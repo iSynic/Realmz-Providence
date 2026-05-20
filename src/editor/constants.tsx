@@ -1,0 +1,164 @@
+import {
+  AlertTriangle,
+  Binary,
+  BookOpen,
+  Boxes,
+  Brush,
+  Coins,
+  Download,
+  Eye,
+  FileArchive,
+  Flag,
+  Grid3X3,
+  MessageSquareText,
+  MousePointer2,
+  Spline,
+  Sword,
+  UserCog
+} from "lucide-react";
+import { EditorTab, EditorTool } from "./types";
+
+export const DEFAULT_SOURCE = "F:\\Realmz\\base\\Realmz\\Scenarios\\Tutorial";
+export const DEFAULT_PROJECT = "F:\\Realmz - Providence\\projects\\Tutorial.providence";
+export const DEFAULT_EXPORT = "F:\\Realmz - Providence\\exports\\Tutorial";
+export const DEFAULT_WORKSPACE = "F:\\Realmz - Providence\\workspace";
+export const DEFAULT_DIVINITY_ROOT = "F:\\Divinity CD\\Divinity CD\\Install Options\\World of Realmz\\Divinity";
+export const DEFAULT_REALMZ_DATA_ROOT = "F:\\Realmz\\base\\Realmz\\Data Files";
+export const DEFAULT_NEW_SCENARIO_ROOT = "F:\\Realmz\\base\\Realmz\\Scenarios\\New Scenario";
+
+export const TILE_CHOICES = [
+  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 20, 24, 32, 40, 48, 64, 80, 96, 128, 160,
+  192, 224, 256, 300, 350, 400, 500, 999
+];
+
+export const TABS: { id: EditorTab; label: string; icon: JSX.Element }[] = [
+  { id: "maps", label: "Maps", icon: <Grid3X3 size={15} /> },
+  { id: "scripts", label: "Scripts", icon: <Spline size={15} /> },
+  { id: "scenario", label: "Scenario", icon: <Flag size={15} /> },
+  { id: "encounters", label: "Encounters", icon: <BookOpen size={15} /> },
+  { id: "combat", label: "Combat", icon: <Sword size={15} /> },
+  { id: "economy", label: "Economy", icon: <Coins size={15} /> },
+  { id: "rules", label: "Rules", icon: <UserCog size={15} /> },
+  { id: "assets", label: "Assets", icon: <FileArchive size={15} /> },
+  { id: "text", label: "Text", icon: <MessageSquareText size={15} /> },
+  { id: "records", label: "Records", icon: <Boxes size={15} /> },
+  { id: "linter", label: "Linter", icon: <AlertTriangle size={15} /> },
+  { id: "export", label: "Export", icon: <Download size={15} /> }
+];
+
+export const TOOLS: { id: EditorTool; label: string; icon: JSX.Element; hint: string }[] = [
+  { id: "select", label: "Select", icon: <MousePointer2 size={16} />, hint: "Click to inspect tiles and linked records. Drag empty space to pan the map." },
+  { id: "paint", label: "Paint", icon: <Brush size={16} />, hint: "Paint the selected tile onto the map" },
+  { id: "trigger", label: "Trigger", icon: <Binary size={16} />, hint: "Select trigger/action overlays" },
+  { id: "sample", label: "Sample", icon: <Eye size={16} />, hint: "Pick a tile from the map into the palette" }
+];
+
+export const ENTITY_TYPE_LABELS: Record<string, string> = {
+  scenario: "Scenario",
+  map: "Map",
+  trigger: "Trigger",
+  macro: "Macro",
+  "action-slot": "Action Slot",
+  "edcd-row": "EDCD",
+  "simple encounter": "Simple Encounter",
+  "complex encounter": "Complex Encounter",
+  "random-region": "Random Region",
+  battle: "Battle",
+  monster: "Monster",
+  message: "Message",
+  shop: "Shop",
+  treasure: "Treasure",
+  "item-reference": "Item",
+  "spell-reference": "Spell",
+  "thief-encounter": "Thief Encounter",
+  "timed-encounter": "Timed Encounter",
+  "contact-info": "Contact Info",
+  "solidity-table": "Solidity Table",
+  "menu-cache": "Menu Cache",
+  "map record": "Map Record",
+  resource: "Resource",
+  "resource type": "Resource Type",
+  picture: "Picture",
+  "icon-resource": "Icon",
+  sound: "Sound",
+  "text-resource": "Text Resource",
+  "style-resource": "Style Resource",
+  "string-list-resource": "String List",
+  "realmz-metadata-resource": "Realmz Metadata",
+  "version-resource": "Version Resource",
+  "runtime-cache": "Runtime Cache",
+  "render-profile": "Render Profile",
+  "asset-fallback": "Asset Fallback",
+  "quest flag": "Quest Flag",
+  "tile atlas": "Tile Atlas",
+  item: "Item",
+  spell: "Spell",
+  race: "Race",
+  caste: "Caste",
+  "monster-scrapbook-entry": "Monster Scrapbook",
+  "monster-mash-icon": "Monster Mash Icon",
+  "vault-icon": "Vault of Arcana Icon",
+  "bag-item": "Bag of Holding",
+  "scenario-startup": "Scenario Startup",
+  "scenario-restriction": "Scenario Restriction",
+  "registration-security": "Registration Security",
+  "global-macro": "Global Macro",
+  "land-layout": "Land Layout",
+  "special-land-tile": "Special Land Tile",
+  "library-file": "Library File"
+};
+
+export const SELECTABLE_ENTITY_TYPES = [
+  "scenario",
+  "map",
+  "trigger",
+  "macro",
+  "action-slot",
+  "edcd-row",
+  "simple encounter",
+  "complex encounter",
+  "random-region",
+  "battle",
+  "monster",
+  "message",
+  "shop",
+  "treasure",
+  "item-reference",
+  "spell-reference",
+  "thief-encounter",
+  "timed-encounter",
+  "contact-info",
+  "solidity-table",
+  "menu-cache",
+  "map record",
+  "resource",
+  "resource type",
+  "picture",
+  "icon-resource",
+  "sound",
+  "text-resource",
+  "style-resource",
+  "string-list-resource",
+  "realmz-metadata-resource",
+  "version-resource",
+  "runtime-cache",
+  "render-profile",
+  "asset-fallback",
+  "quest flag",
+  "tile atlas",
+  "item",
+  "spell",
+  "race",
+  "caste",
+  "monster-scrapbook-entry",
+  "monster-mash-icon",
+  "vault-icon",
+  "bag-item",
+  "scenario-startup",
+  "scenario-restriction",
+  "registration-security",
+  "global-macro",
+  "land-layout",
+  "special-land-tile",
+  "library-file"
+];

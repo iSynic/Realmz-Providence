@@ -1,0 +1,474 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-05-20T18:48:16.2495451Z",
+  "sources": [
+    {
+      "sourceKind": "divinity-import",
+      "path": "Coder Data",
+      "bytes": 4874,
+      "sha256": "096fa0bd19ca328749d311c84ba3d54297c49682557196369fdd1929ae887450"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Divinity Coder 7.0.9.rsrc",
+      "bytes": 70976,
+      "sha256": "628e06ba22617d5987574fac099f8edf42bad2d13af8da20da5b30ae4b8eb6d8"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Divinity Data/Bag of Holding",
+      "bytes": 258,
+      "sha256": "117b8c6bd94e48201b9e281f46f0232cf52ccc4b861ea6143f564d2489f04c43"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Divinity Data/Bag of Holding.rsrc",
+      "bytes": 1770100,
+      "sha256": "fa8757beda31f204fc889478415ec06dcc6215a2dcf4a4ed9da5a41752066257"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Divinity Data/Icon_.rsrc",
+      "bytes": 1784,
+      "sha256": "a1883dd538b0d399bf6a33bdbdc564267098bde9909868cdd073ee65a1e659fd"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Divinity Data/Land Archive/Icon_.rsrc",
+      "bytes": 2752,
+      "sha256": "7bd3b4366652a773cc7c3238cf0005e4454bcd21422cf009d8214a12b85250eb"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Divinity Data/Monster Mash.rsrc",
+      "bytes": 964362,
+      "sha256": "b8936aedf6e79394aa648af62120c850309010644b145bc82139b74e1eb13673"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Divinity Data/Monster Scrap Book",
+      "bytes": 93666,
+      "sha256": "fcf1afd726fdc1a08f72ee2393872a8d2d2bda4ffcf1a4b98236feb40daff46c"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Divinity Data/Monster Scrap Book.rsrc",
+      "bytes": 2752,
+      "sha256": "4325ebf04c5eca17375130503ccc730406fc97d67373c197294433764a5947b6"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Divinity Data/Vault of Arcana.rsrc",
+      "bytes": 227142,
+      "sha256": "e6a574f66e11a71e1098f1acabd5cfd760532a986863028c912ad65bfc67ae98"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Divinity.rsrc",
+      "bytes": 261454,
+      "sha256": "60ad9c81885022f2326a6b8cca2de7a95988c1bec9b03ac95bbaa57af08f258a"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Icon_.rsrc",
+      "bytes": 2752,
+      "sha256": "1aab266c04f9fef074e55b2b545986afb3b09ee1d118ca38617cb6a2ed9c6b3a"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Key Codes.rsrc",
+      "bytes": 60588,
+      "sha256": "42312551d9419829c0edb3cbf304bc5e97af4baeb6bf62ef1a7b1bee4391d6c9"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Order form for your use",
+      "bytes": 1333,
+      "sha256": "79b49ff1be1999b6808d0fad36ac268b3386bcd13e46b91a86852798573585a7"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Order form for your use.rsrc",
+      "bytes": 3078,
+      "sha256": "70268921a34f6e7bb450eed3f1d20a3817fd263dc6f6f1bac2047b0581c10712"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Icon_.rsrc",
+      "bytes": 2752,
+      "sha256": "dfe7bc38a6f423c33a77034ac07809d88e14ad806e6a69be4dcb9dd707630549"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 1",
+      "bytes": 96698,
+      "sha256": "a8c93a2d909f5b09cf08e32a071f0b750e471e7975cb4519e96c672f21131063"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 1.rsrc",
+      "bytes": 783,
+      "sha256": "369523c322194151a67114d493f1eb4e12a89719fb093c607f9223beefb2d5bb"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 10",
+      "bytes": 103344,
+      "sha256": "ddee864f1ad6a1b341f2c40009e920e41daa83a1d5ddd384efc281098b785cf0"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 10.rsrc",
+      "bytes": 783,
+      "sha256": "d27deffb845451591c7b6d933e3003eaf1d96dbe4c114b642a05d8d6c0594860"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 11",
+      "bytes": 95226,
+      "sha256": "544442b6b1efa08cf6422e10b9035634cb88bbb571d820106f2b4aa53a8b1503"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 11.rsrc",
+      "bytes": 783,
+      "sha256": "8c6ecef75cf36d950e20d81d1e89315734f6b93a85e9af949449b69f39e69d0c"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 12",
+      "bytes": 92930,
+      "sha256": "79c4a41c83217263aa640fbaf2bef0b85d1511c42588528504455cc5a19a9eb2"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 12.rsrc",
+      "bytes": 783,
+      "sha256": "13b55bf349423f8606500eb059466029f330cfe6eee6bf0a809b38459268bec6"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 13",
+      "bytes": 80032,
+      "sha256": "cffe759303a33b556ae04c2e41076c594fb0e0a8079884717a82ff007992330c"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 13.rsrc",
+      "bytes": 783,
+      "sha256": "10241aa60f63590f636e49a377a2b3d205871c1f64a0269749f3ec9128469868"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 14",
+      "bytes": 80470,
+      "sha256": "e3a5bc6254202cbca66443d6137e6b5921cc2ba2d6ac95ee8824d42edce85873"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 14.rsrc",
+      "bytes": 783,
+      "sha256": "462d798de3651008a91864bfb9740701588ed6eb9eadd4919379256804dd36b7"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 15",
+      "bytes": 93124,
+      "sha256": "05dcff09fbeb88dd86fce5f01ff088f98fd8cc679abe3f1e86edcb885199adc0"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 15.rsrc",
+      "bytes": 783,
+      "sha256": "9afa86772719a2de3875bde5547add616d37fc181dfee9fdc4ab7bd373048261"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 16",
+      "bytes": 95668,
+      "sha256": "523405c683a94c5a3b61e80ded88dee3b7913738d1ec1b6c58b83da55753e17e"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 16.rsrc",
+      "bytes": 783,
+      "sha256": "831c9cb9e0ee5a0ccd2d1baa2a93c691850dea127b08a905f7d3c0e74b3eeeaa"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 17",
+      "bytes": 101828,
+      "sha256": "64bf73a0c71761388ec7efab4bb54b5df870d167dee09eca59b99d53fd80edcc"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 17.rsrc",
+      "bytes": 783,
+      "sha256": "9f8cb60cd7b7da315adde62219ebfbdf86f94ad1146abcf35e59a8b5f207e053"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 18",
+      "bytes": 100888,
+      "sha256": "6b05abb47727697ca2ec10920cf895aa35d6c685290f455d235d1bcb6467c35d"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 18.rsrc",
+      "bytes": 783,
+      "sha256": "23f24550ce35756e7d292eb3151c7678be9007512ef13a35fe7f1034ad2e3b67"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 19",
+      "bytes": 99534,
+      "sha256": "dc68e256a8d0c94b24c2c591de07bdf71d04a511b051f8114e871974aec301a0"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 19.rsrc",
+      "bytes": 783,
+      "sha256": "d6085293cd04181a9991a8ba17aaa1323c590f18f4b2fa9cfc44693a29ded5aa"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 2",
+      "bytes": 98294,
+      "sha256": "c7b494ca234e908aba1a7624d9fbdbeb68200dc37f0a51e0892392cd5c331d8a"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 2.rsrc",
+      "bytes": 783,
+      "sha256": "c562c599a04ac071c8b328739a79499dac3c068e61788eb11b7ecc0f432fac69"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 20",
+      "bytes": 82190,
+      "sha256": "3b4f072855caf20810b37d2621654aabb9ef518b277afa3eff93d7923330a7e4"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 20.rsrc",
+      "bytes": 783,
+      "sha256": "93ab02de50866f4d20f69ff510fef8a72010baebb17456975a499ef1aecc8845"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 3",
+      "bytes": 91062,
+      "sha256": "a984a827ad0603a0ed54404891206945efa4c333fe03c19a5b401857e636041a"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 3.rsrc",
+      "bytes": 783,
+      "sha256": "678e8d1f9cb2b86b28e99f80b3ea2fe2570d4a0355a65bad50edd40ddf56935c"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 4",
+      "bytes": 95170,
+      "sha256": "148acf4c11d8cdbc424d127ae7d9547517942894d8a34aeef8c771667df26c3f"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 4.rsrc",
+      "bytes": 783,
+      "sha256": "86393deed6101699bab43ba00aabcbff1c708a417908b94cc82de2c00983ec45"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 5",
+      "bytes": 90792,
+      "sha256": "cbba884e7090f0769814a8a3fd43d96e28aa574cbc3e57ca28b60924a3f98b50"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 5.rsrc",
+      "bytes": 783,
+      "sha256": "70ad09f2276fd99684db1a232142d36250061c00b4936ffbd151c49371dba354"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 6",
+      "bytes": 93642,
+      "sha256": "af52faf2968aeabf26a774c27c598477fadc17ca0799cc3c248a220417fb2dd5"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 6.rsrc",
+      "bytes": 783,
+      "sha256": "125bf9d731b2e336a4ad4f20c942c51178b767c9719db48b6e764c710c104e84"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 7",
+      "bytes": 95640,
+      "sha256": "3e2b8f70331b403e6f8512d666c59830a51b5b98dde90fa5814a5a77e173e4fb"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 7.rsrc",
+      "bytes": 783,
+      "sha256": "473262bfcd97503f0fd5dc0a11459805a0ca04f4b6f80b33de906cbbf51de252"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 8",
+      "bytes": 93288,
+      "sha256": "3c57a5a42a3a4466333bc3b947b87f552b35871017f325ce17c23b1d8c9aaaec"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 8.rsrc",
+      "bytes": 783,
+      "sha256": "8873c9b0c317a6794361c455625c193e8fa11a8c95c95bf0d87eb92cdc7da2c7"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 9",
+      "bytes": 90886,
+      "sha256": "f55a49874aff625257435dce0b9022e70aabbc0b801c8c6d860b039c90621fa1"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Picts for Splash Screens/Splash 9.rsrc",
+      "bytes": 783,
+      "sha256": "adcf07c748a4129a33f7c7b36817cea444f0590a210943fc723b604fb0a18e01"
+    },
+    {
+      "sourceKind": "divinity-import",
+      "path": "Printable Forms.rsrc",
+      "bytes": 74891,
+      "sha256": "49a2da3f8a444a6be358c88b3210c37c738f738867c65b2ad1f744fc94121ee6"
+    },
+    {
+      "sourceKind": "realmz-reference",
+      "path": "Combat Data BD",
+      "bytes": 8104,
+      "sha256": "cfce17721f4090265ff9a986deb88fb95f740958cc5f7db14f42dff5c8dae56a"
+    },
+    {
+      "sourceKind": "realmz-reference",
+      "path": "Custom Names.rsrc",
+      "bytes": 8800,
+      "sha256": "d75bcee3f6c16d1bdb13e7c7eaf17b2e784d7a9df36a275e4dee4e27b269fc84"
+    },
+    {
+      "sourceKind": "realmz-reference",
+      "path": "Data AD",
+      "bytes": 882,
+      "sha256": "2db5422bb858d8eaf24218d0b1828537a77b888b070367296e4f2ef6f0c138a0"
+    },
+    {
+      "sourceKind": "realmz-reference",
+      "path": "Data Caste",
+      "bytes": 17280,
+      "sha256": "9511b8230ddb9588ce5d08dee47fa0d1ffd4b8e8b3ae77ecc50ad3bb25823d06"
+    },
+    {
+      "sourceKind": "realmz-reference",
+      "path": "Data Caste.rsrc",
+      "bytes": 377,
+      "sha256": "71b27babd1e1955b066f59db054d3910a471fbc9579a9d95e24a6bb4c056ccaa"
+    },
+    {
+      "sourceKind": "realmz-reference",
+      "path": "Data Castle BD",
+      "bytes": 8104,
+      "sha256": "76bf196e111141b92190314b8b56cd4786bc37abb2d89bdbd43c5cf559fcf8d5"
+    },
+    {
+      "sourceKind": "realmz-reference",
+      "path": "Data Desert BD",
+      "bytes": 8104,
+      "sha256": "1c0c17cf40ef14d05fa3e77d918ce1aa7e2d5eb7df91490c1d68d4b8564491b3"
+    },
+    {
+      "sourceKind": "realmz-reference",
+      "path": "Data ID",
+      "bytes": 80000,
+      "sha256": "a64ad1fb64933ecca45de2cbf84b9e0415337ae045c71f2c0c56770af84e80ad"
+    },
+    {
+      "sourceKind": "realmz-reference",
+      "path": "Data ID.rsrc",
+      "bytes": 55880,
+      "sha256": "2c9063b7b54f0d5a5be3e7bd4954c6b46e5585e5028073236197ca6fb3864afa"
+    },
+    {
+      "sourceKind": "realmz-reference",
+      "path": "Data P BD",
+      "bytes": 8104,
+      "sha256": "4ca7f4b8e8a31f1374d61a65a770220785b04129f7678b5a1e7d06e971c8cca0"
+    },
+    {
+      "sourceKind": "realmz-reference",
+      "path": "Data Race",
+      "bytes": 28800,
+      "sha256": "22d1ec93dfb2504eaf43e92fcaeb80ca6c1ce35a9ef109c0158e17405f5ddebe"
+    },
+    {
+      "sourceKind": "realmz-reference",
+      "path": "Data Race.rsrc",
+      "bytes": 378,
+      "sha256": "7ae2f25ffb0a6bdc3507da36a935e48cb0fd4583f16d3efcefbf18e4fdd8a199"
+    },
+    {
+      "sourceKind": "realmz-reference",
+      "path": "Data S",
+      "bytes": 15750,
+      "sha256": "e503f55325e27465edfb7950867c4d115b16fc4c5cd7fe25824b46a56bb83ca2"
+    },
+    {
+      "sourceKind": "realmz-reference",
+      "path": "Data S.rsrc",
+      "bytes": 377,
+      "sha256": "b23eed04d29c2e53b1a999f6cc73464e27e6ba7ac70386213d94a160576ad65b"
+    },
+    {
+      "sourceKind": "realmz-reference",
+      "path": "Data Snow BD",
+      "bytes": 8104,
+      "sha256": "564d944bcbb9f4060db58784bdfb1dc468fef9e891e63e62b41fdfe5cd764b2e"
+    },
+    {
+      "sourceKind": "realmz-reference",
+      "path": "Data SUB BD",
+      "bytes": 8104,
+      "sha256": "33e88f4c0926e076276cd5920d1604fabc0e1349fa219495620253b6253516c5"
+    },
+    {
+      "sourceKind": "realmz-reference",
+      "path": "Data Swamp BD",
+      "bytes": 8104,
+      "sha256": "6e1f5950cdd74b250678b751b43466be8a330bd4a47df3c60135683960db9f58"
+    },
+    {
+      "sourceKind": "realmz-reference",
+      "path": "Portraits.rsrc",
+      "bytes": 359006,
+      "sha256": "b627417cac3e213f6a651a479e5caebb5cebff3bc0f0217e73b84911e37cf4b7"
+    },
+    {
+      "sourceKind": "realmz-reference",
+      "path": "Scenario Names.rsrc",
+      "bytes": 3592,
+      "sha256": "e7e6ba880700c9714953615540b82da45255c30c3998ee9537969269306eddbc"
+    },
+    {
+      "sourceKind": "realmz-reference",
+      "path": "Tacticals.rsrc",
+      "bytes": 372358,
+      "sha256": "f2f2ef053107895c3fbd7e26b0f92ae3bfeb685d698858c14e260c168b319f50"
+    },
+    {
+      "sourceKind": "realmz-reference",
+      "path": "The Family Jewels.rsrc",
+      "bytes": 7472258,
+      "sha256": "2f21229c910fb8ff03f73c969f8e4895afda954fcdf31730204736cc79ede2d9"
+    }
+  ]
+}
