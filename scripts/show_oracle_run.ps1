@@ -92,11 +92,22 @@ function New-OracleReportRow {
     [string[]]@()
   }
   $gameplayResponses = if ($gameplay) { [string[]]@($gameplay.Responses | ForEach-Object { [string]$_ }) } else { [string[]]@() }
+  $gameplayScreenshots = if ($gameplay) { [string[]]@($gameplay.Screenshots | ForEach-Object { [string]$_ }) } else { [string[]]@() }
   $lastSnapshotPath = $null
+  $lastScreenshotPath = $null
+  $lastScreenshotSummary = $null
   if ($gameplay) {
     $lastStep = @($gameplay.Steps | Where-Object { $_.SnapshotPath } | Select-Object -Last 1)
     if ($lastStep.Count -gt 0) {
       $lastSnapshotPath = [string]$lastStep[0].SnapshotPath
+    }
+    $lastVisualStep = @($gameplay.Steps | Where-Object { $_.ScreenshotPath } | Select-Object -Last 1)
+    if ($lastVisualStep.Count -gt 0) {
+      $lastScreenshotPath = [string]$lastVisualStep[0].ScreenshotPath
+      if ($lastVisualStep[0].Screenshot) {
+        $visual = $lastVisualStep[0].Screenshot
+        $lastScreenshotSummary = "written=$($visual.written) size=$($visual.width)x$($visual.height) nonBlack=$($visual.nonBlackPixels) nonWhite=$($visual.nonWhitePixels)"
+      }
     }
   }
   $lastSnapshot = Read-JsonFile -Path $lastSnapshotPath
@@ -130,8 +141,11 @@ function New-OracleReportRow {
     GameplayFailedAssertion = if ($gameplay) { $gameplay.FailedAssertion } else { $null }
     GameplaySteps = $gameplaySteps
     GameplayResponses = $gameplayResponses
+    GameplayScreenshots = $gameplayScreenshots
     GameplayLastSnapshotPath = $lastSnapshotPath
     GameplayLastSnapshot = $lastSnapshotSummary
+    GameplayLastScreenshotPath = $lastScreenshotPath
+    GameplayLastScreenshot = $lastScreenshotSummary
     GameplayResultPath = if ($classic) { $classic.GameplayResultPath } else { $null }
     GameplayCommandPath = if ($classic) { $classic.GameplayCommandPath } else { $null }
     GameplayMarkers = $gameplayMarkers
@@ -198,8 +212,11 @@ if ($Json) {
     Write-Host "  gameplay: ok=$(Format-Nullable $report.GameplayOk) error=$(Format-Nullable $report.GameplayError) assertion=$(Format-Nullable $report.GameplayFailedAssertion)"
     Write-Host "  gameplaySteps: $(Format-Nullable $report.GameplaySteps)"
     Write-Host "  gameplayResponses: $(Format-Nullable $report.GameplayResponses)"
+    Write-Host "  gameplayScreenshots: $(Format-Nullable $report.GameplayScreenshots)"
     Write-Host "  lastSnapshot: $(Format-Nullable $report.GameplayLastSnapshot)"
     Write-Host "  lastSnapshotPath: $(Format-Nullable $report.GameplayLastSnapshotPath)"
+    Write-Host "  lastScreenshot: $(Format-Nullable $report.GameplayLastScreenshot)"
+    Write-Host "  lastScreenshotPath: $(Format-Nullable $report.GameplayLastScreenshotPath)"
     Write-Host "  gameplayArtifacts: result=$(Format-Nullable $report.GameplayResultPath) command=$(Format-Nullable $report.GameplayCommandPath)"
     Write-Host "  gameplayMarkers: $(Format-Nullable $report.GameplayMarkers)"
     Write-Host "  triggerMarkers: $(Format-Nullable $report.TriggerMarkers)"

@@ -104,11 +104,13 @@ Phase 3 adds a Classic debug-only command bridge. It is active only when Classic
 - `REALMZ_RUN_KIND=providence-oracle-gameplay`
 - `REALMZ_ORACLE_COMMAND_PATH=<command-file>`
 
-The Providence script still stages, auto-imports, and selects the exported scenario through the Phase 2 oracle path. After selection, it writes line-oriented command files for Classic to poll. Classic executes commands such as `startScenario`, `snapshot`, `setNoclip`, `warpOutdoor`, `move`, `saveSlot`, and `loadSlot`, then writes one JSON response and snapshot per command. Normal Realmz launches never enable this bridge.
+The Providence script still stages, auto-imports, and selects the exported scenario through the Phase 2 oracle path. After selection, it writes line-oriented command files for Classic to poll. Classic executes commands such as `startScenario`, `snapshot`, `setNoclip`, `warpOutdoor`, `move`, `saveSlot`, and `loadSlot`, then writes one JSON response, state snapshot, and screen BMP per command. Normal Realmz launches never enable this bridge.
 
 The bridge does not change Realmz scenario loading semantics. Gameplay start resolves the actual Game menu row for the staged scenario, calls Realmz's normal `selectscenario` path, and then uses the standard `setupnewgame` and save/load paths. Providence exports must continue to conform to Realmz's scenario layout and resource expectations.
 
 The bridge intentionally seeds a fixed party from staged `Character Files` instead of clicking through party setup. Movement fixtures use noclip so semantic checks are about Providence export data and Realmz action execution, not terrain collision brittleness.
+
+While the bridge owns gameplay, Classic pumps host SDL/Windows events and periodically recomposites the window instead of entering the blocking `mainscreen()` loop. This keeps command polling deterministic while making the live window and screenshot artifacts closer to what a user would see.
 
 ## Artifacts
 
@@ -125,10 +127,11 @@ Each run writes under `tmp\oracle-runs\<stamp>` or under a matrix child director
 - `realmz-logs\providence-oracle-*-gameplay-result.json`: Classic gameplay result.
 - `realmz-logs\providence-oracle-*-gameplay-*-response.json`: per-command responses.
 - `realmz-logs\providence-oracle-*-gameplay-*-snapshot.json`: per-command snapshots.
+- `realmz-logs\providence-oracle-*-gameplay-*-screen.bmp`: per-command screen captures with dimensions and basic non-black/non-white pixel metrics recorded in the response JSON.
 
 The matrix also writes `matrix-summary.json`.
 
-`npm run smoke:oracle:show` reads these files and prints the expectation, stage, Providence assertion/error, Classic dispatch state, marker matches, fatal markers, gameplay steps, response paths, last snapshot, trigger markers, save/load markers, runtime log, menu snapshots, export dir, and profile dir. It exits `1` when any displayed fixture did not match expectation.
+`npm run smoke:oracle:show` reads these files and prints the expectation, stage, Providence assertion/error, Classic dispatch state, marker matches, fatal markers, gameplay steps, response paths, screenshots, last snapshot, last screenshot metrics, trigger markers, save/load markers, runtime log, menu snapshots, export dir, and profile dir. It exits `1` when any displayed fixture did not match expectation.
 
 ## Runtime Mirror Rationale
 
@@ -152,4 +155,4 @@ The pure `REALMZ_USER_DATA_DIR` resource resolver path is deferred until separat
 - Missing character: verify the fixture's `requiredCharacters` are copied into the isolated profile's `Character Files`.
 - Trigger mismatch: inspect `newland` markers and the last snapshot's `quest` array.
 - Save/load mismatch: inspect the `saveSlot`/`loadSlot` markers, the slot `A` save files under the profile, and the before/after snapshots.
-- Partial gameplay window rendering: the gameplay bridge suppresses Realmz's blocking `mainscreen()` loop so command polling can continue, then forces redraw/recomposite after gameplay commands. Treat semantic snapshots and runtime markers as the oracle source of truth; visual rendering issues should be debugged separately from scenario compatibility.
+- Partial gameplay window rendering: inspect the per-step `*-screen.bmp` files and their response metrics first. The bridge pumps host events and recomposites while it owns gameplay, but semantic snapshots and runtime markers remain the oracle source of truth; visual rendering regressions should be debugged separately from scenario compatibility.
