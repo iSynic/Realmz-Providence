@@ -9,6 +9,7 @@ import { tileColor } from "../components/TileSprite";
 import { ResourcePreviewBadge, ResourcePreviewDiagnostics } from "../components/ResourcePreviewStatus";
 import { loadBrowserBundledLibraryAssetPreview } from "../browser/library";
 import { ScrollArea } from "../ui";
+import { renderListKey } from "../renderKeys";
 
 export function ResourcesPanel({
   project,
@@ -63,9 +64,9 @@ export function ResourcesPanel({
           </div>
         </div>
         <ScrollArea className="managed-asset-grid" aria-label="Managed Assets">
-          {project?.assets.map((asset) => (
+          {project?.assets.map((asset, index) => (
             <ManagedAssetCard
-              key={asset.id}
+              key={renderListKey("managed-asset", asset, index)}
               asset={asset}
               desktopRuntime={desktopRuntime}
               projectDir={projectDir}
@@ -101,9 +102,9 @@ export function ResourcesPanel({
           <b>{libraryAssets.length.toLocaleString()}</b>
         </div>
         <ScrollArea className="library-asset-strip" aria-label="Library Assets">
-          {libraryAssets.slice(0, 120).map((asset) => (
+          {libraryAssets.slice(0, 120).map((asset, index) => (
             <LibraryAssetCard
-              key={asset.id}
+              key={renderListKey("library-asset", asset, index)}
               asset={asset}
               desktopRuntime={desktopRuntime}
               workspaceDir={workspaceDir}
@@ -120,10 +121,10 @@ export function ResourcesPanel({
           <b>{resources.length.toLocaleString()}</b>
         </div>
         <div className="resource-type-grid">
-          {resourceTypes.map((entity) => {
+          {resourceTypes.map((entity, index) => {
             const members = resourceMembersForType(project, entity.id);
             return (
-              <button key={entity.id} onClick={() => onSelectEntity(selectEntityFromId(entity.id))}>
+              <button key={renderListKey("resource-type", entity, index)} onClick={() => onSelectEntity(selectEntityFromId(entity.id))}>
                 <strong>{String(entity.summary.type ?? entity.label)}</strong>
                 <span>{members.length.toLocaleString()} resources</span>
                 <small>{String(entity.summary.totalBytes ?? 0)} bytes</small>
@@ -135,8 +136,8 @@ export function ResourcesPanel({
           <ScrollArea className="lint-results compact" aria-label="Resource Fallbacks">
             <section>
               <header>Resource Fallbacks</header>
-              {gaps.slice(0, 8).map((gap) => (
-                <button key={gap.entity.id} className="lint-issue warning" onClick={() => onSelectEntity(selectEntityFromId(gap.entity.id))}>
+              {gaps.slice(0, 8).map((gap, index) => (
+                <button key={renderListKey("resource-gap", gap.entity, index)} className="lint-issue warning" onClick={() => onSelectEntity(selectEntityFromId(gap.entity.id))}>
                   ! {gap.entity.label} uses {gap.reason}
                   <small>{gap.consumers.length.toLocaleString()} semantic consumers</small>
                 </button>
@@ -145,10 +146,10 @@ export function ResourcesPanel({
           </ScrollArea>
         )}
         <ScrollArea className="resource-list" aria-label="Resource Fork Inventory">
-          {resources.slice(0, 500).map((entity) => {
+          {resources.slice(0, 500).map((entity, index) => {
             const consumers = resourceConsumers(project, entity.id);
             return (
-              <button key={entity.id} onClick={() => onSelectEntity(selectEntityFromId(entity.id))}>
+              <button key={renderListKey("resource-entity", entity, index)} onClick={() => onSelectEntity(selectEntityFromId(entity.id))}>
                 <strong>{entity.label}</strong>
                 <span>{resourceStatus(entity)} | {consumers.length.toLocaleString()} refs</span>
                 <small>{entity.id}</small>
@@ -166,8 +167,8 @@ export function ResourcesPanel({
           <b>{tileAtlases.length.toLocaleString()}</b>
         </div>
         <ScrollArea className="asset-grid compact" aria-label="Tile Atlases">
-          {tileAtlases.map((asset) => (
-            <article key={asset.id} className="asset-card">
+          {tileAtlases.map((asset, index) => (
+            <article key={renderListKey("tile-atlas", asset, index)} className="asset-card">
               <div className="asset-swatch" style={{ background: tileColor(numberSummary(asset.summary.landlook)) }}>
                 <span>{asset.editState === "blocked" ? "missing" : "ready"}</span>
               </div>
@@ -286,9 +287,9 @@ function SpecialLandTilePanel({
         They are separate from standard land tile set atlases.
       </div>
       <ScrollArea className="managed-asset-grid compact-assets" aria-label="Authored special land tiles">
-        {authoredTiles.map((asset) => (
+        {authoredTiles.map((asset, index) => (
           <SpecialLandAssetCard
-            key={asset.id}
+            key={renderListKey("special-land-authored", asset, index)}
             asset={asset}
             desktopRuntime={desktopRuntime}
             projectDir={projectDir}
@@ -306,8 +307,8 @@ function SpecialLandTilePanel({
         <>
           <div className="subsection-label">Read-only library examples</div>
           <ScrollArea className="library-asset-strip compact-assets" aria-label="Read-only special land tile examples">
-            {libraryTiles.slice(0, 48).map((asset) => (
-              <LibraryAssetCard key={asset.id} asset={asset} desktopRuntime={desktopRuntime} workspaceDir={workspaceDir} />
+            {libraryTiles.slice(0, 48).map((asset, index) => (
+              <LibraryAssetCard key={renderListKey("special-land-library", asset, index)} asset={asset} desktopRuntime={desktopRuntime} workspaceDir={workspaceDir} />
             ))}
           </ScrollArea>
         </>

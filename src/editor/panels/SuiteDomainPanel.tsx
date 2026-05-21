@@ -5,6 +5,7 @@ import { isDraftEntity, LibraryDraftSpec } from "../libraryDrafts";
 import { EditorTab, LibraryAsset, LibraryCatalog, LibraryEntity, ManagedAssetKind, Project, SemanticEntity, SelectedEntity } from "../types";
 import { selectEntityFromId } from "../utils";
 import { ScrollArea } from "../ui";
+import { renderListKey } from "../renderKeys";
 
 const DOMAIN_CONFIG: Record<EditorTab, { title: string; subtitle: string; editors: DomainEditor[] }> = {
   maps: {
@@ -179,8 +180,8 @@ export function SuiteDomainPanel({
               <b>{records.length.toLocaleString()}</b>
             </header>
             <ScrollArea className="domain-entity-list" aria-label="Decoded records">
-              {records.slice(0, 240).map((record) => (
-                <button key={record.id} type="button" onClick={() => onSelectEntity(selectEntityFromId(record.id))}>
+              {records.slice(0, 240).map((record, index) => (
+                <button key={renderListKey("domain-record", record, index)} type="button" onClick={() => onSelectEntity(selectEntityFromId(record.id))}>
                   <strong>{record.label}</strong>
                   <small>{record.type} | {record.editState}</small>
                 </button>
@@ -197,8 +198,8 @@ export function SuiteDomainPanel({
               <b>{catalog?.diagnostics.length ?? 0}</b>
             </header>
             <ScrollArea className="domain-entity-list" aria-label="Library diagnostics">
-              {catalog?.diagnostics.slice(0, 240).map((diagnostic) => (
-                <button key={diagnostic.id} type="button">
+              {catalog?.diagnostics.slice(0, 240).map((diagnostic, index) => (
+                <button key={renderListKey("domain-diagnostic", diagnostic, index)} type="button">
                   <strong>{diagnostic.message}</strong>
                   <small>{diagnostic.severity} | {diagnostic.type}</small>
                 </button>
@@ -447,7 +448,7 @@ function EntityRows({
         const selected = selectedEntity?.id === entity.id;
         return (
           <button
-            key={`${entity.id}:${entity.source}:${index}`}
+            key={renderListKey("domain-entity", entity, index)}
             className={selected ? "selected" : ""}
             type="button"
             onClick={() => onSelectEntity(selectEntityFromId(entity.id))}

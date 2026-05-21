@@ -5,10 +5,10 @@ import { EditorTool, MapEntity, Project, ProjectCommand, RandomLevel, SelectedEn
 import { randomRectEntityId } from "../map/geometry";
 import { actionSlotEntitiesForTriggerRecord } from "../semanticGraph";
 import { mapEntityId, selectEntityFromId, triggerEntityId } from "../utils";
-import { EntityBrowser } from "./EntityBrowser";
 import { InfoGrid } from "./InfoGrid";
 import { ActionPointCodeTable, CellTileEvidence, MapCapabilityPanel, RandomRectangleForm } from "./MapAffordances";
 import { PaintPalettePanel } from "./TileSelectionBar";
+import { TileSprite, tileColor } from "./TileSprite";
 import { TutorialTip } from "./TutorialTip";
 import { ScrollArea } from "../ui";
 
@@ -45,6 +45,11 @@ export function MapContextSidebar({
   return (
     <aside className="editor-sidebar contextual-sidebar">
       <ScrollArea className="contextual-sidebar-scroll" aria-label="Map tools and browser">
+        <MapOutliner
+          project={state.project}
+          selectedMap={selectedMap}
+          onSelectMap={onSelectMap}
+        />
         {selection ? (
           <SelectionInspector
             selection={selection}
@@ -56,11 +61,9 @@ export function MapContextSidebar({
           />
         ) : (
           <CoreMapSetup
-            project={state.project}
             selectedMap={selectedMap}
             randomLevel={selectedRandomLevel}
             activeTool={state.activeTool}
-            onSelectMap={onSelectMap}
             onSelectEntity={onSelectEntity}
           />
         )}
@@ -72,7 +75,6 @@ export function MapContextSidebar({
           onSetTool={onSetTool}
           onSelectTile={onSelectTile}
         />
-        <EntityBrowser project={state.project} selectedEntity={state.selectedEntity} onSelect={onSelectEntity} />
       </ScrollArea>
     </aside>
   );
@@ -85,40 +87,22 @@ type Selection =
   | { kind: "record"; record: SemanticEntity };
 
 function CoreMapSetup({
-  project,
   selectedMap,
   randomLevel,
   activeTool,
-  onSelectMap,
   onSelectEntity
 }: {
-  project: Project | null;
   selectedMap: MapEntity | null;
   randomLevel: RandomLevel | null;
   activeTool: EditorTool;
-  onSelectMap: (id: string) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
 }) {
   return (
     <section className="context-panel">
-      <div className="tutorial-callout">
-        Map-level setup, source identity, and Realmz flags.
-      </div>
       <div className="panel-header">
         <span>Core Map Setup</span>
-        <small>{project?.maps.length ?? 0} maps</small>
+        <small>{selectedMap?.levelType ?? "none"}</small>
       </div>
-      <label className="context-field">
-        <span>Scenario Map</span>
-        <select value={selectedMap?.id ?? ""} onChange={(event) => onSelectMap(event.currentTarget.value)} disabled={!project}>
-          {!project && <option value="">No project loaded</option>}
-          {project?.maps.map((map) => (
-            <option key={map.id} value={map.id}>
-              {map.name}
-            </option>
-          ))}
-        </select>
-      </label>
       <details className="context-section" open>
         <summary>
           <span>Map Identity</span>
@@ -161,6 +145,77 @@ function CoreMapSetup({
   );
 }
 
+function MapOutliner({
+  project,
+  selectedMap,
+  onSelectMap
+}: {
+  project: Project | null;
+  selectedMap: MapEntity | null;
+  onSelectMap: (id: string) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const normalizedQuery = query.trim().toLowerCase();
+  const maps = project?.maps ?? [];
+  const filtered = normalizedQuery
+    ? maps.filter((map) => {
+        const label = `${map.name} ${map.levelType} ${map.index} ${map.render.tilesetId}`.toLowerCase();
+        return label.includes(normalizedQuery);
+      })
+    : maps;
+  const landCount = maps.filter((map) => map.levelType === "land").length;
+  const dungeonCount = maps.filter((map) => map.levelType === "dungeon").length;
+  return (
+    <section className="context-panel map-outliner-panel">
+      <div className="panel-header">
+        <span>Scenario Maps</span>
+        <small>{maps.length.toLocaleString()}</small>
+      </div>
+      <label className="context-field compact">
+        <span>Current Map</span>
+        <select value={selectedMap?.id ?? ""} onChange={(event) => onSelectMap(event.currentTarget.value)} disabled={!project}>
+          {!project && <option value="">No project loaded</option>}
+          {maps.map((map) => (
+            <option key={map.id} value={map.id}>
+              {map.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className="map-outliner-meta">
+        <span>{landCount} land</span>
+        <span>{dungeonCount} dungeon</span>
+        {selectedMap && <span>{selectedMap.render.tilesetId}</span>}
+      </div>
+      <input
+        className="map-outliner-search"
+        value={query}
+        onChange={(event) => setQuery(event.currentTarget.value)}
+        placeholder="Search maps..."
+        aria-label="Search maps"
+      />
+      <ScrollArea className="map-outliner-list" aria-label="Scenario map list">
+        {filtered.map((map) => (
+          <button
+            key={map.id}
+            className={`map-outliner-row${map.id === selectedMap?.id ? " selected" : ""}`}
+            type="button"
+            onClick={() => onSelectMap(map.id)}
+          >
+            <span className={`map-type-badge ${map.levelType}`}>{map.levelType === "dungeon" ? "D" : "L"}</span>
+            <span>
+              <strong>{map.name}</strong>
+              <small>{map.levelType} {map.index} | {map.render.tilesetId}</small>
+            </span>
+          </button>
+        ))}
+        {project && filtered.length === 0 && <p className="empty-copy compact">No maps match that search.</p>}
+        {!project && <p className="empty-copy compact">Create or import a scenario to browse maps.</p>}
+      </ScrollArea>
+    </section>
+  );
+}
+
 function MapToolset({
   state,
   selectedMap,
@@ -176,7 +231,7 @@ function MapToolset({
   onSetTool: (tool: EditorTool) => void;
   onSelectTile: (tile: number) => void;
 }) {
-  const [paletteOpen, setPaletteOpen] = useState(true);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   return (
     <section className="context-panel map-toolset-panel">
       <div className="panel-header">
@@ -193,6 +248,13 @@ function MapToolset({
           </TutorialTip>
         ))}
       </div>
+      <PaintTileSummary
+        selectedTile={state.selectedTile}
+        inspectedTile={state.selectedCell?.tile ?? null}
+        atlas={atlas}
+        selectedTileset={selectedTileset}
+        onSelectTile={onSelectTile}
+      />
       <button className={`toolset-disclosure${paletteOpen ? " open" : ""}`} onClick={() => setPaletteOpen((open) => !open)}>
         <span>{paletteOpen ? "Collapse" : "Open"} Paint Palette</span>
         <b>Paint {state.selectedTile}</b>
@@ -210,6 +272,40 @@ function MapToolset({
         />
       )}
     </section>
+  );
+}
+
+function PaintTileSummary({
+  selectedTile,
+  inspectedTile,
+  atlas,
+  selectedTileset,
+  onSelectTile
+}: {
+  selectedTile: number;
+  inspectedTile: number | null;
+  atlas: EditorState["atlasEntries"][string] | null;
+  selectedTileset: TilesetAsset | null;
+  onSelectTile: (tile: number) => void;
+}) {
+  return (
+    <div className="paint-tile-summary">
+      <button
+        type="button"
+        className="paint-tile-preview"
+        style={{ background: tileColor(selectedTile) }}
+        onClick={() => onSelectTile(selectedTile)}
+        title={`Selected paint tile ${selectedTile}`}
+      >
+        {atlas && <TileSprite atlas={atlas} tile={selectedTile} />}
+        <span>{selectedTile}</span>
+      </button>
+      <div>
+        <strong>Paint tile {selectedTile}</strong>
+        <small>{selectedTileset?.name ?? "No tileset loaded"}</small>
+        {inspectedTile != null && <small>Selected cell tile {inspectedTile}</small>}
+      </div>
+    </div>
   );
 }
 
