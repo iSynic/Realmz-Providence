@@ -226,7 +226,7 @@ export type ProjectCommand =
       kind: "updateTriggerHeader";
       label: string;
       triggerId: string;
-      fields: Partial<Pick<TriggerRecord, "percent" | "landid" | "targetX" | "targetY" | "active">>;
+      fields: Partial<Pick<TriggerRecord, "doorid" | "coordinate" | "percent" | "landid" | "targetX" | "targetY" | "active">>;
     }
   | {
       kind: "updateActionSlot";

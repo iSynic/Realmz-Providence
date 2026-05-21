@@ -13,6 +13,8 @@
     "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml",
     "smoke:oracle": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_smoke.ps1",
     "smoke:oracle:matrix": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_smoke_matrix.ps1",
+    "smoke:oracle:gameplay": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_gameplay.ps1",
+    "smoke:oracle:gameplay:matrix": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_gameplay_matrix.ps1",
     "smoke:oracle:show": "powershell -ExecutionPolicy Bypass -File scripts/show_oracle_run.ps1",
     "check": "npm run build && npm run test:rust"
   },

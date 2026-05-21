@@ -187,9 +187,30 @@ function describeAction(slot: number, rawCode: number, id: number): Action {
     code,
     id,
     label: option.shortLabel,
-    category: option.category,
+    category: projectActionCategory(code, option.category),
     gosub: rawCode < 0 && rawCode !== -14 && rawCode !== -23
   };
+}
+
+function projectActionCategory(code: number, legacyCategory: string) {
+  if (code === -23 || [7, 12, 13, 20, 23, 29, 37, 45, 57, 61, 70, 92, 97].includes(code)) return "map";
+  if ([2, 11, 48, 107, 120, 121, 122, 123, 124, 125, 126].includes(code)) return "combat";
+  if ([4, 5, 35, 41, 54, 104].includes(code)) return "encounter";
+  if ([6, 10, 21, 22, 32, 33, 36, 49, 51, 65, 67, 73].includes(code)) return "item_shop";
+  if ([3, 8, 24, 31, 38, 39, 40, 42, 46, 55, 56, 58, 59, 64, 72, 75, 77, 78, 81, 85, 86, 87, 111, 112].includes(code)) return "branch";
+  if ([1, 9, 19, 26, 27, 62, 71].includes(code)) return "ui_text";
+  if ([63, 66].includes(code)) return "time";
+  if ([84, 98, 99].includes(code)) return "registration";
+  if (code === 0) return "unknown";
+  if ([14, 15, 16, 17, 18, 30, 43, 47, 50, 52, 53, 60, 68, 69, 74, 76, 90, 103, 108].includes(code)) return "state";
+
+  const normalized = legacyCategory.toLowerCase();
+  if (["branch", "combat", "encounter", "map"].includes(normalized)) return normalized;
+  if (normalized === "economy") return "item_shop";
+  if (normalized === "text" || normalized === "media") return "ui_text";
+  if (normalized === "scenario") return "time";
+  if (["characters", "quest", "rules"].includes(normalized)) return "state";
+  return "unknown";
 }
 
 function authoredProvenance(sourceFile: string, recordIndex: number, byteOffset: number, byteLength: number): Provenance {

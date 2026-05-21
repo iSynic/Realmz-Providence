@@ -83,6 +83,31 @@ function New-OracleReportRow {
       }
     }
   }
+  $gameplay = if ($classic) { $classic.GameplayResult } else { $null }
+  $gameplaySteps = if ($gameplay) {
+    [string[]]@($gameplay.Steps | ForEach-Object {
+      "$($_.Name):$($_.Command):ok=$($_.Ok):assert=$($_.AssertionError)"
+    })
+  } else {
+    [string[]]@()
+  }
+  $gameplayResponses = if ($gameplay) { [string[]]@($gameplay.Responses | ForEach-Object { [string]$_ }) } else { [string[]]@() }
+  $lastSnapshotPath = $null
+  if ($gameplay) {
+    $lastStep = @($gameplay.Steps | Where-Object { $_.SnapshotPath } | Select-Object -Last 1)
+    if ($lastStep.Count -gt 0) {
+      $lastSnapshotPath = [string]$lastStep[0].SnapshotPath
+    }
+  }
+  $lastSnapshot = Read-JsonFile -Path $lastSnapshotPath
+  $lastSnapshotSummary = $null
+  if ($lastSnapshot) {
+    $characterNames = @($lastSnapshot.characters | ForEach-Object { [string]$_ }) -join ","
+    $lastSnapshotSummary = "scenario=$($lastSnapshot.scenarioName) global=$($lastSnapshot.globalX),$($lastSnapshot.globalY) party=$($lastSnapshot.partyCount) chars=$characterNames saveA=$($lastSnapshot.saveSlotAExists) combat=$($lastSnapshot.inCombat) dungeon=$($lastSnapshot.inDungeon)"
+  }
+  $gameplayMarkers = if ($classic) { [string[]]@($classic.GameplayMarkers | ForEach-Object { [string]$_ }) } else { [string[]]@() }
+  $newlandMarkers = if ($classic) { [string[]]@($classic.NewlandMarkers | ForEach-Object { [string]$_ }) } else { [string[]]@() }
+  $saveLoadMarkers = [string[]]@($gameplayMarkers | Where-Object { $_ -match "saveSlot|loadSlot|fileprep" })
 
   [pscustomobject]@{
     Fixture = $summary.fixture
@@ -97,9 +122,21 @@ function New-OracleReportRow {
     ScenarioSelectDispatch = if ($classic) { $classic.ScenarioSelectDispatch } else { $null }
     ScenarioSelectSkippedReason = if ($classic) { $classic.ScenarioSelectSkippedReason } else { $null }
     MarkerMatches = if ($classic) { $classic.MarkerMatches } else { $null }
-    FatalMarkers = $fatalMarkers
+    FatalMarkers = [string[]]@($fatalMarkers)
     RuntimeMirrorCleanup = if ($classic) { $classic.RuntimeMirrorCleanup } else { $null }
     RuntimeMirrorCleanupOk = if ($classic) { $classic.RuntimeMirrorCleanupOk } else { $null }
+    GameplayOk = if ($gameplay) { $gameplay.Ok } else { $null }
+    GameplayError = if ($gameplay) { $gameplay.Error } else { $null }
+    GameplayFailedAssertion = if ($gameplay) { $gameplay.FailedAssertion } else { $null }
+    GameplaySteps = $gameplaySteps
+    GameplayResponses = $gameplayResponses
+    GameplayLastSnapshotPath = $lastSnapshotPath
+    GameplayLastSnapshot = $lastSnapshotSummary
+    GameplayResultPath = if ($classic) { $classic.GameplayResultPath } else { $null }
+    GameplayCommandPath = if ($classic) { $classic.GameplayCommandPath } else { $null }
+    GameplayMarkers = $gameplayMarkers
+    TriggerMarkers = $newlandMarkers
+    SaveLoadMarkers = $saveLoadMarkers
     RuntimeLog = if ($classic) { $classic.RuntimeLog } else { $null }
     InitialMenuJson = if ($classic) { $classic.InitialMenuJson } else { $null }
     PostImportMenuJson = if ($classic) { $classic.PostImportMenuJson } else { $null }
@@ -158,6 +195,15 @@ if ($Json) {
     Write-Host "  markerMatches: $(Format-Nullable $report.MarkerMatches)"
     Write-Host "  fatalMarkers: $(Format-Nullable $report.FatalMarkers)"
     Write-Host "  cleanup: $(Format-Nullable $report.RuntimeMirrorCleanup) ok=$(Format-Nullable $report.RuntimeMirrorCleanupOk)"
+    Write-Host "  gameplay: ok=$(Format-Nullable $report.GameplayOk) error=$(Format-Nullable $report.GameplayError) assertion=$(Format-Nullable $report.GameplayFailedAssertion)"
+    Write-Host "  gameplaySteps: $(Format-Nullable $report.GameplaySteps)"
+    Write-Host "  gameplayResponses: $(Format-Nullable $report.GameplayResponses)"
+    Write-Host "  lastSnapshot: $(Format-Nullable $report.GameplayLastSnapshot)"
+    Write-Host "  lastSnapshotPath: $(Format-Nullable $report.GameplayLastSnapshotPath)"
+    Write-Host "  gameplayArtifacts: result=$(Format-Nullable $report.GameplayResultPath) command=$(Format-Nullable $report.GameplayCommandPath)"
+    Write-Host "  gameplayMarkers: $(Format-Nullable $report.GameplayMarkers)"
+    Write-Host "  triggerMarkers: $(Format-Nullable $report.TriggerMarkers)"
+    Write-Host "  saveLoadMarkers: $(Format-Nullable $report.SaveLoadMarkers)"
     Write-Host "  runtimeLog: $(Format-Nullable $report.RuntimeLog)"
     Write-Host "  menus: initial=$(Format-Nullable $report.InitialMenuJson) postImport=$(Format-Nullable $report.PostImportMenuJson)"
     Write-Host "  exportDir: $(Format-Nullable $report.ExportDir)"

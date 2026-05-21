@@ -278,6 +278,186 @@ function Get-OracleFixtureDefinition {
   return $definition
 }
 
+function Get-OracleGameplayFixtureDefinitions {
+  $baseAssertions = [ordered]@{
+    validationOk = $true
+    projectHasMaps = $true
+    exportContains = @("Scenario", "Data LD", "Data DD")
+    semanticLinkKinds = @("has_render_profile")
+  }
+  $startSteps = @(
+    [ordered]@{
+      name = "start"
+      command = "startScenario"
+      characters = @("Beldar", "Dirk")
+      assert = [ordered]@{
+        partyCountAtLeast = 2
+        partyContains = @("Beldar", "Dirk")
+      }
+    }
+  )
+  $moveSteps = @(
+    $startSteps[0],
+    [ordered]@{ name = "noclip"; command = "setNoclip"; enabled = $true; assert = [ordered]@{ noclip = $true } },
+    [ordered]@{ name = "before-move"; command = "warpOutdoor"; map = 0; look = 0; x = 19; y = 20; assert = [ordered]@{ globalX = 19; globalY = 20 } },
+    [ordered]@{ name = "after-move"; command = "move"; direction = "east"; assert = [ordered]@{ deltaFrom = [ordered]@{ from = "before-move"; dx = 1; dy = 0 } } }
+  )
+  $saveLoadSteps = @(
+    $startSteps[0],
+    [ordered]@{ name = "noclip"; command = "setNoclip"; enabled = $true },
+    [ordered]@{ name = "saved-position"; command = "warpOutdoor"; map = 0; look = 0; x = 19; y = 20; assert = [ordered]@{ globalX = 19; globalY = 20 } },
+    [ordered]@{ name = "save-a"; command = "saveSlot"; slot = "A"; assert = [ordered]@{ saveSlotAExists = $true } },
+    [ordered]@{ name = "away"; command = "warpOutdoor"; map = 0; look = 0; x = 30; y = 30; assert = [ordered]@{ globalX = 30; globalY = 30 } },
+    [ordered]@{ name = "load-a"; command = "loadSlot"; slot = "A"; assert = [ordered]@{ sameAs = [ordered]@{ from = "saved-position"; fields = @("globalX", "globalY", "landLevel", "inDungeon", "partyCount", "characters") } } }
+  )
+
+  return @(
+    [pscustomobject]@{
+      Name = "tutorial-gameplay-start"
+      Description = "Export Tutorial, start the scenario, and assert a seeded party is active."
+      ExpectedOk = $true
+      ExpectedStage = "complete"
+      HarnessName = "Tutorial oracle gameplay start"
+      Commands = @()
+      Assertions = $baseAssertions
+      GameplayScript = [ordered]@{ version = 1; name = "Tutorial gameplay start"; requiredCharacters = @("Beldar", "Dirk"); steps = $startSteps; assertions = [ordered]@{ partyCountAtLeast = 2 } }
+      PostExportMutation = "none"
+      ClassicArgs = @{}
+      RequiresClassicSummary = $true
+    },
+    [pscustomobject]@{
+      Name = "tutorial-gameplay-move"
+      Description = "Start Tutorial, warp to a stable outdoor coordinate, move east, and assert the coordinate delta."
+      ExpectedOk = $true
+      ExpectedStage = "complete"
+      HarnessName = "Tutorial oracle gameplay movement"
+      Commands = @()
+      Assertions = $baseAssertions
+      GameplayScript = [ordered]@{ version = 1; name = "Tutorial gameplay movement"; requiredCharacters = @("Beldar", "Dirk"); steps = $moveSteps; assertions = [ordered]@{ globalX = 20; globalY = 20 } }
+      PostExportMutation = "none"
+      ClassicArgs = @{}
+      RequiresClassicSummary = $true
+    },
+    [pscustomobject]@{
+      Name = "tutorial-gameplay-trigger"
+      Description = "Author a deterministic action point at 20,20, move onto it, and assert quest flag 7 is set."
+      ExpectedOk = $true
+      ExpectedStage = "complete"
+      HarnessName = "Tutorial oracle gameplay trigger"
+      Commands = @(
+        [ordered]@{
+          kind = "updateTriggerHeader"
+          label = "Oracle repoint trigger"
+          triggerId = "Data DD:0:99"
+          fields = [ordered]@{
+            doorid = 2020
+            coordinate = [ordered]@{ x = 20; y = 20 }
+            percent = 100
+            landid = 0
+            targetX = 20
+            targetY = 20
+            active = $true
+          }
+        },
+        [ordered]@{
+          kind = "paintTiles"
+          label = "Oracle paint trigger tile"
+          mapId = "land:0"
+          cells = @([ordered]@{ x = 20; y = 20; index = 1820; from = 155; to = -1109 })
+        },
+        [ordered]@{ kind = "updateActionSlot"; label = "Oracle set quest trigger"; triggerId = "Data DD:0:99"; slot = 0; rawCode = 47; id = 7 },
+        [ordered]@{ kind = "updateActionSlot"; label = "Oracle clear trigger slot 1"; triggerId = "Data DD:0:99"; slot = 1; rawCode = 0; id = 0 },
+        [ordered]@{ kind = "updateActionSlot"; label = "Oracle clear trigger slot 2"; triggerId = "Data DD:0:99"; slot = 2; rawCode = 0; id = 0 },
+        [ordered]@{ kind = "updateActionSlot"; label = "Oracle clear trigger slot 3"; triggerId = "Data DD:0:99"; slot = 3; rawCode = 0; id = 0 },
+        [ordered]@{ kind = "updateActionSlot"; label = "Oracle clear trigger slot 4"; triggerId = "Data DD:0:99"; slot = 4; rawCode = 0; id = 0 },
+        [ordered]@{ kind = "updateActionSlot"; label = "Oracle clear trigger slot 5"; triggerId = "Data DD:0:99"; slot = 5; rawCode = 0; id = 0 },
+        [ordered]@{ kind = "updateActionSlot"; label = "Oracle clear trigger slot 6"; triggerId = "Data DD:0:99"; slot = 6; rawCode = 0; id = 0 },
+        [ordered]@{ kind = "updateActionSlot"; label = "Oracle clear trigger slot 7"; triggerId = "Data DD:0:99"; slot = 7; rawCode = 0; id = 0 }
+      )
+      Assertions = [ordered]@{
+        validationOk = $true
+        projectHasMaps = $true
+        projectTiles = @([ordered]@{ mapId = "land:0"; index = 1820; value = -1109 })
+        triggerCountAtLeast = 1
+        commandsAppliedAtLeast = 10
+        exportContains = @("Scenario", "Data LD", "Data DD")
+        semanticLinkKinds = @("has_render_profile")
+      }
+      GameplayScript = [ordered]@{ version = 1; name = "Tutorial gameplay trigger"; requiredCharacters = @("Beldar", "Dirk"); steps = $moveSteps; assertions = [ordered]@{ questEquals = [ordered]@{ "7" = 1 }; globalX = 20; globalY = 20 } }
+      PostExportMutation = "none"
+      ClassicArgs = @{}
+      RequiresClassicSummary = $true
+    },
+    [pscustomobject]@{
+      Name = "tutorial-gameplay-save-load"
+      Description = "Start Tutorial, save slot A, move away, load slot A, and assert location and party state restore."
+      ExpectedOk = $true
+      ExpectedStage = "complete"
+      HarnessName = "Tutorial oracle gameplay save load"
+      Commands = @()
+      Assertions = $baseAssertions
+      GameplayScript = [ordered]@{ version = 1; name = "Tutorial gameplay save load"; requiredCharacters = @("Beldar", "Dirk"); steps = $saveLoadSteps; assertions = [ordered]@{ sameAs = [ordered]@{ from = "saved-position"; fields = @("globalX", "globalY", "landLevel", "inDungeon", "partyCount", "characters") } } }
+      PostExportMutation = "none"
+      ClassicArgs = @{}
+      RequiresClassicSummary = $true
+    },
+    [pscustomobject]@{
+      Name = "missing-staged-character"
+      Description = "Ask Classic gameplay start to load a character that does not exist."
+      ExpectedOk = $false
+      ExpectedStage = "classic"
+      HarnessName = "Tutorial oracle gameplay missing character"
+      Commands = @()
+      Assertions = $baseAssertions
+      GameplayScript = [ordered]@{ version = 1; name = "Tutorial gameplay missing character"; requiredCharacters = @("OracleMissingHero"); steps = @([ordered]@{ name = "start"; command = "startScenario"; characters = @("OracleMissingHero") }); assertions = @{} }
+      PostExportMutation = "none"
+      ClassicArgs = @{}
+      RequiresClassicSummary = $true
+    },
+    [pscustomobject]@{
+      Name = "trigger-not-fired"
+      Description = "Author the trigger but assert quest 7 without moving onto the action point."
+      ExpectedOk = $false
+      ExpectedStage = "classic"
+      HarnessName = "Tutorial oracle gameplay trigger not fired"
+      Commands = @(
+        [ordered]@{ kind = "updateTriggerHeader"; label = "Oracle repoint trigger"; triggerId = "Data DD:0:99"; fields = [ordered]@{ doorid = 2020; coordinate = [ordered]@{ x = 20; y = 20 }; percent = 100; landid = 0; targetX = 20; targetY = 20; active = $true } },
+        [ordered]@{ kind = "paintTiles"; label = "Oracle paint trigger tile"; mapId = "land:0"; cells = @([ordered]@{ x = 20; y = 20; index = 1820; from = 155; to = -1109 }) },
+        [ordered]@{ kind = "updateActionSlot"; label = "Oracle set quest trigger"; triggerId = "Data DD:0:99"; slot = 0; rawCode = 47; id = 7 }
+      )
+      Assertions = [ordered]@{ validationOk = $true; projectHasMaps = $true; commandsAppliedAtLeast = 3; exportContains = @("Scenario", "Data LD", "Data DD") }
+      GameplayScript = [ordered]@{ version = 1; name = "Tutorial gameplay trigger not fired"; requiredCharacters = @("Beldar", "Dirk"); steps = @($startSteps[0], [ordered]@{ name = "before-trigger"; command = "warpOutdoor"; map = 0; look = 0; x = 19; y = 20 }); assertions = [ordered]@{ questEquals = [ordered]@{ "7" = 1 } } }
+      PostExportMutation = "none"
+      ClassicArgs = @{}
+      RequiresClassicSummary = $true
+    },
+    [pscustomobject]@{
+      Name = "save-load-restore-mismatch"
+      Description = "Run save/load but require the loaded position to match the wrong coordinate."
+      ExpectedOk = $false
+      ExpectedStage = "classic"
+      HarnessName = "Tutorial oracle gameplay save load mismatch"
+      Commands = @()
+      Assertions = $baseAssertions
+      GameplayScript = [ordered]@{ version = 1; name = "Tutorial gameplay save load mismatch"; requiredCharacters = @("Beldar", "Dirk"); steps = $saveLoadSteps; assertions = [ordered]@{ globalX = 99 } }
+      PostExportMutation = "none"
+      ClassicArgs = @{}
+      RequiresClassicSummary = $true
+    }
+  )
+}
+
+function Get-OracleGameplayFixtureDefinition {
+  param([string]$Fixture)
+  $fixtures = Get-OracleGameplayFixtureDefinitions
+  $definition = $fixtures | Where-Object { $_.Name -eq $Fixture } | Select-Object -First 1
+  if (-not $definition) {
+    $available = ($fixtures | ForEach-Object { $_.Name }) -join ", "
+    throw "Unknown oracle gameplay fixture '$Fixture'. Available fixtures: $available"
+  }
+  return $definition
+}
+
 function New-OracleRunPaths {
   param(
     [string]$RunRoot,
@@ -289,6 +469,7 @@ function New-OracleRunPaths {
     ExportDir = Join-Path $RunRoot "export\$ScenarioName"
     ScriptPath = Join-Path $RunRoot "providence-harness.json"
     ResultPath = Join-Path $RunRoot "providence-result.json"
+    GameplayScriptPath = Join-Path $RunRoot "classic-gameplay-script.json"
     ClassicProfile = Join-Path $RunRoot "realmz-profile"
     ClassicLogDir = Join-Path $RunRoot "realmz-logs"
     SummaryPath = Join-Path $RunRoot "oracle-summary.json"
@@ -323,6 +504,18 @@ function Write-OracleHarnessScript {
     assertions = $FixtureDefinition.Assertions
   }
   $harnessScript | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $Paths.ScriptPath -Encoding utf8
+}
+
+function Write-OracleGameplayScript {
+  param(
+    [object]$FixtureDefinition,
+    [object]$Paths
+  )
+  if (-not ($FixtureDefinition.PSObject.Properties.Name -contains "GameplayScript")) {
+    return $null
+  }
+  $FixtureDefinition.GameplayScript | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $Paths.GameplayScriptPath -Encoding utf8
+  return $Paths.GameplayScriptPath
 }
 
 function Invoke-OracleBuild {
@@ -517,6 +710,7 @@ function Invoke-OracleClassic {
     [string]$ScenarioName,
     [string]$ClassicProfile,
     [string]$ClassicLogDir,
+    [string]$GameplayScriptPath = "",
     [int]$ClassicTimeoutSeconds,
     [switch]$KeepRunning
   )
@@ -541,6 +735,9 @@ function Invoke-OracleClassic {
     "-ExePath", $resolvedClassicExePath,
     "-TimeoutSeconds", $ClassicTimeoutSeconds
   )
+  if (-not [string]::IsNullOrWhiteSpace($GameplayScriptPath)) {
+    $classicArgs += @("-GameplayScriptPath", $GameplayScriptPath)
+  }
   if ($KeepRunning) {
     $classicArgs += "-KeepRunning"
   }
@@ -586,6 +783,7 @@ function Write-OracleFixtureSummary {
   $summaryArtifacts = [ordered]@{
     harnessScript = $Paths.ScriptPath
     providenceResult = $Paths.ResultPath
+    gameplayScript = if ($Paths.PSObject.Properties.Name -contains "GameplayScriptPath") { $Paths.GameplayScriptPath } else { $null }
     oracleSummary = $Paths.SummaryPath
     projectDir = $Paths.ProjectDir
     exportDir = $Paths.ExportDir
@@ -669,6 +867,10 @@ function Complete-OracleFixtureAfterProvidence {
       -RunRoot $RunRoot
 
     $stage = "classic"
+    $gameplayScriptPath = ""
+    if (($FixtureDefinition.PSObject.Properties.Name -contains "GameplayScript") -and (Test-Path -LiteralPath $Paths.GameplayScriptPath)) {
+      $gameplayScriptPath = $Paths.GameplayScriptPath
+    }
     $classic = Invoke-OracleClassic `
       -FixtureDefinition $FixtureDefinition `
       -OracleRoot $OracleRoot `
@@ -678,6 +880,7 @@ function Complete-OracleFixtureAfterProvidence {
       -ScenarioName $ScenarioName `
       -ClassicProfile $Paths.ClassicProfile `
       -ClassicLogDir $Paths.ClassicLogDir `
+      -GameplayScriptPath $gameplayScriptPath `
       -ClassicTimeoutSeconds $ClassicTimeoutSeconds `
       -KeepRunning:$KeepRunning
     $classicSummaryPath = $classic.SummaryPath
