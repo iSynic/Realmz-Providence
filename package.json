@@ -18,6 +18,7 @@
     "smoke:oracle:corpus": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_corpus.ps1",
     "smoke:oracle:corpus:matrix": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_corpus_matrix.ps1",
     "smoke:oracle:corpus:diagnose": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_corpus_diagnose.ps1",
+    "smoke:oracle:corpus:triage": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_corpus_triage.ps1",
     "smoke:oracle:show": "powershell -ExecutionPolicy Bypass -File scripts/show_oracle_run.ps1",
     "check": "npm run build && npm run test:rust"
   },

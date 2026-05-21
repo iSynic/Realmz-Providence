@@ -575,6 +575,7 @@ function New-OracleCorpusFixtureDefinition {
   $lastGoodStage = if ($BaselineEntry.lastGoodStage) { [string]$BaselineEntry.lastGoodStage } else { $null }
   $diagnosticOwner = if ($BaselineEntry.diagnosticOwner) { [string]$BaselineEntry.diagnosticOwner } else { $null }
   $markerNotes = if ($BaselineEntry.markerNotes) { [string]$BaselineEntry.markerNotes } else { $null }
+  $suspectedCause = if ($BaselineEntry.suspectedCause) { [string]$BaselineEntry.suspectedCause } else { $null }
   $diagnostics = New-OracleGameplayDiagnostics
   $scenarioAssert = [ordered]@{
     scenarioNameContains = $ScenarioName
@@ -629,6 +630,7 @@ function New-OracleCorpusFixtureDefinition {
       failureKind = $failureKind
       lastGoodStage = $lastGoodStage
       diagnosticOwner = $diagnosticOwner
+      suspectedCause = $suspectedCause
       markerNotes = $markerNotes
       notes = $notes
     }
@@ -925,6 +927,9 @@ function Invoke-OracleClassic {
   if ($FixtureDefinition.ClassicArgs.VisualGate) {
     $classicArgs += "-VisualGate"
   }
+  if ($FixtureDefinition.ClassicArgs.SeedProfile) {
+    $classicArgs += "-SeedProfile"
+  }
   if ($FixtureDefinition.ClassicArgs.TraceLevel) {
     $classicArgs += @("-TraceLevel", [string]$FixtureDefinition.ClassicArgs.TraceLevel)
   }
@@ -1008,6 +1013,7 @@ function Write-OracleFixtureSummary {
   $lastGoodStage = if ($corpus -and $corpus.lastGoodStage) { [string]$corpus.lastGoodStage } else { $null }
   $markerNotes = if ($corpus -and $corpus.markerNotes) { [string]$corpus.markerNotes } else { $null }
   $diagnosticOwner = if ($corpus -and $corpus.diagnosticOwner) { [string]$corpus.diagnosticOwner } else { $null }
+  $suspectedCause = if ($corpus -and $corpus.suspectedCause) { [string]$corpus.suspectedCause } else { $null }
   $visualRegionDiagnostics = if ($gameplayResult -and ($gameplayResult.PSObject.Properties.Name -contains "VisualRegions")) {
     @($gameplayResult.VisualRegions)
   } elseif ($classicResult -and ($classicResult.PSObject.Properties.Name -contains "VisualRegionDiagnostics")) {
@@ -1050,6 +1056,7 @@ function Write-OracleFixtureSummary {
       failureKind = $failureKind
       lastGoodStage = $lastGoodStage
       diagnosticOwner = $diagnosticOwner
+      suspectedCause = $suspectedCause
       markerNotes = $markerNotes
       traceLevel = if ($FixtureDefinition.ClassicArgs.TraceLevel) { [string]$FixtureDefinition.ClassicArgs.TraceLevel } else { $null }
       lastGameplayMarker = if ($classicResult -and $classicResult.GameplayMarkers) { @($classicResult.GameplayMarkers)[-1] } else { $null }

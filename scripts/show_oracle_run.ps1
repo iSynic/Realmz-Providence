@@ -73,6 +73,87 @@ function Get-SummaryPaths {
 function New-OracleReportRow {
   param([string]$SummaryPath)
   $summary = Read-JsonFile -Path $SummaryPath
+  if ($summary -and ($summary.PSObject.Properties.Name -contains "classification")) {
+    $laneSummaries = [string[]]@($summary.lanes | ForEach-Object {
+      "$($_.lane):ok=$($_.ok):profile=$($_.profileKind):source=$($_.sourceKind):opcode=$($_.blocking.opcode):id=$($_.blocking.id)"
+    })
+    $timeoutArtifacts = [string[]]@($summary.lanes | ForEach-Object {
+      if ($_.timeoutArtifacts) {
+        "$($_.lane):$($_.timeoutArtifacts.runtimeLogTail)"
+      }
+    } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    return [pscustomobject]@{
+      Fixture = $summary.fixture
+      Scenario = $summary.scenario
+      CorpusDepth = "triage"
+      VisualGate = $false
+      ExpectedOk = $null
+      ObservedOk = $null
+      MatchedExpectation = [bool]$summary.ok
+      Stage = "triage"
+      Error = $null
+      FailureKind = $summary.classification
+      LastGoodStage = if ($summary.baseline) { $summary.baseline.lastGoodStage } else { $null }
+      Diagnosis = [pscustomobject]@{
+        classification = $summary.classification
+        confidence = $summary.confidence
+        evidenceLane = $summary.evidenceLane
+        recommendedNextAction = $summary.recommendedNextAction
+      }
+      ProvidenceError = $null
+      CommandsApplied = $null
+      AutoImportDispatch = $null
+      ScenarioSelectDispatch = $null
+      ScenarioSelectSkippedReason = $null
+      MarkerMatches = $null
+      FatalMarkers = [string[]]@($summary.lanes | ForEach-Object { @($_.fatalMarkers) } | Where-Object { $_ })
+      RuntimeMirrorCleanup = $null
+      RuntimeMirrorCleanupOk = $null
+      SupportScenarioName = "City of Bywater"
+      RuntimeSupportScenarioPath = $null
+      RuntimeSupportScenarioCleanup = $null
+      RuntimeSupportScenarioCleanupOk = $null
+      GameplayOk = $null
+      GameplayError = $null
+      GameplayFailedAssertion = $null
+      GameplaySteps = [string[]]@()
+      GameplayResponses = [string[]]@()
+      GameplayScreenshots = [string[]]@()
+      GameplayHostScreenshots = [string[]]@()
+      GameplayLastSnapshotPath = $null
+      GameplayLastSnapshot = $null
+      GameplayLastScreenshotPath = $null
+      GameplayLastScreenshot = $null
+      GameplayLastHostScreenshotPath = $null
+      GameplayLastHostScreenshot = $null
+      VisualWarnings = [string[]]@()
+      VisualFailures = [string[]]@()
+      GameplayResultPath = $null
+      GameplayCommandPath = $null
+      GameplayMarkers = [string[]]@($summary.lanes | ForEach-Object { $_.lastGameplayMarker } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+      LastStartMarker = $summary.lastClassicPhase
+      LastRenderMarker = $null
+      LastActionMarker = $summary.lastNewlandMarker
+      TriggerMarkers = [string[]]@($summary.lanes | ForEach-Object { $_.lastNewlandMarker } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+      SaveLoadMarkers = [string[]]@()
+      TimeoutArtifacts = $timeoutArtifacts
+      VisualRegionDiagnostics = @()
+      VisualRegionFailures = [string[]]@()
+      RuntimeLog = $null
+      InitialMenuJson = $null
+      PostImportMenuJson = $null
+      ExportDir = $summary.exportDir
+      ProfileDir = $null
+      Summary = $SummaryPath
+      TriageClassification = $summary.classification
+      TriageConfidence = $summary.confidence
+      TriageEvidenceLane = $summary.evidenceLane
+      TriageBlocking = "opcode=$($summary.blockingOpcode) id=$($summary.blockingId) coord=$($summary.blockingCoordinate) door=$($summary.blockingDoor) slot=$($summary.blockingSlot)"
+      TriageLanes = $laneSummaries
+      TriageDiff = $summary.sourceExportDiff
+      TriageRecommendedNextAction = $summary.recommendedNextAction
+    }
+  }
   $providence = Read-JsonFile -Path $summary.providenceResult
   $classic = Read-JsonFile -Path $summary.classicResult
   $fatalMarkers = [System.Collections.Generic.List[string]]::new()
@@ -255,6 +336,13 @@ if ($Json) {
     Write-Host "[$($report.Fixture)]"
     Write-Host "  scenario: $(Format-Nullable $report.Scenario) depth=$(Format-Nullable $report.CorpusDepth) visualGate=$(Format-Nullable $report.VisualGate)"
     Write-Host "  diagnosis: failureKind=$(Format-Nullable $report.FailureKind) lastGoodStage=$(Format-Nullable $report.LastGoodStage) detail=$(Format-Nullable $report.Diagnosis)"
+    if ($report.PSObject.Properties.Name -contains "TriageClassification") {
+      Write-Host "  triage: classification=$(Format-Nullable $report.TriageClassification) confidence=$(Format-Nullable $report.TriageConfidence) evidenceLane=$(Format-Nullable $report.TriageEvidenceLane)"
+      Write-Host "  triageBlocking: $(Format-Nullable $report.TriageBlocking)"
+      Write-Host "  triageLanes: $(Format-Nullable $report.TriageLanes)"
+      Write-Host "  triageDiff: $(Format-Nullable $report.TriageDiff)"
+      Write-Host "  triageNext: $(Format-Nullable $report.TriageRecommendedNextAction)"
+    }
     Write-Host "  error: $(Format-Nullable $report.Error)"
     Write-Host "  providence: $(Format-Nullable $report.ProvidenceError)"
     Write-Host "  commandsApplied: $(Format-Nullable $report.CommandsApplied)"

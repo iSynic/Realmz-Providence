@@ -71,6 +71,13 @@ npm run smoke:oracle:corpus:diagnose -- -AllExpectedFailures -SkipBuild -Classic
 npm run smoke:oracle:corpus:diagnose -- -Scenario "Half Truth" -SkipBuild -ClassicTimeoutSeconds 60 -TraceLevel verbose
 ```
 
+Run Phase 5.1 focused start-failure triage:
+
+```powershell
+npm run smoke:oracle:corpus:triage -- -AllExpectedFailures -SkipBuild -ClassicTimeoutSeconds 90 -TraceLevel verbose
+npm run smoke:oracle:corpus:triage -- -Scenario "The End Worlds" -SkipBuild -ClassicTimeoutSeconds 90 -TraceLevel verbose
+```
+
 Show the latest run, a specific matrix run, or one fixture:
 
 ```powershell
@@ -109,6 +116,8 @@ Phase 4 corpus scenarios are defined in `scripts\oracle_corpus_baseline.json`. T
 The initial 28-scenario baseline has 25 green scenarios and 3 expected Classic start failures (`Half Truth`, `The End Worlds`, and `Wrath of the Mind Lords`). Those expected failures carry `failureKind = classic-start-timeout`, `lastGoodStage = selectscenario`, and marker notes so diagnosis runs can distinguish known Classic start blocking from raw crashes. `Prelude to Pestilence` is green, with one recorded bootstrap transient noted in the manifest.
 
 `smoke:oracle:corpus:diagnose` defaults to the expected-failure corpus entries. `-Scenario` narrows it to one entry, and `-TraceLevel verbose` enables extra Classic runtime markers plus timeout artifacts. The diagnosis lane still uses Providence batch export for multiple scenarios, then runs Classic serially with isolated profiles.
+
+`smoke:oracle:corpus:triage` is tighter than diagnosis and is intentionally limited to `Half Truth`, `The End Worlds`, and `Wrath of the Mind Lords`. It exports through Providence once, then runs four Classic lanes per scenario: exported/minimal profile, original/minimal profile, exported/seeded profile, and original/seeded profile. The seeded profile copies only support folders from the installed Oracle output tree into the isolated profile, such as `Character Files`, `Data Files`, `Data PC`, and `Realmz Music`. Triage writes `triage-summary.json` and `source-vs-export-diff.json`, then classifies each scenario as a Providence export mismatch, missing fixture setup, Classic automation limitation, unsupported scenario action behavior, Classic runtime bug, or not reproduced.
 
 ## Batch Matrix Mode
 
@@ -165,6 +174,8 @@ Each run writes under `tmp\oracle-runs\<stamp>` or under a matrix child director
 The matrix also writes `matrix-summary.json`.
 
 `npm run smoke:oracle:show` reads these files and prints the expectation, stage, diagnosis fields, Providence assertion/error, Classic dispatch state, marker matches, fatal markers, gameplay steps, response paths, internal and host screenshots, last snapshot, screenshot metrics, visual warnings/failures, visual region failures, timeout artifacts, last start/render/action markers, trigger markers, save/load markers, runtime log, menu snapshots, export dir, and profile dir. It exits `1` when any displayed fixture did not match expectation.
+
+For triage runs, the reporter also prints the classification, confidence, evidence lane, blocking opcode/id/coordinate, per-lane outcomes, source/export diff path, and recommended next action.
 
 Corpus reports also show the temporary support-scenario mirror path and cleanup result, which is useful when diagnosing startup failures around Realmz global data.
 
