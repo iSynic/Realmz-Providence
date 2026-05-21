@@ -67,6 +67,7 @@ struct PictDecode {
     opcode: usize,
 }
 
+#[derive(Clone)]
 struct PictFailure {
     diagnostic: super::ResourcePreviewDiagnostic,
     malformed: bool,
@@ -84,26 +85,80 @@ struct PackBitsRect {
     pixel_size: usize,
 }
 
-fn decode_pict(data: &[u8]) -> std::result::Result<PictDecode, PictFailure> {
-    let rect = find_packbits_rect(data)?;
-    let image = decode_packbits_rect(data, &rect)?;
-    Ok(PictDecode {
-        image,
-        format: if rect.pixel_size == 4 {
-            "packbits-indexed-4".to_string()
-        } else {
-            "packbits-indexed-8".to_string()
-        },
-        pixel_size: rect.pixel_size,
-        row_bytes: rect.row_bytes,
-        opcode: rect.opcode,
-    })
+struct DirectBitsRect {
+    opcode: usize,
+    row_bytes: usize,
+    width: usize,
+    height: usize,
+    data_offset: usize,
+    pixel_size: usize,
 }
 
-fn find_packbits_rect(data: &[u8]) -> std::result::Result<PackBitsRect, PictFailure> {
+struct OneBitPackBitsRect {
+    opcode: usize,
+    row_bytes: usize,
+    width: usize,
+    height: usize,
+    data_offset: usize,
+}
+
+fn decode_pict(data: &[u8]) -> std::result::Result<PictDecode, PictFailure> {
+    let mut failures = Vec::new();
+    match find_indexed_packbits_rect(data).and_then(|rect| {
+        decode_packbits_rect(data, &rect).map(|image| PictDecode {
+            image,
+            format: if rect.pixel_size == 4 {
+                "packbits-indexed-4".to_string()
+            } else {
+                "packbits-indexed-8".to_string()
+            },
+            pixel_size: rect.pixel_size,
+            row_bytes: rect.row_bytes,
+            opcode: rect.opcode,
+        })
+    }) {
+        Ok(decoded) => return Ok(decoded),
+        Err(failure) => failures.push(failure),
+    }
+    match find_direct_bits_rect(data).and_then(|rect| {
+        decode_direct_bits_rect(data, &rect).map(|image| PictDecode {
+            image,
+            format: format!("directbits-{}-packbits", rect.pixel_size),
+            pixel_size: rect.pixel_size,
+            row_bytes: rect.row_bytes,
+            opcode: rect.opcode,
+        })
+    }) {
+        Ok(decoded) => return Ok(decoded),
+        Err(failure) => failures.push(failure),
+    }
+    match find_one_bit_packbits_rect(data).and_then(|rect| {
+        decode_one_bit_packbits_rect(data, &rect).map(|image| PictDecode {
+            image,
+            format: "packbits-bitmap-1".to_string(),
+            pixel_size: 1,
+            row_bytes: rect.row_bytes,
+            opcode: rect.opcode,
+        })
+    }) {
+        Ok(decoded) => return Ok(decoded),
+        Err(failure) => failures.push(failure),
+    }
+    Err(failures.into_iter().next().unwrap_or_else(|| PictFailure {
+        malformed: true,
+        diagnostic: diagnostic(
+            "error",
+            "pict.no_drawable_opcode",
+            "PICT contains no supported PackBits, Bits, or DirectBits drawing opcode.",
+            "pict",
+        ),
+    }))
+}
+
+fn find_indexed_packbits_rect(data: &[u8]) -> std::result::Result<PackBitsRect, PictFailure> {
     let mut first_supported_candidate = None;
     let mut first_known_opcode = None;
-    for offset in 10..data.len().saturating_sub(80) {
+    for offset in (10..data.len().saturating_sub(80)).step_by(2) {
         let Some(opcode) = u16_be(data, offset) else {
             continue;
         };
@@ -184,10 +239,8 @@ fn find_packbits_rect(data: &[u8]) -> std::result::Result<PackBitsRect, PictFail
                 .with_opcode(opcode),
             });
         }
-        let width = (i16_be(data, after_color_table + 6) - i16_be(data, after_color_table + 2))
-            .max(0) as usize;
-        let height =
-            (i16_be(data, after_color_table + 4) - i16_be(data, after_color_table)).max(0) as usize;
+        let width = rect_span(data, after_color_table + 2, after_color_table + 6);
+        let height = rect_span(data, after_color_table, after_color_table + 4);
         let mut data_offset = after_color_table + 18;
         if opcode == PACK_BITS_RGN {
             let region_size = u16_be(data, data_offset).unwrap_or(0);
@@ -254,6 +307,124 @@ fn find_packbits_rect(data: &[u8]) -> std::result::Result<PackBitsRect, PictFail
             "pict",
         ),
     })
+}
+
+fn find_direct_bits_rect(data: &[u8]) -> std::result::Result<DirectBitsRect, PictFailure> {
+    let mut first_direct = None;
+    for offset in (10..data.len().saturating_sub(130)).step_by(2) {
+        let Some(opcode) = u16_be(data, offset) else {
+            continue;
+        };
+        if opcode != DIRECT_BITS_RECT && opcode != DIRECT_BITS_RGN {
+            continue;
+        }
+        first_direct.get_or_insert((offset, opcode));
+        let pixmap = offset + 2;
+        let row_bytes_raw = u16_be(data, pixmap + 4).unwrap_or(0);
+        let row_bytes = row_bytes_raw & 0x3fff;
+        let width = rect_span(data, pixmap + 8, pixmap + 12);
+        let height = rect_span(data, pixmap + 6, pixmap + 10);
+        let pixel_type = u16_be(data, pixmap + 30).unwrap_or(usize::MAX);
+        let pixel_size = u16_be(data, pixmap + 32).unwrap_or(usize::MAX);
+        let component_count = u16_be(data, pixmap + 34).unwrap_or(usize::MAX);
+        let component_size = u16_be(data, pixmap + 36).unwrap_or(usize::MAX);
+        if row_bytes_raw & 0x8000 == 0
+            || row_bytes == 0
+            || row_bytes > 8192
+            || width == 0
+            || height == 0
+            || width > 2048
+            || height > 2048
+            || pixel_type != 16
+            || ![16, 32].contains(&pixel_size)
+            || ![3, 4].contains(&component_count)
+            || ![5, 8].contains(&component_size)
+        {
+            continue;
+        }
+        let mut data_offset = pixmap + 50 + 18;
+        if opcode == DIRECT_BITS_RGN {
+            let region_size = u16_be(data, data_offset).unwrap_or(0);
+            if region_size < 10 || data_offset + region_size >= data.len() {
+                continue;
+            }
+            data_offset += region_size;
+        }
+        if data_offset < data.len() {
+            return Ok(DirectBitsRect {
+                opcode,
+                row_bytes,
+                width,
+                height,
+                data_offset,
+                pixel_size,
+            });
+        }
+    }
+    if let Some((offset, opcode)) = first_direct {
+        return Err(PictFailure {
+            malformed: false,
+            diagnostic: diagnostic(
+                "warning",
+                "pict.directbits_unsupported_shape",
+                "PICT DirectBits resource is not a 32-bit PackBits RGB pixmap.",
+                "pict",
+            )
+            .with_offset(offset)
+            .with_opcode(opcode)
+            .with_variant("direct-bits"),
+        });
+    }
+    Err(PictFailure {
+        malformed: true,
+        diagnostic: diagnostic(
+            "error",
+            "pict.no_directbits_opcode",
+            "PICT contains no DirectBits opcode.",
+            "pict",
+        ),
+    })
+}
+
+fn find_one_bit_packbits_rect(data: &[u8]) -> std::result::Result<OneBitPackBitsRect, PictFailure> {
+    for offset in 10..data.len().saturating_sub(40) {
+        if data[offset] != 0x98 {
+            continue;
+        }
+        let row_bytes = u16_be(data, offset + 1).unwrap_or(0);
+        let width = rect_span(data, offset + 5, offset + 9);
+        let height = rect_span(data, offset + 3, offset + 7);
+        if row_bytes == 0
+            || row_bytes > 512
+            || width == 0
+            || height == 0
+            || width > 2048
+            || height > 2048
+            || row_bytes < width.div_ceil(8)
+        {
+            continue;
+        }
+        return Ok(OneBitPackBitsRect {
+            opcode: 0x98,
+            row_bytes,
+            width,
+            height,
+            data_offset: offset + 29,
+        });
+    }
+    Err(PictFailure {
+        malformed: true,
+        diagnostic: diagnostic(
+            "error",
+            "pict.no_one_bit_packbits",
+            "PICT contains no old-style 1-bit PackBits bitmap opcode.",
+            "pict",
+        ),
+    })
+}
+
+fn rect_span(data: &[u8], start_offset: usize, end_offset: usize) -> usize {
+    (i32::from(i16_be(data, end_offset)) - i32::from(i16_be(data, start_offset))).max(0) as usize
 }
 
 fn decode_packbits_rect(
@@ -328,6 +499,129 @@ fn decode_packbits_rect(
         }
     }
     let _ = rect.opcode_offset;
+    Ok(DecodedImage {
+        width: width as u32,
+        height: height as u32,
+        rgba,
+    })
+}
+
+fn decode_direct_bits_rect(
+    data: &[u8],
+    rect: &DirectBitsRect,
+) -> std::result::Result<DecodedImage, PictFailure> {
+    let width = rect.width.min(2048);
+    let height = rect.height.min(2048);
+    let mut rgba = vec![0u8; width * height * 4];
+    let mut cursor = rect.data_offset;
+    for y in 0..rect.height {
+        if cursor >= data.len() {
+            return Err(PictFailure {
+                malformed: true,
+                diagnostic: diagnostic(
+                    "error",
+                    "pict.pixel_data_truncated",
+                    "PICT DirectBits pixel data ended before all rows were decoded.",
+                    "pict",
+                )
+                .with_offset(cursor)
+                .with_opcode(rect.opcode),
+            });
+        }
+        let packed_length = if rect.row_bytes > 250 {
+            let value = u16_be(data, cursor).unwrap_or(0);
+            cursor += 2;
+            value
+        } else {
+            let value = data[cursor] as usize;
+            cursor += 1;
+            value
+        };
+        let available = packed_length.min(data.len().saturating_sub(cursor));
+        let row = decode_packbits_row(data, cursor, available, rect.row_bytes);
+        cursor += available;
+        if y >= height {
+            continue;
+        }
+        for x in 0..width {
+            let out = (y * width + x) * 4;
+            if rect.pixel_size == 16 {
+                let source = x * 2;
+                let pixel = u16::from_be_bytes([
+                    row.get(source).copied().unwrap_or(0),
+                    row.get(source + 1).copied().unwrap_or(0),
+                ]);
+                rgba[out] = five_bit_to_u8((pixel >> 10) & 0x1f);
+                rgba[out + 1] = five_bit_to_u8((pixel >> 5) & 0x1f);
+                rgba[out + 2] = five_bit_to_u8(pixel & 0x1f);
+            } else {
+                let source = x * 4;
+                rgba[out] = row.get(source + 1).copied().unwrap_or(0);
+                rgba[out + 1] = row.get(source + 2).copied().unwrap_or(0);
+                rgba[out + 2] = row.get(source + 3).copied().unwrap_or(0);
+            }
+            rgba[out + 3] = 255;
+        }
+    }
+    Ok(DecodedImage {
+        width: width as u32,
+        height: height as u32,
+        rgba,
+    })
+}
+
+fn five_bit_to_u8(value: u16) -> u8 {
+    ((u32::from(value) * 255 + 15) / 31) as u8
+}
+
+fn decode_one_bit_packbits_rect(
+    data: &[u8],
+    rect: &OneBitPackBitsRect,
+) -> std::result::Result<DecodedImage, PictFailure> {
+    let width = rect.width.min(2048);
+    let height = rect.height.min(2048);
+    let mut rgba = vec![0u8; width * height * 4];
+    let mut cursor = rect.data_offset;
+    for y in 0..rect.height {
+        if cursor >= data.len() {
+            return Err(PictFailure {
+                malformed: true,
+                diagnostic: diagnostic(
+                    "error",
+                    "pict.pixel_data_truncated",
+                    "PICT 1-bit PackBits pixel data ended before all rows were decoded.",
+                    "pict",
+                )
+                .with_offset(cursor)
+                .with_opcode(rect.opcode),
+            });
+        }
+        let packed_length = if rect.row_bytes > 250 {
+            let value = u16_be(data, cursor).unwrap_or(0);
+            cursor += 2;
+            value
+        } else {
+            let value = data[cursor] as usize;
+            cursor += 1;
+            value
+        };
+        let available = packed_length.min(data.len().saturating_sub(cursor));
+        let row = decode_packbits_row(data, cursor, available, rect.row_bytes);
+        cursor += available;
+        if y >= height {
+            continue;
+        }
+        for x in 0..width {
+            let byte = row.get(x / 8).copied().unwrap_or(0);
+            let bit = (byte >> (7 - (x % 8))) & 1;
+            let value = if bit == 1 { 0 } else { 255 };
+            let out = (y * width + x) * 4;
+            rgba[out] = value;
+            rgba[out + 1] = value;
+            rgba[out + 2] = value;
+            rgba[out + 3] = 255;
+        }
+    }
     Ok(DecodedImage {
         width: width as u32,
         height: height as u32,

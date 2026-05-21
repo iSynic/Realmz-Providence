@@ -92,10 +92,92 @@ mod tests {
             issues.extend(audit.issues);
         }
         assert!(audited > 0, "expected bundled resource corpus");
+        assert!(
+            issues.is_empty(),
+            "bundled resource previews should all resolve or become metadata-only: {issues:#?}"
+        );
         for issue in issues {
             assert!(!issue.code.trim().is_empty());
             assert!(!issue.message.contains("not yet available"));
             assert!(!issue.message.contains("Unsupported preview"));
+        }
+    }
+
+    #[test]
+    #[ignore = "Prints the local resource compatibility audit for decoder planning."]
+    fn print_resource_compatibility_audit() {
+        let roots = [
+            Path::new(env!("CARGO_MANIFEST_DIR"))
+                .parent()
+                .expect("workspace")
+                .join("public")
+                .join("bundled-libraries"),
+            Path::new("F:/Realmz/base/Realmz/Scenarios").to_path_buf(),
+            Path::new("F:/Realmz/out_win_clang/Scenarios").to_path_buf(),
+        ];
+        let mut total = 0usize;
+        let mut by_type = BTreeMap::<String, usize>::new();
+        let mut by_status = BTreeMap::<String, usize>::new();
+        let mut by_issue = BTreeMap::<String, usize>::new();
+        let mut samples = Vec::new();
+        for root in roots {
+            if !root.exists() {
+                continue;
+            }
+            for path in walk(&root) {
+                let Some(name) = path.file_name().and_then(|value| value.to_str()) else {
+                    continue;
+                };
+                if !is_resource_file_name(name) {
+                    continue;
+                }
+                let Ok(bytes) = fs::read(&path) else {
+                    continue;
+                };
+                let audit = audit_resource_fork(&path.display().to_string(), &bytes);
+                total += audit.total;
+                merge_counts(&mut by_type, audit.by_type);
+                merge_counts(&mut by_status, audit.by_status);
+                for issue in audit.issues {
+                    let key = format!(
+                        "{}:{}:{}",
+                        issue.resource_type.trim(),
+                        issue.code,
+                        issue.variant.as_deref().unwrap_or("none")
+                    );
+                    *by_issue.entry(key).or_default() += 1;
+                    if samples.len() < 40 {
+                        samples.push(issue);
+                    }
+                }
+            }
+        }
+        eprintln!("total resources: {total}");
+        eprintln!("by type: {by_type:#?}");
+        eprintln!("by status: {by_status:#?}");
+        eprintln!("issues: {by_issue:#?}");
+        for sample in samples {
+            eprintln!(
+                "sample: {} {} {} {:?} {}",
+                sample.source,
+                sample.resource_type,
+                sample.resource_id,
+                sample.status,
+                sample.message
+            );
+        }
+    }
+
+    fn is_resource_file_name(name: &str) -> bool {
+        name == "Scenario"
+            || name.ends_with(".rsrc")
+            || name.ends_with(".rsf")
+            || name.starts_with("._")
+    }
+
+    fn merge_counts(target: &mut BTreeMap<String, usize>, source: BTreeMap<String, usize>) {
+        for (key, count) in source {
+            *target.entry(key).or_default() += count;
         }
     }
 

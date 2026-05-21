@@ -144,6 +144,7 @@ fn decode_format_two(data: &[u8]) -> std::result::Result<SoundDecode, SoundFailu
     }
     let command_count = u16_be(data, 4).unwrap_or(0);
     let command = u16_be(data, 6).unwrap_or(0);
+    let command_param = u32_be(data, 10).unwrap_or(0);
     if command_count == 0 || command & 0x7fff != 0x0051 {
         return Err(SoundFailure {
             malformed: false,
@@ -157,7 +158,9 @@ fn decode_format_two(data: &[u8]) -> std::result::Result<SoundDecode, SoundFailu
             .with_variant("format-2"),
         });
     }
-    decode_standard_header(data, 20, 16, "format-2")
+    let mut decoded = decode_standard_header(data, 14, 22, "format-2")?;
+    decoded.variant = format!("format-2 commandParam={command_param}");
+    Ok(decoded)
 }
 
 fn decode_standard_header(

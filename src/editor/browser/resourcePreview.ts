@@ -54,6 +54,19 @@ function imageToDataUrl(image: DecodedImage) {
 }
 
 function decodePictPackBits(pict: Uint8Array, summary: Record<string, string>): DecodedImage {
+  const failures: PreviewFailure[] = [];
+  for (const decode of [decodeIndexedPictPackBits, decodeDirectBitsPict, decodeOneBitPackBitsPict]) {
+    try {
+      return decode(pict, summary);
+    } catch (error) {
+      failures.push(error as PreviewFailure);
+    }
+  }
+  throw failures.find((failure) => failure.diagnostic)
+    ?? previewError("malformed", "pict.no_drawable_opcode", "PICT contains no supported PackBits, Bits, or DirectBits drawing opcode.", "pict");
+}
+
+function decodeIndexedPictPackBits(pict: Uint8Array, summary: Record<string, string>): DecodedImage {
   const rect = findPackBitsRect(pict);
   if (!rect) throw previewError("malformed", "pict.no_drawable_opcode", "PICT contains no supported PackBits, Bits, or DirectBits drawing opcode.", "pict");
   const palette: Array<[number, number, number]> = new Array(rect.colorCount).fill([0, 0, 0]);
@@ -102,7 +115,7 @@ function decodePictPackBits(pict: Uint8Array, summary: Record<string, string>): 
 function findPackBitsRect(pict: Uint8Array) {
   let firstKnown: { offset: number; opcode: number } | null = null;
   let firstUnsupported: PreviewFailure | null = null;
-  for (let offset = 10; offset + 80 < pict.byteLength; offset += 1) {
+  for (let offset = 10; offset + 80 < pict.byteLength; offset += 2) {
     const opcode = u16At(pict, offset);
     if ([0x0090, 0x0091, 0x0098, 0x0099, 0x009a, 0x009b].includes(opcode ?? -1) && !firstKnown) firstKnown = { offset, opcode: opcode ?? 0 };
     if (opcode !== 0x0098 && opcode !== 0x0099) continue;
@@ -138,6 +151,120 @@ function findPackBitsRect(pict: Uint8Array) {
     throw previewError("unsupported-variant", "pict.unsupported_opcode", "PICT uses a QuickDraw bitmap opcode that is not yet decoded for preview.", "pict", firstKnown.offset, `0x${firstKnown.opcode.toString(16).padStart(4, "0").toUpperCase()}`, [0x009a, 0x009b].includes(firstKnown.opcode) ? "direct-bits" : "bits");
   }
   return null;
+}
+
+function decodeDirectBitsPict(pict: Uint8Array, summary: Record<string, string>): DecodedImage {
+  const rect = findDirectBitsRect(pict);
+  const width = Math.min(rect.width, 2048);
+  const height = Math.min(rect.height, 2048);
+  const rgba = new Uint8ClampedArray(width * height * 4);
+  let cursor = rect.dataOffset;
+  summary.format = `directbits-${rect.pixelSize}-packbits`;
+  summary.pixelSize = String(rect.pixelSize);
+  summary.rowBytes = String(rect.rowBytes);
+  summary.opcode = `0x${rect.opcode.toString(16).padStart(4, "0").toUpperCase()}`;
+  for (let y = 0; y < rect.height; y += 1) {
+    if (cursor >= pict.byteLength) throw previewError("malformed", "pict.pixel_data_truncated", "PICT DirectBits pixel data ended before all rows were decoded.", "pict", cursor, summary.opcode, summary.format);
+    const packedLength = rect.rowBytes > 250 ? (u16At(pict, cursor) ?? 0) : (pict[cursor] ?? 0);
+    cursor += rect.rowBytes > 250 ? 2 : 1;
+    const availableLength = Math.min(packedLength, Math.max(0, pict.byteLength - cursor));
+    const row = decodePackBitsRow(pict, cursor, availableLength, rect.rowBytes);
+    cursor += availableLength;
+    if (y >= height) continue;
+    for (let x = 0; x < width; x += 1) {
+      const out = (y * width + x) * 4;
+      if (rect.pixelSize === 16) {
+        const source = x * 2;
+        const pixel = ((row[source] ?? 0) << 8) | (row[source + 1] ?? 0);
+        rgba[out] = fiveBitToU8((pixel >> 10) & 0x1f);
+        rgba[out + 1] = fiveBitToU8((pixel >> 5) & 0x1f);
+        rgba[out + 2] = fiveBitToU8(pixel & 0x1f);
+      } else {
+        const source = x * 4;
+        rgba[out] = row[source + 1] ?? 0;
+        rgba[out + 1] = row[source + 2] ?? 0;
+        rgba[out + 2] = row[source + 3] ?? 0;
+      }
+      rgba[out + 3] = 255;
+    }
+  }
+  return { width, height, rgba };
+}
+
+function findDirectBitsRect(pict: Uint8Array) {
+  let firstDirect: { offset: number; opcode: number } | null = null;
+  for (let offset = 10; offset + 130 < pict.byteLength; offset += 2) {
+    const opcode = u16At(pict, offset);
+    if (opcode !== 0x009a && opcode !== 0x009b) continue;
+    firstDirect ??= { offset, opcode };
+    const pixMapOffset = offset + 2;
+    const rowBytesRaw = u16At(pict, pixMapOffset + 4) ?? 0;
+    const rowBytes = rowBytesRaw & 0x3fff;
+    const width = i16At(pict, pixMapOffset + 12) - i16At(pict, pixMapOffset + 8);
+    const height = i16At(pict, pixMapOffset + 10) - i16At(pict, pixMapOffset + 6);
+    const pixelType = u16At(pict, pixMapOffset + 30) ?? -1;
+    const pixelSize = u16At(pict, pixMapOffset + 32) ?? -1;
+    const componentCount = u16At(pict, pixMapOffset + 34) ?? -1;
+    const componentSize = u16At(pict, pixMapOffset + 36) ?? -1;
+    if (!(rowBytesRaw & 0x8000) || rowBytes <= 0 || rowBytes > 8192 || width <= 0 || height <= 0 || width > 2048 || height > 2048 || pixelType !== 16 || ![16, 32].includes(pixelSize) || ![3, 4].includes(componentCount) || ![5, 8].includes(componentSize)) continue;
+    let dataOffset = pixMapOffset + 50 + 18;
+    if (opcode === 0x009b) {
+      const regionSize = u16At(pict, dataOffset) ?? 0;
+      if (regionSize < 10 || dataOffset + regionSize >= pict.byteLength) continue;
+      dataOffset += regionSize;
+    }
+    return { opcode, rowBytes, width, height, dataOffset, pixelSize };
+  }
+  if (firstDirect) throw previewError("unsupported-variant", "pict.directbits_unsupported_shape", "PICT DirectBits resource is not a 32-bit PackBits RGB pixmap.", "pict", firstDirect.offset, `0x${firstDirect.opcode.toString(16).padStart(4, "0").toUpperCase()}`, "direct-bits");
+  throw previewError("malformed", "pict.no_directbits_opcode", "PICT contains no DirectBits opcode.", "pict");
+}
+
+function fiveBitToU8(value: number) {
+  return Math.round((value * 255) / 31);
+}
+
+function decodeOneBitPackBitsPict(pict: Uint8Array, summary: Record<string, string>): DecodedImage {
+  const rect = findOneBitPackBitsRect(pict);
+  const width = Math.min(rect.width, 2048);
+  const height = Math.min(rect.height, 2048);
+  const rgba = new Uint8ClampedArray(width * height * 4);
+  let cursor = rect.dataOffset;
+  summary.format = "packbits-bitmap-1";
+  summary.pixelSize = "1";
+  summary.rowBytes = String(rect.rowBytes);
+  summary.opcode = "0x0098";
+  for (let y = 0; y < rect.height; y += 1) {
+    if (cursor >= pict.byteLength) throw previewError("malformed", "pict.pixel_data_truncated", "PICT 1-bit PackBits pixel data ended before all rows were decoded.", "pict", cursor, summary.opcode, summary.format);
+    const packedLength = rect.rowBytes > 250 ? (u16At(pict, cursor) ?? 0) : (pict[cursor] ?? 0);
+    cursor += rect.rowBytes > 250 ? 2 : 1;
+    const availableLength = Math.min(packedLength, Math.max(0, pict.byteLength - cursor));
+    const row = decodePackBitsRow(pict, cursor, availableLength, rect.rowBytes);
+    cursor += availableLength;
+    if (y >= height) continue;
+    for (let x = 0; x < width; x += 1) {
+      const byte = row[Math.floor(x / 8)] ?? 0;
+      const bit = (byte >> (7 - (x % 8))) & 1;
+      const value = bit === 1 ? 0 : 255;
+      const out = (y * width + x) * 4;
+      rgba[out] = value;
+      rgba[out + 1] = value;
+      rgba[out + 2] = value;
+      rgba[out + 3] = 255;
+    }
+  }
+  return { width, height, rgba };
+}
+
+function findOneBitPackBitsRect(pict: Uint8Array) {
+  for (let offset = 10; offset + 40 < pict.byteLength; offset += 1) {
+    if (pict[offset] !== 0x98) continue;
+    const rowBytes = u16At(pict, offset + 1) ?? 0;
+    const width = i16At(pict, offset + 9) - i16At(pict, offset + 5);
+    const height = i16At(pict, offset + 7) - i16At(pict, offset + 3);
+    if (rowBytes <= 0 || rowBytes > 512 || width <= 0 || height <= 0 || width > 2048 || height > 2048 || rowBytes < Math.ceil(width / 8)) continue;
+    return { opcode: 0x98, rowBytes, width, height, dataOffset: offset + 29 };
+  }
+  throw previewError("malformed", "pict.no_one_bit_packbits", "PICT contains no old-style 1-bit PackBits bitmap opcode.", "pict");
 }
 
 function decodePackBitsRow(buffer: Uint8Array, offset: number, packedLength: number, expectedLength: number) {
@@ -259,18 +386,19 @@ function decodeFormatTwoSndToWav(data: Uint8Array, summary: Record<string, strin
   if (data.byteLength < 36) throw previewError("malformed", "snd.format2_truncated", "format-2 sampled snd resource is truncated before its sound header.", "snd", undefined, undefined, "format-2");
   const commandCount = u16At(data, 4) ?? 0;
   const command = u16At(data, 6) ?? 0;
+  const commandParam = u32At(data, 10) ?? 0;
   if (commandCount === 0 || (command & 0x7fff) !== 0x0051) {
     throw previewError("unsupported-variant", "snd.format2_no_buffer_command", `format-2 snd expected a bufferCmd at offset 6; found commandCount=${commandCount}, command=0x${command.toString(16).padStart(4, "0").toUpperCase()}.`, "snd", 6, `0x${command.toString(16).padStart(4, "0").toUpperCase()}`, "format-2");
   }
-  const headerOffset = 20;
+  const headerOffset = 14;
   const length = u32At(data, headerOffset + 4) ?? 0;
   const sampleRateFixed = u32At(data, headerOffset + 8) ?? (22254 << 16);
   const sampleRate = Math.max(1, sampleRateFixed >>> 16);
-  const sampleStart = headerOffset + 16;
+  const sampleStart = headerOffset + 22;
   if (sampleStart + length > data.byteLength) throw previewError("malformed", "snd.sample_truncated", `format-2 declares ${length} sample bytes, but the resource ends early.`, "snd", sampleStart, undefined, "format-2");
   summary.sampleRate = String(sampleRate);
   summary.samples = String(length);
-  summary.variant = "format-2";
+  summary.variant = `format-2 commandParam=${commandParam}`;
   return encodeWavU8(sampleRate, data.slice(sampleStart, sampleStart + length));
 }
 
