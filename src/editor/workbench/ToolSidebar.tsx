@@ -1,4 +1,5 @@
 import { ActiveWorkbench, EditorTab, LibraryCatalog, Project } from "../types";
+import { ResizablePane } from "../components/ResizablePane";
 import { TutorialTip } from "../components/TutorialTip";
 import { DOMAIN_REGISTRY, toolCount } from "./registry";
 
@@ -21,7 +22,15 @@ export function ToolSidebar({
   const tools = domain.tools.filter((tool) => tool.workbench === "both" || tool.workbench === activeWorkbench);
   if (tools.length === 0) return null;
   return (
-    <aside className="tool-sidebar" aria-label={`${domain.label} tools`}>
+    <ResizablePane
+      className="tool-sidebar"
+      ariaLabel={`${domain.label} tools`}
+      storageKey="providence.toolSidebarWidth.v3"
+      defaultWidth={280}
+      minWidth={250}
+      maxWidth={480}
+      edge="right"
+    >
       <section className="tool-sidebar-card">
         <header>
           <div>
@@ -61,7 +70,7 @@ export function ToolSidebar({
           })}
         </div>
       </section>
-    </aside>
+    </ResizablePane>
   );
 }
 

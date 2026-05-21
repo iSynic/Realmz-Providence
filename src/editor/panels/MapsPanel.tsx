@@ -7,6 +7,7 @@ import { RealmzMapCanvas } from "../components/MapCanvas";
 import { MapContextSidebar } from "../components/MapContextSidebar";
 import { MapViewFilters } from "../components/MapViewFilters";
 import { OverlayInspector } from "../components/OverlayInspector";
+import { ResizablePane } from "../components/ResizablePane";
 import { SemanticInspector } from "../components/SemanticInspector";
 import { tileValueAt } from "../map/geometry";
 import { ScrollArea } from "../ui";
@@ -121,7 +122,15 @@ export function MapsPanel({
         )}
       </section>
 
-      <aside className="editor-inspector">
+      <ResizablePane
+        className="editor-inspector"
+        ariaLabel="Map inspector"
+        storageKey="providence.mapRightInspectorWidth.v3"
+        defaultWidth={360}
+        minWidth={300}
+        maxWidth={620}
+        edge="left"
+      >
         <ScrollArea className="editor-inspector-scroll" aria-label="Map inspector">
         <MapInspector
           map={selectedMap}
@@ -144,7 +153,7 @@ export function MapsPanel({
         <TriggerInspector project={state.project} triggers={mapTriggers} onSelectEntity={onSelectEntity} />
         <SemanticInspector project={state.project} selectedEntity={state.selectedEntity} onSelect={onSelectEntity} />
         </ScrollArea>
-      </aside>
+      </ResizablePane>
     </>
   );
 }

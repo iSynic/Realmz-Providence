@@ -488,8 +488,56 @@ button:disabled {
   background: #0f1012;
 }
 
+.resizable-pane {
+  position: relative;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.pane-resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 25;
+  width: 10px;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.pane-resize-handle::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 4px;
+  width: 2px;
+  border-radius: 999px;
+  background: transparent;
+  transition: background 0.12s, box-shadow 0.12s;
+}
+
+.pane-resize-handle:hover::before,
+.pane-resize-handle:focus-visible::before,
+body.is-resizing-pane .pane-resize-handle::before {
+  background: #4f9ad7;
+  box-shadow: 0 0 0 1px rgba(79, 154, 215, 0.24), 0 0 14px rgba(79, 154, 215, 0.28);
+}
+
+.pane-resize-handle-right {
+  right: -5px;
+}
+
+.pane-resize-handle-left {
+  left: -5px;
+}
+
+body.is-resizing-pane {
+  cursor: col-resize;
+  user-select: none;
+}
+
 .tool-sidebar {
-  width: 244px;
+  width: 280px;
   flex-shrink: 0;
   border-right: 1px solid #252a31;
   background: #121416;
@@ -1732,7 +1780,7 @@ button:disabled {
 }
 
 .editor-sidebar {
-  width: 250px;
+  width: 360px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -1742,7 +1790,7 @@ button:disabled {
 }
 
 .contextual-sidebar {
-  width: 250px;
+  width: 360px;
   overflow-y: scroll;
 }
 
@@ -1756,7 +1804,7 @@ button:disabled {
 }
 
 .editor-inspector {
-  width: 315px;
+  width: 360px;
   flex-shrink: 0;
   background: #151719;
   border-left: 1px solid #252a31;
@@ -2244,8 +2292,8 @@ button:disabled {
 }
 
 .map-outliner-panel > .workbench-scroll-area {
-  height: min(220px, 25vh);
-  min-height: 132px;
+  height: min(300px, 32vh);
+  min-height: 150px;
   margin: 0 0 8px;
 }
 
@@ -2260,14 +2308,14 @@ button:disabled {
   width: 100%;
   min-width: 0;
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr);
-  gap: 7px;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 8px;
   align-items: center;
   border: 1px solid #24303b;
   border-radius: 6px;
   background: #11161c;
   color: #dbe6f0;
-  padding: 7px;
+  padding: 8px;
   text-align: left;
 }
 

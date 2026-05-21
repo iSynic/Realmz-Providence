@@ -11,6 +11,7 @@ import { PaintPalettePanel } from "./TileSelectionBar";
 import { TileSprite, tileColor } from "./TileSprite";
 import { TutorialTip } from "./TutorialTip";
 import { ScrollArea } from "../ui";
+import { ResizablePane } from "./ResizablePane";
 
 export function MapContextSidebar({
   state,
@@ -43,7 +44,15 @@ export function MapContextSidebar({
 }) {
   const selection = selectionSummary(selectedMap, state.selectedEntity, state.selectedCell, mapTriggers, selectedRandomLevel, mapRecords);
   return (
-    <aside className="editor-sidebar contextual-sidebar">
+    <ResizablePane
+      className="editor-sidebar contextual-sidebar"
+      ariaLabel="Map tools and context"
+      storageKey="providence.mapLeftSidebarWidth.v4"
+      defaultWidth={360}
+      minWidth={320}
+      maxWidth={560}
+      edge="right"
+    >
       <ScrollArea className="contextual-sidebar-scroll" aria-label="Map tools and browser">
         <MapOutliner
           project={state.project}
@@ -76,7 +85,7 @@ export function MapContextSidebar({
           onSelectTile={onSelectTile}
         />
       </ScrollArea>
-    </aside>
+    </ResizablePane>
   );
 }
 
