@@ -1,25 +1,20 @@
 param(
+  [string]$SourceScenarioDir = "F:\Realmz\base\Realmz\Scenarios\Tutorial",
+  [string]$ScenarioName = "Providence Oracle Tutorial",
   [string]$OracleRoot = "F:\Realmz - Oracle",
   [string]$ClassicExePath = "",
   [string]$RunRoot = "",
   [int]$ProvidenceTimeoutSeconds = 180,
   [int]$ClassicTimeoutSeconds = 60,
-  [switch]$SkipBuild
+  [switch]$SkipBuild,
+  [switch]$KeepRunning
 )
 
 $ErrorActionPreference = "Stop"
-
-function Resolve-OrCreateDirectory {
-  param([string]$Path)
-  if (-not (Test-Path -LiteralPath $Path)) {
-    New-Item -ItemType Directory -Path $Path | Out-Null
-  }
-  return (Resolve-Path -LiteralPath $Path).Path
-}
+. (Join-Path $PSScriptRoot "oracle_smoke_lib.ps1")
 
 $repoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
-$smokeScript = Join-Path $PSScriptRoot "run_oracle_smoke.ps1"
-$fixtures = @(
+$fixtureNames = @(
   "tutorial-macro",
   "tutorial-paint-tile",
   "tutorial-edcd-row",
@@ -30,73 +25,102 @@ $fixtures = @(
   "scenario-not-appearing"
 )
 
+$started = Get-Date
 $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
 if ([string]::IsNullOrWhiteSpace($RunRoot)) {
   $RunRoot = Join-Path $repoRoot "tmp\oracle-runs\matrix-$stamp"
 }
 $RunRoot = Resolve-OrCreateDirectory $RunRoot
+$batchPath = Join-Path $RunRoot "providence-harness-batch.json"
 
 if (-not $SkipBuild) {
-  Push-Location $repoRoot
-  try {
-    & npm run build
-    if ($LASTEXITCODE -ne 0) {
-      throw "npm run build failed with exit code $LASTEXITCODE"
-    }
-    & cargo build --manifest-path (Join-Path $repoRoot "src-tauri\Cargo.toml")
-    if ($LASTEXITCODE -ne 0) {
-      throw "cargo build failed with exit code $LASTEXITCODE"
-    }
-  } finally {
-    Pop-Location
+  Invoke-OracleBuild -RepoRoot $repoRoot
+}
+
+$sourceScenario = (Resolve-Path -LiteralPath $SourceScenarioDir).Path
+if (-not (Test-Path -LiteralPath (Join-Path $sourceScenario "Scenario"))) {
+  throw "Source scenario is missing its Scenario resource file: $sourceScenario"
+}
+
+$preparedRuns = @()
+$batchRuns = @()
+foreach ($fixtureName in $fixtureNames) {
+  $fixtureDefinition = Get-OracleFixtureDefinition -Fixture $fixtureName
+  $fixtureRoot = Resolve-OrCreateDirectory (Join-Path $RunRoot $fixtureName)
+  $paths = New-OracleRunPaths -RunRoot $fixtureRoot -ScenarioName $ScenarioName
+  Initialize-OracleRunPaths -Paths $paths
+  Write-OracleHarnessScript `
+    -FixtureDefinition $fixtureDefinition `
+    -SourceScenario $sourceScenario `
+    -ScenarioName $ScenarioName `
+    -Paths $paths
+
+  $preparedRuns += [pscustomobject]@{
+    FixtureDefinition = $fixtureDefinition
+    RunRoot = $fixtureRoot
+    Paths = $paths
+  }
+  $batchRuns += [ordered]@{
+    fixture = $fixtureName
+    scriptPath = $paths.ScriptPath
+    resultPath = $paths.ResultPath
   }
 }
+
+$batch = [ordered]@{
+  version = 1
+  name = "Providence oracle smoke matrix"
+  runs = $batchRuns
+}
+$batch | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $batchPath -Encoding utf8
+
+Write-Host "Running Providence harness batch for $($preparedRuns.Count) fixtures..."
+Start-OracleProvidenceHarness `
+  -RepoRoot $repoRoot `
+  -RunRoot $RunRoot `
+  -BatchPath $batchPath `
+  -ResultPaths @($preparedRuns | ForEach-Object { $_.Paths.ResultPath }) `
+  -TimeoutSeconds $ProvidenceTimeoutSeconds `
+  -KeepRunning:$KeepRunning
 
 $results = @()
-foreach ($fixture in $fixtures) {
-  $fixtureRoot = Join-Path $RunRoot $fixture
-  New-Item -ItemType Directory -Force -Path $fixtureRoot | Out-Null
-  Write-Host "Running oracle fixture: $fixture"
+foreach ($prepared in $preparedRuns) {
+  $fixtureName = $prepared.FixtureDefinition.Name
+  Write-Host "Completing oracle fixture: $fixtureName"
+  $summary = Complete-OracleFixtureAfterProvidence `
+    -FixtureDefinition $prepared.FixtureDefinition `
+    -Stamp $stamp `
+    -RunRoot $prepared.RunRoot `
+    -ScenarioName $ScenarioName `
+    -SourceScenario $sourceScenario `
+    -OracleRoot $OracleRoot `
+    -ClassicExePath $ClassicExePath `
+    -Paths $prepared.Paths `
+    -ClassicTimeoutSeconds $ClassicTimeoutSeconds `
+    -ProvidenceMode "batch" `
+    -KeepRunning:$KeepRunning
 
-  $args = @(
-    "-ExecutionPolicy", "Bypass",
-    "-File", $smokeScript,
-    "-Fixture", $fixture,
-    "-RunRoot", $fixtureRoot,
-    "-OracleRoot", $OracleRoot,
-    "-ProvidenceTimeoutSeconds", $ProvidenceTimeoutSeconds,
-    "-ClassicTimeoutSeconds", $ClassicTimeoutSeconds,
-    "-SkipBuild"
-  )
-  if (-not [string]::IsNullOrWhiteSpace($ClassicExePath)) {
-    $args += @("-ClassicExePath", $ClassicExePath)
-  }
-
-  & powershell @args
-  $exitCode = $LASTEXITCODE
-  $summaryPath = Join-Path $fixtureRoot "oracle-summary.json"
-  $summary = $null
-  if (Test-Path -LiteralPath $summaryPath) {
-    $summary = Get-Content -Raw -LiteralPath $summaryPath | ConvertFrom-Json
-  }
-  $matched = ($exitCode -eq 0) -and $summary -and [bool]$summary.matchedExpectation
   $results += [pscustomobject]@{
-    Fixture = $fixture
-    ExitCode = $exitCode
-    ExpectedOk = if ($summary) { [bool]$summary.expectedOk } else { $null }
-    ObservedOk = if ($summary) { [bool]$summary.observedOk } else { $null }
-    MatchedExpectation = [bool]$matched
-    Stage = if ($summary) { $summary.stage } else { $null }
-    Error = if ($summary) { $summary.error } else { "summary missing" }
-    Summary = if (Test-Path -LiteralPath $summaryPath) { $summaryPath } else { $null }
+    Fixture = $fixtureName
+    ExpectedOk = [bool]$summary.expectedOk
+    ObservedOk = [bool]$summary.observedOk
+    MatchedExpectation = [bool]$summary.matchedExpectation
+    Stage = $summary.stage
+    Error = $summary.error
+    Summary = $prepared.Paths.SummaryPath
   }
 }
 
+$finished = Get-Date
 $allMatched = ($results | Where-Object { -not $_.MatchedExpectation }).Count -eq 0
 $matrixSummary = [ordered]@{
   ok = [bool]$allMatched
   timestamp = $stamp
   runRoot = $RunRoot
+  providenceMode = "batch"
+  providenceLaunches = 1
+  durationSeconds = [math]::Round(($finished - $started).TotalSeconds, 3)
+  batchPath = $batchPath
   fixtures = $results
 }
 $matrixSummaryPath = Join-Path $RunRoot "matrix-summary.json"

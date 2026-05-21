@@ -39,8 +39,11 @@ pub fn run() {
             commands::validate_project,
             commands::benchmark_project,
             harness::get_harness_config,
+            harness::read_harness_batch,
             harness::read_harness_script,
+            harness::read_harness_script_at,
             harness::write_harness_result,
+            harness::write_harness_result_at,
             harness::harness_exit
         ])
         .run(tauri::generate_context!())

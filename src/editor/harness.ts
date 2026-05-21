@@ -4,8 +4,15 @@ import { ExportReport, Project, ProjectCommand, ValidationReport } from "./types
 
 type ProvidenceHarnessConfig = {
   enabled: boolean;
+  scriptPath: string | null;
+  resultPath: string | null;
+  batchPath: string | null;
+};
+
+type ProvidenceHarnessRunConfig = {
   scriptPath: string;
   resultPath: string;
+  batchPath?: string | null;
 };
 
 export type ProvidenceHarnessScript = {
@@ -29,6 +36,16 @@ export type ProvidenceHarnessScript = {
   };
 };
 
+export type ProvidenceHarnessBatch = {
+  version: number;
+  name: string;
+  runs: Array<{
+    fixture: string;
+    scriptPath: string;
+    resultPath: string;
+  }>;
+};
+
 export type ProvidenceHarnessResult = {
   ok: boolean;
   projectDir: string;
@@ -49,10 +66,22 @@ export async function runProvidenceHarness(onStatus?: (status: string) => void) 
   }
 
   let result: ProvidenceHarnessResult;
+  if (config.batchPath) {
+    const ok = await runProvidenceHarnessBatch(config, onStatus);
+    return ok;
+  }
+
+  if (!config.scriptPath || !config.resultPath) {
+    return false;
+  }
+  const runConfig: ProvidenceHarnessRunConfig = {
+    scriptPath: config.scriptPath,
+    resultPath: config.resultPath
+  };
   try {
     onStatus?.("Harness: reading script...");
     const script = await invoke<ProvidenceHarnessScript>("read_harness_script");
-    result = await executeHarnessScript(script, config, onStatus);
+    result = await executeHarnessScript(script, runConfig, onStatus);
   } catch (error) {
     result = {
       ok: false,
@@ -62,8 +91,8 @@ export async function runProvidenceHarness(onStatus?: (status: string) => void) 
       validation: null,
       exportReport: null,
       artifacts: {
-        scriptPath: config.scriptPath,
-        resultPath: config.resultPath
+        scriptPath: runConfig.scriptPath,
+        resultPath: runConfig.resultPath
       },
       error: errorText(error)
     };
@@ -79,9 +108,55 @@ export async function runProvidenceHarness(onStatus?: (status: string) => void) 
   return true;
 }
 
+async function runProvidenceHarnessBatch(config: ProvidenceHarnessConfig, onStatus?: (status: string) => void) {
+  try {
+    onStatus?.("Harness: reading batch...");
+    const batch = await invoke<ProvidenceHarnessBatch>("read_harness_batch");
+    for (const run of batch.runs ?? []) {
+      const runConfig: ProvidenceHarnessRunConfig = {
+        scriptPath: run.scriptPath,
+        resultPath: run.resultPath,
+        batchPath: config.batchPath
+      };
+      let result: ProvidenceHarnessResult;
+      try {
+        onStatus?.(`Harness: running ${run.fixture}...`);
+        const script = await invoke<ProvidenceHarnessScript>("read_harness_script_at", { path: run.scriptPath });
+        result = await executeHarnessScript(script, runConfig, onStatus);
+      } catch (error) {
+        result = {
+          ok: false,
+          projectDir: "",
+          exportDir: "",
+          commandsApplied: 0,
+          validation: null,
+          exportReport: null,
+          artifacts: {
+            scriptPath: run.scriptPath,
+            resultPath: run.resultPath,
+            batchPath: config.batchPath
+          },
+          error: errorText(error)
+        };
+      }
+      await invoke("write_harness_result_at", { path: run.resultPath, result });
+    }
+    window.setTimeout(() => {
+      void invoke("harness_exit", { code: 0 });
+    }, 250);
+    return true;
+  } catch (error) {
+    console.error("Providence harness batch failed", error);
+    window.setTimeout(() => {
+      void invoke("harness_exit", { code: 1 });
+    }, 250);
+    return true;
+  }
+}
+
 async function executeHarnessScript(
   script: ProvidenceHarnessScript,
-  config: ProvidenceHarnessConfig,
+  config: ProvidenceHarnessRunConfig,
   onStatus?: (status: string) => void
 ): Promise<ProvidenceHarnessResult> {
   onStatus?.(`Harness: importing ${script.sourceScenarioDir}...`);
@@ -125,6 +200,7 @@ async function executeHarnessScript(
     artifacts: {
       scriptPath: config.scriptPath,
       resultPath: config.resultPath,
+      batchPath: config.batchPath ?? null,
       exportDir: script.exportDir,
       writtenFiles: exportReport.writtenFiles,
       passThroughFiles: exportReport.passThroughFiles
