@@ -6,6 +6,7 @@ pub mod media_assets;
 pub mod project;
 pub mod realmz;
 pub mod resource_fork;
+pub mod resource_preview;
 pub mod semantic;
 pub mod validation;
 pub mod workspace;

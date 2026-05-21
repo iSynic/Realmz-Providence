@@ -4131,6 +4131,43 @@ body.is-resizing-pane {
   color: #8aa6bd;
   gap: 4px;
   font-size: 11px;
+  text-align: center;
+  padding: 8px;
+  overflow: hidden;
+}
+
+.asset-preview-placeholder small {
+  color: #f0b866;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resource-preview-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 10px 0;
+}
+
+.resource-preview-filters button {
+  border: 1px solid #26384a;
+  border-radius: 5px;
+  background: #101820;
+  color: #9eb8cc;
+  min-height: 24px;
+  padding: 3px 7px;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.resource-preview-filters button.active {
+  border-color: #41a8ff;
+  background: #123354;
+  color: #e7f5ff;
 }
 
 .asset-audio-preview {

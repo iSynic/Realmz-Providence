@@ -425,7 +425,7 @@ pub fn inspect_resource_preview(
                 ResourcePreviewStatus::UnsupportedVariant,
                 "image/pict",
                 summary,
-                format!("PICT preview is not yet available: {error}"),
+                format!("PICT decoder could not render this resource variant: {error}"),
             )),
         },
         "cicn" => match decode_cicn(data) {
@@ -444,7 +444,7 @@ pub fn inspect_resource_preview(
                 ResourcePreviewStatus::UnsupportedVariant,
                 "image/cicn",
                 summary,
-                format!("cicn preview is not yet available: {error}"),
+                format!("cicn decoder could not render this resource variant: {error}"),
             )),
         },
         "snd " => match decode_snd_to_wav(data) {
@@ -459,7 +459,7 @@ pub fn inspect_resource_preview(
                 ResourcePreviewStatus::UnsupportedVariant,
                 "audio/x-mac-snd",
                 summary,
-                format!("Sound preview is not yet available: {error}"),
+                format!("Sound decoder could not play this resource variant: {error}"),
             )),
         },
         "TEXT" => {

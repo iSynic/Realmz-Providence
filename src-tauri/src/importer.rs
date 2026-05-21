@@ -1,7 +1,10 @@
 use crate::error::{IoPath, JsonPath, ProvidenceError, Result};
 use crate::project::*;
 use crate::realmz::{parse_scenario_buffers, ParsedScenario, SUPPORTED_WRITE_FILES, TRACKED_FILES};
-use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
+use base64::{
+    engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD},
+    Engine as _,
+};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -198,6 +201,7 @@ pub fn open_project(project_dir: impl AsRef<Path>) -> Result<ProvidenceProject> 
         serde_json::from_str(&text).with_json_path(project_path)?;
     backfill_tileset_metadata(&mut project);
     refresh_semantic_schema(project_dir, &mut project)?;
+    refresh_custom_tile_atlases(project_dir, &mut project)?;
     import_icon_overlays(&project_dir.join(ASSETS_DIR), &mut project)?;
     project.validation = crate::validation::validate_project(&project);
     save_project(project_dir, &project)?;
@@ -249,6 +253,42 @@ fn backfill_tileset_metadata(project: &mut ProvidenceProject) {
             tileset.base_tile = landlook_base_tile(tileset.landlook);
         }
     }
+}
+
+fn refresh_custom_tile_atlases(project_dir: &Path, project: &mut ProvidenceProject) -> Result<()> {
+    let raw_dir = project_dir.join(if project.source.raw_sources_dir.is_empty() {
+        RAW_SOURCES_DIR
+    } else {
+        project.source.raw_sources_dir.as_str()
+    });
+    if !raw_dir.is_dir() {
+        return Ok(());
+    }
+    let atlas_dir = project_dir.join(ASSETS_DIR).join(TILE_ATLASES_DIR);
+    fs::create_dir_all(&atlas_dir).with_path(&atlas_dir)?;
+    for tileset in &mut project.asset_catalog.tilesets {
+        if !tileset.custom {
+            continue;
+        }
+        if tileset.base_tile.is_none() {
+            tileset.base_tile = custom_landlook_base_tile(&raw_dir, tileset.landlook)?;
+        }
+        let image_missing = tileset
+            .image_path
+            .as_ref()
+            .map(|relative| !project_dir.join(relative).is_file())
+            .unwrap_or(true);
+        if !image_missing {
+            continue;
+        }
+        if let CustomAtlasImport::Imported(relative_path) =
+            import_custom_tile_atlas(&raw_dir, &atlas_dir, tileset)?
+        {
+            tileset.image_path = Some(relative_path);
+            tileset.available = true;
+        }
+    }
+    Ok(())
 }
 
 fn landlook_base_tile(landlook: i8) -> Option<i16> {
@@ -339,31 +379,46 @@ fn import_tile_atlases(
     let atlas_dir = assets_dir.join(TILE_ATLASES_DIR);
     fs::create_dir_all(&atlas_dir).with_path(&atlas_dir)?;
     for tileset in &mut project.asset_catalog.tilesets {
-        let Some(source) = atlas_source_path(source_path, tileset) else {
-            tileset.available = false;
-            project.diagnostics.push(Diagnostic {
-                severity: DiagnosticSeverity::Warning,
-                code: "missing-tile-atlas".to_string(),
-                message: format!("No tile atlas source is known for {}", tileset.id),
-                source: Some(tileset.id.clone()),
-            });
-            continue;
-        };
-        if !source.is_file() {
-            tileset.available = false;
-            project.diagnostics.push(Diagnostic {
-                severity: DiagnosticSeverity::Warning,
-                code: "missing-tile-atlas".to_string(),
-                message: format!("{} was not found at {}", tileset.name, source.display()),
-                source: Some(tileset.id.clone()),
-            });
-            continue;
+        if tileset.base_tile.is_none() {
+            tileset.base_tile = custom_landlook_base_tile(source_path, tileset.landlook)?;
         }
-        let file_name = format!("{}.png", tileset.id);
-        let dest = atlas_dir.join(&file_name);
-        fs::copy(&source, &dest).with_path(&dest)?;
-        tileset.image_path = Some(format!("{ASSETS_DIR}/{TILE_ATLASES_DIR}/{file_name}"));
-        tileset.available = true;
+        if let Some(source) = atlas_source_path(source_path, tileset) {
+            if source.is_file() {
+                let file_name = format!("{}.png", tileset.id);
+                let dest = atlas_dir.join(&file_name);
+                fs::copy(&source, &dest).with_path(&dest)?;
+                tileset.image_path = Some(format!("{ASSETS_DIR}/{TILE_ATLASES_DIR}/{file_name}"));
+                tileset.available = true;
+                continue;
+            }
+        }
+        if tileset.custom {
+            match import_custom_tile_atlas(source_path, &atlas_dir, tileset)? {
+                CustomAtlasImport::Imported(relative_path) => {
+                    tileset.image_path = Some(relative_path);
+                    tileset.available = true;
+                    continue;
+                }
+                CustomAtlasImport::Unsupported(message) => {
+                    tileset.available = false;
+                    project.diagnostics.push(Diagnostic {
+                        severity: DiagnosticSeverity::Warning,
+                        code: "unsupported-custom-tile-atlas".to_string(),
+                        message,
+                        source: Some(tileset.id.clone()),
+                    });
+                    continue;
+                }
+                CustomAtlasImport::Missing => {}
+            }
+        }
+        tileset.available = false;
+        project.diagnostics.push(Diagnostic {
+            severity: DiagnosticSeverity::Warning,
+            code: "missing-tile-atlas".to_string(),
+            message: format!("No tile atlas source is known for {}", tileset.id),
+            source: Some(tileset.id.clone()),
+        });
     }
     Ok(())
 }
@@ -444,6 +499,106 @@ fn atlas_source_path(source_path: &Path, tileset: &TilesetAsset) -> Option<PathB
             .join("pictures")
             .join(format!("picture_{pict_id}.png"))
     })
+}
+
+enum CustomAtlasImport {
+    Imported(String),
+    Missing,
+    Unsupported(String),
+}
+
+fn import_custom_tile_atlas(
+    source_path: &Path,
+    atlas_dir: &Path,
+    tileset: &TilesetAsset,
+) -> Result<CustomAtlasImport> {
+    let Some(pict_id) = tileset.pict_id else {
+        return Ok(CustomAtlasImport::Missing);
+    };
+    for resource_path in scenario_resource_candidates(source_path) {
+        if !resource_path.is_file() {
+            continue;
+        }
+        let bytes = fs::read(&resource_path).with_path(&resource_path)?;
+        let Some(entry) = crate::resource_fork::parse_resource_fork_entries(&bytes)
+            .into_iter()
+            .find(|entry| entry.resource_type == "PICT" && i32::from(entry.id) == pict_id)
+        else {
+            continue;
+        };
+        let preview = crate::resource_preview::inspect_resource_preview("PICT", &entry.data)?;
+        let Some(data_url) = preview.data_url else {
+            let detail = preview
+                .diagnostics
+                .first()
+                .map(|diagnostic| diagnostic.message.clone())
+                .unwrap_or_else(|| format!("preview status was {:?}", preview.status));
+            return Ok(CustomAtlasImport::Unsupported(format!(
+                "{} PICT {} in {} could not be decoded as a tile atlas: {}",
+                tileset.name,
+                pict_id,
+                resource_path.display(),
+                detail
+            )));
+        };
+        let Some(png_bytes) = png_bytes_from_data_url(&data_url) else {
+            return Ok(CustomAtlasImport::Unsupported(format!(
+                "{} PICT {} decoded, but did not produce a PNG preview",
+                tileset.name, pict_id
+            )));
+        };
+        let file_name = format!("{}.png", tileset.id);
+        let dest = atlas_dir.join(&file_name);
+        fs::write(&dest, png_bytes).with_path(&dest)?;
+        return Ok(CustomAtlasImport::Imported(format!(
+            "{ASSETS_DIR}/{TILE_ATLASES_DIR}/{file_name}"
+        )));
+    }
+    Ok(CustomAtlasImport::Missing)
+}
+
+fn custom_landlook_base_tile(source_path: &Path, landlook: i8) -> Result<Option<i16>> {
+    let Some(file_name) = custom_landlook_metadata_file(landlook) else {
+        return Ok(None);
+    };
+    let path = source_path.join(file_name);
+    if !path.is_file() {
+        return Ok(None);
+    }
+    let bytes = fs::read(&path).with_path(&path)?;
+    if bytes.len() < 8042 {
+        return Ok(None);
+    }
+    let value = i16::from_be_bytes([bytes[8040], bytes[8041]]);
+    Ok((value > 0 && value <= 999).then_some(value))
+}
+
+fn custom_landlook_metadata_file(landlook: i8) -> Option<&'static str> {
+    match landlook {
+        6 => Some("Data Custom 1 BD"),
+        7 => Some("Data Custom 2 BD"),
+        8 => Some("Data Custom 3 BD"),
+        _ => None,
+    }
+}
+
+fn scenario_resource_candidates(source_path: &Path) -> Vec<PathBuf> {
+    let scenario_name = source_path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("Scenario");
+    vec![
+        source_path.join("Scenario.rsrc"),
+        source_path.join("Scenario.rsf"),
+        source_path.join(format!("{scenario_name}.rsrc")),
+        source_path.join(format!("{scenario_name}.rsf")),
+        source_path.join("Scenario"),
+    ]
+}
+
+fn png_bytes_from_data_url(data_url: &str) -> Option<Vec<u8>> {
+    let base64 = data_url.strip_prefix("data:image/png;base64,")?;
+    STANDARD.decode(base64).ok()
 }
 
 fn scenario_cache_key(source_path: &Path) -> String {

@@ -7,9 +7,9 @@ use crate::importer::{
 };
 use crate::media_assets::mime_for_path;
 use crate::project::{ProvidenceProject, ValidationReport};
-use crate::resource_fork::{
-    inspect_resource_preview, parse_resource_fork_entries, preview_data_url_for_resource,
-    DecodedResourcePreview,
+use crate::resource_fork::parse_resource_fork_entries;
+use crate::resource_preview::{
+    inspect_resource_preview, preview_data_url_for_resource, DecodedResourcePreview,
 };
 use crate::validation::validate_project as validate_project_impl;
 use crate::workspace::{
@@ -152,7 +152,7 @@ pub fn inspect_library_asset_preview(
         )));
     }
     Ok(DecodedResourcePreview {
-        status: crate::resource_fork::ResourcePreviewStatus::MetadataOnly,
+        status: crate::resource_preview::ResourcePreviewStatus::MetadataOnly,
         mime_type: mime_for_path(&relative_path).to_string(),
         data_url: Some(format!(
             "data:{};base64,{}",

@@ -47,6 +47,9 @@ pub const TRACKED_FILES: &[&str] = &[
     "Data CI",
     "Data MENU",
     "Data Solids",
+    "Data Custom 1 BD",
+    "Data Custom 2 BD",
+    "Data Custom 3 BD",
 ];
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

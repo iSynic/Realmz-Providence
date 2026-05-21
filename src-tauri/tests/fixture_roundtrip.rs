@@ -15,6 +15,11 @@ fn fixture_path(name: &str) -> Option<std::path::PathBuf> {
     path.is_dir().then_some(path)
 }
 
+fn out_fixture_path(name: &str) -> Option<std::path::PathBuf> {
+    let path = Path::new("F:/Realmz/out_win_clang/Scenarios").join(name);
+    path.is_dir().then_some(path)
+}
+
 const HARDENED_FIXTURES: &[&str] = &[
     "City of Bywater",
     "Prelude to Pestilence",
@@ -59,6 +64,34 @@ fn imports_core_fixture_scenarios() {
             );
         }
     }
+}
+
+#[test]
+fn imports_kalypso_custom_landlook_atlas() {
+    let Some(source) = out_fixture_path("Kalypso's Island") else {
+        eprintln!("Skipping Kalypso custom landlook fixture; out_win_clang scenario is absent.");
+        return;
+    };
+    let temp = tempdir().unwrap();
+    let project_dir = temp.path().join("kalypsos_island");
+    let project = import_scenario(&source, &project_dir).unwrap();
+    let tileset = project
+        .asset_catalog
+        .tilesets
+        .iter()
+        .find(|tileset| tileset.id == "landlook-6")
+        .expect("Kalypso Land level 0 should reference custom landlook 6");
+    assert_eq!(tileset.pict_id, Some(306));
+    assert_eq!(tileset.base_tile, Some(156));
+    assert!(tileset.available, "custom landlook 6 atlas should import");
+    let image_path = tileset
+        .image_path
+        .as_ref()
+        .expect("custom landlook 6 should have a project atlas image");
+    assert!(
+        project_dir.join(image_path).is_file(),
+        "{image_path} should exist in the project package"
+    );
 }
 
 #[test]

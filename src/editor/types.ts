@@ -43,11 +43,18 @@ export type ResourcePreviewStatus =
   | "text-ready"
   | "metadata-only"
   | "unsupported-variant"
-  | "malformed";
+  | "malformed"
+  | "missing-fallback";
 
 export type ResourcePreviewDiagnostic = {
   severity: string;
+  code: string;
   message: string;
+  decoder: string;
+  offset?: number;
+  opcode?: string;
+  variant?: string;
+  hint?: string;
 };
 
 export type WorkbenchDescriptor = {

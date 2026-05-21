@@ -1,14 +1,13 @@
-import { LibraryCatalog, LibraryEntity, LibraryRecord, LibrarySource, ProvidenceWorkspace } from "../types";
+import { DecodedResourcePreview, LibraryCatalog, LibraryEntity, LibraryRecord, LibrarySource, ProvidenceWorkspace } from "../types";
 import { BrowserDirectoryHandle, BrowserFileSelection, BrowserScenarioSource } from "./fsAccess";
-import { previewResourceDataUrl } from "./resourcePreview";
+import { inspectResourcePreview } from "./resourcePreview";
 
 export const BROWSER_WORKSPACE_PATH = "browser://workspace";
 const LIBRARY_SCHEMA_VERSION = 2;
 const bundledResourceCache = new Map<string, Promise<ResourceEntry[]>>();
-const bundledPreviewCache = new Map<string, Promise<string | null>>();
 type BrowserLibraryFile = { name: string; relativePath: string; bytes: Uint8Array };
 type BrowserLibrarySourceKind = "divinity-import" | "realmz-reference";
-type ResourceEntry = {
+export type ResourceEntry = {
   resourceType: string;
   id: number;
   name: string;
@@ -74,19 +73,56 @@ export async function importBrowserLibrary(source: BrowserScenarioSource, source
 }
 
 export async function loadBrowserBundledLibraryAssetPreview(asset: LibraryCatalog["assets"][number]) {
-  if (asset.previewPath) return asset.previewPath;
-  const folder = bundledFolderForSource(asset.source);
-  if (!folder) return null;
-  const [filePath, fragment] = splitResourceFragment(asset.relativePath);
-  if (!fragment) return null;
-  const cacheKey = `${folder}:${asset.relativePath}`;
-  if (!bundledPreviewCache.has(cacheKey)) {
-    bundledPreviewCache.set(cacheKey, loadBrowserBundledResourcePreview(folder, filePath, fragment));
-  }
-  return bundledPreviewCache.get(cacheKey) ?? null;
+  return (await inspectBrowserBundledLibraryAssetPreview(asset)).dataUrl;
 }
 
-async function loadBrowserBundledResourcePreview(folder: string, filePath: string, fragment: { resourceType: string; resourceId: number }) {
+export async function inspectBrowserBundledLibraryAssetPreview(asset: LibraryCatalog["assets"][number]): Promise<DecodedResourcePreview> {
+  if (asset.previewPath) {
+    return {
+      status: asset.type === "sound" ? "playable" : asset.type === "text" ? "text-ready" : "preview-ready",
+      mimeType: asset.mimeType ?? resourceMimeType(asset.resourceType ?? ""),
+      dataUrl: asset.previewPath,
+      summary: { bytes: String(asset.bytes), source: asset.source },
+      diagnostics: []
+    };
+  }
+  const folder = bundledFolderForSource(asset.source);
+  if (!folder) return missingFallbackPreview(asset, "Bundled library source could not be mapped to a preview folder.");
+  const [filePath, fragment] = splitResourceFragment(asset.relativePath);
+  if (!fragment) {
+    return {
+      status: "metadata-only",
+      mimeType: asset.mimeType ?? resourceMimeType(asset.resourceType ?? ""),
+      dataUrl: asset.previewPath ?? null,
+      summary: { bytes: String(asset.bytes), source: asset.source },
+      diagnostics: [{
+        severity: "info",
+        code: "browser.resource.no_fragment",
+        message: "This library asset is a whole file, not a resource-fork member.",
+        decoder: "browser-library"
+      }]
+    };
+  }
+  return loadBrowserBundledResourcePreview(folder, filePath, fragment);
+}
+
+function missingFallbackPreview(asset: LibraryCatalog["assets"][number], message: string): DecodedResourcePreview {
+  return {
+    status: "missing-fallback",
+    mimeType: asset.mimeType ?? resourceMimeType(asset.resourceType ?? ""),
+    dataUrl: null,
+    summary: { bytes: String(asset.bytes), source: asset.source },
+    diagnostics: [{
+      severity: "error",
+      code: "browser.resource.missing_fallback",
+      message,
+      decoder: "browser-library",
+      variant: asset.type
+    }]
+  };
+}
+
+async function loadBrowserBundledResourcePreview(folder: string, filePath: string, fragment: { resourceType: string; resourceId: number }): Promise<DecodedResourcePreview> {
   const url = `/bundled-libraries/${folder}/${encodePath(filePath.replace(/\\/g, "/"))}`;
   if (!bundledResourceCache.has(url)) {
     bundledResourceCache.set(url, fetch(url)
@@ -98,7 +134,19 @@ async function loadBrowserBundledResourcePreview(folder: string, filePath: strin
   }
   const resources = await bundledResourceCache.get(url);
   const resource = resources?.find((entry) => entry.resourceType === fragment.resourceType && entry.id === fragment.resourceId);
-  return resource ? previewResourceDataUrl(fragment.resourceType, resource.data) : null;
+  return resource ? inspectResourcePreview(fragment.resourceType, resource.data) : {
+    status: "missing-fallback",
+    mimeType: "application/octet-stream",
+    dataUrl: null,
+    summary: { resourceType: fragment.resourceType.trim(), resourceId: String(fragment.resourceId) },
+    diagnostics: [{
+      severity: "error",
+      code: "browser.resource.not_found",
+      message: `${fragment.resourceType} ${fragment.resourceId} was not found in ${filePath}.`,
+      decoder: "browser-library",
+      variant: "resource-fork-fragment"
+    }]
+  };
 }
 
 async function buildLibraryCatalogFromFiles(
@@ -399,7 +447,7 @@ async function addResourceEntries(
   }
 }
 
-function parseResourceFork(original: Uint8Array): ResourceEntry[] {
+export function parseResourceFork(original: Uint8Array): ResourceEntry[] {
   const buffer = extractResourceFork(original);
   if (buffer.byteLength < 32) return [];
   const dataOffset = u32At(buffer, 0);

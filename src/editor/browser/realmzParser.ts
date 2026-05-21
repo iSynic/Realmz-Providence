@@ -10,6 +10,8 @@ import {
   TriggerRecord
 } from "../types";
 import { browserReferenceAtlasUrl, hasBrowserReferenceAtlas } from "./atlasPaths";
+import { parseResourceFork, type ResourceEntry } from "./library";
+import { inspectResourcePreview } from "./resourcePreview";
 
 export const MAP_SIZE = 90;
 export const FIELD_BYTES = MAP_SIZE * MAP_SIZE * 2;
@@ -42,7 +44,10 @@ export const TRACKED_FILES = [
   "Data TD3",
   "Data CI",
   "Data MENU",
-  "Data Solids"
+  "Data Solids",
+  "Data Custom 1 BD",
+  "Data Custom 2 BD",
+  "Data Custom 3 BD"
 ] as const;
 
 const RECORD_BYTES: Record<string, number> = {
@@ -112,7 +117,7 @@ export function parseScenarioBuffers(buffers: Map<string, Uint8Array>): ParsedBr
     ...parseMacroFile(buffers.get("Data ED3"))
   ];
   const extracodes = parseExtracodes(buffers.get("Data EDCD"));
-  const assetCatalog = { tilesets: buildAssetCatalog(maps, randomLevels) };
+  const assetCatalog = { tilesets: buildAssetCatalog(maps, randomLevels, buffers, diagnostics) };
   return { maps, triggers, randomLevels, extracodes, assetCatalog, records, diagnostics };
 }
 
@@ -280,26 +285,36 @@ function parseExtracodes(buffer: Uint8Array | undefined) {
   });
 }
 
-function buildAssetCatalog(maps: MapEntity[], randomLevels: RandomLevel[]) {
+function buildAssetCatalog(
+  maps: MapEntity[],
+  randomLevels: RandomLevel[],
+  buffers: Map<string, Uint8Array>,
+  diagnostics: Diagnostic[]
+) {
   const landlooks = [...new Set(randomLevels.map((level) => level.landlook).filter((landlook) => landlook >= 0))].sort((a, b) => a - b);
+  const scenarioResources = scenarioResourceEntries(buffers);
   const tilesets = landlooks.map((landlook): TilesetAsset => {
     const pictId = landlookPictId(landlook);
-    const imagePath = browserReferenceAtlasUrl(pictId);
+    const customPreview = landlook >= 6 && landlook <= 8 && pictId !== null
+      ? customAtlasPreview(scenarioResources, pictId, landlook, diagnostics)
+      : null;
+    const imagePath = customPreview?.imagePath ?? browserReferenceAtlasUrl(pictId);
+    const hasAtlas = customPreview?.available ?? hasBrowserReferenceAtlas(pictId);
     return {
       id: `landlook-${landlook}`,
       landlook,
       name: landlookName(landlook),
-      source: imagePath
+      source: customPreview?.source ?? (imagePath
         ? "Browser import: Scenario Utility reference PICT PNG"
-        : "Browser import: custom or missing reference atlas",
-      available: hasBrowserReferenceAtlas(pictId),
+        : "Browser import: custom or missing reference atlas"),
+      available: hasAtlas,
       imagePath,
       pictId,
       tileWidth: 32,
       tileHeight: 32,
       columns: 20,
       rows: 10,
-      baseTile: landlookBaseTile(landlook),
+      baseTile: landlookBaseTile(landlook, buffers),
       custom: landlook >= 6 && landlook <= 8
     };
   });
@@ -322,6 +337,56 @@ function buildAssetCatalog(maps: MapEntity[], randomLevels: RandomLevel[]) {
     });
   }
   return tilesets;
+}
+
+function scenarioResourceEntries(buffers: Map<string, Uint8Array>) {
+  const entries: Array<{ source: string; resource: ResourceEntry }> = [];
+  for (const [name, bytes] of buffers) {
+    if (!isScenarioResourceForkName(name)) continue;
+    for (const resource of parseResourceFork(bytes)) {
+      entries.push({ source: name, resource });
+    }
+  }
+  return entries;
+}
+
+function customAtlasPreview(
+  resources: Array<{ source: string; resource: ResourceEntry }>,
+  pictId: number,
+  landlook: number,
+  diagnostics: Diagnostic[]
+) {
+  const match = resources.find((entry) => entry.resource.resourceType === "PICT" && entry.resource.id === pictId);
+  if (!match) {
+    diagnostics.push({
+      severity: "warning",
+      code: "missing-custom-tile-atlas",
+      message: `Landlook ${landlook} expects scenario PICT ${pictId}, but it was not found in the Scenario resource fork.`,
+      source: `landlook-${landlook}`
+    });
+    return null;
+  }
+  const preview = inspectResourcePreview("PICT", match.resource.data);
+  if (preview.status !== "preview-ready" || !preview.dataUrl) {
+    const detail = preview.diagnostics[0]?.message ?? `Preview status was ${preview.status}.`;
+    diagnostics.push({
+      severity: preview.status === "malformed" ? "error" : "warning",
+      code: "unsupported-custom-tile-atlas",
+      message: `Landlook ${landlook} PICT ${pictId} could not be decoded as a tile atlas: ${detail}`,
+      source: match.source
+    });
+    return { imagePath: null, available: false, source: `Browser import: ${match.source} PICT ${pictId} unsupported` };
+  }
+  return {
+    imagePath: preview.dataUrl,
+    available: true,
+    source: `Browser import: ${match.source} PICT ${pictId}`
+  };
+}
+
+function isScenarioResourceForkName(name: string) {
+  const lower = name.toLowerCase();
+  return lower === "scenario" || lower === "scenario.rsrc" || lower === "scenario.rsf" || lower === "._scenario";
 }
 
 function alignmentFor(source: string, buffer: Uint8Array | undefined, recordBytes: number): Alignment {
@@ -394,8 +459,18 @@ function landlookPictId(landlook: number) {
   return ({ 0: 300, 2: 302, 3: 303, 4: 304, 5: 305, 6: 306, 7: 307, 8: 308, 9: 309, 10: 310 } as Record<number, number>)[landlook] ?? null;
 }
 
-export function landlookBaseTile(landlook: number) {
-  return ({ 0: 156, 3: 155, 4: 111, 5: 191, 9: 155, 10: 155 } as Record<number, number>)[landlook] ?? null;
+export function landlookBaseTile(landlook: number, buffers?: Map<string, Uint8Array>) {
+  const standard = ({ 0: 156, 3: 155, 4: 111, 5: 191, 9: 155, 10: 155 } as Record<number, number>)[landlook];
+  if (standard != null) return standard;
+  return customLandlookBaseTile(landlook, buffers);
+}
+
+function customLandlookBaseTile(landlook: number, buffers?: Map<string, Uint8Array>) {
+  const metadataName = ({ 6: "Data Custom 1 BD", 7: "Data Custom 2 BD", 8: "Data Custom 3 BD" } as Record<number, string>)[landlook];
+  const bytes = metadataName ? buffers?.get(metadataName) : undefined;
+  if (!bytes || bytes.byteLength < 8042) return null;
+  const baseTile = i16(bytes, 8040);
+  return baseTile > 0 && baseTile <= 999 ? baseTile : null;
 }
 
 function provenance(sourceFile: string, recordIndex: number, byteOffset: number, byteLength: number, confidence: string) {

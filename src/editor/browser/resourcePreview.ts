@@ -1,3 +1,5 @@
+import { DecodedResourcePreview, ResourcePreviewDiagnostic, ResourcePreviewStatus } from "../types";
+
 type DecodedImage = {
   width: number;
   height: number;
@@ -5,18 +7,38 @@ type DecodedImage = {
 };
 
 export function previewResourceDataUrl(resourceType: string, data: Uint8Array): string | null {
+  return inspectResourcePreview(resourceType, data).dataUrl;
+}
+
+export function inspectResourcePreview(resourceType: string, data: Uint8Array): DecodedResourcePreview {
+  const summary: Record<string, string> = {
+    resourceType: resourceType.trim(),
+    bytes: String(data.byteLength)
+  };
   try {
-    if (resourceType === "PICT") return imageToDataUrl(decodePictPackBits8(data));
-    if (resourceType === "cicn") return imageToDataUrl(decodeCicn(data));
-    if (resourceType === "snd ") return bytesToDataUrl("audio/wav", decodeSndToWav(data));
-    if (resourceType === "TEXT") return `data:text/plain;charset=utf-8,${encodeURIComponent(decodeClassicText(data))}`;
-    if (resourceType === "STR#") return `data:text/plain;charset=utf-8,${encodeURIComponent(decodeStringList(data).join("\n"))}`;
-    if (resourceType === "styl") return `data:text/plain;charset=utf-8,${encodeURIComponent(describeStyl(data))}`;
-    if (resourceType === "vers" || resourceType === "RLMZ") return `data:text/plain;charset=utf-8,${encodeURIComponent(describeMetadata(resourceType, data))}`;
-  } catch {
-    return null;
+    if (resourceType === "PICT") {
+      const image = decodePictPackBits(data, summary);
+      return previewReady("image/png", imageToDataUrl(image), summary);
+    }
+    if (resourceType === "cicn") {
+      const image = decodeCicn(data);
+      return previewReady("image/png", imageToDataUrl(image), summary);
+    }
+    if (resourceType === "snd ") return playable(bytesToDataUrl("audio/wav", decodeSndToWav(data, summary)), summary);
+    if (resourceType === "TEXT") return textReady(decodeClassicText(data), { ...summary, characters: String(decodeClassicText(data).length) });
+    if (resourceType === "STR#") {
+      const strings = decodeStringList(data);
+      return textReady(strings.join("\n"), { ...summary, strings: String(strings.length) });
+    }
+    if (resourceType === "styl") return metadata("metadata-only", "application/octet-stream", summary, diagnostic("info", "styl.metadata_only", describeStyl(data), "styl", "style-run-table"));
+    if (resourceType === "vers" || resourceType === "RLMZ") {
+      return metadata("metadata-only", "application/octet-stream", summary, diagnostic("info", `${resourceType.trim().toLowerCase()}.metadata`, describeMetadata(resourceType, data), resourceType.trim().toLowerCase(), resourceType.trim()));
+    }
+    return metadata("metadata-only", "application/octet-stream", summary, diagnostic("info", "resource.no_decoder", `No preview decoder is registered for resource type ${resourceType}.`, "resource-preview", resourceType.trim()));
+  } catch (error) {
+    const failure = normalizePreviewError(error, resourceType);
+    return metadata(failure.status, fallbackMime(resourceType), summary, failure.diagnostic);
   }
-  return null;
 }
 
 function imageToDataUrl(image: DecodedImage) {
@@ -31,24 +53,29 @@ function imageToDataUrl(image: DecodedImage) {
   return canvas.toDataURL("image/png");
 }
 
-function decodePictPackBits8(pict: Uint8Array): DecodedImage {
+function decodePictPackBits(pict: Uint8Array, summary: Record<string, string>): DecodedImage {
   const rect = findPackBitsRect(pict);
-  if (!rect) throw new Error("No 8-bit PackBitsRect");
-  const palette: Array<[number, number, number]> = [];
+  if (!rect) throw previewError("malformed", "pict.no_drawable_opcode", "PICT contains no supported PackBits, Bits, or DirectBits drawing opcode.", "pict");
+  const palette: Array<[number, number, number]> = new Array(rect.colorCount).fill([0, 0, 0]);
   for (let index = 0; index < rect.colorCount; index += 1) {
     const offset = rect.colorTableOffset + 8 + index * 8;
-    palette.push([
+    const colorIndex = u16At(pict, offset) ?? index;
+    palette[colorIndex] = [
       (u16At(pict, offset + 2) ?? 0) >> 8,
       (u16At(pict, offset + 4) ?? 0) >> 8,
       (u16At(pict, offset + 6) ?? 0) >> 8
-    ]);
+    ];
   }
   const width = Math.min(rect.width, 2048);
   const height = Math.min(rect.height, 2048);
+  summary.format = rect.pixelSize === 4 ? "packbits-indexed-4" : "packbits-indexed-8";
+  summary.pixelSize = String(rect.pixelSize);
+  summary.rowBytes = String(rect.rowBytes);
+  summary.opcode = `0x${rect.opcode.toString(16).padStart(4, "0").toUpperCase()}`;
   const rgba = new Uint8ClampedArray(width * height * 4);
   let cursor = rect.dataOffset;
   for (let y = 0; y < rect.height; y += 1) {
-    if (cursor >= pict.byteLength) break;
+    if (cursor >= pict.byteLength) throw previewError("malformed", "pict.pixel_data_truncated", "PICT PackBits pixel data ended before all rows were decoded.", "pict", rect.dataOffset, summary.opcode, summary.format);
     const packedLength = rect.rowBytes > 250 ? (u16At(pict, cursor) ?? 0) : (pict[cursor] ?? 0);
     cursor += rect.rowBytes > 250 ? 2 : 1;
     const availableLength = Math.min(packedLength, Math.max(0, pict.byteLength - cursor));
@@ -56,7 +83,12 @@ function decodePictPackBits8(pict: Uint8Array): DecodedImage {
     cursor += availableLength;
     if (y >= height) continue;
     for (let x = 0; x < width; x += 1) {
-      const color = palette[row[x] ?? 0] ?? [0, 0, 0];
+      const paletteIndex = rect.pixelSize === 8
+        ? row[x] ?? 0
+        : x % 2 === 0
+          ? (row[Math.floor(x / 2)] ?? 0) >> 4
+          : (row[Math.floor(x / 2)] ?? 0) & 0x0f;
+      const color = palette[paletteIndex] ?? [0, 0, 0];
       const out = (y * width + x) * 4;
       rgba[out] = color[0];
       rgba[out + 1] = color[1];
@@ -68,8 +100,11 @@ function decodePictPackBits8(pict: Uint8Array): DecodedImage {
 }
 
 function findPackBitsRect(pict: Uint8Array) {
-  for (let offset = 10; offset + 80 < pict.byteLength; offset += 2) {
+  let firstKnown: { offset: number; opcode: number } | null = null;
+  let firstUnsupported: PreviewFailure | null = null;
+  for (let offset = 10; offset + 80 < pict.byteLength; offset += 1) {
     const opcode = u16At(pict, offset);
+    if ([0x0090, 0x0091, 0x0098, 0x0099, 0x009a, 0x009b].includes(opcode ?? -1) && !firstKnown) firstKnown = { offset, opcode: opcode ?? 0 };
     if (opcode !== 0x0098 && opcode !== 0x0099) continue;
     const pixMapOffset = offset + 2;
     const rowBytesRaw = u16At(pict, pixMapOffset) ?? 0;
@@ -78,7 +113,8 @@ function findPackBitsRect(pict: Uint8Array) {
     const pixelSize = u16At(pict, pixMapOffset + 28) ?? -1;
     const componentCount = u16At(pict, pixMapOffset + 30) ?? -1;
     const componentSize = u16At(pict, pixMapOffset + 32) ?? -1;
-    if (!(rowBytesRaw & 0x8000) || rowBytes < 1 || rowBytes > 4096 || pixelType !== 0 || pixelSize !== 8 || componentCount !== 1 || componentSize !== 8) {
+    if (!(rowBytesRaw & 0x8000) || rowBytes < 1 || rowBytes > 4096 || pixelType !== 0 || ![4, 8].includes(pixelSize) || componentCount !== 1 || componentSize !== pixelSize) {
+      firstUnsupported ??= previewError("unsupported-variant", "pict.packbits_unsupported_shape", `PICT PackBits shape is not supported: pixelType=${pixelType}, pixelSize=${pixelSize}, componentCount=${componentCount}, componentSize=${componentSize}, rowBytes=${rowBytes}.`, "pict", offset, `0x${opcode.toString(16).padStart(4, "0").toUpperCase()}`, `pixel-size-${pixelSize}`);
       continue;
     }
     const colorTableOffset = pixMapOffset + 46;
@@ -94,8 +130,12 @@ function findPackBitsRect(pict: Uint8Array) {
       dataOffset += regionSize;
     }
     if (width > 0 && width <= 2048 && height > 0 && height <= 2048) {
-      return { rowBytes, colorTableOffset, colorCount, width, height, dataOffset };
+      return { opcode, rowBytes, colorTableOffset, colorCount, width, height, dataOffset, pixelSize };
     }
+  }
+  if (firstUnsupported) throw firstUnsupported;
+  if (firstKnown) {
+    throw previewError("unsupported-variant", "pict.unsupported_opcode", "PICT uses a QuickDraw bitmap opcode that is not yet decoded for preview.", "pict", firstKnown.offset, `0x${firstKnown.opcode.toString(16).padStart(4, "0").toUpperCase()}`, [0x009a, 0x009b].includes(firstKnown.opcode) ? "direct-bits" : "bits");
   }
   return null;
 }
@@ -181,28 +221,56 @@ function decodeCicn(cicn: Uint8Array): DecodedImage {
   return { width, height, rgba };
 }
 
-function decodeSndToWav(data: Uint8Array) {
-  if (data.byteLength < 44 || i16At(data, 0) !== 1) throw new Error("Unsupported snd");
+function decodeSndToWav(data: Uint8Array, summary: Record<string, string>) {
+  const format = i16At(data, 0);
+  summary.format = String(format ?? "missing");
+  if (format === 2) return decodeFormatTwoSndToWav(data, summary);
+  if (data.byteLength < 44 || format !== 1) throw previewError("unsupported-variant", "snd.unsupported_format", `snd resource format ${format ?? "missing"} is not a sampled-sound variant Providence can play yet.`, "snd", undefined, undefined, `format-${format ?? "missing"}`);
   const commandCountOffset = 10;
   const commandCount = u16At(data, commandCountOffset) ?? 0;
   let headerOffset: number | null = null;
   let cursor = commandCountOffset + 2;
+  const commands: string[] = [];
   for (let index = 0; index < commandCount; index += 1) {
     if (cursor + 8 > data.byteLength) break;
     const command = u16At(data, cursor) ?? 0;
     const offset = u32At(data, cursor + 4) ?? 0;
+    commands.push(`0x${command.toString(16).padStart(4, "0").toUpperCase()}@${offset}`);
     if ((command & 0x7fff) === 0x0051 && (command & 0x8000) !== 0) {
       headerOffset = offset;
       break;
     }
     cursor += 8;
   }
-  if (headerOffset === null || headerOffset + 22 > data.byteLength) throw new Error("snd header missing");
+  if (headerOffset === null) throw previewError("unsupported-variant", "snd.no_buffer_command", `format-1 snd has no bufferCmd sound header. Commands: ${commands.join(", ")}`, "snd", undefined, undefined, "format-1");
+  if (headerOffset + 22 > data.byteLength) throw previewError("malformed", "snd.header_out_of_range", "format-1 sound header points outside the resource.", "snd", headerOffset, undefined, "format-1");
   const length = u32At(data, headerOffset + 4) ?? 0;
   const sampleRateFixed = u32At(data, headerOffset + 8) ?? (22254 << 16);
   const sampleRate = Math.max(1, sampleRateFixed >>> 16);
   const sampleStart = headerOffset + 22;
-  if (sampleStart + length > data.byteLength) throw new Error("snd sample truncated");
+  if (sampleStart + length > data.byteLength) throw previewError("malformed", "snd.sample_truncated", `format-1 declares ${length} sample bytes, but the resource ends early.`, "snd", sampleStart, undefined, "format-1");
+  summary.sampleRate = String(sampleRate);
+  summary.samples = String(length);
+  summary.variant = "format-1";
+  return encodeWavU8(sampleRate, data.slice(sampleStart, sampleStart + length));
+}
+
+function decodeFormatTwoSndToWav(data: Uint8Array, summary: Record<string, string>) {
+  if (data.byteLength < 36) throw previewError("malformed", "snd.format2_truncated", "format-2 sampled snd resource is truncated before its sound header.", "snd", undefined, undefined, "format-2");
+  const commandCount = u16At(data, 4) ?? 0;
+  const command = u16At(data, 6) ?? 0;
+  if (commandCount === 0 || (command & 0x7fff) !== 0x0051) {
+    throw previewError("unsupported-variant", "snd.format2_no_buffer_command", `format-2 snd expected a bufferCmd at offset 6; found commandCount=${commandCount}, command=0x${command.toString(16).padStart(4, "0").toUpperCase()}.`, "snd", 6, `0x${command.toString(16).padStart(4, "0").toUpperCase()}`, "format-2");
+  }
+  const headerOffset = 20;
+  const length = u32At(data, headerOffset + 4) ?? 0;
+  const sampleRateFixed = u32At(data, headerOffset + 8) ?? (22254 << 16);
+  const sampleRate = Math.max(1, sampleRateFixed >>> 16);
+  const sampleStart = headerOffset + 16;
+  if (sampleStart + length > data.byteLength) throw previewError("malformed", "snd.sample_truncated", `format-2 declares ${length} sample bytes, but the resource ends early.`, "snd", sampleStart, undefined, "format-2");
+  summary.sampleRate = String(sampleRate);
+  summary.samples = String(length);
+  summary.variant = "format-2";
   return encodeWavU8(sampleRate, data.slice(sampleStart, sampleStart + length));
 }
 
@@ -315,4 +383,76 @@ function writeU32Le(bytes: Uint8Array, offset: number, value: number) {
   bytes[offset + 1] = (value >> 8) & 0xff;
   bytes[offset + 2] = (value >> 16) & 0xff;
   bytes[offset + 3] = (value >> 24) & 0xff;
+}
+
+type PreviewFailure = Error & {
+  previewStatus?: ResourcePreviewStatus;
+  diagnostic?: ResourcePreviewDiagnostic;
+};
+
+function previewReady(mimeType: string, dataUrl: string | null, summary: Record<string, string>): DecodedResourcePreview {
+  return { status: "preview-ready", mimeType, dataUrl, summary, diagnostics: [] };
+}
+
+function playable(dataUrl: string | null, summary: Record<string, string>): DecodedResourcePreview {
+  return { status: "playable", mimeType: "audio/wav", dataUrl, summary, diagnostics: [] };
+}
+
+function textReady(text: string, summary: Record<string, string>): DecodedResourcePreview {
+  return {
+    status: "text-ready",
+    mimeType: "text/plain",
+    dataUrl: `data:text/plain;charset=utf-8,${encodeURIComponent(text)}`,
+    summary,
+    diagnostics: []
+  };
+}
+
+function metadata(status: ResourcePreviewStatus, mimeType: string, summary: Record<string, string>, diagnosticValue: ResourcePreviewDiagnostic): DecodedResourcePreview {
+  return { status, mimeType, dataUrl: null, summary, diagnostics: [diagnosticValue] };
+}
+
+function diagnostic(severity: string, code: string, message: string, decoder: string, variant?: string): ResourcePreviewDiagnostic {
+  return { severity, code, message, decoder, variant };
+}
+
+function previewError(
+  status: ResourcePreviewStatus,
+  code: string,
+  message: string,
+  decoder: string,
+  offset?: number,
+  opcode?: string,
+  variant?: string,
+  hint?: string
+) {
+  const error = new Error(message) as PreviewFailure;
+  error.previewStatus = status;
+  error.diagnostic = { severity: status === "malformed" ? "error" : "warning", code, message, decoder, offset, opcode, variant, hint };
+  return error;
+}
+
+function normalizePreviewError(error: unknown, resourceType: string) {
+  const failure = error as PreviewFailure;
+  if (failure?.diagnostic && failure.previewStatus) {
+    return { status: failure.previewStatus, diagnostic: failure.diagnostic };
+  }
+  return {
+    status: "unsupported-variant" as ResourcePreviewStatus,
+    diagnostic: diagnostic(
+      "warning",
+      "resource.preview_failed",
+      error instanceof Error ? error.message : `Preview failed for ${resourceType}.`,
+      resourceType.trim() || "resource-preview",
+      resourceType.trim()
+    )
+  };
+}
+
+function fallbackMime(resourceType: string) {
+  if (resourceType === "PICT") return "image/pict";
+  if (resourceType === "cicn") return "image/cicn";
+  if (resourceType === "snd ") return "audio/x-mac-snd";
+  if (resourceType === "TEXT" || resourceType === "STR#") return "text/plain";
+  return "application/octet-stream";
 }
