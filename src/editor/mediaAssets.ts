@@ -93,6 +93,17 @@ export function requestToBrowserAsset(request: MediaAssetImportRequest): Managed
   };
 }
 
+export function requestToBrowserReplacement(request: MediaAssetImportRequest, previous: ManagedAsset): ManagedAsset {
+  return {
+    ...requestToBrowserAsset(request),
+    id: previous.id,
+    resourceId: previous.resourceId,
+    resourceType: previous.resourceType,
+    linkedEntity: previous.linkedEntity,
+    provenance: `${previous.provenance}; replaced in browser preview`
+  };
+}
+
 export function nextResourceId(assets: ManagedAsset[], kind: ManagedAssetKind) {
   if (kind === "special-land-tile") {
     const used = new Set(

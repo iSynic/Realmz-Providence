@@ -19,7 +19,7 @@ import { loadImage } from "./editor/components/TileSprite";
 import { referencedMapIconIds } from "./editor/map/renderValues";
 import { editorReducer, initialEditorState, BROWSER_PREVIEW_STATUS } from "./editor/store";
 import { BenchmarkReport, ExportReport, LibraryCatalog, ManagedAssetKind, MapEntity, MapViewFlag, Project, ProjectCommand, ProvidenceWorkspace, SelectedEntity, SemanticEntity, TilesetAsset, ValidationReport } from "./editor/types";
-import { fileToMediaAssetRequest, nextResourceId, requestToBrowserAsset } from "./editor/mediaAssets";
+import { fileToMediaAssetRequest, nextResourceId, requestToBrowserAsset, requestToBrowserReplacement } from "./editor/mediaAssets";
 import { commandError, hasDesktopRuntime, issuesFor } from "./editor/utils";
 import {
   semanticMapRecordsForMap,
@@ -677,6 +677,36 @@ export function App() {
     }
   }
 
+  async function replaceManagedAsset(assetId: string, file: File) {
+    if (!state.project) return;
+    const existing = state.project.assets.find((asset) => asset.id === assetId);
+    if (!existing) {
+      dispatch({ type: "setStatus", status: "Asset replace failed: asset no longer exists." });
+      return;
+    }
+    try {
+      dispatch({ type: "setStatus", status: `Replacing ${existing.label}...` });
+      const request = await fileToMediaAssetRequest(file, existing.kind, existing.resourceId);
+      if (!desktopRuntime) {
+        const asset = requestToBrowserReplacement(request, existing);
+        dispatch({ type: "applyCommand", command: { kind: "replaceProjectAsset", label: `Replace ${existing.label}`, assetId, asset } });
+        dispatch({ type: "setStatus", status: `Replaced ${existing.label}` });
+        return;
+      }
+      const project = await invoke<Project>("replace_project_media_asset", {
+        projectDir,
+        project: state.project,
+        assetId,
+        request
+      });
+      dispatch({ type: "markSaved", project });
+      dispatch({ type: "setProject", project, selectedMapId: state.selectedMapId });
+      dispatch({ type: "setStatus", status: `Replaced ${existing.label}` });
+    } catch (error) {
+      dispatch({ type: "setStatus", status: `Asset replace failed: ${commandError(error)}` });
+    }
+  }
+
   async function deleteManagedAsset(assetId: string) {
     if (!state.project) return;
     if (!desktopRuntime) {
@@ -796,6 +826,7 @@ export function App() {
         onCreateDraft={createDraftEntry}
         onUpdateDraft={updateDraftEntry}
         onImportAssets={importMediaAssets}
+        onReplaceAsset={replaceManagedAsset}
         onUpdateAsset={updateManagedAsset}
         onDeleteAsset={deleteManagedAsset}
         onValidate={validateProject}

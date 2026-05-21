@@ -50,6 +50,7 @@ export function WorkbenchRouter({
   onCreateDraft,
   onUpdateDraft,
   onImportAssets,
+  onReplaceAsset,
   onUpdateAsset,
   onDeleteAsset,
   onValidate,
@@ -92,6 +93,7 @@ export function WorkbenchRouter({
   onCreateDraft: (spec: LibraryDraftSpec) => void;
   onUpdateDraft: (entityId: string, changes: { label?: string; notes?: string }) => void;
   onImportAssets: (files: File[], kind: ManagedAssetKind) => void;
+  onReplaceAsset: (assetId: string, file: File) => void;
   onUpdateAsset: (assetId: string, changes: { label?: string; resourceId?: number }) => void;
   onDeleteAsset: (assetId: string) => void;
   onValidate: () => void;
@@ -225,6 +227,7 @@ export function WorkbenchRouter({
         workspaceDir={workspaceDir}
         onSelectEntity={onSelectEntity}
         onImportAssets={onImportAssets}
+        onReplaceAsset={onReplaceAsset}
         onUpdateAsset={onUpdateAsset}
         onDeleteAsset={onDeleteAsset}
         onSelectPaintTile={(tile) => {

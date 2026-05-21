@@ -76,6 +76,7 @@ export function MapsPanel({
         onSelectTile={onSelectTile}
         onSelectEntity={onSelectEntity}
         onClearSelection={onClearSelection}
+        onApplyCommand={onApplyCommand}
       />
 
       <section className="editor-canvas-area">

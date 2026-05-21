@@ -443,11 +443,11 @@ function EntityRows({
 }) {
   return (
     <ScrollArea className="domain-entity-list" aria-label="Domain entities">
-      {entities.map((entity) => {
+      {entities.map((entity, index) => {
         const selected = selectedEntity?.id === entity.id;
         return (
           <button
-            key={entity.id}
+            key={`${entity.id}:${entity.source}:${index}`}
             className={selected ? "selected" : ""}
             type="button"
             onClick={() => onSelectEntity(selectEntityFromId(entity.id))}

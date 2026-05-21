@@ -4,7 +4,9 @@ use crate::project::{LevelType, ProvidenceProject};
 use crate::realmz::{
     write_door_file, write_extracodes, write_fields, write_macro_file, write_random_levels,
 };
-use crate::resource_fork::{merge_resource_entries, parse_resource_fork_entries, ResourceForkEntry};
+use crate::resource_fork::{
+    merge_resource_entries, parse_resource_fork_entries, ResourceForkEntry,
+};
 use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
@@ -175,7 +177,10 @@ fn write_managed_resources(
     result.preserved_resources = parse_resource_fork_entries(&original).len();
     let mut updates = Vec::new();
     for asset in &project.assets {
-        if !matches!(asset.export_state, crate::project::ManagedAssetExportState::Ready) {
+        if !matches!(
+            asset.export_state,
+            crate::project::ManagedAssetExportState::Ready
+        ) {
             result.blocked_assets.push(asset.label.clone());
             continue;
         }
@@ -188,9 +193,10 @@ fn write_managed_resources(
         }
         let path = project_dir.join(&asset.resource_path);
         if !path.is_file() {
-            result
-                .blocked_assets
-                .push(format!("{} is missing converted resource bytes", asset.label));
+            result.blocked_assets.push(format!(
+                "{} is missing converted resource bytes",
+                asset.label
+            ));
             continue;
         }
         let data = fs::read(&path).with_path(&path)?;

@@ -113,18 +113,27 @@ export function tileColor(tile: number) {
 
 export function categoryColor(category: string) {
   const colors: Record<string, string> = {
+    advanced: "#94a3b8",
     branch: "#9dcfff",
+    characters: "#4ade80",
     combat: "#f87171",
+    core: "#93c5fd",
+    economy: "#fbbf24",
     encounter: "#c084fc",
     item_shop: "#fbbf24",
     map: "#38bdf8",
+    media: "#22d3ee",
+    quest: "#a7f3d0",
     registration: "#94a3b8",
+    rules: "#f0abfc",
+    scenario: "#fb923c",
     state: "#4ade80",
+    text: "#eab308",
     time: "#fb923c",
     ui_text: "#eab308",
     unknown: "#cbd5e1"
   };
-  return colors[category] ?? colors.unknown;
+  return colors[category.toLowerCase()] ?? colors.unknown;
 }
 
 export function loadImage(url: string) {

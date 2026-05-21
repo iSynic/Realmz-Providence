@@ -201,14 +201,22 @@ pub fn import_divinity_libraries(
     source_path: impl AsRef<Path>,
     workspace_dir: impl AsRef<Path>,
 ) -> Result<LibraryCatalog> {
-    import_library(source_path, workspace_dir, LibrarySourceKind::DivinityImport)
+    import_library(
+        source_path,
+        workspace_dir,
+        LibrarySourceKind::DivinityImport,
+    )
 }
 
 pub fn import_realmz_reference_data(
     source_path: impl AsRef<Path>,
     workspace_dir: impl AsRef<Path>,
 ) -> Result<LibraryCatalog> {
-    import_library(source_path, workspace_dir, LibrarySourceKind::RealmzReference)
+    import_library(
+        source_path,
+        workspace_dir,
+        LibrarySourceKind::RealmzReference,
+    )
 }
 
 pub fn seed_bundled_libraries(
@@ -435,7 +443,10 @@ fn add_resource_inventory(catalog: &mut LibraryCatalog, source: &LibrarySource, 
             ),
             diagnostic_type: "resource-fork-empty".to_string(),
             severity: DiagnosticSeverity::Warning,
-            message: format!("{} did not expose a readable Mac resource map.", source.relative_path),
+            message: format!(
+                "{} did not expose a readable Mac resource map.",
+                source.relative_path
+            ),
             source: Some(source.id.clone()),
             data: summary([("bytes", json!(bytes.len()))]),
         });
@@ -461,7 +472,12 @@ fn add_resource_inventory(catalog: &mut LibraryCatalog, source: &LibrarySource, 
         );
         let entity_type = resource_entity_family(source, &resource.resource_type);
         let label = if resource.name.is_empty() {
-            format!("{} {} {}", source.name, printable_token(&resource.resource_type), resource.id)
+            format!(
+                "{} {} {}",
+                source.name,
+                printable_token(&resource.resource_type),
+                resource.id
+            )
         } else {
             format!(
                 "{} {} {}: {}",
@@ -710,10 +726,16 @@ fn library_record_layout(source: &LibrarySource) -> Option<(&'static str, usize)
 }
 
 fn library_role(path: &Path) -> String {
-    let name = path.file_name().and_then(|name| name.to_str()).unwrap_or("");
+    let name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("");
     if is_resource_file(name) {
         "resource-fork".to_string()
-    } else if matches!(name, "Data ID" | "Data Spell" | "Data S" | "Data Race" | "Data Caste") {
+    } else if matches!(
+        name,
+        "Data ID" | "Data Spell" | "Data S" | "Data Race" | "Data Caste"
+    ) {
         "shared-data".to_string()
     } else if name.starts_with("Data ") {
         "template-data".to_string()
@@ -916,9 +938,17 @@ fn split_catalog_resource_fragment(relative_path: &str) -> Option<(String, i16)>
     Some((resource_type.to_string(), id.parse::<i16>().ok()?))
 }
 
-fn catalog_has_source_kind(catalog: Option<&LibraryCatalog>, source_kind: LibrarySourceKind) -> bool {
+fn catalog_has_source_kind(
+    catalog: Option<&LibraryCatalog>,
+    source_kind: LibrarySourceKind,
+) -> bool {
     catalog
-        .map(|catalog| catalog.sources.iter().any(|source| source.source_kind == source_kind))
+        .map(|catalog| {
+            catalog
+                .sources
+                .iter()
+                .any(|source| source.source_kind == source_kind)
+        })
         .unwrap_or(false)
 }
 
@@ -1031,12 +1061,30 @@ mod tests {
 
         let catalog = import_divinity_libraries(&source, &workspace).expect("import");
 
-        assert!(catalog.sources.iter().any(|source| source.name == "Monster Scrap Book"));
-        assert!(catalog.entities.iter().any(|entity| entity.entity_type == "monster-scrapbook-entry"));
-        assert!(catalog.sources.iter().any(|source| source.name == "Monster Mash.rsrc"));
-        assert!(catalog.sources.iter().any(|source| source.name == "Vault of Arcana.rsrc"));
-        assert!(catalog.sources.iter().any(|source| source.name == "Bag of Holding"));
-        assert!(catalog.entities.iter().any(|entity| entity.entity_type == "library-file"));
+        assert!(catalog
+            .sources
+            .iter()
+            .any(|source| source.name == "Monster Scrap Book"));
+        assert!(catalog
+            .entities
+            .iter()
+            .any(|entity| entity.entity_type == "monster-scrapbook-entry"));
+        assert!(catalog
+            .sources
+            .iter()
+            .any(|source| source.name == "Monster Mash.rsrc"));
+        assert!(catalog
+            .sources
+            .iter()
+            .any(|source| source.name == "Vault of Arcana.rsrc"));
+        assert!(catalog
+            .sources
+            .iter()
+            .any(|source| source.name == "Bag of Holding"));
+        assert!(catalog
+            .entities
+            .iter()
+            .any(|entity| entity.entity_type == "library-file"));
         assert!(workspace.join("library").join("catalog.json").is_file());
     }
 
@@ -1076,8 +1124,8 @@ mod tests {
         fs::write(realmz.join("Data ID"), vec![2u8; 800]).expect("items");
         let workspace_dir = temp.path().join("workspace");
 
-        let workspace =
-            open_workspace_with_bundled_libraries(&workspace_dir, Some(&bundled)).expect("workspace");
+        let workspace = open_workspace_with_bundled_libraries(&workspace_dir, Some(&bundled))
+            .expect("workspace");
         let catalog = workspace.active_library_catalog.expect("catalog");
 
         assert!(catalog
@@ -1092,6 +1140,9 @@ mod tests {
             .entities
             .iter()
             .any(|entity| entity.entity_type == "monster-scrapbook-entry"));
-        assert!(catalog.entities.iter().any(|entity| entity.entity_type == "item"));
+        assert!(catalog
+            .entities
+            .iter()
+            .any(|entity| entity.entity_type == "item"));
     }
 }

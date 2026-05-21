@@ -4,9 +4,13 @@ import { Action, Project, ProjectCommand, SelectedEntity, SemanticEntity, Trigge
 import { linksFor, selectEntityFromId, semanticLabel } from "../utils";
 import { actionSlotEntitiesForScript, actionSlotEntitiesForTriggerRecord, schemaEntities, scriptPrimaryCategory } from "../semanticGraph";
 import { EntityBrowser } from "../components/EntityBrowser";
+import { EdcdRowEditor } from "../components/EdcdRowEditor";
+import { TargetPicker } from "../components/RealmzTargetPicker";
 import { SemanticInspector } from "../components/SemanticInspector";
 import { categoryColor } from "../components/TileSprite";
 import { EmptyState, FieldRow, PanelSection, ScrollArea } from "../ui";
+import { ACTION_CATEGORIES, ACTION_OPTIONS, actionOptionFor } from "../realmzActions";
+import { edcdFieldNamesForShape } from "../realmzEdcd";
 
 export function ScriptsPanel({
   project,
@@ -104,6 +108,18 @@ function ScriptAuthoringPanel({
   const selectedOption = actionOptionFor(selectedDraft.rawCode);
   const actionSlots = selectedTrigger ? actionSlotEntitiesForTriggerRecord(project, selectedTrigger) : [];
   const selectedSlotEntity = actionSlots.find((entity) => Number(entity.summary.slot) === selectedSlot);
+  const selectedEdcdUsage = selectedSlotEntity?.summary.edcdUsage as
+    | {
+        rowId?: number;
+        shape?: string;
+        fields?: { name?: string; value?: number }[];
+        secondaryRowId?: number;
+        secondaryShape?: string;
+        secondaryFields?: { name?: string; value?: number }[];
+        diagnostics?: string[];
+        summary?: string;
+      }
+    | undefined;
   return (
     <section className="realmz-script-editor">
       <header>
@@ -249,6 +265,22 @@ function ScriptAuthoringPanel({
                         />
                       </label>
                     </div>
+                    <TargetPicker
+                      project={project}
+                      opcode={selectedDraft.rawCode}
+                      value={selectedDraft.id}
+                      onChange={(id) => setDraft({ ...draft, [selectedKey]: { ...selectedDraft, id } })}
+                      onInspect={onSelectEntity}
+                    />
+                    <EdcdRowEditor
+                      project={project}
+                      edcdUsage={selectedEdcdUsage}
+                      fallbackRowId={selectedDraft.id}
+                      fallbackShape={selectedOption.edcdShape}
+                      fallbackFieldNames={edcdFieldNamesForShape(selectedOption.edcdShape)}
+                      selectedSlotLabel={`slot ${selectedSlot}`}
+                      onApplyCommand={onApplyCommand}
+                    />
                     <div className="realmz-raw-preview">
                       <FieldRow label="Raw CODE" value={selectedDraft.rawCode} />
                       <FieldRow label="Raw ID" value={selectedDraft.id} />
@@ -318,50 +350,6 @@ function scriptPanelTitle(activeEditor: string) {
   if (activeEditor === "global-macros") return "Global Macro Editor";
   if (activeEditor === "quests") return "Quest Script Links";
   return "Triggers And Macros";
-}
-
-const ACTION_OPTIONS = [
-  { code: 0, label: "0 Empty", shortLabel: "Empty", category: "Core", description: "Clear this slot; Realmz will skip it." },
-  { code: 1, label: "1 Show Message", shortLabel: "Message", category: "Text", description: "Display a scenario message by ID." },
-  { code: 2, label: "2 Start Battle", shortLabel: "Battle", category: "Combat", description: "Start a battle record.", edcdShape: "battle" },
-  { code: 3, label: "3 Choice / Branch", shortLabel: "Choice", category: "Branch", description: "Prompt or branch using EDCD parameters.", edcdShape: "choice" },
-  { code: 4, label: "4 Simple Encounter", shortLabel: "Simple Encounter", category: "Encounter", description: "Start a simple encounter." },
-  { code: 5, label: "5 Complex Encounter", shortLabel: "Complex Encounter", category: "Encounter", description: "Start a complex encounter." },
-  { code: 6, label: "6 Open Shop", shortLabel: "Shop", category: "Economy", description: "Open a shop by ID." },
-  { code: 9, label: "9 Play Sound", shortLabel: "Sound", category: "Media", description: "Play a snd resource." },
-  { code: 10, label: "10 Give Treasure", shortLabel: "Treasure", category: "Economy", description: "Give treasure or reward data." },
-  { code: 12, label: "12 Mutate Tile", shortLabel: "Tile Patch", category: "Map", description: "Mutate land/dungeon tile data.", edcdShape: "tile mutation" },
-  { code: 13, label: "13 Enable/Disable AP", shortLabel: "AP State", category: "Map", description: "Enable, disable, or mutate an Action Point.", edcdShape: "trigger mutation" },
-  { code: 20, label: "20 Teleport", shortLabel: "Teleport", category: "Map", description: "Move the party to a level/cell.", edcdShape: "teleport" },
-  { code: 23, label: "23 Mutate Random Region", shortLabel: "Random Region", category: "Encounter", description: "Patch random encounter rectangle data.", edcdShape: "random-region mutation" },
-  { code: 24, label: "24 Keep Codes", shortLabel: "Keep Codes", category: "Branch", description: "Keep evaluating following action slots." },
-  { code: 27, label: "27 Show Picture", shortLabel: "Picture", category: "Media", description: "Show a PICT resource." },
-  { code: 29, label: "29 Give/Display Map", shortLabel: "Map Item", category: "Map", description: "Give or display map-related data." },
-  { code: 39, label: "39 Extend Codes", shortLabel: "Extend", category: "Branch", description: "Use extended CODE/ID behavior." },
-  { code: 46, label: "46 Branch Quest Flag", shortLabel: "Read Flag", category: "Quest", description: "Branch based on quest flag state." },
-  { code: 47, label: "47 Set Quest Flag", shortLabel: "Write Flag", category: "Quest", description: "Set a quest flag." },
-  { code: 57, label: "57 Change Landlook", shortLabel: "Landlook", category: "Map", description: "Change map render/landlook state.", edcdShape: "render mutation" },
-  { code: 73, label: "73 Restricted Shop", shortLabel: "Restricted Shop", category: "Economy", description: "Open a restricted shop variant.", edcdShape: "restricted shop" },
-  { code: 76, label: "76 Write Quest Value", shortLabel: "Write Quest", category: "Quest", description: "Write quest value data.", edcdShape: "condition/value mutation" },
-  { code: 77, label: "77 Branch Quest Value", shortLabel: "Quest Branch", category: "Quest", description: "Branch on quest value data.", edcdShape: "condition" },
-  { code: 84, label: "84 Check Registration", shortLabel: "Registration", category: "Scenario", description: "Legacy registration check." },
-  { code: 98, label: "98 Registration Check", shortLabel: "Reg Check", category: "Scenario", description: "Legacy registration choke point." },
-  { code: 99, label: "99 Registration Gate", shortLabel: "Reg Gate", category: "Scenario", description: "Legacy registration gate." },
-  { code: 111, label: "111 Return from GOSUB", shortLabel: "Return", category: "Core", description: "Return from a GOSUB macro." },
-  { code: 112, label: "112 Pop Stack", shortLabel: "Pop", category: "Core", description: "Pop script stack state." },
-  { code: 126, label: "126 Battle Macro", shortLabel: "Battle Macro", category: "Combat", description: "Call battle macro behavior.", edcdShape: "battle macro" }
-];
-
-const ACTION_CATEGORIES = Array.from(new Set(ACTION_OPTIONS.map((option) => option.category)));
-
-function actionOptionFor(rawCode: number) {
-  return ACTION_OPTIONS.find((option) => option.code === rawCode) ?? {
-    code: rawCode,
-    label: `${rawCode} Unknown`,
-    shortLabel: `Opcode ${rawCode}`,
-    category: "Unknown",
-    description: "Unsupported or archaeology-only opcode. Keep visible and inspect raw fields."
-  };
 }
 
 function scriptLabel(trigger: TriggerRecord) {

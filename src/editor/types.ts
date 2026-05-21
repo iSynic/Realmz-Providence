@@ -242,6 +242,7 @@ export type ProjectCommand =
       displayName: string;
     }
   | { kind: "attachProjectAsset"; label: string; asset: ManagedAsset }
+  | { kind: "replaceProjectAsset"; label: string; assetId: string; asset: ManagedAsset }
   | { kind: "updateProjectAsset"; label: string; assetId: string; changes: Partial<Pick<ManagedAsset, "label" | "resourceId" | "linkedEntity">> }
   | { kind: "deleteProjectAsset"; label: string; assetId: string }
   | {

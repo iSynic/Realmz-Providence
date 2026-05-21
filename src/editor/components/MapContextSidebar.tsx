@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { TOOLS } from "../constants";
 import { EditorState } from "../store";
-import { EditorTool, MapEntity, Project, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
+import { EditorTool, MapEntity, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
 import { randomRectEntityId } from "../map/geometry";
 import { actionSlotEntitiesForTriggerRecord } from "../semanticGraph";
 import { mapEntityId, selectEntityFromId, triggerEntityId } from "../utils";
@@ -24,7 +24,8 @@ export function MapContextSidebar({
   onSetTool,
   onSelectTile,
   onSelectEntity,
-  onClearSelection
+  onClearSelection,
+  onApplyCommand
 }: {
   state: EditorState;
   selectedMap: MapEntity | null;
@@ -38,6 +39,7 @@ export function MapContextSidebar({
   onSelectTile: (tile: number) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
   onClearSelection: () => void;
+  onApplyCommand: (command: ProjectCommand) => void;
 }) {
   const selection = selectionSummary(selectedMap, state.selectedEntity, state.selectedCell, mapTriggers, selectedRandomLevel, mapRecords);
   return (
@@ -50,6 +52,7 @@ export function MapContextSidebar({
             project={state.project}
             onSelectEntity={onSelectEntity}
             onClearSelection={onClearSelection}
+            onApplyCommand={onApplyCommand}
           />
         ) : (
           <CoreMapSetup
@@ -215,13 +218,15 @@ function SelectionInspector({
   map,
   project,
   onSelectEntity,
-  onClearSelection
+  onClearSelection,
+  onApplyCommand
 }: {
   selection: Selection;
   map: MapEntity | null;
   project: Project | null;
   onSelectEntity: (entity: SelectedEntity) => void;
   onClearSelection: () => void;
+  onApplyCommand: (command: ProjectCommand) => void;
 }) {
   return (
     <section className="context-panel">
@@ -249,6 +254,24 @@ function SelectionInspector({
             records={selection.records}
             onSelectEntity={onSelectEntity}
           />
+          {map && (
+            <button
+              className="btn btn-primary btn-xs context-action-button"
+              type="button"
+              onClick={() =>
+                onApplyCommand({
+                  kind: "createActionPoint",
+                  label: `Create Action Point ${selection.cell.x},${selection.cell.y}`,
+                  levelType: map.levelType,
+                  levelIndex: map.index,
+                  x: selection.cell.x,
+                  y: selection.cell.y
+                })
+              }
+            >
+              Create Action Point Here
+            </button>
+          )}
         </>
       )}
       {selection.kind === "trigger" && (

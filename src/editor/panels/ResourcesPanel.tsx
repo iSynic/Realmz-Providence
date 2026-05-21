@@ -1,11 +1,12 @@
 import { invoke } from "@tauri-apps/api/core";
 import { ImageIcon, Music, Upload, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { DecodedResourcePreview, LibraryAsset, LibraryCatalog, ManagedAsset, ManagedAssetKind, Project, SelectedEntity } from "../types";
+import { DecodedResourcePreview, LibraryAsset, LibraryCatalog, ManagedAsset, ManagedAssetKind, Project, ResourcePreviewStatus, SelectedEntity } from "../types";
 import { compactValue, selectEntityFromId, semanticLabel } from "../utils";
 import { resourceConsumers, resourceGaps, resourceMembersForType, schemaEntities } from "../semanticGraph";
 import { SemanticInspector } from "../components/SemanticInspector";
 import { tileColor } from "../components/TileSprite";
+import { ResourcePreviewBadge, ResourcePreviewDiagnostics } from "../components/ResourcePreviewStatus";
 import { loadBrowserBundledLibraryAssetPreview } from "../browser/library";
 import { ScrollArea } from "../ui";
 
@@ -19,6 +20,7 @@ export function ResourcesPanel({
   workspaceDir = "",
   onSelectEntity,
   onImportAssets,
+  onReplaceAsset,
   onUpdateAsset,
   onDeleteAsset,
   onSelectPaintTile
@@ -32,6 +34,7 @@ export function ResourcesPanel({
   workspaceDir?: string;
   onSelectEntity: (entity: SelectedEntity) => void;
   onImportAssets?: (files: File[], kind: ManagedAssetKind) => void;
+  onReplaceAsset?: (assetId: string, file: File) => void;
   onUpdateAsset?: (assetId: string, changes: { label?: string; resourceId?: number }) => void;
   onDeleteAsset?: (assetId: string) => void;
   onSelectPaintTile?: (tile: number) => void;
@@ -66,6 +69,7 @@ export function ResourcesPanel({
               asset={asset}
               desktopRuntime={desktopRuntime}
               projectDir={projectDir}
+              onReplaceAsset={onReplaceAsset}
               onUpdateAsset={onUpdateAsset}
               onDeleteAsset={onDeleteAsset}
             />
@@ -85,6 +89,8 @@ export function ResourcesPanel({
         projectDir={projectDir}
         workspaceDir={workspaceDir}
         onImportAssets={onImportAssets}
+        onReplaceAsset={onReplaceAsset}
+        onDeleteAsset={onDeleteAsset}
         onSelectPaintTile={onSelectPaintTile}
       />
       )}
@@ -245,6 +251,8 @@ function SpecialLandTilePanel({
   projectDir,
   workspaceDir,
   onImportAssets,
+  onReplaceAsset,
+  onDeleteAsset,
   onSelectPaintTile
 }: {
   project: Project | null;
@@ -253,6 +261,8 @@ function SpecialLandTilePanel({
   projectDir: string;
   workspaceDir: string;
   onImportAssets?: (files: File[], kind: ManagedAssetKind) => void;
+  onReplaceAsset?: (assetId: string, file: File) => void;
+  onDeleteAsset?: (assetId: string) => void;
   onSelectPaintTile?: (tile: number) => void;
 }) {
   const authoredTiles = (project?.assets ?? []).filter((asset) => asset.kind === "special-land-tile");
@@ -282,6 +292,8 @@ function SpecialLandTilePanel({
             asset={asset}
             desktopRuntime={desktopRuntime}
             projectDir={projectDir}
+            onReplaceAsset={onReplaceAsset}
+            onDeleteAsset={onDeleteAsset}
             onSelectPaintTile={onSelectPaintTile}
           />
         ))}
@@ -308,14 +320,19 @@ function SpecialLandAssetCard({
   asset,
   desktopRuntime,
   projectDir,
+  onReplaceAsset,
+  onDeleteAsset,
   onSelectPaintTile
 }: {
   asset: ManagedAsset;
   desktopRuntime: boolean;
   projectDir: string;
+  onReplaceAsset?: (assetId: string, file: File) => void;
+  onDeleteAsset?: (assetId: string) => void;
   onSelectPaintTile?: (tile: number) => void;
 }) {
   const preview = useProjectPreview(asset.previewPath, desktopRuntime, projectDir);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
   return (
     <article className="managed-asset-card special-land-card">
       <AssetPreview kind={asset.kind} label={asset.label} preview={preview} />
@@ -326,9 +343,28 @@ function SpecialLandAssetCard({
         <span>{asset.exportState}</span>
         <span>32 x 32 export</span>
       </div>
-      <button className="btn btn-primary btn-xs" type="button" onClick={() => onSelectPaintTile?.(asset.resourceId)}>
-        Select for painting
-      </button>
+      <div className="asset-card-actions">
+        <button className="btn btn-primary btn-xs" type="button" onClick={() => onSelectPaintTile?.(asset.resourceId)}>
+          Select for painting
+        </button>
+        <button className="btn btn-secondary btn-xs" type="button" disabled={!onReplaceAsset} onClick={() => replaceInputRef.current?.click()}>
+          <Upload size={12} /> Replace
+        </button>
+        <button className="btn btn-danger btn-xs" type="button" onClick={() => onDeleteAsset?.(asset.id)}>
+          <Trash2 size={12} /> Delete
+        </button>
+      </div>
+      <input
+        ref={replaceInputRef}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={(event) => {
+          const file = event.currentTarget.files?.[0] ?? null;
+          if (file) onReplaceAsset?.(asset.id, file);
+          event.currentTarget.value = "";
+        }}
+      />
     </article>
   );
 }
@@ -337,16 +373,19 @@ function ManagedAssetCard({
   asset,
   desktopRuntime,
   projectDir,
+  onReplaceAsset,
   onUpdateAsset,
   onDeleteAsset
 }: {
   asset: ManagedAsset;
   desktopRuntime: boolean;
   projectDir: string;
+  onReplaceAsset?: (assetId: string, file: File) => void;
   onUpdateAsset?: (assetId: string, changes: { label?: string; resourceId?: number }) => void;
   onDeleteAsset?: (assetId: string) => void;
 }) {
   const preview = useProjectPreview(asset.previewPath, desktopRuntime, projectDir);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
   return (
     <article className="managed-asset-card">
       <AssetPreview kind={asset.kind} label={asset.label} preview={preview} />
@@ -377,9 +416,25 @@ function ManagedAssetCard({
         {asset.width && asset.height ? <span>{asset.width} x {asset.height}</span> : null}
         {asset.durationMs ? <span>{(asset.durationMs / 1000).toFixed(1)}s</span> : null}
       </div>
-      <button className="btn btn-danger btn-xs" type="button" onClick={() => onDeleteAsset?.(asset.id)}>
-        <Trash2 size={12} /> Delete
-      </button>
+      <div className="asset-card-actions">
+        <button className="btn btn-secondary btn-xs" type="button" disabled={!onReplaceAsset} onClick={() => replaceInputRef.current?.click()}>
+          <Upload size={12} /> Replace
+        </button>
+        <button className="btn btn-danger btn-xs" type="button" onClick={() => onDeleteAsset?.(asset.id)}>
+          <Trash2 size={12} /> Delete
+        </button>
+      </div>
+      <input
+        ref={replaceInputRef}
+        type="file"
+        accept={asset.kind === "sound" ? "audio/*" : "image/*"}
+        hidden
+        onChange={(event) => {
+          const file = event.currentTarget.files?.[0] ?? null;
+          if (file) onReplaceAsset?.(asset.id, file);
+          event.currentTarget.value = "";
+        }}
+      />
     </article>
   );
 }
@@ -388,10 +443,15 @@ function LibraryAssetCard({ asset, desktopRuntime, workspaceDir }: { asset: Libr
   const preview = useLibraryPreview(asset, desktopRuntime, workspaceDir);
   return (
     <article className="managed-asset-card library">
-      <AssetPreview kind={assetKind(asset.type)} label={asset.label} preview={preview} />
+      <AssetPreview kind={assetKind(asset.type)} label={asset.label} preview={preview.dataUrl} />
       <strong>{asset.label}</strong>
       <small>{asset.resourceType ?? asset.type} {asset.resourceId ?? ""}</small>
-      <small>{formatBytes(asset.bytes)}</small>
+      <div className="asset-facts">
+        <ResourcePreviewBadge status={preview.status} />
+        <span>{formatBytes(asset.bytes)}</span>
+        {preview.summary.format && <span>{preview.summary.format}</span>}
+      </div>
+      <ResourcePreviewDiagnostics diagnostics={preview.diagnostics} />
     </article>
   );
 }
@@ -436,37 +496,82 @@ function useProjectPreview(path: string, desktopRuntime: boolean, projectDir: st
   return preview;
 }
 
+type AssetPreviewState = {
+  dataUrl: string | null;
+  status: ResourcePreviewStatus | "unknown";
+  summary: Record<string, string>;
+  diagnostics: string[];
+};
+
+function initialPreviewState(dataUrl: string | null): AssetPreviewState {
+  return {
+    dataUrl,
+    status: dataUrl ? "preview-ready" : "metadata-only",
+    summary: {},
+    diagnostics: []
+  };
+}
+
 function useLibraryPreview(asset: LibraryAsset, desktopRuntime: boolean, workspaceDir: string) {
-  const [preview, setPreview] = useState<string | null>(asset.previewPath ?? null);
+  const [preview, setPreview] = useState<AssetPreviewState>(() => initialPreviewState(asset.previewPath ?? null));
   useEffect(() => {
     let disposed = false;
     if (!desktopRuntime) {
       loadBrowserBundledLibraryAssetPreview(asset)
         .then((url) => {
-          if (!disposed) setPreview(url);
+          if (!disposed) setPreview(initialPreviewState(url));
         })
         .catch(() => {
-          if (!disposed) setPreview(asset.previewPath ?? null);
+          if (!disposed) {
+            setPreview({
+              ...initialPreviewState(asset.previewPath ?? null),
+              diagnostics: ["Browser preview fallback could not decode this bundled asset."]
+            });
+          }
         });
       return () => {
         disposed = true;
       };
     }
     if (!workspaceDir) {
-      setPreview(asset.previewPath ?? null);
+      setPreview({
+        ...initialPreviewState(asset.previewPath ?? null),
+        diagnostics: asset.previewPath ? [] : ["Workspace path is not available for structured preview inspection."]
+      });
       return;
     }
     invoke<DecodedResourcePreview>("inspect_library_asset_preview", { workspaceDir, source: asset.source, relativePath: asset.relativePath })
       .then((decoded) => {
-        if (!disposed) setPreview(decoded.dataUrl ?? asset.previewPath ?? null);
+        if (!disposed) {
+          setPreview({
+            dataUrl: decoded.dataUrl ?? asset.previewPath ?? null,
+            status: decoded.status,
+            summary: decoded.summary,
+            diagnostics: decoded.diagnostics.map((diagnostic) => diagnostic.message)
+          });
+        }
       })
       .catch(() => {
         invoke<string>("load_library_asset_preview", { workspaceDir, source: asset.source, relativePath: asset.relativePath })
           .then((url) => {
-            if (!disposed) setPreview(url);
+            if (!disposed) {
+              setPreview({
+                dataUrl: url,
+                status: "preview-ready",
+                summary: {},
+                diagnostics: ["Structured resource preview failed, but raw preview bytes were available."]
+              });
+            }
           })
           .catch(() => {
-            if (!disposed) setPreview(null);
+            if (!disposed) {
+              setPreview({
+                dataUrl: null,
+                status: "unsupported-variant",
+                summary: {},
+                diagnostics: ["No preview decoder or raw fallback could read this resource."]
+              });
+            }
           });
       });
     return () => {

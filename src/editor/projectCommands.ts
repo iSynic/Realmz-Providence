@@ -1,4 +1,5 @@
 import { Action, ExtraCodeRow, PaintCellChange, Project, ProjectCommand, TriggerRecord } from "./types";
+import { actionOptionFor, normalizeStepOpcode } from "./realmzActions";
 
 export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "paintTiles") return paintTiles(project, command.mapId, command.cells);
@@ -10,6 +11,10 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "updateEdcdRow") return updateEdcdRow(project, command.rowId, command.values);
   if (command.kind === "renameEditorEntity") return renameEditorEntity(project, command.entityId, command.displayName);
   if (command.kind === "attachProjectAsset") return { ...project, assets: [...(project.assets ?? []), command.asset] };
+  if (command.kind === "replaceProjectAsset") return {
+    ...project,
+    assets: (project.assets ?? []).map((asset) => asset.id === command.assetId ? command.asset : asset)
+  };
   if (command.kind === "updateProjectAsset") return {
     ...project,
     assets: (project.assets ?? []).map((asset) => asset.id === command.assetId ? { ...asset, ...command.changes } : asset)
@@ -159,58 +164,15 @@ function renameEditorEntity(project: Project, entityId: string, displayName: str
 }
 
 function describeAction(slot: number, rawCode: number, id: number): Action {
-  const code = normalizeOpcode(rawCode);
-  const [label, category] = opcodeInfo(code);
+  const code = normalizeStepOpcode(rawCode);
+  const option = actionOptionFor(rawCode);
   return {
     slot,
     rawCode,
     code,
     id,
-    label,
-    category,
+    label: option.shortLabel,
+    category: option.category,
     gosub: rawCode < 0 && rawCode !== -14 && rawCode !== -23
   };
-}
-
-function normalizeOpcode(code: number) {
-  if (code < 0 && code !== -14 && code !== -23) return -code;
-  return code;
-}
-
-function opcodeInfo(code: number): [string, string] {
-  const labels: Record<number, [string, string]> = {
-    1: ["Text", "ui_text"],
-    2: ["Battle", "combat"],
-    3: ["Choice", "branch"],
-    4: ["Simple encounter", "encounter"],
-    5: ["Complex encounter", "encounter"],
-    6: ["Load shop", "item_shop"],
-    9: ["Play sound", "ui_text"],
-    10: ["Give treasure", "item_shop"],
-    12: ["New land icon", "map"],
-    13: ["Enable or disable door", "map"],
-    20: ["Teleport", "map"],
-    23: ["Alter land random rectangle", "map"],
-    24: ["Keep codes", "branch"],
-    27: ["Show picture", "ui_text"],
-    29: ["Give or display map", "map"],
-    39: ["Extend door codes", "branch"],
-    46: ["Branch quest flag", "branch"],
-    47: ["Set quest flag", "state"],
-    54: ["Alter time encounter", "time"],
-    57: ["Change land look", "map"],
-    73: ["Restricted shop", "item_shop"],
-    76: ["Quest value write", "state"],
-    77: ["Branch quest value", "branch"],
-    84: ["Check registration", "registration"],
-    98: ["Registration check", "registration"],
-    99: ["Registration check", "registration"],
-    104: ["Set encounter status", "encounter"],
-    111: ["Return from GOSUB", "branch"],
-    112: ["Pop stack", "branch"],
-    126: ["Battle macro", "combat"]
-  };
-  if (code === -14) return ["Pick inverse characters", "state"];
-  if (code === -23) return ["Alter dungeon random rectangle", "map"];
-  return labels[code] ?? [`Opcode ${code}`, "unknown"];
 }

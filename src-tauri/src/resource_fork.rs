@@ -94,8 +94,8 @@ pub fn parse_resource_fork_entries(buffer: &[u8]) -> Vec<ResourceForkEntry> {
         if type_offset + 8 > buffer.len() {
             continue;
         }
-        let resource_type = String::from_utf8_lossy(&buffer[type_offset..type_offset + 4])
-            .to_string();
+        let resource_type =
+            String::from_utf8_lossy(&buffer[type_offset..type_offset + 4]).to_string();
         let Some(raw_resource_count) = u16_safe(buffer, type_offset + 4) else {
             continue;
         };
@@ -249,9 +249,10 @@ pub fn merge_resource_entries(
     let mut entries = parse_resource_fork_entries(original);
     let mut replaced = 0usize;
     for update in updates {
-        if let Some(existing) = entries.iter_mut().find(|entry| {
-            entry.resource_type == update.resource_type && entry.id == update.id
-        }) {
+        if let Some(existing) = entries
+            .iter_mut()
+            .find(|entry| entry.resource_type == update.resource_type && entry.id == update.id)
+        {
             *existing = update;
             replaced += 1;
         } else {
@@ -319,7 +320,13 @@ pub fn encode_cicn_resource(payload: &RgbaImagePayload) -> Result<Vec<u8>> {
         .decode(&payload.rgba_base64)
         .map_err(|error| ProvidenceError::message(error.to_string()))?;
     expected_rgba_len(payload.width, payload.height, rgba.len())?;
-    let resized = resize_rgba_nearest(&rgba, payload.width as usize, payload.height as usize, 32, 32);
+    let resized = resize_rgba_nearest(
+        &rgba,
+        payload.width as usize,
+        payload.height as usize,
+        32,
+        32,
+    );
     let (indices, palette) = quantize_rgba_to_palette(&resized);
     let width = 32usize;
     let height = 32usize;
@@ -346,7 +353,11 @@ pub fn encode_cicn_resource(payload: &RgbaImagePayload) -> Result<Vec<u8>> {
             }
         }
     }
-    write_u16_be(&mut cicn, color_table_offset + 6, palette.len().saturating_sub(1));
+    write_u16_be(
+        &mut cicn,
+        color_table_offset + 6,
+        palette.len().saturating_sub(1),
+    );
     for (index, color) in palette.iter().enumerate() {
         let offset = color_table_offset + 8 + index * 8;
         write_u16_be(&mut cicn, offset, index);
@@ -542,7 +553,10 @@ pub fn encode_png_data_url(width: u32, height: u32, rgba: &[u8]) -> Result<Strin
             .write_image_data(rgba)
             .map_err(|error| ProvidenceError::message(error.to_string()))?;
     }
-    Ok(format!("data:image/png;base64,{}", STANDARD.encode(png_bytes)))
+    Ok(format!(
+        "data:image/png;base64,{}",
+        STANDARD.encode(png_bytes)
+    ))
 }
 
 pub fn decode_snd_to_wav(data: &[u8]) -> Result<Vec<u8>> {
@@ -675,10 +689,10 @@ fn find_packbits_rect(pict: &[u8]) -> Option<PackBitsRect> {
                 if after_color_table + 18 < pict.len() {
                     let width = (i16_be(pict, after_color_table + 6)
                         - i16_be(pict, after_color_table + 2))
-                        .max(0) as usize;
+                    .max(0) as usize;
                     let height = (i16_be(pict, after_color_table + 4)
                         - i16_be(pict, after_color_table))
-                        .max(0) as usize;
+                    .max(0) as usize;
                     let mut data_offset = after_color_table + 18;
                     if opcode == 0x0099 {
                         let region_size = u16_safe(pict, data_offset)?;
@@ -918,7 +932,12 @@ fn packbits(row: &[u8]) -> Vec<u8> {
     output
 }
 
-fn decode_packbits_row(buffer: &[u8], offset: usize, packed_length: usize, expected: usize) -> Vec<u8> {
+fn decode_packbits_row(
+    buffer: &[u8],
+    offset: usize,
+    packed_length: usize,
+    expected: usize,
+) -> Vec<u8> {
     let end = (offset + packed_length).min(buffer.len());
     let mut cursor = offset;
     let mut output = Vec::with_capacity(expected);
@@ -1152,9 +1171,15 @@ mod tests {
         .expect("merge");
         let entries = parse_resource_fork_entries(&merged);
         assert_eq!(replaced, 1);
-        assert!(entries.iter().any(|entry| entry.resource_type == "TEXT" && entry.id == 1));
-        assert!(entries.iter().any(|entry| entry.resource_type == "PICT" && entry.id == 200 && entry.data == vec![9, 9]));
-        assert!(entries.iter().any(|entry| entry.resource_type == "snd " && entry.id == 201));
+        assert!(entries
+            .iter()
+            .any(|entry| entry.resource_type == "TEXT" && entry.id == 1));
+        assert!(entries.iter().any(|entry| entry.resource_type == "PICT"
+            && entry.id == 200
+            && entry.data == vec![9, 9]));
+        assert!(entries
+            .iter()
+            .any(|entry| entry.resource_type == "snd " && entry.id == 201));
     }
 
     #[test]
@@ -1192,14 +1217,27 @@ mod tests {
 
     #[test]
     fn text_resource_previews_include_string_lists_and_metadata() {
-        let str_list = vec![0, 2, 5, b'H', b'e', b'l', b'l', b'o', 5, b'W', b'o', b'r', b'l', b'd'];
+        let str_list = vec![
+            0, 2, 5, b'H', b'e', b'l', b'l', b'o', 5, b'W', b'o', b'r', b'l', b'd',
+        ];
         let preview = inspect_resource_preview("STR#", &str_list).expect("str preview");
         assert!(matches!(preview.status, ResourcePreviewStatus::TextReady));
-        assert_eq!(preview.summary.get("strings").map(String::as_str), Some("2"));
-        assert!(preview.data_url.expect("text data").starts_with("data:text/plain;base64,"));
+        assert_eq!(
+            preview.summary.get("strings").map(String::as_str),
+            Some("2")
+        );
+        assert!(preview
+            .data_url
+            .expect("text data")
+            .starts_with("data:text/plain;base64,"));
 
         let styl = inspect_resource_preview("styl", &[0, 1, 0, 0]).expect("styl preview");
         assert!(matches!(styl.status, ResourcePreviewStatus::MetadataOnly));
-        assert_eq!(styl.summary.get("styleRunCountCandidate").map(String::as_str), Some("1"));
+        assert_eq!(
+            styl.summary
+                .get("styleRunCountCandidate")
+                .map(String::as_str),
+            Some("1")
+        );
     }
 }

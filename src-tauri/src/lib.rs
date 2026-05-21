@@ -2,6 +2,7 @@ mod commands;
 pub mod error;
 pub mod exporter;
 pub mod importer;
+pub mod media_assets;
 pub mod project;
 pub mod realmz;
 pub mod resource_fork;
@@ -25,11 +26,12 @@ pub fn run() {
             commands::import_scenario,
             commands::import_scenario_into_project,
             commands::open_project,
-            commands::load_project_asset,
-            commands::load_project_asset_preview,
-            commands::import_project_media_asset,
-            commands::update_project_asset,
-            commands::delete_project_asset,
+            media_assets::load_project_asset,
+            media_assets::load_project_asset_preview,
+            media_assets::import_project_media_asset,
+            media_assets::replace_project_media_asset,
+            media_assets::update_project_asset,
+            media_assets::delete_project_asset,
             commands::save_project,
             commands::export_project,
             commands::validate_project,
