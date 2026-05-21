@@ -42,6 +42,15 @@ Run the full matrix:
 npm run smoke:oracle:matrix -- -SkipBuild
 ```
 
+Show the latest run, a specific matrix run, or one fixture:
+
+```powershell
+npm run smoke:oracle:show
+npm run smoke:oracle:show -- -RunRoot tmp\oracle-runs\matrix-20260521-095526
+npm run smoke:oracle:show -- -RunRoot tmp\oracle-runs\matrix-20260521-095526 -Fixture validation-error
+npm run smoke:oracle:show -- -RunRoot tmp\oracle-runs\matrix-20260521-095526 -Json
+```
+
 Omit `-SkipBuild` when you want the smoke script to build first.
 
 ## Fixtures
@@ -57,6 +66,14 @@ Omit `-SkipBuild` when you want the smoke script to build first.
 
 The matrix exits `0` only when every fixture matches its expected outcome and stage.
 
+## Batch Matrix Mode
+
+Single-fixture runs use `PROVIDENCE_HARNESS_SCRIPT` and `PROVIDENCE_HARNESS_RESULT`.
+
+Matrix runs use `PROVIDENCE_HARNESS_BATCH`, which points to `providence-harness-batch.json`. The batch manifest lists each fixture's script and result path. Providence desktop launches once, runs every harness script sequentially, writes one `providence-result.json` per fixture, then exits. Classic oracle checks still run serially per fixture so each scenario gets an isolated profile, logs, and cleanup.
+
+`matrix-summary.json` records `providenceMode = "batch"`, `providenceLaunches = 1`, and `durationSeconds`.
+
 ## Artifacts
 
 Each run writes under `tmp\oracle-runs\<stamp>` or under a matrix child directory:
@@ -70,6 +87,8 @@ Each run writes under `tmp\oracle-runs\<stamp>` or under a matrix child director
 - `realmz-logs`: Classic runtime log, menu snapshots, and Classic summary JSON.
 
 The matrix also writes `matrix-summary.json`.
+
+`npm run smoke:oracle:show` reads these files and prints the expectation, stage, Providence assertion/error, Classic dispatch state, marker matches, fatal markers, runtime log, menu snapshots, export dir, and profile dir. It exits `1` when any displayed fixture did not match expectation.
 
 ## Runtime Mirror Rationale
 
