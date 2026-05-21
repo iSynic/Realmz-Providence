@@ -11,6 +11,7 @@ import {
 } from "./editor/browser/fsAccess";
 import { browserReferenceIconUrl, browserTilesetAtlasUrl } from "./editor/browser/atlasPaths";
 import { createBrowserWorkspace, importBrowserLibrary, loadBundledLibraryCatalog } from "./editor/browser/library";
+import { runProvidenceHarness } from "./editor/harness";
 import { createLibraryDraft, LibraryDraftSpec, updateLibraryDraft } from "./editor/libraryDrafts";
 import { benchmarkBrowserProject, createBrowserProject, importBrowserScenario, openBrowserProject, validateBrowserProject } from "./editor/browser/project";
 import { IconButton } from "./editor/components/IconButton";
@@ -80,6 +81,17 @@ export function App() {
   const importAllowed = Boolean(state.project && isProjectEmpty(state.project));
   const libraryIssueCount = state.libraryCatalog?.diagnostics.length ?? 0;
   const railIssueCount = visibleIssues.length + libraryIssueCount;
+
+  useEffect(() => {
+    if (!desktopRuntime) return;
+    let disposed = false;
+    void runProvidenceHarness((status) => {
+      if (!disposed) dispatch({ type: "setStatus", status });
+    });
+    return () => {
+      disposed = true;
+    };
+  }, [desktopRuntime]);
 
   useEffect(() => {
     let disposed = false;

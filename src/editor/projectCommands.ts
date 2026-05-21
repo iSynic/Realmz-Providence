@@ -1,5 +1,9 @@
-import { Action, ExtraCodeRow, PaintCellChange, Project, ProjectCommand, TriggerRecord } from "./types";
+import { Action, ExtraCodeRow, PaintCellChange, Project, ProjectCommand, Provenance, TriggerRecord } from "./types";
 import { actionOptionFor, normalizeStepOpcode } from "./realmzActions";
+
+const DOOR_RECORD_BYTES = 40;
+const DOORS_PER_LEVEL = 100;
+const EXTRACODE_BYTES = 10;
 
 export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "paintTiles") return paintTiles(project, command.mapId, command.cells);
@@ -72,7 +76,8 @@ function createMacro(project: Project) {
     targetY: 0,
     percent: 100,
     coordinate: null,
-    actions: []
+    actions: [],
+    provenance: authoredProvenance("Data ED3", recordIndex, recordIndex * DOOR_RECORD_BYTES, DOOR_RECORD_BYTES)
   };
   return { ...project, triggers: [...project.triggers, macro] };
 }
@@ -97,7 +102,13 @@ function createActionPoint(
     targetY: command.y,
     percent: 100,
     coordinate: { x: command.x, y: command.y },
-    actions: []
+    actions: [],
+    provenance: authoredProvenance(
+      command.levelType === "land" ? "Data DD" : "Data DDD",
+      recordIndex,
+      (command.levelIndex * DOORS_PER_LEVEL + recordIndex) * DOOR_RECORD_BYTES,
+      DOOR_RECORD_BYTES
+    )
   };
   return { ...project, triggers: [...project.triggers, trigger] };
 }
@@ -142,7 +153,11 @@ function updateEdcdRow(project: Project, rowId: number, values: number[]) {
     return { ...row, values: normalized };
   });
   if (!found) {
-    const row: ExtraCodeRow = { id: rowId, values: normalized };
+    const row: ExtraCodeRow = {
+      id: rowId,
+      values: normalized,
+      provenance: authoredProvenance("Data EDCD", rowId, rowId * EXTRACODE_BYTES, EXTRACODE_BYTES)
+    };
     extracodes.push(row);
     extracodes.sort((a, b) => a.id - b.id);
   }
@@ -174,5 +189,15 @@ function describeAction(slot: number, rawCode: number, id: number): Action {
     label: option.shortLabel,
     category: option.category,
     gosub: rawCode < 0 && rawCode !== -14 && rawCode !== -23
+  };
+}
+
+function authoredProvenance(sourceFile: string, recordIndex: number, byteOffset: number, byteLength: number): Provenance {
+  return {
+    sourceFile,
+    recordIndex,
+    byteOffset,
+    byteLength,
+    confidence: "inferred"
   };
 }

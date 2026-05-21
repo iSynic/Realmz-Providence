@@ -6,3 +6,4 @@ src-tauri/target/
 projects/
 exports/
 workspace/
+tmp/

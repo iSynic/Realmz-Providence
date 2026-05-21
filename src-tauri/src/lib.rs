@@ -1,6 +1,7 @@
 mod commands;
 pub mod error;
 pub mod exporter;
+pub mod harness;
 pub mod importer;
 pub mod media_assets;
 pub mod project;
@@ -36,7 +37,11 @@ pub fn run() {
             commands::save_project,
             commands::export_project,
             commands::validate_project,
-            commands::benchmark_project
+            commands::benchmark_project,
+            harness::get_harness_config,
+            harness::read_harness_script,
+            harness::write_harness_result,
+            harness::harness_exit
         ])
         .run(tauri::generate_context!())
         .expect("failed to run Realmz Providence");
