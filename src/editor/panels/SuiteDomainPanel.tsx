@@ -4,6 +4,7 @@ import { loadBrowserBundledLibraryAssetPreview } from "../browser/library";
 import { isDraftEntity, LibraryDraftSpec } from "../libraryDrafts";
 import { EditorTab, LibraryAsset, LibraryCatalog, LibraryEntity, ManagedAssetKind, Project, SemanticEntity, SelectedEntity } from "../types";
 import { selectEntityFromId } from "../utils";
+import { ScrollArea } from "../ui";
 
 const DOMAIN_CONFIG: Record<EditorTab, { title: string; subtitle: string; editors: DomainEditor[] }> = {
   maps: {
@@ -177,14 +178,14 @@ export function SuiteDomainPanel({
               <span>Decoded Records</span>
               <b>{records.length.toLocaleString()}</b>
             </header>
-            <div className="domain-entity-list">
+            <ScrollArea className="domain-entity-list" aria-label="Decoded records">
               {records.slice(0, 240).map((record) => (
                 <button key={record.id} type="button" onClick={() => onSelectEntity(selectEntityFromId(record.id))}>
                   <strong>{record.label}</strong>
                   <small>{record.type} | {record.editState}</small>
                 </button>
               ))}
-            </div>
+            </ScrollArea>
           </article>
         </div>
       )}
@@ -195,14 +196,14 @@ export function SuiteDomainPanel({
               <span>Library Diagnostics</span>
               <b>{catalog?.diagnostics.length ?? 0}</b>
             </header>
-            <div className="domain-entity-list">
+            <ScrollArea className="domain-entity-list" aria-label="Library diagnostics">
               {catalog?.diagnostics.slice(0, 240).map((diagnostic) => (
                 <button key={diagnostic.id} type="button">
                   <strong>{diagnostic.message}</strong>
                   <small>{diagnostic.severity} | {diagnostic.type}</small>
                 </button>
               ))}
-            </div>
+            </ScrollArea>
             {!catalog?.diagnostics.length && <p>No library diagnostics.</p>}
           </article>
         </div>
@@ -268,7 +269,9 @@ function DomainDetailPanel({
         <header>
           <span>Selection</span>
         </header>
-        <p>Select an entry or create a new draft to inspect its content, decoded fields, and export state.</p>
+        <ScrollArea className="domain-detail-scroll" aria-label="Selection detail">
+          <p>Select an entry or create a new draft to inspect its content, decoded fields, and export state.</p>
+        </ScrollArea>
       </aside>
     );
   }
@@ -284,75 +287,77 @@ function DomainDetailPanel({
         <span>{ENTITY_TYPE_LABELS[detail.type] ?? detail.type}</span>
         <b>{detail.editState}</b>
       </header>
-      {canEditDraft ? (
-        <label className="domain-field">
-          <span>Name</span>
-          <input
-            defaultValue={detail.label}
-            onBlur={(event) => {
-              const label = event.currentTarget.value.trim();
-              if (label && label !== detail.label) onUpdateDraft(detail.id, { label });
-            }}
-          />
-        </label>
-      ) : (
-        <h2>{detail.label}</h2>
-      )}
-      <p className="domain-detail-subtitle">{entitySubtitle(detail)}</p>
-      {asset && <DomainAssetPreview asset={asset} preview={preview} />}
-      <section className="domain-summary">
-        <header>Content</header>
-        {contentFacts.map((fact) => (
-          <div key={fact.label}>
-            <span>{fact.label}</span>
-            <code>{fact.value}</code>
-          </div>
-        ))}
-      </section>
-      {canEditDraft && (
-        <label className="domain-field">
-          <span>Notes</span>
-          <textarea
-            defaultValue={String(summary.notes ?? "")}
-            onBlur={(event) => {
-              const notes = event.currentTarget.value;
-              if (notes !== String(summary.notes ?? "")) onUpdateDraft(detail.id, { notes });
-            }}
-          />
-        </label>
-      )}
-      <section className="domain-summary">
-        <header>Decoded Fields</header>
-        {Object.entries(summary).length ? (
-          Object.entries(summary).map(([key, value]) => (
-            <div key={key}>
-              <span>{key}</span>
-              <code>{formatSummaryValue(value)}</code>
-            </div>
-          ))
+      <ScrollArea className="domain-detail-scroll" aria-label="Domain detail">
+        {canEditDraft ? (
+          <label className="domain-field">
+            <span>Name</span>
+            <input
+              defaultValue={detail.label}
+              onBlur={(event) => {
+                const label = event.currentTarget.value.trim();
+                if (label && label !== detail.label) onUpdateDraft(detail.id, { label });
+              }}
+            />
+          </label>
         ) : (
-          <p>No decoded fields yet.</p>
+          <h2>{detail.label}</h2>
         )}
-      </section>
-      <section className="domain-summary domain-technical-summary">
-        <header>Technical</header>
-        <div>
-          <span>ID</span>
-          <code>{detail.id}</code>
-        </div>
-        <div>
-          <span>Source</span>
-          <code>{sourceLabel}</code>
-        </div>
-        <div>
-          <span>Record</span>
-          <code>{recordRef ?? "none"}</code>
-        </div>
-        <div>
-          <span>Confidence</span>
-          <code>{detail.confidence}</code>
-        </div>
-      </section>
+        <p className="domain-detail-subtitle">{entitySubtitle(detail)}</p>
+        {asset && <DomainAssetPreview asset={asset} preview={preview} />}
+        <section className="domain-summary">
+          <header>Content</header>
+          {contentFacts.map((fact) => (
+            <div key={fact.label}>
+              <span>{fact.label}</span>
+              <code>{fact.value}</code>
+            </div>
+          ))}
+        </section>
+        {canEditDraft && (
+          <label className="domain-field">
+            <span>Notes</span>
+            <textarea
+              defaultValue={String(summary.notes ?? "")}
+              onBlur={(event) => {
+                const notes = event.currentTarget.value;
+                if (notes !== String(summary.notes ?? "")) onUpdateDraft(detail.id, { notes });
+              }}
+            />
+          </label>
+        )}
+        <section className="domain-summary">
+          <header>Decoded Fields</header>
+          {Object.entries(summary).length ? (
+            Object.entries(summary).map(([key, value]) => (
+              <div key={key}>
+                <span>{key}</span>
+                <code>{formatSummaryValue(value)}</code>
+              </div>
+            ))
+          ) : (
+            <p>No decoded fields yet.</p>
+          )}
+        </section>
+        <section className="domain-summary domain-technical-summary">
+          <header>Technical</header>
+          <div>
+            <span>ID</span>
+            <code>{detail.id}</code>
+          </div>
+          <div>
+            <span>Source</span>
+            <code>{sourceLabel}</code>
+          </div>
+          <div>
+            <span>Record</span>
+            <code>{recordRef ?? "none"}</code>
+          </div>
+          <div>
+            <span>Confidence</span>
+            <code>{detail.confidence}</code>
+          </div>
+        </section>
+      </ScrollArea>
     </aside>
   );
 }
@@ -437,7 +442,7 @@ function EntityRows({
   onSelectEntity: (entity: SelectedEntity) => void;
 }) {
   return (
-    <div className="domain-entity-list">
+    <ScrollArea className="domain-entity-list" aria-label="Domain entities">
       {entities.map((entity) => {
         const selected = selectedEntity?.id === entity.id;
         return (
@@ -452,7 +457,7 @@ function EntityRows({
           </button>
         );
       })}
-    </div>
+    </ScrollArea>
   );
 }
 

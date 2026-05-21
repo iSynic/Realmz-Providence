@@ -7,6 +7,7 @@ export {
   LinkChip,
   PanelSection,
   PreviewCard,
+  ScrollArea,
   ValidationGate
 } from "./WorkbenchPrimitives";
 
@@ -20,6 +21,7 @@ export type {
   LinkChipProps,
   PanelSectionProps,
   PreviewCardProps,
+  ScrollAreaProps,
   ValidationGateProps,
   WorkbenchIssue,
   WorkbenchTone

@@ -10,6 +10,7 @@ import { InfoGrid } from "./InfoGrid";
 import { ActionPointCodeTable, CellTileEvidence, MapCapabilityPanel, RandomRectangleForm } from "./MapAffordances";
 import { PaintPalettePanel } from "./TileSelectionBar";
 import { TutorialTip } from "./TutorialTip";
+import { ScrollArea } from "../ui";
 
 export function MapContextSidebar({
   state,
@@ -41,33 +42,35 @@ export function MapContextSidebar({
   const selection = selectionSummary(selectedMap, state.selectedEntity, state.selectedCell, mapTriggers, selectedRandomLevel, mapRecords);
   return (
     <aside className="editor-sidebar contextual-sidebar">
-      {selection ? (
-        <SelectionInspector
-          selection={selection}
-          map={selectedMap}
-          project={state.project}
-          onSelectEntity={onSelectEntity}
-          onClearSelection={onClearSelection}
-        />
-      ) : (
-        <CoreMapSetup
-          project={state.project}
+      <ScrollArea className="contextual-sidebar-scroll" aria-label="Map tools and browser">
+        {selection ? (
+          <SelectionInspector
+            selection={selection}
+            map={selectedMap}
+            project={state.project}
+            onSelectEntity={onSelectEntity}
+            onClearSelection={onClearSelection}
+          />
+        ) : (
+          <CoreMapSetup
+            project={state.project}
+            selectedMap={selectedMap}
+            randomLevel={selectedRandomLevel}
+            activeTool={state.activeTool}
+            onSelectMap={onSelectMap}
+            onSelectEntity={onSelectEntity}
+          />
+        )}
+        <MapToolset
+          state={state}
           selectedMap={selectedMap}
-          randomLevel={selectedRandomLevel}
-          activeTool={state.activeTool}
-          onSelectMap={onSelectMap}
-          onSelectEntity={onSelectEntity}
+          selectedTileset={selectedTileset}
+          atlas={atlas}
+          onSetTool={onSetTool}
+          onSelectTile={onSelectTile}
         />
-      )}
-      <MapToolset
-        state={state}
-        selectedMap={selectedMap}
-        selectedTileset={selectedTileset}
-        atlas={atlas}
-        onSetTool={onSetTool}
-        onSelectTile={onSelectTile}
-      />
-      <EntityBrowser project={state.project} selectedEntity={state.selectedEntity} onSelect={onSelectEntity} />
+        <EntityBrowser project={state.project} selectedEntity={state.selectedEntity} onSelect={onSelectEntity} />
+      </ScrollArea>
     </aside>
   );
 }

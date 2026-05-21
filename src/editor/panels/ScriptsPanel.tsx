@@ -6,7 +6,7 @@ import { actionSlotEntitiesForScript, actionSlotEntitiesForTriggerRecord, schema
 import { EntityBrowser } from "../components/EntityBrowser";
 import { SemanticInspector } from "../components/SemanticInspector";
 import { categoryColor } from "../components/TileSprite";
-import { EmptyState, FieldRow, PanelSection } from "../ui";
+import { EmptyState, FieldRow, PanelSection, ScrollArea } from "../ui";
 
 export function ScriptsPanel({
   project,
@@ -46,26 +46,30 @@ export function ScriptsPanel({
           <span>{scriptPanelTitle(activeEditor)}</span>
           <b>{scriptEntities.length.toLocaleString()}</b>
         </div>
-        <ScriptAuthoringPanel project={project} activeEditor={activeEditor} selectedEntity={selectedEntity} onSelectEntity={onSelectEntity} onApplyCommand={onApplyCommand} />
-        <div className="script-category-grid">
-          {grouped.map(([category, entities]) => (
-            <section key={category} className="script-category">
-              <header>
-                <span style={{ color: categoryColor(category) }}>●</span>
-                <strong>{category}</strong>
-                <b>{entities.length.toLocaleString()}</b>
-              </header>
-              {entities.slice(0, 18).map((entity) => (
-                <ScriptRow key={entity.id} project={project} entity={entity} onSelectEntity={onSelectEntity} />
-              ))}
-            </section>
-          ))}
-          {!project && <div className="entity-empty">Open a project to inspect scripts.</div>}
-        </div>
+        <ScrollArea className="script-detail-scroll" aria-label="Script editor">
+          <ScriptAuthoringPanel project={project} activeEditor={activeEditor} selectedEntity={selectedEntity} onSelectEntity={onSelectEntity} onApplyCommand={onApplyCommand} />
+          <div className="script-category-grid">
+            {grouped.map(([category, entities]) => (
+              <section key={category} className="script-category">
+                <header>
+                  <span style={{ color: categoryColor(category) }}>●</span>
+                  <strong>{category}</strong>
+                  <b>{entities.length.toLocaleString()}</b>
+                </header>
+                {entities.slice(0, 18).map((entity) => (
+                  <ScriptRow key={entity.id} project={project} entity={entity} onSelectEntity={onSelectEntity} />
+                ))}
+              </section>
+            ))}
+            {!project && <div className="entity-empty">Open a project to inspect scripts.</div>}
+          </div>
+        </ScrollArea>
       </section>
       <aside className="tab-panel semantic-right">
-        <SemanticInspector project={project} selectedEntity={selectedEntity} onSelect={onSelectEntity} />
-        <EdcdList project={project} onSelectEntity={onSelectEntity} />
+        <ScrollArea className="semantic-right-scroll" aria-label="Script semantic inspector">
+          <SemanticInspector project={project} selectedEntity={selectedEntity} onSelect={onSelectEntity} />
+          <EdcdList project={project} onSelectEntity={onSelectEntity} />
+        </ScrollArea>
       </aside>
     </div>
   );
@@ -112,7 +116,7 @@ function ScriptAuthoringPanel({
         </button>
       </header>
       <div className="realmz-script-layout">
-        <div className="realmz-script-list">
+        <ScrollArea className="realmz-script-list" aria-label="Triggers and macros">
           {scripts.slice(0, 160).map((trigger) => (
             <button
               type="button"
@@ -124,7 +128,7 @@ function ScriptAuthoringPanel({
               <small>{trigger.source === "Data ED3" ? "macro" : trigger.coordinate ? `${trigger.coordinate.x},${trigger.coordinate.y}` : "action point"}</small>
             </button>
           ))}
-        </div>
+        </ScrollArea>
         <div className="realmz-script-form">
           {selectedTrigger ? (
             <>
@@ -152,7 +156,7 @@ function ScriptAuthoringPanel({
               </div>
               <div className="realmz-visual-script">
                 <PanelSection title="Action Slots" eyebrow="Visual step list" count="8" density="compact">
-                  <div className="realmz-step-list">
+                  <ScrollArea className="realmz-step-list" aria-label="Action slots">
                     {Array.from({ length: 8 }, (_, slot) => {
                       const action = selectedTrigger.actions.find((candidate) => candidate.slot === slot);
                       const current = slotDraft(slot, action);
@@ -175,7 +179,7 @@ function ScriptAuthoringPanel({
                         </button>
                       );
                     })}
-                  </div>
+                  </ScrollArea>
                 </PanelSection>
                 <PanelSection
                   title={`Slot ${selectedSlot} Details`}
@@ -436,13 +440,13 @@ function EdcdList({ project, onSelectEntity }: { project: Project | null; onSele
         <span>EDCD Rows</span>
         <small>{rows.length}</small>
       </div>
-      <div className="edcd-grid">
+      <ScrollArea className="edcd-grid" aria-label="EDCD Rows">
         {rows.slice(0, 180).map((row) => (
           <button key={row.id} onClick={() => onSelectEntity(selectEntityFromId(row.id))}>
             {row.label}: {Array.isArray(row.summary.values) ? row.summary.values.join(", ") : "semantic row"}
           </button>
         ))}
-      </div>
+      </ScrollArea>
     </section>
   );
 }

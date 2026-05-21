@@ -1,6 +1,7 @@
 import { Download, Gauge } from "lucide-react";
 import { BenchmarkReport, ExportReport, Project } from "../types";
 import { InfoGrid } from "../components/InfoGrid";
+import { ScrollArea } from "../ui";
 import {
   assetFallbacks,
   blockedSemanticObjects,
@@ -73,16 +74,16 @@ export function ExportPanel({
           ]}
         />
         {exportReport?.resourceWarnings.length ? (
-          <div className="lint-results compact">
+          <ScrollArea className="lint-results compact" aria-label="Resource export notes">
             <section>
               <header>Resource Export Notes</header>
               {exportReport.resourceWarnings.map((warning) => (
                 <div key={warning} className="lint-issue warning">! {warning}</div>
               ))}
             </section>
-          </div>
+          </ScrollArea>
         ) : null}
-        <div className="record-table">
+        <ScrollArea className="record-table" aria-label="Export sources">
           {plan.exportableSources.map((source) => (
             <article key={source.name} className="record-row">
               <button type="button">
@@ -101,7 +102,7 @@ export function ExportPanel({
               </button>
             </article>
           ))}
-        </div>
+        </ScrollArea>
       </section>
       <section className="tab-panel">
         <div className="panel-header">

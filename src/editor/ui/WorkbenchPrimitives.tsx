@@ -1,4 +1,4 @@
-import { CSSProperties, ReactNode } from "react";
+import { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AlertCircle, CheckCircle2, Info, Link2, Search, XCircle } from "lucide-react";
 import "./workbench.css";
 
@@ -436,6 +436,175 @@ export function HelpBubble({
       {children}
     </span>
   );
+}
+
+export type ScrollAreaProps = {
+  children?: ReactNode;
+  className?: string;
+  shellClassName?: string;
+  orientation?: "vertical" | "horizontal" | "both";
+  onViewportRef?: (node: HTMLDivElement | null) => void;
+  "aria-label"?: string;
+};
+
+type ScrollMetrics = {
+  canX: boolean;
+  canY: boolean;
+  xThumb: number;
+  yThumb: number;
+  xThumbSize: number;
+  yThumbSize: number;
+  xTrack: number;
+  yTrack: number;
+};
+
+const EMPTY_SCROLL_METRICS: ScrollMetrics = {
+  canX: false,
+  canY: false,
+  xThumb: 0,
+  yThumb: 0,
+  xThumbSize: 0,
+  yThumbSize: 0,
+  xTrack: 0,
+  yTrack: 0
+};
+
+export function ScrollArea({
+  children,
+  className,
+  shellClassName,
+  orientation = "vertical",
+  onViewportRef,
+  "aria-label": ariaLabel
+}: ScrollAreaProps) {
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const [metrics, setMetrics] = useState<ScrollMetrics>(EMPTY_SCROLL_METRICS);
+  const allowX = orientation === "horizontal" || orientation === "both";
+  const allowY = orientation === "vertical" || orientation === "both";
+  const updateMetrics = useCallback(() => {
+    const element = viewportRef.current;
+    if (!element) return;
+    setMetrics(readScrollMetrics(element, allowX, allowY));
+  }, [allowX, allowY]);
+  const setViewportNode = useCallback(
+    (node: HTMLDivElement | null) => {
+      viewportRef.current = node;
+      onViewportRef?.(node);
+    },
+    [onViewportRef]
+  );
+
+  useLayoutEffect(() => {
+    updateMetrics();
+  }, [children, updateMetrics]);
+
+  useEffect(() => {
+    const element = viewportRef.current;
+    if (!element) return;
+    const handleScroll = () => updateMetrics();
+    const handleResize = () => updateMetrics();
+    element.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleResize);
+    const resizeObserver = typeof ResizeObserver !== "undefined" ? new ResizeObserver(handleResize) : null;
+    resizeObserver?.observe(element);
+    const mutationObserver = typeof MutationObserver !== "undefined" ? new MutationObserver(handleResize) : null;
+    mutationObserver?.observe(element, { childList: true, subtree: true, attributes: true });
+    updateMetrics();
+    return () => {
+      element.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleResize);
+      resizeObserver?.disconnect();
+      mutationObserver?.disconnect();
+    };
+  }, [updateMetrics]);
+
+  return (
+    <div
+      className={classNames(
+        "workbench-scroll-area",
+        `scroll-${orientation}`,
+        metrics.canX && "has-horizontal-scroll",
+        metrics.canY && "has-vertical-scroll",
+        shellClassName
+      )}
+    >
+      <div ref={setViewportNode} className={classNames("workbench-scroll-viewport", className)} aria-label={ariaLabel}>
+        {children}
+      </div>
+      {metrics.canY && (
+        <div
+          className="workbench-scrollbar workbench-scrollbar-y"
+          aria-hidden="true"
+          onPointerDown={(event) => beginScrollDrag(event, "y", viewportRef.current, metrics)}
+        >
+          <span style={{ height: metrics.yThumbSize, transform: `translateY(${metrics.yThumb}px)` }} />
+        </div>
+      )}
+      {metrics.canX && (
+        <div
+          className="workbench-scrollbar workbench-scrollbar-x"
+          aria-hidden="true"
+          onPointerDown={(event) => beginScrollDrag(event, "x", viewportRef.current, metrics)}
+        >
+          <span style={{ width: metrics.xThumbSize, transform: `translateX(${metrics.xThumb}px)` }} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function readScrollMetrics(element: HTMLDivElement, allowX: boolean, allowY: boolean): ScrollMetrics {
+  const canY = allowY && element.scrollHeight > element.clientHeight + 1;
+  const canX = allowX && element.scrollWidth > element.clientWidth + 1;
+  const xTrack = Math.max(0, element.clientWidth - 12 - (canY ? 14 : 0));
+  const yTrack = Math.max(0, element.clientHeight - 12 - (canX ? 14 : 0));
+  const yThumbSize = canY ? clamp((element.clientHeight / element.scrollHeight) * yTrack, 32, yTrack) : 0;
+  const xThumbSize = canX ? clamp((element.clientWidth / element.scrollWidth) * xTrack, 32, xTrack) : 0;
+  const yThumb = canY
+    ? (element.scrollTop / Math.max(1, element.scrollHeight - element.clientHeight)) * Math.max(0, yTrack - yThumbSize)
+    : 0;
+  const xThumb = canX
+    ? (element.scrollLeft / Math.max(1, element.scrollWidth - element.clientWidth)) * Math.max(0, xTrack - xThumbSize)
+    : 0;
+  return { canX, canY, xThumb, yThumb, xThumbSize, yThumbSize, xTrack, yTrack };
+}
+
+function beginScrollDrag(event: ReactPointerEvent<HTMLDivElement>, axis: "x" | "y", element: HTMLDivElement | null, metrics: ScrollMetrics) {
+  if (!element) return;
+  event.preventDefault();
+  const pointerId = event.pointerId;
+  event.currentTarget.setPointerCapture(pointerId);
+  const startPointer = axis === "y" ? event.clientY : event.clientX;
+  const startScroll = axis === "y" ? element.scrollTop : element.scrollLeft;
+  const scrollRange = axis === "y"
+    ? element.scrollHeight - element.clientHeight
+    : element.scrollWidth - element.clientWidth;
+  const thumbRange = axis === "y"
+    ? metrics.yTrack - metrics.yThumbSize
+    : metrics.xTrack - metrics.xThumbSize;
+  const ratio = scrollRange / Math.max(1, thumbRange);
+
+  function move(moveEvent: PointerEvent) {
+    const pointer = axis === "y" ? moveEvent.clientY : moveEvent.clientX;
+    const next = startScroll + (pointer - startPointer) * ratio;
+    if (axis === "y") element!.scrollTop = next;
+    else element!.scrollLeft = next;
+  }
+
+  function stop() {
+    window.removeEventListener("pointermove", move);
+    window.removeEventListener("pointerup", stop);
+    window.removeEventListener("pointercancel", stop);
+  }
+
+  window.addEventListener("pointermove", move);
+  window.addEventListener("pointerup", stop, { once: true });
+  window.addEventListener("pointercancel", stop, { once: true });
+}
+
+function clamp(value: number, min: number, max: number) {
+  if (max <= min) return Math.max(0, max);
+  return Math.min(max, Math.max(min, value));
 }
 
 function normalizeTone(tone: WorkbenchIssue["severity"]): WorkbenchTone {

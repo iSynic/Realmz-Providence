@@ -1,6 +1,7 @@
 import { ENTITY_TYPE_LABELS, SELECTABLE_ENTITY_TYPES } from "../constants";
 import { Project, SelectedEntity, SemanticEntity } from "../types";
 import { selectedEntityForSemantic } from "../utils";
+import { ScrollArea } from "../ui";
 
 export function EntityBrowser({
   project,
@@ -28,7 +29,7 @@ export function EntityBrowser({
         <Metric label="Records" value={project?.semanticSchema.summary.recordCount ?? 0} />
         <Metric label="Links" value={project?.semanticSchema.summary.linkCount ?? 0} />
       </div>
-      <div className="semantic-entity-list">
+      <ScrollArea className="semantic-entity-list" aria-label="Semantic Browser">
         {groups.map((group) => (
           <details key={group.type} open={group.type === "map" || group.type === "trigger"}>
             <summary>
@@ -46,7 +47,7 @@ export function EntityBrowser({
           </details>
         ))}
         {!project && <div className="entity-empty">Import a Realmz scenario to inspect semantic links.</div>}
-      </div>
+      </ScrollArea>
     </section>
   );
 }

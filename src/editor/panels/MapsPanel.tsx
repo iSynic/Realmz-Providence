@@ -9,6 +9,7 @@ import { MapViewFilters } from "../components/MapViewFilters";
 import { OverlayInspector } from "../components/OverlayInspector";
 import { SemanticInspector } from "../components/SemanticInspector";
 import { tileValueAt } from "../map/geometry";
+import { ScrollArea } from "../ui";
 
 export function MapsPanel({
   state,
@@ -120,6 +121,7 @@ export function MapsPanel({
       </section>
 
       <aside className="editor-inspector">
+        <ScrollArea className="editor-inspector-scroll" aria-label="Map inspector">
         <MapInspector
           map={selectedMap}
           project={state.project}
@@ -140,6 +142,7 @@ export function MapsPanel({
         />
         <TriggerInspector project={state.project} triggers={mapTriggers} onSelectEntity={onSelectEntity} />
         <SemanticInspector project={state.project} selectedEntity={state.selectedEntity} onSelect={onSelectEntity} />
+        </ScrollArea>
       </aside>
     </>
   );
@@ -322,7 +325,7 @@ function TriggerInspector({ project, triggers, onSelectEntity }: { project: Proj
   return (
     <section className="object-inspector trigger-panel">
       <div className="inspector-header">Trigger Stack</div>
-      <div className="trigger-list">
+      <ScrollArea className="trigger-list" aria-label="Trigger Stack">
         {triggers.slice(0, 90).map((trigger) => {
           const slots = actionSlotEntitiesForTriggerRecord(project, trigger);
           const summary = slots.length
@@ -344,7 +347,7 @@ function TriggerInspector({ project, triggers, onSelectEntity }: { project: Proj
           );
         })}
         {triggers.length === 0 && <p className="empty-copy">No active triggers on this map.</p>}
-      </div>
+      </ScrollArea>
     </section>
   );
 }

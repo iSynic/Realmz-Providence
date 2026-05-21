@@ -1,6 +1,7 @@
 import { Project, SelectedEntity, SemanticEntity } from "../types";
 import { compactValue, linksFor, selectEntityFromId, semanticLabel } from "../utils";
 import { SemanticInspector } from "../components/SemanticInspector";
+import { ScrollArea } from "../ui";
 
 const ENCOUNTER_TYPES = ["simple encounter", "complex encounter", "battle", "monster", "shop", "treasure", "thief-encounter", "timed-encounter", "random-region"];
 
@@ -24,15 +25,17 @@ export function EncountersPanel({
           <span>{encounterTitle(activeEditor)}</span>
           <b>{entities.length.toLocaleString()}</b>
         </div>
-        <div className="record-table">
+        <ScrollArea className="record-table" aria-label={encounterTitle(activeEditor)}>
           {entities.map((entity) => (
             <EncounterRow key={entity.id} project={project} entity={entity} onSelectEntity={onSelectEntity} />
           ))}
           {!project && <div className="entity-empty">Open a project to inspect encounters.</div>}
-        </div>
+        </ScrollArea>
       </section>
       <aside className="tab-panel semantic-right">
-        <SemanticInspector project={project} selectedEntity={selectedEntity} onSelect={onSelectEntity} />
+        <ScrollArea className="semantic-right-scroll" aria-label="Encounter semantic inspector">
+          <SemanticInspector project={project} selectedEntity={selectedEntity} onSelect={onSelectEntity} />
+        </ScrollArea>
       </aside>
     </div>
   );

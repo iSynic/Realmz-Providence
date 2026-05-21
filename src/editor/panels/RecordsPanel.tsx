@@ -2,6 +2,7 @@ import { Project, SelectedEntity } from "../types";
 import { compactValue, linksFor, selectEntityFromId, semanticLabel } from "../utils";
 import { semanticRecordGroups } from "../semanticGraph";
 import { SemanticInspector } from "../components/SemanticInspector";
+import { ScrollArea } from "../ui";
 
 export function RecordsPanel({
   project,
@@ -21,7 +22,7 @@ export function RecordsPanel({
           <span>Record Catalog</span>
           <b>{records.length.toLocaleString()}</b>
         </div>
-        <div className="alignment-strip">
+        <ScrollArea className="alignment-strip" orientation="horizontal" aria-label="Record source groups">
           {groups.map((group) => (
             <article key={group.source.id} className={group.source.origin}>
               <strong>{group.source.name}</strong>
@@ -29,8 +30,8 @@ export function RecordsPanel({
               <small>{group.source.layout ? `${group.source.layout.kind} | ${group.source.layout.recordBytes} bytes` : group.source.origin}</small>
             </article>
           ))}
-        </div>
-        <div className="record-table">
+        </ScrollArea>
+        <ScrollArea className="record-table" aria-label="Record Catalog">
           {records.slice(0, 900).map((record) => (
             <article key={record.id} className="record-row">
               <button onClick={() => onSelectEntity(selectEntityFromId(record.id))}>
@@ -43,10 +44,12 @@ export function RecordsPanel({
             </article>
           ))}
           {!project && <div className="entity-empty">Open a project to inspect record layouts.</div>}
-        </div>
+        </ScrollArea>
       </section>
       <aside className="tab-panel semantic-right">
-        <SemanticInspector project={project} selectedEntity={selectedEntity} onSelect={onSelectEntity} />
+        <ScrollArea className="semantic-right-scroll" aria-label="Record semantic inspector">
+          <SemanticInspector project={project} selectedEntity={selectedEntity} onSelect={onSelectEntity} />
+        </ScrollArea>
       </aside>
     </div>
   );

@@ -4,6 +4,7 @@ import { Issue, Project, SelectedEntity } from "../types";
 import { SemanticInspector } from "../components/SemanticInspector";
 import { selectEntityFromId } from "../utils";
 import { assetFallbacks, blockedSemanticObjects, generatedRuntimeCaches, resourceGaps, sourcePassThroughList, unresolvedLinks } from "../semanticGraph";
+import { ScrollArea } from "../ui";
 
 export function LinterPanel({
   project,
@@ -42,7 +43,7 @@ export function LinterPanel({
           {project?.validation.ok ? <CheckCircle2 size={18} /> : <XCircle size={18} />}
           <span>{project ? (project.validation.ok ? "No blocking export errors" : "Blocking export issues found") : "No project loaded"}</span>
         </div>
-        <div className="lint-results">
+        <ScrollArea className="lint-results" aria-label="Project Linter">
           {semanticGroups.map((group) => (
             <section key={group.title}>
               <header>{group.title}</header>
@@ -64,10 +65,12 @@ export function LinterPanel({
             </section>
           ))}
           {project && issues.length === 0 && <div className="entity-empty">All checks passed.</div>}
-        </div>
+        </ScrollArea>
       </section>
       <aside className="tab-panel semantic-right">
-        <SemanticInspector project={project} selectedEntity={selectedEntity} onSelect={onSelectEntity} />
+        <ScrollArea className="semantic-right-scroll" aria-label="Linter semantic inspector">
+          <SemanticInspector project={project} selectedEntity={selectedEntity} onSelect={onSelectEntity} />
+        </ScrollArea>
       </aside>
     </div>
   );

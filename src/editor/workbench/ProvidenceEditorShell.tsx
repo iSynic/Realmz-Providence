@@ -1,5 +1,4 @@
 import { ReactNode } from "react";
-import { ScrollAffordanceLayer } from "../components/ScrollAffordanceLayer";
 import { EditorState } from "../store";
 import { EditorTab } from "../types";
 import { DomainRail } from "./DomainRail";
@@ -135,7 +134,6 @@ export function ProvidenceEditorShell({
         project={state.project}
         catalog={state.libraryCatalog}
       />
-      <ScrollAffordanceLayer />
     </div>
   );
 }

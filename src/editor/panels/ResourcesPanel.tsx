@@ -7,6 +7,7 @@ import { resourceConsumers, resourceGaps, resourceMembersForType, schemaEntities
 import { SemanticInspector } from "../components/SemanticInspector";
 import { tileColor } from "../components/TileSprite";
 import { loadBrowserBundledLibraryAssetPreview } from "../browser/library";
+import { ScrollArea } from "../ui";
 
 export function ResourcesPanel({
   project,
@@ -48,7 +49,7 @@ export function ResourcesPanel({
   const showRenderAssets = showAll || activeEditor === "render-assets";
   return (
     <div className="editor-full-panel asset-workbench">
-      <div className="asset-workbench-main">
+      <ScrollArea className="asset-workbench-main" aria-label="Assets workbench">
       {showProjectAssets && (
       <section className="tab-panel asset-authoring-panel">
         <div className="panel-header">
@@ -58,7 +59,7 @@ export function ResourcesPanel({
             <AssetImportBar onImportAssets={onImportAssets} compact />
           </div>
         </div>
-        <div className="managed-asset-grid">
+        <ScrollArea className="managed-asset-grid" aria-label="Managed Assets">
           {project?.assets.map((asset) => (
             <ManagedAssetCard
               key={asset.id}
@@ -73,7 +74,7 @@ export function ResourcesPanel({
             <p className="empty-copy compact">Import pictures, icons, or sounds to make them available to scripts and export.</p>
           )}
           {!project && <p className="empty-copy compact">Open a project to manage scenario assets.</p>}
-        </div>
+        </ScrollArea>
       </section>
       )}
       {showSpecialLand && (
@@ -93,7 +94,7 @@ export function ResourcesPanel({
           <span>Library Assets</span>
           <b>{libraryAssets.length.toLocaleString()}</b>
         </div>
-        <div className="library-asset-strip">
+        <ScrollArea className="library-asset-strip" aria-label="Library Assets">
           {libraryAssets.slice(0, 120).map((asset) => (
             <LibraryAssetCard
               key={asset.id}
@@ -103,7 +104,7 @@ export function ResourcesPanel({
             />
           ))}
           {libraryAssets.length === 0 && <p className="empty-copy compact">Bundled libraries did not expose media assets.</p>}
-        </div>
+        </ScrollArea>
       </section>
       )}
       {showResourceForks && (
@@ -125,7 +126,7 @@ export function ResourcesPanel({
           })}
         </div>
         {gaps.length > 0 && (
-          <div className="lint-results compact">
+          <ScrollArea className="lint-results compact" aria-label="Resource Fallbacks">
             <section>
               <header>Resource Fallbacks</header>
               {gaps.slice(0, 8).map((gap) => (
@@ -135,9 +136,9 @@ export function ResourcesPanel({
                 </button>
               ))}
             </section>
-          </div>
+          </ScrollArea>
         )}
-        <div className="resource-list">
+        <ScrollArea className="resource-list" aria-label="Resource Fork Inventory">
           {resources.slice(0, 500).map((entity) => {
             const consumers = resourceConsumers(project, entity.id);
             return (
@@ -149,7 +150,7 @@ export function ResourcesPanel({
             );
           })}
           {!project && <div className="entity-empty">Open a project to inspect resources.</div>}
-        </div>
+        </ScrollArea>
       </section>
       )}
       {showRenderAssets && (
@@ -158,7 +159,7 @@ export function ResourcesPanel({
           <span>Tile Atlases</span>
           <b>{tileAtlases.length.toLocaleString()}</b>
         </div>
-        <div className="asset-grid compact">
+        <ScrollArea className="asset-grid compact" aria-label="Tile Atlases">
           {tileAtlases.map((asset) => (
             <article key={asset.id} className="asset-card">
               <div className="asset-swatch" style={{ background: tileColor(numberSummary(asset.summary.landlook)) }}>
@@ -170,12 +171,14 @@ export function ResourcesPanel({
               {asset.summary.imagePath != null && <small>{compactValue(asset.summary.imagePath)}</small>}
             </article>
           ))}
-        </div>
+        </ScrollArea>
       </section>
       )}
-      </div>
+      </ScrollArea>
       <aside className="tab-panel semantic-right">
-        <SemanticInspector project={project} selectedEntity={selectedEntity} onSelect={onSelectEntity} />
+        <ScrollArea className="semantic-right-scroll" aria-label="Asset semantic inspector">
+          <SemanticInspector project={project} selectedEntity={selectedEntity} onSelect={onSelectEntity} />
+        </ScrollArea>
       </aside>
     </div>
   );
@@ -272,7 +275,7 @@ function SpecialLandTilePanel({
         Special Land Tiles are 32 x 32 scenario <code>cicn</code> resources addressed by negative tile ids such as <code>-100</code>.
         They are separate from standard land tile set atlases.
       </div>
-      <div className="managed-asset-grid compact-assets">
+      <ScrollArea className="managed-asset-grid compact-assets" aria-label="Authored special land tiles">
         {authoredTiles.map((asset) => (
           <SpecialLandAssetCard
             key={asset.id}
@@ -286,15 +289,15 @@ function SpecialLandTilePanel({
           <p className="empty-copy compact">Import a small image here to create a 32 x 32 cicn special land tile.</p>
         )}
         {!project && <p className="empty-copy compact">Open a project to author Special Land Tiles. Bundled examples remain read-only below.</p>}
-      </div>
+      </ScrollArea>
       {libraryTiles.length > 0 && (
         <>
           <div className="subsection-label">Read-only library examples</div>
-          <div className="library-asset-strip compact-assets">
+          <ScrollArea className="library-asset-strip compact-assets" aria-label="Read-only special land tile examples">
             {libraryTiles.slice(0, 48).map((asset) => (
               <LibraryAssetCard key={asset.id} asset={asset} desktopRuntime={desktopRuntime} workspaceDir={workspaceDir} />
             ))}
-          </div>
+          </ScrollArea>
         </>
       )}
     </section>

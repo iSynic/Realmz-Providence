@@ -28,6 +28,7 @@ import {
 import { hasSecretMarkerTile, hasSecretPathTile, isSecretWalkableTile } from "../map/secrets";
 import { useMapInteractions } from "../map/useMapInteractions";
 import { triggerEntityId } from "../utils";
+import { ScrollArea } from "../ui";
 import { drawTileSprite, tileColor } from "./TileSprite";
 
 const BASE_CANVAS_SIZE = 900;
@@ -250,7 +251,7 @@ export function RealmzMapCanvas({
   ]);
 
   return (
-    <div className="room-canvas-wrap" ref={wrapRef}>
+    <ScrollArea className="room-canvas-wrap" orientation="both" aria-label="Map canvas" onViewportRef={(node) => { wrapRef.current = node; }}>
       <div className="canvas-frame" style={{ width: `${canvasCssSize}px`, height: `${canvasCssSize}px` }}>
         <canvas
           ref={baseCanvasRef}
@@ -278,7 +279,7 @@ export function RealmzMapCanvas({
           tilesetLabel={viewOptions.showRealTiles && atlas ? `${atlas.asset.name} atlas` : `${tileset?.name ?? "unknown"} decoded`}
         />
       </div>
-    </div>
+    </ScrollArea>
   );
 }
 

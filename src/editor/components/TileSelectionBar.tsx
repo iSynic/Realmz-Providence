@@ -3,6 +3,7 @@ import { EditorState } from "../store";
 import { MapEntity, TilesetAsset } from "../types";
 import { TileSprite, tileColor } from "./TileSprite";
 import { TutorialTip } from "./TutorialTip";
+import { ScrollArea } from "../ui";
 
 const FALLBACK_TILE_CHOICES = [
   0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 20, 24, 32, 40, 48, 64, 80, 96, 128, 160,
@@ -61,7 +62,7 @@ export function PaintPalettePanel({
         {inspectedTile != null && <b className="cell-tile-readout">Cell tile {inspectedTile}</b>}
         <b>Paint {selectedTile}</b>
       </div>
-      <div className={listClass} aria-label="Paint Palette">
+      <ScrollArea className={listClass} orientation={variant === "bar" ? "horizontal" : "vertical"} aria-label="Paint Palette">
         {paletteTiles.map((tile) => (
           <button
             ref={(node) => {
@@ -78,7 +79,7 @@ export function PaintPalettePanel({
             <span className="tile-label">{tile}</span>
           </button>
         ))}
-      </div>
+      </ScrollArea>
       <small>{atlasStatus}</small>
     </section>
   );
