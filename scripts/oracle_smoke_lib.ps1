@@ -278,6 +278,36 @@ function Get-OracleFixtureDefinition {
   return $definition
 }
 
+function New-OracleGameplayDiagnostics {
+  param(
+    [bool]$TraceStart = $true,
+    [bool]$TraceActions = $true,
+    [bool]$TraceRender = $true,
+    [bool]$CaptureOnTimeout = $true
+  )
+  return [ordered]@{
+    traceStart = $TraceStart
+    traceActions = $TraceActions
+    traceRender = $TraceRender
+    captureOnTimeout = $CaptureOnTimeout
+  }
+}
+
+function New-OracleRenderFrameStep {
+  param(
+    [string]$Name,
+    [object]$Assert = $null
+  )
+  $step = [ordered]@{
+    name = $Name
+    command = "renderFrame"
+  }
+  if ($Assert) {
+    $step.assert = $Assert
+  }
+  return $step
+}
+
 function Get-OracleGameplayFixtureDefinitions {
   $baseAssertions = [ordered]@{
     validationOk = $true
@@ -285,30 +315,40 @@ function Get-OracleGameplayFixtureDefinitions {
     exportContains = @("Scenario", "Data LD", "Data DD")
     semanticLinkKinds = @("has_render_profile")
   }
-  $startSteps = @(
-    [ordered]@{
-      name = "start"
-      command = "startScenario"
-      characters = @("Beldar", "Dirk")
-      assert = [ordered]@{
-        partyCountAtLeast = 2
-        partyContains = @("Beldar", "Dirk")
-      }
+  $diagnostics = New-OracleGameplayDiagnostics
+  $startStep = [ordered]@{
+    name = "start"
+    command = "startScenario"
+    characters = @("Beldar", "Dirk")
+    assert = [ordered]@{
+      partyCountAtLeast = 2
+      partyContains = @("Beldar", "Dirk")
     }
+  }
+  $startSteps = @(
+    $startStep,
+    (New-OracleRenderFrameStep -Name "render-start" -Assert ([ordered]@{ partyCountAtLeast = 2; partyContains = @("Beldar", "Dirk") }))
   )
   $moveSteps = @(
-    $startSteps[0],
+    $startStep,
+    (New-OracleRenderFrameStep -Name "render-start" -Assert ([ordered]@{ partyCountAtLeast = 2; partyContains = @("Beldar", "Dirk") })),
     [ordered]@{ name = "noclip"; command = "setNoclip"; enabled = $true; assert = [ordered]@{ noclip = $true } },
     [ordered]@{ name = "before-move"; command = "warpOutdoor"; map = 0; look = 0; x = 19; y = 20; assert = [ordered]@{ globalX = 19; globalY = 20 } },
-    [ordered]@{ name = "after-move"; command = "move"; direction = "east"; assert = [ordered]@{ deltaFrom = [ordered]@{ from = "before-move"; dx = 1; dy = 0 } } }
+    (New-OracleRenderFrameStep -Name "render-before-move" -Assert ([ordered]@{ globalX = 19; globalY = 20 })),
+    [ordered]@{ name = "after-move"; command = "move"; direction = "east"; assert = [ordered]@{ deltaFrom = [ordered]@{ from = "before-move"; dx = 1; dy = 0 } } },
+    (New-OracleRenderFrameStep -Name "render-after-move" -Assert ([ordered]@{ globalX = 20; globalY = 20 }))
   )
   $saveLoadSteps = @(
-    $startSteps[0],
+    $startStep,
+    (New-OracleRenderFrameStep -Name "render-start" -Assert ([ordered]@{ partyCountAtLeast = 2; partyContains = @("Beldar", "Dirk") })),
     [ordered]@{ name = "noclip"; command = "setNoclip"; enabled = $true },
     [ordered]@{ name = "saved-position"; command = "warpOutdoor"; map = 0; look = 0; x = 19; y = 20; assert = [ordered]@{ globalX = 19; globalY = 20 } },
+    (New-OracleRenderFrameStep -Name "render-saved-position" -Assert ([ordered]@{ globalX = 19; globalY = 20 })),
     [ordered]@{ name = "save-a"; command = "saveSlot"; slot = "A"; assert = [ordered]@{ saveSlotAExists = $true } },
     [ordered]@{ name = "away"; command = "warpOutdoor"; map = 0; look = 0; x = 30; y = 30; assert = [ordered]@{ globalX = 30; globalY = 30 } },
-    [ordered]@{ name = "load-a"; command = "loadSlot"; slot = "A"; assert = [ordered]@{ sameAs = [ordered]@{ from = "saved-position"; fields = @("globalX", "globalY", "landLevel", "inDungeon", "partyCount", "characters") } } }
+    (New-OracleRenderFrameStep -Name "render-away" -Assert ([ordered]@{ globalX = 30; globalY = 30 })),
+    [ordered]@{ name = "load-a"; command = "loadSlot"; slot = "A"; assert = [ordered]@{ sameAs = [ordered]@{ from = "saved-position"; fields = @("globalX", "globalY", "landLevel", "inDungeon", "partyCount", "characters") } } },
+    (New-OracleRenderFrameStep -Name "render-loaded" -Assert ([ordered]@{ sameAs = [ordered]@{ from = "saved-position"; fields = @("globalX", "globalY", "landLevel", "inDungeon", "partyCount", "characters") } }))
   )
 
   return @(
@@ -320,7 +360,7 @@ function Get-OracleGameplayFixtureDefinitions {
       HarnessName = "Tutorial oracle gameplay start"
       Commands = @()
       Assertions = $baseAssertions
-      GameplayScript = [ordered]@{ version = 1; name = "Tutorial gameplay start"; requiredCharacters = @("Beldar", "Dirk"); steps = $startSteps; assertions = [ordered]@{ partyCountAtLeast = 2 } }
+      GameplayScript = [ordered]@{ version = 1; name = "Tutorial gameplay start"; diagnostics = $diagnostics; requiredCharacters = @("Beldar", "Dirk"); steps = $startSteps; assertions = [ordered]@{ partyCountAtLeast = 2 } }
       PostExportMutation = "none"
       ClassicArgs = @{}
       RequiresClassicSummary = $true
@@ -333,7 +373,7 @@ function Get-OracleGameplayFixtureDefinitions {
       HarnessName = "Tutorial oracle gameplay movement"
       Commands = @()
       Assertions = $baseAssertions
-      GameplayScript = [ordered]@{ version = 1; name = "Tutorial gameplay movement"; requiredCharacters = @("Beldar", "Dirk"); steps = $moveSteps; assertions = [ordered]@{ globalX = 20; globalY = 20 } }
+      GameplayScript = [ordered]@{ version = 1; name = "Tutorial gameplay movement"; diagnostics = $diagnostics; requiredCharacters = @("Beldar", "Dirk"); steps = $moveSteps; assertions = [ordered]@{ globalX = 20; globalY = 20 } }
       PostExportMutation = "none"
       ClassicArgs = @{}
       RequiresClassicSummary = $true
@@ -383,7 +423,7 @@ function Get-OracleGameplayFixtureDefinitions {
         exportContains = @("Scenario", "Data LD", "Data DD")
         semanticLinkKinds = @("has_render_profile")
       }
-      GameplayScript = [ordered]@{ version = 1; name = "Tutorial gameplay trigger"; requiredCharacters = @("Beldar", "Dirk"); steps = $moveSteps; assertions = [ordered]@{ questEquals = [ordered]@{ "7" = 1 }; globalX = 20; globalY = 20 } }
+      GameplayScript = [ordered]@{ version = 1; name = "Tutorial gameplay trigger"; diagnostics = $diagnostics; requiredCharacters = @("Beldar", "Dirk"); steps = $moveSteps; assertions = [ordered]@{ questEquals = [ordered]@{ "7" = 1 }; globalX = 20; globalY = 20 } }
       PostExportMutation = "none"
       ClassicArgs = @{}
       RequiresClassicSummary = $true
@@ -396,7 +436,7 @@ function Get-OracleGameplayFixtureDefinitions {
       HarnessName = "Tutorial oracle gameplay save load"
       Commands = @()
       Assertions = $baseAssertions
-      GameplayScript = [ordered]@{ version = 1; name = "Tutorial gameplay save load"; requiredCharacters = @("Beldar", "Dirk"); steps = $saveLoadSteps; assertions = [ordered]@{ sameAs = [ordered]@{ from = "saved-position"; fields = @("globalX", "globalY", "landLevel", "inDungeon", "partyCount", "characters") } } }
+      GameplayScript = [ordered]@{ version = 1; name = "Tutorial gameplay save load"; diagnostics = $diagnostics; requiredCharacters = @("Beldar", "Dirk"); steps = $saveLoadSteps; assertions = [ordered]@{ sameAs = [ordered]@{ from = "saved-position"; fields = @("globalX", "globalY", "landLevel", "inDungeon", "partyCount", "characters") } } }
       PostExportMutation = "none"
       ClassicArgs = @{}
       RequiresClassicSummary = $true
@@ -409,7 +449,7 @@ function Get-OracleGameplayFixtureDefinitions {
       HarnessName = "Tutorial oracle gameplay missing character"
       Commands = @()
       Assertions = $baseAssertions
-      GameplayScript = [ordered]@{ version = 1; name = "Tutorial gameplay missing character"; requiredCharacters = @("OracleMissingHero"); steps = @([ordered]@{ name = "start"; command = "startScenario"; characters = @("OracleMissingHero") }); assertions = @{} }
+      GameplayScript = [ordered]@{ version = 1; name = "Tutorial gameplay missing character"; diagnostics = $diagnostics; requiredCharacters = @("OracleMissingHero"); steps = @([ordered]@{ name = "start"; command = "startScenario"; characters = @("OracleMissingHero") }); assertions = @{} }
       PostExportMutation = "none"
       ClassicArgs = @{}
       RequiresClassicSummary = $true
@@ -426,7 +466,7 @@ function Get-OracleGameplayFixtureDefinitions {
         [ordered]@{ kind = "updateActionSlot"; label = "Oracle set quest trigger"; triggerId = "Data DD:0:99"; slot = 0; rawCode = 47; id = 7 }
       )
       Assertions = [ordered]@{ validationOk = $true; projectHasMaps = $true; commandsAppliedAtLeast = 3; exportContains = @("Scenario", "Data LD", "Data DD") }
-      GameplayScript = [ordered]@{ version = 1; name = "Tutorial gameplay trigger not fired"; requiredCharacters = @("Beldar", "Dirk"); steps = @($startSteps[0], [ordered]@{ name = "before-trigger"; command = "warpOutdoor"; map = 0; look = 0; x = 19; y = 20 }); assertions = [ordered]@{ questEquals = [ordered]@{ "7" = 1 } } }
+      GameplayScript = [ordered]@{ version = 1; name = "Tutorial gameplay trigger not fired"; diagnostics = $diagnostics; requiredCharacters = @("Beldar", "Dirk"); steps = @($startStep, (New-OracleRenderFrameStep -Name "render-start"), [ordered]@{ name = "before-trigger"; command = "warpOutdoor"; map = 0; look = 0; x = 19; y = 20 }, (New-OracleRenderFrameStep -Name "render-before-trigger")); assertions = [ordered]@{ questEquals = [ordered]@{ "7" = 1 } } }
       PostExportMutation = "none"
       ClassicArgs = @{}
       RequiresClassicSummary = $true
@@ -439,7 +479,7 @@ function Get-OracleGameplayFixtureDefinitions {
       HarnessName = "Tutorial oracle gameplay save load mismatch"
       Commands = @()
       Assertions = $baseAssertions
-      GameplayScript = [ordered]@{ version = 1; name = "Tutorial gameplay save load mismatch"; requiredCharacters = @("Beldar", "Dirk"); steps = $saveLoadSteps; assertions = [ordered]@{ globalX = 99 } }
+      GameplayScript = [ordered]@{ version = 1; name = "Tutorial gameplay save load mismatch"; diagnostics = $diagnostics; requiredCharacters = @("Beldar", "Dirk"); steps = $saveLoadSteps; assertions = [ordered]@{ globalX = 99 } }
       PostExportMutation = "none"
       ClassicArgs = @{}
       RequiresClassicSummary = $true
@@ -456,6 +496,143 @@ function Get-OracleGameplayFixtureDefinition {
     throw "Unknown oracle gameplay fixture '$Fixture'. Available fixtures: $available"
   }
   return $definition
+}
+
+function Read-OracleCorpusBaseline {
+  param([string]$RepoRoot)
+  $baselinePath = Join-Path $RepoRoot "scripts\oracle_corpus_baseline.json"
+  if (-not (Test-Path -LiteralPath $baselinePath)) {
+    throw "Oracle corpus baseline was not found: $baselinePath"
+  }
+  return Get-Content -Raw -LiteralPath $baselinePath | ConvertFrom-Json
+}
+
+function Assert-OracleCorpusRootSafe {
+  param(
+    [string]$CorpusRoot,
+    [string]$OracleRoot
+  )
+  $resolvedCorpus = (Resolve-Path -LiteralPath $CorpusRoot).Path
+  $resolvedOracle = (Resolve-Path -LiteralPath $OracleRoot).Path
+  $runtimeScenarioRoot = [System.IO.Path]::GetFullPath((Join-Path $resolvedOracle "out_win_clang\Scenarios"))
+  $runtimePrefix = $runtimeScenarioRoot.TrimEnd('\') + '\'
+  if (
+    $resolvedCorpus.Equals($runtimeScenarioRoot, [System.StringComparison]::OrdinalIgnoreCase) -or
+    $resolvedCorpus.StartsWith($runtimePrefix, [System.StringComparison]::OrdinalIgnoreCase)
+  ) {
+    throw "Refusing to use the Classic runtime mirror as corpus source. CorpusRoot=$resolvedCorpus RuntimeMirrorRoot=$runtimeScenarioRoot"
+  }
+  return $resolvedCorpus
+}
+
+function Get-OracleCorpusScenarioEntries {
+  param(
+    [object]$Baseline,
+    [string]$CorpusRoot,
+    [string]$Scenario = "",
+    [int]$MaxScenarios = 0
+  )
+  $entries = @()
+  foreach ($baselineScenario in @($Baseline.scenarios)) {
+    $name = [string]$baselineScenario.name
+    if (-not [string]::IsNullOrWhiteSpace($Scenario) -and $name -ne $Scenario) {
+      continue
+    }
+    $sourcePath = Join-Path $CorpusRoot $name
+    $entries += [pscustomobject]@{
+      Name = $name
+      SourcePath = $sourcePath
+      Exists = (Test-Path -LiteralPath (Join-Path $sourcePath "Scenario"))
+      Baseline = $baselineScenario
+    }
+  }
+  if (-not [string]::IsNullOrWhiteSpace($Scenario) -and $entries.Count -eq 0) {
+    $available = (@($Baseline.scenarios) | ForEach-Object { [string]$_.name }) -join ", "
+    throw "Unknown corpus scenario '$Scenario'. Available scenarios: $available"
+  }
+  if ($MaxScenarios -gt 0) {
+    $entries = @($entries | Select-Object -First $MaxScenarios)
+  }
+  return @($entries)
+}
+
+function ConvertTo-OracleSafeName {
+  param([string]$Name)
+  $safe = ($Name -replace '[\\/:*?"<>|]', "_")
+  $safe = ($safe -replace '\s+', "-")
+  return $safe
+}
+
+function New-OracleCorpusFixtureDefinition {
+  param(
+    [string]$ScenarioName,
+    [object]$BaselineEntry
+  )
+  $visualGate = [bool]$BaselineEntry.visualGate
+  $depth = if ($BaselineEntry.depth) { [string]$BaselineEntry.depth } else { "import-select-start" }
+  $notes = if ($BaselineEntry.notes) { [string]$BaselineEntry.notes } else { "" }
+  $failureKind = if ($BaselineEntry.failureKind) { [string]$BaselineEntry.failureKind } else { $null }
+  $lastGoodStage = if ($BaselineEntry.lastGoodStage) { [string]$BaselineEntry.lastGoodStage } else { $null }
+  $diagnosticOwner = if ($BaselineEntry.diagnosticOwner) { [string]$BaselineEntry.diagnosticOwner } else { $null }
+  $markerNotes = if ($BaselineEntry.markerNotes) { [string]$BaselineEntry.markerNotes } else { $null }
+  $diagnostics = New-OracleGameplayDiagnostics
+  $scenarioAssert = [ordered]@{
+    scenarioNameContains = $ScenarioName
+    partyCountAtLeast = 2
+    partyContains = @("Beldar", "Dirk")
+  }
+  $startSteps = @(
+    [ordered]@{
+      name = "start"
+      command = "startScenario"
+      characters = @("Beldar", "Dirk")
+      assert = $scenarioAssert
+    },
+    (New-OracleRenderFrameStep -Name "render-start" -Assert $scenarioAssert),
+    [ordered]@{
+      name = "snapshot"
+      command = "snapshot"
+      assert = $scenarioAssert
+    }
+  )
+  return [pscustomobject]@{
+    Name = $ScenarioName
+    Description = "Corpus conformance for $ScenarioName."
+    ExpectedOk = [bool]$BaselineEntry.expectedOk
+    ExpectedStage = [string]$BaselineEntry.expectedStage
+    HarnessName = "$ScenarioName oracle corpus conformance"
+    Commands = @()
+    Assertions = [ordered]@{
+      validationOk = $true
+      projectHasMaps = $true
+      exportContains = @("Scenario", "Data LD", "Data DD")
+      semanticLinkKinds = @("has_render_profile")
+    }
+    GameplayScript = [ordered]@{
+      version = 1
+      name = "$ScenarioName corpus start"
+      diagnostics = $diagnostics
+      requiredCharacters = @("Beldar", "Dirk")
+      steps = $startSteps
+      assertions = [ordered]@{
+        scenarioNameContains = $ScenarioName
+        partyCountAtLeast = 2
+      }
+    }
+    PostExportMutation = "none"
+    ClassicArgs = @{ VisualGate = $visualGate; SupportScenarioName = "City of Bywater" }
+    RequiresClassicSummary = $true
+    Corpus = [ordered]@{
+      scenarioName = $ScenarioName
+      depth = $depth
+      visualGate = $visualGate
+      failureKind = $failureKind
+      lastGoodStage = $lastGoodStage
+      diagnosticOwner = $diagnosticOwner
+      markerNotes = $markerNotes
+      notes = $notes
+    }
+  }
 }
 
 function New-OracleRunPaths {
@@ -737,12 +914,38 @@ function Invoke-OracleClassic {
   )
   if (-not [string]::IsNullOrWhiteSpace($GameplayScriptPath)) {
     $classicArgs += @("-GameplayScriptPath", $GameplayScriptPath)
+    $classicArgs += @("-GameplayTimeoutSeconds", $ClassicTimeoutSeconds)
   }
   if ($KeepRunning) {
     $classicArgs += "-KeepRunning"
   }
   if ($FixtureDefinition.ClassicArgs.InjectFatalMarker) {
     $classicArgs += "-InjectFatalMarker"
+  }
+  if ($FixtureDefinition.ClassicArgs.VisualGate) {
+    $classicArgs += "-VisualGate"
+  }
+  if ($FixtureDefinition.ClassicArgs.TraceLevel) {
+    $classicArgs += @("-TraceLevel", [string]$FixtureDefinition.ClassicArgs.TraceLevel)
+  }
+  $supportScenarioName = if ($FixtureDefinition.ClassicArgs.SupportScenarioName) {
+    [string]$FixtureDefinition.ClassicArgs.SupportScenarioName
+  } else {
+    "City of Bywater"
+  }
+  $supportScenarioPath = if ($FixtureDefinition.ClassicArgs.SupportScenarioPath) {
+    [string]$FixtureDefinition.ClassicArgs.SupportScenarioPath
+  } else {
+    $defaultSupportScenarioPath = "F:\Realmz\out_win_clang\Scenarios\$supportScenarioName"
+    if (Test-Path -LiteralPath (Join-Path $defaultSupportScenarioPath "Scenario")) {
+      $defaultSupportScenarioPath
+    } else {
+      ""
+    }
+  }
+  if (-not [string]::IsNullOrWhiteSpace($supportScenarioPath) -and $supportScenarioName -ne $ScenarioName) {
+    $classicArgs += @("-SupportScenarioPath", $supportScenarioPath)
+    $classicArgs += @("-SupportScenarioName", $supportScenarioName)
   }
   $previousErrorActionPreference = $ErrorActionPreference
   $ErrorActionPreference = "Continue"
@@ -792,6 +995,27 @@ function Write-OracleFixtureSummary {
     classicSummary = $ClassicSummaryPath
   }
 
+  $classicResult = if ($ClassicSummaryPath -and (Test-Path -LiteralPath $ClassicSummaryPath)) {
+    Get-Content -Raw -LiteralPath $ClassicSummaryPath | ConvertFrom-Json
+  } else {
+    $null
+  }
+  $gameplayResult = if ($classicResult) { $classicResult.GameplayResult } else { $null }
+  $visualFailures = if ($classicResult) { @($classicResult.VisualFailures) } else { @() }
+  $visualWarnings = if ($classicResult) { @($classicResult.VisualWarnings) } else { @() }
+  $corpus = if ($FixtureDefinition.PSObject.Properties.Name -contains "Corpus") { $FixtureDefinition.Corpus } else { $null }
+  $failureKind = if ($corpus -and $corpus.failureKind) { [string]$corpus.failureKind } else { $null }
+  $lastGoodStage = if ($corpus -and $corpus.lastGoodStage) { [string]$corpus.lastGoodStage } else { $null }
+  $markerNotes = if ($corpus -and $corpus.markerNotes) { [string]$corpus.markerNotes } else { $null }
+  $diagnosticOwner = if ($corpus -and $corpus.diagnosticOwner) { [string]$corpus.diagnosticOwner } else { $null }
+  $visualRegionDiagnostics = if ($gameplayResult -and ($gameplayResult.PSObject.Properties.Name -contains "VisualRegions")) {
+    @($gameplayResult.VisualRegions)
+  } elseif ($classicResult -and ($classicResult.PSObject.Properties.Name -contains "VisualRegionDiagnostics")) {
+    @($classicResult.VisualRegionDiagnostics)
+  } else {
+    @()
+  }
+
   $classicSummaryRequirementOk = (-not $FixtureDefinition.RequiresClassicSummary) -or [bool]$ClassicSummaryPath
   $stageMatches = $Stage -eq $FixtureDefinition.ExpectedStage
   $matchedExpectation = (
@@ -819,6 +1043,37 @@ function Write-OracleFixtureSummary {
     exportDir = $Paths.ExportDir
     mutation = $MutationNote
     artifacts = $summaryArtifacts
+    corpus = $corpus
+    failureKind = $failureKind
+    lastGoodStage = $lastGoodStage
+    diagnosis = [ordered]@{
+      failureKind = $failureKind
+      lastGoodStage = $lastGoodStage
+      diagnosticOwner = $diagnosticOwner
+      markerNotes = $markerNotes
+      traceLevel = if ($FixtureDefinition.ClassicArgs.TraceLevel) { [string]$FixtureDefinition.ClassicArgs.TraceLevel } else { $null }
+      lastGameplayMarker = if ($classicResult -and $classicResult.GameplayMarkers) { @($classicResult.GameplayMarkers)[-1] } else { $null }
+      lastNewlandMarker = if ($classicResult -and $classicResult.NewlandMarkers) { @($classicResult.NewlandMarkers)[-1] } else { $null }
+      timeoutArtifacts = if ($gameplayResult -and ($gameplayResult.PSObject.Properties.Name -contains "TimeoutArtifacts")) { $gameplayResult.TimeoutArtifacts } else { $null }
+    }
+    startResult = if ($gameplayResult) {
+      [ordered]@{
+        ok = [bool]$gameplayResult.Ok
+        stage = $gameplayResult.Stage
+        failedAssertion = $gameplayResult.FailedAssertion
+        error = $gameplayResult.Error
+      }
+    } else { $null }
+    visualDiagnostics = if ($classicResult) {
+      [ordered]@{
+        visualGate = [bool]$classicResult.VisualGate
+        warnings = @($visualWarnings)
+        failures = @($visualFailures)
+        internalScreenshots = if ($gameplayResult) { @($gameplayResult.Screenshots) } else { @() }
+        hostScreenshots = if ($gameplayResult) { @($gameplayResult.HostScreenshots) } else { @() }
+      }
+    } else { $null }
+    visualRegionDiagnostics = @($visualRegionDiagnostics)
   }
   $summary | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $Paths.SummaryPath -Encoding utf8
   return [pscustomobject]$summary
