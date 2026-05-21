@@ -46,6 +46,9 @@ export function ExportPanel({
               ["Output", exportReport.outputPath],
               ["Written", exportReport.writtenFiles.join(", ") || "none"],
               ["Pass-through", exportReport.passThroughFiles.length.toLocaleString()],
+              ["Resources", exportReport.writtenResources.join(", ") || "none"],
+              ["Preserved Resources", exportReport.preservedResources.toLocaleString()],
+              ["Blocked Assets", exportReport.blockedAssets.join(", ") || "none"],
               ["Warnings", exportReport.warnings.length.toLocaleString()]
             ]}
           />
@@ -65,9 +68,20 @@ export function ExportPanel({
             ["Asset Fallbacks", plan.assetFallbacks.toLocaleString()],
             ["Runtime Caches", plan.runtimeCaches.toLocaleString()],
             ["Unresolved Links", plan.unresolvedLinks.toLocaleString()],
-            ["Blocked Objects", plan.blockedObjects.toLocaleString()]
+            ["Blocked Objects", plan.blockedObjects.toLocaleString()],
+            ["Managed Assets", plan.managedAssets.toLocaleString()]
           ]}
         />
+        {exportReport?.resourceWarnings.length ? (
+          <div className="lint-results compact">
+            <section>
+              <header>Resource Export Notes</header>
+              {exportReport.resourceWarnings.map((warning) => (
+                <div key={warning} className="lint-issue warning">! {warning}</div>
+              ))}
+            </section>
+          </div>
+        ) : null}
         <div className="record-table">
           {plan.exportableSources.map((source) => (
             <article key={source.name} className="record-row">
@@ -121,6 +135,7 @@ function exportPlan(project: Project | null) {
       runtimeCaches: 0,
       unresolvedLinks: 0,
       blockedObjects: 0,
+      managedAssets: 0,
       exportableSources: [] as NonNullable<ReturnType<typeof sourceByName>>[],
       passThroughSources: [] as ReturnType<typeof sourcePassThroughList>
     };
@@ -138,6 +153,7 @@ function exportPlan(project: Project | null) {
     runtimeCaches: generatedRuntimeCaches(project).length,
     unresolvedLinks: unresolvedLinks(project).length,
     blockedObjects: blocked.entities.length + blocked.records.length,
+    managedAssets: project.assets.length,
     exportableSources,
     passThroughSources
   };

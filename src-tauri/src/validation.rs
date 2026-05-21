@@ -57,6 +57,46 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
             }
         }
     }
+    for asset in &project.assets {
+        if matches!(asset.export_state, ManagedAssetExportState::Blocked) {
+            errors.push(format!(
+                "{} is blocked from export: converted Realmz resource data is not available.",
+                asset.label
+            ));
+        }
+        if !matches!(asset.resource_type.as_str(), "PICT" | "cicn" | "snd ") {
+            errors.push(format!(
+                "{} targets unsupported resource type {}.",
+                asset.label, asset.resource_type
+            ));
+        }
+        if matches!(asset.kind, ManagedAssetKind::SpecialLandTile) {
+            if asset.resource_type != "cicn" {
+                errors.push(format!(
+                    "{} is a Special Land Tile but targets {}; special land tiles must export as cicn resources.",
+                    asset.label, asset.resource_type
+                ));
+            }
+            if asset.resource_id >= 0 {
+                errors.push(format!(
+                    "{} uses resource id {}; Special Land Tiles should use negative cicn ids such as -100.",
+                    asset.label, asset.resource_id
+                ));
+            }
+            if asset.width.is_none() || asset.height.is_none() {
+                warnings.push(format!(
+                    "{} has no original image dimensions recorded; its 32 x 32 cicn conversion should be rechecked before export.",
+                    asset.label
+                ));
+            }
+        }
+        if asset.resource_id == 0 {
+            warnings.push(format!(
+                "{} uses resource id 0; Realmz resources normally use explicit nonzero ids.",
+                asset.label
+            ));
+        }
+    }
     validate_semantic_schema(project, &mut errors, &mut warnings);
 
     let has_scenario_file = project
@@ -96,6 +136,12 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
             } else {
                 "."
             }
+        ));
+    }
+    if !project.assets.is_empty() {
+        warnings.push(format!(
+            "{} managed media asset(s) will be written into the exported Scenario resource fork.",
+            project.assets.len()
         ));
     }
 

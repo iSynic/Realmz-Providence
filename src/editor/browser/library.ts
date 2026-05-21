@@ -1,7 +1,11 @@
 import { LibraryCatalog, LibraryEntity, LibraryRecord, LibrarySource, ProvidenceWorkspace } from "../types";
 import { BrowserDirectoryHandle, BrowserFileSelection, BrowserScenarioSource } from "./fsAccess";
+import { previewResourceDataUrl } from "./resourcePreview";
 
 export const BROWSER_WORKSPACE_PATH = "browser://workspace";
+const LIBRARY_SCHEMA_VERSION = 2;
+const bundledResourceCache = new Map<string, Promise<ResourceEntry[]>>();
+const bundledPreviewCache = new Map<string, Promise<string | null>>();
 type BrowserLibraryFile = { name: string; relativePath: string; bytes: Uint8Array };
 type BrowserLibrarySourceKind = "divinity-import" | "realmz-reference";
 type ResourceEntry = {
@@ -69,6 +73,34 @@ export async function importBrowserLibrary(source: BrowserScenarioSource, source
   return buildLibraryCatalogFromFiles(source.name, files, sourceKind, "browser-memory://library", "browser-fallback");
 }
 
+export async function loadBrowserBundledLibraryAssetPreview(asset: LibraryCatalog["assets"][number]) {
+  if (asset.previewPath) return asset.previewPath;
+  const folder = bundledFolderForSource(asset.source);
+  if (!folder) return null;
+  const [filePath, fragment] = splitResourceFragment(asset.relativePath);
+  if (!fragment) return null;
+  const cacheKey = `${folder}:${asset.relativePath}`;
+  if (!bundledPreviewCache.has(cacheKey)) {
+    bundledPreviewCache.set(cacheKey, loadBrowserBundledResourcePreview(folder, filePath, fragment));
+  }
+  return bundledPreviewCache.get(cacheKey) ?? null;
+}
+
+async function loadBrowserBundledResourcePreview(folder: string, filePath: string, fragment: { resourceType: string; resourceId: number }) {
+  const url = `/bundled-libraries/${folder}/${encodePath(filePath.replace(/\\/g, "/"))}`;
+  if (!bundledResourceCache.has(url)) {
+    bundledResourceCache.set(url, fetch(url)
+      .then((response) => {
+        if (!response.ok) throw new Error(`Bundled library file missing: ${filePath}`);
+        return response.arrayBuffer();
+      })
+      .then((buffer) => parseResourceFork(new Uint8Array(buffer))));
+  }
+  const resources = await bundledResourceCache.get(url);
+  const resource = resources?.find((entry) => entry.resourceType === fragment.resourceType && entry.id === fragment.resourceId);
+  return resource ? previewResourceDataUrl(fragment.resourceType, resource.data) : null;
+}
+
 async function buildLibraryCatalogFromFiles(
   sourceName: string,
   files: BrowserLibraryFile[],
@@ -129,7 +161,7 @@ async function buildLibraryCatalogFromFiles(
     await addResourceEntries(sourceKind, id, file, records, entities, assets, diagnostics, confidence);
   }
   const catalog: LibraryCatalog = {
-    schemaVersion: 1,
+    schemaVersion: LIBRARY_SCHEMA_VERSION,
     importedAt: new Date().toISOString(),
     managedPath,
     sources,
@@ -150,7 +182,7 @@ async function buildLibraryCatalogFromFiles(
 
 function mergeCatalogs(catalogs: LibraryCatalog[]): LibraryCatalog {
   const catalog: LibraryCatalog = {
-    schemaVersion: 1,
+    schemaVersion: LIBRARY_SCHEMA_VERSION,
     importedAt: new Date().toISOString(),
     managedPath: "browser-bundled://library",
     sources: catalogs.flatMap((entry) => entry.sources),
@@ -338,7 +370,11 @@ async function addResourceEntries(
         source: sourceId,
         relativePath: `${file.relativePath}#${resourceType}:${resource.id}`,
         bytes: resource.length,
-        sha256
+        sha256,
+        resourceType,
+        resourceId: resource.id,
+        previewPath: null,
+        mimeType: resourceMimeType(resource.resourceType)
       });
     }
   }
@@ -467,11 +503,19 @@ function resourceLabel(file: BrowserLibraryFile, resource: ResourceEntry, entity
 }
 
 function resourceAssetType(resourceType: string, entityType: string) {
+  if (resourceType === "cicn" && entityType === "special-land-tile") return "icon";
   if (resourceType === "PICT" || entityType === "picture" || entityType === "special-land-tile") return "picture";
   if (resourceType === "cicn" || entityType.endsWith("-icon") || entityType === "icon-resource") return "icon";
   if (resourceType === "snd " || entityType === "sound") return "sound";
   if (resourceType === "TEXT" || entityType === "text-resource") return "text";
   return null;
+}
+
+function resourceMimeType(resourceType: string) {
+  if (resourceType === "PICT" || resourceType === "cicn") return "image/png";
+  if (resourceType === "snd ") return "audio/wav";
+  if (resourceType === "TEXT" || resourceType === "STR#") return "text/plain";
+  return "application/octet-stream";
 }
 
 function resourcePayloadSummary(resource: ResourceEntry) {
@@ -533,6 +577,22 @@ const ENTITY_LABELS: Record<string, string> = {
   "realmz-metadata-resource": "Realmz Metadata",
   "version-resource": "Version"
 };
+
+function bundledFolderForSource(source: string) {
+  if (source.includes(":divinity:") || source.includes("divinity-import")) return "divinity";
+  if (source.includes(":realmz:") || source.includes("realmz-reference")) return "realmz-reference";
+  return null;
+}
+
+function splitResourceFragment(relativePath: string) {
+  const [filePath, fragment] = relativePath.split("#");
+  if (!fragment) return [relativePath, null] as const;
+  const separator = fragment.lastIndexOf(":");
+  if (separator < 0) return [filePath, null] as const;
+  const resourceId = Number(fragment.slice(separator + 1));
+  if (!Number.isInteger(resourceId)) return [filePath, null] as const;
+  return [filePath, { resourceType: fragment.slice(0, separator), resourceId }] as const;
+}
 
 function encodePath(path: string) {
   return path.split("/").map((part) => encodeURIComponent(part)).join("/");

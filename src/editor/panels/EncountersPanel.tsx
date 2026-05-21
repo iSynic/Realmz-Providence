@@ -7,18 +7,21 @@ const ENCOUNTER_TYPES = ["simple encounter", "complex encounter", "battle", "mon
 export function EncountersPanel({
   project,
   selectedEntity,
-  onSelectEntity
+  onSelectEntity,
+  activeEditor = "domain"
 }: {
   project: Project | null;
   selectedEntity: SelectedEntity | null;
   onSelectEntity: (entity: SelectedEntity) => void;
+  activeEditor?: string;
 }) {
-  const entities = project?.semanticSchema.entities.filter((entity) => ENCOUNTER_TYPES.includes(entity.type)) ?? [];
+  const wantedTypes = encounterTypesForEditor(activeEditor);
+  const entities = project?.semanticSchema.entities.filter((entity) => wantedTypes.includes(entity.type)) ?? [];
   return (
     <div className="editor-full-panel semantic-workbench">
       <section className="tab-panel record-table-panel">
         <div className="panel-header">
-          <span>Encounters, Battles, Shops</span>
+          <span>{encounterTitle(activeEditor)}</span>
           <b>{entities.length.toLocaleString()}</b>
         </div>
         <div className="record-table">
@@ -33,6 +36,22 @@ export function EncountersPanel({
       </aside>
     </div>
   );
+}
+
+function encounterTypesForEditor(activeEditor: string) {
+  if (activeEditor === "simple") return ["simple encounter"];
+  if (activeEditor === "complex") return ["complex encounter"];
+  if (activeEditor === "rogue") return ["thief-encounter"];
+  if (activeEditor === "timed") return ["timed-encounter"];
+  return ENCOUNTER_TYPES;
+}
+
+function encounterTitle(activeEditor: string) {
+  if (activeEditor === "simple") return "Simple Encounter Editor";
+  if (activeEditor === "complex") return "Complex Encounter Editor";
+  if (activeEditor === "rogue") return "Rogue Encounter Editor";
+  if (activeEditor === "timed") return "Timed Encounter Editor";
+  return "Encounters, Battles, Shops";
 }
 
 function EncounterRow({

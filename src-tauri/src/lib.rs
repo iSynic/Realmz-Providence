@@ -4,6 +4,7 @@ pub mod exporter;
 pub mod importer;
 pub mod project;
 pub mod realmz;
+pub mod resource_fork;
 pub mod semantic;
 pub mod validation;
 pub mod workspace;
@@ -19,10 +20,16 @@ pub fn run() {
             commands::import_divinity_libraries,
             commands::import_realmz_reference_data,
             commands::load_library_asset,
+            commands::load_library_asset_preview,
+            commands::inspect_library_asset_preview,
             commands::import_scenario,
             commands::import_scenario_into_project,
             commands::open_project,
             commands::load_project_asset,
+            commands::load_project_asset_preview,
+            commands::import_project_media_asset,
+            commands::update_project_asset,
+            commands::delete_project_asset,
             commands::save_project,
             commands::export_project,
             commands::validate_project,

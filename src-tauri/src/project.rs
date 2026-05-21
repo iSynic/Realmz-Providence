@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-pub const PROJECT_SCHEMA_VERSION: u32 = 3;
+pub const PROJECT_SCHEMA_VERSION: u32 = 4;
 pub const SEMANTIC_SCHEMA_VERSION: u32 = 3;
 pub const MAP_SIZE: usize = 90;
 
@@ -16,7 +16,11 @@ pub struct ProvidenceProject {
     pub triggers: Vec<TriggerRecord>,
     pub random_levels: Vec<RandomLevel>,
     pub extracodes: Vec<ExtraCodeRow>,
+    #[serde(default)]
+    pub assets: Vec<ManagedAsset>,
     pub asset_catalog: AssetCatalog,
+    #[serde(default)]
+    pub editor_metadata: EditorMetadata,
     pub records: RecordCatalog,
     pub diagnostics: Vec<Diagnostic>,
     #[serde(default)]
@@ -31,6 +35,71 @@ pub struct ScenarioMeta {
     pub name: String,
     pub project_path: String,
     pub imported_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct EditorMetadata {
+    pub display_names: BTreeMap<String, EditorDisplayName>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EditorDisplayName {
+    pub label: String,
+    pub source: EditorNameSource,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum EditorNameSource {
+    User,
+    Generated,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ManagedAsset {
+    pub id: String,
+    pub label: String,
+    pub kind: ManagedAssetKind,
+    pub resource_type: String,
+    pub resource_id: i16,
+    pub file_name: String,
+    pub original_path: String,
+    pub preview_path: String,
+    pub resource_path: String,
+    pub mime_type: String,
+    pub bytes: u64,
+    pub sha256: String,
+    pub width: Option<u32>,
+    pub height: Option<u32>,
+    pub duration_ms: Option<u32>,
+    pub sample_rate: Option<u32>,
+    pub channels: Option<u16>,
+    pub export_state: ManagedAssetExportState,
+    pub provenance: String,
+    pub linked_entity: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "kebab-case")]
+pub enum ManagedAssetKind {
+    Picture,
+    Icon,
+    SpecialLandTile,
+    Sound,
+    Text,
+    Other,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "kebab-case")]
+pub enum ManagedAssetExportState {
+    Ready,
+    Blocked,
+    PreviewOnly,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

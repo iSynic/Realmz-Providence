@@ -8,7 +8,7 @@ import { assetFallbacks, blockedSemanticObjects, generatedRuntimeCaches, resourc
 export function createBrowserProject(projectName: string): Project {
   const safeName = projectName.trim() || "Untitled Scenario";
   const project: Project = {
-    schemaVersion: 3,
+    schemaVersion: 4,
     appVersion: "browser-preview",
     scenario: {
       name: safeName,
@@ -25,7 +25,9 @@ export function createBrowserProject(projectName: string): Project {
     triggers: [],
     randomLevels: [],
     extracodes: [],
+    assets: [],
     assetCatalog: { tilesets: [] },
+    editorMetadata: { displayNames: {} },
     records: { counts: {}, alignments: [] },
     diagnostics: [],
     semanticSchema: emptySemanticSchema(),
@@ -41,7 +43,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
   const scenarioName = source.name || "Untitled Scenario";
   const projectPath = `browser://${scenarioName}.providence`;
   const project: Project = {
-    schemaVersion: 3,
+    schemaVersion: 4,
     appVersion: "browser-preview",
     scenario: {
       name: scenarioName,
@@ -58,7 +60,9 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
     triggers: parsed.triggers,
     randomLevels: parsed.randomLevels,
     extracodes: parsed.extracodes,
+    assets: [],
     assetCatalog: parsed.assetCatalog,
+    editorMetadata: { displayNames: {} },
     records: parsed.records,
     diagnostics: parsed.diagnostics,
     semanticSchema: emptySemanticSchema(),
@@ -86,6 +90,8 @@ function emptySemanticSchema(): Project["semanticSchema"] {
 export async function openBrowserProject(source: BrowserScenarioSource): Promise<Project> {
   const text = await readProjectJson(source);
   const project = JSON.parse(text) as Project;
+  project.assets ??= [];
+  project.editorMetadata ??= { displayNames: {} };
   backfillTilesetMetadata(project);
   project.validation = validateBrowserProject(project);
   return project;
@@ -110,6 +116,13 @@ export function validateBrowserProject(project: Project): ValidationReport {
     if (alignment.status === "has-trailing-bytes") {
       warnings.push(`${alignment.source} has ${alignment.trailingBytes} trailing bytes after full records.`);
     }
+  }
+  for (const asset of project.assets ?? []) {
+    if (asset.exportState === "blocked") errors.push(`${asset.label} is blocked from Realmz export.`);
+    if (!["PICT", "cicn", "snd "].includes(asset.resourceType)) errors.push(`${asset.label} uses unsupported resource type ${asset.resourceType}.`);
+  }
+  if ((project.assets ?? []).length > 0) {
+    warnings.push(`${project.assets.length.toLocaleString()} managed media asset(s) are present; desktop export writes them to the Scenario resource fork.`);
   }
   if (project.semanticSchema.schemaVersion !== 3) {
     warnings.push(`Semantic schema version ${project.semanticSchema.schemaVersion} is stale; re-import this scenario to refresh archaeology data.`);

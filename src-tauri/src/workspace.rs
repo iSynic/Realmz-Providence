@@ -11,7 +11,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use walkdir::WalkDir;
 
 pub const WORKSPACE_SCHEMA_VERSION: u32 = 1;
-pub const LIBRARY_SCHEMA_VERSION: u32 = 1;
+pub const LIBRARY_SCHEMA_VERSION: u32 = 2;
 pub const WORKSPACE_FILE_NAME: &str = "workspace.json";
 pub const LIBRARY_DIR: &str = "library";
 pub const LIBRARY_CATALOG_FILE: &str = "catalog.json";
@@ -118,6 +118,14 @@ pub struct LibraryAsset {
     pub relative_path: String,
     pub bytes: u64,
     pub sha256: String,
+    #[serde(default)]
+    pub resource_type: Option<String>,
+    #[serde(default)]
+    pub resource_id: Option<i16>,
+    #[serde(default)]
+    pub preview_path: Option<String>,
+    #[serde(default)]
+    pub mime_type: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -515,6 +523,10 @@ fn add_resource_inventory(catalog: &mut LibraryCatalog, source: &LibrarySource, 
                 ),
                 bytes: resource.length as u64,
                 sha256: resource_sha256,
+                resource_type: Some(printable_token(&resource.resource_type)),
+                resource_id: Some(resource.id),
+                preview_path: None,
+                mime_type: Some(resource_mime_type(&resource.resource_type).to_string()),
             });
         }
     }
@@ -663,7 +675,8 @@ fn resource_entity_family(source: &LibrarySource, resource_type: &str) -> &'stat
 
 fn resource_asset_type(resource_type: &str, entity_type: &str) -> Option<&'static str> {
     match (resource_type, entity_type) {
-        ("PICT", _) | (_, "picture") | (_, "special-land-tile") => Some("picture"),
+        ("cicn", "special-land-tile") => Some("icon"),
+        ("PICT", _) | (_, "picture") => Some("picture"),
         ("cicn", _)
         | (_, "icon-resource")
         | (_, "monster-mash-icon")
@@ -672,6 +685,15 @@ fn resource_asset_type(resource_type: &str, entity_type: &str) -> Option<&'stati
         ("snd ", _) | (_, "sound") => Some("sound"),
         ("TEXT", _) | (_, "text-resource") => Some("text"),
         _ => None,
+    }
+}
+
+fn resource_mime_type(resource_type: &str) -> &'static str {
+    match resource_type {
+        "PICT" | "cicn" => "image/png",
+        "snd " => "audio/wav",
+        "TEXT" | "STR#" => "text/plain",
+        _ => "application/octet-stream",
     }
 }
 
@@ -845,6 +867,7 @@ fn load_catalog(workspace_dir: &Path) -> Result<Option<LibraryCatalog>> {
     }
     let text = fs::read_to_string(&catalog_path).with_path(&catalog_path)?;
     let mut catalog: LibraryCatalog = serde_json::from_str(&text).with_json_path(&catalog_path)?;
+    migrate_catalog(&mut catalog);
     summarize_catalog(&mut catalog);
     Ok(Some(catalog))
 }
@@ -866,6 +889,31 @@ fn summarize_catalog(catalog: &mut LibraryCatalog) {
         asset_count: catalog.assets.len(),
         diagnostic_count: catalog.diagnostics.len(),
     };
+}
+
+fn migrate_catalog(catalog: &mut LibraryCatalog) {
+    if catalog.schema_version < LIBRARY_SCHEMA_VERSION {
+        catalog.schema_version = LIBRARY_SCHEMA_VERSION;
+    }
+    for asset in &mut catalog.assets {
+        if asset.resource_type.is_none() || asset.resource_id.is_none() {
+            if let Some((resource_type, resource_id)) =
+                split_catalog_resource_fragment(&asset.relative_path)
+            {
+                asset.resource_type.get_or_insert(resource_type.clone());
+                asset.resource_id.get_or_insert(resource_id);
+                asset
+                    .mime_type
+                    .get_or_insert(resource_mime_type(&resource_type).to_string());
+            }
+        }
+    }
+}
+
+fn split_catalog_resource_fragment(relative_path: &str) -> Option<(String, i16)> {
+    let (_, fragment) = relative_path.split_once('#')?;
+    let (resource_type, id) = fragment.rsplit_once(':')?;
+    Some((resource_type.to_string(), id.parse::<i16>().ok()?))
 }
 
 fn catalog_has_source_kind(catalog: Option<&LibraryCatalog>, source_kind: LibrarySourceKind) -> bool {

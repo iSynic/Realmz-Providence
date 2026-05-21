@@ -5,4 +5,4 @@ src-tauri/target/
 .DS_Store
 projects/
 exports/
-
+workspace/

@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import { Database, Download, FilePlus2, FolderOpen, LibraryBig, RefreshCcw, Save, Upload } from "lucide-react";
+import { BookOpen, Database, Download, FilePlus2, FolderOpen, LibraryBig, RefreshCcw, Save, Upload } from "lucide-react";
 import { useEffect, useMemo, useReducer, useState } from "react";
 import { DEFAULT_DIVINITY_ROOT, DEFAULT_EXPORT, DEFAULT_REALMZ_DATA_ROOT, DEFAULT_WORKSPACE } from "./editor/constants";
 import {
@@ -18,7 +18,8 @@ import { EditorToolRail } from "./editor/components/EditorToolRail";
 import { loadImage } from "./editor/components/TileSprite";
 import { referencedMapIconIds } from "./editor/map/renderValues";
 import { editorReducer, initialEditorState, BROWSER_PREVIEW_STATUS } from "./editor/store";
-import { BenchmarkReport, ExportReport, LibraryCatalog, MapEntity, MapViewFlag, Project, ProjectCommand, ProvidenceWorkspace, SelectedEntity, SemanticEntity, TilesetAsset, ValidationReport } from "./editor/types";
+import { BenchmarkReport, ExportReport, LibraryCatalog, ManagedAssetKind, MapEntity, MapViewFlag, Project, ProjectCommand, ProvidenceWorkspace, SelectedEntity, SemanticEntity, TilesetAsset, ValidationReport } from "./editor/types";
+import { fileToMediaAssetRequest, nextResourceId, requestToBrowserAsset } from "./editor/mediaAssets";
 import { commandError, hasDesktopRuntime, issuesFor } from "./editor/utils";
 import {
   semanticMapRecordsForMap,
@@ -35,6 +36,9 @@ import { RecordsPanel } from "./editor/panels/RecordsPanel";
 import { ResourcesPanel } from "./editor/panels/ResourcesPanel";
 import { ScriptsPanel } from "./editor/panels/ScriptsPanel";
 import { SuiteDomainPanel } from "./editor/panels/SuiteDomainPanel";
+import { DocumentsView } from "./editor/views/DocumentsView";
+import { ProvidenceEditorShell } from "./editor/workbench/ProvidenceEditorShell";
+import { WorkbenchRouter } from "./editor/workbench/WorkbenchRouter";
 
 const DEFAULT_SCENARIO_ROOT = "F:\\Realmz\\base\\Realmz\\Scenarios";
 const DEFAULT_PROJECT_ROOT = "F:\\Realmz - Providence\\projects";
@@ -48,6 +52,7 @@ export function App() {
   const [projectDir, setProjectDir] = useState("");
   const [exportDir, setExportDir] = useState(DEFAULT_EXPORT);
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
+  const [documentsOpen, setDocumentsOpen] = useState(false);
   const [projectNameDraft, setProjectNameDraft] = useState("Untitled Scenario");
   const [state, dispatch] = useReducer(editorReducer, desktopRuntime, initialEditorState);
 
@@ -112,6 +117,10 @@ export function App() {
       disposed = true;
     };
   }, [desktopRuntime, workspaceDir]);
+
+  useEffect(() => {
+    document.documentElement.dataset.tutorial = state.tutorialEnabled ? "on" : "off";
+  }, [state.tutorialEnabled]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -621,6 +630,69 @@ export function App() {
     dispatch({ type: "applyCommand", command });
   }
 
+  async function importMediaAssets(files: File[], kind: ManagedAssetKind) {
+    if (!state.project || files.length === 0) return;
+    let project = state.project;
+    try {
+      dispatch({ type: "setStatus", status: `Importing ${files.length} ${kind} asset(s)...` });
+      for (const file of files) {
+        const request = await fileToMediaAssetRequest(file, kind, nextResourceId(project.assets ?? [], kind));
+        if (desktopRuntime) {
+          project = await invoke<Project>("import_project_media_asset", { projectDir, project, request });
+          dispatch({ type: "markSaved", project });
+        } else {
+          const asset = requestToBrowserAsset(request);
+          project = { ...project, assets: [...(project.assets ?? []), asset] };
+          dispatch({ type: "applyCommand", command: { kind: "attachProjectAsset", label: `Import ${asset.label}`, asset } });
+        }
+      }
+      if (desktopRuntime) {
+        dispatch({ type: "setProject", project, selectedMapId: state.selectedMapId });
+      }
+      dispatch({ type: "setStatus", status: `Imported ${files.length} ${kind} asset(s)` });
+    } catch (error) {
+      dispatch({ type: "setStatus", status: `Asset import failed: ${commandError(error)}` });
+    }
+  }
+
+  async function updateManagedAsset(assetId: string, changes: { label?: string; resourceId?: number }) {
+    if (!state.project) return;
+    if (!desktopRuntime) {
+      dispatch({ type: "applyCommand", command: { kind: "updateProjectAsset", label: "Update asset", assetId, changes } });
+      return;
+    }
+    try {
+      const project = await invoke<Project>("update_project_asset", {
+        projectDir,
+        project: state.project,
+        assetId,
+        label: changes.label ?? null,
+        resourceId: changes.resourceId ?? null
+      });
+      dispatch({ type: "markSaved", project });
+      dispatch({ type: "setProject", project, selectedMapId: state.selectedMapId });
+      dispatch({ type: "setStatus", status: "Asset updated" });
+    } catch (error) {
+      dispatch({ type: "setStatus", status: `Asset update failed: ${commandError(error)}` });
+    }
+  }
+
+  async function deleteManagedAsset(assetId: string) {
+    if (!state.project) return;
+    if (!desktopRuntime) {
+      dispatch({ type: "applyCommand", command: { kind: "deleteProjectAsset", label: "Delete asset", assetId } });
+      return;
+    }
+    try {
+      const project = await invoke<Project>("delete_project_asset", { projectDir, project: state.project, assetId });
+      dispatch({ type: "markSaved", project });
+      dispatch({ type: "setProject", project, selectedMapId: state.selectedMapId });
+      dispatch({ type: "setStatus", status: "Asset deleted" });
+    } catch (error) {
+      dispatch({ type: "setStatus", status: `Asset delete failed: ${commandError(error)}` });
+    }
+  }
+
   function selectMap(id: string) {
     dispatch({ type: "setSelectedMap", id });
   }
@@ -636,219 +708,100 @@ export function App() {
   }
 
   return (
-    <div className="editor-layout">
-      <header className="editor-topbar">
-        <div className="app-mark">
-          <span className="mark-glyph">RP</span>
-          <div>
-            <strong>Realmz Providence</strong>
-            <small>{state.activeWorkbench === "library" ? "Library Workbench" : state.project?.scenario.name ?? "No project loaded"}</small>
-          </div>
-        </div>
-
-        <div className="editor-topbar-actions">
-          <span className={`runtime-pill${desktopRuntime || browserFileSystem ? " live" : ""}`}>
-            {desktopRuntime ? "Desktop" : browserFileSystem ? "Browser FS" : "Browser Preview"}
-          </span>
-          {state.dirty && <span className="dirty-pill">Dirty</span>}
-          {state.groupLabel && <span className="dirty-pill">Editing</span>}
-          <button className="topbar-action-button" type="button" onClick={openLibraryHub} title="Open managed library workbench">
-            <LibraryBig size={15} />
-            <span>Library</span>
-          </button>
-          {state.activeWorkbench === "library" && (
-            <button className="topbar-action-button" type="button" onClick={openProjectWorkbench} title="Return to project workbench">
-              <GridButtonGlyph />
-              <span>Project</span>
-            </button>
-          )}
-          <button className="topbar-action-button" type="button" onClick={showNewProjectDialog} title="Create a new Providence project">
-            <FilePlus2 size={15} />
-            <span>New</span>
-          </button>
-          <button
-            className="topbar-action-button"
-            type="button"
-            onClick={chooseExistingProject}
-            disabled={!desktopRuntime && !browserFileSystem}
-            title={desktopRuntime || browserFileSystem ? "Open Providence project package" : BROWSER_PREVIEW_STATUS}
-          >
-            <FolderOpen size={15} />
-            <span>Open</span>
-          </button>
-          {importAllowed && (
-            <button
-              className="topbar-action-button"
-              type="button"
-              onClick={importScenario}
-              disabled={!desktopRuntime && !browserFileSystem}
-              title={desktopRuntime || browserFileSystem ? "Import a Realmz scenario into this empty project" : BROWSER_PREVIEW_STATUS}
-            >
-              <Upload size={15} />
-              <span>Import</span>
-            </button>
-          )}
-          <button
-            className="topbar-action-button"
-            type="button"
-            onClick={importDivinityLibraries}
-            disabled={!desktopRuntime && !browserFileSystem}
-            title="Refresh bundled Divinity library catalog from a local source folder"
-          >
-            <LibraryBig size={15} />
-            <span>Refresh Divinity</span>
-          </button>
-          <button
-            className="topbar-action-button"
-            type="button"
-            onClick={importRealmzReferenceData}
-            disabled={!desktopRuntime && !browserFileSystem}
-            title="Refresh bundled Realmz reference catalog from a local source folder"
-          >
-            <Database size={15} />
-            <span>Refresh Realmz</span>
-          </button>
-          <div className="editor-undo-redo" aria-label="Undo and redo">
-          <IconButton title={undoLabel ? `Undo ${undoLabel} (Ctrl+Z)` : "Undo (Ctrl+Z)"} onClick={() => dispatch({ type: "undo" })} disabled={!state.past.length}>
-            <RefreshCcw size={15} />
-          </IconButton>
-          <IconButton title={redoLabel ? `Redo ${redoLabel} (Ctrl+Y)` : "Redo (Ctrl+Y)"} onClick={() => dispatch({ type: "redo" })} disabled={!state.future.length}>
-            <RefreshCcw size={15} className="redo-icon" />
-          </IconButton>
-          </div>
-          <IconButton title={desktopRuntime ? "Save project" : BROWSER_PREVIEW_STATUS} onClick={saveProject} disabled={!state.project || !desktopRuntime}>
-            <Save size={15} />
-          </IconButton>
-          <IconButton title={desktopRuntime ? "Export scenario" : BROWSER_PREVIEW_STATUS} onClick={exportProject} disabled={!state.project || !desktopRuntime}>
-            <Download size={15} />
-          </IconButton>
-        </div>
-      </header>
-
-      <main className="editor-body">
-        {(state.project || state.activeWorkbench === "library") && (
-          <EditorToolRail
-            activeTab={state.activeTab}
-            project={state.project}
-            catalog={state.libraryCatalog}
-            activeWorkbench={state.activeWorkbench}
-            issueCount={railIssueCount}
-            onSelectTab={(tab) => {
-              dispatch({ type: "setTab", tab });
-              dispatch({ type: "setActiveEditor", editor: "domain" });
-            }}
+    <ProvidenceEditorShell
+      state={state}
+      runtimeLabel={desktopRuntime ? "Desktop" : browserFileSystem ? "Browser FS" : "Browser Preview"}
+      runtimeLive={desktopRuntime || browserFileSystem}
+      canUseFiles={desktopRuntime || browserFileSystem}
+      browserPreviewStatus={BROWSER_PREVIEW_STATUS}
+      importAllowed={importAllowed}
+      railIssueCount={railIssueCount}
+      activeStatus={activeStatus}
+      undoLabel={undoLabel}
+      redoLabel={redoLabel}
+      canSave={Boolean(state.project && desktopRuntime)}
+      canExport={Boolean(state.project && desktopRuntime)}
+      tutorialEnabled={state.tutorialEnabled}
+      onLibrary={openLibraryHub}
+      onProject={openProjectWorkbench}
+      onDocuments={() => setDocumentsOpen(true)}
+      onToggleTutorial={() => dispatch({ type: "setTutorialEnabled", enabled: !state.tutorialEnabled })}
+      onNewProject={showNewProjectDialog}
+      onOpenProject={chooseExistingProject}
+      onImportScenario={importScenario}
+      onImportDivinity={importDivinityLibraries}
+      onImportRealmz={importRealmzReferenceData}
+      onUndo={() => dispatch({ type: "undo" })}
+      onRedo={() => dispatch({ type: "redo" })}
+      onSave={saveProject}
+      onExport={exportProject}
+      onSelectDomain={(domain) => {
+        dispatch({ type: "setActiveDomain", domain });
+        dispatch({ type: "setActiveEditor", editor: "domain" });
+      }}
+      onSelectEditor={(editor) => dispatch({ type: "setActiveEditor", editor })}
+    >
+      <WorkbenchRouter
+        state={state}
+        emptyProjectView={
+          <ProjectStart
+            desktopRuntime={desktopRuntime}
+            browserFileSystem={browserFileSystem}
+            onNewProject={showNewProjectDialog}
+            onOpenProject={chooseExistingProject}
+            onImportScenario={importScenario}
+            onLibraryHub={openLibraryHub}
+            onImportDivinity={importDivinityLibraries}
+            onImportRealmz={importRealmzReferenceData}
+            onDocuments={() => setDocumentsOpen(true)}
           />
-        )}
-        <div className="editor-panel-host">
-          {!state.project && state.activeWorkbench === "project" && (
-            <ProjectStart
-              desktopRuntime={desktopRuntime}
-              browserFileSystem={browserFileSystem}
-              onNewProject={showNewProjectDialog}
-              onOpenProject={chooseExistingProject}
-              onImportScenario={importScenario}
-              onLibraryHub={openLibraryHub}
-              onImportDivinity={importDivinityLibraries}
-              onImportRealmz={importRealmzReferenceData}
-            />
-          )}
-          {state.activeWorkbench === "library" && state.activeEditor === "hub" && (
-            <LibraryHubPanel
-              workspace={state.workspace}
-              catalog={state.libraryCatalog}
-              desktopRuntime={desktopRuntime}
-              browserFileSystem={browserFileSystem}
-              onImportDivinity={importDivinityLibraries}
-              onImportRealmz={importRealmzReferenceData}
-            />
-          )}
-          {state.activeWorkbench === "library" && state.activeEditor !== "hub" && (
-            <SuiteDomainPanel
-              tab={state.activeTab}
-              project={state.project}
-              catalog={state.libraryCatalog}
-              selectedEntity={state.selectedEntity}
-              onSelectEntity={selectEntity}
-              onCreateDraft={createDraftEntry}
-              onUpdateDraft={updateDraftEntry}
-            />
-          )}
-          {state.project && state.activeWorkbench === "project" && state.activeTab === "maps" && (
-            <MapsPanel
-              state={state}
-              selectedMap={selectedMap}
-              selectedRandomLevel={selectedRandomLevel}
-              mapTriggers={mapTriggers}
-              selectedTileset={selectedTileset}
-              mapRecords={selectedMapRecords}
-              atlas={selectedAtlas}
-              onSelectMap={selectMap}
-              onSelectTile={(tile) => dispatch({ type: "setSelectedTile", tile })}
-              onSelectCell={(cell) => dispatch({ type: "setSelectedCell", cell })}
-              onSelectEntity={selectEntity}
-              onSetTool={(tool) => dispatch({ type: "setTool", tool })}
-              onSetZoom={(zoom) => dispatch({ type: "setZoom", zoom })}
-              onSetSmoothTiles={(value) => dispatch({ type: "setSmoothTiles", value })}
-              onSetViewFlag={(flag: MapViewFlag, value: boolean) => dispatch({ type: "setMapViewFlag", flag, value })}
-              onSetShowTriggers={(value) => dispatch({ type: "setShowTriggers", value })}
-              onSetShowRandomRects={(value) => dispatch({ type: "setShowRandomRects", value })}
-              onSetShowMapRecords={(value) => dispatch({ type: "setShowMapRecords", value })}
-              onClearSelection={clearMapSelection}
-              onBeginPaintStroke={(label) => dispatch({ type: "beginCommandGroup", label })}
-              onApplyCommand={applyProjectCommand}
-              onCommitPaintStroke={() => dispatch({ type: "commitCommandGroup" })}
-              onCancelPaintStroke={() => dispatch({ type: "cancelCommandGroup" })}
-            />
-          )}
-          {state.project && state.activeWorkbench === "project" && state.activeTab === "scripts" && (
-            <ScriptsPanel project={state.project} selectedEntity={state.selectedEntity} onSelectEntity={selectEntity} />
-          )}
-          {state.project && state.activeWorkbench === "project" && state.activeTab === "scenario" && (
-            <SuiteDomainPanel tab="scenario" project={state.project} catalog={state.libraryCatalog} selectedEntity={state.selectedEntity} onSelectEntity={selectEntity} onCreateDraft={createDraftEntry} onUpdateDraft={updateDraftEntry} />
-          )}
-          {state.project && state.activeWorkbench === "project" && state.activeTab === "encounters" && (
-            <EncountersPanel project={state.project} selectedEntity={state.selectedEntity} onSelectEntity={selectEntity} />
-          )}
-          {state.project && state.activeWorkbench === "project" && ["combat", "economy", "rules", "text"].includes(state.activeTab) && (
-            <SuiteDomainPanel tab={state.activeTab} project={state.project} catalog={state.libraryCatalog} selectedEntity={state.selectedEntity} onSelectEntity={selectEntity} onCreateDraft={createDraftEntry} onUpdateDraft={updateDraftEntry} />
-          )}
-          {state.project && state.activeWorkbench === "project" && state.activeTab === "assets" && (
-            <ResourcesPanel project={state.project} selectedEntity={state.selectedEntity} onSelectEntity={selectEntity} />
-          )}
-          {state.project && state.activeWorkbench === "project" && state.activeTab === "records" && (
-            <RecordsPanel project={state.project} selectedEntity={state.selectedEntity} onSelectEntity={selectEntity} />
-          )}
-          {state.project && state.activeWorkbench === "project" && state.activeTab === "linter" && (
-            <LinterPanel
-              project={state.project}
-              issues={visibleIssues}
-              selectedEntity={state.selectedEntity}
-              onValidate={validateProject}
-              onSelectEntity={selectEntity}
-            />
-          )}
-          {state.project && state.activeWorkbench === "project" && state.activeTab === "export" && (
-            <ExportPanel
-              project={state.project}
-              exportReport={state.exportReport}
-              benchmark={state.benchmark}
-              onExport={exportProject}
-              onBenchmark={benchmarkProject}
-            />
-          )}
-        </div>
-      </main>
-
-      <footer className="status-bar">
-        <span>{activeStatus}</span>
-        <span>
-          {state.activeWorkbench === "library"
-            ? `${state.libraryCatalog?.summary.sourceCount ?? 0} library sources | ${state.libraryCatalog?.summary.entityCount ?? 0} entities`
-            : state.project
-            ? `${state.project.maps.length} maps | ${state.project.triggers.length.toLocaleString()} triggers | ${state.project.semanticSchema.summary.linkCount.toLocaleString()} links`
-            : "Awaiting project"}
-        </span>
-      </footer>
+        }
+        selectedMap={selectedMap}
+        selectedRandomLevel={selectedRandomLevel}
+        mapTriggers={mapTriggers}
+        selectedTileset={selectedTileset}
+        mapRecords={selectedMapRecords}
+        atlas={selectedAtlas}
+        desktopRuntime={desktopRuntime}
+        browserFileSystem={browserFileSystem}
+        projectDir={projectDir}
+        workspaceDir={workspaceDir}
+        exportReport={state.exportReport}
+        benchmark={state.benchmark}
+        issues={visibleIssues}
+        onSelectMap={selectMap}
+        onSelectTile={(tile) => {
+          dispatch({ type: "setSelectedTile", tile });
+          if (state.activeTab !== "maps") {
+            dispatch({ type: "setTab", tab: "maps" });
+            dispatch({ type: "setStatus", status: `Selected Special Land Tile ${tile} for painting` });
+          }
+        }}
+        onSelectCell={(cell) => dispatch({ type: "setSelectedCell", cell })}
+        onSelectEntity={selectEntity}
+        onSetTool={(tool) => dispatch({ type: "setTool", tool })}
+        onSetZoom={(zoom) => dispatch({ type: "setZoom", zoom })}
+        onSetSmoothTiles={(value) => dispatch({ type: "setSmoothTiles", value })}
+        onSetViewFlag={(flag: MapViewFlag, value: boolean) => dispatch({ type: "setMapViewFlag", flag, value })}
+        onSetShowTriggers={(value) => dispatch({ type: "setShowTriggers", value })}
+        onSetShowRandomRects={(value) => dispatch({ type: "setShowRandomRects", value })}
+        onSetShowMapRecords={(value) => dispatch({ type: "setShowMapRecords", value })}
+        onClearSelection={clearMapSelection}
+        onBeginPaintStroke={(label) => dispatch({ type: "beginCommandGroup", label })}
+        onApplyCommand={applyProjectCommand}
+        onCommitPaintStroke={() => dispatch({ type: "commitCommandGroup" })}
+        onCancelPaintStroke={() => dispatch({ type: "cancelCommandGroup" })}
+        onImportDivinity={importDivinityLibraries}
+        onImportRealmz={importRealmzReferenceData}
+        onCreateDraft={createDraftEntry}
+        onUpdateDraft={updateDraftEntry}
+        onImportAssets={importMediaAssets}
+        onUpdateAsset={updateManagedAsset}
+        onDeleteAsset={deleteManagedAsset}
+        onValidate={validateProject}
+        onExport={exportProject}
+        onBenchmark={benchmarkProject}
+      />
       {projectDialogOpen && (
         <ProjectNameDialog
           value={projectNameDraft}
@@ -860,7 +813,14 @@ export function App() {
           onCreate={() => createNewProject()}
         />
       )}
-    </div>
+      {documentsOpen && (
+        <DocumentsView
+          initialSection={state.docsSection}
+          onSectionChange={(section) => dispatch({ type: "setDocsSection", section })}
+          onClose={() => setDocumentsOpen(false)}
+        />
+      )}
+    </ProvidenceEditorShell>
   );
 }
 
@@ -915,7 +875,8 @@ function ProjectStart({
   onImportScenario,
   onLibraryHub,
   onImportDivinity,
-  onImportRealmz
+  onImportRealmz,
+  onDocuments
 }: {
   desktopRuntime: boolean;
   browserFileSystem: boolean;
@@ -925,6 +886,7 @@ function ProjectStart({
   onLibraryHub: () => void;
   onImportDivinity: () => void;
   onImportRealmz: () => void;
+  onDocuments: () => void;
 }) {
   const canImport = desktopRuntime || browserFileSystem;
   return (
@@ -951,6 +913,10 @@ function ProjectStart({
           <button className="btn" type="button" onClick={onLibraryHub}>
             <LibraryBig size={16} />
             Library Hub
+          </button>
+          <button className="btn" type="button" onClick={onDocuments}>
+            <BookOpen size={16} />
+            Documents
           </button>
           <button
             className="btn"

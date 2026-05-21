@@ -1,6 +1,8 @@
+import { useEffect, useMemo, useState } from "react";
 import { ENTITY_TYPE_LABELS } from "../constants";
+import { loadBrowserBundledLibraryAssetPreview } from "../browser/library";
 import { isDraftEntity, LibraryDraftSpec } from "../libraryDrafts";
-import { EditorTab, LibraryCatalog, LibraryEntity, Project, SemanticEntity, SelectedEntity } from "../types";
+import { EditorTab, LibraryAsset, LibraryCatalog, LibraryEntity, ManagedAssetKind, Project, SemanticEntity, SelectedEntity } from "../types";
 import { selectEntityFromId } from "../utils";
 
 const DOMAIN_CONFIG: Record<EditorTab, { title: string; subtitle: string; editors: DomainEditor[] }> = {
@@ -122,6 +124,7 @@ type DomainEditor = {
 
 export function SuiteDomainPanel({
   tab,
+  activeEditor = "domain",
   project,
   catalog,
   selectedEntity,
@@ -130,6 +133,7 @@ export function SuiteDomainPanel({
   onUpdateDraft
 }: {
   tab: EditorTab;
+  activeEditor?: string;
   project: Project | null;
   catalog: LibraryCatalog | null;
   selectedEntity: SelectedEntity | null;
@@ -138,6 +142,8 @@ export function SuiteDomainPanel({
   onUpdateDraft?: (entityId: string, changes: { label?: string; notes?: string }) => void;
 }) {
   const config = DOMAIN_CONFIG[tab];
+  const focusedEditor = config.editors.find((editor) => editor.id === activeEditor) ?? null;
+  const visibleEditors = focusedEditor ? [focusedEditor] : config.editors;
   const projectEntities = project?.semanticSchema.entities ?? [];
   const libraryEntities = catalog?.entities ?? [];
   const allRecords = [
@@ -157,8 +163,8 @@ export function SuiteDomainPanel({
     <section className="domain-workbench">
       <header className="domain-header">
         <div>
-          <h1>{config.title}</h1>
-          <p>{config.subtitle}</p>
+          <h1>{focusedEditor ? focusedEditor.label : config.title}</h1>
+          <p>{focusedEditor ? editorSubtitle(focusedEditor) : config.subtitle}</p>
         </div>
         <small>{project ? project.scenario.name : "Library workbench"}</small>
       </header>
@@ -202,7 +208,7 @@ export function SuiteDomainPanel({
         </div>
       )}
       <div className="domain-editor-grid">
-        {tab !== "records" && tab !== "linter" && config.editors.map((editor) => {
+        {tab !== "records" && tab !== "linter" && visibleEditors.map((editor) => {
           const matches = matchingEntities(editor, projectEntities, libraryEntities);
           return (
             <article key={editor.id} className="domain-editor-card">
@@ -233,6 +239,11 @@ export function SuiteDomainPanel({
   );
 }
 
+function editorSubtitle(editor: DomainEditor) {
+  if (editor.createType) return `Create, inspect, and validate ${editor.label.toLowerCase()} entries. Export remains blocked until writer support is fixture-backed.`;
+  return `Inspect source-backed ${editor.label.toLowerCase()} records, resources, links, and diagnostics.`;
+}
+
 function matchingEntities(editor: DomainEditor, projectEntities: SemanticEntity[], libraryEntities: LibraryEntity[]) {
   const wanted = new Set(editor.entityTypes);
   const projectMatches = projectEntities.filter((entity) => wanted.has(entity.type));
@@ -249,6 +260,8 @@ function DomainDetailPanel({
   catalog: LibraryCatalog | null;
   onUpdateDraft?: (entityId: string, changes: { label?: string; notes?: string }) => void;
 }) {
+  const asset = useMemo(() => findLibraryAssetForDetail(detail, catalog), [catalog, detail]);
+  const preview = useLibraryAssetPreview(asset);
   if (!detail) {
     return (
       <aside className="domain-detail-panel">
@@ -286,6 +299,7 @@ function DomainDetailPanel({
         <h2>{detail.label}</h2>
       )}
       <p className="domain-detail-subtitle">{entitySubtitle(detail)}</p>
+      {asset && <DomainAssetPreview asset={asset} preview={preview} />}
       <section className="domain-summary">
         <header>Content</header>
         {contentFacts.map((fact) => (
@@ -341,6 +355,70 @@ function DomainDetailPanel({
       </section>
     </aside>
   );
+}
+
+function DomainAssetPreview({ asset, preview }: { asset: LibraryAsset; preview: string | null }) {
+  const kind = assetKind(asset.type);
+  return (
+    <section className="domain-asset-preview">
+      {preview && kind === "sound" ? (
+        <audio src={preview} controls preload="metadata" />
+      ) : preview && kind !== "sound" ? (
+        <img src={preview} alt={asset.label} />
+      ) : (
+        <div className="domain-preview-empty">Preview unavailable for this resource variant.</div>
+      )}
+      <div>
+        <strong>{asset.label}</strong>
+        <small>{asset.resourceType ?? asset.type} {asset.resourceId ?? ""} | {formatBytes(asset.bytes)}</small>
+      </div>
+    </section>
+  );
+}
+
+function useLibraryAssetPreview(asset: LibraryAsset | null) {
+  const [preview, setPreview] = useState<string | null>(asset?.previewPath ?? null);
+  useEffect(() => {
+    let disposed = false;
+    if (!asset) {
+      setPreview(null);
+      return;
+    }
+    setPreview(asset.previewPath ?? null);
+    loadBrowserBundledLibraryAssetPreview(asset)
+      .then((url) => {
+        if (!disposed) setPreview(url);
+      })
+      .catch(() => {
+        if (!disposed) setPreview(asset.previewPath ?? null);
+      });
+    return () => {
+      disposed = true;
+    };
+  }, [asset]);
+  return preview;
+}
+
+function findLibraryAssetForDetail(detail: { id: string; label?: string; type: string; summary: Record<string, unknown>; source?: string } | null, catalog: LibraryCatalog | null) {
+  if (!detail || !catalog) return null;
+  const resourceType = typeof detail.summary.type === "string" ? detail.summary.type : null;
+  const resourceId = typeof detail.summary.resourceId === "number" ? detail.summary.resourceId : null;
+  if (resourceType && resourceId !== null) {
+    return catalog.assets.find((asset) =>
+      asset.resourceType === resourceType &&
+      asset.resourceId === resourceId &&
+      (!detail.source || asset.source === detail.source)
+    ) ?? null;
+  }
+  return catalog.assets.find((asset) => asset.id === detail.id || (detail.label != null && asset.label === detail.label)) ?? null;
+}
+
+function assetKind(type: string): ManagedAssetKind {
+  if (type === "sound") return "sound";
+  if (type === "icon" || type.includes("icon")) return "icon";
+  if (type === "picture") return "picture";
+  if (type === "text") return "text";
+  return "other";
 }
 
 function formatSummaryValue(value: unknown) {

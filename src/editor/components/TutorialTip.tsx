@@ -1,4 +1,6 @@
-import { CSSProperties, ReactNode, useRef, useState } from "react";
+import { CSSProperties, ReactNode, useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { HelpBubble, HelpBubbleSide } from "../ui";
 
 export function TutorialTip({
   title,
@@ -8,10 +10,11 @@ export function TutorialTip({
 }: {
   title: string;
   body: string;
-  side?: "right" | "left" | "below" | "above";
+  side?: HelpBubbleSide;
   children: ReactNode;
 }) {
   const wrapperRef = useRef<HTMLSpanElement | null>(null);
+  const tooltipId = useId();
   const [bubbleStyle, setBubbleStyle] = useState<CSSProperties | undefined>();
   const [open, setOpen] = useState(false);
 
@@ -35,6 +38,7 @@ export function TutorialTip({
   }
 
   function showBubble() {
+    if (typeof document !== "undefined" && document.documentElement.dataset.tutorial === "off") return;
     updateBubblePosition();
     setOpen(true);
   }
@@ -43,22 +47,44 @@ export function TutorialTip({
     setOpen(false);
   }
 
+  useEffect(() => {
+    if (!open) return;
+    updateBubblePosition();
+    window.addEventListener("resize", updateBubblePosition);
+    window.addEventListener("scroll", updateBubblePosition, true);
+    return () => {
+      window.removeEventListener("resize", updateBubblePosition);
+      window.removeEventListener("scroll", updateBubblePosition, true);
+    };
+  }, [open, side]);
+
   return (
-    <span
-      ref={wrapperRef}
-      className={`tutorial-tip tutorial-tip-${side}${open ? " tooltip-open" : ""}`}
-      tabIndex={0}
-      onMouseEnter={showBubble}
-      onMouseLeave={hideBubble}
-      onPointerLeave={hideBubble}
-      onBlur={hideBubble}
-      onFocus={showBubble}
-    >
-      {children}
-      <span className="tutorial-bubble tutorial-bubble-floating" role="tooltip" style={bubbleStyle}>
-        <strong>{title}</strong>
-        <span>{body}</span>
+    <>
+      <span
+        ref={wrapperRef}
+        className={`tutorial-tip tutorial-tip-${side}${open ? " tooltip-open" : ""}`}
+        tabIndex={0}
+        aria-describedby={open ? tooltipId : undefined}
+        onMouseEnter={showBubble}
+        onMouseLeave={hideBubble}
+        onPointerLeave={hideBubble}
+        onBlur={hideBubble}
+        onFocus={showBubble}
+      >
+        {children}
       </span>
-    </span>
+      {open && typeof document !== "undefined" && createPortal(
+        <HelpBubble
+          id={tooltipId}
+          title={title}
+          body={body}
+          side={side}
+          floating
+          style={bubbleStyle}
+          className={`tutorial-bubble tutorial-bubble-floating tutorial-bubble-${side}`}
+        />,
+        document.body
+      )}
+    </>
   );
 }

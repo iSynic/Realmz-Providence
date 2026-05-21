@@ -14,6 +14,9 @@ export type EditorTab =
   | "export";
 export type ActiveWorkbench = "project" | "library";
 export type EditorTool = "select" | "paint" | "trigger" | "sample" | "pan";
+export type FocusedPanel = "main" | "tool-sidebar" | "outliner" | "inspector" | "canvas" | "docs";
+export type SidePanelMode = "auto" | "hidden" | "compact" | "wide";
+export type OverlayPreset = "authoring" | "inspection" | "clean" | "diagnostic";
 export type MapViewFlag =
   | "showRealTiles"
   | "showDecodedColors"
@@ -32,9 +35,215 @@ export type MapViewFlag =
 export type MapViewOptions = Record<MapViewFlag, boolean>;
 
 export type PaintCellChange = { x: number; y: number; index: number; from: number; to: number };
+export type ManagedAssetKind = "picture" | "icon" | "special-land-tile" | "sound" | "text" | "other";
+export type ManagedAssetExportState = "ready" | "blocked" | "preview-only";
+export type ResourcePreviewStatus =
+  | "preview-ready"
+  | "playable"
+  | "text-ready"
+  | "metadata-only"
+  | "unsupported-variant"
+  | "malformed";
+
+export type ResourcePreviewDiagnostic = {
+  severity: string;
+  message: string;
+};
+
+export type WorkbenchDescriptor = {
+  id: ActiveWorkbench;
+  label: string;
+  description: string;
+};
+
+export type DomainDescriptor = {
+  id: EditorTab;
+  label: string;
+  shortLabel: string;
+  description: string;
+  help: string;
+  tools: EditorToolDescriptor[];
+};
+
+export type EditorToolDescriptor = {
+  id: string;
+  label: string;
+  description: string;
+  iconLabel: string;
+  workbench: "project" | "library" | "both";
+  entityTypes?: string[];
+  defaultInspector?: "semantic" | "resource" | "map" | "validation" | "export";
+};
+
+export type PanelDescriptor = {
+  id: string;
+  title: string;
+  region: FocusedPanel;
+  collapsible: boolean;
+};
+
+export type OutlinerItem = {
+  id: string;
+  label: string;
+  kind: string;
+  subtitle?: string;
+  count?: number;
+  selected?: boolean;
+  blocked?: boolean;
+};
+
+export type InspectorField = {
+  label: string;
+  value: string | number | boolean | null;
+  tone?: "normal" | "success" | "warning" | "danger";
+};
+
+export type InspectorSection = {
+  id: string;
+  title: string;
+  fields: InspectorField[];
+  collapsed?: boolean;
+};
+
+export type ValidationIssueView = {
+  id: string;
+  severity: "error" | "warning" | "info";
+  category: string;
+  message: string;
+  detail?: string;
+  target?: string | null;
+};
+
+export type RealmzStepDescriptor = {
+  id: string;
+  opcode: number;
+  label: string;
+  category: string;
+  summary: string;
+  edcdShape?: string;
+  editable: boolean;
+};
+
+export type DecodedResourcePreview = {
+  status: ResourcePreviewStatus;
+  mimeType: string;
+  dataUrl: string | null;
+  summary: Record<string, string>;
+  diagnostics: ResourcePreviewDiagnostic[];
+};
+
+export type ManagedAsset = {
+  id: string;
+  label: string;
+  kind: ManagedAssetKind;
+  resourceType: string;
+  resourceId: number;
+  fileName: string;
+  originalPath: string;
+  previewPath: string;
+  resourcePath: string;
+  mimeType: string;
+  bytes: number;
+  sha256: string;
+  width: number | null;
+  height: number | null;
+  durationMs: number | null;
+  sampleRate: number | null;
+  channels: number | null;
+  exportState: ManagedAssetExportState;
+  provenance: string;
+  linkedEntity: string | null;
+};
+
+export type EditorDisplayName = {
+  label: string;
+  source: "user" | "generated";
+  updatedAt: string;
+};
+
+export type EditorMetadata = {
+  displayNames: Record<string, EditorDisplayName>;
+};
+
+export type RealmzActionSlotDraft = {
+  triggerId: string;
+  slot: number;
+  rawCode: number;
+  code: number;
+  id: number;
+  label: string;
+  gosub: boolean;
+};
+
+export type RealmzStepKind =
+  | "empty"
+  | "message"
+  | "sound"
+  | "picture"
+  | "battle"
+  | "simpleEncounter"
+  | "complexEncounter"
+  | "shop"
+  | "treasure"
+  | "teleport"
+  | "branch"
+  | "setQuestFlag"
+  | "returnGosub"
+  | "raw";
+
+export type RealmzScriptDraft = {
+  triggerId: string;
+  label: string;
+  kind: "action-point" | "macro";
+  percent: number;
+  landid: number;
+  targetX: number;
+  targetY: number;
+  coordinate: { x: number; y: number } | null;
+  slots: RealmzActionSlotDraft[];
+};
 
 export type ProjectCommand =
   | { kind: "paintTiles"; mapId: string; label: string; cells: PaintCellChange[] }
+  | { kind: "createMacro"; label: string }
+  | { kind: "deleteMacro"; label: string; triggerId: string }
+  | {
+      kind: "createActionPoint";
+      label: string;
+      levelType: LevelType;
+      levelIndex: number;
+      x: number;
+      y: number;
+    }
+  | {
+      kind: "updateTriggerHeader";
+      label: string;
+      triggerId: string;
+      fields: Partial<Pick<TriggerRecord, "percent" | "landid" | "targetX" | "targetY" | "active">>;
+    }
+  | {
+      kind: "updateActionSlot";
+      label: string;
+      triggerId: string;
+      slot: number;
+      rawCode: number;
+      id: number;
+    }
+  | {
+      kind: "updateEdcdRow";
+      label: string;
+      rowId: number;
+      values: number[];
+    }
+  | {
+      kind: "renameEditorEntity";
+      label: string;
+      entityId: string;
+      displayName: string;
+    }
+  | { kind: "attachProjectAsset"; label: string; asset: ManagedAsset }
+  | { kind: "updateProjectAsset"; label: string; assetId: string; changes: Partial<Pick<ManagedAsset, "label" | "resourceId" | "linkedEntity">> }
+  | { kind: "deleteProjectAsset"; label: string; assetId: string }
   | {
       kind: "updateScenarioStartup" | "updateGlobalMacro" | "updateRegistrationSecurity" | "attachLibraryAsset";
       label: string;
@@ -77,7 +286,9 @@ export type Project = {
   triggers: TriggerRecord[];
   randomLevels: RandomLevel[];
   extracodes: ExtraCodeRow[];
+  assets: ManagedAsset[];
   assetCatalog: { tilesets: TilesetAsset[] };
+  editorMetadata: EditorMetadata;
   records: { counts: Record<string, number>; alignments: Alignment[] };
   diagnostics: Diagnostic[];
   semanticSchema: SemanticSchema;
@@ -171,6 +382,10 @@ export type LibraryAsset = {
   relativePath: string;
   bytes: number;
   sha256: string;
+  resourceType?: string | null;
+  resourceId?: number | null;
+  previewPath?: string | null;
+  mimeType?: string | null;
 };
 
 export type LibraryDiagnostic = {
@@ -302,6 +517,10 @@ export type ExportReport = {
   outputPath: string;
   writtenFiles: string[];
   passThroughFiles: string[];
+  writtenResources: string[];
+  preservedResources: number;
+  resourceWarnings: string[];
+  blockedAssets: string[];
   warnings: string[];
 };
 

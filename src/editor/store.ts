@@ -4,16 +4,19 @@ import {
   BenchmarkReport,
   EditorTab,
   EditorTool,
+  FocusedPanel,
   IconEntry,
   LibraryCatalog,
   MapViewFlag,
   MapViewOptions,
+  OverlayPreset,
   ExportReport,
   MapFocusTarget,
   Project,
   ProjectCommand,
   ProvidenceWorkspace,
   SelectedEntity,
+  SidePanelMode,
   ValidationReport
 } from "./types";
 import { applyProjectCommand, projectCommandChangeCount, projectCommandLabel } from "./projectCommands";
@@ -30,7 +33,16 @@ export type EditorState = MapViewOptions & {
   workspace: ProvidenceWorkspace | null;
   libraryCatalog: LibraryCatalog | null;
   activeWorkbench: ActiveWorkbench;
+  activeDomain: EditorTab;
   activeEditor: string;
+  focusedPanel: FocusedPanel;
+  leftPanelMode: SidePanelMode;
+  rightPanelMode: SidePanelMode;
+  overlayDrawerOpen: boolean;
+  overlayPreset: OverlayPreset;
+  docsSection: string;
+  tutorialEnabled: boolean;
+  panelState: Record<string, { collapsed?: boolean; size?: number }>;
   project: Project | null;
   selectedMapId: string | null;
   selectedTile: number;
@@ -62,7 +74,16 @@ export type EditorAction =
   | { type: "setWorkspace"; workspace: ProvidenceWorkspace | null }
   | { type: "setLibraryCatalog"; catalog: LibraryCatalog | null }
   | { type: "setWorkbench"; workbench: ActiveWorkbench; tab?: EditorTab }
+  | { type: "setActiveDomain"; domain: EditorTab }
   | { type: "setActiveEditor"; editor: string }
+  | { type: "setFocusedPanel"; panel: FocusedPanel }
+  | { type: "setLeftPanelMode"; mode: SidePanelMode }
+  | { type: "setRightPanelMode"; mode: SidePanelMode }
+  | { type: "setOverlayDrawerOpen"; open: boolean }
+  | { type: "setOverlayPreset"; preset: OverlayPreset }
+  | { type: "setDocsSection"; section: string }
+  | { type: "setTutorialEnabled"; enabled: boolean }
+  | { type: "togglePanelCollapsed"; panelId: string }
   | { type: "setProject"; project: Project | null; selectedMapId?: string | null }
   | { type: "replaceProject"; project: Project }
   | { type: "markSaved"; project: Project }
@@ -97,7 +118,16 @@ export function initialEditorState(desktopRuntime: boolean): EditorState {
     workspace: null,
     libraryCatalog: null,
     activeWorkbench: "project",
+    activeDomain: "maps",
     activeEditor: "hub",
+    focusedPanel: "main",
+    leftPanelMode: "auto",
+    rightPanelMode: "auto",
+    overlayDrawerOpen: false,
+    overlayPreset: "authoring",
+    docsSection: "getting-started",
+    tutorialEnabled: true,
+    panelState: {},
     project: null,
     selectedMapId: null,
     selectedTile: 1,
@@ -157,10 +187,42 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return {
         ...state,
         activeWorkbench: action.workbench,
-        activeTab: action.tab ?? state.activeTab
+        activeTab: action.tab ?? state.activeTab,
+        activeDomain: action.tab ?? state.activeDomain
+      };
+    case "setActiveDomain":
+      return {
+        ...state,
+        activeDomain: action.domain,
+        activeTab: action.domain,
+        activeEditor: "domain"
       };
     case "setActiveEditor":
       return { ...state, activeEditor: action.editor };
+    case "setFocusedPanel":
+      return { ...state, focusedPanel: action.panel };
+    case "setLeftPanelMode":
+      return { ...state, leftPanelMode: action.mode };
+    case "setRightPanelMode":
+      return { ...state, rightPanelMode: action.mode };
+    case "setOverlayDrawerOpen":
+      return { ...state, overlayDrawerOpen: action.open };
+    case "setOverlayPreset":
+      return { ...state, overlayPreset: action.preset };
+    case "setDocsSection":
+      return { ...state, docsSection: action.section };
+    case "setTutorialEnabled":
+      return { ...state, tutorialEnabled: action.enabled };
+    case "togglePanelCollapsed": {
+      const existing = state.panelState[action.panelId] ?? {};
+      return {
+        ...state,
+        panelState: {
+          ...state.panelState,
+          [action.panelId]: { ...existing, collapsed: !existing.collapsed }
+        }
+      };
+    }
     case "setProject":
       return {
         ...state,
@@ -328,7 +390,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     case "selectEntity":
       return { ...state, selectedEntity: action.entity };
     case "setTab":
-      return { ...state, activeTab: action.tab };
+      return { ...state, activeTab: action.tab, activeDomain: action.tab };
     case "setTool":
       return { ...state, activeTool: action.tool };
     case "setStatus":
