@@ -114,8 +114,20 @@ function ScriptAuthoringPanel({
       setScriptScope("all");
     }
   }, [activeEditor]);
-  const slotDraft = (slot: number, action?: Action) => draft[`${selectedTrigger?.id}:${slot}`] ?? { rawCode: action?.rawCode ?? 0, id: action?.id ?? 0 };
   if (!project) return null;
+  const selectedMap = projectMaps.find((map) => map.id === newActionPoint.mapId) ?? projectMaps[0] ?? null;
+  const selectedMapCapacity = selectedMap ? actionPointCapacity(project.triggers, selectedMap.levelType, selectedMap.index) : null;
+  const canScopeToMap = Boolean(selectedMap && activeEditor !== "macros" && activeEditor !== "global-macros");
+  const scopedScripts = scriptScope === "current-map" && selectedMap && canScopeToMap
+    ? scripts.filter((trigger) => trigger.source !== "Data ED3" && trigger.levelType === selectedMap.levelType && trigger.levelIndex === selectedMap.index)
+    : scripts;
+  const filteredScripts = scopedScripts.filter((trigger) => scriptMatchesQuery(project, trigger, scriptQuery));
+  const selectedTrigger =
+    scripts.find((trigger) => trigger.id === selectedEntity?.id || actionBelongsTo(trigger, selectedEntity?.id ?? "")) ??
+    filteredScripts[0] ??
+    scripts[0] ??
+    null;
+  const slotDraft = (slot: number, action?: Action) => draft[`${selectedTrigger?.id}:${slot}`] ?? { rawCode: action?.rawCode ?? 0, id: action?.id ?? 0 };
   const selectedAction = selectedTrigger?.actions.find((candidate) => candidate.slot === selectedSlot);
   const selectedKey = `${selectedTrigger?.id}:${selectedSlot}`;
   const selectedDraft = slotDraft(selectedSlot, selectedAction);
@@ -145,18 +157,6 @@ function ScriptAuthoringPanel({
     ? validateActionDraft(project, selectedTrigger, selectedSlot, selectedDraft.rawCode, selectedDraft.id)
     : [];
   const selectedEdcdRowId = selectedEdcdUsage?.rowId ?? (selectedOption.edcdShape ? Math.max(0, selectedDraft.id) : null);
-  const selectedMap = projectMaps.find((map) => map.id === newActionPoint.mapId) ?? projectMaps[0] ?? null;
-  const selectedMapCapacity = selectedMap ? actionPointCapacity(project.triggers, selectedMap.levelType, selectedMap.index) : null;
-  const canScopeToMap = Boolean(selectedMap && activeEditor !== "macros" && activeEditor !== "global-macros");
-  const scopedScripts = scriptScope === "current-map" && selectedMap && canScopeToMap
-    ? scripts.filter((trigger) => trigger.source !== "Data ED3" && trigger.levelType === selectedMap.levelType && trigger.levelIndex === selectedMap.index)
-    : scripts;
-  const filteredScripts = scopedScripts.filter((trigger) => scriptMatchesQuery(project, trigger, scriptQuery));
-  const selectedTrigger =
-    scripts.find((trigger) => trigger.id === selectedEntity?.id || actionBelongsTo(trigger, selectedEntity?.id ?? "")) ??
-    filteredScripts[0] ??
-    scripts[0] ??
-    null;
   const isMacro = selectedTrigger?.source === "Data ED3";
   const moveMapKey = selectedTrigger && !isMacro && selectedTrigger.levelType && selectedTrigger.levelIndex != null
     ? `${selectedTrigger.levelType}:${selectedTrigger.levelIndex}`
