@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Save } from "lucide-react";
+import { Save, Trash2 } from "lucide-react";
 import { Project, ProjectCommand } from "../types";
 import { EmptyState, FieldRow, PanelSection } from "../ui";
 
@@ -68,19 +68,31 @@ export function EdcdRowEditor({
       eyebrow={shape}
       density="compact"
       actions={
-        <button
-          type="button"
-          className="btn btn-primary btn-xs"
-          disabled={!onApplyCommand || !changed}
-          onClick={() => onApplyCommand?.({
-            kind: "updateEdcdRow",
-            label: `Update EDCD row ${rowId}`,
-            rowId,
-            values: numericDraft
-          })}
-        >
-          <Save size={12} /> Apply Row
-        </button>
+        <>
+          <button
+            type="button"
+            className="btn btn-primary btn-xs"
+            disabled={!onApplyCommand || !changed}
+            onClick={() => onApplyCommand?.({
+              kind: "updateEdcdRow",
+              label: `Update EDCD row ${rowId}`,
+              rowId,
+              values: numericDraft
+            })}
+          >
+            <Save size={12} /> Apply Row
+          </button>
+          {row && (
+            <button
+              type="button"
+              className="btn btn-danger btn-xs"
+              disabled={!onApplyCommand}
+              onClick={() => onApplyCommand?.({ kind: "deleteEdcdRow", label: `Delete EDCD row ${rowId}`, rowId })}
+            >
+              <Trash2 size={12} /> Delete
+            </button>
+          )}
+        </>
       }
     >
       <div className="edcd-row-editor">

@@ -4,7 +4,7 @@ import { schemaEntities } from "../semanticGraph";
 import { selectEntityFromId } from "../utils";
 import { normalizeStepOpcode } from "../realmzActions";
 
-type ScriptTargetOption = {
+export type ScriptTargetOption = {
   key: string;
   value: number;
   label: string;
@@ -62,7 +62,7 @@ export function TargetPicker({
   );
 }
 
-function targetPickerConfig(opcode: number) {
+export function targetPickerConfig(opcode: number) {
   const code = normalizeStepOpcode(opcode);
   const configs: Record<number, { label: string; hint: string }> = {
     1: { label: "Message Target", hint: "Select the scenario message this action displays." },
@@ -93,7 +93,7 @@ function targetPickerConfig(opcode: number) {
   return configs[code] ?? null;
 }
 
-function targetOptionsForOpcode(project: Project | null, opcode: number): ScriptTargetOption[] {
+export function targetOptionsForOpcode(project: Project | null, opcode: number): ScriptTargetOption[] {
   if (!project) return [];
   const code = normalizeStepOpcode(opcode);
   const semanticTypes = targetSemanticTypes(code);
@@ -159,7 +159,7 @@ function entityMatchesOpcodeTarget(entity: SemanticEntity, code: number) {
   return true;
 }
 
-function targetSemanticTypes(code: number) {
+export function targetSemanticTypes(code: number) {
   const types: Record<number, string[]> = {
     1: ["message"],
     4: ["simple encounter"],
@@ -189,7 +189,7 @@ function targetSemanticTypes(code: number) {
   return types[code] ?? [];
 }
 
-function isDirectMacroOpcode(code: number) {
+export function isDirectMacroOpcode(code: number) {
   return code === 8 || code === 40 || code === 55 || code === 64;
 }
 

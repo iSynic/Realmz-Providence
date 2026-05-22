@@ -1,0 +1,97 @@
+import { Project, TriggerRecord } from "./types";
+import { actionOptionFor, normalizeStepOpcode } from "./realmzActions";
+import { isDirectMacroOpcode, targetOptionsForOpcode, targetPickerConfig } from "./components/RealmzTargetPicker";
+
+export type ScriptDiagnosticSeverity = "error" | "warning" | "info";
+
+export type ScriptDiagnostic = {
+  id: string;
+  severity: ScriptDiagnosticSeverity;
+  message: string;
+  detail: string;
+  slot?: number;
+};
+
+export function validateScriptTrigger(project: Project, trigger: TriggerRecord): ScriptDiagnostic[] {
+  const diagnostics: ScriptDiagnostic[] = [];
+  if (trigger.source !== "Data ED3") {
+    const coordinate = trigger.coordinate;
+    if (!coordinate) {
+      diagnostics.push(issue("error", trigger.id, "missing-coordinate", "Action Point has no valid map coordinate.", "Realmz action points need a packed door coordinate inside a land or dungeon level."));
+    } else if (!inRealmzMapBounds(coordinate.x) || !inRealmzMapBounds(coordinate.y)) {
+      diagnostics.push(issue("error", trigger.id, "invalid-coordinate", "Action Point coordinate is outside the 90 x 90 Realmz map.", `${coordinate.x}, ${coordinate.y} cannot be exported as a valid Realmz cell.`));
+    }
+    if (trigger.doorid <= 0) {
+      diagnostics.push(issue("warning", trigger.id, "ambiguous-door-id", "Action Point has a non-positive packed door id.", "Providence preserves the coordinate, but Realmz door files normally need a positive packed door id to reload the point unambiguously."));
+    }
+  }
+  if (trigger.percent < 0 || trigger.percent > 100) {
+    diagnostics.push(issue("warning", trigger.id, "chance-range", "Chance is outside the usual 0..100 range.", `Current chance is ${trigger.percent}; confirm this is intentional before export.`));
+  }
+
+  const occupiedSlots = new Set<number>();
+  for (const action of trigger.actions) {
+    if (occupiedSlots.has(action.slot)) {
+      diagnostics.push(slotIssue("error", trigger.id, action.slot, "duplicate-slot", "Multiple actions use the same slot.", "Only one CODE/ID pair can be written to a Realmz slot."));
+    }
+    occupiedSlots.add(action.slot);
+    if (action.slot < 0 || action.slot > 7) {
+      diagnostics.push(slotIssue("error", trigger.id, action.slot, "slot-range", "Action slot is outside 0..7.", "Realmz door records contain exactly eight CODE/ID slots."));
+    }
+    diagnostics.push(...validateAction(project, trigger, action.slot, action.rawCode, action.id));
+  }
+  return diagnostics;
+}
+
+export function validateActionDraft(project: Project, trigger: TriggerRecord, slot: number, rawCode: number, id: number): ScriptDiagnostic[] {
+  return validateAction(project, trigger, slot, rawCode, id);
+}
+
+function validateAction(project: Project, trigger: TriggerRecord, slot: number, rawCode: number, id: number): ScriptDiagnostic[] {
+  const diagnostics: ScriptDiagnostic[] = [];
+  const code = normalizeStepOpcode(rawCode);
+  const option = actionOptionFor(rawCode);
+  if (option.category === "Unknown") {
+    diagnostics.push(slotIssue("warning", trigger.id, slot, "unknown-opcode", "Unsupported opcode is preserved but not safely understood.", `CODE ${rawCode} will stay visible as raw Realmz data until Providence documents it.`));
+  }
+
+  if (option.edcdShape) {
+    const rowId = Math.max(0, id);
+    const row = project.extracodes.find((candidate) => candidate.id === rowId);
+    if (!row) {
+      diagnostics.push(slotIssue("warning", trigger.id, slot, "missing-edcd-row", "This action expects an EDCD parameter row, but none is present.", `${option.shortLabel} uses ${option.edcdShape}; create Data EDCD row ${rowId} before relying on this behavior.`));
+    } else if (row.values.length !== 5 || row.values.some((value) => !Number.isFinite(value))) {
+      diagnostics.push(slotIssue("error", trigger.id, slot, "malformed-edcd-row", "The attached EDCD row is malformed.", `Data EDCD row ${rowId} must contain five finite numeric values.`));
+    }
+  }
+
+  const config = targetPickerConfig(code);
+  if (config && id !== 0) {
+    const targets = targetOptionsForOpcode(project, code);
+    const selected = targets.find((target) => target.value === id);
+    if (!selected) {
+      diagnostics.push(slotIssue("warning", trigger.id, slot, "unresolved-target", `${config.label} does not resolve to a known target.`, `ID ${id} is still preserved as raw data, but Providence cannot prove the referenced ${config.label.toLowerCase()} exists.`));
+    }
+  }
+
+  if (isDirectMacroOpcode(code) && id !== 0) {
+    const macro = project.triggers.find((candidate) => candidate.source === "Data ED3" && candidate.recordIndex === id);
+    if (!macro) {
+      diagnostics.push(slotIssue("error", trigger.id, slot, "dangling-macro", "Macro/GOSUB target is missing.", `No Data ED3 macro with record index ${id} exists.`));
+    }
+  }
+
+  return diagnostics;
+}
+
+function inRealmzMapBounds(value: number) {
+  return Number.isInteger(value) && value >= 0 && value < 90;
+}
+
+function issue(severity: ScriptDiagnosticSeverity, triggerId: string, code: string, message: string, detail: string): ScriptDiagnostic {
+  return { id: `${triggerId}:${code}`, severity, message, detail };
+}
+
+function slotIssue(severity: ScriptDiagnosticSeverity, triggerId: string, slot: number, code: string, message: string, detail: string): ScriptDiagnostic {
+  return { id: `${triggerId}:${slot}:${code}`, severity, slot, message, detail };
+}

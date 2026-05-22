@@ -118,7 +118,25 @@ export function useMapInteractions({
       onSampleTile(tile);
       return;
     }
-    if (activeTool === "select" || activeTool === "trigger") {
+    if (activeTool === "trigger") {
+      const hit = targetAt(cell);
+      setHoverTarget(hit);
+      selectTargetCell(hit.cell);
+      if (hit.kind !== "cell") {
+        onSelectEntity(hit.entity);
+        return;
+      }
+      onApplyCommand({
+        kind: "createActionPoint",
+        label: `Create Action Point ${cell.x},${cell.y}`,
+        levelType: map.levelType,
+        levelIndex: map.index,
+        x: cell.x,
+        y: cell.y
+      });
+      return;
+    }
+    if (activeTool === "select") {
       inspectAt(cell);
       return;
     }

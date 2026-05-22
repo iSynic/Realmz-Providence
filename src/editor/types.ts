@@ -210,13 +210,27 @@ export type RealmzScriptDraft = {
   slots: RealmzActionSlotDraft[];
 };
 
+export type ScenarioStartupFields = Partial<Pick<Project["scenario"], "name" | "projectPath" | "importedAt">>;
+
 export type ProjectCommand =
   | { kind: "paintTiles"; mapId: string; label: string; cells: PaintCellChange[] }
-  | { kind: "createMacro"; label: string }
+  | { kind: "createMacro"; label: string; displayName?: string }
   | { kind: "deleteMacro"; label: string; triggerId: string }
+  | { kind: "deleteTrigger"; label: string; triggerId: string }
+  | { kind: "duplicateTrigger"; label: string; triggerId: string; displayName?: string }
   | {
       kind: "createActionPoint";
       label: string;
+      levelType: LevelType;
+      levelIndex: number;
+      x: number;
+      y: number;
+      displayName?: string;
+    }
+  | {
+      kind: "moveActionPoint";
+      label: string;
+      triggerId: string;
       levelType: LevelType;
       levelIndex: number;
       x: number;
@@ -237,10 +251,35 @@ export type ProjectCommand =
       id: number;
     }
   | {
+      kind: "swapActionSlots";
+      label: string;
+      triggerId: string;
+      fromSlot: number;
+      toSlot: number;
+    }
+  | {
+      kind: "duplicateActionSlot";
+      label: string;
+      triggerId: string;
+      fromSlot: number;
+      toSlot: number;
+    }
+  | {
+      kind: "deleteActionSlot";
+      label: string;
+      triggerId: string;
+      slot: number;
+    }
+  | {
       kind: "updateEdcdRow";
       label: string;
       rowId: number;
       values: number[];
+    }
+  | {
+      kind: "deleteEdcdRow";
+      label: string;
+      rowId: number;
     }
   | {
       kind: "renameEditorEntity";
@@ -253,9 +292,9 @@ export type ProjectCommand =
   | { kind: "updateProjectAsset"; label: string; assetId: string; changes: Partial<Pick<ManagedAsset, "label" | "resourceId" | "linkedEntity">> }
   | { kind: "deleteProjectAsset"; label: string; assetId: string }
   | {
-      kind: "updateScenarioStartup" | "updateGlobalMacro" | "updateRegistrationSecurity" | "attachLibraryAsset";
+      kind: "updateScenarioStartup";
       label: string;
-      payload: Record<string, unknown>;
+      fields: ScenarioStartupFields;
     };
 
 export type SelectedEntity = {

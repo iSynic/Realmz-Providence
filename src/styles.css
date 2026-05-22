@@ -2526,6 +2526,23 @@ body.is-resizing-pane {
   padding: 0 10px 10px;
 }
 
+.context-capacity-note {
+  margin: 0 10px 8px;
+  padding: 7px 8px;
+  border: 1px solid #2d4151;
+  border-radius: 5px;
+  background: #101922;
+  color: #9fb4c5;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.context-capacity-note.blocked {
+  border-color: #6b5629;
+  background: #211d14;
+  color: #f3ca76;
+}
+
 .affordance-section {
   background: linear-gradient(180deg, rgba(22, 27, 33, 0.76), rgba(16, 18, 21, 0.52));
 }
@@ -4267,20 +4284,141 @@ body.is-resizing-pane {
   min-width: 0;
 }
 
+.script-toolbar,
+.script-record-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
 .realmz-script-editor small {
   color: #8da8ba;
 }
 
+.script-create-strip,
+.script-record-header {
+  display: grid;
+  gap: 8px;
+  align-items: end;
+  margin-bottom: 10px;
+  padding: 8px;
+  border: 1px solid #26333f;
+  border-radius: 6px;
+  background: #101820;
+}
+
+.script-create-strip {
+  grid-template-columns: minmax(160px, 1fr) 70px 70px auto;
+}
+
+.script-capacity-note {
+  grid-column: 1 / -1;
+  color: #8ca6bd;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.script-capacity-note.blocked {
+  color: #f3ca76;
+}
+
+.script-record-header {
+  grid-template-columns: minmax(180px, 1fr) auto;
+}
+
+.script-create-strip label,
+.script-name-field {
+  display: grid;
+  gap: 4px;
+}
+
+.script-create-strip label span,
+.script-name-field span {
+  color: #7eaedf;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
 .realmz-script-layout {
-  min-height: 260px;
+  min-height: min(700px, calc(100vh - 260px));
+  align-items: stretch;
+}
+
+.script-list-column {
+  width: 260px;
+  flex: 0 0 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-right: 1px solid #26333f;
+  padding-right: 8px;
+  min-height: 0;
+}
+
+.script-list-tools {
+  display: grid;
+  gap: 6px;
+}
+
+.script-list-summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.script-list-summary strong {
+  color: #dcecff;
+  font-size: 11px;
+}
+
+.script-list-filter {
+  width: 100%;
+  min-height: 28px;
+  border: 1px solid #263746;
+  border-radius: 5px;
+  background: #0b1218;
+  color: #dcecff;
+  padding: 5px 7px;
+}
+
+.script-list-scope {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.script-list-scope button {
+  min-height: 26px;
+  border: 1px solid #2b3a49;
+  border-radius: 5px;
+  background: #0f151c;
+  color: #93aabd;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.script-list-scope button.active {
+  border-color: #2b8fd8;
+  background: #10283d;
+  color: #dcecff;
+}
+
+.script-list-scope button:disabled {
+  opacity: 0.45;
 }
 
 .realmz-script-list {
-  width: 210px;
-  max-height: 330px;
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 520px;
+  max-height: min(760px, calc(100vh - 340px));
   overflow-y: scroll;
-  border-right: 1px solid #26333f;
-  padding-right: 8px;
+  padding-right: 2px;
 }
 
 .realmz-script-list button {
@@ -4300,6 +4438,48 @@ body.is-resizing-pane {
 .realmz-script-list button.selected {
   border-color: #2b8fd8;
   background: #10283d;
+}
+
+.script-list-empty {
+  border: 1px dashed #2d3a45;
+  border-radius: 5px;
+  color: #8fa3b7;
+  padding: 8px;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.script-issue-badge {
+  width: fit-content;
+  min-height: 17px;
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  border: 1px solid #2d3a45;
+  border-radius: 3px;
+  color: #9eb2c4;
+  background: #0c1117;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.script-issue-badge.ok {
+  color: #9ad9b6;
+  border-color: #2b5c45;
+  background: #0f1b15;
+}
+
+.script-issue-badge.warning {
+  color: #f3ca76;
+  border-color: #6b5629;
+  background: #211d14;
+}
+
+.script-issue-badge.danger {
+  color: #ff9cad;
+  border-color: #7d3440;
+  background: #27151a;
 }
 
 .realmz-script-form {
@@ -4378,6 +4558,14 @@ body.is-resizing-pane {
   box-shadow: inset 3px 0 0 #e6c477;
 }
 
+.realmz-step-card.has-warning {
+  box-shadow: inset 3px 0 0 #e6c477;
+}
+
+.realmz-step-card.has-error {
+  box-shadow: inset 3px 0 0 #ff6b85;
+}
+
 .realmz-step-card .slot-index {
   width: 24px;
   height: 24px;
@@ -4415,15 +4603,47 @@ body.is-resizing-pane {
 }
 
 .realmz-step-card b {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end;
   color: #8d9aaa;
   font-size: 9px;
   text-transform: uppercase;
+}
+
+.realmz-step-card b em {
+  min-height: 16px;
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 4px;
+  border: 1px solid #34495e;
+  border-radius: 3px;
+  color: #9dcfff;
+  background: #0d1823;
+  font-style: normal;
+}
+
+.realmz-step-card b em.warning {
+  color: #f3ca76;
+  border-color: #6b5629;
+  background: #211d14;
+}
+
+.realmz-step-card b em.danger {
+  color: #ff9cad;
+  border-color: #7d3440;
+  background: #27151a;
 }
 
 .realmz-step-category-bar {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
+}
+
+.realmz-opcode-search {
+  width: 100%;
 }
 
 .realmz-step-category-bar button,
@@ -4576,6 +4796,114 @@ body.is-resizing-pane {
 
 .field-warning {
   color: #f2bc68;
+}
+
+.script-diagnostics {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.script-diagnostics.ok {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  padding: 7px 8px;
+  border: 1px solid #254a39;
+  border-radius: 5px;
+  background: #101b16;
+}
+
+.script-diagnostics.ok span {
+  color: #76c59a;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.script-diagnostics.ok strong {
+  color: #b9e8cb;
+  font-size: 11px;
+}
+
+.script-diagnostic {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 7px;
+  align-items: start;
+  padding: 7px 8px;
+  border: 1px solid #2e3a45;
+  border-radius: 5px;
+  background: #101820;
+}
+
+.script-diagnostic svg {
+  margin-top: 2px;
+}
+
+.script-diagnostic.warning {
+  border-color: #6b5629;
+  background: #211d14;
+}
+
+.script-diagnostic.error {
+  border-color: #7d3440;
+  background: #27151a;
+}
+
+.script-diagnostic.info {
+  border-color: #2f5373;
+  background: #101a27;
+}
+
+.script-diagnostic span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.script-diagnostic strong {
+  color: #edf4fb;
+  font-size: 11px;
+}
+
+.script-diagnostic small,
+.script-diagnostic-more {
+  color: #8fa3b7;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.btn.icon-only {
+  width: 26px;
+  min-width: 26px;
+  padding-left: 0;
+  padding-right: 0;
+  justify-content: center;
+}
+
+@media (max-width: 980px) {
+  .realmz-script-layout {
+    flex-direction: column;
+  }
+
+  .script-list-column {
+    width: 100%;
+    flex-basis: auto;
+    border-right: 0;
+    border-bottom: 1px solid #26333f;
+    padding-right: 0;
+    padding-bottom: 8px;
+  }
+
+  .realmz-script-list {
+    min-height: 220px;
+    max-height: 320px;
+  }
+
+  .script-create-strip,
+  .script-record-header {
+    grid-template-columns: 1fr;
+  }
 }
 
 .realmz-raw-preview {

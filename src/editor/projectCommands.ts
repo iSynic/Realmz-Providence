@@ -1,5 +1,6 @@
 import { Action, ExtraCodeRow, PaintCellChange, Project, ProjectCommand, Provenance, TriggerRecord } from "./types";
 import { actionOptionFor, normalizeStepOpcode } from "./realmzActions";
+import { isReusableDoorPlaceholder } from "./actionPointCapacity";
 
 const DOOR_RECORD_BYTES = 40;
 const DOORS_PER_LEVEL = 100;
@@ -7,13 +8,20 @@ const EXTRACODE_BYTES = 10;
 
 export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "paintTiles") return paintTiles(project, command.mapId, command.cells);
-  if (command.kind === "createMacro") return createMacro(project);
-  if (command.kind === "deleteMacro") return { ...project, triggers: project.triggers.filter((trigger) => trigger.id !== command.triggerId) };
+  if (command.kind === "createMacro") return createMacro(project, command.displayName);
+  if (command.kind === "deleteMacro" || command.kind === "deleteTrigger") return deleteTrigger(project, command.triggerId);
+  if (command.kind === "duplicateTrigger") return duplicateTrigger(project, command.triggerId, command.displayName);
   if (command.kind === "createActionPoint") return createActionPoint(project, command);
+  if (command.kind === "moveActionPoint") return moveActionPoint(project, command);
   if (command.kind === "updateTriggerHeader") return updateTriggerHeader(project, command.triggerId, command.fields);
   if (command.kind === "updateActionSlot") return updateActionSlot(project, command.triggerId, command.slot, command.rawCode, command.id);
+  if (command.kind === "swapActionSlots") return swapActionSlots(project, command.triggerId, command.fromSlot, command.toSlot);
+  if (command.kind === "duplicateActionSlot") return duplicateActionSlot(project, command.triggerId, command.fromSlot, command.toSlot);
+  if (command.kind === "deleteActionSlot") return updateActionSlot(project, command.triggerId, command.slot, 0, 0);
   if (command.kind === "updateEdcdRow") return updateEdcdRow(project, command.rowId, command.values);
+  if (command.kind === "deleteEdcdRow") return deleteEdcdRow(project, command.rowId);
   if (command.kind === "renameEditorEntity") return renameEditorEntity(project, command.entityId, command.displayName);
+  if (command.kind === "updateScenarioStartup") return updateScenarioStartup(project, command.fields);
   if (command.kind === "attachProjectAsset") return { ...project, assets: [...(project.assets ?? []), command.asset] };
   if (command.kind === "replaceProjectAsset") return {
     ...project,
@@ -60,7 +68,7 @@ function paintTiles(project: Project, mapId: string, cells: PaintCellChange[]) {
   return projectChanged ? { ...project, maps } : project;
 }
 
-function createMacro(project: Project) {
+function createMacro(project: Project, displayName?: string) {
   const recordIndex =
     Math.max(-1, ...project.triggers.filter((trigger) => trigger.source === "Data ED3").map((trigger) => trigger.recordIndex)) + 1;
   const macro: TriggerRecord = {
@@ -79,7 +87,92 @@ function createMacro(project: Project) {
     actions: [],
     provenance: authoredProvenance("Data ED3", recordIndex, recordIndex * DOOR_RECORD_BYTES, DOOR_RECORD_BYTES)
   };
-  return { ...project, triggers: [...project.triggers, macro] };
+  return {
+    ...project,
+    triggers: [...project.triggers, macro],
+    editorMetadata: addDisplayName(project.editorMetadata, macro.id, displayName)
+  };
+}
+
+function deleteTrigger(project: Project, triggerId: string) {
+  let changed = false;
+  const removedDisplayNames: string[] = [];
+  const nextTriggers = project.triggers.flatMap((trigger) => {
+    if (trigger.id !== triggerId) return [trigger];
+    changed = true;
+    removedDisplayNames.push(trigger.id);
+    if (trigger.source === "Data ED3") return [];
+    return [emptyActionPointPlaceholder(trigger)];
+  });
+  if (!changed) return project;
+  return {
+    ...project,
+    triggers: nextTriggers,
+    editorMetadata: removeDisplayNames(project.editorMetadata, removedDisplayNames)
+  };
+}
+
+function emptyActionPointPlaceholder(trigger: TriggerRecord): TriggerRecord {
+  return {
+    ...trigger,
+    active: false,
+    doorid: 0,
+    landid: trigger.levelIndex ?? 0,
+    targetX: 0,
+    targetY: 0,
+    percent: 0,
+    coordinate: null,
+    actions: []
+  };
+}
+
+function duplicateTrigger(project: Project, triggerId: string, displayName?: string) {
+  const original = project.triggers.find((trigger) => trigger.id === triggerId);
+  if (!original) return project;
+
+  if (original.source === "Data ED3") {
+    const recordIndex =
+      Math.max(-1, ...project.triggers.filter((trigger) => trigger.source === "Data ED3").map((trigger) => trigger.recordIndex)) + 1;
+    const macro = cloneTrigger(original, {
+      id: `Data ED3:macro:${recordIndex}`,
+      source: "Data ED3",
+      levelType: null,
+      levelIndex: null,
+      recordIndex,
+      coordinate: null,
+      provenance: authoredProvenance("Data ED3", recordIndex, recordIndex * DOOR_RECORD_BYTES, DOOR_RECORD_BYTES)
+    });
+    return {
+      ...project,
+      triggers: [...project.triggers, macro],
+      editorMetadata: addDisplayName(project.editorMetadata, macro.id, displayName ?? `Copy of ${displayNameFor(project, original.id, `Macro ${original.recordIndex}`)}`)
+    };
+  }
+
+  if (!original.levelType || original.levelIndex == null) return project;
+  const siblings = project.triggers.filter((trigger) => trigger.levelType === original.levelType && trigger.levelIndex === original.levelIndex);
+  const allocation = findReusableDoorSlot(siblings, DOORS_PER_LEVEL);
+  if (!allocation) return project;
+  const source = original.levelType === "land" ? "Data DD" : "Data DDD";
+  const coordinate = original.coordinate ?? { x: original.targetX ?? 0, y: original.targetY ?? 0 };
+  const duplicate = cloneTrigger(original, {
+    id: triggerIdFor(source, original.levelIndex, allocation.recordIndex),
+    source,
+    levelType: original.levelType,
+    levelIndex: original.levelIndex,
+    recordIndex: allocation.recordIndex,
+    coordinate,
+    doorid: packDoorId(original.levelIndex, coordinate.x, coordinate.y),
+    landid: original.levelIndex,
+    targetX: coordinate.x,
+    targetY: coordinate.y,
+    provenance: authoredProvenance(source, allocation.recordIndex, (original.levelIndex * DOORS_PER_LEVEL + allocation.recordIndex) * DOOR_RECORD_BYTES, DOOR_RECORD_BYTES)
+  });
+  return {
+    ...project,
+    triggers: upsertAllocatedTrigger(project.triggers, duplicate, allocation.placeholderId),
+    editorMetadata: addDisplayName(project.editorMetadata, duplicate.id, displayName ?? `Copy of ${displayNameFor(project, original.id, `Action Point ${original.recordIndex}`)}`)
+  };
 }
 
 function createActionPoint(
@@ -87,14 +180,15 @@ function createActionPoint(
   command: Extract<ProjectCommand, { kind: "createActionPoint" }>
 ) {
   const siblings = project.triggers.filter((trigger) => trigger.levelType === command.levelType && trigger.levelIndex === command.levelIndex);
-  const recordIndex = nextRecordIndex(siblings, 100);
-  if (recordIndex === null) return project;
+  const allocation = findReusableDoorSlot(siblings, DOORS_PER_LEVEL);
+  if (!allocation) return project;
+  const source = command.levelType === "land" ? "Data DD" : "Data DDD";
   const trigger: TriggerRecord = {
-    id: `Data ${command.levelType === "land" ? "DD" : "DDD"}:${command.levelIndex}:${recordIndex}`,
-    source: command.levelType === "land" ? "Data DD" : "Data DDD",
+    id: triggerIdFor(source, command.levelIndex, allocation.recordIndex),
+    source,
     levelType: command.levelType,
     levelIndex: command.levelIndex,
-    recordIndex,
+    recordIndex: allocation.recordIndex,
     active: true,
     doorid: command.levelIndex * 10000 + command.y * 100 + command.x,
     landid: command.levelIndex,
@@ -104,13 +198,17 @@ function createActionPoint(
     coordinate: { x: command.x, y: command.y },
     actions: [],
     provenance: authoredProvenance(
-      command.levelType === "land" ? "Data DD" : "Data DDD",
-      recordIndex,
-      (command.levelIndex * DOORS_PER_LEVEL + recordIndex) * DOOR_RECORD_BYTES,
+      source,
+      allocation.recordIndex,
+      (command.levelIndex * DOORS_PER_LEVEL + allocation.recordIndex) * DOOR_RECORD_BYTES,
       DOOR_RECORD_BYTES
     )
   };
-  return { ...project, triggers: [...project.triggers, trigger] };
+  return {
+    ...project,
+    triggers: upsertAllocatedTrigger(project.triggers, trigger, allocation.placeholderId),
+    editorMetadata: addDisplayName(project.editorMetadata, trigger.id, command.displayName)
+  };
 }
 
 function nextRecordIndex(records: TriggerRecord[], limit: number) {
@@ -131,12 +229,86 @@ function updateTriggerHeader(project: Project, triggerId: string, fields: Partia
   return changed ? { ...project, triggers } : project;
 }
 
+function moveActionPoint(project: Project, command: Extract<ProjectCommand, { kind: "moveActionPoint" }>) {
+  const original = project.triggers.find((trigger) => trigger.id === command.triggerId);
+  if (!original || original.source === "Data ED3") return project;
+  const nextSource = command.levelType === "land" ? "Data DD" : "Data DDD";
+  const sameBucket = original.levelType === command.levelType && original.levelIndex === command.levelIndex;
+  let recordIndex = original.recordIndex;
+  let placeholderId: string | undefined;
+  if (!sameBucket) {
+    const siblings = project.triggers.filter((trigger) => trigger.levelType === command.levelType && trigger.levelIndex === command.levelIndex);
+    const allocation = findReusableDoorSlot(siblings, DOORS_PER_LEVEL, original.recordIndex, original.id);
+    if (!allocation) return project;
+    recordIndex = allocation.recordIndex;
+    placeholderId = allocation.placeholderId;
+  }
+  const nextId = triggerIdFor(nextSource, command.levelIndex, recordIndex);
+  const nextTrigger = cloneTrigger(original, {
+    id: nextId,
+    source: nextSource,
+    levelType: command.levelType,
+    levelIndex: command.levelIndex,
+    recordIndex,
+    active: true,
+    doorid: packDoorId(command.levelIndex, command.x, command.y),
+    landid: command.levelIndex,
+    targetX: command.x,
+    targetY: command.y,
+    coordinate: { x: command.x, y: command.y },
+    provenance: authoredProvenance(nextSource, recordIndex, (command.levelIndex * DOORS_PER_LEVEL + recordIndex) * DOOR_RECORD_BYTES, DOOR_RECORD_BYTES)
+  });
+  return {
+    ...project,
+    triggers: upsertAllocatedTrigger(
+      project.triggers.filter((trigger) => trigger.id !== original.id),
+      nextTrigger,
+      placeholderId
+    ),
+    editorMetadata: remapDisplayName(project.editorMetadata, original.id, nextId)
+  };
+}
+
 function updateActionSlot(project: Project, triggerId: string, slot: number, rawCode: number, id: number) {
   let changed = false;
   const triggers = project.triggers.map((trigger) => {
     if (trigger.id !== triggerId) return trigger;
     const actions = trigger.actions.filter((action) => action.slot !== slot);
     if (rawCode !== 0 || id !== 0) actions.push(describeAction(slot, rawCode, id));
+    actions.sort((a, b) => a.slot - b.slot);
+    changed = true;
+    return { ...trigger, actions };
+  });
+  return changed ? { ...project, triggers } : project;
+}
+
+function swapActionSlots(project: Project, triggerId: string, fromSlot: number, toSlot: number) {
+  if (!slotInRange(fromSlot) || !slotInRange(toSlot) || fromSlot === toSlot) return project;
+  let changed = false;
+  const triggers = project.triggers.map((trigger) => {
+    if (trigger.id !== triggerId) return trigger;
+    const actions = trigger.actions
+      .map((action) => {
+        if (action.slot === fromSlot) return { ...action, slot: toSlot };
+        if (action.slot === toSlot) return { ...action, slot: fromSlot };
+        return action;
+      })
+      .sort((a, b) => a.slot - b.slot);
+    changed = true;
+    return { ...trigger, actions };
+  });
+  return changed ? { ...project, triggers } : project;
+}
+
+function duplicateActionSlot(project: Project, triggerId: string, fromSlot: number, toSlot: number) {
+  if (!slotInRange(fromSlot) || !slotInRange(toSlot) || fromSlot === toSlot) return project;
+  let changed = false;
+  const triggers = project.triggers.map((trigger) => {
+    if (trigger.id !== triggerId) return trigger;
+    const action = trigger.actions.find((candidate) => candidate.slot === fromSlot);
+    if (!action) return trigger;
+    const actions = trigger.actions.filter((candidate) => candidate.slot !== toSlot);
+    actions.push(describeAction(toSlot, action.rawCode, action.id));
     actions.sort((a, b) => a.slot - b.slot);
     changed = true;
     return { ...trigger, actions };
@@ -164,6 +336,11 @@ function updateEdcdRow(project: Project, rowId: number, values: number[]) {
   return { ...project, extracodes };
 }
 
+function deleteEdcdRow(project: Project, rowId: number) {
+  const nextRows = project.extracodes.filter((row) => row.id !== rowId);
+  return nextRows.length === project.extracodes.length ? project : { ...project, extracodes: nextRows };
+}
+
 function renameEditorEntity(project: Project, entityId: string, displayName: string) {
   const label = displayName.trim();
   if (!label) return project;
@@ -174,6 +351,18 @@ function renameEditorEntity(project: Project, entityId: string, displayName: str
         ...(project.editorMetadata?.displayNames ?? {}),
         [entityId]: { label, source: "user" as const, updatedAt: new Date().toISOString() }
       }
+    }
+  };
+}
+
+function updateScenarioStartup(project: Project, fields: Extract<ProjectCommand, { kind: "updateScenarioStartup" }>["fields"]) {
+  const name = fields.name?.trim();
+  return {
+    ...project,
+    scenario: {
+      ...project.scenario,
+      ...fields,
+      ...(name ? { name } : {})
     }
   };
 }
@@ -221,4 +410,91 @@ function authoredProvenance(sourceFile: string, recordIndex: number, byteOffset:
     byteLength,
     confidence: "inferred"
   };
+}
+
+function cloneTrigger(trigger: TriggerRecord, changes: Partial<TriggerRecord>): TriggerRecord {
+  return {
+    ...trigger,
+    actions: trigger.actions.map((action) => ({ ...action })),
+    ...changes
+  };
+}
+
+function findReusableDoorSlot(
+  records: TriggerRecord[],
+  limit: number,
+  preferredIndex?: number,
+  excludeId?: string
+): { recordIndex: number; placeholderId?: string } | null {
+  const candidates = records.filter((record) => record.id !== excludeId);
+  if (preferredIndex != null) {
+    const preferred = candidates.find((record) => record.recordIndex === preferredIndex);
+    if (!preferred) return { recordIndex: preferredIndex };
+    if (isReusableDoorPlaceholder(preferred)) return { recordIndex: preferredIndex, placeholderId: preferred.id };
+  }
+  for (let index = 0; index < limit; index += 1) {
+    const existing = candidates.find((record) => record.recordIndex === index);
+    if (!existing) return { recordIndex: index };
+    if (isReusableDoorPlaceholder(existing)) return { recordIndex: index, placeholderId: existing.id };
+  }
+  return null;
+}
+
+function upsertAllocatedTrigger(triggers: TriggerRecord[], trigger: TriggerRecord, placeholderId?: string) {
+  let replaced = false;
+  const next = triggers.map((candidate) => {
+    if (candidate.id !== placeholderId && candidate.id !== trigger.id) return candidate;
+    replaced = true;
+    return trigger;
+  });
+  return replaced ? next : [...next, trigger];
+}
+
+function slotInRange(slot: number) {
+  return Number.isInteger(slot) && slot >= 0 && slot < 8;
+}
+
+function packDoorId(levelIndex: number, x: number, y: number) {
+  return levelIndex * 10000 + y * 100 + x;
+}
+
+function triggerIdFor(source: string, levelIndex: number, recordIndex: number) {
+  return `${source}:${levelIndex}:${recordIndex}`;
+}
+
+function addDisplayName(metadata: Project["editorMetadata"], entityId: string, displayName?: string) {
+  const label = displayName?.trim();
+  if (!label) return metadata;
+  return {
+    displayNames: {
+      ...(metadata?.displayNames ?? {}),
+      [entityId]: { label, source: "user" as const, updatedAt: new Date().toISOString() }
+    }
+  };
+}
+
+function removeDisplayNames(metadata: Project["editorMetadata"], entityIds: string[]) {
+  const displayNames = { ...(metadata?.displayNames ?? {}) };
+  let changed = false;
+  for (const id of entityIds) {
+    if (id in displayNames) {
+      delete displayNames[id];
+      changed = true;
+    }
+  }
+  return changed ? { displayNames } : metadata;
+}
+
+function remapDisplayName(metadata: Project["editorMetadata"], fromId: string, toId: string) {
+  if (fromId === toId) return metadata;
+  const existing = metadata?.displayNames?.[fromId];
+  if (!existing) return metadata;
+  const displayNames = { ...(metadata?.displayNames ?? {}) };
+  delete displayNames[fromId];
+  displayNames[toId] = { ...existing, updatedAt: new Date().toISOString() };
+  return { displayNames };
+}
+
+function displayNameFor(project: Project, entityId: string, fallback: string) {
+  return project.editorMetadata?.displayNames?.[entityId]?.label ?? fallback;
 }

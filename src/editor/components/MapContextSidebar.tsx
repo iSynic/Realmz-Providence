@@ -12,6 +12,7 @@ import { TileSprite, tileColor } from "./TileSprite";
 import { TutorialTip } from "./TutorialTip";
 import { ScrollArea } from "../ui";
 import { ResizablePane } from "./ResizablePane";
+import { actionPointCapacity } from "../actionPointCapacity";
 
 export function MapContextSidebar({
   state,
@@ -341,6 +342,11 @@ function SelectionInspector({
       </div>
       {selection.kind === "cell" && (
         <>
+          {map && project && (
+            <p className={`context-capacity-note${actionPointCapacity(project.triggers, map.levelType, map.index).canCreate ? "" : " blocked"}`}>
+              {actionPointCapacity(project.triggers, map.levelType, map.index).active}/100 Action Point records used on this map.
+            </p>
+          )}
           <InfoGrid
             rows={[
               ["Cell", `${selection.cell.x}, ${selection.cell.y}`],
@@ -363,6 +369,8 @@ function SelectionInspector({
             <button
               className="btn btn-primary btn-xs context-action-button"
               type="button"
+              disabled={project ? !actionPointCapacity(project.triggers, map.levelType, map.index).canCreate : false}
+              title={project && !actionPointCapacity(project.triggers, map.levelType, map.index).canCreate ? "This map already uses all 100 Realmz Action Point records." : "Create an Action Point at the selected cell."}
               onClick={() =>
                 onApplyCommand({
                   kind: "createActionPoint",
