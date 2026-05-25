@@ -1,4 +1,19 @@
-import { Action, ExtraCodeRow, PaintCellChange, Project, ProjectCommand, Provenance, TriggerRecord } from "./types";
+import {
+  Action,
+  BattleRecord,
+  ComplexEncounterRecord,
+  ExtraCodeRow,
+  MessageRecord,
+  PaintCellChange,
+  Project,
+  ProjectCommand,
+  Provenance,
+  RealmzTargetRecordKind,
+  ShopRecord,
+  SimpleEncounterRecord,
+  TreasureRecord,
+  TriggerRecord
+} from "./types";
 import { actionOptionFor, normalizeStepOpcode } from "./realmzActions";
 import { isReusableDoorPlaceholder } from "./actionPointCapacity";
 
@@ -20,6 +35,20 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "deleteActionSlot") return updateActionSlot(project, command.triggerId, command.slot, 0, 0);
   if (command.kind === "updateEdcdRow") return updateEdcdRow(project, command.rowId, command.values);
   if (command.kind === "deleteEdcdRow") return deleteEdcdRow(project, command.rowId);
+  if (command.kind === "createTargetRecord") return createTargetRecord(project, command.recordType, command.id);
+  if (command.kind === "deleteTargetRecord") return deleteTargetRecord(project, command.recordType, command.id);
+  if (command.kind === "updateMessageRecord") return updateRecord(project, "messages", command.id, command.changes);
+  if (command.kind === "updateBattleRecord") return updateRecord(project, "battles", command.id, command.changes);
+  if (command.kind === "updateTreasureRecord") return updateRecord(project, "treasures", command.id, command.changes);
+  if (command.kind === "updateShopRecord") return updateRecord(project, "shops", command.id, command.changes);
+  if (command.kind === "updateSimpleEncounterRecord") return updateRecord(project, "simpleEncounters", command.id, command.changes);
+  if (command.kind === "updateComplexEncounterRecord") return updateRecord(project, "complexEncounters", command.id, command.changes);
+  if (command.kind === "upsertQuestLabel") return upsertQuestLabel(project, command.quest);
+  if (command.kind === "deleteQuestLabel") return { ...project, questLabels: (project.questLabels ?? []).filter((quest) => quest.id !== command.id) };
+  if (command.kind === "applyRealmzScriptStep") {
+    const withSlot = updateActionSlot(project, command.triggerId, command.slot, command.opcode, command.id);
+    return command.edcdValues ? updateEdcdRow(withSlot, command.id, command.edcdValues) : withSlot;
+  }
   if (command.kind === "renameEditorEntity") return renameEditorEntity(project, command.entityId, command.displayName);
   if (command.kind === "updateScenarioStartup") return updateScenarioStartup(project, command.fields);
   if (command.kind === "attachProjectAsset") return { ...project, assets: [...(project.assets ?? []), command.asset] };
@@ -339,6 +368,132 @@ function updateEdcdRow(project: Project, rowId: number, values: number[]) {
 function deleteEdcdRow(project: Project, rowId: number) {
   const nextRows = project.extracodes.filter((row) => row.id !== rowId);
   return nextRows.length === project.extracodes.length ? project : { ...project, extracodes: nextRows };
+}
+
+function createTargetRecord(project: Project, recordType: RealmzTargetRecordKind, requestedId?: number): Project {
+  const id = requestedId ?? nextTargetId(project, recordType);
+  if (id < 0 || !Number.isInteger(id)) return project;
+  switch (recordType) {
+    case "message":
+      return upsertRecord(project, "messages", emptyMessage(id));
+    case "battle":
+      return upsertRecord(project, "battles", emptyBattle(id));
+    case "treasure":
+      return upsertRecord(project, "treasures", emptyTreasure(id));
+    case "shop":
+      return upsertRecord(project, "shops", emptyShop(id));
+    case "simpleEncounter":
+      return upsertRecord(project, "simpleEncounters", emptySimpleEncounter(id));
+    case "complexEncounter":
+      return upsertRecord(project, "complexEncounters", emptyComplexEncounter(id));
+    case "questLabel":
+      return upsertQuestLabel(project, { id, label: `Quest ${id}` });
+  }
+}
+
+function deleteTargetRecord(project: Project, recordType: RealmzTargetRecordKind, id: number): Project {
+  switch (recordType) {
+    case "message":
+      return upsertRecord(project, "messages", emptyMessage(id));
+    case "battle":
+      return upsertRecord(project, "battles", emptyBattle(id));
+    case "treasure":
+      return upsertRecord(project, "treasures", emptyTreasure(id));
+    case "shop":
+      return upsertRecord(project, "shops", emptyShop(id));
+    case "simpleEncounter":
+      return upsertRecord(project, "simpleEncounters", emptySimpleEncounter(id));
+    case "complexEncounter":
+      return upsertRecord(project, "complexEncounters", emptyComplexEncounter(id));
+    case "questLabel":
+      return { ...project, questLabels: (project.questLabels ?? []).filter((quest) => quest.id !== id) };
+  }
+}
+
+type TargetCollectionName = "messages" | "battles" | "treasures" | "shops" | "simpleEncounters" | "complexEncounters";
+type TargetRecord =
+  | MessageRecord
+  | BattleRecord
+  | TreasureRecord
+  | ShopRecord
+  | SimpleEncounterRecord
+  | ComplexEncounterRecord;
+
+function updateRecord<K extends TargetCollectionName>(project: Project, collection: K, id: number, changes: Partial<Project[K][number]>) {
+  const existing = (project[collection] as TargetRecord[]).find((record) => record.id === id);
+  const base = existing ?? defaultRecordForCollection(collection, id);
+  return upsertRecord(project, collection, { ...base, ...changes, authored: true } as Project[K][number]);
+}
+
+function upsertRecord<K extends TargetCollectionName>(project: Project, collection: K, record: Project[K][number]) {
+  const current = [...((project[collection] ?? []) as Project[K][number][])];
+  const index = current.findIndex((candidate) => candidate.id === record.id);
+  if (index >= 0) current[index] = { ...current[index], ...record };
+  else current.push(record);
+  current.sort((a, b) => a.id - b.id);
+  return { ...project, [collection]: current };
+}
+
+function defaultRecordForCollection(collection: TargetCollectionName, id: number): TargetRecord {
+  if (collection === "messages") return emptyMessage(id);
+  if (collection === "battles") return emptyBattle(id);
+  if (collection === "treasures") return emptyTreasure(id);
+  if (collection === "shops") return emptyShop(id);
+  if (collection === "simpleEncounters") return emptySimpleEncounter(id);
+  return emptyComplexEncounter(id);
+}
+
+function nextTargetId(project: Project, recordType: RealmzTargetRecordKind) {
+  const ids = targetIds(project, recordType);
+  for (let id = 0; id < 10000; id += 1) {
+    if (!ids.has(id)) return id;
+  }
+  return ids.size;
+}
+
+function targetIds(project: Project, recordType: RealmzTargetRecordKind) {
+  const values =
+    recordType === "message" ? project.messages :
+    recordType === "battle" ? project.battles :
+    recordType === "treasure" ? project.treasures :
+    recordType === "shop" ? project.shops :
+    recordType === "simpleEncounter" ? project.simpleEncounters :
+    recordType === "complexEncounter" ? project.complexEncounters :
+    project.questLabels;
+  return new Set((values ?? []).map((record) => record.id));
+}
+
+function upsertQuestLabel(project: Project, quest: { id: number; label: string; note?: string }) {
+  const quests = [...(project.questLabels ?? [])];
+  const index = quests.findIndex((candidate) => candidate.id === quest.id);
+  if (index >= 0) quests[index] = { ...quests[index], ...quest };
+  else quests.push(quest);
+  quests.sort((a, b) => a.id - b.id);
+  return { ...project, questLabels: quests };
+}
+
+function emptyMessage(id: number): MessageRecord {
+  return { id, text: "", rawBytes: new Array(256).fill(0), authored: true, provenance: authoredProvenance("Data SD2", id, id * 256, 256) };
+}
+
+function emptyBattle(id: number): BattleRecord {
+  return { id, grid: new Array(13 * 13).fill(0), dist: 0, messageBefore: 0, messageAfter: 0, battleMacro: 0, rawBytes: new Array(346).fill(0), authored: true, provenance: authoredProvenance("Data BD", id, id * 346, 346) };
+}
+
+function emptyTreasure(id: number): TreasureRecord {
+  return { id, itemIds: new Array(20).fill(0), exp: 0, gold: 0, gems: 0, jewelry: 0, rawBytes: new Array(48).fill(0), authored: true, provenance: authoredProvenance("Data TD", id, id * 48, 48) };
+}
+
+function emptyShop(id: number): ShopRecord {
+  return { id, itemIds: new Array(1000).fill(0), quantities: new Array(1000).fill(0), inflation: 0, rawBytes: new Array(3002).fill(0), authored: true, provenance: authoredProvenance("Data SD", id, id * 3002, 3002) };
+}
+
+function emptySimpleEncounter(id: number): SimpleEncounterRecord {
+  return { id, actions: [], choiceResults: [0, 0, 0, 0], canBackOut: false, maxTimes: 0, casteSuccess: 0, prompt: 0, texts: ["", "", "", ""], rawBytes: new Array(426).fill(0), authored: true, provenance: authoredProvenance("Data ED", id, id * 426, 426) };
+}
+
+function emptyComplexEncounter(id: number): ComplexEncounterRecord {
+  return { id, actions: [], choiceResults: [0, 0, 0, 0], wordResults: [0, 0, 0, 0], canBackOut: false, thief: false, maxTimes: 0, casteSuccess: 0, thiefSuccess: 0, thiefFail: 0, prompt: 0, texts: ["", "", "", "", "", "", "", "", ""], rawBytes: new Array(520).fill(0), authored: true, provenance: authoredProvenance("Data ED2", id, id * 520, 520) };
 }
 
 function renameEditorEntity(project: Project, entityId: string, displayName: string) {

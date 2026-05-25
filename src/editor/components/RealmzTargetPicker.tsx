@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Project, SelectedEntity, SemanticEntity } from "../types";
+import { Project, RealmzTargetRecordKind, SelectedEntity, SemanticEntity } from "../types";
 import { isCallableMacro, schemaEntities } from "../semanticGraph";
 import { selectEntityFromId } from "../utils";
 import { normalizeStepOpcode } from "../realmzActions";
@@ -17,13 +17,15 @@ export function TargetPicker({
   opcode,
   value,
   onChange,
-  onInspect
+  onInspect,
+  onCreate
 }: {
   project: Project | null;
   opcode: number;
   value: number;
   onChange: (id: number) => void;
   onInspect: (entity: SelectedEntity) => void;
+  onCreate?: (recordType: RealmzTargetRecordKind, id?: number) => void;
 }) {
   const config = targetPickerConfig(opcode);
   const targets = useMemo(() => targetOptionsForOpcode(project, opcode), [project, opcode]);
@@ -57,36 +59,49 @@ export function TargetPicker({
           Inspect Target
         </button>
       )}
-      {targets.length === 0 && <span className="target-picker-empty">No source-backed targets are available yet.</span>}
+      {config.recordType && onCreate && (
+        <button
+          className="btn btn-secondary btn-xs"
+          type="button"
+          onClick={() => onCreate(config.recordType!, hasCurrentValue ? value : undefined)}
+        >
+          Create {config.label}
+        </button>
+      )}
+      {targets.length === 0 && <span className="target-picker-empty">No authorable targets are available yet.</span>}
     </div>
   );
 }
 
 export function targetPickerConfig(opcode: number) {
   const code = normalizeStepOpcode(opcode);
-  const configs: Record<number, { label: string; hint: string }> = {
-    1: { label: "Message Target", hint: "Select the scenario message this action displays." },
-    4: { label: "Simple Encounter", hint: "Select a simple encounter record." },
-    5: { label: "Complex Encounter", hint: "Select a complex encounter record." },
-    6: { label: "Shop Target", hint: "Select a shop record." },
+  const configs: Record<number, { label: string; hint: string; recordType?: RealmzTargetRecordKind }> = {
+    1: { label: "Message Target", hint: "Select the scenario message this action displays.", recordType: "message" },
+    2: { label: "Battle Target", hint: "Select a battle record.", recordType: "battle" },
+    4: { label: "Simple Encounter", hint: "Select a simple encounter record.", recordType: "simpleEncounter" },
+    5: { label: "Complex Encounter", hint: "Select a complex encounter record.", recordType: "complexEncounter" },
+    6: { label: "Shop Target", hint: "Select a shop record.", recordType: "shop" },
     8: { label: "Macro Target", hint: "Select a reusable Data ED3 macro." },
     9: { label: "Sound Resource", hint: "Select a playable sound resource or managed sound asset." },
-    10: { label: "Treasure Target", hint: "Select a treasure record." },
-    19: { label: "Message Target", hint: "Select the scenario message this action displays." },
+    10: { label: "Treasure Target", hint: "Select a treasure record.", recordType: "treasure" },
+    19: { label: "Message Target", hint: "Select the scenario message this action displays.", recordType: "message" },
     27: { label: "Picture Resource", hint: "Select a picture resource or managed picture asset." },
     29: { label: "Map Reference", hint: "Select a map or map record." },
-    35: { label: "Simple Encounter", hint: "Select the simple encounter this action mutates." },
+    35: { label: "Simple Encounter", hint: "Select the simple encounter this action mutates.", recordType: "simpleEncounter" },
     40: { label: "Macro Target", hint: "Select a reusable Data ED3 macro." },
-    44: { label: "Complex Encounter", hint: "Select the complex encounter this action mutates." },
-    47: { label: "Quest Flag", hint: "Select a quest flag to write." },
-    49: { label: "Shop Target", hint: "Select a shop record." },
-    51: { label: "Shop Target", hint: "Select a shop record." },
+    44: { label: "Complex Encounter", hint: "Select the complex encounter this action mutates.", recordType: "complexEncounter" },
+    47: { label: "Quest Flag", hint: "Select a quest flag to write.", recordType: "questLabel" },
+    48: { label: "Battle Variant", hint: "Select a battle variant/range.", recordType: "battle" },
+    49: { label: "Shop Target", hint: "Select a shop record.", recordType: "shop" },
+    51: { label: "Shop Target", hint: "Select a shop record.", recordType: "shop" },
     55: { label: "Macro Target", hint: "Select a reusable Data ED3 macro." },
-    62: { label: "Message Target", hint: "Select the scenario message this action displays." },
+    56: { label: "Battle Variant", hint: "Select a battle variant/range.", recordType: "battle" },
+    62: { label: "Message Target", hint: "Select the scenario message this action displays.", recordType: "message" },
     64: { label: "Macro Target", hint: "Select a reusable Data ED3 macro." },
-    71: { label: "Message Target", hint: "Select the scenario message this action displays." },
+    71: { label: "Message Target", hint: "Select the scenario message this action displays.", recordType: "message" },
     97: { label: "Map Record", hint: "Select a map record." },
-    104: { label: "Simple Encounter", hint: "Select the simple encounter this action mutates." },
+    104: { label: "Simple Encounter", hint: "Select the simple encounter this action mutates.", recordType: "simpleEncounter" },
+    107: { label: "Battle Variant", hint: "Select a battle variant/range.", recordType: "battle" },
     106: { label: "Map Record", hint: "Select the map record this action mutates." },
     127: { label: "Monster Target", hint: "Select a monster record." }
   };
@@ -98,6 +113,7 @@ export function targetOptionsForOpcode(project: Project | null, opcode: number):
   const code = normalizeStepOpcode(opcode);
   const semanticTypes = targetSemanticTypes(code);
   const options: ScriptTargetOption[] = [];
+  addTypedProjectTargets(project, code, options);
   for (const type of semanticTypes) {
     for (const entity of schemaEntities(project, type)) {
       if (!entityMatchesOpcodeTarget(entity, code)) continue;
@@ -150,6 +166,44 @@ export function targetOptionsForOpcode(project: Project | null, opcode: number):
   return dedupeTargetOptions(options).sort((a, b) => a.value - b.value || a.label.localeCompare(b.label)).slice(0, 320);
 }
 
+function addTypedProjectTargets(project: Project, code: number, options: ScriptTargetOption[]) {
+  if ([1, 19, 62, 71].includes(code)) {
+    for (const record of project.messages ?? []) {
+      options.push({ key: `message:${record.id}`, value: record.id, label: `Message ${record.id}`, detail: `${record.text.slice(0, 80) || "empty"} | Realmz-writable`, entity: { type: "message", id: `message:${record.id}` } });
+    }
+  }
+  if (code === 2) {
+    for (const record of project.battles ?? []) {
+      options.push({ key: `battle:${record.id}`, value: record.id, label: `Battle ${record.id}`, detail: `${record.grid.filter(Boolean).length} monster slot(s) | Realmz-writable`, entity: { type: "battle", id: `battle:${record.id}` } });
+    }
+  }
+  if (code === 10) {
+    for (const record of project.treasures ?? []) {
+      options.push({ key: `treasure:${record.id}`, value: record.id, label: `Treasure ${record.id}`, detail: `${record.itemIds.filter(Boolean).length} item(s) | Realmz-writable`, entity: { type: "record", id: `treasure:${record.id}` } });
+    }
+  }
+  if ([6, 49, 51].includes(code)) {
+    for (const record of project.shops ?? []) {
+      options.push({ key: `shop:${record.id}`, value: record.id, label: `Shop ${record.id}`, detail: `${record.itemIds.filter(Boolean).length} stocked slot(s) | Realmz-writable`, entity: { type: "shop", id: `shop:${record.id}` } });
+    }
+  }
+  if ([4, 35, 104].includes(code)) {
+    for (const record of project.simpleEncounters ?? []) {
+      options.push({ key: `simple:${record.id}`, value: record.id, label: `Simple Encounter ${record.id}`, detail: `${record.actions.length} action(s) | Realmz-writable`, entity: { type: "encounter", id: `encounter:simple:${record.id}` } });
+    }
+  }
+  if ([5, 44].includes(code)) {
+    for (const record of project.complexEncounters ?? []) {
+      options.push({ key: `complex:${record.id}`, value: record.id, label: `Complex Encounter ${record.id}`, detail: `${record.actions.length} action(s) | Realmz-writable`, entity: { type: "encounter", id: `encounter:complex:${record.id}` } });
+    }
+  }
+  if (code === 47) {
+    for (const quest of project.questLabels ?? []) {
+      options.push({ key: `quest:${quest.id}`, value: quest.id, label: quest.label, detail: quest.note || "Providence metadata; Realmz value is opcode-driven", entity: { type: "questFlag", id: `quest:${quest.id}` } });
+    }
+  }
+}
+
 function entityMatchesOpcodeTarget(entity: SemanticEntity, code: number) {
   if (code === 9 && entity.type === "resource") return String(entity.summary.type ?? "").trim() === "snd";
   if (code === 27 && entity.type === "resource") {
@@ -162,6 +216,7 @@ function entityMatchesOpcodeTarget(entity: SemanticEntity, code: number) {
 export function targetSemanticTypes(code: number) {
   const types: Record<number, string[]> = {
     1: ["message"],
+    2: ["battle"],
     4: ["simple encounter"],
     5: ["complex encounter"],
     6: ["shop"],
@@ -175,14 +230,17 @@ export function targetSemanticTypes(code: number) {
     40: ["macro"],
     44: ["complex encounter"],
     47: ["quest flag"],
+    48: ["battle"],
     49: ["shop"],
     51: ["shop"],
     55: ["macro"],
+    56: ["battle"],
     62: ["message"],
     64: ["macro"],
     71: ["message"],
     97: ["map", "map record"],
     104: ["simple encounter"],
+    107: ["battle"],
     106: ["map", "map record"],
     127: ["monster"]
   };

@@ -17,6 +17,20 @@ pub struct ProvidenceProject {
     pub random_levels: Vec<RandomLevel>,
     pub extracodes: Vec<ExtraCodeRow>,
     #[serde(default)]
+    pub messages: Vec<MessageRecord>,
+    #[serde(default)]
+    pub battles: Vec<BattleRecord>,
+    #[serde(default)]
+    pub treasures: Vec<TreasureRecord>,
+    #[serde(default)]
+    pub shops: Vec<ShopRecord>,
+    #[serde(default)]
+    pub simple_encounters: Vec<SimpleEncounterRecord>,
+    #[serde(default)]
+    pub complex_encounters: Vec<ComplexEncounterRecord>,
+    #[serde(default)]
+    pub quest_labels: Vec<QuestLabel>,
+    #[serde(default)]
     pub assets: Vec<ManagedAsset>,
     pub asset_catalog: AssetCatalog,
     #[serde(default)]
@@ -512,6 +526,121 @@ pub struct ExtraCodeRow {
     pub id: usize,
     pub values: [i16; 5],
     pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MessageRecord {
+    pub id: usize,
+    pub text: String,
+    #[serde(default)]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BattleRecord {
+    pub id: usize,
+    pub grid: Vec<i16>,
+    pub dist: i8,
+    pub message_before: i16,
+    pub message_after: i16,
+    pub battle_macro: i16,
+    #[serde(default)]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TreasureRecord {
+    pub id: usize,
+    pub item_ids: Vec<i16>,
+    pub exp: i16,
+    pub gold: i16,
+    pub gems: i16,
+    pub jewelry: i16,
+    #[serde(default)]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ShopRecord {
+    pub id: usize,
+    pub item_ids: Vec<i16>,
+    pub quantities: Vec<u8>,
+    pub inflation: i16,
+    #[serde(default)]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EncounterActionRow {
+    pub slot: usize,
+    pub raw_code: i16,
+    pub id: i16,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SimpleEncounterRecord {
+    pub id: usize,
+    pub actions: Vec<EncounterActionRow>,
+    pub choice_results: Vec<u8>,
+    pub can_back_out: bool,
+    pub max_times: i8,
+    pub caste_success: i8,
+    pub prompt: i16,
+    pub texts: Vec<String>,
+    #[serde(default)]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ComplexEncounterRecord {
+    pub id: usize,
+    pub actions: Vec<EncounterActionRow>,
+    pub choice_results: Vec<u8>,
+    pub word_results: Vec<u8>,
+    pub can_back_out: bool,
+    pub thief: bool,
+    pub max_times: i8,
+    pub caste_success: i8,
+    pub thief_success: i8,
+    pub thief_fail: i8,
+    pub prompt: i16,
+    pub texts: Vec<String>,
+    #[serde(default)]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuestLabel {
+    pub id: i16,
+    pub label: String,
+    #[serde(default)]
+    pub note: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

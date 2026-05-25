@@ -57,6 +57,57 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
             }
         }
     }
+    for message in &project.messages {
+        if message.text.len() > 255 {
+            errors.push(format!(
+                "Message {} is {} byte(s); Data SD2 supports at most 255 ASCII bytes.",
+                message.id,
+                message.text.len()
+            ));
+        }
+    }
+    for battle in &project.battles {
+        if battle.grid.len() != 13 * 13 {
+            errors.push(format!(
+                "Battle {} has {} grid cells; Data BD requires 169.",
+                battle.id,
+                battle.grid.len()
+            ));
+        }
+    }
+    for treasure in &project.treasures {
+        if treasure.item_ids.len() > 20 {
+            errors.push(format!(
+                "Treasure {} has {} item slots; Data TD supports 20.",
+                treasure.id,
+                treasure.item_ids.len()
+            ));
+        }
+    }
+    for shop in &project.shops {
+        if shop.item_ids.len() > 1000 || shop.quantities.len() > 1000 {
+            errors.push(format!(
+                "Shop {} exceeds Data SD capacity of 1000 item and quantity slots.",
+                shop.id
+            ));
+        }
+    }
+    for encounter in &project.simple_encounters {
+        if encounter.actions.iter().any(|action| action.slot >= 32) {
+            errors.push(format!("Simple encounter {} has an action outside 0..31.", encounter.id));
+        }
+        if encounter.texts.iter().any(|text| text.len() > 80) {
+            errors.push(format!("Simple encounter {} has text longer than 80 bytes.", encounter.id));
+        }
+    }
+    for encounter in &project.complex_encounters {
+        if encounter.actions.iter().any(|action| action.slot >= 32) {
+            errors.push(format!("Complex encounter {} has an action outside 0..31.", encounter.id));
+        }
+        if encounter.texts.iter().any(|text| text.len() > 40) {
+            errors.push(format!("Complex encounter {} has text longer than 40 bytes.", encounter.id));
+        }
+    }
     for asset in &project.assets {
         if matches!(asset.export_state, ManagedAssetExportState::Blocked) {
             errors.push(format!(

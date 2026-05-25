@@ -1,12 +1,19 @@
 import {
   Action,
   Alignment,
+  BattleRecord,
+  ComplexEncounterRecord,
   Diagnostic,
+  EncounterActionRow,
   ExtraCodeRow,
   LevelType,
   MapEntity,
+  MessageRecord,
   RandomLevel,
+  ShopRecord,
+  SimpleEncounterRecord,
   TilesetAsset,
+  TreasureRecord,
   TriggerRecord
 } from "../types";
 import { browserReferenceAtlasUrl, hasBrowserReferenceAtlas } from "./atlasPaths";
@@ -80,6 +87,12 @@ export type ParsedBrowserScenario = {
   triggers: TriggerRecord[];
   randomLevels: RandomLevel[];
   extracodes: ExtraCodeRow[];
+  messages: MessageRecord[];
+  battles: BattleRecord[];
+  treasures: TreasureRecord[];
+  shops: ShopRecord[];
+  simpleEncounters: SimpleEncounterRecord[];
+  complexEncounters: ComplexEncounterRecord[];
   assetCatalog: { tilesets: TilesetAsset[] };
   records: { counts: Record<string, number>; alignments: Alignment[] };
   diagnostics: Diagnostic[];
@@ -118,8 +131,14 @@ export function parseScenarioBuffers(buffers: Map<string, Uint8Array>): ParsedBr
     ...parseMacroFile(buffers.get("Data ED3"))
   ];
   const extracodes = parseExtracodes(buffers.get("Data EDCD"));
+  const messages = parseMessages(buffers.get("Data SD2"));
+  const battles = parseBattles(buffers.get("Data BD"));
+  const treasures = parseTreasures(buffers.get("Data TD"));
+  const shops = parseShops(buffers.get("Data SD"));
+  const simpleEncounters = parseSimpleEncounters(buffers.get("Data ED"));
+  const complexEncounters = parseComplexEncounters(buffers.get("Data ED2"));
   const assetCatalog = { tilesets: buildAssetCatalog(maps, randomLevels, buffers, diagnostics) };
-  return { maps, triggers, randomLevels, extracodes, assetCatalog, records, diagnostics };
+  return { maps, triggers, randomLevels, extracodes, messages, battles, treasures, shops, simpleEncounters, complexEncounters, assetCatalog, records, diagnostics };
 }
 
 function parseFields(buffer: Uint8Array | undefined, levelType: LevelType, source: string) {
@@ -284,6 +303,128 @@ function parseExtracodes(buffer: Uint8Array | undefined) {
       provenance: provenance("Data EDCD", id, start, EXTRACODE_BYTES, "source-backed")
     };
   });
+}
+
+function parseMessages(buffer: Uint8Array | undefined): MessageRecord[] {
+  return fixedRecords(buffer, 256, "Data SD2", (id, start, record) => ({
+    id,
+    text: decodePascalText(record),
+    rawBytes: Array.from(record),
+    authored: false,
+    provenance: provenance("Data SD2", id, start, 256, "source-backed")
+  }));
+}
+
+function parseBattles(buffer: Uint8Array | undefined): BattleRecord[] {
+  return fixedRecords(buffer, 346, "Data BD", (id, start, record) => ({
+    id,
+    grid: Array.from({ length: 13 * 13 }, (_, slot) => i16(record, slot * 2)),
+    dist: signedByte(record[338]),
+    messageBefore: i16(record, 340),
+    messageAfter: i16(record, 342),
+    battleMacro: i16(record, 344),
+    rawBytes: Array.from(record),
+    authored: false,
+    provenance: provenance("Data BD", id, start, 346, "source-backed")
+  }));
+}
+
+function parseTreasures(buffer: Uint8Array | undefined): TreasureRecord[] {
+  return fixedRecords(buffer, 48, "Data TD", (id, start, record) => ({
+    id,
+    itemIds: Array.from({ length: 20 }, (_, slot) => i16(record, slot * 2)),
+    exp: i16(record, 40),
+    gold: i16(record, 42),
+    gems: i16(record, 44),
+    jewelry: i16(record, 46),
+    rawBytes: Array.from(record),
+    authored: false,
+    provenance: provenance("Data TD", id, start, 48, "source-backed")
+  }));
+}
+
+function parseShops(buffer: Uint8Array | undefined): ShopRecord[] {
+  return fixedRecords(buffer, 3002, "Data SD", (id, start, record) => ({
+    id,
+    itemIds: Array.from({ length: 1000 }, (_, slot) => i16(record, slot * 2)),
+    quantities: Array.from(record.subarray(2000, 3000)),
+    inflation: i16(record, 3000),
+    rawBytes: Array.from(record),
+    authored: false,
+    provenance: provenance("Data SD", id, start, 3002, "source-backed")
+  }));
+}
+
+function parseSimpleEncounters(buffer: Uint8Array | undefined): SimpleEncounterRecord[] {
+  return fixedRecords(buffer, 426, "Data ED", (id, start, record) => ({
+    id,
+    actions: parseEncounterActions(record),
+    choiceResults: Array.from(record.subarray(96, 100)),
+    canBackOut: record[100] !== 0,
+    maxTimes: signedByte(record[101]),
+    casteSuccess: signedByte(record[102]),
+    prompt: i16(record, 104),
+    texts: Array.from({ length: 4 }, (_, slot) => decodeFixedText(record.subarray(106 + slot * 80, 106 + slot * 80 + 80))),
+    rawBytes: Array.from(record),
+    authored: false,
+    provenance: provenance("Data ED", id, start, 426, "source-backed")
+  }));
+}
+
+function parseComplexEncounters(buffer: Uint8Array | undefined): ComplexEncounterRecord[] {
+  return fixedRecords(buffer, 520, "Data ED2", (id, start, record) => ({
+    id,
+    actions: parseEncounterActions(record),
+    choiceResults: Array.from(record.subarray(96, 100)),
+    wordResults: Array.from(record.subarray(100, 104)),
+    canBackOut: record[151] !== 0,
+    thief: record[152] !== 0,
+    maxTimes: signedByte(record[153]),
+    casteSuccess: signedByte(record[154]),
+    thiefSuccess: signedByte(record[155]),
+    thiefFail: signedByte(record[156]),
+    prompt: i16(record, 158),
+    texts: Array.from({ length: 9 }, (_, slot) => decodeFixedText(record.subarray(160 + slot * 40, 160 + slot * 40 + 40))),
+    rawBytes: Array.from(record),
+    authored: false,
+    provenance: provenance("Data ED2", id, start, 520, "source-backed")
+  }));
+}
+
+function fixedRecords<T>(
+  buffer: Uint8Array | undefined,
+  recordBytes: number,
+  source: string,
+  parser: (id: number, start: number, record: Uint8Array) => T
+) {
+  if (!buffer) return [];
+  return Array.from({ length: Math.floor(buffer.byteLength / recordBytes) }, (_, id) => {
+    const start = id * recordBytes;
+    return parser(id, start, buffer.subarray(start, start + recordBytes));
+  });
+}
+
+function parseEncounterActions(record: Uint8Array): EncounterActionRow[] {
+  const rows: EncounterActionRow[] = [];
+  for (let slot = 0; slot < 32; slot += 1) {
+    const rawCode = signedByte(record[slot]);
+    const id = i16(record, 32 + slot * 2);
+    if (rawCode !== 0 || id !== 0) rows.push({ slot, rawCode, id });
+  }
+  return rows;
+}
+
+function decodePascalText(bytes: Uint8Array) {
+  const length = Math.min(bytes[0] ?? 0, Math.max(0, bytes.length - 1));
+  return decodeFixedText(bytes.subarray(1, 1 + length));
+}
+
+function decodeFixedText(bytes: Uint8Array) {
+  const end = bytes.findIndex((byte) => byte === 0);
+  return Array.from(bytes.subarray(0, end < 0 ? bytes.length : end))
+    .map((byte) => byte >= 32 && byte <= 126 ? String.fromCharCode(byte) : " ")
+    .join("")
+    .trimEnd();
 }
 
 function buildAssetCatalog(

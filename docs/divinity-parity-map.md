@@ -27,14 +27,14 @@ See `docs/scenario-format-integration.md` for the Providence-specific integratio
 | Scripting Codes 60-89 | Scripts | Guided opcode picker with descriptions, target picker, EDCD shape hints | Complete manual-derived notes and opcode examples |
 | Scripting Codes 90-End | Scripts | Guided opcode picker with descriptions, target picker, EDCD shape hints | Complete manual-derived notes and opcode examples |
 | HUB | Workbench | Modern domain rail replaces Divinity HUB | Add explicit Divinity chapter cross-reference affordance |
-| Battle Editor | Combat | Inspect battle records and links | Battle record forms and export writer support |
+| Battle Editor | Combat | Author usable battle shells with grid, distance, before/after messages, battle macro, preservation of unsupported bytes, and `Data BD` export | Monster record pickers and full battle option coverage |
 | Monster Editor | Combat | Inspect monster records and resource links | Monster record forms and icon assignment |
 | Monster Scrapbook | Combat/Library | Inspect library catalog entries | Copy/adapt scrapbook entries into scenario records |
-| Treasure Editor | Economy | Inspect treasure records and links | Treasure form, item reward picker, gold/reward validation |
+| Treasure Editor | Economy | Author usable treasure shells with item slots, exp, gold, gems, jewelry, preservation of unsupported bytes, and `Data TD` export | Item reward picker and richer reward validation |
 | Item Editor | Economy | Inspect item references | Item form and export writer support |
-| Shop Editor | Economy | Inspect shop records and script links | Shop inventory/pricing editor |
-| Simple Encounter Editor | Encounters | Inspect simple encounters and action links | Simple encounter form and validation |
-| Complex Encounter Editor | Encounters | Inspect complex encounters and action links | Complex encounter branch editor |
+| Shop Editor | Economy | Author usable shop shells with item IDs, quantities, inflation, preservation of unsupported bytes, and `Data SD` export | Item picker, bulk fill, and pricing quality checks |
+| Simple Encounter Editor | Encounters | Author usable simple encounter shells with action rows, text buffers, shell flags, preservation of unsupported bytes, and `Data ED` export | Branch-oriented encounter workflow |
+| Complex Encounter Editor | Encounters | Author usable complex encounter shells with action rows, text buffers, shell flags, preservation of unsupported bytes, and `Data ED2` export | Word/spell/item/thief branch workflow |
 | Rogue Encounter Editor | Encounters | Inspect thief/rogue encounter records | Rogue encounter form |
 | Time Encounter Editor | Encounters | Inspect timed encounters | Timed encounter schedule editor |
 | Map Editor | Maps | Inspect map records and map links | Map note/start authoring |
@@ -49,7 +49,7 @@ See `docs/scenario-format-integration.md` for the Providence-specific integratio
 | Spell Editor | Rules | Inspect spells and references | Spell record form and validation |
 | Race Editor | Rules | Inspect races and references | Race record form and restriction integration |
 | Caste Editor | Rules | Inspect castes and references | Caste record form and restriction integration |
-| Text Import / Export / Spell Checking | Text | Inspect text resources and messages | Message editor, text import/export, spell-check workflow |
+| Text Import / Export / Spell Checking | Text | Author `Data SD2` message records from script context, validate 255-byte limit, preserve imported bytes, and export Realmz message files | Text import/export and spell-check workflow |
 | Scenario Security / Registration Codes | Scenario/Scripts | Inspect registration/security-related scripts | Legacy security field editor and compatibility warnings |
 | Release Checklist | Linter/Export | Validation and export readiness panels exist | Divinity-style release checklist with Realmz compatibility gates |
 | Realmz Win95/98/NT4, FAQ, What's New, License | Docs | Reference only | No editor feature work unless scenario compatibility demands it |
@@ -67,6 +67,21 @@ Scripts are the first parity milestone because they drive most scenario behavior
 - Data ED3 policy: reachable rows become callable macros; non-reachable rows stay visible in ED3 Evidence until duplicated/promoted or proven reachable by source-backed links.
 - Dispatcher policy: active nonzero CODE values ignored by `newland.c` are reported as dispatcher no-ops, not unsupported behavior.
 
+## Scripts V2 Contract
+
+Scripts V2 adds target record authoring around the script workbench. The implementation deliberately borrows Adventure Engine's visual scripting ergonomics, especially grouped step catalogs, ordered step lists, selected-step detail forms, typed target pickers, and inline per-field diagnostics. Providence keeps Realmz as the canonical runtime: descriptors map visual steps onto `CODE`, `ID`, optional `EDCD`, trigger headers, and fixed scenario target files.
+
+New writable target families:
+
+- `Data SD2`: message records.
+- `Data BD`: battle shells.
+- `Data TD`: treasure shells.
+- `Data SD`: shop shells.
+- `Data ED`: simple encounter shells.
+- `Data ED2`: complex encounter shells.
+
+See `docs/scripts-v2-authoring.md` for the author-facing workflow, including Action Point capacity, deletion-as-clear, macros vs ED3 evidence, target creation, and preserved imported bytes.
+
 ## Compatibility Rules
 
 - Realmz remains authoritative. Providence must export the scenario layout Realmz already accepts.
@@ -76,7 +91,7 @@ Scripts are the first parity milestone because they drive most scenario behavior
 
 ## Next Milestones
 
-1. Finish opcode-specific forms for the highest-use scripting families: messages/media, teleport/map mutation, branches/macros, quest flags, battle/encounter starts, treasure/shop actions.
+1. Finish opcode-specific forms for media, teleport/map mutation, branches/macros, quest flags, and higher-order EDCD actions.
 2. Add scenario startup and blank scenario creation.
 3. Promote map layout, random rectangles, and dungeon flags from inspection into authoring.
-4. Build record editors for encounters, combat, economy, rules, text, and assets in that order.
+4. Expand target record shells into full record editors for monsters, items, spells, races, castes, assets, and release/security metadata.

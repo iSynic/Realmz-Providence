@@ -11,6 +11,10 @@ pub const RANDLEVEL_BYTES: usize = 644;
 pub const EXTRACODE_BYTES: usize = 10;
 pub const SIMPLE_ENCOUNTER_BYTES: usize = 426;
 pub const COMPLEX_ENCOUNTER_BYTES: usize = 520;
+pub const BATTLE_BYTES: usize = 346;
+pub const SHOP_BYTES: usize = 3002;
+pub const MESSAGE_BYTES: usize = 256;
+pub const TREASURE_BYTES: usize = 48;
 
 pub const SUPPORTED_WRITE_FILES: &[&str] = &[
     "Data LD",
@@ -21,6 +25,12 @@ pub const SUPPORTED_WRITE_FILES: &[&str] = &[
     "Data RDD",
     "Data ED3",
     "Data EDCD",
+    "Data ED",
+    "Data ED2",
+    "Data BD",
+    "Data SD",
+    "Data SD2",
+    "Data TD",
 ];
 
 pub const TRACKED_FILES: &[&str] = &[
@@ -59,6 +69,12 @@ pub struct ParsedScenario {
     pub triggers: Vec<TriggerRecord>,
     pub random_levels: Vec<RandomLevel>,
     pub extracodes: Vec<ExtraCodeRow>,
+    pub messages: Vec<MessageRecord>,
+    pub battles: Vec<BattleRecord>,
+    pub treasures: Vec<TreasureRecord>,
+    pub shops: Vec<ShopRecord>,
+    pub simple_encounters: Vec<SimpleEncounterRecord>,
+    pub complex_encounters: Vec<ComplexEncounterRecord>,
     pub records: RecordCatalog,
     pub diagnostics: Vec<Diagnostic>,
     pub asset_catalog: AssetCatalog,
@@ -71,6 +87,12 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
     let mut random_levels = Vec::new();
     let mut triggers = Vec::new();
     let mut extracodes = Vec::new();
+    let mut messages = Vec::new();
+    let mut battles = Vec::new();
+    let mut treasures = Vec::new();
+    let mut shops = Vec::new();
+    let mut simple_encounters = Vec::new();
+    let mut complex_encounters = Vec::new();
 
     for (name, record_bytes) in [
         ("Data LD", FIELD_BYTES),
@@ -84,11 +106,11 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
         ("Data ED3", DOOR_BYTES),
         ("Data EDCD", EXTRACODE_BYTES),
         ("Data MD", 210),
-        ("Data BD", 346),
-        ("Data SD", 3002),
-        ("Data SD2", 256),
+        ("Data BD", BATTLE_BYTES),
+        ("Data SD", SHOP_BYTES),
+        ("Data SD2", MESSAGE_BYTES),
         ("Data MD2", 340),
-        ("Data TD", 48),
+        ("Data TD", TREASURE_BYTES),
         ("Data TD2", 118),
         ("Data TD3", 40),
         ("Data CI", 4608),
@@ -137,6 +159,24 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
     if let Some(buffer) = buffers.get("Data EDCD") {
         extracodes.extend(parse_extracodes(buffer));
     }
+    if let Some(buffer) = buffers.get("Data SD2") {
+        messages.extend(parse_messages(buffer));
+    }
+    if let Some(buffer) = buffers.get("Data BD") {
+        battles.extend(parse_battles(buffer));
+    }
+    if let Some(buffer) = buffers.get("Data TD") {
+        treasures.extend(parse_treasures(buffer));
+    }
+    if let Some(buffer) = buffers.get("Data SD") {
+        shops.extend(parse_shops(buffer));
+    }
+    if let Some(buffer) = buffers.get("Data ED") {
+        simple_encounters.extend(parse_simple_encounter_records(buffer));
+    }
+    if let Some(buffer) = buffers.get("Data ED2") {
+        complex_encounters.extend(parse_complex_encounter_records(buffer));
+    }
 
     let asset_catalog = build_asset_catalog(&maps, &random_levels);
     ParsedScenario {
@@ -144,6 +184,12 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
         triggers,
         random_levels,
         extracodes,
+        messages,
+        battles,
+        treasures,
+        shops,
+        simple_encounters,
+        complex_encounters,
         records,
         diagnostics,
         asset_catalog,
@@ -627,6 +673,389 @@ pub fn write_extracodes(rows: &[ExtraCodeRow]) -> Result<Vec<u8>> {
     Ok(output)
 }
 
+pub fn parse_messages(buffer: &[u8]) -> Vec<MessageRecord> {
+    parse_fixed_records(buffer, MESSAGE_BYTES)
+        .map(|(id, start, record)| MessageRecord {
+            id,
+            text: decode_pascal_text(record),
+            raw_bytes: record.to_vec(),
+            authored: false,
+            provenance: provenance("Data SD2", id, start, MESSAGE_BYTES),
+        })
+        .collect()
+}
+
+pub fn write_messages(records: &[MessageRecord]) -> Result<Vec<u8>> {
+    write_fixed_records(records, MESSAGE_BYTES, |record, buffer| {
+        copy_raw(buffer, &record.raw_bytes);
+        if preserve_raw(record.authored, &record.raw_bytes, MESSAGE_BYTES) {
+            return Ok(());
+        }
+        encode_pascal_text(buffer, &record.text)?;
+        Ok(())
+    })
+}
+
+pub fn parse_battles(buffer: &[u8]) -> Vec<BattleRecord> {
+    parse_fixed_records(buffer, BATTLE_BYTES)
+        .map(|(id, start, record)| {
+            let grid = (0..13 * 13)
+                .map(|slot| i16_be(record, slot * 2))
+                .collect();
+            BattleRecord {
+                id,
+                grid,
+                dist: record[338] as i8,
+                message_before: i16_be(record, 340),
+                message_after: i16_be(record, 342),
+                battle_macro: i16_be(record, 344),
+                raw_bytes: record.to_vec(),
+                authored: false,
+                provenance: provenance("Data BD", id, start, BATTLE_BYTES),
+            }
+        })
+        .collect()
+}
+
+pub fn write_battles(records: &[BattleRecord]) -> Result<Vec<u8>> {
+    write_fixed_records(records, BATTLE_BYTES, |record, buffer| {
+        copy_raw(buffer, &record.raw_bytes);
+        if preserve_raw(record.authored, &record.raw_bytes, BATTLE_BYTES) {
+            return Ok(());
+        }
+        if record.grid.len() != 13 * 13 {
+            return Err(ProvidenceError::message(format!(
+                "Battle {} must have a 13 x 13 monster grid",
+                record.id
+            )));
+        }
+        for (slot, value) in record.grid.iter().enumerate() {
+            write_i16_be(buffer, slot * 2, *value);
+        }
+        buffer[338] = record.dist as u8;
+        write_i16_be(buffer, 340, record.message_before);
+        write_i16_be(buffer, 342, record.message_after);
+        write_i16_be(buffer, 344, record.battle_macro);
+        Ok(())
+    })
+}
+
+pub fn parse_treasures(buffer: &[u8]) -> Vec<TreasureRecord> {
+    parse_fixed_records(buffer, TREASURE_BYTES)
+        .map(|(id, start, record)| TreasureRecord {
+            id,
+            item_ids: (0..20).map(|slot| i16_be(record, slot * 2)).collect(),
+            exp: i16_be(record, 40),
+            gold: i16_be(record, 42),
+            gems: i16_be(record, 44),
+            jewelry: i16_be(record, 46),
+            raw_bytes: record.to_vec(),
+            authored: false,
+            provenance: provenance("Data TD", id, start, TREASURE_BYTES),
+        })
+        .collect()
+}
+
+pub fn write_treasures(records: &[TreasureRecord]) -> Result<Vec<u8>> {
+    write_fixed_records(records, TREASURE_BYTES, |record, buffer| {
+        copy_raw(buffer, &record.raw_bytes);
+        if preserve_raw(record.authored, &record.raw_bytes, TREASURE_BYTES) {
+            return Ok(());
+        }
+        if record.item_ids.len() > 20 {
+            return Err(ProvidenceError::message(format!(
+                "Treasure {} has more than 20 item slots",
+                record.id
+            )));
+        }
+        for slot in 0..20 {
+            write_i16_be(buffer, slot * 2, record.item_ids.get(slot).copied().unwrap_or(0));
+        }
+        write_i16_be(buffer, 40, record.exp);
+        write_i16_be(buffer, 42, record.gold);
+        write_i16_be(buffer, 44, record.gems);
+        write_i16_be(buffer, 46, record.jewelry);
+        Ok(())
+    })
+}
+
+pub fn parse_shops(buffer: &[u8]) -> Vec<ShopRecord> {
+    parse_fixed_records(buffer, SHOP_BYTES)
+        .map(|(id, start, record)| ShopRecord {
+            id,
+            item_ids: (0..1000).map(|slot| i16_be(record, slot * 2)).collect(),
+            quantities: record[2000..3000].to_vec(),
+            inflation: i16_be(record, 3000),
+            raw_bytes: record.to_vec(),
+            authored: false,
+            provenance: provenance("Data SD", id, start, SHOP_BYTES),
+        })
+        .collect()
+}
+
+pub fn write_shops(records: &[ShopRecord]) -> Result<Vec<u8>> {
+    write_fixed_records(records, SHOP_BYTES, |record, buffer| {
+        copy_raw(buffer, &record.raw_bytes);
+        if preserve_raw(record.authored, &record.raw_bytes, SHOP_BYTES) {
+            return Ok(());
+        }
+        if record.item_ids.len() > 1000 || record.quantities.len() > 1000 {
+            return Err(ProvidenceError::message(format!(
+                "Shop {} exceeds Realmz shop slot capacity",
+                record.id
+            )));
+        }
+        for slot in 0..1000 {
+            write_i16_be(buffer, slot * 2, record.item_ids.get(slot).copied().unwrap_or(0));
+            buffer[2000 + slot] = record.quantities.get(slot).copied().unwrap_or(0);
+        }
+        write_i16_be(buffer, 3000, record.inflation);
+        Ok(())
+    })
+}
+
+pub fn parse_simple_encounter_records(buffer: &[u8]) -> Vec<SimpleEncounterRecord> {
+    parse_fixed_records(buffer, SIMPLE_ENCOUNTER_BYTES)
+        .map(|(id, start, record)| SimpleEncounterRecord {
+            id,
+            actions: parse_encounter_actions(record),
+            choice_results: record[96..100].to_vec(),
+            can_back_out: record[100] != 0,
+            max_times: record[101] as i8,
+            caste_success: record[102] as i8,
+            prompt: i16_be(record, 104),
+            texts: (0..4)
+                .map(|slot| decode_fixed_text(&record[106 + slot * 80..106 + slot * 80 + 80]))
+                .collect(),
+            raw_bytes: record.to_vec(),
+            authored: false,
+            provenance: provenance("Data ED", id, start, SIMPLE_ENCOUNTER_BYTES),
+        })
+        .collect()
+}
+
+pub fn write_simple_encounters(records: &[SimpleEncounterRecord]) -> Result<Vec<u8>> {
+    write_fixed_records(records, SIMPLE_ENCOUNTER_BYTES, |record, buffer| {
+        copy_raw(buffer, &record.raw_bytes);
+        if preserve_raw(record.authored, &record.raw_bytes, SIMPLE_ENCOUNTER_BYTES) {
+            return Ok(());
+        }
+        write_encounter_actions(buffer, &record.actions)?;
+        for slot in 0..4 {
+            buffer[96 + slot] = record.choice_results.get(slot).copied().unwrap_or(0);
+            encode_fixed_text(
+                &mut buffer[106 + slot * 80..106 + slot * 80 + 80],
+                record.texts.get(slot).map(String::as_str).unwrap_or(""),
+            )?;
+        }
+        buffer[100] = u8::from(record.can_back_out);
+        buffer[101] = record.max_times as u8;
+        buffer[102] = record.caste_success as u8;
+        write_i16_be(buffer, 104, record.prompt);
+        Ok(())
+    })
+}
+
+pub fn parse_complex_encounter_records(buffer: &[u8]) -> Vec<ComplexEncounterRecord> {
+    parse_fixed_records(buffer, COMPLEX_ENCOUNTER_BYTES)
+        .map(|(id, start, record)| ComplexEncounterRecord {
+            id,
+            actions: parse_encounter_actions(record),
+            choice_results: record[96..100].to_vec(),
+            word_results: record[100..104].to_vec(),
+            can_back_out: record[151] != 0,
+            thief: record[152] != 0,
+            max_times: record[153] as i8,
+            caste_success: record[154] as i8,
+            thief_success: record[155] as i8,
+            thief_fail: record[156] as i8,
+            prompt: i16_be(record, 158),
+            texts: (0..9)
+                .map(|slot| decode_fixed_text(&record[160 + slot * 40..160 + slot * 40 + 40]))
+                .collect(),
+            raw_bytes: record.to_vec(),
+            authored: false,
+            provenance: provenance("Data ED2", id, start, COMPLEX_ENCOUNTER_BYTES),
+        })
+        .collect()
+}
+
+pub fn write_complex_encounters(records: &[ComplexEncounterRecord]) -> Result<Vec<u8>> {
+    write_fixed_records(records, COMPLEX_ENCOUNTER_BYTES, |record, buffer| {
+        copy_raw(buffer, &record.raw_bytes);
+        if preserve_raw(record.authored, &record.raw_bytes, COMPLEX_ENCOUNTER_BYTES) {
+            return Ok(());
+        }
+        write_encounter_actions(buffer, &record.actions)?;
+        for slot in 0..4 {
+            buffer[96 + slot] = record.choice_results.get(slot).copied().unwrap_or(0);
+            buffer[100 + slot] = record.word_results.get(slot).copied().unwrap_or(0);
+        }
+        buffer[151] = u8::from(record.can_back_out);
+        buffer[152] = u8::from(record.thief);
+        buffer[153] = record.max_times as u8;
+        buffer[154] = record.caste_success as u8;
+        buffer[155] = record.thief_success as u8;
+        buffer[156] = record.thief_fail as u8;
+        write_i16_be(buffer, 158, record.prompt);
+        for slot in 0..9 {
+            encode_fixed_text(
+                &mut buffer[160 + slot * 40..160 + slot * 40 + 40],
+                record.texts.get(slot).map(String::as_str).unwrap_or(""),
+            )?;
+        }
+        Ok(())
+    })
+}
+
+fn parse_fixed_records(buffer: &[u8], record_bytes: usize) -> impl Iterator<Item = (usize, usize, &[u8])> {
+    (0..buffer.len() / record_bytes).map(move |id| {
+        let start = id * record_bytes;
+        (id, start, &buffer[start..start + record_bytes])
+    })
+}
+
+fn write_fixed_records<T>(
+    records: &[T],
+    record_bytes: usize,
+    mut writer: impl FnMut(&T, &mut [u8]) -> Result<()>,
+) -> Result<Vec<u8>>
+where
+    T: IndexedRecord,
+{
+    let mut selected: Vec<&T> = records.iter().collect();
+    selected.sort_by_key(|record| record.record_id());
+    let count = selected
+        .last()
+        .map(|record| record.record_id() + 1)
+        .unwrap_or(0);
+    let mut output = vec![0u8; count * record_bytes];
+    for record in selected {
+        let start = record.record_id() * record_bytes;
+        writer(record, &mut output[start..start + record_bytes])?;
+    }
+    Ok(output)
+}
+
+trait IndexedRecord {
+    fn record_id(&self) -> usize;
+}
+
+impl IndexedRecord for MessageRecord { fn record_id(&self) -> usize { self.id } }
+impl IndexedRecord for BattleRecord { fn record_id(&self) -> usize { self.id } }
+impl IndexedRecord for TreasureRecord { fn record_id(&self) -> usize { self.id } }
+impl IndexedRecord for ShopRecord { fn record_id(&self) -> usize { self.id } }
+impl IndexedRecord for SimpleEncounterRecord { fn record_id(&self) -> usize { self.id } }
+impl IndexedRecord for ComplexEncounterRecord { fn record_id(&self) -> usize { self.id } }
+
+fn parse_encounter_actions(record: &[u8]) -> Vec<EncounterActionRow> {
+    let mut actions = Vec::new();
+    for slot in 0..32 {
+        let raw_code = record[slot] as i8 as i16;
+        let id = i16_be(record, 32 + slot * 2);
+        if raw_code != 0 || id != 0 {
+            actions.push(EncounterActionRow { slot, raw_code, id });
+        }
+    }
+    actions
+}
+
+fn write_encounter_actions(buffer: &mut [u8], actions: &[EncounterActionRow]) -> Result<()> {
+    for offset in 0..96 {
+        buffer[offset] = 0;
+    }
+    for action in actions {
+        if action.slot >= 32 {
+            return Err(ProvidenceError::message(format!(
+                "Encounter action slot {} is out of range",
+                action.slot
+            )));
+        }
+        if action.raw_code < i8::MIN as i16 || action.raw_code > i8::MAX as i16 {
+            return Err(ProvidenceError::message(format!(
+                "Encounter action slot {} CODE {} is outside byte range",
+                action.slot, action.raw_code
+            )));
+        }
+        buffer[action.slot] = action.raw_code as i8 as u8;
+        write_i16_be(buffer, 32 + action.slot * 2, action.id);
+    }
+    Ok(())
+}
+
+fn copy_raw(buffer: &mut [u8], raw: &[u8]) {
+    let length = buffer.len().min(raw.len());
+    buffer[..length].copy_from_slice(&raw[..length]);
+}
+
+fn preserve_raw(authored: bool, raw: &[u8], record_bytes: usize) -> bool {
+    !authored && raw.len() == record_bytes
+}
+
+fn provenance(source_file: &str, record_index: usize, byte_offset: usize, byte_length: usize) -> Provenance {
+    Provenance {
+        source_file: source_file.to_string(),
+        record_index,
+        byte_offset,
+        byte_length,
+        confidence: Confidence::SourceBacked,
+    }
+}
+
+fn decode_pascal_text(bytes: &[u8]) -> String {
+    let length = bytes.first().copied().unwrap_or(0) as usize;
+    let end = (1 + length).min(bytes.len());
+    decode_fixed_text(&bytes[1..end])
+}
+
+fn decode_fixed_text(bytes: &[u8]) -> String {
+    let end = bytes.iter().position(|byte| *byte == 0).unwrap_or(bytes.len());
+    bytes[..end]
+        .iter()
+        .map(|byte| if (32..=126).contains(byte) { *byte as char } else { ' ' })
+        .collect::<String>()
+        .trim_end()
+        .to_string()
+}
+
+fn encode_pascal_text(buffer: &mut [u8], text: &str) -> Result<()> {
+    if buffer.is_empty() {
+        return Ok(());
+    }
+    let bytes = classic_text_bytes(text);
+    if bytes.len() > buffer.len() - 1 || bytes.len() > u8::MAX as usize {
+        return Err(ProvidenceError::message(format!(
+            "Message text is {} byte(s); maximum is {}",
+            bytes.len(),
+            buffer.len() - 1
+        )));
+    }
+    buffer.fill(0);
+    buffer[0] = bytes.len() as u8;
+    buffer[1..1 + bytes.len()].copy_from_slice(&bytes);
+    Ok(())
+}
+
+fn encode_fixed_text(buffer: &mut [u8], text: &str) -> Result<()> {
+    let bytes = classic_text_bytes(text);
+    if bytes.len() > buffer.len() {
+        return Err(ProvidenceError::message(format!(
+            "Encounter text is {} byte(s); maximum is {}",
+            bytes.len(),
+            buffer.len()
+        )));
+    }
+    buffer.fill(0);
+    buffer[..bytes.len()].copy_from_slice(&bytes);
+    Ok(())
+}
+
+fn classic_text_bytes(text: &str) -> Vec<u8> {
+    text.chars()
+        .map(|ch| if ch.is_ascii() { ch as u8 } else { b'?' })
+        .collect()
+}
+
 fn decode_door_coordinate(doorid: i32) -> Option<MapCoordinate> {
     if doorid <= 0 {
         return None;
@@ -967,5 +1396,143 @@ mod tests {
         let rows = parse_extracodes(&input);
         let output = write_extracodes(&rows).unwrap();
         assert_eq!(input, output);
+    }
+
+    #[test]
+    fn target_records_round_trip_full_records() {
+        let cases: [(usize, fn(&[u8]) -> Vec<u8>); 6] = [
+            (MESSAGE_BYTES, |bytes| write_messages(&parse_messages(bytes)).unwrap()),
+            (BATTLE_BYTES, |bytes| write_battles(&parse_battles(bytes)).unwrap()),
+            (TREASURE_BYTES, |bytes| write_treasures(&parse_treasures(bytes)).unwrap()),
+            (SHOP_BYTES, |bytes| write_shops(&parse_shops(bytes)).unwrap()),
+            (SIMPLE_ENCOUNTER_BYTES, |bytes| {
+                write_simple_encounters(&parse_simple_encounter_records(bytes)).unwrap()
+            }),
+            (COMPLEX_ENCOUNTER_BYTES, |bytes| {
+                write_complex_encounters(&parse_complex_encounter_records(bytes)).unwrap()
+            }),
+        ];
+        for (record_bytes, parse_write) in cases {
+            let mut input = vec![0u8; record_bytes * 2];
+            input[0] = 1;
+            input[record_bytes + 3] = 42;
+            input[record_bytes * 2 - 1] = 99;
+            assert_eq!(input, parse_write(&input));
+        }
+    }
+
+    #[test]
+    fn authored_target_records_write_realmz_offsets() {
+        let message = MessageRecord {
+            id: 0,
+            text: "Hello".to_string(),
+            raw_bytes: vec![0; MESSAGE_BYTES],
+            authored: true,
+            provenance: provenance("Data SD2", 0, 0, MESSAGE_BYTES),
+        };
+        let message_bytes = write_messages(&[message]).unwrap();
+        assert_eq!(message_bytes.len(), MESSAGE_BYTES);
+        assert_eq!(&message_bytes[..6], &[5, b'H', b'e', b'l', b'l', b'o']);
+
+        let mut grid = vec![0; 13 * 13];
+        grid[12] = 77;
+        let battle = BattleRecord {
+            id: 0,
+            grid,
+            dist: -2,
+            message_before: 3,
+            message_after: 4,
+            battle_macro: 5,
+            raw_bytes: vec![0; BATTLE_BYTES],
+            authored: true,
+            provenance: provenance("Data BD", 0, 0, BATTLE_BYTES),
+        };
+        let battle_bytes = write_battles(&[battle]).unwrap();
+        assert_eq!(i16_be(&battle_bytes, 24), 77);
+        assert_eq!(battle_bytes[338] as i8, -2);
+        assert_eq!(i16_be(&battle_bytes, 344), 5);
+
+        let treasure = TreasureRecord {
+            id: 0,
+            item_ids: vec![11, 12],
+            exp: 100,
+            gold: 200,
+            gems: 3,
+            jewelry: 4,
+            raw_bytes: vec![0; TREASURE_BYTES],
+            authored: true,
+            provenance: provenance("Data TD", 0, 0, TREASURE_BYTES),
+        };
+        let treasure_bytes = write_treasures(&[treasure]).unwrap();
+        assert_eq!(i16_be(&treasure_bytes, 0), 11);
+        assert_eq!(i16_be(&treasure_bytes, 40), 100);
+        assert_eq!(i16_be(&treasure_bytes, 46), 4);
+
+        let shop = ShopRecord {
+            id: 0,
+            item_ids: vec![21],
+            quantities: vec![9],
+            inflation: 125,
+            raw_bytes: vec![0; SHOP_BYTES],
+            authored: true,
+            provenance: provenance("Data SD", 0, 0, SHOP_BYTES),
+        };
+        let shop_bytes = write_shops(&[shop]).unwrap();
+        assert_eq!(i16_be(&shop_bytes, 0), 21);
+        assert_eq!(shop_bytes[2000], 9);
+        assert_eq!(i16_be(&shop_bytes, 3000), 125);
+
+        let simple = SimpleEncounterRecord {
+            id: 0,
+            actions: vec![EncounterActionRow {
+                slot: 2,
+                raw_code: 4,
+                id: 9,
+            }],
+            choice_results: vec![1, 2, 3, 4],
+            can_back_out: true,
+            max_times: 7,
+            caste_success: -1,
+            prompt: 55,
+            texts: vec!["A".to_string(), "B".to_string(), String::new(), String::new()],
+            raw_bytes: vec![0; SIMPLE_ENCOUNTER_BYTES],
+            authored: true,
+            provenance: provenance("Data ED", 0, 0, SIMPLE_ENCOUNTER_BYTES),
+        };
+        let simple_bytes = write_simple_encounters(&[simple]).unwrap();
+        assert_eq!(simple_bytes[2], 4);
+        assert_eq!(i16_be(&simple_bytes, 36), 9);
+        assert_eq!(simple_bytes[100], 1);
+        assert_eq!(i16_be(&simple_bytes, 104), 55);
+        assert_eq!(simple_bytes[106], b'A');
+
+        let complex = ComplexEncounterRecord {
+            id: 0,
+            actions: vec![EncounterActionRow {
+                slot: 1,
+                raw_code: 5,
+                id: 10,
+            }],
+            choice_results: vec![1, 0, 0, 0],
+            word_results: vec![2, 0, 0, 0],
+            can_back_out: true,
+            thief: true,
+            max_times: 2,
+            caste_success: 3,
+            thief_success: 4,
+            thief_fail: 5,
+            prompt: 66,
+            texts: vec!["Nine".to_string(); 9],
+            raw_bytes: vec![0; COMPLEX_ENCOUNTER_BYTES],
+            authored: true,
+            provenance: provenance("Data ED2", 0, 0, COMPLEX_ENCOUNTER_BYTES),
+        };
+        let complex_bytes = write_complex_encounters(&[complex]).unwrap();
+        assert_eq!(complex_bytes[1], 5);
+        assert_eq!(i16_be(&complex_bytes, 34), 10);
+        assert_eq!(complex_bytes[100], 2);
+        assert_eq!(complex_bytes[151], 1);
+        assert_eq!(i16_be(&complex_bytes, 158), 66);
+        assert_eq!(complex_bytes[160], b'N');
     }
 }

@@ -129,6 +129,8 @@ export type RealmzStepDescriptor = {
   summary: string;
   edcdShape?: string;
   editable: boolean;
+  targetType?: RealmzTargetRecordKind;
+  compatibility?: "realmz-writable" | "preserved-imported-bytes" | "inspect-only" | "dispatcher-noop" | "needs-manual-verification";
 };
 
 export type DecodedResourcePreview = {
@@ -211,6 +213,93 @@ export type RealmzScriptDraft = {
 };
 
 export type ScenarioStartupFields = Partial<Pick<Project["scenario"], "name" | "projectPath" | "importedAt">>;
+export type RealmzTargetRecordKind = "message" | "battle" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "questLabel";
+
+export type MessageRecord = {
+  id: number;
+  text: string;
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: Provenance;
+};
+
+export type BattleRecord = {
+  id: number;
+  grid: number[];
+  dist: number;
+  messageBefore: number;
+  messageAfter: number;
+  battleMacro: number;
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: Provenance;
+};
+
+export type TreasureRecord = {
+  id: number;
+  itemIds: number[];
+  exp: number;
+  gold: number;
+  gems: number;
+  jewelry: number;
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: Provenance;
+};
+
+export type ShopRecord = {
+  id: number;
+  itemIds: number[];
+  quantities: number[];
+  inflation: number;
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: Provenance;
+};
+
+export type EncounterActionRow = {
+  slot: number;
+  rawCode: number;
+  id: number;
+};
+
+export type SimpleEncounterRecord = {
+  id: number;
+  actions: EncounterActionRow[];
+  choiceResults: number[];
+  canBackOut: boolean;
+  maxTimes: number;
+  casteSuccess: number;
+  prompt: number;
+  texts: string[];
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: Provenance;
+};
+
+export type ComplexEncounterRecord = {
+  id: number;
+  actions: EncounterActionRow[];
+  choiceResults: number[];
+  wordResults: number[];
+  canBackOut: boolean;
+  thief: boolean;
+  maxTimes: number;
+  casteSuccess: number;
+  thiefSuccess: number;
+  thiefFail: number;
+  prompt: number;
+  texts: string[];
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: Provenance;
+};
+
+export type QuestLabel = {
+  id: number;
+  label: string;
+  note?: string;
+};
 
 export type ProjectCommand =
   | { kind: "paintTiles"; mapId: string; label: string; cells: PaintCellChange[] }
@@ -281,6 +370,17 @@ export type ProjectCommand =
       label: string;
       rowId: number;
     }
+  | { kind: "createTargetRecord"; label: string; recordType: RealmzTargetRecordKind; id?: number }
+  | { kind: "deleteTargetRecord"; label: string; recordType: RealmzTargetRecordKind; id: number }
+  | { kind: "updateMessageRecord"; label: string; id: number; changes: Partial<Pick<MessageRecord, "text">> }
+  | { kind: "updateBattleRecord"; label: string; id: number; changes: Partial<Pick<BattleRecord, "grid" | "dist" | "messageBefore" | "messageAfter" | "battleMacro">> }
+  | { kind: "updateTreasureRecord"; label: string; id: number; changes: Partial<Pick<TreasureRecord, "itemIds" | "exp" | "gold" | "gems" | "jewelry">> }
+  | { kind: "updateShopRecord"; label: string; id: number; changes: Partial<Pick<ShopRecord, "itemIds" | "quantities" | "inflation">> }
+  | { kind: "updateSimpleEncounterRecord"; label: string; id: number; changes: Partial<Pick<SimpleEncounterRecord, "actions" | "choiceResults" | "canBackOut" | "maxTimes" | "casteSuccess" | "prompt" | "texts">> }
+  | { kind: "updateComplexEncounterRecord"; label: string; id: number; changes: Partial<Pick<ComplexEncounterRecord, "actions" | "choiceResults" | "wordResults" | "canBackOut" | "thief" | "maxTimes" | "casteSuccess" | "thiefSuccess" | "thiefFail" | "prompt" | "texts">> }
+  | { kind: "upsertQuestLabel"; label: string; quest: QuestLabel }
+  | { kind: "deleteQuestLabel"; label: string; id: number }
+  | { kind: "applyRealmzScriptStep"; label: string; triggerId: string; slot: number; opcode: number; id: number; edcdValues?: number[] }
   | {
       kind: "renameEditorEntity";
       label: string;
@@ -333,6 +433,13 @@ export type Project = {
   triggers: TriggerRecord[];
   randomLevels: RandomLevel[];
   extracodes: ExtraCodeRow[];
+  messages: MessageRecord[];
+  battles: BattleRecord[];
+  treasures: TreasureRecord[];
+  shops: ShopRecord[];
+  simpleEncounters: SimpleEncounterRecord[];
+  complexEncounters: ComplexEncounterRecord[];
+  questLabels: QuestLabel[];
   assets: ManagedAsset[];
   assetCatalog: { tilesets: TilesetAsset[] };
   editorMetadata: EditorMetadata;

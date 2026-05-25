@@ -25,6 +25,13 @@ export function createBrowserProject(projectName: string): Project {
     triggers: [],
     randomLevels: [],
     extracodes: [],
+    messages: [],
+    battles: [],
+    treasures: [],
+    shops: [],
+    simpleEncounters: [],
+    complexEncounters: [],
+    questLabels: [],
     assets: [],
     assetCatalog: { tilesets: [] },
     editorMetadata: { displayNames: {} },
@@ -60,6 +67,13 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
     triggers: parsed.triggers,
     randomLevels: parsed.randomLevels,
     extracodes: parsed.extracodes,
+    messages: parsed.messages,
+    battles: parsed.battles,
+    treasures: parsed.treasures,
+    shops: parsed.shops,
+    simpleEncounters: parsed.simpleEncounters,
+    complexEncounters: parsed.complexEncounters,
+    questLabels: [],
     assets: [],
     assetCatalog: parsed.assetCatalog,
     editorMetadata: { displayNames: {} },
@@ -92,6 +106,13 @@ export async function openBrowserProject(source: BrowserScenarioSource): Promise
   const text = await readProjectJson(source);
   const project = JSON.parse(text) as Project;
   project.assets ??= [];
+  project.messages ??= [];
+  project.battles ??= [];
+  project.treasures ??= [];
+  project.shops ??= [];
+  project.simpleEncounters ??= [];
+  project.complexEncounters ??= [];
+  project.questLabels ??= [];
   project.editorMetadata ??= { displayNames: {} };
   project.semanticSchema.decoding ??= { ed3Reachability: [], dispatcherNoops: [], confidenceDebt: [] };
   backfillTilesetMetadata(project);
@@ -126,7 +147,7 @@ export function validateBrowserProject(project: Project): ValidationReport {
   if ((project.assets ?? []).length > 0) {
     warnings.push(`${project.assets.length.toLocaleString()} managed media asset(s) are present; desktop export writes them to the Scenario resource fork.`);
   }
-  if (project.semanticSchema.schemaVersion !== 3) {
+  if (project.semanticSchema.schemaVersion !== 4) {
     warnings.push(`Semantic schema version ${project.semanticSchema.schemaVersion} is stale; re-import this scenario to refresh archaeology data.`);
   }
   for (const diagnostic of project.semanticSchema.diagnostics) {
@@ -161,7 +182,7 @@ export function validateBrowserProject(project: Project): ValidationReport {
     if (record.summary.edited === true) errors.push(`${record.id} is marked edited but its semantic edit state is blocked.`);
   }
   const sourceNames = new Set(project.source.files.map((file) => file.name));
-  const exportableFiles = ["Data LD", "Data DL", "Data DD", "Data DDD", "Data RD", "Data RDD", "Data ED3", "Data EDCD"].filter((name) =>
+  const exportableFiles = ["Data LD", "Data DL", "Data DD", "Data DDD", "Data RD", "Data RDD", "Data ED3", "Data EDCD", "Data ED", "Data ED2", "Data BD", "Data SD", "Data SD2", "Data TD"].filter((name) =>
     sourceNames.has(name)
   );
   const passThroughFiles = project.source.files.filter((file) => !file.editable).map((file) => file.name);

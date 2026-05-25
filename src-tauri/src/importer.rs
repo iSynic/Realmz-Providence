@@ -59,6 +59,13 @@ pub fn create_project(
         triggers: Vec::new(),
         random_levels: Vec::new(),
         extracodes: Vec::new(),
+        messages: Vec::new(),
+        battles: Vec::new(),
+        treasures: Vec::new(),
+        shops: Vec::new(),
+        simple_encounters: Vec::new(),
+        complex_encounters: Vec::new(),
+        quest_labels: Vec::new(),
         assets: Vec::new(),
         asset_catalog: AssetCatalog::default(),
         editor_metadata: EditorMetadata::default(),
@@ -163,6 +170,13 @@ fn import_scenario_with_name(
         triggers: parsed.triggers,
         random_levels: parsed.random_levels,
         extracodes: parsed.extracodes,
+        messages: parsed.messages,
+        battles: parsed.battles,
+        treasures: parsed.treasures,
+        shops: parsed.shops,
+        simple_encounters: parsed.simple_encounters,
+        complex_encounters: parsed.complex_encounters,
+        quest_labels: Vec::new(),
         assets: Vec::new(),
         asset_catalog: parsed.asset_catalog,
         editor_metadata: EditorMetadata::default(),
@@ -178,6 +192,12 @@ fn import_scenario_with_name(
         triggers: project.triggers.clone(),
         random_levels: project.random_levels.clone(),
         extracodes: project.extracodes.clone(),
+        messages: project.messages.clone(),
+        battles: project.battles.clone(),
+        treasures: project.treasures.clone(),
+        shops: project.shops.clone(),
+        simple_encounters: project.simple_encounters.clone(),
+        complex_encounters: project.complex_encounters.clone(),
         records: project.records.clone(),
         diagnostics: project.diagnostics.clone(),
         asset_catalog: project.asset_catalog.clone(),
@@ -229,11 +249,18 @@ fn refresh_semantic_schema(project_dir: &Path, project: &mut ProvidenceProject) 
     if buffers.is_empty() {
         return Ok(());
     }
+    backfill_target_records(project, &buffers);
     let semantic_parsed = ParsedScenario {
         maps: project.maps.clone(),
         triggers: project.triggers.clone(),
         random_levels: project.random_levels.clone(),
         extracodes: project.extracodes.clone(),
+        messages: project.messages.clone(),
+        battles: project.battles.clone(),
+        treasures: project.treasures.clone(),
+        shops: project.shops.clone(),
+        simple_encounters: project.simple_encounters.clone(),
+        complex_encounters: project.complex_encounters.clone(),
         records: project.records.clone(),
         diagnostics: project.diagnostics.clone(),
         asset_catalog: project.asset_catalog.clone(),
@@ -245,6 +272,28 @@ fn refresh_semantic_schema(project_dir: &Path, project: &mut ProvidenceProject) 
         &semantic_parsed,
     );
     Ok(())
+}
+
+fn backfill_target_records(project: &mut ProvidenceProject, buffers: &BTreeMap<String, Vec<u8>>) {
+    let parsed = parse_scenario_buffers(buffers);
+    if project.messages.is_empty() {
+        project.messages = parsed.messages;
+    }
+    if project.battles.is_empty() {
+        project.battles = parsed.battles;
+    }
+    if project.treasures.is_empty() {
+        project.treasures = parsed.treasures;
+    }
+    if project.shops.is_empty() {
+        project.shops = parsed.shops;
+    }
+    if project.simple_encounters.is_empty() {
+        project.simple_encounters = parsed.simple_encounters;
+    }
+    if project.complex_encounters.is_empty() {
+        project.complex_encounters = parsed.complex_encounters;
+    }
 }
 
 fn backfill_tileset_metadata(project: &mut ProvidenceProject) {

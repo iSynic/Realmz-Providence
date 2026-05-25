@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ArrowDown, ArrowUp, Copy, Plus, Save, Trash2, X } from "lucide-react";
 import { Action, LevelType, Project, ProjectCommand, SelectedEntity, SemanticEntity, TriggerRecord } from "../types";
 import { linksFor, selectEntityFromId, semanticLabel } from "../utils";
@@ -13,6 +13,8 @@ import { ACTION_CATEGORIES, ACTION_OPTIONS, actionOptionFor } from "../realmzAct
 import { edcdFieldNamesForShape } from "../realmzEdcd";
 import { ScriptDiagnostic, validateActionDraft, validateScriptTrigger } from "../scriptValidation";
 import { actionPointCapacity } from "../actionPointCapacity";
+import { isReusableDoorPlaceholder } from "../actionPointCapacity";
+import { realmzScriptStepDescriptorFor } from "../realmzScriptDescriptors";
 
 export function ScriptsPanel({
   project,
@@ -219,14 +221,21 @@ function ScriptAuthoringPanel({
             className="btn btn-primary btn-xs"
             disabled={!selectedMapCapacity?.canCreate}
             title={selectedMapCapacity?.canCreate ? "Create an Action Point on the selected map." : "This map already uses all 100 Realmz Action Point records."}
-            onClick={() => onApplyCommand?.({
-              kind: "createActionPoint",
-              label: `Create Action Point ${newActionPoint.x},${newActionPoint.y}`,
-              levelType: selectedMap.levelType,
-              levelIndex: selectedMap.index,
-              x: clampRealmzCoordinate(newActionPoint.x),
-              y: clampRealmzCoordinate(newActionPoint.y)
-            })}
+            onClick={() => {
+              const recordIndex = nextActionPointRecordIndex(project, selectedMap.levelType, selectedMap.index);
+              onApplyCommand?.({
+                kind: "createActionPoint",
+                label: `Create Action Point ${newActionPoint.x},${newActionPoint.y}`,
+                levelType: selectedMap.levelType,
+                levelIndex: selectedMap.index,
+                x: clampRealmzCoordinate(newActionPoint.x),
+                y: clampRealmzCoordinate(newActionPoint.y)
+              });
+              if (recordIndex != null) {
+                const source = selectedMap.levelType === "land" ? "Data DD" : "Data DDD";
+                onSelectEntity(selectEntityFromId(`${source}:${selectedMap.index}:${recordIndex}`));
+              }
+            }}
           >
             <Plus size={12} /> Action Point
           </button>
@@ -502,6 +511,15 @@ function ScriptAuthoringPanel({
                       value={selectedDraft.id}
                       onChange={(id) => setSelectedDraft({ ...selectedDraft, id })}
                       onInspect={onSelectEntity}
+                      onCreate={(recordType, id) => {
+                        onApplyCommand?.({ kind: "createTargetRecord", label: `Create ${recordType}`, recordType, id });
+                      }}
+                    />
+                    <TargetRecordEditor
+                      project={project}
+                      opcode={selectedDraft.rawCode}
+                      targetId={selectedDraft.id}
+                      onApplyCommand={onApplyCommand}
                     />
                     <EdcdRowEditor
                       project={project}
@@ -541,6 +559,189 @@ function ScriptAuthoringPanel({
       </div>
     </section>
   );
+}
+
+function TargetRecordEditor({
+  project,
+  opcode,
+  targetId,
+  onApplyCommand
+}: {
+  project: Project;
+  opcode: number;
+  targetId: number;
+  onApplyCommand?: (command: ProjectCommand) => void;
+}) {
+  const descriptor = realmzScriptStepDescriptorFor(opcode);
+  if (!descriptor.targetType || !Number.isInteger(targetId) || targetId < 0) return null;
+  const badge = descriptor.compatibility ?? "realmz-writable";
+  if (descriptor.targetType === "message") {
+    const record = project.messages?.find((candidate) => candidate.id === targetId);
+    return (
+      <InlineTargetShell title={`Message ${targetId}`} badge={badge} exists={Boolean(record)} onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create message", recordType: "message", id: targetId })}>
+        {record && (
+          <label className="script-target-wide-field">
+            <span>Text</span>
+            <textarea
+              defaultValue={record.text}
+              maxLength={255}
+              onBlur={(event) => onApplyCommand?.({ kind: "updateMessageRecord", label: "Update message", id: targetId, changes: { text: event.currentTarget.value } })}
+            />
+            <small>{record.text.length}/255 bytes before Classic encoding</small>
+          </label>
+        )}
+      </InlineTargetShell>
+    );
+  }
+  if (descriptor.targetType === "battle") {
+    const record = project.battles?.find((candidate) => candidate.id === targetId);
+    return (
+      <InlineTargetShell title={`Battle ${targetId}`} badge={badge} exists={Boolean(record)} onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create battle", recordType: "battle", id: targetId })}>
+        {record && (
+          <div className="script-target-grid">
+            <NumberField label="Distance" value={record.dist} onCommit={(dist) => onApplyCommand?.({ kind: "updateBattleRecord", label: "Update battle distance", id: targetId, changes: { dist } })} />
+            <NumberField label="Before Msg" value={record.messageBefore} onCommit={(messageBefore) => onApplyCommand?.({ kind: "updateBattleRecord", label: "Update battle message", id: targetId, changes: { messageBefore } })} />
+            <NumberField label="After Msg" value={record.messageAfter} onCommit={(messageAfter) => onApplyCommand?.({ kind: "updateBattleRecord", label: "Update battle message", id: targetId, changes: { messageAfter } })} />
+            <NumberField label="Macro" value={record.battleMacro} onCommit={(battleMacro) => onApplyCommand?.({ kind: "updateBattleRecord", label: "Update battle macro", id: targetId, changes: { battleMacro } })} />
+            <NumberField label="Monster 0" value={record.grid[0] ?? 0} onCommit={(value) => onApplyCommand?.({ kind: "updateBattleRecord", label: "Update battle grid", id: targetId, changes: { grid: updateArraySlot(record.grid, 0, value, 13 * 13) } })} />
+          </div>
+        )}
+      </InlineTargetShell>
+    );
+  }
+  if (descriptor.targetType === "treasure") {
+    const record = project.treasures?.find((candidate) => candidate.id === targetId);
+    return (
+      <InlineTargetShell title={`Treasure ${targetId}`} badge={badge} exists={Boolean(record)} onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create treasure", recordType: "treasure", id: targetId })}>
+        {record && (
+          <div className="script-target-grid">
+            <NumberField label="Item 0" value={record.itemIds[0] ?? 0} onCommit={(value) => onApplyCommand?.({ kind: "updateTreasureRecord", label: "Update treasure item", id: targetId, changes: { itemIds: updateArraySlot(record.itemIds, 0, value, 20) } })} />
+            <NumberField label="Exp" value={record.exp} onCommit={(exp) => onApplyCommand?.({ kind: "updateTreasureRecord", label: "Update treasure exp", id: targetId, changes: { exp } })} />
+            <NumberField label="Gold" value={record.gold} onCommit={(gold) => onApplyCommand?.({ kind: "updateTreasureRecord", label: "Update treasure gold", id: targetId, changes: { gold } })} />
+            <NumberField label="Gems" value={record.gems} onCommit={(gems) => onApplyCommand?.({ kind: "updateTreasureRecord", label: "Update treasure gems", id: targetId, changes: { gems } })} />
+            <NumberField label="Jewelry" value={record.jewelry} onCommit={(jewelry) => onApplyCommand?.({ kind: "updateTreasureRecord", label: "Update treasure jewelry", id: targetId, changes: { jewelry } })} />
+          </div>
+        )}
+      </InlineTargetShell>
+    );
+  }
+  if (descriptor.targetType === "shop") {
+    const record = project.shops?.find((candidate) => candidate.id === targetId);
+    return (
+      <InlineTargetShell title={`Shop ${targetId}`} badge={badge} exists={Boolean(record)} onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create shop", recordType: "shop", id: targetId })}>
+        {record && (
+          <div className="script-target-grid">
+            <NumberField label="Item 0" value={record.itemIds[0] ?? 0} onCommit={(value) => onApplyCommand?.({ kind: "updateShopRecord", label: "Update shop item", id: targetId, changes: { itemIds: updateArraySlot(record.itemIds, 0, value, 1000) } })} />
+            <NumberField label="Qty 0" value={record.quantities[0] ?? 0} onCommit={(value) => onApplyCommand?.({ kind: "updateShopRecord", label: "Update shop quantity", id: targetId, changes: { quantities: updateArraySlot(record.quantities, 0, value, 1000) } })} />
+            <NumberField label="Inflation" value={record.inflation} onCommit={(inflation) => onApplyCommand?.({ kind: "updateShopRecord", label: "Update shop inflation", id: targetId, changes: { inflation } })} />
+          </div>
+        )}
+      </InlineTargetShell>
+    );
+  }
+  if (descriptor.targetType === "simpleEncounter") {
+    const record = project.simpleEncounters?.find((candidate) => candidate.id === targetId);
+    return (
+      <InlineTargetShell title={`Simple Encounter ${targetId}`} badge={badge} exists={Boolean(record)} onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create simple encounter", recordType: "simpleEncounter", id: targetId })}>
+        {record && <EncounterShell recordKind="simple" id={targetId} texts={record.texts} prompt={record.prompt} canBackOut={record.canBackOut} onApplyCommand={onApplyCommand} />}
+      </InlineTargetShell>
+    );
+  }
+  if (descriptor.targetType === "complexEncounter") {
+    const record = project.complexEncounters?.find((candidate) => candidate.id === targetId);
+    return (
+      <InlineTargetShell title={`Complex Encounter ${targetId}`} badge={badge} exists={Boolean(record)} onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create complex encounter", recordType: "complexEncounter", id: targetId })}>
+        {record && <EncounterShell recordKind="complex" id={targetId} texts={record.texts} prompt={record.prompt} canBackOut={record.canBackOut} onApplyCommand={onApplyCommand} />}
+      </InlineTargetShell>
+    );
+  }
+  if (descriptor.targetType === "questLabel") {
+    const record = project.questLabels?.find((candidate) => candidate.id === targetId);
+    return (
+      <InlineTargetShell title={`Quest ${targetId}`} badge="realmz-writable" exists={Boolean(record)} onCreate={() => onApplyCommand?.({ kind: "upsertQuestLabel", label: "Create quest label", quest: { id: targetId, label: `Quest ${targetId}` } })}>
+        {record && (
+          <label className="script-target-wide-field">
+            <span>Label</span>
+            <input defaultValue={record.label} onBlur={(event) => onApplyCommand?.({ kind: "upsertQuestLabel", label: "Update quest label", quest: { ...record, label: event.currentTarget.value } })} />
+          </label>
+        )}
+      </InlineTargetShell>
+    );
+  }
+  return null;
+}
+
+function InlineTargetShell({
+  title,
+  badge,
+  exists,
+  onCreate,
+  children
+}: {
+  title: string;
+  badge: string;
+  exists: boolean;
+  onCreate: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className="script-inline-target-editor">
+      <header>
+        <strong>{title}</strong>
+        <span>{exists ? badge : "missing-target"}</span>
+        {!exists && <button type="button" className="btn btn-secondary btn-xs" onClick={onCreate}>Create target</button>}
+      </header>
+      {exists ? children : <small>This slot points at a target record that does not exist yet.</small>}
+    </div>
+  );
+}
+
+function EncounterShell({
+  recordKind,
+  id,
+  texts,
+  prompt,
+  canBackOut,
+  onApplyCommand
+}: {
+  recordKind: "simple" | "complex";
+  id: number;
+  texts: string[];
+  prompt: number;
+  canBackOut: boolean;
+  onApplyCommand?: (command: ProjectCommand) => void;
+}) {
+  const update = (changes: Record<string, unknown>) => {
+    if (recordKind === "simple") {
+      onApplyCommand?.({ kind: "updateSimpleEncounterRecord", label: "Update simple encounter", id, changes });
+    } else {
+      onApplyCommand?.({ kind: "updateComplexEncounterRecord", label: "Update complex encounter", id, changes });
+    }
+  };
+  return (
+    <div className="script-target-grid">
+      <NumberField label="Prompt" value={prompt} onCommit={(next) => update({ prompt: next })} />
+      <label className="script-target-checkbox">
+        <span>Can Back Out</span>
+        <input type="checkbox" defaultChecked={canBackOut} onChange={(event) => update({ canBackOut: event.currentTarget.checked })} />
+      </label>
+      <label className="script-target-wide-field">
+        <span>Text 0</span>
+        <textarea
+          defaultValue={texts[0] ?? ""}
+          maxLength={recordKind === "simple" ? 80 : 40}
+          onBlur={(event) => update({ texts: updateArraySlot(texts, 0, event.currentTarget.value, recordKind === "simple" ? 4 : 9) })}
+        />
+      </label>
+    </div>
+  );
+}
+
+function updateArraySlot<T>(values: T[], index: number, value: T, minLength: number) {
+  const next = [...values];
+  while (next.length < minLength) next.push((typeof value === "number" ? 0 : "") as T);
+  next[index] = value;
+  return next;
 }
 
 function NumberField({ label, value, onCommit }: { label: string; value: number; onCommit: (value: number) => void }) {
@@ -613,6 +814,15 @@ function clampRealmzCoordinate(value: number) {
   return Math.max(0, Math.min(89, Math.trunc(value)));
 }
 
+function nextActionPointRecordIndex(project: Project, levelType: LevelType, levelIndex: number) {
+  const records = project.triggers.filter((trigger) => trigger.levelType === levelType && trigger.levelIndex === levelIndex);
+  for (let index = 0; index < 100; index += 1) {
+    const existing = records.find((record) => record.recordIndex === index);
+    if (!existing || isReusableDoorPlaceholder(existing)) return index;
+  }
+  return null;
+}
+
 function scriptEntityVisibleForEditor(entity: SemanticEntity, activeEditor: string) {
   if (activeEditor === "action-points") return entity.type === "trigger" || entity.type === "action-slot";
   if (activeEditor === "macros") return entity.type === "macro";
@@ -624,8 +834,9 @@ function scriptEntityVisibleForEditor(entity: SemanticEntity, activeEditor: stri
 
 function triggerVisibleForEditor(project: Project | null, trigger: TriggerRecord, activeEditor: string) {
   if (activeEditor === "macros" || activeEditor === "global-macros") return isCallableMacro(project, trigger);
+  if (activeEditor === "action-points") return trigger.source !== "Data ED3" && trigger.levelType != null && trigger.levelIndex != null;
   if (activeEditor === "quests") return trigger.actions.some((action) => [46, 47, 76, 77].includes(action.code));
-  return Boolean(trigger.coordinate) || isCallableMacro(project, trigger);
+  return (trigger.source !== "Data ED3" && trigger.levelType != null && trigger.levelIndex != null) || isCallableMacro(project, trigger);
 }
 
 function scriptPanelTitle(activeEditor: string) {
@@ -640,6 +851,8 @@ function scriptPanelTitle(activeEditor: string) {
 function scriptLabel(project: Project, trigger: TriggerRecord) {
   const fallback = trigger.source === "Data ED3"
     ? `Macro ${trigger.recordIndex}`
+    : isReusableDoorPlaceholder(trigger)
+      ? `Empty Action Point ${trigger.recordIndex}`
     : trigger.coordinate
       ? `Action Point ${trigger.recordIndex} (${trigger.coordinate.x}, ${trigger.coordinate.y})`
       : `Action Point ${trigger.recordIndex}`;
@@ -653,7 +866,7 @@ function scriptSubtitle(project: Project, trigger: TriggerRecord) {
   }
   const map = project.maps.find((candidate) => candidate.levelType === trigger.levelType && candidate.index === trigger.levelIndex);
   const mapLabel = map?.name ?? `${trigger.levelType ?? "map"} ${trigger.levelIndex ?? 0}`;
-  const coordinate = trigger.coordinate ? `${trigger.coordinate.x},${trigger.coordinate.y}` : "no coordinate";
+  const coordinate = trigger.coordinate ? `${trigger.coordinate.x},${trigger.coordinate.y}` : isReusableDoorPlaceholder(trigger) ? "empty reusable slot" : "no coordinate";
   return `${mapLabel} | record ${trigger.recordIndex} | ${coordinate}`;
 }
 

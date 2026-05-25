@@ -76,6 +76,7 @@ function validateAction(project: Project, trigger: TriggerRecord, slot: number, 
       diagnostics.push(slotIssue("warning", trigger.id, slot, "unresolved-target", `${config.label} does not resolve to a known target.`, `ID ${id} is still preserved as raw data, but Providence cannot prove the referenced ${config.label.toLowerCase()} exists.`));
     }
   }
+  diagnostics.push(...validateTargetRecord(project, trigger.id, slot, code, id));
 
   if (isDirectMacroOpcode(code) && id !== 0) {
     const macro = project.triggers.find((candidate) => candidate.source === "Data ED3" && candidate.recordIndex === id);
@@ -87,6 +88,35 @@ function validateAction(project: Project, trigger: TriggerRecord, slot: number, 
   }
 
   return diagnostics;
+}
+
+function validateTargetRecord(project: Project, triggerId: string, slot: number, code: number, id: number): ScriptDiagnostic[] {
+  if (id < 0) return [];
+  if ([1, 19, 62, 71].includes(code)) {
+    const message = project.messages?.find((record) => record.id === id);
+    if (message && message.text.length > 255) {
+      return [slotIssue("error", triggerId, slot, "message-too-long", "Message text is too long for Data SD2.", `Message ${id} is ${message.text.length} characters; Realmz Data SD2 supports 255 bytes.`)];
+    }
+  }
+  if (code === 2 || [48, 56, 107].includes(code)) {
+    const battle = project.battles?.find((record) => record.id === id);
+    if (battle && battle.grid.length !== 13 * 13) {
+      return [slotIssue("error", triggerId, slot, "battle-grid-shape", "Battle grid is malformed.", `Battle ${id} must have 169 monster cells.`)];
+    }
+  }
+  if (code === 10) {
+    const treasure = project.treasures?.find((record) => record.id === id);
+    if (treasure && treasure.itemIds.length > 20) {
+      return [slotIssue("error", triggerId, slot, "treasure-item-count", "Treasure has too many item slots.", `Treasure ${id} has ${treasure.itemIds.length}; Realmz Data TD supports 20.`)];
+    }
+  }
+  if ([6, 49, 51].includes(code)) {
+    const shop = project.shops?.find((record) => record.id === id);
+    if (shop && (shop.itemIds.length > 1000 || shop.quantities.length > 1000)) {
+      return [slotIssue("error", triggerId, slot, "shop-slot-count", "Shop has too many stocked slots.", `Shop ${id} exceeds Realmz Data SD capacity.`)];
+    }
+  }
+  return [];
 }
 
 function inRealmzMapBounds(value: number) {

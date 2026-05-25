@@ -4803,6 +4803,74 @@ body.is-resizing-pane {
   align-self: end;
 }
 
+.script-inline-target-editor {
+  display: grid;
+  gap: 8px;
+  border: 1px solid #27313c;
+  border-radius: 6px;
+  background: #0f171f;
+  padding: 8px;
+}
+
+.script-inline-target-editor > header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.script-inline-target-editor > header strong {
+  color: #e6f2ff;
+  font-size: 11px;
+}
+
+.script-inline-target-editor > header span {
+  border: 1px solid #315270;
+  border-radius: 4px;
+  background: #0d1b27;
+  color: #9fc2df;
+  padding: 2px 6px;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.script-target-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 8px;
+}
+
+.script-target-wide-field {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 4px;
+}
+
+.script-target-wide-field textarea {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  background: #111820;
+  color: #eaf6ff;
+  border: 1px solid #2c3945;
+  border-radius: 5px;
+  padding: 6px 7px;
+  font: inherit;
+}
+
+.script-target-checkbox {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+}
+
+.script-target-checkbox input {
+  width: fit-content;
+  min-height: auto;
+}
+
 .edcd-row-editor {
   display: grid;
   gap: 8px;

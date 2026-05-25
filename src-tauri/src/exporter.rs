@@ -2,7 +2,9 @@ use crate::error::{IoPath, ProvidenceError, Result};
 use crate::importer::RAW_SOURCES_DIR;
 use crate::project::{LevelType, ProvidenceProject};
 use crate::realmz::{
-    write_door_file, write_extracodes, write_fields, write_macro_file, write_random_levels,
+    write_battles, write_complex_encounters, write_door_file, write_extracodes, write_fields,
+    write_macro_file, write_messages, write_random_levels, write_shops, write_simple_encounters,
+    write_treasures,
 };
 use crate::resource_fork::{
     merge_resource_entries, parse_resource_fork_entries, ResourceForkEntry,
@@ -102,6 +104,54 @@ pub fn export_project(
         write_extracodes(&project.extracodes)?,
         &mut written_files,
     )?;
+    write_fixed_if_nonempty(
+        output_dir,
+        "Data SD2",
+        write_messages(&project.messages)?,
+        crate::realmz::MESSAGE_BYTES,
+        &raw_dir,
+        &mut written_files,
+    )?;
+    write_fixed_if_nonempty(
+        output_dir,
+        "Data BD",
+        write_battles(&project.battles)?,
+        crate::realmz::BATTLE_BYTES,
+        &raw_dir,
+        &mut written_files,
+    )?;
+    write_fixed_if_nonempty(
+        output_dir,
+        "Data TD",
+        write_treasures(&project.treasures)?,
+        crate::realmz::TREASURE_BYTES,
+        &raw_dir,
+        &mut written_files,
+    )?;
+    write_fixed_if_nonempty(
+        output_dir,
+        "Data SD",
+        write_shops(&project.shops)?,
+        crate::realmz::SHOP_BYTES,
+        &raw_dir,
+        &mut written_files,
+    )?;
+    write_fixed_if_nonempty(
+        output_dir,
+        "Data ED",
+        write_simple_encounters(&project.simple_encounters)?,
+        crate::realmz::SIMPLE_ENCOUNTER_BYTES,
+        &raw_dir,
+        &mut written_files,
+    )?;
+    write_fixed_if_nonempty(
+        output_dir,
+        "Data ED2",
+        write_complex_encounters(&project.complex_encounters)?,
+        crate::realmz::COMPLEX_ENCOUNTER_BYTES,
+        &raw_dir,
+        &mut written_files,
+    )?;
     let resource_result = write_managed_resources(project_dir, output_dir, project)?;
     if resource_result.resource_file_written {
         written_files.push(resource_result.resource_file_name.clone());
@@ -139,6 +189,27 @@ fn write_if_nonempty(
     fs::write(&path, bytes).with_path(&path)?;
     written.push(name.to_string());
     Ok(())
+}
+
+fn write_fixed_if_nonempty(
+    output_dir: &Path,
+    name: &str,
+    mut bytes: Vec<u8>,
+    record_bytes: usize,
+    raw_dir: &Path,
+    written: &mut Vec<String>,
+) -> Result<()> {
+    if bytes.is_empty() {
+        return Ok(());
+    }
+    let raw_path = raw_dir.join(name);
+    if raw_path.is_file() {
+        let raw = fs::read(&raw_path).with_path(&raw_path)?;
+        if raw.len() > bytes.len() && raw.len() % record_bytes != 0 {
+            bytes.extend_from_slice(&raw[bytes.len()..]);
+        }
+    }
+    write_if_nonempty(output_dir, name, bytes, written)
 }
 
 #[derive(Debug, Default)]
