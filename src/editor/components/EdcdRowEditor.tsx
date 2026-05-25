@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Save, Trash2 } from "lucide-react";
-import { Project, ProjectCommand } from "../types";
+import { LibraryCatalog, Project, ProjectCommand, SelectedEntity } from "../types";
 import { EmptyState, FieldRow, PanelSection } from "../ui";
+import { itemReferenceDetail, itemReferenceOptions } from "../itemReferences";
+import { createRecordTypeForEdcdTarget, edcdFieldTargetKind, edcdTargetLabel, edcdTargetOptions, missingEdcdTargetReferences } from "../edcdTargets";
 
 type EdcdField = {
   name?: string;
@@ -21,19 +23,23 @@ type EdcdUsage = {
 
 export function EdcdRowEditor({
   project,
+  catalog,
   edcdUsage,
   fallbackRowId,
   fallbackShape,
   fallbackFieldNames,
   selectedSlotLabel,
+  onSelectEntity,
   onApplyCommand
 }: {
   project: Project;
+  catalog?: LibraryCatalog | null;
   edcdUsage?: EdcdUsage | null;
   fallbackRowId: number;
   fallbackShape?: string;
   fallbackFieldNames?: string[];
   selectedSlotLabel: string;
+  onSelectEntity?: (entity: SelectedEntity) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const rowId = edcdUsage?.rowId ?? (fallbackShape ? Math.max(0, fallbackRowId) : null);
@@ -49,6 +55,7 @@ export function EdcdRowEditor({
     return [0, 1, 2, 3, 4].map((index) => Number(semanticValues[index] ?? rawValues[index] ?? 0));
   }, [edcdUsage, row]);
   const [draft, setDraft] = useState(initialValues.map(String));
+  const itemOptions = useMemo(() => itemReferenceOptions(project, catalog), [project, catalog]);
 
   useEffect(() => {
     setDraft(initialValues.map(String));
@@ -60,6 +67,7 @@ export function EdcdRowEditor({
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : 0;
   });
+  const targetIssues = missingEdcdTargetReferences(project, shape, fieldNames, numericDraft);
   const changed = numericDraft.some((value, index) => value !== initialValues[index]);
 
   return (
@@ -105,20 +113,105 @@ export function EdcdRowEditor({
           />
         )}
         <div className="edcd-field-grid">
-          {fieldNames.map((name, index) => (
-            <label key={`${rowId}-${name}-${index}`}>
-              <span>{name}</span>
-              <input
-                type="number"
-                value={draft[index] ?? "0"}
-                onChange={(event) => {
-                  const next = [...draft];
-                  next[index] = event.currentTarget.value;
-                  setDraft(next);
-                }}
-              />
-            </label>
-          ))}
+          {fieldNames.map((name, index) => {
+            const value = Number(draft[index] ?? "0");
+            const isItemField = edcdFieldLooksLikeItem(shape, name);
+            const targetKind = edcdFieldTargetKind(shape, name, fieldNames, numericDraft);
+            const selectedItem = itemOptions.find((option) => option.value === value);
+            const targetOptions = targetKind ? edcdTargetOptions(project, targetKind) : [];
+            const selectedTarget = targetOptions.find((option) => option.value === value);
+            const createRecordType = createRecordTypeForEdcdTarget(targetKind);
+            const targetLabel = targetKind ? edcdTargetLabel(targetKind) : "";
+            const targetIssue = targetIssues.find((issue) => issue.index === index);
+            return (
+              <label key={`${rowId}-${name}-${index}`} className={`${isItemField || targetKind ? "edcd-item-field" : ""}${targetIssue ? " has-warning" : ""}`}>
+                <span>{name}</span>
+                {targetKind && (
+                  <select
+                    value={selectedTarget ? String(value) : value === 0 ? "0" : `raw:${value}`}
+                    onChange={(event) => {
+                      const raw = event.currentTarget.value;
+                      if (raw.startsWith("raw:")) return;
+                      const next = [...draft];
+                      next[index] = raw;
+                      setDraft(next);
+                    }}
+                  >
+                    <option value="0">No {targetLabel}</option>
+                    {value !== 0 && !selectedTarget && <option value={`raw:${value}`}>Current {targetLabel} ID {value}</option>}
+                    {targetOptions.map((option) => (
+                      <option key={option.key} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                )}
+                {isItemField && (
+                  <select
+                    value={selectedItem ? String(value) : value === 0 ? "0" : `raw:${value}`}
+                    onChange={(event) => {
+                      const raw = event.currentTarget.value;
+                      if (raw.startsWith("raw:")) return;
+                      const next = [...draft];
+                      next[index] = raw;
+                      setDraft(next);
+                    }}
+                  >
+                    <option value="0">No item</option>
+                    {value !== 0 && !selectedItem && <option value={`raw:${value}`}>Current item ID {value}</option>}
+                    {itemOptions.slice(0, 260).map((option) => (
+                      <option key={option.key} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                )}
+                <input
+                  type="number"
+                  value={draft[index] ?? "0"}
+                  onChange={(event) => {
+                    const next = [...draft];
+                    next[index] = event.currentTarget.value;
+                    setDraft(next);
+                  }}
+                />
+                {isItemField && <small>{selectedItem ? [selectedItem.detail, selectedItem.sourceState].filter(Boolean).join(" | ") : itemReferenceDetail(project, value, catalog)}</small>}
+                {targetKind && (
+                  <small>
+                    {selectedTarget
+                      ? selectedTarget.detail
+                      : value > 0
+                        ? `No ${targetLabel} ${value} exists yet.`
+                        : `No ${targetLabel} target selected.`}
+                  </small>
+                )}
+                {targetIssue && (
+                  <p className="field-warning">
+                    Create or select {targetIssue.targetLabel} {targetIssue.value}; Realmz will receive this ID, but Providence cannot prove it exists yet.
+                  </p>
+                )}
+                {selectedTarget?.entity && onSelectEntity && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-xs"
+                    onClick={() => onSelectEntity(selectedTarget.entity!)}
+                  >
+                    Inspect {targetLabel}
+                  </button>
+                )}
+                {createRecordType && value > 0 && !selectedTarget && onApplyCommand && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-xs"
+                    onClick={() => onApplyCommand({
+                      kind: "createTargetRecord",
+                      label: `Create ${targetLabel} ${value}`,
+                      recordType: createRecordType,
+                      id: value
+                    })}
+                  >
+                    Create {targetLabel} {value}
+                  </button>
+                )}
+              </label>
+            );
+          })}
         </div>
         {edcdUsage?.secondaryRowId != null && (
           <div className="edcd-secondary-row">
@@ -135,4 +228,11 @@ export function EdcdRowEditor({
       </div>
     </PanelSection>
   );
+}
+
+function edcdFieldLooksLikeItem(shape: string, name: string) {
+  const normalizedShape = shape.toLowerCase();
+  const normalizedName = name.toLowerCase();
+  if (!normalizedShape.includes("item") && normalizedShape !== "random-items") return false;
+  return ["item", "itemlow", "itemhigh", "replacementitem"].includes(normalizedName) || normalizedName.includes("item");
 }

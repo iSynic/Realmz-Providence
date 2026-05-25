@@ -1,19 +1,23 @@
-import { useMemo } from "react";
-import { Project, RealmzTargetRecordKind, SelectedEntity, SemanticEntity } from "../types";
+import { useMemo, useState } from "react";
+import { LibraryCatalog, Project, RealmzTargetRecordKind, SelectedEntity, SemanticEntity } from "../types";
 import { isCallableMacro, schemaEntities } from "../semanticGraph";
 import { selectEntityFromId } from "../utils";
-import { normalizeStepOpcode } from "../realmzActions";
+import { actionOptionFor, normalizeStepOpcode } from "../realmzActions";
 
 export type ScriptTargetOption = {
   key: string;
   value: number;
   label: string;
   detail: string;
+  summary?: string;
+  compatibility?: string;
+  sourceState?: string;
   entity?: SelectedEntity;
 };
 
 export function TargetPicker({
   project,
+  catalog,
   opcode,
   value,
   onChange,
@@ -21,6 +25,7 @@ export function TargetPicker({
   onCreate
 }: {
   project: Project | null;
+  catalog?: LibraryCatalog | null;
   opcode: number;
   value: number;
   onChange: (id: number) => void;
@@ -28,14 +33,24 @@ export function TargetPicker({
   onCreate?: (recordType: RealmzTargetRecordKind, id?: number) => void;
 }) {
   const config = targetPickerConfig(opcode);
-  const targets = useMemo(() => targetOptionsForOpcode(project, opcode), [project, opcode]);
+  const targets = useMemo(() => targetOptionsForOpcode(project, opcode, catalog), [project, opcode, catalog]);
+  const [query, setQuery] = useState("");
   if (!config) return null;
+  const filteredTargets = filterTargetOptions(targets, query);
   const selected = targets.find((target) => target.value === value) ?? null;
   const hasCurrentValue = Number.isFinite(value) && value !== 0 && !selected;
+  const canCreateTarget = Boolean(config.recordType && onCreate && (!selected || hasCurrentValue || value === 0));
+  const detail = selected ? [selected.detail, selected.summary, selected.compatibility, selected.sourceState].filter(Boolean).join(" | ") : config.hint;
   return (
     <div className="realmz-target-picker">
       <label>
         <span>{config.label}</span>
+        <input
+          value={query}
+          onChange={(event) => setQuery(event.currentTarget.value)}
+          placeholder={`Search ${config.label.toLowerCase()}...`}
+          aria-label={`Search ${config.label}`}
+        />
         <select
           value={hasCurrentValue ? `raw:${value}` : selected ? String(selected.value) : ""}
           onChange={(event) => {
@@ -46,38 +61,39 @@ export function TargetPicker({
         >
           <option value="">Choose {config.label.toLowerCase()}</option>
           {hasCurrentValue && <option value={`raw:${value}`}>Current raw ID {value}</option>}
-          {targets.map((target) => (
+          {filteredTargets.map((target) => (
             <option key={target.key} value={target.value}>
               {target.label}
             </option>
           ))}
         </select>
       </label>
-      <small>{selected?.detail ?? config.hint}</small>
+      <small>{detail}</small>
       {selected?.entity && (
         <button className="btn btn-secondary btn-xs" type="button" onClick={() => onInspect(selected.entity!)}>
           Inspect Target
         </button>
       )}
-      {config.recordType && onCreate && (
+      {canCreateTarget && (
         <button
           className="btn btn-secondary btn-xs"
           type="button"
-          onClick={() => onCreate(config.recordType!, hasCurrentValue ? value : undefined)}
+          onClick={() => onCreate?.(config.recordType!, hasCurrentValue ? value : undefined)}
         >
-          Create {config.label}
+          {createTargetButtonLabel(config.recordType!, hasCurrentValue ? value : undefined)}
         </button>
       )}
       {targets.length === 0 && <span className="target-picker-empty">No authorable targets are available yet.</span>}
+      {targets.length > 0 && filteredTargets.length === 0 && <span className="target-picker-empty">No targets match this search.</span>}
     </div>
   );
 }
 
 export function targetPickerConfig(opcode: number) {
   const code = normalizeStepOpcode(opcode);
+  if (actionOptionFor(code).edcdShape) return null;
   const configs: Record<number, { label: string; hint: string; recordType?: RealmzTargetRecordKind }> = {
     1: { label: "Message Target", hint: "Select the scenario message this action displays.", recordType: "message" },
-    2: { label: "Battle Target", hint: "Select a battle record.", recordType: "battle" },
     4: { label: "Simple Encounter", hint: "Select a simple encounter record.", recordType: "simpleEncounter" },
     5: { label: "Complex Encounter", hint: "Select a complex encounter record.", recordType: "complexEncounter" },
     6: { label: "Shop Target", hint: "Select a shop record.", recordType: "shop" },
@@ -91,29 +107,26 @@ export function targetPickerConfig(opcode: number) {
     40: { label: "Macro Target", hint: "Select a reusable Data ED3 macro." },
     44: { label: "Complex Encounter", hint: "Select the complex encounter this action mutates.", recordType: "complexEncounter" },
     47: { label: "Quest Flag", hint: "Select a quest flag to write.", recordType: "questLabel" },
-    48: { label: "Battle Variant", hint: "Select a battle variant/range.", recordType: "battle" },
     49: { label: "Shop Target", hint: "Select a shop record.", recordType: "shop" },
     51: { label: "Shop Target", hint: "Select a shop record.", recordType: "shop" },
     55: { label: "Macro Target", hint: "Select a reusable Data ED3 macro." },
-    56: { label: "Battle Variant", hint: "Select a battle variant/range.", recordType: "battle" },
     62: { label: "Message Target", hint: "Select the scenario message this action displays.", recordType: "message" },
     64: { label: "Macro Target", hint: "Select a reusable Data ED3 macro." },
     71: { label: "Message Target", hint: "Select the scenario message this action displays.", recordType: "message" },
     97: { label: "Map Record", hint: "Select a map record." },
     104: { label: "Simple Encounter", hint: "Select the simple encounter this action mutates.", recordType: "simpleEncounter" },
-    107: { label: "Battle Variant", hint: "Select a battle variant/range.", recordType: "battle" },
     106: { label: "Map Record", hint: "Select the map record this action mutates." },
     127: { label: "Monster Target", hint: "Select a monster record." }
   };
   return configs[code] ?? null;
 }
 
-export function targetOptionsForOpcode(project: Project | null, opcode: number): ScriptTargetOption[] {
+export function targetOptionsForOpcode(project: Project | null, opcode: number, catalog?: LibraryCatalog | null): ScriptTargetOption[] {
   if (!project) return [];
   const code = normalizeStepOpcode(opcode);
   const semanticTypes = targetSemanticTypes(code);
   const options: ScriptTargetOption[] = [];
-  addTypedProjectTargets(project, code, options);
+  addTypedProjectTargets(project, code, options, catalog);
   for (const type of semanticTypes) {
     for (const entity of schemaEntities(project, type)) {
       if (!entityMatchesOpcodeTarget(entity, code)) continue;
@@ -137,6 +150,20 @@ export function targetOptionsForOpcode(project: Project | null, opcode: number):
         value: asset.resourceId,
         label: `${asset.label} (${asset.resourceType.trim()} ${asset.resourceId})`,
         detail: `${asset.kind} | ${asset.exportState}`,
+        entity: { type: "resource", id: asset.id }
+      });
+    }
+    for (const asset of catalog?.assets ?? []) {
+      if (asset.resourceId == null || !wantedKinds.has(asset.type)) continue;
+      const resourceType = asset.resourceType?.trim() || asset.type;
+      options.push({
+        key: asset.id,
+        value: asset.resourceId,
+        label: `${asset.label} (${resourceType} ${asset.resourceId})`,
+        detail: `${asset.type} | library catalog`,
+        summary: asset.relativePath,
+        compatibility: "Realmz resource",
+        sourceState: "Imported library asset",
         entity: { type: "resource", id: asset.id }
       });
     }
@@ -166,35 +193,41 @@ export function targetOptionsForOpcode(project: Project | null, opcode: number):
   return dedupeTargetOptions(options).sort((a, b) => a.value - b.value || a.label.localeCompare(b.label)).slice(0, 320);
 }
 
-function addTypedProjectTargets(project: Project, code: number, options: ScriptTargetOption[]) {
+function addTypedProjectTargets(project: Project, code: number, options: ScriptTargetOption[], catalog?: LibraryCatalog | null) {
   if ([1, 19, 62, 71].includes(code)) {
+    const used = usageCounts(project, [1, 19, 62, 71]);
     for (const record of project.messages ?? []) {
-      options.push({ key: `message:${record.id}`, value: record.id, label: `Message ${record.id}`, detail: `${record.text.slice(0, 80) || "empty"} | Realmz-writable`, entity: { type: "message", id: `message:${record.id}` } });
+      options.push({ key: `message:${record.id}`, value: record.id, label: `Message ${record.id}`, detail: record.text.slice(0, 80) || "empty", summary: `${used.get(record.id) ?? 0} script use(s)`, compatibility: "Realmz-writable", sourceState: record.authored ? "Providence-authored" : "Preserved imported bytes", entity: { type: "message", id: `message:${record.id}` } });
     }
   }
-  if (code === 2) {
+  if ([2, 48, 56, 107].includes(code)) {
+    const used = usageCounts(project, [2, 48, 56, 107]);
     for (const record of project.battles ?? []) {
-      options.push({ key: `battle:${record.id}`, value: record.id, label: `Battle ${record.id}`, detail: `${record.grid.filter(Boolean).length} monster slot(s) | Realmz-writable`, entity: { type: "battle", id: `battle:${record.id}` } });
+      options.push({ key: `battle:${record.id}`, value: record.id, label: `Battle ${record.id}`, detail: `${record.grid.filter(Boolean).length} monster slot(s)`, summary: `messages ${record.messageBefore}/${record.messageAfter}, macro ${record.battleMacro}, ${used.get(record.id) ?? 0} script use(s)`, compatibility: "Realmz-writable", sourceState: record.authored ? "Providence-authored" : "Preserved imported bytes", entity: { type: "battle", id: `battle:${record.id}` } });
     }
   }
   if (code === 10) {
+    const used = usageCounts(project, [10]);
     for (const record of project.treasures ?? []) {
-      options.push({ key: `treasure:${record.id}`, value: record.id, label: `Treasure ${record.id}`, detail: `${record.itemIds.filter(Boolean).length} item(s) | Realmz-writable`, entity: { type: "record", id: `treasure:${record.id}` } });
+      options.push({ key: `treasure:${record.id}`, value: record.id, label: `Treasure ${record.id}`, detail: `${record.itemIds.filter(Boolean).length} item(s), ${record.gold} gold`, summary: `${record.exp} exp, ${used.get(record.id) ?? 0} script use(s)`, compatibility: "Realmz-writable", sourceState: record.authored ? "Providence-authored" : "Preserved imported bytes", entity: { type: "record", id: `treasure:${record.id}` } });
     }
   }
   if ([6, 49, 51].includes(code)) {
+    const used = usageCounts(project, [6, 49, 51]);
     for (const record of project.shops ?? []) {
-      options.push({ key: `shop:${record.id}`, value: record.id, label: `Shop ${record.id}`, detail: `${record.itemIds.filter(Boolean).length} stocked slot(s) | Realmz-writable`, entity: { type: "shop", id: `shop:${record.id}` } });
+      options.push({ key: `shop:${record.id}`, value: record.id, label: `Shop ${record.id}`, detail: `${record.itemIds.filter(Boolean).length} stocked slot(s), ${record.inflation}% inflation`, summary: `${used.get(record.id) ?? 0} script use(s)`, compatibility: "Realmz-writable", sourceState: record.authored ? "Providence-authored" : "Preserved imported bytes", entity: { type: "shop", id: `shop:${record.id}` } });
     }
   }
   if ([4, 35, 104].includes(code)) {
+    const used = usageCounts(project, [4, 35, 104]);
     for (const record of project.simpleEncounters ?? []) {
-      options.push({ key: `simple:${record.id}`, value: record.id, label: `Simple Encounter ${record.id}`, detail: `${record.actions.length} action(s) | Realmz-writable`, entity: { type: "encounter", id: `encounter:simple:${record.id}` } });
+      options.push({ key: `simple:${record.id}`, value: record.id, label: `Simple Encounter ${record.id}`, detail: `${record.actions.length} action(s), prompt ${record.prompt}`, summary: `${record.texts.find(Boolean) ?? "no text"} | ${used.get(record.id) ?? 0} script use(s)`, compatibility: "Realmz-writable", sourceState: record.authored ? "Providence-authored" : "Preserved imported bytes", entity: { type: "encounter", id: `encounter:simple:${record.id}` } });
     }
   }
   if ([5, 44].includes(code)) {
+    const used = usageCounts(project, [5, 44]);
     for (const record of project.complexEncounters ?? []) {
-      options.push({ key: `complex:${record.id}`, value: record.id, label: `Complex Encounter ${record.id}`, detail: `${record.actions.length} action(s) | Realmz-writable`, entity: { type: "encounter", id: `encounter:complex:${record.id}` } });
+      options.push({ key: `complex:${record.id}`, value: record.id, label: `Complex Encounter ${record.id}`, detail: `${record.actions.length} action(s), prompt ${record.prompt}`, summary: `${record.texts.find(Boolean) ?? "no text"} | ${used.get(record.id) ?? 0} script use(s)`, compatibility: "Realmz-writable", sourceState: record.authored ? "Providence-authored" : "Preserved imported bytes", entity: { type: "encounter", id: `encounter:complex:${record.id}` } });
     }
   }
   if (code === 47) {
@@ -202,6 +235,44 @@ function addTypedProjectTargets(project: Project, code: number, options: ScriptT
       options.push({ key: `quest:${quest.id}`, value: quest.id, label: quest.label, detail: quest.note || "Providence metadata; Realmz value is opcode-driven", entity: { type: "questFlag", id: `quest:${quest.id}` } });
     }
   }
+}
+
+function usageCounts(project: Project, opcodes: number[]) {
+  const codes = new Set(opcodes);
+  const counts = new Map<number, number>();
+  for (const trigger of project.triggers) {
+    for (const action of trigger.actions) {
+      if (!codes.has(normalizeStepOpcode(action.rawCode))) continue;
+      counts.set(action.id, (counts.get(action.id) ?? 0) + 1);
+    }
+  }
+  return counts;
+}
+
+function filterTargetOptions(options: ScriptTargetOption[], query: string) {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return options;
+  return options.filter((option) => [
+    option.value,
+    option.label,
+    option.detail,
+    option.summary,
+    option.compatibility,
+    option.sourceState
+  ].join(" ").toLowerCase().includes(normalized));
+}
+
+function createTargetButtonLabel(recordType: RealmzTargetRecordKind, id?: number) {
+  const labels: Record<RealmzTargetRecordKind, string> = {
+    message: "Message",
+    battle: "Battle",
+    treasure: "Treasure",
+    shop: "Shop",
+    simpleEncounter: "Simple Encounter",
+    complexEncounter: "Complex Encounter",
+    questLabel: "Quest Label"
+  };
+  return id != null ? `Create ${labels[recordType]} ${id}` : `Create Next ${labels[recordType]}`;
 }
 
 function entityMatchesOpcodeTarget(entity: SemanticEntity, code: number) {

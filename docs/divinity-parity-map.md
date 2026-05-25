@@ -63,13 +63,13 @@ Scripts are the first parity milestone because they drive most scenario behavior
 - Opcode authoring: category browser, search, descriptions, raw CODE/ID controls.
 - Target authoring: semantic pickers for messages, sounds, pictures, encounters, shops, treasures, maps, monsters, quest flags, and macros where decoded targets exist.
 - EDCD authoring: create/update/delete rows with named fields for known shapes.
-- Compatibility diagnostics: unknown opcode, missing target, missing/malformed EDCD, dangling macro, duplicate/out-of-range slot, invalid coordinate, and unusual chance values.
+- Compatibility diagnostics: unknown opcode, missing target, missing/malformed EDCD, missing decoded EDCD targets, dangling macro, duplicate/out-of-range slot, invalid coordinate, and unusual chance values.
 - Data ED3 policy: reachable rows become callable macros; non-reachable rows stay visible in ED3 Evidence until duplicated/promoted or proven reachable by source-backed links.
 - Dispatcher policy: active nonzero CODE values ignored by `newland.c` are reported as dispatcher no-ops, not unsupported behavior.
 
 ## Scripts V2 Contract
 
-Scripts V2 adds target record authoring around the script workbench. The implementation deliberately borrows Adventure Engine's visual scripting ergonomics, especially grouped step catalogs, ordered step lists, selected-step detail forms, typed target pickers, and inline per-field diagnostics. Providence keeps Realmz as the canonical runtime: descriptors map visual steps onto `CODE`, `ID`, optional `EDCD`, trigger headers, and fixed scenario target files.
+Scripts V2 adds target record authoring around the script workbench. The implementation deliberately borrows Adventure Engine's visual scripting ergonomics, especially grouped step catalogs, ordered step lists, selected-step detail forms, typed target pickers, docked/floating detail surfaces, and inline per-field diagnostics. Providence keeps Realmz as the canonical runtime: descriptors map visual steps onto `CODE`, `ID`, optional `EDCD`, trigger headers, and fixed scenario target files.
 
 New writable target families:
 
@@ -80,7 +80,7 @@ New writable target families:
 - `Data ED`: simple encounter shells.
 - `Data ED2`: complex encounter shells.
 
-See `docs/scripts-v2-authoring.md` for the author-facing workflow, including Action Point capacity, deletion-as-clear, macros vs ED3 evidence, target creation, and preserved imported bytes.
+See `docs/scripts-v2-authoring.md` for the author-facing workflow, including Action Point capacity, deletion-as-clear, focused/floating layout, macros vs ED3 evidence, EDCD-backed target creation, diagnostics smokes, and preserved imported bytes.
 
 ## Compatibility Rules
 

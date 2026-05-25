@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "desktop": "tauri dev",
+    "typecheck": "tsc --noEmit",
     "build": "vite build",
     "dist": "tauri build",
     "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml",
@@ -20,7 +21,10 @@
     "smoke:oracle:corpus:diagnose": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_corpus_diagnose.ps1",
     "smoke:oracle:corpus:triage": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_corpus_triage.ps1",
     "smoke:oracle:show": "powershell -ExecutionPolicy Bypass -File scripts/show_oracle_run.ps1",
-    "check": "npm run build && npm run test:rust"
+    "smoke:editor": "powershell -ExecutionPolicy Bypass -File scripts/run_editor_smoke_matrix.ps1",
+    "smoke:editor:scripts-v2": "powershell -ExecutionPolicy Bypass -File scripts/run_scripts_v2_editor_smoke.ps1",
+    "smoke:editor:scripts-v2:diagnostics": "powershell -ExecutionPolicy Bypass -File scripts/run_scripts_v2_diagnostics_smoke.ps1",
+    "check": "npm run typecheck && npm run build && npm run test:rust"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",

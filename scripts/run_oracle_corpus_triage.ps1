@@ -244,6 +244,8 @@ function Invoke-OracleTriageLane {
     [string[]]@($gameplayMarkers | Where-Object { $_ -like "*dialog state*" })
   }
   $modalMarkers = [string[]]@($gameplayMarkers | Where-Object { $_ -like "*oracle gameplay modal*" })
+  $autoAckMarkers = [string[]]@($modalMarkers | Where-Object { $_ -like "*phase=auto-ack*" })
+  $autoChoiceMarkers = [string[]]@($modalMarkers | Where-Object { $_ -like "*phase=auto-choice*" })
   $fatalMarkers = if ($classicResult) { [string[]]@($classicResult.FoundBadMarkers | ForEach-Object { [string]$_ }) } else { [string[]]@() }
   $gameplayResult = if ($classicResult) { $classicResult.GameplayResult } else { $null }
   $timeoutArtifacts = if ($gameplayResult -and ($gameplayResult.PSObject.Properties.Name -contains "TimeoutArtifacts")) { $gameplayResult.TimeoutArtifacts } else { $null }
@@ -252,6 +254,8 @@ function Invoke-OracleTriageLane {
   $lastGameplayMarker = Get-LastOracleItem -Items $gameplayMarkers
   $lastDialogState = Get-LastOracleItem -Items $dialogStateMarkers
   $lastModalMarker = Get-LastOracleItem -Items $modalMarkers
+  $lastAutoAckMarker = Get-LastOracleItem -Items $autoAckMarkers
+  $lastAutoChoiceMarker = Get-LastOracleItem -Items $autoChoiceMarkers
   $parsed = Parse-OracleNewlandMarker -Marker $lastActionMarker
 
   return [pscustomobject]@{
@@ -276,6 +280,10 @@ function Invoke-OracleTriageLane {
     lastNewlandMarker = $lastNewlandMarker
     lastActionMarker = $lastActionMarker
     lastModalMarker = $lastModalMarker
+    lastAutoAckMarker = $lastAutoAckMarker
+    autoAckMarkers = @($autoAckMarkers)
+    lastAutoChoiceMarker = $lastAutoChoiceMarker
+    autoChoiceMarkers = @($autoChoiceMarkers)
     dialogState = $lastDialogState
     timeoutArtifacts = $timeoutArtifacts
     blocking = $parsed
@@ -302,8 +310,10 @@ function Classify-OracleTriageScenario {
   }
   $blocking = if ($evidenceLane) { $evidenceLane.blocking } else { Parse-OracleNewlandMarker -Marker $null }
   $combinedText = (@($Lanes | ForEach-Object {
-    "$($_.lastActionMarker)`n$($_.lastModalMarker)`n$($_.dialogState)`n$($_.error)"
+    "$($_.lastActionMarker)`n$($_.lastModalMarker)`n$($_.lastAutoAckMarker)`n$($_.lastAutoChoiceMarker)`n$($_.dialogState)`n$($_.error)"
   }) -join "`n")
+  $autoAckCount = @($Lanes | Where-Object { @($_.autoAckMarkers).Count -gt 0 }).Count
+  $autoChoiceCount = @($Lanes | Where-Object { @($_.autoChoiceMarkers).Count -gt 0 }).Count
 
   if (@($Lanes | Where-Object { @($_.fatalMarkers).Count -gt 0 }).Count -gt 0) {
     return [pscustomobject]@{
@@ -344,6 +354,24 @@ function Classify-OracleTriageScenario {
   }
 
   if (@($Lanes | Where-Object { $_.ok }).Count -eq $Lanes.Count -and $Lanes.Count -gt 0) {
+    if ($autoChoiceCount -gt 0) {
+      return [pscustomobject]@{
+        classification = "fixed-by-auto-choice"
+        confidence = "high"
+        recommendedNextAction = "Run the full corpus matrix; if it stays green, update the baseline expected outcome for this scenario."
+        blocking = $blocking
+        evidenceLane = if ($evidenceLane) { $evidenceLane.lane } else { $null }
+      }
+    }
+    if ($autoAckCount -gt 0) {
+      return [pscustomobject]@{
+        classification = "fixed-by-auto-ack"
+        confidence = "high"
+        recommendedNextAction = "Run the full corpus matrix; if it stays green, update the baseline expected outcome for this scenario."
+        blocking = $blocking
+        evidenceLane = if ($evidenceLane) { $evidenceLane.lane } else { $null }
+      }
+    }
     return [pscustomobject]@{
       classification = "not-reproduced"
       confidence = "medium"
@@ -392,6 +420,9 @@ if (-not [string]::IsNullOrWhiteSpace($Scenario)) {
 } elseif ($AllExpectedFailures) {
   $allEntries = Get-OracleCorpusScenarioEntries -Baseline $baseline -CorpusRoot $corpusRootResolved
   $entries = @($allEntries | Where-Object { -not [bool]$_.Baseline.expectedOk -and $triageScenarioNames -contains [string]$_.Name })
+  if ($entries.Count -eq 0) {
+    $entries = @($allEntries | Where-Object { $triageScenarioNames -contains [string]$_.Name })
+  }
 } else {
   $allEntries = Get-OracleCorpusScenarioEntries -Baseline $baseline -CorpusRoot $corpusRootResolved
   $entries = @($allEntries | Where-Object { $triageScenarioNames -contains [string]$_.Name })
@@ -523,6 +554,11 @@ foreach ($prepared in $preparedRuns) {
     evidenceLane = $classification.evidenceLane
     lastClassicPhase = if ($classification.evidenceLane) { (Get-OracleLane -Lanes $lanes -Name $classification.evidenceLane).lastGameplayMarker } else { $null }
     lastNewlandMarker = if ($classification.evidenceLane) { (Get-OracleLane -Lanes $lanes -Name $classification.evidenceLane).lastNewlandMarker } else { $null }
+    lastModalMarker = if ($classification.evidenceLane) { (Get-OracleLane -Lanes $lanes -Name $classification.evidenceLane).lastModalMarker } else { $null }
+    lastAutoAckMarker = if ($classification.evidenceLane) { (Get-OracleLane -Lanes $lanes -Name $classification.evidenceLane).lastAutoAckMarker } else { $null }
+    autoAckMarkers = @($lanes | ForEach-Object { @($_.autoAckMarkers) } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    lastAutoChoiceMarker = if ($classification.evidenceLane) { (Get-OracleLane -Lanes $lanes -Name $classification.evidenceLane).lastAutoChoiceMarker } else { $null }
+    autoChoiceMarkers = @($lanes | ForEach-Object { @($_.autoChoiceMarkers) } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
     dialogState = if ($classification.evidenceLane) { (Get-OracleLane -Lanes $lanes -Name $classification.evidenceLane).dialogState } else { $null }
     sourceExportDiff = $diffPath
     sourceExportDiffSummary = [ordered]@{

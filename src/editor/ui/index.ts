@@ -1,7 +1,9 @@
 export {
   EmptyState,
+  CollapsibleSection,
   EntityRow,
   FieldRow,
+  FloatingWorkbenchPanel,
   HelpBubble,
   IssueGroup,
   LinkChip,
@@ -13,8 +15,10 @@ export {
 
 export type {
   EmptyStateProps,
+  CollapsibleSectionProps,
   EntityRowProps,
   FieldRowProps,
+  FloatingWorkbenchPanelProps,
   HelpBubbleProps,
   HelpBubbleSide,
   IssueGroupProps,

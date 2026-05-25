@@ -597,28 +597,31 @@ fn add_record_slots(catalog: &mut LibraryCatalog, source: &LibrarySource, bytes:
             ]),
         });
     }
-    for index in 0..full.min(512) {
+    let limit = if entity_type == "item" {
+        full.min(1000)
+    } else {
+        full.min(512)
+    };
+    for index in 0..limit {
         let start = index * record_bytes;
+        let record = &bytes[start..start + record_bytes];
         let record_id = format!(
             "{}:{}:{}",
             source.source_kind.record_prefix(),
             entity_type,
             index
         );
+        let record_summary = library_record_summary(entity_type, index, record_bytes, record);
+        let record_label = library_record_label(entity_type, index, &record_summary);
         catalog.records.push(LibraryRecord {
             id: record_id.clone(),
             source: source.id.clone(),
             record_type: entity_type.to_string(),
-            label: format!("{} {}", title(entity_type), index),
+            label: record_label.clone(),
             edit_state: SemanticEditState::InspectOnly,
             byte_range: Some(byte_range(start, record_bytes)),
             confidence: Confidence::Inferred,
-            summary: summary([
-                ("index", json!(index)),
-                ("recordBytes", json!(record_bytes)),
-                ("preview", json!(hex_preview(&bytes[start..start + record_bytes], 20))),
-                ("note", json!("Library record slot is inventoried; full field taxonomy remains future work.")),
-            ]),
+            summary: record_summary.clone(),
         });
         catalog.entities.push(LibraryEntity {
             id: format!(
@@ -628,16 +631,12 @@ fn add_record_slots(catalog: &mut LibraryCatalog, source: &LibrarySource, bytes:
                 index
             ),
             entity_type: entity_type.to_string(),
-            label: format!("{} {}", title(entity_type), index),
+            label: record_label,
             source: source.id.clone(),
             record_ref: Some(record_id),
             edit_state: SemanticEditState::InspectOnly,
             confidence: Confidence::Inferred,
-            summary: summary([
-                ("index", json!(index)),
-                ("sourceFile", json!(source.relative_path)),
-                ("recordBytes", json!(record_bytes)),
-            ]),
+            summary: record_summary,
         });
     }
 }
@@ -716,13 +715,106 @@ fn resource_mime_type(resource_type: &str) -> &'static str {
 fn library_record_layout(source: &LibrarySource) -> Option<(&'static str, usize)> {
     match source.name.as_str() {
         "Monster Scrap Book" => Some(("monster-scrapbook-entry", 210)),
-        "Data ID" => Some(("item", 400)),
+        "Data ID" => Some(("item", 80)),
         "Data Race" => Some(("race", 288)),
         "Data Caste" => Some(("caste", 288)),
         "Data Spell" => Some(("spell", 112)),
         "Data S" => Some(("spell", 126)),
         _ => None,
     }
+}
+
+fn library_record_summary(
+    entity_type: &str,
+    index: usize,
+    record_bytes: usize,
+    record: &[u8],
+) -> BTreeMap<String, Value> {
+    let mut out = summary([
+        ("index", json!(index)),
+        ("recordBytes", json!(record_bytes)),
+        ("preview", json!(hex_preview(record, 20))),
+        (
+            "note",
+            json!("Library record slot is inventoried; unsupported fields remain preserved in the source catalog."),
+        ),
+    ]);
+    if entity_type == "item" && record.len() >= 80 {
+        out.extend(item_record_summary(index, record));
+    }
+    out
+}
+
+fn library_record_label(
+    entity_type: &str,
+    index: usize,
+    summary: &BTreeMap<String, Value>,
+) -> String {
+    if entity_type == "item" {
+        if let Some(item_id) = summary.get("itemId").and_then(Value::as_i64) {
+            let category = summary
+                .get("category")
+                .and_then(Value::as_str)
+                .unwrap_or("Item");
+            return format!("{category} {item_id}");
+        }
+    }
+    format!("{} {}", title(entity_type), index)
+}
+
+fn item_record_summary(index: usize, record: &[u8]) -> BTreeMap<String, Value> {
+    let category_index = index / 200;
+    let category_slot = index % 200;
+    let category = match category_index {
+        0 => "Weapon",
+        1 => "Armor",
+        2 => "Shield/Helm",
+        3 => "Magic",
+        4 => "Supply",
+        _ => "Item",
+    };
+    let fallback_id = category_index * 200 + category_slot;
+    let stored_id = i16_be(record, 2);
+    let item_id = if stored_id != 0 {
+        stored_id
+    } else {
+        fallback_id as i16
+    };
+    summary([
+        ("itemId", json!(item_id)),
+        ("category", json!(category)),
+        ("categorySlot", json!(category_slot)),
+        ("st", json!(i16_be(record, 0))),
+        ("iconId", json!(i16_be(record, 4))),
+        ("type", json!(i16_be(record, 6))),
+        ("blunt", json!(i16_be(record, 8))),
+        ("hands", json!(i16_be(record, 10))),
+        ("lu", json!(i16_be(record, 12))),
+        ("movement", json!(i16_be(record, 14))),
+        ("ac", json!(i16_be(record, 16))),
+        ("magicResistance", json!(i16_be(record, 18))),
+        ("damage", json!(i16_be(record, 20))),
+        ("spellPoints", json!(i16_be(record, 22))),
+        ("sound", json!(i16_be(record, 24))),
+        ("weight", json!(i16_be(record, 26))),
+        ("cost", json!(i16_be(record, 28))),
+        ("charge", json!(i16_be(record, 30))),
+        ("cursedItemId", json!(i16_be(record, 32))),
+        ("magical", json!(i16_be(record, 34))),
+        ("itemCat0", json!(i32_be(record, 36))),
+        ("itemCat1", json!(i32_be(record, 40))),
+        ("raceRestrictions", json!(i16_be(record, 44))),
+        ("casteRestrictions", json!(i16_be(record, 46))),
+        ("specificRace", json!(i16_be(record, 48))),
+        ("specificCaste", json!(i16_be(record, 50))),
+        ("raceClassOnly", json!(i16_be(record, 52))),
+        ("casteClassOnly", json!(i16_be(record, 54))),
+        ("vSmall", json!(i16_be(record, 70))),
+        ("vLarge", json!(i16_be(record, 72))),
+        ("heat", json!(i16_be(record, 74))),
+        ("cold", json!(i16_be(record, 76))),
+        ("electric", json!(i16_be(record, 78))),
+    ])
 }
 
 fn library_role(path: &Path) -> String {
@@ -1027,6 +1119,19 @@ fn hex_preview(buffer: &[u8], limit: usize) -> String {
         .join(" ")
 }
 
+fn i16_be(buffer: &[u8], offset: usize) -> i16 {
+    i16::from_be_bytes([buffer[offset], buffer[offset + 1]])
+}
+
+fn i32_be(buffer: &[u8], offset: usize) -> i32 {
+    i32::from_be_bytes([
+        buffer[offset],
+        buffer[offset + 1],
+        buffer[offset + 2],
+        buffer[offset + 3],
+    ])
+}
+
 fn title(value: &str) -> String {
     let mut chars = value.chars();
     match chars.next() {
@@ -1046,6 +1151,19 @@ fn timestamp() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn write_i16(bytes: &mut [u8], offset: usize, value: i16) {
+        bytes[offset..offset + 2].copy_from_slice(&value.to_be_bytes());
+    }
+
+    fn item_record(item_id: i16, icon_id: i16, damage: i16, cost: i16) -> Vec<u8> {
+        let mut bytes = vec![0u8; 80];
+        write_i16(&mut bytes, 2, item_id);
+        write_i16(&mut bytes, 4, icon_id);
+        write_i16(&mut bytes, 20, damage);
+        write_i16(&mut bytes, 28, cost);
+        bytes
+    }
 
     #[test]
     fn divinity_import_builds_managed_catalog() {
@@ -1110,6 +1228,33 @@ mod tests {
         assert!(entity_types.contains("spell"));
         assert!(entity_types.contains("race"));
         assert!(entity_types.contains("caste"));
+    }
+
+    #[test]
+    fn realmz_reference_import_decodes_item_catalog_records() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let source = temp.path().join("Data Files");
+        fs::create_dir_all(&source).expect("source");
+        let mut data_id = Vec::new();
+        data_id.extend(item_record(12, 345, 9, 1250));
+        data_id.extend(item_record(0, 0, 0, 0));
+        fs::write(source.join("Data ID"), data_id).expect("items");
+        let workspace = temp.path().join("workspace");
+
+        let catalog = import_realmz_reference_data(&source, &workspace).expect("import");
+        let item = catalog
+            .entities
+            .iter()
+            .find(|entity| entity.entity_type == "item")
+            .expect("item entity");
+
+        assert_eq!(item.label, "Weapon 12");
+        assert_eq!(item.summary.get("recordBytes"), Some(&json!(80)));
+        assert_eq!(item.summary.get("itemId"), Some(&json!(12)));
+        assert_eq!(item.summary.get("category"), Some(&json!("Weapon")));
+        assert_eq!(item.summary.get("iconId"), Some(&json!(345)));
+        assert_eq!(item.summary.get("damage"), Some(&json!(9)));
+        assert_eq!(item.summary.get("cost"), Some(&json!(1250)));
     }
 
     #[test]

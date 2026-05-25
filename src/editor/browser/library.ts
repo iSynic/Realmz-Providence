@@ -312,28 +312,32 @@ function addRecordSlots(
       data: { recordBytes, trailingBytes: trailing }
     });
   }
-  for (let index = 0; index < Math.min(full, 512); index += 1) {
+  const limit = type === "item" ? Math.min(full, 1000) : Math.min(full, 512);
+  for (let index = 0; index < limit; index += 1) {
     const start = index * recordBytes;
+    const record = file.bytes.slice(start, start + recordBytes);
     const recordId = `library-record:${sourceKind}:${type}:${index}`;
+    const summary = recordSummary(type, index, recordBytes, record);
+    const label = recordLabel(type, index, summary);
     records.push({
       id: recordId,
       source: sourceId,
       type,
-      label: `${title(type)} ${index}`,
+      label,
       editState: "inspect-only",
       byteRange: { start, length: recordBytes, endExclusive: start + recordBytes },
       confidence,
-      summary: { index, recordBytes, preview: hexPreview(file.bytes.slice(start, start + recordBytes), 20) }
+      summary
     });
     entities.push({
       id: `library-entity:${sourceKind}:${type}:${index}`,
       type,
-      label: `${title(type)} ${index}`,
+      label,
       source: sourceId,
       recordRef: recordId,
       editState: "inspect-only",
       confidence,
-      summary: { index, sourceFile: file.relativePath, recordBytes }
+      summary: { ...summary, sourceFile: file.relativePath }
     });
   }
 }
@@ -671,12 +675,94 @@ function family(name: string, entityType: string, label: string) {
 
 function recordLayout(name: string): [string, number] | null {
   if (name === "Monster Scrap Book") return ["monster-scrapbook-entry", 210];
-  if (name === "Data ID") return ["item", 400];
+  if (name === "Data ID") return ["item", 80];
   if (name === "Data Race") return ["race", 288];
   if (name === "Data Caste") return ["caste", 288];
   if (name === "Data Spell") return ["spell", 112];
   if (name === "Data S") return ["spell", 126];
   return null;
+}
+
+function recordSummary(type: string, index: number, recordBytes: number, record: Uint8Array) {
+  const summary: Record<string, unknown> = {
+    index,
+    recordBytes,
+    preview: hexPreview(record, 20),
+    note: "Library record slot is inventoried; unsupported fields remain preserved in the source catalog."
+  };
+  if (type === "item" && record.byteLength >= 80) {
+    Object.assign(summary, itemRecordSummary(index, record));
+  }
+  return summary;
+}
+
+function recordLabel(type: string, index: number, summary: Record<string, unknown>) {
+  if (type === "item" && typeof summary.itemId === "number") {
+    const category = typeof summary.category === "string" ? summary.category : "Item";
+    return `${category} ${summary.itemId}`;
+  }
+  return `${title(type)} ${index}`;
+}
+
+function itemRecordSummary(index: number, record: Uint8Array) {
+  const categoryIndex = Math.floor(index / 200);
+  const categorySlot = index % 200;
+  const category = itemCategory(categoryIndex);
+  const fallbackId = categoryIndex * 200 + categorySlot;
+  const storedId = i16At(record, 2);
+  const itemId = storedId !== 0 ? storedId : fallbackId;
+  return {
+    itemId,
+    category,
+    categorySlot,
+    st: i16At(record, 0),
+    iconId: i16At(record, 4),
+    type: i16At(record, 6),
+    blunt: i16At(record, 8),
+    hands: i16At(record, 10),
+    lu: i16At(record, 12),
+    movement: i16At(record, 14),
+    ac: i16At(record, 16),
+    magicResistance: i16At(record, 18),
+    damage: i16At(record, 20),
+    spellPoints: i16At(record, 22),
+    sound: i16At(record, 24),
+    weight: i16At(record, 26),
+    cost: i16At(record, 28),
+    charge: i16At(record, 30),
+    cursedItemId: i16At(record, 32),
+    magical: i16At(record, 34),
+    itemCat0: i32At(record, 36),
+    itemCat1: i32At(record, 40),
+    raceRestrictions: i16At(record, 44),
+    casteRestrictions: i16At(record, 46),
+    specificRace: i16At(record, 48),
+    specificCaste: i16At(record, 50),
+    raceClassOnly: i16At(record, 52),
+    casteClassOnly: i16At(record, 54),
+    vSmall: i16At(record, 70),
+    vLarge: i16At(record, 72),
+    heat: i16At(record, 74),
+    cold: i16At(record, 76),
+    electric: i16At(record, 78)
+  };
+}
+
+function itemCategory(categoryIndex: number) {
+  switch (categoryIndex) {
+    case 0:
+      return "Weapon";
+    case 1:
+      return "Armor";
+    case 2:
+      return "Shield/Helm";
+    case 3:
+      return "Magic";
+    case 4:
+      return "Supply";
+    default:
+      return "Item";
+  }
 }
 
 function roleForFile(name: string) {
@@ -722,6 +808,12 @@ function u32At(bytes: Uint8Array, offset: number) {
     (bytes[offset + 2] ?? 0) * 0x100 +
     (bytes[offset + 3] ?? 0)
   );
+}
+
+function i32At(bytes: Uint8Array, offset: number) {
+  const value = u32At(bytes, offset);
+  if (value === null) return 0;
+  return value >= 0x80000000 ? value - 0x100000000 : value;
 }
 
 function u16At(bytes: Uint8Array, offset: number) {

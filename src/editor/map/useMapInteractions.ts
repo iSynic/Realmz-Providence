@@ -12,6 +12,8 @@ import {
 } from "../types";
 import { cellFromCanvasPoint, mapTileIndex, tileValueAt } from "./geometry";
 import { hitTestMapTarget } from "./hitTest";
+import { nextActionPointRecordIndex } from "../actionPointCapacity";
+import { selectEntityFromId, triggerEntityId } from "../utils";
 
 export function useMapInteractions({
   map,
@@ -126,6 +128,7 @@ export function useMapInteractions({
         onSelectEntity(hit.entity);
         return;
       }
+      const recordIndex = nextActionPointRecordIndex(triggers, map.levelType, map.index);
       onApplyCommand({
         kind: "createActionPoint",
         label: `Create Action Point ${cell.x},${cell.y}`,
@@ -134,6 +137,10 @@ export function useMapInteractions({
         x: cell.x,
         y: cell.y
       });
+      if (recordIndex != null) {
+        const source = map.levelType === "land" ? "Data DD" : "Data DDD";
+        onSelectEntity(selectEntityFromId(triggerEntityId(map.levelType, map.index, recordIndex, source)));
+      }
       return;
     }
     if (activeTool === "select") {

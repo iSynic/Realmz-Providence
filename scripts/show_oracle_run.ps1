@@ -72,10 +72,10 @@ function Get-SummaryPaths {
 
 function New-OracleReportRow {
   param([string]$SummaryPath)
-  $summary = Read-JsonFile -Path $SummaryPath
+    $summary = Read-JsonFile -Path $SummaryPath
   if ($summary -and ($summary.PSObject.Properties.Name -contains "classification")) {
     $laneSummaries = [string[]]@($summary.lanes | ForEach-Object {
-      "$($_.lane):ok=$($_.ok):profile=$($_.profileKind):source=$($_.sourceKind):opcode=$($_.blocking.opcode):id=$($_.blocking.id)"
+      "$($_.lane):ok=$($_.ok):profile=$($_.profileKind):source=$($_.sourceKind):opcode=$($_.blocking.opcode):id=$($_.blocking.id):autoAck=$(@($_.autoAckMarkers).Count):autoChoice=$(@($_.autoChoiceMarkers).Count)"
     })
     $timeoutArtifacts = [string[]]@($summary.lanes | ForEach-Object {
       if ($_.timeoutArtifacts) {
@@ -151,6 +151,10 @@ function New-OracleReportRow {
       TriageBlocking = "opcode=$($summary.blockingOpcode) id=$($summary.blockingId) coord=$($summary.blockingCoordinate) door=$($summary.blockingDoor) slot=$($summary.blockingSlot)"
       TriageLanes = $laneSummaries
       TriageDiff = $summary.sourceExportDiff
+      TriageAutoAck = [string[]]@($summary.autoAckMarkers | ForEach-Object { [string]$_ })
+      TriageLastAutoAck = $summary.lastAutoAckMarker
+      TriageAutoChoice = [string[]]@($summary.autoChoiceMarkers | ForEach-Object { [string]$_ })
+      TriageLastAutoChoice = $summary.lastAutoChoiceMarker
       TriageRecommendedNextAction = $summary.recommendedNextAction
     }
   }
@@ -341,6 +345,8 @@ if ($Json) {
       Write-Host "  triageBlocking: $(Format-Nullable $report.TriageBlocking)"
       Write-Host "  triageLanes: $(Format-Nullable $report.TriageLanes)"
       Write-Host "  triageDiff: $(Format-Nullable $report.TriageDiff)"
+      Write-Host "  triageAutoAck: last=$(Format-Nullable $report.TriageLastAutoAck) markers=$(Format-Nullable $report.TriageAutoAck)"
+      Write-Host "  triageAutoChoice: last=$(Format-Nullable $report.TriageLastAutoChoice) markers=$(Format-Nullable $report.TriageAutoChoice)"
       Write-Host "  triageNext: $(Format-Nullable $report.TriageRecommendedNextAction)"
     }
     Write-Host "  error: $(Format-Nullable $report.Error)"

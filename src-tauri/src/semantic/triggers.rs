@@ -222,7 +222,10 @@ fn add_action_slot_entities(
                     source: Some(trigger.source.clone()),
                     message: format!(
                         "{} action slot {} references missing {} {}",
-                        trigger.id, action.slot, target.kind, action.id
+                        trigger.id,
+                        action.slot,
+                        target.kind,
+                        target_display_id(&target.id).unwrap_or(&target.id)
                     ),
                     data: summary([
                         ("trigger", json!(trigger.id)),
@@ -273,6 +276,10 @@ fn add_action_slot_entities(
     }
 }
 
+fn target_display_id(target_id: &str) -> Option<&str> {
+    target_id.rsplit_once(':').map(|(_, id)| id)
+}
+
 fn trigger_record_id(trigger: &TriggerRecord) -> String {
     if trigger.source == "Data ED3" {
         format!("record:Data ED3:{}", trigger.record_index)
@@ -319,5 +326,18 @@ fn trigger_label(trigger: &TriggerRecord) -> String {
             trigger.level_index.unwrap_or(0),
             trigger.record_index
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn target_display_id_uses_decoded_semantic_target() {
+        assert_eq!(target_display_id("message:30000"), Some("30000"));
+        assert_eq!(target_display_id("encounter:complex:19"), Some("19"));
+        assert_eq!(target_display_id("monster:145"), Some("145"));
+        assert_eq!(target_display_id("macro"), None);
     }
 }

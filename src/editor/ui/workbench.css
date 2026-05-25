@@ -17,6 +17,137 @@
   background: #171b20;
 }
 
+.workbench-collapsible-section .workbench-panel-section-header {
+  align-items: center;
+}
+
+.workbench-collapse-toggle {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.workbench-collapse-toggle svg {
+  flex: 0 0 auto;
+  color: #8fa9bd;
+  transition: transform 0.12s ease;
+}
+
+.workbench-collapsible-section.is-collapsed .workbench-collapse-toggle svg {
+  transform: rotate(-90deg);
+}
+
+.workbench-collapse-toggle span {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.workbench-collapse-toggle em {
+  color: #7e8b98;
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.workbench-collapsible-section.tone-warning {
+  border-color: #6b5629;
+}
+
+.workbench-collapsible-section.tone-danger {
+  border-color: #7d3440;
+}
+
+.workbench-floating-panel {
+  position: fixed;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #334657;
+  border-radius: 7px;
+  background: #10161d;
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.62), 0 0 0 1px rgba(83, 135, 180, 0.12);
+}
+
+.workbench-floating-panel-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  padding: 6px 9px;
+  border-bottom: 1px solid #26333f;
+  background: #151d25;
+  cursor: move;
+  user-select: none;
+}
+
+.workbench-floating-panel-header > div:first-child {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.workbench-floating-panel-header span {
+  color: #7990a5;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.55px;
+  text-transform: uppercase;
+}
+
+.workbench-floating-panel-header strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #edf5ff;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workbench-floating-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.workbench-floating-panel-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 9px;
+}
+
+.workbench-floating-panel-resize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 18px;
+  height: 18px;
+  border: 0;
+  background:
+    linear-gradient(135deg, transparent 50%, rgba(126, 174, 223, 0.18) 50%),
+    linear-gradient(135deg, transparent 62%, rgba(126, 174, 223, 0.35) 62%);
+  cursor: nwse-resize;
+}
+
+.workbench-floating-panel-resize:hover {
+  background:
+    linear-gradient(135deg, transparent 50%, rgba(126, 174, 223, 0.28) 50%),
+    linear-gradient(135deg, transparent 62%, rgba(126, 174, 223, 0.55) 62%);
+}
+
 .workbench-panel-section-header > div:first-child {
   min-width: 0;
   display: grid;

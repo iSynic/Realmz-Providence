@@ -283,13 +283,23 @@ function New-OracleGameplayDiagnostics {
     [bool]$TraceStart = $true,
     [bool]$TraceActions = $true,
     [bool]$TraceRender = $true,
-    [bool]$CaptureOnTimeout = $true
+    [bool]$CaptureOnTimeout = $true,
+    [bool]$AutoAckTextboxes = $false,
+    [bool]$AutoAckFlashMessages = $false,
+    [bool]$AutoChooseEncounters = $false,
+    [bool]$AutoChooseTreasure = $false,
+    [int]$AutoChoiceIndex = 1
   )
   return [ordered]@{
     traceStart = $TraceStart
     traceActions = $TraceActions
     traceRender = $TraceRender
     captureOnTimeout = $CaptureOnTimeout
+    autoAckTextboxes = $AutoAckTextboxes
+    autoAckFlashMessages = $AutoAckFlashMessages
+    autoChooseEncounters = $AutoChooseEncounters
+    autoChooseTreasure = $AutoChooseTreasure
+    autoChoiceIndex = $AutoChoiceIndex
   }
 }
 
@@ -576,7 +586,7 @@ function New-OracleCorpusFixtureDefinition {
   $diagnosticOwner = if ($BaselineEntry.diagnosticOwner) { [string]$BaselineEntry.diagnosticOwner } else { $null }
   $markerNotes = if ($BaselineEntry.markerNotes) { [string]$BaselineEntry.markerNotes } else { $null }
   $suspectedCause = if ($BaselineEntry.suspectedCause) { [string]$BaselineEntry.suspectedCause } else { $null }
-  $diagnostics = New-OracleGameplayDiagnostics
+  $diagnostics = New-OracleGameplayDiagnostics -AutoAckTextboxes $true -AutoAckFlashMessages $true -AutoChooseEncounters $true -AutoChooseTreasure $true -AutoChoiceIndex 1
   $scenarioAssert = [ordered]@{
     scenarioNameContains = $ScenarioName
     partyCountAtLeast = 2

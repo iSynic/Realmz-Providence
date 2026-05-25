@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { ENTITY_TYPE_LABELS } from "../constants";
 import { loadBrowserBundledLibraryAssetPreview } from "../browser/library";
 import { isDraftEntity, LibraryDraftSpec } from "../libraryDrafts";
-import { EditorTab, LibraryAsset, LibraryCatalog, LibraryEntity, ManagedAssetKind, Project, SemanticEntity, SelectedEntity } from "../types";
+import { EditorTab, LibraryAsset, LibraryCatalog, LibraryEntity, ManagedAssetKind, Project, ProjectCommand, RealmzTargetRecordKind, SemanticEntity, SelectedEntity } from "../types";
 import { selectEntityFromId } from "../utils";
 import { ScrollArea } from "../ui";
 import { renderListKey } from "../renderKeys";
+import { TargetRecordEditor } from "./ScriptsPanel";
 
 const DOMAIN_CONFIG: Record<EditorTab, { title: string; subtitle: string; editors: DomainEditor[] }> = {
   maps: {
@@ -132,6 +133,7 @@ export function SuiteDomainPanel({
   catalog,
   selectedEntity,
   onSelectEntity,
+  onApplyCommand,
   onCreateDraft,
   onUpdateDraft
 }: {
@@ -141,6 +143,7 @@ export function SuiteDomainPanel({
   catalog: LibraryCatalog | null;
   selectedEntity: SelectedEntity | null;
   onSelectEntity: (entity: SelectedEntity) => void;
+  onApplyCommand?: (command: ProjectCommand) => void;
   onCreateDraft?: (spec: LibraryDraftSpec) => void;
   onUpdateDraft?: (entityId: string, changes: { label?: string; notes?: string }) => void;
 }) {
@@ -162,6 +165,30 @@ export function SuiteDomainPanel({
     libraryEntities.find((entity) => entity.id === selectedEntity?.id) ??
     allRecords.find((record) => record.id === selectedEntity?.id) ??
     null;
+  const targetRecordTypes = project ? targetRecordTypesForEditor(tab, activeEditor) : [];
+  const focusedTargetEditor = targetRecordTypes.length > 0 && activeEditor !== "domain";
+  const selectedTargetRecordType = selectedTargetRecordTypeFromEntity(selectedEntity?.id ?? "", targetRecordTypes);
+  const [overviewTargetRecordType, setOverviewTargetRecordType] = useState<RealmzTargetRecordKind | null>(() => readStoredOverviewTargetRecordType(tab));
+  useEffect(() => {
+    if (targetRecordTypes.length === 0) return;
+    setOverviewTargetRecordType((current) => {
+      const stored = readStoredOverviewTargetRecordType(tab);
+      const next =
+        selectedTargetRecordType ??
+        (current && targetRecordTypes.includes(current) ? current : null) ??
+        (stored && targetRecordTypes.includes(stored) ? stored : null) ??
+        targetRecordTypes[0];
+      return current === next ? current : next;
+    });
+  }, [activeEditor, selectedTargetRecordType, tab, targetRecordTypes.join("|")]);
+  useEffect(() => {
+    if (!overviewTargetRecordType || !targetRecordTypes.includes(overviewTargetRecordType)) return;
+    writeStoredOverviewTargetRecordType(tab, overviewTargetRecordType);
+  }, [overviewTargetRecordType, tab, targetRecordTypes]);
+  const visibleTargetRecordTypes =
+    focusedTargetEditor ? targetRecordTypes :
+    overviewTargetRecordType && targetRecordTypes.includes(overviewTargetRecordType) ? [overviewTargetRecordType] :
+    targetRecordTypes.slice(0, 1);
   return (
     <section className="domain-workbench">
       <header className="domain-header">
@@ -173,6 +200,29 @@ export function SuiteDomainPanel({
       </header>
       <div className="domain-main-layout">
         <div className="domain-main-column">
+      {project && targetRecordTypes.length > 0 && (
+        <div className="domain-target-stack">
+          {!focusedTargetEditor && targetRecordTypes.length > 1 && (
+            <DomainTargetSwitcher
+              project={project}
+              recordTypes={targetRecordTypes}
+              selectedRecordType={visibleTargetRecordTypes[0] ?? targetRecordTypes[0]}
+              onSelectRecordType={setOverviewTargetRecordType}
+            />
+          )}
+          {visibleTargetRecordTypes.map((recordType) => (
+            <TargetRecordWorkbench
+              key={recordType}
+              project={project}
+              catalog={catalog}
+              recordType={recordType}
+              selectedEntity={selectedEntity}
+              onSelectEntity={onSelectEntity}
+              onApplyCommand={onApplyCommand}
+            />
+          ))}
+        </div>
+      )}
       {tab === "records" && (
         <div className="domain-editor-grid">
           <article className="domain-editor-card">
@@ -211,7 +261,7 @@ export function SuiteDomainPanel({
         </div>
       )}
       <div className="domain-editor-grid">
-        {tab !== "records" && tab !== "linter" && visibleEditors.map((editor) => {
+        {tab !== "records" && tab !== "linter" && !focusedTargetEditor && visibleEditors.map((editor) => {
           const matches = matchingEntities(editor, projectEntities, libraryEntities);
           return (
             <article key={editor.id} className="domain-editor-card">
@@ -252,6 +302,219 @@ function matchingEntities(editor: DomainEditor, projectEntities: SemanticEntity[
   const projectMatches = projectEntities.filter((entity) => wanted.has(entity.type));
   const libraryMatches = libraryEntities.filter((entity) => wanted.has(entity.type));
   return [...projectMatches, ...libraryMatches];
+}
+
+function DomainTargetSwitcher({
+  project,
+  recordTypes,
+  selectedRecordType,
+  onSelectRecordType
+}: {
+  project: Project;
+  recordTypes: RealmzTargetRecordKind[];
+  selectedRecordType: RealmzTargetRecordKind;
+  onSelectRecordType: (recordType: RealmzTargetRecordKind) => void;
+}) {
+  return (
+    <div className="domain-target-switcher" role="tablist" aria-label="Writable Realmz record family">
+      {recordTypes.map((recordType) => {
+        const selected = selectedRecordType === recordType;
+        const count = targetRecords(project, recordType).length;
+        return (
+          <button
+            key={recordType}
+            type="button"
+            role="tab"
+            aria-selected={selected}
+            className={selected ? "active" : ""}
+            onClick={() => onSelectRecordType(recordType)}
+          >
+            <span>{targetRecordLabel(recordType)}</span>
+            <b>{count.toLocaleString()}</b>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function TargetRecordWorkbench({
+  project,
+  catalog,
+  recordType,
+  selectedEntity,
+  onSelectEntity,
+  onApplyCommand
+}: {
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  recordType: RealmzTargetRecordKind;
+  selectedEntity: SelectedEntity | null;
+  onSelectEntity: (entity: SelectedEntity) => void;
+  onApplyCommand?: (command: ProjectCommand) => void;
+}) {
+  const records = targetRecords(project, recordType);
+  const selectedId = targetIdFromSelection(selectedEntity?.id ?? "", recordType) ?? records[0]?.id ?? 1;
+  const opcode = opcodeForTargetRecord(recordType);
+  const nextId = nextTargetRecordId(project, recordType);
+  return (
+    <article className="domain-target-workbench">
+      <header>
+        <div>
+          <span>{targetRecordLabel(recordType)} Records</span>
+          <small>{records.length.toLocaleString()} editable Realmz fixed-record entr{records.length === 1 ? "y" : "ies"}</small>
+        </div>
+        <button
+          type="button"
+          className="btn btn-primary btn-xs"
+          onClick={() => {
+            onApplyCommand?.({ kind: "createTargetRecord", label: `Create ${targetRecordLabel(recordType)}`, recordType, id: nextId });
+            onSelectEntity(selectEntityFromId(targetEntityId(recordType, nextId)));
+          }}
+        >
+          New {targetRecordLabel(recordType)} {nextId}
+        </button>
+      </header>
+      <div className="domain-target-layout">
+        <ScrollArea className="domain-target-list" aria-label={`${targetRecordLabel(recordType)} records`}>
+          {records.map((record) => (
+            <button
+              key={`${recordType}:${record.id}`}
+              type="button"
+              className={record.id === selectedId ? "selected" : ""}
+              onClick={() => onSelectEntity(selectEntityFromId(targetEntityId(recordType, record.id)))}
+            >
+              <strong>{targetRecordLabel(recordType)} {record.id}</strong>
+              <small>{targetRecordSummary(project, recordType, record.id)}</small>
+            </button>
+          ))}
+          {records.length === 0 && <p>No {targetRecordLabel(recordType).toLowerCase()} records yet.</p>}
+        </ScrollArea>
+        <div className="domain-target-editor">
+          <TargetRecordEditor project={project} catalog={catalog} opcode={opcode} targetId={selectedId} onApplyCommand={onApplyCommand} />
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function targetRecordTypesForEditor(tab: EditorTab, activeEditor: string): RealmzTargetRecordKind[] {
+  if (tab === "text" && (activeEditor === "domain" || activeEditor === "messages")) return ["message"];
+  if (tab === "combat" && (activeEditor === "domain" || activeEditor === "battles")) return ["battle"];
+  if (tab === "economy" && activeEditor === "domain") return ["treasure", "shop"];
+  if (tab === "economy" && activeEditor === "treasure") return ["treasure"];
+  if (tab === "economy" && activeEditor === "shops") return ["shop"];
+  if (tab === "encounters" && activeEditor === "domain") return ["simpleEncounter", "complexEncounter"];
+  if (tab === "encounters" && activeEditor === "simple") return ["simpleEncounter"];
+  if (tab === "encounters" && activeEditor === "complex") return ["complexEncounter"];
+  return [];
+}
+
+function targetRecords(project: Project, recordType: RealmzTargetRecordKind): Array<{ id: number }> {
+  const records =
+    recordType === "message" ? project.messages :
+    recordType === "battle" ? project.battles :
+    recordType === "treasure" ? project.treasures :
+    recordType === "shop" ? project.shops :
+    recordType === "simpleEncounter" ? project.simpleEncounters :
+    recordType === "complexEncounter" ? project.complexEncounters :
+    project.questLabels;
+  return [...(records ?? [])].sort((a, b) => a.id - b.id);
+}
+
+function targetIdFromSelection(entityId: string, recordType: RealmzTargetRecordKind) {
+  const prefix = targetEntityPrefix(recordType);
+  if (!entityId.startsWith(prefix)) return null;
+  const value = Number(entityId.slice(prefix.length));
+  return Number.isInteger(value) ? value : null;
+}
+
+function selectedTargetRecordTypeFromEntity(entityId: string, recordTypes: RealmzTargetRecordKind[]) {
+  return recordTypes.find((recordType) => targetIdFromSelection(entityId, recordType) !== null) ?? null;
+}
+
+function targetEntityId(recordType: RealmzTargetRecordKind, id: number) {
+  return `${targetEntityPrefix(recordType)}${id}`;
+}
+
+function targetEntityPrefix(recordType: RealmzTargetRecordKind) {
+  if (recordType === "simpleEncounter") return "encounter:simple:";
+  if (recordType === "complexEncounter") return "encounter:complex:";
+  if (recordType === "questLabel") return "quest:";
+  return `${recordType}:`;
+}
+
+function opcodeForTargetRecord(recordType: RealmzTargetRecordKind) {
+  if (recordType === "message") return 1;
+  if (recordType === "battle") return 2;
+  if (recordType === "treasure") return 10;
+  if (recordType === "shop") return 6;
+  if (recordType === "simpleEncounter") return 4;
+  if (recordType === "complexEncounter") return 5;
+  return 47;
+}
+
+function targetRecordLabel(recordType: RealmzTargetRecordKind) {
+  const labels: Record<RealmzTargetRecordKind, string> = {
+    message: "Message",
+    battle: "Battle",
+    treasure: "Treasure",
+    shop: "Shop",
+    simpleEncounter: "Simple Encounter",
+    complexEncounter: "Complex Encounter",
+    questLabel: "Quest Label"
+  };
+  return labels[recordType];
+}
+
+function nextTargetRecordId(project: Project, recordType: RealmzTargetRecordKind) {
+  const used = new Set(targetRecords(project, recordType).map((record) => record.id));
+  for (let id = 1; id < 10000; id += 1) {
+    if (!used.has(id)) return id;
+  }
+  return used.size + 1;
+}
+
+function targetRecordSummary(project: Project, recordType: RealmzTargetRecordKind, id: number) {
+  if (recordType === "message") return project.messages.find((record) => record.id === id)?.text.slice(0, 80) || "empty message";
+  if (recordType === "battle") {
+    const record = project.battles.find((candidate) => candidate.id === id);
+    return record ? `${record.grid.filter(Boolean).length} monster slot(s), messages ${record.messageBefore}/${record.messageAfter}` : "missing battle";
+  }
+  if (recordType === "treasure") {
+    const record = project.treasures.find((candidate) => candidate.id === id);
+    return record ? `${record.itemIds.filter(Boolean).length} item(s), ${record.gold} gold, ${record.exp} exp` : "missing treasure";
+  }
+  if (recordType === "shop") {
+    const record = project.shops.find((candidate) => candidate.id === id);
+    return record ? `${record.itemIds.filter(Boolean).length} stocked slot(s), ${record.inflation}% inflation` : "missing shop";
+  }
+  if (recordType === "simpleEncounter") {
+    const record = project.simpleEncounters.find((candidate) => candidate.id === id);
+    return record ? `${record.actions.length} action row(s), prompt ${record.prompt}` : "missing simple encounter";
+  }
+  if (recordType === "complexEncounter") {
+    const record = project.complexEncounters.find((candidate) => candidate.id === id);
+    return record ? `${record.actions.length} action row(s), prompt ${record.prompt}` : "missing complex encounter";
+  }
+  return "metadata";
+}
+
+function readStoredOverviewTargetRecordType(tab: EditorTab) {
+  try {
+    const value = window.localStorage.getItem(`domain.${tab}.targetRecordType`) as RealmzTargetRecordKind | null;
+    return value;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredOverviewTargetRecordType(tab: EditorTab, recordType: RealmzTargetRecordKind) {
+  try {
+    window.localStorage.setItem(`domain.${tab}.targetRecordType`, recordType);
+  } catch {
+    // Local storage can be unavailable in hardened browser contexts.
+  }
 }
 
 function DomainDetailPanel({

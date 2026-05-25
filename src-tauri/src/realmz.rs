@@ -699,9 +699,7 @@ pub fn write_messages(records: &[MessageRecord]) -> Result<Vec<u8>> {
 pub fn parse_battles(buffer: &[u8]) -> Vec<BattleRecord> {
     parse_fixed_records(buffer, BATTLE_BYTES)
         .map(|(id, start, record)| {
-            let grid = (0..13 * 13)
-                .map(|slot| i16_be(record, slot * 2))
-                .collect();
+            let grid = (0..13 * 13).map(|slot| i16_be(record, slot * 2)).collect();
             BattleRecord {
                 id,
                 grid,
@@ -769,7 +767,11 @@ pub fn write_treasures(records: &[TreasureRecord]) -> Result<Vec<u8>> {
             )));
         }
         for slot in 0..20 {
-            write_i16_be(buffer, slot * 2, record.item_ids.get(slot).copied().unwrap_or(0));
+            write_i16_be(
+                buffer,
+                slot * 2,
+                record.item_ids.get(slot).copied().unwrap_or(0),
+            );
         }
         write_i16_be(buffer, 40, record.exp);
         write_i16_be(buffer, 42, record.gold);
@@ -806,7 +808,11 @@ pub fn write_shops(records: &[ShopRecord]) -> Result<Vec<u8>> {
             )));
         }
         for slot in 0..1000 {
-            write_i16_be(buffer, slot * 2, record.item_ids.get(slot).copied().unwrap_or(0));
+            write_i16_be(
+                buffer,
+                slot * 2,
+                record.item_ids.get(slot).copied().unwrap_or(0),
+            );
             buffer[2000 + slot] = record.quantities.get(slot).copied().unwrap_or(0);
         }
         write_i16_be(buffer, 3000, record.inflation);
@@ -908,7 +914,10 @@ pub fn write_complex_encounters(records: &[ComplexEncounterRecord]) -> Result<Ve
     })
 }
 
-fn parse_fixed_records(buffer: &[u8], record_bytes: usize) -> impl Iterator<Item = (usize, usize, &[u8])> {
+fn parse_fixed_records(
+    buffer: &[u8],
+    record_bytes: usize,
+) -> impl Iterator<Item = (usize, usize, &[u8])> {
     (0..buffer.len() / record_bytes).map(move |id| {
         let start = id * record_bytes;
         (id, start, &buffer[start..start + record_bytes])
@@ -941,12 +950,36 @@ trait IndexedRecord {
     fn record_id(&self) -> usize;
 }
 
-impl IndexedRecord for MessageRecord { fn record_id(&self) -> usize { self.id } }
-impl IndexedRecord for BattleRecord { fn record_id(&self) -> usize { self.id } }
-impl IndexedRecord for TreasureRecord { fn record_id(&self) -> usize { self.id } }
-impl IndexedRecord for ShopRecord { fn record_id(&self) -> usize { self.id } }
-impl IndexedRecord for SimpleEncounterRecord { fn record_id(&self) -> usize { self.id } }
-impl IndexedRecord for ComplexEncounterRecord { fn record_id(&self) -> usize { self.id } }
+impl IndexedRecord for MessageRecord {
+    fn record_id(&self) -> usize {
+        self.id
+    }
+}
+impl IndexedRecord for BattleRecord {
+    fn record_id(&self) -> usize {
+        self.id
+    }
+}
+impl IndexedRecord for TreasureRecord {
+    fn record_id(&self) -> usize {
+        self.id
+    }
+}
+impl IndexedRecord for ShopRecord {
+    fn record_id(&self) -> usize {
+        self.id
+    }
+}
+impl IndexedRecord for SimpleEncounterRecord {
+    fn record_id(&self) -> usize {
+        self.id
+    }
+}
+impl IndexedRecord for ComplexEncounterRecord {
+    fn record_id(&self) -> usize {
+        self.id
+    }
+}
 
 fn parse_encounter_actions(record: &[u8]) -> Vec<EncounterActionRow> {
     let mut actions = Vec::new();
@@ -992,7 +1025,12 @@ fn preserve_raw(authored: bool, raw: &[u8], record_bytes: usize) -> bool {
     !authored && raw.len() == record_bytes
 }
 
-fn provenance(source_file: &str, record_index: usize, byte_offset: usize, byte_length: usize) -> Provenance {
+fn provenance(
+    source_file: &str,
+    record_index: usize,
+    byte_offset: usize,
+    byte_length: usize,
+) -> Provenance {
     Provenance {
         source_file: source_file.to_string(),
         record_index,
@@ -1009,10 +1047,19 @@ fn decode_pascal_text(bytes: &[u8]) -> String {
 }
 
 fn decode_fixed_text(bytes: &[u8]) -> String {
-    let end = bytes.iter().position(|byte| *byte == 0).unwrap_or(bytes.len());
+    let end = bytes
+        .iter()
+        .position(|byte| *byte == 0)
+        .unwrap_or(bytes.len());
     bytes[..end]
         .iter()
-        .map(|byte| if (32..=126).contains(byte) { *byte as char } else { ' ' })
+        .map(|byte| {
+            if (32..=126).contains(byte) {
+                *byte as char
+            } else {
+                ' '
+            }
+        })
         .collect::<String>()
         .trim_end()
         .to_string()
@@ -1401,10 +1448,18 @@ mod tests {
     #[test]
     fn target_records_round_trip_full_records() {
         let cases: [(usize, fn(&[u8]) -> Vec<u8>); 6] = [
-            (MESSAGE_BYTES, |bytes| write_messages(&parse_messages(bytes)).unwrap()),
-            (BATTLE_BYTES, |bytes| write_battles(&parse_battles(bytes)).unwrap()),
-            (TREASURE_BYTES, |bytes| write_treasures(&parse_treasures(bytes)).unwrap()),
-            (SHOP_BYTES, |bytes| write_shops(&parse_shops(bytes)).unwrap()),
+            (MESSAGE_BYTES, |bytes| {
+                write_messages(&parse_messages(bytes)).unwrap()
+            }),
+            (BATTLE_BYTES, |bytes| {
+                write_battles(&parse_battles(bytes)).unwrap()
+            }),
+            (TREASURE_BYTES, |bytes| {
+                write_treasures(&parse_treasures(bytes)).unwrap()
+            }),
+            (SHOP_BYTES, |bytes| {
+                write_shops(&parse_shops(bytes)).unwrap()
+            }),
             (SIMPLE_ENCOUNTER_BYTES, |bytes| {
                 write_simple_encounters(&parse_simple_encounter_records(bytes)).unwrap()
             }),
@@ -1494,7 +1549,12 @@ mod tests {
             max_times: 7,
             caste_success: -1,
             prompt: 55,
-            texts: vec!["A".to_string(), "B".to_string(), String::new(), String::new()],
+            texts: vec![
+                "A".to_string(),
+                "B".to_string(),
+                String::new(),
+                String::new(),
+            ],
             raw_bytes: vec![0; SIMPLE_ENCOUNTER_BYTES],
             authored: true,
             provenance: provenance("Data ED", 0, 0, SIMPLE_ENCOUNTER_BYTES),

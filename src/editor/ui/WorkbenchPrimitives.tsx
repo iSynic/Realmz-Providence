@@ -1,5 +1,6 @@
 import { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { AlertCircle, CheckCircle2, Info, Link2, Search, XCircle } from "lucide-react";
+import { createPortal } from "react-dom";
+import { AlertCircle, CheckCircle2, ChevronDown, Info, Link2, Search, XCircle } from "lucide-react";
 import "./workbench.css";
 
 export type WorkbenchTone = "neutral" | "info" | "success" | "warning" | "danger" | "blocked";
@@ -42,6 +43,233 @@ export function PanelSection({
       {children && <div className="workbench-panel-section-body">{children}</div>}
     </section>
   );
+}
+
+export type CollapsibleSectionProps = PanelSectionProps & {
+  storageKey?: string;
+  defaultOpen?: boolean;
+  tone?: WorkbenchTone;
+};
+
+export function CollapsibleSection({
+  title,
+  eyebrow,
+  count,
+  actions,
+  children,
+  className,
+  density = "normal",
+  scroll = false,
+  storageKey,
+  defaultOpen = true,
+  tone = "neutral"
+}: CollapsibleSectionProps) {
+  const [open, setOpen] = useState(() => readStoredBoolean(storageKey, defaultOpen));
+
+  useEffect(() => {
+    setOpen(readStoredBoolean(storageKey, defaultOpen));
+  }, [storageKey, defaultOpen]);
+
+  useEffect(() => {
+    if (!storageKey) return;
+    try {
+      window.localStorage.setItem(storageKey, open ? "1" : "0");
+    } catch {
+      // Local storage can be unavailable in hardened browser contexts.
+    }
+  }, [storageKey, open]);
+
+  return (
+    <section className={classNames("workbench-panel-section", "workbench-collapsible-section", `density-${density}`, `tone-${tone}`, scroll && "is-scrollable", !open && "is-collapsed", className)}>
+      <header className="workbench-panel-section-header">
+        <button type="button" className="workbench-collapse-toggle" onClick={() => setOpen((current) => !current)} aria-expanded={open}>
+          <ChevronDown size={13} />
+          <span>
+            {eyebrow && <em>{eyebrow}</em>}
+            <strong>{title}</strong>
+          </span>
+        </button>
+        {(count || actions) && (
+          <div className="workbench-panel-section-actions">
+            {count && <b>{count}</b>}
+            {actions}
+          </div>
+        )}
+      </header>
+      {open && children && <div className="workbench-panel-section-body">{children}</div>}
+    </section>
+  );
+}
+
+export type FloatingWorkbenchPanelProps = {
+  title: ReactNode;
+  eyebrow?: ReactNode;
+  actions?: ReactNode;
+  children?: ReactNode;
+  storageKey: string;
+  defaultWidth?: number;
+  defaultHeight?: number;
+  minWidth?: number;
+  minHeight?: number;
+  className?: string;
+};
+
+export function FloatingWorkbenchPanel({
+  title,
+  eyebrow,
+  actions,
+  children,
+  storageKey,
+  defaultWidth = 720,
+  defaultHeight = 560,
+  minWidth = 420,
+  minHeight = 320,
+  className
+}: FloatingWorkbenchPanelProps) {
+  const [box, setBox] = useState(() => readStoredPanelBox(storageKey, defaultWidth, defaultHeight, minWidth, minHeight));
+  const dragging = useRef(false);
+  const resizing = useRef(false);
+  const offset = useRef({ x: 0, y: 0 });
+  const resizeStart = useRef({ x: 0, y: 0, width: defaultWidth, height: defaultHeight });
+
+  useEffect(() => {
+    setBox((current) => clampFloatingBox(current, minWidth, minHeight));
+  }, [minWidth, minHeight]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(box));
+    } catch {
+      // Local storage can be unavailable in hardened browser contexts.
+    }
+  }, [storageKey, box]);
+
+  useEffect(() => {
+    function handleMove(event: MouseEvent) {
+      if (dragging.current) {
+        setBox((current) => clampFloatingBox({
+          ...current,
+          x: event.clientX - offset.current.x,
+          y: event.clientY - offset.current.y
+        }, minWidth, minHeight));
+      }
+      if (resizing.current) {
+        const width = resizeStart.current.width + event.clientX - resizeStart.current.x;
+        const height = resizeStart.current.height + event.clientY - resizeStart.current.y;
+        setBox((current) => clampFloatingBox({ ...current, width, height }, minWidth, minHeight));
+      }
+    }
+    function handleUp() {
+      dragging.current = false;
+      resizing.current = false;
+    }
+    function handleResize() {
+      setBox((current) => clampFloatingBox(current, minWidth, minHeight));
+    }
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleUp);
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleUp);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [minWidth, minHeight]);
+
+  const panel = (
+    <section
+      className={classNames("workbench-floating-panel", className)}
+      style={{
+        left: box.x,
+        top: box.y,
+        width: box.width,
+        height: box.height,
+        minWidth: `min(${minWidth}px, calc(100vw - 24px))`,
+        minHeight: `min(${minHeight}px, calc(100vh - 24px))`
+      }}
+    >
+      <header
+        className="workbench-floating-panel-header"
+        onMouseDown={(event) => {
+          if ((event.target as HTMLElement).closest("button, input, select, textarea, a")) return;
+          dragging.current = true;
+          offset.current = { x: event.clientX - box.x, y: event.clientY - box.y };
+          event.preventDefault();
+        }}
+      >
+        <div>
+          {eyebrow && <span>{eyebrow}</span>}
+          <strong>{title}</strong>
+        </div>
+        {actions && <div className="workbench-floating-panel-actions">{actions}</div>}
+      </header>
+      <div className="workbench-floating-panel-body">{children}</div>
+      <button
+        type="button"
+        className="workbench-floating-panel-resize"
+        aria-label="Resize floating panel"
+        onMouseDown={(event) => {
+          resizing.current = true;
+          resizeStart.current = { x: event.clientX, y: event.clientY, width: box.width, height: box.height };
+          event.preventDefault();
+          event.stopPropagation();
+        }}
+      />
+    </section>
+  );
+
+  return createPortal(panel, document.body);
+}
+
+function readStoredBoolean(storageKey: string | undefined, fallback: boolean) {
+  if (!storageKey) return fallback;
+  try {
+    const value = window.localStorage.getItem(storageKey);
+    if (value == null) return fallback;
+    return value === "1" || value === "true";
+  } catch {
+    return fallback;
+  }
+}
+
+type FloatingPanelBox = { x: number; y: number; width: number; height: number };
+
+function readStoredPanelBox(storageKey: string, width: number, height: number, minWidth: number, minHeight: number): FloatingPanelBox {
+  try {
+    const value = window.localStorage.getItem(storageKey);
+    if (value) {
+      const parsed = JSON.parse(value) as { x?: unknown; y?: unknown; width?: unknown; height?: unknown };
+      if (typeof parsed.x === "number" && typeof parsed.y === "number") {
+        return clampFloatingBox({
+          x: parsed.x,
+          y: parsed.y,
+          width: typeof parsed.width === "number" ? parsed.width : width,
+          height: typeof parsed.height === "number" ? parsed.height : height
+        }, minWidth, minHeight);
+      }
+    }
+  } catch {
+    // Fall through to the default placement.
+  }
+  return clampFloatingBox({
+    x: Math.max(12, window.innerWidth - width - 18),
+    y: Math.max(16, Math.round((window.innerHeight - height) / 2)),
+    width,
+    height
+  }, minWidth, minHeight);
+}
+
+function clampFloatingBox(box: FloatingPanelBox, minWidth: number, minHeight: number): FloatingPanelBox {
+  const width = clamp(box.width, Math.min(minWidth, window.innerWidth - 24), Math.max(180, window.innerWidth - 24));
+  const height = clamp(box.height, Math.min(minHeight, window.innerHeight - 24), Math.max(180, window.innerHeight - 24));
+  const maxX = Math.max(12, window.innerWidth - width - 12);
+  const maxY = Math.max(12, window.innerHeight - height - 12);
+  return {
+    x: clamp(box.x, 12, maxX),
+    y: clamp(box.y, 12, maxY),
+    width,
+    height
+  };
 }
 
 export type FieldRowProps = {

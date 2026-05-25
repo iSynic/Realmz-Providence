@@ -139,6 +139,7 @@ export function WorkbenchRouter({
         catalog={state.libraryCatalog}
         selectedEntity={state.selectedEntity}
         onSelectEntity={onSelectEntity}
+        onApplyCommand={onApplyCommand}
         onCreateDraft={onCreateDraft}
         onUpdateDraft={onUpdateDraft}
       />
@@ -178,7 +179,7 @@ export function WorkbenchRouter({
   }
 
   if (state.activeTab === "scripts") {
-    return <ScriptsPanel project={state.project} activeEditor={state.activeEditor} selectedEntity={state.selectedEntity} onSelectEntity={onSelectEntity} onApplyCommand={onApplyCommand} />;
+    return <ScriptsPanel project={state.project} catalog={state.libraryCatalog} activeEditor={state.activeEditor} selectedEntity={state.selectedEntity} onSelectEntity={onSelectEntity} onApplyCommand={onApplyCommand} />;
   }
 
   if (state.activeTab === "scenario") {
@@ -190,6 +191,7 @@ export function WorkbenchRouter({
         catalog={state.libraryCatalog}
         selectedEntity={state.selectedEntity}
         onSelectEntity={onSelectEntity}
+        onApplyCommand={onApplyCommand}
         onCreateDraft={onCreateDraft}
         onUpdateDraft={onUpdateDraft}
       />
@@ -197,6 +199,21 @@ export function WorkbenchRouter({
   }
 
   if (state.activeTab === "encounters") {
+    if (state.activeEditor === "domain" || state.activeEditor === "simple" || state.activeEditor === "complex") {
+      return (
+        <SuiteDomainPanel
+          tab="encounters"
+          activeEditor={state.activeEditor}
+          project={state.project}
+          catalog={state.libraryCatalog}
+          selectedEntity={state.selectedEntity}
+          onSelectEntity={onSelectEntity}
+          onApplyCommand={onApplyCommand}
+          onCreateDraft={onCreateDraft}
+          onUpdateDraft={onUpdateDraft}
+        />
+      );
+    }
     return <EncountersPanel project={state.project} selectedEntity={state.selectedEntity} onSelectEntity={onSelectEntity} activeEditor={state.activeEditor} />;
   }
 
@@ -209,6 +226,7 @@ export function WorkbenchRouter({
         catalog={state.libraryCatalog}
         selectedEntity={state.selectedEntity}
         onSelectEntity={onSelectEntity}
+        onApplyCommand={onApplyCommand}
         onCreateDraft={onCreateDraft}
         onUpdateDraft={onUpdateDraft}
       />

@@ -1,6 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { applyProjectCommand } from "./projectCommands";
 import { ExportReport, Project, ProjectCommand, ValidationReport } from "./types";
+import { validateScriptTrigger } from "./scriptValidation";
+import { validateRealmzTargetRecord } from "./targetValidation";
 
 type ProvidenceHarnessConfig = {
   enabled: boolean;
@@ -22,13 +24,40 @@ export type ProvidenceHarnessScript = {
   projectName: string;
   projectDir: string;
   exportDir: string;
+  reopenAfterSave?: boolean;
   commands: ProjectCommand[];
   assertions?: {
     validationOk?: boolean;
     validationErrorsContain?: string[];
     validationWarningsContain?: string[];
+    validationErrorsNotContain?: string[];
+    validationWarningsNotContain?: string[];
     projectHasMaps?: boolean;
     projectTiles?: Array<{ mapId: string; index: number; value: number }>;
+    triggers?: Array<{ triggerId: string; fields?: Record<string, unknown> }>;
+    actionSlots?: Array<{ triggerId: string; slot: number; rawCode: number; id: number }>;
+    edcdRows?: Array<{ rowId: number; values: number[] }>;
+    targetRecords?: Array<{
+      recordType: "message" | "battle" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "questLabel";
+      id: number;
+      fields?: Record<string, unknown>;
+    }>;
+    targetRecordsAbsent?: Array<{
+      recordType: "message" | "battle" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "questLabel";
+      id: number;
+    }>;
+    scriptDiagnosticsContain?: Array<{ triggerId: string; text: string }>;
+    scriptDiagnosticsNotContain?: Array<{ triggerId: string; text: string }>;
+    targetDiagnosticsContain?: Array<{
+      recordType: "message" | "battle" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "questLabel";
+      id: number;
+      text: string;
+    }>;
+    targetDiagnosticsNotContain?: Array<{
+      recordType: "message" | "battle" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "questLabel";
+      id: number;
+      text: string;
+    }>;
     triggerCountAtLeast?: number;
     commandsAppliedAtLeast?: number;
     exportContains?: string[];
@@ -56,6 +85,10 @@ export type ProvidenceHarnessResult = {
   artifacts: Record<string, string | string[] | null>;
   error: string | null;
 };
+
+type HarnessTargetRecordType = NonNullable<
+  NonNullable<ProvidenceHarnessScript["assertions"]>["targetRecords"]
+>[number]["recordType"];
 
 export async function runProvidenceHarness(onStatus?: (status: string) => void) {
   let config: ProvidenceHarnessConfig;
@@ -177,6 +210,10 @@ async function executeHarnessScript(
 
   onStatus?.(`Harness: saving ${script.projectName}...`);
   project = await invoke<Project>("save_project", { projectDir: script.projectDir, project });
+  if (script.reopenAfterSave) {
+    onStatus?.(`Harness: reopening ${script.projectName}...`);
+    project = await invoke<Project>("open_project", { projectDir: script.projectDir });
+  }
 
   onStatus?.("Harness: validating project...");
   const validation = await invoke<ValidationReport>("validate_project", { project });
@@ -227,10 +264,22 @@ function assertHarnessResult(
       errors.push(assertionError("validationErrorsContain", expectedText, validation.errors));
     }
   }
+  for (const forbiddenText of assertions.validationErrorsNotContain ?? []) {
+    const observed = validation.errors.find((message) => message.includes(forbiddenText)) ?? null;
+    if (observed !== null) {
+      errors.push(assertionError("validationErrorsNotContain", `no message containing ${forbiddenText}`, observed));
+    }
+  }
   for (const expectedText of assertions.validationWarningsContain ?? []) {
     const observed = validation.warnings.find((message) => message.includes(expectedText)) ?? null;
     if (observed === null) {
       errors.push(assertionError("validationWarningsContain", expectedText, validation.warnings));
+    }
+  }
+  for (const forbiddenText of assertions.validationWarningsNotContain ?? []) {
+    const observed = validation.warnings.find((message) => message.includes(forbiddenText)) ?? null;
+    if (observed !== null) {
+      errors.push(assertionError("validationWarningsNotContain", `no message containing ${forbiddenText}`, observed));
     }
   }
   if (assertions.projectHasMaps && project.maps.length === 0) {
@@ -241,6 +290,88 @@ function assertHarnessResult(
     const observed = map?.tiles[tileAssertion.index] ?? null;
     if (observed !== tileAssertion.value) {
       errors.push(assertionError(`projectTiles:${tileAssertion.mapId}:${tileAssertion.index}`, tileAssertion.value, observed));
+    }
+  }
+  for (const triggerAssertion of assertions.triggers ?? []) {
+    const trigger = project.triggers.find((candidate) => candidate.id === triggerAssertion.triggerId);
+    if (!trigger) {
+      errors.push(assertionError(`triggers:${triggerAssertion.triggerId}`, "trigger exists", null));
+      continue;
+    }
+    for (const [field, expected] of Object.entries(triggerAssertion.fields ?? {})) {
+      const observed = readAssertionField(trigger, field);
+      if (!sameJsonValue(observed, expected)) {
+        errors.push(assertionError(`triggers:${triggerAssertion.triggerId}:${field}`, expected, observed));
+      }
+    }
+  }
+  for (const slotAssertion of assertions.actionSlots ?? []) {
+    const trigger = project.triggers.find((candidate) => candidate.id === slotAssertion.triggerId);
+    const action = trigger?.actions.find((candidate) => candidate.slot === slotAssertion.slot);
+    const observed = {
+      rawCode: action?.rawCode ?? 0,
+      id: action?.id ?? 0
+    };
+    const expected = {
+      rawCode: slotAssertion.rawCode,
+      id: slotAssertion.id
+    };
+    if (!sameJsonValue(observed, expected)) {
+      errors.push(assertionError(`actionSlots:${slotAssertion.triggerId}:${slotAssertion.slot}`, expected, observed));
+    }
+  }
+  for (const rowAssertion of assertions.edcdRows ?? []) {
+    const row = project.extracodes.find((candidate) => candidate.id === rowAssertion.rowId);
+    const observed = row?.values ?? null;
+    if (!sameJsonValue(observed, rowAssertion.values)) {
+      errors.push(assertionError(`edcdRows:${rowAssertion.rowId}`, rowAssertion.values, observed));
+    }
+  }
+  for (const recordAssertion of assertions.targetRecords ?? []) {
+    const record = targetRecordForAssertion(project, recordAssertion.recordType, recordAssertion.id);
+    if (!record) {
+      errors.push(assertionError(`targetRecords:${recordAssertion.recordType}:${recordAssertion.id}`, "record exists", null));
+      continue;
+    }
+    for (const [field, expected] of Object.entries(recordAssertion.fields ?? {})) {
+      const observed = readAssertionField(record, field);
+      if (!sameJsonValue(observed, expected)) {
+        errors.push(assertionError(`targetRecords:${recordAssertion.recordType}:${recordAssertion.id}:${field}`, expected, observed));
+      }
+    }
+  }
+  for (const recordAssertion of assertions.targetRecordsAbsent ?? []) {
+    const record = targetRecordForAssertion(project, recordAssertion.recordType, recordAssertion.id);
+    if (record) {
+      errors.push(assertionError(`targetRecordsAbsent:${recordAssertion.recordType}:${recordAssertion.id}`, "no record", record));
+    }
+  }
+  for (const diagnosticAssertion of assertions.scriptDiagnosticsContain ?? []) {
+    const diagnostics = scriptDiagnosticsForAssertion(project, diagnosticAssertion.triggerId);
+    const observed = diagnostics.find((message) => message.includes(diagnosticAssertion.text)) ?? null;
+    if (observed === null) {
+      errors.push(assertionError(`scriptDiagnosticsContain:${diagnosticAssertion.triggerId}`, diagnosticAssertion.text, diagnostics));
+    }
+  }
+  for (const diagnosticAssertion of assertions.scriptDiagnosticsNotContain ?? []) {
+    const diagnostics = scriptDiagnosticsForAssertion(project, diagnosticAssertion.triggerId);
+    const observed = diagnostics.find((message) => message.includes(diagnosticAssertion.text)) ?? null;
+    if (observed !== null) {
+      errors.push(assertionError(`scriptDiagnosticsNotContain:${diagnosticAssertion.triggerId}`, `no diagnostic containing ${diagnosticAssertion.text}`, observed));
+    }
+  }
+  for (const diagnosticAssertion of assertions.targetDiagnosticsContain ?? []) {
+    const diagnostics = targetDiagnosticsForAssertion(project, diagnosticAssertion.recordType, diagnosticAssertion.id);
+    const observed = diagnostics.find((message) => message.includes(diagnosticAssertion.text)) ?? null;
+    if (observed === null) {
+      errors.push(assertionError(`targetDiagnosticsContain:${diagnosticAssertion.recordType}:${diagnosticAssertion.id}`, diagnosticAssertion.text, diagnostics));
+    }
+  }
+  for (const diagnosticAssertion of assertions.targetDiagnosticsNotContain ?? []) {
+    const diagnostics = targetDiagnosticsForAssertion(project, diagnosticAssertion.recordType, diagnosticAssertion.id);
+    const observed = diagnostics.find((message) => message.includes(diagnosticAssertion.text)) ?? null;
+    if (observed !== null) {
+      errors.push(assertionError(`targetDiagnosticsNotContain:${diagnosticAssertion.recordType}:${diagnosticAssertion.id}`, `no diagnostic containing ${diagnosticAssertion.text}`, observed));
     }
   }
   if (assertions.triggerCountAtLeast !== undefined && project.triggers.length < assertions.triggerCountAtLeast) {
@@ -265,6 +396,52 @@ function assertHarnessResult(
 
 function assertionError(name: string, expected: unknown, observed: unknown) {
   return `assertion ${name} expected ${formatAssertionValue(expected)} observed ${formatAssertionValue(observed)}`;
+}
+
+function targetRecordForAssertion(project: Project, recordType: HarnessTargetRecordType, id: number) {
+  const records =
+    recordType === "message" ? project.messages :
+    recordType === "battle" ? project.battles :
+    recordType === "treasure" ? project.treasures :
+    recordType === "shop" ? project.shops :
+    recordType === "simpleEncounter" ? project.simpleEncounters :
+    recordType === "complexEncounter" ? project.complexEncounters :
+    project.questLabels;
+  return records.find((record) => record.id === id) ?? null;
+}
+
+function scriptDiagnosticsForAssertion(project: Project, triggerId: string) {
+  const trigger = project.triggers.find((candidate) => candidate.id === triggerId);
+  if (!trigger) return [`missing trigger ${triggerId}`];
+  return validateScriptTrigger(project, trigger).map(formatDiagnostic);
+}
+
+function targetDiagnosticsForAssertion(project: Project, recordType: HarnessTargetRecordType, id: number) {
+  return validateRealmzTargetRecord(project, recordType, id).map(formatDiagnostic);
+}
+
+function formatDiagnostic(diagnostic: { message: string; detail: string; slot?: number }) {
+  return [
+    diagnostic.slot != null ? `slot ${diagnostic.slot}` : "",
+    diagnostic.message,
+    diagnostic.detail
+  ].filter(Boolean).join(": ");
+}
+
+function readAssertionField(record: Record<string, unknown>, field: string) {
+  return field.split(".").reduce<unknown>((current, part) => {
+    if (current == null) return null;
+    if (Array.isArray(current)) {
+      const index = Number(part);
+      return Number.isInteger(index) ? current[index] ?? null : null;
+    }
+    if (typeof current === "object") return (current as Record<string, unknown>)[part] ?? null;
+    return null;
+  }, record);
+}
+
+function sameJsonValue(left: unknown, right: unknown) {
+  return JSON.stringify(left) === JSON.stringify(right);
 }
 
 function formatAssertionValue(value: unknown) {

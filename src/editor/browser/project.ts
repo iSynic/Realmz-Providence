@@ -4,6 +4,7 @@ import { browserTilesetAtlasUrl } from "./atlasPaths";
 import { buildBrowserSemanticSchema } from "./semantic";
 import { landlookBaseTile, parseScenarioBuffers, TRACKED_FILES } from "./realmzParser";
 import { assetFallbacks, blockedSemanticObjects, generatedRuntimeCaches, resourceGaps, unresolvedLinks } from "../semanticGraph";
+import { validateRealmzTargetRecord } from "../targetValidation";
 
 export function createBrowserProject(projectName: string): Project {
   const safeName = projectName.trim() || "Untitled Scenario";
@@ -144,6 +145,12 @@ export function validateBrowserProject(project: Project): ValidationReport {
     if (asset.exportState === "blocked") errors.push(`${asset.label} is blocked from Realmz export.`);
     if (!["PICT", "cicn", "snd "].includes(asset.resourceType)) errors.push(`${asset.label} uses unsupported resource type ${asset.resourceType}.`);
   }
+  for (const message of project.messages ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "message", message.id), errors, warnings);
+  for (const battle of project.battles ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "battle", battle.id), errors, warnings);
+  for (const treasure of project.treasures ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "treasure", treasure.id), errors, warnings);
+  for (const shop of project.shops ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "shop", shop.id), errors, warnings);
+  for (const encounter of project.simpleEncounters ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "simpleEncounter", encounter.id), errors, warnings);
+  for (const encounter of project.complexEncounters ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "complexEncounter", encounter.id), errors, warnings);
   if ((project.assets ?? []).length > 0) {
     warnings.push(`${project.assets.length.toLocaleString()} managed media asset(s) are present; desktop export writes them to the Scenario resource fork.`);
   }
@@ -195,6 +202,14 @@ export function validateBrowserProject(project: Project): ValidationReport {
     }
   }
   return { ok: errors.length === 0, errors, warnings, exportableFiles, passThroughFiles };
+}
+
+function appendTargetDiagnostics(issues: ReturnType<typeof validateRealmzTargetRecord>, errors: string[], warnings: string[]) {
+  for (const issue of issues) {
+    const message = `${issue.message} ${issue.detail}`;
+    if (issue.severity === "error") errors.push(message);
+    else if (issue.severity === "warning") warnings.push(message);
+  }
 }
 
 export function benchmarkBrowserProject(project: Project): BenchmarkReport {

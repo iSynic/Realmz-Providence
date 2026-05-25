@@ -12,7 +12,7 @@ import { TileSprite, tileColor } from "./TileSprite";
 import { TutorialTip } from "./TutorialTip";
 import { ScrollArea } from "../ui";
 import { ResizablePane } from "./ResizablePane";
-import { actionPointCapacity } from "../actionPointCapacity";
+import { actionPointCapacity, nextActionPointRecordIndex } from "../actionPointCapacity";
 
 export function MapContextSidebar({
   state,
@@ -371,7 +371,8 @@ function SelectionInspector({
               type="button"
               disabled={project ? !actionPointCapacity(project.triggers, map.levelType, map.index).canCreate : false}
               title={project && !actionPointCapacity(project.triggers, map.levelType, map.index).canCreate ? "This map already uses all 100 Realmz Action Point records." : "Create an Action Point at the selected cell."}
-              onClick={() =>
+              onClick={() => {
+                const recordIndex = nextActionPointRecordIndex(project?.triggers ?? [], map.levelType, map.index);
                 onApplyCommand({
                   kind: "createActionPoint",
                   label: `Create Action Point ${selection.cell.x},${selection.cell.y}`,
@@ -379,8 +380,12 @@ function SelectionInspector({
                   levelIndex: map.index,
                   x: selection.cell.x,
                   y: selection.cell.y
-                })
-              }
+                });
+                if (recordIndex != null) {
+                  const source = map.levelType === "land" ? "Data DD" : "Data DDD";
+                  onSelectEntity(selectEntityFromId(triggerEntityId(map.levelType, map.index, recordIndex, source)));
+                }
+              }}
             >
               Create Action Point Here
             </button>

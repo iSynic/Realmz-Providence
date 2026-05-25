@@ -1,7 +1,9 @@
-import { Project, TriggerRecord } from "./types";
+import { LibraryCatalog, Project, TriggerRecord } from "./types";
 import { actionOptionFor, isDispatcherNoopOpcode, normalizeStepOpcode } from "./realmzActions";
 import { isDirectMacroOpcode, targetOptionsForOpcode, targetPickerConfig } from "./components/RealmzTargetPicker";
 import { isCallableMacro } from "./semanticGraph";
+import { missingEdcdTargetReferences } from "./edcdTargets";
+import { edcdFieldNamesForShape } from "./realmzEdcd";
 
 export type ScriptDiagnosticSeverity = "error" | "warning" | "info";
 
@@ -13,7 +15,7 @@ export type ScriptDiagnostic = {
   slot?: number;
 };
 
-export function validateScriptTrigger(project: Project, trigger: TriggerRecord): ScriptDiagnostic[] {
+export function validateScriptTrigger(project: Project, trigger: TriggerRecord, catalog?: LibraryCatalog | null): ScriptDiagnostic[] {
   const diagnostics: ScriptDiagnostic[] = [];
   if (trigger.source !== "Data ED3") {
     const coordinate = trigger.coordinate;
@@ -39,16 +41,16 @@ export function validateScriptTrigger(project: Project, trigger: TriggerRecord):
     if (action.slot < 0 || action.slot > 7) {
       diagnostics.push(slotIssue("error", trigger.id, action.slot, "slot-range", "Action slot is outside 0..7.", "Realmz door records contain exactly eight CODE/ID slots."));
     }
-    diagnostics.push(...validateAction(project, trigger, action.slot, action.rawCode, action.id));
+    diagnostics.push(...validateAction(project, trigger, action.slot, action.rawCode, action.id, catalog));
   }
   return diagnostics;
 }
 
-export function validateActionDraft(project: Project, trigger: TriggerRecord, slot: number, rawCode: number, id: number): ScriptDiagnostic[] {
-  return validateAction(project, trigger, slot, rawCode, id);
+export function validateActionDraft(project: Project, trigger: TriggerRecord, slot: number, rawCode: number, id: number, catalog?: LibraryCatalog | null): ScriptDiagnostic[] {
+  return validateAction(project, trigger, slot, rawCode, id, catalog);
 }
 
-function validateAction(project: Project, trigger: TriggerRecord, slot: number, rawCode: number, id: number): ScriptDiagnostic[] {
+function validateAction(project: Project, trigger: TriggerRecord, slot: number, rawCode: number, id: number, catalog?: LibraryCatalog | null): ScriptDiagnostic[] {
   const diagnostics: ScriptDiagnostic[] = [];
   const code = normalizeStepOpcode(rawCode);
   const option = actionOptionFor(rawCode);
@@ -65,12 +67,26 @@ function validateAction(project: Project, trigger: TriggerRecord, slot: number, 
       diagnostics.push(slotIssue("warning", trigger.id, slot, "missing-edcd-row", "This action expects an EDCD parameter row, but none is present.", `${option.shortLabel} uses ${option.edcdShape}; create Data EDCD row ${rowId} before relying on this behavior.`));
     } else if (row.values.length !== 5 || row.values.some((value) => !Number.isFinite(value))) {
       diagnostics.push(slotIssue("error", trigger.id, slot, "malformed-edcd-row", "The attached EDCD row is malformed.", `Data EDCD row ${rowId} must contain five finite numeric values.`));
+    } else {
+      const fieldNames = edcdFieldNamesForShape(option.edcdShape);
+      if (fieldNames) {
+        for (const issue of missingEdcdTargetReferences(project, option.edcdShape, fieldNames, row.values)) {
+          diagnostics.push(slotIssue(
+            "warning",
+            trigger.id,
+            slot,
+            `missing-edcd-${issue.field}`,
+            `EDCD ${issue.field} target is missing.`,
+            `Data EDCD row ${rowId} field ${issue.index} points at ${issue.targetLabel} ${issue.value}, but Providence cannot prove that target exists.`
+          ));
+        }
+      }
     }
   }
 
   const config = targetPickerConfig(code);
-  if (config && id !== 0) {
-    const targets = targetOptionsForOpcode(project, code);
+  if (config && !option.edcdShape && id !== 0) {
+    const targets = targetOptionsForOpcode(project, code, catalog);
     const selected = targets.find((target) => target.value === id);
     if (!selected) {
       diagnostics.push(slotIssue("warning", trigger.id, slot, "unresolved-target", `${config.label} does not resolve to a known target.`, `ID ${id} is still preserved as raw data, but Providence cannot prove the referenced ${config.label.toLowerCase()} exists.`));
@@ -92,6 +108,7 @@ function validateAction(project: Project, trigger: TriggerRecord, slot: number, 
 
 function validateTargetRecord(project: Project, triggerId: string, slot: number, code: number, id: number): ScriptDiagnostic[] {
   if (id < 0) return [];
+  if (actionOptionFor(code).edcdShape) return [];
   if ([1, 19, 62, 71].includes(code)) {
     const message = project.messages?.find((record) => record.id === id);
     if (message && message.text.length > 255) {

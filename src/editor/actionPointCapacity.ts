@@ -28,6 +28,20 @@ export function actionPointCapacity(
   };
 }
 
+export function nextActionPointRecordIndex(
+  triggers: TriggerRecord[],
+  levelType: LevelType,
+  levelIndex: number,
+  max = ACTION_POINTS_PER_LEVEL
+) {
+  const records = triggers.filter((trigger) => trigger.levelType === levelType && trigger.levelIndex === levelIndex);
+  for (let index = 0; index < max; index += 1) {
+    const existing = records.find((record) => record.recordIndex === index);
+    if (!existing || isReusableDoorPlaceholder(existing)) return index;
+  }
+  return null;
+}
+
 export function isReusableDoorPlaceholder(trigger: TriggerRecord) {
   return !trigger.active && !trigger.coordinate && trigger.actions.length === 0;
 }
