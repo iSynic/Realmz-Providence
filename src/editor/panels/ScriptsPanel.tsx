@@ -30,22 +30,9 @@ export function ScriptsPanel({
   onApplyCommand?: (command: ProjectCommand) => void;
   activeEditor?: string;
 }) {
-  const scriptCount = useMemo(
-    () => project?.triggers.filter((trigger) => triggerVisibleForEditor(project, trigger, activeEditor)).length ?? 0,
-    [project, activeEditor]
-  );
-
   return (
     <div className="editor-full-panel scripts-workbench">
-      <section className="tab-panel script-detail">
-        <div className="panel-header scripts-panel-header">
-          <span>{scriptPanelTitle(activeEditor)}</span>
-          <b>{scriptCount.toLocaleString()}</b>
-        </div>
-        <ScrollArea className="script-detail-scroll" aria-label="Script editor">
-          <ScriptAuthoringPanel project={project} catalog={catalog} activeEditor={activeEditor} selectedEntity={selectedEntity} onSelectEntity={onSelectEntity} onApplyCommand={onApplyCommand} />
-        </ScrollArea>
-      </section>
+      <ScriptAuthoringPanel project={project} catalog={catalog} activeEditor={activeEditor} selectedEntity={selectedEntity} onSelectEntity={onSelectEntity} onApplyCommand={onApplyCommand} />
     </div>
   );
 }
