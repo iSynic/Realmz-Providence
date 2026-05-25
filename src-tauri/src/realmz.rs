@@ -831,7 +831,7 @@ pub fn parse_simple_encounter_records(buffer: &[u8]) -> Vec<SimpleEncounterRecor
             caste_success: record[102] as i8,
             prompt: i16_be(record, 104),
             texts: (0..4)
-                .map(|slot| decode_fixed_text(&record[106 + slot * 80..106 + slot * 80 + 80]))
+                .map(|slot| decode_pascal_text(&record[106 + slot * 80..106 + slot * 80 + 80]))
                 .collect(),
             raw_bytes: record.to_vec(),
             authored: false,
@@ -849,7 +849,7 @@ pub fn write_simple_encounters(records: &[SimpleEncounterRecord]) -> Result<Vec<
         write_encounter_actions(buffer, &record.actions)?;
         for slot in 0..4 {
             buffer[96 + slot] = record.choice_results.get(slot).copied().unwrap_or(0);
-            encode_fixed_text(
+            encode_pascal_text(
                 &mut buffer[106 + slot * 80..106 + slot * 80 + 80],
                 record.texts.get(slot).map(String::as_str).unwrap_or(""),
             )?;
@@ -877,7 +877,7 @@ pub fn parse_complex_encounter_records(buffer: &[u8]) -> Vec<ComplexEncounterRec
             thief_fail: record[156] as i8,
             prompt: i16_be(record, 158),
             texts: (0..9)
-                .map(|slot| decode_fixed_text(&record[160 + slot * 40..160 + slot * 40 + 40]))
+                .map(|slot| decode_pascal_text(&record[160 + slot * 40..160 + slot * 40 + 40]))
                 .collect(),
             raw_bytes: record.to_vec(),
             authored: false,
@@ -905,7 +905,7 @@ pub fn write_complex_encounters(records: &[ComplexEncounterRecord]) -> Result<Ve
         buffer[156] = record.thief_fail as u8;
         write_i16_be(buffer, 158, record.prompt);
         for slot in 0..9 {
-            encode_fixed_text(
+            encode_pascal_text(
                 &mut buffer[160 + slot * 40..160 + slot * 40 + 40],
                 record.texts.get(slot).map(String::as_str).unwrap_or(""),
             )?;
@@ -1072,7 +1072,7 @@ fn encode_pascal_text(buffer: &mut [u8], text: &str) -> Result<()> {
     let bytes = classic_text_bytes(text);
     if bytes.len() > buffer.len() - 1 || bytes.len() > u8::MAX as usize {
         return Err(ProvidenceError::message(format!(
-            "Message text is {} byte(s); maximum is {}",
+            "Classic Pascal text is {} byte(s); maximum is {}",
             bytes.len(),
             buffer.len() - 1
         )));
@@ -1080,20 +1080,6 @@ fn encode_pascal_text(buffer: &mut [u8], text: &str) -> Result<()> {
     buffer.fill(0);
     buffer[0] = bytes.len() as u8;
     buffer[1..1 + bytes.len()].copy_from_slice(&bytes);
-    Ok(())
-}
-
-fn encode_fixed_text(buffer: &mut [u8], text: &str) -> Result<()> {
-    let bytes = classic_text_bytes(text);
-    if bytes.len() > buffer.len() {
-        return Err(ProvidenceError::message(format!(
-            "Encounter text is {} byte(s); maximum is {}",
-            bytes.len(),
-            buffer.len()
-        )));
-    }
-    buffer.fill(0);
-    buffer[..bytes.len()].copy_from_slice(&bytes);
     Ok(())
 }
 
@@ -1564,7 +1550,8 @@ mod tests {
         assert_eq!(i16_be(&simple_bytes, 36), 9);
         assert_eq!(simple_bytes[100], 1);
         assert_eq!(i16_be(&simple_bytes, 104), 55);
-        assert_eq!(simple_bytes[106], b'A');
+        assert_eq!(simple_bytes[106], 1);
+        assert_eq!(simple_bytes[107], b'A');
 
         let complex = ComplexEncounterRecord {
             id: 0,
@@ -1593,6 +1580,7 @@ mod tests {
         assert_eq!(complex_bytes[100], 2);
         assert_eq!(complex_bytes[151], 1);
         assert_eq!(i16_be(&complex_bytes, 158), 66);
-        assert_eq!(complex_bytes[160], b'N');
+        assert_eq!(complex_bytes[160], 4);
+        assert_eq!(&complex_bytes[161..165], b"Nine");
     }
 }

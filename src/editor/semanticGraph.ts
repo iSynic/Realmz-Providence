@@ -11,6 +11,7 @@ import {
   TriggerRecord
 } from "./types";
 import { mapEntityId, triggerEntityId } from "./utils";
+import { semanticEntityById, semanticLinkById, semanticLinksForId, semanticRecordById } from "./semanticIndex";
 
 const MAP_LINK_KINDS = new Set(["located_on", "contains_region", "describes_map", "configures_map", "names_map_level"]);
 const TEXT_LINK_KINDS = new Set(["shows_message", "uses_resource", "has_text_resource", "has_style_resource", "has_name_evidence"]);
@@ -62,13 +63,11 @@ export function schemaEntities(project: Project | null, type?: string) {
 }
 
 export function entityById(project: Project | null, id: string | null | undefined) {
-  if (!project || !id) return null;
-  return project.semanticSchema.entities.find((entity) => entity.id === id) ?? null;
+  return semanticEntityById(project, id);
 }
 
 export function recordById(project: Project | null, id: string | null | undefined) {
-  if (!project || !id) return null;
-  return project.semanticSchema.records.find((record) => record.id === id) ?? null;
+  return semanticRecordById(project, id);
 }
 
 export function sourceByName(project: Project | null, name: string) {
@@ -76,18 +75,11 @@ export function sourceByName(project: Project | null, name: string) {
 }
 
 export function linkById(project: Project | null, id: string | null | undefined) {
-  if (!project || !id) return null;
-  return project.semanticSchema.links.find((link) => link.id === id) ?? null;
+  return semanticLinkById(project, id);
 }
 
 export function semanticLinksFor(project: Project | null, id: string | null | undefined) {
-  if (!project || !id) return { outgoing: [] as SemanticLink[], incoming: [] as SemanticLink[] };
-  const reverse = project.semanticSchema.reverseLinks[id];
-  if (!reverse) return { outgoing: [], incoming: [] };
-  return {
-    outgoing: reverse.outgoing.map((linkId) => linkById(project, linkId)).filter(Boolean) as SemanticLink[],
-    incoming: reverse.incoming.map((linkId) => linkById(project, linkId)).filter(Boolean) as SemanticLink[]
-  };
+  return semanticLinksForId(project, id);
 }
 
 export function outgoingLinks(project: Project | null, id: string | null | undefined, kinds?: Iterable<string>) {

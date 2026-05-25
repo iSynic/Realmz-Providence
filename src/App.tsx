@@ -94,6 +94,33 @@ export function App() {
   }, [desktopRuntime]);
 
   useEffect(() => {
+    if (desktopRuntime) return;
+    const benchmarkProjectUrl = new URLSearchParams(window.location.search).get("benchmarkProject");
+    if (!benchmarkProjectUrl) return;
+    const url = benchmarkProjectUrl;
+    let disposed = false;
+    async function loadBenchmarkProject() {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const project = (await response.json()) as Project;
+        if (!disposed) {
+          setProjectDir(`browser-benchmark://${url}`);
+          dispatch({ type: "setProject", project, selectedMapId: project.maps[0]?.id ?? null });
+          dispatch({ type: "setTab", tab: "scripts" });
+          dispatch({ type: "setStatus", status: `Loaded benchmark project ${project.scenario.name}` });
+        }
+      } catch (error) {
+        if (!disposed) dispatch({ type: "setStatus", status: `Benchmark project load failed: ${commandError(error)}` });
+      }
+    }
+    void loadBenchmarkProject();
+    return () => {
+      disposed = true;
+    };
+  }, [desktopRuntime]);
+
+  useEffect(() => {
     let disposed = false;
     async function loadWorkspace() {
       if (!desktopRuntime) {

@@ -364,7 +364,7 @@ function parseSimpleEncounters(buffer: Uint8Array | undefined): SimpleEncounterR
     maxTimes: signedByte(record[101]),
     casteSuccess: signedByte(record[102]),
     prompt: i16(record, 104),
-    texts: Array.from({ length: 4 }, (_, slot) => decodeFixedText(record.subarray(106 + slot * 80, 106 + slot * 80 + 80))),
+    texts: Array.from({ length: 4 }, (_, slot) => decodePascalText(record.subarray(106 + slot * 80, 106 + slot * 80 + 80))),
     rawBytes: Array.from(record),
     authored: false,
     provenance: provenance("Data ED", id, start, 426, "source-backed")
@@ -384,7 +384,7 @@ function parseComplexEncounters(buffer: Uint8Array | undefined): ComplexEncounte
     thiefSuccess: signedByte(record[155]),
     thiefFail: signedByte(record[156]),
     prompt: i16(record, 158),
-    texts: Array.from({ length: 9 }, (_, slot) => decodeFixedText(record.subarray(160 + slot * 40, 160 + slot * 40 + 40))),
+    texts: Array.from({ length: 9 }, (_, slot) => decodePascalText(record.subarray(160 + slot * 40, 160 + slot * 40 + 40))),
     rawBytes: Array.from(record),
     authored: false,
     provenance: provenance("Data ED2", id, start, 520, "source-backed")

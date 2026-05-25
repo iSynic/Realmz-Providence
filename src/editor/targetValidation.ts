@@ -68,10 +68,10 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
       : project.complexEncounters?.find((candidate) => candidate.id === recordId);
     if (!record) return [];
     const issues = validateRecordId(recordType, recordId);
-    const maxTextBytes = recordType === "simpleEncounter" ? 80 : 40;
+    const maxTextBytes = recordType === "simpleEncounter" ? 79 : 39;
     for (const [slot, text] of record.texts.entries()) {
       const bytes = asciiByteLength(text);
-      if (bytes > maxTextBytes) issues.push(slotIssue("error", recordType, recordId, slot, "encounter-text-too-long", "Encounter text is too long.", `Text ${slot} is ${bytes} byte(s); ${recordType === "simpleEncounter" ? "Data ED" : "Data ED2"} supports ${maxTextBytes}.`));
+      if (bytes > maxTextBytes) issues.push(slotIssue("error", recordType, recordId, slot, "encounter-text-too-long", "Encounter text is too long.", `Text ${slot} is ${bytes} byte(s); ${recordType === "simpleEncounter" ? "Data ED" : "Data ED2"} supports ${maxTextBytes} display byte(s) plus one length byte.`));
       if (hasNonAscii(text)) issues.push(slotIssue("warning", recordType, recordId, slot, "encounter-text-non-ascii", "Encounter text contains non-ASCII characters.", "Classic encounter text is byte-oriented; non-ASCII characters may not round-trip as intended."));
     }
     if (record.choiceResults.length > 4) issues.push(recordIssue("error", recordType, recordId, "choice-result-count", "Encounter has too many choice result rows.", "Realmz stores four choice result bytes."));

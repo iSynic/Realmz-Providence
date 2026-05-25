@@ -7,6 +7,7 @@ import {
   SemanticLink,
   SemanticRecord
 } from "./types";
+import { semanticEntityById, semanticIndex, semanticLinksForId, semanticRecordById } from "./semanticIndex";
 
 export function hasDesktopRuntime() {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -93,29 +94,23 @@ export function selectEntityFromId(id: string): SelectedEntity {
 
 export function findSemanticEntity(project: Project | null, selected: SelectedEntity | null) {
   if (!project || !selected) return null;
-  return project.semanticSchema.entities.find((entity) => entity.id === selected.id) ?? null;
+  return semanticEntityById(project, selected.id);
 }
 
 export function findSemanticRecord(project: Project | null, id: string | null): SemanticRecord | null {
-  if (!project || !id) return null;
-  return project.semanticSchema.records.find((record) => record.id === id) ?? null;
+  return semanticRecordById(project, id);
 }
 
 export function linksFor(project: Project | null, id: string | null) {
-  if (!project || !id) return { outgoing: [] as SemanticLink[], incoming: [] as SemanticLink[] };
-  const reverse = project.semanticSchema.reverseLinks[id];
-  const byId = new Map(project.semanticSchema.links.map((link) => [link.id, link]));
-  return {
-    outgoing: reverse?.outgoing.map((linkId) => byId.get(linkId)).filter(Boolean) as SemanticLink[] ?? [],
-    incoming: reverse?.incoming.map((linkId) => byId.get(linkId)).filter(Boolean) as SemanticLink[] ?? []
-  };
+  return semanticLinksForId(project, id);
 }
 
 export function semanticLabel(project: Project | null, id: string) {
   if (!project) return id;
+  const index = semanticIndex(project);
   return (
-    project.semanticSchema.entities.find((entity) => entity.id === id)?.label ??
-    project.semanticSchema.records.find((record) => record.id === id)?.label ??
+    index.entitiesById.get(id)?.label ??
+    index.recordsById.get(id)?.label ??
     id
   );
 }

@@ -198,10 +198,10 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
             if encounter
                 .texts
                 .iter()
-                .any(|text| classic_text_len(text) > 80)
+                .any(|text| classic_text_len(text) > 79)
             {
                 errors.push(format!(
-                    "Simple encounter {} has text longer than 80 bytes.",
+                    "Simple encounter {} has text longer than 79 bytes.",
                     encounter.id
                 ));
             }
@@ -254,10 +254,10 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
             if encounter
                 .texts
                 .iter()
-                .any(|text| classic_text_len(text) > 40)
+                .any(|text| classic_text_len(text) > 39)
             {
                 errors.push(format!(
-                    "Complex encounter {} has text longer than 40 bytes.",
+                    "Complex encounter {} has text longer than 39 bytes.",
                     encounter.id
                 ));
             }

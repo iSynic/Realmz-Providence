@@ -15,6 +15,10 @@ export type ScriptTargetOption = {
   entity?: SelectedEntity;
 };
 
+const targetOptionsCache = new WeakMap<Project, Map<string, ScriptTargetOption[]>>();
+const catalogIds = new WeakMap<LibraryCatalog, number>();
+let nextCatalogId = 1;
+
 export function TargetPicker({
   project,
   catalog,
@@ -124,6 +128,14 @@ export function targetPickerConfig(opcode: number) {
 export function targetOptionsForOpcode(project: Project | null, opcode: number, catalog?: LibraryCatalog | null): ScriptTargetOption[] {
   if (!project) return [];
   const code = normalizeStepOpcode(opcode);
+  const cacheKey = `${catalogCacheKey(catalog)}:${code}`;
+  let projectCache = targetOptionsCache.get(project);
+  if (!projectCache) {
+    projectCache = new Map();
+    targetOptionsCache.set(project, projectCache);
+  }
+  const cached = projectCache.get(cacheKey);
+  if (cached) return cached;
   const semanticTypes = targetSemanticTypes(code);
   const options: ScriptTargetOption[] = [];
   addTypedProjectTargets(project, code, options, catalog);
@@ -190,7 +202,18 @@ export function targetOptionsForOpcode(project: Project | null, opcode: number, 
       });
     }
   }
-  return dedupeTargetOptions(options).sort((a, b) => a.value - b.value || a.label.localeCompare(b.label)).slice(0, 320);
+  const result = dedupeTargetOptions(options).sort((a, b) => a.value - b.value || a.label.localeCompare(b.label)).slice(0, 320);
+  projectCache.set(cacheKey, result);
+  return result;
+}
+
+function catalogCacheKey(catalog?: LibraryCatalog | null) {
+  if (!catalog) return "none";
+  const existing = catalogIds.get(catalog);
+  if (existing) return existing;
+  const next = nextCatalogId++;
+  catalogIds.set(catalog, next);
+  return next;
 }
 
 function addTypedProjectTargets(project: Project, code: number, options: ScriptTargetOption[], catalog?: LibraryCatalog | null) {

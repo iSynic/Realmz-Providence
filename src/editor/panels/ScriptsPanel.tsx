@@ -1,5 +1,5 @@
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, ArrowDown, ArrowUp, Copy, Plus, Save, Trash2, X } from "lucide-react";
+import { memo, type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from "react";
+import { AlertTriangle, ArrowDown, ArrowUp, Copy, CopyPlus, Plus, Save, Trash2, X } from "lucide-react";
 import { Action, EncounterActionRow, LevelType, LibraryCatalog, Project, ProjectCommand, RealmzTargetRecordKind, ScriptDetailSurface, ScriptInventoryFilter, SelectedEntity, SemanticEntity, TriggerRecord } from "../types";
 import { linksFor, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
 import { actionSlotEntitiesForTriggerRecord, ed3EvidenceRecords, ed3ReachabilityFor, isCallableMacro } from "../semanticGraph";
@@ -65,8 +65,11 @@ function ScriptAuthoringPanel({
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
-  const scripts = project?.triggers.filter((trigger) => triggerVisibleForEditor(project, trigger, activeEditor)) ?? [];
-  const ed3Evidence = ed3EvidenceRecords(project);
+  const scripts = useMemo(
+    () => project?.triggers.filter((trigger) => triggerVisibleForEditor(project, trigger, activeEditor)) ?? [],
+    [project, activeEditor]
+  );
+  const ed3Evidence = useMemo(() => ed3EvidenceRecords(project), [project]);
   const projectMaps = project?.maps ?? [];
   const [draft, setDraft] = useState<Record<string, { rawCode: number; id: number }>>({});
   const [selectedSlot, setSelectedSlot] = useState(0);
@@ -78,6 +81,7 @@ function ScriptAuthoringPanel({
   const [targetDrawerOpen, setTargetDrawerOpen] = usePersistentBoolean("scripts.targetDrawer.open", true);
   const [newActionPoint, setNewActionPoint] = useState({ mapId: projectMaps[0]?.id ?? "", x: 1, y: 1 });
   const selectedScriptButtonRef = useRef<HTMLButtonElement | null>(null);
+  const benchmarkStartedRef = useRef(false);
   useEffect(() => {
     if (projectMaps.length === 0) return;
     if (!projectMaps.some((map) => map.id === newActionPoint.mapId)) {
@@ -94,17 +98,104 @@ function ScriptAuthoringPanel({
   }, [selectedEntity?.id, inventoryFilter, scriptQuery, scripts.length]);
   const selectedMap = projectMaps.find((map) => map.id === newActionPoint.mapId) ?? projectMaps[0] ?? null;
   const canScopeToMap = Boolean(selectedMap && activeEditor !== "macros" && activeEditor !== "global-macros");
+  const triggerDiagnosticsById = useMemo(() => {
+    const map = new Map<string, ScriptDiagnostic[]>();
+    if (!project) return map;
+    for (const trigger of scripts) {
+      map.set(trigger.id, validateScriptTrigger(project, trigger, catalog));
+    }
+    return map;
+  }, [project, scripts, catalog]);
   const inventoryCounts = useMemo(() => {
     const counts = new Map<ScriptInventoryFilter, number>();
     for (const filter of SCRIPT_INVENTORY_FILTERS) {
-      counts.set(filter.id, filterScriptsByInventory(project, scripts, filter.id, selectedMap, canScopeToMap, catalog).length);
+      counts.set(filter.id, filterScriptsByInventory(project, scripts, filter.id, selectedMap, canScopeToMap, triggerDiagnosticsById).length);
     }
     return counts;
-  }, [project, scripts, selectedMap, canScopeToMap]);
+  }, [project, scripts, selectedMap, canScopeToMap, triggerDiagnosticsById]);
+  const scopedScripts = useMemo(
+    () => filterScriptsByInventory(project, scripts, inventoryFilter, selectedMap, canScopeToMap, triggerDiagnosticsById),
+    [project, scripts, inventoryFilter, selectedMap, canScopeToMap, triggerDiagnosticsById]
+  );
+  const filteredScripts = useMemo(
+    () => project ? scopedScripts.filter((trigger) => scriptMatchesQuery(project, trigger, scriptQuery)) : [],
+    [project, scopedScripts, scriptQuery]
+  );
+  useEffect(() => {
+    if (!isScriptsBenchmarkMode() || benchmarkStartedRef.current || filteredScripts.length === 0) return;
+    benchmarkStartedRef.current = true;
+    let disposed = false;
+    const afterPaint = () => new Promise<void>((resolve) => setTimeout(() => setTimeout(resolve, 0), 0));
+    const summarize = (label: string, values: number[]) => {
+      const sorted = [...values].sort((a, b) => a - b);
+      const pick = (p: number) => sorted[Math.min(sorted.length - 1, Math.floor((sorted.length - 1) * p))] ?? 0;
+      return {
+        label,
+        count: values.length,
+        min: Math.round(sorted[0] ?? 0),
+        median: Math.round(pick(0.5)),
+        p90: Math.round(pick(0.9)),
+        p95: Math.round(pick(0.95)),
+        max: Math.round(sorted[sorted.length - 1] ?? 0),
+        avg: Math.round(values.reduce((total, value) => total + value, 0) / Math.max(1, values.length))
+      };
+    };
+    const writeResult = (result: unknown) => {
+      let node = document.getElementById("providence-scripts-benchmark-result");
+      if (!node) {
+        node = document.createElement("script");
+        node.id = "providence-scripts-benchmark-result";
+        node.setAttribute("type", "application/json");
+        document.body.appendChild(node);
+      }
+      node.textContent = JSON.stringify(result);
+    };
+    const measure = async (label: string, indexes: number[], action: (index: number) => boolean) => {
+      const values: number[] = [];
+      for (const index of indexes) {
+        const start = Date.now();
+        if (!action(index)) continue;
+        await afterPaint();
+        values.push(Date.now() - start);
+      }
+      return summarize(label, values);
+    };
+    async function runBenchmark() {
+      const scriptIndexes = [1, 2, 3, 4, 5, 10, 20, 40, 60, 80];
+      const slotIndexes = [0, 1, 2, 3, 4, 5, 6, 7];
+      const scriptSwitch = await measure("script-row-switch", scriptIndexes, (index) => {
+        const trigger = filteredScripts[index];
+        if (!trigger) return false;
+        onSelectEntity(selectEntityFromId(trigger.source === "Data ED3" ? `macro:${trigger.recordIndex}` : trigger.id));
+        return true;
+      });
+      const slotSwitch = await measure("slot-switch", slotIndexes, (slot) => {
+        if (slot < 0 || slot > 7) return false;
+        setSelectedSlot(slot);
+        return true;
+      });
+      const surfaceToggle = await measure("dock-float-toggle", [0, 1], () => {
+        setDetailSurface((current) => current === "floating" ? "docked" : "floating");
+        return true;
+      });
+      if (!disposed) {
+        writeResult({
+          filteredScripts: filteredScripts.length,
+          visibleScripts: Math.min(filteredScripts.length, 240),
+          scriptSwitch,
+          slotSwitch,
+          surfaceToggle
+        });
+      }
+    }
+    void runBenchmark();
+    return () => {
+      disposed = true;
+      benchmarkStartedRef.current = false;
+    };
+  }, [filteredScripts, onSelectEntity, setDetailSurface]);
   if (!project) return null;
   const selectedMapCapacity = selectedMap ? actionPointCapacity(project.triggers, selectedMap.levelType, selectedMap.index) : null;
-  const scopedScripts = filterScriptsByInventory(project, scripts, inventoryFilter, selectedMap, canScopeToMap, catalog);
-  const filteredScripts = scopedScripts.filter((trigger) => scriptMatchesQuery(project, trigger, scriptQuery));
   const selectedTrigger =
     scripts.find((trigger) => triggerMatchesSelection(trigger, selectedEntity?.id ?? "")) ??
     filteredScripts[0] ??
@@ -138,7 +229,7 @@ function ScriptAuthoringPanel({
         summary?: string;
       }
     | undefined;
-  const triggerDiagnostics = selectedTrigger ? validateScriptTrigger(project, selectedTrigger, catalog) : [];
+  const triggerDiagnostics = selectedTrigger ? triggerDiagnosticsById.get(selectedTrigger.id) ?? [] : [];
   const selectedSlotDiagnostics = selectedTrigger
     ? validateActionDraft(project, selectedTrigger, selectedSlot, selectedDraft.rawCode, selectedDraft.id, catalog)
     : [];
@@ -171,14 +262,21 @@ function ScriptAuthoringPanel({
   };
   const floatingDetail = detailSurface === "floating";
   const directTargetDrawerAvailable = !selectedOption.edcdShape;
-  const detailSurfaceToggle = (
-    <div className="script-detail-surface-toggle" role="group" aria-label="Script detail surface">
-      <button type="button" className={detailSurface === "docked" ? "active" : ""} onClick={() => setDetailSurface("docked")}>Docked</button>
-      <button type="button" className={detailSurface === "floating" ? "active" : ""} onClick={() => setDetailSurface("floating")}>Floating</button>
-    </div>
+  const targetRecordType = realmzScriptStepDescriptorFor(selectedDraft.rawCode).targetType;
+  const wideTargetRecord = targetRecordType === "battle" || targetRecordType === "treasure" || targetRecordType === "shop" || targetRecordType === "simpleEncounter" || targetRecordType === "complexEncounter";
+  const detailSurfaceButton = (
+    <button
+      type="button"
+      className="btn btn-secondary btn-xs"
+      title={floatingDetail ? "Dock this selected slot editor back into the Scripts workbench." : "Float this selected slot editor for more target editing room."}
+      onClick={() => setDetailSurface(floatingDetail ? "docked" : "floating")}
+    >
+      {floatingDetail ? "Dock" : "Float"}
+    </button>
   );
   const stepDetailActions = selectedTrigger ? (
     <>
+      {detailSurfaceButton}
       <button type="button" className="btn btn-secondary btn-xs icon-only" title="Move slot up" disabled={selectedSlot === 0} onClick={() => onApplyCommand?.({ kind: "swapActionSlots", label: "Swap action slots", triggerId: selectedTrigger.id, fromSlot: selectedSlot, toSlot: selectedSlot - 1 })}>
         <ArrowUp size={12} />
       </button>
@@ -186,7 +284,7 @@ function ScriptAuthoringPanel({
         <ArrowDown size={12} />
       </button>
       <button type="button" className="btn btn-secondary btn-xs icon-only" title="Duplicate slot to next slot" disabled={!selectedAction || selectedSlot === 7} onClick={() => onApplyCommand?.({ kind: "duplicateActionSlot", label: "Duplicate action slot", triggerId: selectedTrigger.id, fromSlot: selectedSlot, toSlot: selectedSlot + 1 })}>
-        <Copy size={12} />
+        <CopyPlus size={12} />
       </button>
       <button type="button" className="btn btn-danger btn-xs icon-only" title="Clear slot" disabled={!selectedAction} onClick={() => onApplyCommand?.({ kind: "deleteActionSlot", label: "Clear action slot", triggerId: selectedTrigger.id, slot: selectedSlot })}>
         <X size={12} />
@@ -235,7 +333,7 @@ function ScriptAuthoringPanel({
     />
   ) : null;
   const targetEditorPanel = selectedTrigger && targetDrawerOpen && directTargetDrawerAvailable ? (
-    <PanelSection title="Target Record" eyebrow="selected slot" density="compact" className="script-target-drawer" actions={<button type="button" className="btn btn-secondary btn-xs icon-only" title="Hide target drawer" onClick={() => setTargetDrawerOpen(false)}><X size={12} /></button>}>
+    <PanelSection title="Target Record" eyebrow="selected slot" density="compact" className={`script-target-drawer${wideTargetRecord ? " wide-target" : ""}`} actions={<button type="button" className="btn btn-secondary btn-xs icon-only" title="Hide target drawer" onClick={() => setTargetDrawerOpen(false)}><X size={12} /></button>}>
       <TargetRecordEditor
         project={project}
         catalog={catalog}
@@ -253,7 +351,6 @@ function ScriptAuthoringPanel({
           <small>Guided Realmz CODE/ID authoring with raw slots, EDCD rows, and compatibility checks kept visible.</small>
         </div>
         <div className="script-toolbar">
-          {detailSurfaceToggle}
           <button type="button" className="btn btn-secondary btn-xs" onClick={() => onApplyCommand?.({ kind: "createMacro", label: "Create macro" })}>
             <Plus size={12} /> Macro
           </button>
@@ -335,18 +432,15 @@ function ScriptAuthoringPanel({
           </div>
           <ScrollArea className="realmz-script-list" aria-label="Triggers and macros">
             {filteredScripts.slice(0, 240).map((trigger) => (
-              <button
-                type="button"
+              <ScriptListItem
                 key={trigger.id}
-                ref={trigger.id === selectedTrigger?.id ? selectedScriptButtonRef : undefined}
-                className={`${trigger.id === selectedTrigger?.id ? "selected" : ""}${isReusableActionPoint(trigger) ? " reusable" : ""}`}
-                onClick={() => onSelectEntity(selectEntityFromId(trigger.source === "Data ED3" ? `macro:${trigger.recordIndex}` : trigger.id))}
-              >
-                <strong>{scriptLabel(project, trigger)}</strong>
-                <small>{scriptSubtitle(project, trigger)}</small>
-                {trigger.source === "Data ED3" && <small className="script-reachability-badge">{ed3ReachabilityFor(project, trigger.recordIndex)?.rootType ?? "authored"}</small>}
-                <ScriptIssueBadge issues={validateScriptTrigger(project, trigger, catalog)} />
-              </button>
+                project={project}
+                trigger={trigger}
+                selected={trigger.id === selectedTrigger?.id}
+                buttonRef={trigger.id === selectedTrigger?.id ? selectedScriptButtonRef : undefined}
+                issues={triggerDiagnosticsById.get(trigger.id) ?? []}
+                onSelectEntity={onSelectEntity}
+              />
             ))}
             {filteredScripts.length === 0 && (
               <div className="script-list-empty">
@@ -466,7 +560,7 @@ function ScriptAuthoringPanel({
                 selectedEdcdRowId={selectedEdcdRowId}
                 onSelectEntity={onSelectEntity}
               />
-              <div className={`realmz-visual-script${floatingDetail ? " has-floating-detail" : ""}${targetEditorPanel ? "" : " no-target-drawer"}`}>
+              <div className={`realmz-visual-script${floatingDetail ? " has-floating-detail" : ""}${targetEditorPanel ? "" : " no-target-drawer"}${wideTargetRecord && targetEditorPanel && !floatingDetail ? " has-wide-target" : ""}`}>
                 <PanelSection title="Action Slots" eyebrow="Visual step list" count="8" density="compact">
                   <ScrollArea className="realmz-step-list" aria-label="Action slots">
                     {Array.from({ length: 8 }, (_, slot) => {
@@ -515,9 +609,6 @@ function ScriptAuthoringPanel({
                   actions={
                     <>
                       {stepDetailActions}
-                      <button type="button" className="btn btn-secondary btn-xs icon-only" title="Dock step details" onClick={() => setDetailSurface("docked")}>
-                        <X size={12} />
-                      </button>
                     </>
                   }
                 >
@@ -1231,21 +1322,31 @@ function EncounterTextGrid({
   onCommit: (slot: number, text: string) => void;
 }) {
   const count = recordKind === "simple" ? 4 : 9;
-  const maxLength = recordKind === "simple" ? 80 : 40;
+  const maxLength = recordKind === "simple" ? 79 : 39;
   return (
-    <CollapsibleSection title="Encounter Text" eyebrow={`${count} buffers`} count={`${maxLength} bytes each`} density="compact" className="script-encounter-text-section" defaultOpen>
+    <CollapsibleSection title="Choice / Response Text Buffers" eyebrow="Classic Pascal text" count={`${count} buffers, ${maxLength} display bytes each`} density="compact" className="script-encounter-text-section" defaultOpen>
+      <p className="script-encounter-text-note">
+        Realmz stores these as Pascal text buffers inside the encounter record. Providence shows the display text and writes the hidden length byte on export.
+      </p>
       <div className="script-encounter-text-grid">
-        {Array.from({ length: count }, (_, slot) => (
-          <label key={slot} className="script-encounter-text-field">
-            <span>Text {slot}</span>
-            <textarea
-              defaultValue={texts[slot] ?? ""}
-              maxLength={maxLength}
-              onBlur={(event) => onCommit(slot, event.currentTarget.value)}
-            />
-            <small>{(texts[slot] ?? "").length}/{maxLength}</small>
-          </label>
-        ))}
+        {Array.from({ length: count }, (_, slot) => {
+          const text = texts[slot] ?? "";
+          return (
+            <label key={slot} className="script-encounter-text-field">
+              <span>
+                {encounterTextBufferLabel(recordKind, slot)}
+              </span>
+              <textarea
+                defaultValue={text}
+                maxLength={maxLength}
+                onBlur={(event) => onCommit(slot, event.currentTarget.value)}
+              />
+              <small>
+                {text.length}/{maxLength}
+              </small>
+            </label>
+          );
+        })}
       </div>
     </CollapsibleSection>
   );
@@ -1334,9 +1435,18 @@ function ReferenceIdField({
     if (selected && !visible.some((option) => option.value === selected.value)) return [selected, ...visible.slice(0, 259)];
     return visible;
   }, [filteredOptions, selected]);
+  const resultOptions = useMemo(() => {
+    const visible = filteredOptions.slice(0, 8);
+    if (selected && !query.trim() && !visible.some((option) => option.value === selected.value)) return [selected, ...visible.slice(0, 7)];
+    return visible;
+  }, [filteredOptions, query, selected]);
   const hasRawValue = value !== 0 && !selected;
   const canCreate = Boolean(createRecordType && onCreateTarget && (!selected || hasRawValue || value === 0));
   const createId = value > 0 && !selected ? value : createRecordType ? nextAuthorableTargetId(project, createRecordType) : value;
+  const selectTarget = (next: number) => {
+    onCommit(next);
+    setQuery("");
+  };
   return (
     <label className="script-reference-id-field">
       <span>{label}</span>
@@ -1346,10 +1456,25 @@ function ReferenceIdField({
         placeholder={`Search ${label.toLowerCase()}...`}
         aria-label={`Search ${label}`}
       />
+      <div className="script-reference-results" aria-live="polite">
+        {query.trim() && resultOptions.length === 0 && <small>No matching {label.toLowerCase()} targets.</small>}
+        {(query.trim() ? resultOptions : selected ? [selected] : []).map((option) => (
+          <button
+            key={option.key}
+            type="button"
+            className={option.value === value ? "selected" : ""}
+            onClick={() => selectTarget(option.value)}
+          >
+            <strong>{option.label}</strong>
+            <span>{[option.detail, option.summary, option.compatibility, option.sourceState].filter(Boolean).join(" | ")}</span>
+          </button>
+        ))}
+        {query.trim() && filteredOptions.length > resultOptions.length && <small>{filteredOptions.length - resultOptions.length} more match(es); keep typing to narrow.</small>}
+      </div>
       <select value={hasRawValue ? `raw:${value}` : selected ? String(selected.value) : ""} onChange={(event) => {
         const raw = event.currentTarget.value;
         if (!raw || raw.startsWith("raw:")) return;
-        onCommit(Number(raw));
+        selectTarget(Number(raw));
       }}>
         <option value="">{emptyLabel}</option>
         {hasRawValue && <option value={`raw:${value}`}>Current raw ID {value}</option>}
@@ -1391,6 +1516,24 @@ function updateEncounterActionRow(actions: EncounterActionRow[], slot: number, c
     next.set(slot, updated);
   }
   return [...next.values()].sort((a, b) => a.slot - b.slot);
+}
+
+function encounterTextBufferLabel(recordKind: "simple" | "complex", slot: number) {
+  if (recordKind === "simple") {
+    return ["Choice 0 Label", "Choice 1 Label", "Choice 2 Label", "Choice 3 Label"][slot] ?? `Text Buffer ${slot}`;
+  }
+  const labels = [
+    "Action Option 0 Label",
+    "Action Option 1 Label",
+    "Action Option 2 Label",
+    "Action Option 3 Label",
+    "Action Option 4 Label",
+    "Action Option 5 Label",
+    "Action Option 6 Label",
+    "Action Option 7 Label",
+    "Word Answer"
+  ];
+  return labels[slot] ?? `Text Buffer ${slot}`;
 }
 
 function BattleGridEditor({ grid, onCommit }: { grid: number[]; onCommit: (index: number, value: number) => void }) {
@@ -1563,6 +1706,10 @@ function targetRecordExists(project: Project, recordType: RealmzTargetRecordKind
   return Boolean((records ?? []).some((record) => record.id === id));
 }
 
+function isScriptsBenchmarkMode() {
+  return typeof window !== "undefined" && new URLSearchParams(window.location.search).has("benchmarkScripts");
+}
+
 function NumberField({ label, value, onCommit, compact = false }: { label: string; value: number; onCommit: (value: number) => void; compact?: boolean }) {
   const [draft, setDraft] = useState(String(value));
   useEffect(() => {
@@ -1608,6 +1755,36 @@ function ScriptDiagnostics({ issues }: { issues: ScriptDiagnostic[] }) {
     </div>
   );
 }
+
+const ScriptListItem = memo(function ScriptListItem({
+  project,
+  trigger,
+  selected,
+  buttonRef,
+  issues,
+  onSelectEntity
+}: {
+  project: Project;
+  trigger: TriggerRecord;
+  selected: boolean;
+  buttonRef?: RefObject<HTMLButtonElement>;
+  issues: ScriptDiagnostic[];
+  onSelectEntity: (entity: SelectedEntity) => void;
+}) {
+  return (
+    <button
+      type="button"
+      ref={buttonRef}
+      className={`${selected ? "selected" : ""}${isReusableActionPoint(trigger) ? " reusable" : ""}`}
+      onClick={() => onSelectEntity(selectEntityFromId(trigger.source === "Data ED3" ? `macro:${trigger.recordIndex}` : trigger.id))}
+    >
+      <strong>{scriptLabel(project, trigger)}</strong>
+      <small>{scriptSubtitle(project, trigger)}</small>
+      {trigger.source === "Data ED3" && <small className="script-reachability-badge">{ed3ReachabilityFor(project, trigger.recordIndex)?.rootType ?? "authored"}</small>}
+      <ScriptIssueBadge issues={issues} />
+    </button>
+  );
+});
 
 function ScriptIssueBadge({ issues }: { issues: ScriptDiagnostic[] }) {
   const errors = issues.filter((issue) => issue.severity === "error").length;
@@ -1658,7 +1835,14 @@ const SCRIPT_INVENTORY_FILTERS: Array<{ id: ScriptInventoryFilter; label: string
   { id: "macros", label: "Macros" }
 ];
 
-function filterScriptsByInventory(project: Project | null, scripts: TriggerRecord[], filter: ScriptInventoryFilter, selectedMap: Project["maps"][number] | null, canScopeToMap: boolean, catalog?: LibraryCatalog | null) {
+function filterScriptsByInventory(
+  project: Project | null,
+  scripts: TriggerRecord[],
+  filter: ScriptInventoryFilter,
+  selectedMap: Project["maps"][number] | null,
+  canScopeToMap: boolean,
+  triggerDiagnosticsById: Map<string, ScriptDiagnostic[]>
+) {
   if (filter === "current-map" && selectedMap && canScopeToMap) {
     return scripts.filter((trigger) => trigger.source !== "Data ED3" && trigger.levelType === selectedMap.levelType && trigger.levelIndex === selectedMap.index);
   }
@@ -1670,7 +1854,7 @@ function filterScriptsByInventory(project: Project | null, scripts: TriggerRecor
   }
   if (filter === "warnings") {
     if (!project) return [];
-    return scripts.filter((trigger) => validateScriptTrigger(project, trigger, catalog).length > 0);
+    return scripts.filter((trigger) => (triggerDiagnosticsById.get(trigger.id) ?? []).length > 0);
   }
   if (filter === "macros") {
     return scripts.filter((trigger) => trigger.source === "Data ED3");
