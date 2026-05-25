@@ -18,8 +18,10 @@ Realmz Action Points are fixed records inside map trigger files. Deleting one do
 
 The Scripts workbench is optimized around the selected script, not around always-visible evidence panels.
 
-- Scripts opens in focused authoring mode by default. `Show Context` reveals the Semantic Browser and Semantic Inspector; `Focus Scripts` hides them again so the Action Point inventory and selected step editor own the screen.
-- The Semantic Inspector, ED3 Evidence, EDCD row list, raw Realmz fields, and low-priority semantic groups are collapsible and persist their open/closed state.
+- Scripts/AP is a contextual authoring screen. It does not render the generic Semantic Browser or Semantic Inspector.
+- The Action Point/Macro inventory stays on the left; the selected script, selected slot, and target record editor reclaim the remaining width.
+- Source-backed details are available in a collapsed `Source Evidence` section near the selected script/slot/target instead of living in a permanent side pane.
+- ED3 Evidence, EDCD attachments, raw Realmz fields, and low-priority source details are collapsible and persist their open/closed state.
 - The selected step detail surface can be docked or floating. Floating mode borrows Adventure Engine's bounded floating editor pattern while still editing native Realmz records.
 - On medium-width screens, the target record drawer moves below the slot detail instead of forcing three cramped columns. On EDCD-backed opcodes, the redundant target drawer is disabled because the editable target fields live in the EDCD Attachment section.
 - The selected opcode summary remains visible while the full opcode browser is collapsed into `Opcode Catalog` by default after a slot has a CODE, keeping the current CODE/ID fields, target picker, EDCD attachment, and diagnostics in the primary editing path.

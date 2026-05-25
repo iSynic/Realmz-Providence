@@ -3882,7 +3882,7 @@ body.is-resizing-pane {
   height: 100%;
 }
 
-.scripts-workbench.semantic-workbench {
+.scripts-workbench {
   display: flex;
   align-items: stretch;
   gap: 10px;
@@ -3892,56 +3892,10 @@ body.is-resizing-pane {
 
 .scripts-workbench .script-detail {
   flex: 1 1 auto;
+  width: 100%;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-}
-
-.scripts-workbench .scripts-browser-pane,
-.scripts-workbench .scripts-inspector-pane {
-  min-height: 0;
-  max-height: none;
-  overflow: hidden;
-}
-
-.scripts-workbench .scripts-inspector-pane {
-  display: flex;
-  flex-direction: column;
-}
-
-.scripts-workbench.is-focused .script-detail {
-  max-width: 1500px;
-  margin: 0 auto;
-}
-
-.scripts-inspector-rail {
-  width: 34px;
-  min-width: 34px;
-  display: grid;
-  place-items: center;
-  gap: 8px;
-  border: 1px solid #26333f;
-  border-radius: 7px;
-  background: #10161d;
-  color: #9db7c9;
-  cursor: pointer;
-}
-
-.scripts-inspector-rail span {
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-}
-
-.scripts-compact-tabs {
-  display: none;
-}
-
-.script-focus-toggle {
-  box-shadow: 0 0 0 1px rgba(43, 143, 216, 0.28);
 }
 
 .asset-workbench {
@@ -4590,8 +4544,8 @@ body.is-resizing-pane {
 }
 
 .script-list-column {
-  width: 260px;
-  flex: 0 0 260px;
+  width: clamp(280px, 22vw, 380px);
+  flex: 0 0 clamp(280px, 22vw, 380px);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -4856,7 +4810,7 @@ body.is-resizing-pane {
 
 .realmz-visual-script {
   display: grid;
-  grid-template-columns: minmax(210px, 0.42fr) minmax(340px, 1fr) minmax(260px, 0.62fr);
+  grid-template-columns: minmax(230px, 300px) minmax(520px, 1.2fr) minmax(460px, 1fr);
   gap: 10px;
   align-items: start;
   margin-top: 10px;
@@ -4867,7 +4821,7 @@ body.is-resizing-pane {
 }
 
 .realmz-visual-script.no-target-drawer {
-  grid-template-columns: minmax(210px, 0.42fr) minmax(340px, 1fr);
+  grid-template-columns: minmax(230px, 300px) minmax(560px, 1fr);
 }
 
 .script-floating-detail .realmz-step-detail {
@@ -4896,6 +4850,23 @@ body.is-resizing-pane {
 .selected-step-detail-links {
   display: grid;
   gap: 6px;
+}
+
+.script-source-evidence {
+  display: grid;
+  gap: 8px;
+}
+
+.script-source-link-group {
+  display: grid;
+  gap: 4px;
+}
+
+.script-source-link-group > strong {
+  color: #7eaedf;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .realmz-step-card {
@@ -5685,59 +5656,23 @@ body.is-resizing-pane {
   .script-record-header {
     grid-template-columns: 1fr;
   }
+
+  .realmz-visual-script,
+  .realmz-visual-script.no-target-drawer,
+  .realmz-visual-script.has-floating-detail {
+    grid-template-columns: 1fr;
+  }
 }
 
-@media (max-width: 1500px) {
+@media (max-width: 1700px) {
   .realmz-visual-script {
-    grid-template-columns: minmax(210px, 0.45fr) minmax(320px, 1fr);
+    grid-template-columns: minmax(230px, 300px) minmax(520px, 1fr);
   }
 
   .script-target-drawer {
     grid-column: 1 / -1;
     position: static;
     max-height: none;
-  }
-}
-
-@media (max-width: 1180px) {
-  .scripts-workbench.semantic-workbench {
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
-  }
-
-  .scripts-compact-tabs {
-    display: flex;
-    gap: 6px;
-  }
-
-  .scripts-compact-tabs button {
-    min-height: 30px;
-    border: 1px solid #2b3a49;
-    border-radius: 6px;
-    background: #0f151c;
-    color: #93aabd;
-    font-size: 10px;
-    font-weight: 900;
-    text-transform: uppercase;
-    padding: 0 10px;
-  }
-
-  .scripts-compact-tabs button.active {
-    border-color: #2b8fd8;
-    background: #10283d;
-    color: #dcecff;
-  }
-
-  .scripts-workbench .semantic-left,
-  .scripts-workbench .semantic-right,
-  .scripts-workbench .script-detail {
-    width: 100%;
-    min-height: 0;
-    max-height: none;
-  }
-
-  .realmz-script-layout {
-    min-height: 0;
   }
 }
 

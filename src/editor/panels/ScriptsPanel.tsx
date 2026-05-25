@@ -1,16 +1,13 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, ArrowDown, ArrowUp, Copy, Eye, EyeOff, Focus, PanelRightOpen, Plus, Save, Trash2, X } from "lucide-react";
-import { Action, EncounterActionRow, LevelType, LibraryCatalog, Project, ProjectCommand, RealmzTargetRecordKind, ScriptDetailSurface, ScriptInventoryFilter, ScriptWorkbenchMode, SelectedEntity, SemanticEntity, TriggerRecord } from "../types";
+import { AlertTriangle, ArrowDown, ArrowUp, Copy, Plus, Save, Trash2, X } from "lucide-react";
+import { Action, EncounterActionRow, LevelType, LibraryCatalog, Project, ProjectCommand, RealmzTargetRecordKind, ScriptDetailSurface, ScriptInventoryFilter, SelectedEntity, SemanticEntity, TriggerRecord } from "../types";
 import { linksFor, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
-import { actionSlotEntitiesForScript, actionSlotEntitiesForTriggerRecord, ed3EvidenceRecords, ed3ReachabilityFor, isCallableMacro, schemaEntities, scriptPrimaryCategory } from "../semanticGraph";
-import { EntityBrowser } from "../components/EntityBrowser";
+import { actionSlotEntitiesForTriggerRecord, ed3EvidenceRecords, ed3ReachabilityFor, isCallableMacro } from "../semanticGraph";
 import { EdcdRowEditor } from "../components/EdcdRowEditor";
 import { TargetPicker, targetOptionsForOpcode } from "../components/RealmzTargetPicker";
-import { SemanticInspector } from "../components/SemanticInspector";
-import { ResizablePane } from "../components/ResizablePane";
 import { categoryColor } from "../components/TileSprite";
 import { CollapsibleSection, EmptyState, FieldRow, FloatingWorkbenchPanel, PanelSection, ScrollArea } from "../ui";
-import { ACTION_CATEGORIES, ACTION_OPTIONS, actionOptionFor } from "../realmzActions";
+import { ACTION_CATEGORIES, ACTION_OPTIONS, actionOptionFor, isDispatcherNoopOpcode } from "../realmzActions";
 import { edcdFieldNamesForShape } from "../realmzEdcd";
 import { ScriptDiagnostic, validateActionDraft, validateScriptTrigger } from "../scriptValidation";
 import { actionPointCapacity, isReusableDoorPlaceholder, nextActionPointRecordIndex } from "../actionPointCapacity";
@@ -33,103 +30,22 @@ export function ScriptsPanel({
   onApplyCommand?: (command: ProjectCommand) => void;
   activeEditor?: string;
 }) {
-  const scriptEntities = useMemo(
-    () => schemaEntities(project).filter((entity) => scriptEntityVisibleForEditor(entity, activeEditor)),
+  const scriptCount = useMemo(
+    () => project?.triggers.filter((trigger) => triggerVisibleForEditor(project, trigger, activeEditor)).length ?? 0,
     [project, activeEditor]
-  );
-  const grouped = useMemo(() => {
-    const map = new Map<string, SemanticEntity[]>();
-    for (const entity of scriptEntities) {
-      const category = scriptPrimaryCategory(project, entity);
-      const list = map.get(category) ?? [];
-      list.push(entity);
-      map.set(category, list);
-    }
-    return [...map.entries()].sort((a, b) => b[1].length - a[1].length);
-  }, [scriptEntities]);
-  const [focused, setFocused] = usePersistentBoolean("scripts.focused.v2", true);
-  const [inspectorOpen, setInspectorOpen] = usePersistentBoolean("scripts.inspector.open", false);
-  const [compactTab, setCompactTab] = usePersistentValue<"inventory" | "script" | "inspector">("scripts.compact.tab", "script");
-  const width = useWindowWidth();
-  const mode: ScriptWorkbenchMode = focused ? "focused" : width < 1180 ? "compact" : "standard";
-  const showBrowser = mode === "standard";
-  const showInspector = mode === "standard" && inspectorOpen;
-  const browserPane = (
-    <EntityBrowser project={project} selectedEntity={selectedEntity} onSelect={onSelectEntity} />
-  );
-  const scriptPane = (
-    <>
-      <div className="panel-header scripts-panel-header">
-        <span>{scriptPanelTitle(activeEditor)}</span>
-        <b>{scriptEntities.length.toLocaleString()}</b>
-      </div>
-      <ScrollArea className="script-detail-scroll" aria-label="Script editor">
-        <ScriptAuthoringPanel project={project} catalog={catalog} activeEditor={activeEditor} selectedEntity={selectedEntity} onSelectEntity={onSelectEntity} onApplyCommand={onApplyCommand} focused={focused} onToggleFocus={() => setFocused(!focused)} inspectorOpen={inspectorOpen} onToggleInspector={() => setInspectorOpen(!inspectorOpen)} />
-        <CollapsibleSection title="Semantic Browser Groups" eyebrow="advanced evidence" count={grouped.length} density="compact" storageKey="scripts.semanticGroups.open" defaultOpen={false}>
-          <div className="script-category-grid">
-            {grouped.map(([category, entities]) => (
-              <section key={category} className="script-category">
-                <header>
-                  <span style={{ color: categoryColor(category) }}>●</span>
-                  <strong>{category}</strong>
-                  <b>{entities.length.toLocaleString()}</b>
-                </header>
-                {entities.slice(0, 18).map((entity) => (
-                  <ScriptRow key={entity.id} project={project} entity={entity} onSelectEntity={onSelectEntity} />
-                ))}
-              </section>
-            ))}
-            {!project && <div className="entity-empty">Open a project to inspect scripts.</div>}
-          </div>
-        </CollapsibleSection>
-      </ScrollArea>
-    </>
-  );
-  const inspectorPane = (
-    <ScrollArea className="semantic-right-scroll" aria-label="Script semantic inspector">
-      <CollapsibleSection title="Semantic Inspector" eyebrow="source evidence" density="compact" storageKey="scripts.semanticInspector.open" defaultOpen={false}>
-        <SemanticInspector project={project} selectedEntity={selectedEntity} onSelect={onSelectEntity} />
-      </CollapsibleSection>
-      <CollapsibleSection title="EDCD Rows" eyebrow="advanced rows" density="compact" storageKey="scripts.edcdList.open" defaultOpen={false} count={schemaEntities(project, "edcd-row").length}>
-        <EdcdList project={project} onSelectEntity={onSelectEntity} />
-      </CollapsibleSection>
-    </ScrollArea>
   );
 
   return (
-    <div className={`editor-full-panel semantic-workbench scripts-workbench mode-${mode}${inspectorOpen ? " inspector-open" : " inspector-collapsed"}${focused ? " is-focused" : ""}`}>
-      {mode === "compact" ? (
-        <>
-          <div className="scripts-compact-tabs" role="tablist" aria-label="Scripts workbench panes">
-            <button type="button" className={compactTab === "inventory" ? "active" : ""} onClick={() => setCompactTab("inventory")}>Inventory</button>
-            <button type="button" className={compactTab === "script" ? "active" : ""} onClick={() => setCompactTab("script")}>Script</button>
-            <button type="button" className={compactTab === "inspector" ? "active" : ""} onClick={() => setCompactTab("inspector")}>Inspector</button>
-          </div>
-          {compactTab === "inventory" && <aside className="tab-panel semantic-left scripts-browser-pane">{browserPane}</aside>}
-          {compactTab === "script" && <section className="tab-panel script-detail">{scriptPane}</section>}
-          {compactTab === "inspector" && <aside className="tab-panel semantic-right scripts-inspector-pane">{inspectorPane}</aside>}
-        </>
-      ) : (
-        <>
-          {showBrowser && (
-            <ResizablePane className="tab-panel semantic-left scripts-browser-pane" ariaLabel="Script inventory" storageKey="scripts.browser.width" defaultWidth={300} minWidth={230} maxWidth={460} edge="right">
-              {browserPane}
-            </ResizablePane>
-          )}
-          <section className="tab-panel script-detail">{scriptPane}</section>
-          {!focused && !showInspector && (
-            <button type="button" className="scripts-inspector-rail" onClick={() => setInspectorOpen(true)} title="Open semantic inspector">
-              <PanelRightOpen size={14} />
-              <span>Inspector</span>
-            </button>
-          )}
-          {showInspector && (
-            <ResizablePane className="tab-panel semantic-right scripts-inspector-pane" ariaLabel="Script semantic inspector" storageKey="scripts.inspector.width" defaultWidth={340} minWidth={280} maxWidth={520} edge="left">
-              {inspectorPane}
-            </ResizablePane>
-          )}
-        </>
-      )}
+    <div className="editor-full-panel scripts-workbench">
+      <section className="tab-panel script-detail">
+        <div className="panel-header scripts-panel-header">
+          <span>{scriptPanelTitle(activeEditor)}</span>
+          <b>{scriptCount.toLocaleString()}</b>
+        </div>
+        <ScrollArea className="script-detail-scroll" aria-label="Script editor">
+          <ScriptAuthoringPanel project={project} catalog={catalog} activeEditor={activeEditor} selectedEntity={selectedEntity} onSelectEntity={onSelectEntity} onApplyCommand={onApplyCommand} />
+        </ScrollArea>
+      </section>
     </div>
   );
 }
@@ -140,11 +56,7 @@ function ScriptAuthoringPanel({
   activeEditor,
   selectedEntity,
   onSelectEntity,
-  onApplyCommand,
-  focused,
-  onToggleFocus,
-  inspectorOpen,
-  onToggleInspector
+  onApplyCommand
 }: {
   project: Project | null;
   catalog?: LibraryCatalog | null;
@@ -152,10 +64,6 @@ function ScriptAuthoringPanel({
   selectedEntity: SelectedEntity | null;
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
-  focused: boolean;
-  onToggleFocus: () => void;
-  inspectorOpen: boolean;
-  onToggleInspector: () => void;
 }) {
   const scripts = project?.triggers.filter((trigger) => triggerVisibleForEditor(project, trigger, activeEditor)) ?? [];
   const ed3Evidence = ed3EvidenceRecords(project);
@@ -345,12 +253,6 @@ function ScriptAuthoringPanel({
           <small>Guided Realmz CODE/ID authoring with raw slots, EDCD rows, and compatibility checks kept visible.</small>
         </div>
         <div className="script-toolbar">
-          <button type="button" className={`btn btn-primary btn-xs script-focus-toggle${focused ? " active" : ""}`} onClick={onToggleFocus} title={focused ? "Show browser and inspector panes" : "Hide side panes and focus on script authoring"}>
-            <Focus size={12} /> {focused ? "Show Context" : "Focus Scripts"}
-          </button>
-          <button type="button" className={`btn btn-secondary btn-xs${inspectorOpen ? " active" : ""}`} onClick={onToggleInspector} title={inspectorOpen ? "Collapse semantic inspector" : "Open semantic inspector"}>
-            {inspectorOpen ? <EyeOff size={12} /> : <Eye size={12} />} Inspector
-          </button>
           {detailSurfaceToggle}
           <button type="button" className="btn btn-secondary btn-xs" onClick={() => onApplyCommand?.({ kind: "createMacro", label: "Create macro" })}>
             <Plus size={12} /> Macro
@@ -553,6 +455,17 @@ function ScriptAuthoringPanel({
                   onCommit={(targetY) => onApplyCommand?.({ kind: "updateTriggerHeader", label: "Update action target Y", triggerId: selectedTrigger.id, fields: { targetY } })}
                 />
               </div>
+              <SourceEvidence
+                project={project}
+                trigger={selectedTrigger}
+                selectedSlot={selectedSlot}
+                selectedAction={selectedAction}
+                selectedDraft={selectedDraft}
+                selectedOption={selectedOption}
+                selectedSlotEntity={selectedSlotEntity}
+                selectedEdcdRowId={selectedEdcdRowId}
+                onSelectEntity={onSelectEntity}
+              />
               <div className={`realmz-visual-script${floatingDetail ? " has-floating-detail" : ""}${targetEditorPanel ? "" : " no-target-drawer"}`}>
                 <PanelSection title="Action Slots" eyebrow="Visual step list" count="8" density="compact">
                   <ScrollArea className="realmz-step-list" aria-label="Action slots">
@@ -619,6 +532,96 @@ function ScriptAuthoringPanel({
         </div>
       </div>
     </section>
+  );
+}
+
+function SourceEvidence({
+  project,
+  trigger,
+  selectedSlot,
+  selectedAction,
+  selectedDraft,
+  selectedOption,
+  selectedSlotEntity,
+  selectedEdcdRowId,
+  onSelectEntity
+}: {
+  project: Project;
+  trigger: TriggerRecord;
+  selectedSlot: number;
+  selectedAction?: Action;
+  selectedDraft: { rawCode: number; id: number };
+  selectedOption: ReturnType<typeof actionOptionFor>;
+  selectedSlotEntity?: SemanticEntity;
+  selectedEdcdRowId: number | null;
+  onSelectEntity: (entity: SelectedEntity) => void;
+}) {
+  const triggerEntityIdValue = triggerSemanticSelectionId(trigger);
+  const triggerLinks = linksFor(project, triggerEntityIdValue);
+  const slotLinks = linksFor(project, selectedSlotEntity?.id ?? null);
+  const linkCount = triggerLinks.outgoing.length + triggerLinks.incoming.length + slotLinks.outgoing.length + slotLinks.incoming.length;
+  const edcdUsage = selectedSlotEntity?.summary.edcdUsage as { summary?: string; rowId?: number; shape?: string } | undefined;
+  const count = [
+    trigger.source,
+    selectedSlotEntity?.id,
+    selectedEdcdRowId != null ? `edcd:${selectedEdcdRowId}` : null,
+    linkCount ? `links:${linkCount}` : null
+  ].filter(Boolean).length;
+  return (
+    <CollapsibleSection title="Source Evidence" eyebrow="contextual" count={String(count)} density="compact" storageKey="scripts.sourceEvidence.open" defaultOpen={false}>
+      <div className="script-source-evidence">
+        <div className="realmz-raw-preview">
+          <FieldRow label="Script Source" value={trigger.source} />
+          <FieldRow label="Script Entity" value={triggerEntityIdValue} />
+          <FieldRow label="Record Index" value={trigger.recordIndex} />
+          <FieldRow label="Door ID" value={trigger.doorid} />
+          <FieldRow label="Map" value={trigger.levelType != null ? `${trigger.levelType} ${trigger.levelIndex ?? 0}` : "macro"} />
+          <FieldRow label="Coordinate" value={trigger.coordinate ? `${trigger.coordinate.x}, ${trigger.coordinate.y}` : "none"} />
+          <FieldRow label="Selected Slot" value={selectedSlot} />
+          <FieldRow label="Slot Entity" value={selectedSlotEntity?.id ?? "draft-only"} />
+          <FieldRow label="Applied CODE/ID" value={selectedAction ? `${selectedAction.rawCode} / ${selectedAction.id}` : "empty"} />
+          <FieldRow label="Draft CODE/ID" value={`${selectedDraft.rawCode} / ${selectedDraft.id}`} />
+          <FieldRow label="Opcode" value={selectedOption.label} />
+          <FieldRow label="Dispatcher" value={isDispatcherNoopOpcode(selectedDraft.rawCode) ? "dispatcher no-op; Realmz ignores this CODE" : "has documented dispatcher behavior"} />
+          <FieldRow label="EDCD" value={selectedEdcdRowId != null ? `row ${selectedEdcdRowId}${edcdUsage?.shape ? ` (${edcdUsage.shape})` : ""}` : "none"} />
+          <FieldRow label="Edit State" value={selectedSlotEntity?.editState ?? "authored/draft"} />
+        </div>
+        {edcdUsage?.summary && <p className="field-help">{edcdUsage.summary}</p>}
+        {selectedEdcdRowId != null && (
+          <button className="btn btn-secondary btn-xs" type="button" onClick={() => onSelectEntity(selectEntityFromId(`record:Data EDCD:${selectedEdcdRowId}`))}>
+            Inspect Data EDCD row {selectedEdcdRowId}
+          </button>
+        )}
+        <EvidenceLinkGroup title="Script Links" project={project} links={[...triggerLinks.outgoing, ...triggerLinks.incoming]} onSelectEntity={onSelectEntity} />
+        <EvidenceLinkGroup title="Slot Links" project={project} links={[...slotLinks.outgoing, ...slotLinks.incoming]} onSelectEntity={onSelectEntity} />
+      </div>
+    </CollapsibleSection>
+  );
+}
+
+function EvidenceLinkGroup({
+  title,
+  project,
+  links,
+  onSelectEntity
+}: {
+  title: string;
+  project: Project;
+  links: ReturnType<typeof linksFor>["outgoing"];
+  onSelectEntity: (entity: SelectedEntity) => void;
+}) {
+  if (links.length === 0) return null;
+  return (
+    <div className="script-source-link-group">
+      <strong>{title}</strong>
+      <div className="link-chip-row">
+        {links.slice(0, 12).map((link) => (
+          <button key={link.id} className="link-chip" type="button" onClick={() => onSelectEntity(selectEntityFromId(link.to))}>
+            {link.kind}: {semanticLabel(project, link.to)}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -1679,15 +1682,6 @@ function isReusableActionPoint(trigger: TriggerRecord) {
   return trigger.source !== "Data ED3" && isReusableDoorPlaceholder(trigger);
 }
 
-function scriptEntityVisibleForEditor(entity: SemanticEntity, activeEditor: string) {
-  if (activeEditor === "action-points") return entity.type === "trigger" || entity.type === "action-slot";
-  if (activeEditor === "macros") return entity.type === "macro";
-  if (activeEditor === "ed3-evidence") return entity.type === "ed3-action-record";
-  if (activeEditor === "global-macros") return entity.type === "global-macro" || entity.type === "macro";
-  if (activeEditor === "quests") return entity.type === "quest flag" || entity.type === "action-slot";
-  return entity.type === "trigger" || entity.type === "macro";
-}
-
 function triggerVisibleForEditor(project: Project | null, trigger: TriggerRecord, activeEditor: string) {
   if (activeEditor === "macros" || activeEditor === "global-macros") return isCallableMacro(project, trigger);
   if (activeEditor === "action-points") return trigger.source !== "Data ED3" && trigger.levelType != null && trigger.levelIndex != null;
@@ -1765,88 +1759,6 @@ function triggerSelectionId(trigger: TriggerRecord) {
 
 function triggerSemanticSelectionId(trigger: TriggerRecord) {
   return triggerEntityId(trigger.levelType, trigger.levelIndex, trigger.recordIndex, trigger.source);
-}
-
-function ScriptRow({
-  project,
-  entity,
-  onSelectEntity
-}: {
-  project: Project | null;
-  entity: SemanticEntity;
-  onSelectEntity: (entity: SelectedEntity) => void;
-}) {
-  const links = linksFor(project, entity.id).outgoing;
-  const actions = actionSlotEntitiesForScript(project, entity).slice(0, 8);
-  return (
-    <article className="script-row">
-      <button onClick={() => onSelectEntity(selectEntityFromId(entity.id))}>
-        <strong>{entity.label}</strong>
-        <small>{entity.id}</small>
-      </button>
-      <div className="action-slot-list">
-        {actions.map((slotEntity, index) => {
-          const slot = slotEntity.summary as {
-            slot?: number;
-            code?: number;
-            id?: number;
-            label?: string;
-            category?: string;
-            edcdUsage?: { summary?: string; shape?: string };
-          };
-          const label = slot.edcdUsage?.summary ?? slot.label ?? `opcode ${slot.code}`;
-          const title = slot.edcdUsage?.shape ? `${slot.label ?? `opcode ${slot.code}`} · ${slot.edcdUsage.shape}` : label;
-          return (
-            <button
-              key={`${entity.id}-${index}`}
-              title={title}
-              style={{ borderColor: categoryColor(slot.category ?? "unknown") }}
-              onClick={() => onSelectEntity(selectEntityFromId(slotEntity.id))}
-            >
-              {slot.slot ?? index}: {label}
-            </button>
-          );
-        })}
-        {actions.length === 0 && <span>No action slots</span>}
-      </div>
-      <div className="link-chip-row">
-        {links.slice(0, 8).map((link) => (
-          <button key={link.id} className="link-chip" onClick={() => onSelectEntity(selectEntityFromId(link.to))}>
-            {link.kind}: {semanticLabel(project, link.to)}
-          </button>
-        ))}
-      </div>
-    </article>
-  );
-}
-
-function EdcdList({ project, onSelectEntity }: { project: Project | null; onSelectEntity: (entity: SelectedEntity) => void }) {
-  const rows = schemaEntities(project, "edcd-row");
-  return (
-    <section className="object-inspector">
-      <div className="inspector-header">
-        <span>EDCD Rows</span>
-        <small>{rows.length}</small>
-      </div>
-      <ScrollArea className="edcd-grid" aria-label="EDCD Rows">
-        {rows.slice(0, 180).map((row) => (
-          <button key={row.id} onClick={() => onSelectEntity(selectEntityFromId(row.id))}>
-            {row.label}: {Array.isArray(row.summary.values) ? row.summary.values.join(", ") : "semantic row"}
-          </button>
-        ))}
-      </ScrollArea>
-    </section>
-  );
-}
-
-function useWindowWidth() {
-  const [width, setWidth] = useState(() => typeof window === "undefined" ? 1600 : window.innerWidth);
-  useEffect(() => {
-    const onResize = () => setWidth(window.innerWidth);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-  return width;
 }
 
 function usePersistentBoolean(key: string, fallback: boolean) {
