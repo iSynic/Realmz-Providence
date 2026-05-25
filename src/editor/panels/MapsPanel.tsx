@@ -2,7 +2,7 @@ import { EditorState } from "../store";
 import { MapEntity, MapViewFlag, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
 import { triggerOverlayKinds } from "../semanticGraph";
 import { RealmzMapCanvas } from "../components/MapCanvas";
-import { MapContextSidebar } from "../components/MapContextSidebar";
+import { MapContextSidebar, MapSelectionSidebar } from "../components/MapContextSidebar";
 import { MapViewFilters } from "../components/MapViewFilters";
 
 export function MapsPanel({
@@ -54,16 +54,11 @@ export function MapsPanel({
       <MapContextSidebar
         state={state}
         selectedMap={selectedMap}
-        selectedRandomLevel={selectedRandomLevel}
-        mapTriggers={mapTriggers}
-        mapRecords={mapRecords}
         selectedTileset={selectedTileset}
         atlas={atlas}
         onSelectMap={onSelectMap}
         onSetTool={onSetTool}
         onSelectTile={onSelectTile}
-        onSelectEntity={onSelectEntity}
-        onClearSelection={onClearSelection}
         onApplyCommand={onApplyCommand}
       />
 
@@ -108,6 +103,16 @@ export function MapsPanel({
           <div className="room-canvas-placeholder">Import or open a Providence project.</div>
         )}
       </section>
+      <MapSelectionSidebar
+        state={state}
+        selectedMap={selectedMap}
+        selectedRandomLevel={selectedRandomLevel}
+        mapTriggers={mapTriggers}
+        mapRecords={mapRecords}
+        onSelectEntity={onSelectEntity}
+        onClearSelection={onClearSelection}
+        onApplyCommand={onApplyCommand}
+      />
     </>
   );
 }

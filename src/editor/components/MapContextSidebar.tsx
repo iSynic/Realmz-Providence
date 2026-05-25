@@ -17,33 +17,22 @@ import { actionPointCapacity, nextActionPointRecordIndex } from "../actionPointC
 export function MapContextSidebar({
   state,
   selectedMap,
-  selectedRandomLevel,
-  mapTriggers,
-  mapRecords,
   selectedTileset,
   atlas,
   onSelectMap,
   onSetTool,
   onSelectTile,
-  onSelectEntity,
-  onClearSelection,
   onApplyCommand
 }: {
   state: EditorState;
   selectedMap: MapEntity | null;
-  selectedRandomLevel: RandomLevel | null;
-  mapTriggers: TriggerRecord[];
-  mapRecords: SemanticEntity[];
   selectedTileset: TilesetAsset | null;
   atlas: EditorState["atlasEntries"][string] | null;
   onSelectMap: (id: string) => void;
   onSetTool: (tool: EditorTool) => void;
   onSelectTile: (tile: number) => void;
-  onSelectEntity: (entity: SelectedEntity) => void;
-  onClearSelection: () => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
-  const selection = selectionSummary(selectedMap, state.selectedEntity, state.selectedCell, mapTriggers, selectedRandomLevel, mapRecords);
   return (
     <ResizablePane
       className="editor-sidebar contextual-sidebar"
@@ -55,11 +44,72 @@ export function MapContextSidebar({
       edge="right"
     >
       <ScrollArea className="contextual-sidebar-scroll" aria-label="Map tools and browser">
+        <MapToolset
+          state={state}
+          selectedMap={selectedMap}
+          selectedTileset={selectedTileset}
+          atlas={atlas}
+          onSetTool={onSetTool}
+          onSelectTile={onSelectTile}
+        />
         <MapOutliner
           project={state.project}
           selectedMap={selectedMap}
           onSelectMap={onSelectMap}
         />
+      </ScrollArea>
+    </ResizablePane>
+  );
+}
+
+export function MapSelectionSidebar({
+  state,
+  selectedMap,
+  selectedRandomLevel,
+  mapTriggers,
+  mapRecords,
+  onSelectEntity,
+  onClearSelection,
+  onApplyCommand
+}: {
+  state: EditorState;
+  selectedMap: MapEntity | null;
+  selectedRandomLevel: RandomLevel | null;
+  mapTriggers: TriggerRecord[];
+  mapRecords: SemanticEntity[];
+  onSelectEntity: (entity: SelectedEntity) => void;
+  onClearSelection: () => void;
+  onApplyCommand: (command: ProjectCommand) => void;
+}) {
+  const [open, setOpen] = useState(() => localStorage.getItem("providence.mapRightContextOpen.v1") !== "0");
+  useEffect(() => {
+    localStorage.setItem("providence.mapRightContextOpen.v1", open ? "1" : "0");
+  }, [open]);
+  const selection = selectionSummary(selectedMap, state.selectedEntity, state.selectedCell, mapTriggers, selectedRandomLevel, mapRecords);
+  if (!open) {
+    return (
+      <aside className="map-context-rail">
+        <button type="button" onClick={() => setOpen(true)}>
+          Inspector
+        </button>
+      </aside>
+    );
+  }
+  return (
+    <ResizablePane
+      className="editor-inspector map-context-sidebar"
+      ariaLabel="Map contextual inspector"
+      storageKey="providence.mapRightContextWidth.v1"
+      defaultWidth={380}
+      minWidth={320}
+      maxWidth={680}
+      edge="left"
+    >
+      <ScrollArea className="editor-inspector-scroll map-context-scroll" aria-label="Map contextual inspector">
+        <div className="panel-header map-context-header">
+          <span>{selection ? "Selection Inspector" : "Map Setup"}</span>
+          <button className="btn btn-ghost btn-xs" type="button" onClick={() => setOpen(false)}>Collapse</button>
+        </div>
         {selection ? (
           <SelectionInspector
             selection={selection}
@@ -79,14 +129,6 @@ export function MapContextSidebar({
             onApplyCommand={onApplyCommand}
           />
         )}
-        <MapToolset
-          state={state}
-          selectedMap={selectedMap}
-          selectedTileset={selectedTileset}
-          atlas={atlas}
-          onSetTool={onSetTool}
-          onSelectTile={onSelectTile}
-        />
       </ScrollArea>
     </ResizablePane>
   );
@@ -169,19 +211,11 @@ function MapOutliner({
   selectedMap: MapEntity | null;
   onSelectMap: (id: string) => void;
 }) {
-  const [query, setQuery] = useState("");
-  const normalizedQuery = query.trim().toLowerCase();
   const maps = project?.maps ?? [];
-  const filtered = normalizedQuery
-    ? maps.filter((map) => {
-        const label = `${map.name} ${map.levelType} ${map.index} ${map.render.tilesetId}`.toLowerCase();
-        return label.includes(normalizedQuery);
-      })
-    : maps;
   const landCount = maps.filter((map) => map.levelType === "land").length;
   const dungeonCount = maps.filter((map) => map.levelType === "dungeon").length;
   return (
-    <section className="context-panel map-outliner-panel">
+    <section className="context-panel map-outliner-panel compact">
       <div className="panel-header">
         <span>Scenario Maps</span>
         <small>{maps.length.toLocaleString()}</small>
@@ -202,31 +236,12 @@ function MapOutliner({
         <span>{dungeonCount} dungeon</span>
         {selectedMap && <span>{selectedMap.render.tilesetId}</span>}
       </div>
-      <input
-        className="map-outliner-search"
-        value={query}
-        onChange={(event) => setQuery(event.currentTarget.value)}
-        placeholder="Search maps..."
-        aria-label="Search maps"
-      />
-      <ScrollArea className="map-outliner-list" aria-label="Scenario map list">
-        {filtered.map((map) => (
-          <button
-            key={map.id}
-            className={`map-outliner-row${map.id === selectedMap?.id ? " selected" : ""}`}
-            type="button"
-            onClick={() => onSelectMap(map.id)}
-          >
-            <span className={`map-type-badge ${map.levelType}`}>{map.levelType === "dungeon" ? "D" : "L"}</span>
-            <span>
-              <strong>{map.name}</strong>
-              <small>{map.levelType} {map.index} | {map.render.tilesetId}</small>
-            </span>
-          </button>
-        ))}
-        {project && filtered.length === 0 && <p className="empty-copy compact">No maps match that search.</p>}
-        {!project && <p className="empty-copy compact">Create or import a scenario to browse maps.</p>}
-      </ScrollArea>
+      {selectedMap && (
+        <p className="map-current-summary">
+          {selectedMap.name} | {selectedMap.levelType} {selectedMap.index} | {selectedMap.render.tilesetId}
+        </p>
+      )}
+      {!project && <p className="empty-copy compact">Create or import a scenario to browse maps.</p>}
     </section>
   );
 }

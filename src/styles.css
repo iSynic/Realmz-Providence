@@ -2250,6 +2250,40 @@ a.documents-source-chip:hover {
   overflow: hidden;
 }
 
+.map-context-sidebar {
+  width: 380px;
+}
+
+.map-context-rail {
+  width: 34px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: stretch;
+  border-left: 1px solid #252a31;
+  background: #151719;
+}
+
+.map-context-rail button {
+  width: 100%;
+  border: 0;
+  border-left: 1px solid #263343;
+  background: #111820;
+  color: #9dcfff;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  cursor: pointer;
+}
+
+.map-context-rail button:hover {
+  background: #17263a;
+  color: #f2f8ff;
+}
+
 .contextual-sidebar,
 .semantic-left,
 .semantic-right,
@@ -2355,6 +2389,16 @@ a.documents-source-chip:hover {
   display: grid;
   align-content: start;
   gap: 10px;
+}
+
+.map-context-scroll {
+  gap: 0;
+}
+
+.map-context-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .entity-browser > .workbench-scroll-area {
@@ -2692,6 +2736,11 @@ a.documents-source-chip:hover {
     #14171b;
 }
 
+.map-outliner-panel.compact {
+  background: #14171b;
+  border-top: 1px solid #252a31;
+}
+
 .map-outliner-meta {
   display: flex;
   flex-wrap: wrap;
@@ -2710,6 +2759,15 @@ a.documents-source-chip:hover {
   color: #8ebbe7;
   font-size: 10px;
   font-weight: 800;
+}
+
+.map-current-summary {
+  margin: 0;
+  padding: 0 10px 10px;
+  color: #8399ab;
+  font-size: 10px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .map-outliner-search {
