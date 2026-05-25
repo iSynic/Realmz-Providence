@@ -24,6 +24,7 @@ export function useMapInteractions({
   mapRecords,
   showRandomRects,
   showMapRecords,
+  selectedEntity,
   overlayCanvasRef,
   wrapRef,
   onSelectCell,
@@ -42,6 +43,7 @@ export function useMapInteractions({
   mapRecords: SemanticEntity[];
   showRandomRects: boolean;
   showMapRecords: boolean;
+  selectedEntity: SelectedEntity | null;
   overlayCanvasRef: RefObject<HTMLCanvasElement | null>;
   wrapRef: RefObject<HTMLDivElement | null>;
   onSelectCell: (cell: { x: number; y: number; tile: number }) => void;
@@ -61,6 +63,11 @@ export function useMapInteractions({
     moved: boolean;
   } | null>(null);
   const paintActiveRef = useRef(false);
+  const randomDragRef = useRef<{
+    start: { x: number; y: number };
+    rectIndex: number | null;
+    moved: boolean;
+  } | null>(null);
   const strokeCellsRef = useRef<Set<string>>(new Set());
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
   const [hoverTarget, setHoverTarget] = useState<MapHitTarget | null>(null);
@@ -143,6 +150,13 @@ export function useMapInteractions({
       }
       return;
     }
+    if (activeTool === "random") {
+      const hit = targetAt(cell);
+      setHoverTarget(hit);
+      selectTargetCell(hit.cell);
+      if (hit.kind !== "cell") onSelectEntity(hit.entity);
+      return;
+    }
     if (activeTool === "select") {
       inspectAt(cell);
       return;
@@ -192,6 +206,17 @@ export function useMapInteractions({
           }
           return;
         }
+        if (activeTool === "random") {
+          const cell = cellFromEvent(event);
+          const hit = targetAt(cell);
+          const rectIndex = hit.kind === "randomRect" ? hit.rect.rectIndex : selectedRandomRectIndex(map, selectedEntity);
+          randomDragRef.current = { start: cell, rectIndex, moved: false };
+          setHover(cell);
+          setHoverTarget(hit);
+          selectTargetCell(hit.cell);
+          event.currentTarget.setPointerCapture(event.pointerId);
+          return;
+        }
         event.currentTarget.setPointerCapture(event.pointerId);
         if (activeTool === "paint") {
           paintActiveRef.current = true;
@@ -224,6 +249,19 @@ export function useMapInteractions({
           wrapRef.current.scrollTop = panRef.current.scrollTop - (event.clientY - panRef.current.y);
           return;
         }
+        if (randomDragRef.current) {
+          const cell = cellFromEvent(event);
+          setHover(cell);
+          setHoverTarget(targetAt(cell));
+          if (
+            randomDragRef.current.moved ||
+            Math.abs(cell.x - randomDragRef.current.start.x) > 0 ||
+            Math.abs(cell.y - randomDragRef.current.start.y) > 0
+          ) {
+            randomDragRef.current.moved = true;
+          }
+          return;
+        }
         const cell = cellFromEvent(event);
         setHover(cell);
         if (!paintActiveRef.current) setHoverTarget(targetAt(cell));
@@ -240,6 +278,49 @@ export function useMapInteractions({
           return;
         }
         panRef.current = null;
+        if (randomDragRef.current) {
+          const drag = randomDragRef.current;
+          randomDragRef.current = null;
+          const end = cellFromEvent(event);
+          const bounds = rectBounds(drag.start, end);
+          if (!drag.moved) {
+            applyToolAt(event);
+          } else if (drag.rectIndex != null) {
+            onApplyCommand({
+              kind: "updateRandomRect",
+              label: `Resize Random Rectangle ${drag.rectIndex}`,
+              levelType: map.levelType,
+              levelIndex: map.index,
+              rectIndex: drag.rectIndex,
+              fields: bounds
+            });
+            onSelectEntity({ type: "encounter", id: `random:${map.levelType}:${map.index}:${drag.rectIndex}` });
+          } else {
+            const rectIndex = nextRandomRectIndex(randomLevel);
+            onApplyCommand({
+              kind: "createRandomRect",
+              label: `Create Random Rectangle ${bounds.left},${bounds.top}`,
+              levelType: map.levelType,
+              levelIndex: map.index,
+              rect: {
+                ...bounds,
+                percent: 1000,
+                battleRange: [0, 0],
+                randomDoors: [0, 0, 0],
+                randomDoorPercent: [0, 0, 0],
+                only: false,
+                option: 0,
+                sound: 0,
+                text: 0
+              }
+            });
+            if (rectIndex != null) onSelectEntity({ type: "encounter", id: `random:${map.levelType}:${map.index}:${rectIndex}` });
+          }
+          if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+            event.currentTarget.releasePointerCapture(event.pointerId);
+          }
+          return;
+        }
         finishPaintStroke(true);
         if (event.currentTarget.hasPointerCapture(event.pointerId)) {
           event.currentTarget.releasePointerCapture(event.pointerId);
@@ -248,6 +329,7 @@ export function useMapInteractions({
       onPointerCancel(event: PointerEvent<HTMLCanvasElement>) {
         panRef.current = null;
         selectDragRef.current = null;
+        randomDragRef.current = null;
         setHoverTarget(null);
         finishPaintStroke(false);
         if (event.currentTarget.hasPointerCapture(event.pointerId)) {
@@ -265,4 +347,28 @@ export function useMapInteractions({
       }
     }
   };
+}
+
+function rectBounds(start: { x: number; y: number }, end: { x: number; y: number }) {
+  return {
+    left: Math.min(start.x, end.x),
+    top: Math.min(start.y, end.y),
+    right: Math.max(start.x, end.x),
+    bottom: Math.max(start.y, end.y)
+  };
+}
+
+function selectedRandomRectIndex(map: MapEntity, selectedEntity: SelectedEntity | null) {
+  const prefix = `random:${map.levelType}:${map.index}:`;
+  if (!selectedEntity?.id.startsWith(prefix)) return null;
+  const value = Number(selectedEntity.id.slice(prefix.length));
+  return Number.isInteger(value) ? value : null;
+}
+
+function nextRandomRectIndex(randomLevel: RandomLevel | null) {
+  const used = new Set((randomLevel?.rects ?? []).map((rect) => rect.rectIndex));
+  for (let index = 0; index < 20; index += 1) {
+    if (!used.has(index)) return index;
+  }
+  return null;
 }

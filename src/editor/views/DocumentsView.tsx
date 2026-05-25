@@ -1,140 +1,52 @@
-import { useEffect, useState } from "react";
-import { Camera } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { BookOpen, Camera, ExternalLink, FileText, Search, X } from "lucide-react";
 import { EmptyState, LinkChip, PanelSection, PreviewCard } from "../ui";
-
-type DocumentSection = {
-  id: string;
-  label: string;
-  title: string;
-  eyebrow: string;
-  body: string[];
-  cards?: Array<{ title: string; body: string; facts?: string[] }>;
-};
-
-const SECTIONS: DocumentSection[] = [
-  {
-    id: "getting-started",
-    label: "Getting Started",
-    title: "Providence Workbenches",
-    eyebrow: "Suite orientation",
-    body: [
-      "Providence has a Project Workbench for scenario packages and a Library Workbench for bundled Realmz and Divinity data.",
-      "Create or open a project before importing a scenario. Scenario import is intentionally disabled once a project contains records so source data cannot be accidentally merged."
-    ],
-    cards: [
-      { title: "Project Workbench", body: "Maps, scripts, scenario data, managed assets, validation, and export safety.", facts: ["editable", "exportable"] },
-      { title: "Library Workbench", body: "Read-only shared fixtures: pictures, sounds, icons, items, monsters, spells, races, castes, and reference resources.", facts: ["read-only", "shared"] }
-    ]
-  },
-  {
-    id: "projects",
-    label: "Projects",
-    title: "Projects, Import, and Export",
-    eyebrow: "Folder package workflow",
-    body: [
-      "A Providence project is a folder package with its own schema, source snapshot metadata, managed assets, semantic records, and editor-only names.",
-      "Export writes a new Realmz-readable scenario folder. Source scenarios remain read-only evidence and are never mutated."
-    ],
-    cards: [
-      { title: "New Project", body: "Creates an empty package. Import remains available while the package is empty.", facts: ["empty package"] },
-      { title: "Open Project", body: "Loads a valid Providence folder package.", facts: ["folder package"] },
-      { title: "Export", body: "Writes supported edited records and passes through unsupported compatible source files.", facts: ["safe output"] }
-    ]
-  },
-  {
-    id: "assets",
-    label: "Assets",
-    title: "Assets and Resource Forks",
-    eyebrow: "Media compatibility",
-    body: [
-      "Project assets are user-authored media converted into Realmz resource entries. Library assets are bundled reference material and remain read-only.",
-      "Each resource should either preview/play/decode or explain why it is metadata-only, unsupported, malformed, or missing a fallback."
-    ],
-    cards: [
-      { title: "Pictures", body: "Imported images are converted into PICT resources for scripts such as picture display actions.", facts: ["PICT"] },
-      { title: "Sounds", body: "Imported audio is browser-decoded to PCM and exported as classic sampled snd resources when supported.", facts: ["snd"] },
-      { title: "Icons", body: "32 x 32 icon-like art is converted into cicn resources for Realmz-compatible icon workflows.", facts: ["cicn"] }
-    ]
-  },
-  {
-    id: "pictures-sounds",
-    label: "Pictures & Sounds",
-    title: "Picture and Sound Authoring",
-    eyebrow: "Divinity-compatible roles",
-    body: [
-      "Divinity exposed pictures and sounds as scenario resources addressed by script codes. Providence keeps that native Realmz model.",
-      "Use the Assets panel to import, preview, play, name, replace, and assign resource IDs. Editor-only names help authors work, but only real Realmz fields and resources are exported."
-    ]
-  },
-  {
-    id: "special-land",
-    label: "Special Land Tiles",
-    title: "Special Land Tiles",
-    eyebrow: "32 x 32 cicn tiles",
-    body: [
-      "Special Land Tiles are small scenario cicn resources addressed by negative tile IDs such as -100. They are not the same thing as standard landlook tile atlases.",
-      "Providence imports an image, normalizes it to 32 x 32 pixels, creates a cicn resource, assigns the next available negative ID, and can select that tile for painting."
-    ],
-    cards: [
-      { title: "Use Special Tile", body: "Select for painting, then paint it on a land map like any other tile value.", facts: ["paintable"] },
-      { title: "Export Safety", body: "A Special Land Tile exports only when converted cicn bytes are present and the resource ID is valid.", facts: ["validated"] }
-    ]
-  },
-  {
-    id: "standard-land",
-    label: "Standard Land Sets",
-    title: "Standard Land Tile Sets",
-    eyebrow: "Future atlas editor",
-    body: [
-      "Divinity also had a Standard Land Tile Editor for full landlook tile sets. Those are large PICT atlas-style resources, separate from Special Land Tiles.",
-      "Providence currently documents and inventories these resources; destructive atlas editing remains blocked until fixture-backed writer support exists."
-    ]
-  },
-  {
-    id: "scripts",
-    label: "Action Points",
-    title: "Action Points, GOSUBs, CODE/ID, and EDCD",
-    eyebrow: "Realmz-native script model",
-    body: [
-      "Providence scripts are Realmz-native: action slots preserve CODE/ID values and use EDCD rows for parameter-heavy operations.",
-      "The visual editor is inspired by Adventure Engine's step editing, but it does not compile JavaScript. It emits and validates Realmz records."
-    ]
-  },
-  {
-    id: "records",
-    label: "Records",
-    title: "Records and Evidence",
-    eyebrow: "Archaeology model",
-    body: [
-      "The semantic schema keeps raw sources, decoded records, entities, links, reverse links, evidence, and diagnostics separate.",
-      "Unknown records stay inspectable and source-backed. Editing is blocked until the format has fixture-backed writer coverage."
-    ]
-  },
-  {
-    id: "linter-export",
-    label: "Linter & Export",
-    title: "Linter and Export Safety",
-    eyebrow: "Compatibility gates",
-    body: [
-      "The linter explains missing resources, unsupported edits, malformed forks, generated caches, unresolved semantic links, and export blockers.",
-      "Export is conservative: supported edited files are written, compatible unsupported files pass through, and destructive unknown writes are blocked."
-    ]
-  }
-];
+import {
+  DOCUMENTATION_GROUPS,
+  DOCUMENTATION_TOPICS,
+  DocumentationCallout,
+  DocumentationReference,
+  DocumentationSection,
+  DocumentationTopic,
+  DocumentationVisualSlot,
+  documentationSearchText,
+  documentationTopicById
+} from "../docs/documentationContent";
 
 export function DocumentsView({
   onClose,
-  initialSection = SECTIONS[0].id,
+  initialSection = DOCUMENTATION_TOPICS[0].id,
   onSectionChange
 }: {
   onClose: () => void;
   initialSection?: string;
   onSectionChange?: (section: string) => void;
 }) {
-  const [activeSection, setActiveSection] = useState(initialSection);
-  const section = SECTIONS.find((candidate) => candidate.id === activeSection) ?? SECTIONS[0];
+  const [activeSection, setActiveSection] = useState(() => documentationTopicById(initialSection).id);
+  const [query, setQuery] = useState("");
+  const normalizedQuery = query.trim().toLowerCase();
 
-  function selectSection(sectionId: string) {
+  useEffect(() => {
+    setActiveSection(documentationTopicById(initialSection).id);
+  }, [initialSection]);
+
+  const filteredTopics = useMemo(() => {
+    if (!normalizedQuery) return DOCUMENTATION_TOPICS;
+    return DOCUMENTATION_TOPICS.filter((topic) => documentationSearchText(topic).includes(normalizedQuery));
+  }, [normalizedQuery]);
+
+  const groupedTopics = useMemo(() => {
+    return DOCUMENTATION_GROUPS.map((group) => ({
+      group,
+      topics: filteredTopics.filter((topic) => topic.groupId === group.id)
+    })).filter((entry) => entry.topics.length > 0);
+  }, [filteredTopics]);
+
+  const activeTopic = filteredTopics.find((topic) => topic.id === activeSection) ?? filteredTopics[0] ?? documentationTopicById(activeSection);
+  const relatedTopics = activeTopic.relatedTopicIds.map(documentationTopicById).filter((topic) => topic.id !== activeTopic.id);
+
+  function selectSection(sectionId: string, options: { clearSearch?: boolean } = {}) {
+    if (options.clearSearch) setQuery("");
     setActiveSection(sectionId);
     onSectionChange?.(sectionId);
   }
@@ -153,60 +65,209 @@ export function DocumentsView({
         <header className="documents-header">
           <div>
             <span>Providence Documents</span>
-            <strong>{section.title}</strong>
+            <strong>{activeTopic.title}</strong>
           </div>
           <button className="btn btn-ghost btn-xs" type="button" onClick={onClose}>Close</button>
         </header>
         <div className="documents-body">
-          <nav className="documents-nav" aria-label="Document sections">
-            {SECTIONS.map((candidate) => (
-              <button
-                key={candidate.id}
-                type="button"
-                className={candidate.id === activeSection ? "active" : ""}
-                onClick={() => selectSection(candidate.id)}
-              >
-                {candidate.label}
-              </button>
-            ))}
-          </nav>
-          <article className="documents-content documents-content-workbench">
-            <PanelSection
-              eyebrow={section.eyebrow}
-              title={section.title}
-              count={section.cards?.length ? `${section.cards.length} notes` : undefined}
-            >
-              <div className="documents-copy">
-                {section.body.map((paragraph) => (
-                  <p key={paragraph}>{paragraph}</p>
-                ))}
-              </div>
-              {section.cards && (
-                <div className="documents-chip-row" aria-label="Document topics">
-                  {section.cards.map((card) => (
-                    <LinkChip key={card.title} label={card.title} inert />
-                  ))}
-                </div>
+          <aside className="documents-nav-shell">
+            <label className="documents-search">
+              <Search size={14} />
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.currentTarget.value)}
+                placeholder="Search docs"
+                aria-label="Search documentation"
+              />
+              {query && (
+                <button type="button" onClick={() => setQuery("")} aria-label="Clear documentation search">
+                  <X size={13} />
+                </button>
               )}
-            </PanelSection>
-            {section.cards && (
-              <PanelSection title="Workbench Notes" density="compact">
-                <div className="workbench-preview-grid">
-                  {section.cards.map((card) => (
-                    <PreviewCard key={card.title} title={card.title} subtitle={card.body} facts={card.facts} />
+            </label>
+            <nav className="documents-nav" aria-label="Document sections">
+              {groupedTopics.map(({ group, topics }) => (
+                <section key={group.id} className="documents-nav-group" aria-label={group.label}>
+                  <header>
+                    <strong>{group.label}</strong>
+                    <span>{topics.length}</span>
+                  </header>
+                  {topics.map((topic) => (
+                    <button
+                      key={topic.id}
+                      type="button"
+                      className={topic.id === activeTopic.id ? "active" : ""}
+                      onClick={() => selectSection(topic.id)}
+                    >
+                      <span>{topic.label}</span>
+                      <small>{topic.summary}</small>
+                    </button>
+                  ))}
+                </section>
+              ))}
+              {filteredTopics.length === 0 && (
+                <EmptyState compact title="No document matches" body="Try searching for EDCD, special land, release, Divinity, dispatcher, or oracle." />
+              )}
+            </nav>
+          </aside>
+
+          <article className="documents-content documents-content-workbench">
+            <TopicHero topic={activeTopic} resultCount={filteredTopics.length} searching={Boolean(normalizedQuery)} />
+            {activeTopic.sections.map((section) => (
+              <ArticleSection key={section.title} section={section} />
+            ))}
+            {activeTopic.visualSlots && activeTopic.visualSlots.length > 0 && (
+              <PanelSection title="Visual Reference Slots" eyebrow="Prepared assets" count={`${activeTopic.visualSlots.length} slot${activeTopic.visualSlots.length === 1 ? "" : "s"}`}>
+                <div className="documents-visual-grid">
+                  {activeTopic.visualSlots.map((slot) => (
+                    <VisualSlot key={slot.title} slot={slot} />
                   ))}
                 </div>
               </PanelSection>
             )}
-            <EmptyState
-              compact
-              icon={<Camera size={18} />}
-              title="Screenshot Slots"
-              body="Illustrated reference slots are ready for stable Providence and Divinity screenshots as the UI settles."
-            />
+            {relatedTopics.length > 0 && (
+              <PanelSection title="Related Topics" eyebrow="Keep reading" density="compact">
+                <div className="documents-chip-row" aria-label="Related document topics">
+                  {relatedTopics.map((topic) => (
+                    <LinkChip key={topic.id} label={topic.label} detail={topic.groupId === "reference" ? "reference" : "workflow"} onClick={() => selectSection(topic.id, { clearSearch: true })} />
+                  ))}
+                </div>
+              </PanelSection>
+            )}
           </article>
+
+          <aside className="documents-reference-panel" aria-label="Source references">
+            <PanelSection title="Source References" eyebrow="Divinity and repo" density="compact">
+              <div className="documents-source-list">
+                {activeTopic.references.map((reference) => (
+                  <SourceReferenceChip key={referenceKey(reference)} reference={reference} />
+                ))}
+              </div>
+            </PanelSection>
+            <PanelSection title="Status Badges" eyebrow="Current topic" density="compact">
+              <div className="documents-status-list">
+                {activeTopic.badges.map((badge) => (
+                  <span key={badge}>{badge}</span>
+                ))}
+              </div>
+            </PanelSection>
+            <PanelSection title="Search Terms" eyebrow="Indexed tags" density="compact">
+              <div className="documents-tag-list">
+                {activeTopic.tags.map((tag) => (
+                  <button key={tag} type="button" onClick={() => setQuery(tag)}>
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </PanelSection>
+          </aside>
         </div>
       </section>
     </div>
   );
+}
+
+function TopicHero({ topic, resultCount, searching }: { topic: DocumentationTopic; resultCount: number; searching: boolean }) {
+  return (
+    <PanelSection eyebrow={topic.groupId === "reference" ? "Reference" : "Author workflow"} title={topic.title} count={searching ? `${resultCount} result${resultCount === 1 ? "" : "s"}` : `${topic.sections.length} sections`}>
+      <div className="documents-topic-hero">
+        <p>{topic.summary}</p>
+        <div className="documents-status-list" aria-label="Topic status badges">
+          {topic.badges.map((badge) => (
+            <span key={badge}>{badge}</span>
+          ))}
+        </div>
+      </div>
+    </PanelSection>
+  );
+}
+
+function ArticleSection({ section }: { section: DocumentationSection }) {
+  return (
+    <PanelSection title={section.title} density="compact">
+      <div className="documents-article-section">
+        {section.paragraphs && (
+          <div className="documents-copy">
+            {section.paragraphs.map((paragraph) => (
+              <p key={paragraph}>{paragraph}</p>
+            ))}
+          </div>
+        )}
+        {section.points && (
+          <ul className="documents-point-list">
+            {section.points.map((point) => (
+              <li key={point}>{point}</li>
+            ))}
+          </ul>
+        )}
+        {section.cards && (
+          <div className="workbench-preview-grid">
+            {section.cards.map((card) => (
+              <PreviewCard key={card.title} title={card.title} subtitle={card.body} facts={card.facts} />
+            ))}
+          </div>
+        )}
+        {section.callout && <DocumentationCalloutView callout={section.callout} />}
+      </div>
+    </PanelSection>
+  );
+}
+
+function DocumentationCalloutView({ callout }: { callout: DocumentationCallout }) {
+  return (
+    <aside className={`documents-callout tone-${callout.tone}`}>
+      <strong>{callout.title}</strong>
+      <span>{callout.body}</span>
+    </aside>
+  );
+}
+
+function VisualSlot({ slot }: { slot: DocumentationVisualSlot }) {
+  return (
+    <article className="documents-visual-slot">
+      <div className="documents-visual-frame">
+        {slot.imageSrc ? <img src={slot.imageSrc} alt="" /> : <Camera size={22} />}
+      </div>
+      <div>
+        <strong>{slot.title}</strong>
+        <span>{slot.caption}</span>
+        {slot.sourceHref && (
+          <a href={slot.sourceHref} target="_blank" rel="noreferrer">
+            {slot.sourceLabel ?? "Open source"}
+            <ExternalLink size={11} />
+          </a>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function SourceReferenceChip({ reference }: { reference: DocumentationReference }) {
+  if (reference.kind === "divinity") {
+    return (
+      <a className="documents-source-chip source-divinity" href={reference.href} target="_blank" rel="noreferrer">
+        <BookOpen size={13} />
+        <span>
+          <strong>{reference.label}</strong>
+          <small>{reference.detail}</small>
+        </span>
+        <ExternalLink size={12} />
+      </a>
+    );
+  }
+
+  return (
+    <span className="documents-source-chip source-repo">
+      <FileText size={13} />
+      <span>
+        <strong>{reference.label}</strong>
+        <small>{reference.detail}</small>
+        <code>{reference.path}</code>
+      </span>
+    </span>
+  );
+}
+
+function referenceKey(reference: DocumentationReference) {
+  return reference.kind === "divinity" ? reference.href : reference.path;
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { EditorState } from "../store";
 import { MapEntity, TilesetAsset } from "../types";
 import { TileSprite, tileColor } from "./TileSprite";
@@ -36,13 +36,20 @@ export function PaintPalettePanel({
   variant = "sidebar"
 }: PaintPalettePanelProps) {
   const paletteTiles = paletteForMap(map, tileset);
+  const [query, setQuery] = useState("");
   const buttonRefs = useRef(new Map<number, HTMLButtonElement>());
   const focusTile = inspectedTile ?? selectedTile;
+  const filteredTiles = useMemo(() => {
+    const normalized = query.trim();
+    if (!normalized) return paletteTiles;
+    return paletteTiles.filter((tile) => String(tile).includes(normalized));
+  }, [paletteTiles, query]);
+  const quickTiles = Array.from(new Set([selectedTile, inspectedTile, ...(map?.tiles ?? [])].filter((tile): tile is number => typeof tile === "number"))).slice(0, 12);
 
   useEffect(() => {
     const button = buttonRefs.current.get(focusTile);
     button?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: variant === "bar" ? "center" : "nearest" });
-  }, [focusTile, paletteTiles.length]);
+  }, [focusTile, filteredTiles.length, paletteTiles.length]);
 
   const rootClass = variant === "bar" ? "tile-selection-bar" : "paint-palette-panel";
   const metaClass = variant === "bar" ? "tile-selection-meta" : "paint-palette-meta";
@@ -62,8 +69,27 @@ export function PaintPalettePanel({
         {inspectedTile != null && <b className="cell-tile-readout">Cell tile {inspectedTile}</b>}
         <b>Paint {selectedTile}</b>
       </div>
+      {variant === "sidebar" && (
+        <input
+          className="paint-palette-search"
+          value={query}
+          onChange={(event) => setQuery(event.currentTarget.value)}
+          placeholder="Search tile id..."
+          aria-label="Search tile id"
+        />
+      )}
+      {variant === "sidebar" && quickTiles.length > 0 && (
+        <div className="paint-quick-tiles" aria-label="Recent and sampled tiles">
+          {quickTiles.map((tile) => (
+            <button key={tile} className={tileButtonClass(tile, selectedTile, inspectedTile)} type="button" style={{ background: tileColor(tile) }} onClick={() => setSelectedTile(tile)} title={`Use tile ${tile}`}>
+              {atlas && <TileSprite atlas={atlas} tile={tile} />}
+              <span>{tile}</span>
+            </button>
+          ))}
+        </div>
+      )}
       <ScrollArea className={listClass} orientation={variant === "bar" ? "horizontal" : "vertical"} aria-label="Paint Palette">
-        {paletteTiles.map((tile) => (
+        {filteredTiles.map((tile) => (
           <button
             ref={(node) => {
               if (node) buttonRefs.current.set(tile, node);
@@ -79,6 +105,7 @@ export function PaintPalettePanel({
             <span className="tile-label">{tile}</span>
           </button>
         ))}
+        {filteredTiles.length === 0 && <small>No tiles match that search.</small>}
       </ScrollArea>
       <small>{atlasStatus}</small>
     </section>

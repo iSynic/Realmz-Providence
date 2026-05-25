@@ -37,9 +37,6 @@ export function WorkbenchRouter({
   onSetZoom,
   onSetSmoothTiles,
   onSetViewFlag,
-  onSetShowTriggers,
-  onSetShowRandomRects,
-  onSetShowMapRecords,
   onClearSelection,
   onBeginPaintStroke,
   onApplyCommand,
@@ -80,9 +77,6 @@ export function WorkbenchRouter({
   onSetZoom: (zoom: number) => void;
   onSetSmoothTiles: (value: boolean) => void;
   onSetViewFlag: (flag: MapViewFlag, value: boolean) => void;
-  onSetShowTriggers: (value: boolean) => void;
-  onSetShowRandomRects: (value: boolean) => void;
-  onSetShowMapRecords: (value: boolean) => void;
   onClearSelection: () => void;
   onBeginPaintStroke: (label: string) => void;
   onApplyCommand: (command: ProjectCommand) => void;
@@ -166,9 +160,6 @@ export function WorkbenchRouter({
         onSetZoom={onSetZoom}
         onSetSmoothTiles={onSetSmoothTiles}
         onSetViewFlag={onSetViewFlag}
-        onSetShowTriggers={onSetShowTriggers}
-        onSetShowRandomRects={onSetShowRandomRects}
-        onSetShowMapRecords={onSetShowMapRecords}
         onClearSelection={onClearSelection}
         onBeginPaintStroke={onBeginPaintStroke}
         onApplyCommand={onApplyCommand}

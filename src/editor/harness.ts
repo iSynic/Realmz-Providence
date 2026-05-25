@@ -34,6 +34,7 @@ export type ProvidenceHarnessScript = {
     validationWarningsNotContain?: string[];
     projectHasMaps?: boolean;
     projectTiles?: Array<{ mapId: string; index: number; value: number }>;
+    randomLevels?: Array<{ levelType: "land" | "dungeon"; levelIndex: number; fields?: Record<string, unknown>; rects?: Array<{ rectIndex: number; fields?: Record<string, unknown> }> }>;
     triggers?: Array<{ triggerId: string; fields?: Record<string, unknown> }>;
     actionSlots?: Array<{ triggerId: string; slot: number; rawCode: number; id: number }>;
     edcdRows?: Array<{ rowId: number; values: number[] }>;
@@ -290,6 +291,32 @@ function assertHarnessResult(
     const observed = map?.tiles[tileAssertion.index] ?? null;
     if (observed !== tileAssertion.value) {
       errors.push(assertionError(`projectTiles:${tileAssertion.mapId}:${tileAssertion.index}`, tileAssertion.value, observed));
+    }
+  }
+  for (const randomAssertion of assertions.randomLevels ?? []) {
+    const level = project.randomLevels.find((candidate) => candidate.levelType === randomAssertion.levelType && candidate.levelIndex === randomAssertion.levelIndex);
+    if (!level) {
+      errors.push(assertionError(`randomLevels:${randomAssertion.levelType}:${randomAssertion.levelIndex}`, "random level exists", null));
+      continue;
+    }
+    for (const [field, expected] of Object.entries(randomAssertion.fields ?? {})) {
+      const observed = readAssertionField(level, field);
+      if (!sameJsonValue(observed, expected)) {
+        errors.push(assertionError(`randomLevels:${randomAssertion.levelType}:${randomAssertion.levelIndex}:${field}`, expected, observed));
+      }
+    }
+    for (const rectAssertion of randomAssertion.rects ?? []) {
+      const rect = level.rects.find((candidate) => candidate.rectIndex === rectAssertion.rectIndex);
+      if (!rect) {
+        errors.push(assertionError(`randomLevels:${randomAssertion.levelType}:${randomAssertion.levelIndex}:rect:${rectAssertion.rectIndex}`, "rect exists", null));
+        continue;
+      }
+      for (const [field, expected] of Object.entries(rectAssertion.fields ?? {})) {
+        const observed = readAssertionField(rect, field);
+        if (!sameJsonValue(observed, expected)) {
+          errors.push(assertionError(`randomLevels:${randomAssertion.levelType}:${randomAssertion.levelIndex}:rect:${rectAssertion.rectIndex}:${field}`, expected, observed));
+        }
+      }
     }
   }
   for (const triggerAssertion of assertions.triggers ?? []) {

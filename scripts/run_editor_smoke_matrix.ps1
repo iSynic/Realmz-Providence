@@ -22,6 +22,11 @@ New-Item -ItemType Directory -Force -Path $RunRoot | Out-Null
 
 $fixtures = @(
   @{
+    name = "maps-authoring"
+    script = Join-Path $PSScriptRoot "run_maps_authoring_editor_smoke.ps1"
+    runRoot = Join-Path $RunRoot "maps-authoring"
+  },
+  @{
     name = "scripts-v2"
     script = Join-Path $PSScriptRoot "run_scripts_v2_editor_smoke.ps1"
     runRoot = Join-Path $RunRoot "scripts-v2"

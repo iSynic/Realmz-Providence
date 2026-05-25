@@ -21,14 +21,12 @@ export function MapCapabilityPanel({
           <b>{activeToolLabel(activeTool)}</b>
         </summary>
         <div className="affordance-button-grid">
-          <AffordanceButton label="Level Layout" body="Inspect the map-to-map layout references that stitch levels together. Editing stays blocked until MD2 writing is fixture-backed." />
-          <AffordanceButton label="Scenario Hub" body="Scenario startup, global macros, strings, and resource setup live here as inspectable semantic groups." />
-          <AffordanceButton label="Tile Atlases" body="Inspect standard and custom tileset resources used by this map, including imported atlas coverage." />
-          <AffordanceButton label="Action Scripts" body="Jump into the Action Point script surface for this level. The Scripts rail tab owns deeper script browsing." />
-          <AffordanceButton label="Undo Tile" body="Undo/redo tracks safe Providence project edits. Action Point mutation remains guarded until writers are backed by fixtures." tone="ready" />
-          <AffordanceButton label="Remove AP" body="Remove an Action Point through the semantic record once editing is enabled, instead of hiding it by painting over the tile." tone="blocked" />
-          <AffordanceButton label="Force Clear" body="Emergency destructive cleanup for malformed Action Point markers. Visible for parity, blocked for now." tone="danger" />
-          <AffordanceButton label="Clear Level" body="Replace the entire level with the selected tile. This stays blocked until destructive export flows are safer." tone="danger" />
+          <AffordanceButton label="Paint Tiles" body="Use Paint and Sample to edit Realmz land and dungeon tile fields through the paint command path." tone="ready" />
+          <AffordanceButton label="Action Points" body="Use the Action Point tool or selected-cell actions to create, move, edit, and clear AP records." tone="ready" />
+          <AffordanceButton label="Map Flags" body="Landlook, darkness, and LOS are writable through the current map setup controls." tone="ready" />
+          <AffordanceButton label="Level Layout" body="Map-to-map starts and layout references are visible as source evidence; writer support is a later slice." />
+          <AffordanceButton label="Tile Atlases" body="Inspect standard and custom tileset resources used by this map, including imported atlas coverage." tone="ready" />
+          <AffordanceButton label="Clear Level" body="Whole-level destructive edits remain guarded until the region tools are fixture-backed." tone="danger" />
         </div>
       </details>
       <details className="context-section affordance-section" open>
@@ -37,10 +35,10 @@ export function MapCapabilityPanel({
           <b>{randomLevel?.rects.length ?? 0} / 20</b>
         </summary>
         <div className="affordance-button-grid compact">
-          <AffordanceButton label="Set Area" body="Drag out the top, left, bottom, and right bounds for a Random Rectangle once editing is enabled." />
+          <AffordanceButton label="Set Area" body="Use the Random Area tool or selected-cell actions to create and resize a Random Rectangle." tone="ready" />
           <AffordanceButton label="Highlight" body="Locate and highlight the selected Random Rectangle on the map." tone="ready" />
           <AffordanceButton label="Show All" body="Show every Random Rectangle on the current level." tone="ready" />
-          <AffordanceButton label="Go To" body="Scroll the canvas to a chosen Random Rectangle." />
+          <AffordanceButton label="Edit Fields" body="Select a Random Rectangle to edit bounds, chance, battles, text, sound, and extra AP doors." tone="ready" />
         </div>
         <div className="mini-rect-list">
           {randomLevel?.rects.slice(0, 6).map((rect) => (

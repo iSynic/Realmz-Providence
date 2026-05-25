@@ -22,6 +22,7 @@
     "smoke:oracle:corpus:triage": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_corpus_triage.ps1",
     "smoke:oracle:show": "powershell -ExecutionPolicy Bypass -File scripts/show_oracle_run.ps1",
     "smoke:editor": "powershell -ExecutionPolicy Bypass -File scripts/run_editor_smoke_matrix.ps1",
+    "smoke:editor:maps": "powershell -ExecutionPolicy Bypass -File scripts/run_maps_authoring_editor_smoke.ps1",
     "smoke:editor:scripts-v2": "powershell -ExecutionPolicy Bypass -File scripts/run_scripts_v2_editor_smoke.ps1",
     "smoke:editor:scripts-v2:diagnostics": "powershell -ExecutionPolicy Bypass -File scripts/run_scripts_v2_diagnostics_smoke.ps1",
     "check": "npm run typecheck && npm run build && npm run test:rust"

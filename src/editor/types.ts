@@ -13,7 +13,7 @@ export type EditorTab =
   | "linter"
   | "export";
 export type ActiveWorkbench = "project" | "library";
-export type EditorTool = "select" | "paint" | "trigger" | "sample" | "pan";
+export type EditorTool = "select" | "paint" | "trigger" | "random" | "sample" | "pan";
 export type FocusedPanel = "main" | "tool-sidebar" | "outliner" | "inspector" | "canvas" | "docs";
 export type ScriptDetailSurface = "docked" | "floating";
 export type ScriptInventoryFilter = "current-map" | "all" | "active" | "reusable" | "warnings" | "macros";
@@ -332,6 +332,35 @@ export type ProjectCommand =
       label: string;
       triggerId: string;
       fields: Partial<Pick<TriggerRecord, "doorid" | "coordinate" | "percent" | "landid" | "targetX" | "targetY" | "active">>;
+    }
+  | {
+      kind: "updateRandomLevelSettings";
+      label: string;
+      levelType: LevelType;
+      levelIndex: number;
+      fields: Partial<Pick<RandomLevel, "landlook" | "isDark" | "useLos">>;
+    }
+  | {
+      kind: "createRandomRect";
+      label: string;
+      levelType: LevelType;
+      levelIndex: number;
+      rect: Omit<RandomRect, "rectIndex"> & { rectIndex?: number };
+    }
+  | {
+      kind: "updateRandomRect";
+      label: string;
+      levelType: LevelType;
+      levelIndex: number;
+      rectIndex: number;
+      fields: Partial<Omit<RandomRect, "rectIndex">>;
+    }
+  | {
+      kind: "clearRandomRect";
+      label: string;
+      levelType: LevelType;
+      levelIndex: number;
+      rectIndex: number;
     }
   | {
       kind: "updateActionSlot";

@@ -852,9 +852,6 @@ export function App() {
         onSetZoom={(zoom) => dispatch({ type: "setZoom", zoom })}
         onSetSmoothTiles={(value) => dispatch({ type: "setSmoothTiles", value })}
         onSetViewFlag={(flag: MapViewFlag, value: boolean) => dispatch({ type: "setMapViewFlag", flag, value })}
-        onSetShowTriggers={(value) => dispatch({ type: "setShowTriggers", value })}
-        onSetShowRandomRects={(value) => dispatch({ type: "setShowRandomRects", value })}
-        onSetShowMapRecords={(value) => dispatch({ type: "setShowMapRecords", value })}
         onClearSelection={clearMapSelection}
         onBeginPaintStroke={(label) => dispatch({ type: "beginCommandGroup", label })}
         onApplyCommand={applyProjectCommand}

@@ -111,6 +111,7 @@ export function RealmzMapCanvas({
     mapRecords,
     showRandomRects,
     showMapRecords,
+    selectedEntity,
     overlayCanvasRef,
     wrapRef,
     onSelectCell,
@@ -267,6 +268,7 @@ export function RealmzMapCanvas({
 function cursorForTool(tool: EditorTool, target: MapHitTarget | null) {
   if (tool === "pan") return "grab";
   if (tool === "paint") return "crosshair";
+  if (tool === "random") return target?.kind === "randomRect" ? "move" : "crosshair";
   if (tool === "sample") return "copy";
   if (tool === "select" && target?.kind === "cell") return "grab";
   if (target && target.kind !== "cell") return "pointer";

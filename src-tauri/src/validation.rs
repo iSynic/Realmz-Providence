@@ -60,6 +60,17 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         macros: &macro_ids,
         edcd_rows: &edcd_ids,
     };
+    let trigger_slots = project
+        .triggers
+        .iter()
+        .filter_map(|trigger| {
+            Some((
+                trigger.level_type?,
+                trigger.level_index?,
+                trigger.record_index,
+            ))
+        })
+        .collect::<BTreeSet<_>>();
 
     if project.maps.is_empty() {
         errors.push(
@@ -92,6 +103,11 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                 errors.push(format!("{} has an out-of-bounds coordinate.", trigger.id));
             }
         }
+        if trigger.level_type.is_some()
+            && ((trigger.target_x as usize) >= MAP_SIZE || (trigger.target_y as usize) >= MAP_SIZE)
+        {
+            errors.push(format!("{} has an out-of-bounds target coordinate.", trigger.id));
+        }
     }
     for level in &project.random_levels {
         if level.raw_values.len() != crate::realmz::RANDLEVEL_BYTES / 2 {
@@ -106,6 +122,50 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                     "{} has random rect {} outside 0..19.",
                     level.id, rect.rect_index
                 ));
+            }
+            if rect.left < 0
+                || rect.top < 0
+                || rect.right >= MAP_SIZE as i16
+                || rect.bottom >= MAP_SIZE as i16
+            {
+                warnings.push(format!(
+                    "{} random rect {} is outside the 90x90 map.",
+                    level.id, rect.rect_index
+                ));
+            }
+            if rect.left > rect.right || rect.top > rect.bottom {
+                warnings.push(format!(
+                    "{} random rect {} has invalid bounds.",
+                    level.id, rect.rect_index
+                ));
+            }
+            if !(0..=10000).contains(&rect.percent) {
+                warnings.push(format!(
+                    "{} random rect {} has percent {} outside 0..10000.",
+                    level.id, rect.rect_index, rect.percent
+                ));
+            }
+            for (slot, percent) in rect.random_door_percent.iter().enumerate() {
+                if !(0..=10000).contains(percent) {
+                    warnings.push(format!(
+                        "{} random rect {} extra door {} has percent {} outside 0..10000.",
+                        level.id, rect.rect_index, slot, percent
+                    ));
+                }
+            }
+            for (slot, door) in rect.random_doors.iter().enumerate() {
+                if *door > 0
+                    && !trigger_slots.contains(&(
+                        level.level_type,
+                        level.level_index,
+                        *door as usize,
+                    ))
+                {
+                    warnings.push(format!(
+                        "{} random rect {} extra door {} points at missing Action Point record {}.",
+                        level.id, rect.rect_index, slot, door
+                    ));
+                }
             }
         }
     }
@@ -1099,6 +1159,60 @@ mod tests {
         assert_eq!(classic_text_len("Realmzé"), 7);
     }
 
+    #[test]
+    fn validates_random_rect_authoring_bounds_and_percent() {
+        let mut project = empty_project();
+        project.maps.push(MapEntity {
+            id: "land:0".to_string(),
+            level_type: LevelType::Land,
+            source: "Data LD".to_string(),
+            index: 0,
+            name: "Land 0".to_string(),
+            width: MAP_SIZE,
+            height: MAP_SIZE,
+            tiles: vec![0; MAP_SIZE * MAP_SIZE],
+            render: MapRender {
+                tileset_id: "landlook-2".to_string(),
+                landlook: Some(2),
+                mode: RenderMode::OutdoorLandlook,
+            },
+            provenance: test_provenance("Data LD", 0, 0, crate::realmz::FIELD_BYTES),
+        });
+        project.random_levels.push(RandomLevel {
+            id: "land:0:randlevel".to_string(),
+            source: "Data RD".to_string(),
+            level_type: LevelType::Land,
+            level_index: 0,
+            landlook: 2,
+            is_dark: false,
+            use_los: false,
+            rects: vec![RandomRect {
+                rect_index: 0,
+                top: 4,
+                left: 6,
+                bottom: 2,
+                right: 90,
+                percent: 10001,
+                battle_range: [0, 0],
+                random_doors: [99, 0, 0],
+                random_door_percent: [10001, 0, 0],
+                only: false,
+                option: 0,
+                sound: 0,
+                text: 0,
+            }],
+            raw_values: vec![0; crate::realmz::RANDLEVEL_BYTES / 2],
+            provenance: test_provenance("Data RD", 0, 0, crate::realmz::RANDLEVEL_BYTES),
+        });
+
+        let report = validate_project(&project);
+
+        assert!(report.warnings.iter().any(|warning| warning.contains("outside the 90x90 map")));
+        assert!(report.warnings.iter().any(|warning| warning.contains("invalid bounds")));
+        assert!(report.warnings.iter().any(|warning| warning.contains("outside 0..10000")));
+        assert!(report.warnings.iter().any(|warning| warning.contains("points at missing Action Point")));
+    }
+
     fn resource_entity(id: &str, shared_fallback: bool) -> SemanticEntity {
         SemanticEntity {
             id: id.to_string(),
@@ -1167,6 +1281,16 @@ mod tests {
             diagnostics: Vec::new(),
             semantic_schema: SemanticSchema::default(),
             validation: ValidationReport::default(),
+        }
+    }
+
+    fn test_provenance(source_file: &str, record_index: usize, byte_offset: usize, byte_length: usize) -> Provenance {
+        Provenance {
+            source_file: source_file.to_string(),
+            record_index,
+            byte_offset,
+            byte_length,
+            confidence: Confidence::SourceBacked,
         }
     }
 }
