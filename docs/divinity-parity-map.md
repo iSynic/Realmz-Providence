@@ -2,6 +2,10 @@
 
 Providence treats Divinity Manual 7.0 as the feature coverage reference, but the product goal is not to clone Divinity screen-for-screen. The editor should expose the same Realmz scenario authoring power through modern, guided workflows while exporting scenario folders that Realmz already accepts.
 
+The technical evidence layer under this roadmap lives in `F:\Realmz Scenario Utility\docs\scenario-format`. Providence links to those local source-backed findings rather than copying the full doc set. The Divinity Manual remains the UX/capability reference; the scenario-format docs are the byte-layout, runtime-consumer, opcode, EDCD, resource, and reachability reference used to decide what can be edited, preserved, validated, or exported.
+
+See `docs/scenario-format-integration.md` for the Providence-specific integration policy.
+
 ## Coverage Legend
 
 - `Inspect`: Providence can import and explain the data.
@@ -17,7 +21,7 @@ Providence treats Divinity Manual 7.0 as the feature coverage reference, but the
 | Getting Started | Project/Scenario | Inspect imported projects; desktop save/export exists | Blank scenario creation flow |
 | Land Editor / Land Layout | Maps | Author tile painting and Action Point placement; inspect map layout evidence | Land layout/start records, map-level flags, random rectangle authoring |
 | Scenario Startup Information | Scenario | Inspect scenario/contact/startup records where decoded | User-facing startup editor and typed scenario commands |
-| Action Points / GOSUBs | Scripts | Author Action Points, macros, CODE/ID slots, EDCD rows, reordering, duplication, deletion, and inline diagnostics | Broader opcode-specific forms and richer branch visualizations |
+| Action Points / GOSUBs | Scripts | Author Action Points, callable/reachable macros, CODE/ID slots, EDCD rows, reordering, duplication, deletion, and inline diagnostics; preserve non-reachable ED3 rows as evidence | Broader opcode-specific forms and richer branch visualizations |
 | Scripting Codes 1-29 | Scripts | Guided opcode picker with descriptions, target picker, EDCD shape hints | Complete manual-derived notes and opcode examples |
 | Scripting Codes 30-59 | Scripts | Guided opcode picker with descriptions, target picker, EDCD shape hints | Complete manual-derived notes and opcode examples |
 | Scripting Codes 60-89 | Scripts | Guided opcode picker with descriptions, target picker, EDCD shape hints | Complete manual-derived notes and opcode examples |
@@ -60,6 +64,8 @@ Scripts are the first parity milestone because they drive most scenario behavior
 - Target authoring: semantic pickers for messages, sounds, pictures, encounters, shops, treasures, maps, monsters, quest flags, and macros where decoded targets exist.
 - EDCD authoring: create/update/delete rows with named fields for known shapes.
 - Compatibility diagnostics: unknown opcode, missing target, missing/malformed EDCD, dangling macro, duplicate/out-of-range slot, invalid coordinate, and unusual chance values.
+- Data ED3 policy: reachable rows become callable macros; non-reachable rows stay visible in ED3 Evidence until duplicated/promoted or proven reachable by source-backed links.
+- Dispatcher policy: active nonzero CODE values ignored by `newland.c` are reported as dispatcher no-ops, not unsupported behavior.
 
 ## Compatibility Rules
 

@@ -224,6 +224,29 @@ export function triggerEntityForRecord(project: Project | null, trigger: Trigger
   return entityById(project, id);
 }
 
+export function ed3ReachabilityFor(project: Project | null, recordIndex: number) {
+  return project?.semanticSchema.decoding?.ed3Reachability?.find((row) => row.recordIndex === recordIndex) ?? null;
+}
+
+export function isCallableMacro(project: Project | null, trigger: TriggerRecord) {
+  if (trigger.source !== "Data ED3") return false;
+  const entity = triggerEntityForRecord(project, trigger);
+  const row = ed3ReachabilityFor(project, trigger.recordIndex);
+  if (entity?.type === "macro" && entity.summary.callable !== false) return true;
+  if (row?.reachable) return true;
+  if (project?.editorMetadata?.displayNames?.[trigger.id]?.source === "user") return true;
+  if (trigger.provenance?.confidence === "inferred") return true;
+  if ((project?.semanticSchema.schemaVersion ?? 0) < 4 && trigger.active) return true;
+  return false;
+}
+
+export function ed3EvidenceRecords(project: Project | null) {
+  if (!project) return [];
+  return project.triggers
+    .filter((trigger) => trigger.source === "Data ED3" && !isCallableMacro(project, trigger))
+    .sort((a, b) => a.recordIndex - b.recordIndex);
+}
+
 export function semanticRecordGroups(project: Project | null): SemanticRecordGroup[] {
   if (!project) return [];
   return project.semanticSchema.sources

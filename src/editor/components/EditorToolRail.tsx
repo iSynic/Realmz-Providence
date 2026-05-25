@@ -60,7 +60,7 @@ function countFor(tab: EditorTab, project: Project | null, catalog: LibraryCatal
   const libraryEntities = activeWorkbench === "library" ? catalog?.entities ?? [] : [];
   if (!project && libraryEntities.length === 0) return 0;
   if (tab === "maps") return project?.maps.length ?? 0;
-  if (tab === "scripts") return project?.semanticSchema.entities.filter((entity) => entity.type === "trigger" || entity.type === "macro").length ?? 0;
+  if (tab === "scripts") return project?.semanticSchema.entities.filter((entity) => entity.type === "trigger" || entity.type === "macro" || entity.type === "ed3-action-record").length ?? 0;
   if (tab === "scenario") return (project?.semanticSchema.entities.filter((entity) => ["scenario", "contact-info", "global-macro", "registration-security"].includes(entity.type)).length ?? 0);
   if (tab === "encounters") {
     return project?.semanticSchema.entities.filter((entity) =>

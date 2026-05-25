@@ -42,6 +42,24 @@ pub(super) fn source_anchors() -> Vec<SemanticEvidence> {
             note: "Opcode categories, EDCD coverage policy, and source-backed high-linkage action shapes.".to_string(),
         },
         SemanticEvidence {
+            id: "anchor:ed3-reachability".to_string(),
+            confidence: Confidence::SourceBacked,
+            source: "F:\\Realmz Scenario Utility\\docs\\scenario-format\\ed3-reachability.md".to_string(),
+            note: "Data ED3 rows are promoted to callable macros only when source-backed roots can reach them.".to_string(),
+        },
+        SemanticEvidence {
+            id: "anchor:dispatcher-noops".to_string(),
+            confidence: Confidence::SourceBacked,
+            source: "F:\\Realmz Scenario Utility\\docs\\scenario-format\\generated\\dispatcher-noop-action-cases.md".to_string(),
+            note: "Active nonzero action words without newland.c dispatcher cases are recorded as no-op diagnostics.".to_string(),
+        },
+        SemanticEvidence {
+            id: "anchor:confidence-debt".to_string(),
+            confidence: Confidence::SourceBacked,
+            source: "F:\\Realmz Scenario Utility\\docs\\scenario-format\\generated\\confidence-debt-cases.md".to_string(),
+            note: "Low-confidence or runtime-only format evidence remains grouped as debt rather than promoted to editable semantics.".to_string(),
+        },
+        SemanticEvidence {
             id: "anchor:resource-fork-taxonomy".to_string(),
             confidence: Confidence::FixtureBacked,
             source: "F:\\Realmz Scenario Utility\\docs\\scenario-format\\resource-fork-taxonomy.md".to_string(),

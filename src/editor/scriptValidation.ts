@@ -1,6 +1,7 @@
 import { Project, TriggerRecord } from "./types";
-import { actionOptionFor, normalizeStepOpcode } from "./realmzActions";
+import { actionOptionFor, isDispatcherNoopOpcode, normalizeStepOpcode } from "./realmzActions";
 import { isDirectMacroOpcode, targetOptionsForOpcode, targetPickerConfig } from "./components/RealmzTargetPicker";
+import { isCallableMacro } from "./semanticGraph";
 
 export type ScriptDiagnosticSeverity = "error" | "warning" | "info";
 
@@ -53,6 +54,8 @@ function validateAction(project: Project, trigger: TriggerRecord, slot: number, 
   const option = actionOptionFor(rawCode);
   if (option.category === "Unknown") {
     diagnostics.push(slotIssue("warning", trigger.id, slot, "unknown-opcode", "Unsupported opcode is preserved but not safely understood.", `CODE ${rawCode} will stay visible as raw Realmz data until Providence documents it.`));
+  } else if (isDispatcherNoopOpcode(rawCode)) {
+    diagnostics.push(slotIssue("info", trigger.id, slot, "dispatcher-noop", "Realmz ignores this CODE value.", `CODE ${rawCode} has no newland.c dispatcher case, so it is preserved as no-op data.`));
   }
 
   if (option.edcdShape) {
@@ -78,6 +81,8 @@ function validateAction(project: Project, trigger: TriggerRecord, slot: number, 
     const macro = project.triggers.find((candidate) => candidate.source === "Data ED3" && candidate.recordIndex === id);
     if (!macro) {
       diagnostics.push(slotIssue("error", trigger.id, slot, "dangling-macro", "Macro/GOSUB target is missing.", `No Data ED3 macro with record index ${id} exists.`));
+    } else if (!isCallableMacro(project, macro)) {
+      diagnostics.push(slotIssue("warning", trigger.id, slot, "ed3-evidence-target", "Macro target is preserved ED3 evidence, not a proven callable macro.", `Data ED3 record ${id} is inspect-only until it is duplicated/promoted into authored macro data or proven reachable.`));
     }
   }
 

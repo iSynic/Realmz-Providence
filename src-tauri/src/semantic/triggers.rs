@@ -62,10 +62,11 @@ pub(super) fn add_triggers(
             continue;
         }
         let entity_id = trigger_entity_id(trigger);
+        let is_ed3 = trigger.source == "Data ED3";
         schema.entities.push(SemanticEntity {
             id: entity_id.clone(),
-            entity_type: if trigger.source == "Data ED3" {
-                "macro".to_string()
+            entity_type: if is_ed3 {
+                "ed3-action-record".to_string()
             } else {
                 "trigger".to_string()
             },
@@ -86,6 +87,23 @@ pub(super) fn add_triggers(
                 ("percent", json!(trigger.percent)),
                 ("actionCount", json!(trigger.actions.len())),
                 ("actions", json!(actions_summary)),
+                ("callable", json!(!is_ed3)),
+                (
+                    "reachability",
+                    json!(if is_ed3 {
+                        "unclassified"
+                    } else {
+                        "source-root"
+                    }),
+                ),
+                (
+                    "classification",
+                    json!(if is_ed3 {
+                        "needs-runtime-trace"
+                    } else {
+                        "map-trigger-root"
+                    }),
+                ),
             ]),
         });
         if let (Some(level_type), Some(level_index), Some(_coord)) =
@@ -218,6 +236,18 @@ fn add_action_slot_entities(
             }
         }
         for diagnostic in semantics.diagnostics {
+            if diagnostic.diagnostic_type == "dispatcher-noop" {
+                schema.decoding.dispatcher_noops.push(DispatcherNoopRow {
+                    source: trigger.source.clone(),
+                    level_type: trigger.level_type,
+                    level_index: trigger.level_index,
+                    record_index: trigger.record_index,
+                    slot: action.slot,
+                    raw_code: action.raw_code,
+                    id: action.id,
+                    message: diagnostic.message.clone(),
+                });
+            }
             schema.diagnostics.push(SemanticDiagnostic {
                 id: format!("diagnostic:opcode:{}", schema.diagnostics.len()),
                 diagnostic_type: diagnostic.diagnostic_type,
@@ -278,7 +308,7 @@ fn action_slot_entity_id(trigger_entity_id: &str, slot: usize) -> String {
 
 fn trigger_label(trigger: &TriggerRecord) -> String {
     if trigger.source == "Data ED3" {
-        format!("Macro {}", trigger.record_index)
+        format!("ED3 record {}", trigger.record_index)
     } else {
         format!(
             "{} {} trigger {}",

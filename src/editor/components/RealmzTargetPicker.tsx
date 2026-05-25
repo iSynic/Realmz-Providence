@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Project, SelectedEntity, SemanticEntity } from "../types";
-import { schemaEntities } from "../semanticGraph";
+import { isCallableMacro, schemaEntities } from "../semanticGraph";
 import { selectEntityFromId } from "../utils";
 import { normalizeStepOpcode } from "../realmzActions";
 
@@ -137,13 +137,13 @@ export function targetOptionsForOpcode(project: Project | null, opcode: number):
     }
   }
   if (isDirectMacroOpcode(code)) {
-    for (const trigger of project.triggers.filter((candidate) => candidate.source === "Data ED3")) {
+    for (const trigger of project.triggers.filter((candidate) => candidate.source === "Data ED3" && isCallableMacro(project, candidate))) {
       options.push({
         key: `macro:${trigger.recordIndex}`,
         value: trigger.recordIndex,
         label: `Macro ${trigger.recordIndex}`,
         detail: `${trigger.actions.length} action slot(s)`,
-        entity: selectEntityFromId(trigger.id)
+        entity: selectEntityFromId(`macro:${trigger.recordIndex}`)
       });
     }
   }

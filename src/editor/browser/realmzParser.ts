@@ -12,6 +12,7 @@ import {
 import { browserReferenceAtlasUrl, hasBrowserReferenceAtlas } from "./atlasPaths";
 import { parseResourceFork, type ResourceEntry } from "./library";
 import { inspectResourcePreview } from "./resourcePreview";
+import { actionOptionFor, normalizeStepOpcode } from "../realmzActions";
 
 export const MAP_SIZE = 90;
 export const FIELD_BYTES = MAP_SIZE * MAP_SIZE * 2;
@@ -397,36 +398,21 @@ function alignmentFor(source: string, buffer: Uint8Array | undefined, recordByte
 }
 
 function describeAction(slot: number, rawCode: number, id: number): Action {
-  const code = normalizeOpcode(rawCode);
-  const [label, category] = opcodeInfo(code);
-  return { slot, rawCode, code, id, label, category, gosub: rawCode < 0 && rawCode !== -14 && rawCode !== -23 };
+  const code = normalizeStepOpcode(rawCode);
+  const option = actionOptionFor(rawCode);
+  return { slot, rawCode, code, id, label: option.shortLabel, category: legacyCategory(option.category), gosub: rawCode < 0 && rawCode !== -14 && rawCode !== -23 };
 }
 
-function normalizeOpcode(code: number) {
-  return code < 0 && code !== -14 && code !== -23 ? -code : code;
-}
-
-function opcodeInfo(code: number): [string, string] {
-  if (code === 1) return ["Text", "ui_text"];
-  if (code === 2) return ["Battle", "combat"];
-  if (code === 3) return ["Choice", "branch"];
-  if (code === 4) return ["Simple encounter", "encounter"];
-  if (code === 5) return ["Complex encounter", "encounter"];
-  if (code === 6) return ["Load shop", "item_shop"];
-  if (code === 7) return ["Action data mutation", "map"];
-  if (code === 8) return ["Same as other door", "branch"];
-  if (code === 9) return ["Play sound", "ui_text"];
-  if (code === 10) return ["Give treasure", "item_shop"];
-  if (code === 11) return ["Give experience", "combat"];
-  if (code === 12 || code === 13 || [20, 37, 45, 57, 59, 61, 70, 78, 92, 106].includes(code)) return ["Map action", "map"];
-  if ([21, 22, 33, 38, 49, 51, 52, 65, 67, 73].includes(code)) return ["Item or shop action", "item_shop"];
-  if ([23, -23, 54, 63, 64, 66].includes(code)) return ["Time or encounter state", "time"];
-  if ([24, 31, 40, 42, 46, 55, 56, 58, 72, 75, 76, 77, 81, 85, 86, 87, 111, 112].includes(code)) return ["Branch", "branch"];
-  if ([27, 29, 62, 71, 74, 107, 122].includes(code)) return ["UI or text action", "ui_text"];
-  if ([47, 60, 68, 69, 83, 84, 88, 89, 90, 91, 97, 100, 101, 102, 103, 104, 105, 108, 119, 123].includes(code)) return ["State action", "state"];
-  if (code === 98 || code === 99) return ["Registration check", "registration"];
-  if (code === 0) return ["Empty", "unknown"];
-  return ["Unknown opcode", "unknown"];
+function legacyCategory(category: string) {
+  if (category === "Text" || category === "Media") return "ui_text";
+  if (category === "Combat") return "combat";
+  if (category === "Encounter") return "encounter";
+  if (category === "Economy") return "item_shop";
+  if (category === "Map") return "map";
+  if (category === "Scenario") return "registration";
+  if (category === "Quest" || category === "Branch") return "branch";
+  if (category === "Characters" || category === "Rules" || category === "Advanced") return "state";
+  return "unknown";
 }
 
 function decodeDoorCoordinate(doorid: number, levelIndex: number | null) {

@@ -75,7 +75,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
 
 function emptySemanticSchema(): Project["semanticSchema"] {
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     sources: [],
     records: [],
     entities: [],
@@ -83,6 +83,7 @@ function emptySemanticSchema(): Project["semanticSchema"] {
     reverseLinks: {},
     evidence: [],
     diagnostics: [],
+    decoding: { ed3Reachability: [], dispatcherNoops: [], confidenceDebt: [] },
     summary: { sourceCount: 0, recordCount: 0, entityCount: 0, linkCount: 0, diagnosticCount: 0 }
   };
 }
@@ -92,6 +93,7 @@ export async function openBrowserProject(source: BrowserScenarioSource): Promise
   const project = JSON.parse(text) as Project;
   project.assets ??= [];
   project.editorMetadata ??= { displayNames: {} };
+  project.semanticSchema.decoding ??= { ed3Reachability: [], dispatcherNoops: [], confidenceDebt: [] };
   backfillTilesetMetadata(project);
   project.validation = validateBrowserProject(project);
   return project;

@@ -82,6 +82,7 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     tools: [
       t({ id: "action-points", label: "Action Points / GOSUBs", iconLabel: "AP", workbench: "project", description: "Create and edit map action slots.", entityTypes: ["trigger", "action-slot"], defaultInspector: "semantic" }),
       t({ id: "macros", label: "Macros", iconLabel: "M", workbench: "project", description: "Extra Action Point macros and branch targets.", entityTypes: ["macro"], defaultInspector: "semantic" }),
+      t({ id: "ed3-evidence", label: "ED3 Evidence", iconLabel: "E3", workbench: "project", description: "Preserved non-reachable Data ED3 rows.", entityTypes: ["ed3-action-record"], defaultInspector: "semantic" }),
       t({ id: "global-macros", label: "Global Macros", iconLabel: "GM", workbench: "project", description: "Scenario-wide macro hooks and startup logic.", entityTypes: ["global-macro"], defaultInspector: "semantic" }),
       t({ id: "quests", label: "Quests", iconLabel: "Q", workbench: "project", description: "Quest flags and script references.", entityTypes: ["quest flag"], defaultInspector: "semantic" })
     ]

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ArrowDown, ArrowUp, Copy, Plus, Save, Trash2, X } from "lucide-react";
 import { Action, LevelType, Project, ProjectCommand, SelectedEntity, SemanticEntity, TriggerRecord } from "../types";
 import { linksFor, selectEntityFromId, semanticLabel } from "../utils";
-import { actionSlotEntitiesForScript, actionSlotEntitiesForTriggerRecord, schemaEntities, scriptPrimaryCategory } from "../semanticGraph";
+import { actionSlotEntitiesForScript, actionSlotEntitiesForTriggerRecord, ed3EvidenceRecords, ed3ReachabilityFor, isCallableMacro, schemaEntities, scriptPrimaryCategory } from "../semanticGraph";
 import { EntityBrowser } from "../components/EntityBrowser";
 import { EdcdRowEditor } from "../components/EdcdRowEditor";
 import { TargetPicker } from "../components/RealmzTargetPicker";
@@ -94,7 +94,8 @@ function ScriptAuthoringPanel({
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
-  const scripts = project?.triggers.filter((trigger) => triggerVisibleForEditor(trigger, activeEditor)) ?? [];
+  const scripts = project?.triggers.filter((trigger) => triggerVisibleForEditor(project, trigger, activeEditor)) ?? [];
+  const ed3Evidence = ed3EvidenceRecords(project);
   const projectMaps = project?.maps ?? [];
   const [draft, setDraft] = useState<Record<string, { rawCode: number; id: number }>>({});
   const [selectedSlot, setSelectedSlot] = useState(0);
@@ -123,7 +124,7 @@ function ScriptAuthoringPanel({
     : scripts;
   const filteredScripts = scopedScripts.filter((trigger) => scriptMatchesQuery(project, trigger, scriptQuery));
   const selectedTrigger =
-    scripts.find((trigger) => trigger.id === selectedEntity?.id || actionBelongsTo(trigger, selectedEntity?.id ?? "")) ??
+    scripts.find((trigger) => triggerSelectionId(trigger) === selectedEntity?.id || trigger.id === selectedEntity?.id || actionBelongsTo(trigger, selectedEntity?.id ?? "")) ??
     filteredScripts[0] ??
     scripts[0] ??
     null;
@@ -268,10 +269,11 @@ function ScriptAuthoringPanel({
                 type="button"
                 key={trigger.id}
                 className={trigger.id === selectedTrigger?.id ? "selected" : ""}
-                onClick={() => onSelectEntity(selectEntityFromId(trigger.id))}
+                onClick={() => onSelectEntity(selectEntityFromId(trigger.source === "Data ED3" ? `macro:${trigger.recordIndex}` : trigger.id))}
               >
                 <strong>{scriptLabel(project, trigger)}</strong>
                 <small>{scriptSubtitle(project, trigger)}</small>
+                {trigger.source === "Data ED3" && <small className="script-reachability-badge">{ed3ReachabilityFor(project, trigger.recordIndex)?.rootType ?? "authored"}</small>}
                 <ScriptIssueBadge issues={validateScriptTrigger(project, trigger)} />
               </button>
             ))}
@@ -286,6 +288,23 @@ function ScriptAuthoringPanel({
               </div>
             )}
           </ScrollArea>
+          {ed3Evidence.length > 0 && (
+            <div className="ed3-evidence-strip">
+              <strong>ED3 Evidence</strong>
+              <small>{ed3Evidence.length.toLocaleString()} preserved non-callable Data ED3 row(s)</small>
+              <ScrollArea className="ed3-evidence-list" aria-label="ED3 evidence records">
+                {ed3Evidence.slice(0, 80).map((trigger) => {
+                  const row = ed3ReachabilityFor(project, trigger.recordIndex);
+                  return (
+                    <button key={trigger.id} type="button" onClick={() => onSelectEntity(selectEntityFromId(`macro:${trigger.recordIndex}`))}>
+                      <strong>ED3 row {trigger.recordIndex}</strong>
+                      <small>{row?.classification ?? "unclassified"} | {trigger.actions.length} slot(s)</small>
+                    </button>
+                  );
+                })}
+              </ScrollArea>
+            </div>
+          )}
         </div>
         <div className="realmz-script-form">
           {selectedTrigger ? (
@@ -597,20 +616,22 @@ function clampRealmzCoordinate(value: number) {
 function scriptEntityVisibleForEditor(entity: SemanticEntity, activeEditor: string) {
   if (activeEditor === "action-points") return entity.type === "trigger" || entity.type === "action-slot";
   if (activeEditor === "macros") return entity.type === "macro";
+  if (activeEditor === "ed3-evidence") return entity.type === "ed3-action-record";
   if (activeEditor === "global-macros") return entity.type === "global-macro" || entity.type === "macro";
   if (activeEditor === "quests") return entity.type === "quest flag" || entity.type === "action-slot";
   return entity.type === "trigger" || entity.type === "macro";
 }
 
-function triggerVisibleForEditor(trigger: TriggerRecord, activeEditor: string) {
-  if (activeEditor === "macros" || activeEditor === "global-macros") return trigger.source === "Data ED3";
+function triggerVisibleForEditor(project: Project | null, trigger: TriggerRecord, activeEditor: string) {
+  if (activeEditor === "macros" || activeEditor === "global-macros") return isCallableMacro(project, trigger);
   if (activeEditor === "quests") return trigger.actions.some((action) => [46, 47, 76, 77].includes(action.code));
-  return trigger.source === "Data ED3" || Boolean(trigger.coordinate);
+  return Boolean(trigger.coordinate) || isCallableMacro(project, trigger);
 }
 
 function scriptPanelTitle(activeEditor: string) {
   if (activeEditor === "action-points") return "Action Points / GOSUBs";
   if (activeEditor === "macros") return "Macro Editor";
+  if (activeEditor === "ed3-evidence") return "ED3 Evidence";
   if (activeEditor === "global-macros") return "Global Macro Editor";
   if (activeEditor === "quests") return "Quest Script Links";
   return "Triggers And Macros";
@@ -626,7 +647,10 @@ function scriptLabel(project: Project, trigger: TriggerRecord) {
 }
 
 function scriptSubtitle(project: Project, trigger: TriggerRecord) {
-  if (trigger.source === "Data ED3") return `macro | record ${trigger.recordIndex}`;
+  if (trigger.source === "Data ED3") {
+    const row = ed3ReachabilityFor(project, trigger.recordIndex);
+    return `macro | record ${trigger.recordIndex} | ${row?.pathStatus ?? "authored"}`;
+  }
   const map = project.maps.find((candidate) => candidate.levelType === trigger.levelType && candidate.index === trigger.levelIndex);
   const mapLabel = map?.name ?? `${trigger.levelType ?? "map"} ${trigger.levelIndex ?? 0}`;
   const coordinate = trigger.coordinate ? `${trigger.coordinate.x},${trigger.coordinate.y}` : "no coordinate";
@@ -650,7 +674,11 @@ function actionSummary(action?: Action) {
 }
 
 function actionBelongsTo(trigger: TriggerRecord, entityId: string) {
-  return entityId.includes(trigger.id) || entityId.startsWith(`action:${trigger.source}:${trigger.recordIndex}:`);
+  return entityId.includes(trigger.id) || entityId.startsWith(`action:${trigger.source}:${trigger.recordIndex}:`) || entityId.startsWith(`action-slot:${triggerSelectionId(trigger)}:`);
+}
+
+function triggerSelectionId(trigger: TriggerRecord) {
+  return trigger.source === "Data ED3" ? `macro:${trigger.recordIndex}` : trigger.id;
 }
 
 function ScriptRow({

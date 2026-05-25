@@ -132,7 +132,18 @@ export const ACTION_CATEGORIES = Array.from(new Set(ACTION_OPTIONS.map((option) 
 
 export function actionOptionFor(rawCode: number): RealmzActionOption {
   const normalizedCode = normalizeStepOpcode(rawCode);
-  return ACTION_OPTIONS.find((option) => option.code === normalizedCode) ?? {
+  const known = ACTION_OPTIONS.find((option) => option.code === normalizedCode);
+  if (known) return known;
+  if (isDispatcherNoopOpcode(rawCode)) {
+    return {
+      code: normalizedCode,
+      label: `${rawCode} Dispatcher No-op`,
+      shortLabel: "Dispatcher No-op",
+      category: "Advanced",
+      description: "Realmz reads this nonzero CODE value but newland.c has no dispatcher case, so the slot is ignored at runtime."
+    };
+  }
+  return {
     code: normalizedCode,
     label: `${rawCode} Unknown`,
     shortLabel: `Opcode ${rawCode}`,
@@ -144,6 +155,15 @@ export function actionOptionFor(rawCode: number): RealmzActionOption {
 export function normalizeStepOpcode(code: number) {
   if (code < 0 && code !== -14 && code !== -23) return -code;
   return code;
+}
+
+export function hasNewlandDispatcherCase(code: number) {
+  return ACTION_OPTIONS.some((option) => option.code === normalizeStepOpcode(code));
+}
+
+export function isDispatcherNoopOpcode(code: number) {
+  const normalized = normalizeStepOpcode(code);
+  return normalized !== 0 && !hasNewlandDispatcherCase(normalized);
 }
 
 function range(start: number, end: number) {

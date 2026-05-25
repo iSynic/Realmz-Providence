@@ -25,7 +25,7 @@ export function buildBrowserSemanticSchema(projectParts: {
   records: Project["records"];
 }): SemanticSchema {
   const schema: SemanticSchema = {
-    schemaVersion: 3,
+    schemaVersion: 4,
     sources: [],
     records: [],
     entities: [],
@@ -40,6 +40,7 @@ export function buildBrowserSemanticSchema(projectParts: {
       }
     ],
     diagnostics: [],
+    decoding: { ed3Reachability: [], dispatcherNoops: [], confidenceDebt: [] },
     summary: { sourceCount: 0, recordCount: 0, entityCount: 0, linkCount: 0, diagnosticCount: 0 }
   };
 
@@ -55,6 +56,7 @@ export function buildBrowserSemanticSchema(projectParts: {
   addRenderProfiles(schema, projectParts.maps, projectParts.assetCatalog);
   addResourceEntities(schema, projectParts.sourceFiles);
   addInferredTargets(schema);
+  classifyEd3Reachability(schema, projectParts.triggers);
   finalize(schema);
   return schema;
 }
@@ -438,8 +440,8 @@ function addTriggers(schema: SemanticSchema, triggers: TriggerRecord[], extracod
     const recordRef = `record:${trigger.source}:${trigger.recordIndex}`;
     schema.entities.push({
       id,
-      type: trigger.source === "Data ED3" ? "macro" : "trigger",
-      label: trigger.source === "Data ED3" ? `Macro ${trigger.recordIndex}` : `Trigger ${trigger.recordIndex}`,
+      type: trigger.source === "Data ED3" ? "ed3-action-record" : "trigger",
+      label: trigger.source === "Data ED3" ? `ED3 record ${trigger.recordIndex}` : `Trigger ${trigger.recordIndex}`,
       editState: "inspect-only",
       confidence: "source-backed",
       source: trigger.source,
@@ -454,7 +456,10 @@ function addTriggers(schema: SemanticSchema, triggers: TriggerRecord[], extracod
         coordinate: trigger.coordinate,
         percent: trigger.percent,
         actionCount: trigger.actions.length,
-        actions: trigger.actions.map((action) => actionSummary(action, edcdRows))
+        actions: trigger.actions.map((action) => actionSummary(action, edcdRows)),
+        callable: trigger.source !== "Data ED3",
+        reachability: trigger.source === "Data ED3" ? "unclassified" : "source-root",
+        classification: trigger.source === "Data ED3" ? "needs-runtime-trace" : "map-trigger-root"
       }
     });
     if (trigger.levelType && trigger.levelIndex != null) {
@@ -476,8 +481,24 @@ function addTriggers(schema: SemanticSchema, triggers: TriggerRecord[], extracod
       });
       pushLink(schema, id, slotId, "has_action_slot", "source-backed");
       addActionLink(schema, slotId, action.code, action.id, edcdRows);
+      if (action.rawCode !== 0 && actionOptionLooksNoop(action.label)) {
+        schema.decoding.dispatcherNoops.push({
+          source: trigger.source,
+          levelType: trigger.levelType,
+          levelIndex: trigger.levelIndex,
+          recordIndex: trigger.recordIndex,
+          slot: action.slot,
+          rawCode: action.rawCode,
+          id: action.id,
+          message: `Action slot ${action.slot} uses CODE ${action.code} (raw ${action.rawCode}), which Realmz reads but ignores because newland.c has no dispatcher case.`
+        });
+      }
     }
   }
+}
+
+function actionOptionLooksNoop(label: string) {
+  return label === "Dispatcher No-op";
 }
 
 function actionSummary(action: Action, edcdRows: Map<number, number[]>) {
@@ -907,6 +928,94 @@ function addInferredResourceTypes(schema: SemanticSchema, existing: Set<string>)
       pushLink(schema, resource.id, typeId, "member_of_resource_type", "inferred");
     }
   }
+}
+
+function classifyEd3Reachability(schema: SemanticSchema, triggers: TriggerRecord[]) {
+  const ed3Triggers = triggers.filter((trigger) => trigger.source === "Data ED3" && trigger.active);
+  if (ed3Triggers.length === 0) return;
+  const ed3Ids = new Set(ed3Triggers.map((trigger) => `macro:${trigger.recordIndex}`));
+  const incoming = new Map<string, SemanticLink[]>();
+  for (const link of schema.links) {
+    if (!ed3Ids.has(link.to)) continue;
+    const links = incoming.get(link.to) ?? [];
+    links.push(link);
+    incoming.set(link.to, links);
+  }
+  const reachable = new Map<string, { rootType: string; evidence: string[] }>();
+  for (const [target, links] of incoming) {
+    const root = links.find((link) => link.kind === "calls_macro" && !link.from.startsWith("action-slot:macro:"));
+    if (root) reachable.set(target, { rootType: browserRootType(root.from), evidence: [root.id] });
+  }
+  const queue = Array.from(reachable.keys());
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    const [, recordIndex] = current.split(":");
+    const prefix = `action-slot:macro:${recordIndex}:`;
+    for (const link of schema.links.filter((candidate) => candidate.kind === "calls_macro" && candidate.from.startsWith(prefix))) {
+      if (!ed3Ids.has(link.to) || reachable.has(link.to)) continue;
+      reachable.set(link.to, { rootType: "recursive-macro-call", evidence: [...(reachable.get(current)?.evidence ?? []), link.id] });
+      queue.push(link.to);
+    }
+  }
+  const debtCounts = new Map<string, number>();
+  for (const trigger of ed3Triggers) {
+    const entityId = `macro:${trigger.recordIndex}`;
+    const root = reachable.get(entityId);
+    const actionCount = trigger.actions.filter((action) => action.rawCode !== 0 || action.id !== 0).length;
+    const classification = root ? "reachable-macro" : browserNonreachableClassification(trigger, actionCount);
+    if (!root) debtCounts.set(classification, (debtCounts.get(classification) ?? 0) + 1);
+    const row = {
+      recordIndex: trigger.recordIndex,
+      entityId,
+      classification,
+      reachable: Boolean(root),
+      pathStatus: root ? "source-backed-root" : "not-source-reachable",
+      rootType: root?.rootType ?? null,
+      incomingRefs: incoming.get(entityId)?.length ?? 0,
+      actionCount,
+      rawSignature: trigger.actions.flatMap((action) => [action.rawCode, action.id]),
+      evidence: root?.evidence ?? ["browser-import-core"],
+      promotionRule: root
+        ? "Promoted from Data ED3 because a source-backed root reaches this record."
+        : "Preserved as Data ED3 evidence until source-backed reachability or explicit authoring exists."
+    };
+    schema.decoding.ed3Reachability.push(row);
+    const entity = schema.entities.find((candidate) => candidate.id === entityId);
+    if (entity) {
+      entity.type = row.reachable ? "macro" : "ed3-action-record";
+      entity.label = row.reachable ? `Macro ${trigger.recordIndex}` : `ED3 evidence ${trigger.recordIndex}`;
+      entity.editable = row.reachable;
+      entity.summary.callable = row.reachable;
+      entity.summary.reachability = row.pathStatus;
+      entity.summary.classification = row.classification;
+      entity.summary.incomingRefs = row.incomingRefs;
+      entity.summary.promotionRule = row.promotionRule;
+    }
+  }
+  for (const [group, claimCount] of debtCounts) {
+    schema.decoding.confidenceDebt.push({
+      group,
+      confidence: "inferred",
+      impact: "Non-reachable Data ED3 rows are preserved and inspectable but not offered as callable macros.",
+      claimCount,
+      nextStep: "Use source-backed links, runtime traces, or explicit duplicate/promote authoring before editing."
+    });
+  }
+}
+
+function browserRootType(from: string) {
+  if (from.startsWith("action-slot:trigger:")) return "map-trigger-call";
+  if (from.startsWith("random:")) return "random-region-door";
+  if (from.startsWith("time:")) return "timed-encounter-door";
+  if (from.startsWith("monster:")) return "monster-death-hook";
+  return "source-backed-root";
+}
+
+function browserNonreachableClassification(trigger: TriggerRecord, actionCount: number) {
+  if (actionCount === 0) return "probable-editor-padding";
+  if (trigger.actions.some((action) => action.code === 7 || action.code === 13)) return "runtime-mutation-candidate";
+  if (actionCount >= 2) return "needs-runtime-trace";
+  return "orphan-authored-content";
 }
 
 function inferred(id: string, type: string, label: string): SemanticEntity {

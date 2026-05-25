@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 pub const PROJECT_SCHEMA_VERSION: u32 = 4;
-pub const SEMANTIC_SCHEMA_VERSION: u32 = 3;
+pub const SEMANTIC_SCHEMA_VERSION: u32 = 4;
 pub const MAP_SIZE: usize = 90;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -133,7 +133,56 @@ pub struct SemanticSchema {
     pub reverse_links: BTreeMap<String, SemanticReverseLinks>,
     pub evidence: Vec<SemanticEvidence>,
     pub diagnostics: Vec<SemanticDiagnostic>,
+    #[serde(default)]
+    pub decoding: SemanticDecoding,
     pub summary: SemanticSummary,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct SemanticDecoding {
+    pub ed3_reachability: Vec<Ed3ReachabilityRow>,
+    pub dispatcher_noops: Vec<DispatcherNoopRow>,
+    pub confidence_debt: Vec<ConfidenceDebtRow>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Ed3ReachabilityRow {
+    pub record_index: usize,
+    pub entity_id: String,
+    pub classification: String,
+    pub reachable: bool,
+    pub path_status: String,
+    pub root_type: Option<String>,
+    pub incoming_refs: usize,
+    pub action_count: usize,
+    pub raw_signature: Vec<i16>,
+    pub evidence: Vec<String>,
+    pub promotion_rule: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DispatcherNoopRow {
+    pub source: String,
+    pub level_type: Option<LevelType>,
+    pub level_index: Option<usize>,
+    pub record_index: usize,
+    pub slot: usize,
+    pub raw_code: i16,
+    pub id: i16,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConfidenceDebtRow {
+    pub group: String,
+    pub confidence: Confidence,
+    pub impact: String,
+    pub claim_count: usize,
+    pub next_step: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

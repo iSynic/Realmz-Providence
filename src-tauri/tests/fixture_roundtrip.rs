@@ -495,8 +495,8 @@ fn assert_generated_diagnostics(name: &str, project: &ProvidenceProject, expecte
                 .semantic_schema
                 .diagnostics
                 .iter()
-                .any(|diagnostic| diagnostic.diagnostic_type == "unknown-opcode"),
-            "{name} should keep generated-corpus unknown opcodes visible as diagnostics"
+                .any(|diagnostic| diagnostic.diagnostic_type == "dispatcher-noop"),
+            "{name} should keep generated-corpus dispatcher no-op opcodes visible as diagnostics"
         );
     }
     let missing_edcd_count = expected
@@ -1177,8 +1177,8 @@ fn assert_opcode_edcd_semantics(name: &str, project: &ProvidenceProject) {
             schema
                 .diagnostics
                 .iter()
-                .any(|diagnostic| diagnostic.diagnostic_type == "unknown-opcode"),
-            "{name} should surface unknown opcodes as diagnostics"
+                .any(|diagnostic| diagnostic.diagnostic_type == "dispatcher-noop"),
+            "{name} should surface dispatcher no-op opcodes as diagnostics"
         );
     }
 }

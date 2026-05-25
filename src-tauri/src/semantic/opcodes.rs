@@ -72,19 +72,12 @@ pub(super) fn action_semantics(
 
     if !spec.known && code != 0 {
         semantics.diagnostics.push(ActionDiagnostic {
-            diagnostic_type: "unknown-opcode".to_string(),
-            severity: DiagnosticSeverity::Warning,
-            message: if code.abs() > 127 {
-                format!(
-                    "Action slot {} contains high-value unknown opcode {} (raw {})",
-                    action.slot, code, action.raw_code
-                )
-            } else {
-                format!(
-                    "Action slot {} contains undocumented opcode {} (raw {})",
-                    action.slot, code, action.raw_code
-                )
-            },
+            diagnostic_type: "dispatcher-noop".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: format!(
+                "Action slot {} uses CODE {} (raw {}), which Realmz reads but ignores because newland.c has no dispatcher case.",
+                action.slot, code, action.raw_code
+            ),
             target: None,
             data: metadata([
                 ("slot", json!(action.slot)),
@@ -1164,6 +1157,11 @@ fn opcode_spec(code: i16) -> OpcodeSpec {
     }
 }
 
+#[cfg(test)]
+pub(super) fn has_newland_dispatcher_case(code: i16) -> bool {
+    opcode_spec(normalize_opcode(code)).known
+}
+
 fn edcd_shape(code: i16) -> Option<EdcdShapeSpec> {
     Some(match code {
         2 => EdcdShapeSpec {
@@ -1717,5 +1715,24 @@ mod tests {
             .any(|diagnostic| diagnostic.diagnostic_type == "missing-edcd-row"));
         let usage = semantics.edcd_usage.expect("missing row still emits usage");
         assert_eq!(usage["shape"], json!("battle"));
+    }
+
+    #[test]
+    fn nonzero_codes_without_dispatch_cases_are_noops() {
+        let action = dummy_action(200, 0);
+        let semantics = action_semantics(
+            &action,
+            &dummy_trigger(),
+            &BTreeMap::new(),
+            ReferenceCounts::default(),
+        );
+        let diagnostic = semantics
+            .diagnostics
+            .iter()
+            .find(|diagnostic| diagnostic.diagnostic_type == "dispatcher-noop")
+            .expect("unsupported dispatcher codes should be classified as no-ops");
+        assert_eq!(diagnostic.severity, DiagnosticSeverity::Info);
+        assert!(!has_newland_dispatcher_case(200));
+        assert!(has_newland_dispatcher_case(1));
     }
 }

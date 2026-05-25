@@ -1,5 +1,5 @@
 use super::common::*;
-use super::{map_names, metadata, records, resources, triggers};
+use super::{ed3, map_names, metadata, records, resources, triggers};
 use crate::project::*;
 use crate::realmz::{ParsedScenario, FIELD_BYTES, RANDLEVEL_BYTES};
 use serde_json::json;
@@ -31,6 +31,7 @@ pub fn build_semantic_schema(
     add_tile_assets(&mut schema, &parsed.asset_catalog);
     add_render_profiles(&mut schema, &parsed.maps, &parsed.asset_catalog);
     add_runtime_cache_model(&mut schema);
+    ed3::classify_ed3_reachability(&mut schema, &parsed.triggers);
     add_quest_flag_entities(&mut schema);
     add_referenced_resource_placeholders(&mut schema);
     add_reverse_links_and_summary(&mut schema);

@@ -1,5 +1,6 @@
 mod builder;
 mod common;
+mod ed3;
 mod map_names;
 mod metadata;
 mod opcodes;

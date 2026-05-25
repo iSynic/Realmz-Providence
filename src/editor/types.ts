@@ -591,7 +591,47 @@ export type SemanticSchema = {
   reverseLinks: Record<string, SemanticReverseLinks>;
   evidence: SemanticEvidence[];
   diagnostics: SemanticDiagnostic[];
+  decoding: SemanticDecoding;
   summary: SemanticSummary;
+};
+
+export type SemanticDecoding = {
+  ed3Reachability: Ed3ReachabilityRow[];
+  dispatcherNoops: DispatcherNoopRow[];
+  confidenceDebt: ConfidenceDebtRow[];
+};
+
+export type Ed3ReachabilityRow = {
+  recordIndex: number;
+  entityId: string;
+  classification: string;
+  reachable: boolean;
+  pathStatus: string;
+  rootType: string | null;
+  incomingRefs: number;
+  actionCount: number;
+  rawSignature: number[];
+  evidence: string[];
+  promotionRule: string;
+};
+
+export type DispatcherNoopRow = {
+  source: string;
+  levelType: LevelType | null;
+  levelIndex: number | null;
+  recordIndex: number;
+  slot: number;
+  rawCode: number;
+  id: number;
+  message: string;
+};
+
+export type ConfidenceDebtRow = {
+  group: string;
+  confidence: string;
+  impact: string;
+  claimCount: number;
+  nextStep: string;
 };
 
 export type SemanticSource = {
