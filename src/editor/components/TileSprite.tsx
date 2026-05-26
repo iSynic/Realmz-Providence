@@ -1,4 +1,4 @@
-import { normalizeAtlasTile, normalizeIconId, normalizeTile } from "../map/renderValues";
+import { normalizeAtlasTile, normalizeTile, tileIconCandidates } from "../map/renderValues";
 import { AtlasEntry, IconEntry, TilesetAsset } from "../types";
 
 const DUNGEON_ATLAS_ID = "dungeon-top-down-302";
@@ -40,12 +40,27 @@ export function drawTileSprite(
   dh: number,
   iconEntries?: Record<number, IconEntry>
 ) {
-  if (!atlas) return false;
+  const icon = tileIconCandidates(tile).map((iconId) => iconEntries?.[iconId]).find((entry) => Boolean(entry?.image));
+  if (!atlas) {
+    if (icon?.image) {
+      ctx.drawImage(icon.image, dx, dy, dw, dh);
+      return true;
+    }
+    return false;
+  }
   if (isDungeonAtlas(atlas.asset)) {
-    return drawDungeonTileSprite(ctx, atlas.image, tile, dx, dy, dw, dh);
+    const drewDungeon = drawDungeonTileSprite(ctx, atlas.image, tile, dx, dy, dw, dh);
+    if (icon?.image) ctx.drawImage(icon.image, dx, dy, dw, dh);
+    return drewDungeon || Boolean(icon?.image);
   }
   const rect = tileAtlasRect(atlas.asset, tile);
-  if (!rect) return false;
+  if (!rect) {
+    if (icon?.image) {
+      ctx.drawImage(icon.image, dx, dy, dw, dh);
+      return true;
+    }
+    return false;
+  }
   const sprite = landSpriteCanvas(atlas.image, atlas.asset, rect);
   ctx.drawImage(
     sprite,
@@ -58,8 +73,6 @@ export function drawTileSprite(
     dw,
     dh
   );
-  const iconId = normalizeIconId(tile);
-  const icon = iconId == null ? null : iconEntries?.[iconId];
   if (icon?.image) ctx.drawImage(icon.image, dx, dy, dw, dh);
   return true;
 }
@@ -81,9 +94,9 @@ export function tileAtlasRect(asset: TilesetAsset, tile: number) {
 
 export function tileColor(tile: number) {
   const base = normalizeTile(tile);
-  const hasDoorMarker = Math.abs(tile) >= 1000;
-  const noteBit = tile & 2;
-  const pathBit = tile & 4;
+  const hasDoorMarker = tile > 999;
+  const noteBit = tile > 0 && (tile & 2);
+  const pathBit = tile > 0 && (tile & 4);
   let hue = (base * 43 + 2100) % 360;
   let saturation = 34 + (Math.abs(base) % 20);
   let lightness = 28 + (Math.abs(base) % 26);

@@ -57,6 +57,7 @@ pub fn create_project(
         },
         maps: Vec::new(),
         map_records: Vec::new(),
+        tile_attributes: Vec::new(),
         triggers: Vec::new(),
         random_levels: Vec::new(),
         extracodes: Vec::new(),
@@ -139,6 +140,7 @@ fn import_scenario_with_name(
     }
 
     let mut parsed = parse_scenario_buffers(&buffers);
+    parsed.tile_attributes.extend(reference_landlook_tile_attributes()?);
     crate::semantic::apply_map_name_hints(&mut parsed, &buffers);
     let scenario_name = source_path
         .file_name()
@@ -169,6 +171,7 @@ fn import_scenario_with_name(
         },
         maps: parsed.maps,
         map_records: parsed.map_records,
+        tile_attributes: parsed.tile_attributes,
         triggers: parsed.triggers,
         random_levels: parsed.random_levels,
         extracodes: parsed.extracodes,
@@ -192,6 +195,7 @@ fn import_scenario_with_name(
     let semantic_parsed = ParsedScenario {
         maps: project.maps.clone(),
         map_records: project.map_records.clone(),
+        tile_attributes: project.tile_attributes.clone(),
         triggers: project.triggers.clone(),
         random_levels: project.random_levels.clone(),
         extracodes: project.extracodes.clone(),
@@ -224,6 +228,7 @@ pub fn open_project(project_dir: impl AsRef<Path>) -> Result<ProvidenceProject> 
         serde_json::from_str(&text).with_json_path(project_path)?;
     backfill_tileset_metadata(&mut project);
     refresh_semantic_schema(project_dir, &mut project)?;
+    ensure_reference_tile_attributes(&mut project)?;
     refresh_custom_tile_atlases(project_dir, &mut project)?;
     import_icon_overlays(&project_dir.join(ASSETS_DIR), &mut project)?;
     project.validation = crate::validation::validate_project(&project);
@@ -256,6 +261,7 @@ fn refresh_semantic_schema(project_dir: &Path, project: &mut ProvidenceProject) 
     let semantic_parsed = ParsedScenario {
         maps: project.maps.clone(),
         map_records: project.map_records.clone(),
+        tile_attributes: project.tile_attributes.clone(),
         triggers: project.triggers.clone(),
         random_levels: project.random_levels.clone(),
         extracodes: project.extracodes.clone(),
@@ -286,6 +292,9 @@ fn backfill_target_records(project: &mut ProvidenceProject, buffers: &BTreeMap<S
     if project.map_records.is_empty() {
         project.map_records = parsed.map_records;
     }
+    if project.tile_attributes.is_empty() {
+        project.tile_attributes = parsed.tile_attributes;
+    }
     if project.battles.is_empty() {
         project.battles = parsed.battles;
     }
@@ -301,6 +310,20 @@ fn backfill_target_records(project: &mut ProvidenceProject, buffers: &BTreeMap<S
     if project.complex_encounters.is_empty() {
         project.complex_encounters = parsed.complex_encounters;
     }
+}
+
+fn ensure_reference_tile_attributes(project: &mut ProvidenceProject) -> Result<()> {
+    let has_mapstats = project
+        .tile_attributes
+        .iter()
+        .any(|profile| matches!(profile.source_kind, TileAttributeSourceKind::Mapstats));
+    if has_mapstats {
+        return Ok(());
+    }
+    project
+        .tile_attributes
+        .extend(reference_landlook_tile_attributes()?);
+    Ok(())
 }
 
 fn backfill_tileset_metadata(project: &mut ProvidenceProject) {
@@ -345,6 +368,59 @@ fn refresh_custom_tile_atlases(project_dir: &Path, project: &mut ProvidenceProje
         }
     }
     Ok(())
+}
+
+fn reference_landlook_tile_attributes() -> Result<Vec<TileAttributeProfile>> {
+    let mut out = Vec::new();
+    for (file_name, landlook) in standard_landlook_metadata_files() {
+        let Some(path) = reference_landlook_metadata_path(file_name) else {
+            continue;
+        };
+        let bytes = fs::read(&path).with_path(&path)?;
+        out.extend(crate::realmz::parse_landlook_mapstats_data(
+            &bytes,
+            landlook,
+            file_name,
+        ));
+    }
+    Ok(out)
+}
+
+fn standard_landlook_metadata_files() -> [(&'static str, i8); 6] {
+    [
+        ("Data P BD", 0),
+        ("Data SUB BD", 3),
+        ("Data Castle BD", 4),
+        ("Data Desert BD", 5),
+        ("Data Swamp BD", 9),
+        ("Data Snow BD", 10),
+    ]
+}
+
+fn reference_landlook_metadata_path(file_name: &str) -> Option<PathBuf> {
+    for base in [
+        Path::new("public")
+            .join("bundled-libraries")
+            .join("realmz-reference"),
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .unwrap_or_else(|| Path::new("."))
+            .join("public")
+            .join("bundled-libraries")
+            .join("realmz-reference"),
+        Path::new(REFERENCE_UTILITY_ROOT)
+            .join("assets")
+            .join("realmz")
+            .join("resources")
+            .join("binary"),
+        Path::new("F:\\Realmz\\base\\Realmz\\Data Files").to_path_buf(),
+    ] {
+        let path = base.join(file_name);
+        if path.is_file() {
+            return Some(path);
+        }
+    }
+    None
 }
 
 fn landlook_base_tile(landlook: i8) -> Option<i16> {
@@ -487,16 +563,23 @@ fn import_icon_overlays(assets_dir: &Path, project: &mut ProvidenceProject) -> R
         .join("realmz")
         .join("resources")
         .join("icons");
+    if reference_icon_dir.is_dir() {
+        for entry in fs::read_dir(&reference_icon_dir).with_path(&reference_icon_dir)? {
+            let entry = entry.with_path(&reference_icon_dir)?;
+            let path = entry.path();
+            if path.extension().and_then(|ext| ext.to_str()) != Some("png") {
+                continue;
+            }
+            let dest = icon_dir.join(entry.file_name());
+            fs::copy(&path, &dest).with_path(&dest)?;
+        }
+    }
     let mut missing = BTreeSet::new();
     for icon_id in map_icon_ids(&project.maps) {
         let file_name = format!("icon_{icon_id}.png");
-        let source = reference_icon_dir.join(&file_name);
-        if !source.is_file() {
+        if !icon_dir.join(&file_name).is_file() {
             missing.insert(icon_id);
-            continue;
         }
-        let dest = icon_dir.join(file_name);
-        fs::copy(&source, &dest).with_path(&dest)?;
     }
     if !missing.is_empty() {
         project.diagnostics.push(Diagnostic {

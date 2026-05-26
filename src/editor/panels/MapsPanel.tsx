@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { EditorState } from "../store";
-import { MapEntity, MapPaintMode, MapRegionSelection, MapViewFlag, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
+import { MapEntity, MapPaintMode, MapPreviewFocalPoint, MapPreviewMode, MapRegionSelection, MapViewFlag, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
 import { triggerOverlayKinds } from "../semanticGraph";
 import { RealmzMapCanvas } from "../components/MapCanvas";
 import { MapContextSidebar, MapSelectionSidebar } from "../components/MapContextSidebar";
@@ -54,12 +54,15 @@ export function MapsPanel({
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [contextFocus, setContextFocus] = useState<"flags" | "atlas" | "source">("flags");
   const [paintMode, setPaintMode] = useState<MapPaintMode>("brush");
+  const [previewMode, setPreviewMode] = useState<MapPreviewMode>("off");
+  const [previewFocalPoint, setPreviewFocalPoint] = useState<MapPreviewFocalPoint | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<MapRegionSelection | null>(null);
   const [replaceSourceTile, setReplaceSourceTile] = useState<number | null>(null);
   const visibleTriggers = state.showTriggers ? mapTriggers.filter((trigger) => triggerMatchesViewFilters(state.project, trigger, state)) : [];
   useEffect(() => {
     setSelectedRegion(null);
     setReplaceSourceTile(null);
+    setPreviewFocalPoint(null);
   }, [selectedMap?.id]);
   return (
     <>
@@ -109,8 +112,11 @@ export function MapsPanel({
               zoom={state.zoom}
               smoothTiles={state.smoothTiles}
               viewOptions={state}
+              tileAttributes={state.project?.tileAttributes ?? []}
               showRandomRects={state.showRandomRects}
               showMapRecords={state.showMapRecords}
+              previewMode={previewMode}
+              previewFocalPoint={previewFocalPoint ?? state.selectedCell ?? defaultPreviewFocalPoint(selectedMap)}
               selectedEntity={state.selectedEntity}
               selectedCell={state.selectedCell}
               selectedRegion={selectedRegion}
@@ -139,6 +145,10 @@ export function MapsPanel({
         mapRecords={mapRecords}
         contextFocus={contextFocus}
         onSetContextFocus={setContextFocus}
+        previewMode={previewMode}
+        previewFocalPoint={previewFocalPoint ?? state.selectedCell ?? defaultPreviewFocalPoint(selectedMap)}
+        onSetPreviewMode={setPreviewMode}
+        onSetPreviewFocalPoint={setPreviewFocalPoint}
         onSetTool={(tool) => {
           onSetTool(tool);
           if (tool === "paint") setPaletteOpen(true);
@@ -158,6 +168,13 @@ export function MapsPanel({
       />
     </>
   );
+}
+
+function defaultPreviewFocalPoint(map: MapEntity | null): MapPreviewFocalPoint {
+  return {
+    x: Math.max(0, Math.min(89, Math.floor((map?.width ?? 90) / 2))),
+    y: Math.max(0, Math.min(89, Math.floor((map?.height ?? 90) / 2)))
+  };
 }
 
 type EditorStateSetter<Key extends keyof EditorState> = (value: EditorState[Key]) => void;

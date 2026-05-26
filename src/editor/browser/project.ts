@@ -2,9 +2,10 @@ import { BenchmarkReport, Project, ValidationReport } from "../types";
 import { BrowserScenarioSource, readProjectJson, readScenarioSource } from "./fsAccess";
 import { browserTilesetAtlasUrl } from "./atlasPaths";
 import { buildBrowserSemanticSchema } from "./semantic";
-import { landlookBaseTile, parseScenarioBuffers, TRACKED_FILES } from "./realmzParser";
+import { landlookBaseTile, parseLandlookMapstats, parseScenarioBuffers, TRACKED_FILES } from "./realmzParser";
 import { assetFallbacks, blockedSemanticObjects, generatedRuntimeCaches, resourceGaps, unresolvedLinks } from "../semanticGraph";
 import { validateRealmzTargetRecord } from "../targetValidation";
+import { tileIconCandidates } from "../map/renderValues";
 
 export function createBrowserProject(projectName: string): Project {
   const safeName = projectName.trim() || "Untitled Scenario";
@@ -24,6 +25,7 @@ export function createBrowserProject(projectName: string): Project {
     },
     maps: [],
     mapRecords: [],
+    tileAttributes: [],
     triggers: [],
     randomLevels: [],
     extracodes: [],
@@ -49,6 +51,7 @@ export function createBrowserProject(projectName: string): Project {
 export async function importBrowserScenario(source: BrowserScenarioSource): Promise<Project> {
   const { files, sourceFiles } = await readScenarioSource(source, TRACKED_FILES);
   const parsed = parseScenarioBuffers(files);
+  parsed.tileAttributes.push(...await loadBundledLandlookMapstats());
   const scenarioName = source.name || "Untitled Scenario";
   const projectPath = `browser://${scenarioName}.providence`;
   const project: Project = {
@@ -67,6 +70,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
     },
     maps: parsed.maps,
     mapRecords: parsed.mapRecords,
+    tileAttributes: parsed.tileAttributes,
     triggers: parsed.triggers,
     randomLevels: parsed.randomLevels,
     extracodes: parsed.extracodes,
@@ -110,6 +114,7 @@ export async function openBrowserProject(source: BrowserScenarioSource): Promise
   const project = JSON.parse(text) as Project;
   project.assets ??= [];
   project.mapRecords ??= [];
+  project.tileAttributes ??= [];
   project.messages ??= [];
   project.battles ??= [];
   project.treasures ??= [];
@@ -120,8 +125,39 @@ export async function openBrowserProject(source: BrowserScenarioSource): Promise
   project.editorMetadata ??= { displayNames: {} };
   project.semanticSchema.decoding ??= { ed3Reachability: [], dispatcherNoops: [], confidenceDebt: [] };
   backfillTilesetMetadata(project);
+  await ensureBrowserReferenceTileAttributes(project);
   project.validation = validateBrowserProject(project);
   return project;
+}
+
+export async function ensureBrowserReferenceTileAttributes(project: Project) {
+  project.tileAttributes ??= [];
+  backfillTilesetMetadata(project);
+  if (!project.tileAttributes.some((profile) => profile.sourceKind === "mapstats")) {
+    project.tileAttributes.push(...await loadBundledLandlookMapstats());
+  }
+  return project;
+}
+
+async function loadBundledLandlookMapstats() {
+  const out: Project["tileAttributes"] = [];
+  for (const [fileName, landlook] of [
+    ["Data P BD", 0],
+    ["Data SUB BD", 3],
+    ["Data Castle BD", 4],
+    ["Data Desert BD", 5],
+    ["Data Swamp BD", 9],
+    ["Data Snow BD", 10]
+  ] as const) {
+    try {
+      const response = await fetch(`/bundled-libraries/realmz-reference/${encodeURIComponent(fileName)}`, { cache: "force-cache" });
+      if (!response.ok) continue;
+      out.push(...parseLandlookMapstats(new Uint8Array(await response.arrayBuffer()), landlook, fileName));
+    } catch {
+      // Browser preview can still operate from scenario-local data when bundled reference files are unavailable.
+    }
+  }
+  return out;
 }
 
 function backfillTilesetMetadata(project: Project) {
@@ -192,6 +228,7 @@ export function validateBrowserProject(project: Project): ValidationReport {
     if (record.summary.edited === true) errors.push(`${record.id} is marked edited but its semantic edit state is blocked.`);
   }
   const sourceNames = new Set(project.source.files.map((file) => file.name));
+  validateTileAttributes(project, sourceNames, warnings);
   validateMapRecords(project, errors, warnings);
   const exportableFiles = ["Data LD", "Data DL", "Data DD", "Data DDD", "Data RD", "Data RDD", "Data ED3", "Data EDCD", "Data ED", "Data ED2", "Data BD", "Data SD", "Data SD2", "Data MD2", "Data TD"].filter((name) =>
     sourceNames.has(name)
@@ -206,6 +243,58 @@ export function validateBrowserProject(project: Project): ValidationReport {
     }
   }
   return { ok: errors.length === 0, errors, warnings, exportableFiles, passThroughFiles };
+}
+
+function validateTileAttributes(project: Project, sourceNames: Set<string>, warnings: string[]) {
+  if (!sourceNames.has("Data Solids")) {
+    warnings.push("Data Solids is missing; special negative tile solidity will remain unknown.");
+  }
+  const usedLandlooks = new Set(project.maps.map((map) => map.render.landlook).filter((value): value is number => value != null && value >= 0));
+  const mapstatsLandlooks = new Set(project.tileAttributes.filter((profile) => profile.sourceKind === "mapstats").map((profile) => profile.landlook).filter((value): value is number => value != null));
+  for (const landlook of usedLandlooks) {
+    if (!mapstatsLandlooks.has(landlook) && landlook !== 2) {
+      warnings.push(`Landlook ${landlook} has no decoded mapstats; tile attributes will be shown as unknown metadata.`);
+    }
+  }
+  const knownIcons = knownIconIds(project);
+  const missingIcons = new Set<number>();
+  let positiveStateValues = 0;
+  for (const map of project.maps) {
+    for (const tile of map.tiles) {
+      if (tile > 999) positiveStateValues += 1;
+      if (tile >= 0) continue;
+      const candidates = tileIconCandidates(tile);
+      if (!candidates.some((candidate) => knownIcons.has(candidate))) {
+        missingIcons.add(candidates[0] ?? tile);
+      }
+    }
+  }
+  if (missingIcons.size > 0) {
+    warnings.push(`${missingIcons.size.toLocaleString()} negative/special tile value(s) do not currently resolve to decoded cicn icon art.`);
+  }
+  if (positiveStateValues > 0) {
+    warnings.push(`${positiveStateValues.toLocaleString()} positive high map field value(s) carry Realmz state bands; edit them through AP/secret/path workflows or Raw/Advanced tile tools.`);
+  }
+}
+
+function knownIconIds(project: Project) {
+  const ids = new Set<number>();
+  for (const asset of project.assets ?? []) {
+    if (asset.resourceType === "cicn") insertIconId(ids, asset.resourceId);
+  }
+  for (const asset of project.assetCatalog.icons ?? []) insertIconId(ids, asset.resourceId);
+  for (const entity of project.semanticSchema.entities) {
+    if (entity.type !== "resource" && entity.type !== "icon-resource" && entity.type !== "special-land-tile") continue;
+    const resourceId = typeof entity.summary.resourceId === "number" ? entity.summary.resourceId : Number(entity.summary.resourceId);
+    const resourceType = String(entity.summary.type ?? entity.summary.resourceType ?? "");
+    if (Number.isFinite(resourceId) && (resourceType === "cicn" || entity.type !== "resource")) insertIconId(ids, resourceId);
+  }
+  return ids;
+}
+
+function insertIconId(ids: Set<number>, id: number) {
+  ids.add(id);
+  if (id > 0) ids.add(-id);
 }
 
 function validateMapRecords(project: Project, errors: string[], warnings: string[]) {

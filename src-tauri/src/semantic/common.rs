@@ -95,6 +95,8 @@ pub(super) fn layout_for(name: &str) -> Option<SemanticLayout> {
         "Data TD2" => ("thief encounters", 118),
         "Data TD3" => ("timed encounters", 40),
         "Data CI" => ("scenario contact", 4608),
+        "Data RI" => ("scenario restrictions", 320),
+        "Global" => ("global macro hooks", 60),
         "Data MENU" => ("monster menu cache", 502),
         "Data Solids" => ("solid tile table", 1024),
         _ => return None,

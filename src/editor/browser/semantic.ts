@@ -2,6 +2,7 @@ import {
   Action,
   ExtraCodeRow,
   MapEntity,
+  MapRecord,
   Project,
   RandomLevel,
   SemanticEntity,
@@ -18,6 +19,7 @@ export function buildBrowserSemanticSchema(projectParts: {
   buffers: Map<string, Uint8Array>;
   sourceFiles: SourceFile[];
   maps: MapEntity[];
+  mapRecords: MapRecord[];
   randomLevels: RandomLevel[];
   triggers: TriggerRecord[];
   extracodes: ExtraCodeRow[];
@@ -49,6 +51,7 @@ export function buildBrowserSemanticSchema(projectParts: {
   addRecordAlignments(schema, projectParts.records.alignments);
   addSupportingRecords(schema, projectParts.buffers);
   addMaps(schema, projectParts.maps);
+  addMapRecords(schema, projectParts.mapRecords, projectParts.maps);
   addRandomLevels(schema, projectParts.randomLevels);
   addExtracodes(schema, projectParts.extracodes);
   addTriggers(schema, projectParts.triggers, projectParts.extracodes);
@@ -183,6 +186,7 @@ function addSupportingRecords(schema: SemanticSchema, buffers: Map<string, Uint8
   addThiefRecords(schema, buffers.get("Data TD2"));
   addTimedRecords(schema, buffers.get("Data TD3"));
   addContactRecords(schema, buffers.get("Data CI"));
+  addGlobalMacroRecords(schema, buffers.get("Global"));
   addMenuRecords(schema, buffers.get("Data MENU"));
   addSolidsRecords(schema, buffers.get("Data Solids"));
 }
@@ -291,6 +295,76 @@ function addContactRecords(schema: SemanticSchema, buffer?: Uint8Array) {
   }
 }
 
+function addGlobalMacroRecords(schema: SemanticSchema, buffer?: Uint8Array) {
+  if (!buffer) return;
+  for (let index = 0; index + 60 <= buffer.byteLength; index += 1) {
+    const start = index * 60;
+    if (start + 60 > buffer.byteLength) break;
+    const slots = Array.from({ length: 30 }, (_, slot) => {
+      const door = i16At(buffer, start + slot * 2);
+      return {
+        slot,
+        door,
+        label: globalMacroSlotLabel(slot),
+        runtimeConsumer: globalMacroSlotRuntimeConsumer(slot),
+        sourceBacked: [0, 1, 2, 4, 5].includes(slot)
+      };
+    });
+    const activeSlots = slots.filter((slot) => slot.door !== 0);
+    const summary = {
+      id: index,
+      slots,
+      activeSlots,
+      preview: `${activeSlots.length} active global macro hook(s)`
+    };
+    upsertRecord(schema, browserRecord("Global", index, 60, "global-macro", `Global Macro Hooks ${index}`, summary));
+    const entityId = `global:${index}`;
+    schema.entities.push(browserEntity(entityId, "global-macro", `Global Macro Hooks ${index}`, "Global", `record:Global:${index}`, start, 60, summary));
+    for (const slot of activeSlots) {
+      if (!slot.sourceBacked || slot.door <= 0) continue;
+      pushLink(schema, entityId, `macro:${slot.door}`, "calls_macro", "source-backed", {
+        slot: slot.slot,
+        field: slot.label,
+        door: slot.door
+      });
+    }
+  }
+}
+
+function globalMacroSlotLabel(slot: number) {
+  switch (slot) {
+    case 0:
+      return "Start game";
+    case 1:
+      return "Party death";
+    case 2:
+      return "End/quit game";
+    case 4:
+      return "Before shop";
+    case 5:
+      return "Before temple";
+    default:
+      return "Preserved slot";
+  }
+}
+
+function globalMacroSlotRuntimeConsumer(slot: number) {
+  switch (slot) {
+    case 0:
+      return "mainscreeninit/new-game start";
+    case 1:
+      return "partyloss death/revive path";
+    case 2:
+      return "end current game";
+    case 4:
+      return "shop button when shop is available";
+    case 5:
+      return "shop/temple button when temple is available";
+    default:
+      return "no source-backed runtime consumer found";
+  }
+}
+
 function addMenuRecords(schema: SemanticSchema, buffer?: Uint8Array) {
   if (!buffer) return;
   for (let index = 0; index + 502 <= buffer.byteLength; index += 1) {
@@ -314,7 +388,7 @@ function addSolidsRecords(schema: SemanticSchema, buffer?: Uint8Array) {
       id: index,
       solidEntries: Array.from(slice).filter((value) => value !== 0).length,
       openEntries: Array.from(slice).filter((value) => value === 0).length,
-      tableKind: "terrain/contact lookup",
+      tableKind: "special negative tile solidity",
       bytes: 1024
     };
     upsertRecord(schema, browserRecord("Data Solids", index, 1024, "solidity-table", `Solids ${index}`, summary));
@@ -354,6 +428,51 @@ function addMaps(schema: SemanticSchema, maps: MapEntity[]) {
         mode: map.render.mode
       }
     });
+  }
+}
+
+function addMapRecords(schema: SemanticSchema, mapRecords: MapRecord[], maps: MapEntity[]) {
+  const knownMaps = new Set(maps.map((map) => mapEntityId(map.levelType, map.index)));
+  for (const record of mapRecords) {
+    const recordRef = `record:Data MD2:${record.id}`;
+    const iconSlots = Array.from({ length: 10 }, (_, slot) => {
+      const offset = slot * 6;
+      const iconId = i16Array(record.rawBytes, offset);
+      return {
+        slot,
+        iconId,
+        x: i16Array(record.rawBytes, offset + 2),
+        y: i16Array(record.rawBytes, offset + 4)
+      };
+    }).filter((slot) => slot.iconId !== 0);
+    const name = record.name || record.primaryName || `Map record ${record.id}`;
+    const summary = {
+      id: record.id,
+      name,
+      primaryName: record.primaryName ?? null,
+      secondaryName: record.secondaryName ?? null,
+      nameSource: record.nameSource ?? null,
+      iconSlots,
+      startX: record.startX,
+      startY: record.startY,
+      level: record.level,
+      pictId: record.pictId,
+      iconSize: record.iconSize,
+      show: record.show,
+      isDungeon: record.isDungeon,
+      rect: record.rect,
+      note: record.note
+    };
+    upsertRecord(schema, browserRecord("Data MD2", record.id, 340, "map record", name, summary));
+    const entityId = `map-record:${record.id}`;
+    schema.entities.push(browserEntity(entityId, "map record", name, "Data MD2", recordRef, record.id * 340, 340, summary));
+    const levelType = record.isDungeon ? "dungeon" : "land";
+    const mapId = mapEntityId(levelType, record.level);
+    if (knownMaps.has(mapId)) pushLink(schema, entityId, mapId, "describes_map", "source-backed");
+    if (record.pictId !== 0) pushLink(schema, entityId, `resource:PICT:${record.pictId}`, "uses_resource", "source-backed", { field: "pictid" });
+    for (const icon of iconSlots) {
+      pushLink(schema, entityId, `resource:cicn:${icon.iconId}`, "uses_resource", "source-backed", { field: "icon", slot: icon.slot });
+    }
   }
 }
 
@@ -1008,6 +1127,7 @@ function browserRootType(from: string) {
   if (from.startsWith("random:")) return "random-region-door";
   if (from.startsWith("time:")) return "timed-encounter-door";
   if (from.startsWith("monster:")) return "monster-death-hook";
+  if (from.startsWith("global:")) return "global-macro-slot";
   return "source-backed-root";
 }
 
@@ -1118,6 +1238,12 @@ function i16At(buffer: Uint8Array, offset: number) {
   return value & 0x8000 ? value - 0x10000 : value;
 }
 
+function i16Array(buffer: number[] | undefined, offset: number) {
+  if (!buffer || offset + 2 > buffer.length) return 0;
+  const value = ((buffer[offset] ?? 0) << 8) | (buffer[offset + 1] ?? 0);
+  return value & 0x8000 ? value - 0x10000 : value;
+}
+
 function shortArray(buffer: Uint8Array, offset: number, count: number) {
   return Array.from({ length: count }, (_, index) => i16At(buffer, offset + index * 2));
 }
@@ -1189,6 +1315,8 @@ const LAYOUTS: Record<string, [string, number]> = {
   "Data TD2": ["thief encounters", 118],
   "Data TD3": ["timed encounters", 40],
   "Data CI": ["scenario contact", 4608],
+  "Data RI": ["scenario restrictions", 320],
+  "Global": ["global macro hooks", 60],
   "Data MENU": ["monster menu cache", 502],
   "Data Solids": ["solid tile table", 1024]
 };

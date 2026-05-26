@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-26T00:00:00.000-05:00",
+  "source": "Manual archaeology pass over Realmz source map field-value render, movement, LOS, and secret handlers",
+  "realmzSourceAnchors": [
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\variables.h",
+      "topic": "bit numbering",
+      "finding": "MyrBitSetShort/MyrBitClrShort/MyrBitTstShort use bit position 15 - b; source comments identify bit 1 as note marker and bit 2 as path marker."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\mapstuff.c",
+      "topic": "full-map render normalization",
+      "finding": "fastplotmap renders negative values by drawing the current landlook base tile and ploticon3(id), while positive values over 999 clear note/path bits and subtract 1000 bands before terrain render."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\centerpict.c",
+      "topic": "main-screen render normalization",
+      "finding": "Outdoor render branches negative field values to cicn icon rendering before note/path checks; positive values can draw secret, note, and path overlays after normalization."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\buttonchoice.c",
+      "topic": "movement and action normalization",
+      "finding": "Movement checks Data Solids only for raw -1..-998 values, clears note/path bits on positive values, treats values beyond +/-2999 as undetected secret areas, and treats positive values above 999 as door/action state."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\cansee.c",
+      "topic": "line-of-sight normalization",
+      "finding": "LOS checks clear note/path marker bits and subtract positive 1000 bands before consulting mapstats[hit].los."
+    }
+  ],
+  "fieldValueLayers": [
+    {
+      "layer": "standard-terrain",
+      "rawShape": "positive visible terrain id",
+      "runtimeMeaning": "Landlook terrain tile with mapstats movement, LOS, sound, and combat attributes after normalization.",
+      "providenceTreatment": "Primary Landlook Tiles palette and source-backed tile attribute inspector."
+    },
+    {
+      "layer": "negative-special-icon",
+      "rawShape": "negative signed short",
+      "runtimeMeaning": "Current landlook base terrain plus cicn icon art; raw -1..-998 can be solid through Data Solids.",
+      "providenceTreatment": "Special Land / Icons palette, icon-resource preview, Data Solids solidity evidence."
+    },
+    {
+      "layer": "positive-thousand-band",
+      "rawShape": "positive value greater than 999",
+      "runtimeMeaning": "Door/action/secret/path/note field state normalized by clearing note/path bits and subtracting 1000 bands.",
+      "providenceTreatment": "Raw / Advanced unless created through known AP, secret, note, or path workflows."
+    },
+    {
+      "layer": "note-marker-bit",
+      "rawShape": "positive field value with Realmz bit 1 set",
+      "runtimeMeaning": "Rendering clears this bit before tile lookup and draws note overlay art.",
+      "providenceTreatment": "Contextual note/map-record evidence badge; writer support needs Divinity/source proof."
+    },
+    {
+      "layer": "path-marker-bit",
+      "rawShape": "positive field value with Realmz bit 2 set",
+      "runtimeMeaning": "Runtime marks path-capable traversed tiles by setting this bit; render clears it and draws path overlay art.",
+      "providenceTreatment": "Runtime mutation evidence by default; avoid presenting as ordinary terrain."
+    },
+    {
+      "layer": "secret-state-band",
+      "rawShape": "values beyond +/-2999 and related reduced bands",
+      "runtimeMeaning": "Hidden/undetected/detected secret-area handling in movement and render paths.",
+      "providenceTreatment": "Preserve and explain until Divinity editor labels/defaults are proven."
+    }
+  ],
+  "editorImplications": [
+    "Classify negative high-magnitude values as special/icon candidates, not generic marker-bit tiles.",
+    "Classify positive high values as Realmz field state and keep arbitrary authoring in Raw / Advanced.",
+    "Show note/path bits only for positive values because negative render paths branch to icon drawing before note/path handling.",
+    "Represent path bits as likely runtime mutation evidence unless authored through a future explicit path workflow.",
+    "Add selected-cell evidence for raw value, normalized terrain, icon candidates, note/path bits, positive state band, and secret/door suspicion."
+  ],
+  "confidenceDebt": [
+    {
+      "topic": "very negative normalization",
+      "finding": "centerpict and fastplotmap normalize very negative values differently; screenshots or runtime fixtures are needed before one universal icon candidate rule is claimed."
+    },
+    {
+      "topic": "positive thousand-band editor labels",
+      "finding": "Realmz source proves runtime behavior, but Divinity binary/manual work is still needed for editor labels, defaults, and safe authoring controls."
+    },
+    {
+      "topic": "note marker relationship",
+      "finding": "Runtime note overlay behavior is source-backed, but the exact authored relationship between note-marked cells, Data MD2 map notes, and Divinity UI remains to be proven."
+    }
+  ]
+}

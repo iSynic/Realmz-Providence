@@ -4,6 +4,8 @@ import {
   EditorTool,
   IconEntry,
   MapFocusTarget,
+  MapPreviewFocalPoint,
+  MapPreviewMode,
   MapHitTarget,
   MapEntity,
   MapPaintMode,
@@ -13,6 +15,7 @@ import {
   RandomLevel,
   SelectedEntity,
   SemanticEntity,
+  TileAttributeProfile,
   TilesetAsset,
   TriggerRecord
 } from "../types";
@@ -31,6 +34,7 @@ import {
   drawBaseMap,
   drawHover,
   drawMapRecords,
+  drawMapVisibilityPreview,
   drawRandomRectangles,
   drawRegionSelection,
   drawSecretTileOverlay,
@@ -57,8 +61,11 @@ export function RealmzMapCanvas({
   zoom,
   smoothTiles,
   viewOptions,
+  tileAttributes,
   showRandomRects,
   showMapRecords,
+  previewMode,
+  previewFocalPoint,
   selectedEntity,
   selectedCell,
   selectedRegion,
@@ -86,8 +93,11 @@ export function RealmzMapCanvas({
   zoom: number;
   smoothTiles: boolean;
   viewOptions: MapViewOptions;
+  tileAttributes: TileAttributeProfile[];
   showRandomRects: boolean;
   showMapRecords: boolean;
+  previewMode: MapPreviewMode;
+  previewFocalPoint: MapPreviewFocalPoint;
   selectedEntity: SelectedEntity | null;
   selectedCell: { x: number; y: number; tile: number } | null;
   selectedRegion: MapRegionSelection | null;
@@ -166,6 +176,7 @@ export function RealmzMapCanvas({
       drawRandomRectangles(ctx, map, randomLevel, selectedEntity, cell);
     }
     if (viewOptions.showSecretOverlays) drawSecretTileOverlay(ctx, map, cell);
+    if (previewMode !== "off") drawMapVisibilityPreview(ctx, map, tileset, tileAttributes, cell, previewMode, previewFocalPoint);
     drawTriggers(ctx, triggers, selectedEntity, cell);
     if (showMapRecords) drawMapRecords(ctx, mapRecords, selectedEntity, cell);
     if (selectedRegion) drawRegionSelection(ctx, selectedRegion, cell, "selected");
@@ -184,6 +195,10 @@ export function RealmzMapCanvas({
     selectedRegion,
     regionPreview,
     viewOptions.showSecretOverlays,
+    previewMode,
+    previewFocalPoint,
+    tileAttributes,
+    tileset,
     canvasCssSize,
     map
   ]);

@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-26T00:00:00.000-05:00",
+  "target": "core-records-full-construction",
+  "evidenceCard": "docs/format-evidence-cards/map-record-runtime-anchors.md",
+  "container": {
+    "file": "Data MD2",
+    "recordBytes": 340,
+    "struct": "struct maps",
+    "endianness": "big-endian signed shorts through byte 83; Pascal-style Str255 note at byte 84"
+  },
+  "layout": [
+    { "offset": 0, "field": "icon[10][3]", "type": "30 signed shorts", "meaning": "Ten cicn marker triples: icon id, x, y", "confidence": "source-backed" },
+    { "offset": 60, "field": "startx", "type": "signed short", "meaning": "Preview start x", "confidence": "source-backed" },
+    { "offset": 62, "field": "starty", "type": "signed short", "meaning": "Preview start y", "confidence": "source-backed" },
+    { "offset": 64, "field": "level", "type": "signed short", "meaning": "Land or dungeon level index", "confidence": "source-backed" },
+    { "offset": 66, "field": "pictid", "type": "signed short", "meaning": "Optional PICT map view", "confidence": "source-backed" },
+    { "offset": 68, "field": "iconsize", "type": "signed short", "meaning": "Preview cell/icon size", "confidence": "source-backed" },
+    { "offset": 70, "field": "show", "type": "signed short", "meaning": "Display/movie flag; negative path calls movie()", "confidence": "source-backed-partial" },
+    { "offset": 72, "field": "isdungeon", "type": "signed short", "meaning": "Nonzero targets dungeon level", "confidence": "source-backed" },
+    { "offset": 74, "field": "spare", "type": "signed short", "meaning": "Unknown spare field", "confidence": "preserved" },
+    { "offset": 76, "field": "rect.top", "type": "signed short", "meaning": "PICT clip top", "confidence": "source-backed" },
+    { "offset": 78, "field": "rect.left", "type": "signed short", "meaning": "PICT clip left", "confidence": "source-backed" },
+    { "offset": 80, "field": "rect.bottom", "type": "signed short", "meaning": "PICT clip bottom", "confidence": "source-backed" },
+    { "offset": 82, "field": "rect.right", "type": "signed short", "meaning": "PICT clip right", "confidence": "source-backed" },
+    { "offset": 84, "field": "note", "type": "Str255", "meaning": "Map record note text", "confidence": "source-backed" }
+  ],
+  "sourceAnchors": [
+    "F:\\Realmz\\src\\realmz_orig\\structs.h:181-189",
+    "F:\\Realmz\\src\\realmz_orig\\convert.c:201-204",
+    "F:\\Realmz\\src\\realmz_orig\\mapstuff.c:67-72",
+    "F:\\Realmz\\src\\realmz_orig\\mapstuff.c:79-91",
+    "F:\\Realmz\\src\\realmz_orig\\mapstuff.c:95-124",
+    "F:\\Realmz\\src\\realmz_orig\\mapstuff.c:139-169",
+    "F:\\Realmz\\src\\realmz_orig\\mapstuff.c:180-193",
+    "F:\\Realmz\\src\\realmz_orig\\mapstuff.c:211"
+  ],
+  "corpusEvidence": {
+    "localOutputCorpusRoot": "F:\\Realmz\\out_win_clang\\Scenarios",
+    "checkedScenarios": 28,
+    "dataMd2Present": 28,
+    "records": 427,
+    "recordsWithNotes": 370,
+    "nonzeroIconSlots": 1181,
+    "recordsWithPictId": 53,
+    "dungeonTargetRecords": 58,
+    "representative": [
+      { "scenario": "City of Bywater", "records": 20, "notes": 14, "iconSlots": 17, "pictRecords": 0, "dungeonRecords": 1 },
+      { "scenario": "The End Worlds", "records": 20, "notes": 16, "iconSlots": 155, "pictRecords": 14, "dungeonRecords": 15 },
+      { "scenario": "Castle in the Clouds", "records": 21, "notes": 21, "iconSlots": 123, "pictRecords": 11, "dungeonRecords": 11 },
+      { "scenario": "Lord of the Abyss", "records": 20, "notes": 20, "iconSlots": 110, "pictRecords": 9, "dungeonRecords": 9 }
+    ],
+    "broadInventory": "Data MD2 reported in 44 of 44 scenarios in docs/generated/corpus-field-usage.json."
+  },
+  "providenceImplications": [
+    "Map record selections should show decoded fields and links, not a generic read-only inspector.",
+    "Icon slots are source-backed cicn marker triples and should be visible as map-record evidence.",
+    "PICT-backed records should link to picture resources and show clip rectangle fields.",
+    "Names stay resource-fork evidence until STR# writing is proven.",
+    "The spare short and exact show/movie editor semantics remain preserve-only."
+  ],
+  "validationReady": [
+    "Data MD2 record length must be a multiple of 340 bytes.",
+    "Map record start coordinates should be inside 0..89.",
+    "Linked level should exist for the selected land/dungeon family.",
+    "Picture ids and icon ids should resolve through scenario/shared resources when catalogs are available.",
+    "Rectangles should not be inverted."
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-25T00:00:00.000-05:00",
+  "target": "core-records-full-construction",
+  "containers": ["Data ED", "Data ED2", "CE", "CE2"],
+  "classification": {
+    "Data ED": "scenario-authored-simple-encounter-source-with-runtime-cache-copy",
+    "Data ED2": "scenario-authored-complex-encounter-source-with-runtime-cache-copy",
+    "CE": "runtime-simple-encounter-cache",
+    "CE2": "runtime-complex-encounter-cache"
+  },
+  "sourceAnchors": [
+    { "path": "F:\\Realmz\\src\\realmz_orig\\structs.h", "line": 226, "evidence": "struct encount2 declares complex encounter header fields." },
+    { "path": "F:\\Realmz\\src\\realmz_orig\\structs.h", "line": 242, "evidence": "struct encount declares simple encounter header fields." },
+    { "path": "F:\\Realmz\\src\\realmz_orig\\setupnewgame.c", "line": 164, "evidence": "Data ED is copied to runtime CE with four 80-byte buffers." },
+    { "path": "F:\\Realmz\\src\\realmz_orig\\setupnewgame.c", "line": 184, "evidence": "Data ED2 is copied to runtime CE2 with nine 40-byte buffers." },
+    { "path": "F:\\Realmz\\src\\realmz_orig\\newland.c", "line": 1575, "evidence": "Opcode 4 loads simple encounters from runtime CE." },
+    { "path": "F:\\Realmz\\src\\realmz_orig\\newland.c", "line": 1641, "evidence": "Opcode 5 loads complex encounters from runtime CE2." },
+    { "path": "F:\\Realmz\\src\\realmz_orig\\encounters.c", "line": 1004, "evidence": "Complex spell action matches exact spell IDs or class IDs." },
+    { "path": "F:\\Realmz\\src\\realmz_orig\\encounters.c", "line": 1065, "evidence": "Complex item action matches item IDs." },
+    { "path": "F:\\Realmz\\src\\realmz_orig\\encounters.c", "line": 1100, "evidence": "Complex action picker uses group flags." }
+  ],
+  "layouts": {
+    "sharedActionRows": {
+      "offset": 0,
+      "size": 96,
+      "fields": [
+        { "offset": 0, "size": 32, "field": "code", "kind": "i8[4][8]", "editorMeaning": "four result action rows, eight CODE slots each" },
+        { "offset": 32, "size": 64, "field": "id", "kind": "be_i16[4][8]", "editorMeaning": "four result action rows, eight ID slots each" }
+      ]
+    },
+    "Data ED": {
+      "recordSizeBytes": 426,
+      "confidence": "source-backed-runtime-stride-with-corpus-tail-debt",
+      "fields": [
+        { "offset": 96, "size": 4, "field": "choiceresult", "kind": "i8[4]", "editorMeaning": "simple choice result mapping; zero eliminated/unavailable" },
+        { "offset": 100, "size": 1, "field": "canbackout", "kind": "bool", "editorMeaning": "back-out/cancel affordance" },
+        { "offset": 101, "size": 1, "field": "maxtimes", "kind": "i8", "editorMeaning": "attempt count" },
+        { "offset": 102, "size": 1, "field": "castesuccess", "kind": "i8", "editorMeaning": "caste success/result evidence" },
+        { "offset": 103, "size": 1, "field": "padding", "kind": "raw", "editorMeaning": "preserve" },
+        { "offset": 104, "size": 2, "field": "prompt", "kind": "be_i16", "editorMeaning": "Data SD2 prompt message id" },
+        { "offset": 106, "size": 320, "field": "textBuffers", "kind": "pascal-ish-bytes[4][80]", "editorMeaning": "simple choice display buffers" }
+      ]
+    },
+    "Data ED2": {
+      "recordSizeBytes": 520,
+      "confidence": "source-and-corpus-backed",
+      "fields": [
+        { "offset": 96, "size": 1, "field": "choiceresult", "kind": "i8", "editorMeaning": "action-picker success result" },
+        { "offset": 97, "size": 1, "field": "wordresult", "kind": "i8", "editorMeaning": "typed-word success result" },
+        { "offset": 98, "size": 8, "field": "group", "kind": "i8[8]", "editorMeaning": "required action-picker groups" },
+        { "offset": 106, "size": 20, "field": "spellid", "kind": "be_i16[10]", "editorMeaning": "spell IDs or class IDs under 7" },
+        { "offset": 126, "size": 10, "field": "spellresult", "kind": "i8[10]", "editorMeaning": "spell result mapping" },
+        { "offset": 136, "size": 10, "field": "itemid", "kind": "be_i16[5]", "editorMeaning": "accepted item IDs" },
+        { "offset": 146, "size": 5, "field": "itemresult", "kind": "i8[5]", "editorMeaning": "item result mapping" },
+        { "offset": 151, "size": 1, "field": "canbackout", "kind": "bool", "editorMeaning": "back-out/cancel affordance" },
+        { "offset": 152, "size": 1, "field": "thief", "kind": "bool", "editorMeaning": "enables thief-action path" },
+        { "offset": 153, "size": 1, "field": "maxtimes", "kind": "i8", "editorMeaning": "attempt count" },
+        { "offset": 154, "size": 1, "field": "castesuccess", "kind": "i8", "editorMeaning": "caste success/result evidence" },
+        { "offset": 155, "size": 1, "field": "thiefsuccess", "kind": "i8", "editorMeaning": "Data TD2 thief encounter id/hook evidence" },
+        { "offset": 156, "size": 1, "field": "thieffail", "kind": "i8", "editorMeaning": "thief failure result/evidence" },
+        { "offset": 157, "size": 1, "field": "padding", "kind": "raw", "editorMeaning": "preserve" },
+        { "offset": 158, "size": 2, "field": "prompt", "kind": "be_i16", "editorMeaning": "Data SD2 prompt message id" },
+        { "offset": 160, "size": 360, "field": "textBuffers", "kind": "pascal-ish-bytes[9][40]", "editorMeaning": "complex display buffers; buffer 8 is word target text" }
+      ]
+    }
+  },
+  "runtimeBehaviors": [
+    "Opcode 4 starts a simple encounter from runtime CE.",
+    "Opcode 5 starts a complex encounter from runtime CE2.",
+    "Simple encounters return choiceresult[choice] and then newland executes the corresponding result action row.",
+    "Complex encounters can succeed through spell, item, thief, word, or action-picker paths.",
+    "Complex spell tests match exact spell IDs or spell class IDs below 7.",
+    "Complex item tests match used item IDs.",
+    "Complex action-picker tests require group flags.",
+    "Runtime opcodes can eliminate choices or replace result-code rows in CE/CE2 without changing source Data ED/Data ED2."
+  ],
+  "corpusEvidence": {
+    "Data ED": {
+      "presence": "44/44",
+      "recordSizeBytes": 426,
+      "confidenceDebt": "several corpus files have trailing bytes when divided by 426; preserve and investigate before aggressive rewrites"
+    },
+    "Data ED2": {
+      "presence": "44/44",
+      "recordSizeBytes": 520,
+      "largestObserved": { "scenario": "Trouble in the Sword Lands", "bytes": 48360, "records": 93 }
+    }
+  },
+  "editorReadiness": {
+    "simpleEncounter": "shell-ready-with-tail-preservation-warning",
+    "complexEncounter": "ready-for-corrected-typed-model-and-ui",
+    "validation": [
+      "Data ED2 length divisible by 520",
+      "Data ED parse uses 426-byte runtime stride and preserves trailing bytes",
+      "prompt ids resolve to Data SD2",
+      "simple choice results map to available result rows or zero eliminated state",
+      "complex spell ids resolve to spells or class ids below 7",
+      "complex item ids resolve through item library",
+      "thiefsuccess resolves to Data TD2 when thief path is enabled",
+      "inline text byte limits: 80 simple, 40 complex",
+      "runtime CE/CE2 mutations labeled as runtime effects"
+    ]
+  }
+}

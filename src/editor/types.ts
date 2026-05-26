@@ -16,6 +16,8 @@ export type ActiveWorkbench = "project" | "library";
 export type EditorTool = "select" | "paint" | "stamp" | "trigger" | "random" | "sample" | "pan";
 export type MapPaintMode = "brush" | "rectangle" | "region" | "replace" | "clear";
 export type MapRegionSelection = { left: number; top: number; right: number; bottom: number };
+export type MapPreviewMode = "off" | "los" | "darkness" | "both";
+export type MapPreviewFocalPoint = { x: number; y: number };
 export type FocusedPanel = "main" | "tool-sidebar" | "outliner" | "inspector" | "canvas" | "docs";
 export type ScriptDetailSurface = "docked" | "floating";
 export type ScriptInventoryFilter = "current-map" | "all" | "active" | "reusable" | "warnings" | "macros";
@@ -176,6 +178,49 @@ export type StampPaletteItem = {
   source: "project" | "library" | "used-map" | "raw";
   previewPath: string | null;
   compatibility: string;
+};
+
+export type TileAttributeConfidence = "source-backed" | "inferred" | "unknown" | "preserved";
+export type TileAttributeSourceKind = "mapstats" | "data-solids" | "inferred" | "preserved" | "unknown";
+export type TileAttributeFlag =
+  | "walkable"
+  | "solid"
+  | "path"
+  | "shore"
+  | "boat-required"
+  | "fly-float-required"
+  | "blocks-los"
+  | "special-icon"
+  | "unknown-metadata";
+
+export type TileAttributeProfile = {
+  tile: number;
+  landlook: number | null;
+  solidType: number | null;
+  movementSoundId: number | null;
+  movementCost: number | null;
+  flags: TileAttributeFlag[];
+  confidence: TileAttributeConfidence;
+  sourceKind?: TileAttributeSourceKind;
+  source: string;
+  rawByte: number | null;
+};
+
+export type TilePaletteCategory =
+  | "landlook"
+  | "special"
+  | "used"
+  | "attributes"
+  | "raw";
+
+export type TileRenderResolution = {
+  raw: number;
+  terrainTile: number;
+  iconCandidates: number[];
+  iconId: number | null;
+  iconAvailable: boolean;
+  fallbackReason: string | null;
+  confidence: TileAttributeConfidence;
 };
 
 export type EditorDisplayName = {
@@ -502,6 +547,7 @@ export type Project = {
   triggers: TriggerRecord[];
   randomLevels: RandomLevel[];
   mapRecords: MapRecord[];
+  tileAttributes: TileAttributeProfile[];
   extracodes: ExtraCodeRow[];
   messages: MessageRecord[];
   battles: BattleRecord[];

@@ -6,6 +6,8 @@ The technical evidence layer under this roadmap lives in `F:\Realmz Scenario Uti
 
 See `docs/scenario-format-integration.md` for the Providence-specific integration policy.
 
+See `docs/archaeology-priorities.md` for the editor-first reverse-engineering backlog. That backlog ranks format targets by authoring value, runtime importance, Divinity coverage, parse/write confidence, and corpus frequency before they become new Providence editor work.
+
 ## Coverage Legend
 
 - `Inspect`: Providence can import and explain the data.
@@ -19,7 +21,7 @@ See `docs/scenario-format-integration.md` for the Providence-specific integratio
 | Divinity area | Providence domain | Current state | Next editor work |
 | --- | --- | --- | --- |
 | Getting Started | Project/Scenario | Inspect imported projects; desktop save/export exists | Blank scenario creation flow |
-| Land Editor / Land Layout | Maps | Author tile painting and Action Point placement; inspect map layout evidence | Land layout/start records, map-level flags, random rectangle authoring |
+| Land Editor / Land Layout | Maps | Author tile painting, region fill/replace, Action Point placement, random rectangles, map flags, and special/icon tile placement; inspect map layout evidence | Land layout/start records and deeper dungeon geometry |
 | Scenario Startup Information | Scenario | Inspect scenario/contact/startup records where decoded | User-facing startup editor and typed scenario commands |
 | Action Points / GOSUBs | Scripts | Author Action Points, callable/reachable macros, CODE/ID slots, EDCD rows, reordering, duplication, deletion, and inline diagnostics; preserve non-reachable ED3 rows as evidence | Broader opcode-specific forms and richer branch visualizations |
 | Scripting Codes 1-29 | Scripts | Guided opcode picker with descriptions, target picker, EDCD shape hints | Complete manual-derived notes and opcode examples |
@@ -37,15 +39,15 @@ See `docs/scenario-format-integration.md` for the Providence-specific integratio
 | Complex Encounter Editor | Encounters | Author usable complex encounter shells with action rows, text buffers, shell flags, preservation of unsupported bytes, and `Data ED2` export | Word/spell/item/thief branch workflow |
 | Rogue Encounter Editor | Encounters | Inspect thief/rogue encounter records | Rogue encounter form |
 | Time Encounter Editor | Encounters | Inspect timed encounters | Timed encounter schedule editor |
-| Map Editor | Maps | Inspect map records and map links | Map note/start authoring |
+| Map Editor | Maps | Author map tiles, APs, random rectangles, map flags, special/icon tiles, and source-backed map-record fields | Map note/start authoring beyond decoded MD2 fields |
 | Dungeon Editor | Maps | Inspect dungeon levels, render profiles, LOS/darkness evidence | Dungeon geometry and flag authoring |
 | Macros / Quests | Scripts | Author macros and quest flag script links; validate missing targets | Dedicated quest registry and macro graph view |
 | Monster Mash | Combat/Library | Inspect shared monster icon material | Scenario icon import/copy workflow |
 | Vault of Arcana | Economy/Library | Inspect shared item/icon material | Copy/adapt vault entries into scenario records |
 | Adding Monster & Item Icons | Assets | Import managed picture/icon/sound assets; preview resource forks | Icon assignment to monster/item records |
-| Creating Special Land Tiles | Assets/Maps | Import special land tile assets and negative cicn IDs | Special tile placement and release validation |
+| Creating Special Land Tiles | Assets/Maps | Import, preview, place, validate, and preserve special land/icon tiles as negative Realmz field values | Special tile asset creation/editing |
 | Pictures & Sounds | Assets/Text/Scripts | Managed assets, target picker for PICT/snd actions | Resource ID conflict resolution and richer previews |
-| Standard Land Tile Editor | Assets/Maps | Inspect/render standard tilesets | Tile atlas editing remains future work |
+| Standard Land Tile Editor | Assets/Maps | Inspect/render standard tilesets; group tiles with source-backed landlook `mapstats`; use `Data Solids` as special/icon solidity evidence | Tile atlas and tile-attribute writing remains future work |
 | Spell Editor | Rules | Inspect spells and references | Spell record form and validation |
 | Race Editor | Rules | Inspect races and references | Race record form and restriction integration |
 | Caste Editor | Rules | Inspect castes and references | Caste record form and restriction integration |
@@ -81,6 +83,18 @@ New writable target families:
 - `Data ED2`: complex encounter shells.
 
 See `docs/scripts-v2-authoring.md` for the author-facing workflow, including Action Point capacity, deletion-as-clear, focused/floating layout, macros vs ED3 evidence, EDCD-backed target creation, diagnostics smokes, and preserved imported bytes.
+
+## Maps V4 Contract
+
+Maps now follows the Divinity mental model that terrain tiles, special land tiles, icon-backed values, and raw used values are all placeable Realmz map-field values. The Paint palette is the single authoring surface for those values:
+
+- `Landlook Tiles`: standard atlas-backed land or dungeon tiles.
+- `Special / Icons`: negative `cicn`/special land values from project assets, library evidence, icon resources, and values already used by the current map.
+- `Used In This Map`: every raw value present on the current level.
+- `Attributes`: decoded metadata groups where Providence has source-backed evidence.
+- `Raw / Advanced`: compatibility values and map-used values outside the visible atlas range.
+
+The current source-backed tile attribute layer is split deliberately. Standard positive land tiles use landlook `mapstats` from Realmz `* BD` files for movement sound, movement cost, solidity, shore/path behavior, boat/water requirements, LOS blocking, fly/float script flags, and combat/forest hints. Scenario `Data Solids` is retained as the special negative/icon tile solidity table for raw values like `-35` or `-223`; it is not the full Divinity Standard Land Tile Editor table. The documentation section can link to these anchors: `#maps-v4-contract`, `#compatibility-rules`, `#tile-values`, `#special-land-tiles`, `#tile-attributes`, and the local source evidence in `F:\Realmz Scenario Utility\docs\scenario-format`.
 
 ## Compatibility Rules
 

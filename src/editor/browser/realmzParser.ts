@@ -13,6 +13,7 @@ import {
   RandomLevel,
   ShopRecord,
   SimpleEncounterRecord,
+  TileAttributeProfile,
   TilesetAsset,
   TreasureRecord,
   TriggerRecord
@@ -80,6 +81,8 @@ const RECORD_BYTES: Record<string, number> = {
   "Data TD2": 118,
   "Data TD3": 40,
   "Data CI": 4608,
+  "Data RI": 320,
+  "Global": 60,
   "Data MENU": 502,
   "Data Solids": 1024
 };
@@ -87,6 +90,7 @@ const RECORD_BYTES: Record<string, number> = {
 export type ParsedBrowserScenario = {
   maps: MapEntity[];
   mapRecords: MapRecord[];
+  tileAttributes: TileAttributeProfile[];
   triggers: TriggerRecord[];
   randomLevels: RandomLevel[];
   extracodes: ExtraCodeRow[];
@@ -128,6 +132,12 @@ export function parseScenarioBuffers(buffers: Map<string, Uint8Array>): ParsedBr
   ];
   attachRenderInfo(maps, randomLevels);
   const mapRecords = parseMapRecords(buffers.get("Data MD2"));
+  const tileAttributes = [
+    ...parseTileAttributes(buffers.get("Data Solids")),
+    ...parseLandlookMapstats(buffers.get("Data Custom 1 BD"), 6, "Data Custom 1 BD"),
+    ...parseLandlookMapstats(buffers.get("Data Custom 2 BD"), 7, "Data Custom 2 BD"),
+    ...parseLandlookMapstats(buffers.get("Data Custom 3 BD"), 8, "Data Custom 3 BD")
+  ];
 
   const triggers = [
     ...parseDoorFile(buffers.get("Data DD"), "land", "Data DD"),
@@ -142,7 +152,64 @@ export function parseScenarioBuffers(buffers: Map<string, Uint8Array>): ParsedBr
   const simpleEncounters = parseSimpleEncounters(buffers.get("Data ED"));
   const complexEncounters = parseComplexEncounters(buffers.get("Data ED2"));
   const assetCatalog = { tilesets: buildAssetCatalog(maps, randomLevels, buffers, diagnostics) };
-  return { maps, mapRecords, triggers, randomLevels, extracodes, messages, battles, treasures, shops, simpleEncounters, complexEncounters, assetCatalog, records, diagnostics };
+  return { maps, mapRecords, tileAttributes, triggers, randomLevels, extracodes, messages, battles, treasures, shops, simpleEncounters, complexEncounters, assetCatalog, records, diagnostics };
+}
+
+function parseTileAttributes(buffer: Uint8Array | undefined): TileAttributeProfile[] {
+  if (!buffer) return [];
+  const count = Math.min(1024, buffer.byteLength);
+  return Array.from({ length: count }, (_, tile) => {
+    const solidType = buffer[tile] ?? 0;
+    return {
+      tile,
+      landlook: null,
+      solidType,
+      movementSoundId: null,
+      movementCost: null,
+      flags: solidType === 0 ? ["walkable"] : ["solid"],
+      confidence: "source-backed",
+      sourceKind: "data-solids",
+      source: "Data Solids",
+      rawByte: solidType
+    };
+  });
+}
+
+const MAPSTATS_RECORD_BYTES = 40;
+const MAPSTATS_RECORDS = 201;
+
+export function parseLandlookMapstats(buffer: Uint8Array | undefined, landlook: number, source: string): TileAttributeProfile[] {
+  if (!buffer) return [];
+  const count = Math.min(MAPSTATS_RECORDS, Math.floor(buffer.byteLength / MAPSTATS_RECORD_BYTES));
+  return Array.from({ length: count }, (_, tile) => {
+    const start = tile * MAPSTATS_RECORD_BYTES;
+    const sound = i16(buffer, start);
+    const time = i16(buffer, start + 2);
+    const solid = i16(buffer, start + 4);
+    const shore = i16(buffer, start + 6) !== 0;
+    const needBoat = i16(buffer, start + 8);
+    const isPath = i16(buffer, start + 10) !== 0;
+    const los = i16(buffer, start + 12) !== 0;
+    const flyFloat = i16(buffer, start + 14) !== 0;
+    const flags: TileAttributeProfile["flags"] = [solid === 0 ? "walkable" : "solid"];
+    if (shore) flags.push("shore");
+    if (needBoat !== 0) flags.push("boat-required");
+    if (isPath) flags.push("path");
+    if (los) flags.push("blocks-los");
+    if (flyFloat) flags.push("fly-float-required");
+    return {
+      tile,
+      landlook,
+      solidType: solid,
+      movementSoundId: sound,
+      movementCost: time,
+      flags,
+      confidence: "source-backed",
+      sourceKind: "mapstats",
+      source,
+      rawByte: null
+    };
+  });
 }
 
 function parseFields(buffer: Uint8Array | undefined, levelType: LevelType, source: string) {

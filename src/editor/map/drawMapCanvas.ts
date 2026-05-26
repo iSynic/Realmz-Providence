@@ -1,4 +1,4 @@
-import { AtlasEntry, IconEntry, MapEntity, MapRegionSelection, MapViewOptions, RandomLevel, SelectedEntity, SemanticEntity, TriggerRecord } from "../types";
+import { AtlasEntry, IconEntry, MapEntity, MapPreviewFocalPoint, MapPreviewMode, MapRegionSelection, MapViewOptions, RandomLevel, SelectedEntity, SemanticEntity, TileAttributeProfile, TilesetAsset, TriggerRecord } from "../types";
 import {
   clampCell,
   MAP_CELLS,
@@ -9,6 +9,7 @@ import {
 import { hasSecretMarkerTile, isSecretWalkableTile } from "./secrets";
 import { triggerEntityId } from "../utils";
 import { drawTileSprite, tileColor } from "../components/TileSprite";
+import { classifyTileValue } from "./tileMetadata";
 
 export function drawBaseMap(
   ctx: CanvasRenderingContext2D,
@@ -221,6 +222,49 @@ export function drawSecretTileOverlay(ctx: CanvasRenderingContext2D, map: MapEnt
       }
     }
   }
+  ctx.restore();
+}
+
+export function drawMapVisibilityPreview(
+  ctx: CanvasRenderingContext2D,
+  map: MapEntity,
+  tileset: TilesetAsset | null,
+  tileAttributes: TileAttributeProfile[],
+  cell: number,
+  mode: MapPreviewMode,
+  focalPoint: MapPreviewFocalPoint
+) {
+  const focusX = clampCell(focalPoint.x);
+  const focusY = clampCell(focalPoint.y);
+  const radius = 9;
+  ctx.save();
+  if (mode === "darkness" || mode === "both") {
+    ctx.fillStyle = "rgba(3, 6, 9, 0.42)";
+    ctx.fillRect(0, 0, MAP_CELLS * cell, MAP_CELLS * cell);
+  }
+  if (mode === "los" || mode === "both") {
+    for (let y = 0; y < MAP_CELLS; y += 1) {
+      for (let x = 0; x < MAP_CELLS; x += 1) {
+        const distance = Math.abs(x - focusX) + Math.abs(y - focusY);
+        const tile = tileValueAt(map, x, y);
+        const blocksLos = classifyTileValue(tile, tileset, tileAttributes).attributes?.flags.includes("blocks-los") ?? false;
+        if (distance > radius) {
+          ctx.fillStyle = "rgba(0, 0, 0, 0.46)";
+          ctx.fillRect(x * cell, y * cell, cell, cell);
+        } else if (blocksLos) {
+          ctx.fillStyle = "rgba(250, 204, 21, 0.20)";
+          ctx.fillRect(x * cell, y * cell, cell, cell);
+          ctx.strokeStyle = "rgba(250, 204, 21, 0.66)";
+          ctx.strokeRect(x * cell + 1, y * cell + 1, cell - 2, cell - 2);
+        }
+      }
+    }
+  }
+  ctx.strokeStyle = "#facc15";
+  ctx.lineWidth = Math.max(2, cell * 0.12);
+  ctx.beginPath();
+  ctx.arc((focusX + 0.5) * cell, (focusY + 0.5) * cell, Math.max(3, cell * 0.28), 0, Math.PI * 2);
+  ctx.stroke();
   ctx.restore();
 }
 

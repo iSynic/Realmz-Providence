@@ -16,6 +16,8 @@ pub const SHOP_BYTES: usize = 3002;
 pub const MESSAGE_BYTES: usize = 256;
 pub const TREASURE_BYTES: usize = 48;
 pub const MAP_RECORD_BYTES: usize = 340;
+pub const MAPSTATS_RECORD_BYTES: usize = 40;
+pub const MAPSTATS_RECORDS: usize = 201;
 
 pub const SUPPORTED_WRITE_FILES: &[&str] = &[
     "Data LD",
@@ -57,6 +59,7 @@ pub const TRACKED_FILES: &[&str] = &[
     "Data TD2",
     "Data TD3",
     "Data CI",
+    "Data RI",
     "Data MENU",
     "Data Solids",
     "Data Custom 1 BD",
@@ -69,6 +72,7 @@ pub const TRACKED_FILES: &[&str] = &[
 pub struct ParsedScenario {
     pub maps: Vec<MapEntity>,
     pub map_records: Vec<MapRecord>,
+    pub tile_attributes: Vec<TileAttributeProfile>,
     pub triggers: Vec<TriggerRecord>,
     pub random_levels: Vec<RandomLevel>,
     pub extracodes: Vec<ExtraCodeRow>,
@@ -88,6 +92,7 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
     let mut records = RecordCatalog::default();
     let mut maps = Vec::new();
     let mut map_records = Vec::new();
+    let mut tile_attributes = Vec::new();
     let mut random_levels = Vec::new();
     let mut triggers = Vec::new();
     let mut extracodes = Vec::new();
@@ -118,6 +123,8 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
         ("Data TD2", 118),
         ("Data TD3", 40),
         ("Data CI", 4608),
+        ("Data RI", 320),
+        ("Global", 60),
         ("Data MENU", 502),
         ("Data Solids", 1024),
     ] {
@@ -152,6 +159,22 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
     attach_render_info(&mut maps, &random_levels);
     if let Some(buffer) = buffers.get("Data MD2") {
         map_records.extend(parse_map_records(buffer));
+    }
+    if let Some(buffer) = buffers.get("Data Solids") {
+        tile_attributes.extend(parse_tile_attributes(buffer));
+    }
+    for (file_name, landlook) in [
+        ("Data Custom 1 BD", 6),
+        ("Data Custom 2 BD", 7),
+        ("Data Custom 3 BD", 8),
+    ] {
+        if let Some(buffer) = buffers.get(file_name) {
+            tile_attributes.extend(parse_landlook_mapstats_data(
+                buffer,
+                landlook,
+                file_name,
+            ));
+        }
     }
 
     if let Some(buffer) = buffers.get("Data DD") {
@@ -189,6 +212,7 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
     ParsedScenario {
         maps,
         map_records,
+        tile_attributes,
         triggers,
         random_levels,
         extracodes,
@@ -202,6 +226,88 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
         diagnostics,
         asset_catalog,
     }
+}
+
+fn parse_tile_attributes(buffer: &[u8]) -> Vec<TileAttributeProfile> {
+    buffer
+        .iter()
+        .take(1024)
+        .enumerate()
+        .map(|(tile, solid_type)| TileAttributeProfile {
+            tile: tile as i16,
+            landlook: None,
+            solid_type: Some(*solid_type),
+            movement_sound_id: None,
+            movement_cost: None,
+            flags: if *solid_type == 0 {
+                vec![TileAttributeFlag::Walkable]
+            } else {
+                vec![TileAttributeFlag::Solid]
+            },
+            confidence: TileAttributeConfidence::SourceBacked,
+            source_kind: TileAttributeSourceKind::DataSolids,
+            source: "Data Solids".to_string(),
+            raw_byte: Some(*solid_type),
+        })
+        .collect()
+}
+
+pub fn parse_landlook_mapstats_data(
+    buffer: &[u8],
+    landlook: i8,
+    source: &str,
+) -> Vec<TileAttributeProfile> {
+    let count = (buffer.len() / MAPSTATS_RECORD_BYTES).min(MAPSTATS_RECORDS);
+    (0..count)
+        .map(|tile| {
+            let start = tile * MAPSTATS_RECORD_BYTES;
+            let sound = i16_be(buffer, start);
+            let time = i16_be(buffer, start + 2);
+            let solid = i16_be(buffer, start + 4);
+            let shore = i16_be(buffer, start + 6) != 0;
+            let need_boat = i16_be(buffer, start + 8);
+            let is_path = i16_be(buffer, start + 10) != 0;
+            let los = i16_be(buffer, start + 12) != 0;
+            let fly_float = i16_be(buffer, start + 14) != 0;
+            let forest = i16_be(buffer, start + 16) != 0;
+            let mut flags = Vec::new();
+            if solid == 0 {
+                flags.push(TileAttributeFlag::Walkable);
+            } else {
+                flags.push(TileAttributeFlag::Solid);
+            }
+            if shore {
+                flags.push(TileAttributeFlag::Shore);
+            }
+            if need_boat != 0 {
+                flags.push(TileAttributeFlag::BoatRequired);
+            }
+            if is_path {
+                flags.push(TileAttributeFlag::Path);
+            }
+            if los {
+                flags.push(TileAttributeFlag::BlocksLos);
+            }
+            if fly_float {
+                flags.push(TileAttributeFlag::FlyFloatRequired);
+            }
+            if forest && !flags.contains(&TileAttributeFlag::Solid) {
+                flags.push(TileAttributeFlag::Walkable);
+            }
+            TileAttributeProfile {
+                tile: tile as i16,
+                landlook: Some(landlook),
+                solid_type: Some(solid as u8),
+                movement_sound_id: Some(sound),
+                movement_cost: Some(time),
+                flags,
+                confidence: TileAttributeConfidence::SourceBacked,
+                source_kind: TileAttributeSourceKind::Mapstats,
+                source: source.to_string(),
+                raw_byte: None,
+            }
+        })
+        .collect()
 }
 
 fn alignment_for(name: &str, buffer: Option<&Vec<u8>>, record_bytes: usize) -> RecordAlignment {
@@ -343,12 +449,19 @@ pub fn write_map_records(records: &[MapRecord]) -> Result<Vec<u8>> {
         write_i16_be(&mut output, start + 66, record.pict_id);
         write_i16_be(&mut output, start + 68, record.icon_size);
         write_i16_be(&mut output, start + 70, record.show);
-        write_i16_be(&mut output, start + 72, if record.is_dungeon { 1 } else { 0 });
+        write_i16_be(
+            &mut output,
+            start + 72,
+            if record.is_dungeon { 1 } else { 0 },
+        );
         write_i16_be(&mut output, start + 76, record.rect.top);
         write_i16_be(&mut output, start + 78, record.rect.left);
         write_i16_be(&mut output, start + 80, record.rect.bottom);
         write_i16_be(&mut output, start + 82, record.rect.right);
-        encode_pascal_text(&mut output[start + 84..start + MAP_RECORD_BYTES], &record.note)?;
+        encode_pascal_text(
+            &mut output[start + 84..start + MAP_RECORD_BYTES],
+            &record.note,
+        )?;
     }
     Ok(output)
 }
@@ -1491,6 +1604,34 @@ mod tests {
         let levels = parse_random_levels(&input, LevelType::Land, "Data RD");
         let output = write_random_levels(&levels, LevelType::Land).unwrap();
         assert_eq!(input, output);
+    }
+
+    #[test]
+    fn mapstats_parse_source_backed_tile_attributes() {
+        let mut input = vec![0u8; MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 64];
+        let tile_start = MAPSTATS_RECORD_BYTES;
+        write_i16_be(&mut input, tile_start, 9);
+        write_i16_be(&mut input, tile_start + 2, 4);
+        write_i16_be(&mut input, tile_start + 4, 2);
+        write_i16_be(&mut input, tile_start + 6, 1);
+        write_i16_be(&mut input, tile_start + 8, 2);
+        write_i16_be(&mut input, tile_start + 10, 1);
+        write_i16_be(&mut input, tile_start + 12, 1);
+        write_i16_be(&mut input, tile_start + 14, 1);
+        let profiles = parse_landlook_mapstats_data(&input, 0, "Data P BD");
+        assert_eq!(profiles.len(), MAPSTATS_RECORDS);
+        let tile = &profiles[1];
+        assert_eq!(tile.landlook, Some(0));
+        assert_eq!(tile.movement_sound_id, Some(9));
+        assert_eq!(tile.movement_cost, Some(4));
+        assert_eq!(tile.solid_type, Some(2));
+        assert!(tile.flags.contains(&TileAttributeFlag::Solid));
+        assert!(tile.flags.contains(&TileAttributeFlag::Shore));
+        assert!(tile.flags.contains(&TileAttributeFlag::BoatRequired));
+        assert!(tile.flags.contains(&TileAttributeFlag::Path));
+        assert!(tile.flags.contains(&TileAttributeFlag::BlocksLos));
+        assert!(tile.flags.contains(&TileAttributeFlag::FlyFloatRequired));
+        assert!(matches!(tile.source_kind, TileAttributeSourceKind::Mapstats));
     }
 
     #[test]

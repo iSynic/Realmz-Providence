@@ -716,10 +716,10 @@ fn library_record_layout(source: &LibrarySource) -> Option<(&'static str, usize)
     match source.name.as_str() {
         "Monster Scrap Book" => Some(("monster-scrapbook-entry", 210)),
         "Data ID" => Some(("item", 80)),
-        "Data Race" => Some(("race", 288)),
-        "Data Caste" => Some(("caste", 288)),
-        "Data Spell" => Some(("spell", 112)),
-        "Data S" => Some(("spell", 126)),
+        "Data Race" => Some(("race", 408)),
+        "Data Caste" => Some(("caste", 576)),
+        "Data Spell" => Some(("spell", 30)),
+        "Data S" => Some(("spell", 30)),
         _ => None,
     }
 }

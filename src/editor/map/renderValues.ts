@@ -30,11 +30,18 @@ export function normalizeIconId(value: number) {
   return iconId;
 }
 
+export function tileIconCandidates(value: number) {
+  if (value >= 0) return [];
+  const candidates = [value];
+  const normalized = normalizeIconId(value);
+  if (normalized !== null && normalized < 0) candidates.push(normalized);
+  return [...new Set(candidates)];
+}
+
 export function referencedMapIconIds(tiles: number[]) {
   const ids = new Set<number>();
   for (const value of tiles) {
-    const id = normalizeIconId(value);
-    if (id !== null) ids.add(id);
+    for (const id of tileIconCandidates(value)) ids.add(id);
   }
   return [...ids].sort((a, b) => a - b);
 }

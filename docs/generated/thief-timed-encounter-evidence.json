@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-26T00:00:00.000-05:00",
+  "target": "core-records-full-construction",
+  "containers": ["Data TD2", "Data TD3", "CT", "CTD3", "Data H1"],
+  "classification": {
+    "Data TD2": "scenario-authored-thief-encounter-source-copied-to-runtime-cache",
+    "Data TD3": "scenario-authored-timed-encounter-source-copied-to-runtime-cache",
+    "CT": "runtime-thief-encounter-cache",
+    "CTD3": "runtime-timed-encounter-cache",
+    "Data H1": "saved-runtime-thief-encounter-state"
+  },
+  "sourceAnchors": [
+    { "path": "F:\\Realmz\\src\\realmz_orig\\structs.h", "line": 133, "evidence": "struct timeencounter is 20 shorts / 40 bytes." },
+    { "path": "F:\\Realmz\\src\\realmz_orig\\structs.h", "line": 192, "evidence": "struct thief declares type flags, modifiers, success/failure codes, messages, sounds, trap spell/damage, tumblers, prompts, and sounds." },
+    { "path": "F:\\Realmz\\src\\realmz_orig\\setupnewgame.c", "line": 140, "evidence": "Data TD2 is copied to runtime CT." },
+    { "path": "F:\\Realmz\\src\\realmz_orig\\setupnewgame.c", "line": 152, "evidence": "Data TD3 is copied to runtime CTD3." },
+    { "path": "F:\\Realmz\\src\\realmz_orig\\encounters.c", "line": 17, "evidence": "Thief encounter loads CT by enc2.thiefsuccess * sizeof thief." },
+    { "path": "F:\\Realmz\\src\\realmz_orig\\encounters.c", "line": 222, "evidence": "Thief encounter mutations are written back to runtime CT." },
+    { "path": "F:\\Realmz\\src\\realmz_orig\\textbox-time.c", "line": 220, "evidence": "Timed encounter checks scan runtime CTD3." },
+    { "path": "F:\\Realmz\\src\\realmz_orig\\textbox-time.c", "line": 369, "evidence": "Passing timed encounter executes dotime.door through newland." },
+    { "path": "F:\\Realmz\\src\\realmz_orig\\newland.c", "line": 3281, "evidence": "Opcode 54 mutates runtime timed encounter percent/increment/day." },
+    { "path": "F:\\Realmz\\src\\realmz_orig\\save-direction-order.c", "line": 150, "evidence": "Save flow persists runtime CT as Data H1." }
+  ],
+  "layouts": {
+    "Data TD2": {
+      "recordSizeBytes": 118,
+      "confidence": "source-and-corpus-backed-with-writer-fixture-needed",
+      "fields": [
+        { "offset": 0, "size": 10, "field": "type", "kind": "bool[10]", "editorMeaning": "enabled/type/trap state flags" },
+        { "offset": 10, "size": 8, "field": "modifer", "kind": "i8[8]", "editorMeaning": "thief action skill modifiers" },
+        { "offset": 18, "size": 8, "field": "codes", "kind": "i8[8]", "editorMeaning": "success result codes" },
+        { "offset": 26, "size": 8, "field": "codef", "kind": "i8[8]", "editorMeaning": "failure result codes" },
+        { "offset": 34, "size": 16, "field": "texts", "kind": "be_i16[8]", "editorMeaning": "success message ids" },
+        { "offset": 50, "size": 16, "field": "textf", "kind": "be_i16[8]", "editorMeaning": "failure message ids" },
+        { "offset": 66, "size": 16, "field": "sounds", "kind": "be_i16[8]", "editorMeaning": "success sound ids" },
+        { "offset": 82, "size": 16, "field": "soundf", "kind": "be_i16[8]", "editorMeaning": "failure sound ids" },
+        { "offset": 98, "size": 2, "field": "spell", "kind": "be_i16", "editorMeaning": "trap spell" },
+        { "offset": 100, "size": 2, "field": "lowdamage", "kind": "be_i16", "editorMeaning": "trap damage low" },
+        { "offset": 102, "size": 2, "field": "highdamage", "kind": "be_i16", "editorMeaning": "trap damage high" },
+        { "offset": 104, "size": 2, "field": "tumblers", "kind": "be_i16", "editorMeaning": "pick-lock tumbler difficulty" },
+        { "offset": 106, "size": 6, "field": "prompt", "kind": "be_i16[3]", "editorMeaning": "prompt/support fields" },
+        { "offset": 112, "size": 6, "field": "sound", "kind": "be_i16[3]", "editorMeaning": "opening/support sounds or chances" }
+      ]
+    },
+    "Data TD3": {
+      "recordSizeBytes": 40,
+      "confidence": "source-and-corpus-backed",
+      "fields": [
+        { "offset": 0, "size": 2, "field": "day", "kind": "be_i16", "editorMeaning": "runtime day-of-year trigger; zero terminates scan" },
+        { "offset": 2, "size": 2, "field": "increment", "kind": "be_i16", "editorMeaning": "days added after check" },
+        { "offset": 4, "size": 2, "field": "percent", "kind": "be_i16", "editorMeaning": "percent chance" },
+        { "offset": 6, "size": 2, "field": "door", "kind": "be_i16", "editorMeaning": "macro/door id executed through newland" },
+        { "offset": 8, "size": 2, "field": "reclevel", "kind": "be_i16", "editorMeaning": "required land/dungeon level" },
+        { "offset": 10, "size": 2, "field": "recrect", "kind": "be_i16", "editorMeaning": "required random rectangle index or -1" },
+        { "offset": 12, "size": 2, "field": "recx", "kind": "be_i16", "editorMeaning": "required x or -1" },
+        { "offset": 14, "size": 2, "field": "recy", "kind": "be_i16", "editorMeaning": "required y or -1" },
+        { "offset": 16, "size": 2, "field": "recitem", "kind": "be_i16", "editorMeaning": "required item id if positive" },
+        { "offset": 18, "size": 2, "field": "recquest", "kind": "be_i16", "editorMeaning": "required quest flag or -1" },
+        { "offset": 20, "size": 20, "field": "stuff", "kind": "be_i16[10]", "editorMeaning": "extra gates; stuff[0] location kind 1 land, 2 dungeon, other any" }
+      ]
+    }
+  },
+  "runtimeBehaviors": [
+    "Thief encounters are selected by complex encounter thiefsuccess.",
+    "Thief actions mutate runtime type flags and write back to CT.",
+    "Disarm trap clears type[9].",
+    "Failed thief actions can trigger trap damage and trap spells.",
+    "Timed encounters scan CTD3 until day is zero or a scan cap is reached.",
+    "When day matches current day, runtime increments day before checking percent and gates.",
+    "Timed encounters can require item, quest, land/dungeon level, random rectangle, and coordinates.",
+    "Passing timed encounter gates executes dotime.door through newland.",
+    "Opcode 54 mutates runtime timed encounter state."
+  ],
+  "corpusEvidence": {
+    "Data TD2": { "presence": "44/44", "recordSizeBytes": 118, "largestObserved": { "scenario": "Hax", "bytes": 117410, "records": 995 } },
+    "Data TD3": { "presence": "44/44", "recordSizeBytes": 40, "largestObserved": { "scenario": "White Dragon", "bytes": 2080, "records": 52 } }
+  },
+  "editorReadiness": {
+    "timedEncounter": "ready-for-parser-writer-and-ui",
+    "thiefEncounter": "parser-ready; writer-ui-needs-divinity-labels-and-fixtures",
+    "validation": [
+      "Data TD2 length divisible by 118",
+      "Data TD3 length divisible by 40",
+      "thief text and sound ids resolve when nonzero",
+      "thief damage range low <= high",
+      "thief spell resolves when nonzero",
+      "timed door resolves to callable macro/door",
+      "timed percent in 0..100 unless preserving imported data",
+      "timed item, quest, rectangle, level, and coordinate gates resolve"
+    ]
+  }
+}

@@ -1,0 +1,186 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-26T00:00:00.000-05:00",
+  "target": "rules-spell-race-caste-runtime-anchors",
+  "containers": ["Data S", "Data Spell", "Data Race", "Data Caste"],
+  "runtimePolicy": {
+    "spells": "shared Data S plus scenario Data Spell custom fifth-class override",
+    "races": "shared Data Race with third-party scenario Data Race override and shared fallback",
+    "castes": "shared Data Caste with third-party scenario Data Caste override and shared fallback"
+  },
+  "sourceAnchors": [
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\structs.h",
+      "line": 58,
+      "evidence": "struct race defines source-backed race profile fields."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\structs.h",
+      "line": 93,
+      "evidence": "struct caste defines source-backed caste profile fields."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\structs.h",
+      "line": 259,
+      "evidence": "struct spell is a 30-byte byte-only record."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\convert.c",
+      "line": 9,
+      "evidence": "CvtRaceToPc identifies endian-owned race fields."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\convert.c",
+      "line": 31,
+      "evidence": "CvtCasteToPc identifies endian-owned caste fields."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\convert.h",
+      "line": 150,
+      "evidence": "Spells are already composed solely of bytes and require no endian conversion."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\main.c",
+      "line": 1183,
+      "evidence": "Startup loads standard spells from shared Data S."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\misc.c",
+      "line": 2492,
+      "evidence": "openrace uses scenario Data Race for third-party scenarios, otherwise shared Data Race."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\misc.c",
+      "line": 2504,
+      "evidence": "opencaste uses scenario Data Caste for third-party scenarios, otherwise shared Data Caste."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\misc.c",
+      "line": 2756,
+      "evidence": "Scenario Data Spell fills spelldata[4] with 105 custom spell records."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\loadspell.c",
+      "line": 5,
+      "evidence": "loadspell2 decodes packed spell IDs into class, level, and slot."
+    }
+  ],
+  "recordLayouts": {
+    "spell": {
+      "recordBytes": 30,
+      "endian": "byte-only",
+      "sharedDataS": { "bytes": 15750, "records": 525, "shape": "5 classes x 7 levels x 15 slots" },
+      "scenarioDataSpell": {
+        "observedBytes": 9016,
+        "runtimeReadRecords": 105,
+        "runtimeTarget": "spelldata[4]",
+        "packaging": "data plus resource/tail evidence; preserve until Divinity write evidence"
+      },
+      "fields": [
+        { "offset": 0, "field": "range1", "kind": "i8" },
+        { "offset": 1, "field": "range2", "kind": "i8" },
+        { "offset": 2, "field": "queicon", "kind": "i8" },
+        { "offset": 3, "field": "tohitbonus", "kind": "i8" },
+        { "offset": 4, "field": "savebonus", "kind": "i8" },
+        { "offset": 5, "field": "fixedtargetnum", "kind": "i8" },
+        { "offset": 6, "field": "canrotate", "kind": "i8" },
+        { "offset": 7, "field": "saveadjust", "kind": "i8" },
+        { "offset": 8, "field": "cannot", "kind": "i8" },
+        { "offset": 9, "field": "resistadjust", "kind": "i8" },
+        { "offset": 10, "field": "cost", "kind": "i8" },
+        { "offset": 11, "field": "damage1", "kind": "i8" },
+        { "offset": 12, "field": "damage2", "kind": "i8" },
+        { "offset": 13, "field": "powerdam1", "kind": "i8" },
+        { "offset": 14, "field": "powerdam2", "kind": "i8" },
+        { "offset": 15, "field": "duration1", "kind": "i8" },
+        { "offset": 16, "field": "duration2", "kind": "i8" },
+        { "offset": 17, "field": "powerdur1", "kind": "i8" },
+        { "offset": 18, "field": "powerdur2", "kind": "i8" },
+        { "offset": 19, "field": "spelllook1", "kind": "i8" },
+        { "offset": 20, "field": "spelllook2", "kind": "i8" },
+        { "offset": 21, "field": "sound1", "kind": "i8" },
+        { "offset": 22, "field": "sound2", "kind": "i8" },
+        { "offset": 23, "field": "targettype", "kind": "i8" },
+        { "offset": 24, "field": "size", "kind": "i8" },
+        { "offset": 25, "field": "special", "kind": "u8" },
+        { "offset": 26, "field": "damagetype", "kind": "i8" },
+        { "offset": 27, "field": "spellclass", "kind": "u8" },
+        { "offset": 28, "field": "incombat", "kind": "u8" },
+        { "offset": 29, "field": "incamp", "kind": "u8" }
+      ]
+    },
+    "race": {
+      "recordBytes": 408,
+      "scenarioOverrideBytes": 12240,
+      "scenarioOverrideRecords": 30,
+      "fields": [
+        { "offset": 0, "size": 16, "field": "plusminustohit", "kind": "be_i16[8]" },
+        { "offset": 16, "size": 28, "field": "specialability", "kind": "be_i16[14]" },
+        { "offset": 44, "size": 16, "field": "drvbonus", "kind": "be_i16[8]" },
+        { "offset": 60, "size": 12, "field": "attbonus", "kind": "be_i16[6]" },
+        { "offset": 72, "size": 24, "field": "minmax", "kind": "be_i16[12]" },
+        { "offset": 112, "size": 80, "field": "conditions", "kind": "be_i16[40]" },
+        { "offset": 192, "size": 16, "field": "coreMovementAndCombat", "kind": "be_i16[8]" },
+        { "offset": 208, "size": 30, "field": "cancaste", "kind": "u8[30]" },
+        { "offset": 238, "size": 20, "field": "agerange", "kind": "be_i16[5][2]" },
+        { "offset": 258, "size": 75, "field": "agechange", "kind": "i8[5][15]" },
+        { "offset": 333, "size": 1, "field": "canregenerate", "kind": "u8" },
+        { "offset": 334, "size": 2, "field": "defaulticonset", "kind": "be_i16" },
+        { "offset": 336, "size": 8, "field": "itemtypes", "kind": "be_i32[2]" },
+        { "offset": 344, "size": 2, "field": "descriptors", "kind": "be_i16" },
+        { "offset": 346, "size": 62, "field": "spacer", "kind": "preserve" }
+      ]
+    },
+    "caste": {
+      "recordBytes": 576,
+      "scenarioOverrideBytes": 17280,
+      "scenarioOverrideRecords": 30,
+      "fields": [
+        { "offset": 0, "size": 56, "field": "specialability", "kind": "be_i16[2][14]" },
+        { "offset": 56, "size": 16, "field": "drvbonus", "kind": "be_i16[8]" },
+        { "offset": 72, "size": 12, "field": "attbonus", "kind": "be_i16[6]" },
+        { "offset": 84, "size": 24, "field": "spellcasters", "kind": "be_i16[4][3]" },
+        { "offset": 108, "size": 24, "field": "minmax", "kind": "be_i16[12]" },
+        { "offset": 132, "size": 80, "field": "conditions", "kind": "be_i16[40]" },
+        { "offset": 212, "size": 36, "field": "combatAndLeveling", "kind": "be_i16[18]" },
+        { "offset": 248, "size": 16, "field": "classAndMovement", "kind": "be_i16[8]" },
+        { "offset": 264, "size": 120, "field": "victory", "kind": "be_i32[30]" },
+        { "offset": 384, "size": 2, "field": "startmoney", "kind": "be_i16" },
+        { "offset": 386, "size": 40, "field": "startitems", "kind": "be_i16[20]" },
+        { "offset": 426, "size": 10, "field": "attacks", "kind": "u8[10]" },
+        { "offset": 436, "size": 8, "field": "itemtypes", "kind": "be_i32[2]" },
+        { "offset": 444, "size": 2, "field": "defaulticon", "kind": "be_i16" },
+        { "offset": 446, "size": 2, "field": "maxspellsattacks", "kind": "be_i16" },
+        { "offset": 448, "size": 2, "field": "spellssofar", "kind": "be_i16" },
+        { "offset": 450, "size": 126, "field": "spacer", "kind": "preserve" }
+      ]
+    }
+  },
+  "corpusEvidence": {
+    "Data Spell": { "presence": "17/44", "observedBytes": [9016] },
+    "Data Race": { "presence": "7/44", "observedBytes": [12240], "records": 30, "recordBytes": 408 },
+    "Data Caste": { "presence": "4/44", "observedBytes": [17280], "records": 30, "recordBytes": 576 }
+  },
+  "providenceImplications": [
+    "Rules tool should expose spell/race/caste pickers with shared-vs-override badges.",
+    "Rules library layout values for Data Race, Data Caste, Data Spell, and Data S should follow source-backed record sizes.",
+    "Spell references should decode packed ids and support complex-encounter spell class ids where the consuming field permits them.",
+    "Full Rules editing should wait for Divinity binary/manual field labels and writer fixtures."
+  ],
+  "validationReady": [
+    "Data Race scenario override length divisible by 408",
+    "Data Caste scenario override length divisible by 576",
+    "scenario Data Spell preserves resource/tail evidence",
+    "exact spell ids resolve to class, level, and slot",
+    "race and caste ids resolve through scenario override before shared fallback",
+    "caste starting items resolve through item picker",
+    "race/caste/item usability restrictions warn on impossible combinations"
+  ],
+  "needsDivinityEvidence": [
+    "Spell editor labels, grouping, defaults, and resource/name save behavior",
+    "Race editor descriptor, age, caste permission, and item-type labels",
+    "Caste editor spellcaster, victory, starting item, attack, and item-type labels",
+    "Whether race/caste overrides are always complete 30-record files",
+    "Exact scenario Data Spell packaging and name mapping"
+  ]
+}

@@ -15,6 +15,8 @@ pub struct ProvidenceProject {
     pub maps: Vec<MapEntity>,
     #[serde(default)]
     pub map_records: Vec<MapRecord>,
+    #[serde(default)]
+    pub tile_attributes: Vec<TileAttributeProfile>,
     pub triggers: Vec<TriggerRecord>,
     pub random_levels: Vec<RandomLevel>,
     pub extracodes: Vec<ExtraCodeRow>,
@@ -717,6 +719,59 @@ pub struct ResourceAsset {
     pub resource_id: i32,
     pub name: Option<String>,
     pub source: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum TileAttributeConfidence {
+    SourceBacked,
+    Inferred,
+    Unknown,
+    Preserved,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum TileAttributeFlag {
+    Walkable,
+    Solid,
+    Path,
+    Shore,
+    BoatRequired,
+    FlyFloatRequired,
+    BlocksLos,
+    SpecialIcon,
+    UnknownMetadata,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TileAttributeProfile {
+    pub tile: i16,
+    pub landlook: Option<i8>,
+    pub solid_type: Option<u8>,
+    pub movement_sound_id: Option<i16>,
+    pub movement_cost: Option<i16>,
+    pub flags: Vec<TileAttributeFlag>,
+    pub confidence: TileAttributeConfidence,
+    #[serde(default = "default_tile_attribute_source_kind")]
+    pub source_kind: TileAttributeSourceKind,
+    pub source: String,
+    pub raw_byte: Option<u8>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum TileAttributeSourceKind {
+    Mapstats,
+    DataSolids,
+    Inferred,
+    Preserved,
+    Unknown,
+}
+
+fn default_tile_attribute_source_kind() -> TileAttributeSourceKind {
+    TileAttributeSourceKind::Unknown
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

@@ -1,0 +1,165 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-25T00:00:00.000-05:00",
+  "target": "scenario-shell-startup-release",
+  "sourceAnchors": [
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\misc.c",
+      "lines": "2621-2779",
+      "claim": "selectscenario requires a scenario folder marker/main file named like the scenario, opens the Scenario resource file, counts RLMZ resources, loads or creates Data Solids, and optionally loads Data Spell."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\setupnewgame.c",
+      "lines": "76-231",
+      "claim": "setupnewgame copies authored source files into runtime caches and reads five startup int32 fields plus two 20-byte code segments from the marker/main scenario file."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\misc.c",
+      "lines": "2529-2530",
+      "claim": "usercheck2 reads a Str255 creator/user name from marker/main offset 60."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\partyselect.c",
+      "lines": "55-164",
+      "claim": "party selection reads reclevel and maxlevel from the marker/main file and displays them as recommended/required level and maximum level."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\contactinfo.c",
+      "lines": "70-82",
+      "claim": "loadcontact reads one Data CI contactdata struct."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\structs.h",
+      "lines": "36-54",
+      "claim": "contactdata is eighteen Str255 fields, producing a 4608-byte Data CI file."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\structs.h",
+      "lines": "29-34",
+      "claim": "restrictinfo is one 320-byte Data RI record with description, maxpc, maxlevel, banned race flags, and banned caste flags."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\partyselect.c",
+      "lines": "207-210",
+      "claim": "party selection opens optional Data RI and reads one restrictinfo record."
+    }
+  ],
+  "markerMainFile": {
+    "corpusObservedSizes": [
+      { "bytes": 316, "count": 24, "corpusRoot": "F:\\Realmz\\out_win_clang\\Scenarios" },
+      { "bytes": 320, "count": 4, "corpusRoot": "F:\\Realmz\\out_win_clang\\Scenarios" }
+    ],
+    "fields": [
+      { "offset": 0, "bytes": 4, "name": "reclevel", "type": "be_i32", "confidence": "source-backed", "meaning": "party level target used by party selection" },
+      { "offset": 4, "bytes": 4, "name": "maxlevel", "type": "be_i32", "confidence": "source-backed", "meaning": "maximum total party level; 999 can display as None" },
+      { "offset": 8, "bytes": 4, "name": "landlevel", "type": "be_i32", "confidence": "source-backed", "meaning": "initial outdoor land level loaded by setupnewgame" },
+      { "offset": 12, "bytes": 4, "name": "lookx", "type": "be_i32", "confidence": "source-backed", "meaning": "initial map/view X base" },
+      { "offset": 16, "bytes": 4, "name": "looky", "type": "be_i32", "confidence": "source-backed", "meaning": "initial map/view Y base" },
+      { "offset": 20, "bytes": 20, "name": "codeseg1", "type": "raw_bytes", "confidence": "source-backed", "meaning": "legacy registration/security code segment" },
+      { "offset": 40, "bytes": 20, "name": "codeseg2", "type": "raw_bytes", "confidence": "source-backed", "meaning": "legacy registration/security code segment" },
+      { "offset": 60, "bytes": 256, "name": "creatorUser", "type": "Str255", "confidence": "source-backed", "meaning": "Divine/user check string; empty allows access" },
+      { "offset": 316, "bytes": "0-or-4", "name": "trailingBytes", "type": "raw_bytes", "confidence": "corpus-backed-unknown", "meaning": "preserve-only until Divinity writer evidence explains 320-byte files" }
+    ]
+  },
+  "dataCI": {
+    "bytes": 4608,
+    "fieldType": "Str255",
+    "fieldCount": 18,
+    "fields": [
+      "scenarioname",
+      "version",
+      "date",
+      "authorsname",
+      "email",
+      "web",
+      "fee",
+      "payinfo[0]",
+      "payinfo[1]",
+      "payinfo[2]",
+      "payinfo[3]",
+      "payinfo[4]",
+      "titles[0]",
+      "titles[1]",
+      "titles[2]",
+      "titles[3]",
+      "titles[4]",
+      "description"
+    ],
+    "localCorpusPresence": {
+      "present": 25,
+      "total": 28,
+      "bytesWhenPresent": 4608
+    },
+    "broadCorpusPresence": {
+      "present": 40,
+      "total": 44
+    }
+  },
+  "dataRI": {
+    "bytes": 320,
+    "fields": [
+      { "offset": 0, "bytes": 256, "name": "description", "type": "Str255", "meaning": "restriction dialog explanation" },
+      { "offset": 256, "bytes": 2, "name": "maxpc", "type": "be_i16", "meaning": "maximum party character count; zero means no extra limit" },
+      { "offset": 258, "bytes": 2, "name": "maxlevel", "type": "be_i16", "meaning": "maximum candidate level gate; zero means no extra limit" },
+      { "offset": 260, "bytes": 30, "name": "canrace", "type": "u8[30]", "meaning": "nonzero flags ban race id index+1" },
+      { "offset": 290, "bytes": 30, "name": "cancaste", "type": "u8[30]", "meaning": "nonzero flags ban caste id index+1" }
+    ],
+    "localCorpusPresence": {
+      "present": 24,
+      "total": 28,
+      "bytesWhenPresent": 320
+    }
+  },
+  "firstStartSourceFiles": [
+    { "source": ["Data DD", "Data LD", "Data RD"], "runtimeCache": "CL", "role": "outdoor triggers, land fields, random land metadata, site cache" },
+    { "source": ["Data DDD", "Data DL", "Data RDD"], "runtimeCache": "CD", "role": "dungeon triggers, dungeon fields, random dungeon metadata" },
+    { "source": ["Data SD"], "runtimeCache": "CS", "role": "shop runtime state" },
+    { "source": ["Data TD2"], "runtimeCache": "CT", "role": "thief/rogue encounter runtime state" },
+    { "source": ["Data TD3"], "runtimeCache": "CTD3", "role": "timed encounter runtime state" },
+    { "source": ["Data ED"], "runtimeCache": "CE", "role": "simple encounter runtime state plus text buffers" },
+    { "source": ["Data ED2"], "runtimeCache": "CE2", "role": "complex encounter runtime state plus text buffers" }
+  ],
+  "localCorpus": {
+    "root": "F:\\Realmz\\out_win_clang\\Scenarios",
+    "scenarioCount": 28,
+    "markerMainPresent": 28,
+    "scenarioResourcePresent": 28,
+    "scenarioResourceBytesObserved": 600,
+    "setupSourceFilesPresentForAll": [
+      "Data DD",
+      "Data LD",
+      "Data RD",
+      "Data DDD",
+      "Data DL",
+      "Data RDD",
+      "Data SD",
+      "Data TD2",
+      "Data TD3",
+      "Data ED",
+      "Data ED2"
+    ]
+  },
+  "editorReadiness": {
+    "parserWriterReady": [
+      "marker/main startup fields with trailing-byte preservation",
+      "Data CI fixed Str255 fields",
+      "Data RI fixed restriction record"
+    ],
+    "validationReady": [
+      "marker/main file exists and is at least 316 bytes",
+      "startup land level exists",
+      "startup coordinates stay in 90x90 outdoor range",
+      "Data CI strings fit Str255 slots",
+      "Data RI description fits Str255 and race/caste flag arrays stay 30 bytes",
+      "first-start source files exist and have aligned record counts",
+      "runtime cache files are not treated as authored export sources"
+    ],
+    "needsDivinityOrFixtureEvidence": [
+      "blank/new scenario default resource fork contents",
+      "RLMZ payload and minimum resource defaults",
+      "release checklist persistence",
+      "Scenario Startup Information UI labels",
+      "meaning of 320-byte marker/main trailing 4 bytes"
+    ]
+  }
+}

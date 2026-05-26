@@ -10,14 +10,14 @@ import {
   pickBrowserScenarioSource
 } from "./editor/browser/fsAccess";
 import { browserReferenceIconUrl, browserTilesetAtlasUrl } from "./editor/browser/atlasPaths";
-import { createBrowserWorkspace, importBrowserLibrary, loadBundledLibraryCatalog } from "./editor/browser/library";
+import { createBrowserWorkspace, importBrowserLibrary, loadBrowserBundledLibraryAssetPreview, loadBundledLibraryCatalog } from "./editor/browser/library";
 import { runProvidenceHarness } from "./editor/harness";
 import { createLibraryDraft, LibraryDraftSpec, updateLibraryDraft } from "./editor/libraryDrafts";
-import { benchmarkBrowserProject, createBrowserProject, importBrowserScenario, openBrowserProject, validateBrowserProject } from "./editor/browser/project";
+import { benchmarkBrowserProject, createBrowserProject, ensureBrowserReferenceTileAttributes, importBrowserScenario, openBrowserProject, validateBrowserProject } from "./editor/browser/project";
 import { IconButton } from "./editor/components/IconButton";
 import { EditorToolRail } from "./editor/components/EditorToolRail";
 import { loadImage } from "./editor/components/TileSprite";
-import { referencedMapIconIds } from "./editor/map/renderValues";
+import { referencedMapIconIds, tileIconCandidates } from "./editor/map/renderValues";
 import { editorReducer, initialEditorState, BROWSER_PREVIEW_STATUS } from "./editor/store";
 import { BenchmarkReport, ExportReport, LibraryCatalog, ManagedAssetKind, MapEntity, MapViewFlag, Project, ProjectCommand, ProvidenceWorkspace, SelectedEntity, SemanticEntity, TilesetAsset, ValidationReport } from "./editor/types";
 import { fileToMediaAssetRequest, nextResourceId, requestToBrowserAsset, requestToBrowserReplacement } from "./editor/mediaAssets";
@@ -88,13 +88,19 @@ export function App() {
         ? [
             ...new Set([
               ...state.project.maps.flatMap((map) => referencedMapIconIds(map.tiles)),
+              ...(state.project.assetCatalog.icons ?? [])
+                .filter((asset) => asset.resourceType === "cicn")
+                .flatMap((asset) => tileIconCandidates(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId)),
               ...(state.project.assets ?? [])
                 .filter((asset) => asset.kind === "special-land-tile" && asset.resourceType === "cicn")
-                .map((asset) => asset.resourceId)
+                .flatMap((asset) => tileIconCandidates(asset.resourceId)),
+              ...(state.libraryCatalog?.assets ?? [])
+                .filter((asset) => asset.type === "special-land-tile" || asset.resourceType === "cicn")
+                .flatMap((asset) => asset.resourceId == null ? [] : tileIconCandidates(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId))
             ])
           ].sort((a, b) => a - b).join(",")
         : "",
-    [state.project]
+    [state.project, state.libraryCatalog]
   );
   const undoLabel = state.past.length > 0 ? state.past[state.past.length - 1].label : null;
   const redoLabel = state.future.length > 0 ? state.future[0].label : null;
@@ -126,7 +132,7 @@ export function App() {
       try {
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const project = (await response.json()) as Project;
+        const project = await ensureBrowserReferenceTileAttributes((await response.json()) as Project);
         if (!disposed) {
           setProjectDir(`browser-benchmark://${url}`);
           dispatch({ type: "setProject", project, selectedMapId: project.maps[0]?.id ?? null });
@@ -265,10 +271,15 @@ export function App() {
         return;
       }
       const projectStampAssets = (state.project.assets ?? []).filter((asset) => asset.kind === "special-land-tile" && asset.resourceType === "cicn");
+      const libraryIconAssets = (state.libraryCatalog?.assets ?? []).filter((asset) => asset.type === "special-land-tile" || asset.resourceType === "cicn");
       const ids = [
         ...new Set([
           ...state.project.maps.flatMap((map) => referencedMapIconIds(map.tiles)),
-          ...projectStampAssets.map((asset) => asset.resourceId)
+          ...(state.project.assetCatalog.icons ?? [])
+            .filter((asset) => asset.resourceType === "cicn")
+            .flatMap((asset) => tileIconCandidates(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId)),
+          ...projectStampAssets.flatMap((asset) => tileIconCandidates(asset.resourceId)),
+          ...libraryIconAssets.flatMap((asset) => asset.resourceId == null ? [] : tileIconCandidates(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId))
         ])
       ].sort((a, b) => a - b);
       if (ids.length === 0) {
@@ -283,11 +294,24 @@ export function App() {
       const pairs = await Promise.all(
         ids.map(async (id) => {
           try {
-            const projectStamp = projectStampAssets.find((asset) => asset.resourceId === id);
-            const relativePath = projectStamp?.previewPath ?? `assets/icons/icon_${id}.png`;
-            const url = desktopRuntime
-              ? await invoke<string>("load_project_asset", { projectDir, relativePath })
-              : browserReferenceIconUrl(id);
+            const projectStamp = projectStampAssets.find((asset) => asset.resourceId === id || tileIconCandidates(asset.resourceId).includes(id));
+            const libraryAsset = libraryIconAssets.find((asset) => {
+              if (asset.resourceId == null) return false;
+              return tileIconCandidates(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId).includes(id);
+            });
+            let url: string;
+            if (projectStamp) {
+              const relativePath = projectStamp.previewPath ?? `assets/icons/icon_${id}.png`;
+              url = desktopRuntime
+                ? await invoke<string>("load_project_asset", { projectDir, relativePath })
+                : browserReferenceIconUrl(id);
+            } else if (libraryAsset) {
+              url = desktopRuntime
+                ? await invoke<string>("load_library_asset_preview", { workspaceDir, source: libraryAsset.source, relativePath: libraryAsset.relativePath })
+                : (await loadBrowserBundledLibraryAssetPreview(libraryAsset)) ?? browserReferenceIconUrl(id);
+            } else {
+              url = browserReferenceIconUrl(id);
+            }
             const image = await loadImage(url);
             return [id, { id, image, url }] as const;
           } catch (error) {

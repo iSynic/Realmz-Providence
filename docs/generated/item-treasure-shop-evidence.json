@@ -1,0 +1,112 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-25T00:00:00.000-05:00",
+  "target": "core-records-full-construction",
+  "containers": ["Data TD", "Data SD", "Data ID", "Data NI", "CS"],
+  "classification": {
+    "Data TD": "scenario-authored-fixed-record",
+    "Data SD": "scenario-authored-fixed-record-copied-to-runtime-cache",
+    "Data ID": "shared-item-library",
+    "Data NI": "supply-item-library-from-bywater-defaults",
+    "CS": "runtime-shop-cache"
+  },
+  "sourceAnchors": [
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\structs.h",
+      "line": 221,
+      "evidence": "struct treasure contains 20 item IDs plus exp/gold/gems/jewelry."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\structs.h",
+      "line": 330,
+      "evidence": "struct itemattr defines the item profile loaded by item lookup."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\structs.h",
+      "line": 338,
+      "evidence": "struct shop contains 1000 item IDs, 1000 quantities, and inflation."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\loaditem.c",
+      "line": 5,
+      "evidence": "loaditem maps abs(id) into 200-record item families."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\setupnewgame.c",
+      "line": 128,
+      "evidence": "scenario Data SD is copied to runtime CS on new game setup."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\newland.c",
+      "line": 1823,
+      "evidence": "treasure opcode reads scenario Data TD by record id."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\newland.c",
+      "line": 3174,
+      "evidence": "alter shop opcode mutates runtime shop inflation and stock then saves CS."
+    }
+  ],
+  "itemFamilies": [
+    { "range": "0-199", "family": "weapons", "runtimeArray": "allweapons", "source": "Data Files/Data ID group 1" },
+    { "range": "200-399", "family": "armor", "runtimeArray": "allarmor", "source": "Data Files/Data ID group 2" },
+    { "range": "400-599", "family": "helms", "runtimeArray": "allhelms", "source": "Data Files/Data ID group 3" },
+    { "range": "600-799", "family": "magic", "runtimeArray": "allmagic", "source": "Data Files/Data ID group 4" },
+    { "range": "800-999", "family": "supplies", "runtimeArray": "allsupply", "source": "Scenarios/City of Bywater/Data NI" }
+  ],
+  "layouts": {
+    "Data TD": {
+      "recordSizeBytes": 48,
+      "fields": [
+        { "offset": 0, "size": 40, "field": "itemid", "kind": "be_i16[20]", "editorMeaning": "reward item references" },
+        { "offset": 40, "size": 2, "field": "exp", "kind": "be_i16", "editorMeaning": "experience reward; negative randomizes" },
+        { "offset": 42, "size": 2, "field": "gold", "kind": "be_i16", "editorMeaning": "gold reward; negative randomizes" },
+        { "offset": 44, "size": 2, "field": "gems", "kind": "be_i16", "editorMeaning": "gem reward; negative randomizes" },
+        { "offset": 46, "size": 2, "field": "jewelry", "kind": "be_i16", "editorMeaning": "jewelry reward; negative randomizes" }
+      ]
+    },
+    "Data SD": {
+      "recordSizeBytes": 3002,
+      "fields": [
+        { "offset": 0, "size": 2000, "field": "id", "kind": "be_i16[1000]", "editorMeaning": "shop stock item IDs" },
+        { "offset": 2000, "size": 1000, "field": "num", "kind": "u8[1000]", "editorMeaning": "stock quantities" },
+        { "offset": 3000, "size": 2, "field": "inflation", "kind": "be_i16", "editorMeaning": "shop price inflation" }
+      ]
+    },
+    "itemattr": {
+      "recordSizeBytes": 100,
+      "source": "Data ID/Data NI",
+      "editorStatus": "read-only-picker-until-divinity-write-evidence"
+    }
+  },
+  "runtimeBehaviors": [
+    "Treasures are loaded directly from scenario Data TD when opcode 10 fires.",
+    "Negative treasure exp/gold/gems/jewelry values are randomized with Rand(abs(value)).",
+    "Shops are copied from scenario Data SD to runtime CS during setupnewgame.",
+    "loadshop reads runtime CS and marks shopavail when opening an active shop.",
+    "saveshop writes mutations to runtime/saved CS.",
+    "Opcode 6 loads a shop; negative shop IDs immediately open the shop UI.",
+    "Opcode 73 loads restricted shops using EDCD accepted item ranges.",
+    "Opcode 51 alters runtime shop stock and inflation.",
+    "Opcode 65 builds a temporary random-item treasure reward from an item ID range."
+  ],
+  "corpusEvidence": {
+    "Data TD": { "presence": "44/44", "recordSizeBytes": 48, "largestObserved": { "scenario": "Price of Power", "bytes": 11424, "records": 238 } },
+    "Data SD": { "presence": "44/44", "recordSizeBytes": 3002, "largestObserved": { "scenario": "Assault on Giant Mountain", "bytes": 117078, "records": 39 } },
+    "Data ID": { "path": "F:\\Realmz\\out_win_clang\\Data Files\\Data ID", "bytes": 80000, "records": 800 },
+    "Data NI": { "path": "F:\\Realmz\\out_win_clang\\Scenarios\\City of Bywater\\Data NI", "bytes": 20000, "records": 200 }
+  },
+  "editorReadiness": {
+    "treasure": "ready-for-parser-writer-and-ui",
+    "shop": "ready-for-parser-writer-and-ui-with-runtime-cache-warning",
+    "itemDefinitions": "picker-ready-read-only; full editing needs Divinity write evidence",
+    "validation": [
+      "Data TD length divisible by 48",
+      "Data SD length divisible by 3002",
+      "nonzero treasure/shop item IDs resolve through item library",
+      "negative treasure rewards labeled as randomized",
+      "shop quantity/inflation ranges warn until Divinity labels are proven",
+      "runtime CS separated from authored Data SD"
+    ]
+  }
+}

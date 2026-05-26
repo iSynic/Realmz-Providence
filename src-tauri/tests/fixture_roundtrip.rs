@@ -981,9 +981,9 @@ fn assert_supporting_record_depth(name: &str, project: &ProvidenceProject) {
             schema.entities.iter().any(|entity| {
                 entity.entity_type == "solidity-table"
                     && entity.summary.get("tableKind").and_then(Value::as_str)
-                        == Some("terrain/contact lookup")
+                        == Some("special negative tile solidity")
             }),
-            "{name} should decode Data Solids as terrain/contact lookup evidence"
+            "{name} should decode Data Solids as special negative tile solidity evidence"
         );
     }
 }

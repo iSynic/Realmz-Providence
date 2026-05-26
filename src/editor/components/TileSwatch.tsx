@@ -17,7 +17,7 @@ export function TileSwatch({
   showBadge?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const metadata = useMemo(() => classifyTileValue(tile, tileset), [tile, tileset]);
+  const metadata = useMemo(() => classifyTileValue(tile, tileset, [], icons), [icons, tile, tileset]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -28,9 +28,7 @@ export function TileSwatch({
     context.clearRect(0, 0, canvas.width, canvas.height);
     context.fillStyle = tileColor(tile);
     context.fillRect(0, 0, canvas.width, canvas.height);
-    if (atlas) {
-      drawTileSprite(context, atlas, tile, 0, 0, canvas.width, canvas.height, icons);
-    }
+    drawTileSprite(context, atlas, tile, 0, 0, canvas.width, canvas.height, icons);
   }, [atlas, icons, tile]);
 
   return (

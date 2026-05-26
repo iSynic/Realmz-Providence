@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { TOOLS } from "../constants";
 import { EditorState } from "../store";
-import { EditorTool, MapEntity, MapPaintMode, MapRecord, MapRegionSelection, MapViewFlag, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, StampPaletteItem, TilesetAsset, TriggerRecord } from "../types";
+import { EditorTool, MapEntity, MapPaintMode, MapPreviewFocalPoint, MapPreviewMode, MapRecord, MapRegionSelection, MapViewFlag, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
 import { randomRectEntityId } from "../map/geometry";
 import { allMapCells, buildPaintChanges, buildReplaceChanges, dominantTiles, rectCells, regionCellCount, regionDimensions } from "../map/regionPaint";
 import { actionSlotEntitiesForTriggerRecord } from "../semanticGraph";
@@ -100,6 +100,10 @@ export function MapSelectionSidebar({
   mapRecords,
   contextFocus,
   onSetContextFocus,
+  previewMode,
+  previewFocalPoint,
+  onSetPreviewMode,
+  onSetPreviewFocalPoint,
   onSetTool,
   onSetViewFlag,
   onOpenPalette,
@@ -123,6 +127,10 @@ export function MapSelectionSidebar({
   mapRecords: SemanticEntity[];
   contextFocus: "flags" | "atlas" | "source";
   onSetContextFocus: (focus: "flags" | "atlas" | "source") => void;
+  previewMode: MapPreviewMode;
+  previewFocalPoint: MapPreviewFocalPoint;
+  onSetPreviewMode: (mode: MapPreviewMode) => void;
+  onSetPreviewFocalPoint: (point: MapPreviewFocalPoint | null) => void;
   onSetTool: (tool: EditorTool) => void;
   onSetViewFlag: (flag: MapViewFlag, value: boolean) => void;
   onOpenPalette: () => void;
@@ -173,6 +181,7 @@ export function MapSelectionSidebar({
             project={state.project}
             selectedPaintTile={state.selectedTile}
             selectedTileset={selectedTileset}
+            icons={state.iconEntries}
             paintMode={paintMode}
             onSetPaintMode={onSetPaintMode}
             selectedRegion={selectedRegion}
@@ -193,8 +202,12 @@ export function MapSelectionSidebar({
             randomLevel={selectedRandomLevel}
             activeTool={state.activeTool}
             contextFocus={contextFocus}
+            previewMode={previewMode}
+            previewFocalPoint={previewFocalPoint}
             showRandomRects={state.showRandomRects}
             onSetContextFocus={onSetContextFocus}
+            onSetPreviewMode={onSetPreviewMode}
+            onSetPreviewFocalPoint={onSetPreviewFocalPoint}
             onSetTool={onSetTool}
             onSetViewFlag={onSetViewFlag}
             onOpenPalette={onOpenPalette}
@@ -222,8 +235,12 @@ function CoreMapSetup({
   randomLevel,
   activeTool,
   contextFocus,
+  previewMode,
+  previewFocalPoint,
   showRandomRects,
   onSetContextFocus,
+  onSetPreviewMode,
+  onSetPreviewFocalPoint,
   onSetTool,
   onSetViewFlag,
   onOpenPalette,
@@ -237,8 +254,12 @@ function CoreMapSetup({
   randomLevel: RandomLevel | null;
   activeTool: EditorTool;
   contextFocus: "flags" | "atlas" | "source";
+  previewMode: MapPreviewMode;
+  previewFocalPoint: MapPreviewFocalPoint;
   showRandomRects: boolean;
   onSetContextFocus: (focus: "flags" | "atlas" | "source") => void;
+  onSetPreviewMode: (mode: MapPreviewMode) => void;
+  onSetPreviewFocalPoint: (point: MapPreviewFocalPoint | null) => void;
   onSetTool: (tool: EditorTool) => void;
   onSetViewFlag: (flag: MapViewFlag, value: boolean) => void;
   onOpenPalette: () => void;
@@ -293,7 +314,16 @@ function CoreMapSetup({
           <span>Realmz Map Flags</span>
           <b>{randomLevel ? "configured" : "none"}</b>
         </summary>
-        <MapLevelSettings map={selectedMap} randomLevel={randomLevel} selectedTileset={selectedTileset} onApplyCommand={onApplyCommand} />
+        <MapLevelSettings
+          map={selectedMap}
+          randomLevel={randomLevel}
+          selectedTileset={selectedTileset}
+          previewMode={previewMode}
+          previewFocalPoint={previewFocalPoint}
+          onSetPreviewMode={onSetPreviewMode}
+          onSetPreviewFocalPoint={onSetPreviewFocalPoint}
+          onApplyCommand={onApplyCommand}
+        />
       </details>
       <details className="context-section" open={contextFocus === "atlas"}>
         <summary>
@@ -447,21 +477,10 @@ function MapToolset({
         inspectedTile={state.selectedCell?.tile ?? null}
         atlas={atlas}
         selectedTileset={selectedTileset}
+        tileAttributes={state.project?.tileAttributes ?? []}
         icons={state.iconEntries}
         onSelectTile={onSelectTile}
       />
-      {state.activeTool === "stamp" && (
-        <StampPalettePanel
-          project={state.project}
-          map={selectedMap}
-          selectedTile={state.selectedTile}
-          selectedTileset={selectedTileset}
-          atlas={atlas}
-          icons={state.iconEntries}
-          libraryAssets={state.libraryCatalog?.assets ?? []}
-          onSelectTile={onSelectTile}
-        />
-      )}
       <PaintModePanel
         map={selectedMap}
         selectedTileset={selectedTileset}
@@ -481,6 +500,8 @@ function MapToolset({
       {paletteOpen && (
         <PaintPalettePanel
           map={selectedMap}
+          project={state.project}
+          libraryAssets={state.libraryCatalog?.assets ?? []}
           selectedTile={state.selectedTile}
           inspectedTile={state.selectedCell?.tile ?? null}
           setSelectedTile={onSelectTile}
@@ -499,11 +520,19 @@ function MapLevelSettings({
   map,
   randomLevel,
   selectedTileset,
+  previewMode,
+  previewFocalPoint,
+  onSetPreviewMode,
+  onSetPreviewFocalPoint,
   onApplyCommand
 }: {
   map: MapEntity | null;
   randomLevel: RandomLevel | null;
   selectedTileset: TilesetAsset | null;
+  previewMode: MapPreviewMode;
+  previewFocalPoint: MapPreviewFocalPoint;
+  onSetPreviewMode: (mode: MapPreviewMode) => void;
+  onSetPreviewFocalPoint: (point: MapPreviewFocalPoint | null) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
   const [applied, setApplied] = useState<string | null>(null);
@@ -533,11 +562,29 @@ function MapLevelSettings({
       </label>
       {applied && <small className="map-applied-status">{applied}</small>}
       {atlasMissing && <div className="map-diagnostic-list"><span>Landlook atlas is unavailable; map rendering will fall back to colors.</span></div>}
+      <div className="map-preview-controls">
+        <label className="context-field compact">
+          <span>Editor Preview</span>
+          <select value={previewMode} onChange={(event) => onSetPreviewMode(event.currentTarget.value as MapPreviewMode)}>
+            <option value="off">Off</option>
+            <option value="los">LOS preview</option>
+            <option value="darkness">Darkness preview</option>
+            <option value="both">Both</option>
+          </select>
+        </label>
+        <div className="map-authoring-form">
+          <MapNumberField label="Focus X" value={previewFocalPoint.x} min={0} max={89} onCommit={(x) => onSetPreviewFocalPoint({ ...previewFocalPoint, x })} />
+          <MapNumberField label="Focus Y" value={previewFocalPoint.y} min={0} max={89} onCommit={(y) => onSetPreviewFocalPoint({ ...previewFocalPoint, y })} />
+        </div>
+        <button className="btn btn-ghost btn-xs context-action-button" type="button" onClick={() => onSetPreviewFocalPoint(null)}>
+          Use selected/default focus
+        </button>
+      </div>
       <small>
         {map.levelType === "dungeon"
           ? "Dungeon geometry stays evidence-only in this slice."
           : "Landlook changes update Realmz random-level metadata and render hints."}{" "}
-        Dark and line-of-sight are saved/exported Realmz flags; a party-position lighting preview is planned.
+        Dark and line-of-sight are saved/exported Realmz flags; previews are editor-only approximations and do not write runtime site data.
       </small>
     </div>
   );
@@ -548,6 +595,7 @@ function PaintTileSummary({
   inspectedTile,
   atlas,
   selectedTileset,
+  tileAttributes,
   icons,
   onSelectTile
 }: {
@@ -555,12 +603,13 @@ function PaintTileSummary({
   inspectedTile: number | null;
   atlas: EditorState["atlasEntries"][string] | null;
   selectedTileset: TilesetAsset | null;
+  tileAttributes: Project["tileAttributes"];
   icons: EditorState["iconEntries"];
   onSelectTile: (tile: number) => void;
 }) {
-  const paintMeaning = classifyTileValue(selectedTile, selectedTileset);
+  const paintMeaning = classifyTileValue(selectedTile, selectedTileset, tileAttributes, icons);
   const inspectedMeaning = inspectedTile != null && inspectedTile !== selectedTile
-    ? classifyTileValue(inspectedTile, selectedTileset)
+    ? classifyTileValue(inspectedTile, selectedTileset, tileAttributes, icons)
     : null;
   return (
     <div className="paint-tile-card">
@@ -586,113 +635,6 @@ function PaintTileSummary({
   );
 }
 
-function StampPalettePanel({
-  project,
-  map,
-  selectedTile,
-  selectedTileset,
-  atlas,
-  icons,
-  libraryAssets,
-  onSelectTile
-}: {
-  project: Project | null;
-  map: MapEntity | null;
-  selectedTile: number;
-  selectedTileset: TilesetAsset | null;
-  atlas: EditorState["atlasEntries"][string] | null;
-  icons: EditorState["iconEntries"];
-  libraryAssets: NonNullable<EditorState["libraryCatalog"]>["assets"];
-  onSelectTile: (tile: number) => void;
-}) {
-  const stamps = stampPaletteItems(project, map, libraryAssets);
-  return (
-    <details className="context-section stamp-palette-section" open>
-      <summary>
-        <span>Stamp Palette</span>
-        <b>{stamps.length}</b>
-      </summary>
-      <p className="empty-copy compact">
-        Stamps are special Realmz tile values, usually negative <code>cicn</code> icons, written directly into the map field grid.
-      </p>
-      <div className="stamp-palette-grid">
-        {stamps.map((stamp) => (
-          <button
-            key={stamp.id}
-            type="button"
-            className={`stamp-palette-card${stamp.tileValue === selectedTile ? " selected" : ""}`}
-            onClick={() => onSelectTile(stamp.tileValue)}
-            title={`${stamp.label}. ${stamp.compatibility}`}
-          >
-            <TileSwatch atlas={atlas} icons={icons} tile={stamp.tileValue} tileset={selectedTileset} />
-            <span>{stamp.label}</span>
-            <small>{stamp.tileValue}</small>
-          </button>
-        ))}
-        {stamps.length === 0 && <p className="empty-copy compact">No special land tiles or negative map values are available yet.</p>}
-      </div>
-      <TileMeaningInspector title="Selected Stamp Meaning" meaning={classifyTileValue(selectedTile, selectedTileset)} compact />
-    </details>
-  );
-}
-
-function stampPaletteItems(project: Project | null, map: MapEntity | null, libraryAssets: NonNullable<EditorState["libraryCatalog"]>["assets"]): StampPaletteItem[] {
-  const items = new Map<number, StampPaletteItem>();
-  for (const asset of project?.assets ?? []) {
-    if (asset.kind !== "special-land-tile") continue;
-    items.set(asset.resourceId, {
-      id: `project:${asset.id}`,
-      label: asset.label,
-      tileValue: asset.resourceId,
-      resourceId: asset.resourceId,
-      source: "project",
-      previewPath: asset.previewPath,
-      compatibility: "Project special land tile; exported as a cicn-backed negative tile value."
-    });
-  }
-  for (const asset of project?.semanticSchema.entities ?? []) {
-    if (asset.type !== "special-land-tile" && asset.type !== "icon-resource") continue;
-    const resourceId = summaryNumber(asset, "resourceId");
-    if (resourceId == null || resourceId >= 0 || items.has(resourceId)) continue;
-    items.set(resourceId, {
-      id: `semantic:${asset.id}`,
-      label: asset.label,
-      tileValue: resourceId,
-      resourceId,
-      source: "library",
-      previewPath: null,
-      compatibility: "Decoded or bundled special land icon evidence."
-    });
-  }
-  for (const asset of libraryAssets) {
-    if (asset.type !== "special-land-tile" && asset.resourceType !== "cicn") continue;
-    const resourceId = asset.resourceId ?? null;
-    if (resourceId == null || resourceId >= 0 || items.has(resourceId)) continue;
-    items.set(resourceId, {
-      id: `library:${asset.id}`,
-      label: asset.label,
-      tileValue: resourceId,
-      resourceId,
-      source: "library",
-      previewPath: asset.previewPath ?? null,
-      compatibility: "Bundled Divinity/Realmz special land tile reference."
-    });
-  }
-  for (const tile of new Set((map?.tiles ?? []).filter((value) => value < 0))) {
-    if (items.has(tile)) continue;
-    items.set(tile, {
-      id: `used:${tile}`,
-      label: `Used stamp ${tile}`,
-      tileValue: tile,
-      resourceId: tile,
-      source: "used-map",
-      previewPath: null,
-      compatibility: "Negative tile value already used on this map."
-    });
-  }
-  return [...items.values()].sort((a, b) => a.tileValue - b.tileValue);
-}
-
 function TileMeaningInspector({
   title,
   meaning,
@@ -708,6 +650,13 @@ function TileMeaningInspector({
     meaning.flags.noteBit ? "note" : null,
     meaning.iconId != null ? `icon ${meaning.iconId}` : null
   ].filter(Boolean).join(", ") || "none";
+  const iconState = meaning.iconCandidates.length === 0
+    ? "none"
+    : meaning.iconAvailable
+      ? `loaded ${meaning.iconCandidates.join(", ")}`
+      : `missing ${meaning.iconCandidates.join(", ")}`;
+  const attributes = meaning.attributes;
+  const attributeFlags = attributes?.flags.length ? attributes.flags.join(", ") : "unknown";
   return (
     <div className={`tile-meaning-inspector${compact ? " compact" : ""}`}>
       <div className="tile-meaning-title">
@@ -723,6 +672,20 @@ function TileMeaningInspector({
         <b>{meaning.normalized}</b>
         <span>Flags</span>
         <b>{flags}</b>
+        <span>Icon Art</span>
+        <b>{iconState}</b>
+        <span>Solid Type</span>
+        <b>{attributes?.solidType ?? "unknown"}</b>
+        <span>Metadata</span>
+        <b>{attributeFlags}</b>
+        <span>Source</span>
+        <b>{attributes?.sourceKind ?? attributes?.source ?? "unknown"}</b>
+        <span>Move Cost</span>
+        <b>{attributes?.movementCost ?? "unknown"}</b>
+        <span>Sound</span>
+        <b>{attributes?.movementSoundId ?? "unknown"}</b>
+        <span>Confidence</span>
+        <b>{attributes?.confidence ?? (meaning.iconCandidates.length > 0 ? "preserved" : "unknown")}</b>
       </div>
       {!compact && <p>{meaning.compatibility}</p>}
     </div>
@@ -804,6 +767,8 @@ function RegionSelectionDetails({
   map,
   region,
   selectedTileset,
+  tileAttributes,
+  icons,
   paintMode,
   onSetPaintMode,
   selectedRegion,
@@ -816,6 +781,8 @@ function RegionSelectionDetails({
   map: MapEntity | null;
   region: MapRegionSelection;
   selectedTileset: TilesetAsset | null;
+  tileAttributes: Project["tileAttributes"];
+  icons: EditorState["iconEntries"];
   paintMode: MapPaintMode;
   onSetPaintMode: (mode: MapPaintMode) => void;
   selectedRegion: MapRegionSelection | null;
@@ -832,6 +799,7 @@ function RegionSelectionDetails({
   const sourceTile = replaceSourceTile ?? dominantTiles(cells, 1)[0]?.tile ?? selectedPaintTile;
   const regionReplaceCount = buildReplaceChanges(map, cells, sourceTile, selectedPaintTile).length;
   const mapReplaceCount = buildReplaceChanges(map, allMapCells(map), sourceTile, selectedPaintTile).length;
+  const selectedMeaning = classifyTileValue(selectedPaintTile, selectedTileset, tileAttributes, icons);
   return (
     <div className="region-selection-details">
       <InfoGrid
@@ -894,9 +862,9 @@ function RegionSelectionDetails({
       <div className="tile-meaning-inspector compact">
         <div className="tile-meaning-title">
           <span>Selected Paint Tile</span>
-          <b>{classifyTileValue(selectedPaintTile, selectedTileset).kind.replace(/-/g, " ")}</b>
+          <b>{selectedMeaning.kind.replace(/-/g, " ")}</b>
         </div>
-        <p>{classifyTileValue(selectedPaintTile, selectedTileset).compatibility}</p>
+        <p>{selectedMeaning.compatibility}</p>
       </div>
       {!selectedRegion && <p className="empty-copy compact">No region is currently selected.</p>}
       <button className="btn btn-ghost btn-xs context-action-button" type="button" onClick={() => onSetPaintMode("region")}>
@@ -912,6 +880,7 @@ function SelectionInspector({
   project,
   selectedPaintTile,
   selectedTileset,
+  icons,
   paintMode,
   onSetPaintMode,
   selectedRegion,
@@ -928,6 +897,7 @@ function SelectionInspector({
   project: Project | null;
   selectedPaintTile: number;
   selectedTileset: TilesetAsset | null;
+  icons: EditorState["iconEntries"];
   paintMode: MapPaintMode;
   onSetPaintMode: (mode: MapPaintMode) => void;
   selectedRegion: MapRegionSelection | null;
@@ -939,6 +909,9 @@ function SelectionInspector({
   onClearSelection: () => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
+  const selectedCellMeaning = selection.kind === "cell"
+    ? classifyTileValue(selection.cell.tile, selectedTileset, project?.tileAttributes ?? [], icons)
+    : null;
   return (
     <section className="context-panel">
       <div className="panel-header">
@@ -956,8 +929,10 @@ function SelectionInspector({
             rows={[
               ["Cell", `${selection.cell.x}, ${selection.cell.y}`],
               ["Raw Tile", selection.cell.tile],
-              ["Render Tile", classifyTileValue(selection.cell.tile, selectedTileset).renderTile],
-              ["Static Stamp", classifyTileValue(selection.cell.tile, selectedTileset).iconId ?? "none"],
+              ["Render Tile", selectedCellMeaning?.renderTile ?? "unknown"],
+              ["Special/Icon", selectedCellMeaning?.iconId ?? "none"],
+              ["Icon Art", selectedCellMeaning?.iconCandidates.length ? (selectedCellMeaning.iconAvailable ? "loaded" : "missing") : "none"],
+              ["Solid Type", selectedCellMeaning?.attributes?.solidType ?? "unknown"],
               ["Action Points", selection.triggers.length],
               ["Random Rects", selection.rects.length],
               ["Starts", selection.records.length],
@@ -965,6 +940,7 @@ function SelectionInspector({
             ]}
           />
           <CellTileEvidence cell={selection.cell} records={selection.records} />
+          {selectedCellMeaning && <TileMeaningInspector title="Selected Cell Meaning" meaning={selectedCellMeaning} compact />}
           <ScriptedChangeSection project={project} map={map} cell={selection.cell} onSelectEntity={onSelectEntity} onOpenScripts={onOpenScripts} />
           <MapDiagnostics diagnostics={cellDiagnostics(selection)} />
           <SelectionLinks
@@ -1057,6 +1033,8 @@ function SelectionInspector({
           map={map}
           region={selection.region}
           selectedTileset={selectedTileset}
+          tileAttributes={project?.tileAttributes ?? []}
+          icons={icons}
           paintMode={paintMode}
           onSetPaintMode={onSetPaintMode}
           selectedRegion={selectedRegion}
@@ -1162,7 +1140,7 @@ function scriptedTileChangesForCell(project: Project | null, map: MapEntity | nu
 
 function cellDiagnostics(selection: Extract<Selection, { kind: "cell" }>) {
   const diagnostics: string[] = [];
-  const tileLooksLikeActionMarker = Math.abs(selection.cell.tile) >= 1000;
+  const tileLooksLikeActionMarker = selection.cell.tile > 999;
   if (selection.triggers.length > 0 && !tileLooksLikeActionMarker) {
     diagnostics.push("Action Point exists here, but the tile does not look like an AP marker.");
   }
@@ -1172,6 +1150,10 @@ function cellDiagnostics(selection: Extract<Selection, { kind: "cell" }>) {
   for (const rect of selection.rects) {
     diagnostics.push(...randomRectDiagnostics(rect).map((message) => `Random Rectangle ${rect.rectIndex}: ${message}`));
   }
+  if (selection.rects.length > 1) {
+    const priority = [...selection.rects].sort((a, b) => b.rectIndex - a.rectIndex)[0];
+    diagnostics.push(`Multiple Random Rectangles overlap this cell; Realmz checks higher record indexes first, so rectangle ${priority.rectIndex} has priority here.`);
+  }
   return diagnostics;
 }
 
@@ -1179,12 +1161,19 @@ function randomRectDiagnostics(rect: RandomLevel["rects"][number]) {
   const diagnostics: string[] = [];
   if (rect.left < 0 || rect.top < 0 || rect.right > 89 || rect.bottom > 89) diagnostics.push("Bounds are outside the 90x90 map.");
   if (rect.left > rect.right || rect.top > rect.bottom) diagnostics.push("Bounds are inverted.");
-  if (rect.percent < 0 || rect.percent > 10000) diagnostics.push("Chance must be between 0 and 10000.");
+  if (rect.percent > 10000) diagnostics.push("Times in 10,000 must not exceed 10000.");
+  if (rect.percent < 0) diagnostics.push("Negative Times in 10,000 is preserved from source, but normal authoring should use 0..10000.");
   rect.randomDoorPercent.forEach((percent, index) => {
-    if (percent < 0 || percent > 10000) diagnostics.push(`Door ${index + 1} percent must be between 0 and 10000.`);
+    if (percent < -100 || percent > 100) diagnostics.push(`Door ${index + 1} percent must be between -100 and 100.`);
   });
   if (rect.percent === 0 && rect.randomDoors.every((door) => door === 0)) diagnostics.push("Rectangle is effectively inactive.");
   return diagnostics;
+}
+
+function randomDoorPercentMeaning(percent: number) {
+  if (percent < 0) return `${Math.abs(percent)}% repeat door path`;
+  if (percent > 0) return `${percent}% one-shot door path`;
+  return "No extra AP chance.";
 }
 
 function TriggerSelectionDetails({
@@ -1312,7 +1301,7 @@ function RandomRectangleEditor({
         <MapNumberField label="Top" value={rect.top} min={0} max={89} onCommit={(top) => update({ top })} />
         <MapNumberField label="Right" value={rect.right} min={0} max={89} onCommit={(right) => update({ right })} />
         <MapNumberField label="Bottom" value={rect.bottom} min={0} max={89} onCommit={(bottom) => update({ bottom })} />
-        <MapNumberField label="Chance / 10000" value={rect.percent} min={0} max={10000} onCommit={(percent) => update({ percent })} />
+        <MapNumberField label="Times in 10,000" value={rect.percent} min={0} max={10000} onCommit={(percent) => update({ percent })} />
         <MapNumberField label="Battle Low" value={rect.battleRange[0] ?? 0} onCommit={(value) => update({ battleRange: [value, rect.battleRange[1] ?? value] })} />
         <MapNumberField label="Battle High" value={rect.battleRange[1] ?? 0} onCommit={(value) => update({ battleRange: [rect.battleRange[0] ?? value, value] })} />
         <MapNumberField label="Option" value={rect.option} min={-128} max={127} onCommit={(option) => update({ option })} />
@@ -1329,7 +1318,8 @@ function RandomRectangleEditor({
           {[0, 1, 2].map((index) => (
             <div className="map-door-pair" key={index}>
               <MapNumberField label={`Door ${index + 1}`} value={rect.randomDoors[index] ?? 0} onCommit={(value) => updateDoor(index, value)} />
-              <MapNumberField label={`Door ${index + 1} %`} value={rect.randomDoorPercent[index] ?? 0} min={0} max={10000} onCommit={(value) => updateDoorPercent(index, value)} />
+              <MapNumberField label={`Door ${index + 1} %`} value={rect.randomDoorPercent[index] ?? 0} min={-100} max={100} onCommit={(value) => updateDoorPercent(index, value)} />
+              <small className="context-capacity-note compact">{randomDoorPercentMeaning(rect.randomDoorPercent[index] ?? 0)}</small>
             </div>
           ))}
         </div>

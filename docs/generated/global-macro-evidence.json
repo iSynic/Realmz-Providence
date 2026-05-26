@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-26T00:00:00.000-05:00",
+  "target": "scripts-runtime-state-semantics",
+  "evidenceCard": "docs/format-evidence-cards/global-macro-runtime-anchors.md",
+  "container": {
+    "file": "Global",
+    "recordBytes": 60,
+    "recordCount": 1,
+    "endianness": "big-endian signed shorts",
+    "slotCount": 30
+  },
+  "runtimeHookSlots": [
+    {
+      "slot": 0,
+      "offset": 0,
+      "label": "Start game",
+      "consumer": "mainscreeninit/new-game start",
+      "confidence": "source-backed",
+      "sourceAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\handlemenuchoice.c:1195-1211",
+        "F:\\Realmz\\src\\realmz_orig\\misc.c:510-512"
+      ]
+    },
+    {
+      "slot": 1,
+      "offset": 2,
+      "label": "Party death",
+      "consumer": "partyloss death/revive path",
+      "confidence": "source-backed",
+      "sourceAnchors": ["F:\\Realmz\\src\\realmz_orig\\partyloss.c:15-24"]
+    },
+    {
+      "slot": 2,
+      "offset": 4,
+      "label": "End/quit game",
+      "consumer": "end current game",
+      "confidence": "source-backed",
+      "sourceAnchors": ["F:\\Realmz\\src\\realmz_orig\\handlemenuchoice.c:1227-1235"]
+    },
+    {
+      "slot": 4,
+      "offset": 8,
+      "label": "Before shop",
+      "consumer": "shop button when shop is available",
+      "confidence": "source-backed",
+      "sourceAnchors": ["F:\\Realmz\\src\\realmz_orig\\buttonchoice.c:419-421"]
+    },
+    {
+      "slot": 5,
+      "offset": 10,
+      "label": "Before temple",
+      "consumer": "shop/temple button when temple is available",
+      "confidence": "source-backed",
+      "sourceAnchors": ["F:\\Realmz\\src\\realmz_orig\\buttonchoice.c:435-437"]
+    }
+  ],
+  "preservedSlots": {
+    "slots": [3, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29],
+    "reason": "No source-backed globalmacro consumer was found for these slots; nonzero values are preserved evidence until Divinity binary/source evidence explains them."
+  },
+  "corpusEvidence": {
+    "localOutputCorpusRoot": "F:\\Realmz\\out_win_clang\\Scenarios",
+    "checkedScenarios": 28,
+    "globalPresent": 28,
+    "recordSize": "60 bytes in every checked scenario",
+    "representativeNonzero": [
+      { "scenario": "Wrath of the Mind Lords", "slots": { "0": 19, "1": 60, "2": 19, "29": 1 } },
+      { "scenario": "Hax", "slots": { "0": 142, "1": 142, "2": 142 } },
+      { "scenario": "War", "slots": { "1": 182, "2": 238 } },
+      { "scenario": "The End Worlds", "slots": { "0": 2, "29": 1 } },
+      { "scenario": "Half Truth", "slots": { "0": 58, "29": 1 } },
+      { "scenario": "Trouble", "slots": { "2": 83 } },
+      { "scenario": "Mithril Vault", "slots": { "3": 58 } },
+      { "scenario": "Price of Power", "slots": { "29": 1 } }
+    ],
+    "broadInventory": "Global reported in 44 of 44 scenarios in docs/generated/corpus-field-usage.json."
+  },
+  "providenceImplications": [
+    "Parse Global as a source-backed global-macro entity.",
+    "Link nonzero source-backed slots to Data ED3 macro targets for reachability and macro pickers.",
+    "Do not present slots 3 and 6-29 as proven executable hooks until Divinity/source evidence confirms them.",
+    "A future Scenario editor can write the 30 signed-short slots with fixture-backed validation."
+  ],
+  "validationReady": [
+    "Global file length should be exactly 60 bytes.",
+    "Source-backed nonzero hook slots should resolve to callable Data ED3 macro rows.",
+    "Nonzero unproven slots should show preserved-source warnings, not unsupported behavior errors."
+  ]
+}

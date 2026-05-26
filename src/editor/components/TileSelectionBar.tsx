@@ -1,7 +1,7 @@
 import { MutableRefObject, useEffect, useMemo, useRef, useState } from "react";
 import { EditorState } from "../store";
-import { IconEntry, MapEntity, TilesetAsset } from "../types";
-import { classifyTileValue, standardTileValues } from "../map/tileMetadata";
+import { IconEntry, LibraryAsset, MapEntity, Project, TileAttributeFlag, TilePaletteCategory, TilesetAsset } from "../types";
+import { classifyTileValue, standardTileValues, tileAttributeGroup } from "../map/tileMetadata";
 import { tileColor } from "./TileSprite";
 import { TileSwatch } from "./TileSwatch";
 import { TutorialTip } from "./TutorialTip";
@@ -14,6 +14,8 @@ const FALLBACK_TILE_CHOICES = [
 
 type PaintPalettePanelProps = {
   map: MapEntity | null;
+  project?: Project | null;
+  libraryAssets?: LibraryAsset[];
   selectedTile: number;
   inspectedTile: number | null;
   setSelectedTile: (tile: number) => void;
@@ -30,6 +32,8 @@ export function TileSelectionBar(props: Omit<PaintPalettePanelProps, "variant">)
 
 export function PaintPalettePanel({
   map,
+  project,
+  libraryAssets = [],
   selectedTile,
   inspectedTile,
   setSelectedTile,
@@ -42,8 +46,24 @@ export function PaintPalettePanel({
   const standardTiles = standardTileValues(tileset);
   const usedTiles = usedTilesForMap(map);
   const rawTiles = rawTilesForMap(map, tileset);
-  const [mode, setMode] = useState<"landlook" | "used" | "raw">("landlook");
-  const paletteTiles = mode === "used" ? usedTiles : mode === "raw" ? rawTiles : standardTiles;
+  const specialTiles = specialTilesForPalette(project ?? null, map, libraryAssets, icons);
+  const [mode, setMode] = useState<TilePaletteCategory>("landlook");
+  const [attributeFilter, setAttributeFilter] = useState<TileAttributeFlag | "all">("all");
+  const tileAttributes = project?.tileAttributes ?? [];
+  const attributeTiles = useMemo(() => {
+    const candidates = [...new Set([...standardTiles, ...usedTiles])].sort((a, b) => a - b);
+    if (attributeFilter === "all") return candidates;
+    return candidates.filter((tile) => tileAttributeGroup(classifyTileValue(tile, tileset, tileAttributes, icons).attributes, tile).includes(attributeFilter));
+  }, [attributeFilter, icons, standardTiles, tileAttributes, tileset, usedTiles]);
+  const paletteTiles = mode === "used"
+    ? usedTiles
+    : mode === "raw"
+      ? rawTiles
+      : mode === "special"
+        ? specialTiles
+        : mode === "attributes"
+          ? attributeTiles
+          : standardTiles;
   const [query, setQuery] = useState("");
   const buttonRefs = useRef(new Map<number, HTMLButtonElement>());
   const focusTile = inspectedTile ?? selectedTile;
@@ -52,7 +72,7 @@ export function PaintPalettePanel({
     if (!normalized) return paletteTiles;
     return paletteTiles.filter((tile) => String(tile).includes(normalized));
   }, [paletteTiles, query]);
-  const selectedMeta = classifyTileValue(selectedTile, tileset);
+  const selectedMeta = classifyTileValue(selectedTile, tileset, tileAttributes, icons);
 
   useEffect(() => {
     const button = buttonRefs.current.get(focusTile);
@@ -80,8 +100,25 @@ export function PaintPalettePanel({
       {variant === "sidebar" && (
         <div className="paint-palette-tabs" role="tablist" aria-label="Tile palette mode">
           <button type="button" className={mode === "landlook" ? "active" : ""} onClick={() => setMode("landlook")}>Landlook</button>
+          <button type="button" className={mode === "special" ? "active" : ""} onClick={() => setMode("special")}>Special / Icons</button>
           <button type="button" className={mode === "used" ? "active" : ""} onClick={() => setMode("used")}>Used</button>
-          <button type="button" className={mode === "raw" ? "active" : ""} onClick={() => setMode("raw")}>Special / Raw</button>
+          <button type="button" className={mode === "attributes" ? "active" : ""} onClick={() => setMode("attributes")}>Attributes</button>
+          <button type="button" className={mode === "raw" ? "active" : ""} onClick={() => setMode("raw")}>Raw / Advanced</button>
+        </div>
+      )}
+      {variant === "sidebar" && mode === "attributes" && (
+        <div className="paint-attribute-filters" role="toolbar" aria-label="Tile attribute filters">
+          {ATTRIBUTE_FILTERS.map((filter) => (
+            <button
+              key={filter.id}
+              type="button"
+              className={attributeFilter === filter.id ? "active" : ""}
+              onClick={() => setAttributeFilter(filter.id)}
+              title={filter.hint}
+            >
+              {filter.label}
+            </button>
+          ))}
         </div>
       )}
       {variant === "sidebar" && (
@@ -103,6 +140,7 @@ export function PaintPalettePanel({
             setSelectedTile={setSelectedTile}
             tiles={filteredTiles}
             tileset={tileset}
+            tileAttributes={tileAttributes}
             buttonRefs={buttonRefs}
           />
         </ScrollArea>
@@ -116,6 +154,7 @@ export function PaintPalettePanel({
             setSelectedTile={setSelectedTile}
             tiles={filteredTiles}
             tileset={tileset}
+            tileAttributes={tileAttributes}
             buttonRefs={buttonRefs}
           />
         </div>
@@ -136,6 +175,7 @@ function PaletteButtons({
   setSelectedTile,
   tiles,
   tileset,
+  tileAttributes,
   buttonRefs
 }: {
   atlas: EditorState["atlasEntries"][string] | null;
@@ -145,6 +185,7 @@ function PaletteButtons({
   setSelectedTile: (tile: number) => void;
   tiles: number[];
   tileset: TilesetAsset | null;
+  tileAttributes: Project["tileAttributes"];
   buttonRefs: MutableRefObject<Map<number, HTMLButtonElement>>;
 }) {
   return (
@@ -156,9 +197,9 @@ function PaletteButtons({
             else buttonRefs.current.delete(tile);
           }}
           key={tile}
-          className={tileButtonClassWithMetadata(tile, selectedTile, inspectedTile, tileset)}
+          className={tileButtonClassWithMetadata(tile, selectedTile, inspectedTile, tileset, tileAttributes, icons)}
           style={{ background: tileColor(tile) }}
-          title={tileTitle(tile, tileset)}
+          title={tileTitle(tile, tileset, tileAttributes, icons)}
           onClick={() => setSelectedTile(tile)}
         >
           <TileSwatch atlas={atlas} icons={icons} tile={tile} tileset={tileset} />
@@ -170,15 +211,29 @@ function PaletteButtons({
 }
 
 export function tileButtonClass(tile: number, selectedTile: number, inspectedTile: number | null) {
-  return tileButtonClassFor(tile, selectedTile, inspectedTile, null);
+  return tileButtonClassFor(tile, selectedTile, inspectedTile, null, [], undefined);
 }
 
-function tileButtonClassWithMetadata(tile: number, selectedTile: number, inspectedTile: number | null, tileset: TilesetAsset | null) {
-  return tileButtonClassFor(tile, selectedTile, inspectedTile, tileset);
+function tileButtonClassWithMetadata(
+  tile: number,
+  selectedTile: number,
+  inspectedTile: number | null,
+  tileset: TilesetAsset | null,
+  tileAttributes: Project["tileAttributes"],
+  icons?: Record<number, IconEntry>
+) {
+  return tileButtonClassFor(tile, selectedTile, inspectedTile, tileset, tileAttributes, icons);
 }
 
-function tileButtonClassFor(tile: number, selectedTile: number, inspectedTile: number | null, tileset: TilesetAsset | null) {
-  const metadata = classifyTileValue(tile, tileset);
+function tileButtonClassFor(
+  tile: number,
+  selectedTile: number,
+  inspectedTile: number | null,
+  tileset: TilesetAsset | null,
+  tileAttributes: Project["tileAttributes"],
+  icons?: Record<number, IconEntry>
+) {
+  const metadata = classifyTileValue(tile, tileset, tileAttributes, icons);
   return [
     `tile-kind-${metadata.kind}`,
     tile === selectedTile ? "selected" : "",
@@ -191,6 +246,60 @@ function tileButtonClassFor(tile: number, selectedTile: number, inspectedTile: n
 export function paletteForMap(map: MapEntity | null, tileset: TilesetAsset | null) {
   const merged = [...standardTileValues(tileset), ...usedTilesForMap(map), ...FALLBACK_TILE_CHOICES];
   return Array.from(new Set(merged)).sort((a, b) => tileSort(a, b, tileset));
+}
+
+const ATTRIBUTE_FILTERS: Array<{ id: TileAttributeFlag | "all"; label: string; hint: string }> = [
+  { id: "all", label: "All", hint: "Show all tiles with known or unknown metadata." },
+  { id: "walkable", label: "Walkable", hint: "Source-backed mapstats or Data Solids says this tile is not solid." },
+  { id: "solid", label: "Solid / Blocking", hint: "Source-backed mapstats or Data Solids marks this tile as blocking." },
+  { id: "path", label: "Path", hint: "Source-backed mapstats path flag." },
+  { id: "shore", label: "Shore / Water", hint: "Source-backed mapstats shore/water flag." },
+  { id: "boat-required", label: "Boat Required", hint: "Source-backed mapstats boat/water requirement." },
+  { id: "fly-float-required", label: "Fly / Float", hint: "Source-backed mapstats fly/float script flag." },
+  { id: "blocks-los", label: "Blocks LOS", hint: "Source-backed mapstats line-of-sight blocker." },
+  { id: "special-icon", label: "Special / Icon", hint: "Negative values or icon-backed tiles." },
+  { id: "unknown-metadata", label: "Unknown", hint: "Tiles without decoded attribute metadata." }
+];
+
+function specialTilesForPalette(
+  project: Project | null,
+  map: MapEntity | null,
+  libraryAssets: LibraryAsset[],
+  icons?: Record<number, IconEntry>
+) {
+  const values = new Set<number>();
+  for (const asset of project?.assets ?? []) {
+    if (asset.kind === "special-land-tile") values.add(asset.resourceId);
+  }
+  for (const entity of project?.semanticSchema.entities ?? []) {
+    if (entity.type !== "special-land-tile" && entity.type !== "icon-resource") continue;
+    const resourceId = entitySummaryNumber(entity.summary, "resourceId") ?? entitySummaryNumber(entity.summary, "id");
+    if (resourceId == null) continue;
+    values.add(resourceId < 0 ? resourceId : -resourceId);
+  }
+  for (const asset of libraryAssets) {
+    if (asset.type !== "special-land-tile" && asset.resourceType !== "cicn") continue;
+    if (asset.resourceId == null) continue;
+    values.add(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId);
+  }
+  for (const tile of map?.tiles ?? []) {
+    if (tile < 0) values.add(tile);
+  }
+  for (const id of Object.keys(icons ?? {})) {
+    const tile = Number(id);
+    if (Number.isFinite(tile) && tile < 0) values.add(tile);
+  }
+  return [...values].sort((a, b) => a - b);
+}
+
+function entitySummaryNumber(summary: Record<string, unknown> | undefined, key: string) {
+  const value = summary?.[key];
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
 }
 
 function usedTilesForMap(map: MapEntity | null) {
@@ -215,7 +324,20 @@ function tileSort(a: number, b: number, tileset: TilesetAsset | null) {
   return rank(a) - rank(b) || a - b;
 }
 
-function tileTitle(tile: number, tileset: TilesetAsset | null) {
-  const metadata = classifyTileValue(tile, tileset);
-  return `${metadata.label}. Raw ${metadata.raw}; renders as ${metadata.renderTile}. ${metadata.compatibility}`;
+function tileTitle(
+  tile: number,
+  tileset: TilesetAsset | null,
+  tileAttributes: Project["tileAttributes"],
+  icons?: Record<number, IconEntry>
+) {
+  const metadata = classifyTileValue(tile, tileset, tileAttributes, icons);
+  const icon = metadata.iconCandidates.length > 0
+    ? metadata.iconAvailable
+      ? ` Icon art loaded (${metadata.iconCandidates.join(", ")}).`
+      : ` Missing icon art (${metadata.iconCandidates.join(", ")}).`
+    : "";
+  const attributes = metadata.attributes
+    ? ` Solid type ${metadata.attributes.solidType ?? "unknown"} from ${metadata.attributes.source}.`
+    : " Tile attributes unknown.";
+  return `${metadata.label}. Raw ${metadata.raw}; renders as ${metadata.renderTile}.${icon}${attributes} ${metadata.compatibility}`;
 }

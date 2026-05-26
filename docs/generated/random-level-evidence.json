@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-26T00:00:00.000-05:00",
+  "source": "Manual archaeology pass over Realmz randlevel source, runtime consumers, and local output corpus",
+  "record": {
+    "name": "randlevel",
+    "bytes": 644,
+    "sourceFiles": ["Data RD", "Data RDD"],
+    "runtimeCaches": ["CL", "CD"]
+  },
+  "realmzSourceAnchors": [
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\structs.h",
+      "topic": "randlevel struct",
+      "finding": "The record contains 20 rectangles, percent values, battle ranges, three random doors and percents, landlook, darkness, LOS, only flags, option bytes, sounds, and text IDs."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\convert.c",
+      "topic": "endian conversion",
+      "finding": "CvtRandLevelToPc converts rects, short arrays, booleans, sounds, and text; landlook and option are byte fields."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\textbox-time.c",
+      "topic": "normal random encounter path",
+      "finding": "Runtime checks rectangles from index 19 down to 0, tests Rand(10000) <= percent, fires extra AP doors, optionally prompts using option/sound/text, then picks battle range."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\buttonchoice.c",
+      "topic": "negative percent seamless path",
+      "finding": "A movement path checks rectangles where percent < 0 and can fire extra AP doors without the normal random-battle flow."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\newland.c",
+      "topic": "script mutation",
+      "finding": "Opcodes 23, -23, 92, and 106 mutate random rectangle percent/ranges/shape or level landlook/darkness."
+    }
+  ],
+  "layout": [
+    { "offset": 0, "size": 160, "field": "randrect[20]", "type": "Rect[20]", "editorMeaning": "Random rectangle bounds top/left/bottom/right." },
+    { "offset": 160, "size": 40, "field": "percent[20]", "type": "be_i16[20]", "editorMeaning": "Chance in times per 10000; negative values use a seamless-door path." },
+    { "offset": 200, "size": 80, "field": "battlerange[20][2]", "type": "be_i16[40]", "editorMeaning": "Low/high battle record IDs." },
+    { "offset": 280, "size": 120, "field": "randdoor[20][3]", "type": "be_i16[60]", "editorMeaning": "Up to three extra Action Point door IDs." },
+    { "offset": 400, "size": 120, "field": "randdoorpercent[20][3]", "type": "be_i16[60]", "editorMeaning": "Chance out of 100 for each extra AP; positive one-shot, negative repeat." },
+    { "offset": 520, "size": 1, "field": "landlook", "type": "i8", "editorMeaning": "Level landlook/render tileset hint." },
+    { "offset": 521, "size": 1, "field": "isdark", "type": "bool", "editorMeaning": "Dark level flag." },
+    { "offset": 522, "size": 1, "field": "uselos", "type": "bool", "editorMeaning": "Line-of-sight/unknown-site outdoor render flag." },
+    { "offset": 523, "size": 20, "field": "only[20]", "type": "bool[20]", "editorMeaning": "Stop lower-priority random rectangle checks when party is inside this rectangle." },
+    { "offset": 543, "size": 20, "field": "option[20]", "type": "i8[20]", "editorMeaning": "Prompt/surprise chance used before random battle." },
+    { "offset": 563, "size": 40, "field": "sound[20]", "type": "be_i16[20]", "editorMeaning": "Sound played with option prompt." },
+    { "offset": 603, "size": 40, "field": "text[20]", "type": "be_i16[20]", "editorMeaning": "Data SD2 message ID displayed with option prompt." },
+    { "offset": 643, "size": 1, "field": "padding", "type": "u8", "editorMeaning": "Preserve alignment/padding byte." }
+  ],
+  "runtimeSemantics": {
+    "priority": "Rectangles are checked from index 19 down to 0.",
+    "percent": "Rand(10000) <= percent; label as times in 10000.",
+    "extraApPercent": "Rand(100) <= abs(randdoorpercent); positive values are zeroed after firing, negative values repeat.",
+    "only": "If true, random checks stop after this rectangle is processed.",
+    "option": "Rand(100) < option triggers sound/text prompt and can set favorable surprise before battle.",
+    "negativePercent": "Supported by Realmz source for seamless extra-AP checks; not observed in local output corpus."
+  },
+  "localOutputCorpus": {
+    "root": "F:\\Realmz\\out_win_clang\\Scenarios",
+    "scenarios": 28,
+    "files": 56,
+    "levels": 349,
+    "activeRects": 2615,
+    "negativePercentRects": 0,
+    "battleRects": 958,
+    "onlyRects": 527,
+    "extraDoorSlots": 2819,
+    "oneShotDoorPercentSlots": 2840,
+    "repeatDoorPercentSlots": 0,
+    "topActiveOutdoorFiles": [
+      { "scenario": "War in the Sword Lands", "file": "Data RD", "activeRects": 310 },
+      { "scenario": "Trouble in the Sword Lands", "file": "Data RD", "activeRects": 289 },
+      { "scenario": "Wrath of the Mind Lords", "file": "Data RD", "activeRects": 281 },
+      { "scenario": "Price of Power", "file": "Data RD", "activeRects": 138 },
+      { "scenario": "Half Truth", "file": "Data RD", "activeRects": 136 }
+    ]
+  },
+  "editorImplications": [
+    "Validate percent as times in 10000, not percent out of 100.",
+    "Show rectangle priority order and warn on overlap only when it affects expected behavior.",
+    "Expose positive extra AP percent as one-shot and negative extra AP percent as repeat.",
+    "Rename option UI to prompt/surprise chance and link sound/text to decoded targets.",
+    "Treat opcodes 23, -23, 92, and 106 as runtime mutation evidence when they alter random-level data."
+  ]
+}

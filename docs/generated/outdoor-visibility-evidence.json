@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-26T00:00:00.000-05:00",
+  "source": "Manual archaeology pass over Realmz outdoor render, LOS, setupnewgame, and save/load sources",
+  "topic": "Outdoor visibility, dark levels, and generated site cache",
+  "realmzSourceAnchors": [
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\main.c",
+      "topic": "site cache allocation",
+      "finding": "Runtime owns Boolean site[90][90]."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\setupnewgame.c",
+      "topic": "site cache generation",
+      "finding": "New-game setup clears site to zero and writes one site grid into each outdoor CL record after door, field, and randlevel."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\loadland-loadpixmap.c",
+      "topic": "outdoor vs dungeon cache records",
+      "finding": "Outdoor CL records are door + field + randlevel + site; dungeon CD records are door + field + randlevel."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\centerpict.c",
+      "topic": "LOS and darkness render",
+      "finding": "If randlevel.uselos and site is false, Realmz draws black tile 252; if randlevel.isdark, it applies a 320x320 darkness mask around the party position."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\cansee.c",
+      "topic": "site discovery",
+      "finding": "Visibility rays normalize map field values, consult mapstats[hit].los, and mark visible cells site[x][y] = TRUE."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\save-direction-order.c",
+      "topic": "save preservation",
+      "finding": "Saved games preserve CL records including site; saveland writes site only for outdoor records."
+    }
+  ],
+  "sourceRuntimeSplit": [
+    {
+      "field": "randlevel.landlook",
+      "source": "Data RD byte offset 520",
+      "authored": true,
+      "editorTreatment": "Writable map flag and tileset selection."
+    },
+    {
+      "field": "randlevel.isdark",
+      "source": "Data RD byte offset 521",
+      "authored": true,
+      "editorTreatment": "Writable map flag with party-position-dependent preview."
+    },
+    {
+      "field": "randlevel.uselos",
+      "source": "Data RD byte offset 522",
+      "authored": true,
+      "editorTreatment": "Writable map flag with generated-site preview."
+    },
+    {
+      "field": "site[90][90]",
+      "source": "Generated runtime CL cache",
+      "authored": false,
+      "editorTreatment": "Runtime/save-state evidence only; do not export as scenario source."
+    }
+  ],
+  "editorImplications": [
+    "Dark Level and Use LOS controls are real source-backed Data RD fields.",
+    "Canvas effects should be preview modes because both features depend on party position and generated site state.",
+    "Use LOS should preview unknown cells from a chosen focal point, not imply a static tile palette change.",
+    "Dark Level should preview a party-centered mask, not change landlook tile art.",
+    "Providence should not create or export authored site data; Realmz creates site in CL during setupnewgame."
+  ],
+  "followUpUi": [
+    "Add preview focal point choices: scenario start, selected cell, selected map record start, or manual coordinate.",
+    "Add LOS-blocking tile overlay from mapstats.los.",
+    "Add dark-mask preview layer.",
+    "Keep generated site cache in Source Evidence only."
+  ],
+  "confidenceDebt": [
+    "Divinity binary/manual evidence is still needed to prove whether Divinity offered a visual preview for dark/LOS flags.",
+    "Dungeon use of randlevel.isdark exists as a stored flag, but this pass focused on outdoor centerpict/site behavior."
+  ]
+}

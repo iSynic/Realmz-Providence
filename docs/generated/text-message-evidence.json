@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-25T00:00:00.000-05:00",
+  "target": "core-records-full-construction",
+  "sourceAnchors": [
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\textbox-time.c",
+      "lines": "6-63",
+      "claim": "textbox reads scenario messages from Data SD2 as 256-byte Str255 slots and displays bytes 1..length."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\textbox-time.c",
+      "lines": "111-113",
+      "claim": "Scenario messages can become notes/journal entries through the n/autonote path."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\question.c",
+      "lines": "104-146",
+      "claim": "Two-choice prompt labels use Data OD 25-byte slots when present and Data SD2 fallback otherwise; first visible character becomes the shortcut."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\setupnewgame.c",
+      "lines": "164-196",
+      "claim": "First-start copies Data ED with four 80-byte buffers into CE and Data ED2 with nine 40-byte buffers into CE2."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\encounters.c",
+      "lines": "283-300",
+      "claim": "Simple encounter runtime reads four 80-byte buffers, passes them to ParamText, and displays the prompt through Data SD2."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\newland.c",
+      "lines": "1566-1677",
+      "claim": "Opcode 4/5 encounter actions branch through encounter action/result rows, not inline text punctuation."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\saveshop.c",
+      "lines": "5-35",
+      "claim": "Encounter state saves target generated CE/CE2 runtime caches."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\editstring.c",
+      "lines": "42-74",
+      "claim": "The string editor writes Data SD2 message slots directly as 256-byte records."
+    }
+  ],
+  "dataSD2": {
+    "recordBytes": 256,
+    "encoding": "Str255",
+    "lookup": "messageId * 256",
+    "notes": [
+      "byte 0 is the Pascal length",
+      "0 is no message in several runtime paths",
+      "negative IDs can suppress textbox click-wait in class -1 display path",
+      "messages can be marked as notes/journal entries"
+    ]
+  },
+  "encounterBuffers": [
+    {
+      "container": "Data ED",
+      "runtimeCache": "CE",
+      "recordBytes": 426,
+      "confidence": "source-backed-runtime-stride-with-corpus-tail-debt",
+      "structBytes": 106,
+      "bufferCount": 4,
+      "bufferBytes": 80,
+      "meaning": "simple encounter choice display text"
+    },
+    {
+      "container": "Data ED2",
+      "runtimeCache": "CE2",
+      "recordBytes": 520,
+      "confidence": "source-and-corpus-backed",
+      "structBytes": 160,
+      "bufferCount": 9,
+      "bufferBytes": 40,
+      "meaning": "complex encounter display text"
+    }
+  ],
+  "localCorpus": {
+    "root": "F:\\Realmz\\out_win_clang\\Scenarios",
+    "scenarioCount": 28,
+    "dataSD2Present": 28,
+    "dataSD2RecordCountMin": 50,
+    "dataSD2RecordCountMax": 4155,
+    "dataSD2RecordCountAverage": 1126.818080357143,
+    "examples": [
+      { "scenario": "City of Bywater", "dataSD2Records": 881, "dataEDBytes": 8520, "simpleEncounterRecords": 20, "dataED2Bytes": 7280, "complexEncounterRecords": 14 },
+      { "scenario": "Araman's Ring", "dataSD2Records": 211, "dataEDBytes": 4680, "dataED2Bytes": 1560 },
+      { "scenario": "Assault on Giant Mountain", "dataSD2Records": 983, "dataEDBytes": 7668, "dataED2Bytes": 16640 }
+    ]
+  },
+  "editorImplications": [
+    "Make Text the central editable message workbench.",
+    "Encounter inline text should be labeled display text, not active scripting syntax.",
+    "Prompt message search controls should behave as target pickers for Data SD2 IDs.",
+    "Keep Data OD as optional two-choice prompt evidence and expose fallback to Data SD2.",
+    "Write encounter edits to source Data ED/Data ED2, not generated CE/CE2."
+  ],
+  "validationReady": [
+    "Data SD2 messages must fit 255 encoded bytes.",
+    "Simple encounter display buffers must fit 80 bytes.",
+    "Complex encounter display buffers must fit 40 bytes.",
+    "Simple encounter source tails should be preserved until Data ED packing/tail evidence is resolved.",
+    "Prompt IDs should resolve to Data SD2 records unless preserved raw.",
+    "Two-choice prompt shortcuts should not collide.",
+    "Visible encounter display text with no action/result should warn as inert."
+  ],
+  "needsDivinityEvidence": [
+    "Whether leading punctuation in encounter text is editor annotation or pure authored copy.",
+    "Divinity labels for simple/complex encounter text buffers.",
+    "Data OD authoring UI and fallback rules.",
+    "Text import/export and spell-check workflow."
+  ]
+}

@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-25T00:00:00.000-05:00",
+  "target": "core-records-full-construction",
+  "container": "Data MD",
+  "recordSizeBytes": 210,
+  "classification": "scenario-authored-fixed-record-template",
+  "sourceAnchors": [
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\structs.h",
+      "line": 159,
+      "evidence": "struct monster declares the 210-byte monster template."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\convert.c",
+      "line": 236,
+      "evidence": "CvtMonsterToPc converts short fields and confirms endian-owned field groups."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\combatsetup.c",
+      "line": 300,
+      "evidence": "Battle grid entries seek into Data MD by abs(monsterId) * sizeof monster."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\combatsetup.c",
+      "line": 388,
+      "evidence": "Negative battle-grid entries flip the traiter side flag."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\menuinit.c",
+      "line": 438,
+      "evidence": "Data MENU is rebuilt from Data MD when cache is absent/stale."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\newland.c",
+      "line": 431,
+      "evidence": "Spawn action loads Data MD and builds a combat monster."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\killbody.c",
+      "line": 87,
+      "evidence": "todoondeath triggers a monster death macro."
+    }
+  ],
+  "layout": [
+    { "offset": 0, "size": 1, "field": "hd", "kind": "u8", "editorMeaning": "hit dice / active marker" },
+    { "offset": 1, "size": 1, "field": "bonus", "kind": "u8", "editorMeaning": "stamina bonus" },
+    { "offset": 2, "size": 1, "field": "dx", "kind": "u8", "editorMeaning": "dexterity / speed" },
+    { "offset": 3, "size": 1, "field": "name", "kind": "u8", "editorMeaning": "numeric monster name/id for runtime checks" },
+    { "offset": 4, "size": 1, "field": "movementmax", "kind": "u8", "editorMeaning": "movement allowance" },
+    { "offset": 5, "size": 1, "field": "ac", "kind": "i8", "editorMeaning": "armor class" },
+    { "offset": 6, "size": 1, "field": "magres", "kind": "i8", "editorMeaning": "magic resistance" },
+    { "offset": 7, "size": 1, "field": "dist", "kind": "i8", "editorMeaning": "distance / range behavior evidence" },
+    { "offset": 8, "size": 1, "field": "traiter", "kind": "i8", "editorMeaning": "side/friendly flag" },
+    { "offset": 9, "size": 1, "field": "size", "kind": "i8", "editorMeaning": "placement footprint / summon-size matching" },
+    { "offset": 10, "size": 8, "field": "type", "kind": "i8[8]", "editorMeaning": "monster type flags" },
+    { "offset": 18, "size": 1, "field": "noofattacks", "kind": "i8", "editorMeaning": "attack count" },
+    { "offset": 19, "size": 1, "field": "noofmagattacks", "kind": "i8", "editorMeaning": "magical attack count" },
+    { "offset": 20, "size": 20, "field": "attacks", "kind": "i8[5][4]", "editorMeaning": "five attack rows" },
+    { "offset": 40, "size": 6, "field": "behaviorChances", "kind": "i8[6]", "editorMeaning": "damage bonus, cast/run/surrender/missile chances, summon flag" },
+    { "offset": 46, "size": 6, "field": "save", "kind": "i8[6]", "editorMeaning": "saving throws" },
+    { "offset": 52, "size": 6, "field": "spellimmune", "kind": "i8[6]", "editorMeaning": "spell immunity profile" },
+    { "offset": 58, "size": 6, "field": "money", "kind": "be_i16[3]", "editorMeaning": "money rewards" },
+    { "offset": 64, "size": 20, "field": "spells", "kind": "be_i16[10]", "editorMeaning": "spell references" },
+    { "offset": 84, "size": 12, "field": "items", "kind": "be_i16[6]", "editorMeaning": "item/equipment references" },
+    { "offset": 96, "size": 2, "field": "weapon", "kind": "be_i16", "editorMeaning": "weapon item or negative random weapon category" },
+    { "offset": 98, "size": 2, "field": "iconid", "kind": "be_i16", "editorMeaning": "icon resource id" },
+    { "offset": 100, "size": 2, "field": "spellpoints", "kind": "be_i16", "editorMeaning": "spell points template" },
+    { "offset": 102, "size": 2, "field": "exp", "kind": "be_i16", "editorMeaning": "experience reward" },
+    { "offset": 104, "size": 12, "field": "runtimePlacementState", "kind": "be_i16[6]", "editorMeaning": "stamina/max/underneath evidence, mostly runtime-mutated" },
+    { "offset": 116, "size": 50, "field": "runtimeByteState", "kind": "i8[50]", "editorMeaning": "target/guard/menu visibility/movement/conditions/runtime state" },
+    { "offset": 166, "size": 2, "field": "todoondeath", "kind": "be_i16", "editorMeaning": "death macro/door id" },
+    { "offset": 168, "size": 2, "field": "maxspellpoints", "kind": "be_i16", "editorMeaning": "runtime max spell points" },
+    { "offset": 170, "size": 40, "field": "monname", "kind": "char[40]", "editorMeaning": "display name" }
+  ],
+  "runtimeBehaviors": [
+    "Data BD battle cells reference Data MD by signed record id; abs(id) selects the template.",
+    "Negative battle cell values flip the loaded monster's traiter side flag.",
+    "Data MENU is generated from Data MD records with hd != 0 and notonmenu == 0.",
+    "hd == 255 terminates the generated bestiary scan/list.",
+    "Opcode 124 spawns monsters from Data MD during combat.",
+    "Opcode 89 adds allies from Data MD.",
+    "todoondeath executes a macro through loaddoor2/newland when the monster dies.",
+    "Combat build randomizes or adjusts AC, DX, spell points, stamina, saves, magic resistance, and negative random weapon categories."
+  ],
+  "corpusEvidence": {
+    "presence": "Data MD appears in all 44 analyzed scenarios.",
+    "recordSizeConfirmedBy": [
+      { "scenario": "War in the Sword Lands", "bytes": 70560, "records": 336 },
+      { "scenario": "Wrath of the Mind Lords", "bytes": 63210, "records": 301 },
+      { "scenario": "Grilochs Revenge", "bytes": 52710, "records": 251 },
+      { "scenario": "Trouble in the Sword Lands", "bytes": 50820, "records": 242 },
+      { "scenario": "Destroy the Necronomicon", "bytes": 48300, "records": 230 },
+      { "scenario": "City of Bywater", "bytes": 32550, "records": 155 }
+    ]
+  },
+  "editorReadiness": {
+    "parse": "high",
+    "write": "medium-after-fixture",
+    "ui": "ready-after-item-spell-icon-pickers",
+    "validation": [
+      "file length divisible by 210",
+      "active record has hd and display name",
+      "iconid resolves to icon/cicn resource",
+      "item and weapon references resolve through item library evidence",
+      "spell references resolve through packed spell id resolver",
+      "todoondeath resolves to callable macro/door",
+      "warn on hd == 255 unless intentionally terminating menu scan",
+      "Data MENU should be generated evidence, not authoring source"
+    ]
+  },
+  "divinityEvidenceNeeded": [
+    "monster editor labels and control order",
+    "attack row labels and effect meanings",
+    "random weapon category labels",
+    "type flag labels",
+    "cansum option labels",
+    "whether runtime-looking fields are exposed or hidden in Divinity"
+  ]
+}

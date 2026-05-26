@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-25T00:00:00.000-05:00",
+  "target": "core-records-full-construction",
+  "container": "Data BD",
+  "recordSizeBytes": 346,
+  "classification": "scenario-authored-fixed-record",
+  "sourceAnchors": [
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\structs.h",
+      "line": 125,
+      "evidence": "struct battle declares the 13x13 grid, distance byte, before/after messages, and battle macro."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\convert.c",
+      "line": 275,
+      "evidence": "CvtBattleToPc converts grid shorts and message/macro shorts."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\combat.c",
+      "line": 37,
+      "evidence": "Combat loads Data BD by abs(battlenum) * sizeof battle."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\combatsetup.c",
+      "line": 300,
+      "evidence": "Battle grid entries resolve monsters through abs(value) into Data MD."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\combatsetup.c",
+      "line": 388,
+      "evidence": "Negative grid values flip the loaded monster side/friendly flag."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\getup.c",
+      "line": 75,
+      "evidence": "Negative battlemacro activates a macro at combat-round boundaries."
+    }
+  ],
+  "layout": [
+    {
+      "offset": 0,
+      "size": 338,
+      "field": "battle",
+      "kind": "be_i16[13][13]",
+      "editorMeaning": "monster placement grid; 0 empty, abs(value) Data MD id, negative flips side"
+    },
+    {
+      "offset": 338,
+      "size": 1,
+      "field": "dist",
+      "kind": "i8",
+      "editorMeaning": "randomized initial placement distance/spread"
+    },
+    {
+      "offset": 339,
+      "size": 1,
+      "field": "padding",
+      "kind": "raw",
+      "editorMeaning": "alignment padding, preserve"
+    },
+    {
+      "offset": 340,
+      "size": 2,
+      "field": "messagebefore",
+      "kind": "be_i16",
+      "editorMeaning": "Data SD2 message shown before combat"
+    },
+    {
+      "offset": 342,
+      "size": 2,
+      "field": "messageafter",
+      "kind": "be_i16",
+      "editorMeaning": "Data SD2 message shown after combat"
+    },
+    {
+      "offset": 344,
+      "size": 2,
+      "field": "battlemacro",
+      "kind": "be_i16",
+      "editorMeaning": "combat-round macro/door reference with sign-sensitive behavior"
+    }
+  ],
+  "runtimeBehaviors": [
+    "Battle IDs are loaded by abs(battlenum).",
+    "messagebefore displays through textbox(-1, messagebefore).",
+    "messageafter is copied to runtime messageafter for post-battle handling.",
+    "dist is randomized using Rand(dist) before initial monster placement.",
+    "Each nonzero grid cell creates a monster until maxmon.",
+    "Grid cell abs(value) is the Data MD monster record index.",
+    "Negative grid cell values flip the loaded monster side/friendly flag.",
+    "Negative battlemacro values activate combat-round macro execution."
+  ],
+  "corpusEvidence": {
+    "presence": "Data BD appears in all 44 analyzed scenarios.",
+    "recordSizeConfirmedBy": [
+      { "scenario": "Price of Power", "bytes": 257770, "records": 745 },
+      { "scenario": "Wrath of the Mind Lords", "bytes": 186148, "records": 538 },
+      { "scenario": "War in the Sword Lands", "bytes": 173346, "records": 501 },
+      { "scenario": "Kalypso's Island", "bytes": 128366, "records": 371 },
+      { "scenario": "Lord of the Abyss", "bytes": 124906, "records": 361 },
+      { "scenario": "Half Truth", "bytes": 103454, "records": 299 }
+    ]
+  },
+  "editorReadiness": {
+    "parse": "high",
+    "write": "medium-after-fixture",
+    "ui": "ready-after-monster-picker",
+    "validation": [
+      "file length divisible by 346",
+      "nonzero grid entries resolve to Data MD by abs(value)",
+      "negative grid values shown as side/friendly toggle",
+      "before/after messages resolve to Data SD2 when nonzero",
+      "battlemacro resolves to callable macro/door when nonzero",
+      "warn on zero/negative distance except preserve-only imported data",
+      "warn on no monster cells"
+    ]
+  },
+  "divinityEvidenceNeeded": [
+    "battle editor labels and defaults",
+    "distance field label and range",
+    "battle macro sign behavior labels",
+    "monster side/friendly placement UI",
+    "maximum monster count feedback"
+  ]
+}

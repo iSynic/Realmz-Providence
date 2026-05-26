@@ -1,0 +1,135 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-25T23:30:00.000-05:00",
+  "source": "Manual archaeology pass over Realmz source and local Oracle output",
+  "realmzSourceAnchors": [
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\structs.h",
+      "topic": "mapstats struct",
+      "finding": "Runtime tile attributes include sound, time, solid, shore, needboad, ispath, los, flyfloat, forest, spare, build[3][3], and clearlandid."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\loadland-loadpixmap.c",
+      "topic": "landlook mapstats load",
+      "finding": "loadpixmap reads 201 mapstats records from landlook * BD files, then basetile and basescale."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\misc.c",
+      "topic": "Data Solids load",
+      "finding": "selectscenario loads scenario Data Solids as a 1024-byte solids table and creates a zero-filled file if missing."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\buttonchoice.c",
+      "topic": "negative tile solidity",
+      "finding": "Data Solids is checked only when the raw map hit value is between -1 and -998."
+    }
+  ],
+  "standardLandlookFiles": [
+    {
+      "file": "Combat Data BD",
+      "bytes": 8104,
+      "recordsConsumed": 201,
+      "notableFields": {
+        "solid": "29 nonzero records; values 1 and 2",
+        "shore": "43 nonzero records",
+        "needboad": "one value 2 record",
+        "los": "28 nonzero records"
+      }
+    },
+    {
+      "file": "Data P BD",
+      "bytes": 8104,
+      "recordsConsumed": 201,
+      "notableFields": {
+        "solid": "51 nonzero records; values 1 and 2",
+        "shore": "57 nonzero records",
+        "needboad": "values 1 and 2 observed",
+        "ispath": "7 nonzero records",
+        "los": "62 nonzero records",
+        "forest": "12 records with value 1"
+      }
+    },
+    {
+      "file": "Data Castle BD",
+      "bytes": 8104,
+      "recordsConsumed": 201,
+      "notableFields": {
+        "solid": "71 nonzero records; values 1 and 2",
+        "ispath": "8 nonzero records",
+        "los": "76 nonzero records",
+        "flyfloat": "4 nonzero records",
+        "forest": "2 records with value 3"
+      }
+    },
+    {
+      "file": "Data Desert BD",
+      "bytes": 8104,
+      "recordsConsumed": 201,
+      "notableFields": {
+        "solid": "55 nonzero records; values 1 and 2",
+        "shore": "56 nonzero records",
+        "needboad": "values 1 and 2 observed",
+        "los": "66 nonzero records",
+        "forest": "12 records with value 2"
+      }
+    },
+    {
+      "file": "Data SUB BD",
+      "bytes": 8104,
+      "recordsConsumed": 201,
+      "notableFields": {
+        "solid": "51 nonzero records; values 1 and 2",
+        "shore": "56 nonzero records",
+        "needboad": "values 1 and 2 observed",
+        "los": "62 nonzero records",
+        "forest": "13 records with value 3"
+      }
+    },
+    {
+      "file": "Data Swamp BD",
+      "bytes": 8104,
+      "recordsConsumed": 201,
+      "notableFields": {
+        "solid": "52 nonzero records; values 1 and 2",
+        "shore": "56 nonzero records",
+        "needboad": "values 1 and 2 observed",
+        "los": "62 nonzero records",
+        "forest": "12 records with value 4"
+      }
+    },
+    {
+      "file": "Data Snow BD",
+      "bytes": 8104,
+      "recordsConsumed": 201,
+      "notableFields": {
+        "solid": "52 nonzero records; values 1 and 2",
+        "shore": "56 nonzero records",
+        "needboad": "values 1 and 2 observed",
+        "los": "61 nonzero records",
+        "forest": "12 records with value 5"
+      }
+    }
+  ],
+  "dataSolidsCorpus": {
+    "root": "F:\\Realmz\\out_win_clang\\Scenarios",
+    "scenarioFilesObserved": 28,
+    "recordBytes": 1024,
+    "interpretation": "Scenario-local solidity overrides for special negative map values. Index N corresponds to raw map field value -N.",
+    "highestNonzeroCounts": [
+      { "scenario": "Wrath of the Mind Lords", "nonzeroEntries": 81 },
+      { "scenario": "Hax", "nonzeroEntries": 79 },
+      { "scenario": "Dagger of Shine", "nonzeroEntries": 66 },
+      { "scenario": "War in the Sword Lands", "nonzeroEntries": 60 },
+      { "scenario": "Destroy the Necronomicon", "nonzeroEntries": 55 },
+      { "scenario": "Lord of the Abyss", "nonzeroEntries": 53 }
+    ],
+    "frequentNonzeroIndexes": [35, 36, 52, 53, 62, 63, 74, 75, 76, 190, 192, 193]
+  },
+  "editorImplications": [
+    "Treat Data Solids as special/icon tile solidity, not the standard land tile attribute source.",
+    "Parse bundled landlook * BD files to populate TileAttributeProfile for normal terrain.",
+    "Classify raw Data LD field values before attribute lookup: negative values are special/icon candidates, while positive values over 999 are door/action/secret/note/path field state.",
+    "Keep landlook attribute writing disabled until Divinity binary write routines or fixtures prove trailing bytes and custom landlook behavior.",
+    "Expose needboad using a user-facing label such as boat/water requirement while preserving the source spelling in evidence."
+  ]
+}

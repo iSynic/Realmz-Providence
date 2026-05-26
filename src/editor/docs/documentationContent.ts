@@ -233,13 +233,20 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         points: [
           "Use real tile atlases when available to inspect the artwork Realmz will use.",
           "Use decoded-color mode when an atlas is missing or when raw values are easier to audit.",
-          "Special Land Tiles are negative tile IDs backed by scenario cicn resources, not standard landlook atlas tiles."
+          "Standard positive land tiles use source-backed landlook mapstats for movement, solidity, shore/path, LOS, and related attributes.",
+          "Special Land Tiles are negative tile IDs backed by scenario cicn resources; Data Solids supplies their scenario-local solidity evidence."
         ],
         callout: {
           tone: "warning",
-          title: "Standard land sets are not special tiles",
-          body: "Divinity's Standard Land Tile Editor covers full landlook atlas resources. Providence currently inventories those resources and blocks destructive atlas editing until writer support is fixture-backed."
+          title: "Attribute tables are inspect-first",
+          body: "Providence can group and validate tiles from source-backed mapstats/Data Solids evidence, but land tile attribute table writing remains disabled until writer fixtures prove the remaining bytes."
         }
+      },
+      {
+        title: "Darkness And Line Of Sight",
+        paragraphs: [
+          "Dark Level and Use Line Of Sight are authored Realmz map flags. Providence previews them as an editor-only approximation from a chosen focal cell; it does not write Realmz runtime site/visibility cache data."
+        ]
       }
     ],
     visualSlots: [

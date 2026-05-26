@@ -3016,11 +3016,12 @@ a.documents-source-chip:hover {
 
 .paint-palette-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
   gap: 4px;
 }
 
-.paint-palette-tabs button {
+.paint-palette-tabs button,
+.paint-attribute-filters button {
   min-width: 0;
   border: 1px solid #2d3946;
   border-radius: 5px;
@@ -3033,10 +3034,22 @@ a.documents-source-chip:hover {
   cursor: pointer;
 }
 
-.paint-palette-tabs button.active {
+.paint-palette-tabs button.active,
+.paint-attribute-filters button.active {
   border-color: #3c78b2;
   background: #172d48;
   color: #d8ecff;
+}
+
+.paint-attribute-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.paint-attribute-filters button {
+  flex: 1 1 86px;
+  padding: 5px 6px;
 }
 
 .paint-quick-tiles {
@@ -4081,6 +4094,7 @@ a.documents-source-chip:hover {
   gap: 4px;
   justify-items: center;
   padding: 8px 6px;
+  overflow: hidden;
   text-align: center;
 }
 
@@ -4089,7 +4103,17 @@ a.documents-source-chip:hover {
   box-shadow: inset 0 0 0 1px #4da3ff;
 }
 
-.stamp-palette-card span {
+.stamp-palette-preview {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.13);
+  border-radius: 5px;
+  background: #11151a;
+}
+
+.stamp-palette-label {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;

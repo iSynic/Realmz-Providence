@@ -1,0 +1,190 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-25T00:00:00.000-05:00",
+  "source": "Seeded from F:\\Realmz Scenario Utility\\docs\\scenario-format\\generated\\corpus-summary.json generated 2026-05-21T22:12:34.160Z",
+  "corpus": {
+    "discovered": 44,
+    "analyzed": 44,
+    "failures": 0,
+    "roots": [
+      "F:\\Realmz\\base\\Realmz\\Scenarios",
+      "F:\\Realmz\\out_win_clang\\Scenarios"
+    ]
+  },
+  "filePresence": [
+    { "key": "Data BD", "count": 44, "archaeologyTarget": "core-records-full-construction" },
+    { "key": "Data DD", "count": 44, "archaeologyTarget": "scripts-runtime-state-semantics" },
+    { "key": "Data DDD", "count": 44, "archaeologyTarget": "scripts-runtime-state-semantics" },
+    { "key": "Data DL", "count": 44, "archaeologyTarget": "dungeon-geometry-interaction-bits" },
+    { "key": "Data ED", "count": 44, "archaeologyTarget": "core-records-full-construction" },
+    { "key": "Data ED2", "count": 44, "archaeologyTarget": "core-records-full-construction" },
+    { "key": "Data ED3", "count": 44, "archaeologyTarget": "scripts-runtime-state-semantics" },
+    { "key": "Data EDCD", "count": 44, "archaeologyTarget": "scripts-runtime-state-semantics" },
+    { "key": "Data LD", "count": 44, "archaeologyTarget": "map-tile-intelligence" },
+    { "key": "Data MD", "count": 44, "archaeologyTarget": "core-records-full-construction" },
+    { "key": "Data MD2", "count": 44, "archaeologyTarget": "core-records-full-construction" },
+    { "key": "Data RD", "count": 44, "archaeologyTarget": "map-tile-intelligence" },
+    { "key": "Data RDD", "count": 44, "archaeologyTarget": "dungeon-geometry-interaction-bits" },
+    { "key": "Data SD", "count": 44, "archaeologyTarget": "core-records-full-construction" },
+    { "key": "Data SD2", "count": 44, "archaeologyTarget": "core-records-full-construction" },
+    { "key": "Data Solids", "count": 44, "archaeologyTarget": "map-tile-intelligence" },
+    { "key": "Data TD", "count": 44, "archaeologyTarget": "core-records-full-construction" },
+    { "key": "Data TD2", "count": 44, "archaeologyTarget": "core-records-full-construction" },
+    { "key": "Data TD3", "count": 44, "archaeologyTarget": "core-records-full-construction" },
+    { "key": "Global", "count": 44, "archaeologyTarget": "scripts-runtime-state-semantics" },
+    { "key": "Scenario", "count": 44, "archaeologyTarget": "scenario-shell-startup-release" },
+    { "key": "Data CI", "count": 40, "archaeologyTarget": "scenario-shell-startup-release" },
+    { "key": "Data RI", "count": 24, "archaeologyTarget": "scenario-shell-startup-release" },
+    { "key": "Data MENU", "count": 28, "archaeologyTarget": "core-records-full-construction" },
+    { "key": "Data Spell", "count": 17, "archaeologyTarget": "core-records-full-construction" },
+    { "key": "Data Race", "count": 7, "archaeologyTarget": "core-records-full-construction" },
+    { "key": "Data Caste", "count": 4, "archaeologyTarget": "core-records-full-construction" }
+  ],
+  "resourceTypes": [
+    { "key": "cicn", "count": 7535, "archaeologyTarget": "resource-authoring" },
+    { "key": "snd ", "count": 386, "archaeologyTarget": "resource-authoring" },
+    { "key": "RLMZ", "count": 259, "archaeologyTarget": "scenario-shell-startup-release" },
+    { "key": "STR#", "count": 222, "archaeologyTarget": "scenario-shell-startup-release" },
+    { "key": "PICT", "count": 160, "archaeologyTarget": "resource-authoring" },
+    { "key": "TEXT", "count": 150, "archaeologyTarget": "resource-authoring" },
+    { "key": "styl", "count": 91, "archaeologyTarget": "resource-authoring" },
+    { "key": "vers", "count": 31, "archaeologyTarget": "scenario-shell-startup-release" },
+    { "key": "\\x00\\x00\\x00\\x00", "count": 2, "archaeologyTarget": "resource-authoring" }
+  ],
+  "unknownQueues": [
+    {
+      "key": "ed3-reachability-confidence-debt",
+      "source": "generated/confidence-debt-cases.md",
+      "archaeologyTarget": "scripts-runtime-state-semantics",
+      "status": "needs-runtime-trace-or-source-proof"
+    },
+    {
+      "key": "active-unknown-opcodes",
+      "source": "generated/active-unknown-opcode-cases.md",
+      "archaeologyTarget": "scripts-runtime-state-semantics",
+      "status": "audit-before-editor-labeling"
+    },
+    {
+      "key": "data-solids-mapstats",
+      "source": "containers/supporting-records.md",
+      "archaeologyTarget": "map-tile-intelligence",
+      "status": "split-proven-data-solids-special-negative-mapstats-standard-landlook"
+    },
+    {
+      "key": "scenario-marker-tail",
+      "source": "docs/format-evidence-cards/scenario-startup-runtime-anchors.md",
+      "archaeologyTarget": "scenario-shell-startup-release",
+      "status": "preserve-unknown-4-byte-tail-observed-in-4-of-28-local-output-scenarios"
+    }
+  ],
+  "derivedEvidence": [
+    {
+      "key": "scenario-shell-evidence",
+      "path": "docs/generated/scenario-shell-evidence.json",
+      "archaeologyTarget": "scenario-shell-startup-release",
+      "status": "manual-source-backed-seed"
+    },
+    {
+      "key": "scenario-party-restrictions-evidence",
+      "path": "docs/generated/scenario-party-restrictions-evidence.json",
+      "archaeologyTarget": "scenario-shell-startup-release",
+      "status": "manual-source-backed-seed"
+    },
+    {
+      "key": "tile-attribute-evidence",
+      "path": "docs/generated/tile-attribute-evidence.json",
+      "archaeologyTarget": "map-tile-intelligence",
+      "status": "manual-source-backed-seed"
+    },
+    {
+      "key": "map-field-value-evidence",
+      "path": "docs/generated/map-field-value-evidence.json",
+      "archaeologyTarget": "map-tile-intelligence",
+      "status": "manual-source-backed-seed"
+    },
+    {
+      "key": "random-level-evidence",
+      "path": "docs/generated/random-level-evidence.json",
+      "archaeologyTarget": "map-tile-intelligence",
+      "status": "manual-source-backed-seed"
+    },
+    {
+      "key": "outdoor-visibility-evidence",
+      "path": "docs/generated/outdoor-visibility-evidence.json",
+      "archaeologyTarget": "map-tile-intelligence",
+      "status": "manual-source-backed-seed"
+    },
+    {
+      "key": "dungeon-bitfield-evidence",
+      "path": "docs/generated/dungeon-bitfield-evidence.json",
+      "archaeologyTarget": "dungeon-geometry-interaction-bits",
+      "status": "manual-source-backed-seed"
+    },
+    {
+      "key": "resource-icon-evidence",
+      "path": "docs/generated/resource-icon-evidence.json",
+      "archaeologyTarget": "resource-authoring",
+      "status": "manual-source-backed-seed"
+    },
+    {
+      "key": "core-rules-record-evidence",
+      "path": "docs/generated/core-rules-record-evidence.json",
+      "archaeologyTarget": "core-records-full-construction",
+      "status": "manual-source-backed-seed"
+    },
+    {
+      "key": "text-message-evidence",
+      "path": "docs/generated/text-message-evidence.json",
+      "archaeologyTarget": "core-records-full-construction",
+      "status": "manual-source-backed-seed"
+    },
+    {
+      "key": "monster-record-evidence",
+      "path": "docs/generated/monster-record-evidence.json",
+      "archaeologyTarget": "core-records-full-construction",
+      "status": "manual-source-backed-seed"
+    },
+    {
+      "key": "battle-record-evidence",
+      "path": "docs/generated/battle-record-evidence.json",
+      "archaeologyTarget": "core-records-full-construction",
+      "status": "manual-source-backed-seed"
+    },
+    {
+      "key": "item-treasure-shop-evidence",
+      "path": "docs/generated/item-treasure-shop-evidence.json",
+      "archaeologyTarget": "core-records-full-construction",
+      "status": "manual-source-backed-seed"
+    },
+    {
+      "key": "encounter-record-evidence",
+      "path": "docs/generated/encounter-record-evidence.json",
+      "archaeologyTarget": "core-records-full-construction",
+      "status": "manual-source-backed-seed"
+    },
+    {
+      "key": "thief-timed-encounter-evidence",
+      "path": "docs/generated/thief-timed-encounter-evidence.json",
+      "archaeologyTarget": "core-records-full-construction",
+      "status": "manual-source-backed-seed"
+    },
+    {
+      "key": "rules-spell-race-caste-evidence",
+      "path": "docs/generated/rules-spell-race-caste-evidence.json",
+      "archaeologyTarget": "core-records-full-construction",
+      "status": "manual-source-backed-seed"
+    },
+    {
+      "key": "map-record-evidence",
+      "path": "docs/generated/map-record-evidence.json",
+      "archaeologyTarget": "core-records-full-construction",
+      "status": "manual-source-backed-seed"
+    },
+    {
+      "key": "global-macro-evidence",
+      "path": "docs/generated/global-macro-evidence.json",
+      "archaeologyTarget": "scripts-runtime-state-semantics",
+      "status": "manual-source-backed-seed"
+    }
+  ]
+}

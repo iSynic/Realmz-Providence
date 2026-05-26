@@ -106,7 +106,10 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         if trigger.level_type.is_some()
             && ((trigger.target_x as usize) >= MAP_SIZE || (trigger.target_y as usize) >= MAP_SIZE)
         {
-            errors.push(format!("{} has an out-of-bounds target coordinate.", trigger.id));
+            errors.push(format!(
+                "{} has an out-of-bounds target coordinate.",
+                trigger.id
+            ));
         }
     }
     for level in &project.random_levels {
@@ -139,16 +142,21 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                     level.id, rect.rect_index
                 ));
             }
-            if !(0..=10000).contains(&rect.percent) {
+            if rect.percent > 10000 {
                 warnings.push(format!(
-                    "{} random rect {} has percent {} outside 0..10000.",
+                    "{} random rect {} has Times in 10,000 value {} above 10000.",
+                    level.id, rect.rect_index, rect.percent
+                ));
+            } else if rect.percent < 0 {
+                warnings.push(format!(
+                    "{} random rect {} has negative Times in 10,000 value {}; Realmz preserves this but normal authoring should use 0..10000.",
                     level.id, rect.rect_index, rect.percent
                 ));
             }
             for (slot, percent) in rect.random_door_percent.iter().enumerate() {
-                if !(0..=10000).contains(percent) {
+                if !(-100..=100).contains(percent) {
                     warnings.push(format!(
-                        "{} random rect {} extra door {} has percent {} outside 0..10000.",
+                        "{} random rect {} extra door {} has percent {} outside -100..100.",
                         level.id, rect.rect_index, slot, percent
                     ));
                 }
@@ -168,8 +176,20 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                 }
             }
         }
+        for (left_index, left_rect) in level.rects.iter().enumerate() {
+            for right_rect in level.rects.iter().skip(left_index + 1) {
+                if random_rects_overlap(left_rect, right_rect) {
+                    let priority = left_rect.rect_index.max(right_rect.rect_index);
+                    warnings.push(format!(
+                        "{} random rects {} and {} overlap; Realmz checks higher indexes first, so rect {} has priority.",
+                        level.id, left_rect.rect_index, right_rect.rect_index, priority
+                    ));
+                }
+            }
+        }
     }
     validate_map_records(project, &mut errors, &mut warnings);
+    validate_tile_attributes(project, &mut warnings);
     for message in &project.messages {
         let message_bytes = classic_text_len(&message.text);
         if message_bytes > 255 {
@@ -430,6 +450,122 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         exportable_files,
         pass_through_files,
     }
+}
+
+fn random_rects_overlap(a: &RandomRect, b: &RandomRect) -> bool {
+    a.left <= b.right && a.right >= b.left && a.top <= b.bottom && a.bottom >= b.top
+}
+
+fn validate_tile_attributes(project: &ProvidenceProject, warnings: &mut Vec<String>) {
+    let has_solids = project
+        .source
+        .files
+        .iter()
+        .any(|file| file.name == "Data Solids");
+    if !has_solids {
+        warnings.push(
+            "Data Solids is missing; special negative tile solidity will remain unknown."
+                .to_string(),
+        );
+    }
+    let mapstats_landlooks = project
+        .tile_attributes
+        .iter()
+        .filter(|profile| matches!(profile.source_kind, TileAttributeSourceKind::Mapstats))
+        .filter_map(|profile| profile.landlook)
+        .collect::<BTreeSet<_>>();
+    let used_landlooks = project
+        .maps
+        .iter()
+        .filter_map(|map| map.render.landlook)
+        .filter(|landlook| *landlook >= 0)
+        .collect::<BTreeSet<_>>();
+    for landlook in used_landlooks {
+        if landlook != 2 && !mapstats_landlooks.contains(&landlook) {
+            warnings.push(format!(
+                "Landlook {landlook} has no decoded mapstats; tile attributes will be shown as unknown metadata."
+            ));
+        }
+    }
+    let mut known_icons: BTreeSet<i16> = BTreeSet::new();
+    for asset in &project.assets {
+        if asset.resource_type == "cicn" {
+            insert_icon_id(&mut known_icons, asset.resource_id as i32);
+        }
+    }
+    for asset in &project.asset_catalog.icons {
+        insert_icon_id(&mut known_icons, asset.resource_id);
+    }
+    for entity in &project.semantic_schema.entities {
+        if entity.entity_type == "resource"
+            || entity.entity_type == "icon-resource"
+            || entity.entity_type == "special-land-tile"
+        {
+            if let Some(id) = entity
+                .summary
+                .get("resourceId")
+                .and_then(|value| value.as_i64())
+            {
+                insert_icon_id(&mut known_icons, id as i32);
+            }
+        }
+    }
+    let mut missing = BTreeSet::new();
+    let mut positive_state_values = 0usize;
+    for map in &project.maps {
+        for tile in &map.tiles {
+            if *tile > 999 {
+                positive_state_values += 1;
+            }
+            if *tile >= 0 {
+                continue;
+            }
+            let candidates = tile_icon_candidates(*tile);
+            if !candidates
+                .iter()
+                .any(|candidate| known_icons.contains(candidate))
+            {
+                if let Some(first) = candidates.first() {
+                    missing.insert(*first);
+                }
+            }
+        }
+    }
+    if !missing.is_empty() {
+        warnings.push(format!(
+            "{} negative/special tile value(s) do not currently resolve to decoded cicn icon art.",
+            missing.len()
+        ));
+    }
+    if positive_state_values > 0 {
+        warnings.push(format!(
+            "{positive_state_values} positive high map field value(s) carry Realmz state bands; edit them through AP/secret/path workflows or Raw/Advanced tile tools."
+        ));
+    }
+}
+
+fn insert_icon_id(known_icons: &mut BTreeSet<i16>, id: i32) {
+    if let Ok(value) = i16::try_from(id) {
+        known_icons.insert(value);
+        if value > 0 {
+            known_icons.insert(-value);
+        }
+    }
+}
+
+fn tile_icon_candidates(value: i16) -> Vec<i16> {
+    if value >= 0 {
+        return Vec::new();
+    }
+    let mut out = vec![value];
+    let mut normalized = value;
+    while normalized < -999 {
+        normalized += 1000;
+    }
+    if normalized != value && normalized < 0 {
+        out.push(normalized);
+    }
+    out
 }
 
 fn validate_map_records(
@@ -1273,10 +1409,26 @@ mod tests {
 
         let report = validate_project(&project);
 
-        assert!(report.warnings.iter().any(|warning| warning.contains("outside the 90x90 map")));
-        assert!(report.warnings.iter().any(|warning| warning.contains("invalid bounds")));
-        assert!(report.warnings.iter().any(|warning| warning.contains("outside 0..10000")));
-        assert!(report.warnings.iter().any(|warning| warning.contains("points at missing Action Point")));
+        assert!(report
+            .warnings
+            .iter()
+            .any(|warning| warning.contains("outside the 90x90 map")));
+        assert!(report
+            .warnings
+            .iter()
+            .any(|warning| warning.contains("invalid bounds")));
+        assert!(report
+            .warnings
+            .iter()
+            .any(|warning| warning.contains("above 10000")));
+        assert!(report
+            .warnings
+            .iter()
+            .any(|warning| warning.contains("outside -100..100")));
+        assert!(report
+            .warnings
+            .iter()
+            .any(|warning| warning.contains("points at missing Action Point")));
     }
 
     fn resource_entity(id: &str, shared_fallback: bool) -> SemanticEntity {
@@ -1331,6 +1483,7 @@ mod tests {
             },
             maps: Vec::new(),
             map_records: Vec::new(),
+            tile_attributes: Vec::new(),
             triggers: Vec::new(),
             random_levels: Vec::new(),
             extracodes: Vec::new(),
@@ -1351,7 +1504,12 @@ mod tests {
         }
     }
 
-    fn test_provenance(source_file: &str, record_index: usize, byte_offset: usize, byte_length: usize) -> Provenance {
+    fn test_provenance(
+        source_file: &str,
+        record_index: usize,
+        byte_offset: usize,
+        byte_length: usize,
+    ) -> Provenance {
         Provenance {
             source_file: source_file.to_string(),
             record_index,

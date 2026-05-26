@@ -199,4 +199,15 @@ pub(super) fn add_scenario_metadata_links(schema: &mut SemanticSchema, scenario:
             _ => {}
         }
     }
+    if entity_ids.contains("restriction:0") {
+        push_link(
+            schema,
+            scenario_id,
+            "restriction:0",
+            "has_party_restrictions",
+            Confidence::SourceBacked,
+            vec!["anchor:runtime-consumer-matrix".to_string()],
+            BTreeMap::new(),
+        );
+    }
 }

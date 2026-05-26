@@ -122,6 +122,24 @@ pub(super) fn add_fixed_collections(
     parse_fixed_collection(
         schema,
         buffers,
+        "Data RI",
+        320,
+        "scenario-restriction",
+        "restriction",
+        parse_restriction,
+    );
+    parse_fixed_collection(
+        schema,
+        buffers,
+        "Global",
+        60,
+        "global-macro",
+        "global",
+        parse_global_macros,
+    );
+    parse_fixed_collection(
+        schema,
+        buffers,
         "Data Solids",
         1024,
         "solidity-table",
@@ -144,6 +162,7 @@ pub(super) fn add_fixed_collections(
     add_treasure_links(schema);
     add_thief_links(schema);
     add_timed_encounter_links(schema);
+    add_global_macro_links(schema);
     add_menu_cache_links(schema);
     add_item_reference_entities(schema);
     add_spell_reference_entities(schema);
@@ -495,6 +514,46 @@ fn add_map_record_links(schema: &mut SemanticSchema, maps: &[MapEntity]) {
                 BTreeMap::new(),
             );
         }
+        if let Some(pict_id) = record.summary.get("pictId").and_then(Value::as_i64) {
+            if pict_id != 0 {
+                push_link(
+                    schema,
+                    &record.id,
+                    &format!("resource:PICT:{pict_id}"),
+                    "uses_resource",
+                    Confidence::SourceBacked,
+                    vec![record
+                        .record_ref
+                        .clone()
+                        .unwrap_or_else(|| record.id.clone())],
+                    summary([("field", json!("pictid"))]),
+                );
+            }
+        }
+        if let Some(icon_slots) = record.summary.get("iconSlots").and_then(Value::as_array) {
+            for icon in icon_slots {
+                let icon_id = icon
+                    .get("iconId")
+                    .and_then(Value::as_i64)
+                    .unwrap_or_default();
+                if icon_id == 0 {
+                    continue;
+                }
+                let slot = icon.get("slot").and_then(Value::as_i64).unwrap_or_default();
+                push_link(
+                    schema,
+                    &record.id,
+                    &format!("resource:cicn:{icon_id}"),
+                    "uses_resource",
+                    Confidence::SourceBacked,
+                    vec![record
+                        .record_ref
+                        .clone()
+                        .unwrap_or_else(|| record.id.clone())],
+                    summary([("field", json!("icon")), ("slot", json!(slot))]),
+                );
+            }
+        }
     }
 }
 
@@ -775,6 +834,51 @@ fn add_timed_encounter_links(schema: &mut SemanticSchema) {
     }
 }
 
+fn add_global_macro_links(schema: &mut SemanticSchema) {
+    let globals: Vec<_> = schema
+        .entities
+        .iter()
+        .filter(|entity| entity.entity_type == "global-macro" && entity.id.starts_with("global:"))
+        .cloned()
+        .collect();
+    for global in globals {
+        let Some(active_slots) = global.summary.get("activeSlots").and_then(Value::as_array) else {
+            continue;
+        };
+        for slot in active_slots {
+            let slot_index = slot.get("slot").and_then(Value::as_i64).unwrap_or_default();
+            let door = slot.get("door").and_then(Value::as_i64).unwrap_or_default();
+            let source_backed = slot
+                .get("sourceBacked")
+                .and_then(Value::as_bool)
+                .unwrap_or(false);
+            if door <= 0 || !source_backed {
+                continue;
+            }
+            let label = slot
+                .get("label")
+                .and_then(Value::as_str)
+                .unwrap_or("Global macro hook");
+            push_link(
+                schema,
+                &global.id,
+                &format!("macro:{door}"),
+                "calls_macro",
+                Confidence::SourceBacked,
+                vec![global
+                    .record_ref
+                    .clone()
+                    .unwrap_or_else(|| global.id.clone())],
+                summary([
+                    ("slot", json!(slot_index)),
+                    ("field", json!(label)),
+                    ("door", json!(door)),
+                ]),
+            );
+        }
+    }
+}
+
 fn add_menu_cache_links(schema: &mut SemanticSchema) {
     let menus: Vec<_> = schema
         .entities
@@ -998,8 +1102,23 @@ fn parse_map_record(
     id: usize,
     map_names: &BTreeMap<usize, ResourceMapName>,
 ) -> BTreeMap<String, Value> {
+    let icon_slots: Vec<Value> = (0..10)
+        .filter_map(|slot| {
+            let offset = slot * 6;
+            let icon_id = i16_be(buffer, offset);
+            (icon_id != 0).then(|| {
+                json!({
+                    "slot": slot,
+                    "iconId": icon_id,
+                    "x": i16_be(buffer, offset + 2),
+                    "y": i16_be(buffer, offset + 4),
+                })
+            })
+        })
+        .collect();
     let mut data = summary([
         ("id", json!(id)),
+        ("iconSlots", json!(icon_slots)),
         ("startX", json!(i16_be(buffer, 60))),
         ("startY", json!(i16_be(buffer, 62))),
         ("level", json!(i16_be(buffer, 64))),
@@ -1197,6 +1316,109 @@ fn parse_contact(buffer: &[u8], id: usize) -> BTreeMap<String, Value> {
     ])
 }
 
+fn parse_restriction(buffer: &[u8], id: usize) -> BTreeMap<String, Value> {
+    let description = decode_pascal_text(&buffer[0..256]);
+    let max_pc = i16_be(buffer, 256);
+    let max_level = i16_be(buffer, 258);
+    let banned_races: Vec<Value> = buffer[260..290]
+        .iter()
+        .enumerate()
+        .filter(|(_, value)| **value != 0)
+        .map(|(index, value)| json!({"raceId": index + 1, "value": value}))
+        .collect();
+    let banned_castes: Vec<Value> = buffer[290..320]
+        .iter()
+        .enumerate()
+        .filter(|(_, value)| **value != 0)
+        .map(|(index, value)| json!({"casteId": index + 1, "value": value}))
+        .collect();
+    summary([
+        ("id", json!(id)),
+        ("description", json!(description)),
+        (
+            "preview",
+            json!(description.chars().take(96).collect::<String>()),
+        ),
+        ("maxPartyCharacters", json!(max_pc)),
+        ("maxPartyLevel", json!(max_level)),
+        ("bannedRaces", json!(banned_races)),
+        ("bannedCastes", json!(banned_castes)),
+        (
+            "bannedRaceCount",
+            json!(buffer[260..290].iter().filter(|value| **value != 0).count()),
+        ),
+        (
+            "bannedCasteCount",
+            json!(buffer[290..320].iter().filter(|value| **value != 0).count()),
+        ),
+    ])
+}
+
+fn parse_global_macros(buffer: &[u8], id: usize) -> BTreeMap<String, Value> {
+    let slots: Vec<Value> = (0..30)
+        .map(|slot| {
+            let door = i16_be(buffer, slot * 2);
+            json!({
+                "slot": slot,
+                "door": door,
+                "label": global_macro_slot_label(slot),
+                "runtimeConsumer": global_macro_slot_runtime_consumer(slot),
+                "sourceBacked": matches!(slot, 0 | 1 | 2 | 4 | 5),
+            })
+        })
+        .collect();
+    let active_slots: Vec<Value> = (0..30)
+        .filter_map(|slot| {
+            let door = i16_be(buffer, slot * 2);
+            (door != 0).then(|| {
+                json!({
+                    "slot": slot,
+                    "door": door,
+                    "label": global_macro_slot_label(slot),
+                    "sourceBacked": matches!(slot, 0 | 1 | 2 | 4 | 5),
+                })
+            })
+        })
+        .collect();
+    summary([
+        ("id", json!(id)),
+        ("slots", json!(slots)),
+        ("activeSlots", json!(active_slots)),
+        (
+            "preview",
+            json!(format!(
+                "{} active global macro hook(s)",
+                buffer
+                    .chunks_exact(2)
+                    .filter(|chunk| i16_be(chunk, 0) != 0)
+                    .count()
+            )),
+        ),
+    ])
+}
+
+fn global_macro_slot_label(slot: usize) -> &'static str {
+    match slot {
+        0 => "Start game",
+        1 => "Party death",
+        2 => "End/quit game",
+        4 => "Before shop",
+        5 => "Before temple",
+        _ => "Preserved slot",
+    }
+}
+
+fn global_macro_slot_runtime_consumer(slot: usize) -> &'static str {
+    match slot {
+        0 => "mainscreeninit/new-game start",
+        1 => "partyloss death/revive path",
+        2 => "end current game",
+        4 => "shop button when shop is available",
+        5 => "shop/temple button when temple is available",
+        _ => "no source-backed runtime consumer found",
+    }
+}
+
 fn parse_solids(buffer: &[u8], id: usize) -> BTreeMap<String, Value> {
     let unique_values: BTreeSet<u8> = buffer.iter().copied().collect();
     let samples: Vec<Value> = buffer
@@ -1218,7 +1440,7 @@ fn parse_solids(buffer: &[u8], id: usize) -> BTreeMap<String, Value> {
         ),
         ("uniqueValues", json!(unique_values)),
         ("sampleSolidEntries", json!(samples)),
-        ("tableKind", json!("terrain/contact lookup")),
+        ("tableKind", json!("special negative tile solidity")),
         ("bytes", json!(buffer.len())),
     ])
 }

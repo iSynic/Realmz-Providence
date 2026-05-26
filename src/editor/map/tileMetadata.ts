@@ -1,5 +1,5 @@
-import { normalizeAtlasTile, normalizeIconId, normalizeTile } from "./renderValues";
-import { TilesetAsset } from "../types";
+import { normalizeAtlasTile, normalizeIconId, normalizeTile, tileIconCandidates } from "./renderValues";
+import { IconEntry, TileAttributeFlag, TileAttributeProfile, TileRenderResolution, TilesetAsset } from "../types";
 
 export type TileValueKind =
   | "standard-atlas"
@@ -18,6 +18,9 @@ export type TileValueMetadata = {
   label: string;
   atlasAvailable: boolean;
   iconId: number | null;
+  iconCandidates: number[];
+  iconAvailable: boolean;
+  attributes: TileAttributeProfile | null;
   flags: {
     markerBit: boolean;
     pathBit: boolean;
@@ -26,17 +29,27 @@ export type TileValueMetadata = {
   compatibility: string;
 };
 
-export function classifyTileValue(tile: number, tileset: TilesetAsset | null): TileValueMetadata {
+export type MapFieldValueProfile = TileValueMetadata;
+
+export function classifyTileValue(
+  tile: number,
+  tileset: TilesetAsset | null,
+  attributes: TileAttributeProfile[] = [],
+  icons?: Record<number, IconEntry>
+): TileValueMetadata {
   const normalized = normalizeTile(tile);
   const baseTile = tileset?.baseTile ?? 1;
   const renderTile = normalizeAtlasTile(tile, baseTile);
   const capacity = tileset ? Math.max(0, tileset.columns * tileset.rows) : 0;
   const isDungeon = Boolean(tileset && (tileset.id === "dungeon-top-down-302" || tileset.pictId === 302));
   const iconId = normalizeIconId(tile);
-  const markerBit = Math.abs(tile) >= 1000;
-  const pathBit = Boolean(tile & 4);
-  const noteBit = Boolean(tile & 2);
+  const iconCandidates = tileIconCandidates(tile);
+  const iconAvailable = iconCandidates.some((candidate) => Boolean(icons?.[candidate]?.image));
+  const markerBit = tile > 999;
+  const pathBit = tile > 0 && Boolean(tile & 4);
+  const noteBit = tile > 0 && Boolean(tile & 2);
   const canRenderFromAtlas = Boolean(tileset?.available && tileset.imagePath && capacity > 0);
+  const attribute = attributeProfileForTile(tile, tileset, attributes);
 
   let kind: TileValueKind = "unknown";
   let label = `Tile ${tile}`;
@@ -46,16 +59,16 @@ export function classifyTileValue(tile: number, tileset: TilesetAsset | null): T
     kind = "dungeon-bitfield";
     label = `Dungeon cell ${tile}`;
     compatibility = "Dungeon values are bitfields rendered through the dungeon atlas.";
-  } else if (markerBit) {
-    kind = "marker-bit";
-    label = `Marked tile ${tile}`;
-    compatibility = "Realmz marker bits are preserved while rendering from the normalized base tile.";
   } else if (tile < 0) {
     kind = "special-negative";
     label = `Special tile ${tile}`;
     compatibility = iconId != null
       ? "Negative values may reference icon-backed or special land tile overlays."
       : "Special negative tile value is preserved.";
+  } else if (markerBit) {
+    kind = "marker-bit";
+    label = `Marked tile ${tile}`;
+    compatibility = "Positive thousand-band Realmz field state is preserved while rendering from the normalized base tile.";
   } else if (capacity > 0 && tile >= 1 && tile <= capacity) {
     kind = "standard-atlas";
     label = `Landlook tile ${tile}`;
@@ -78,6 +91,9 @@ export function classifyTileValue(tile: number, tileset: TilesetAsset | null): T
     label,
     atlasAvailable: canRenderFromAtlas,
     iconId,
+    iconCandidates,
+    iconAvailable,
+    attributes: attribute,
     flags: { markerBit, pathBit, noteBit },
     compatibility
   };
@@ -87,4 +103,58 @@ export function standardTileValues(tileset: TilesetAsset | null) {
   const capacity = tileset ? Math.max(0, tileset.columns * tileset.rows) : 0;
   if (capacity <= 0) return [];
   return Array.from({ length: capacity }, (_, index) => index + 1);
+}
+
+export function resolveTileRender(
+  tile: number,
+  tileset: TilesetAsset | null,
+  attributes: TileAttributeProfile[] = [],
+  icons?: Record<number, IconEntry>
+): TileRenderResolution {
+  const baseTile = tileset?.baseTile ?? 1;
+  const terrainTile = normalizeAtlasTile(tile, baseTile);
+  const iconCandidates = tileIconCandidates(tile);
+  const iconId = iconCandidates.find((candidate) => Boolean(icons?.[candidate]?.image)) ?? iconCandidates[0] ?? null;
+  const iconAvailable = iconId !== null && Boolean(icons?.[iconId]?.image);
+  const attribute = attributeProfileForTile(tile, tileset, attributes);
+  return {
+    raw: tile,
+    terrainTile,
+    iconCandidates,
+    iconId,
+    iconAvailable,
+    fallbackReason: iconCandidates.length > 0 && !iconAvailable ? "Missing cicn/icon preview for this special tile value." : null,
+    confidence: attribute?.confidence ?? (iconCandidates.length > 0 ? "preserved" : "unknown")
+  };
+}
+
+export function attributeProfileForTile(tile: number, tileset: TilesetAsset | null, attributes: TileAttributeProfile[] = []) {
+  if (tile < 0) {
+    const specialIndex = Math.abs(normalizeIconId(tile) ?? tile);
+    return attributes.find((profile) =>
+      tileAttributeSourceKind(profile) === "data-solids" &&
+      profile.tile === specialIndex
+    ) ?? null;
+  }
+  const normalized = normalizeAtlasTile(tile, tileset?.baseTile ?? 1);
+  const landlook = tileset?.landlook ?? null;
+  return attributes.find((profile) =>
+    profile.tile === normalized &&
+    tileAttributeSourceKind(profile) === "mapstats" &&
+    profile.landlook === landlook
+  ) ?? attributes.find((profile) =>
+    profile.tile === normalized &&
+    tileAttributeSourceKind(profile) !== "data-solids" &&
+    (profile.landlook === landlook || profile.landlook === null)
+  ) ?? null;
+}
+
+function tileAttributeSourceKind(profile: TileAttributeProfile) {
+  return profile.sourceKind ?? (profile.source === "Data Solids" ? "data-solids" : "unknown");
+}
+
+export function tileAttributeGroup(profile: TileAttributeProfile | null, tile: number): TileAttributeFlag[] {
+  if (tile < 0) return [...new Set(["special-icon", ...(profile?.flags ?? [])])] as TileAttributeFlag[];
+  if (!profile) return ["unknown-metadata"];
+  return profile.flags.length > 0 ? profile.flags : ["unknown-metadata"];
 }

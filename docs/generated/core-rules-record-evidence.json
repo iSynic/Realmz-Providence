@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-25T00:00:00.000-05:00",
+  "target": "core-records-full-construction",
+  "sourceAnchors": [
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\structs.h",
+      "lines": "58-338",
+      "claim": "Core scenario and rules structs are source-backed: race, caste, battle, monster, maps, thief, treasure, encounters, spell, itemattr, and shop."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\convert.c",
+      "lines": "151-282",
+      "claim": "Endian conversion routines identify owned fields for item attributes, maps, thief encounters, monsters, simple/complex encounters, battles, and shops."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\main.c",
+      "lines": "952-965",
+      "claim": "Startup loads shared item groups from Data ID and supply defaults from Data NI evidence before scenario selection."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\main.c",
+      "lines": "1183-1198",
+      "claim": "Startup loads shared spell data from Data S and shared/override race data through openrace."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\misc.c",
+      "lines": "2492-2511",
+      "claim": "openrace/opencaste use scenario Data Race/Data Caste for third-party scenarios when present, otherwise shared Data Files fallbacks."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\misc.c",
+      "lines": "2753-2767",
+      "claim": "selectscenario optionally opens scenario Data Spell and resource fork evidence."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\loaditem.c",
+      "lines": "5-29",
+      "claim": "loaditem resolves item IDs by 200-record groups: weapons, armor, helms, magic, and supplies."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\loadspell.c",
+      "lines": "5-18",
+      "claim": "loadspell2 decodes packed spell IDs into caste, level, and spell slot."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\menuinit.c",
+      "lines": "388-507",
+      "claim": "Data MENU is rebuilt from Data MD and should be treated as generated monster-menu evidence."
+    }
+  ],
+  "scenarioAuthoredFamilies": [
+    { "file": "Data SD2", "family": "messages", "editorReadiness": "writable-shell", "next": "central Text workbench" },
+    { "file": "Data MD", "family": "monsters", "editorReadiness": "parser-plus-links", "next": "full monster editor" },
+    { "file": "Data BD", "family": "battles", "editorReadiness": "writable-shell", "next": "deepen after monster picker" },
+    { "file": "Data TD", "family": "treasure", "editorReadiness": "writable-shell", "next": "deepen after item picker" },
+    { "file": "Data SD", "family": "shops", "editorReadiness": "writable-shell", "next": "deepen after item picker and CS cache explanation" },
+    { "file": "Data ED", "family": "simple encounters", "editorReadiness": "writable-shell", "next": "deepen prompt/text/action forms" },
+    { "file": "Data ED2", "family": "complex encounters", "editorReadiness": "writable-shell", "next": "deepen spell/item/thief branch forms" },
+    { "file": "Data TD2", "family": "thief encounters", "editorReadiness": "parser-needed", "next": "thief encounter editor" },
+    { "file": "Data TD3", "family": "timed encounters", "editorReadiness": "parser-needed", "next": "timed encounter editor" },
+    { "file": "Data MD2", "family": "map records", "editorReadiness": "writable-shell-plus-icon-evidence", "next": "map note, picture, and cicn marker editing" }
+  ],
+  "sharedOrOverrideFamilies": [
+    {
+      "family": "items",
+      "source": "shared Data ID plus supply defaults from Data NI evidence",
+      "runtime": "loaditem resolves five 200-record groups",
+      "policy": "picker/library first; scenario-local item editing needs Divinity evidence"
+    },
+    {
+      "family": "spells",
+      "source": "shared Data S plus optional scenario Data Spell",
+      "runtime": "loadspell2 packed IDs caste/level/slot",
+      "policy": "picker/library first; source-backed 30-byte spell records; scenario Data Spell packaging remains preserve-first"
+    },
+    {
+      "family": "races",
+      "source": "shared Data Race with scenario override for third-party scenarios",
+      "runtime": "openrace fallback",
+      "policy": "show shared vs scenario override; scenario override records are 408 bytes; writer fixture required"
+    },
+    {
+      "family": "castes",
+      "source": "shared Data Caste with scenario override for third-party scenarios",
+      "runtime": "opencaste fallback",
+      "policy": "show shared vs scenario override; records are 576 bytes; writer fixture required"
+    }
+  ],
+  "localBywaterRecordEvidence": [
+    { "file": "Data MD", "bytes": 32550, "unitBytes": 210, "records": 155 },
+    { "file": "Data BD", "bytes": 88922, "unitBytes": 346, "records": 257 },
+    { "file": "Data TD", "bytes": 3648, "unitBytes": 48, "records": 76 },
+    { "file": "Data SD", "bytes": 63042, "unitBytes": 3002, "records": 21 },
+    { "file": "Data MD2", "bytes": 6800, "unitBytes": 340, "records": 20 },
+    { "file": "Data SD2", "bytes": 225536, "unitBytes": 256, "records": 881 }
+  ],
+  "editorDependencyOrder": [
+    "Text/messages",
+    "Item/spell/race/caste pickers with shared/override badges",
+    "Monsters",
+    "Battles",
+    "Treasure and shops",
+    "Simple/complex/thief/timed encounters",
+    "Race/caste/spell override editors after Divinity writer evidence"
+  ],
+  "rulesEvidence": {
+    "path": "docs/generated/rules-spell-race-caste-evidence.json",
+    "summary": "Spells are 30-byte byte-only records with packed IDs; scenario Data Race overrides are 408-byte records; Data Caste records are 576 bytes."
+  },
+  "mapRecordEvidence": {
+    "path": "docs/generated/map-record-evidence.json",
+    "summary": "Data MD2 is a 340-byte map record with ten cicn marker triples, preview start fields, optional PICT-backed display, land/dungeon target, clip rectangle, and Str255 note text."
+  },
+  "validationReady": [
+    "Data MENU is generated/effective monster menu evidence, not authored monster identity",
+    "Runtime caches CS/CT/CTD3/CE/CE2 are generated state evidence",
+    "Scenario-authored records should validate references to messages, icons, items, spells, monsters, macros, sounds, and maps",
+    "Rules records should show shared fallback vs scenario override state"
+  ],
+  "needsDivinityEvidence": [
+    "Monster, Item, Spell, Race, Caste, Battle, Treasure, Shop, Rogue/Thief, Time Encounter, and Map Note editor labels/defaults",
+    "Scenario-local item authoring path, if any",
+    "Custom Data Spell layout and resource naming",
+    "Race/Caste override defaults and partial file semantics"
+  ]
+}

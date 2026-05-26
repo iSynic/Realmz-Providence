@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-25T23:45:00.000-05:00",
+  "source": "Manual archaeology pass over Realmz dungeon source and local Oracle output",
+  "realmzBitIndexConvention": "MyrBitTstShort(&value, b) maps source bit index b to mask 1 << (15 - b).",
+  "sourceAnchors": [
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\threed.c",
+      "topic": "movement and overhead render",
+      "finding": "Dungeon movement and plotwall consume the same Data DL field bits."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\checkforsecret.c",
+      "topic": "secret discovery",
+      "finding": "Dungeon search checks mask 0x0F00, then sets bit index 9 and bit index 2."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\MacrocosmMain.c",
+      "topic": "3D perspective wall model",
+      "finding": "Perspective walls, doors, arches, stairs, and pillars are derived from dungeon field bits."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\combatmap.c",
+      "topic": "dungeon combat terrain",
+      "finding": "Dungeon combat maps reduce field bits to wall/floor/black/default terrain."
+    }
+  ],
+  "bitFlags": [
+    { "realmzBit": 15, "mask": "0x0001", "label": "wall", "confidence": "source-backed" },
+    { "realmzBit": 14, "mask": "0x0002", "label": "door orientation", "confidence": "source-backed" },
+    { "realmzBit": 13, "mask": "0x0004", "label": "door orientation", "confidence": "source-backed" },
+    { "realmzBit": 12, "mask": "0x0008", "label": "stair", "confidence": "source-backed" },
+    { "realmzBit": 11, "mask": "0x0010", "label": "pillar", "confidence": "source-backed" },
+    { "realmzBit": 10, "mask": "0x0020", "label": "note or interaction evidence", "confidence": "source-backed-partial" },
+    { "realmzBit": 9, "mask": "0x0040", "label": "revealed secret marker", "confidence": "source-backed" },
+    { "realmzBit": 8, "mask": "0x0080", "label": "hidden visual", "confidence": "source-backed" },
+    { "realmzBit": 7, "mask": "0x0100", "label": "directional secret pass-through", "confidence": "source-backed-partial" },
+    { "realmzBit": 6, "mask": "0x0200", "label": "directional secret pass-through", "confidence": "source-backed-partial" },
+    { "realmzBit": 5, "mask": "0x0400", "label": "directional secret pass-through", "confidence": "source-backed-partial" },
+    { "realmzBit": 4, "mask": "0x0800", "label": "directional secret pass-through", "confidence": "source-backed-partial" }
+  ],
+  "corpus": {
+    "root": "F:\\Realmz\\out_win_clang\\Scenarios",
+    "dataDlFilesObserved": 28,
+    "recordBytesPerLevel": 16200,
+    "globalMaskCounts": {
+      "wall_0x0001": 466864,
+      "door_0x0002": 11200,
+      "door_0x0004": 17092,
+      "stair_0x0008": 15084,
+      "pillar_0x0010": 23593,
+      "note_or_interaction_0x0020": 14626,
+      "revealed_secret_0x0040": 11679,
+      "hidden_visual_0x0080": 430319,
+      "secret_pass_dirs_0x0F00": 21816,
+      "runtime_hole_mask_0x4F0E": 37794
+    },
+    "highestNonzeroScenarios": [
+      { "scenario": "Castle in the Clouds", "levels": 5, "cells": 40500, "nonzero": 40203 },
+      { "scenario": "Grilochs Revenge", "levels": 5, "cells": 40500, "nonzero": 40010 },
+      { "scenario": "Wrath of the Mind Lords", "levels": 4, "cells": 32400, "nonzero": 32400 },
+      { "scenario": "Trouble in the Sword Lands", "levels": 4, "cells": 32400, "nonzero": 32392 },
+      { "scenario": "White Dragon", "levels": 4, "cells": 32400, "nonzero": 32348 }
+    ]
+  },
+  "editorImplications": [
+    "Model Data DL as a DungeonCellProfile bitfield, not a terrain tile ID.",
+    "Provide named dungeon drawing primitives before exposing raw masks.",
+    "Treat secret pass-through as directional, not as a single secret toggle.",
+    "Keep note/interaction bit labeling conservative until Divinity fixtures clarify it.",
+    "Require writer fixtures before enabling broad dungeon geometry edits."
+  ]
+}

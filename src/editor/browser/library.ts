@@ -676,10 +676,10 @@ function family(name: string, entityType: string, label: string) {
 function recordLayout(name: string): [string, number] | null {
   if (name === "Monster Scrap Book") return ["monster-scrapbook-entry", 210];
   if (name === "Data ID") return ["item", 80];
-  if (name === "Data Race") return ["race", 288];
-  if (name === "Data Caste") return ["caste", 288];
-  if (name === "Data Spell") return ["spell", 112];
-  if (name === "Data S") return ["spell", 126];
+  if (name === "Data Race") return ["race", 408];
+  if (name === "Data Caste") return ["caste", 576];
+  if (name === "Data Spell") return ["spell", 30];
+  if (name === "Data S") return ["spell", 30];
   return null;
 }
 

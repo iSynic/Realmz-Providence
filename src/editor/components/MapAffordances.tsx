@@ -40,7 +40,7 @@ export function MapCapabilityPanel({
         </summary>
         <div className="affordance-button-grid">
           <AffordanceButton label="Paint Tiles" body="Use Paint and Sample to edit Realmz land and dungeon tile fields through the paint command path." tone="ready" onClick={() => { onSetTool("paint"); onOpenPalette(); }} />
-          <AffordanceButton label="Stamp Tiles" body="Place special land tiles, corpses, props, and icon-backed map art through Realmz tile values." tone="ready" onClick={() => onSetTool("stamp")} />
+          <AffordanceButton label="Special / Icons" body="Open the Paint palette's special land and icon-backed Realmz tile values." tone="ready" onClick={() => { onSetTool("paint"); onOpenPalette(); }} />
           <AffordanceButton label="Action Points" body="Use the Action Point tool or selected-cell actions to create, move, edit, and clear AP records." tone="ready" onClick={() => onSetTool("trigger")} />
           <AffordanceButton label="Map Flags" body="Landlook, darkness, and LOS are writable through the current map setup controls." tone="ready" onClick={onFocusFlags} />
           <AffordanceButton label="Tile Atlases" body="Inspect standard and custom tileset resources used by this map, including imported atlas coverage." tone="ready" onClick={() => { onFocusAtlas(); onOpenPalette(); }} />
@@ -139,13 +139,13 @@ export function RandomRectangleForm({ rect }: { rect: RandomLevel["rects"][numbe
       <ReadOnlyField label="Left" value={rect.left} />
       <ReadOnlyField label="Bottom" value={rect.bottom} />
       <ReadOnlyField label="Right" value={rect.right} />
-      <ReadOnlyField label="Times in 10000" value={rect.percent} wide />
+      <ReadOnlyField label="Times in 10,000" value={rect.percent} wide />
       <ReadOnlyField label="Battle Low" value={rect.battleRange[0]} />
       <ReadOnlyField label="Battle High" value={rect.battleRange[1]} />
       <ReadOnlyField label="% Option" value={rect.option} />
       <ReadOnlyField label="Text" value={rect.text} />
       {rect.randomDoors.map((door, index) => (
-        <ReadOnlyField key={index} label={`Extra AP ${index + 1}`} value={`${door} @ ${rect.randomDoorPercent[index]}%`} />
+        <ReadOnlyField key={index} label={`Extra AP ${index + 1}`} value={`${door} @ ${doorPercentLabel(rect.randomDoorPercent[index])}`} />
       ))}
     </div>
   );
@@ -156,11 +156,18 @@ export function CellTileEvidence({ cell, records }: { cell: { x: number; y: numb
   return (
     <div className="tile-evidence">
       <span><b>Base Tile</b>{baseTile}</span>
-      <span><b>AP Marker</b>{Math.abs(cell.tile) >= 1000 ? "yes" : "no"}</span>
-      <span><b>Path Bit</b>{Boolean(cell.tile & 4) ? "yes" : "no"}</span>
+      <span><b>State Band</b>{cell.tile > 999 ? "positive" : "none"}</span>
+      <span><b>Path Bit</b>{cell.tile > 0 && Boolean(cell.tile & 4) ? "yes" : "no"}</span>
+      <span><b>Note Bit</b>{cell.tile > 0 && Boolean(cell.tile & 2) ? "yes" : "no"}</span>
       <span><b>Map Starts</b>{records.length}</span>
     </div>
   );
+}
+
+function doorPercentLabel(percent: number) {
+  if (percent < 0) return `${Math.abs(percent)}% repeat`;
+  if (percent > 0) return `${percent}% one-shot`;
+  return "0%";
 }
 
 function AffordanceButton({
@@ -197,7 +204,6 @@ function ReadOnlyField({ label, value, wide = false }: { label: string; value: s
 
 function activeToolLabel(tool: EditorTool) {
   if (tool === "trigger") return "Action Point";
-  if (tool === "stamp") return "Stamp";
   return tool;
 }
 

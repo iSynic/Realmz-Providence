@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-26T00:00:00.000-05:00",
+  "target": "scenario-party-restrictions-runtime-anchors",
+  "containers": ["Data RI", "Scenario"],
+  "runtimePolicy": {
+    "Data RI": "optional scenario-authored party restriction record",
+    "Scenario": "marker/main scenario file supplies reclevel and maxlevel startup metadata"
+  },
+  "sourceAnchors": [
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\structs.h",
+      "line": 29,
+      "evidence": "struct restrictinfo declares description, maxpc, maxlevel, canrace[30], and cancaste[30]."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\convert.c",
+      "line": 287,
+      "evidence": "CvtRestrictionInfoToPc endian-converts maxpc and maxlevel only."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\partyselect.c",
+      "line": 55,
+      "evidence": "Party selection reads marker/main reclevel."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\partyselect.c",
+      "line": 57,
+      "evidence": "Party selection reads marker/main maxlevel."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\partyselect.c",
+      "line": 207,
+      "evidence": "Party selection opens optional Data RI."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\partyselect.c",
+      "line": 461,
+      "evidence": "Candidate character level is rejected when over restrictinfo.maxlevel."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\partyselect.c",
+      "line": 466,
+      "evidence": "Candidate addition is rejected when party size reaches restrictinfo.maxpc."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\partyselect.c",
+      "line": 471,
+      "evidence": "Nonzero canrace flag bans that race."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\partyselect.c",
+      "line": 476,
+      "evidence": "Nonzero cancaste flag bans that caste."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\partyselect.c",
+      "line": 731,
+      "evidence": "Restriction dialog displays description, maxpc, maxlevel, and race/caste flags."
+    }
+  ],
+  "recordLayout": {
+    "Data RI": {
+      "recordBytes": 320,
+      "fields": [
+        { "offset": 0, "size": 256, "field": "description", "kind": "Str255", "editorMeaning": "restriction dialog explanation" },
+        { "offset": 256, "size": 2, "field": "maxpc", "kind": "be_i16", "editorMeaning": "maximum party character count; zero means no extra limit" },
+        { "offset": 258, "size": 2, "field": "maxlevel", "kind": "be_i16", "editorMeaning": "maximum character/level gate; zero means no extra limit" },
+        { "offset": 260, "size": 30, "field": "canrace", "kind": "u8[30]", "editorMeaning": "nonzero flag bans race id index+1" },
+        { "offset": 290, "size": 30, "field": "cancaste", "kind": "u8[30]", "editorMeaning": "nonzero flag bans caste id index+1" }
+      ]
+    }
+  },
+  "corpusEvidence": {
+    "outputCorpus": {
+      "root": "F:\\Realmz\\out_win_clang\\Scenarios",
+      "presence": "24/28",
+      "observedBytes": [320]
+    },
+    "baseCorpus": {
+      "root": "F:\\Realmz\\base\\Realmz\\Scenarios",
+      "presence": "13 scenarios",
+      "observedBytes": [320]
+    }
+  },
+  "providenceImplications": [
+    "Data RI should be tracked and exposed as source-backed Scenario Restrictions evidence.",
+    "UI should label canrace/cancaste as banned races/castes because nonzero values reject candidates.",
+    "Race/caste flag labels should resolve through Rules/shared string evidence.",
+    "Writer support should wait for Scenario command and fixture coverage."
+  ],
+  "validationReady": [
+    "Data RI length is 320 bytes when present",
+    "description fits Str255",
+    "maxpc and maxlevel are non-negative",
+    "race and caste flag arrays contain 30 entries",
+    "warn if every race or every caste is banned"
+  ],
+  "needsDivinityEvidence": [
+    "Scenario Restrictions dialog labels/defaults",
+    "Whether no restrictions omits Data RI or writes an all-zero file",
+    "Exact UI meaning of maxlevel relative to marker/main maxlevel",
+    "User-facing wording for banned race/caste flags"
+  ]
+}

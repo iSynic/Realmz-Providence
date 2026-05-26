@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-25T00:00:00.000-05:00",
+  "target": "resource-authoring",
+  "sourceAnchors": [
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\centerpict.c",
+      "lines": "106-115",
+      "claim": "Main outdoor renderer treats negative field values as special icons, normalizes thousand bands, draws the current landlook base tile, then loads the normalized value via GetCIcon."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\mapstuff.c",
+      "lines": "5-17",
+      "claim": "Map overview renderer repeats negative-value normalization, draws the current landlook base tile, and overlays a cicn through ploticon3."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\fastplot.c",
+      "lines": "5-17",
+      "claim": "Terrain-atlas fastplot returns immediately for negative values, proving negative special/icon values need a separate icon-aware render path."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\buttonchoice.c",
+      "lines": "78-79",
+      "claim": "Movement solidity checks Data Solids only for raw negative values in the -1..-998 range."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\newland.c",
+      "lines": "1845-1861",
+      "claim": "Opcode 12 writes a raw field value into the selected land/dungeon field grid, so script-mutated icon/tile changes share the same field-value model."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\loadland-loadpixmap.c",
+      "lines": "100-132",
+      "claim": "Outdoor terrain art comes from PICT 300 + landlook, while landlook mapstats are loaded from the matching data file."
+    }
+  ],
+  "negativeFieldValueRender": {
+    "baseTile": "basetile[lastpix]",
+    "iconResourceType": "cicn",
+    "normalization": [
+      { "rawRange": "-1..-998", "normalizedIconId": "raw", "confidence": "source-backed" },
+      { "rawRange": "-1000..-1999", "normalizedIconId": "raw + 1000", "example": "-1091 -> -91", "confidence": "source-backed" },
+      { "rawRange": "-2000..-2999", "normalizedIconId": "raw + 2000 in main viewport, repeated +1000 in map overview", "example": "-2091 -> -91", "confidence": "source-backed" },
+      { "rawRange": "< -2999", "normalizedIconId": "overview path repeats +1000 up to three times; main viewport behavior needs fixture checks", "confidence": "partial" }
+    ],
+    "exportRule": "Preserve raw field value unless the user explicitly changes it; normalized icon ID is render/diagnostic metadata."
+  },
+  "editorImplications": [
+    "Unify terrain and special/icon values in Paint because both write Data LD/Data DL field values.",
+    "Render negative swatches by resolving the normalized cicn candidate before terrain fallback.",
+    "Show missing icon resources as diagnostics instead of silently rendering grass.",
+    "Use Data Solids only as raw -1..-998 special/icon solidity evidence.",
+    "Keep opcode 12 effects labeled as runtime script mutations, not static placed art."
+  ],
+  "corpusEvidence": {
+    "cicnResources": 7535,
+    "opcode12NewLandIcon": 5352,
+    "usesIconResourceLinks": 7839,
+    "knownLocalExamples": [
+      {
+        "scenario": "City of Bywater",
+        "rawValue": -1091,
+        "normalizedIconCandidate": -91,
+        "note": "Observed in used map values; should preview through icon resolution while preserving raw field value."
+      }
+    ]
+  },
+  "needsDivinityEvidence": [
+    "Special Land Tiles editor resource ID allocation.",
+    "Import Picture workflow for cicn creation and collision handling.",
+    "Whether Divinity exposes thousand-band encoded negative field values as distinct from icon IDs."
+  ]
+}
