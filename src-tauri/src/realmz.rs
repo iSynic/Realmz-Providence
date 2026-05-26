@@ -271,7 +271,7 @@ pub fn parse_landlook_mapstats_data(
             let fly_float = i16_be(buffer, start + 14) != 0;
             let forest = i16_be(buffer, start + 16) != 0;
             let mut flags = Vec::new();
-            if solid == 0 {
+            if solid == 0 && need_boat == 0 && !fly_float {
                 flags.push(TileAttributeFlag::Walkable);
             } else {
                 flags.push(TileAttributeFlag::Solid);

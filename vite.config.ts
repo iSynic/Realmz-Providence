@@ -9,7 +9,11 @@ export default defineConfig({
     port: 5178,
     strictPort: true,
     fs: {
-      allow: [".", "F:/Realmz Scenario Utility/assets/realmz/resources/pictures"]
+      allow: [
+        ".",
+        "F:/Realmz Scenario Utility/assets/realmz/resources/pictures",
+        "F:/Realmz Scenario Utility/assets/realmz/resources/icons"
+      ]
     },
     watch: {
       ignored: ["**/src-tauri/**"]

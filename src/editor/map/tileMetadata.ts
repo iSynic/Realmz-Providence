@@ -21,6 +21,7 @@ export type TileValueMetadata = {
   iconCandidates: number[];
   iconAvailable: boolean;
   attributes: TileAttributeProfile | null;
+  attributeFlags: TileAttributeFlag[];
   flags: {
     markerBit: boolean;
     pathBit: boolean;
@@ -50,6 +51,7 @@ export function classifyTileValue(
   const noteBit = tile > 0 && Boolean(tile & 2);
   const canRenderFromAtlas = Boolean(tileset?.available && tileset.imagePath && capacity > 0);
   const attribute = attributeProfileForTile(tile, tileset, attributes);
+  const attributeFlags = tileAttributeGroup(attribute, tile, tileset);
 
   let kind: TileValueKind = "unknown";
   let label = `Tile ${tile}`;
@@ -94,6 +96,7 @@ export function classifyTileValue(
     iconCandidates,
     iconAvailable,
     attributes: attribute,
+    attributeFlags,
     flags: { markerBit, pathBit, noteBit },
     compatibility
   };
@@ -153,8 +156,21 @@ function tileAttributeSourceKind(profile: TileAttributeProfile) {
   return profile.sourceKind ?? (profile.source === "Data Solids" ? "data-solids" : "unknown");
 }
 
-export function tileAttributeGroup(profile: TileAttributeProfile | null, tile: number): TileAttributeFlag[] {
-  if (tile < 0) return [...new Set(["special-icon", ...(profile?.flags ?? [])])] as TileAttributeFlag[];
-  if (!profile) return ["unknown-metadata"];
-  return profile.flags.length > 0 ? profile.flags : ["unknown-metadata"];
+export function tileAttributeGroup(profile: TileAttributeProfile | null, tile: number, tileset: TilesetAsset | null = null): TileAttributeFlag[] {
+  if (tile < 0) {
+    const flags: TileAttributeFlag[] = ["special-icon"];
+    if (profile?.flags.includes("solid")) flags.push("solid");
+    return flags;
+  }
+  const flags = profile?.flags.length ? [...profile.flags] : ["unknown-metadata" as TileAttributeFlag];
+  if (isDivinityVisualPathTile(tile, tileset) && !flags.includes("path")) {
+    flags.push("path");
+  }
+  return flags;
+}
+
+export function isDivinityVisualPathTile(tile: number, tileset: TilesetAsset | null = null) {
+  if (tile < 0) return false;
+  const normalized = normalizeAtlasTile(tile, tileset?.baseTile ?? 1);
+  return normalized >= 132 && normalized <= 146;
 }

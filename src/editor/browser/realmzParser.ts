@@ -191,7 +191,7 @@ export function parseLandlookMapstats(buffer: Uint8Array | undefined, landlook: 
     const isPath = i16(buffer, start + 10) !== 0;
     const los = i16(buffer, start + 12) !== 0;
     const flyFloat = i16(buffer, start + 14) !== 0;
-    const flags: TileAttributeProfile["flags"] = [solid === 0 ? "walkable" : "solid"];
+    const flags: TileAttributeProfile["flags"] = [solid === 0 && needBoat === 0 && !flyFloat ? "walkable" : "solid"];
     if (shore) flags.push("shore");
     if (needBoat !== 0) flags.push("boat-required");
     if (isPath) flags.push("path");
@@ -668,7 +668,7 @@ function decodeDoorCoordinate(doorid: number, levelIndex: number | null) {
   return { x, y };
 }
 
-function landlookName(landlook: number) {
+export function landlookName(landlook: number) {
   const names: Record<number, string> = {
     0: "Plains",
     3: "Subterranean",
@@ -683,7 +683,7 @@ function landlookName(landlook: number) {
   return names[landlook] ?? "Unknown landlook";
 }
 
-function landlookPictId(landlook: number) {
+export function landlookPictId(landlook: number) {
   return ({ 0: 300, 2: 302, 3: 303, 4: 304, 5: 305, 6: 306, 7: 307, 8: 308, 9: 309, 10: 310 } as Record<number, number>)[landlook] ?? null;
 }
 

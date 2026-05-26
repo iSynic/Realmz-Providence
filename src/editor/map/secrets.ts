@@ -10,12 +10,12 @@ export function isSecretWalkableTile(value: number, map: MapEntity) {
 
 export function hasSecretMarkerTile(value: number, map: MapEntity) {
   if (isDungeonTopDownMap(map)) return hasDungeonSecretDirection(value) || hasDungeonShownSecretMarker(value);
-  return Math.abs(value) >= 3000;
+  return value >= 3000;
 }
 
 export function hasSecretPathTile(value: number, map: MapEntity) {
   if (isDungeonTopDownMap(map)) return hasDungeonSecretDirection(value);
-  return Math.abs(value) >= 1000;
+  return value >= 1000;
 }
 
 function isDungeonTopDownMap(map: MapEntity) {

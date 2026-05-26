@@ -17,7 +17,7 @@ import { benchmarkBrowserProject, createBrowserProject, ensureBrowserReferenceTi
 import { IconButton } from "./editor/components/IconButton";
 import { EditorToolRail } from "./editor/components/EditorToolRail";
 import { loadImage } from "./editor/components/TileSprite";
-import { referencedMapIconIds, tileIconCandidates } from "./editor/map/renderValues";
+import { PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES, referencedMapIconIds, tileIconCandidates } from "./editor/map/renderValues";
 import { editorReducer, initialEditorState, BROWSER_PREVIEW_STATUS } from "./editor/store";
 import { BenchmarkReport, ExportReport, LibraryCatalog, ManagedAssetKind, MapEntity, MapViewFlag, Project, ProjectCommand, ProvidenceWorkspace, SelectedEntity, SemanticEntity, TilesetAsset, ValidationReport } from "./editor/types";
 import { fileToMediaAssetRequest, nextResourceId, requestToBrowserAsset, requestToBrowserReplacement } from "./editor/mediaAssets";
@@ -95,12 +95,13 @@ export function App() {
                 .filter((asset) => asset.kind === "special-land-tile" && asset.resourceType === "cicn")
                 .flatMap((asset) => tileIconCandidates(asset.resourceId)),
               ...(state.libraryCatalog?.assets ?? [])
-                .filter((asset) => asset.type === "special-land-tile" || asset.resourceType === "cicn")
-                .flatMap((asset) => asset.resourceId == null ? [] : tileIconCandidates(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId))
+                .filter(isPaintableSpecialLandLibraryAsset)
+                .flatMap((asset) => asset.resourceId == null ? [] : tileIconCandidates(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId)),
+              ...(!desktopRuntime ? PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES.flatMap(tileIconCandidates) : [])
             ])
           ].sort((a, b) => a - b).join(",")
         : "",
-    [state.project, state.libraryCatalog]
+    [desktopRuntime, state.project, state.libraryCatalog]
   );
   const undoLabel = state.past.length > 0 ? state.past[state.past.length - 1].label : null;
   const redoLabel = state.future.length > 0 ? state.future[0].label : null;
@@ -271,7 +272,7 @@ export function App() {
         return;
       }
       const projectStampAssets = (state.project.assets ?? []).filter((asset) => asset.kind === "special-land-tile" && asset.resourceType === "cicn");
-      const libraryIconAssets = (state.libraryCatalog?.assets ?? []).filter((asset) => asset.type === "special-land-tile" || asset.resourceType === "cicn");
+      const libraryIconAssets = (state.libraryCatalog?.assets ?? []).filter(isPaintableSpecialLandLibraryAsset);
       const ids = [
         ...new Set([
           ...state.project.maps.flatMap((map) => referencedMapIconIds(map.tiles)),
@@ -279,7 +280,8 @@ export function App() {
             .filter((asset) => asset.resourceType === "cicn")
             .flatMap((asset) => tileIconCandidates(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId)),
           ...projectStampAssets.flatMap((asset) => tileIconCandidates(asset.resourceId)),
-          ...libraryIconAssets.flatMap((asset) => asset.resourceId == null ? [] : tileIconCandidates(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId))
+          ...libraryIconAssets.flatMap((asset) => asset.resourceId == null ? [] : tileIconCandidates(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId)),
+          ...(!desktopRuntime ? PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES.flatMap(tileIconCandidates) : [])
         ])
       ].sort((a, b) => a - b);
       if (ids.length === 0) {
@@ -1083,6 +1085,16 @@ function defaultProjectPath(scenarioName: string) {
 
 function defaultExportPath(scenarioName: string) {
   return `${DEFAULT_EXPORT_ROOT}\\${sanitizePackageName(scenarioName)}`;
+}
+
+function isPaintableSpecialLandLibraryAsset(asset: LibraryCatalog["assets"][number]) {
+  if (asset.resourceType !== "cicn") return false;
+  return (
+    asset.type === "special-land-tile" ||
+    asset.relativePath.includes("Land Archive") ||
+    asset.label.includes("Special Land") ||
+    (typeof asset.resourceId === "number" && asset.resourceId < 0)
+  );
 }
 
 function nextUntitledProjectName() {

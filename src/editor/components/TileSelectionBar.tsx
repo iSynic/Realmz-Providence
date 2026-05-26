@@ -1,7 +1,8 @@
 import { MutableRefObject, useEffect, useMemo, useRef, useState } from "react";
 import { EditorState } from "../store";
 import { IconEntry, LibraryAsset, MapEntity, Project, TileAttributeFlag, TilePaletteCategory, TilesetAsset } from "../types";
-import { classifyTileValue, standardTileValues, tileAttributeGroup } from "../map/tileMetadata";
+import { classifyTileValue, isDivinityVisualPathTile, standardTileValues, tileAttributeGroup } from "../map/tileMetadata";
+import { PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES } from "../map/renderValues";
 import { tileColor } from "./TileSprite";
 import { TileSwatch } from "./TileSwatch";
 import { TutorialTip } from "./TutorialTip";
@@ -53,7 +54,7 @@ export function PaintPalettePanel({
   const attributeTiles = useMemo(() => {
     const candidates = [...new Set([...standardTiles, ...usedTiles])].sort((a, b) => a - b);
     if (attributeFilter === "all") return candidates;
-    return candidates.filter((tile) => tileAttributeGroup(classifyTileValue(tile, tileset, tileAttributes, icons).attributes, tile).includes(attributeFilter));
+    return candidates.filter((tile) => tileAttributeGroup(classifyTileValue(tile, tileset, tileAttributes, icons).attributes, tile, tileset).includes(attributeFilter));
   }, [attributeFilter, icons, standardTiles, tileAttributes, tileset, usedTiles]);
   const paletteTiles = mode === "used"
     ? usedTiles
@@ -250,9 +251,9 @@ export function paletteForMap(map: MapEntity | null, tileset: TilesetAsset | nul
 
 const ATTRIBUTE_FILTERS: Array<{ id: TileAttributeFlag | "all"; label: string; hint: string }> = [
   { id: "all", label: "All", hint: "Show all tiles with known or unknown metadata." },
-  { id: "walkable", label: "Walkable", hint: "Source-backed mapstats or Data Solids says this tile is not solid." },
-  { id: "solid", label: "Solid / Blocking", hint: "Source-backed mapstats or Data Solids marks this tile as blocking." },
-  { id: "path", label: "Path", hint: "Source-backed mapstats path flag." },
+  { id: "walkable", label: "Walkable", hint: "Source-backed data says normal foot movement can enter this tile without boat or fly/float." },
+  { id: "solid", label: "Solid / Blocking", hint: "Source-backed data marks this tile as solid, boat-only, or fly/float-gated." },
+  { id: "path", label: "Path", hint: "Source-backed mapstats path flag plus Divinity-visible road/path atlas tiles 132-146." },
   { id: "shore", label: "Shore / Water", hint: "Source-backed mapstats shore/water flag." },
   { id: "boat-required", label: "Boat Required", hint: "Source-backed mapstats boat/water requirement." },
   { id: "fly-float-required", label: "Fly / Float", hint: "Source-backed mapstats fly/float script flag." },
@@ -278,9 +279,12 @@ function specialTilesForPalette(
     values.add(resourceId < 0 ? resourceId : -resourceId);
   }
   for (const asset of libraryAssets) {
-    if (asset.type !== "special-land-tile" && asset.resourceType !== "cicn") continue;
+    if (!isPaintableSpecialLandAsset(asset)) continue;
     if (asset.resourceId == null) continue;
     values.add(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId);
+  }
+  for (const tile of PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES) {
+    values.add(tile);
   }
   for (const tile of map?.tiles ?? []) {
     if (tile < 0) values.add(tile);
@@ -290,6 +294,16 @@ function specialTilesForPalette(
     if (Number.isFinite(tile) && tile < 0) values.add(tile);
   }
   return [...values].sort((a, b) => a - b);
+}
+
+function isPaintableSpecialLandAsset(asset: LibraryAsset) {
+  if (asset.resourceType !== "cicn") return false;
+  return (
+    asset.type === "special-land-tile" ||
+    asset.relativePath.includes("Land Archive") ||
+    asset.label.includes("Special Land") ||
+    (typeof asset.resourceId === "number" && asset.resourceId < 0)
+  );
 }
 
 function entitySummaryNumber(summary: Record<string, unknown> | undefined, key: string) {
@@ -339,5 +353,8 @@ function tileTitle(
   const attributes = metadata.attributes
     ? ` Solid type ${metadata.attributes.solidType ?? "unknown"} from ${metadata.attributes.source}.`
     : " Tile attributes unknown.";
-  return `${metadata.label}. Raw ${metadata.raw}; renders as ${metadata.renderTile}.${icon}${attributes} ${metadata.compatibility}`;
+  const visualPath = isDivinityVisualPathTile(tile, tileset) && !metadata.attributes?.flags.includes("path")
+    ? " Divinity shows this atlas range as road/path art; Realmz mapstats does not set its path flag."
+    : "";
+  return `${metadata.label}. Raw ${metadata.raw}; renders as ${metadata.renderTile}.${icon}${attributes}${visualPath} ${metadata.compatibility}`;
 }

@@ -5,7 +5,7 @@ export const BROWSER_REFERENCE_PICTURES_DEV_URL =
 export const BROWSER_REFERENCE_ICONS_DEV_URL =
   "/@fs/F:/Realmz Scenario Utility/assets/realmz/resources/icons";
 
-const KNOWN_REFERENCE_PICTS = new Set([300, 302, 303, 304, 305, 309]);
+const KNOWN_REFERENCE_PICTS = new Set([300, 302, 303, 304, 305, 309, 310]);
 
 export function browserReferenceAtlasUrl(pictId: number | null) {
   if (pictId === null || !KNOWN_REFERENCE_PICTS.has(pictId)) return null;

@@ -30,11 +30,31 @@ export function normalizeIconId(value: number) {
   return iconId;
 }
 
+export const PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES = [
+  ...range(-223, -212),
+  ...range(-209, -200),
+  ...range(-195, -164),
+  ...range(-99, -90),
+  -83,
+  ...range(-79, -50),
+  ...range(-47, -25),
+  ...range(-19, -15),
+  -11,
+  ...range(-5, -1)
+];
+
 export function tileIconCandidates(value: number) {
   if (value >= 0) return [];
-  const candidates = [value];
+  const candidates: number[] = [];
   const normalized = normalizeIconId(value);
-  if (normalized !== null && normalized < 0) candidates.push(normalized);
+  if (normalized !== null && normalized < 0) {
+    candidates.push(normalized);
+    const positive = Math.abs(normalized);
+    // Realmz looks up the normalized negative cicn ID, while our reference
+    // asset export also contains Divinity/library icon ranges such as 6000+n.
+    if (value !== normalized || positive <= 199) candidates.push(6000 + positive, 12000 + positive);
+  }
+  if (value !== normalized) candidates.push(value);
   return [...new Set(candidates)];
 }
 
@@ -50,4 +70,10 @@ function clearRealmzShortBit(value: number, bit: number) {
   const unsigned = value & 0xffff;
   const cleared = unsigned & ~(1 << (15 - bit));
   return cleared >= 0x8000 ? cleared - 0x10000 : cleared;
+}
+
+function range(start: number, end: number) {
+  const out: number[] = [];
+  for (let value = start; value <= end; value += 1) out.push(value);
+  return out;
 }

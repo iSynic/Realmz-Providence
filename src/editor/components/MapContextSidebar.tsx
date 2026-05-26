@@ -656,7 +656,7 @@ function TileMeaningInspector({
       ? `loaded ${meaning.iconCandidates.join(", ")}`
       : `missing ${meaning.iconCandidates.join(", ")}`;
   const attributes = meaning.attributes;
-  const attributeFlags = attributes?.flags.length ? attributes.flags.join(", ") : "unknown";
+  const attributeFlags = meaning.attributeFlags.length ? meaning.attributeFlags.join(", ") : "unknown";
   return (
     <div className={`tile-meaning-inspector${compact ? " compact" : ""}`}>
       <div className="tile-meaning-title">

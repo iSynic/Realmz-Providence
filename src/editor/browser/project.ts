@@ -1,8 +1,8 @@
 import { BenchmarkReport, Project, ValidationReport } from "../types";
 import { BrowserScenarioSource, readProjectJson, readScenarioSource } from "./fsAccess";
-import { browserTilesetAtlasUrl } from "./atlasPaths";
+import { browserReferenceAtlasUrl, browserTilesetAtlasUrl, hasBrowserReferenceAtlas } from "./atlasPaths";
 import { buildBrowserSemanticSchema } from "./semantic";
-import { landlookBaseTile, parseLandlookMapstats, parseScenarioBuffers, TRACKED_FILES } from "./realmzParser";
+import { landlookBaseTile, landlookName, landlookPictId, parseLandlookMapstats, parseScenarioBuffers, TRACKED_FILES } from "./realmzParser";
 import { assetFallbacks, blockedSemanticObjects, generatedRuntimeCaches, resourceGaps, unresolvedLinks } from "../semanticGraph";
 import { validateRealmzTargetRecord } from "../targetValidation";
 import { tileIconCandidates } from "../map/renderValues";
@@ -133,9 +133,10 @@ export async function openBrowserProject(source: BrowserScenarioSource): Promise
 export async function ensureBrowserReferenceTileAttributes(project: Project) {
   project.tileAttributes ??= [];
   backfillTilesetMetadata(project);
-  if (!project.tileAttributes.some((profile) => profile.sourceKind === "mapstats")) {
-    project.tileAttributes.push(...await loadBundledLandlookMapstats());
-  }
+  project.tileAttributes = [
+    ...project.tileAttributes.filter((profile) => profile.sourceKind !== "mapstats"),
+    ...await loadBundledLandlookMapstats()
+  ];
   return project;
 }
 
@@ -161,9 +162,72 @@ async function loadBundledLandlookMapstats() {
 }
 
 function backfillTilesetMetadata(project: Project) {
+  project.assetCatalog ??= { tilesets: [] };
+  project.assetCatalog.tilesets ??= [];
+
+  const requiredLandlooks = new Set<number>();
+  for (const map of project.maps ?? []) {
+    const landlook = map.render?.landlook;
+    if (typeof landlook === "number" && landlook >= 0 && map.levelType !== "dungeon") requiredLandlooks.add(landlook);
+  }
+  for (const randomLevel of project.randomLevels ?? []) {
+    if (typeof randomLevel.landlook === "number" && randomLevel.landlook >= 0 && randomLevel.levelType !== "dungeon") {
+      requiredLandlooks.add(randomLevel.landlook);
+    }
+  }
+  for (const landlook of requiredLandlooks) {
+    if (!project.assetCatalog.tilesets.some((tileset) => tileset.landlook === landlook || tileset.id === `landlook-${landlook}`)) {
+      project.assetCatalog.tilesets.push(browserReferenceTileset(landlook));
+    }
+  }
+  if ((project.maps ?? []).some((map) => map.levelType === "dungeon") && !project.assetCatalog.tilesets.some((tileset) => tileset.id === "dungeon-top-down-302")) {
+    project.assetCatalog.tilesets.push({
+      id: "dungeon-top-down-302",
+      landlook: 2,
+      name: "Dungeon Top Down",
+      source: "Browser project hydration: Scenario Utility reference PICT PNG",
+      available: hasBrowserReferenceAtlas(302),
+      imagePath: browserReferenceAtlasUrl(302),
+      pictId: 302,
+      tileWidth: 16,
+      tileHeight: 16,
+      columns: 4,
+      rows: 4,
+      baseTile: null,
+      custom: false
+    });
+  }
   for (const tileset of project.assetCatalog.tilesets) {
     if (tileset.baseTile == null) tileset.baseTile = landlookBaseTile(tileset.landlook);
+    const referenceUrl = browserReferenceAtlasUrl(tileset.pictId);
+    if (referenceUrl && (!tileset.imagePath || tileset.imagePath.startsWith("assets/") || tileset.imagePath.startsWith("assets\\"))) {
+      tileset.imagePath = referenceUrl;
+      tileset.available = true;
+      tileset.source = "Browser project hydration: Scenario Utility reference PICT PNG";
+    }
   }
+}
+
+function browserReferenceTileset(landlook: number) {
+  const pictId = landlookPictId(landlook);
+  const imagePath = browserReferenceAtlasUrl(pictId);
+  return {
+    id: `landlook-${landlook}`,
+    landlook,
+    name: landlookName(landlook),
+    source: imagePath
+      ? "Browser project hydration: Scenario Utility reference PICT PNG"
+      : "Browser project hydration: missing reference atlas",
+    available: hasBrowserReferenceAtlas(pictId),
+    imagePath,
+    pictId,
+    tileWidth: 32,
+    tileHeight: 32,
+    columns: 20,
+    rows: 10,
+    baseTile: landlookBaseTile(landlook),
+    custom: landlook >= 6 && landlook <= 8
+  };
 }
 
 export function validateBrowserProject(project: Project): ValidationReport {
