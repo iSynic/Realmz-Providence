@@ -13,7 +13,9 @@ export type EditorTab =
   | "linter"
   | "export";
 export type ActiveWorkbench = "project" | "library";
-export type EditorTool = "select" | "paint" | "trigger" | "random" | "sample" | "pan";
+export type EditorTool = "select" | "paint" | "stamp" | "trigger" | "random" | "sample" | "pan";
+export type MapPaintMode = "brush" | "rectangle" | "region" | "replace" | "clear";
+export type MapRegionSelection = { left: number; top: number; right: number; bottom: number };
 export type FocusedPanel = "main" | "tool-sidebar" | "outliner" | "inspector" | "canvas" | "docs";
 export type ScriptDetailSurface = "docked" | "floating";
 export type ScriptInventoryFilter = "current-map" | "all" | "active" | "reusable" | "warnings" | "macros";
@@ -166,6 +168,16 @@ export type ManagedAsset = {
   linkedEntity: string | null;
 };
 
+export type StampPaletteItem = {
+  id: string;
+  label: string;
+  tileValue: number;
+  resourceId: number | null;
+  source: "project" | "library" | "used-map" | "raw";
+  previewPath: string | null;
+  compatibility: string;
+};
+
 export type EditorDisplayName = {
   label: string;
   source: "user" | "generated";
@@ -303,6 +315,26 @@ export type QuestLabel = {
   note?: string;
 };
 
+export type MapRecord = {
+  id: number;
+  startX: number;
+  startY: number;
+  level: number;
+  pictId: number;
+  iconSize: number;
+  show: number;
+  isDungeon: boolean;
+  rect: { top: number; left: number; bottom: number; right: number };
+  note: string;
+  name?: string;
+  primaryName?: string;
+  secondaryName?: string;
+  nameSource?: string;
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: Provenance;
+};
+
 export type ProjectCommand =
   | { kind: "paintTiles"; mapId: string; label: string; cells: PaintCellChange[] }
   | { kind: "createMacro"; label: string; displayName?: string }
@@ -339,6 +371,12 @@ export type ProjectCommand =
       levelType: LevelType;
       levelIndex: number;
       fields: Partial<Pick<RandomLevel, "landlook" | "isDark" | "useLos">>;
+    }
+  | {
+      kind: "updateMapRecord";
+      label: string;
+      id: number;
+      changes: Partial<Pick<MapRecord, "startX" | "startY" | "level" | "pictId" | "iconSize" | "show" | "isDungeon" | "rect" | "note">>;
     }
   | {
       kind: "createRandomRect";
@@ -463,6 +501,7 @@ export type Project = {
   maps: MapEntity[];
   triggers: TriggerRecord[];
   randomLevels: RandomLevel[];
+  mapRecords: MapRecord[];
   extracodes: ExtraCodeRow[];
   messages: MessageRecord[];
   battles: BattleRecord[];
@@ -472,7 +511,7 @@ export type Project = {
   complexEncounters: ComplexEncounterRecord[];
   questLabels: QuestLabel[];
   assets: ManagedAsset[];
-  assetCatalog: { tilesets: TilesetAsset[] };
+  assetCatalog: { tilesets: TilesetAsset[]; pictures?: ResourceAsset[]; icons?: ResourceAsset[] };
   editorMetadata: EditorMetadata;
   records: { counts: Record<string, number>; alignments: Alignment[] };
   diagnostics: Diagnostic[];
@@ -675,6 +714,14 @@ export type TilesetAsset = {
   rows: number;
   custom: boolean;
   baseTile?: number | null;
+};
+
+export type ResourceAsset = {
+  id: string;
+  resourceType: string;
+  resourceId: number;
+  name?: string | null;
+  source: string;
 };
 
 export type AtlasEntry = { image: HTMLImageElement; url: string; asset: TilesetAsset };

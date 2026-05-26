@@ -169,6 +169,7 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
             }
         }
     }
+    validate_map_records(project, &mut errors, &mut warnings);
     for message in &project.messages {
         let message_bytes = classic_text_len(&message.text);
         if message_bytes > 255 {
@@ -428,6 +429,71 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         warnings,
         exportable_files,
         pass_through_files,
+    }
+}
+
+fn validate_map_records(
+    project: &ProvidenceProject,
+    errors: &mut Vec<String>,
+    warnings: &mut Vec<String>,
+) {
+    let maps = project
+        .maps
+        .iter()
+        .map(|map| (map.level_type, map.index))
+        .collect::<BTreeSet<_>>();
+    let pictures = project
+        .asset_catalog
+        .pictures
+        .iter()
+        .map(|picture| picture.resource_id)
+        .collect::<BTreeSet<_>>();
+    for record in &project.map_records {
+        if record.raw_bytes.len() != crate::realmz::MAP_RECORD_BYTES {
+            errors.push(format!(
+                "Map record {} does not preserve a {}-byte raw record.",
+                record.id,
+                crate::realmz::MAP_RECORD_BYTES
+            ));
+        }
+        if record.start_x < 0
+            || record.start_x >= MAP_SIZE as i16
+            || record.start_y < 0
+            || record.start_y >= MAP_SIZE as i16
+        {
+            warnings.push(format!(
+                "Map record {} starts outside the 90x90 map at {},{}.",
+                record.id, record.start_x, record.start_y
+            ));
+        }
+        let level_type = if record.is_dungeon {
+            LevelType::Dungeon
+        } else {
+            LevelType::Land
+        };
+        if record.level < 0 || !maps.contains(&(level_type, record.level as usize)) {
+            warnings.push(format!(
+                "Map record {} points to missing {}:{}.",
+                record.id,
+                level_type.as_str(),
+                record.level
+            ));
+        }
+        if record.rect.left > record.rect.right || record.rect.top > record.rect.bottom {
+            warnings.push(format!(
+                "Map record {} has an inverted display rectangle.",
+                record.id
+            ));
+        }
+        if record.pict_id != 0
+            && !pictures.is_empty()
+            && !pictures.contains(&(record.pict_id as i32))
+        {
+            warnings.push(format!(
+                "Map record {} references picture {}, which is not decoded in the scenario resource catalog.",
+                record.id, record.pict_id
+            ));
+        }
     }
 }
 
@@ -1264,6 +1330,7 @@ mod tests {
                 immutable: false,
             },
             maps: Vec::new(),
+            map_records: Vec::new(),
             triggers: Vec::new(),
             random_levels: Vec::new(),
             extracodes: Vec::new(),

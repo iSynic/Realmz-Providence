@@ -13,6 +13,8 @@ pub struct ProvidenceProject {
     pub scenario: ScenarioMeta,
     pub source: SourceSnapshot,
     pub maps: Vec<MapEntity>,
+    #[serde(default)]
+    pub map_records: Vec<MapRecord>,
     pub triggers: Vec<TriggerRecord>,
     pub random_levels: Vec<RandomLevel>,
     pub extracodes: Vec<ExtraCodeRow>,
@@ -359,6 +361,43 @@ pub struct MapEntity {
     pub tiles: Vec<i16>,
     pub render: MapRender,
     pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MapRecord {
+    pub id: usize,
+    pub start_x: i16,
+    pub start_y: i16,
+    pub level: i16,
+    pub pict_id: i16,
+    pub icon_size: i16,
+    pub show: i16,
+    pub is_dungeon: bool,
+    pub rect: MapRecordRect,
+    pub note: String,
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub primary_name: Option<String>,
+    #[serde(default)]
+    pub secondary_name: Option<String>,
+    #[serde(default)]
+    pub name_source: Option<String>,
+    #[serde(default)]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MapRecordRect {
+    pub top: i16,
+    pub left: i16,
+    pub bottom: i16,
+    pub right: i16,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]

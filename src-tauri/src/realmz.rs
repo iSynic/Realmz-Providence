@@ -15,6 +15,7 @@ pub const BATTLE_BYTES: usize = 346;
 pub const SHOP_BYTES: usize = 3002;
 pub const MESSAGE_BYTES: usize = 256;
 pub const TREASURE_BYTES: usize = 48;
+pub const MAP_RECORD_BYTES: usize = 340;
 
 pub const SUPPORTED_WRITE_FILES: &[&str] = &[
     "Data LD",
@@ -30,6 +31,7 @@ pub const SUPPORTED_WRITE_FILES: &[&str] = &[
     "Data BD",
     "Data SD",
     "Data SD2",
+    "Data MD2",
     "Data TD",
 ];
 
@@ -66,6 +68,7 @@ pub const TRACKED_FILES: &[&str] = &[
 #[serde(rename_all = "camelCase")]
 pub struct ParsedScenario {
     pub maps: Vec<MapEntity>,
+    pub map_records: Vec<MapRecord>,
     pub triggers: Vec<TriggerRecord>,
     pub random_levels: Vec<RandomLevel>,
     pub extracodes: Vec<ExtraCodeRow>,
@@ -84,6 +87,7 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
     let mut diagnostics = Vec::new();
     let mut records = RecordCatalog::default();
     let mut maps = Vec::new();
+    let mut map_records = Vec::new();
     let mut random_levels = Vec::new();
     let mut triggers = Vec::new();
     let mut extracodes = Vec::new();
@@ -109,7 +113,7 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
         ("Data BD", BATTLE_BYTES),
         ("Data SD", SHOP_BYTES),
         ("Data SD2", MESSAGE_BYTES),
-        ("Data MD2", 340),
+        ("Data MD2", MAP_RECORD_BYTES),
         ("Data TD", TREASURE_BYTES),
         ("Data TD2", 118),
         ("Data TD3", 40),
@@ -146,6 +150,9 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
         random_levels.extend(parse_random_levels(buffer, LevelType::Dungeon, "Data RDD"));
     }
     attach_render_info(&mut maps, &random_levels);
+    if let Some(buffer) = buffers.get("Data MD2") {
+        map_records.extend(parse_map_records(buffer));
+    }
 
     if let Some(buffer) = buffers.get("Data DD") {
         triggers.extend(parse_door_file(buffer, LevelType::Land, "Data DD"));
@@ -181,6 +188,7 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
     let asset_catalog = build_asset_catalog(&maps, &random_levels);
     ParsedScenario {
         maps,
+        map_records,
         triggers,
         random_levels,
         extracodes,
@@ -277,6 +285,70 @@ pub fn write_fields(maps: &[MapEntity], level_type: LevelType) -> Result<Vec<u8>
         for (index, value) in map.tiles.iter().enumerate() {
             write_i16_be(&mut output, start + index * 2, *value);
         }
+    }
+    Ok(output)
+}
+
+pub fn parse_map_records(buffer: &[u8]) -> Vec<MapRecord> {
+    let count = buffer.len() / MAP_RECORD_BYTES;
+    (0..count)
+        .map(|id| {
+            let start = id * MAP_RECORD_BYTES;
+            let record = &buffer[start..start + MAP_RECORD_BYTES];
+            MapRecord {
+                id,
+                start_x: i16_be(record, 60),
+                start_y: i16_be(record, 62),
+                level: i16_be(record, 64),
+                pict_id: i16_be(record, 66),
+                icon_size: i16_be(record, 68),
+                show: i16_be(record, 70),
+                is_dungeon: i16_be(record, 72) != 0,
+                rect: MapRecordRect {
+                    top: i16_be(record, 76),
+                    left: i16_be(record, 78),
+                    bottom: i16_be(record, 80),
+                    right: i16_be(record, 82),
+                },
+                note: decode_pascal_text(&record[84..MAP_RECORD_BYTES]),
+                raw_bytes: record.to_vec(),
+                authored: false,
+                name: None,
+                primary_name: None,
+                secondary_name: None,
+                name_source: None,
+                provenance: provenance("Data MD2", id, start, MAP_RECORD_BYTES),
+            }
+        })
+        .collect()
+}
+
+pub fn write_map_records(records: &[MapRecord]) -> Result<Vec<u8>> {
+    if records.is_empty() {
+        return Ok(Vec::new());
+    }
+    let max_id = records.iter().map(|record| record.id).max().unwrap_or(0);
+    let mut output = vec![0u8; (max_id + 1) * MAP_RECORD_BYTES];
+    for record in records {
+        let start = record.id * MAP_RECORD_BYTES;
+        if record.raw_bytes.len() == MAP_RECORD_BYTES {
+            output[start..start + MAP_RECORD_BYTES].copy_from_slice(&record.raw_bytes);
+        }
+        if !record.authored && record.raw_bytes.len() == MAP_RECORD_BYTES {
+            continue;
+        }
+        write_i16_be(&mut output, start + 60, record.start_x);
+        write_i16_be(&mut output, start + 62, record.start_y);
+        write_i16_be(&mut output, start + 64, record.level);
+        write_i16_be(&mut output, start + 66, record.pict_id);
+        write_i16_be(&mut output, start + 68, record.icon_size);
+        write_i16_be(&mut output, start + 70, record.show);
+        write_i16_be(&mut output, start + 72, if record.is_dungeon { 1 } else { 0 });
+        write_i16_be(&mut output, start + 76, record.rect.top);
+        write_i16_be(&mut output, start + 78, record.rect.left);
+        write_i16_be(&mut output, start + 80, record.rect.bottom);
+        write_i16_be(&mut output, start + 82, record.rect.right);
+        encode_pascal_text(&mut output[start + 84..start + MAP_RECORD_BYTES], &record.note)?;
     }
     Ok(output)
 }

@@ -3,8 +3,8 @@ use crate::importer::RAW_SOURCES_DIR;
 use crate::project::{LevelType, ProvidenceProject};
 use crate::realmz::{
     write_battles, write_complex_encounters, write_door_file, write_extracodes, write_fields,
-    write_macro_file, write_messages, write_random_levels, write_shops, write_simple_encounters,
-    write_treasures,
+    write_macro_file, write_map_records, write_messages, write_random_levels, write_shops,
+    write_simple_encounters, write_treasures,
 };
 use crate::resource_fork::{
     merge_resource_entries, parse_resource_fork_entries, ResourceForkEntry,
@@ -109,6 +109,14 @@ pub fn export_project(
         "Data SD2",
         write_messages(&project.messages)?,
         crate::realmz::MESSAGE_BYTES,
+        &raw_dir,
+        &mut written_files,
+    )?;
+    write_fixed_if_nonempty(
+        output_dir,
+        "Data MD2",
+        write_map_records(&project.map_records)?,
+        crate::realmz::MAP_RECORD_BYTES,
         &raw_dir,
         &mut written_files,
     )?;

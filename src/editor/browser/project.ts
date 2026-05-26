@@ -23,6 +23,7 @@ export function createBrowserProject(projectName: string): Project {
       immutable: true
     },
     maps: [],
+    mapRecords: [],
     triggers: [],
     randomLevels: [],
     extracodes: [],
@@ -65,6 +66,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
       immutable: true
     },
     maps: parsed.maps,
+    mapRecords: parsed.mapRecords,
     triggers: parsed.triggers,
     randomLevels: parsed.randomLevels,
     extracodes: parsed.extracodes,
@@ -107,6 +109,7 @@ export async function openBrowserProject(source: BrowserScenarioSource): Promise
   const text = await readProjectJson(source);
   const project = JSON.parse(text) as Project;
   project.assets ??= [];
+  project.mapRecords ??= [];
   project.messages ??= [];
   project.battles ??= [];
   project.treasures ??= [];
@@ -189,7 +192,8 @@ export function validateBrowserProject(project: Project): ValidationReport {
     if (record.summary.edited === true) errors.push(`${record.id} is marked edited but its semantic edit state is blocked.`);
   }
   const sourceNames = new Set(project.source.files.map((file) => file.name));
-  const exportableFiles = ["Data LD", "Data DL", "Data DD", "Data DDD", "Data RD", "Data RDD", "Data ED3", "Data EDCD", "Data ED", "Data ED2", "Data BD", "Data SD", "Data SD2", "Data TD"].filter((name) =>
+  validateMapRecords(project, errors, warnings);
+  const exportableFiles = ["Data LD", "Data DL", "Data DD", "Data DDD", "Data RD", "Data RDD", "Data ED3", "Data EDCD", "Data ED", "Data ED2", "Data BD", "Data SD", "Data SD2", "Data MD2", "Data TD"].filter((name) =>
     sourceNames.has(name)
   );
   const passThroughFiles = project.source.files.filter((file) => !file.editable).map((file) => file.name);
@@ -202,6 +206,27 @@ export function validateBrowserProject(project: Project): ValidationReport {
     }
   }
   return { ok: errors.length === 0, errors, warnings, exportableFiles, passThroughFiles };
+}
+
+function validateMapRecords(project: Project, errors: string[], warnings: string[]) {
+  const mapIds = new Set(project.maps.map((map) => `${map.levelType}:${map.index}`));
+  const pictures = new Set(project.assetCatalog.pictures?.map((picture) => picture.resourceId) ?? []);
+  for (const record of project.mapRecords ?? []) {
+    if (record.startX < 0 || record.startX >= 90 || record.startY < 0 || record.startY >= 90) {
+      warnings.push(`Map record ${record.id} starts outside the 90x90 map at ${record.startX},${record.startY}.`);
+    }
+    const mapId = `${record.isDungeon ? "dungeon" : "land"}:${record.level}`;
+    if (!mapIds.has(mapId)) warnings.push(`Map record ${record.id} points to missing ${mapId}.`);
+    if (record.rect.left > record.rect.right || record.rect.top > record.rect.bottom) {
+      warnings.push(`Map record ${record.id} has an inverted display rectangle.`);
+    }
+    if (record.pictId !== 0 && pictures.size > 0 && !pictures.has(record.pictId)) {
+      warnings.push(`Map record ${record.id} references picture ${record.pictId}, which is not decoded in the scenario resource catalog.`);
+    }
+    if ((record.rawBytes?.length ?? 0) !== 340) {
+      errors.push(`Map record ${record.id} does not preserve a 340-byte raw record.`);
+    }
+  }
 }
 
 function appendTargetDiagnostics(issues: ReturnType<typeof validateRealmzTargetRecord>, errors: string[], warnings: string[]) {

@@ -28,6 +28,28 @@ $exportDir = Join-Path $RunRoot "exported-Tutorial"
 
 $commands = @(
   @{ kind = "paintTiles"; label = "Paint smoke tile"; mapId = "land:0"; cells = @(@{ x = 1; y = 1; index = 91; from = 155; to = 62 }) },
+  @{ kind = "paintTiles"; label = "Region fill smoke"; mapId = "land:0"; cells = @(
+    @{ x = 2; y = 2; index = 182; from = 0; to = 63 },
+    @{ x = 3; y = 2; index = 183; from = 0; to = 63 },
+    @{ x = 2; y = 3; index = 272; from = 0; to = 63 },
+    @{ x = 3; y = 3; index = 273; from = 0; to = 63 }
+  ) },
+  @{ kind = "paintTiles"; label = "Region replace smoke"; mapId = "land:0"; cells = @(
+    @{ x = 2; y = 2; index = 182; from = 63; to = 64 },
+    @{ x = 3; y = 2; index = 183; from = 63; to = 64 },
+    @{ x = 2; y = 3; index = 272; from = 63; to = 64 },
+    @{ x = 3; y = 3; index = 273; from = 63; to = 64 }
+  ) },
+  @{ kind = "paintTiles"; label = "Region clear smoke"; mapId = "land:0"; cells = @(
+    @{ x = 2; y = 2; index = 182; from = 64; to = 1 },
+    @{ x = 3; y = 2; index = 183; from = 64; to = 1 },
+    @{ x = 2; y = 3; index = 272; from = 64; to = 1 },
+    @{ x = 3; y = 3; index = 273; from = 64; to = 1 }
+  ) },
+  @{ kind = "paintTiles"; label = "Place special stamp smoke"; mapId = "land:0"; cells = @(@{ x = 4; y = 4; index = 364; from = 0; to = -100 }) },
+  @{ kind = "paintTiles"; label = "Place removable stamp smoke"; mapId = "land:0"; cells = @(@{ x = 5; y = 4; index = 365; from = 0; to = -101 }) },
+  @{ kind = "paintTiles"; label = "Remove stamp smoke"; mapId = "land:0"; cells = @(@{ x = 5; y = 4; index = 365; from = -101; to = 1 }) },
+  @{ kind = "updateMapRecord"; label = "Update map record smoke"; id = 0; changes = @{ startX = 2; startY = 2; note = "Providence map record smoke" } },
   @{ kind = "updateRandomLevelSettings"; label = "Update land flags"; levelType = "land"; levelIndex = 0; fields = @{ landlook = 3; isDark = $true; useLos = $true } },
   @{ kind = "deleteTrigger"; label = "Clear AP 7 for reuse"; triggerId = "Data DD:0:7" },
   @{ kind = "createActionPoint"; label = "Reuse AP 7 at 18,18"; levelType = "land"; levelIndex = 0; x = 18; y = 18; displayName = "Map Smoke AP" },
@@ -51,7 +73,16 @@ $script = @{
   assertions = @{
     validationOk = $true
     projectTiles = @(
-      @{ mapId = "land:0"; index = 91; value = 62 }
+      @{ mapId = "land:0"; index = 91; value = 62 },
+      @{ mapId = "land:0"; index = 182; value = 1 },
+      @{ mapId = "land:0"; index = 183; value = 1 },
+      @{ mapId = "land:0"; index = 272; value = 1 },
+      @{ mapId = "land:0"; index = 273; value = 1 },
+      @{ mapId = "land:0"; index = 364; value = -100 },
+      @{ mapId = "land:0"; index = 365; value = 1 }
+    )
+    mapRecords = @(
+      @{ id = 0; fields = @{ startX = 2; startY = 2; note = "Providence map record smoke" } }
     )
     triggers = @(
       @{ triggerId = "Data DD:0:7"; fields = @{ active = $true; levelType = "land"; levelIndex = 0; recordIndex = 7; "coordinate.x" = 19; "coordinate.y" = 18; percent = 75; landid = 0; targetX = 20; targetY = 18 } }
@@ -64,8 +95,8 @@ $script = @{
     validationWarningsNotContain = @(
       "random rect 19 extra door 0 points at missing Action Point record 7"
     )
-    commandsAppliedAtLeast = 9
-    exportContains = @("Data LD", "Data DD", "Data RD")
+    commandsAppliedAtLeast = 16
+    exportContains = @("Data LD", "Data DD", "Data RD", "Data MD2")
   }
 }
 

@@ -3,6 +3,7 @@ import {
   BattleRecord,
   ComplexEncounterRecord,
   ExtraCodeRow,
+  MapRecord,
   MessageRecord,
   PaintCellChange,
   Project,
@@ -25,6 +26,7 @@ const EXTRACODE_BYTES = 10;
 const RANDOM_LEVEL_BYTES = 644;
 const RANDOM_LEVEL_WORDS = RANDOM_LEVEL_BYTES / 2;
 const RANDOM_RECTS_PER_LEVEL = 20;
+const MAP_RECORD_BYTES = 340;
 
 export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "paintTiles") return paintTiles(project, command.mapId, command.cells);
@@ -35,6 +37,7 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "moveActionPoint") return moveActionPoint(project, command);
   if (command.kind === "updateTriggerHeader") return updateTriggerHeader(project, command.triggerId, command.fields);
   if (command.kind === "updateRandomLevelSettings") return updateRandomLevelSettings(project, command);
+  if (command.kind === "updateMapRecord") return updateMapRecord(project, command.id, command.changes);
   if (command.kind === "createRandomRect") return createRandomRect(project, command);
   if (command.kind === "updateRandomRect") return updateRandomRect(project, command);
   if (command.kind === "clearRandomRect") return clearRandomRect(project, command);
@@ -277,6 +280,22 @@ function updateRandomLevelSettings(
     ...command.fields
   };
   return replaceRandomLevel(project, syncMapRenderForRandomLevel(level));
+}
+
+function updateMapRecord(project: Project, id: number, changes: Extract<ProjectCommand, { kind: "updateMapRecord" }>["changes"]) {
+  let changed = false;
+  const mapRecords = (project.mapRecords ?? []).map((record) => {
+    if (record.id !== id) return record;
+    changed = true;
+    const next: MapRecord = {
+      ...record,
+      ...changes,
+      rect: changes.rect ? { ...record.rect, ...changes.rect } : record.rect,
+      authored: true
+    };
+    return { ...next, rawBytes: mapRecordRawBytes(next) };
+  });
+  return changed ? { ...project, mapRecords } : project;
 }
 
 function createRandomRect(project: Project, command: Extract<ProjectCommand, { kind: "createRandomRect" }>) {
@@ -713,6 +732,26 @@ function randomLevelRawBytes(level: RandomLevel) {
   return bytes;
 }
 
+function mapRecordRawBytes(record: MapRecord) {
+  const bytes = new Uint8Array(MAP_RECORD_BYTES);
+  if (record.rawBytes?.length === MAP_RECORD_BYTES) {
+    bytes.set(record.rawBytes.map((value) => value & 0xff));
+  }
+  writeI16(bytes, 60, record.startX);
+  writeI16(bytes, 62, record.startY);
+  writeI16(bytes, 64, record.level);
+  writeI16(bytes, 66, record.pictId);
+  writeI16(bytes, 68, record.iconSize);
+  writeI16(bytes, 70, record.show);
+  writeI16(bytes, 72, record.isDungeon ? 1 : 0);
+  writeI16(bytes, 76, record.rect.top);
+  writeI16(bytes, 78, record.rect.left);
+  writeI16(bytes, 80, record.rect.bottom);
+  writeI16(bytes, 82, record.rect.right);
+  writePascalText(bytes, 84, MAP_RECORD_BYTES - 84, record.note);
+  return Array.from(bytes);
+}
+
 function rawBytesToWords(bytes: Uint8Array) {
   const values: number[] = [];
   for (let offset = 0; offset < bytes.length; offset += 2) {
@@ -726,6 +765,18 @@ function writeI16(bytes: Uint8Array, offset: number, value: number) {
   const normalized = clampInt(value, -32768, 32767) & 0xffff;
   bytes[offset] = (normalized >> 8) & 0xff;
   bytes[offset + 1] = normalized & 0xff;
+}
+
+function writePascalText(bytes: Uint8Array, offset: number, length: number, text: string) {
+  const end = Math.min(bytes.length, offset + length);
+  for (let index = offset; index < end; index += 1) bytes[index] = 0;
+  const encoded = Array.from(text ?? "").map((char) => {
+    const code = char.charCodeAt(0);
+    return code >= 0 && code <= 0x7f ? code : 63;
+  });
+  const count = Math.min(encoded.length, Math.max(0, length - 1), 255);
+  bytes[offset] = count;
+  for (let index = 0; index < count; index += 1) bytes[offset + 1 + index] = encoded[index];
 }
 
 function normalizePair(values: number[]) {

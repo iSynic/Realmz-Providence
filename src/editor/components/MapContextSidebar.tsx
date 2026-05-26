@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { TOOLS } from "../constants";
 import { EditorState } from "../store";
-import { EditorTool, MapEntity, MapViewFlag, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
+import { EditorTool, MapEntity, MapPaintMode, MapRecord, MapRegionSelection, MapViewFlag, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, StampPaletteItem, TilesetAsset, TriggerRecord } from "../types";
 import { randomRectEntityId } from "../map/geometry";
+import { allMapCells, buildPaintChanges, buildReplaceChanges, dominantTiles, rectCells, regionCellCount, regionDimensions } from "../map/regionPaint";
 import { actionSlotEntitiesForTriggerRecord } from "../semanticGraph";
 import { compactValue, linksFor, mapEntityId, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
 import { InfoGrid } from "./InfoGrid";
@@ -24,6 +25,12 @@ export function MapContextSidebar({
   onSelectMap,
   onSetTool,
   onSelectTile,
+  paintMode,
+  onSetPaintMode,
+  selectedRegion,
+  onSetSelectedRegion,
+  replaceSourceTile,
+  onSetReplaceSourceTile,
   onApplyCommand,
   paletteOpen,
   onSetPaletteOpen
@@ -35,6 +42,12 @@ export function MapContextSidebar({
   onSelectMap: (id: string) => void;
   onSetTool: (tool: EditorTool) => void;
   onSelectTile: (tile: number) => void;
+  paintMode: MapPaintMode;
+  onSetPaintMode: (mode: MapPaintMode) => void;
+  selectedRegion: MapRegionSelection | null;
+  onSetSelectedRegion: (region: MapRegionSelection | null) => void;
+  replaceSourceTile: number | null;
+  onSetReplaceSourceTile: (tile: number | null) => void;
   onApplyCommand: (command: ProjectCommand) => void;
   paletteOpen: boolean;
   onSetPaletteOpen: (open: boolean) => void;
@@ -62,6 +75,13 @@ export function MapContextSidebar({
           atlas={atlas}
           onSetTool={onSetTool}
           onSelectTile={onSelectTile}
+          paintMode={paintMode}
+          onSetPaintMode={onSetPaintMode}
+          selectedRegion={selectedRegion}
+          onSetSelectedRegion={onSetSelectedRegion}
+          replaceSourceTile={replaceSourceTile}
+          onSetReplaceSourceTile={onSetReplaceSourceTile}
+          onApplyCommand={onApplyCommand}
           paletteOpen={paletteOpen}
           onSetPaletteOpen={onSetPaletteOpen}
         />
@@ -84,6 +104,12 @@ export function MapSelectionSidebar({
   onSetViewFlag,
   onOpenPalette,
   onOpenScripts,
+  paintMode,
+  onSetPaintMode,
+  selectedRegion,
+  onSetSelectedRegion,
+  replaceSourceTile,
+  onSetReplaceSourceTile,
   onSelectEntity,
   onClearSelection,
   onApplyCommand
@@ -101,6 +127,12 @@ export function MapSelectionSidebar({
   onSetViewFlag: (flag: MapViewFlag, value: boolean) => void;
   onOpenPalette: () => void;
   onOpenScripts: (entity: SelectedEntity) => void;
+  paintMode: MapPaintMode;
+  onSetPaintMode: (mode: MapPaintMode) => void;
+  selectedRegion: MapRegionSelection | null;
+  onSetSelectedRegion: (region: MapRegionSelection | null) => void;
+  replaceSourceTile: number | null;
+  onSetReplaceSourceTile: (tile: number | null) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
   onClearSelection: () => void;
   onApplyCommand: (command: ProjectCommand) => void;
@@ -109,7 +141,7 @@ export function MapSelectionSidebar({
   useEffect(() => {
     localStorage.setItem("providence.mapRightContextOpen.v1", open ? "1" : "0");
   }, [open]);
-  const selection = selectionSummary(selectedMap, state.selectedEntity, state.selectedCell, mapTriggers, selectedRandomLevel, mapRecords);
+  const selection = selectionSummary(selectedMap, state.selectedEntity, state.selectedCell, selectedRegion, mapTriggers, selectedRandomLevel, mapRecords);
   if (!open) {
     return (
       <aside className="map-context-rail">
@@ -139,6 +171,14 @@ export function MapSelectionSidebar({
             selection={selection}
             map={selectedMap}
             project={state.project}
+            selectedPaintTile={state.selectedTile}
+            selectedTileset={selectedTileset}
+            paintMode={paintMode}
+            onSetPaintMode={onSetPaintMode}
+            selectedRegion={selectedRegion}
+            onSetSelectedRegion={onSetSelectedRegion}
+            replaceSourceTile={replaceSourceTile}
+            onSetReplaceSourceTile={onSetReplaceSourceTile}
             onSelectEntity={onSelectEntity}
             onOpenScripts={onOpenScripts}
             onClearSelection={onClearSelection}
@@ -169,6 +209,7 @@ export function MapSelectionSidebar({
 
 type Selection =
   | { kind: "cell"; cell: { x: number; y: number; tile: number }; triggers: TriggerRecord[]; rects: RandomLevel["rects"]; records: SemanticEntity[] }
+  | { kind: "region"; region: MapRegionSelection }
   | { kind: "trigger"; trigger: TriggerRecord }
   | { kind: "random"; rect: RandomLevel["rects"][number] }
   | { kind: "record"; record: SemanticEntity };
@@ -354,6 +395,13 @@ function MapToolset({
   atlas,
   onSetTool,
   onSelectTile,
+  paintMode,
+  onSetPaintMode,
+  selectedRegion,
+  onSetSelectedRegion,
+  replaceSourceTile,
+  onSetReplaceSourceTile,
+  onApplyCommand,
   paletteOpen,
   onSetPaletteOpen
 }: {
@@ -363,9 +411,21 @@ function MapToolset({
   atlas: EditorState["atlasEntries"][string] | null;
   onSetTool: (tool: EditorTool) => void;
   onSelectTile: (tile: number) => void;
+  paintMode: MapPaintMode;
+  onSetPaintMode: (mode: MapPaintMode) => void;
+  selectedRegion: MapRegionSelection | null;
+  onSetSelectedRegion: (region: MapRegionSelection | null) => void;
+  replaceSourceTile: number | null;
+  onSetReplaceSourceTile: (tile: number | null) => void;
+  onApplyCommand: (command: ProjectCommand) => void;
   paletteOpen: boolean;
   onSetPaletteOpen: (open: boolean) => void;
 }) {
+  const setPaintSubmode = (mode: MapPaintMode) => {
+    onSetTool("paint");
+    onSetPaintMode(mode);
+    onSetPaletteOpen(true);
+  };
   return (
     <section className="context-panel map-toolset-panel">
       <div className="panel-header">
@@ -389,6 +449,30 @@ function MapToolset({
         selectedTileset={selectedTileset}
         icons={state.iconEntries}
         onSelectTile={onSelectTile}
+      />
+      {state.activeTool === "stamp" && (
+        <StampPalettePanel
+          project={state.project}
+          map={selectedMap}
+          selectedTile={state.selectedTile}
+          selectedTileset={selectedTileset}
+          atlas={atlas}
+          icons={state.iconEntries}
+          libraryAssets={state.libraryCatalog?.assets ?? []}
+          onSelectTile={onSelectTile}
+        />
+      )}
+      <PaintModePanel
+        map={selectedMap}
+        selectedTileset={selectedTileset}
+        selectedTile={state.selectedTile}
+        paintMode={paintMode}
+        onSetPaintMode={setPaintSubmode}
+        selectedRegion={selectedRegion}
+        onSetSelectedRegion={onSetSelectedRegion}
+        replaceSourceTile={replaceSourceTile}
+        onSetReplaceSourceTile={onSetReplaceSourceTile}
+        onApplyCommand={onApplyCommand}
       />
       <button className={`toolset-disclosure${paletteOpen ? " open" : ""}`} onClick={() => onSetPaletteOpen(!paletteOpen)}>
         <span>{paletteOpen ? "Collapse" : "Open"} Paint Palette</span>
@@ -502,6 +586,113 @@ function PaintTileSummary({
   );
 }
 
+function StampPalettePanel({
+  project,
+  map,
+  selectedTile,
+  selectedTileset,
+  atlas,
+  icons,
+  libraryAssets,
+  onSelectTile
+}: {
+  project: Project | null;
+  map: MapEntity | null;
+  selectedTile: number;
+  selectedTileset: TilesetAsset | null;
+  atlas: EditorState["atlasEntries"][string] | null;
+  icons: EditorState["iconEntries"];
+  libraryAssets: NonNullable<EditorState["libraryCatalog"]>["assets"];
+  onSelectTile: (tile: number) => void;
+}) {
+  const stamps = stampPaletteItems(project, map, libraryAssets);
+  return (
+    <details className="context-section stamp-palette-section" open>
+      <summary>
+        <span>Stamp Palette</span>
+        <b>{stamps.length}</b>
+      </summary>
+      <p className="empty-copy compact">
+        Stamps are special Realmz tile values, usually negative <code>cicn</code> icons, written directly into the map field grid.
+      </p>
+      <div className="stamp-palette-grid">
+        {stamps.map((stamp) => (
+          <button
+            key={stamp.id}
+            type="button"
+            className={`stamp-palette-card${stamp.tileValue === selectedTile ? " selected" : ""}`}
+            onClick={() => onSelectTile(stamp.tileValue)}
+            title={`${stamp.label}. ${stamp.compatibility}`}
+          >
+            <TileSwatch atlas={atlas} icons={icons} tile={stamp.tileValue} tileset={selectedTileset} />
+            <span>{stamp.label}</span>
+            <small>{stamp.tileValue}</small>
+          </button>
+        ))}
+        {stamps.length === 0 && <p className="empty-copy compact">No special land tiles or negative map values are available yet.</p>}
+      </div>
+      <TileMeaningInspector title="Selected Stamp Meaning" meaning={classifyTileValue(selectedTile, selectedTileset)} compact />
+    </details>
+  );
+}
+
+function stampPaletteItems(project: Project | null, map: MapEntity | null, libraryAssets: NonNullable<EditorState["libraryCatalog"]>["assets"]): StampPaletteItem[] {
+  const items = new Map<number, StampPaletteItem>();
+  for (const asset of project?.assets ?? []) {
+    if (asset.kind !== "special-land-tile") continue;
+    items.set(asset.resourceId, {
+      id: `project:${asset.id}`,
+      label: asset.label,
+      tileValue: asset.resourceId,
+      resourceId: asset.resourceId,
+      source: "project",
+      previewPath: asset.previewPath,
+      compatibility: "Project special land tile; exported as a cicn-backed negative tile value."
+    });
+  }
+  for (const asset of project?.semanticSchema.entities ?? []) {
+    if (asset.type !== "special-land-tile" && asset.type !== "icon-resource") continue;
+    const resourceId = summaryNumber(asset, "resourceId");
+    if (resourceId == null || resourceId >= 0 || items.has(resourceId)) continue;
+    items.set(resourceId, {
+      id: `semantic:${asset.id}`,
+      label: asset.label,
+      tileValue: resourceId,
+      resourceId,
+      source: "library",
+      previewPath: null,
+      compatibility: "Decoded or bundled special land icon evidence."
+    });
+  }
+  for (const asset of libraryAssets) {
+    if (asset.type !== "special-land-tile" && asset.resourceType !== "cicn") continue;
+    const resourceId = asset.resourceId ?? null;
+    if (resourceId == null || resourceId >= 0 || items.has(resourceId)) continue;
+    items.set(resourceId, {
+      id: `library:${asset.id}`,
+      label: asset.label,
+      tileValue: resourceId,
+      resourceId,
+      source: "library",
+      previewPath: asset.previewPath ?? null,
+      compatibility: "Bundled Divinity/Realmz special land tile reference."
+    });
+  }
+  for (const tile of new Set((map?.tiles ?? []).filter((value) => value < 0))) {
+    if (items.has(tile)) continue;
+    items.set(tile, {
+      id: `used:${tile}`,
+      label: `Used stamp ${tile}`,
+      tileValue: tile,
+      resourceId: tile,
+      source: "used-map",
+      previewPath: null,
+      compatibility: "Negative tile value already used on this map."
+    });
+  }
+  return [...items.values()].sort((a, b) => a.tileValue - b.tileValue);
+}
+
 function TileMeaningInspector({
   title,
   meaning,
@@ -538,10 +729,195 @@ function TileMeaningInspector({
   );
 }
 
+const PAINT_MODES: Array<{ id: MapPaintMode; label: string; body: string }> = [
+  { id: "brush", label: "Brush", body: "Paint cells by dragging." },
+  { id: "rectangle", label: "Rectangle Fill", body: "Drag a rectangle and fill it on release." },
+  { id: "region", label: "Region Select", body: "Drag a rectangle without changing tiles." },
+  { id: "replace", label: "Replace Tile", body: "Replace one tile value in a region or map." },
+  { id: "clear", label: "Clear Region", body: "Reset a selected region to the base tile." }
+];
+
+function PaintModePanel({
+  map,
+  selectedTileset,
+  selectedTile,
+  paintMode,
+  onSetPaintMode,
+  selectedRegion,
+  onSetSelectedRegion,
+  replaceSourceTile,
+  onSetReplaceSourceTile,
+  onApplyCommand
+}: {
+  map: MapEntity | null;
+  selectedTileset: TilesetAsset | null;
+  selectedTile: number;
+  paintMode: MapPaintMode;
+  onSetPaintMode: (mode: MapPaintMode) => void;
+  selectedRegion: MapRegionSelection | null;
+  onSetSelectedRegion: (region: MapRegionSelection | null) => void;
+  replaceSourceTile: number | null;
+  onSetReplaceSourceTile: (tile: number | null) => void;
+  onApplyCommand: (command: ProjectCommand) => void;
+}) {
+  const clearTile = clearTileForMap(map, selectedTileset);
+  return (
+    <div className="paint-mode-panel">
+      <div className="paint-mode-header">
+        <span>Paint Subtool</span>
+        <b>{paintModeLabel(paintMode)}</b>
+      </div>
+      <div className="paint-mode-grid">
+        {PAINT_MODES.map((mode) => (
+          <button key={mode.id} className={paintMode === mode.id ? "active" : ""} type="button" onClick={() => onSetPaintMode(mode.id)} title={mode.body}>
+            {mode.label}
+          </button>
+        ))}
+      </div>
+      <p className="paint-mode-hint">
+        {paintMode === "brush" && "Brush keeps the current single-cell and drag painting behavior."}
+        {paintMode === "rectangle" && "Drag on the map to preview a rectangle; release fills it with the selected paint tile."}
+        {paintMode === "region" && "Drag on the map to select a rectangular region for later fill, replace, or clear operations."}
+        {paintMode === "replace" && "Select a region, then replace one tile value with the selected paint tile."}
+        {paintMode === "clear" && `Select a region, then clear it to tile ${clearTile}.`}
+      </p>
+      {selectedRegion && (
+        <div className="paint-region-quick-actions">
+          <span>{regionLabel(selectedRegion)}</span>
+          <button type="button" onClick={() => fillRegion(map, selectedRegion, selectedTile, onApplyCommand)}>Fill</button>
+          <button type="button" onClick={() => clearRegion(map, selectedRegion, selectedTileset, onApplyCommand)}>Clear</button>
+          <button type="button" onClick={() => onSetSelectedRegion(null)}>Clear Selection</button>
+        </div>
+      )}
+      {paintMode === "replace" && (
+        <MapNumberField
+          label="Replace Source Tile"
+          value={replaceSourceTile ?? selectedTile}
+          onCommit={(tile) => onSetReplaceSourceTile(tile)}
+        />
+      )}
+    </div>
+  );
+}
+
+function RegionSelectionDetails({
+  map,
+  region,
+  selectedTileset,
+  paintMode,
+  onSetPaintMode,
+  selectedRegion,
+  onSetSelectedRegion,
+  replaceSourceTile,
+  onSetReplaceSourceTile,
+  selectedPaintTile,
+  onApplyCommand
+}: {
+  map: MapEntity | null;
+  region: MapRegionSelection;
+  selectedTileset: TilesetAsset | null;
+  paintMode: MapPaintMode;
+  onSetPaintMode: (mode: MapPaintMode) => void;
+  selectedRegion: MapRegionSelection | null;
+  onSetSelectedRegion: (region: MapRegionSelection | null) => void;
+  replaceSourceTile: number | null;
+  onSetReplaceSourceTile: (tile: number | null) => void;
+  selectedPaintTile: number;
+  onApplyCommand: (command: ProjectCommand) => void;
+}) {
+  if (!map) return <p className="empty-copy compact">Select a map region to edit tiles.</p>;
+  const cells = rectCells(map, region);
+  const dimensions = regionDimensions(region);
+  const clearTile = clearTileForMap(map, selectedTileset);
+  const sourceTile = replaceSourceTile ?? dominantTiles(cells, 1)[0]?.tile ?? selectedPaintTile;
+  const regionReplaceCount = buildReplaceChanges(map, cells, sourceTile, selectedPaintTile).length;
+  const mapReplaceCount = buildReplaceChanges(map, allMapCells(map), sourceTile, selectedPaintTile).length;
+  return (
+    <div className="region-selection-details">
+      <InfoGrid
+        rows={[
+          ["Bounds", `${region.left},${region.top} to ${region.right},${region.bottom}`],
+          ["Size", `${dimensions.width} x ${dimensions.height}`],
+          ["Cells", regionCellCount(region).toLocaleString()],
+          ["Paint Tile", selectedPaintTile],
+          ["Clear Tile", clearTile],
+          ["Mode", paintModeLabel(paintMode)]
+        ]}
+      />
+      <details className="context-section" open>
+        <summary><span>Dominant Tiles</span><b>{cells.length}</b></summary>
+        <div className="dominant-tile-list">
+          {dominantTiles(cells).map((entry) => (
+            <button key={entry.tile} type="button" className="link-chip" onClick={() => onSetReplaceSourceTile(entry.tile)}>
+              Tile {entry.tile} <b>{entry.count}</b>
+            </button>
+          ))}
+        </div>
+      </details>
+      <div className="context-action-stack">
+        <button className="btn btn-primary btn-xs context-action-button" type="button" onClick={() => fillRegion(map, region, selectedPaintTile, onApplyCommand)}>
+          Fill Region
+        </button>
+        <button className="btn btn-ghost btn-xs context-action-button" type="button" onClick={() => clearRegion(map, region, selectedTileset, onApplyCommand)}>
+          Clear Region
+        </button>
+        <button className="btn btn-ghost btn-xs context-action-button" type="button" onClick={() => onSetSelectedRegion(null)}>
+          Clear Selection
+        </button>
+      </div>
+      <details className="context-section" open={paintMode === "replace"}>
+        <summary><span>Replace Tile</span><b>{sourceTile} to {selectedPaintTile}</b></summary>
+        <div className="map-authoring-form">
+          <MapNumberField label="Source Tile" value={sourceTile} onCommit={(tile) => onSetReplaceSourceTile(tile)} />
+          <label className="map-number-field">
+            <span>Target Tile</span>
+            <input type="number" value={selectedPaintTile} readOnly />
+          </label>
+        </div>
+        <div className="context-action-stack">
+          <button className="btn btn-primary btn-xs context-action-button" type="button" disabled={regionReplaceCount === 0} onClick={() => replaceRegion(map, region, sourceTile, selectedPaintTile, onApplyCommand)}>
+            Replace In Region ({regionReplaceCount})
+          </button>
+          <button
+            className="btn btn-ghost btn-xs context-action-button"
+            type="button"
+            disabled={mapReplaceCount === 0}
+            onClick={() => {
+              if (mapReplaceCount > 250 && !window.confirm(`Replace ${mapReplaceCount.toLocaleString()} tiles across ${map.name}?`)) return;
+              replaceWholeMap(map, sourceTile, selectedPaintTile, onApplyCommand);
+            }}
+          >
+            Replace Whole Map ({mapReplaceCount})
+          </button>
+        </div>
+      </details>
+      <div className="tile-meaning-inspector compact">
+        <div className="tile-meaning-title">
+          <span>Selected Paint Tile</span>
+          <b>{classifyTileValue(selectedPaintTile, selectedTileset).kind.replace(/-/g, " ")}</b>
+        </div>
+        <p>{classifyTileValue(selectedPaintTile, selectedTileset).compatibility}</p>
+      </div>
+      {!selectedRegion && <p className="empty-copy compact">No region is currently selected.</p>}
+      <button className="btn btn-ghost btn-xs context-action-button" type="button" onClick={() => onSetPaintMode("region")}>
+        Return to Region Select
+      </button>
+    </div>
+  );
+}
+
 function SelectionInspector({
   selection,
   map,
   project,
+  selectedPaintTile,
+  selectedTileset,
+  paintMode,
+  onSetPaintMode,
+  selectedRegion,
+  onSetSelectedRegion,
+  replaceSourceTile,
+  onSetReplaceSourceTile,
   onSelectEntity,
   onOpenScripts,
   onClearSelection,
@@ -550,6 +926,14 @@ function SelectionInspector({
   selection: Selection;
   map: MapEntity | null;
   project: Project | null;
+  selectedPaintTile: number;
+  selectedTileset: TilesetAsset | null;
+  paintMode: MapPaintMode;
+  onSetPaintMode: (mode: MapPaintMode) => void;
+  selectedRegion: MapRegionSelection | null;
+  onSetSelectedRegion: (region: MapRegionSelection | null) => void;
+  replaceSourceTile: number | null;
+  onSetReplaceSourceTile: (tile: number | null) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
   onOpenScripts: (entity: SelectedEntity) => void;
   onClearSelection: () => void;
@@ -571,7 +955,9 @@ function SelectionInspector({
           <InfoGrid
             rows={[
               ["Cell", `${selection.cell.x}, ${selection.cell.y}`],
-              ["Tile", selection.cell.tile],
+              ["Raw Tile", selection.cell.tile],
+              ["Render Tile", classifyTileValue(selection.cell.tile, selectedTileset).renderTile],
+              ["Static Stamp", classifyTileValue(selection.cell.tile, selectedTileset).iconId ?? "none"],
               ["Action Points", selection.triggers.length],
               ["Random Rects", selection.rects.length],
               ["Starts", selection.records.length],
@@ -579,6 +965,7 @@ function SelectionInspector({
             ]}
           />
           <CellTileEvidence cell={selection.cell} records={selection.records} />
+          <ScriptedChangeSection project={project} map={map} cell={selection.cell} onSelectEntity={onSelectEntity} onOpenScripts={onOpenScripts} />
           <MapDiagnostics diagnostics={cellDiagnostics(selection)} />
           <SelectionLinks
             map={map}
@@ -644,9 +1031,41 @@ function SelectionInspector({
               >
                 Create Random Rectangle Here
               </button>
+              {selection.cell.tile < 0 && (
+                <button
+                  className="btn btn-ghost btn-xs context-action-button"
+                  type="button"
+                  onClick={() => {
+                    const fallback = selectedTileset?.baseTile ?? 1;
+                    onApplyCommand({
+                      kind: "paintTiles",
+                      label: "Remove stamp",
+                      mapId: map.id,
+                      cells: [{ ...selection.cell, index: selection.cell.y * map.width + selection.cell.x, from: selection.cell.tile, to: fallback }]
+                    });
+                  }}
+                >
+                  Remove Stamp to Tile {selectedTileset?.baseTile ?? 1}
+                </button>
+              )}
             </div>
           )}
         </>
+      )}
+      {selection.kind === "region" && (
+        <RegionSelectionDetails
+          map={map}
+          region={selection.region}
+          selectedTileset={selectedTileset}
+          paintMode={paintMode}
+          onSetPaintMode={onSetPaintMode}
+          selectedRegion={selectedRegion}
+          onSetSelectedRegion={onSetSelectedRegion}
+          replaceSourceTile={replaceSourceTile}
+          onSetReplaceSourceTile={onSetReplaceSourceTile}
+          selectedPaintTile={selectedPaintTile}
+          onApplyCommand={onApplyCommand}
+        />
       )}
       {selection.kind === "trigger" && (
         <TriggerSelectionDetails
@@ -661,7 +1080,7 @@ function SelectionInspector({
         <RandomRectangleEditor map={map} rect={selection.rect} onApplyCommand={onApplyCommand} />
       )}
       {selection.kind === "record" && (
-        <RecordSelectionDetails project={project} record={selection.record} onSelectEntity={onSelectEntity} />
+        <RecordSelectionDetails project={project} map={map} record={selection.record} onSelectEntity={onSelectEntity} onApplyCommand={onApplyCommand} />
       )}
       {project && <small className="context-footnote">{project.scenario.name}</small>}
     </section>
@@ -679,6 +1098,66 @@ function MapDiagnostics({ diagnostics }: { diagnostics: string[] }) {
       ))}
     </div>
   );
+}
+
+function ScriptedChangeSection({
+  project,
+  map,
+  cell,
+  onSelectEntity,
+  onOpenScripts
+}: {
+  project: Project | null;
+  map: MapEntity | null;
+  cell: { x: number; y: number; tile: number };
+  onSelectEntity: (entity: SelectedEntity) => void;
+  onOpenScripts: (entity: SelectedEntity) => void;
+}) {
+  const changes = scriptedTileChangesForCell(project, map, cell);
+  if (changes.length === 0) return null;
+  return (
+    <details className="context-section scripted-change-section" open>
+      <summary><span>Scripted Changes</span><b>{changes.length}</b></summary>
+      <div className="selection-link-list">
+        {changes.map((change) => {
+          const selected = selectEntityFromId(change.entityId);
+          return (
+            <div className="link-chip-group" key={`${change.entityId}:${change.slot}`}>
+              <button className="link-chip" type="button" onClick={() => onSelectEntity(selected)}>
+                Slot {change.slot}: {change.label}
+              </button>
+              <button className="link-chip action" type="button" onClick={() => onOpenScripts(selected)}>
+                Scripts/AP
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      <p className="empty-copy compact">These are runtime script effects, not static stamps painted into the map grid.</p>
+    </details>
+  );
+}
+
+function scriptedTileChangesForCell(project: Project | null, map: MapEntity | null, cell: { x: number; y: number }) {
+  if (!project || !map) return [];
+  const out: { entityId: string; slot: number; label: string }[] = [];
+  for (const trigger of project.triggers) {
+    for (const action of trigger.actions) {
+      if (![12, 13, 25].includes(action.code)) continue;
+      const edcd = project.extracodes.find((row) => row.id === action.id);
+      const values = edcd?.values ?? [];
+      const targetLevel = values[0];
+      const targetX = values[1];
+      const targetY = values[2];
+      const matches = targetLevel === map.index && targetX === cell.x && targetY === cell.y;
+      if (!matches) continue;
+      const entityId = trigger.levelType && trigger.levelIndex != null
+        ? triggerEntityId(trigger.levelType, trigger.levelIndex, trigger.recordIndex, trigger.source)
+        : `ed3-action-record:${trigger.recordIndex}`;
+      out.push({ entityId, slot: action.slot, label: `${action.label} targets ${cell.x},${cell.y}` });
+    }
+  }
+  return out;
 }
 
 function cellDiagnostics(selection: Extract<Selection, { kind: "cell" }>) {
@@ -919,14 +1398,19 @@ function SelectionLinks({
 
 function RecordSelectionDetails({
   project,
+  map,
   record,
-  onSelectEntity
+  onSelectEntity,
+  onApplyCommand
 }: {
   project: Project | null;
+  map: MapEntity | null;
   record: SemanticEntity;
   onSelectEntity: (entity: SelectedEntity) => void;
+  onApplyCommand: (command: ProjectCommand) => void;
 }) {
   const links = linksFor(project, record.id);
+  const mapRecord = mapRecordForSemantic(project, record);
   const summaryRows = Object.entries(record.summary)
     .filter(([, value]) => value !== null && value !== undefined && value !== "")
     .slice(0, 12)
@@ -944,6 +1428,15 @@ function RecordSelectionDetails({
           ["Confidence", record.confidence]
         ]}
       />
+      {mapRecord && (
+        <MapRecordEditor
+          map={map}
+          record={mapRecord}
+          semanticRecord={record}
+          onSelectEntity={onSelectEntity}
+          onApplyCommand={onApplyCommand}
+        />
+      )}
       {summaryRows.length > 0 && (
         <details className="context-section" open>
           <summary><span>Decoded Fields</span><b>{summaryRows.length}</b></summary>
@@ -966,6 +1459,88 @@ function RecordSelectionDetails({
       />
     </div>
   );
+}
+
+function MapRecordEditor({
+  map,
+  record,
+  semanticRecord,
+  onSelectEntity,
+  onApplyCommand
+}: {
+  map: MapEntity | null;
+  record: MapRecord;
+  semanticRecord: SemanticEntity;
+  onSelectEntity: (entity: SelectedEntity) => void;
+  onApplyCommand: (command: ProjectCommand) => void;
+}) {
+  const update = (changes: Extract<ProjectCommand, { kind: "updateMapRecord" }>["changes"]) => {
+    onApplyCommand({ kind: "updateMapRecord", label: `Update map record ${record.id}`, id: record.id, changes });
+  };
+  const targetMapId = `${record.isDungeon ? "dungeon" : "land"}:${record.level}`;
+  return (
+    <details className="context-section map-record-editor" open>
+      <summary><span>Edit Map Record</span><b>Data MD2</b></summary>
+      <MapDiagnostics diagnostics={mapRecordDiagnostics(record, map)} />
+      <div className="map-authoring-form">
+        <MapNumberField label="Start X" value={record.startX} min={0} max={89} onCommit={(startX) => update({ startX })} />
+        <MapNumberField label="Start Y" value={record.startY} min={0} max={89} onCommit={(startY) => update({ startY })} />
+        <MapNumberField label="Level" value={record.level} min={0} max={255} onCommit={(level) => update({ level })} />
+        <MapNumberField label="Picture ID" value={record.pictId} onCommit={(pictId) => update({ pictId })} />
+        <MapNumberField label="Icon Size" value={record.iconSize} onCommit={(iconSize) => update({ iconSize })} />
+        <MapNumberField label="Show" value={record.show} onCommit={(show) => update({ show })} />
+        <label className="map-check-field">
+          <input type="checkbox" checked={record.isDungeon} onChange={(event) => update({ isDungeon: event.currentTarget.checked })} />
+          <span>Dungeon record</span>
+        </label>
+      </div>
+      <label className="context-field">
+        <span>Note</span>
+        <textarea value={record.note} maxLength={255} onChange={(event) => update({ note: event.currentTarget.value })} />
+      </label>
+      <details className="context-section">
+        <summary><span>Display Rect</span><b>{record.rect.left},{record.rect.top}</b></summary>
+        <div className="map-authoring-form">
+          <MapNumberField label="Top" value={record.rect.top} onCommit={(top) => update({ rect: { ...record.rect, top } })} />
+          <MapNumberField label="Left" value={record.rect.left} onCommit={(left) => update({ rect: { ...record.rect, left } })} />
+          <MapNumberField label="Bottom" value={record.rect.bottom} onCommit={(bottom) => update({ rect: { ...record.rect, bottom } })} />
+          <MapNumberField label="Right" value={record.rect.right} onCommit={(right) => update({ rect: { ...record.rect, right } })} />
+        </div>
+      </details>
+      <div className="context-action-stack">
+        <button className="btn btn-primary btn-xs context-action-button" type="button" onClick={() => onSelectEntity({ type: "map", id: `map:${targetMapId}` })}>
+          Open Related Map
+        </button>
+        <button className="btn btn-ghost btn-xs context-action-button" type="button" onClick={() => navigator.clipboard?.writeText(`${record.startX},${record.startY}`)}>
+          Copy Coordinates
+        </button>
+      </div>
+      <p className="empty-copy compact">
+        Names stay read-only because they come from resource-fork string evidence. Unknown icon-slot bytes are preserved from {semanticRecord.recordRef ?? "Data MD2"}.
+      </p>
+    </details>
+  );
+}
+
+function mapRecordForSemantic(project: Project | null, record: SemanticEntity) {
+  if (record.type !== "map record") return null;
+  const id = summaryNumber(record, "id") ?? Number(record.id.replace(/^map-record:/, ""));
+  if (!Number.isInteger(id)) return null;
+  return (project?.mapRecords ?? []).find((candidate) => candidate.id === id) ?? null;
+}
+
+function mapRecordDiagnostics(record: MapRecord, map: MapEntity | null) {
+  const diagnostics: string[] = [];
+  if (record.startX < 0 || record.startX >= 90 || record.startY < 0 || record.startY >= 90) {
+    diagnostics.push("Start coordinate is outside the 90x90 map.");
+  }
+  if (record.rect.left > record.rect.right || record.rect.top > record.rect.bottom) {
+    diagnostics.push("Display rectangle is inverted.");
+  }
+  if (map && (record.isDungeon !== (map.levelType === "dungeon") || record.level !== map.index)) {
+    diagnostics.push(`This record points to ${record.isDungeon ? "dungeon" : "land"} ${record.level}, not the current map.`);
+  }
+  return diagnostics;
 }
 
 function RelatedLinkSection({
@@ -1008,6 +1583,7 @@ function selectionSummary(
   map: MapEntity | null,
   selectedEntity: SelectedEntity | null,
   selectedCell: { x: number; y: number; tile: number } | null,
+  selectedRegion: MapRegionSelection | null,
   triggers: TriggerRecord[],
   randomLevel: RandomLevel | null,
   mapRecords: SemanticEntity[]
@@ -1020,6 +1596,7 @@ function selectionSummary(
     const record = mapRecords.find((candidate) => candidate.id === selectedEntity.id);
     if (record) return { kind: "record", record };
   }
+  if (selectedRegion) return { kind: "region", region: selectedRegion };
   if (!selectedCell) return null;
   return {
     kind: "cell",
@@ -1047,6 +1624,79 @@ function nextAvailableRandomRectIndex(project: Project | null, levelType: MapEnt
     if (!used.has(index)) return index;
   }
   return null;
+}
+
+function fillRegion(
+  map: MapEntity | null,
+  region: MapRegionSelection | null,
+  selectedTile: number,
+  onApplyCommand: (command: ProjectCommand) => void
+) {
+  if (!map || !region) return;
+  const changes = buildPaintChanges(map, rectCells(map, region), selectedTile);
+  if (changes.length === 0) return;
+  onApplyCommand({
+    kind: "paintTiles",
+    label: `Fill region ${region.left},${region.top}-${region.right},${region.bottom}`,
+    mapId: map.id,
+    cells: changes
+  });
+}
+
+function clearRegion(
+  map: MapEntity | null,
+  region: MapRegionSelection | null,
+  selectedTileset: TilesetAsset | null,
+  onApplyCommand: (command: ProjectCommand) => void
+) {
+  if (!map || !region) return;
+  fillRegion(map, region, clearTileForMap(map, selectedTileset), onApplyCommand);
+}
+
+function replaceRegion(
+  map: MapEntity,
+  region: MapRegionSelection,
+  fromTile: number,
+  toTile: number,
+  onApplyCommand: (command: ProjectCommand) => void
+) {
+  const changes = buildReplaceChanges(map, rectCells(map, region), fromTile, toTile);
+  if (changes.length === 0) return;
+  onApplyCommand({
+    kind: "paintTiles",
+    label: `Replace tile ${fromTile} with ${toTile} in region`,
+    mapId: map.id,
+    cells: changes
+  });
+}
+
+function replaceWholeMap(
+  map: MapEntity,
+  fromTile: number,
+  toTile: number,
+  onApplyCommand: (command: ProjectCommand) => void
+) {
+  const changes = buildReplaceChanges(map, allMapCells(map), fromTile, toTile);
+  if (changes.length === 0) return;
+  onApplyCommand({
+    kind: "paintTiles",
+    label: `Replace tile ${fromTile} with ${toTile} on map`,
+    mapId: map.id,
+    cells: changes
+  });
+}
+
+function clearTileForMap(map: MapEntity | null, selectedTileset: TilesetAsset | null) {
+  return selectedTileset?.baseTile ?? map?.tiles[0] ?? 1;
+}
+
+function regionLabel(region: MapRegionSelection) {
+  const { width, height } = regionDimensions(region);
+  return `${region.left},${region.top} to ${region.right},${region.bottom} (${width}x${height})`;
+}
+
+function paintModeLabel(mode: MapPaintMode) {
+  return PAINT_MODES.find((candidate) => candidate.id === mode)?.label ?? mode;
 }
 
 function MapNumberField({

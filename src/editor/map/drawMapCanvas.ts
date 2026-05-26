@@ -1,4 +1,4 @@
-import { AtlasEntry, IconEntry, MapEntity, MapViewOptions, RandomLevel, SelectedEntity, SemanticEntity, TriggerRecord } from "../types";
+import { AtlasEntry, IconEntry, MapEntity, MapRegionSelection, MapViewOptions, RandomLevel, SelectedEntity, SemanticEntity, TriggerRecord } from "../types";
 import {
   clampCell,
   MAP_CELLS,
@@ -237,6 +237,26 @@ export function drawSelectedCell(ctx: CanvasRenderingContext2D, selectedCell: { 
   ctx.lineWidth = Math.max(2, Math.min(5, cell * 0.14));
   ctx.setLineDash([Math.max(4, cell * 0.34), Math.max(3, cell * 0.2)]);
   ctx.strokeRect(selectedCell.x * cell + inset, selectedCell.y * cell + inset, cell - inset * 2, cell - inset * 2);
+  ctx.restore();
+}
+
+export function drawRegionSelection(
+  ctx: CanvasRenderingContext2D,
+  region: MapRegionSelection,
+  cell: number,
+  mode: "selected" | "preview" = "selected"
+) {
+  const left = Math.min(region.left, region.right);
+  const top = Math.min(region.top, region.bottom);
+  const width = Math.abs(region.right - region.left) + 1;
+  const height = Math.abs(region.bottom - region.top) + 1;
+  ctx.save();
+  ctx.fillStyle = mode === "preview" ? "rgba(120, 215, 255, 0.16)" : "rgba(120, 215, 255, 0.11)";
+  ctx.strokeStyle = mode === "preview" ? "#f3c869" : "#78d7ff";
+  ctx.lineWidth = Math.max(2, Math.min(5, cell * 0.13));
+  ctx.setLineDash(mode === "preview" ? [] : [Math.max(6, cell * 0.38), Math.max(3, cell * 0.2)]);
+  ctx.fillRect(left * cell, top * cell, width * cell, height * cell);
+  ctx.strokeRect(left * cell + 1, top * cell + 1, width * cell - 2, height * cell - 2);
   ctx.restore();
 }
 

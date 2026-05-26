@@ -40,6 +40,7 @@ export function MapCapabilityPanel({
         </summary>
         <div className="affordance-button-grid">
           <AffordanceButton label="Paint Tiles" body="Use Paint and Sample to edit Realmz land and dungeon tile fields through the paint command path." tone="ready" onClick={() => { onSetTool("paint"); onOpenPalette(); }} />
+          <AffordanceButton label="Stamp Tiles" body="Place special land tiles, corpses, props, and icon-backed map art through Realmz tile values." tone="ready" onClick={() => onSetTool("stamp")} />
           <AffordanceButton label="Action Points" body="Use the Action Point tool or selected-cell actions to create, move, edit, and clear AP records." tone="ready" onClick={() => onSetTool("trigger")} />
           <AffordanceButton label="Map Flags" body="Landlook, darkness, and LOS are writable through the current map setup controls." tone="ready" onClick={onFocusFlags} />
           <AffordanceButton label="Tile Atlases" body="Inspect standard and custom tileset resources used by this map, including imported atlas coverage." tone="ready" onClick={() => { onFocusAtlas(); onOpenPalette(); }} />
@@ -196,6 +197,7 @@ function ReadOnlyField({ label, value, wide = false }: { label: string; value: s
 
 function activeToolLabel(tool: EditorTool) {
   if (tool === "trigger") return "Action Point";
+  if (tool === "stamp") return "Stamp";
   return tool;
 }
 

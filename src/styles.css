@@ -3190,6 +3190,97 @@ a.documents-source-chip:hover {
   line-height: 1.35;
 }
 
+.paint-mode-panel,
+.region-selection-details {
+  display: grid;
+  gap: 8px;
+}
+
+.paint-mode-panel {
+  margin: 0 10px 8px;
+  padding: 8px;
+  border: 1px solid #26333f;
+  border-radius: 6px;
+  background: #0f151c;
+}
+
+.paint-mode-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #8ebeea;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.paint-mode-header b {
+  color: #f3c869;
+}
+
+.paint-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.paint-mode-grid button {
+  min-width: 0;
+  border: 1px solid #2a3542;
+  border-radius: 5px;
+  background: #111820;
+  color: #cbd8e5;
+  padding: 7px 6px;
+  font-size: 10px;
+  font-weight: 850;
+  text-align: left;
+}
+
+.paint-mode-grid button.active,
+.paint-mode-grid button:hover {
+  border-color: #4a77ad;
+  background: #17263a;
+  color: #eef7ff;
+}
+
+.paint-mode-hint {
+  margin: 0;
+  color: #8796a7;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.paint-region-quick-actions {
+  display: grid;
+  gap: 5px;
+  padding-top: 6px;
+  border-top: 1px solid #202b36;
+}
+
+.paint-region-quick-actions span {
+  color: #dce9f5;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.paint-region-quick-actions button {
+  border: 1px solid #314154;
+  border-radius: 4px;
+  background: #111820;
+  color: #bfe2ff;
+  padding: 5px 7px;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.dominant-tile-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 0 10px 10px;
+}
+
 .toolset-disclosure {
   width: calc(100% - 20px);
   display: flex;
@@ -3967,6 +4058,55 @@ a.documents-source-chip:hover {
 
 .paint-palette-detail b {
   color: #cfe6ff;
+}
+
+.stamp-palette-section code {
+  color: #f6d86b;
+}
+
+.stamp-palette-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 8px;
+}
+
+.stamp-palette-card {
+  min-height: 92px;
+  border: 1px solid #263341;
+  border-radius: 6px;
+  background: #10161d;
+  color: #d8e8f8;
+  display: grid;
+  grid-template-rows: 38px auto auto;
+  gap: 4px;
+  justify-items: center;
+  padding: 8px 6px;
+  text-align: center;
+}
+
+.stamp-palette-card.selected {
+  border-color: #4da3ff;
+  box-shadow: inset 0 0 0 1px #4da3ff;
+}
+
+.stamp-palette-card span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stamp-palette-card small {
+  color: #7d8996;
+}
+
+.map-record-editor textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.scripted-change-section .empty-copy {
+  margin-top: 8px;
 }
 
 .room-canvas-placeholder {

@@ -85,7 +85,14 @@ export function App() {
   const iconLoadKey = useMemo(
     () =>
       state.project
-        ? [...new Set(state.project.maps.flatMap((map) => referencedMapIconIds(map.tiles)))].sort((a, b) => a - b).join(",")
+        ? [
+            ...new Set([
+              ...state.project.maps.flatMap((map) => referencedMapIconIds(map.tiles)),
+              ...(state.project.assets ?? [])
+                .filter((asset) => asset.kind === "special-land-tile" && asset.resourceType === "cicn")
+                .map((asset) => asset.resourceId)
+            ])
+          ].sort((a, b) => a - b).join(",")
         : "",
     [state.project]
   );
@@ -257,7 +264,13 @@ export function App() {
         dispatch({ type: "setIcons", entries: {}, status: "No icon overlays loaded" });
         return;
       }
-      const ids = [...new Set(state.project.maps.flatMap((map) => referencedMapIconIds(map.tiles)))].sort((a, b) => a - b);
+      const projectStampAssets = (state.project.assets ?? []).filter((asset) => asset.kind === "special-land-tile" && asset.resourceType === "cicn");
+      const ids = [
+        ...new Set([
+          ...state.project.maps.flatMap((map) => referencedMapIconIds(map.tiles)),
+          ...projectStampAssets.map((asset) => asset.resourceId)
+        ])
+      ].sort((a, b) => a - b);
       if (ids.length === 0) {
         dispatch({ type: "setIcons", entries: {}, status: "No icon overlays in maps" });
         return;
@@ -270,7 +283,8 @@ export function App() {
       const pairs = await Promise.all(
         ids.map(async (id) => {
           try {
-            const relativePath = `assets/icons/icon_${id}.png`;
+            const projectStamp = projectStampAssets.find((asset) => asset.resourceId === id);
+            const relativePath = projectStamp?.previewPath ?? `assets/icons/icon_${id}.png`;
             const url = desktopRuntime
               ? await invoke<string>("load_project_asset", { projectDir, relativePath })
               : browserReferenceIconUrl(id);

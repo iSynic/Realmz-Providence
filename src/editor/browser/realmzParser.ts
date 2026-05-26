@@ -8,6 +8,7 @@ import {
   ExtraCodeRow,
   LevelType,
   MapEntity,
+  MapRecord,
   MessageRecord,
   RandomLevel,
   ShopRecord,
@@ -28,6 +29,7 @@ export const DOORS_PER_LEVEL = 100;
 export const DOOR_LEVEL_BYTES = DOOR_BYTES * DOORS_PER_LEVEL;
 export const RANDLEVEL_BYTES = 644;
 export const EXTRACODE_BYTES = 10;
+export const MAP_RECORD_BYTES = 340;
 
 export const TRACKED_FILES = [
   "Scenario",
@@ -84,6 +86,7 @@ const RECORD_BYTES: Record<string, number> = {
 
 export type ParsedBrowserScenario = {
   maps: MapEntity[];
+  mapRecords: MapRecord[];
   triggers: TriggerRecord[];
   randomLevels: RandomLevel[];
   extracodes: ExtraCodeRow[];
@@ -124,6 +127,7 @@ export function parseScenarioBuffers(buffers: Map<string, Uint8Array>): ParsedBr
     ...parseRandomLevels(buffers.get("Data RDD"), "dungeon", "Data RDD")
   ];
   attachRenderInfo(maps, randomLevels);
+  const mapRecords = parseMapRecords(buffers.get("Data MD2"));
 
   const triggers = [
     ...parseDoorFile(buffers.get("Data DD"), "land", "Data DD"),
@@ -138,7 +142,7 @@ export function parseScenarioBuffers(buffers: Map<string, Uint8Array>): ParsedBr
   const simpleEncounters = parseSimpleEncounters(buffers.get("Data ED"));
   const complexEncounters = parseComplexEncounters(buffers.get("Data ED2"));
   const assetCatalog = { tilesets: buildAssetCatalog(maps, randomLevels, buffers, diagnostics) };
-  return { maps, triggers, randomLevels, extracodes, messages, battles, treasures, shops, simpleEncounters, complexEncounters, assetCatalog, records, diagnostics };
+  return { maps, mapRecords, triggers, randomLevels, extracodes, messages, battles, treasures, shops, simpleEncounters, complexEncounters, assetCatalog, records, diagnostics };
 }
 
 function parseFields(buffer: Uint8Array | undefined, levelType: LevelType, source: string) {
@@ -231,6 +235,36 @@ function attachRenderInfo(maps: MapEntity[], randomLevels: RandomLevel[]) {
       map.render = { tilesetId: `landlook-${level.landlook}`, landlook: level.landlook, mode: "outdoor-landlook" };
     }
   }
+}
+
+function parseMapRecords(buffer: Uint8Array | undefined) {
+  if (!buffer) return [];
+  const count = Math.floor(buffer.byteLength / MAP_RECORD_BYTES);
+  const records: MapRecord[] = [];
+  for (let id = 0; id < count; id += 1) {
+    const start = id * MAP_RECORD_BYTES;
+    const rawBytes = Array.from(buffer.slice(start, start + MAP_RECORD_BYTES));
+    records.push({
+      id,
+      startX: i16(buffer, start + 60),
+      startY: i16(buffer, start + 62),
+      level: i16(buffer, start + 64),
+      pictId: i16(buffer, start + 66),
+      iconSize: i16(buffer, start + 68),
+      show: i16(buffer, start + 70),
+      isDungeon: i16(buffer, start + 72) !== 0,
+      rect: {
+        top: i16(buffer, start + 76),
+        left: i16(buffer, start + 78),
+        bottom: i16(buffer, start + 80),
+        right: i16(buffer, start + 82)
+      },
+      note: decodePascalText(buffer.slice(start + 84, start + MAP_RECORD_BYTES)),
+      rawBytes,
+      provenance: provenance("Data MD2", id, start, MAP_RECORD_BYTES, "source-backed")
+    });
+  }
+  return records;
 }
 
 function parseDoorFile(buffer: Uint8Array | undefined, levelType: LevelType, source: string) {

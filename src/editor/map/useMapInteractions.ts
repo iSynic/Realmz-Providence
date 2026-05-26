@@ -3,6 +3,8 @@ import {
   EditorTool,
   MapEntity,
   MapHitTarget,
+  MapPaintMode,
+  MapRegionSelection,
   PaintCellChange,
   ProjectCommand,
   RandomLevel,
@@ -12,12 +14,14 @@ import {
 } from "../types";
 import { cellFromCanvasPoint, mapTileIndex, tileValueAt } from "./geometry";
 import { hitTestMapTarget } from "./hitTest";
+import { buildPaintChanges, normalizeRegionBounds, rectCells } from "./regionPaint";
 import { nextActionPointRecordIndex } from "../actionPointCapacity";
 import { selectEntityFromId, triggerEntityId } from "../utils";
 
 export function useMapInteractions({
   map,
   activeTool,
+  paintMode,
   selectedTile,
   triggers,
   randomLevel,
@@ -28,6 +32,7 @@ export function useMapInteractions({
   overlayCanvasRef,
   wrapRef,
   onSelectCell,
+  onSetSelectedRegion,
   onSampleTile,
   onSelectEntity,
   onBeginPaintStroke,
@@ -37,6 +42,7 @@ export function useMapInteractions({
 }: {
   map: MapEntity;
   activeTool: EditorTool;
+  paintMode: MapPaintMode;
   selectedTile: number;
   triggers: TriggerRecord[];
   randomLevel: RandomLevel | null;
@@ -47,6 +53,7 @@ export function useMapInteractions({
   overlayCanvasRef: RefObject<HTMLCanvasElement | null>;
   wrapRef: RefObject<HTMLDivElement | null>;
   onSelectCell: (cell: { x: number; y: number; tile: number }) => void;
+  onSetSelectedRegion: (region: MapRegionSelection | null) => void;
   onSampleTile: (tile: number) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
   onBeginPaintStroke: (label: string) => void;
@@ -68,9 +75,15 @@ export function useMapInteractions({
     rectIndex: number | null;
     moved: boolean;
   } | null>(null);
+  const regionDragRef = useRef<{
+    start: { x: number; y: number };
+    moved: boolean;
+    mode: MapPaintMode;
+  } | null>(null);
   const strokeCellsRef = useRef<Set<string>>(new Set());
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
   const [hoverTarget, setHoverTarget] = useState<MapHitTarget | null>(null);
+  const [regionPreview, setRegionPreview] = useState<MapRegionSelection | null>(null);
 
   function cellFromEvent(event: PointerEvent<HTMLCanvasElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -161,7 +174,7 @@ export function useMapInteractions({
       inspectAt(cell);
       return;
     }
-    if (activeTool === "paint") paintAt(cell);
+    if ((activeTool === "paint" && paintMode === "brush") || activeTool === "stamp") paintAt(cell);
   }
 
   function finishPaintStroke(commit: boolean) {
@@ -175,6 +188,7 @@ export function useMapInteractions({
   return {
     hover,
     hoverTarget,
+    regionPreview,
     overlayHandlers: {
       onPointerDown(event: PointerEvent<HTMLCanvasElement>) {
         event.currentTarget.focus();
@@ -217,11 +231,20 @@ export function useMapInteractions({
           event.currentTarget.setPointerCapture(event.pointerId);
           return;
         }
+        if (activeTool === "paint" && paintMode !== "brush") {
+          const cell = cellFromEvent(event);
+          regionDragRef.current = { start: cell, moved: false, mode: paintMode };
+          setHover(cell);
+          setHoverTarget({ kind: "cell", cell: { ...cell, tile: tileValueAt(map, cell.x, cell.y) } });
+          setRegionPreview(normalizeRegionBounds(cell, cell));
+          event.currentTarget.setPointerCapture(event.pointerId);
+          return;
+        }
         event.currentTarget.setPointerCapture(event.pointerId);
-        if (activeTool === "paint") {
+        if ((activeTool === "paint" && paintMode === "brush") || activeTool === "stamp") {
           paintActiveRef.current = true;
           strokeCellsRef.current.clear();
-          onBeginPaintStroke("Paint tiles");
+          onBeginPaintStroke(activeTool === "stamp" ? "Place stamp" : "Paint tiles");
         }
         applyToolAt(event);
       },
@@ -260,6 +283,16 @@ export function useMapInteractions({
           ) {
             randomDragRef.current.moved = true;
           }
+          return;
+        }
+        if (regionDragRef.current) {
+          const cell = cellFromEvent(event);
+          const drag = regionDragRef.current;
+          const moved = drag.moved || cell.x !== drag.start.x || cell.y !== drag.start.y;
+          drag.moved = moved;
+          setHover(cell);
+          setHoverTarget({ kind: "cell", cell: { ...cell, tile: tileValueAt(map, cell.x, cell.y) } });
+          setRegionPreview(normalizeRegionBounds(drag.start, cell));
           return;
         }
         const cell = cellFromEvent(event);
@@ -321,6 +354,32 @@ export function useMapInteractions({
           }
           return;
         }
+        if (regionDragRef.current) {
+          const drag = regionDragRef.current;
+          regionDragRef.current = null;
+          const end = cellFromEvent(event);
+          const region = normalizeRegionBounds(drag.start, end);
+          setRegionPreview(null);
+          onSetSelectedRegion(region);
+          const tile = tileValueAt(map, end.x, end.y);
+          selectTargetCell({ ...end, tile });
+          setHoverTarget({ kind: "cell", cell: { ...end, tile } });
+          if (drag.mode === "rectangle") {
+            const changes = buildPaintChanges(map, rectCells(map, region), selectedTile);
+            if (changes.length > 0) {
+              onApplyCommand({
+                kind: "paintTiles",
+                mapId: map.id,
+                label: `Fill region ${region.left},${region.top}-${region.right},${region.bottom}`,
+                cells: changes
+              });
+            }
+          }
+          if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+            event.currentTarget.releasePointerCapture(event.pointerId);
+          }
+          return;
+        }
         finishPaintStroke(true);
         if (event.currentTarget.hasPointerCapture(event.pointerId)) {
           event.currentTarget.releasePointerCapture(event.pointerId);
@@ -330,6 +389,8 @@ export function useMapInteractions({
         panRef.current = null;
         selectDragRef.current = null;
         randomDragRef.current = null;
+        regionDragRef.current = null;
+        setRegionPreview(null);
         setHoverTarget(null);
         finishPaintStroke(false);
         if (event.currentTarget.hasPointerCapture(event.pointerId)) {
@@ -337,12 +398,14 @@ export function useMapInteractions({
         }
       },
       onPointerLeave() {
-        if (paintActiveRef.current || panRef.current || selectDragRef.current) return;
+        if (paintActiveRef.current || panRef.current || selectDragRef.current || randomDragRef.current || regionDragRef.current) return;
         setHover(null);
         setHoverTarget(null);
       },
       onKeyDown(event: KeyboardEvent<HTMLCanvasElement>) {
         if (event.key !== "Escape") return;
+        regionDragRef.current = null;
+        setRegionPreview(null);
         finishPaintStroke(false);
       }
     }

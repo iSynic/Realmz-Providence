@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { EditorState } from "../store";
-import { MapEntity, MapViewFlag, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
+import { MapEntity, MapPaintMode, MapRegionSelection, MapViewFlag, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
 import { triggerOverlayKinds } from "../semanticGraph";
 import { RealmzMapCanvas } from "../components/MapCanvas";
 import { MapContextSidebar, MapSelectionSidebar } from "../components/MapContextSidebar";
@@ -53,7 +53,14 @@ export function MapsPanel({
 }) {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [contextFocus, setContextFocus] = useState<"flags" | "atlas" | "source">("flags");
+  const [paintMode, setPaintMode] = useState<MapPaintMode>("brush");
+  const [selectedRegion, setSelectedRegion] = useState<MapRegionSelection | null>(null);
+  const [replaceSourceTile, setReplaceSourceTile] = useState<number | null>(null);
   const visibleTriggers = state.showTriggers ? mapTriggers.filter((trigger) => triggerMatchesViewFilters(state.project, trigger, state)) : [];
+  useEffect(() => {
+    setSelectedRegion(null);
+    setReplaceSourceTile(null);
+  }, [selectedMap?.id]);
   return (
     <>
       <MapContextSidebar
@@ -67,6 +74,12 @@ export function MapsPanel({
           if (tool === "paint") setPaletteOpen(true);
         }}
         onSelectTile={onSelectTile}
+        paintMode={paintMode}
+        onSetPaintMode={setPaintMode}
+        selectedRegion={selectedRegion}
+        onSetSelectedRegion={setSelectedRegion}
+        replaceSourceTile={replaceSourceTile}
+        onSetReplaceSourceTile={setReplaceSourceTile}
         onApplyCommand={onApplyCommand}
         paletteOpen={paletteOpen}
         onSetPaletteOpen={setPaletteOpen}
@@ -91,6 +104,7 @@ export function MapsPanel({
               randomLevel={selectedRandomLevel}
               mapRecords={mapRecords}
               activeTool={state.activeTool}
+              paintMode={paintMode}
               selectedTile={state.selectedTile}
               zoom={state.zoom}
               smoothTiles={state.smoothTiles}
@@ -99,8 +113,10 @@ export function MapsPanel({
               showMapRecords={state.showMapRecords}
               selectedEntity={state.selectedEntity}
               selectedCell={state.selectedCell}
+              selectedRegion={selectedRegion}
               focusTarget={state.focusTarget}
               onSelectCell={onSelectCell}
+              onSetSelectedRegion={setSelectedRegion}
               onSampleTile={onSelectTile}
               onSelectEntity={onSelectEntity}
               onBeginPaintStroke={onBeginPaintStroke}
@@ -130,6 +146,12 @@ export function MapsPanel({
         onSetViewFlag={onSetViewFlag}
         onOpenPalette={() => setPaletteOpen(true)}
         onOpenScripts={onOpenScripts}
+        paintMode={paintMode}
+        onSetPaintMode={setPaintMode}
+        selectedRegion={selectedRegion}
+        onSetSelectedRegion={setSelectedRegion}
+        replaceSourceTile={replaceSourceTile}
+        onSetReplaceSourceTile={setReplaceSourceTile}
         onSelectEntity={onSelectEntity}
         onClearSelection={onClearSelection}
         onApplyCommand={onApplyCommand}

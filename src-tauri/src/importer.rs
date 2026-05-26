@@ -56,6 +56,7 @@ pub fn create_project(
             immutable: true,
         },
         maps: Vec::new(),
+        map_records: Vec::new(),
         triggers: Vec::new(),
         random_levels: Vec::new(),
         extracodes: Vec::new(),
@@ -167,6 +168,7 @@ fn import_scenario_with_name(
             immutable: true,
         },
         maps: parsed.maps,
+        map_records: parsed.map_records,
         triggers: parsed.triggers,
         random_levels: parsed.random_levels,
         extracodes: parsed.extracodes,
@@ -189,6 +191,7 @@ fn import_scenario_with_name(
     import_icon_overlays(&assets_dir, &mut project)?;
     let semantic_parsed = ParsedScenario {
         maps: project.maps.clone(),
+        map_records: project.map_records.clone(),
         triggers: project.triggers.clone(),
         random_levels: project.random_levels.clone(),
         extracodes: project.extracodes.clone(),
@@ -252,6 +255,7 @@ fn refresh_semantic_schema(project_dir: &Path, project: &mut ProvidenceProject) 
     backfill_target_records(project, &buffers);
     let semantic_parsed = ParsedScenario {
         maps: project.maps.clone(),
+        map_records: project.map_records.clone(),
         triggers: project.triggers.clone(),
         random_levels: project.random_levels.clone(),
         extracodes: project.extracodes.clone(),
@@ -278,6 +282,9 @@ fn backfill_target_records(project: &mut ProvidenceProject, buffers: &BTreeMap<S
     let parsed = parse_scenario_buffers(buffers);
     if project.messages.is_empty() {
         project.messages = parsed.messages;
+    }
+    if project.map_records.is_empty() {
+        project.map_records = parsed.map_records;
     }
     if project.battles.is_empty() {
         project.battles = parsed.battles;

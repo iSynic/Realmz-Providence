@@ -34,6 +34,7 @@ export type ProvidenceHarnessScript = {
     validationWarningsNotContain?: string[];
     projectHasMaps?: boolean;
     projectTiles?: Array<{ mapId: string; index: number; value: number }>;
+    mapRecords?: Array<{ id: number; fields?: Record<string, unknown> }>;
     randomLevels?: Array<{ levelType: "land" | "dungeon"; levelIndex: number; fields?: Record<string, unknown>; rects?: Array<{ rectIndex: number; fields?: Record<string, unknown> }> }>;
     triggers?: Array<{ triggerId: string; fields?: Record<string, unknown> }>;
     actionSlots?: Array<{ triggerId: string; slot: number; rawCode: number; id: number }>;
@@ -291,6 +292,19 @@ function assertHarnessResult(
     const observed = map?.tiles[tileAssertion.index] ?? null;
     if (observed !== tileAssertion.value) {
       errors.push(assertionError(`projectTiles:${tileAssertion.mapId}:${tileAssertion.index}`, tileAssertion.value, observed));
+    }
+  }
+  for (const recordAssertion of assertions.mapRecords ?? []) {
+    const record = (project.mapRecords ?? []).find((candidate) => candidate.id === recordAssertion.id);
+    if (!record) {
+      errors.push(assertionError(`mapRecords:${recordAssertion.id}`, "map record exists", null));
+      continue;
+    }
+    for (const [field, expected] of Object.entries(recordAssertion.fields ?? {})) {
+      const observed = readAssertionField(record, field);
+      if (!sameJsonValue(observed, expected)) {
+        errors.push(assertionError(`mapRecords:${recordAssertion.id}:${field}`, expected, observed));
+      }
     }
   }
   for (const randomAssertion of assertions.randomLevels ?? []) {

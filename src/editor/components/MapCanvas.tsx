@@ -6,6 +6,8 @@ import {
   MapFocusTarget,
   MapHitTarget,
   MapEntity,
+  MapPaintMode,
+  MapRegionSelection,
   MapViewOptions,
   ProjectCommand,
   RandomLevel,
@@ -30,6 +32,7 @@ import {
   drawHover,
   drawMapRecords,
   drawRandomRectangles,
+  drawRegionSelection,
   drawSecretTileOverlay,
   drawSelectedCell,
   drawTriggers,
@@ -49,6 +52,7 @@ export function RealmzMapCanvas({
   randomLevel,
   mapRecords,
   activeTool,
+  paintMode,
   selectedTile,
   zoom,
   smoothTiles,
@@ -57,8 +61,10 @@ export function RealmzMapCanvas({
   showMapRecords,
   selectedEntity,
   selectedCell,
+  selectedRegion,
   focusTarget,
   onSelectCell,
+  onSetSelectedRegion,
   onSampleTile,
   onSelectEntity,
   onBeginPaintStroke,
@@ -75,6 +81,7 @@ export function RealmzMapCanvas({
   randomLevel: RandomLevel | null;
   mapRecords: SemanticEntity[];
   activeTool: EditorTool;
+  paintMode: MapPaintMode;
   selectedTile: number;
   zoom: number;
   smoothTiles: boolean;
@@ -83,8 +90,10 @@ export function RealmzMapCanvas({
   showMapRecords: boolean;
   selectedEntity: SelectedEntity | null;
   selectedCell: { x: number; y: number; tile: number } | null;
+  selectedRegion: MapRegionSelection | null;
   focusTarget: MapFocusTarget | null;
   onSelectCell: (cell: { x: number; y: number; tile: number }) => void;
+  onSetSelectedRegion: (region: MapRegionSelection | null) => void;
   onSampleTile: (tile: number) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
   onBeginPaintStroke: (label: string) => void;
@@ -102,9 +111,10 @@ export function RealmzMapCanvas({
     hudRef.current = node;
   }, []);
   const canvasCssSize = Math.round(BASE_CANVAS_SIZE * zoom);
-  const { hover, hoverTarget, overlayHandlers } = useMapInteractions({
+  const { hover, hoverTarget, regionPreview, overlayHandlers } = useMapInteractions({
     map,
     activeTool,
+    paintMode,
     selectedTile,
     triggers,
     randomLevel,
@@ -115,6 +125,7 @@ export function RealmzMapCanvas({
     overlayCanvasRef,
     wrapRef,
     onSelectCell,
+    onSetSelectedRegion,
     onSampleTile,
     onSelectEntity,
     onBeginPaintStroke,
@@ -157,7 +168,9 @@ export function RealmzMapCanvas({
     if (viewOptions.showSecretOverlays) drawSecretTileOverlay(ctx, map, cell);
     drawTriggers(ctx, triggers, selectedEntity, cell);
     if (showMapRecords) drawMapRecords(ctx, mapRecords, selectedEntity, cell);
+    if (selectedRegion) drawRegionSelection(ctx, selectedRegion, cell, "selected");
     if (selectedCell) drawSelectedCell(ctx, selectedCell, cell);
+    if (regionPreview) drawRegionSelection(ctx, regionPreview, cell, "preview");
     if (hover) drawHover(ctx, hover, cell);
   }, [
     triggers,
@@ -168,6 +181,8 @@ export function RealmzMapCanvas({
     showMapRecords,
     selectedEntity,
     selectedCell,
+    selectedRegion,
+    regionPreview,
     viewOptions.showSecretOverlays,
     canvasCssSize,
     map
