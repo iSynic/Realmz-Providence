@@ -3,7 +3,8 @@ use crate::importer::RAW_SOURCES_DIR;
 use crate::project::{LevelType, ProvidenceProject};
 use crate::realmz::{
     write_battles, write_complex_encounters, write_door_file, write_extracodes, write_fields,
-    write_macro_file, write_map_records, write_messages, write_random_levels, write_shops,
+    write_macro_file, write_map_records, write_messages, write_random_levels,
+    write_scenario_contact_info, write_scenario_restrictions, write_scenario_shell, write_shops,
     write_simple_encounters, write_treasures,
 };
 use crate::resource_fork::{
@@ -56,6 +57,30 @@ pub fn export_project(
     }
 
     let mut written_files = Vec::new();
+    if let Some(shell) = &project.scenario.shell {
+        write_if_nonempty(
+            output_dir,
+            scenario_shell_file_name(project),
+            write_scenario_shell(shell)?,
+            &mut written_files,
+        )?;
+    }
+    if let Some(contact_info) = &project.scenario.contact_info {
+        write_if_nonempty(
+            output_dir,
+            "Data CI",
+            write_scenario_contact_info(contact_info)?,
+            &mut written_files,
+        )?;
+    }
+    if let Some(restrictions) = &project.scenario.restrictions {
+        write_if_nonempty(
+            output_dir,
+            "Data RI",
+            write_scenario_restrictions(restrictions)?,
+            &mut written_files,
+        )?;
+    }
     write_if_nonempty(
         output_dir,
         "Data LD",
@@ -314,4 +339,14 @@ fn resource_file_name(project: &ProvidenceProject) -> String {
         .find(|file| matches!(file.role, crate::project::SourceFileRole::ResourceFork))
         .map(|file| file.name.clone())
         .unwrap_or_else(|| "Scenario".to_string())
+}
+
+fn scenario_shell_file_name(project: &ProvidenceProject) -> &str {
+    project
+        .scenario
+        .shell
+        .as_ref()
+        .map(|shell| shell.source_file.as_str())
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or(project.scenario.name.as_str())
 }

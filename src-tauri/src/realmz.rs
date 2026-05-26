@@ -466,6 +466,141 @@ pub fn write_map_records(records: &[MapRecord]) -> Result<Vec<u8>> {
     Ok(output)
 }
 
+pub fn parse_scenario_shell(source_file: &str, buffer: &[u8]) -> Result<ScenarioShell> {
+    if buffer.len() < 316 {
+        return Err(ProvidenceError::message(format!(
+            "{} is {} byte(s); scenario marker/main file must be at least 316 bytes",
+            source_file,
+            buffer.len()
+        )));
+    }
+    Ok(ScenarioShell {
+        source_file: source_file.to_string(),
+        rec_level: i32_be(buffer, 0),
+        max_level: i32_be(buffer, 4),
+        land_level: i32_be(buffer, 8),
+        look_x: i32_be(buffer, 12),
+        look_y: i32_be(buffer, 16),
+        codeseg1: buffer[20..40].to_vec(),
+        codeseg2: buffer[40..60].to_vec(),
+        creator_user: decode_pascal_text(&buffer[60..316]),
+        trailing_bytes: buffer.get(316..).unwrap_or(&[]).to_vec(),
+        authored: false,
+        provenance: Some(provenance(source_file, 0, 0, buffer.len())),
+    })
+}
+
+pub fn write_scenario_shell(shell: &ScenarioShell) -> Result<Vec<u8>> {
+    let mut output = vec![0u8; 316 + shell.trailing_bytes.len()];
+    write_i32_be(&mut output, 0, shell.rec_level);
+    write_i32_be(&mut output, 4, shell.max_level);
+    write_i32_be(&mut output, 8, shell.land_level);
+    write_i32_be(&mut output, 12, shell.look_x);
+    write_i32_be(&mut output, 16, shell.look_y);
+    copy_fixed_bytes(&mut output[20..40], &shell.codeseg1);
+    copy_fixed_bytes(&mut output[40..60], &shell.codeseg2);
+    encode_pascal_text(&mut output[60..316], &shell.creator_user)?;
+    if !shell.trailing_bytes.is_empty() {
+        output[316..].copy_from_slice(&shell.trailing_bytes);
+    }
+    Ok(output)
+}
+
+pub fn parse_scenario_contact_info(buffer: &[u8]) -> Result<ScenarioContactInfo> {
+    if buffer.len() < 4608 {
+        return Err(ProvidenceError::message(format!(
+            "Data CI is {} byte(s); expected 4608 bytes",
+            buffer.len()
+        )));
+    }
+    Ok(ScenarioContactInfo {
+        scenario_name: pascal_record_string(buffer, 0),
+        version: pascal_record_string(buffer, 1),
+        date: pascal_record_string(buffer, 2),
+        author: pascal_record_string(buffer, 3),
+        email: pascal_record_string(buffer, 4),
+        web: pascal_record_string(buffer, 5),
+        fee: pascal_record_string(buffer, 6),
+        pay_info: (7..12).map(|slot| pascal_record_string(buffer, slot)).collect(),
+        titles: (12..17).map(|slot| pascal_record_string(buffer, slot)).collect(),
+        description: pascal_record_string(buffer, 17),
+        authored: false,
+        provenance: Some(provenance("Data CI", 0, 0, 4608)),
+    })
+}
+
+pub fn write_scenario_contact_info(contact: &ScenarioContactInfo) -> Result<Vec<u8>> {
+    let mut output = vec![0u8; 4608];
+    let fields = [
+        contact.scenario_name.as_str(),
+        contact.version.as_str(),
+        contact.date.as_str(),
+        contact.author.as_str(),
+        contact.email.as_str(),
+        contact.web.as_str(),
+        contact.fee.as_str(),
+    ];
+    for (slot, value) in fields.iter().enumerate() {
+        encode_pascal_text(&mut output[slot * 256..slot * 256 + 256], value)?;
+    }
+    for index in 0..5 {
+        encode_pascal_text(
+            &mut output[(7 + index) * 256..(8 + index) * 256],
+            contact.pay_info.get(index).map(String::as_str).unwrap_or(""),
+        )?;
+        encode_pascal_text(
+            &mut output[(12 + index) * 256..(13 + index) * 256],
+            contact.titles.get(index).map(String::as_str).unwrap_or(""),
+        )?;
+    }
+    encode_pascal_text(&mut output[17 * 256..18 * 256], &contact.description)?;
+    Ok(output)
+}
+
+pub fn parse_scenario_restrictions(buffer: &[u8]) -> Result<ScenarioRestrictions> {
+    if buffer.len() < 320 {
+        return Err(ProvidenceError::message(format!(
+            "Data RI is {} byte(s); expected 320 bytes",
+            buffer.len()
+        )));
+    }
+    Ok(ScenarioRestrictions {
+        description: decode_pascal_text(&buffer[0..256]),
+        max_party_characters: i16_be(buffer, 256),
+        max_party_level: i16_be(buffer, 258),
+        banned_races: buffer[260..290]
+            .iter()
+            .enumerate()
+            .filter_map(|(index, value)| (*value != 0).then_some((index + 1) as u8))
+            .collect(),
+        banned_castes: buffer[290..320]
+            .iter()
+            .enumerate()
+            .filter_map(|(index, value)| (*value != 0).then_some((index + 1) as u8))
+            .collect(),
+        authored: false,
+        provenance: Some(provenance("Data RI", 0, 0, 320)),
+    })
+}
+
+pub fn write_scenario_restrictions(restrictions: &ScenarioRestrictions) -> Result<Vec<u8>> {
+    let mut output = vec![0u8; 320];
+    encode_pascal_text(&mut output[0..256], &restrictions.description)?;
+    write_i16_be(&mut output, 256, restrictions.max_party_characters);
+    write_i16_be(&mut output, 258, restrictions.max_party_level);
+    for race in &restrictions.banned_races {
+        if (1..=30).contains(race) {
+            output[260 + *race as usize - 1] = 1;
+        }
+    }
+    for caste in &restrictions.banned_castes {
+        if (1..=30).contains(caste) {
+            output[290 + *caste as usize - 1] = 1;
+        }
+    }
+    Ok(output)
+}
+
 fn ensure_dense_indices(maps: &[&MapEntity], label: &str) -> Result<()> {
     for (expected, map) in maps.iter().enumerate() {
         if map.index != expected {
@@ -1268,6 +1403,21 @@ fn encode_pascal_text(buffer: &mut [u8], text: &str) -> Result<()> {
     Ok(())
 }
 
+fn pascal_record_string(buffer: &[u8], slot: usize) -> String {
+    let start = slot * 256;
+    let end = (start + 256).min(buffer.len());
+    if start >= end {
+        return String::new();
+    }
+    decode_pascal_text(&buffer[start..end])
+}
+
+fn copy_fixed_bytes(dest: &mut [u8], source: &[u8]) {
+    dest.fill(0);
+    let len = dest.len().min(source.len());
+    dest[..len].copy_from_slice(&source[..len]);
+}
+
 fn classic_text_bytes(text: &str) -> Vec<u8> {
     text.chars()
         .map(|ch| if ch.is_ascii() { ch as u8 } else { b'?' })
@@ -1632,6 +1782,85 @@ mod tests {
         assert!(tile.flags.contains(&TileAttributeFlag::BlocksLos));
         assert!(tile.flags.contains(&TileAttributeFlag::FlyFloatRequired));
         assert!(matches!(tile.source_kind, TileAttributeSourceKind::Mapstats));
+    }
+
+    #[test]
+    fn scenario_shell_contact_and_restrictions_round_trip() {
+        let shell = ScenarioShell {
+            source_file: "Tutorial".to_string(),
+            rec_level: 5,
+            max_level: 42,
+            land_level: 1,
+            look_x: 12,
+            look_y: 34,
+            creator_user: "Eric".to_string(),
+            codeseg1: (0..20).collect(),
+            codeseg2: (20..40).collect(),
+            trailing_bytes: vec![9, 8, 7, 6],
+            authored: true,
+            provenance: None,
+        };
+        let shell_bytes = write_scenario_shell(&shell).unwrap();
+        let parsed_shell = parse_scenario_shell("Tutorial", &shell_bytes).unwrap();
+        assert_eq!(parsed_shell.rec_level, 5);
+        assert_eq!(parsed_shell.max_level, 42);
+        assert_eq!(parsed_shell.land_level, 1);
+        assert_eq!(parsed_shell.look_x, 12);
+        assert_eq!(parsed_shell.look_y, 34);
+        assert_eq!(parsed_shell.creator_user, "Eric");
+        assert_eq!(parsed_shell.codeseg1[19], 19);
+        assert_eq!(parsed_shell.codeseg2[0], 20);
+        assert_eq!(parsed_shell.trailing_bytes, vec![9, 8, 7, 6]);
+
+        let contact = ScenarioContactInfo {
+            scenario_name: "New Scenario".to_string(),
+            version: "1.0".to_string(),
+            date: "2026".to_string(),
+            author: "Providence".to_string(),
+            email: "none".to_string(),
+            web: "example".to_string(),
+            fee: "free".to_string(),
+            pay_info: vec![
+                "A".to_string(),
+                "B".to_string(),
+                "C".to_string(),
+                "D".to_string(),
+                "E".to_string(),
+            ],
+            titles: vec![
+                "T1".to_string(),
+                "T2".to_string(),
+                "T3".to_string(),
+                "T4".to_string(),
+                "T5".to_string(),
+            ],
+            description: "Description".to_string(),
+            authored: true,
+            provenance: None,
+        };
+        let contact_bytes = write_scenario_contact_info(&contact).unwrap();
+        let parsed_contact = parse_scenario_contact_info(&contact_bytes).unwrap();
+        assert_eq!(parsed_contact.scenario_name, "New Scenario");
+        assert_eq!(parsed_contact.pay_info[2], "C");
+        assert_eq!(parsed_contact.titles[4], "T5");
+        assert_eq!(parsed_contact.description, "Description");
+
+        let restrictions = ScenarioRestrictions {
+            description: "No giants".to_string(),
+            max_party_characters: 4,
+            max_party_level: 20,
+            banned_races: vec![1, 30],
+            banned_castes: vec![2, 29],
+            authored: true,
+            provenance: None,
+        };
+        let restrictions_bytes = write_scenario_restrictions(&restrictions).unwrap();
+        let parsed_restrictions = parse_scenario_restrictions(&restrictions_bytes).unwrap();
+        assert_eq!(parsed_restrictions.description, "No giants");
+        assert_eq!(parsed_restrictions.max_party_characters, 4);
+        assert_eq!(parsed_restrictions.max_party_level, 20);
+        assert_eq!(parsed_restrictions.banned_races, vec![1, 30]);
+        assert_eq!(parsed_restrictions.banned_castes, vec![2, 29]);
     }
 
     #[test]

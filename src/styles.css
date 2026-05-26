@@ -1685,6 +1685,244 @@ body.is-resizing-pane {
   text-overflow: ellipsis;
 }
 
+.scenario-workbench {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 14px;
+  background: #101113;
+}
+
+.scenario-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid #2a3038;
+  border-radius: 7px;
+  background: #151719;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.scenario-hero h1 {
+  color: #eef3f8;
+  font-size: 18px;
+}
+
+.scenario-hero p {
+  margin-top: 5px;
+  color: #91a0ae;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.scenario-hero span {
+  color: #f2c66d;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.scenario-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(360px, 0.75fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.scenario-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #26333f;
+  border-radius: 7px;
+  background: #10161d;
+  padding: 12px;
+}
+
+.scenario-card-primary {
+  grid-row: span 2;
+}
+
+.scenario-card > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid #25313c;
+}
+
+.scenario-card > header div {
+  display: grid;
+  gap: 3px;
+}
+
+.scenario-card > header span {
+  color: #eff6ff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.scenario-card > header small,
+.scenario-action-row span,
+.scenario-empty-state p {
+  color: #8fa4b8;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.scenario-card > header b {
+  color: #f2c66d;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.scenario-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.scenario-field {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.scenario-field-wide {
+  grid-column: 1 / -1;
+}
+
+.scenario-field span {
+  color: #80bfff;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.scenario-field input,
+.scenario-field select,
+.scenario-field textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #2a3947;
+  border-radius: 6px;
+  background: #0d151d;
+  color: #f0f7ff;
+  padding: 8px 9px;
+  font: inherit;
+}
+
+.scenario-field textarea {
+  min-height: 105px;
+  resize: vertical;
+}
+
+.scenario-action-row,
+.scenario-empty-state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.scenario-action-row button,
+.scenario-empty-state button {
+  border: 1px solid #3a5470;
+  border-radius: 6px;
+  background: #10263b;
+  color: #e3f2ff;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.scenario-action-row button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.scenario-evidence {
+  border: 1px solid #2c3845;
+  border-radius: 6px;
+  background: #0d131a;
+  padding: 8px 10px;
+}
+
+.scenario-evidence summary {
+  color: #cbd8e6;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.scenario-evidence div,
+.scenario-checklist div {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 10px;
+  padding-top: 7px;
+}
+
+.scenario-evidence span,
+.scenario-checklist span {
+  color: #8094a8;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.scenario-evidence code,
+.scenario-checklist small {
+  color: #d6e6f5;
+  font-size: 10px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.scenario-checklist {
+  display: grid;
+  gap: 6px;
+}
+
+.scenario-checklist div {
+  border: 1px solid #273441;
+  border-radius: 6px;
+  background: #0d141b;
+  padding: 8px;
+}
+
+.scenario-checklist div.ok {
+  border-color: #28543d;
+}
+
+.scenario-checklist div.warn {
+  border-color: #69562a;
+  background: #17140c;
+}
+
+@media (max-width: 1280px) {
+  .scenario-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .scenario-card-primary {
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .scenario-form-grid,
+  .scenario-evidence div,
+  .scenario-checklist div {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 1100px) {
   .domain-main-layout {
     grid-template-columns: 1fr;

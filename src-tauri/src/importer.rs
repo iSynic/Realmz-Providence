@@ -45,9 +45,12 @@ pub fn create_project(
         app_version: env!("CARGO_PKG_VERSION").to_string(),
         scenario: ScenarioMeta {
             id: scenario_id(&project_name),
-            name: project_name,
+            name: project_name.clone(),
             project_path: project_path_text,
             imported_at: timestamp(),
+            shell: Some(default_scenario_shell(&project_name)),
+            contact_info: Some(default_contact_info(&project_name)),
+            restrictions: None,
         },
         source: SourceSnapshot {
             source_path: String::new(),
@@ -154,6 +157,14 @@ fn import_scenario_with_name(
         .to_string_lossy()
         .to_string();
 
+    let scenario_shell = read_scenario_shell(&source_path, &scenario_name)?;
+    let contact_info = buffers
+        .get("Data CI")
+        .and_then(|buffer| crate::realmz::parse_scenario_contact_info(buffer).ok());
+    let restrictions = buffers
+        .get("Data RI")
+        .and_then(|buffer| crate::realmz::parse_scenario_restrictions(buffer).ok());
+
     let mut project = ProvidenceProject {
         schema_version: PROJECT_SCHEMA_VERSION,
         app_version: env!("CARGO_PKG_VERSION").to_string(),
@@ -162,6 +173,9 @@ fn import_scenario_with_name(
             name: project_name,
             project_path,
             imported_at: timestamp(),
+            shell: scenario_shell,
+            contact_info,
+            restrictions,
         },
         source: SourceSnapshot {
             source_path: source_path.to_string_lossy().to_string(),
@@ -229,6 +243,7 @@ pub fn open_project(project_dir: impl AsRef<Path>) -> Result<ProvidenceProject> 
     backfill_tileset_metadata(&mut project);
     refresh_semantic_schema(project_dir, &mut project)?;
     ensure_reference_tile_attributes(&mut project)?;
+    hydrate_scenario_metadata(project_dir, &mut project)?;
     refresh_custom_tile_atlases(project_dir, &mut project)?;
     import_icon_overlays(&project_dir.join(ASSETS_DIR), &mut project)?;
     project.validation = crate::validation::validate_project(&project);
@@ -309,6 +324,102 @@ fn backfill_target_records(project: &mut ProvidenceProject, buffers: &BTreeMap<S
     }
     if project.complex_encounters.is_empty() {
         project.complex_encounters = parsed.complex_encounters;
+    }
+}
+
+fn hydrate_scenario_metadata(project_dir: &Path, project: &mut ProvidenceProject) -> Result<()> {
+    let raw_dir = project_dir.join(if project.source.raw_sources_dir.is_empty() {
+        RAW_SOURCES_DIR
+    } else {
+        project.source.raw_sources_dir.as_str()
+    });
+    if !raw_dir.is_dir() {
+        return Ok(());
+    }
+    if project.scenario.shell.is_none() {
+        project.scenario.shell = read_scenario_shell_from_raw(&raw_dir, project)?;
+    }
+    if project.scenario.contact_info.is_none() {
+        let path = raw_dir.join("Data CI");
+        if path.is_file() {
+            let bytes = fs::read(&path).with_path(&path)?;
+            project.scenario.contact_info = crate::realmz::parse_scenario_contact_info(&bytes).ok();
+        }
+    }
+    if project.scenario.restrictions.is_none() {
+        let path = raw_dir.join("Data RI");
+        if path.is_file() {
+            let bytes = fs::read(&path).with_path(&path)?;
+            project.scenario.restrictions = crate::realmz::parse_scenario_restrictions(&bytes).ok();
+        }
+    }
+    Ok(())
+}
+
+fn read_scenario_shell(source_path: &Path, scenario_name: &str) -> Result<Option<ScenarioShell>> {
+    let path = source_path.join(scenario_name);
+    if !path.is_file() {
+        return Ok(None);
+    }
+    let bytes = fs::read(&path).with_path(&path)?;
+    crate::realmz::parse_scenario_shell(scenario_name, &bytes).map(Some)
+}
+
+fn read_scenario_shell_from_raw(raw_dir: &Path, project: &ProvidenceProject) -> Result<Option<ScenarioShell>> {
+    let candidates = [
+        project.scenario.shell.as_ref().map(|shell| shell.source_file.as_str()),
+        Some(project.scenario.name.as_str()),
+        project
+            .source
+            .files
+            .iter()
+            .find(|file| {
+                !is_resource_file_name(&file.name)
+                    && !TRACKED_FILES.iter().any(|tracked| *tracked == file.name)
+            })
+            .map(|file| file.name.as_str()),
+    ];
+    for candidate in candidates.into_iter().flatten() {
+        let path = raw_dir.join(candidate);
+        if path.is_file() {
+            let bytes = fs::read(&path).with_path(&path)?;
+            return crate::realmz::parse_scenario_shell(candidate, &bytes).map(Some);
+        }
+    }
+    Ok(None)
+}
+
+fn default_scenario_shell(source_file: &str) -> ScenarioShell {
+    ScenarioShell {
+        source_file: source_file.to_string(),
+        rec_level: 1,
+        max_level: 999,
+        land_level: 0,
+        look_x: 0,
+        look_y: 0,
+        creator_user: String::new(),
+        codeseg1: vec![0; 20],
+        codeseg2: vec![0; 20],
+        trailing_bytes: Vec::new(),
+        authored: true,
+        provenance: None,
+    }
+}
+
+fn default_contact_info(name: &str) -> ScenarioContactInfo {
+    ScenarioContactInfo {
+        scenario_name: name.to_string(),
+        version: String::new(),
+        date: String::new(),
+        author: String::new(),
+        email: String::new(),
+        web: String::new(),
+        fee: String::new(),
+        pay_info: vec![String::new(); 5],
+        titles: vec![String::new(); 5],
+        description: String::new(),
+        authored: true,
+        provenance: None,
     }
 }
 

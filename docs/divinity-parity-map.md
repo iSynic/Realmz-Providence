@@ -22,7 +22,7 @@ See `docs/archaeology-priorities.md` for the editor-first reverse-engineering ba
 | --- | --- | --- | --- |
 | Getting Started | Project/Scenario | Inspect imported projects; desktop save/export exists | Blank scenario creation flow |
 | Land Editor / Land Layout | Maps | Author tile painting, region fill/replace, Action Point placement, random rectangles, map flags, and special/icon tile placement; inspect map layout evidence | Land layout/start records and deeper dungeon geometry |
-| Scenario Startup Information | Scenario | Inspect scenario/contact/startup records where decoded | User-facing startup editor and typed scenario commands |
+| Scenario Startup Information | Scenario | Author marker/main startup shell, Data CI contact info, and optional Data RI party restrictions; preserve legacy security segments | Blank scenario resource defaults and release/security workflow |
 | Action Points / GOSUBs | Scripts | Author Action Points, callable/reachable macros, CODE/ID slots, EDCD rows, reordering, duplication, deletion, and inline diagnostics; preserve non-reachable ED3 rows as evidence | Broader opcode-specific forms and richer branch visualizations |
 | Scripting Codes 1-29 | Scripts | Guided opcode picker with descriptions, target picker, EDCD shape hints | Complete manual-derived notes and opcode examples |
 | Scripting Codes 30-59 | Scripts | Guided opcode picker with descriptions, target picker, EDCD shape hints | Complete manual-derived notes and opcode examples |
@@ -52,7 +52,7 @@ See `docs/archaeology-priorities.md` for the editor-first reverse-engineering ba
 | Race Editor | Rules | Inspect races and references | Race record form and restriction integration |
 | Caste Editor | Rules | Inspect castes and references | Caste record form and restriction integration |
 | Text Import / Export / Spell Checking | Text | Author `Data SD2` message records from script context, validate 255-byte limit, preserve imported bytes, and export Realmz message files | Text import/export and spell-check workflow |
-| Scenario Security / Registration Codes | Scenario/Scripts | Inspect registration/security-related scripts | Legacy security field editor and compatibility warnings |
+| Scenario Security / Registration Codes | Scenario/Scripts | Preserve marker/main registration code segments and inspect registration/security scripts | Legacy security field editor and compatibility warnings |
 | Release Checklist | Linter/Export | Validation and export readiness panels exist | Divinity-style release checklist with Realmz compatibility gates |
 | Realmz Win95/98/NT4, FAQ, What's New, License | Docs | Reference only | No editor feature work unless scenario compatibility demands it |
 
@@ -84,6 +84,17 @@ New writable target families:
 
 See `docs/scripts-v2-authoring.md` for the author-facing workflow, including Action Point capacity, deletion-as-clear, focused/floating layout, macros vs ED3 evidence, EDCD-backed target creation, diagnostics smokes, and preserved imported bytes.
 
+## Scenario Authoring Contract
+
+The Scenario tool is now an authoring-first workbench for the source-backed files Realmz checks before first play:
+
+- Marker/main scenario file: recommended party level, maximum party level, startup land level, startup X/Y view coordinates, creator/user check string, preserved registration/security code segments, and preserved trailing bytes.
+- `Data CI`: editable contact and release-facing strings, using the eighteen fixed Str255 fields documented by the scenario shell evidence card.
+- `Data RI`: optional party restriction record for maximum party characters, maximum candidate level, banned race IDs, banned caste IDs, and restriction message.
+- Load readiness: checks the marker shell, Scenario resource fork, startup land/coordinates, and first-start authored outdoor files.
+
+Blank scenario creation is still a later slice because minimum resource-fork defaults and release/security UI behavior need more Divinity binary or fixture evidence. Imported marker/code bytes remain preserved unless Providence owns the edited field.
+
 ## Maps V4 Contract
 
 Maps now follows the Divinity mental model that terrain tiles, special land tiles, icon-backed values, and raw used values are all placeable Realmz map-field values. The Paint palette is the single authoring surface for those values:
@@ -106,6 +117,6 @@ The current source-backed tile attribute layer is split deliberately. Standard p
 ## Next Milestones
 
 1. Finish opcode-specific forms for media, teleport/map mutation, branches/macros, quest flags, and higher-order EDCD actions.
-2. Add scenario startup and blank scenario creation.
-3. Promote map layout, random rectangles, and dungeon flags from inspection into authoring.
+2. Add blank scenario resource defaults and release/security checklist authoring.
+3. Promote map layout and deeper dungeon flags from inspection into authoring.
 4. Expand target record shells into full record editors for monsters, items, spells, races, castes, assets, and release/security metadata.

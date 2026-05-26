@@ -271,7 +271,57 @@ export type RealmzScriptDraft = {
   slots: RealmzActionSlotDraft[];
 };
 
-export type ScenarioStartupFields = Partial<Pick<Project["scenario"], "name" | "projectPath" | "importedAt">>;
+export type ScenarioShell = {
+  sourceFile: string;
+  recLevel: number;
+  maxLevel: number;
+  landLevel: number;
+  lookX: number;
+  lookY: number;
+  creatorUser: string;
+  codeseg1: number[];
+  codeseg2: number[];
+  trailingBytes: number[];
+  authored?: boolean;
+  provenance?: Provenance;
+};
+
+export type ScenarioContactInfo = {
+  scenarioName: string;
+  version: string;
+  date: string;
+  author: string;
+  email: string;
+  web: string;
+  fee: string;
+  payInfo: string[];
+  titles: string[];
+  description: string;
+  authored?: boolean;
+  provenance?: Provenance;
+};
+
+export type ScenarioRestrictions = {
+  description: string;
+  maxPartyCharacters: number;
+  maxPartyLevel: number;
+  bannedRaces: number[];
+  bannedCastes: number[];
+  authored?: boolean;
+  provenance?: Provenance;
+};
+
+export type ScenarioMeta = {
+  id?: string;
+  name: string;
+  projectPath: string;
+  importedAt: string;
+  shell?: ScenarioShell | null;
+  contactInfo?: ScenarioContactInfo | null;
+  restrictions?: ScenarioRestrictions | null;
+};
+
+export type ScenarioStartupFields = Partial<ScenarioMeta>;
 export type RealmzTargetRecordKind = "message" | "battle" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "questLabel";
 
 export type MessageRecord = {
@@ -495,6 +545,9 @@ export type ProjectCommand =
   | { kind: "upsertQuestLabel"; label: string; quest: QuestLabel }
   | { kind: "deleteQuestLabel"; label: string; id: number }
   | { kind: "applyRealmzScriptStep"; label: string; triggerId: string; slot: number; opcode: number; id: number; edcdValues?: number[] }
+  | { kind: "updateScenarioShell"; label: string; changes: Partial<ScenarioShell> }
+  | { kind: "updateScenarioContactInfo"; label: string; changes: Partial<ScenarioContactInfo> }
+  | { kind: "updateScenarioRestrictions"; label: string; changes: Partial<ScenarioRestrictions> }
   | {
       kind: "renameEditorEntity";
       label: string;
@@ -541,7 +594,7 @@ export type MapFocusTarget =
 export type Project = {
   schemaVersion: number;
   appVersion: string;
-  scenario: { name: string; projectPath: string; importedAt: string };
+  scenario: ScenarioMeta;
   source: { sourcePath: string; rawSourcesDir?: string; immutable: boolean; files: SourceFile[] };
   maps: MapEntity[];
   triggers: TriggerRecord[];

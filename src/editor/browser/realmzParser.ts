@@ -54,6 +54,7 @@ export const TRACKED_FILES = [
   "Data TD2",
   "Data TD3",
   "Data CI",
+  "Data RI",
   "Data MENU",
   "Data Solids",
   "Data Custom 1 BD",

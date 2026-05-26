@@ -15,7 +15,10 @@ export function createBrowserProject(projectName: string): Project {
     scenario: {
       name: safeName,
       projectPath: `browser://${safeName}.providence`,
-      importedAt: new Date().toISOString()
+      importedAt: new Date().toISOString(),
+      shell: defaultScenarioShell(safeName),
+      contactInfo: defaultScenarioContactInfo(safeName),
+      restrictions: null
     },
     source: {
       sourcePath: "",
@@ -60,7 +63,10 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
     scenario: {
       name: scenarioName,
       projectPath,
-      importedAt: new Date().toISOString()
+      importedAt: new Date().toISOString(),
+      shell: defaultScenarioShell(scenarioName),
+      contactInfo: parseScenarioContactInfo(files.get("Data CI")) ?? defaultScenarioContactInfo(scenarioName),
+      restrictions: parseScenarioRestrictions(files.get("Data RI"))
     },
     source: {
       sourcePath: `browser://${scenarioName}`,
@@ -109,10 +115,91 @@ function emptySemanticSchema(): Project["semanticSchema"] {
   };
 }
 
+function defaultScenarioShell(name: string): NonNullable<Project["scenario"]["shell"]> {
+  return {
+    sourceFile: name,
+    recLevel: 1,
+    maxLevel: 999,
+    landLevel: 0,
+    lookX: 0,
+    lookY: 0,
+    creatorUser: "",
+    codeseg1: new Array(20).fill(0),
+    codeseg2: new Array(20).fill(0),
+    trailingBytes: [],
+    authored: true
+  };
+}
+
+function defaultScenarioContactInfo(name: string): NonNullable<Project["scenario"]["contactInfo"]> {
+  return {
+    scenarioName: name,
+    version: "",
+    date: "",
+    author: "",
+    email: "",
+    web: "",
+    fee: "",
+    payInfo: ["", "", "", "", ""],
+    titles: ["", "", "", "", ""],
+    description: "",
+    authored: true
+  };
+}
+
+function parseScenarioContactInfo(buffer?: Uint8Array): Project["scenario"]["contactInfo"] {
+  if (!buffer || buffer.byteLength < 4608) return null;
+  return {
+    scenarioName: pascalSlot(buffer, 0),
+    version: pascalSlot(buffer, 1),
+    date: pascalSlot(buffer, 2),
+    author: pascalSlot(buffer, 3),
+    email: pascalSlot(buffer, 4),
+    web: pascalSlot(buffer, 5),
+    fee: pascalSlot(buffer, 6),
+    payInfo: [7, 8, 9, 10, 11].map((slot) => pascalSlot(buffer, slot)),
+    titles: [12, 13, 14, 15, 16].map((slot) => pascalSlot(buffer, slot)),
+    description: pascalSlot(buffer, 17),
+    authored: false
+  };
+}
+
+function parseScenarioRestrictions(buffer?: Uint8Array): Project["scenario"]["restrictions"] {
+  if (!buffer || buffer.byteLength < 320) return null;
+  return {
+    description: pascalString(buffer.slice(0, 256)),
+    maxPartyCharacters: i16At(buffer, 256),
+    maxPartyLevel: i16At(buffer, 258),
+    bannedRaces: Array.from(buffer.slice(260, 290)).flatMap((value, index) => value ? [index + 1] : []),
+    bannedCastes: Array.from(buffer.slice(290, 320)).flatMap((value, index) => value ? [index + 1] : []),
+    authored: false
+  };
+}
+
+function pascalSlot(buffer: Uint8Array, slot: number) {
+  return pascalString(buffer.slice(slot * 256, slot * 256 + 256));
+}
+
+function pascalString(buffer: Uint8Array) {
+  const length = Math.min(buffer[0] ?? 0, Math.max(0, buffer.byteLength - 1));
+  return Array.from(buffer.slice(1, 1 + length))
+    .map((byte) => byte >= 32 && byte <= 126 ? String.fromCharCode(byte) : " ")
+    .join("")
+    .trimEnd();
+}
+
+function i16At(buffer: Uint8Array, offset: number) {
+  const value = (buffer[offset] << 8) | buffer[offset + 1];
+  return value & 0x8000 ? value - 0x10000 : value;
+}
+
 export async function openBrowserProject(source: BrowserScenarioSource): Promise<Project> {
   const text = await readProjectJson(source);
   const project = JSON.parse(text) as Project;
   project.assets ??= [];
+  project.scenario.shell ??= defaultScenarioShell(project.scenario.name);
+  project.scenario.contactInfo ??= defaultScenarioContactInfo(project.scenario.name);
+  project.scenario.restrictions ??= null;
   project.mapRecords ??= [];
   project.tileAttributes ??= [];
   project.messages ??= [];

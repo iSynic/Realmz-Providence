@@ -9,6 +9,7 @@ import { LinterPanel } from "../panels/LinterPanel";
 import { MapsPanel } from "../panels/MapsPanel";
 import { RecordsPanel } from "../panels/RecordsPanel";
 import { ResourcesPanel } from "../panels/ResourcesPanel";
+import { ScenarioPanel } from "../panels/ScenarioPanel";
 import { ScriptsPanel } from "../panels/ScriptsPanel";
 import { SuiteDomainPanel } from "../panels/SuiteDomainPanel";
 import { Issue } from "../types";
@@ -168,16 +169,10 @@ export function WorkbenchRouter({
 
   if (state.activeTab === "scenario") {
     return (
-      <SuiteDomainPanel
-        tab="scenario"
-        activeEditor={state.activeEditor}
+      <ScenarioPanel
         project={state.project}
-        catalog={state.libraryCatalog}
-        selectedEntity={state.selectedEntity}
-        onSelectEntity={onSelectEntity}
         onApplyCommand={onApplyCommand}
-        onCreateDraft={onCreateDraft}
-        onUpdateDraft={onUpdateDraft}
+        onSelectMap={onSelectMap}
       />
     );
   }

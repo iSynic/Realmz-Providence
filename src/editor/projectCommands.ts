@@ -62,6 +62,9 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
     return command.edcdValues ? updateEdcdRow(withSlot, command.id, command.edcdValues) : withSlot;
   }
   if (command.kind === "renameEditorEntity") return renameEditorEntity(project, command.entityId, command.displayName);
+  if (command.kind === "updateScenarioShell") return updateScenarioShell(project, command.changes);
+  if (command.kind === "updateScenarioContactInfo") return updateScenarioContactInfo(project, command.changes);
+  if (command.kind === "updateScenarioRestrictions") return updateScenarioRestrictions(project, command.changes);
   if (command.kind === "updateScenarioStartup") return updateScenarioStartup(project, command.fields);
   if (command.kind === "attachProjectAsset") return { ...project, assets: [...(project.assets ?? []), command.asset] };
   if (command.kind === "replaceProjectAsset") return {
@@ -594,6 +597,80 @@ function updateScenarioStartup(project: Project, fields: Extract<ProjectCommand,
       ...fields,
       ...(name ? { name } : {})
     }
+  };
+}
+
+function updateScenarioShell(project: Project, changes: Extract<ProjectCommand, { kind: "updateScenarioShell" }>["changes"]) {
+  const shell = {
+    ...defaultScenarioShell(project),
+    ...(project.scenario.shell ?? {}),
+    ...changes,
+    authored: true
+  };
+  return { ...project, scenario: { ...project.scenario, shell } };
+}
+
+function updateScenarioContactInfo(project: Project, changes: Extract<ProjectCommand, { kind: "updateScenarioContactInfo" }>["changes"]) {
+  const contactInfo = {
+    ...defaultScenarioContactInfo(project),
+    ...(project.scenario.contactInfo ?? {}),
+    ...changes,
+    payInfo: changes.payInfo ?? project.scenario.contactInfo?.payInfo ?? defaultScenarioContactInfo(project).payInfo,
+    titles: changes.titles ?? project.scenario.contactInfo?.titles ?? defaultScenarioContactInfo(project).titles,
+    authored: true
+  };
+  return { ...project, scenario: { ...project.scenario, contactInfo } };
+}
+
+function updateScenarioRestrictions(project: Project, changes: Extract<ProjectCommand, { kind: "updateScenarioRestrictions" }>["changes"]) {
+  const restrictions = {
+    ...defaultScenarioRestrictions(),
+    ...(project.scenario.restrictions ?? {}),
+    ...changes,
+    bannedRaces: changes.bannedRaces ?? project.scenario.restrictions?.bannedRaces ?? [],
+    bannedCastes: changes.bannedCastes ?? project.scenario.restrictions?.bannedCastes ?? [],
+    authored: true
+  };
+  return { ...project, scenario: { ...project.scenario, restrictions } };
+}
+
+function defaultScenarioShell(project: Project) {
+  return {
+    sourceFile: project.scenario.name || "Scenario",
+    recLevel: 1,
+    maxLevel: 999,
+    landLevel: project.maps.find((map) => map.levelType === "land")?.index ?? 0,
+    lookX: 0,
+    lookY: 0,
+    creatorUser: "",
+    codeseg1: new Array(20).fill(0),
+    codeseg2: new Array(20).fill(0),
+    trailingBytes: []
+  };
+}
+
+function defaultScenarioContactInfo(project: Project) {
+  return {
+    scenarioName: project.scenario.name,
+    version: "",
+    date: "",
+    author: "",
+    email: "",
+    web: "",
+    fee: "",
+    payInfo: ["", "", "", "", ""],
+    titles: ["", "", "", "", ""],
+    description: ""
+  };
+}
+
+function defaultScenarioRestrictions() {
+  return {
+    description: "",
+    maxPartyCharacters: 0,
+    maxPartyLevel: 0,
+    bannedRaces: [],
+    bannedCastes: []
   };
 }
 

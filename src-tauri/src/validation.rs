@@ -408,6 +408,31 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                 .to_string(),
         );
     }
+    if let Some(shell) = &project.scenario.shell {
+        if shell.source_file.trim().is_empty() {
+            errors.push("Scenario marker/main file name is empty.".to_string());
+        }
+        if shell.look_x < 0 || shell.look_x >= MAP_SIZE as i32 || shell.look_y < 0 || shell.look_y >= MAP_SIZE as i32 {
+            errors.push(format!(
+                "Scenario startup coordinates {},{} are outside the 0..{} map range.",
+                shell.look_x,
+                shell.look_y,
+                MAP_SIZE - 1
+            ));
+        }
+        if !project
+            .maps
+            .iter()
+            .any(|map| matches!(map.level_type, LevelType::Land) && map.index == shell.land_level as usize)
+        {
+            warnings.push(format!(
+                "Scenario startup land level {} does not resolve to an imported land map.",
+                shell.land_level
+            ));
+        }
+    } else {
+        warnings.push("No parsed Scenario startup shell is available; export will rely on source pass-through.".to_string());
+    }
     for file in &project.source.files {
         if supported.contains(file.name.as_str()) {
             exportable_files.push(file.name.clone());
@@ -1474,6 +1499,9 @@ mod tests {
                 name: "test".to_string(),
                 project_path: String::new(),
                 imported_at: String::new(),
+                shell: None,
+                contact_info: None,
+                restrictions: None,
             },
             source: SourceSnapshot {
                 source_path: String::new(),
