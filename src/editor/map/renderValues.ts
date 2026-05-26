@@ -43,6 +43,14 @@ export const PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES = [
   ...range(-5, -1)
 ];
 
+export const PAINTABLE_REFERENCE_ACTOR_ICON_VALUES = [
+  ...negativeAliases(range(379, 461)),
+  ...negativeAliases(range(464, 496)),
+  ...negativeAliases(range(500, 590)),
+  ...negativeAliases(range(600, 619)),
+  ...negativeAliases(range(692, 824))
+];
+
 export function tileIconCandidates(value: number) {
   if (value >= 0) return [];
   const candidates: number[] = [];
@@ -50,6 +58,7 @@ export function tileIconCandidates(value: number) {
   if (normalized !== null && normalized < 0) {
     candidates.push(normalized);
     const positive = Math.abs(normalized);
+    if (positive <= 999) candidates.push(positive);
     // Realmz looks up the normalized negative cicn ID, while our reference
     // asset export also contains Divinity/library icon ranges such as 6000+n.
     if (value !== normalized || positive <= 199) candidates.push(6000 + positive, 12000 + positive);
@@ -76,4 +85,8 @@ function range(start: number, end: number) {
   const out: number[] = [];
   for (let value = start; value <= end; value += 1) out.push(value);
   return out;
+}
+
+function negativeAliases(values: number[]) {
+  return values.map((value) => -value);
 }

@@ -2,7 +2,7 @@ import { MutableRefObject, useEffect, useMemo, useRef, useState } from "react";
 import { EditorState } from "../store";
 import { IconEntry, LibraryAsset, MapEntity, Project, TileAttributeFlag, TilePaletteCategory, TilesetAsset } from "../types";
 import { classifyTileValue, isDivinityVisualPathTile, standardTileValues, tileAttributeGroup } from "../map/tileMetadata";
-import { PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES } from "../map/renderValues";
+import { PAINTABLE_REFERENCE_ACTOR_ICON_VALUES, PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES } from "../map/renderValues";
 import { tileColor } from "./TileSprite";
 import { TileSwatch } from "./TileSwatch";
 import { TutorialTip } from "./TutorialTip";
@@ -27,6 +27,8 @@ type PaintPalettePanelProps = {
   variant?: "bar" | "sidebar";
 };
 
+type SpecialIconFilter = "placeable" | "actors" | "used" | "all";
+
 export function TileSelectionBar(props: Omit<PaintPalettePanelProps, "variant">) {
   return <PaintPalettePanel {...props} variant="bar" />;
 }
@@ -47,8 +49,9 @@ export function PaintPalettePanel({
   const standardTiles = standardTileValues(tileset);
   const usedTiles = usedTilesForMap(map);
   const rawTiles = rawTilesForMap(map, tileset);
-  const specialTiles = specialTilesForPalette(project ?? null, map, libraryAssets, icons);
   const [mode, setMode] = useState<TilePaletteCategory>("landlook");
+  const [specialFilter, setSpecialFilter] = useState<SpecialIconFilter>("placeable");
+  const specialTiles = specialTilesForPalette(project ?? null, map, libraryAssets, icons, specialFilter);
   const [attributeFilter, setAttributeFilter] = useState<TileAttributeFlag | "all">("all");
   const tileAttributes = project?.tileAttributes ?? [];
   const attributeTiles = useMemo(() => {
@@ -115,6 +118,21 @@ export function PaintPalettePanel({
               type="button"
               className={attributeFilter === filter.id ? "active" : ""}
               onClick={() => setAttributeFilter(filter.id)}
+              title={filter.hint}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+      )}
+      {variant === "sidebar" && mode === "special" && (
+        <div className="paint-attribute-filters" role="toolbar" aria-label="Special icon filters">
+          {SPECIAL_ICON_FILTERS.map((filter) => (
+            <button
+              key={filter.id}
+              type="button"
+              className={specialFilter === filter.id ? "active" : ""}
+              onClick={() => setSpecialFilter(filter.id)}
               title={filter.hint}
             >
               {filter.label}
@@ -262,37 +280,56 @@ const ATTRIBUTE_FILTERS: Array<{ id: TileAttributeFlag | "all"; label: string; h
   { id: "unknown-metadata", label: "Unknown", hint: "Tiles without decoded attribute metadata." }
 ];
 
+const SPECIAL_ICON_FILTERS: Array<{ id: SpecialIconFilter; label: string; hint: string }> = [
+  { id: "placeable", label: "Special Land", hint: "Project/library special land tiles and negative icon values commonly authored as map field values." },
+  { id: "actors", label: "NPCs / Creatures", hint: "Broader cicn actor, corpse, monster, and creature art exposed as negative map-field aliases for special/icon painting." },
+  { id: "used", label: "Used Here", hint: "Negative icon values already used in the current map." },
+  { id: "all", label: "All", hint: "All currently exposed special/icon paint values." }
+];
+
 function specialTilesForPalette(
   project: Project | null,
   map: MapEntity | null,
   libraryAssets: LibraryAsset[],
-  icons?: Record<number, IconEntry>
+  icons?: Record<number, IconEntry>,
+  filter: SpecialIconFilter = "placeable"
 ) {
-  const values = new Set<number>();
+  const placeable = new Set<number>();
+  const actors = new Set<number>();
+  const used = new Set<number>();
   for (const asset of project?.assets ?? []) {
-    if (asset.kind === "special-land-tile") values.add(asset.resourceId);
+    if (asset.kind === "special-land-tile") placeable.add(asset.resourceId);
   }
   for (const entity of project?.semanticSchema.entities ?? []) {
     if (entity.type !== "special-land-tile" && entity.type !== "icon-resource") continue;
     const resourceId = entitySummaryNumber(entity.summary, "resourceId") ?? entitySummaryNumber(entity.summary, "id");
     if (resourceId == null) continue;
-    values.add(resourceId < 0 ? resourceId : -resourceId);
+    placeable.add(resourceId < 0 ? resourceId : -resourceId);
   }
   for (const asset of libraryAssets) {
     if (!isPaintableSpecialLandAsset(asset)) continue;
     if (asset.resourceId == null) continue;
-    values.add(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId);
+    const value = asset.resourceId < 0 ? asset.resourceId : -asset.resourceId;
+    if (isActorIconResourceId(Math.abs(asset.resourceId))) actors.add(value);
+    else placeable.add(value);
   }
   for (const tile of PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES) {
-    values.add(tile);
+    placeable.add(tile);
+  }
+  for (const tile of PAINTABLE_REFERENCE_ACTOR_ICON_VALUES) {
+    actors.add(tile);
   }
   for (const tile of map?.tiles ?? []) {
-    if (tile < 0) values.add(tile);
+    if (tile < 0) used.add(tile);
   }
   for (const id of Object.keys(icons ?? {})) {
     const tile = Number(id);
-    if (Number.isFinite(tile) && tile < 0) values.add(tile);
+    if (Number.isFinite(tile) && tile < 0) placeable.add(tile);
   }
+  const values = new Set<number>();
+  if (filter === "placeable" || filter === "all") for (const value of placeable) values.add(value);
+  if (filter === "actors" || filter === "all") for (const value of actors) values.add(value);
+  if (filter === "used" || filter === "all") for (const value of used) values.add(value);
   return [...values].sort((a, b) => a - b);
 }
 
@@ -302,7 +339,17 @@ function isPaintableSpecialLandAsset(asset: LibraryAsset) {
     asset.type === "special-land-tile" ||
     asset.relativePath.includes("Land Archive") ||
     asset.label.includes("Special Land") ||
-    (typeof asset.resourceId === "number" && asset.resourceId < 0)
+    (typeof asset.resourceId === "number" && (asset.resourceId < 0 || isActorIconResourceId(Math.abs(asset.resourceId))))
+  );
+}
+
+function isActorIconResourceId(resourceId: number) {
+  return (
+    (resourceId >= 379 && resourceId <= 461) ||
+    (resourceId >= 464 && resourceId <= 496) ||
+    (resourceId >= 500 && resourceId <= 590) ||
+    (resourceId >= 600 && resourceId <= 619) ||
+    (resourceId >= 692 && resourceId <= 824)
   );
 }
 

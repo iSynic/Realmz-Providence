@@ -17,7 +17,7 @@ import { benchmarkBrowserProject, createBrowserProject, ensureBrowserReferenceTi
 import { IconButton } from "./editor/components/IconButton";
 import { EditorToolRail } from "./editor/components/EditorToolRail";
 import { loadImage } from "./editor/components/TileSprite";
-import { PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES, referencedMapIconIds, tileIconCandidates } from "./editor/map/renderValues";
+import { PAINTABLE_REFERENCE_ACTOR_ICON_VALUES, PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES, referencedMapIconIds, tileIconCandidates } from "./editor/map/renderValues";
 import { editorReducer, initialEditorState, BROWSER_PREVIEW_STATUS } from "./editor/store";
 import { BenchmarkReport, ExportReport, LibraryCatalog, ManagedAssetKind, MapEntity, MapViewFlag, Project, ProjectCommand, ProvidenceWorkspace, SelectedEntity, SemanticEntity, TilesetAsset, ValidationReport } from "./editor/types";
 import { fileToMediaAssetRequest, nextResourceId, requestToBrowserAsset, requestToBrowserReplacement } from "./editor/mediaAssets";
@@ -97,7 +97,7 @@ export function App() {
               ...(state.libraryCatalog?.assets ?? [])
                 .filter(isPaintableSpecialLandLibraryAsset)
                 .flatMap((asset) => asset.resourceId == null ? [] : tileIconCandidates(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId)),
-              ...(!desktopRuntime ? PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES.flatMap(tileIconCandidates) : [])
+              ...(!desktopRuntime ? [...PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES, ...PAINTABLE_REFERENCE_ACTOR_ICON_VALUES].flatMap(tileIconCandidates) : [])
             ])
           ].sort((a, b) => a - b).join(",")
         : "",
@@ -281,7 +281,7 @@ export function App() {
             .flatMap((asset) => tileIconCandidates(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId)),
           ...projectStampAssets.flatMap((asset) => tileIconCandidates(asset.resourceId)),
           ...libraryIconAssets.flatMap((asset) => asset.resourceId == null ? [] : tileIconCandidates(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId)),
-          ...(!desktopRuntime ? PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES.flatMap(tileIconCandidates) : [])
+          ...(!desktopRuntime ? [...PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES, ...PAINTABLE_REFERENCE_ACTOR_ICON_VALUES].flatMap(tileIconCandidates) : [])
         ])
       ].sort((a, b) => a - b);
       if (ids.length === 0) {
@@ -1093,7 +1093,17 @@ function isPaintableSpecialLandLibraryAsset(asset: LibraryCatalog["assets"][numb
     asset.type === "special-land-tile" ||
     asset.relativePath.includes("Land Archive") ||
     asset.label.includes("Special Land") ||
-    (typeof asset.resourceId === "number" && asset.resourceId < 0)
+    (typeof asset.resourceId === "number" && (asset.resourceId < 0 || isActorIconResourceId(Math.abs(asset.resourceId))))
+  );
+}
+
+function isActorIconResourceId(resourceId: number) {
+  return (
+    (resourceId >= 379 && resourceId <= 461) ||
+    (resourceId >= 464 && resourceId <= 496) ||
+    (resourceId >= 500 && resourceId <= 590) ||
+    (resourceId >= 600 && resourceId <= 619) ||
+    (resourceId >= 692 && resourceId <= 824)
   );
 }
 
