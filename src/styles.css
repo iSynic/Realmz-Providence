@@ -2252,6 +2252,7 @@ a.documents-source-chip:hover {
 
 .map-context-sidebar {
   width: 380px;
+  min-height: 0;
 }
 
 .map-context-rail {
@@ -2393,6 +2394,7 @@ a.documents-source-chip:hover {
 
 .map-context-scroll {
   gap: 0;
+  min-height: 0;
 }
 
 .map-context-header {
@@ -3012,6 +3014,31 @@ a.documents-source-chip:hover {
   margin: 0;
 }
 
+.paint-palette-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.paint-palette-tabs button {
+  min-width: 0;
+  border: 1px solid #2d3946;
+  border-radius: 5px;
+  background: #11161d;
+  color: #8da2b8;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 6px 5px;
+  cursor: pointer;
+}
+
+.paint-palette-tabs button.active {
+  border-color: #3c78b2;
+  background: #172d48;
+  color: #d8ecff;
+}
+
 .paint-quick-tiles {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -3041,16 +3068,21 @@ a.documents-source-chip:hover {
   border-color: #78d7ff;
 }
 
-.paint-tile-summary {
+.paint-tile-card {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr);
-  gap: 8px;
-  align-items: center;
+  gap: 7px;
   margin: 0 10px 8px;
   padding: 8px;
   border: 1px solid #26333f;
   border-radius: 6px;
   background: #10161d;
+}
+
+.paint-tile-summary {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
 }
 
 .paint-tile-preview {
@@ -3095,6 +3127,67 @@ a.documents-source-chip:hover {
 .paint-tile-summary small {
   color: #8795a5;
   font-size: 10px;
+}
+
+.tile-meaning-inspector {
+  display: grid;
+  gap: 6px;
+  padding: 7px;
+  border: 1px solid #213141;
+  border-radius: 5px;
+  background: rgba(6, 11, 16, 0.55);
+}
+
+.tile-meaning-inspector.compact {
+  padding: 6px;
+  opacity: 0.9;
+}
+
+.tile-meaning-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  color: #8ebeea;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tile-meaning-title b {
+  color: #f3c869;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.tile-meaning-grid {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 4px 8px;
+  align-items: baseline;
+  font-size: 10px;
+}
+
+.tile-meaning-grid span {
+  color: #778796;
+}
+
+.tile-meaning-grid b {
+  min-width: 0;
+  overflow: hidden;
+  color: #dce9f5;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tile-meaning-inspector p {
+  margin: 0;
+  color: #8a9caf;
+  font-size: 10px;
+  line-height: 1.35;
 }
 
 .toolset-disclosure {
@@ -3155,6 +3248,42 @@ a.documents-source-chip:hover {
   flex-wrap: wrap;
   gap: 5px;
   padding: 0 10px 10px;
+}
+
+.link-chip-group {
+  display: inline-flex;
+  min-width: 0;
+  gap: 4px;
+}
+
+.link-chip.action {
+  border-color: #4b3f1f;
+  background: #241f12;
+  color: #f3c869;
+}
+
+.link-chip.related {
+  display: grid;
+  align-items: start;
+  max-width: 100%;
+}
+
+.link-chip.related span,
+.link-chip.related b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.link-chip.related span {
+  color: #8290a0;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.link-chip.related b {
+  color: #dbe9f6;
 }
 
 .context-footnote {
@@ -3724,8 +3853,6 @@ a.documents-source-chip:hover {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 5px;
-  max-height: 230px;
-  overflow-y: scroll;
   padding: 1px;
 }
 
@@ -3741,6 +3868,17 @@ a.documents-source-chip:hover {
   color: #f7fafc;
   font-size: 10px;
   text-shadow: 0 1px 2px #000;
+}
+
+.paint-palette-grid button.tile-kind-special-negative,
+.paint-palette-grid button.tile-kind-raw-preserved,
+.paint-palette-grid button.tile-kind-marker-bit,
+.paint-palette-grid button.tile-kind-path-bit,
+.tile-strip button.tile-kind-special-negative,
+.tile-strip button.tile-kind-raw-preserved,
+.tile-strip button.tile-kind-marker-bit,
+.tile-strip button.tile-kind-path-bit {
+  border-style: dashed;
 }
 
 .tile-strip button {
@@ -3816,6 +3954,19 @@ a.documents-source-chip:hover {
 .tile-selection-bar small {
   color: #69737e;
   font-size: 10px;
+}
+
+.paint-palette-detail {
+  display: block;
+  border: 1px solid #263341;
+  border-radius: 5px;
+  background: #10161d;
+  padding: 6px 7px;
+  line-height: 1.35;
+}
+
+.paint-palette-detail b {
+  color: #cfe6ff;
 }
 
 .room-canvas-placeholder {
@@ -3921,6 +4072,36 @@ a.documents-source-chip:hover {
   inset: 0;
   background-repeat: no-repeat;
   image-rendering: auto;
+}
+
+.tile-swatch {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+}
+
+.tile-swatch canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+}
+
+.tile-swatch-badge {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  z-index: 2;
+  max-width: calc(100% - 4px);
+  border-radius: 3px;
+  background: rgba(5, 8, 12, 0.72);
+  padding: 1px 3px;
+  color: #f8fafc;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 1px 1px #000;
 }
 
 .tile-label {

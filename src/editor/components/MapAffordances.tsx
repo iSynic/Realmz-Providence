@@ -5,11 +5,29 @@ export function MapCapabilityPanel({
   map,
   randomLevel,
   activeTool,
+  showRandomRects,
+  onSetTool,
+  onOpenPalette,
+  onFocusFlags,
+  onFocusAtlas,
+  onClearLevel,
+  onShowRandomRects,
+  onHighlightRandomRect,
+  onEditRandomRect,
   onSelectRandomRect
 }: {
   map: MapEntity | null;
   randomLevel: RandomLevel | null;
   activeTool: EditorTool;
+  showRandomRects: boolean;
+  onSetTool: (tool: EditorTool) => void;
+  onOpenPalette: () => void;
+  onFocusFlags: () => void;
+  onFocusAtlas: () => void;
+  onClearLevel: () => void;
+  onShowRandomRects: () => void;
+  onHighlightRandomRect: () => void;
+  onEditRandomRect: () => void;
   onSelectRandomRect?: (rectIndex: number) => void;
 }) {
   const isDungeon = map?.levelType === "dungeon";
@@ -21,24 +39,30 @@ export function MapCapabilityPanel({
           <b>{activeToolLabel(activeTool)}</b>
         </summary>
         <div className="affordance-button-grid">
-          <AffordanceButton label="Paint Tiles" body="Use Paint and Sample to edit Realmz land and dungeon tile fields through the paint command path." tone="ready" />
-          <AffordanceButton label="Action Points" body="Use the Action Point tool or selected-cell actions to create, move, edit, and clear AP records." tone="ready" />
-          <AffordanceButton label="Map Flags" body="Landlook, darkness, and LOS are writable through the current map setup controls." tone="ready" />
-          <AffordanceButton label="Level Layout" body="Map-to-map starts and layout references are visible as source evidence; writer support is a later slice." />
-          <AffordanceButton label="Tile Atlases" body="Inspect standard and custom tileset resources used by this map, including imported atlas coverage." tone="ready" />
-          <AffordanceButton label="Clear Level" body="Whole-level destructive edits remain guarded until the region tools are fixture-backed." tone="danger" />
+          <AffordanceButton label="Paint Tiles" body="Use Paint and Sample to edit Realmz land and dungeon tile fields through the paint command path." tone="ready" onClick={() => { onSetTool("paint"); onOpenPalette(); }} />
+          <AffordanceButton label="Action Points" body="Use the Action Point tool or selected-cell actions to create, move, edit, and clear AP records." tone="ready" onClick={() => onSetTool("trigger")} />
+          <AffordanceButton label="Map Flags" body="Landlook, darkness, and LOS are writable through the current map setup controls." tone="ready" onClick={onFocusFlags} />
+          <AffordanceButton label="Tile Atlases" body="Inspect standard and custom tileset resources used by this map, including imported atlas coverage." tone="ready" onClick={() => { onFocusAtlas(); onOpenPalette(); }} />
+          <AffordanceButton label="Clear Level" body="Clear every cell to the level's base tile after confirmation." tone="danger" onClick={onClearLevel} />
         </div>
+      </details>
+      <details className="context-section affordance-section">
+        <summary>
+          <span>Source Evidence</span>
+          <b>layout</b>
+        </summary>
+        <p className="empty-copy compact">Level layout and map-to-map start records are preserved as source evidence until writer support is fixture-backed.</p>
       </details>
       <details className="context-section affordance-section" open>
         <summary>
           <span>Random Areas</span>
-          <b>{randomLevel?.rects.length ?? 0} / 20</b>
+          <b>{randomLevel?.rects.length ?? 0} / 20{showRandomRects ? "" : " hidden"}</b>
         </summary>
         <div className="affordance-button-grid compact">
-          <AffordanceButton label="Set Area" body="Use the Random Area tool or selected-cell actions to create and resize a Random Rectangle." tone="ready" />
-          <AffordanceButton label="Highlight" body="Locate and highlight the selected Random Rectangle on the map." tone="ready" />
-          <AffordanceButton label="Show All" body="Show every Random Rectangle on the current level." tone="ready" />
-          <AffordanceButton label="Edit Fields" body="Select a Random Rectangle to edit bounds, chance, battles, text, sound, and extra AP doors." tone="ready" />
+          <AffordanceButton label="Set Area" body="Use the Random Area tool or selected-cell actions to create and resize a Random Rectangle." tone="ready" onClick={() => onSetTool("random")} />
+          <AffordanceButton label="Highlight" body="Locate and highlight the first selected Random Rectangle on the map." tone="ready" onClick={onHighlightRandomRect} disabled={!randomLevel?.rects.length} />
+          <AffordanceButton label="Show All" body="Show every Random Rectangle on the current level." tone="ready" onClick={onShowRandomRects} />
+          <AffordanceButton label="Edit Fields" body="Select a Random Rectangle to edit bounds, chance, battles, text, sound, and extra AP doors." tone="ready" onClick={onEditRandomRect} disabled={!randomLevel?.rects.length} />
         </div>
         <div className="mini-rect-list">
           {randomLevel?.rects.slice(0, 6).map((rect) => (
@@ -141,15 +165,20 @@ export function CellTileEvidence({ cell, records }: { cell: { x: number; y: numb
 function AffordanceButton({
   label,
   body,
-  tone = "planned"
+  tone = "planned",
+  onClick,
+  disabled = false
 }: {
   label: string;
   body: string;
   tone?: "planned" | "ready" | "blocked" | "danger";
+  onClick?: () => void;
+  disabled?: boolean;
 }) {
+  const isDisabled = disabled || !onClick;
   return (
     <TutorialTip title={label} body={body} side="right">
-      <button className={`affordance-button ${tone}`} type="button" aria-disabled={tone !== "ready"}>
+      <button className={`affordance-button ${tone}`} type="button" disabled={isDisabled} aria-disabled={isDisabled} onClick={onClick}>
         {label}
       </button>
     </TutorialTip>

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { EditorState } from "../store";
 import { MapEntity, MapViewFlag, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
 import { triggerOverlayKinds } from "../semanticGraph";
@@ -22,6 +23,7 @@ export function MapsPanel({
   onSetSmoothTiles,
   onSetViewFlag,
   onClearSelection,
+  onOpenScripts,
   onBeginPaintStroke,
   onApplyCommand,
   onCommitPaintStroke,
@@ -43,11 +45,14 @@ export function MapsPanel({
   onSetSmoothTiles: (value: boolean) => void;
   onSetViewFlag: (flag: MapViewFlag, value: boolean) => void;
   onClearSelection: () => void;
+  onOpenScripts: (entity: SelectedEntity) => void;
   onBeginPaintStroke: (label: string) => void;
   onApplyCommand: (command: ProjectCommand) => void;
   onCommitPaintStroke: () => void;
   onCancelPaintStroke: () => void;
 }) {
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [contextFocus, setContextFocus] = useState<"flags" | "atlas" | "source">("flags");
   const visibleTriggers = state.showTriggers ? mapTriggers.filter((trigger) => triggerMatchesViewFilters(state.project, trigger, state)) : [];
   return (
     <>
@@ -57,9 +62,14 @@ export function MapsPanel({
         selectedTileset={selectedTileset}
         atlas={atlas}
         onSelectMap={onSelectMap}
-        onSetTool={onSetTool}
+        onSetTool={(tool) => {
+          onSetTool(tool);
+          if (tool === "paint") setPaletteOpen(true);
+        }}
         onSelectTile={onSelectTile}
         onApplyCommand={onApplyCommand}
+        paletteOpen={paletteOpen}
+        onSetPaletteOpen={setPaletteOpen}
       />
 
       <section className="editor-canvas-area">
@@ -106,9 +116,20 @@ export function MapsPanel({
       <MapSelectionSidebar
         state={state}
         selectedMap={selectedMap}
+        selectedTileset={selectedTileset}
+        atlas={atlas}
         selectedRandomLevel={selectedRandomLevel}
         mapTriggers={mapTriggers}
         mapRecords={mapRecords}
+        contextFocus={contextFocus}
+        onSetContextFocus={setContextFocus}
+        onSetTool={(tool) => {
+          onSetTool(tool);
+          if (tool === "paint") setPaletteOpen(true);
+        }}
+        onSetViewFlag={onSetViewFlag}
+        onOpenPalette={() => setPaletteOpen(true)}
+        onOpenScripts={onOpenScripts}
         onSelectEntity={onSelectEntity}
         onClearSelection={onClearSelection}
         onApplyCommand={onApplyCommand}

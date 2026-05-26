@@ -139,7 +139,6 @@ export function RealmzMapCanvas({
     smoothTiles,
     canvasCssSize,
     viewOptions.showRealTiles,
-    viewOptions.showDecodedColors,
     viewOptions.showRealmzCoordinates
   ]);
 

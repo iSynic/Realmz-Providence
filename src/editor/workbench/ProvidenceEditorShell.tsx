@@ -28,8 +28,6 @@ export function ProvidenceEditorShell({
   onNewProject,
   onOpenProject,
   onImportScenario,
-  onImportDivinity,
-  onImportRealmz,
   onUndo,
   onRedo,
   onSave,
@@ -58,8 +56,6 @@ export function ProvidenceEditorShell({
   onNewProject: () => void;
   onOpenProject: () => void;
   onImportScenario: () => void;
-  onImportDivinity: () => void;
-  onImportRealmz: () => void;
   onUndo: () => void;
   onRedo: () => void;
   onSave: () => void;
@@ -96,8 +92,6 @@ export function ProvidenceEditorShell({
         onNewProject={onNewProject}
         onOpenProject={onOpenProject}
         onImportScenario={onImportScenario}
-        onImportDivinity={onImportDivinity}
-        onImportRealmz={onImportRealmz}
         onUndo={onUndo}
         onRedo={onRedo}
         onSave={onSave}

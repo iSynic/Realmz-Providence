@@ -42,11 +42,6 @@ export function drawBaseMap(
       if (!drewSprite) {
         ctx.fillStyle = tileColor(tile);
         ctx.fillRect(x * cell, y * cell, Math.ceil(cell), Math.ceil(cell));
-      } else if (viewOptions.showDecodedColors) {
-        ctx.globalAlpha = 0.22;
-        ctx.fillStyle = tileColor(tile);
-        ctx.fillRect(x * cell, y * cell, Math.ceil(cell), Math.ceil(cell));
-        ctx.globalAlpha = 1;
       }
     }
   }

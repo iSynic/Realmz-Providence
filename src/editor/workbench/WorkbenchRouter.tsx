@@ -23,7 +23,6 @@ export function WorkbenchRouter({
   mapRecords,
   atlas,
   desktopRuntime,
-  browserFileSystem,
   projectDir,
   workspaceDir,
   exportReport,
@@ -38,12 +37,11 @@ export function WorkbenchRouter({
   onSetSmoothTiles,
   onSetViewFlag,
   onClearSelection,
+  onOpenScripts,
   onBeginPaintStroke,
   onApplyCommand,
   onCommitPaintStroke,
   onCancelPaintStroke,
-  onImportDivinity,
-  onImportRealmz,
   onCreateDraft,
   onUpdateDraft,
   onImportAssets,
@@ -63,7 +61,6 @@ export function WorkbenchRouter({
   mapRecords: SemanticEntity[];
   atlas: EditorState["atlasEntries"][string] | null;
   desktopRuntime: boolean;
-  browserFileSystem: boolean;
   projectDir: string;
   workspaceDir: string;
   exportReport: ExportReport | null;
@@ -78,12 +75,11 @@ export function WorkbenchRouter({
   onSetSmoothTiles: (value: boolean) => void;
   onSetViewFlag: (flag: MapViewFlag, value: boolean) => void;
   onClearSelection: () => void;
+  onOpenScripts: (entity: SelectedEntity) => void;
   onBeginPaintStroke: (label: string) => void;
   onApplyCommand: (command: ProjectCommand) => void;
   onCommitPaintStroke: () => void;
   onCancelPaintStroke: () => void;
-  onImportDivinity: () => void;
-  onImportRealmz: () => void;
   onCreateDraft: (spec: LibraryDraftSpec) => void;
   onUpdateDraft: (entityId: string, changes: { label?: string; notes?: string }) => void;
   onImportAssets: (files: File[], kind: ManagedAssetKind) => void;
@@ -103,10 +99,6 @@ export function WorkbenchRouter({
       <LibraryHubPanel
         workspace={state.workspace}
         catalog={state.libraryCatalog}
-        desktopRuntime={desktopRuntime}
-        browserFileSystem={browserFileSystem}
-        onImportDivinity={onImportDivinity}
-        onImportRealmz={onImportRealmz}
       />
     );
   }
@@ -161,6 +153,7 @@ export function WorkbenchRouter({
         onSetSmoothTiles={onSetSmoothTiles}
         onSetViewFlag={onSetViewFlag}
         onClearSelection={onClearSelection}
+        onOpenScripts={onOpenScripts}
         onBeginPaintStroke={onBeginPaintStroke}
         onApplyCommand={onApplyCommand}
         onCommitPaintStroke={onCommitPaintStroke}

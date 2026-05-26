@@ -1,4 +1,4 @@
-import { BookOpen, Database, Download, FilePlus2, FolderOpen, LibraryBig, RefreshCcw, Save, Upload } from "lucide-react";
+import { BookOpen, Download, FilePlus2, FolderOpen, LibraryBig, RefreshCcw, Save, Upload } from "lucide-react";
 import { ActiveWorkbench } from "../types";
 import { IconButton } from "../components/IconButton";
 
@@ -27,8 +27,6 @@ export function WorkbenchTopbar({
   onNewProject,
   onOpenProject,
   onImportScenario,
-  onImportDivinity,
-  onImportRealmz,
   onUndo,
   onRedo,
   onSave,
@@ -58,8 +56,6 @@ export function WorkbenchTopbar({
   onNewProject: () => void;
   onOpenProject: () => void;
   onImportScenario: () => void;
-  onImportDivinity: () => void;
-  onImportRealmz: () => void;
   onUndo: () => void;
   onRedo: () => void;
   onSave: () => void;
@@ -122,26 +118,6 @@ export function WorkbenchTopbar({
             <span>Import</span>
           </button>
         )}
-        <button
-          className="topbar-action-button"
-          type="button"
-          onClick={onImportDivinity}
-          disabled={!canUseFiles}
-          title="Refresh bundled Divinity library catalog from a local source folder"
-        >
-          <LibraryBig size={15} />
-          <span>Refresh Divinity</span>
-        </button>
-        <button
-          className="topbar-action-button"
-          type="button"
-          onClick={onImportRealmz}
-          disabled={!canUseFiles}
-          title="Refresh bundled Realmz reference catalog from a local source folder"
-        >
-          <Database size={15} />
-          <span>Refresh Realmz</span>
-        </button>
         <div className="editor-undo-redo" aria-label="Undo and redo">
           <IconButton title={undoLabel ? `Undo ${undoLabel} (Ctrl+Z)` : "Undo (Ctrl+Z)"} onClick={onUndo} disabled={!canUndo}>
             <RefreshCcw size={15} />

@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
 import { TOOLS } from "../constants";
 import { EditorState } from "../store";
-import { EditorTool, MapEntity, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
+import { EditorTool, MapEntity, MapViewFlag, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
 import { randomRectEntityId } from "../map/geometry";
 import { actionSlotEntitiesForTriggerRecord } from "../semanticGraph";
-import { mapEntityId, selectEntityFromId, triggerEntityId } from "../utils";
+import { compactValue, linksFor, mapEntityId, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
 import { InfoGrid } from "./InfoGrid";
 import { ActionPointCodeTable, CellTileEvidence, MapCapabilityPanel, RandomRectangleForm } from "./MapAffordances";
 import { PaintPalettePanel } from "./TileSelectionBar";
-import { TileSprite, tileColor } from "./TileSprite";
+import { classifyTileValue } from "../map/tileMetadata";
+import { tileColor } from "./TileSprite";
+import { TileSwatch } from "./TileSwatch";
 import { TutorialTip } from "./TutorialTip";
 import { ScrollArea } from "../ui";
 import { ResizablePane } from "./ResizablePane";
@@ -22,7 +24,9 @@ export function MapContextSidebar({
   onSelectMap,
   onSetTool,
   onSelectTile,
-  onApplyCommand
+  onApplyCommand,
+  paletteOpen,
+  onSetPaletteOpen
 }: {
   state: EditorState;
   selectedMap: MapEntity | null;
@@ -32,6 +36,8 @@ export function MapContextSidebar({
   onSetTool: (tool: EditorTool) => void;
   onSelectTile: (tile: number) => void;
   onApplyCommand: (command: ProjectCommand) => void;
+  paletteOpen: boolean;
+  onSetPaletteOpen: (open: boolean) => void;
 }) {
   return (
     <ResizablePane
@@ -44,6 +50,11 @@ export function MapContextSidebar({
       edge="right"
     >
       <ScrollArea className="contextual-sidebar-scroll" aria-label="Map tools and browser">
+        <MapOutliner
+          project={state.project}
+          selectedMap={selectedMap}
+          onSelectMap={onSelectMap}
+        />
         <MapToolset
           state={state}
           selectedMap={selectedMap}
@@ -51,11 +62,8 @@ export function MapContextSidebar({
           atlas={atlas}
           onSetTool={onSetTool}
           onSelectTile={onSelectTile}
-        />
-        <MapOutliner
-          project={state.project}
-          selectedMap={selectedMap}
-          onSelectMap={onSelectMap}
+          paletteOpen={paletteOpen}
+          onSetPaletteOpen={onSetPaletteOpen}
         />
       </ScrollArea>
     </ResizablePane>
@@ -65,18 +73,34 @@ export function MapContextSidebar({
 export function MapSelectionSidebar({
   state,
   selectedMap,
+  selectedTileset,
+  atlas,
   selectedRandomLevel,
   mapTriggers,
   mapRecords,
+  contextFocus,
+  onSetContextFocus,
+  onSetTool,
+  onSetViewFlag,
+  onOpenPalette,
+  onOpenScripts,
   onSelectEntity,
   onClearSelection,
   onApplyCommand
 }: {
   state: EditorState;
   selectedMap: MapEntity | null;
+  selectedTileset: TilesetAsset | null;
+  atlas: EditorState["atlasEntries"][string] | null;
   selectedRandomLevel: RandomLevel | null;
   mapTriggers: TriggerRecord[];
   mapRecords: SemanticEntity[];
+  contextFocus: "flags" | "atlas" | "source";
+  onSetContextFocus: (focus: "flags" | "atlas" | "source") => void;
+  onSetTool: (tool: EditorTool) => void;
+  onSetViewFlag: (flag: MapViewFlag, value: boolean) => void;
+  onOpenPalette: () => void;
+  onOpenScripts: (entity: SelectedEntity) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
   onClearSelection: () => void;
   onApplyCommand: (command: ProjectCommand) => void;
@@ -116,6 +140,7 @@ export function MapSelectionSidebar({
             map={selectedMap}
             project={state.project}
             onSelectEntity={onSelectEntity}
+            onOpenScripts={onOpenScripts}
             onClearSelection={onClearSelection}
             onApplyCommand={onApplyCommand}
           />
@@ -123,8 +148,16 @@ export function MapSelectionSidebar({
           <CoreMapSetup
             project={state.project}
             selectedMap={selectedMap}
+            selectedTileset={selectedTileset}
+            atlas={atlas}
             randomLevel={selectedRandomLevel}
             activeTool={state.activeTool}
+            contextFocus={contextFocus}
+            showRandomRects={state.showRandomRects}
+            onSetContextFocus={onSetContextFocus}
+            onSetTool={onSetTool}
+            onSetViewFlag={onSetViewFlag}
+            onOpenPalette={onOpenPalette}
             onSelectEntity={onSelectEntity}
             onApplyCommand={onApplyCommand}
           />
@@ -143,18 +176,57 @@ type Selection =
 function CoreMapSetup({
   project,
   selectedMap,
+  selectedTileset,
+  atlas,
   randomLevel,
   activeTool,
+  contextFocus,
+  showRandomRects,
+  onSetContextFocus,
+  onSetTool,
+  onSetViewFlag,
+  onOpenPalette,
   onSelectEntity,
   onApplyCommand
 }: {
   project: Project | null;
   selectedMap: MapEntity | null;
+  selectedTileset: TilesetAsset | null;
+  atlas: EditorState["atlasEntries"][string] | null;
   randomLevel: RandomLevel | null;
   activeTool: EditorTool;
+  contextFocus: "flags" | "atlas" | "source";
+  showRandomRects: boolean;
+  onSetContextFocus: (focus: "flags" | "atlas" | "source") => void;
+  onSetTool: (tool: EditorTool) => void;
+  onSetViewFlag: (flag: MapViewFlag, value: boolean) => void;
+  onOpenPalette: () => void;
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
+  const clearLevel = () => {
+    if (!selectedMap) return;
+    const fillTile = selectedTileset?.baseTile ?? selectedMap.tiles[0] ?? 1;
+    const confirmed = window.confirm(`Clear ${selectedMap.name} to tile ${fillTile}? This will overwrite all ${selectedMap.tiles.length.toLocaleString()} cells.`);
+    if (!confirmed) return;
+    onApplyCommand({
+      kind: "paintTiles",
+      label: "Clear level",
+      mapId: selectedMap.id,
+      cells: selectedMap.tiles.map((from, index) => ({
+        index,
+        x: index % selectedMap.width,
+        y: Math.floor(index / selectedMap.width),
+        from,
+        to: fillTile
+      }))
+    });
+  };
+  const focusFirstRandomRect = () => {
+    if (!selectedMap || !randomLevel?.rects.length) return;
+    onSetViewFlag("showRandomRects", true);
+    onSelectEntity({ type: "encounter", id: randomRectEntityId(selectedMap, randomLevel.rects[0].rectIndex) });
+  };
   return (
     <section className="context-panel">
       <div className="panel-header">
@@ -175,12 +247,29 @@ function CoreMapSetup({
           ]}
         />
       </details>
-      <details className="context-section" open>
+      <details className="context-section" open={contextFocus === "flags"}>
         <summary>
           <span>Realmz Map Flags</span>
           <b>{randomLevel ? "configured" : "none"}</b>
         </summary>
-        <MapLevelSettings map={selectedMap} randomLevel={randomLevel} onApplyCommand={onApplyCommand} />
+        <MapLevelSettings map={selectedMap} randomLevel={randomLevel} selectedTileset={selectedTileset} onApplyCommand={onApplyCommand} />
+      </details>
+      <details className="context-section" open={contextFocus === "atlas"}>
+        <summary>
+          <span>Tile Atlas</span>
+          <b>{selectedTileset?.id ?? "none"}</b>
+        </summary>
+        <InfoGrid
+          rows={[
+            ["Tileset", selectedTileset?.name ?? "none"],
+            ["Atlas", selectedTileset?.imagePath ? "available" : "missing"],
+            ["Tile Count", selectedTileset ? selectedTileset.columns * selectedTileset.rows : 0],
+            ["Base Tile", selectedTileset?.baseTile ?? "none"]
+          ]}
+        />
+        <p className="context-capacity-note">
+          {atlas ? "Palette previews use the same renderer as the map canvas." : "No atlas image is loaded; Providence will show fallback swatches."}
+        </p>
       </details>
       {selectedMap && project && (
         <p className="context-capacity-note">
@@ -192,6 +281,18 @@ function CoreMapSetup({
         map={selectedMap}
         randomLevel={randomLevel}
         activeTool={activeTool}
+        showRandomRects={showRandomRects}
+        onSetTool={(tool) => {
+          onSetTool(tool);
+          if (tool === "paint") onOpenPalette();
+        }}
+        onOpenPalette={onOpenPalette}
+        onFocusFlags={() => onSetContextFocus("flags")}
+        onFocusAtlas={() => onSetContextFocus("atlas")}
+        onClearLevel={clearLevel}
+        onShowRandomRects={() => onSetViewFlag("showRandomRects", true)}
+        onHighlightRandomRect={focusFirstRandomRect}
+        onEditRandomRect={focusFirstRandomRect}
         onSelectRandomRect={
           selectedMap
             ? (rectIndex) => onSelectEntity({ type: "encounter", id: randomRectEntityId(selectedMap, rectIndex) })
@@ -252,7 +353,9 @@ function MapToolset({
   selectedTileset,
   atlas,
   onSetTool,
-  onSelectTile
+  onSelectTile,
+  paletteOpen,
+  onSetPaletteOpen
 }: {
   state: EditorState;
   selectedMap: MapEntity | null;
@@ -260,8 +363,9 @@ function MapToolset({
   atlas: EditorState["atlasEntries"][string] | null;
   onSetTool: (tool: EditorTool) => void;
   onSelectTile: (tile: number) => void;
+  paletteOpen: boolean;
+  onSetPaletteOpen: (open: boolean) => void;
 }) {
-  const [paletteOpen, setPaletteOpen] = useState(false);
   return (
     <section className="context-panel map-toolset-panel">
       <div className="panel-header">
@@ -283,9 +387,10 @@ function MapToolset({
         inspectedTile={state.selectedCell?.tile ?? null}
         atlas={atlas}
         selectedTileset={selectedTileset}
+        icons={state.iconEntries}
         onSelectTile={onSelectTile}
       />
-      <button className={`toolset-disclosure${paletteOpen ? " open" : ""}`} onClick={() => setPaletteOpen((open) => !open)}>
+      <button className={`toolset-disclosure${paletteOpen ? " open" : ""}`} onClick={() => onSetPaletteOpen(!paletteOpen)}>
         <span>{paletteOpen ? "Collapse" : "Open"} Paint Palette</span>
         <b>Paint {state.selectedTile}</b>
       </button>
@@ -297,6 +402,7 @@ function MapToolset({
           setSelectedTile={onSelectTile}
           tileset={selectedTileset}
           atlas={atlas}
+          icons={state.iconEntries}
           atlasStatus={state.atlasStatus}
           variant="sidebar"
         />
@@ -308,12 +414,15 @@ function MapToolset({
 function MapLevelSettings({
   map,
   randomLevel,
+  selectedTileset,
   onApplyCommand
 }: {
   map: MapEntity | null;
   randomLevel: RandomLevel | null;
+  selectedTileset: TilesetAsset | null;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
+  const [applied, setApplied] = useState<string | null>(null);
   if (!map) return <p className="empty-copy compact">Select a map to edit Realmz level flags.</p>;
   const commit = (fields: Partial<Pick<RandomLevel, "landlook" | "isDark" | "useLos">>) => {
     onApplyCommand({
@@ -323,7 +432,10 @@ function MapLevelSettings({
       levelIndex: map.index,
       fields
     });
+    setApplied("Applied");
+    window.setTimeout(() => setApplied(null), 1200);
   };
+  const atlasMissing = map.levelType === "land" && selectedTileset && (!selectedTileset.available || !selectedTileset.imagePath);
   return (
     <div className="map-level-settings">
       <MapNumberField label="Landlook" value={randomLevel?.landlook ?? map.render.landlook ?? (map.levelType === "land" ? 2 : -1)} onCommit={(landlook) => commit({ landlook })} />
@@ -335,7 +447,14 @@ function MapLevelSettings({
         <input type="checkbox" checked={Boolean(randomLevel?.useLos)} onChange={(event) => commit({ useLos: event.currentTarget.checked })} />
         <span>Use line of sight</span>
       </label>
-      <small>{map.levelType === "dungeon" ? "Dungeon geometry stays evidence-only in this slice." : "Landlook changes update Realmz random-level metadata and render hints."}</small>
+      {applied && <small className="map-applied-status">{applied}</small>}
+      {atlasMissing && <div className="map-diagnostic-list"><span>Landlook atlas is unavailable; map rendering will fall back to colors.</span></div>}
+      <small>
+        {map.levelType === "dungeon"
+          ? "Dungeon geometry stays evidence-only in this slice."
+          : "Landlook changes update Realmz random-level metadata and render hints."}{" "}
+        Dark and line-of-sight are saved/exported Realmz flags; a party-position lighting preview is planned.
+      </small>
     </div>
   );
 }
@@ -345,31 +464,76 @@ function PaintTileSummary({
   inspectedTile,
   atlas,
   selectedTileset,
+  icons,
   onSelectTile
 }: {
   selectedTile: number;
   inspectedTile: number | null;
   atlas: EditorState["atlasEntries"][string] | null;
   selectedTileset: TilesetAsset | null;
+  icons: EditorState["iconEntries"];
   onSelectTile: (tile: number) => void;
 }) {
+  const paintMeaning = classifyTileValue(selectedTile, selectedTileset);
+  const inspectedMeaning = inspectedTile != null && inspectedTile !== selectedTile
+    ? classifyTileValue(inspectedTile, selectedTileset)
+    : null;
   return (
-    <div className="paint-tile-summary">
-      <button
-        type="button"
-        className="paint-tile-preview"
-        style={{ background: tileColor(selectedTile) }}
-        onClick={() => onSelectTile(selectedTile)}
-        title={`Selected paint tile ${selectedTile}`}
-      >
-        {atlas && <TileSprite atlas={atlas} tile={selectedTile} />}
-        <span>{selectedTile}</span>
-      </button>
-      <div>
-        <strong>Paint tile {selectedTile}</strong>
-        <small>{selectedTileset?.name ?? "No tileset loaded"}</small>
-        {inspectedTile != null && <small>Selected cell tile {inspectedTile}</small>}
+    <div className="paint-tile-card">
+      <div className="paint-tile-summary">
+        <button
+          type="button"
+          className="paint-tile-preview"
+          style={{ background: tileColor(selectedTile) }}
+          onClick={() => onSelectTile(selectedTile)}
+          title={`Selected paint tile ${selectedTile}`}
+        >
+          <TileSwatch atlas={atlas} icons={icons} tile={selectedTile} tileset={selectedTileset} />
+        </button>
+        <div>
+          <strong>{paintMeaning.label}</strong>
+          <small>{selectedTileset?.name ?? "No tileset loaded"}</small>
+          {inspectedTile != null && <small>Selected cell tile {inspectedTile}</small>}
+        </div>
       </div>
+      <TileMeaningInspector title="Paint Tile Meaning" meaning={paintMeaning} />
+      {inspectedMeaning && <TileMeaningInspector title="Selected Cell Meaning" meaning={inspectedMeaning} compact />}
+    </div>
+  );
+}
+
+function TileMeaningInspector({
+  title,
+  meaning,
+  compact = false
+}: {
+  title: string;
+  meaning: ReturnType<typeof classifyTileValue>;
+  compact?: boolean;
+}) {
+  const flags = [
+    meaning.flags.markerBit ? "marker" : null,
+    meaning.flags.pathBit ? "path" : null,
+    meaning.flags.noteBit ? "note" : null,
+    meaning.iconId != null ? `icon ${meaning.iconId}` : null
+  ].filter(Boolean).join(", ") || "none";
+  return (
+    <div className={`tile-meaning-inspector${compact ? " compact" : ""}`}>
+      <div className="tile-meaning-title">
+        <span>{title}</span>
+        <b>{meaning.kind.replace(/-/g, " ")}</b>
+      </div>
+      <div className="tile-meaning-grid">
+        <span>Raw</span>
+        <b>{meaning.raw}</b>
+        <span>Render</span>
+        <b>{meaning.renderTile}</b>
+        <span>Normalized</span>
+        <b>{meaning.normalized}</b>
+        <span>Flags</span>
+        <b>{flags}</b>
+      </div>
+      {!compact && <p>{meaning.compatibility}</p>}
     </div>
   );
 }
@@ -379,6 +543,7 @@ function SelectionInspector({
   map,
   project,
   onSelectEntity,
+  onOpenScripts,
   onClearSelection,
   onApplyCommand
 }: {
@@ -386,6 +551,7 @@ function SelectionInspector({
   map: MapEntity | null;
   project: Project | null;
   onSelectEntity: (entity: SelectedEntity) => void;
+  onOpenScripts: (entity: SelectedEntity) => void;
   onClearSelection: () => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
@@ -420,6 +586,7 @@ function SelectionInspector({
             rects={selection.rects}
             records={selection.records}
             onSelectEntity={onSelectEntity}
+            onOpenScripts={onOpenScripts}
           />
           {map && (
             <div className="context-action-stack">
@@ -487,21 +654,14 @@ function SelectionInspector({
           trigger={selection.trigger}
           onApplyCommand={onApplyCommand}
           onSelectEntity={onSelectEntity}
+          onOpenScripts={onOpenScripts}
         />
       )}
       {selection.kind === "random" && (
         <RandomRectangleEditor map={map} rect={selection.rect} onApplyCommand={onApplyCommand} />
       )}
       {selection.kind === "record" && (
-        <InfoGrid
-          rows={[
-            ["Label", selection.record.label],
-            ["Type", selection.record.type],
-            ["Source", selection.record.source],
-            ["Start", `${summaryNumber(selection.record, "startX") ?? "?"}, ${summaryNumber(selection.record, "startY") ?? "?"}`],
-            ["Edit State", selection.record.editState ?? (selection.record.editable ? "editable" : "inspect-only")]
-          ]}
-        />
+        <RecordSelectionDetails project={project} record={selection.record} onSelectEntity={onSelectEntity} />
       )}
       {project && <small className="context-footnote">{project.scenario.name}</small>}
     </section>
@@ -552,12 +712,14 @@ function TriggerSelectionDetails({
   project,
   trigger,
   onApplyCommand,
-  onSelectEntity
+  onSelectEntity,
+  onOpenScripts
 }: {
   project: Project | null;
   trigger: TriggerRecord;
   onApplyCommand: (command: ProjectCommand) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
+  onOpenScripts: (entity: SelectedEntity) => void;
 }) {
   const slots = actionSlotEntitiesForTriggerRecord(project, trigger);
   const isActionPoint = trigger.source !== "Data ED3" && trigger.levelType && trigger.levelIndex != null;
@@ -584,6 +746,17 @@ function TriggerSelectionDetails({
           ["Edit State", isActionPoint ? "Realmz-writable" : "macro"]
         ]}
       />
+      {isActionPoint && (
+        <div className="context-action-stack">
+          <button
+            className="btn btn-primary btn-xs context-action-button"
+            type="button"
+            onClick={() => onOpenScripts(selectEntityFromId(triggerEntityId(trigger.levelType, trigger.levelIndex, trigger.recordIndex, trigger.source)))}
+          >
+            Open in Scripts/AP
+          </button>
+        </div>
+      )}
       {isActionPoint && trigger.coordinate && (
         <div className="map-authoring-form">
           <MapNumberField label="Cell X" value={trigger.coordinate.x} min={0} max={89} onCommit={(x) => move({ x })} />
@@ -702,25 +875,34 @@ function SelectionLinks({
   triggers,
   rects,
   records,
-  onSelectEntity
+  onSelectEntity,
+  onOpenScripts
 }: {
   map: MapEntity | null;
   triggers: TriggerRecord[];
   rects: RandomLevel["rects"];
   records: SemanticEntity[];
   onSelectEntity: (entity: SelectedEntity) => void;
+  onOpenScripts: (entity: SelectedEntity) => void;
 }) {
   return (
     <div className="selection-link-list">
-      {triggers.map((trigger) => (
-        <button
-          key={trigger.id}
-          className="link-chip"
-          onClick={() => onSelectEntity(selectEntityFromId(triggerEntityId(trigger.levelType, trigger.levelIndex, trigger.recordIndex, trigger.source)))}
-        >
-          {trigger.actions[0]?.label ?? "Action Point"} #{trigger.recordIndex}
-        </button>
-      ))}
+      {triggers.map((trigger) => {
+        const selected = selectEntityFromId(triggerEntityId(trigger.levelType, trigger.levelIndex, trigger.recordIndex, trigger.source));
+        return (
+          <div className="link-chip-group" key={trigger.id}>
+            <button
+              className="link-chip"
+              onClick={() => onSelectEntity(selected)}
+            >
+              {trigger.actions[0]?.label ?? "Action Point"} #{trigger.recordIndex}
+            </button>
+            <button className="link-chip action" onClick={() => onOpenScripts(selected)}>
+              Scripts/AP
+            </button>
+          </div>
+        );
+      })}
       {map && rects.map((rect) => (
         <button key={rect.rectIndex} className="link-chip" onClick={() => onSelectEntity({ type: "encounter", id: `random:${map.levelType}:${map.index}:${rect.rectIndex}` })}>
           Random Rectangle {rect.rectIndex}
@@ -733,6 +915,93 @@ function SelectionLinks({
       ))}
     </div>
   );
+}
+
+function RecordSelectionDetails({
+  project,
+  record,
+  onSelectEntity
+}: {
+  project: Project | null;
+  record: SemanticEntity;
+  onSelectEntity: (entity: SelectedEntity) => void;
+}) {
+  const links = linksFor(project, record.id);
+  const summaryRows = Object.entries(record.summary)
+    .filter(([, value]) => value !== null && value !== undefined && value !== "")
+    .slice(0, 12)
+    .map(([key, value]) => [labelizeKey(key), compactValue(value)] as [string, string]);
+  return (
+    <div className="record-selection-details">
+      <InfoGrid
+        rows={[
+          ["Label", record.label],
+          ["Type", record.type],
+          ["Source", record.source],
+          ["Record", record.recordRef ?? "none"],
+          ["Byte Range", record.byteRange ? `${record.byteRange.start}..${record.byteRange.endExclusive} (${record.byteRange.length} bytes)` : "none"],
+          ["Edit State", record.editState ?? (record.editable ? "editable" : "inspect-only")],
+          ["Confidence", record.confidence]
+        ]}
+      />
+      {summaryRows.length > 0 && (
+        <details className="context-section" open>
+          <summary><span>Decoded Fields</span><b>{summaryRows.length}</b></summary>
+          <InfoGrid rows={summaryRows} />
+        </details>
+      )}
+      <RelatedLinkSection
+        title="Outgoing Links"
+        links={links.outgoing}
+        direction="outgoing"
+        project={project}
+        onSelectEntity={onSelectEntity}
+      />
+      <RelatedLinkSection
+        title="Incoming Links"
+        links={links.incoming}
+        direction="incoming"
+        project={project}
+        onSelectEntity={onSelectEntity}
+      />
+    </div>
+  );
+}
+
+function RelatedLinkSection({
+  title,
+  links,
+  direction,
+  project,
+  onSelectEntity
+}: {
+  title: string;
+  links: ReturnType<typeof linksFor>["outgoing"];
+  direction: "outgoing" | "incoming";
+  project: Project | null;
+  onSelectEntity: (entity: SelectedEntity) => void;
+}) {
+  return (
+    <details className="context-section" open={links.length > 0}>
+      <summary><span>{title}</span><b>{links.length}</b></summary>
+      <div className="selection-link-list">
+        {links.slice(0, 24).map((link) => {
+          const id = direction === "outgoing" ? link.to : link.from;
+          return (
+            <button key={link.id} className="link-chip related" onClick={() => onSelectEntity(selectEntityFromId(id))}>
+              <span>{link.kind.replace(/_/g, " ")}</span>
+              <b>{semanticLabel(project, id)}</b>
+            </button>
+          );
+        })}
+        {links.length === 0 && <span className="empty-inline">No related records resolved.</span>}
+      </div>
+    </details>
+  );
+}
+
+function labelizeKey(key: string) {
+  return key.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/[_-]/g, " ");
 }
 
 function selectionSummary(

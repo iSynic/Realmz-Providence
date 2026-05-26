@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import { BookOpen, Database, Download, FilePlus2, FolderOpen, LibraryBig, RefreshCcw, Save, Upload } from "lucide-react";
+import { BookOpen, Download, FilePlus2, FolderOpen, LibraryBig, RefreshCcw, Save, Upload } from "lucide-react";
 import { useEffect, useMemo, useReducer, useState } from "react";
 import { DEFAULT_DIVINITY_ROOT, DEFAULT_EXPORT, DEFAULT_REALMZ_DATA_ROOT, DEFAULT_WORKSPACE } from "./editor/constants";
 import {
@@ -73,6 +73,22 @@ export function App() {
   const selectedMapRecords = useMemo(() => semanticMapRecordsForMap(state.project, selectedMap), [state.project, selectedMap]);
   const visibleIssues = useMemo(() => issuesFor(state.project), [state.project]);
   const selectedAtlas = selectedTileset ? state.atlasEntries[selectedTileset.id] ?? null : null;
+  const atlasLoadKey = useMemo(
+    () =>
+      state.project
+        ? state.project.assetCatalog.tilesets
+            .map((asset) => `${asset.id}:${asset.imagePath ?? ""}:${asset.available ? "1" : "0"}:${asset.columns}x${asset.rows}:${asset.baseTile ?? ""}`)
+            .join("|")
+        : "",
+    [state.project]
+  );
+  const iconLoadKey = useMemo(
+    () =>
+      state.project
+        ? [...new Set(state.project.maps.flatMap((map) => referencedMapIconIds(map.tiles)))].sort((a, b) => a - b).join(",")
+        : "",
+    [state.project]
+  );
   const undoLabel = state.past.length > 0 ? state.past[state.past.length - 1].label : null;
   const redoLabel = state.future.length > 0 ? state.future[0].label : null;
   const activeStatus = state.groupLabel
@@ -232,7 +248,7 @@ export function App() {
     return () => {
       disposed = true;
     };
-  }, [state.project, projectDir, desktopRuntime]);
+  }, [atlasLoadKey, projectDir, desktopRuntime]);
 
   useEffect(() => {
     let disposed = false;
@@ -281,7 +297,7 @@ export function App() {
     return () => {
       disposed = true;
     };
-  }, [state.project, projectDir, desktopRuntime]);
+  }, [iconLoadKey, projectDir, desktopRuntime]);
 
   function showNewProjectDialog() {
     setProjectNameDraft(nextUntitledProjectName());
@@ -776,6 +792,13 @@ export function App() {
     }
   }
 
+  function openScriptsForEntity(entity: SelectedEntity) {
+    dispatch({ type: "selectEntity", entity });
+    dispatch({ type: "setActiveDomain", domain: "scripts" });
+    dispatch({ type: "setActiveEditor", editor: "action-points" });
+    dispatch({ type: "setStatus", status: "Opened selected Action Point in Scripts/AP" });
+  }
+
   return (
     <ProvidenceEditorShell
       state={state}
@@ -798,8 +821,6 @@ export function App() {
       onNewProject={showNewProjectDialog}
       onOpenProject={chooseExistingProject}
       onImportScenario={importScenario}
-      onImportDivinity={importDivinityLibraries}
-      onImportRealmz={importRealmzReferenceData}
       onUndo={() => dispatch({ type: "undo" })}
       onRedo={() => dispatch({ type: "redo" })}
       onSave={saveProject}
@@ -820,8 +841,6 @@ export function App() {
             onOpenProject={chooseExistingProject}
             onImportScenario={importScenario}
             onLibraryHub={openLibraryHub}
-            onImportDivinity={importDivinityLibraries}
-            onImportRealmz={importRealmzReferenceData}
             onDocuments={() => setDocumentsOpen(true)}
           />
         }
@@ -832,7 +851,6 @@ export function App() {
         mapRecords={selectedMapRecords}
         atlas={selectedAtlas}
         desktopRuntime={desktopRuntime}
-        browserFileSystem={browserFileSystem}
         projectDir={projectDir}
         workspaceDir={workspaceDir}
         exportReport={state.exportReport}
@@ -853,12 +871,11 @@ export function App() {
         onSetSmoothTiles={(value) => dispatch({ type: "setSmoothTiles", value })}
         onSetViewFlag={(flag: MapViewFlag, value: boolean) => dispatch({ type: "setMapViewFlag", flag, value })}
         onClearSelection={clearMapSelection}
+        onOpenScripts={openScriptsForEntity}
         onBeginPaintStroke={(label) => dispatch({ type: "beginCommandGroup", label })}
         onApplyCommand={applyProjectCommand}
         onCommitPaintStroke={() => dispatch({ type: "commitCommandGroup" })}
         onCancelPaintStroke={() => dispatch({ type: "cancelCommandGroup" })}
-        onImportDivinity={importDivinityLibraries}
-        onImportRealmz={importRealmzReferenceData}
         onCreateDraft={createDraftEntry}
         onUpdateDraft={updateDraftEntry}
         onImportAssets={importMediaAssets}
@@ -941,8 +958,6 @@ function ProjectStart({
   onOpenProject,
   onImportScenario,
   onLibraryHub,
-  onImportDivinity,
-  onImportRealmz,
   onDocuments
 }: {
   desktopRuntime: boolean;
@@ -951,8 +966,6 @@ function ProjectStart({
   onOpenProject: () => void;
   onImportScenario: () => void;
   onLibraryHub: () => void;
-  onImportDivinity: () => void;
-  onImportRealmz: () => void;
   onDocuments: () => void;
 }) {
   const canImport = desktopRuntime || browserFileSystem;
@@ -994,14 +1007,6 @@ function ProjectStart({
           >
             <Upload size={16} />
             Import Scenario
-          </button>
-          <button className="btn" type="button" onClick={onImportDivinity} disabled={!canImport}>
-            <LibraryBig size={16} />
-            Refresh Divinity
-          </button>
-          <button className="btn" type="button" onClick={onImportRealmz} disabled={!canImport}>
-            <Database size={16} />
-            Refresh Realmz Data
           </button>
         </div>
         <small>{desktopRuntime ? "Projects are created under F:\\Realmz - Providence\\projects. Bundled libraries are seeded automatically." : "Browser preview loads bundled library fixtures into memory."}</small>

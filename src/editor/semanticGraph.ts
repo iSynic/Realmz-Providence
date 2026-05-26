@@ -137,27 +137,30 @@ export function semanticRandomRegionsForMap(project: Project | null, map: MapEnt
 export function semanticRandomLevelForMap(project: Project | null, map: MapEntity | null): RandomLevel | null {
   if (!project || !map) return null;
   const fallback = project.randomLevels.find((level) => level.levelType === map.levelType && level.levelIndex === map.index) ?? null;
+  if (fallback) return fallback;
   const regions = semanticRandomRegionsForMap(project, map);
   const configRecord = incomingLinks(project, mapEntityId(map.levelType, map.index), ["configures_map"])
     .map((link) => recordById(project, link.from))
     .find(Boolean);
   if (regions.length === 0 && !configRecord) return fallback;
   return {
-    id: fallback?.id ?? `${map.levelType}-${map.index}`,
-    source: fallback?.source ?? (map.levelType === "land" ? "Data RD" : "Data RDD"),
+    id: `${map.levelType}-${map.index}`,
+    source: map.levelType === "land" ? "Data RD" : "Data RDD",
     levelType: map.levelType,
     levelIndex: map.index,
-    landlook: numberRecordSummary(configRecord, "landlook") ?? fallback?.landlook ?? map.render.landlook ?? -1,
-    isDark: booleanRecordSummary(configRecord, "isDark") ?? fallback?.isDark ?? false,
-    useLos: booleanRecordSummary(configRecord, "useLos") ?? fallback?.useLos ?? false,
-    rects: regions.length > 0 ? regions.map(randomRectFromEntity) : fallback?.rects ?? [],
-    rawValues: fallback?.rawValues,
-    provenance: fallback?.provenance
+    landlook: numberRecordSummary(configRecord, "landlook") ?? map.render.landlook ?? -1,
+    isDark: booleanRecordSummary(configRecord, "isDark") ?? false,
+    useLos: booleanRecordSummary(configRecord, "useLos") ?? false,
+    rects: regions.length > 0 ? regions.map(randomRectFromEntity) : [],
+    rawValues: undefined,
+    provenance: undefined
   };
 }
 
 export function semanticTilesetForMap(project: Project | null, map: MapEntity | null): TilesetAsset | null {
   if (!project || !map) return null;
+  const liveTileset = project.assetCatalog.tilesets.find((tileset) => tileset.id === map.render.tilesetId);
+  if (liveTileset) return liveTileset;
   const mapId = mapEntityId(map.levelType, map.index);
   const profile = linkedEntities(project, mapId, ["has_render_profile"])[0];
   const atlasId = profile

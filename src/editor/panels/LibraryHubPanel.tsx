@@ -1,22 +1,13 @@
-import { Database, FileArchive, FolderDown, LibraryBig } from "lucide-react";
+import { FileArchive, LibraryBig } from "lucide-react";
 import { LibraryCatalog, ProvidenceWorkspace } from "../types";
 
 export function LibraryHubPanel({
   workspace,
-  catalog,
-  desktopRuntime,
-  browserFileSystem,
-  onImportDivinity,
-  onImportRealmz
+  catalog
 }: {
   workspace: ProvidenceWorkspace | null;
   catalog: LibraryCatalog | null;
-  desktopRuntime: boolean;
-  browserFileSystem: boolean;
-  onImportDivinity: () => void;
-  onImportRealmz: () => void;
 }) {
-  const canImport = desktopRuntime || browserFileSystem;
   return (
     <section className="library-hub">
       <div className="library-hero">
@@ -26,16 +17,7 @@ export function LibraryHubPanel({
           <p>Bundled Divinity and Realmz reference data for tools that should work even before a scenario is loaded.</p>
         </div>
       </div>
-      <div className="library-actions">
-        <button className="btn btn-primary" type="button" onClick={onImportDivinity} disabled={!canImport}>
-          <FolderDown size={16} />
-          Refresh From Divinity Folder
-        </button>
-        <button className="btn" type="button" onClick={onImportRealmz} disabled={!canImport}>
-          <Database size={16} />
-          Refresh From Realmz Data Folder
-        </button>
-      </div>
+      <p className="library-note">Realmz and Divinity reference assets are packaged with Providence. Rebuild this catalog from source only during developer asset updates.</p>
       <div className="library-summary-grid">
         <SummaryCard label="Sources" value={catalog?.summary.sourceCount ?? 0} />
         <SummaryCard label="Records" value={catalog?.summary.recordCount ?? 0} />
@@ -60,7 +42,7 @@ export function LibraryHubPanel({
             ))}
           </div>
         ) : (
-          <p className="empty-copy">No managed library catalog yet. Bundled fixtures should seed automatically; use refresh only to rebuild from a local source folder.</p>
+          <p className="empty-copy">No managed library catalog yet. Bundled fixtures should seed automatically when the app starts.</p>
         )}
       </section>
     </section>

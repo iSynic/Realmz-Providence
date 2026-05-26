@@ -17,12 +17,6 @@ const FILTERS: { flag: MapViewFlag; label: string; title: string; body: string }
     body: "Draw available Realmz PICT tile atlases instead of only decoded fallback colors."
   },
   {
-    flag: "showDecodedColors",
-    label: "Decoded colors",
-    title: "Decoded Colors",
-    body: "Overlay Providence's decoded tile colors for quick format inspection and debugging."
-  },
-  {
     flag: "showRealmzCoordinates",
     label: "Realmz XY",
     title: "Realmz Coordinates",
