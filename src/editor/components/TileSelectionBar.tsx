@@ -50,7 +50,7 @@ export function PaintPalettePanel({
   const usedTiles = usedTilesForMap(map);
   const rawTiles = rawTilesForMap(map, tileset);
   const [mode, setMode] = useState<TilePaletteCategory>("landlook");
-  const [specialFilter, setSpecialFilter] = useState<SpecialIconFilter>("placeable");
+  const [specialFilter, setSpecialFilter] = useState<SpecialIconFilter>("all");
   const specialTiles = specialTilesForPalette(project ?? null, map, libraryAssets, icons, specialFilter);
   const [attributeFilter, setAttributeFilter] = useState<TileAttributeFlag | "all">("all");
   const tileAttributes = project?.tileAttributes ?? [];
@@ -281,10 +281,10 @@ const ATTRIBUTE_FILTERS: Array<{ id: TileAttributeFlag | "all"; label: string; h
 ];
 
 const SPECIAL_ICON_FILTERS: Array<{ id: SpecialIconFilter; label: string; hint: string }> = [
-  { id: "placeable", label: "Special Land", hint: "Project/library special land tiles and negative icon values commonly authored as map field values." },
+  { id: "all", label: "All", hint: "All currently exposed special/icon paint values, including special land and actor-style cicn art." },
   { id: "actors", label: "NPCs / Creatures", hint: "Broader cicn actor, corpse, monster, and creature art exposed as negative map-field aliases for special/icon painting." },
+  { id: "placeable", label: "Special Land", hint: "Project/library special land tiles and negative icon values commonly authored as map field values." },
   { id: "used", label: "Used Here", hint: "Negative icon values already used in the current map." },
-  { id: "all", label: "All", hint: "All currently exposed special/icon paint values." }
 ];
 
 function specialTilesForPalette(
