@@ -310,7 +310,15 @@ export function ResourcesPanel({
       </section>
       )}
       </div>
-      {previewItem && <ResourcePreviewWindow item={previewItem} onClose={() => setPreviewItem(null)} onSelectEntity={onSelectEntity} />}
+      {previewItem && (
+        <ResourcePreviewWindow
+          item={previewItem}
+          desktopRuntime={desktopRuntime}
+          projectDir={projectDir}
+          onClose={() => setPreviewItem(null)}
+          onSelectEntity={onSelectEntity}
+        />
+      )}
     </section>
   );
 }
@@ -402,10 +410,11 @@ function AssetImportBar({
   const [matte, setMatte] = useState<MediaAssetImportOptions["matte"]>("transparent");
   const [ditherMode, setDitherMode] = useState<MediaAssetImportOptions["ditherMode"]>("none");
   const [sourceInfo, setSourceInfo] = useState<MediaAssetSourceInfo | null>(null);
+  const [sourcePreviewDataUrl, setSourcePreviewDataUrl] = useState<string | null>(null);
   const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
   const [previewSummary, setPreviewSummary] = useState("");
   const [previewWarnings, setPreviewWarnings] = useState<string[]>([]);
-  const accept = activeKind === "sound" ? "audio/*" : "image/*";
+  const accept = fixedKind ? (fixedKind === "sound" ? "audio/*" : "image/*") : "image/*,audio/*";
   const isImage = activeKind !== "sound";
   const fixedSizeImage = activeKind === "icon" || activeKind === "special-land-tile";
   const buildOptions = (): MediaAssetImportOptions => ({
@@ -418,16 +427,20 @@ function AssetImportBar({
   });
   const openImportDialog = (files: File[]) => {
     const first = files[0];
+    const nextKind = fixedKind ?? defaultImportKindForFile(first);
+    setKind(nextKind);
     setPendingFiles(files);
     setSourceInfo(null);
+    setSourcePreviewDataUrl(null);
     setPreviewDataUrl(null);
     setPreviewSummary("Preparing preview...");
     setPreviewWarnings([]);
     setFitMode("fit");
-    setScaleMode(isLikelyPixelArt(first, activeKind) ? "crisp" : "smooth");
-    setMatte(activeKind === "picture" ? "white" : "transparent");
-    setDitherMode(activeKind === "picture" ? "floyd-steinberg" : "none");
+    setScaleMode(isLikelyPixelArt(first, nextKind) ? "crisp" : "smooth");
+    setMatte(nextKind === "picture" ? "white" : "transparent");
+    setDitherMode(nextKind === "picture" ? "floyd-steinberg" : "none");
   };
+  const pendingImportKinds = importKindsForFile(pendingFiles[0], fixedKind);
   useEffect(() => {
     if (pendingFiles.length === 0) return;
     let disposed = false;
@@ -438,6 +451,7 @@ function AssetImportBar({
         const request = await fileToMediaAssetRequest(first, activeKind, previewResourceIdForKind(activeKind), buildOptions());
         if (disposed) return;
         setSourceInfo(info);
+        setSourcePreviewDataUrl(`data:${request.mimeType};base64,${request.originalBase64}`);
         setPreviewDataUrl(request.kind === "sound"
           ? `data:audio/wav;base64,${request.previewBase64}`
           : `data:image/png;base64,${request.previewBase64}`);
@@ -449,6 +463,7 @@ function AssetImportBar({
         if (disposed) return;
         const message = commandErrorLabel(error);
         setSourceInfo(null);
+        setSourcePreviewDataUrl(null);
         setPreviewDataUrl(null);
         setPreviewSummary(message);
         setPreviewWarnings([message]);
@@ -461,16 +476,7 @@ function AssetImportBar({
   }, [activeKind, ditherMode, fitMode, matte, pendingFiles, scaleMode]);
   return (
     <div className={`asset-import-bar${compact ? " compact" : ""}`}>
-      {fixedKind ? (
-        <span className="asset-import-fixed-kind">{kindLabel(fixedKind)}</span>
-      ) : (
-        <select value={kind} onChange={(event) => setKind(event.currentTarget.value as ManagedAssetKind)}>
-          <option value="picture">Picture / PICT</option>
-          <option value="icon">Icon / cicn</option>
-          <option value="special-land-tile">Special Land Tile / cicn</option>
-          <option value="sound">Sound / snd</option>
-        </select>
-      )}
+      {fixedKind && <span className="asset-import-fixed-kind">{kindLabel(fixedKind)}</span>}
       <button type="button" className="btn btn-primary" onClick={() => inputRef.current?.click()} disabled={!onImportAssets}>
         <Upload size={14} /> {label}
       </button>
@@ -499,12 +505,40 @@ function AssetImportBar({
               </button>
             </div>
             <div className="asset-import-dialog-body">
-              <div className="asset-import-preview">
-                {previewDataUrl && activeKind === "sound" && <audio controls src={previewDataUrl} />}
-                {previewDataUrl && activeKind !== "sound" && <img src={previewDataUrl} alt="Converted asset preview" />}
-                {!previewDataUrl && <span>{previewSummary}</span>}
+              <div className="asset-import-preview-comparison">
+                <div className="asset-import-preview">
+                  <strong>Realmz-ready output</strong>
+                  {previewDataUrl && activeKind === "sound" && <audio controls src={previewDataUrl} />}
+                  {previewDataUrl && activeKind !== "sound" && <img src={previewDataUrl} alt="Converted asset preview" />}
+                  {!previewDataUrl && <span>{previewSummary}</span>}
+                </div>
+                <div className="asset-import-preview">
+                  <strong>Original source</strong>
+                  {sourcePreviewDataUrl && activeKind === "sound" && <audio controls src={sourcePreviewDataUrl} />}
+                  {sourcePreviewDataUrl && activeKind !== "sound" && <img src={sourcePreviewDataUrl} alt="Original source preview" />}
+                  {!sourcePreviewDataUrl && <span>{sourceInfo ? sourceSummary(sourceInfo) : "Reading..."}</span>}
+                </div>
               </div>
               <div className="asset-import-settings">
+                <label>
+                  Import As
+                  <select
+                    value={activeKind}
+                    disabled={Boolean(fixedKind)}
+                    onChange={(event) => {
+                      const nextKind = event.currentTarget.value as ManagedAssetKind;
+                      setKind(nextKind);
+                      setFitMode("fit");
+                      setScaleMode(isLikelyPixelArt(pendingFiles[0], nextKind) ? "crisp" : "smooth");
+                      setMatte(nextKind === "picture" ? "white" : "transparent");
+                      setDitherMode(nextKind === "picture" ? "floyd-steinberg" : "none");
+                    }}
+                  >
+                    {pendingImportKinds.map((option) => (
+                      <option key={option.kind} value={option.kind}>{option.label}</option>
+                    ))}
+                  </select>
+                </label>
                 <div className="asset-import-facts">
                   <span>Target</span><b>{targetLabel(activeKind)}</b>
                   <span>Source</span><b>{sourceInfo ? sourceSummary(sourceInfo) : "Reading..."}</b>
@@ -572,6 +606,27 @@ function AssetImportBar({
       )}
     </div>
   );
+}
+
+function defaultImportKindForFile(file: File | undefined): ManagedAssetKind {
+  if (file?.type.startsWith("audio/")) return "sound";
+  return "picture";
+}
+
+function importKindsForFile(file: File | undefined, fixedKind?: ManagedAssetKind) {
+  const allImageKinds = [
+    { kind: "picture" as ManagedAssetKind, label: "Scenario Picture / PICT" },
+    { kind: "icon" as ManagedAssetKind, label: "Icon / cicn 32 x 32" },
+    { kind: "special-land-tile" as ManagedAssetKind, label: "Special Land Tile / cicn 32 x 32" }
+  ];
+  const soundKind = { kind: "sound" as ManagedAssetKind, label: "Sound / snd" };
+  if (fixedKind) {
+    const fixed = [...allImageKinds, soundKind].find((option) => option.kind === fixedKind);
+    return fixed ? [fixed] : [{ kind: fixedKind, label: kindLabel(fixedKind) }];
+  }
+  if (file?.type.startsWith("audio/")) return [soundKind];
+  if (file?.type.startsWith("image/")) return allImageKinds;
+  return [...allImageKinds, soundKind];
 }
 
 function isLikelyPixelArt(file: File | undefined, kind: ManagedAssetKind) {
@@ -1055,10 +1110,14 @@ function ResourceScopeBadge({ scope }: { scope: ResourceExportScope }) {
 
 function ResourcePreviewWindow({
   item,
+  desktopRuntime,
+  projectDir,
   onClose,
   onSelectEntity
 }: {
   item: ResourcePreviewItem;
+  desktopRuntime: boolean;
+  projectDir: string;
   onClose: () => void;
   onSelectEntity: (entity: SelectedEntity) => void;
 }) {
@@ -1083,16 +1142,12 @@ function ResourcePreviewWindow({
       <div className="resource-detail-view">
         <ResourceScopeBadge scope={scope} />
         {item.type === "managed" && (
-          <>
-            <ResourcePreviewMedia kind={item.asset.kind} preview={item.preview} label={item.asset.label} />
-            <ResourceFactGrid rows={[
-              ["Resource", `${item.asset.resourceType} ${item.asset.resourceId}`],
-              ["Kind", kindLabel(item.asset.kind)],
-              ["Export", assetExportLabel(item.asset.exportState)],
-              ["Size", item.asset.width && item.asset.height ? `${item.asset.width} x ${item.asset.height}` : formatBytes(item.asset.bytes)]
-            ]} />
-            <UsageLinks usages={item.usages} onSelectEntity={onSelectEntity} />
-          </>
+          <ManagedResourceDetail
+            item={item}
+            desktopRuntime={desktopRuntime}
+            projectDir={projectDir}
+            onSelectEntity={onSelectEntity}
+          />
         )}
         {item.type === "library" && (
           <>
@@ -1137,6 +1192,52 @@ function ResourcePreviewWindow({
   );
 }
 
+function ManagedResourceDetail({
+  item,
+  desktopRuntime,
+  projectDir,
+  onSelectEntity
+}: {
+  item: Extract<ResourcePreviewItem, { type: "managed" }>;
+  desktopRuntime: boolean;
+  projectDir: string;
+  onSelectEntity: (entity: SelectedEntity) => void;
+}) {
+  const originalPreview = useProjectPreview(item.asset.originalPath, desktopRuntime, projectDir);
+  const isSound = item.asset.kind === "sound";
+  const conversionRows = managedConversionRows(item.asset);
+  return (
+    <>
+      <div className="resource-preview-comparison">
+        <div className="resource-preview-panel">
+          <header>
+            <strong>{isSound ? "Realmz Sound Preview" : "Realmz-Ready Output"}</strong>
+            <span>{managedOutputSummary(item.asset)}</span>
+          </header>
+          <ResourcePreviewMedia kind={item.asset.kind} preview={item.preview} label={`${item.asset.label} converted preview`} />
+        </div>
+        <div className="resource-preview-panel">
+          <header>
+            <strong>Original Source</strong>
+            <span>{managedSourceSummary(item.asset)}</span>
+          </header>
+          <ResourcePreviewMedia kind={item.asset.kind} preview={originalPreview} label={`${item.asset.label} original source`} />
+        </div>
+      </div>
+      <ResourceFactGrid rows={[
+        ["Resource", `${item.asset.resourceType} ${item.asset.resourceId}`],
+        ["Kind", kindLabel(item.asset.kind)],
+        ["Export", assetExportLabel(item.asset.exportState)],
+        ["Output", managedOutputSummary(item.asset)],
+        ["Original", managedSourceSummary(item.asset)],
+        ["Original Bytes", formatBytes(item.asset.bytes)]
+      ]} />
+      {conversionRows.length > 0 && <ResourceFactGrid title="Import Conversion" rows={conversionRows} />}
+      <UsageLinks usages={item.usages} onSelectEntity={onSelectEntity} />
+    </>
+  );
+}
+
 function ResourcePreviewMedia({ kind, preview, label }: { kind: ManagedAssetKind; preview: string | null; label: string }) {
   if (preview && kind === "sound") return <audio className="resource-detail-audio" src={preview} controls preload="metadata" />;
   if (preview && kind === "text") return <iframe className="resource-detail-text" src={preview} title={label} />;
@@ -1147,6 +1248,59 @@ function ResourcePreviewMedia({ kind, preview, label }: { kind: ManagedAssetKind
       <span>No preview available</span>
     </div>
   );
+}
+
+function managedOutputSummary(asset: ManagedAsset) {
+  if (asset.width && asset.height) return `${asset.width} x ${asset.height}`;
+  if (asset.durationMs) return `${(asset.durationMs / 1000).toFixed(1)}s @ ${asset.sampleRate ?? "?"} Hz`;
+  const finalWidth = asset.conversion?.finalWidth ?? null;
+  const finalHeight = asset.conversion?.finalHeight ?? null;
+  if (finalWidth && finalHeight) return `${finalWidth} x ${finalHeight}`;
+  return formatBytes(asset.bytes);
+}
+
+function managedSourceSummary(asset: ManagedAsset) {
+  const conversion = asset.conversion;
+  if (conversion?.sourceWidth && conversion.sourceHeight) return `${conversion.sourceWidth} x ${conversion.sourceHeight}`;
+  if (conversion?.sourceDurationMs) {
+    const rate = conversion.sourceSampleRate ? ` @ ${conversion.sourceSampleRate} Hz` : "";
+    const channels = conversion.sourceChannels ? `, ${conversion.sourceChannels} channel${conversion.sourceChannels === 1 ? "" : "s"}` : "";
+    return `${(conversion.sourceDurationMs / 1000).toFixed(1)}s${rate}${channels}`;
+  }
+  return asset.fileName || "imported source";
+}
+
+function managedConversionRows(asset: ManagedAsset): Array<[string, string]> {
+  const conversion = asset.conversion;
+  if (!conversion) return [];
+  const rows: Array<[string, string]> = [];
+  rows.push(["Target", importTargetLabel(conversion.target)]);
+  if (conversion.sourceWidth && conversion.sourceHeight) rows.push(["Source Size", `${conversion.sourceWidth} x ${conversion.sourceHeight}`]);
+  if (conversion.finalWidth && conversion.finalHeight) rows.push(["Output Size", `${conversion.finalWidth} x ${conversion.finalHeight}`]);
+  if (conversion.sourceDurationMs) rows.push(["Source Duration", `${(conversion.sourceDurationMs / 1000).toFixed(1)}s`]);
+  if (conversion.sourceSampleRate) rows.push(["Source Sample Rate", `${conversion.sourceSampleRate} Hz`]);
+  if (conversion.sourceChannels) rows.push(["Source Channels", String(conversion.sourceChannels)]);
+  if (conversion.fitMode) rows.push(["Fit", titleCase(conversion.fitMode)]);
+  if (conversion.scaleMode) rows.push(["Scale", titleCase(conversion.scaleMode)]);
+  if (conversion.matte) rows.push(["Matte", titleCase(conversion.matte)]);
+  if (conversion.ditherMode) rows.push(["Dither", conversion.ditherMode === "floyd-steinberg" ? "Floyd-Steinberg" : "None"]);
+  if (conversion.warnings.length > 0) rows.push(["Warnings", conversion.warnings.join("; ")]);
+  return rows;
+}
+
+function importTargetLabel(target: NonNullable<ManagedAsset["conversion"]>["target"]) {
+  if (target === "scenario-picture") return "Scenario Picture";
+  if (target === "special-land-tile") return "Special Land Tile";
+  if (target === "icon") return "Icon";
+  if (target === "sound") return "Sound";
+  return target;
+}
+
+function titleCase(value: string) {
+  return value
+    .split("-")
+    .map((part) => part ? `${part[0]?.toUpperCase() ?? ""}${part.slice(1)}` : part)
+    .join(" ");
 }
 
 function ResourceFactGrid({ title, rows }: { title?: string; rows: Array<[string, string]> }) {

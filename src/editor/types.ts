@@ -57,6 +57,11 @@ export type ManagedAssetConversion = {
   matte: ImageMatte | null;
   paletteMode: PaletteMode | null;
   ditherMode: DitherMode | null;
+  sourceWidth?: number | null;
+  sourceHeight?: number | null;
+  sourceDurationMs?: number | null;
+  sourceSampleRate?: number | null;
+  sourceChannels?: number | null;
   finalWidth: number | null;
   finalHeight: number | null;
   warnings: string[];

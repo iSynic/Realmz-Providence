@@ -217,6 +217,16 @@ pub struct ManagedAssetConversion {
     pub matte: Option<ImageMatte>,
     pub palette_mode: Option<PaletteMode>,
     pub dither_mode: Option<DitherMode>,
+    #[serde(default)]
+    pub source_width: Option<u32>,
+    #[serde(default)]
+    pub source_height: Option<u32>,
+    #[serde(default)]
+    pub source_duration_ms: Option<u32>,
+    #[serde(default)]
+    pub source_sample_rate: Option<u32>,
+    #[serde(default)]
+    pub source_channels: Option<u16>,
     pub final_width: Option<u32>,
     pub final_height: Option<u32>,
     #[serde(default)]

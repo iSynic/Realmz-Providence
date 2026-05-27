@@ -35,6 +35,16 @@ pub struct MediaAssetImportRequest {
     pub matte: Option<ImageMatte>,
     pub palette_mode: Option<PaletteMode>,
     pub dither_mode: Option<DitherMode>,
+    #[serde(default)]
+    pub source_width: Option<u32>,
+    #[serde(default)]
+    pub source_height: Option<u32>,
+    #[serde(default)]
+    pub source_duration_ms: Option<u32>,
+    #[serde(default)]
+    pub source_sample_rate: Option<u32>,
+    #[serde(default)]
+    pub source_channels: Option<u16>,
     pub final_width: Option<u32>,
     pub final_height: Option<u32>,
     #[serde(default)]
@@ -273,6 +283,11 @@ fn write_managed_media_asset(
             matte: request.matte,
             palette_mode: request.palette_mode,
             dither_mode: request.dither_mode,
+            source_width: request.source_width,
+            source_height: request.source_height,
+            source_duration_ms: request.source_duration_ms,
+            source_sample_rate: request.source_sample_rate,
+            source_channels: request.source_channels,
             final_width: request.final_width,
             final_height: request.final_height,
             warnings: request.warnings.clone(),

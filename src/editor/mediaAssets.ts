@@ -54,6 +54,11 @@ export type MediaAssetImportRequest = {
   matte: ImageMatte | null;
   paletteMode: PaletteMode | null;
   ditherMode: DitherMode | null;
+  sourceWidth: number | null;
+  sourceHeight: number | null;
+  sourceDurationMs: number | null;
+  sourceSampleRate: number | null;
+  sourceChannels: number | null;
   finalWidth: number | null;
   finalHeight: number | null;
   warnings: string[];
@@ -124,6 +129,11 @@ export async function fileToMediaAssetRequest(
       matte: null,
       paletteMode: null,
       ditherMode: null,
+      sourceWidth: null,
+      sourceHeight: null,
+      sourceDurationMs: decoded.durationMs,
+      sourceSampleRate: decoded.sampleRate,
+      sourceChannels: decoded.sourceChannels,
       finalWidth: null,
       finalHeight: null,
       warnings
@@ -164,6 +174,11 @@ export async function fileToMediaAssetRequest(
     matte: imageProfile.matte,
     paletteMode: imageProfile.paletteMode,
     ditherMode: imageProfile.ditherMode,
+    sourceWidth: decoded.width,
+    sourceHeight: decoded.height,
+    sourceDurationMs: null,
+    sourceSampleRate: null,
+    sourceChannels: null,
     finalWidth: prepared.width,
     finalHeight: prepared.height,
     warnings
@@ -261,6 +276,11 @@ function requestToConversion(request: MediaAssetImportRequest): ManagedAssetConv
     matte: request.matte,
     paletteMode: request.paletteMode,
     ditherMode: request.ditherMode,
+    sourceWidth: request.sourceWidth,
+    sourceHeight: request.sourceHeight,
+    sourceDurationMs: request.sourceDurationMs,
+    sourceSampleRate: request.sourceSampleRate,
+    sourceChannels: request.sourceChannels,
     finalWidth: request.finalWidth,
     finalHeight: request.finalHeight,
     warnings: request.warnings
