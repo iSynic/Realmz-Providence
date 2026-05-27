@@ -412,7 +412,11 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         if shell.source_file.trim().is_empty() {
             errors.push("Scenario marker/main file name is empty.".to_string());
         }
-        if shell.look_x < 0 || shell.look_x >= MAP_SIZE as i32 || shell.look_y < 0 || shell.look_y >= MAP_SIZE as i32 {
+        if shell.look_x < 0
+            || shell.look_x >= MAP_SIZE as i32
+            || shell.look_y < 0
+            || shell.look_y >= MAP_SIZE as i32
+        {
             errors.push(format!(
                 "Scenario startup coordinates {},{} are outside the 0..{} map range.",
                 shell.look_x,
@@ -420,11 +424,9 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                 MAP_SIZE - 1
             ));
         }
-        if !project
-            .maps
-            .iter()
-            .any(|map| matches!(map.level_type, LevelType::Land) && map.index == shell.land_level as usize)
-        {
+        if !project.maps.iter().any(|map| {
+            matches!(map.level_type, LevelType::Land) && map.index == shell.land_level as usize
+        }) {
             warnings.push(format!(
                 "Scenario startup land level {} does not resolve to an imported land map.",
                 shell.land_level
@@ -930,7 +932,10 @@ fn validate_rules_overrides(
     let mut race_ids = BTreeSet::new();
     for race in &project.race_overrides {
         if race.id >= 30 {
-            errors.push(format!("Race override {} is outside the 0..29 race table.", race.id));
+            errors.push(format!(
+                "Race override {} is outside the 0..29 race table.",
+                race.id
+            ));
         }
         if !race_ids.insert(race.id) {
             errors.push(format!("Race override {} is duplicated.", race.id));
@@ -951,7 +956,10 @@ fn validate_rules_overrides(
     let mut caste_ids = BTreeSet::new();
     for caste in &project.caste_overrides {
         if caste.id >= 30 {
-            errors.push(format!("Caste override {} is outside the 0..29 caste table.", caste.id));
+            errors.push(format!(
+                "Caste override {} is outside the 0..29 caste table.",
+                caste.id
+            ));
         }
         if !caste_ids.insert(caste.id) {
             errors.push(format!("Caste override {} is duplicated.", caste.id));

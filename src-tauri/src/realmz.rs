@@ -189,11 +189,7 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
         ("Data Custom 3 BD", 8),
     ] {
         if let Some(buffer) = buffers.get(file_name) {
-            tile_attributes.extend(parse_landlook_mapstats_data(
-                buffer,
-                landlook,
-                file_name,
-            ));
+            tile_attributes.extend(parse_landlook_mapstats_data(buffer, landlook, file_name));
         }
     }
 
@@ -553,8 +549,12 @@ pub fn parse_scenario_contact_info(buffer: &[u8]) -> Result<ScenarioContactInfo>
         email: pascal_record_string(buffer, 4),
         web: pascal_record_string(buffer, 5),
         fee: pascal_record_string(buffer, 6),
-        pay_info: (7..12).map(|slot| pascal_record_string(buffer, slot)).collect(),
-        titles: (12..17).map(|slot| pascal_record_string(buffer, slot)).collect(),
+        pay_info: (7..12)
+            .map(|slot| pascal_record_string(buffer, slot))
+            .collect(),
+        titles: (12..17)
+            .map(|slot| pascal_record_string(buffer, slot))
+            .collect(),
         description: pascal_record_string(buffer, 17),
         authored: false,
         provenance: Some(provenance("Data CI", 0, 0, 4608)),
@@ -578,7 +578,11 @@ pub fn write_scenario_contact_info(contact: &ScenarioContactInfo) -> Result<Vec<
     for index in 0..5 {
         encode_pascal_text(
             &mut output[(7 + index) * 256..(8 + index) * 256],
-            contact.pay_info.get(index).map(String::as_str).unwrap_or(""),
+            contact
+                .pay_info
+                .get(index)
+                .map(String::as_str)
+                .unwrap_or(""),
         )?;
         encode_pascal_text(
             &mut output[(12 + index) * 256..(13 + index) * 256],
@@ -873,7 +877,9 @@ pub fn parse_caste_overrides(buffer: &[u8]) -> Vec<ScenarioCasteOverride> {
                 special_ability: vec![read_i16_vec(record, 0, 14), read_i16_vec(record, 28, 14)],
                 drv_bonus: read_i16_vec(record, 56, 8),
                 att_bonus: read_i16_vec(record, 72, 6),
-                spellcasters: (0..4).map(|row| read_i16_vec(record, 84 + row * 6, 3)).collect(),
+                spellcasters: (0..4)
+                    .map(|row| read_i16_vec(record, 84 + row * 6, 3))
+                    .collect(),
                 min_max: read_i16_vec(record, 108, 12),
                 conditions: read_i16_vec(record, 132, 40),
                 can_use_missile: i16_be(record, 212),
@@ -920,12 +926,39 @@ pub fn write_caste_overrides(records: &[ScenarioCasteOverride]) -> Result<Vec<u8
         if record.raw_bytes.len() == CASTE_BYTES {
             target.copy_from_slice(&record.raw_bytes);
         }
-        write_i16_vec(target, 0, record.special_ability.first().map(Vec::as_slice).unwrap_or(&[]), 14);
-        write_i16_vec(target, 28, record.special_ability.get(1).map(Vec::as_slice).unwrap_or(&[]), 14);
+        write_i16_vec(
+            target,
+            0,
+            record
+                .special_ability
+                .first()
+                .map(Vec::as_slice)
+                .unwrap_or(&[]),
+            14,
+        );
+        write_i16_vec(
+            target,
+            28,
+            record
+                .special_ability
+                .get(1)
+                .map(Vec::as_slice)
+                .unwrap_or(&[]),
+            14,
+        );
         write_i16_vec(target, 56, &record.drv_bonus, 8);
         write_i16_vec(target, 72, &record.att_bonus, 6);
         for row in 0..4 {
-            write_i16_vec(target, 84 + row * 6, record.spellcasters.get(row).map(Vec::as_slice).unwrap_or(&[]), 3);
+            write_i16_vec(
+                target,
+                84 + row * 6,
+                record
+                    .spellcasters
+                    .get(row)
+                    .map(Vec::as_slice)
+                    .unwrap_or(&[]),
+                3,
+            );
         }
         write_i16_vec(target, 108, &record.min_max, 12);
         write_i16_vec(target, 132, &record.conditions, 40);
@@ -2184,7 +2217,10 @@ mod tests {
         assert!(tile.flags.contains(&TileAttributeFlag::Path));
         assert!(tile.flags.contains(&TileAttributeFlag::BlocksLos));
         assert!(tile.flags.contains(&TileAttributeFlag::FlyFloatRequired));
-        assert!(matches!(tile.source_kind, TileAttributeSourceKind::Mapstats));
+        assert!(matches!(
+            tile.source_kind,
+            TileAttributeSourceKind::Mapstats
+        ));
     }
 
     #[test]

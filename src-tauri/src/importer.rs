@@ -147,7 +147,9 @@ fn import_scenario_with_name(
     }
 
     let mut parsed = parse_scenario_buffers(&buffers);
-    parsed.tile_attributes.extend(reference_landlook_tile_attributes()?);
+    parsed
+        .tile_attributes
+        .extend(reference_landlook_tile_attributes()?);
     crate::semantic::apply_map_name_hints(&mut parsed, &buffers);
     let scenario_name = source_path
         .file_name()
@@ -383,7 +385,8 @@ fn hydrate_scenario_metadata(project_dir: &Path, project: &mut ProvidenceProject
         let path = raw_dir.join("Global");
         if path.is_file() {
             let bytes = fs::read(&path).with_path(&path)?;
-            project.scenario.global_macro_hooks = Some(crate::realmz::parse_global_macro_hooks(&bytes));
+            project.scenario.global_macro_hooks =
+                Some(crate::realmz::parse_global_macro_hooks(&bytes));
         }
     }
     Ok(())
@@ -398,9 +401,16 @@ fn read_scenario_shell(source_path: &Path, scenario_name: &str) -> Result<Option
     crate::realmz::parse_scenario_shell(scenario_name, &bytes).map(Some)
 }
 
-fn read_scenario_shell_from_raw(raw_dir: &Path, project: &ProvidenceProject) -> Result<Option<ScenarioShell>> {
+fn read_scenario_shell_from_raw(
+    raw_dir: &Path,
+    project: &ProvidenceProject,
+) -> Result<Option<ScenarioShell>> {
     let candidates = [
-        project.scenario.shell.as_ref().map(|shell| shell.source_file.as_str()),
+        project
+            .scenario
+            .shell
+            .as_ref()
+            .map(|shell| shell.source_file.as_str()),
         Some(project.scenario.name.as_str()),
         project
             .source
@@ -522,9 +532,7 @@ fn reference_landlook_tile_attributes() -> Result<Vec<TileAttributeProfile>> {
         };
         let bytes = fs::read(&path).with_path(&path)?;
         out.extend(crate::realmz::parse_landlook_mapstats_data(
-            &bytes,
-            landlook,
-            file_name,
+            &bytes, landlook, file_name,
         ));
     }
     Ok(out)

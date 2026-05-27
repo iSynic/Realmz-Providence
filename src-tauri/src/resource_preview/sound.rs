@@ -218,8 +218,8 @@ fn playable_pcm(sample_rate: u32, samples: &[u8]) -> (u32, Vec<u8>) {
         return (sample_rate, samples.to_vec());
     }
     let target_rate = 8_000u32;
-    let output_len = ((samples.len() as u64 * target_rate as u64) / sample_rate.max(1) as u64)
-        .max(1) as usize;
+    let output_len =
+        ((samples.len() as u64 * target_rate as u64) / sample_rate.max(1) as u64).max(1) as usize;
     let mut output = Vec::with_capacity(output_len);
     for index in 0..output_len {
         let source = (index as u64 * sample_rate.max(1) as u64 / target_rate as u64)

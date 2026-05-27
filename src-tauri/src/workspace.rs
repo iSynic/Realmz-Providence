@@ -235,15 +235,112 @@ pub fn seed_bundled_libraries(
         (LibrarySourceKind::DivinityImport, "divinity"),
         (LibrarySourceKind::RealmzReference, "realmz-reference"),
     ] {
-        if catalog_has_source_kind(catalog.as_ref(), source_kind) {
-            continue;
-        }
         let source_path = bundled_library_root.join(folder);
-        if source_path.is_dir() {
+        if source_path.is_dir()
+            && should_refresh_bundled_library(catalog.as_ref(), source_kind, &source_path)?
+        {
             catalog = Some(import_library(source_path, workspace_dir, source_kind)?);
         }
     }
     Ok(catalog)
+}
+
+fn should_refresh_bundled_library(
+    catalog: Option<&LibraryCatalog>,
+    source_kind: LibrarySourceKind,
+    source_path: &Path,
+) -> Result<bool> {
+    let Some(catalog) = catalog else {
+        return Ok(true);
+    };
+    if !catalog_has_source_kind(Some(catalog), source_kind) {
+        return Ok(true);
+    }
+    if bundled_source_signatures_changed(catalog, source_kind, source_path)? {
+        return Ok(true);
+    }
+    if source_kind == LibrarySourceKind::RealmzReference
+        && realmz_reference_rule_catalog_is_stale(catalog)
+    {
+        return Ok(true);
+    }
+    Ok(false)
+}
+
+fn bundled_source_signatures_changed(
+    catalog: &LibraryCatalog,
+    source_kind: LibrarySourceKind,
+    source_path: &Path,
+) -> Result<bool> {
+    let sources_by_id = catalog
+        .sources
+        .iter()
+        .filter(|source| source.source_kind == source_kind)
+        .map(|source| (source.id.as_str(), source))
+        .collect::<BTreeMap<_, _>>();
+    for entry in WalkDir::new(source_path).min_depth(1) {
+        let entry = entry.map_err(|error| ProvidenceError::message(error.to_string()))?;
+        if !entry.file_type().is_file() {
+            continue;
+        }
+        let path = entry.path();
+        let relative = path
+            .strip_prefix(source_path)
+            .unwrap_or(path)
+            .to_string_lossy()
+            .replace('/', "\\");
+        let id = format!(
+            "{}:{}",
+            source_kind.source_prefix(),
+            stable_token(&relative)
+        );
+        let bytes = fs::read(path).with_path(path)?;
+        let Some(source) = sources_by_id.get(id.as_str()) else {
+            return Ok(true);
+        };
+        if source.bytes != bytes.len() as u64 || source.sha256 != sha256_hex(&bytes) {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
+fn realmz_reference_rule_catalog_is_stale(catalog: &LibraryCatalog) -> bool {
+    let mut spells = 0usize;
+    let mut races = 0usize;
+    let mut castes = 0usize;
+    for entity in &catalog.entities {
+        if !entity
+            .source
+            .starts_with(LibrarySourceKind::RealmzReference.source_prefix())
+        {
+            continue;
+        }
+        match entity.entity_type.as_str() {
+            "spell"
+                if entity.summary.get("recordBytes").and_then(Value::as_u64) == Some(30)
+                    && entity.summary.contains_key("packedSpellId") =>
+            {
+                spells += 1;
+            }
+            "race"
+                if entity.summary.get("recordBytes").and_then(Value::as_u64) == Some(408)
+                    && entity.summary.contains_key("raceNumber")
+                    && entity.summary.contains_key("baseMove") =>
+            {
+                races += 1;
+            }
+            "caste"
+                if entity.summary.get("recordBytes").and_then(Value::as_u64) == Some(576)
+                    && entity.summary.contains_key("casteNumber")
+                    && entity.summary.contains_key("victory") =>
+            {
+                castes += 1;
+            }
+            _ => {}
+        }
+    }
+    spells < 500 || races < 60 || castes < 30
 }
 
 pub fn load_library_asset(
@@ -501,7 +598,10 @@ fn add_resource_inventory(catalog: &mut LibraryCatalog, source: &LibrarySource, 
             ("sha256", json!(resource_sha256.clone())),
             ("preview", json!(hex_preview(&resource.data, 20))),
         ]);
-        resource_summary.extend(resource_payload_summary(&resource.resource_type, &resource.data));
+        resource_summary.extend(resource_payload_summary(
+            &resource.resource_type,
+            &resource.data,
+        ));
         catalog.records.push(LibraryRecord {
             id: record_id.clone(),
             source: source.id.clone(),
@@ -600,10 +700,10 @@ fn add_record_slots(catalog: &mut LibraryCatalog, source: &LibrarySource, bytes:
             ]),
         });
     }
-    let limit = if entity_type == "item" {
-        full.min(1000)
-    } else {
-        full.min(512)
+    let limit = match entity_type {
+        "item" => full.min(1000),
+        "spell" => full.min(525),
+        _ => full.min(512),
     };
     for index in 0..limit {
         let start = index * record_bytes;
@@ -674,24 +774,37 @@ fn decorate_rule_catalog(catalog: &mut LibraryCatalog) {
         let name = match entity_type {
             "spell" => {
                 let resource_id = summary.get("spellNameResourceId").and_then(Value::as_i64);
-                let slot = summary.get("spellSlot").and_then(Value::as_u64).map(|value| value as usize);
+                let slot = summary
+                    .get("spellSlot")
+                    .and_then(Value::as_u64)
+                    .map(|value| value as usize);
                 resource_id
                     .and_then(|id| strings_by_id.get(&id))
                     .and_then(|strings| slot.and_then(|index| strings.get(index)))
                     .cloned()
             }
             "race" => {
-                let number = summary.get("raceNumber").and_then(Value::as_u64).map(|value| value as usize);
+                let number = summary
+                    .get("raceNumber")
+                    .and_then(Value::as_u64)
+                    .map(|value| value as usize);
                 strings_by_id
                     .get(&129)
-                    .and_then(|strings| number.and_then(|index| strings.get(index.saturating_sub(1))))
+                    .and_then(|strings| {
+                        number.and_then(|index| strings.get(index.saturating_sub(1)))
+                    })
                     .cloned()
             }
             "caste" => {
-                let number = summary.get("casteNumber").and_then(Value::as_u64).map(|value| value as usize);
+                let number = summary
+                    .get("casteNumber")
+                    .and_then(Value::as_u64)
+                    .map(|value| value as usize);
                 strings_by_id
                     .get(&131)
-                    .and_then(|strings| number.and_then(|index| strings.get(index.saturating_sub(1))))
+                    .and_then(|strings| {
+                        number.and_then(|index| strings.get(index.saturating_sub(1)))
+                    })
                     .cloned()
             }
             _ => None,
@@ -712,11 +825,21 @@ fn decorate_rule_catalog(catalog: &mut LibraryCatalog) {
     }
     for record in &mut catalog.records {
         let entity_type = record.record_type.clone();
-        decorate_entry(&entity_type, &mut record.label, &mut record.summary, &strings_by_id);
+        decorate_entry(
+            &entity_type,
+            &mut record.label,
+            &mut record.summary,
+            &strings_by_id,
+        );
     }
     for entity in &mut catalog.entities {
         let entity_type = entity.entity_type.clone();
-        decorate_entry(&entity_type, &mut entity.label, &mut entity.summary, &strings_by_id);
+        decorate_entry(
+            &entity_type,
+            &mut entity.label,
+            &mut entity.summary,
+            &strings_by_id,
+        );
     }
 }
 
@@ -814,10 +937,7 @@ fn library_record_summary(
         ("recordBytes", json!(record_bytes)),
         ("rawBytes", json!(record)),
         ("preview", json!(hex_preview(record, 20))),
-        (
-            "note",
-            json!("Built-in Realmz catalog record."),
-        ),
+        ("note", json!("Built-in Realmz catalog record.")),
     ]);
     if entity_type == "item" && record.len() >= 80 {
         out.extend(item_record_summary(index, record));
@@ -941,7 +1061,10 @@ fn spell_record_summary(index: usize, record: &[u8]) -> BTreeMap<String, Value> 
         ("spellLevel", json!(level_index + 1)),
         ("spellSlot", json!(spell_slot)),
         ("visibleSpellSlot", json!(spell_slot < 12)),
-        ("spellNameResourceId", json!((spellcaster_class + 1) * 1000 + level_index)),
+        (
+            "spellNameResourceId",
+            json!((spellcaster_class + 1) * 1000 + level_index),
+        ),
         ("range1", json!(record[0])),
         ("range2", json!(record[1])),
         ("queueIcon", json!(record[2])),
@@ -992,11 +1115,27 @@ fn race_record_summary(index: usize, record: &[u8]) -> BTreeMap<String, Value> {
         ("missile", json!(i16_be(record, 202))),
         ("numOfAttacks", json!(read_i16s(record, 204, 2))),
         ("canCaste", json!(record[208..238].to_vec())),
-        ("ageRange", json!((0..5).map(|band| read_i16s(record, 238 + band * 4, 2)).collect::<Vec<_>>())),
-        ("ageChange", json!((0..5).map(|band| record[258 + band * 15..258 + (band + 1) * 15].iter().map(|byte| signed_byte(*byte)).collect::<Vec<_>>()).collect::<Vec<_>>())),
+        (
+            "ageRange",
+            json!((0..5)
+                .map(|band| read_i16s(record, 238 + band * 4, 2))
+                .collect::<Vec<_>>()),
+        ),
+        (
+            "ageChange",
+            json!((0..5)
+                .map(|band| record[258 + band * 15..258 + (band + 1) * 15]
+                    .iter()
+                    .map(|byte| signed_byte(*byte))
+                    .collect::<Vec<_>>())
+                .collect::<Vec<_>>()),
+        ),
         ("canRegenerate", json!(record[333])),
         ("defaultIconSet", json!(i16_be(record, 334))),
-        ("itemTypes", json!([i32_be(record, 336), i32_be(record, 340)])),
+        (
+            "itemTypes",
+            json!([i32_be(record, 336), i32_be(record, 340)]),
+        ),
         ("descriptors", json!(i16_be(record, 344))),
     ])
 }
@@ -1004,10 +1143,18 @@ fn race_record_summary(index: usize, record: &[u8]) -> BTreeMap<String, Value> {
 fn caste_record_summary(index: usize, record: &[u8]) -> BTreeMap<String, Value> {
     summary([
         ("casteNumber", json!(index + 1)),
-        ("specialAbility", json!([read_i16s(record, 0, 14), read_i16s(record, 28, 14)])),
+        (
+            "specialAbility",
+            json!([read_i16s(record, 0, 14), read_i16s(record, 28, 14)]),
+        ),
         ("drvBonus", json!(read_i16s(record, 56, 8))),
         ("attBonus", json!(read_i16s(record, 72, 6))),
-        ("spellcasters", json!((0..4).map(|row| read_i16s(record, 84 + row * 6, 3)).collect::<Vec<_>>())),
+        (
+            "spellcasters",
+            json!((0..4)
+                .map(|row| read_i16s(record, 84 + row * 6, 3))
+                .collect::<Vec<_>>()),
+        ),
         ("minMax", json!(read_i16s(record, 108, 12))),
         ("conditions", json!(read_i16s(record, 132, 40))),
         ("canUseMissile", json!(i16_be(record, 212))),
@@ -1030,7 +1177,10 @@ fn caste_record_summary(index: usize, record: &[u8]) -> BTreeMap<String, Value> 
         ("startMoney", json!(i16_be(record, 384))),
         ("startItems", json!(read_i16s(record, 386, 20))),
         ("attacks", json!(record[426..436].to_vec())),
-        ("itemTypes", json!([i32_be(record, 436), i32_be(record, 440)])),
+        (
+            "itemTypes",
+            json!([i32_be(record, 436), i32_be(record, 440)]),
+        ),
         ("defaultIcon", json!(i16_be(record, 444))),
         ("maxSpellsAttacks", json!(i16_be(record, 446))),
         ("spellsSoFar", json!(i16_be(record, 448))),
@@ -1038,7 +1188,9 @@ fn caste_record_summary(index: usize, record: &[u8]) -> BTreeMap<String, Value> 
 }
 
 fn read_i16s(record: &[u8], offset: usize, count: usize) -> Vec<i16> {
-    (0..count).map(|index| i16_be(record, offset + index * 2)).collect()
+    (0..count)
+        .map(|index| i16_be(record, offset + index * 2))
+        .collect()
 }
 
 fn signed_byte(value: u8) -> i8 {
@@ -1362,7 +1514,9 @@ fn i32_be(buffer: &[u8], offset: usize) -> i32 {
 }
 
 fn read_i32s(record: &[u8], offset: usize, count: usize) -> Vec<i32> {
-    (0..count).map(|index| i32_be(record, offset + index * 4)).collect()
+    (0..count)
+        .map(|index| i32_be(record, offset + index * 4))
+        .collect()
 }
 
 fn u16_be(buffer: &[u8], offset: usize) -> Option<u16> {
@@ -1426,6 +1580,36 @@ mod tests {
         write_i16(&mut bytes, 20, damage);
         write_i16(&mut bytes, 28, cost);
         bytes
+    }
+
+    fn stale_source_for(
+        workspace: &Path,
+        source_kind: LibrarySourceKind,
+        relative_path: &str,
+        bytes: &[u8],
+    ) -> LibrarySource {
+        LibrarySource {
+            id: format!(
+                "{}:{}",
+                source_kind.source_prefix(),
+                stable_token(relative_path)
+            ),
+            name: relative_path.to_string(),
+            relative_path: relative_path.to_string(),
+            original_path: relative_path.to_string(),
+            source_kind,
+            role: "test".to_string(),
+            bytes: bytes.len() as u64,
+            sha256: sha256_hex(bytes),
+            copied_to: workspace
+                .join("library")
+                .join("raw")
+                .join(source_kind.folder_name())
+                .join(relative_path)
+                .to_string_lossy()
+                .to_string(),
+            confidence: Confidence::FixtureBacked,
+        }
     }
 
     #[test]
@@ -1552,5 +1736,92 @@ mod tests {
             .entities
             .iter()
             .any(|entity| entity.entity_type == "item"));
+    }
+
+    #[test]
+    fn workspace_refreshes_stale_bundled_realmz_rule_catalog() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let bundled = temp.path().join(BUNDLED_LIBRARY_DIR);
+        let realmz = bundled.join("realmz-reference");
+        fs::create_dir_all(&realmz).expect("realmz");
+        let spells = vec![0u8; 30 * 525];
+        let races = vec![0u8; 408 * 70];
+        let castes = vec![0u8; 576 * 30];
+        fs::write(realmz.join("Data S"), &spells).expect("spells");
+        fs::write(realmz.join("Data Race"), &races).expect("races");
+        fs::write(realmz.join("Data Caste"), &castes).expect("castes");
+        let workspace_dir = temp.path().join("workspace");
+        let stale_catalog = LibraryCatalog {
+            schema_version: LIBRARY_SCHEMA_VERSION,
+            imported_at: timestamp(),
+            managed_path: library_dir(&workspace_dir).to_string_lossy().to_string(),
+            sources: vec![
+                stale_source_for(
+                    &workspace_dir,
+                    LibrarySourceKind::RealmzReference,
+                    "Data S",
+                    &spells,
+                ),
+                stale_source_for(
+                    &workspace_dir,
+                    LibrarySourceKind::RealmzReference,
+                    "Data Race",
+                    &races,
+                ),
+                stale_source_for(
+                    &workspace_dir,
+                    LibrarySourceKind::RealmzReference,
+                    "Data Caste",
+                    &castes,
+                ),
+            ],
+            entities: vec![LibraryEntity {
+                id: "library-entity:realmz:spell:0".to_string(),
+                entity_type: "spell".to_string(),
+                label: "Spell 0".to_string(),
+                source: "library-source:realmz:data-s".to_string(),
+                record_ref: None,
+                edit_state: SemanticEditState::InspectOnly,
+                confidence: Confidence::Inferred,
+                summary: summary([("recordBytes", json!(126))]),
+            }],
+            ..LibraryCatalog::default()
+        };
+        save_catalog(&workspace_dir, &stale_catalog).expect("stale catalog");
+
+        let workspace = open_workspace_with_bundled_libraries(&workspace_dir, Some(&bundled))
+            .expect("workspace");
+        let catalog = workspace.active_library_catalog.expect("catalog");
+        let decoded_spells = catalog
+            .entities
+            .iter()
+            .filter(|entity| {
+                entity.entity_type == "spell"
+                    && entity.summary.get("recordBytes").and_then(Value::as_u64) == Some(30)
+                    && entity.summary.contains_key("packedSpellId")
+            })
+            .count();
+        let decoded_races = catalog
+            .entities
+            .iter()
+            .filter(|entity| {
+                entity.entity_type == "race"
+                    && entity.summary.get("recordBytes").and_then(Value::as_u64) == Some(408)
+                    && entity.summary.contains_key("raceNumber")
+            })
+            .count();
+        let decoded_castes = catalog
+            .entities
+            .iter()
+            .filter(|entity| {
+                entity.entity_type == "caste"
+                    && entity.summary.get("recordBytes").and_then(Value::as_u64) == Some(576)
+                    && entity.summary.contains_key("casteNumber")
+            })
+            .count();
+
+        assert_eq!(decoded_spells, 525);
+        assert_eq!(decoded_races, 70);
+        assert_eq!(decoded_castes, 30);
     }
 }
