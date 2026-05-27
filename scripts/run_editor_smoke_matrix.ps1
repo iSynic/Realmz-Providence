@@ -35,6 +35,11 @@ $fixtures = @(
     name = "scripts-v2-diagnostics"
     script = Join-Path $PSScriptRoot "run_scripts_v2_diagnostics_smoke.ps1"
     runRoot = Join-Path $RunRoot "scripts-v2-diagnostics"
+  },
+  @{
+    name = "text-assets"
+    script = Join-Path $PSScriptRoot "run_text_assets_editor_smoke.ps1"
+    runRoot = Join-Path $RunRoot "text-assets"
   }
 )
 

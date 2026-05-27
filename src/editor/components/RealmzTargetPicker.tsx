@@ -220,37 +220,37 @@ function addTypedProjectTargets(project: Project, code: number, options: ScriptT
   if ([1, 19, 62, 71].includes(code)) {
     const used = usageCounts(project, [1, 19, 62, 71]);
     for (const record of project.messages ?? []) {
-      options.push({ key: `message:${record.id}`, value: record.id, label: `Message ${record.id}`, detail: record.text.slice(0, 80) || "empty", summary: `${used.get(record.id) ?? 0} script use(s)`, compatibility: "Realmz-writable", sourceState: record.authored ? "Providence-authored" : "Preserved imported bytes", entity: { type: "message", id: `message:${record.id}` } });
+      options.push({ key: `message:${record.id}`, value: record.id, label: `Message ${record.id}`, detail: record.text.slice(0, 80) || "empty", summary: `${used.get(record.id) ?? 0} script use(s)`, compatibility: "Editable", sourceState: record.authored ? "Authored" : "Imported", entity: { type: "message", id: `message:${record.id}` } });
     }
   }
   if ([2, 48, 56, 107].includes(code)) {
     const used = usageCounts(project, [2, 48, 56, 107]);
     for (const record of project.battles ?? []) {
-      options.push({ key: `battle:${record.id}`, value: record.id, label: `Battle ${record.id}`, detail: `${record.grid.filter(Boolean).length} monster slot(s)`, summary: `messages ${record.messageBefore}/${record.messageAfter}, macro ${record.battleMacro}, ${used.get(record.id) ?? 0} script use(s)`, compatibility: "Realmz-writable", sourceState: record.authored ? "Providence-authored" : "Preserved imported bytes", entity: { type: "battle", id: `battle:${record.id}` } });
+      options.push({ key: `battle:${record.id}`, value: record.id, label: `Battle ${record.id}`, detail: `${record.grid.filter(Boolean).length} monster slot(s)`, summary: `messages ${record.messageBefore}/${record.messageAfter}, macro ${record.battleMacro}, ${used.get(record.id) ?? 0} script use(s)`, compatibility: "Editable", sourceState: record.authored ? "Authored" : "Imported", entity: { type: "battle", id: `battle:${record.id}` } });
     }
   }
   if (code === 10) {
     const used = usageCounts(project, [10]);
     for (const record of project.treasures ?? []) {
-      options.push({ key: `treasure:${record.id}`, value: record.id, label: `Treasure ${record.id}`, detail: `${record.itemIds.filter(Boolean).length} item(s), ${record.gold} gold`, summary: `${record.exp} exp, ${used.get(record.id) ?? 0} script use(s)`, compatibility: "Realmz-writable", sourceState: record.authored ? "Providence-authored" : "Preserved imported bytes", entity: { type: "record", id: `treasure:${record.id}` } });
+      options.push({ key: `treasure:${record.id}`, value: record.id, label: `Treasure ${record.id}`, detail: `${record.itemIds.filter(Boolean).length} item(s), ${record.gold} gold`, summary: `${record.exp} exp, ${used.get(record.id) ?? 0} script use(s)`, compatibility: "Editable", sourceState: record.authored ? "Authored" : "Imported", entity: { type: "record", id: `treasure:${record.id}` } });
     }
   }
   if ([6, 49, 51].includes(code)) {
     const used = usageCounts(project, [6, 49, 51]);
     for (const record of project.shops ?? []) {
-      options.push({ key: `shop:${record.id}`, value: record.id, label: `Shop ${record.id}`, detail: `${record.itemIds.filter(Boolean).length} stocked slot(s), ${record.inflation}% inflation`, summary: `${used.get(record.id) ?? 0} script use(s)`, compatibility: "Realmz-writable", sourceState: record.authored ? "Providence-authored" : "Preserved imported bytes", entity: { type: "shop", id: `shop:${record.id}` } });
+      options.push({ key: `shop:${record.id}`, value: record.id, label: `Shop ${record.id}`, detail: `${record.itemIds.filter(Boolean).length} stocked slot(s), ${record.inflation}% inflation`, summary: `${used.get(record.id) ?? 0} script use(s)`, compatibility: "Editable", sourceState: record.authored ? "Authored" : "Imported", entity: { type: "shop", id: `shop:${record.id}` } });
     }
   }
   if ([4, 35, 104].includes(code)) {
     const used = usageCounts(project, [4, 35, 104]);
     for (const record of project.simpleEncounters ?? []) {
-      options.push({ key: `simple:${record.id}`, value: record.id, label: `Simple Encounter ${record.id}`, detail: `${record.actions.length} action(s), prompt ${record.prompt}`, summary: `${record.texts.find(Boolean) ?? "no text"} | ${used.get(record.id) ?? 0} script use(s)`, compatibility: "Realmz-writable", sourceState: record.authored ? "Providence-authored" : "Preserved imported bytes", entity: { type: "encounter", id: `encounter:simple:${record.id}` } });
+      options.push({ key: `simple:${record.id}`, value: record.id, label: `Simple Encounter ${record.id}`, detail: `${record.actions.length} action(s), prompt ${record.prompt}`, summary: `${record.texts.find(Boolean) ?? "no text"} | ${used.get(record.id) ?? 0} script use(s)`, compatibility: "Editable", sourceState: record.authored ? "Authored" : "Imported", entity: { type: "encounter", id: `encounter:simple:${record.id}` } });
     }
   }
   if ([5, 44].includes(code)) {
     const used = usageCounts(project, [5, 44]);
     for (const record of project.complexEncounters ?? []) {
-      options.push({ key: `complex:${record.id}`, value: record.id, label: `Complex Encounter ${record.id}`, detail: `${record.actions.length} action(s), prompt ${record.prompt}`, summary: `${record.texts.find(Boolean) ?? "no text"} | ${used.get(record.id) ?? 0} script use(s)`, compatibility: "Realmz-writable", sourceState: record.authored ? "Providence-authored" : "Preserved imported bytes", entity: { type: "encounter", id: `encounter:complex:${record.id}` } });
+      options.push({ key: `complex:${record.id}`, value: record.id, label: `Complex Encounter ${record.id}`, detail: `${record.actions.length} action(s), prompt ${record.prompt}`, summary: `${record.texts.find(Boolean) ?? "no text"} | ${used.get(record.id) ?? 0} script use(s)`, compatibility: "Editable", sourceState: record.authored ? "Authored" : "Imported", entity: { type: "encounter", id: `encounter:complex:${record.id}` } });
     }
   }
   if (code === 47) {
@@ -367,3 +367,4 @@ function dedupeTargetOptions(options: ScriptTargetOption[]) {
     return true;
   });
 }
+

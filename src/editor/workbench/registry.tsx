@@ -156,25 +156,28 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     id: "assets",
     label: "Assets",
     shortLabel: "Ast",
-    description: "Pictures, sounds, resource forks, special land tiles, and render assets.",
-    help: "Project assets are editable. Bundled Realmz/Divinity fixtures are read-only but previewable.",
+    description: "Project pictures, sounds, icons, special land tiles, and library media.",
+    help: "Project assets are editable. Bundled Realmz/Divinity media is read-only but previewable.",
     tools: [
       t({ id: "project-assets", label: "Project Assets", iconLabel: "PA", workbench: "project", description: "Imported pictures, icons, sounds, and text.", entityTypes: ["picture", "sound", "special-land-tile"], defaultInspector: "resource" }),
-      t({ id: "library-assets", label: "Library Assets", iconLabel: "LA", workbench: "library", description: "Bundled read-only media and reference assets.", entityTypes: ["picture", "sound", "icon-resource", "special-land-tile"], defaultInspector: "resource" }),
-      t({ id: "resource-forks", label: "Resource Forks", iconLabel: "RF", workbench: "both", description: "PICT, cicn, snd, TEXT, STR#, styl, RLMZ inventory.", entityTypes: ["resource", "resource type"], defaultInspector: "resource" }),
-      t({ id: "render-assets", label: "Render Assets", iconLabel: "RA", workbench: "project", description: "Tile atlases, render profiles, and fallbacks.", entityTypes: ["tile atlas", "render-profile", "asset-fallback"], defaultInspector: "resource" })
+      t({ id: "pictures", label: "Pictures", iconLabel: "PI", workbench: "both", description: "Scenario pictures and bundled PICT resources.", entityTypes: ["picture"], defaultInspector: "resource" }),
+      t({ id: "sounds", label: "Sounds", iconLabel: "SN", workbench: "both", description: "Scenario sounds and bundled snd resources.", entityTypes: ["sound"], defaultInspector: "resource" }),
+      t({ id: "icons", label: "Icons", iconLabel: "IC", workbench: "both", description: "cicn icons, portraits, and spell icons.", entityTypes: ["icon-resource"], defaultInspector: "resource" }),
+      t({ id: "special-land", label: "Special Land Tiles", iconLabel: "SL", workbench: "both", description: "32 x 32 placeable cicn land tiles.", entityTypes: ["special-land-tile"], defaultInspector: "resource" }),
+      t({ id: "library-assets", label: "Library Reference", iconLabel: "LA", workbench: "library", description: "Bundled read-only media and reference assets.", entityTypes: ["picture", "sound", "icon-resource", "special-land-tile"], defaultInspector: "resource" }),
+      t({ id: "resource-forks", label: "Advanced Resources", iconLabel: "RF", workbench: "both", description: "Raw PICT, cicn, snd, TEXT, STR#, styl, RLMZ inventory.", entityTypes: ["resource", "resource type"], defaultInspector: "resource" })
     ]
   },
   text: {
     id: "text",
-    label: "Text",
+    label: "Strings",
     shortLabel: "Txt",
-    description: "Scenario strings, TEXT/styl resources, import/export, and spell-check workflow.",
-    help: "Text views prefer readable previews and message links.",
+    description: "Scenario strings, reference string tables, and export checks.",
+    help: "Scenario strings are editable. TEXT and STR# resources are readable reference material.",
     tools: [
-      t({ id: "messages", label: "Scenario Strings", iconLabel: "MSG", workbench: "project", description: "Message records and string links.", entityTypes: ["message"], defaultInspector: "semantic" }),
-      t({ id: "text-resources", label: "TEXT / STR#", iconLabel: "TXT", workbench: "both", description: "Readable resource text and string lists.", entityTypes: ["text-resource", "string-list-resource", "style-resource"], defaultInspector: "resource" }),
-      t({ id: "spell-check", label: "Spell Check", iconLabel: "SC", workbench: "project", description: "Text import/export and spell-check workflow.", entityTypes: ["message", "text-resource"], defaultInspector: "semantic" })
+      t({ id: "messages", label: "String Editor", iconLabel: "STR", workbench: "project", description: "Create, edit, duplicate, clear, and find scenario strings.", entityTypes: ["message"], defaultInspector: "semantic" }),
+      t({ id: "text-resources", label: "Reference Strings", iconLabel: "REF", workbench: "both", description: "Readable TEXT, STR#, and style resources.", entityTypes: ["text-resource", "string-list-resource", "style-resource"], defaultInspector: "resource" }),
+      t({ id: "spell-check", label: "Export Check", iconLabel: "OK", workbench: "project", description: "Length and character checks for exported strings.", entityTypes: ["message", "text-resource"], defaultInspector: "semantic" })
     ]
   },
   records: {

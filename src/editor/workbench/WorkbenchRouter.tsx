@@ -13,6 +13,7 @@ import { RulesPanel } from "../panels/RulesPanel";
 import { ScenarioPanel } from "../panels/ScenarioPanel";
 import { ScriptsPanel } from "../panels/ScriptsPanel";
 import { SuiteDomainPanel } from "../panels/SuiteDomainPanel";
+import { TextPanel } from "../panels/TextPanel";
 import { Issue } from "../types";
 
 export function WorkbenchRouter({
@@ -214,7 +215,20 @@ export function WorkbenchRouter({
     );
   }
 
-  if (["combat", "economy", "text"].includes(state.activeTab)) {
+  if (state.activeTab === "text") {
+    return (
+      <TextPanel
+        project={state.project}
+        catalog={state.libraryCatalog}
+        selectedEntity={state.selectedEntity}
+        activeEditor={state.activeEditor}
+        onSelectEntity={onSelectEntity}
+        onApplyCommand={onApplyCommand}
+      />
+    );
+  }
+
+  if (["combat", "economy"].includes(state.activeTab)) {
     return (
       <SuiteDomainPanel
         tab={state.activeTab}

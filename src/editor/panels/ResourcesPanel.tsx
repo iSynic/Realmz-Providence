@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { DecodedResourcePreview, LibraryAsset, LibraryCatalog, ManagedAsset, ManagedAssetKind, Project, ResourcePreviewDiagnostic, ResourcePreviewStatus, SelectedEntity } from "../types";
 import { compactValue, selectEntityFromId, semanticLabel } from "../utils";
 import { resourceConsumers, resourceGaps, resourceMembersForType, schemaEntities } from "../semanticGraph";
-import { SemanticInspector } from "../components/SemanticInspector";
+import { resourceUsageLinks } from "../contentLinks";
 import { tileColor } from "../components/TileSprite";
 import { ResourcePreviewBadge, ResourcePreviewDiagnostics } from "../components/ResourcePreviewStatus";
 import { inspectBrowserBundledLibraryAssetPreview } from "../browser/library";
@@ -45,92 +45,123 @@ export function ResourcesPanel({
   const tileAtlases = schemaEntities(project, "tile atlas");
   const gaps = resourceGaps(project);
   const libraryAssets = catalog?.assets ?? [];
-  const showAll = activeEditor === "domain";
-  const showProjectAssets = showAll || activeEditor === "project-assets";
-  const showSpecialLand = showAll || activeEditor === "project-assets" || activeEditor === "special-land";
-  const showLibraryAssets = showAll || activeEditor === "library-assets";
-  const showResourceForks = showAll || activeEditor === "resource-forks";
-  const showRenderAssets = showAll || activeEditor === "render-assets";
+  const [sectionOverride, setSectionOverride] = useState<AssetSection | null>(null);
+  const section = sectionOverride ?? assetSectionFromEditor(activeEditor);
+  useEffect(() => {
+    setSectionOverride(null);
+  }, [activeEditor]);
   const [libraryPreviewFilter, setLibraryPreviewFilter] = useState<ResourcePreviewStatus | "all">("all");
   const [libraryPreviewStatuses, setLibraryPreviewStatuses] = useState<Record<string, ResourcePreviewStatus>>({});
+  const [query, setQuery] = useState("");
+  const normalizedQuery = query.trim().toLowerCase();
+  const projectAssets = (project?.assets ?? []).filter((asset) =>
+    assetMatchesSection(asset, section) &&
+    (!normalizedQuery || `${asset.label} ${asset.resourceType} ${asset.resourceId} ${asset.fileName}`.toLowerCase().includes(normalizedQuery))
+  );
   const visibleLibraryAssets = libraryAssets
     .filter((asset) => {
+      if (!libraryAssetMatchesSection(asset, section)) return false;
+      if (normalizedQuery && !`${asset.label} ${asset.resourceType ?? ""} ${asset.resourceId ?? ""} ${asset.relativePath}`.toLowerCase().includes(normalizedQuery)) return false;
       if (libraryPreviewFilter === "all") return true;
       return (libraryPreviewStatuses[asset.id] ?? estimatedPreviewStatus(asset)) === libraryPreviewFilter;
     })
     .slice(0, 240);
   return (
-    <div className="editor-full-panel asset-workbench">
-      <ScrollArea className="asset-workbench-main" aria-label="Assets workbench">
-      {showProjectAssets && (
-      <section className="tab-panel asset-authoring-panel">
-        <div className="panel-header">
-          <span>Managed Assets</span>
-          <div className="panel-header-actions">
-            <b>{(project?.assets.length ?? 0).toLocaleString()}</b>
-            <AssetImportBar onImportAssets={onImportAssets} compact />
-          </div>
+    <section className="editor-full-panel asset-workbench">
+      <header className="asset-workbench-header">
+        <div>
+          <h1>Assets</h1>
+          <p>Import project media, browse bundled Realmz media, and choose picture, sound, icon, and special land resources.</p>
         </div>
-        <ScrollArea className="managed-asset-grid" aria-label="Managed Assets">
-          {project?.assets.map((asset, index) => (
-            <ManagedAssetCard
-              key={renderListKey("managed-asset", asset, index)}
-              asset={asset}
-              desktopRuntime={desktopRuntime}
-              projectDir={projectDir}
-              onReplaceAsset={onReplaceAsset}
-              onUpdateAsset={onUpdateAsset}
-              onDeleteAsset={onDeleteAsset}
-            />
-          ))}
-          {project && project.assets.length === 0 && (
-            <p className="empty-copy compact">Import pictures, icons, or sounds to make them available to scripts and export.</p>
-          )}
-          {!project && <p className="empty-copy compact">Open a project to manage scenario assets.</p>}
-        </ScrollArea>
-      </section>
-      )}
-      {showSpecialLand && (
-      <SpecialLandTilePanel
-        project={project}
-        libraryAssets={libraryAssets}
-        desktopRuntime={desktopRuntime}
-        projectDir={projectDir}
-        workspaceDir={workspaceDir}
-        onImportAssets={onImportAssets}
-        onReplaceAsset={onReplaceAsset}
-        onDeleteAsset={onDeleteAsset}
-        onSelectPaintTile={onSelectPaintTile}
-      />
-      )}
-      {showLibraryAssets && (
-      <section className="tab-panel asset-authoring-panel">
-        <div className="panel-header">
-          <span>Library Assets</span>
-          <b>{libraryAssets.length.toLocaleString()}</b>
-        </div>
+        <AssetImportBar onImportAssets={project ? onImportAssets : undefined} compact />
+      </header>
+      <div className="asset-section-tabs" role="tablist" aria-label="Asset sections">
+        {ASSET_SECTIONS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            role="tab"
+            aria-selected={section === item.id}
+            className={section === item.id ? "active" : ""}
+            onClick={() => setSectionOverride(item.id)}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+      <div className="asset-filter-row">
+        <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search assets..." />
         <PreviewStatusFilters value={libraryPreviewFilter} onChange={setLibraryPreviewFilter} />
-        <ScrollArea className="library-asset-strip" aria-label="Library Assets">
-          {visibleLibraryAssets.map((asset, index) => (
-            <LibraryAssetCard
-              key={renderListKey("library-asset", asset, index)}
-              asset={asset}
-              desktopRuntime={desktopRuntime}
-              workspaceDir={workspaceDir}
-              onPreviewStatus={(assetId, status) => setLibraryPreviewStatuses((statuses) => statuses[assetId] === status ? statuses : { ...statuses, [assetId]: status })}
-            />
-          ))}
-          {visibleLibraryAssets.length === 0 && libraryAssets.length > 0 && (
-            <p className="empty-copy compact">No library assets currently match this preview status.</p>
+      </div>
+      <ScrollArea className="asset-workbench-main" aria-label="Assets workbench">
+      {section !== "advanced" && (
+        <section className="tab-panel asset-authoring-panel">
+          <div className="panel-header">
+            <span>{assetSectionTitle(section)}</span>
+            <b>{projectAssets.length.toLocaleString()} project / {visibleLibraryAssets.length.toLocaleString()} library</b>
+          </div>
+          {section === "special-land" && (
+            <div className="special-land-explainer">
+              Special Land Tiles are 32 x 32 <code>cicn</code> resources addressed by negative tile ids. They paint directly onto map cells.
+            </div>
           )}
-          {libraryAssets.length === 0 && <p className="empty-copy compact">Bundled libraries did not expose media assets.</p>}
-        </ScrollArea>
-      </section>
+          {section === "special-land" && (
+            <AssetImportBar compact fixedKind="special-land-tile" label="Import Tile" onImportAssets={project ? onImportAssets : undefined} />
+          )}
+          <div className="asset-subsection-heading">Project Assets</div>
+          <div className="managed-asset-grid" aria-label="Project assets">
+            {projectAssets.map((asset, index) => section === "special-land" ? (
+              <SpecialLandAssetCard
+                key={renderListKey("project-special-land", asset, index)}
+                asset={asset}
+                desktopRuntime={desktopRuntime}
+                projectDir={projectDir}
+                onReplaceAsset={onReplaceAsset}
+                onDeleteAsset={onDeleteAsset}
+                onSelectPaintTile={onSelectPaintTile}
+              />
+            ) : (
+              <ManagedAssetCard
+                key={renderListKey("managed-asset", asset, index)}
+                asset={asset}
+                project={project}
+                desktopRuntime={desktopRuntime}
+                projectDir={projectDir}
+                onReplaceAsset={onReplaceAsset}
+                onUpdateAsset={onUpdateAsset}
+                onDeleteAsset={onDeleteAsset}
+                onSelectEntity={onSelectEntity}
+              />
+            ))}
+            {project && projectAssets.length === 0 && (
+              <p className="empty-copy compact">No project assets in this section yet.</p>
+            )}
+            {!project && <p className="empty-copy compact">Open a project to manage scenario assets.</p>}
+          </div>
+          <div className="asset-subsection-heading">Library Reference</div>
+          <div className="library-asset-strip" aria-label="Library assets">
+            {visibleLibraryAssets.map((asset, index) => (
+              <LibraryAssetCard
+                key={renderListKey("library-asset", asset, index)}
+                asset={asset}
+                project={project}
+                desktopRuntime={desktopRuntime}
+                workspaceDir={workspaceDir}
+                onSelectEntity={onSelectEntity}
+                onPreviewStatus={(assetId, status) => setLibraryPreviewStatuses((statuses) => statuses[assetId] === status ? statuses : { ...statuses, [assetId]: status })}
+              />
+            ))}
+            {visibleLibraryAssets.length === 0 && libraryAssets.length > 0 && (
+              <p className="empty-copy compact">No library assets match this search.</p>
+            )}
+            {libraryAssets.length === 0 && <p className="empty-copy compact">Bundled libraries did not expose media assets.</p>}
+          </div>
+        </section>
       )}
-      {showResourceForks && (
+      {section === "advanced" && (
       <section className="tab-panel resource-browser">
         <div className="panel-header">
-          <span>Resource Fork Inventory</span>
+          <span>Advanced Resources</span>
           <b>{resources.length.toLocaleString()}</b>
         </div>
         <div className="resource-type-grid">
@@ -173,7 +204,7 @@ export function ResourcesPanel({
         </ScrollArea>
       </section>
       )}
-      {showRenderAssets && (
+      {section === "advanced" && (
       <section className="tab-panel atlas-browser">
         <div className="panel-header">
           <span>Tile Atlases</span>
@@ -195,13 +226,58 @@ export function ResourcesPanel({
       </section>
       )}
       </ScrollArea>
-      <aside className="tab-panel semantic-right">
-        <ScrollArea className="semantic-right-scroll" aria-label="Asset semantic inspector">
-          <SemanticInspector project={project} selectedEntity={selectedEntity} onSelect={onSelectEntity} />
-        </ScrollArea>
-      </aside>
-    </div>
+    </section>
   );
+}
+
+type AssetSection = "project" | "pictures" | "sounds" | "icons" | "special-land" | "library" | "advanced";
+
+const ASSET_SECTIONS: Array<{ id: AssetSection; editor: string; label: string }> = [
+  { id: "project", editor: "project-assets", label: "Project Assets" },
+  { id: "pictures", editor: "pictures", label: "Pictures" },
+  { id: "sounds", editor: "sounds", label: "Sounds" },
+  { id: "icons", editor: "icons", label: "Icons" },
+  { id: "special-land", editor: "special-land", label: "Special Land Tiles" },
+  { id: "library", editor: "library-assets", label: "Library Reference" },
+  { id: "advanced", editor: "resource-forks", label: "Advanced" }
+];
+
+function assetSectionFromEditor(activeEditor: string): AssetSection {
+  if (activeEditor === "pictures") return "pictures";
+  if (activeEditor === "sounds") return "sounds";
+  if (activeEditor === "icons") return "icons";
+  if (activeEditor === "special-land") return "special-land";
+  if (activeEditor === "library-assets") return "library";
+  if (activeEditor === "resource-forks" || activeEditor === "render-assets") return "advanced";
+  return "project";
+}
+
+function assetSectionTitle(section: AssetSection) {
+  if (section === "pictures") return "Pictures";
+  if (section === "sounds") return "Sounds";
+  if (section === "icons") return "Icons";
+  if (section === "special-land") return "Special Land Tiles";
+  if (section === "library") return "Library Reference";
+  if (section === "advanced") return "Advanced Resources";
+  return "Project Assets";
+}
+
+function assetMatchesSection(asset: ManagedAsset, section: AssetSection) {
+  if (section === "pictures") return asset.kind === "picture";
+  if (section === "sounds") return asset.kind === "sound";
+  if (section === "icons") return asset.kind === "icon";
+  if (section === "special-land") return asset.kind === "special-land-tile";
+  if (section === "library" || section === "advanced") return false;
+  return true;
+}
+
+function libraryAssetMatchesSection(asset: LibraryAsset, section: AssetSection) {
+  if (section === "project" || section === "library") return true;
+  if (section === "pictures") return asset.type === "picture" || asset.resourceType?.trim() === "PICT";
+  if (section === "sounds") return asset.type === "sound" || asset.resourceType?.trim() === "snd";
+  if (section === "icons") return asset.type === "icon" || asset.type === "icon-resource" || asset.resourceType?.trim() === "cicn";
+  if (section === "special-land") return asset.type === "special-land-tile";
+  return false;
 }
 
 function AssetImportBar({
@@ -321,7 +397,7 @@ function SpecialLandTilePanel({
           <div className="subsection-label">Read-only library examples</div>
           <ScrollArea className="library-asset-strip compact-assets" aria-label="Read-only special land tile examples">
             {libraryTiles.slice(0, 48).map((asset, index) => (
-              <LibraryAssetCard key={renderListKey("special-land-library", asset, index)} asset={asset} desktopRuntime={desktopRuntime} workspaceDir={workspaceDir} />
+              <LibraryAssetCard key={renderListKey("special-land-library", asset, index)} asset={asset} project={project} desktopRuntime={desktopRuntime} workspaceDir={workspaceDir} />
             ))}
           </ScrollArea>
         </>
@@ -385,21 +461,26 @@ function SpecialLandAssetCard({
 
 function ManagedAssetCard({
   asset,
+  project,
   desktopRuntime,
   projectDir,
   onReplaceAsset,
   onUpdateAsset,
-  onDeleteAsset
+  onDeleteAsset,
+  onSelectEntity
 }: {
   asset: ManagedAsset;
+  project: Project | null;
   desktopRuntime: boolean;
   projectDir: string;
   onReplaceAsset?: (assetId: string, file: File) => void;
   onUpdateAsset?: (assetId: string, changes: { label?: string; resourceId?: number }) => void;
   onDeleteAsset?: (assetId: string) => void;
+  onSelectEntity?: (entity: SelectedEntity) => void;
 }) {
   const preview = useProjectPreview(asset.previewPath, desktopRuntime, projectDir);
   const replaceInputRef = useRef<HTMLInputElement>(null);
+  const usages = project ? resourceUsageLinks(project, asset.resourceType, asset.resourceId) : [];
   return (
     <article className="managed-asset-card">
       <AssetPreview kind={asset.kind} label={asset.label} preview={preview} />
@@ -427,9 +508,20 @@ function ManagedAssetCard({
       <div className="asset-facts">
         <span>{asset.kind}</span>
         <span>{asset.exportState}</span>
+        <span>{usages.length} use{usages.length === 1 ? "" : "s"}</span>
         {asset.width && asset.height ? <span>{asset.width} x {asset.height}</span> : null}
         {asset.durationMs ? <span>{(asset.durationMs / 1000).toFixed(1)}s</span> : null}
       </div>
+      {usages.length > 0 && (
+        <div className="asset-usage-list">
+          {usages.slice(0, 4).map((usage) => (
+            <button key={usage.key} type="button" disabled={!usage.entity} onClick={() => usage.entity && onSelectEntity?.(usage.entity)}>
+              {usage.label}
+              <small>{usage.detail}</small>
+            </button>
+          ))}
+        </div>
+      )}
       <div className="asset-card-actions">
         <button className="btn btn-secondary btn-xs" type="button" disabled={!onReplaceAsset} onClick={() => replaceInputRef.current?.click()}>
           <Upload size={12} /> Replace
@@ -488,16 +580,21 @@ function PreviewStatusFilters({
 
 function LibraryAssetCard({
   asset,
+  project,
   desktopRuntime,
   workspaceDir,
+  onSelectEntity,
   onPreviewStatus
 }: {
   asset: LibraryAsset;
+  project: Project | null;
   desktopRuntime: boolean;
   workspaceDir: string;
+  onSelectEntity?: (entity: SelectedEntity) => void;
   onPreviewStatus?: (assetId: string, status: ResourcePreviewStatus) => void;
 }) {
   const preview = useLibraryPreview(asset, desktopRuntime, workspaceDir);
+  const usages = project ? resourceUsageLinks(project, asset.resourceType, asset.resourceId) : [];
   useEffect(() => {
     onPreviewStatus?.(asset.id, preview.status === "unknown" ? estimatedPreviewStatus(asset) : preview.status);
   }, [asset, onPreviewStatus, preview.status]);
@@ -515,8 +612,19 @@ function LibraryAssetCard({
       <div className="asset-facts">
         <ResourcePreviewBadge status={preview.status} />
         <span>{formatBytes(asset.bytes)}</span>
+        <span>{usages.length} use{usages.length === 1 ? "" : "s"}</span>
         {preview.summary.format && <span>{preview.summary.format}</span>}
       </div>
+      {usages.length > 0 && (
+        <div className="asset-usage-list">
+          {usages.slice(0, 4).map((usage) => (
+            <button key={usage.key} type="button" disabled={!usage.entity} onClick={() => usage.entity && onSelectEntity?.(usage.entity)}>
+              {usage.label}
+              <small>{usage.detail}</small>
+            </button>
+          ))}
+        </div>
+      )}
       <ResourcePreviewDiagnostics diagnostics={preview.diagnostics} />
     </article>
   );

@@ -52,6 +52,7 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "deleteEdcdRow") return deleteEdcdRow(project, command.rowId);
   if (command.kind === "createTargetRecord") return createTargetRecord(project, command.recordType, command.id);
   if (command.kind === "deleteTargetRecord") return deleteTargetRecord(project, command.recordType, command.id);
+  if (command.kind === "duplicateMessageRecord") return duplicateMessageRecord(project, command.fromId, command.toId);
   if (command.kind === "updateMessageRecord") return updateRecord(project, "messages", command.id, command.changes);
   if (command.kind === "updateBattleRecord") return updateRecord(project, "battles", command.id, command.changes);
   if (command.kind === "updateTreasureRecord") return updateRecord(project, "treasures", command.id, command.changes);
@@ -499,6 +500,18 @@ function deleteTargetRecord(project: Project, recordType: RealmzTargetRecordKind
     case "questLabel":
       return { ...project, questLabels: (project.questLabels ?? []).filter((quest) => quest.id !== id) };
   }
+}
+
+function duplicateMessageRecord(project: Project, fromId: number, requestedId?: number): Project {
+  const source = project.messages.find((record) => record.id === fromId);
+  if (!source) return project;
+  const id = requestedId ?? nextTargetId(project, "message");
+  if (!Number.isInteger(id) || id < 0) return project;
+  return upsertRecord(project, "messages", {
+    ...emptyMessage(id),
+    text: source.text,
+    authored: true
+  });
 }
 
 type TargetCollectionName = "messages" | "battles" | "treasures" | "shops" | "simpleEncounters" | "complexEncounters";
