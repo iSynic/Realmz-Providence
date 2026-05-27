@@ -1026,7 +1026,7 @@ fn caste_record_summary(index: usize, record: &[u8]) -> BTreeMap<String, Value> 
         ("maxStaminaBonus", json!(i16_be(record, 258))),
         ("bonusAttacks", json!(i16_be(record, 260))),
         ("maxAttacks", json!(i16_be(record, 262))),
-        ("victory", json!(read_i16s(record, 264, 30))),
+        ("victory", json!(read_i32s(record, 264, 30))),
         ("startMoney", json!(i16_be(record, 384))),
         ("startItems", json!(read_i16s(record, 386, 20))),
         ("attacks", json!(record[426..436].to_vec())),
@@ -1359,6 +1359,10 @@ fn i32_be(buffer: &[u8], offset: usize) -> i32 {
         buffer[offset + 2],
         buffer[offset + 3],
     ])
+}
+
+fn read_i32s(record: &[u8], offset: usize, count: usize) -> Vec<i32> {
+    (0..count).map(|index| i32_be(record, offset + index * 4)).collect()
 }
 
 fn u16_be(buffer: &[u8], offset: usize) -> Option<u16> {

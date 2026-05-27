@@ -10,6 +10,7 @@ export function RulesPanel({
   catalog,
   activeEditor,
   selectedEntity,
+  queueAtlasUrl,
   onSelectEntity,
   onApplyCommand
 }: {
@@ -17,6 +18,7 @@ export function RulesPanel({
   catalog: LibraryCatalog | null;
   activeEditor: string;
   selectedEntity: SelectedEntity | null;
+  queueAtlasUrl?: string | null;
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
@@ -39,7 +41,7 @@ export function RulesPanel({
           </button>
         ))}
       </div>
-      {family === "spells" && <SpellRulesEditor project={project} catalog={catalog} selectedEntity={selectedEntity} onSelectEntity={onSelectEntity} onApplyCommand={onApplyCommand} />}
+      {family === "spells" && <SpellRulesEditor project={project} catalog={catalog} selectedEntity={selectedEntity} queueAtlasUrl={queueAtlasUrl ?? null} onSelectEntity={onSelectEntity} onApplyCommand={onApplyCommand} />}
       {family === "races" && <RaceRulesEditor project={project} catalog={catalog} selectedEntity={selectedEntity} onSelectEntity={onSelectEntity} onApplyCommand={onApplyCommand} />}
       {family === "castes" && <CasteRulesEditor project={project} catalog={catalog} selectedEntity={selectedEntity} onSelectEntity={onSelectEntity} onApplyCommand={onApplyCommand} />}
     </section>
@@ -67,6 +69,10 @@ type CasteRuleEntry = {
   id: number;
   record: ScenarioCasteOverride;
   hasScenarioVersion: boolean;
+};
+
+type SpellRulesEditorProps = RulesEditorProps & {
+  queueAtlasUrl: string | null;
 };
 
 function buildSpellEntries(project: Project, catalog: LibraryCatalog | null): SpellRuleEntry[] {
@@ -207,7 +213,7 @@ function nextSpellPackedId(entry: SpellRuleEntry) {
   return spellPackedId(entry.spellcasterClass, Math.floor(next / 12), next % 12);
 }
 
-function SpellRulesEditor({ project, catalog, selectedEntity, onSelectEntity, onApplyCommand }: RulesEditorProps) {
+function SpellRulesEditor({ project, catalog, selectedEntity, queueAtlasUrl, onSelectEntity, onApplyCommand }: SpellRulesEditorProps) {
   const entries = useMemo(() => buildSpellEntries(project, catalog), [project, catalog]);
   const selectedPackedId = selectedIdFor(selectedEntity?.id, "rule-spell") ?? entries[0]?.packedId ?? 1101;
   const entry = entries.find((candidate) => candidate.packedId === selectedPackedId) ?? entries[0] ?? null;
@@ -243,7 +249,10 @@ function SpellRulesEditor({ project, catalog, selectedEntity, onSelectEntity, on
             setSpellcasterClass(value);
             selectPacked(spellPackedId(value, 0, 0));
           }} />
-          <button type="button" className="btn btn-secondary btn-xs" onClick={() => selectedEntry && selectPacked(previousSpellPackedId(selectedEntry))}>-</button>
+          <div className="rules-step-buttons" aria-label="Step through spells">
+            <button type="button" className="btn btn-secondary btn-xs" title="Previous spell" onClick={() => selectedEntry && selectPacked(previousSpellPackedId(selectedEntry))}>‹</button>
+            <button type="button" className="btn btn-secondary btn-xs" title="Next spell" onClick={() => selectedEntry && selectPacked(nextSpellPackedId(selectedEntry))}>›</button>
+          </div>
           <label>
             <span>Go To Spell</span>
             <select value={selectedEntry?.packedId ?? ""} onChange={(event) => selectPacked(Number(event.currentTarget.value))}>
@@ -254,7 +263,6 @@ function SpellRulesEditor({ project, catalog, selectedEntity, onSelectEntity, on
               ))}
             </select>
           </label>
-          <button type="button" className="btn btn-secondary btn-xs" onClick={() => selectedEntry && selectPacked(nextSpellPackedId(selectedEntry))}>+</button>
           {selectedEntry?.spellcasterClass === 4 && !selectedEntry.hasScenarioVersion && (
             <button type="button" className="btn btn-primary btn-xs" onClick={() => createCustomFrom(selectedEntry)}>Create Custom Spell</button>
           )}
@@ -278,6 +286,7 @@ function SpellRulesEditor({ project, catalog, selectedEntity, onSelectEntity, on
           <SpellForm
             entry={selectedEntry}
             iconAssets={catalog?.assets ?? []}
+            queueAtlasUrl={queueAtlasUrl}
             onCreateCustom={() => createCustomFrom(selectedEntry)}
             onApplyCommand={onApplyCommand}
           />
@@ -290,11 +299,13 @@ function SpellRulesEditor({ project, catalog, selectedEntity, onSelectEntity, on
 function SpellForm({
   entry,
   iconAssets,
+  queueAtlasUrl,
   onCreateCustom,
   onApplyCommand
 }: {
   entry: SpellRuleEntry;
   iconAssets: LibraryAsset[];
+  queueAtlasUrl: string | null;
   onCreateCustom: () => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
@@ -312,50 +323,52 @@ function SpellForm({
           <button type="button" className="btn btn-primary btn-xs" onClick={onCreateCustom}>{entry.spellcasterClass === 4 ? "Create Custom Spell" : "Copy To Custom Slot"}</button>
         </div>
       )}
-      <RuleSection title="Identity" badge="metadata">
-        <TextField label="Name" value={record.displayName ?? ""} onCommit={(displayName) => update({ displayName })} disabled={!editable} />
-        <NumberField label="Spell ID" value={entry.packedId} disabled compact />
-        <SelectField label="Spell Catalog" value={entry.spellcasterClass} options={SPELL_CASTER_CLASSES} onCommit={() => {}} disabled />
-        <NumberField label="Level" value={entry.levelIndex + 1} disabled compact />
-        <NumberField label="Spell No." value={entry.slotIndex + 1} disabled compact />
-        <TextField label="Description / Note" value={record.description ?? ""} onCommit={(description) => update({ description })} wide disabled={!editable} />
+      <RuleSection title="Identity" badge="metadata" help="Spell name, catalog location, and description text. Built-in spells can be copied into custom slots before editing.">
+        <TextField label="Name" value={record.displayName ?? ""} onCommit={(displayName) => update({ displayName })} span disabled={!editable} help="The spell name shown in Realmz spell lists." />
+        <NumberField label="Spell ID" value={entry.packedId} disabled compact help="Packed Realmz spell ID, such as 1101 for Sorcerer level 1 slot 1." />
+        <SelectField label="Spell Catalog" value={entry.spellcasterClass} options={SPELL_CASTER_CLASSES} onCommit={() => {}} disabled help="The Realmz spell catalog this entry belongs to." />
+        <NumberField label="Level" value={entry.levelIndex + 1} disabled compact help="Spell level within the selected catalog." />
+        <NumberField label="Spell No." value={entry.slotIndex + 1} disabled compact help="Slot number within this spell level." />
+        <TextField label="Description / Note" value={record.description ?? ""} onCommit={(description) => update({ description })} wide disabled={!editable} help="Reference text shown by the editor for this spell." />
       </RuleSection>
-      <RuleSection title="Casting Context" badge="editable">
-        <CheckboxField label="Can Cast In Combat" checked={record.inCombat} onCommit={(inCombat) => update({ inCombat })} disabled={!editable} />
-        <CheckboxField label="Can Cast In Camp" checked={record.inCamp} onCommit={(inCamp) => update({ inCamp })} disabled={!editable} />
-        <SelectField label="Target Type" value={record.targetType} options={SPELL_TARGET_TYPES} onCommit={(targetType) => update({ targetType })} disabled={!editable} />
-        <NumberField label="Spell Size" value={record.size} onCommit={(size) => update({ size })} disabled={!editable} compact />
-        <NumberField label="Fixed Target Count" value={record.fixedTargetNum} onCommit={(fixedTargetNum) => update({ fixedTargetNum })} disabled={!editable} compact />
-        <NumberField label="Can Rotate" value={record.canRotate} onCommit={(canRotate) => update({ canRotate })} disabled={!editable} compact />
+      <RuleSection title="Casting Context" badge="editable" help="Where the spell can be cast and how Realmz chooses valid targets.">
+        <div className="rules-field-subrow rules-checkbox-row">
+          <CheckboxField label="Can Cast In Combat" checked={record.inCombat} onCommit={(inCombat) => update({ inCombat })} disabled={!editable} help="Allows this spell during combat." />
+          <CheckboxField label="Can Cast In Camp" checked={record.inCamp} onCommit={(inCamp) => update({ inCamp })} disabled={!editable} help="Allows this spell from the camp/adventure spell interface." />
+        </div>
+        <SelectField label="Target Type" value={record.targetType} options={SPELL_TARGET_TYPES} onCommit={(targetType) => update({ targetType })} disabled={!editable} help="How Realmz interprets the spell's target area." />
+        <NumberField label="Spell Size" value={record.size} onCommit={(size) => update({ size })} disabled={!editable} compact help="Target area size used by fixed-size and area spells." />
+        <NumberField label="Fixed Target Count" value={record.fixedTargetNum} onCommit={(fixedTargetNum) => update({ fixedTargetNum })} disabled={!editable} compact help="Fixed number of targets when the spell uses fixed targeting." />
+        <NumberField label="Can Rotate" value={record.canRotate} onCommit={(canRotate) => update({ canRotate })} disabled={!editable} compact help="Whether the spell target shape can rotate." />
       </RuleSection>
-      <RuleSection title="Math" badge="editable">
-        <NumberField label="Fixed Range" value={record.range1} onCommit={(range1) => update({ range1 })} disabled={!editable} compact />
-        <NumberField label="Power Range" value={record.range2} onCommit={(range2) => update({ range2 })} disabled={!editable} compact />
-        <NumberField label="+/- To Hit %" value={record.toHitBonus} onCommit={(toHitBonus) => update({ toHitBonus })} disabled={!editable} compact />
-        <NumberField label="+/- To DRV %" value={record.saveBonus} onCommit={(saveBonus) => update({ saveBonus })} disabled={!editable} compact />
-        <NumberField label="+/- Resist / Level" value={record.resistAdjust} onCommit={(resistAdjust) => update({ resistAdjust })} disabled={!editable} compact />
-        <SelectField label="Resist Type" value={record.saveAdjust} options={["No Resist", "No DRVs", "Neither", ...SPELL_RESIST_CLASSES]} onCommit={(saveAdjust) => update({ saveAdjust })} disabled={!editable} />
-        <NumberField label="Base SP Cost" value={record.cost} onCommit={(cost) => update({ cost })} disabled={!editable} compact />
-        <NumberField label="Spell Class" value={record.spellClass} onCommit={(spellClass) => update({ spellClass })} disabled={!editable} compact hint="Summon effects may use this as a monster ID." />
-        <SelectField label="Damage Type" value={record.damageType} options={SPELL_DAMAGE_TYPES} onCommit={(damageType) => update({ damageType })} disabled={!editable} />
+      <RuleSection title="Math" badge="editable" help="Range, saving throw, resistance, cost, and damage class values used by Realmz spell resolution.">
+        <NumberField label="Fixed Range" value={record.range1} onCommit={(range1) => update({ range1 })} disabled={!editable} compact help="Base range value." />
+        <NumberField label="Power Range" value={record.range2} onCommit={(range2) => update({ range2 })} disabled={!editable} compact help="Range value scaled by spell power when applicable." />
+        <NumberField label="+/- To Hit %" value={record.toHitBonus} onCommit={(toHitBonus) => update({ toHitBonus })} disabled={!editable} compact help="Hit chance adjustment." />
+        <NumberField label="+/- To DRV %" value={record.saveBonus} onCommit={(saveBonus) => update({ saveBonus })} disabled={!editable} compact help="Defense/resistance roll adjustment." />
+        <NumberField label="+/- Resist / Level" value={record.resistAdjust} onCommit={(resistAdjust) => update({ resistAdjust })} disabled={!editable} compact help="Resistance adjustment per level." />
+        <SelectField label="Resist Type" value={record.saveAdjust} options={["No Resist", "No DRVs", "Neither", ...SPELL_RESIST_CLASSES]} onCommit={(saveAdjust) => update({ saveAdjust })} disabled={!editable} help="Resistance behavior used by this spell." />
+        <NumberField label="Base SP Cost" value={record.cost} onCommit={(cost) => update({ cost })} disabled={!editable} compact help="Spell point cost." />
+        <NumberField label="Spell Class" value={record.spellClass} onCommit={(spellClass) => update({ spellClass })} disabled={!editable} compact hint="Summon effects may use this as a monster ID." help="Spell class value; summon effects may use it as a monster ID." />
+        <SelectField label="Damage Type" value={record.damageType} options={SPELL_DAMAGE_TYPES} onCommit={(damageType) => update({ damageType })} disabled={!editable} help="Damage or effect family used by Realmz." />
       </RuleSection>
-      <RuleSection title="Damage And Duration" badge="editable">
-        <NumberField label="Fixed Damage Low" value={record.damage1} onCommit={(damage1) => update({ damage1 })} disabled={!editable} compact />
-        <NumberField label="Fixed Damage High" value={record.damage2} onCommit={(damage2) => update({ damage2 })} disabled={!editable} compact />
-        <NumberField label="Power Damage Low" value={record.powerDamage1} onCommit={(powerDamage1) => update({ powerDamage1 })} disabled={!editable} compact />
-        <NumberField label="Power Damage High" value={record.powerDamage2} onCommit={(powerDamage2) => update({ powerDamage2 })} disabled={!editable} compact />
-        <NumberField label="Fixed Duration Low" value={record.duration1} onCommit={(duration1) => update({ duration1 })} disabled={!editable} compact />
-        <NumberField label="Fixed Duration High" value={record.duration2} onCommit={(duration2) => update({ duration2 })} disabled={!editable} compact />
-        <NumberField label="Power Duration Low" value={record.powerDuration1} onCommit={(powerDuration1) => update({ powerDuration1 })} disabled={!editable} compact />
-        <NumberField label="Power Duration High" value={record.powerDuration2} onCommit={(powerDuration2) => update({ powerDuration2 })} disabled={!editable} compact />
+      <RuleSection title="Damage And Duration" badge="editable" help="Fixed and power-scaled damage and duration ranges.">
+        <NumberField label="Fixed Damage Low" value={record.damage1} onCommit={(damage1) => update({ damage1 })} disabled={!editable} compact help="Low fixed damage value." />
+        <NumberField label="Fixed Damage High" value={record.damage2} onCommit={(damage2) => update({ damage2 })} disabled={!editable} compact help="High fixed damage value." />
+        <NumberField label="Power Damage Low" value={record.powerDamage1} onCommit={(powerDamage1) => update({ powerDamage1 })} disabled={!editable} compact help="Low power-scaled damage value." />
+        <NumberField label="Power Damage High" value={record.powerDamage2} onCommit={(powerDamage2) => update({ powerDamage2 })} disabled={!editable} compact help="High power-scaled damage value." />
+        <NumberField label="Fixed Duration Low" value={record.duration1} onCommit={(duration1) => update({ duration1 })} disabled={!editable} compact help="Low fixed duration value." />
+        <NumberField label="Fixed Duration High" value={record.duration2} onCommit={(duration2) => update({ duration2 })} disabled={!editable} compact help="High fixed duration value." />
+        <NumberField label="Power Duration Low" value={record.powerDuration1} onCommit={(powerDuration1) => update({ powerDuration1 })} disabled={!editable} compact help="Low power-scaled duration value." />
+        <NumberField label="Power Duration High" value={record.powerDuration2} onCommit={(powerDuration2) => update({ powerDuration2 })} disabled={!editable} compact help="High power-scaled duration value." />
       </RuleSection>
-      <RuleSection title="Presentation" badge="editable">
-        <IconNumberField label="Cast Icon" value={record.spellLook1} assets={iconAssets} onCommit={(spellLook1) => update({ spellLook1 })} disabled={!editable} iconId={spellAnimationIconId} />
-        <IconNumberField label="Resolution Icon" value={record.spellLook2} assets={iconAssets} onCommit={(spellLook2) => update({ spellLook2 })} disabled={!editable} iconId={spellAnimationIconId} />
-        <IconNumberField label="Queue Icon" value={record.queueIcon} assets={iconAssets} onCommit={(queueIcon) => update({ queueIcon })} disabled={!editable} iconId={null} hint={(value) => value > 0 ? `Combat queue tile ${200 + value}` : "No queued spell icon"} />
-        <SoundNumberField label="Casting Sound" value={record.sound1} assets={iconAssets} onCommit={(sound1) => update({ sound1 })} disabled={!editable} />
-        <SoundNumberField label="Resolution Sound" value={record.sound2} assets={iconAssets} onCommit={(sound2) => update({ sound2 })} disabled={!editable} />
-        <NumberField label="Spell Effect" value={record.special} onCommit={(special) => update({ special })} disabled={!editable} compact />
+      <RuleSection title="Presentation" badge="editable" help="Spell animation icons, queue icon, sounds, and effect identifier.">
+        <SpellAnimationIconField label="Cast Icon" value={record.spellLook1} assets={iconAssets} onCommit={(spellLook1) => update({ spellLook1 })} disabled={!editable} zeroMode="blank-cast" help="Animation shown while the spell is cast." />
+        <SpellAnimationIconField label="Resolution Icon" value={record.spellLook2} assets={iconAssets} onCommit={(spellLook2) => update({ spellLook2 })} disabled={!editable} zeroMode="default-resolution" help="Animation shown when the spell resolves." />
+        <FastplotTileNumberField label="Queue Icon" value={record.queueIcon} atlasUrl={queueAtlasUrl} onCommit={(queueIcon) => update({ queueIcon })} disabled={!editable} help="Small icon used in spell queue/combat displays." />
+        <SoundNumberField label="Casting Sound" value={record.sound1} assets={iconAssets} onCommit={(sound1) => update({ sound1 })} disabled={!editable} help="Sound played when casting begins." />
+        <SoundNumberField label="Resolution Sound" value={record.sound2} assets={iconAssets} onCommit={(sound2) => update({ sound2 })} disabled={!editable} help="Sound played when the spell resolves." />
+        <NumberField label="Spell Effect" value={record.special} onCommit={(special) => update({ special })} disabled={!editable} compact help="Realmz effect handler identifier for this spell." />
       </RuleSection>
     </div>
   );
@@ -567,6 +580,7 @@ function RaceRulesEditor({ project, catalog, selectedEntity, onSelectEntity, onA
       summaryFor={(race) => `move ${race.record.baseMove}, max age ${race.record.maxAge}, ${race.record.canCaste.filter(Boolean).length} caste(s)`}
       fallbackLabelFor={(id) => REALMZ_RACES[id] || `Race ${id + 1}`}
       fallbackSummaryFor={(id) => `Shared Realmz race ${id + 1}`}
+      recordNoun="Race"
     >
       {entry ? <RaceForm record={entry.record} hasScenarioVersion={entry.hasScenarioVersion} iconAssets={catalog?.assets ?? []} onUpdate={update} /> : <EmptyRulesState label="race" selectedLabel={REALMZ_RACES[selectedId] || `Race ${selectedId + 1}`} onCreate={() => onApplyCommand({ kind: "createRaceOverride", label: "Create race", id: selectedId })} />}
     </RulesLayout>
@@ -578,33 +592,33 @@ function RaceForm({ record, hasScenarioVersion, iconAssets, onUpdate }: { record
   return (
     <div className="rules-editor-stack">
       {!hasScenarioVersion && <div className="rules-help-callout">This is the built-in Realmz race. Changing a field creates a scenario-specific version of this race.</div>}
-      <RuleSection title="Identity And Miscellaneous" badge="mixed">
-        <TextField label="Race Name" value={record.displayName || REALMZ_RACES[record.id] || ""} onCommit={(displayName) => update({ displayName })} />
-        <IconNumberField label="Default Portrait Set" value={record.defaultIconSet} assets={iconAssets} iconId={(value) => 251 + value * 6} onCommit={(defaultIconSet) => update({ defaultIconSet })} />
-        <NumberField label="Can Regenerate" value={record.canRegenerate} onCommit={(canRegenerate) => update({ canRegenerate })} compact />
-        <NumberField label="Base Movement Points" value={record.baseMove} onCommit={(baseMove) => update({ baseMove })} compact />
-        <NumberField label="Magic Resistance +/-" value={record.magRes} onCommit={(magRes) => update({ magRes })} compact />
-        <NumberField label="Two Handed Weapon +/-" value={record.twoHand} onCommit={(twoHand) => update({ twoHand })} compact />
-        <NumberField label="Missile Weapon +/-" value={record.missile} onCommit={(missile) => update({ missile })} compact />
+      <RuleSection title="Identity And Miscellaneous" badge="mixed" help="Race name, portrait set, movement, regeneration, and broad combat modifiers.">
+        <TextField label="Race Name" value={record.displayName || REALMZ_RACES[record.id] || ""} onCommit={(displayName) => update({ displayName })} span help="Name shown for this race." />
+        <IconNumberField label="Default Portrait Set" value={record.defaultIconSet} assets={iconAssets} iconId={(value) => 251 + value * 6} onCommit={(defaultIconSet) => update({ defaultIconSet })} help="Portrait set used for this race." />
+        <NumberField label="Can Regenerate" value={record.canRegenerate} onCommit={(canRegenerate) => update({ canRegenerate })} compact help="Whether this race regenerates naturally." />
+        <NumberField label="Base Movement Points" value={record.baseMove} onCommit={(baseMove) => update({ baseMove })} compact help="Base movement points for this race." />
+        <NumberField label="Magic Resistance +/-" value={record.magRes} onCommit={(magRes) => update({ magRes })} compact help="Race modifier to magic resistance." />
+        <NumberField label="Two Handed Weapon +/-" value={record.twoHand} onCommit={(twoHand) => update({ twoHand })} compact longLabel help="Race modifier for two-handed weapons." />
+        <NumberField label="Missile Weapon +/-" value={record.missile} onCommit={(missile) => update({ missile })} compact help="Race modifier for missile weapons." />
       </RuleSection>
-      <RuleSection title="Attribute Minimums And Maximums" badge="editable">
+      <RuleSection title="Attribute Minimums And Maximums" badge="editable" help="Race attribute limits used during character creation and advancement.">
         <PairGrid labels={RACE_ATTRIBUTES} values={record.minMax} onChange={(minMax) => update({ minMax })} leftLabel="Min" rightLabel="Max" />
       </RuleSection>
-      <RuleSection title="Combat And DRV Modifiers" badge="editable">
+      <RuleSection title="Combat And DRV Modifiers" badge="editable" help="Race ability, hit, and resistance modifiers.">
         <ArrayFields title="+/- To Hit" labels={["Magic Using", "Undead", "Demonic/Devil", "Reptilian", "Very Evil", "Intelligent", "Giant Size", "Non-Humanoid"]} values={record.plusMinusToHit} onChange={(plusMinusToHit) => update({ plusMinusToHit })} />
         <ArrayFields title="DRVs Spell Class" labels={RESISTANCE_TYPES} values={record.drvBonus} onChange={(drvBonus) => update({ drvBonus })} />
       </RuleSection>
-      <RuleSection title="Possible Castes" badge="editable">
+      <RuleSection title="Possible Castes" badge="editable" help="Castes this race may choose.">
         <CheckboxMatrix labels={REALMZ_CASTES} values={record.canCaste} onChange={(canCaste) => update({ canCaste })} />
       </RuleSection>
-      <RuleSection title="Usable Items" badge="editable">
+      <RuleSection title="Usable Items" badge="editable" help="Item categories this race can use.">
         <BitsetEditor labels={ITEM_CATEGORY_LABELS} values={record.itemTypes} onChange={(itemTypes) => update({ itemTypes })} />
       </RuleSection>
-      <RuleSection title="Age Parameters" badge="editable">
-        <NumberField label="Max Age" value={record.maxAge} onCommit={(maxAge) => update({ maxAge })} compact />
+      <RuleSection title="Age Parameters" badge="editable" help="Age bands and stat changes applied by age group.">
+        <NumberField label="Max Age" value={record.maxAge} onCommit={(maxAge) => update({ maxAge })} compact help="Maximum age for this race." />
         <AgeBands record={record} onChange={(ageRange, ageChange) => update({ ageRange, ageChange })} />
       </RuleSection>
-      <RuleSection title="Conditions And Descriptors" badge="editable">
+      <RuleSection title="Conditions And Descriptors" badge="editable" help="Condition levels and race descriptor flags.">
         <ArrayFields title="Condition Levels" labels={CONDITION_LABELS} values={record.conditions} onChange={(conditions) => update({ conditions })} compact />
         <BitsetEditor labels={RACE_DESCRIPTOR_LABELS} values={[record.descriptors]} onChange={(values) => update({ descriptors: values[0] ?? 0 })} />
       </RuleSection>
@@ -640,6 +654,7 @@ function CasteRulesEditor({ project, catalog, selectedEntity, onSelectEntity, on
       summaryFor={(caste) => `move ${caste.record.moveBonus}, class ${caste.record.casteClass}, ${caste.record.startItems.filter(Boolean).length} start item(s)`}
       fallbackLabelFor={(id) => REALMZ_CASTES[id] || `Caste ${id + 1}`}
       fallbackSummaryFor={(id) => `Shared Realmz caste ${id + 1}`}
+      recordNoun="Caste"
     >
       {entry ? <CasteForm record={entry.record} hasScenarioVersion={entry.hasScenarioVersion} iconAssets={catalog?.assets ?? []} onUpdate={update} /> : <EmptyRulesState label="caste" selectedLabel={REALMZ_CASTES[selectedId] || `Caste ${selectedId + 1}`} onCreate={() => onApplyCommand({ kind: "createCasteOverride", label: "Create caste", id: selectedId })} />}
     </RulesLayout>
@@ -651,44 +666,46 @@ function CasteForm({ record, hasScenarioVersion, iconAssets, onUpdate }: { recor
   return (
     <div className="rules-editor-stack">
       {!hasScenarioVersion && <div className="rules-help-callout">This is the built-in Realmz caste. Changing a field creates a scenario-specific version of this caste.</div>}
-      <RuleSection title="Identity And Class" badge="mixed">
-        <TextField label="Caste Name" value={record.displayName || REALMZ_CASTES[record.id] || ""} onCommit={(displayName) => update({ displayName })} />
-        <NumberField label="Caste Class" value={record.casteClass} onCommit={(casteClass) => update({ casteClass })} compact />
-        <NumberField label="Minimum Age Group" value={record.minimumAgeGroup} onCommit={(minimumAgeGroup) => update({ minimumAgeGroup })} compact />
-        <IconNumberField label="Default Icon" value={record.defaultIcon} assets={iconAssets} onCommit={(defaultIcon) => update({ defaultIcon })} />
-        <CheckboxField label="Can Use Missile Weapons" checked={record.canUseMissile !== 0} onCommit={(canUseMissile) => update({ canUseMissile: canUseMissile ? 1 : 0 })} />
-        <CheckboxField label="Missile Bonus Damage" checked={record.getsMissileBonus !== 0} onCommit={(getsMissileBonus) => update({ getsMissileBonus: getsMissileBonus ? 1 : 0 })} />
+      <RuleSection title="Identity And Class" badge="mixed" help="Caste name, class category, icon, and broad weapon flags.">
+        <TextField label="Caste Name" value={record.displayName || REALMZ_CASTES[record.id] || ""} onCommit={(displayName) => update({ displayName })} span help="Name shown for this caste." />
+        <NumberField label="Caste Class" value={record.casteClass} onCommit={(casteClass) => update({ casteClass })} compact help="Realmz caste category code." />
+        <NumberField label="Minimum Age Group" value={record.minimumAgeGroup} onCommit={(minimumAgeGroup) => update({ minimumAgeGroup })} compact help="Minimum age group allowed for this caste." />
+        <IconNumberField label="Default Icon" value={record.defaultIcon} assets={iconAssets} onCommit={(defaultIcon) => update({ defaultIcon })} compact help="Icon shown for this caste in selection menus." />
+        <div className="rules-field-subrow rules-checkbox-row rules-checkbox-row-compact">
+          <CheckboxField label="Can Use Missile Weapons" checked={record.canUseMissile !== 0} onCommit={(canUseMissile) => update({ canUseMissile: canUseMissile ? 1 : 0 })} help="Allows this caste to use missile weapons." />
+          <CheckboxField label="Missile Bonus Damage" checked={record.getsMissileBonus !== 0} onCommit={(getsMissileBonus) => update({ getsMissileBonus: getsMissileBonus ? 1 : 0 })} help="Allows missile weapon bonus damage." />
+        </div>
       </RuleSection>
-      <RuleSection title="Stats And Movement" badge="editable">
+      <RuleSection title="Stats And Movement" badge="editable" help="Caste attribute limits, movement, resistance, and stamina modifiers.">
         <PairGrid labels={RACE_ATTRIBUTES} values={record.minMax} onChange={(minMax) => update({ minMax })} leftLabel="Min" rightLabel="Max" />
-        <NumberField label="Move Bonus" value={record.moveBonus} onCommit={(moveBonus) => update({ moveBonus })} compact />
-        <NumberField label="Magic Resistance" value={record.magRes} onCommit={(magRes) => update({ magRes })} compact />
-        <NumberField label="Two Handed Weapon +/-" value={record.twoHand} onCommit={(twoHand) => update({ twoHand })} compact />
-        <NumberField label="Max Stamina Bonus" value={record.maxStaminaBonus} onCommit={(maxStaminaBonus) => update({ maxStaminaBonus })} compact />
+        <NumberField label="Move Bonus" value={record.moveBonus} onCommit={(moveBonus) => update({ moveBonus })} compact help="Movement point modifier." />
+        <NumberField label="Magic Resistance" value={record.magRes} onCommit={(magRes) => update({ magRes })} compact help="Magic resistance modifier." />
+        <NumberField label="Two Handed Weapon +/-" value={record.twoHand} onCommit={(twoHand) => update({ twoHand })} compact longLabel help="Two-handed weapon modifier." />
+        <NumberField label="Max Stamina Bonus" value={record.maxStaminaBonus} onCommit={(maxStaminaBonus) => update({ maxStaminaBonus })} compact help="Maximum stamina modifier." />
       </RuleSection>
-      <RuleSection title="Combat Progression" badge="editable">
-        <ArrayFields title="Level-Up Pairs" labels={["Stamina A", "Stamina B", "Strength A", "Strength B", "Dodge A", "Dodge B", "To Hit A", "To Hit B", "Missile A", "Missile B", "Hand2Hand A", "Hand2Hand B"]} values={[...record.stamina, ...record.strength, ...record.dodge, ...record.toHit, ...record.missile, ...record.hand2Hand]} onChange={(values) => update({ stamina: values.slice(0, 2), strength: values.slice(2, 4), dodge: values.slice(4, 6), toHit: values.slice(6, 8), missile: values.slice(8, 10), hand2Hand: values.slice(10, 12) })} />
-        <NumberField label="Bonus Attacks" value={record.bonusAttacks} onCommit={(bonusAttacks) => update({ bonusAttacks })} compact />
-        <NumberField label="Max Attacks" value={record.maxAttacks} onCommit={(maxAttacks) => update({ maxAttacks })} compact />
+      <RuleSection title="Combat Progression" badge="editable" help="Level-up combat progression, bonus attacks, and maximum attacks.">
+        <CasteProgressionGrid record={record} onChange={update} />
+        <NumberField label="Bonus Attacks (x 1/2)" value={record.bonusAttacks} onCommit={(bonusAttacks) => update({ bonusAttacks })} compact longLabel help="Bonus attacks are recorded in half-attack steps." />
+        <NumberField label="Max Attacks Per Round" value={record.maxAttacks} onCommit={(maxAttacks) => update({ maxAttacks })} compact longLabel help="Maximum attacks this caste may make per round." />
       </RuleSection>
-      <RuleSection title="Victory Points" badge="levels">
-        <ArrayFields title="Points Required" labels={victoryPointLabels()} values={record.victory} onChange={(victory) => update({ victory })} compact />
+      <RuleSection title="Victory Points" badge="levels" help="Experience points required for each level.">
+        <VictoryPointsGrid values={record.victory} onChange={(victory) => update({ victory })} />
       </RuleSection>
-      <RuleSection title="Bonus Attack Rounds" badge="attacks">
+      <RuleSection title="Bonus Attack Rounds" badge="attacks" help="Round/level thresholds for bonus attacks.">
         <ArrayFields title="Round At Which Bonus Attack Is Awarded" labels={["3 / 2", "2 / 1", "5 / 2", "3 / 1", "7 / 2", "4 / 1", "9 / 2", "5 / 1", "11 / 2", "6 / 1"]} values={record.attacks} onChange={(attacks) => update({ attacks })} compact />
       </RuleSection>
-      <RuleSection title="Spellcasting" badge="editable">
+      <RuleSection title="Spellcasting" badge="editable" help="Spell catalogs and level ranges this caste can cast from.">
         <MatrixFields rows={["Sorcerer", "Priest", "Enchanter", "Special"]} columns={["Enabled", "Start Level", "Max Level"]} values={record.spellcasters} onChange={(spellcasters) => update({ spellcasters })} />
-        <NumberField label="Max Spells Per Round" value={record.maxSpellsAttacks} onCommit={(maxSpellsAttacks) => update({ maxSpellsAttacks })} compact />
+        <NumberField label="Max Spells Per Round" value={record.maxSpellsAttacks} onCommit={(maxSpellsAttacks) => update({ maxSpellsAttacks })} compact longLabel help="Maximum spells this caste may cast per round." />
       </RuleSection>
-      <RuleSection title="Usable Items" badge="editable">
+      <RuleSection title="Usable Items" badge="editable" help="Item categories this caste can use.">
         <BitsetEditor labels={ITEM_CATEGORY_LABELS} values={record.itemTypes} onChange={(itemTypes) => update({ itemTypes })} />
       </RuleSection>
-      <RuleSection title="Initial Items And Gold" badge="editable">
-        <NumberField label="Starting Gold" value={record.startMoney} onCommit={(startMoney) => update({ startMoney })} compact />
+      <RuleSection title="Initial Items And Gold" badge="editable" help="Starting gold and item IDs granted to new characters of this caste.">
+        <NumberField label="Starting Gold" value={record.startMoney} onCommit={(startMoney) => update({ startMoney })} compact help="Gold given to new characters of this caste." />
         <ArrayFields title="Starting Items" labels={Array.from({ length: 20 }, (_, index) => `Item ${index}`)} values={record.startItems} onChange={(startItems) => update({ startItems })} compact />
       </RuleSection>
-      <RuleSection title="Conditions" badge="editable">
+      <RuleSection title="Conditions" badge="editable" help="Levels at which this caste gains conditions.">
         <ArrayFields title="Condition Levels" labels={CONDITION_LABELS} values={record.conditions} onChange={(conditions) => update({ conditions })} compact />
       </RuleSection>
     </div>
@@ -718,6 +735,7 @@ function RulesLayout<T extends { id: number }>({
   summaryFor,
   fallbackLabelFor,
   fallbackSummaryFor,
+  recordNoun,
   children
 }: {
   title: string;
@@ -734,6 +752,7 @@ function RulesLayout<T extends { id: number }>({
   summaryFor: (record: T) => string;
   fallbackLabelFor: (id: number) => string;
   fallbackSummaryFor: (id: number) => string;
+  recordNoun: string;
   children: ReactNode;
 }) {
   const libraryCount = catalog?.entities.filter((entity) => entity.type === fallbackEntityType).length ?? 0;
@@ -755,9 +774,12 @@ function RulesLayout<T extends { id: number }>({
           <small>{scenarioCount} scenario custom, {libraryCount} built-in reference(s)</small>
         </div>
         <div className="rules-record-picker">
-          <button type="button" className="btn btn-secondary btn-xs" onClick={() => onSelect(previousId)}>-</button>
+          <div className="rules-step-buttons" aria-label={`Step through ${recordNoun.toLowerCase()} records`}>
+            <button type="button" className="btn btn-secondary btn-xs" title={`Previous ${recordNoun.toLowerCase()}`} onClick={() => onSelect(previousId)}>‹</button>
+            <button type="button" className="btn btn-secondary btn-xs" title={`Next ${recordNoun.toLowerCase()}`} onClick={() => onSelect(nextId)}>›</button>
+          </div>
           <label>
-            <span>Go To No.</span>
+            <span>Go To {recordNoun}</span>
             <input
               type="number"
               min={0}
@@ -769,7 +791,6 @@ function RulesLayout<T extends { id: number }>({
               }}
             />
           </label>
-          <button type="button" className="btn btn-secondary btn-xs" onClick={() => onSelect(nextId)}>+</button>
           <select value={selectedId} onChange={(event) => onSelect(Number(event.currentTarget.value))}>
             {Array.from({ length: maxRecords }, (_, id) => {
               const record = records.find((candidate) => candidate.id === id);
@@ -805,10 +826,10 @@ function entryHasScenarioVersion(record: unknown) {
   return typeof record === "object" && record !== null && "hasScenarioVersion" in record && Boolean((record as { hasScenarioVersion?: boolean }).hasScenarioVersion);
 }
 
-function RuleSection({ title, badge, children }: { title: string; badge: string; children: ReactNode }) {
+function RuleSection({ title, badge, help, children }: { title: string; badge: string; help?: string; children: ReactNode }) {
   return (
     <section className="rules-section">
-      <header><span>{title}</span><b>{badge}</b></header>
+      <header title={help}><span>{title}</span><b>{badge}</b></header>
       <div className="rules-field-grid">{children}</div>
     </section>
   );
@@ -823,26 +844,53 @@ function EmptyRulesState({ label, selectedLabel, onCreate }: { label: string; se
   );
 }
 
-function TextField({ label, value, onCommit, wide = false, disabled = false }: { label: string; value: string; onCommit: (value: string) => void; wide?: boolean; disabled?: boolean }) {
+function TextField({
+  label,
+  value,
+  onCommit,
+  wide = false,
+  span = false,
+  disabled = false,
+  help
+}: {
+  label: string;
+  value: string;
+  onCommit: (value: string) => void;
+  wide?: boolean;
+  span?: boolean;
+  disabled?: boolean;
+  help?: string;
+}) {
+  const commit = (next: string) => {
+    if (!disabled && next !== value) onCommit(next);
+  };
   return (
-    <label className={`scenario-field${wide ? " scenario-field-wide" : ""}`}>
+    <label className={classNames("scenario-field", wide && "scenario-field-wide", span && "rules-field-span")} title={help}>
       <span>{label}</span>
-      <textarea
-        key={value}
-        defaultValue={value}
-        disabled={disabled}
-        rows={wide ? 3 : 1}
-        onBlur={(event) => {
-          if (event.currentTarget.value !== value) onCommit(event.currentTarget.value);
-        }}
-      />
+      {wide ? (
+        <textarea
+          key={value}
+          defaultValue={value}
+          disabled={disabled}
+          rows={3}
+          onBlur={(event) => commit(event.currentTarget.value)}
+        />
+      ) : (
+        <input
+          key={value}
+          type="text"
+          defaultValue={value}
+          disabled={disabled}
+          onBlur={(event) => commit(event.currentTarget.value)}
+        />
+      )}
     </label>
   );
 }
 
-function NumberField({ label, value, onCommit, disabled = false, compact = false, hint }: { label: string; value: number; onCommit?: (value: number) => void; disabled?: boolean; compact?: boolean; hint?: string }) {
+function NumberField({ label, value, onCommit, disabled = false, compact = false, longLabel = false, hint, help }: { label: string; value: number; onCommit?: (value: number) => void; disabled?: boolean; compact?: boolean; longLabel?: boolean; hint?: string; help?: string }) {
   return (
-    <label className={`scenario-field${compact ? " rules-field-compact" : ""}`}>
+    <label className={classNames("scenario-field", compact && "rules-field-compact", longLabel && "rules-field-long-label")} title={help}>
       <span>{label}</span>
       <input
         key={value}
@@ -859,9 +907,9 @@ function NumberField({ label, value, onCommit, disabled = false, compact = false
   );
 }
 
-function SelectField({ label, value, options, onCommit, disabled = false }: { label: string; value: number; options: string[]; onCommit: (value: number) => void; disabled?: boolean }) {
+function SelectField({ label, value, options, onCommit, disabled = false, help }: { label: string; value: number; options: string[]; onCommit: (value: number) => void; disabled?: boolean; help?: string }) {
   return (
-    <label className="scenario-field">
+    <label className="scenario-field rules-field-medium" title={help}>
       <span>{label}</span>
       <select value={value} disabled={disabled} onChange={(event) => onCommit(Number(event.currentTarget.value))}>
         {options.map((option, index) => <option key={option} value={index}>{index} - {option}</option>)}
@@ -870,11 +918,100 @@ function SelectField({ label, value, options, onCommit, disabled = false }: { la
   );
 }
 
-function CheckboxField({ label, checked, onCommit, disabled = false }: { label: string; checked: boolean; onCommit: (value: boolean) => void; disabled?: boolean }) {
+function CheckboxField({ label, checked, onCommit, disabled = false, help }: { label: string; checked: boolean; onCommit: (value: boolean) => void; disabled?: boolean; help?: string }) {
   return (
-    <label className="rules-checkbox-field">
+    <label className="rules-checkbox-field" title={help}>
       <input type="checkbox" checked={checked} disabled={disabled} onChange={(event) => onCommit(event.currentTarget.checked)} />
       <span>{label}</span>
+    </label>
+  );
+}
+
+function SpellAnimationIconField({
+  label,
+  value,
+  assets,
+  onCommit,
+  disabled = false,
+  zeroMode,
+  help
+}: {
+  label: string;
+  value: number;
+  assets: LibraryAsset[];
+  onCommit: (value: number) => void;
+  disabled?: boolean;
+  zeroMode: "blank-cast" | "default-resolution";
+  help?: string;
+}) {
+  const range = spellAnimationIconRange(value, zeroMode);
+  const frameAssets = range.frameIconIds.map((iconId) => findRuleAsset(assets, "icon", iconId));
+  const previews = useRuleIconPreviews(frameAssets);
+  const preview = useAnimatedPreview(previews);
+  return (
+    <label className="scenario-field rules-icon-number" title={help}>
+      <span>{label}</span>
+      <div>
+        {preview ? (
+          <span className="rules-animation-preview">
+            <img src={preview} alt={`${label} animation`} />
+          </span>
+        ) : range.blank ? <span className="rules-blank-icon-preview" aria-hidden="true" /> : <b>{value || "-"}</b>}
+        <input
+          key={value}
+          type="number"
+          defaultValue={value}
+          disabled={disabled}
+          onBlur={(event) => {
+            const next = Number(event.currentTarget.value);
+            if (!disabled && Number.isFinite(next) && next !== value) onCommit(next);
+          }}
+        />
+      </div>
+      <small>{range.hint}</small>
+    </label>
+  );
+}
+
+function FastplotTileNumberField({
+  label,
+  value,
+  atlasUrl,
+  onCommit,
+  disabled = false,
+  help
+}: {
+  label: string;
+  value: number;
+  atlasUrl: string | null;
+  onCommit: (value: number) => void;
+  disabled?: boolean;
+  help?: string;
+}) {
+  const tile = value > 0 ? 200 + value : null;
+  const rect = tile === null ? null : fastplotTileRect(tile);
+  const style = atlasUrl && rect ? {
+    backgroundImage: `url(${atlasUrl})`,
+    backgroundSize: "2000% 2000%",
+    backgroundPosition: `${(rect.column / 19) * 100}% ${(rect.row / 19) * 100}%`
+  } : undefined;
+  return (
+    <label className="scenario-field rules-icon-number" title={help}>
+      <span>{label}</span>
+      <div>
+        {style ? <span className="rules-fastplot-preview" style={style} aria-hidden="true" /> : <b>{value || "-"}</b>}
+        <input
+          key={value}
+          type="number"
+          defaultValue={value}
+          disabled={disabled}
+          onBlur={(event) => {
+            const next = Number(event.currentTarget.value);
+            if (!disabled && Number.isFinite(next) && next !== value) onCommit(next);
+          }}
+        />
+      </div>
+      <small>{tile ? `Combat tile ${tile}` : "No queued spell icon"}</small>
     </label>
   );
 }
@@ -886,7 +1023,9 @@ function IconNumberField({
   onCommit,
   disabled = false,
   iconId,
-  hint
+  hint,
+  compact = false,
+  help
 }: {
   label: string;
   value: number;
@@ -895,12 +1034,14 @@ function IconNumberField({
   disabled?: boolean;
   iconId?: ((value: number) => number) | null;
   hint?: (value: number) => string;
+  compact?: boolean;
+  help?: string;
 }) {
   const resolvedIconId = iconId === null ? null : iconId ? iconId(value) : value;
   const asset = resolvedIconId === null ? null : findRuleAsset(assets, "icon", resolvedIconId);
   const preview = useRuleIconPreview(asset);
   return (
-    <label className="scenario-field rules-icon-number">
+    <label className={classNames("scenario-field", "rules-icon-number", compact && "rules-icon-number-compact")} title={help}>
       <span>{label}</span>
       <div>
         {preview ? <img src={preview} alt={`${label} ${resolvedIconId}`} /> : <b>{value || "-"}</b>}
@@ -920,7 +1061,7 @@ function IconNumberField({
   );
 }
 
-function SoundNumberField({ label, value, assets, onCommit, disabled = false }: { label: string; value: number; assets: LibraryAsset[]; onCommit: (value: number) => void; disabled?: boolean }) {
+function SoundNumberField({ label, value, assets, onCommit, disabled = false, help }: { label: string; value: number; assets: LibraryAsset[]; onCommit: (value: number) => void; disabled?: boolean; help?: string }) {
   const soundId = 600 + value;
   const asset = value > 0 ? findRuleAsset(assets, "sound", soundId) : null;
   const [status, setStatus] = useState<string | null>(null);
@@ -938,7 +1079,7 @@ function SoundNumberField({ label, value, assets, onCommit, disabled = false }: 
     audio.play().then(() => setStatus(`Playing snd ${soundId}`)).catch(() => setStatus(`Could not play snd ${soundId}`));
   };
   return (
-    <label className="scenario-field rules-sound-number">
+    <label className="scenario-field rules-sound-number" title={help}>
       <span>{label}</span>
       <div>
         <input
@@ -958,8 +1099,27 @@ function SoundNumberField({ label, value, assets, onCommit, disabled = false }: 
   );
 }
 
-function spellAnimationIconId(value: number) {
-  return 11992 + value * 8;
+function spellAnimationIconRange(value: number, zeroMode: "blank-cast" | "default-resolution") {
+  if (value <= 0 && zeroMode === "blank-cast") {
+    return {
+      blank: true,
+      frameIconIds: [],
+      hint: "Blank cast square"
+    };
+  }
+  const base = value <= 0 ? 12032 : 11992 + value * 8;
+  return {
+    blank: false,
+    frameIconIds: Array.from({ length: 8 }, (_, index) => base + index),
+    hint: `Animation frames ${base}-${base + 7}`
+  };
+}
+
+function fastplotTileRect(tile: number) {
+  const normalized = tile > 999 ? tile - 1000 : tile;
+  const tileGroup = Math.floor((normalized - 1) / 20);
+  const column = normalized - tileGroup * 20 - 1;
+  return { column, row: tileGroup };
 }
 
 function findRuleAsset(assets: LibraryAsset[], kind: "icon" | "sound", resourceId: number) {
@@ -991,6 +1151,44 @@ function useRuleIconPreview(asset: LibraryAsset | null) {
     };
   }, [asset]);
   return preview;
+}
+
+function useRuleIconPreviews(assets: Array<LibraryAsset | null>) {
+  const [previews, setPreviews] = useState<string[]>([]);
+  const key = assets.map((asset) => asset?.relativePath ?? "none").join("|");
+  useEffect(() => {
+    let disposed = false;
+    const load = async () => {
+      const urls = await Promise.all(assets.map(async (asset) => {
+        if (!asset) return null;
+        if (asset.previewPath) return asset.previewPath;
+        try {
+          return await loadBrowserBundledLibraryAssetPreview(asset);
+        } catch {
+          return asset.previewPath ?? null;
+        }
+      }));
+      if (!disposed) setPreviews(urls.filter((url): url is string => Boolean(url)));
+    };
+    load();
+    return () => {
+      disposed = true;
+    };
+  }, [key]);
+  return previews;
+}
+
+function useAnimatedPreview(previews: string[]) {
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    setIndex(0);
+    if (previews.length <= 1) return;
+    const timer = window.setInterval(() => {
+      setIndex((current) => (current + 1) % previews.length);
+    }, 180);
+    return () => window.clearInterval(timer);
+  }, [previews]);
+  return previews[index] ?? null;
 }
 
 function PairGrid({ labels, values, leftLabel, rightLabel, onChange }: { labels: string[]; values: number[]; leftLabel: string; rightLabel: string; onChange: (values: number[]) => void }) {
@@ -1109,6 +1307,64 @@ function MatrixRow({ row, rowIndex, columns, values, onChange }: { row: string; 
   );
 }
 
+type CasteProgressionKey = "stamina" | "strength" | "dodge" | "toHit" | "missile" | "hand2Hand";
+
+const CASTE_PROGRESSION_ROWS: Array<{ key: CasteProgressionKey; label: string; left: string; right: string }> = [
+  { key: "stamina", label: "Stamina", left: "Start", right: "Level Up" },
+  { key: "strength", label: "Strength Damage Bonus", left: "Start", right: "Max" },
+  { key: "dodge", label: "Dodge Missile", left: "Bonus", right: "Level Up" },
+  { key: "toHit", label: "Melee ToHit", left: "Start", right: "Level Up" },
+  { key: "missile", label: "Missile ToHit", left: "Start", right: "Level Up" },
+  { key: "hand2Hand", label: "Hand To Hand", left: "Start", right: "Level Up" }
+];
+
+function CasteProgressionGrid({ record, onChange }: { record: ScenarioCasteOverride; onChange: (changes: Partial<ScenarioCasteOverride>) => void }) {
+  return (
+    <div className="rules-progress-grid">
+      <strong>Special Ability Progression</strong>
+      {CASTE_PROGRESSION_ROWS.map((row) => {
+        const values = record[row.key] ?? [];
+        return (
+          <section key={row.key}>
+            <b>{row.label}</b>
+            <label>
+              <span>{row.left}</span>
+              <input type="number" defaultValue={values[0] ?? 0} onBlur={(event) => {
+                onChange({ [row.key]: [Number(event.currentTarget.value), values[1] ?? 0] } as Partial<ScenarioCasteOverride>);
+              }} />
+            </label>
+            <label>
+              <span>{row.right}</span>
+              <input type="number" defaultValue={values[1] ?? 0} onBlur={(event) => {
+                onChange({ [row.key]: [values[0] ?? 0, Number(event.currentTarget.value)] } as Partial<ScenarioCasteOverride>);
+              }} />
+            </label>
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
+function VictoryPointsGrid({ values, onChange }: { values: number[]; onChange: (values: number[]) => void }) {
+  const labels = victoryPointLabels();
+  return (
+    <div className="rules-victory-grid">
+      <strong>Points Required</strong>
+      {labels.map((label, index) => (
+        <label key={label}>
+          <span>{label}</span>
+          <input type="number" defaultValue={values[index] ?? 0} onBlur={(event) => {
+            const next = [...values];
+            next[index] = Number(event.currentTarget.value);
+            onChange(next);
+          }} />
+        </label>
+      ))}
+    </div>
+  );
+}
+
 function AgeBands({ record, onChange }: { record: ScenarioRaceOverride; onChange: (ageRange: number[][], ageChange: number[][]) => void }) {
   const labels = ["Youth", "Young", "Prime", "Adult", "Senior"];
   return (
@@ -1116,11 +1372,24 @@ function AgeBands({ record, onChange }: { record: ScenarioRaceOverride; onChange
       {labels.map((label, band) => (
         <section key={label}>
           <strong>{label}</strong>
-          <RowPair label="Age" left={record.ageRange[band]?.[0] ?? 0} right={record.ageRange[band]?.[1] ?? 0} onChange={(left, right) => {
-            const ageRange = record.ageRange.map((range) => [...range]);
-            ageRange[band] = [left, right];
-            onChange(ageRange, record.ageChange);
-          }} />
+          <div className="rules-age-range">
+            <label>
+              <span>Age Min</span>
+              <input type="number" defaultValue={record.ageRange[band]?.[0] ?? 0} onBlur={(event) => {
+                const ageRange = record.ageRange.map((range) => [...range]);
+                ageRange[band] = [Number(event.currentTarget.value), record.ageRange[band]?.[1] ?? 0];
+                onChange(ageRange, record.ageChange);
+              }} />
+            </label>
+            <label>
+              <span>Age Max</span>
+              <input type="number" defaultValue={record.ageRange[band]?.[1] ?? 0} onBlur={(event) => {
+                const ageRange = record.ageRange.map((range) => [...range]);
+                ageRange[band] = [record.ageRange[band]?.[0] ?? 0, Number(event.currentTarget.value)];
+                onChange(ageRange, record.ageChange);
+              }} />
+            </label>
+          </div>
           {RACE_ATTRIBUTES.map((attribute, index) => (
             <label key={attribute}>
               <span>{attribute}</span>
@@ -1142,6 +1411,10 @@ function selectedIdFor(entityId: string | undefined, prefix: string) {
   if (!entityId?.startsWith(`${prefix}:`)) return null;
   const value = Number(entityId.slice(prefix.length + 1));
   return Number.isInteger(value) ? value : null;
+}
+
+function classNames(...values: Array<string | false | null | undefined>) {
+  return values.filter(Boolean).join(" ");
 }
 
 function normalizeFamily(activeEditor: string): RulesFamily {

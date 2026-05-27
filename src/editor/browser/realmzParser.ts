@@ -626,7 +626,7 @@ function parseCasteOverrides(buffer: Uint8Array | undefined): ScenarioCasteOverr
       maxStaminaBonus: i16(record, 258),
       bonusAttacks: i16(record, 260),
       maxAttacks: i16(record, 262),
-      victory: readI16s(record, 264, 30),
+      victory: readI32s(record, 264, 30),
       startMoney: i16(record, 384),
       startItems: readI16s(record, 386, 20),
       attacks: Array.from(record.slice(426, 436)),
@@ -870,6 +870,10 @@ function i32(buffer: Uint8Array, offset: number) {
 
 function readI16s(buffer: Uint8Array, offset: number, count: number) {
   return Array.from({ length: count }, (_, index) => i16(buffer, offset + index * 2));
+}
+
+function readI32s(buffer: Uint8Array, offset: number, count: number) {
+  return Array.from({ length: count }, (_, index) => i32(buffer, offset + index * 4));
 }
 
 function signedByte(value: number) {

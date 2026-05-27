@@ -200,10 +200,31 @@ fn decode_standard_header(
         });
     }
     let samples = &data[sample_start..sample_start + length];
+    let (playback_rate, playback_samples) = playable_pcm(sample_rate, samples);
     Ok(SoundDecode {
-        wav: encode_wav_u8(sample_rate, samples),
+        wav: encode_wav_u8(playback_rate, &playback_samples),
         sample_rate,
         samples: samples.len(),
-        variant: variant.to_string(),
+        variant: if playback_rate != sample_rate {
+            format!("{variant} playbackRate={playback_rate}")
+        } else {
+            variant.to_string()
+        },
     })
+}
+
+fn playable_pcm(sample_rate: u32, samples: &[u8]) -> (u32, Vec<u8>) {
+    if sample_rate >= 8_000 {
+        return (sample_rate, samples.to_vec());
+    }
+    let target_rate = 8_000u32;
+    let output_len = ((samples.len() as u64 * target_rate as u64) / sample_rate.max(1) as u64)
+        .max(1) as usize;
+    let mut output = Vec::with_capacity(output_len);
+    for index in 0..output_len {
+        let source = (index as u64 * sample_rate.max(1) as u64 / target_rate as u64)
+            .min(samples.len().saturating_sub(1) as u64) as usize;
+        output.push(samples.get(source).copied().unwrap_or(128));
+    }
+    (target_rate, output)
 }

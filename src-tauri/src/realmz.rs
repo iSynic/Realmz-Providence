@@ -892,7 +892,7 @@ pub fn parse_caste_overrides(buffer: &[u8]) -> Vec<ScenarioCasteOverride> {
                 max_stamina_bonus: i16_be(record, 258),
                 bonus_attacks: i16_be(record, 260),
                 max_attacks: i16_be(record, 262),
-                victory: read_i16_vec(record, 264, 30),
+                victory: read_i32_vec(record, 264, 30),
                 start_money: i16_be(record, 384),
                 start_items: read_i16_vec(record, 386, 20),
                 attacks: record[426..436].to_vec(),
@@ -945,7 +945,7 @@ pub fn write_caste_overrides(records: &[ScenarioCasteOverride]) -> Result<Vec<u8
         write_i16_be(target, 258, record.max_stamina_bonus);
         write_i16_be(target, 260, record.bonus_attacks);
         write_i16_be(target, 262, record.max_attacks);
-        write_i16_vec(target, 264, &record.victory, 30);
+        write_i32_vec(target, 264, &record.victory, 30);
         write_i16_be(target, 384, record.start_money);
         write_i16_vec(target, 386, &record.start_items, 20);
         copy_fixed_bytes(&mut target[426..436], &record.attacks);
@@ -1809,6 +1809,18 @@ fn write_i16_vec(buffer: &mut [u8], offset: usize, values: &[i16], count: usize)
     }
 }
 
+fn read_i32_vec(buffer: &[u8], offset: usize, count: usize) -> Vec<i32> {
+    (0..count)
+        .map(|index| i32_be(buffer, offset + index * 4))
+        .collect()
+}
+
+fn write_i32_vec(buffer: &mut [u8], offset: usize, values: &[i32], count: usize) {
+    for index in 0..count {
+        write_i32_be(buffer, offset + index * 4, *values.get(index).unwrap_or(&0));
+    }
+}
+
 fn classic_text_bytes(text: &str) -> Vec<u8> {
     text.chars()
         .map(|ch| if ch.is_ascii() { ch as u8 } else { b'?' })
@@ -2287,14 +2299,20 @@ mod tests {
 
         let mut caste_input = vec![0u8; CASTE_BYTES];
         write_i16_be(&mut caste_input, 252, 2);
+        write_i32_be(&mut caste_input, 264, 3000);
+        write_i32_be(&mut caste_input, 268, 999999);
         write_i16_be(&mut caste_input, 384, 500);
         let mut castes = parse_caste_overrides(&caste_input);
         assert_eq!(castes[0].move_bonus, 2);
+        assert_eq!(castes[0].victory[0], 3000);
+        assert_eq!(castes[0].victory[1], 999999);
         assert_eq!(castes[0].start_money, 500);
         castes[0].authored = true;
+        castes[0].victory[2] = 125000;
         castes[0].start_money = 750;
         castes[0].start_items[0] = 42;
         let caste_output = write_caste_overrides(&castes).unwrap();
+        assert_eq!(i32_be(&caste_output, 272), 125000);
         assert_eq!(i16_be(&caste_output, 384), 750);
         assert_eq!(i16_be(&caste_output, 386), 42);
     }

@@ -207,6 +207,7 @@ export function WorkbenchRouter({
         catalog={state.libraryCatalog}
         activeEditor={state.activeEditor}
         selectedEntity={state.selectedEntity}
+        queueAtlasUrl={state.atlasEntries["dungeon-top-down-302"]?.url ?? null}
         onSelectEntity={onSelectEntity}
         onApplyCommand={onApplyCommand}
       />

@@ -376,10 +376,13 @@ function decodeSndToWav(data: Uint8Array, summary: Record<string, string>) {
   const sampleRate = Math.max(1, sampleRateFixed >>> 16);
   const sampleStart = headerOffset + 22;
   if (sampleStart + length > data.byteLength) throw previewError("malformed", "snd.sample_truncated", `format-1 declares ${length} sample bytes, but the resource ends early.`, "snd", sampleStart, undefined, "format-1");
+  const samples = data.slice(sampleStart, sampleStart + length);
+  const playable = browserPlayablePcm(sampleRate, samples);
   summary.sampleRate = String(sampleRate);
+  if (playable.sampleRate !== sampleRate) summary.playbackSampleRate = String(playable.sampleRate);
   summary.samples = String(length);
   summary.variant = "format-1";
-  return encodeWavU8(sampleRate, data.slice(sampleStart, sampleStart + length));
+  return encodeWavU8(playable.sampleRate, playable.samples);
 }
 
 function decodeFormatTwoSndToWav(data: Uint8Array, summary: Record<string, string>) {
@@ -396,10 +399,24 @@ function decodeFormatTwoSndToWav(data: Uint8Array, summary: Record<string, strin
   const sampleRate = Math.max(1, sampleRateFixed >>> 16);
   const sampleStart = headerOffset + 22;
   if (sampleStart + length > data.byteLength) throw previewError("malformed", "snd.sample_truncated", `format-2 declares ${length} sample bytes, but the resource ends early.`, "snd", sampleStart, undefined, "format-2");
+  const samples = data.slice(sampleStart, sampleStart + length);
+  const playable = browserPlayablePcm(sampleRate, samples);
   summary.sampleRate = String(sampleRate);
+  if (playable.sampleRate !== sampleRate) summary.playbackSampleRate = String(playable.sampleRate);
   summary.samples = String(length);
   summary.variant = `format-2 commandParam=${commandParam}`;
-  return encodeWavU8(sampleRate, data.slice(sampleStart, sampleStart + length));
+  return encodeWavU8(playable.sampleRate, playable.samples);
+}
+
+function browserPlayablePcm(sampleRate: number, samples: Uint8Array) {
+  if (sampleRate >= 8000) return { sampleRate, samples };
+  const targetRate = 8000;
+  const length = Math.max(1, Math.round(samples.byteLength * targetRate / Math.max(1, sampleRate)));
+  const output = new Uint8Array(length);
+  for (let index = 0; index < length; index += 1) {
+    output[index] = samples[Math.min(samples.byteLength - 1, Math.floor(index * sampleRate / targetRate))] ?? 128;
+  }
+  return { sampleRate: targetRate, samples: output };
 }
 
 function encodeWavU8(sampleRate: number, samples: Uint8Array) {

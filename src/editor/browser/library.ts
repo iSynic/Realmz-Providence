@@ -851,7 +851,7 @@ function casteRecordSummary(index: number, record: Uint8Array) {
     maxStaminaBonus: i16At(record, 258),
     bonusAttacks: i16At(record, 260),
     maxAttacks: i16At(record, 262),
-    victory: readI16s(record, 264, 30),
+    victory: readI32s(record, 264, 30),
     startMoney: i16At(record, 384),
     startItems: readI16s(record, 386, 20),
     attacks: Array.from(record.slice(426, 436)),
@@ -864,6 +864,10 @@ function casteRecordSummary(index: number, record: Uint8Array) {
 
 function readI16s(record: Uint8Array, offset: number, count: number) {
   return Array.from({ length: count }, (_, index) => i16At(record, offset + index * 2));
+}
+
+function readI32s(record: Uint8Array, offset: number, count: number) {
+  return Array.from({ length: count }, (_, index) => i32At(record, offset + index * 4));
 }
 
 function signedByte(value: number | undefined) {

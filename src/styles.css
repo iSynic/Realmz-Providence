@@ -7142,7 +7142,7 @@ a.documents-source-chip:hover {
 
 .rules-record-picker {
   display: grid;
-  grid-template-columns: auto minmax(88px, 120px) auto minmax(260px, 1fr) auto auto;
+  grid-template-columns: minmax(180px, 260px) auto minmax(260px, 1fr) auto auto;
   gap: 8px;
   align-items: end;
 }
@@ -7163,6 +7163,27 @@ a.documents-source-chip:hover {
 .rules-record-picker select {
   min-width: 0;
   width: 100%;
+}
+
+.rules-record-picker > .btn {
+  min-width: max-content;
+  align-self: end;
+}
+
+.rules-step-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 34px);
+  gap: 5px;
+  align-self: end;
+}
+
+.rules-step-buttons .btn {
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  padding: 0;
+  font-size: 20px;
+  line-height: 1;
 }
 
 .rules-selected-summary {
@@ -7197,7 +7218,9 @@ a.documents-source-chip:hover {
 
 .rules-editor-stack {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr));
   gap: 10px;
+  align-items: start;
 }
 
 .rules-section header b {
@@ -7208,14 +7231,15 @@ a.documents-source-chip:hover {
 
 .rules-field-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
   gap: 8px;
   padding: 10px;
   align-items: start;
 }
 
 .rules-section .scenario-field {
-  width: min(100%, 260px);
+  min-width: 0;
+  width: 100%;
 }
 
 .rules-section .scenario-field-wide {
@@ -7225,11 +7249,41 @@ a.documents-source-chip:hover {
 }
 
 .rules-section .rules-field-compact {
-  width: min(100%, 118px);
+  width: min(100%, 132px);
 }
 
 .rules-section .rules-field-compact input {
   max-width: 10ch;
+}
+
+.rules-field-medium select,
+.rules-field-medium input {
+  min-width: 0;
+}
+
+.rules-field-long-label span {
+  line-height: 1.25;
+  white-space: normal;
+}
+
+.rules-field-subrow {
+  grid-column: 1 / -1;
+}
+
+.rules-field-span {
+  grid-column: 1 / -1;
+}
+
+.rules-checkbox-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  padding: 2px 0 4px;
+}
+
+.rules-checkbox-row-compact .rules-checkbox-field {
+  padding: 6px 8px;
+  font-size: 11px;
 }
 
 .rules-section .scenario-field small {
@@ -7239,6 +7293,7 @@ a.documents-source-chip:hover {
 }
 
 .rules-help-callout {
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -7255,6 +7310,8 @@ a.documents-source-chip:hover {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  flex-wrap: nowrap;
 }
 
 .rules-icon-number img {
@@ -7262,8 +7319,41 @@ a.documents-source-chip:hover {
   height: 32px;
   border: 1px solid #304052;
   border-radius: 4px;
-  background: #05090d;
+  background: #f7f7ef;
   image-rendering: pixelated;
+}
+
+.rules-blank-icon-preview,
+.rules-fastplot-preview,
+.rules-animation-preview {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #304052;
+  border-radius: 4px;
+  image-rendering: pixelated;
+  background-repeat: no-repeat;
+}
+
+.rules-animation-preview {
+  display: grid;
+  place-items: center;
+  background: #f7f7ef;
+  overflow: hidden;
+}
+
+.rules-animation-preview img {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.rules-blank-icon-preview {
+  background: #f7f7ef;
+}
+
+.rules-fastplot-preview {
+  background-color: #f7f7ef;
 }
 
 .rules-icon-number b {
@@ -7278,22 +7368,31 @@ a.documents-source-chip:hover {
 }
 
 .rules-icon-number input {
-  width: 10ch;
+  width: 8ch;
+  min-width: 0;
 }
 
 .rules-section .rules-icon-number,
 .rules-section .rules-sound-number {
-  width: min(100%, 180px);
+  width: 100%;
+  max-width: 180px;
+}
+
+.rules-section .rules-icon-number-compact {
+  max-width: 150px;
 }
 
 .rules-sound-number > div {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
 }
 
 .rules-sound-number input {
-  width: 10ch;
+  width: 8ch;
+  min-width: 0;
 }
 
 .rules-spell-book {
@@ -7380,6 +7479,7 @@ a.documents-source-chip:hover {
 
 .rules-checkbox-field {
   width: fit-content;
+  max-width: 100%;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -7397,7 +7497,7 @@ a.documents-source-chip:hover {
 }
 
 .rules-pair-grid {
-  grid-template-columns: minmax(110px, 220px) 72px 72px;
+  grid-template-columns: minmax(96px, 1fr) 72px 72px;
 }
 
 .rules-pair-grid input,
@@ -7424,11 +7524,17 @@ a.documents-source-chip:hover {
 }
 
 .rules-array label,
-.rules-age-grid label {
+.rules-age-grid label,
+.rules-progress-grid label,
+.rules-victory-grid label {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 72px;
   gap: 6px;
   align-items: center;
+}
+
+.rules-victory-grid label {
+  grid-template-columns: minmax(0, 1fr) 96px;
 }
 
 .rules-checkbox-grid {
@@ -7452,7 +7558,7 @@ a.documents-source-chip:hover {
 .rules-age-grid {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 260px));
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 8px;
 }
 
@@ -7462,6 +7568,54 @@ a.documents-source-chip:hover {
   padding: 8px;
   border: 1px solid #25313c;
   border-radius: 5px;
+}
+
+.rules-age-range {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+.rules-age-range label {
+  grid-template-columns: minmax(0, 1fr) 72px;
+}
+
+.rules-progress-grid,
+.rules-victory-grid {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 7px;
+}
+
+.rules-progress-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.rules-progress-grid > strong,
+.rules-victory-grid > strong {
+  grid-column: 1 / -1;
+}
+
+.rules-progress-grid section {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid #25313c;
+  border-radius: 5px;
+  background: #0a1118;
+}
+
+.rules-progress-grid section b {
+  color: #dce8f3;
+}
+
+.rules-victory-grid {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 260px));
+}
+
+.rules-victory-grid input {
+  min-width: 0;
+  width: 100%;
 }
 
 .rules-empty-state {
@@ -7483,11 +7637,11 @@ a.documents-source-chip:hover {
   }
 
   .rules-record-picker {
-    grid-template-columns: auto minmax(90px, 1fr) auto;
+    grid-template-columns: auto minmax(120px, 1fr);
   }
 
   .rules-record-picker select,
-  .rules-record-picker button:nth-last-child(-n + 2) {
+  .rules-record-picker > .btn {
     grid-column: 1 / -1;
   }
 

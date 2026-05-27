@@ -885,7 +885,7 @@ pub struct ScenarioCasteOverride {
     pub max_stamina_bonus: i16,
     pub bonus_attacks: i16,
     pub max_attacks: i16,
-    pub victory: Vec<i16>,
+    pub victory: Vec<i32>,
     pub start_money: i16,
     pub start_items: Vec<i16>,
     pub attacks: Vec<u8>,
