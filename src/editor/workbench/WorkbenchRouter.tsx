@@ -9,6 +9,7 @@ import { LinterPanel } from "../panels/LinterPanel";
 import { MapsPanel } from "../panels/MapsPanel";
 import { RecordsPanel } from "../panels/RecordsPanel";
 import { ResourcesPanel } from "../panels/ResourcesPanel";
+import { RulesPanel } from "../panels/RulesPanel";
 import { ScenarioPanel } from "../panels/ScenarioPanel";
 import { ScriptsPanel } from "../panels/ScriptsPanel";
 import { SuiteDomainPanel } from "../panels/SuiteDomainPanel";
@@ -39,6 +40,7 @@ export function WorkbenchRouter({
   onSetViewFlag,
   onClearSelection,
   onOpenScripts,
+  onOpenTool,
   onBeginPaintStroke,
   onApplyCommand,
   onCommitPaintStroke,
@@ -77,6 +79,7 @@ export function WorkbenchRouter({
   onSetViewFlag: (flag: MapViewFlag, value: boolean) => void;
   onClearSelection: () => void;
   onOpenScripts: (entity: SelectedEntity) => void;
+  onOpenTool: (tab: "assets" | "rules" | "scripts", editor: string) => void;
   onBeginPaintStroke: (label: string) => void;
   onApplyCommand: (command: ProjectCommand) => void;
   onCommitPaintStroke: () => void;
@@ -173,6 +176,7 @@ export function WorkbenchRouter({
         project={state.project}
         onApplyCommand={onApplyCommand}
         onSelectMap={onSelectMap}
+        onOpenTool={onOpenTool}
       />
     );
   }
@@ -196,7 +200,20 @@ export function WorkbenchRouter({
     return <EncountersPanel project={state.project} selectedEntity={state.selectedEntity} onSelectEntity={onSelectEntity} activeEditor={state.activeEditor} />;
   }
 
-  if (["combat", "economy", "rules", "text"].includes(state.activeTab)) {
+  if (state.activeTab === "rules") {
+    return (
+      <RulesPanel
+        project={state.project}
+        catalog={state.libraryCatalog}
+        activeEditor={state.activeEditor}
+        selectedEntity={state.selectedEntity}
+        onSelectEntity={onSelectEntity}
+        onApplyCommand={onApplyCommand}
+      />
+    );
+  }
+
+  if (["combat", "economy", "text"].includes(state.activeTab)) {
     return (
       <SuiteDomainPanel
         tab={state.activeTab}

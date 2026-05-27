@@ -2,10 +2,11 @@ use crate::error::{IoPath, ProvidenceError, Result};
 use crate::importer::RAW_SOURCES_DIR;
 use crate::project::{LevelType, ProvidenceProject};
 use crate::realmz::{
-    write_battles, write_complex_encounters, write_door_file, write_extracodes, write_fields,
-    write_macro_file, write_map_records, write_messages, write_random_levels,
+    write_battles, write_caste_overrides, write_complex_encounters, write_door_file,
+    write_extracodes, write_fields, write_global_macro_hooks, write_macro_file,
+    write_map_records, write_messages, write_race_overrides, write_random_levels,
     write_scenario_contact_info, write_scenario_restrictions, write_scenario_shell, write_shops,
-    write_simple_encounters, write_treasures,
+    write_simple_encounters, write_spell_overrides, write_treasures,
 };
 use crate::resource_fork::{
     merge_resource_entries, parse_resource_fork_entries, ResourceForkEntry,
@@ -78,6 +79,14 @@ pub fn export_project(
             output_dir,
             "Data RI",
             write_scenario_restrictions(restrictions)?,
+            &mut written_files,
+        )?;
+    }
+    if let Some(global_hooks) = &project.scenario.global_macro_hooks {
+        write_if_nonempty(
+            output_dir,
+            "Global",
+            write_global_macro_hooks(global_hooks)?,
             &mut written_files,
         )?;
     }
@@ -185,6 +194,28 @@ pub fn export_project(
         &raw_dir,
         &mut written_files,
     )?;
+    write_spell_overrides_preserving_tail(
+        output_dir,
+        &raw_dir,
+        &project.spell_overrides,
+        &mut written_files,
+    )?;
+    write_fixed_if_nonempty(
+        output_dir,
+        "Data Race",
+        write_race_overrides(&project.race_overrides)?,
+        crate::realmz::RACE_BYTES,
+        &raw_dir,
+        &mut written_files,
+    )?;
+    write_fixed_if_nonempty(
+        output_dir,
+        "Data Caste",
+        write_caste_overrides(&project.caste_overrides)?,
+        crate::realmz::CASTE_BYTES,
+        &raw_dir,
+        &mut written_files,
+    )?;
     let resource_result = write_managed_resources(project_dir, output_dir, project)?;
     if resource_result.resource_file_written {
         written_files.push(resource_result.resource_file_name.clone());
@@ -243,6 +274,29 @@ fn write_fixed_if_nonempty(
         }
     }
     write_if_nonempty(output_dir, name, bytes, written)
+}
+
+fn write_spell_overrides_preserving_tail(
+    output_dir: &Path,
+    raw_dir: &Path,
+    records: &[crate::project::ScenarioSpellOverride],
+    written_files: &mut Vec<String>,
+) -> Result<()> {
+    let overlay = write_spell_overrides(records)?;
+    if overlay.is_empty() {
+        return Ok(());
+    }
+    let raw_path = raw_dir.join("Data Spell");
+    let mut bytes = if raw_path.is_file() {
+        fs::read(&raw_path).with_path(&raw_path)?
+    } else {
+        Vec::new()
+    };
+    if bytes.len() < overlay.len() {
+        bytes.resize(overlay.len(), 0);
+    }
+    bytes[..overlay.len()].copy_from_slice(&overlay);
+    write_if_nonempty(output_dir, "Data Spell", bytes, written_files)
 }
 
 #[derive(Debug, Default)]

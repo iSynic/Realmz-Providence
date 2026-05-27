@@ -52,7 +52,7 @@ export function itemReferenceOptions(project: Project, catalog?: LibraryCatalog 
       const usageSummary = formatItemUsage(usage);
       const named = names.get(Math.abs(id));
       const label = named ?? (entity ? itemLabel(entity, id) : itemCategoryLabel(id));
-      const sourceState = named ? "STR# item name evidence" : entity?.type === "item" ? "Imported item catalog" : entity ? "Scenario reference evidence" : "Used by authored records";
+      const sourceState = named ? "Named item" : entity?.type === "item" ? "Imported item catalog" : entity ? "Scenario reference" : "Used by authored records";
       return {
         key: entity?.id ?? `item:${id}`,
         value: id,

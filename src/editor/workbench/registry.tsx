@@ -82,7 +82,7 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     tools: [
       t({ id: "action-points", label: "Action Points / GOSUBs", iconLabel: "AP", workbench: "project", description: "Create and edit map action slots.", entityTypes: ["trigger", "action-slot"], defaultInspector: "semantic" }),
       t({ id: "macros", label: "Macros", iconLabel: "M", workbench: "project", description: "Extra Action Point macros and branch targets.", entityTypes: ["macro"], defaultInspector: "semantic" }),
-      t({ id: "ed3-evidence", label: "ED3 Evidence", iconLabel: "E3", workbench: "project", description: "Preserved non-reachable Data ED3 rows.", entityTypes: ["ed3-action-record"], defaultInspector: "semantic" }),
+      t({ id: "ed3-evidence", label: "Imported ED3 Rows", iconLabel: "E3", workbench: "project", description: "Imported Data ED3 rows that are not callable macros yet.", entityTypes: ["ed3-action-record"], defaultInspector: "semantic" }),
       t({ id: "global-macros", label: "Global Macros", iconLabel: "GM", workbench: "project", description: "Scenario-wide macro hooks and startup logic.", entityTypes: ["global-macro"], defaultInspector: "semantic" }),
       t({ id: "quests", label: "Quests", iconLabel: "Q", workbench: "project", description: "Quest flags and script references.", entityTypes: ["quest flag"], defaultInspector: "semantic" })
     ]
@@ -92,7 +92,7 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     label: "Scenario",
     shortLabel: "Scn",
     description: "Startup information, restrictions, contact metadata, and legacy security.",
-    help: "Scenario-wide data is inspect-first unless the writer is fixture-backed.",
+    help: "Scenario-wide startup, contact, restrictions, and load-readiness records.",
     tools: [
       t({ id: "startup", label: "Startup Info", iconLabel: "ST", workbench: "project", description: "Starting conditions, initial map, and party restrictions.", entityTypes: ["scenario-startup", "scenario"], defaultInspector: "semantic" }),
       t({ id: "restrictions", label: "Restrictions", iconLabel: "R", workbench: "project", description: "Caste, race, level, and scenario restrictions.", entityTypes: ["scenario-restriction"], defaultInspector: "semantic" }),
@@ -118,7 +118,7 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     label: "Combat",
     shortLabel: "Cmb",
     description: "Battles, monsters, Monster Scrapbook, and Monster Mash.",
-    help: "Library material is usable reference data; project records remain source-backed.",
+    help: "Library material is usable reference data; project records remain editable where supported.",
     tools: [
       t({ id: "battles", label: "Battle Editor", iconLabel: "B", workbench: "project", description: "Battle records, monster links, macros, and messages.", entityTypes: ["battle"], defaultInspector: "semantic" }),
       t({ id: "monsters", label: "Monster Editor", iconLabel: "M", workbench: "both", description: "Monster records and cicn/icon links.", entityTypes: ["monster"], defaultInspector: "semantic" }),
@@ -170,7 +170,7 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     label: "Text",
     shortLabel: "Txt",
     description: "Scenario strings, TEXT/styl resources, import/export, and spell-check workflow.",
-    help: "Text views prefer readable decoded previews and source-backed message links.",
+    help: "Text views prefer readable previews and message links.",
     tools: [
       t({ id: "messages", label: "Scenario Strings", iconLabel: "MSG", workbench: "project", description: "Message records and string links.", entityTypes: ["message"], defaultInspector: "semantic" }),
       t({ id: "text-resources", label: "TEXT / STR#", iconLabel: "TXT", workbench: "both", description: "Readable resource text and string lists.", entityTypes: ["text-resource", "string-list-resource", "style-resource"], defaultInspector: "resource" }),
@@ -181,11 +181,11 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     id: "records",
     label: "Records",
     shortLabel: "Rec",
-    description: "Decoded binary records, byte ranges, provenance, and evidence.",
-    help: "Records are the evidence layer behind semantic entities.",
+    description: "Decoded binary records, byte ranges, provenance, and diagnostics.",
+    help: "Records show the technical details behind editable scenario content.",
     tools: [
       t({ id: "decoded-records", label: "Decoded Records", iconLabel: "DR", workbench: "both", description: "Record catalog grouped by source.", defaultInspector: "semantic" }),
-      t({ id: "evidence", label: "Evidence", iconLabel: "EV", workbench: "both", description: "Byte ranges, confidence, and diagnostics.", defaultInspector: "semantic" })
+      t({ id: "evidence", label: "Technical Details", iconLabel: "TD", workbench: "both", description: "Byte ranges, status, and diagnostics.", defaultInspector: "semantic" })
     ]
   },
   linter: {

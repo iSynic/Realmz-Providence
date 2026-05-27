@@ -30,7 +30,7 @@ export function createLibraryDraft(catalog: LibraryCatalog | null, managedPath: 
       draft: true,
       editorId: spec.editorId,
       createdAt: now,
-      exportState: "blocked until a fixture-backed Realmz writer exists",
+      exportState: "not exportable yet",
       fields: {}
     }
   });
@@ -47,7 +47,7 @@ export function createLibraryDraft(catalog: LibraryCatalog | null, managedPath: 
       editorId: spec.editorId,
       notes: "",
       createdAt: now,
-      exportState: "blocked until a fixture-backed Realmz writer exists"
+      exportState: "not exportable yet"
     }
   };
   next.entities.push(entity);

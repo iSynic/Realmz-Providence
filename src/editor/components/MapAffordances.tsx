@@ -49,10 +49,10 @@ export function MapCapabilityPanel({
       </details>
       <details className="context-section affordance-section">
         <summary>
-          <span>Source Evidence</span>
+          <span>Technical Details</span>
           <b>layout</b>
         </summary>
-        <p className="empty-copy compact">Level layout and map-to-map start records are preserved as source evidence until writer support is fixture-backed.</p>
+        <p className="empty-copy compact">Level layout and map-to-map start records are kept intact. Direct editing for these records is not ready yet.</p>
       </details>
       <details className="context-section affordance-section" open>
         <summary>

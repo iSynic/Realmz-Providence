@@ -59,7 +59,7 @@ export function ExportPanel({
       </section>
       <section className="tab-panel">
         <div className="panel-header">
-          <span>Semantic Export Plan</span>
+          <span>Export Plan</span>
         </div>
         <InfoGrid
           rows={[

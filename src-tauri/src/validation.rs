@@ -433,6 +433,7 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
     } else {
         warnings.push("No parsed Scenario startup shell is available; export will rely on source pass-through.".to_string());
     }
+    validate_rules_overrides(project, &mut errors, &mut warnings);
     for file in &project.source.files {
         if supported.contains(file.name.as_str()) {
             exportable_files.push(file.name.clone());
@@ -898,6 +899,69 @@ fn validate_battle_macro_reference(
             "Battle {} battle macro references Data ED3 macro {}, but Providence cannot prove that target exists.",
             battle_id, target_id
         ));
+    }
+}
+
+fn validate_rules_overrides(
+    project: &ProvidenceProject,
+    errors: &mut Vec<String>,
+    warnings: &mut Vec<String>,
+) {
+    let mut spell_ids = BTreeSet::new();
+    for spell in &project.spell_overrides {
+        if spell.id >= crate::realmz::SPELL_OVERRIDE_RECORDS {
+            errors.push(format!(
+                "Spell override {} is outside the 0..{} custom spell range.",
+                spell.id,
+                crate::realmz::SPELL_OVERRIDE_RECORDS - 1
+            ));
+        }
+        if !spell_ids.insert(spell.id) {
+            errors.push(format!("Spell override {} is duplicated.", spell.id));
+        }
+        if spell.target_type > 11 {
+            warnings.push(format!(
+                "Spell override {} uses target type {}; Divinity labels are known for 0..11.",
+                spell.id, spell.target_type
+            ));
+        }
+    }
+
+    let mut race_ids = BTreeSet::new();
+    for race in &project.race_overrides {
+        if race.id >= 30 {
+            errors.push(format!("Race override {} is outside the 0..29 race table.", race.id));
+        }
+        if !race_ids.insert(race.id) {
+            errors.push(format!("Race override {} is duplicated.", race.id));
+        }
+        if race.max_age < 0 {
+            warnings.push(format!("Race override {} has a negative max age.", race.id));
+        }
+        for (band, range) in race.age_range.iter().enumerate() {
+            if range.len() >= 2 && range[0] > range[1] {
+                warnings.push(format!(
+                    "Race override {} age band {} starts after it ends.",
+                    race.id, band
+                ));
+            }
+        }
+    }
+
+    let mut caste_ids = BTreeSet::new();
+    for caste in &project.caste_overrides {
+        if caste.id >= 30 {
+            errors.push(format!("Caste override {} is outside the 0..29 caste table.", caste.id));
+        }
+        if !caste_ids.insert(caste.id) {
+            errors.push(format!("Caste override {} is duplicated.", caste.id));
+        }
+        for item_id in caste.start_items.iter().filter(|item_id| **item_id < 0) {
+            warnings.push(format!(
+                "Caste override {} has negative starting item id {}; verify this is intentional.",
+                caste.id, item_id
+            ));
+        }
     }
 }
 
@@ -1502,6 +1566,7 @@ mod tests {
                 shell: None,
                 contact_info: None,
                 restrictions: None,
+                global_macro_hooks: None,
             },
             source: SourceSnapshot {
                 source_path: String::new(),
@@ -1522,6 +1587,9 @@ mod tests {
             simple_encounters: Vec::new(),
             complex_encounters: Vec::new(),
             quest_labels: Vec::new(),
+            spell_overrides: Vec::new(),
+            race_overrides: Vec::new(),
+            caste_overrides: Vec::new(),
             assets: Vec::new(),
             asset_catalog: AssetCatalog::default(),
             editor_metadata: EditorMetadata::default(),

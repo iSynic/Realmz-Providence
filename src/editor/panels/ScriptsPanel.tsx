@@ -441,9 +441,9 @@ function ScriptAuthoringPanel({
             )}
           </ScrollArea>
           {ed3Evidence.length > 0 && (
-            <CollapsibleSection className="ed3-evidence-strip" title="ED3 Evidence" eyebrow="preserved non-callable rows" count={ed3Evidence.length.toLocaleString()} density="compact" storageKey="scripts.ed3Evidence.open" defaultOpen={false}>
-              <small>{ed3Evidence.length.toLocaleString()} preserved non-callable Data ED3 row(s)</small>
-              <ScrollArea className="ed3-evidence-list" aria-label="ED3 evidence records">
+            <CollapsibleSection className="ed3-evidence-strip" title="Imported ED3 Rows" eyebrow="advanced" count={ed3Evidence.length.toLocaleString()} density="compact" storageKey="scripts.ed3Evidence.open" defaultOpen={false}>
+              <small>{ed3Evidence.length.toLocaleString()} imported Data ED3 row(s) are kept intact and are not callable macros yet.</small>
+              <ScrollArea className="ed3-evidence-list" aria-label="Imported ED3 rows">
                 {ed3Evidence.slice(0, 80).map((trigger) => {
                   const row = ed3ReachabilityFor(project, trigger.recordIndex);
                   return (
@@ -646,7 +646,7 @@ function SourceEvidence({
     linkCount ? `links:${linkCount}` : null
   ].filter(Boolean).length;
   return (
-    <CollapsibleSection title="Source Evidence" eyebrow="contextual" count={String(count)} density="compact" storageKey="scripts.sourceEvidence.open" defaultOpen={false}>
+    <CollapsibleSection title="Technical Details" eyebrow="advanced" count={String(count)} density="compact" storageKey="scripts.sourceEvidence.open" defaultOpen={false}>
       <div className="script-source-evidence">
         <div className="realmz-raw-preview">
           <FieldRow label="Script Source" value={trigger.source} />
@@ -879,9 +879,9 @@ function SelectedStepDetail({
             Inspect semantic action slot
           </button>
         ) : selectedSlotApplied ? (
-          <EmptyState compact title="Authored slot applied" body="This CODE/ID pair is written to the project. Source-backed semantic evidence will catch up when project semantics are rebuilt." />
+          <EmptyState compact title="Authored slot applied" body="This CODE/ID pair is written to the project. Related links update when the project is refreshed." />
         ) : (
-          <EmptyState compact title="No semantic slot yet" body="Apply this slot to create or update the source-backed Realmz action entry." />
+          <EmptyState compact title="No linked slot yet" body="Apply this slot to create or update the Realmz action entry." />
         )}
       </div>
     </div>
@@ -1863,7 +1863,7 @@ function triggerVisibleForEditor(project: Project | null, trigger: TriggerRecord
 function scriptPanelTitle(activeEditor: string) {
   if (activeEditor === "action-points") return "Action Points / GOSUBs";
   if (activeEditor === "macros") return "Macro Editor";
-  if (activeEditor === "ed3-evidence") return "ED3 Evidence";
+  if (activeEditor === "ed3-evidence") return "Imported ED3 Rows";
   if (activeEditor === "global-macros") return "Global Macro Editor";
   if (activeEditor === "quests") return "Quest Script Links";
   return "Triggers And Macros";

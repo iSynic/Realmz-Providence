@@ -60,7 +60,7 @@ export const ENTITY_TYPE_LABELS: Record<string, string> = {
   map: "Map",
   trigger: "Trigger",
   macro: "Macro",
-  "ed3-action-record": "ED3 Evidence",
+  "ed3-action-record": "Imported ED3 Row",
   "action-slot": "Action Slot",
   "edcd-row": "EDCD",
   "simple encounter": "Simple Encounter",

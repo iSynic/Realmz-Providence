@@ -51,6 +51,7 @@ pub fn create_project(
             shell: Some(default_scenario_shell(&project_name)),
             contact_info: Some(default_contact_info(&project_name)),
             restrictions: None,
+            global_macro_hooks: None,
         },
         source: SourceSnapshot {
             source_path: String::new(),
@@ -71,6 +72,9 @@ pub fn create_project(
         simple_encounters: Vec::new(),
         complex_encounters: Vec::new(),
         quest_labels: Vec::new(),
+        spell_overrides: Vec::new(),
+        race_overrides: Vec::new(),
+        caste_overrides: Vec::new(),
         assets: Vec::new(),
         asset_catalog: AssetCatalog::default(),
         editor_metadata: EditorMetadata::default(),
@@ -164,6 +168,9 @@ fn import_scenario_with_name(
     let restrictions = buffers
         .get("Data RI")
         .and_then(|buffer| crate::realmz::parse_scenario_restrictions(buffer).ok());
+    let global_macro_hooks = buffers
+        .get("Global")
+        .map(|buffer| crate::realmz::parse_global_macro_hooks(buffer));
 
     let mut project = ProvidenceProject {
         schema_version: PROJECT_SCHEMA_VERSION,
@@ -176,6 +183,7 @@ fn import_scenario_with_name(
             shell: scenario_shell,
             contact_info,
             restrictions,
+            global_macro_hooks,
         },
         source: SourceSnapshot {
             source_path: source_path.to_string_lossy().to_string(),
@@ -196,6 +204,9 @@ fn import_scenario_with_name(
         simple_encounters: parsed.simple_encounters,
         complex_encounters: parsed.complex_encounters,
         quest_labels: Vec::new(),
+        spell_overrides: parsed.spell_overrides,
+        race_overrides: parsed.race_overrides,
+        caste_overrides: parsed.caste_overrides,
         assets: Vec::new(),
         asset_catalog: parsed.asset_catalog,
         editor_metadata: EditorMetadata::default(),
@@ -219,6 +230,9 @@ fn import_scenario_with_name(
         shops: project.shops.clone(),
         simple_encounters: project.simple_encounters.clone(),
         complex_encounters: project.complex_encounters.clone(),
+        spell_overrides: project.spell_overrides.clone(),
+        race_overrides: project.race_overrides.clone(),
+        caste_overrides: project.caste_overrides.clone(),
         records: project.records.clone(),
         diagnostics: project.diagnostics.clone(),
         asset_catalog: project.asset_catalog.clone(),
@@ -286,6 +300,9 @@ fn refresh_semantic_schema(project_dir: &Path, project: &mut ProvidenceProject) 
         shops: project.shops.clone(),
         simple_encounters: project.simple_encounters.clone(),
         complex_encounters: project.complex_encounters.clone(),
+        spell_overrides: project.spell_overrides.clone(),
+        race_overrides: project.race_overrides.clone(),
+        caste_overrides: project.caste_overrides.clone(),
         records: project.records.clone(),
         diagnostics: project.diagnostics.clone(),
         asset_catalog: project.asset_catalog.clone(),
@@ -325,6 +342,15 @@ fn backfill_target_records(project: &mut ProvidenceProject, buffers: &BTreeMap<S
     if project.complex_encounters.is_empty() {
         project.complex_encounters = parsed.complex_encounters;
     }
+    if project.spell_overrides.is_empty() {
+        project.spell_overrides = parsed.spell_overrides;
+    }
+    if project.race_overrides.is_empty() {
+        project.race_overrides = parsed.race_overrides;
+    }
+    if project.caste_overrides.is_empty() {
+        project.caste_overrides = parsed.caste_overrides;
+    }
 }
 
 fn hydrate_scenario_metadata(project_dir: &Path, project: &mut ProvidenceProject) -> Result<()> {
@@ -351,6 +377,13 @@ fn hydrate_scenario_metadata(project_dir: &Path, project: &mut ProvidenceProject
         if path.is_file() {
             let bytes = fs::read(&path).with_path(&path)?;
             project.scenario.restrictions = crate::realmz::parse_scenario_restrictions(&bytes).ok();
+        }
+    }
+    if project.scenario.global_macro_hooks.is_none() {
+        let path = raw_dir.join("Global");
+        if path.is_file() {
+            let bytes = fs::read(&path).with_path(&path)?;
+            project.scenario.global_macro_hooks = Some(crate::realmz::parse_global_macro_hooks(&bytes));
         }
     }
     Ok(())

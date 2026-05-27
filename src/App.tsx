@@ -839,6 +839,12 @@ export function App() {
     dispatch({ type: "setStatus", status: "Opened selected Action Point in Scripts/AP" });
   }
 
+  function openProjectTool(tab: "assets" | "rules" | "scripts", editor: string) {
+    dispatch({ type: "setActiveDomain", domain: tab });
+    dispatch({ type: "setActiveEditor", editor });
+    dispatch({ type: "setStatus", status: `Opened ${editor.replace(/-/g, " ")}.` });
+  }
+
   return (
     <ProvidenceEditorShell
       state={state}
@@ -912,6 +918,7 @@ export function App() {
         onSetViewFlag={(flag: MapViewFlag, value: boolean) => dispatch({ type: "setMapViewFlag", flag, value })}
         onClearSelection={clearMapSelection}
         onOpenScripts={openScriptsForEntity}
+        onOpenTool={openProjectTool}
         onBeginPaintStroke={(label) => dispatch({ type: "beginCommandGroup", label })}
         onApplyCommand={applyProjectCommand}
         onCommitPaintStroke={() => dispatch({ type: "commitCommandGroup" })}

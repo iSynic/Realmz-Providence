@@ -582,7 +582,7 @@ function MapLevelSettings({
       </div>
       <small>
         {map.levelType === "dungeon"
-          ? "Dungeon geometry stays evidence-only in this slice."
+          ? "Dungeon geometry editing is not ready in this slice."
           : "Landlook changes update Realmz random-level metadata and render hints."}{" "}
         Dark and line-of-sight are saved/exported Realmz flags; previews are editor-only approximations and do not write runtime site data.
       </small>
@@ -684,8 +684,8 @@ function TileMeaningInspector({
         <b>{attributes?.movementCost ?? "unknown"}</b>
         <span>Sound</span>
         <b>{attributes?.movementSoundId ?? "unknown"}</b>
-        <span>Confidence</span>
-        <b>{attributes?.confidence ?? (meaning.iconCandidates.length > 0 ? "preserved" : "unknown")}</b>
+        <span>Status</span>
+        <b>{userFacingConfidence(attributes?.confidence ?? (meaning.iconCandidates.length > 0 ? "preserved" : "unknown"))}</b>
       </div>
       {!compact && <p>{meaning.compatibility}</p>}
     </div>
@@ -1162,7 +1162,7 @@ function randomRectDiagnostics(rect: RandomLevel["rects"][number]) {
   if (rect.left < 0 || rect.top < 0 || rect.right > 89 || rect.bottom > 89) diagnostics.push("Bounds are outside the 90x90 map.");
   if (rect.left > rect.right || rect.top > rect.bottom) diagnostics.push("Bounds are inverted.");
   if (rect.percent > 10000) diagnostics.push("Times in 10,000 must not exceed 10000.");
-  if (rect.percent < 0) diagnostics.push("Negative Times in 10,000 is preserved from source, but normal authoring should use 0..10000.");
+  if (rect.percent < 0) diagnostics.push("Negative Times in 10,000 was imported from the scenario, but normal authoring should use 0..10000.");
   rect.randomDoorPercent.forEach((percent, index) => {
     if (percent < -100 || percent > 100) diagnostics.push(`Door ${index + 1} percent must be between -100 and 100.`);
   });
@@ -1332,7 +1332,7 @@ function RandomRectangleEditor({
         Clear Random Rectangle
       </button>
       <details className="context-section">
-        <summary><span>Source Evidence</span><b>{map.levelType === "land" ? "Data RD" : "Data RDD"}</b></summary>
+        <summary><span>Technical Details</span><b>{map.levelType === "land" ? "Data RD" : "Data RDD"}</b></summary>
         <RandomRectangleForm rect={rect} />
       </details>
     </div>
@@ -1414,8 +1414,8 @@ function RecordSelectionDetails({
           ["Source", record.source],
           ["Record", record.recordRef ?? "none"],
           ["Byte Range", record.byteRange ? `${record.byteRange.start}..${record.byteRange.endExclusive} (${record.byteRange.length} bytes)` : "none"],
-          ["Edit State", record.editState ?? (record.editable ? "editable" : "inspect-only")],
-          ["Confidence", record.confidence]
+          ["Edit State", userFacingEditState(record.editState ?? (record.editable ? "editable" : "inspect-only"))],
+          ["Status", userFacingConfidence(record.confidence)]
         ]}
       />
       {mapRecord && (
@@ -1506,7 +1506,7 @@ function MapRecordEditor({
         </button>
       </div>
       <p className="empty-copy compact">
-        Names stay read-only because they come from resource-fork string evidence. Unknown icon-slot bytes are preserved from {semanticRecord.recordRef ?? "Data MD2"}.
+        Names stay read-only because they are stored in the scenario resource data. Unknown icon-slot bytes are kept intact from {semanticRecord.recordRef ?? "Data MD2"}.
       </p>
     </details>
   );
@@ -1605,6 +1605,21 @@ function toolLabel(tool: EditorTool) {
 function summaryNumber(entity: SemanticEntity, key: string) {
   const value = entity.summary[key];
   return typeof value === "number" ? value : null;
+}
+
+function userFacingEditState(state: string | null | undefined) {
+  if (state === "editable") return "Editable";
+  if (state === "blocked") return "Not editable yet";
+  if (state === "inspect-only") return "Read-only";
+  return state ?? "Read-only";
+}
+
+function userFacingConfidence(confidence: string | null | undefined) {
+  if (confidence === "source-backed" || confidence === "fixture-backed") return "Verified";
+  if (confidence === "inferred") return "Likely";
+  if (confidence === "preserved") return "Imported";
+  if (confidence === "unknown") return "Unknown";
+  return confidence ?? "Unknown";
 }
 
 function nextAvailableRandomRectIndex(project: Project | null, levelType: MapEntity["levelType"], levelIndex: number) {

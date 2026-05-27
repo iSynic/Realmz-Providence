@@ -94,7 +94,7 @@ export function OverlayInspector({
             ["Start", `${summaryNumber(mapRecord, "startX") ?? "?"}, ${summaryNumber(mapRecord, "startY") ?? "?"}`],
             ["Level", summaryNumber(mapRecord, "level") ?? "unknown"],
             ["Dungeon", summaryBool(mapRecord, "isDungeon") ? "yes" : "no"],
-            ["Editable", mapRecord.editable ? "yes" : "inspect-only"]
+            ["Editable", mapRecord.editable ? "yes" : "read-only"]
           ]}
         />
       </section>

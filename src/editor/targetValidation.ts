@@ -96,7 +96,7 @@ function validateEncounterActions(project: Project, recordType: RealmzTargetReco
     const code = normalizeStepOpcode(action.rawCode);
     const option = actionOptionFor(action.rawCode);
     if (option.category === "Unknown") {
-      issues.push(slotIssue("warning", recordType, recordId, action.slot, "unknown-opcode", "Unsupported opcode is preserved but not safely understood.", `CODE ${action.rawCode} will stay visible as raw Realmz data until Providence documents it.`));
+      issues.push(slotIssue("warning", recordType, recordId, action.slot, "unknown-opcode", "Providence does not fully support this opcode yet.", `CODE ${action.rawCode} will stay visible as raw Realmz data until this action is editable.`));
     } else if (isDispatcherNoopOpcode(action.rawCode)) {
       issues.push(slotIssue("info", recordType, recordId, action.slot, "dispatcher-noop", "Realmz ignores this CODE value.", `CODE ${action.rawCode} has no newland.c dispatcher case, so it is preserved as no-op data.`));
     }
@@ -127,7 +127,7 @@ function validateEncounterActions(project: Project, recordType: RealmzTargetReco
     if (isDirectMacroOpcode(code) && action.id !== 0) {
       const macro = project.triggers.find((candidate) => candidate.source === "Data ED3" && candidate.recordIndex === action.id);
       if (!macro) issues.push(slotIssue("error", recordType, recordId, action.slot, "dangling-macro", "Macro/GOSUB target is missing.", `No callable Data ED3 macro ${action.id} exists.`));
-      else if (!isCallableMacro(project, macro)) issues.push(slotIssue("warning", recordType, recordId, action.slot, "ed3-evidence-target", "Macro target is preserved ED3 evidence, not a callable macro.", `Data ED3 record ${action.id} is inspect-only until duplicated/promoted or proven reachable.`));
+      else if (!isCallableMacro(project, macro)) issues.push(slotIssue("warning", recordType, recordId, action.slot, "ed3-evidence-target", "Macro target is an imported ED3 row, not a callable macro.", `Data ED3 record ${action.id} is read-only until duplicated into an authored macro.`));
     }
   }
   return issues;
@@ -139,7 +139,7 @@ function validateReference(project: Project, recordType: RealmzTargetRecordKind,
   if (!config) return [];
   const exists = targetOptionsForOpcode(project, opcode, catalog).some((target) => target.value === id);
   if (exists) return [];
-  const detail = `ID ${id} is preserved as raw data, but Providence cannot prove the referenced ${config.label.toLowerCase()} exists.`;
+  const detail = `ID ${id} is kept as-is, but Providence cannot find the referenced ${config.label.toLowerCase()}.`;
   return [slot == null
     ? recordIssue("warning", recordType, recordId, `${label}:unresolved-target`, `${label} does not resolve to a known target.`, detail)
     : slotIssue("warning", recordType, recordId, slot, "unresolved-target", `${label} does not resolve to a known target.`, detail)];

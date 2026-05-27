@@ -21,7 +21,7 @@ export function EntityBrowser({
   return (
     <section className="entity-browser">
       <div className="panel-header">
-        <span>Semantic Browser</span>
+        <span>Project Browser</span>
         <b>{entities.length.toLocaleString()}</b>
       </div>
       <div className="semantic-summary-strip">
@@ -29,7 +29,7 @@ export function EntityBrowser({
         <Metric label="Records" value={project?.semanticSchema.summary.recordCount ?? 0} />
         <Metric label="Links" value={project?.semanticSchema.summary.linkCount ?? 0} />
       </div>
-      <ScrollArea className="semantic-entity-list" aria-label="Semantic Browser">
+      <ScrollArea className="semantic-entity-list" aria-label="Project Browser">
         {groups.map((group) => (
           <details key={group.type} open={group.type === "map" || group.type === "trigger"}>
             <summary>

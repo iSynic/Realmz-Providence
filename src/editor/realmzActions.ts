@@ -123,7 +123,7 @@ export const ACTION_OPTIONS: RealmzActionOption[] = DOCUMENTED_OPCODE_CODES.map(
     label: `${code} ${shortLabel}`,
     shortLabel,
     category: detail?.category ?? "Advanced",
-    description: detail?.description ?? "Documented Realmz opcode. Use raw CODE/ID and the semantic inspector for source-backed details.",
+    description: detail?.description ?? "Documented Realmz opcode. Use raw CODE/ID and the details inspector for advanced fields.",
     edcdShape: detail?.edcdShape
   };
 });

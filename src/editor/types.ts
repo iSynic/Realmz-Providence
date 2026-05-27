@@ -311,6 +311,21 @@ export type ScenarioRestrictions = {
   provenance?: Provenance;
 };
 
+export type GlobalMacroHook = {
+  slot: number;
+  label: string;
+  door: number;
+  sourceBacked: boolean;
+  runtimeConsumer: string;
+};
+
+export type ScenarioGlobalMacroHooks = {
+  slots: GlobalMacroHook[];
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: Provenance;
+};
+
 export type ScenarioMeta = {
   id?: string;
   name: string;
@@ -319,6 +334,7 @@ export type ScenarioMeta = {
   shell?: ScenarioShell | null;
   contactInfo?: ScenarioContactInfo | null;
   restrictions?: ScenarioRestrictions | null;
+  globalMacroHooks?: ScenarioGlobalMacroHooks | null;
 };
 
 export type ScenarioStartupFields = Partial<ScenarioMeta>;
@@ -408,6 +424,111 @@ export type QuestLabel = {
   id: number;
   label: string;
   note?: string;
+};
+
+export type ScenarioSpellOverride = {
+  id: number;
+  range1: number;
+  range2: number;
+  queueIcon: number;
+  toHitBonus: number;
+  saveBonus: number;
+  fixedTargetNum: number;
+  canRotate: number;
+  saveAdjust: number;
+  cannot: number;
+  resistAdjust: number;
+  cost: number;
+  damage1: number;
+  damage2: number;
+  powerDamage1: number;
+  powerDamage2: number;
+  duration1: number;
+  duration2: number;
+  powerDuration1: number;
+  powerDuration2: number;
+  spellLook1: number;
+  spellLook2: number;
+  sound1: number;
+  sound2: number;
+  targetType: number;
+  size: number;
+  special: number;
+  damageType: number;
+  spellClass: number;
+  inCombat: boolean;
+  inCamp: boolean;
+  displayName?: string;
+  description?: string;
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: Provenance;
+};
+
+export type ScenarioRaceOverride = {
+  id: number;
+  displayName?: string;
+  plusMinusToHit: number[];
+  specialAbility: number[];
+  drvBonus: number[];
+  attBonus: number[];
+  minMax: number[];
+  conditions: number[];
+  maxAge: number;
+  doesNotDie: number;
+  baseMove: number;
+  magRes: number;
+  twoHand: number;
+  missile: number;
+  numOfAttacks: number[];
+  canCaste: number[];
+  ageRange: number[][];
+  ageChange: number[][];
+  canRegenerate: number;
+  defaultIconSet: number;
+  itemTypes: number[];
+  descriptors: number;
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: Provenance;
+};
+
+export type ScenarioCasteOverride = {
+  id: number;
+  displayName?: string;
+  specialAbility: number[][];
+  drvBonus: number[];
+  attBonus: number[];
+  spellcasters: number[][];
+  minMax: number[];
+  conditions: number[];
+  canUseMissile: number;
+  getsMissileBonus: number;
+  stamina: number[];
+  strength: number[];
+  dodge: number[];
+  toHit: number[];
+  missile: number[];
+  hand2Hand: number[];
+  casteClass: number;
+  minimumAgeGroup: number;
+  moveBonus: number;
+  magRes: number;
+  twoHand: number;
+  maxStaminaBonus: number;
+  bonusAttacks: number;
+  maxAttacks: number;
+  victory: number[];
+  startMoney: number;
+  startItems: number[];
+  attacks: number[];
+  itemTypes: number[];
+  defaultIcon: number;
+  maxSpellsAttacks: number;
+  spellsSoFar: number;
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: Provenance;
 };
 
 export type MapRecord = {
@@ -548,6 +669,16 @@ export type ProjectCommand =
   | { kind: "updateScenarioShell"; label: string; changes: Partial<ScenarioShell> }
   | { kind: "updateScenarioContactInfo"; label: string; changes: Partial<ScenarioContactInfo> }
   | { kind: "updateScenarioRestrictions"; label: string; changes: Partial<ScenarioRestrictions> }
+  | { kind: "updateGlobalMacroHook"; label: string; slot: number; door: number }
+  | { kind: "createSpellOverride"; label: string; id?: number; template?: Partial<ScenarioSpellOverride> }
+  | { kind: "updateSpellOverride"; label: string; id: number; changes: Partial<ScenarioSpellOverride> }
+  | { kind: "clearSpellOverride"; label: string; id: number }
+  | { kind: "createRaceOverride"; label: string; id?: number; template?: Partial<ScenarioRaceOverride> }
+  | { kind: "updateRaceOverride"; label: string; id: number; changes: Partial<ScenarioRaceOverride> }
+  | { kind: "clearRaceOverride"; label: string; id: number }
+  | { kind: "createCasteOverride"; label: string; id?: number; template?: Partial<ScenarioCasteOverride> }
+  | { kind: "updateCasteOverride"; label: string; id: number; changes: Partial<ScenarioCasteOverride> }
+  | { kind: "clearCasteOverride"; label: string; id: number }
   | {
       kind: "renameEditorEntity";
       label: string;
@@ -609,6 +740,9 @@ export type Project = {
   simpleEncounters: SimpleEncounterRecord[];
   complexEncounters: ComplexEncounterRecord[];
   questLabels: QuestLabel[];
+  spellOverrides: ScenarioSpellOverride[];
+  raceOverrides: ScenarioRaceOverride[];
+  casteOverrides: ScenarioCasteOverride[];
   assets: ManagedAsset[];
   assetCatalog: { tilesets: TilesetAsset[]; pictures?: ResourceAsset[]; icons?: ResourceAsset[] };
   editorMetadata: EditorMetadata;

@@ -109,7 +109,7 @@ export const MARKDOWN_REFERENCES = {
   divinityParity: repoRef("Divinity Parity Map", "Feature crosswalk and next milestones.", "docs/divinity-parity-map.md"),
   scriptsV2: repoRef("Scripts V2 Authoring Guide", "Action Point, EDCD, target, and diagnostics workflow.", "docs/scripts-v2-authoring.md"),
   formatIntegration: repoRef("Scenario Format Integration", "Authored source, runtime cache, and resource policy.", "docs/scenario-format-integration.md"),
-  oracleHarness: repoRef("Oracle Harness", "Optional Realmz Classic round-trip smoke workflow.", "docs/oracle-harness.md")
+  oracleHarness: repoRef("Oracle Harness", "Optional Realmz Classic compatibility workflow.", "docs/oracle-harness.md")
 } as const;
 
 export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
@@ -171,15 +171,15 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     title: "Projects, Import, and Export",
     summary: "Understand the folder package model, immutable source snapshots, save behavior, and conservative Realmz export.",
     tags: ["project", "import", "export", "source snapshot", "folder package"],
-    badges: ["export-safe", "source-backed"],
+    badges: ["export-safe", "verified"],
     references: [DIVINITY_CHAPTERS.startup, MARKDOWN_REFERENCES.formatIntegration],
     relatedTopicIds: ["getting-started", "records-evidence", "linter-release"],
     sections: [
       {
         title: "Folder Packages",
         paragraphs: [
-          "A Providence project is a folder package with its own schema, source snapshot metadata, managed assets, semantic records, and editor-only names.",
-          "Imported source scenarios are evidence. Providence reads them, stores decoded structures, and keeps the original scenario folder out of the mutation path."
+          "A Providence project is a folder package with its own schema, imported scenario snapshot, managed assets, decoded records, and editor-only names.",
+          "Providence reads imported scenarios, stores editable structures, and keeps the original scenario folder out of the mutation path."
         ]
       },
       {
@@ -233,13 +233,13 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         points: [
           "Use real tile atlases when available to inspect the artwork Realmz will use.",
           "Use decoded-color mode when an atlas is missing or when raw values are easier to audit.",
-          "Standard positive land tiles use source-backed landlook mapstats for movement, solidity, shore/path, LOS, and related attributes.",
-          "Special Land Tiles are negative tile IDs backed by scenario cicn resources; Data Solids supplies their scenario-local solidity evidence."
+          "Standard positive land tiles use Realmz landlook data for movement, solidity, shore/path, LOS, and related attributes.",
+          "Special Land Tiles are negative tile IDs backed by scenario cicn resources; Data Solids supplies their scenario-local solidity rules."
         ],
         callout: {
           tone: "warning",
-          title: "Attribute tables are inspect-first",
-          body: "Providence can group and validate tiles from source-backed mapstats/Data Solids evidence, but land tile attribute table writing remains disabled until writer fixtures prove the remaining bytes."
+          title: "Attribute table editing is not ready yet",
+          body: "Providence can group and validate tiles from Realmz mapstats/Data Solids data, but land tile attribute table editing remains disabled until the remaining bytes are understood."
         }
       },
       {
@@ -261,7 +261,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     groupId: "authoring",
     label: "Scripts",
     title: "Action Points, Macros, CODE/ID, and EDCD",
-    summary: "Author Realmz-native scripts with guided step editing while preserving raw CODE, ID, and EDCD evidence.",
+    summary: "Author Realmz-native scripts with guided step editing while keeping raw CODE, ID, and EDCD available.",
     tags: ["scripts", "Action Point", "GOSUB", "macro", "CODE", "ID", "EDCD", "Divinity"],
     badges: ["Realmz-native", "diagnostic"],
     references: [
@@ -289,12 +289,12 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           },
           {
             title: "Macros",
-            body: "Reachable or user-authored script records that Realmz can call through known source-backed paths.",
+            body: "Reachable or user-authored script records that Realmz can call.",
             facts: ["callable"]
           },
           {
-            title: "ED3 Evidence",
-            body: "Preserved imported rows without a proven callable path. Promote or duplicate them before using as authored behavior.",
+            title: "Imported ED3 Rows",
+            body: "Imported rows that are not callable macros yet. Promote or duplicate them before using as authored behavior.",
             facts: ["inspect first"]
           }
         ]
@@ -364,7 +364,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     title: "Assets and Resource Forks",
     summary: "Import, preview, name, replace, and assign resource IDs for pictures, sounds, icons, text, and Special Land Tiles.",
     tags: ["assets", "resources", "PICT", "snd", "cicn", "special land", "pictures", "sounds"],
-    badges: ["resource-backed", "previewable"],
+    badges: ["resources", "previewable"],
     references: [
       DIVINITY_CHAPTERS.icons,
       DIVINITY_CHAPTERS.specialLand,
@@ -436,7 +436,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     groupId: "authoring",
     label: "Combat, Economy, Rules",
     title: "Combat, Economy, and Rules Coverage",
-    summary: "See which Divinity-style editors are authorable today, inspect-only today, or future work.",
+    summary: "See which Divinity-style editors are authorable today, read-only today, or future work.",
     tags: ["combat", "economy", "rules", "monster", "item", "spell", "race", "caste", "Divinity"],
     badges: ["coverage", "roadmap"],
     references: [
@@ -458,9 +458,9 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         ]
       },
       {
-        title: "Inspect-Only Means Intentional",
+        title: "Read-Only Means Intentional",
         paragraphs: [
-          "When a record family is inspect-only, Providence can explain the data but should not edit it until there is fixture-backed writer coverage.",
+          "When a record family is read-only, Providence can explain the data but should not edit it until export support is ready.",
           "That conservative boundary is what allows Providence to preserve imported scenarios while steadily expanding authoring power."
         ]
       }
@@ -469,27 +469,27 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
   {
     id: "records-evidence",
     groupId: "authoring",
-    label: "Records & Evidence",
-    title: "Records, Provenance, and Evidence",
-    summary: "Understand raw sources, decoded records, semantic entities, links, reverse links, evidence, and diagnostics.",
-    tags: ["records", "evidence", "provenance", "source", "runtime cache", "semantic"],
-    badges: ["source-backed", "audit"],
+    label: "Technical Records",
+    title: "Records and Technical Details",
+    summary: "Understand imported files, decoded records, links, reverse links, and diagnostics.",
+    tags: ["records", "technical details", "source", "runtime cache"],
+    badges: ["verified", "audit"],
     references: [MARKDOWN_REFERENCES.formatIntegration],
     relatedTopicIds: ["projects", "compatibility-terms", "troubleshooting"],
     sections: [
       {
-        title: "Archaeology Model",
+        title: "Technical Model",
         paragraphs: [
-          "The semantic schema keeps raw sources, decoded records, entities, links, reverse links, evidence, and diagnostics separate.",
-          "Unknown records stay inspectable and source-backed. Editing is blocked until the format has fixture-backed writer coverage."
+          "Providence keeps imported files, decoded records, editor items, links, reverse links, and diagnostics separate.",
+          "Unknown records stay readable. Editing is blocked until export support is ready."
         ]
       },
       {
         title: "Authored Source vs Runtime Cache",
         points: [
-          "Authored scenario files can become export targets when Providence has enough evidence and writer support.",
-          "Runtime caches are modeled as inspect-only evidence and are not promoted to authored export targets.",
-          "Byte ranges, confidence, and diagnostics should stay visible where they explain an editing boundary."
+          "Authored scenario files can become export targets when Providence has enough writer support.",
+          "Runtime caches are read-only and are not promoted to authored export targets.",
+          "Byte ranges, status, and diagnostics should stay visible where they explain an editing boundary."
         ]
       }
     ]
@@ -509,9 +509,9 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "What the Linter Explains",
         points: [
           "Missing resources and unresolved script targets.",
-          "Unsupported edits and inspect-only records.",
+          "Unsupported edits and read-only records.",
           "Malformed resource forks or missing fallbacks.",
-          "Generated caches, unresolved semantic links, and export blockers."
+          "Generated caches, unresolved links, and export blockers."
         ]
       },
       {
@@ -562,8 +562,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     groupId: "reference",
     label: "Compatibility Terms",
     title: "Compatibility Terms",
-    summary: "Learn the status language Providence uses for writable, preserved, inspect-only, dispatcher no-op, and manually verified behavior.",
-    tags: ["compatibility", "Realmz-writable", "preserved imported bytes", "inspect-only", "dispatcher", "no-op"],
+    summary: "Learn the status language Providence uses for writable, preserved, read-only, ignored, and manually verified behavior.",
+    tags: ["compatibility", "Realmz-writable", "preserved imported bytes", "read-only", "dispatcher", "no-op"],
     badges: ["glossary", "export policy"],
     references: [MARKDOWN_REFERENCES.scriptsV2, MARKDOWN_REFERENCES.formatIntegration],
     relatedTopicIds: ["scripts", "records-evidence", "linter-release"],
@@ -573,7 +573,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         cards: [
           { title: "Realmz-writable", body: "Providence has a typed writer for the record family.", facts: ["editable"] },
           { title: "Preserved imported bytes", body: "Some bytes are intentionally retained from the original scenario.", facts: ["preserved"] },
-          { title: "Inspect only", body: "Providence can explain the data but should not edit it directly.", facts: ["blocked"] },
+          { title: "Read-only", body: "Providence can explain the data but should not edit it directly.", facts: ["blocked"] },
           { title: "Dispatcher no-op", body: "Realmz reads a nonzero CODE value but has no dispatcher case and ignores it.", facts: ["informational"] },
           { title: "Needs manual verification", body: "The editor can preserve or export it, but behavior is not fully decoded yet.", facts: ["caution"] }
         ]
@@ -611,7 +611,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "When To Use Oracle Notes",
         paragraphs: [
           "The oracle harness documentation is for deeper local compatibility checks. It is useful when a project exports cleanly but you want Realmz Classic to load, start, or exercise the scenario in an isolated profile.",
-          "Most authors should start with Providence validation and export reports before reaching for oracle smoke commands."
+          "Most authors should start with Providence validation and export reports before reaching for deeper oracle checks."
         ],
         callout: {
           tone: "warning",

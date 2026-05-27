@@ -26,7 +26,7 @@ const DOMAIN_CONFIG: Record<EditorTab, { title: string; subtitle: string; editor
     editors: [
       { id: "action-points", label: "Action Points / GOSUBs", entityTypes: ["trigger", "action-slot"] },
       { id: "macros", label: "Macros", entityTypes: ["macro"], createType: "macro" },
-      { id: "ed3-evidence", label: "ED3 Evidence", entityTypes: ["ed3-action-record"] },
+      { id: "ed3-evidence", label: "Imported ED3 Rows", entityTypes: ["ed3-action-record"] },
       { id: "global-macros", label: "Global Macros", entityTypes: ["global-macro"], createType: "global-macro" },
       { id: "quests", label: "Quests", entityTypes: ["quest flag"], createType: "quest flag" }
     ]
@@ -293,8 +293,8 @@ export function SuiteDomainPanel({
 }
 
 function editorSubtitle(editor: DomainEditor) {
-  if (editor.createType) return `Create, inspect, and validate ${editor.label.toLowerCase()} entries. Export remains blocked until writer support is fixture-backed.`;
-  return `Inspect source-backed ${editor.label.toLowerCase()} records, resources, links, and diagnostics.`;
+  if (editor.createType) return `Create, inspect, and validate ${editor.label.toLowerCase()} entries. Export is available when that record family is supported.`;
+  return `Inspect ${editor.label.toLowerCase()} records, resources, links, and diagnostics.`;
 }
 
 function matchingEntities(editor: DomainEditor, projectEntities: SemanticEntity[], libraryEntities: LibraryEntity[]) {
@@ -618,8 +618,8 @@ function DomainDetailPanel({
             <code>{recordRef ?? "none"}</code>
           </div>
           <div>
-            <span>Confidence</span>
-            <code>{detail.confidence}</code>
+            <span>Status</span>
+            <code>{userFacingConfidence(detail.confidence)}</code>
           </div>
         </section>
       </ScrollArea>
@@ -644,6 +644,14 @@ function DomainAssetPreview({ asset, preview }: { asset: LibraryAsset; preview: 
       </div>
     </section>
   );
+}
+
+function userFacingConfidence(confidence: string | null | undefined) {
+  if (confidence === "source-backed" || confidence === "fixture-backed") return "Verified";
+  if (confidence === "inferred") return "Likely";
+  if (confidence === "preserved") return "Imported";
+  if (confidence === "unknown") return "Unknown";
+  return confidence ?? "Unknown";
 }
 
 function useLibraryAssetPreview(asset: LibraryAsset | null) {

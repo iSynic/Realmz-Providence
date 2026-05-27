@@ -109,13 +109,13 @@ function semanticLintGroups(project: Project | null) {
   const blocked = blockedSemanticObjects(project);
   return [
     {
-      title: "Semantic Resource Coverage",
+      title: "Resource Coverage",
       rows: [
         ...gaps.slice(0, 12).map((gap): LintInsight => ({
           id: `gap:${gap.entity.id}`,
           severity: "warning",
           message: `${gap.entity.label} is ${gap.reason}.`,
-          detail: `${gap.consumers.length.toLocaleString()} incoming semantic reference(s).`,
+          detail: `${gap.consumers.length.toLocaleString()} incoming reference(s).`,
           target: gap.entity.id
         })),
         ...fallbacks.slice(0, 8).map((entity): LintInsight => ({
@@ -145,13 +145,13 @@ function semanticLintGroups(project: Project | null) {
         {
           id: "blocked-objects",
           severity: "warning" as const,
-          message: `${blocked.entities.length + blocked.records.length} semantic object(s) are blocked from editing.`,
-          detail: "Blocked entities are visible for inspection but cannot be written by this exporter."
+          message: `${blocked.entities.length + blocked.records.length} item(s) are not editable yet.`,
+          detail: "These items are visible for review but cannot be written by this exporter."
         }
       ].filter((row) => !row.message.startsWith("0 ") || row.id === "runtime-caches")
     },
     {
-      title: "Semantic Link Integrity",
+      title: "Link Integrity",
       rows: unresolved.slice(0, 16).map((link): LintInsight => ({
         id: `unresolved:${link.id}`,
         severity: "warning",

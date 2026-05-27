@@ -55,7 +55,7 @@ function validateAction(project: Project, trigger: TriggerRecord, slot: number, 
   const code = normalizeStepOpcode(rawCode);
   const option = actionOptionFor(rawCode);
   if (option.category === "Unknown") {
-    diagnostics.push(slotIssue("warning", trigger.id, slot, "unknown-opcode", "Unsupported opcode is preserved but not safely understood.", `CODE ${rawCode} will stay visible as raw Realmz data until Providence documents it.`));
+      diagnostics.push(slotIssue("warning", trigger.id, slot, "unknown-opcode", "Providence does not fully support this opcode yet.", `CODE ${rawCode} will stay visible as raw Realmz data until this action is editable.`));
   } else if (isDispatcherNoopOpcode(rawCode)) {
     diagnostics.push(slotIssue("info", trigger.id, slot, "dispatcher-noop", "Realmz ignores this CODE value.", `CODE ${rawCode} has no newland.c dispatcher case, so it is preserved as no-op data.`));
   }
@@ -89,7 +89,7 @@ function validateAction(project: Project, trigger: TriggerRecord, slot: number, 
     const targets = targetOptionsForOpcode(project, code, catalog);
     const selected = targets.find((target) => target.value === id);
     if (!selected) {
-      diagnostics.push(slotIssue("warning", trigger.id, slot, "unresolved-target", `${config.label} does not resolve to a known target.`, `ID ${id} is still preserved as raw data, but Providence cannot prove the referenced ${config.label.toLowerCase()} exists.`));
+      diagnostics.push(slotIssue("warning", trigger.id, slot, "unresolved-target", `${config.label} does not resolve to a known target.`, `ID ${id} is kept as-is, but Providence cannot find the referenced ${config.label.toLowerCase()}.`));
     }
   }
   diagnostics.push(...validateTargetRecord(project, trigger.id, slot, code, id));
@@ -99,7 +99,7 @@ function validateAction(project: Project, trigger: TriggerRecord, slot: number, 
     if (!macro) {
       diagnostics.push(slotIssue("error", trigger.id, slot, "dangling-macro", "Macro/GOSUB target is missing.", `No Data ED3 macro with record index ${id} exists.`));
     } else if (!isCallableMacro(project, macro)) {
-      diagnostics.push(slotIssue("warning", trigger.id, slot, "ed3-evidence-target", "Macro target is preserved ED3 evidence, not a proven callable macro.", `Data ED3 record ${id} is inspect-only until it is duplicated/promoted into authored macro data or proven reachable.`));
+      diagnostics.push(slotIssue("warning", trigger.id, slot, "ed3-evidence-target", "Macro target is an imported ED3 row, not a callable macro.", `Data ED3 record ${id} is read-only until it is duplicated into an authored macro.`));
     }
   }
 

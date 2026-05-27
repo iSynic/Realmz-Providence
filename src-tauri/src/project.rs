@@ -35,6 +35,12 @@ pub struct ProvidenceProject {
     #[serde(default)]
     pub quest_labels: Vec<QuestLabel>,
     #[serde(default)]
+    pub spell_overrides: Vec<ScenarioSpellOverride>,
+    #[serde(default)]
+    pub race_overrides: Vec<ScenarioRaceOverride>,
+    #[serde(default)]
+    pub caste_overrides: Vec<ScenarioCasteOverride>,
+    #[serde(default)]
     pub assets: Vec<ManagedAsset>,
     pub asset_catalog: AssetCatalog,
     #[serde(default)]
@@ -59,6 +65,8 @@ pub struct ScenarioMeta {
     pub contact_info: Option<ScenarioContactInfo>,
     #[serde(default)]
     pub restrictions: Option<ScenarioRestrictions>,
+    #[serde(default)]
+    pub global_macro_hooks: Option<ScenarioGlobalMacroHooks>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -114,6 +122,28 @@ pub struct ScenarioRestrictions {
     pub banned_races: Vec<u8>,
     #[serde(default)]
     pub banned_castes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    #[serde(default)]
+    pub provenance: Option<Provenance>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GlobalMacroHook {
+    pub slot: usize,
+    pub label: String,
+    pub door: i16,
+    pub source_backed: bool,
+    pub runtime_consumer: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScenarioGlobalMacroHooks {
+    pub slots: Vec<GlobalMacroHook>,
+    #[serde(default)]
+    pub raw_bytes: Vec<u8>,
     #[serde(default)]
     pub authored: bool,
     #[serde(default)]
@@ -747,6 +777,127 @@ pub struct QuestLabel {
     pub label: String,
     #[serde(default)]
     pub note: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScenarioSpellOverride {
+    pub id: usize,
+    pub range1: u8,
+    pub range2: u8,
+    pub queue_icon: u8,
+    pub to_hit_bonus: i8,
+    pub save_bonus: i8,
+    pub fixed_target_num: u8,
+    pub can_rotate: u8,
+    pub save_adjust: i8,
+    pub cannot: u8,
+    pub resist_adjust: i8,
+    pub cost: u8,
+    pub damage1: u8,
+    pub damage2: u8,
+    pub power_damage1: u8,
+    pub power_damage2: u8,
+    pub duration1: u8,
+    pub duration2: u8,
+    pub power_duration1: u8,
+    pub power_duration2: u8,
+    pub spell_look1: u8,
+    pub spell_look2: u8,
+    pub sound1: u8,
+    pub sound2: u8,
+    pub target_type: u8,
+    pub size: u8,
+    pub special: u8,
+    pub damage_type: u8,
+    pub spell_class: u8,
+    pub in_combat: bool,
+    pub in_camp: bool,
+    #[serde(default)]
+    pub display_name: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScenarioRaceOverride {
+    pub id: usize,
+    #[serde(default)]
+    pub display_name: String,
+    pub plus_minus_to_hit: Vec<i16>,
+    pub special_ability: Vec<i16>,
+    pub drv_bonus: Vec<i16>,
+    pub att_bonus: Vec<i16>,
+    pub min_max: Vec<i16>,
+    pub conditions: Vec<i16>,
+    pub max_age: i16,
+    pub does_not_die: i16,
+    pub base_move: i16,
+    pub mag_res: i16,
+    pub two_hand: i16,
+    pub missile: i16,
+    pub num_of_attacks: Vec<i16>,
+    pub can_caste: Vec<u8>,
+    pub age_range: Vec<Vec<i16>>,
+    pub age_change: Vec<Vec<i8>>,
+    pub can_regenerate: u8,
+    pub default_icon_set: i16,
+    pub item_types: Vec<i32>,
+    pub descriptors: i16,
+    #[serde(default)]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScenarioCasteOverride {
+    pub id: usize,
+    #[serde(default)]
+    pub display_name: String,
+    pub special_ability: Vec<Vec<i16>>,
+    pub drv_bonus: Vec<i16>,
+    pub att_bonus: Vec<i16>,
+    pub spellcasters: Vec<Vec<i16>>,
+    pub min_max: Vec<i16>,
+    pub conditions: Vec<i16>,
+    pub can_use_missile: i16,
+    pub gets_missile_bonus: i16,
+    pub stamina: Vec<i16>,
+    pub strength: Vec<i16>,
+    pub dodge: Vec<i16>,
+    pub to_hit: Vec<i16>,
+    pub missile: Vec<i16>,
+    pub hand2_hand: Vec<i16>,
+    pub caste_class: i16,
+    pub minimum_age_group: i16,
+    pub move_bonus: i16,
+    pub mag_res: i16,
+    pub two_hand: i16,
+    pub max_stamina_bonus: i16,
+    pub bonus_attacks: i16,
+    pub max_attacks: i16,
+    pub victory: Vec<i16>,
+    pub start_money: i16,
+    pub start_items: Vec<i16>,
+    pub attacks: Vec<u8>,
+    pub item_types: Vec<i32>,
+    pub default_icon: i16,
+    pub max_spells_attacks: i16,
+    pub spells_so_far: i16,
+    #[serde(default)]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    pub provenance: Provenance,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

@@ -225,6 +225,7 @@ async function buildLibraryCatalogFromFiles(
       diagnosticCount: diagnostics.length
     }
   };
+  decorateRuleCatalog(catalog);
   return catalog;
 }
 
@@ -253,6 +254,7 @@ function mergeCatalogs(catalogs: LibraryCatalog[]): LibraryCatalog {
     assetCount: catalog.assets.length,
     diagnosticCount: catalog.diagnostics.length
   };
+  decorateRuleCatalog(catalog);
   return catalog;
 }
 
@@ -687,11 +689,18 @@ function recordSummary(type: string, index: number, recordBytes: number, record:
   const summary: Record<string, unknown> = {
     index,
     recordBytes,
+    rawBytes: Array.from(record),
     preview: hexPreview(record, 20),
-    note: "Library record slot is inventoried; unsupported fields remain preserved in the source catalog."
+    note: "Built-in Realmz catalog record."
   };
   if (type === "item" && record.byteLength >= 80) {
     Object.assign(summary, itemRecordSummary(index, record));
+  } else if (type === "spell" && record.byteLength >= 30) {
+    Object.assign(summary, spellRecordSummary(index, record));
+  } else if (type === "race" && record.byteLength >= 408) {
+    Object.assign(summary, raceRecordSummary(index, record));
+  } else if (type === "caste" && record.byteLength >= 576) {
+    Object.assign(summary, casteRecordSummary(index, record));
   }
   return summary;
 }
@@ -701,7 +710,165 @@ function recordLabel(type: string, index: number, summary: Record<string, unknow
     const category = typeof summary.category === "string" ? summary.category : "Item";
     return `${category} ${summary.itemId}`;
   }
+  if (typeof summary.displayName === "string" && summary.displayName) return summary.displayName;
+  if (typeof summary.packedSpellId === "number") return `Spell ${summary.packedSpellId}`;
+  if (type === "race") return `Race ${index + 1}`;
+  if (type === "caste") return `Caste ${index + 1}`;
   return `${title(type)} ${index}`;
+}
+
+function decorateRuleCatalog(catalog: LibraryCatalog) {
+  const stringsById = new Map<number, string[]>();
+  for (const entity of catalog.entities) {
+    if (entity.type !== "string-list-resource") continue;
+    const resourceId = typeof entity.summary.resourceId === "number" ? entity.summary.resourceId : null;
+    const strings = Array.isArray(entity.summary.strings) ? entity.summary.strings.filter((value): value is string => typeof value === "string") : [];
+    if (resourceId !== null && strings.length > 0) stringsById.set(resourceId, strings);
+  }
+  const decorate = (entry: { type?: string; label: string; summary: Record<string, unknown> }) => {
+    if (entry.type === "spell") {
+      const resourceId = typeof entry.summary.spellNameResourceId === "number" ? entry.summary.spellNameResourceId : null;
+      const slot = typeof entry.summary.spellSlot === "number" ? entry.summary.spellSlot : null;
+      const name = resourceId !== null && slot !== null ? stringsById.get(resourceId)?.[slot] : null;
+      if (name) {
+        entry.summary.displayName = name;
+        entry.label = `${entry.summary.packedSpellId ?? "Spell"} ${name}`;
+      }
+    } else if (entry.type === "race") {
+      const number = typeof entry.summary.raceNumber === "number" ? entry.summary.raceNumber : null;
+      const name = number !== null ? stringsById.get(129)?.[number - 1] : null;
+      if (name) {
+        entry.summary.displayName = name;
+        entry.label = name;
+      }
+    } else if (entry.type === "caste") {
+      const number = typeof entry.summary.casteNumber === "number" ? entry.summary.casteNumber : null;
+      const name = number !== null ? stringsById.get(131)?.[number - 1] : null;
+      if (name) {
+        entry.summary.displayName = name;
+        entry.label = name;
+      }
+    }
+  };
+  catalog.records.forEach(decorate);
+  catalog.entities.forEach(decorate);
+}
+
+function spellRecordSummary(index: number, record: Uint8Array) {
+  const spellcasterClass = Math.floor(index / 105);
+  const withinClass = index % 105;
+  const levelIndex = Math.floor(withinClass / 15);
+  const spellSlot = withinClass % 15;
+  const packedSpellId = (spellcasterClass + 1) * 1000 + (levelIndex + 1) * 100 + spellSlot + 1;
+  return {
+    packedSpellId,
+    spellcasterClass,
+    spellLevel: levelIndex + 1,
+    spellSlot,
+    visibleSpellSlot: spellSlot < 12,
+    spellNameResourceId: (spellcasterClass + 1) * 1000 + levelIndex,
+    range1: record[0],
+    range2: record[1],
+    queueIcon: record[2],
+    toHitBonus: signedByte(record[3]),
+    saveBonus: signedByte(record[4]),
+    fixedTargetNum: record[5],
+    canRotate: record[6],
+    saveAdjust: signedByte(record[7]),
+    cannot: record[8],
+    resistAdjust: signedByte(record[9]),
+    cost: record[10],
+    damage1: record[11],
+    damage2: record[12],
+    powerDamage1: record[13],
+    powerDamage2: record[14],
+    duration1: record[15],
+    duration2: record[16],
+    powerDuration1: record[17],
+    powerDuration2: record[18],
+    spellLook1: record[19],
+    spellLook2: record[20],
+    sound1: record[21],
+    sound2: record[22],
+    targetType: record[23],
+    size: record[24],
+    special: record[25],
+    damageType: record[26],
+    spellClass: record[27],
+    inCombat: record[28] !== 0,
+    inCamp: record[29] !== 0
+  };
+}
+
+function raceRecordSummary(index: number, record: Uint8Array) {
+  return {
+    raceNumber: index + 1,
+    plusMinusToHit: readI16s(record, 0, 8),
+    specialAbility: readI16s(record, 16, 14),
+    drvBonus: readI16s(record, 44, 8),
+    attBonus: readI16s(record, 60, 6),
+    minMax: readI16s(record, 72, 12),
+    conditions: readI16s(record, 112, 40),
+    maxAge: i16At(record, 192),
+    doesNotDie: i16At(record, 194),
+    baseMove: i16At(record, 196),
+    magRes: i16At(record, 198),
+    twoHand: i16At(record, 200),
+    missile: i16At(record, 202),
+    numOfAttacks: readI16s(record, 204, 2),
+    canCaste: Array.from(record.slice(208, 238)),
+    ageRange: Array.from({ length: 5 }, (_, band) => readI16s(record, 238 + band * 4, 2)),
+    ageChange: Array.from({ length: 5 }, (_, band) => Array.from(record.slice(258 + band * 15, 258 + (band + 1) * 15)).map(signedByte)),
+    canRegenerate: record[333],
+    defaultIconSet: i16At(record, 334),
+    itemTypes: [i32At(record, 336), i32At(record, 340)],
+    descriptors: i16At(record, 344)
+  };
+}
+
+function casteRecordSummary(index: number, record: Uint8Array) {
+  return {
+    casteNumber: index + 1,
+    specialAbility: [readI16s(record, 0, 14), readI16s(record, 28, 14)],
+    drvBonus: readI16s(record, 56, 8),
+    attBonus: readI16s(record, 72, 6),
+    spellcasters: Array.from({ length: 4 }, (_, row) => readI16s(record, 84 + row * 6, 3)),
+    minMax: readI16s(record, 108, 12),
+    conditions: readI16s(record, 132, 40),
+    canUseMissile: i16At(record, 212),
+    getsMissileBonus: i16At(record, 214),
+    stamina: readI16s(record, 216, 2),
+    strength: readI16s(record, 220, 2),
+    dodge: readI16s(record, 224, 2),
+    toHit: readI16s(record, 228, 2),
+    missile: readI16s(record, 232, 2),
+    hand2Hand: readI16s(record, 236, 2),
+    casteClass: i16At(record, 248),
+    minimumAgeGroup: i16At(record, 250),
+    moveBonus: i16At(record, 252),
+    magRes: i16At(record, 254),
+    twoHand: i16At(record, 256),
+    maxStaminaBonus: i16At(record, 258),
+    bonusAttacks: i16At(record, 260),
+    maxAttacks: i16At(record, 262),
+    victory: readI16s(record, 264, 30),
+    startMoney: i16At(record, 384),
+    startItems: readI16s(record, 386, 20),
+    attacks: Array.from(record.slice(426, 436)),
+    itemTypes: [i32At(record, 436), i32At(record, 440)],
+    defaultIcon: i16At(record, 444),
+    maxSpellsAttacks: i16At(record, 446),
+    spellsSoFar: i16At(record, 448)
+  };
+}
+
+function readI16s(record: Uint8Array, offset: number, count: number) {
+  return Array.from({ length: count }, (_, index) => i16At(record, offset + index * 2));
+}
+
+function signedByte(value: number | undefined) {
+  const byte = value ?? 0;
+  return byte > 127 ? byte - 256 : byte;
 }
 
 function itemRecordSummary(index: number, record: Uint8Array) {

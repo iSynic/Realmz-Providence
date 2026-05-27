@@ -11,6 +11,9 @@ import {
   MapRecord,
   MessageRecord,
   RandomLevel,
+  ScenarioCasteOverride,
+  ScenarioRaceOverride,
+  ScenarioSpellOverride,
   ShopRecord,
   SimpleEncounterRecord,
   TileAttributeProfile,
@@ -31,6 +34,10 @@ export const DOOR_LEVEL_BYTES = DOOR_BYTES * DOORS_PER_LEVEL;
 export const RANDLEVEL_BYTES = 644;
 export const EXTRACODE_BYTES = 10;
 export const MAP_RECORD_BYTES = 340;
+export const SPELL_BYTES = 30;
+export const SPELL_OVERRIDE_RECORDS = 105;
+export const RACE_BYTES = 408;
+export const CASTE_BYTES = 576;
 
 export const TRACKED_FILES = [
   "Scenario",
@@ -59,7 +66,10 @@ export const TRACKED_FILES = [
   "Data Solids",
   "Data Custom 1 BD",
   "Data Custom 2 BD",
-  "Data Custom 3 BD"
+  "Data Custom 3 BD",
+  "Data Spell",
+  "Data Race",
+  "Data Caste"
 ] as const;
 
 const RECORD_BYTES: Record<string, number> = {
@@ -85,7 +95,10 @@ const RECORD_BYTES: Record<string, number> = {
   "Data RI": 320,
   "Global": 60,
   "Data MENU": 502,
-  "Data Solids": 1024
+  "Data Solids": 1024,
+  "Data Spell": SPELL_BYTES,
+  "Data Race": RACE_BYTES,
+  "Data Caste": CASTE_BYTES
 };
 
 export type ParsedBrowserScenario = {
@@ -101,6 +114,9 @@ export type ParsedBrowserScenario = {
   shops: ShopRecord[];
   simpleEncounters: SimpleEncounterRecord[];
   complexEncounters: ComplexEncounterRecord[];
+  spellOverrides: ScenarioSpellOverride[];
+  raceOverrides: ScenarioRaceOverride[];
+  casteOverrides: ScenarioCasteOverride[];
   assetCatalog: { tilesets: TilesetAsset[] };
   records: { counts: Record<string, number>; alignments: Alignment[] };
   diagnostics: Diagnostic[];
@@ -152,8 +168,11 @@ export function parseScenarioBuffers(buffers: Map<string, Uint8Array>): ParsedBr
   const shops = parseShops(buffers.get("Data SD"));
   const simpleEncounters = parseSimpleEncounters(buffers.get("Data ED"));
   const complexEncounters = parseComplexEncounters(buffers.get("Data ED2"));
+  const spellOverrides = parseSpellOverrides(buffers.get("Data Spell"));
+  const raceOverrides = parseRaceOverrides(buffers.get("Data Race"));
+  const casteOverrides = parseCasteOverrides(buffers.get("Data Caste"));
   const assetCatalog = { tilesets: buildAssetCatalog(maps, randomLevels, buffers, diagnostics) };
-  return { maps, mapRecords, tileAttributes, triggers, randomLevels, extracodes, messages, battles, treasures, shops, simpleEncounters, complexEncounters, assetCatalog, records, diagnostics };
+  return { maps, mapRecords, tileAttributes, triggers, randomLevels, extracodes, messages, battles, treasures, shops, simpleEncounters, complexEncounters, spellOverrides, raceOverrides, casteOverrides, assetCatalog, records, diagnostics };
 }
 
 function parseTileAttributes(buffer: Uint8Array | undefined): TileAttributeProfile[] {
@@ -493,6 +512,135 @@ function parseComplexEncounters(buffer: Uint8Array | undefined): ComplexEncounte
   }));
 }
 
+function parseSpellOverrides(buffer: Uint8Array | undefined): ScenarioSpellOverride[] {
+  if (!buffer) return [];
+  const count = Math.min(Math.floor(buffer.byteLength / SPELL_BYTES), SPELL_OVERRIDE_RECORDS);
+  return Array.from({ length: count }, (_, id) => {
+    const start = id * SPELL_BYTES;
+    const record = buffer.slice(start, start + SPELL_BYTES);
+    return {
+      id,
+      range1: record[0],
+      range2: record[1],
+      queueIcon: record[2],
+      toHitBonus: signedByte(record[3]),
+      saveBonus: signedByte(record[4]),
+      fixedTargetNum: record[5],
+      canRotate: record[6],
+      saveAdjust: signedByte(record[7]),
+      cannot: record[8],
+      resistAdjust: signedByte(record[9]),
+      cost: record[10],
+      damage1: record[11],
+      damage2: record[12],
+      powerDamage1: record[13],
+      powerDamage2: record[14],
+      duration1: record[15],
+      duration2: record[16],
+      powerDuration1: record[17],
+      powerDuration2: record[18],
+      spellLook1: record[19],
+      spellLook2: record[20],
+      sound1: record[21],
+      sound2: record[22],
+      targetType: record[23],
+      size: record[24],
+      special: record[25],
+      damageType: record[26],
+      spellClass: record[27],
+      inCombat: record[28] !== 0,
+      inCamp: record[29] !== 0,
+      displayName: `Custom Spell ${id}`,
+      description: "",
+      rawBytes: Array.from(record),
+      authored: false,
+      provenance: provenance("Data Spell", id, start, SPELL_BYTES, "source-backed")
+    };
+  });
+}
+
+function parseRaceOverrides(buffer: Uint8Array | undefined): ScenarioRaceOverride[] {
+  if (!buffer) return [];
+  const count = Math.floor(buffer.byteLength / RACE_BYTES);
+  return Array.from({ length: count }, (_, id) => {
+    const start = id * RACE_BYTES;
+    const record = buffer.slice(start, start + RACE_BYTES);
+    return {
+      id,
+      displayName: `Race ${id + 1}`,
+      plusMinusToHit: readI16s(record, 0, 8),
+      specialAbility: readI16s(record, 16, 14),
+      drvBonus: readI16s(record, 44, 8),
+      attBonus: readI16s(record, 60, 6),
+      minMax: readI16s(record, 72, 12),
+      conditions: readI16s(record, 112, 40),
+      maxAge: i16(record, 192),
+      doesNotDie: i16(record, 194),
+      baseMove: i16(record, 196),
+      magRes: i16(record, 198),
+      twoHand: i16(record, 200),
+      missile: i16(record, 202),
+      numOfAttacks: readI16s(record, 204, 2),
+      canCaste: Array.from(record.slice(208, 238)),
+      ageRange: Array.from({ length: 5 }, (_, band) => readI16s(record, 238 + band * 4, 2)),
+      ageChange: Array.from({ length: 5 }, (_, band) => Array.from(record.slice(258 + band * 15, 258 + (band + 1) * 15)).map(signedByte)),
+      canRegenerate: record[333],
+      defaultIconSet: i16(record, 334),
+      itemTypes: [i32(record, 336), i32(record, 340)],
+      descriptors: i16(record, 344),
+      rawBytes: Array.from(record),
+      authored: false,
+      provenance: provenance("Data Race", id, start, RACE_BYTES, "source-backed")
+    };
+  });
+}
+
+function parseCasteOverrides(buffer: Uint8Array | undefined): ScenarioCasteOverride[] {
+  if (!buffer) return [];
+  const count = Math.floor(buffer.byteLength / CASTE_BYTES);
+  return Array.from({ length: count }, (_, id) => {
+    const start = id * CASTE_BYTES;
+    const record = buffer.slice(start, start + CASTE_BYTES);
+    return {
+      id,
+      displayName: `Caste ${id + 1}`,
+      specialAbility: [readI16s(record, 0, 14), readI16s(record, 28, 14)],
+      drvBonus: readI16s(record, 56, 8),
+      attBonus: readI16s(record, 72, 6),
+      spellcasters: Array.from({ length: 4 }, (_, row) => readI16s(record, 84 + row * 6, 3)),
+      minMax: readI16s(record, 108, 12),
+      conditions: readI16s(record, 132, 40),
+      canUseMissile: i16(record, 212),
+      getsMissileBonus: i16(record, 214),
+      stamina: readI16s(record, 216, 2),
+      strength: readI16s(record, 220, 2),
+      dodge: readI16s(record, 224, 2),
+      toHit: readI16s(record, 228, 2),
+      missile: readI16s(record, 232, 2),
+      hand2Hand: readI16s(record, 236, 2),
+      casteClass: i16(record, 248),
+      minimumAgeGroup: i16(record, 250),
+      moveBonus: i16(record, 252),
+      magRes: i16(record, 254),
+      twoHand: i16(record, 256),
+      maxStaminaBonus: i16(record, 258),
+      bonusAttacks: i16(record, 260),
+      maxAttacks: i16(record, 262),
+      victory: readI16s(record, 264, 30),
+      startMoney: i16(record, 384),
+      startItems: readI16s(record, 386, 20),
+      attacks: Array.from(record.slice(426, 436)),
+      itemTypes: [i32(record, 436), i32(record, 440)],
+      defaultIcon: i16(record, 444),
+      maxSpellsAttacks: i16(record, 446),
+      spellsSoFar: i16(record, 448),
+      rawBytes: Array.from(record),
+      authored: false,
+      provenance: provenance("Data Caste", id, start, CASTE_BYTES, "source-backed")
+    };
+  });
+}
+
 function fixedRecords<T>(
   buffer: Uint8Array | undefined,
   recordBytes: number,
@@ -718,6 +866,10 @@ function i32(buffer: Uint8Array, offset: number) {
     (buffer[offset + 2] << 8) |
     buffer[offset + 3]
   );
+}
+
+function readI16s(buffer: Uint8Array, offset: number, count: number) {
+  return Array.from({ length: count }, (_, index) => i16(buffer, offset + index * 2));
 }
 
 function signedByte(value: number) {

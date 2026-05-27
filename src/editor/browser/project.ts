@@ -18,7 +18,8 @@ export function createBrowserProject(projectName: string): Project {
       importedAt: new Date().toISOString(),
       shell: defaultScenarioShell(safeName),
       contactInfo: defaultScenarioContactInfo(safeName),
-      restrictions: null
+      restrictions: null,
+      globalMacroHooks: null
     },
     source: {
       sourcePath: "",
@@ -39,6 +40,9 @@ export function createBrowserProject(projectName: string): Project {
     simpleEncounters: [],
     complexEncounters: [],
     questLabels: [],
+    spellOverrides: [],
+    raceOverrides: [],
+    casteOverrides: [],
     assets: [],
     assetCatalog: { tilesets: [] },
     editorMetadata: { displayNames: {} },
@@ -66,7 +70,8 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
       importedAt: new Date().toISOString(),
       shell: defaultScenarioShell(scenarioName),
       contactInfo: parseScenarioContactInfo(files.get("Data CI")) ?? defaultScenarioContactInfo(scenarioName),
-      restrictions: parseScenarioRestrictions(files.get("Data RI"))
+      restrictions: parseScenarioRestrictions(files.get("Data RI")),
+      globalMacroHooks: parseGlobalMacroHooks(files.get("Global"))
     },
     source: {
       sourcePath: `browser://${scenarioName}`,
@@ -87,6 +92,9 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
     simpleEncounters: parsed.simpleEncounters,
     complexEncounters: parsed.complexEncounters,
     questLabels: [],
+    spellOverrides: parsed.spellOverrides,
+    raceOverrides: parsed.raceOverrides,
+    casteOverrides: parsed.casteOverrides,
     assets: [],
     assetCatalog: parsed.assetCatalog,
     editorMetadata: { displayNames: {} },
@@ -176,6 +184,30 @@ function parseScenarioRestrictions(buffer?: Uint8Array): Project["scenario"]["re
   };
 }
 
+function parseGlobalMacroHooks(buffer?: Uint8Array): Project["scenario"]["globalMacroHooks"] {
+  if (!buffer) return null;
+  const defaults = [
+    ["Start", "mainscreeninit/new-game start", true],
+    ["Death", "partyloss death/revive path", true],
+    ["Quit", "end current game", true],
+    ["Reserved", "reserved", false],
+    ["Shop", "shop button when a shop is available", true],
+    ["Temple", "shop/temple button when a temple is available", true],
+    ["Reserved", "reserved", false]
+  ] as const;
+  return {
+    slots: defaults.map(([label, runtimeConsumer, sourceBacked], slot) => ({
+      slot,
+      label,
+      door: buffer.byteLength >= slot * 2 + 2 ? i16At(buffer, slot * 2) : 0,
+      sourceBacked,
+      runtimeConsumer
+    })),
+    rawBytes: Array.from(buffer),
+    authored: false
+  };
+}
+
 function pascalSlot(buffer: Uint8Array, slot: number) {
   return pascalString(buffer.slice(slot * 256, slot * 256 + 256));
 }
@@ -200,6 +232,7 @@ export async function openBrowserProject(source: BrowserScenarioSource): Promise
   project.scenario.shell ??= defaultScenarioShell(project.scenario.name);
   project.scenario.contactInfo ??= defaultScenarioContactInfo(project.scenario.name);
   project.scenario.restrictions ??= null;
+  project.scenario.globalMacroHooks ??= null;
   project.mapRecords ??= [];
   project.tileAttributes ??= [];
   project.messages ??= [];
@@ -209,6 +242,9 @@ export async function openBrowserProject(source: BrowserScenarioSource): Promise
   project.simpleEncounters ??= [];
   project.complexEncounters ??= [];
   project.questLabels ??= [];
+  project.spellOverrides ??= [];
+  project.raceOverrides ??= [];
+  project.casteOverrides ??= [];
   project.editorMetadata ??= { displayNames: {} };
   project.semanticSchema.decoding ??= { ed3Reachability: [], dispatcherNoops: [], confidenceDebt: [] };
   backfillTilesetMetadata(project);
@@ -369,7 +405,7 @@ export function validateBrowserProject(project: Project): ValidationReport {
   }
   const caches = generatedRuntimeCaches(project);
   if (caches.length > 0) {
-    warnings.push(`${caches.length.toLocaleString()} generated runtime cache model(s) are inspect-only and will not be authored on export.`);
+    warnings.push(`${caches.length.toLocaleString()} generated runtime cache model(s) are read-only and will not be authored on export.`);
   }
   const blocked = blockedSemanticObjects(project);
   for (const entity of blocked.entities) {

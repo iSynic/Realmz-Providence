@@ -12,6 +12,9 @@ import {
   RandomLevel,
   RandomRect,
   RealmzTargetRecordKind,
+  ScenarioCasteOverride,
+  ScenarioRaceOverride,
+  ScenarioSpellOverride,
   ShopRecord,
   SimpleEncounterRecord,
   TreasureRecord,
@@ -65,6 +68,16 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "updateScenarioShell") return updateScenarioShell(project, command.changes);
   if (command.kind === "updateScenarioContactInfo") return updateScenarioContactInfo(project, command.changes);
   if (command.kind === "updateScenarioRestrictions") return updateScenarioRestrictions(project, command.changes);
+  if (command.kind === "updateGlobalMacroHook") return updateGlobalMacroHook(project, command.slot, command.door);
+  if (command.kind === "createSpellOverride") return createSpellOverride(project, command.id, command.template);
+  if (command.kind === "updateSpellOverride") return updateRuleOverride(project, "spellOverrides", command.id, command.changes);
+  if (command.kind === "clearSpellOverride") return clearRuleOverride(project, "spellOverrides", command.id);
+  if (command.kind === "createRaceOverride") return createRaceOverride(project, command.id, command.template);
+  if (command.kind === "updateRaceOverride") return updateRuleOverride(project, "raceOverrides", command.id, command.changes);
+  if (command.kind === "clearRaceOverride") return clearRuleOverride(project, "raceOverrides", command.id);
+  if (command.kind === "createCasteOverride") return createCasteOverride(project, command.id, command.template);
+  if (command.kind === "updateCasteOverride") return updateRuleOverride(project, "casteOverrides", command.id, command.changes);
+  if (command.kind === "clearCasteOverride") return clearRuleOverride(project, "casteOverrides", command.id);
   if (command.kind === "updateScenarioStartup") return updateScenarioStartup(project, command.fields);
   if (command.kind === "attachProjectAsset") return { ...project, assets: [...(project.assets ?? []), command.asset] };
   if (command.kind === "replaceProjectAsset") return {
@@ -634,6 +647,89 @@ function updateScenarioRestrictions(project: Project, changes: Extract<ProjectCo
   return { ...project, scenario: { ...project.scenario, restrictions } };
 }
 
+function updateGlobalMacroHook(project: Project, slot: number, door: number) {
+  const hooks = project.scenario.globalMacroHooks ?? defaultGlobalMacroHooks();
+  const slots = defaultGlobalMacroHooks().slots.map((defaultSlot) => {
+    const existing = hooks.slots.find((candidate) => candidate.slot === defaultSlot.slot) ?? defaultSlot;
+    return existing.slot === slot ? { ...existing, door } : existing;
+  });
+  return {
+    ...project,
+    scenario: {
+      ...project.scenario,
+      globalMacroHooks: {
+        ...hooks,
+        slots,
+        authored: true
+      }
+    }
+  };
+}
+
+function createSpellOverride(project: Project, id?: number, template?: Partial<ScenarioSpellOverride>) {
+  const nextId = id ?? nextIdFor(project.spellOverrides ?? [], 105);
+  if ((project.spellOverrides ?? []).some((record) => record.id === nextId)) return project;
+  const record = { ...emptySpellOverride(nextId), ...template, id: nextId, authored: true, provenance: authoredProvenance("Data Spell", nextId, nextId * 30, 30) };
+  return {
+    ...project,
+    spellOverrides: [...(project.spellOverrides ?? []), record].sort((a, b) => a.id - b.id)
+  };
+}
+
+function createRaceOverride(project: Project, id?: number, template?: Partial<ScenarioRaceOverride>) {
+  const nextId = id ?? nextIdFor(project.raceOverrides ?? [], 30);
+  if ((project.raceOverrides ?? []).some((record) => record.id === nextId)) return project;
+  const record = { ...emptyRaceOverride(nextId), ...template, id: nextId, authored: true, provenance: authoredProvenance("Data Race", nextId, nextId * 408, 408) };
+  return {
+    ...project,
+    raceOverrides: [...(project.raceOverrides ?? []), record].sort((a, b) => a.id - b.id)
+  };
+}
+
+function createCasteOverride(project: Project, id?: number, template?: Partial<ScenarioCasteOverride>) {
+  const nextId = id ?? nextIdFor(project.casteOverrides ?? [], 30);
+  if ((project.casteOverrides ?? []).some((record) => record.id === nextId)) return project;
+  const record = { ...emptyCasteOverride(nextId), ...template, id: nextId, authored: true, provenance: authoredProvenance("Data Caste", nextId, nextId * 576, 576) };
+  return {
+    ...project,
+    casteOverrides: [...(project.casteOverrides ?? []), record].sort((a, b) => a.id - b.id)
+  };
+}
+
+function updateRuleOverride<T extends { id: number; authored?: boolean }>(
+  project: Project,
+  key: "spellOverrides" | "raceOverrides" | "casteOverrides",
+  id: number,
+  changes: Partial<T>
+) {
+  const records = (((project[key] as unknown) as T[] | undefined) ?? []);
+  return {
+    ...project,
+    [key]: records.map((record) =>
+      record.id === id ? { ...record, ...changes, authored: true } : record
+    )
+  };
+}
+
+function clearRuleOverride(
+  project: Project,
+  key: "spellOverrides" | "raceOverrides" | "casteOverrides",
+  id: number
+) {
+  return {
+    ...project,
+    [key]: ((project[key] as Array<{ id: number }> | undefined) ?? []).filter((record) => record.id !== id)
+  };
+}
+
+function nextIdFor(records: Array<{ id: number }>, maxExclusive: number) {
+  const used = new Set(records.map((record) => record.id));
+  for (let id = 0; id < maxExclusive; id += 1) {
+    if (!used.has(id)) return id;
+  }
+  return records.length;
+}
+
 function defaultScenarioShell(project: Project) {
   return {
     sourceFile: project.scenario.name || "Scenario",
@@ -671,6 +767,132 @@ function defaultScenarioRestrictions() {
     maxPartyLevel: 0,
     bannedRaces: [],
     bannedCastes: []
+  };
+}
+
+function defaultGlobalMacroHooks() {
+  return {
+    slots: [
+      { slot: 0, label: "Start", door: 0, sourceBacked: true, runtimeConsumer: "mainscreeninit/new-game start" },
+      { slot: 1, label: "Death", door: 0, sourceBacked: true, runtimeConsumer: "partyloss death/revive path" },
+      { slot: 2, label: "Quit", door: 0, sourceBacked: true, runtimeConsumer: "end current game" },
+      { slot: 3, label: "Reserved", door: 0, sourceBacked: false, runtimeConsumer: "reserved" },
+      { slot: 4, label: "Shop", door: 0, sourceBacked: true, runtimeConsumer: "shop button when a shop is available" },
+      { slot: 5, label: "Temple", door: 0, sourceBacked: true, runtimeConsumer: "shop/temple button when a temple is available" },
+      { slot: 6, label: "Reserved", door: 0, sourceBacked: false, runtimeConsumer: "reserved" }
+    ],
+    rawBytes: new Array(60).fill(0)
+  };
+}
+
+function emptySpellOverride(id: number): ScenarioSpellOverride {
+  return {
+    id,
+    range1: 0,
+    range2: 0,
+    queueIcon: 0,
+    toHitBonus: 0,
+    saveBonus: 0,
+    fixedTargetNum: 0,
+    canRotate: 0,
+    saveAdjust: 0,
+    cannot: 0,
+    resistAdjust: 0,
+    cost: 0,
+    damage1: 0,
+    damage2: 0,
+    powerDamage1: 0,
+    powerDamage2: 0,
+    duration1: 0,
+    duration2: 0,
+    powerDuration1: 0,
+    powerDuration2: 0,
+    spellLook1: 0,
+    spellLook2: 0,
+    sound1: 0,
+    sound2: 0,
+    targetType: 0,
+    size: 0,
+    special: 0,
+    damageType: 0,
+    spellClass: 4,
+    inCombat: false,
+    inCamp: false,
+    displayName: `Custom Spell ${id}`,
+    description: "",
+    rawBytes: new Array(30).fill(0),
+    authored: true,
+    provenance: authoredProvenance("Data Spell", id, id * 30, 30)
+  };
+}
+
+function emptyRaceOverride(id: number): ScenarioRaceOverride {
+  return {
+    id,
+    displayName: `Race ${id + 1}`,
+    plusMinusToHit: new Array(8).fill(0),
+    specialAbility: new Array(14).fill(0),
+    drvBonus: new Array(8).fill(0),
+    attBonus: new Array(6).fill(0),
+    minMax: [3, 25, 3, 25, 3, 25, 3, 25, 3, 25, 3, 25],
+    conditions: new Array(40).fill(0),
+    maxAge: 70,
+    doesNotDie: 0,
+    baseMove: 12,
+    magRes: 0,
+    twoHand: 0,
+    missile: 0,
+    numOfAttacks: [2, 4],
+    canCaste: new Array(30).fill(0),
+    ageRange: [[14, 17], [18, 21], [22, 35], [36, 49], [50, 70]],
+    ageChange: Array.from({ length: 5 }, () => new Array(15).fill(0)),
+    canRegenerate: 0,
+    defaultIconSet: 0,
+    itemTypes: [0, 0],
+    descriptors: 0,
+    rawBytes: new Array(408).fill(0),
+    authored: true,
+    provenance: authoredProvenance("Data Race", id, id * 408, 408)
+  };
+}
+
+function emptyCasteOverride(id: number): ScenarioCasteOverride {
+  return {
+    id,
+    displayName: `Caste ${id + 1}`,
+    specialAbility: [new Array(14).fill(0), new Array(14).fill(0)],
+    drvBonus: new Array(8).fill(0),
+    attBonus: new Array(6).fill(0),
+    spellcasters: Array.from({ length: 4 }, () => new Array(3).fill(0)),
+    minMax: [3, 25, 3, 25, 3, 25, 3, 25, 3, 25, 3, 25],
+    conditions: new Array(40).fill(0),
+    canUseMissile: 0,
+    getsMissileBonus: 0,
+    stamina: [0, 0],
+    strength: [0, 0],
+    dodge: [0, 0],
+    toHit: [0, 0],
+    missile: [0, 0],
+    hand2Hand: [0, 0],
+    casteClass: 0,
+    minimumAgeGroup: 0,
+    moveBonus: 0,
+    magRes: 0,
+    twoHand: 0,
+    maxStaminaBonus: 0,
+    bonusAttacks: 0,
+    maxAttacks: 0,
+    victory: new Array(30).fill(0),
+    startMoney: 0,
+    startItems: new Array(20).fill(0),
+    attacks: new Array(10).fill(0),
+    itemTypes: [0, 0],
+    defaultIcon: 0,
+    maxSpellsAttacks: 0,
+    spellsSoFar: 0,
+    rawBytes: new Array(576).fill(0),
+    authored: true,
+    provenance: authoredProvenance("Data Caste", id, id * 576, 576)
   };
 }
 

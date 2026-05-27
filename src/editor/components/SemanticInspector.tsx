@@ -28,8 +28,8 @@ export function SemanticInspector({
   return (
     <section className="object-inspector semantic-inspector">
       <div className="inspector-header">
-        <span>Semantic Inspector</span>
-        {(entity || record) && <small>{entity?.editState ?? record?.editState ?? (entity?.editable ? "editable" : "inspect-only")}</small>}
+        <span>Details Inspector</span>
+        {(entity || record) && <small>{userFacingEditState(entity?.editState ?? record?.editState ?? (entity?.editable ? "editable" : "inspect-only"))}</small>}
       </div>
       {entity || record ? (
         <>
@@ -37,8 +37,8 @@ export function SemanticInspector({
             rows={[
               ["Label", entity?.label ?? record?.label],
               ["Type", entity?.type ?? record?.type],
-              ["Edit State", entity?.editState ?? record?.editState ?? (entity?.editable ? "editable" : "inspect-only")],
-              ["Confidence", entity?.confidence ?? record?.confidence],
+              ["Edit State", userFacingEditState(entity?.editState ?? record?.editState ?? (entity?.editable ? "editable" : "inspect-only"))],
+              ["Status", userFacingConfidence(entity?.confidence ?? record?.confidence)],
               ["Source", entity?.source ?? record?.source],
               ["Bytes", byteRangeLabel(entity?.byteRange ?? record?.byteRange ?? null)],
               ["Record", entity?.recordRef ? <LinkButton id={entity.recordRef} onSelect={onSelect} /> : record?.id ?? "none"]
@@ -57,10 +57,25 @@ export function SemanticInspector({
           )}
         </>
       ) : (
-        <p className="empty-copy">Select a semantic entity, link, map cell, or record.</p>
+        <p className="empty-copy">Select an item, link, map cell, or record.</p>
       )}
     </section>
   );
+}
+
+function userFacingEditState(state: string | null | undefined) {
+  if (state === "editable") return "Editable";
+  if (state === "blocked") return "Not editable yet";
+  if (state === "inspect-only") return "Read-only";
+  return state ?? "Read-only";
+}
+
+function userFacingConfidence(confidence: string | null | undefined) {
+  if (confidence === "source-backed" || confidence === "fixture-backed") return "Verified";
+  if (confidence === "inferred") return "Likely";
+  if (confidence === "preserved") return "Imported";
+  if (confidence === "unknown") return "Unknown";
+  return confidence ?? "Unknown";
 }
 
 function LinkList({

@@ -1,5 +1,6 @@
 use crate::error::{IoPath, JsonPath, ProvidenceError, Result};
 use crate::project::{ByteRange, Confidence, DiagnosticSeverity, SemanticEditState};
+use crate::resource_preview::decode_classic_text;
 use crate::semantic::resources::{parse_resource_fork, resource_entity_id, resource_type_id};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -11,7 +12,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use walkdir::WalkDir;
 
 pub const WORKSPACE_SCHEMA_VERSION: u32 = 1;
-pub const LIBRARY_SCHEMA_VERSION: u32 = 2;
+pub const LIBRARY_SCHEMA_VERSION: u32 = 3;
 pub const WORKSPACE_FILE_NAME: &str = "workspace.json";
 pub const LIBRARY_DIR: &str = "library";
 pub const LIBRARY_CATALOG_FILE: &str = "catalog.json";
@@ -371,6 +372,7 @@ fn import_library(
         add_source_records_entities(&mut catalog, &source, &source_by_id)?;
         catalog.sources.push(source);
     }
+    decorate_rule_catalog(&mut catalog);
     summarize_catalog(&mut catalog);
     save_catalog(workspace_dir, &catalog)?;
     Ok(catalog)
@@ -488,7 +490,7 @@ fn add_resource_inventory(catalog: &mut LibraryCatalog, source: &LibrarySource, 
             )
         };
         let resource_sha256 = sha256_hex(&resource.data);
-        let resource_summary = summary([
+        let mut resource_summary = summary([
             ("type", json!(printable_token(&resource.resource_type))),
             ("resourceId", json!(resource.id)),
             ("resourceKey", json!(resource_id)),
@@ -499,6 +501,7 @@ fn add_resource_inventory(catalog: &mut LibraryCatalog, source: &LibrarySource, 
             ("sha256", json!(resource_sha256.clone())),
             ("preview", json!(hex_preview(&resource.data, 20))),
         ]);
+        resource_summary.extend(resource_payload_summary(&resource.resource_type, &resource.data));
         catalog.records.push(LibraryRecord {
             id: record_id.clone(),
             source: source.id.clone(),
@@ -641,6 +644,82 @@ fn add_record_slots(catalog: &mut LibraryCatalog, source: &LibrarySource, bytes:
     }
 }
 
+fn decorate_rule_catalog(catalog: &mut LibraryCatalog) {
+    let mut strings_by_id: BTreeMap<i64, Vec<String>> = BTreeMap::new();
+    for entity in &catalog.entities {
+        if entity.entity_type != "string-list-resource" {
+            continue;
+        }
+        let Some(resource_id) = entity.summary.get("resourceId").and_then(Value::as_i64) else {
+            continue;
+        };
+        let Some(strings) = entity.summary.get("strings").and_then(Value::as_array) else {
+            continue;
+        };
+        let strings = strings
+            .iter()
+            .filter_map(Value::as_str)
+            .map(ToString::to_string)
+            .collect::<Vec<_>>();
+        if !strings.is_empty() {
+            strings_by_id.insert(resource_id, strings);
+        }
+    }
+    fn decorate_entry(
+        entity_type: &str,
+        label: &mut String,
+        summary: &mut BTreeMap<String, Value>,
+        strings_by_id: &BTreeMap<i64, Vec<String>>,
+    ) {
+        let name = match entity_type {
+            "spell" => {
+                let resource_id = summary.get("spellNameResourceId").and_then(Value::as_i64);
+                let slot = summary.get("spellSlot").and_then(Value::as_u64).map(|value| value as usize);
+                resource_id
+                    .and_then(|id| strings_by_id.get(&id))
+                    .and_then(|strings| slot.and_then(|index| strings.get(index)))
+                    .cloned()
+            }
+            "race" => {
+                let number = summary.get("raceNumber").and_then(Value::as_u64).map(|value| value as usize);
+                strings_by_id
+                    .get(&129)
+                    .and_then(|strings| number.and_then(|index| strings.get(index.saturating_sub(1))))
+                    .cloned()
+            }
+            "caste" => {
+                let number = summary.get("casteNumber").and_then(Value::as_u64).map(|value| value as usize);
+                strings_by_id
+                    .get(&131)
+                    .and_then(|strings| number.and_then(|index| strings.get(index.saturating_sub(1))))
+                    .cloned()
+            }
+            _ => None,
+        };
+        if let Some(name) = name {
+            summary.insert("displayName".to_string(), json!(name));
+            if entity_type == "spell" {
+                let packed = summary
+                    .get("packedSpellId")
+                    .and_then(Value::as_i64)
+                    .map(|value| value.to_string())
+                    .unwrap_or_else(|| "Spell".to_string());
+                *label = format!("{packed} {name}");
+            } else {
+                *label = name;
+            }
+        }
+    }
+    for record in &mut catalog.records {
+        let entity_type = record.record_type.clone();
+        decorate_entry(&entity_type, &mut record.label, &mut record.summary, &strings_by_id);
+    }
+    for entity in &mut catalog.entities {
+        let entity_type = entity.entity_type.clone();
+        decorate_entry(&entity_type, &mut entity.label, &mut entity.summary, &strings_by_id);
+    }
+}
+
 fn source_family(source: &LibrarySource) -> LibraryFamily {
     let path = source.relative_path.replace('/', "\\");
     let name = source.name.as_str();
@@ -733,14 +812,21 @@ fn library_record_summary(
     let mut out = summary([
         ("index", json!(index)),
         ("recordBytes", json!(record_bytes)),
+        ("rawBytes", json!(record)),
         ("preview", json!(hex_preview(record, 20))),
         (
             "note",
-            json!("Library record slot is inventoried; unsupported fields remain preserved in the source catalog."),
+            json!("Built-in Realmz catalog record."),
         ),
     ]);
     if entity_type == "item" && record.len() >= 80 {
         out.extend(item_record_summary(index, record));
+    } else if entity_type == "spell" && record.len() >= 30 {
+        out.extend(spell_record_summary(index, record));
+    } else if entity_type == "race" && record.len() >= 408 {
+        out.extend(race_record_summary(index, record));
+    } else if entity_type == "caste" && record.len() >= 576 {
+        out.extend(caste_record_summary(index, record));
     }
     out
 }
@@ -758,6 +844,20 @@ fn library_record_label(
                 .unwrap_or("Item");
             return format!("{category} {item_id}");
         }
+    }
+    if let Some(display_name) = summary.get("displayName").and_then(Value::as_str) {
+        if !display_name.is_empty() {
+            return display_name.to_string();
+        }
+    }
+    if let Some(packed_spell_id) = summary.get("packedSpellId").and_then(Value::as_i64) {
+        return format!("Spell {packed_spell_id}");
+    }
+    if entity_type == "race" {
+        return format!("Race {}", index + 1);
+    }
+    if entity_type == "caste" {
+        return format!("Caste {}", index + 1);
     }
     format!("{} {}", title(entity_type), index)
 }
@@ -815,6 +915,134 @@ fn item_record_summary(index: usize, record: &[u8]) -> BTreeMap<String, Value> {
         ("cold", json!(i16_be(record, 76))),
         ("electric", json!(i16_be(record, 78))),
     ])
+}
+
+fn resource_payload_summary(resource_type: &str, data: &[u8]) -> BTreeMap<String, Value> {
+    if resource_type == "STR#" {
+        let strings = parse_string_list_resource(data);
+        return summary([
+            ("family", json!("string-list")),
+            ("stringCount", json!(strings.len())),
+            ("strings", json!(strings)),
+        ]);
+    }
+    BTreeMap::new()
+}
+
+fn spell_record_summary(index: usize, record: &[u8]) -> BTreeMap<String, Value> {
+    let spellcaster_class = index / 105;
+    let within_class = index % 105;
+    let level_index = within_class / 15;
+    let spell_slot = within_class % 15;
+    let packed_spell_id = (spellcaster_class + 1) * 1000 + (level_index + 1) * 100 + spell_slot + 1;
+    summary([
+        ("packedSpellId", json!(packed_spell_id)),
+        ("spellcasterClass", json!(spellcaster_class)),
+        ("spellLevel", json!(level_index + 1)),
+        ("spellSlot", json!(spell_slot)),
+        ("visibleSpellSlot", json!(spell_slot < 12)),
+        ("spellNameResourceId", json!((spellcaster_class + 1) * 1000 + level_index)),
+        ("range1", json!(record[0])),
+        ("range2", json!(record[1])),
+        ("queueIcon", json!(record[2])),
+        ("toHitBonus", json!(signed_byte(record[3]))),
+        ("saveBonus", json!(signed_byte(record[4]))),
+        ("fixedTargetNum", json!(record[5])),
+        ("canRotate", json!(record[6])),
+        ("saveAdjust", json!(signed_byte(record[7]))),
+        ("cannot", json!(record[8])),
+        ("resistAdjust", json!(signed_byte(record[9]))),
+        ("cost", json!(record[10])),
+        ("damage1", json!(record[11])),
+        ("damage2", json!(record[12])),
+        ("powerDamage1", json!(record[13])),
+        ("powerDamage2", json!(record[14])),
+        ("duration1", json!(record[15])),
+        ("duration2", json!(record[16])),
+        ("powerDuration1", json!(record[17])),
+        ("powerDuration2", json!(record[18])),
+        ("spellLook1", json!(record[19])),
+        ("spellLook2", json!(record[20])),
+        ("sound1", json!(record[21])),
+        ("sound2", json!(record[22])),
+        ("targetType", json!(record[23])),
+        ("size", json!(record[24])),
+        ("special", json!(record[25])),
+        ("damageType", json!(record[26])),
+        ("spellClass", json!(record[27])),
+        ("inCombat", json!(record[28] != 0)),
+        ("inCamp", json!(record[29] != 0)),
+    ])
+}
+
+fn race_record_summary(index: usize, record: &[u8]) -> BTreeMap<String, Value> {
+    summary([
+        ("raceNumber", json!(index + 1)),
+        ("plusMinusToHit", json!(read_i16s(record, 0, 8))),
+        ("specialAbility", json!(read_i16s(record, 16, 14))),
+        ("drvBonus", json!(read_i16s(record, 44, 8))),
+        ("attBonus", json!(read_i16s(record, 60, 6))),
+        ("minMax", json!(read_i16s(record, 72, 12))),
+        ("conditions", json!(read_i16s(record, 112, 40))),
+        ("maxAge", json!(i16_be(record, 192))),
+        ("doesNotDie", json!(i16_be(record, 194))),
+        ("baseMove", json!(i16_be(record, 196))),
+        ("magRes", json!(i16_be(record, 198))),
+        ("twoHand", json!(i16_be(record, 200))),
+        ("missile", json!(i16_be(record, 202))),
+        ("numOfAttacks", json!(read_i16s(record, 204, 2))),
+        ("canCaste", json!(record[208..238].to_vec())),
+        ("ageRange", json!((0..5).map(|band| read_i16s(record, 238 + band * 4, 2)).collect::<Vec<_>>())),
+        ("ageChange", json!((0..5).map(|band| record[258 + band * 15..258 + (band + 1) * 15].iter().map(|byte| signed_byte(*byte)).collect::<Vec<_>>()).collect::<Vec<_>>())),
+        ("canRegenerate", json!(record[333])),
+        ("defaultIconSet", json!(i16_be(record, 334))),
+        ("itemTypes", json!([i32_be(record, 336), i32_be(record, 340)])),
+        ("descriptors", json!(i16_be(record, 344))),
+    ])
+}
+
+fn caste_record_summary(index: usize, record: &[u8]) -> BTreeMap<String, Value> {
+    summary([
+        ("casteNumber", json!(index + 1)),
+        ("specialAbility", json!([read_i16s(record, 0, 14), read_i16s(record, 28, 14)])),
+        ("drvBonus", json!(read_i16s(record, 56, 8))),
+        ("attBonus", json!(read_i16s(record, 72, 6))),
+        ("spellcasters", json!((0..4).map(|row| read_i16s(record, 84 + row * 6, 3)).collect::<Vec<_>>())),
+        ("minMax", json!(read_i16s(record, 108, 12))),
+        ("conditions", json!(read_i16s(record, 132, 40))),
+        ("canUseMissile", json!(i16_be(record, 212))),
+        ("getsMissileBonus", json!(i16_be(record, 214))),
+        ("stamina", json!(read_i16s(record, 216, 2))),
+        ("strength", json!(read_i16s(record, 220, 2))),
+        ("dodge", json!(read_i16s(record, 224, 2))),
+        ("toHit", json!(read_i16s(record, 228, 2))),
+        ("missile", json!(read_i16s(record, 232, 2))),
+        ("hand2Hand", json!(read_i16s(record, 236, 2))),
+        ("casteClass", json!(i16_be(record, 248))),
+        ("minimumAgeGroup", json!(i16_be(record, 250))),
+        ("moveBonus", json!(i16_be(record, 252))),
+        ("magRes", json!(i16_be(record, 254))),
+        ("twoHand", json!(i16_be(record, 256))),
+        ("maxStaminaBonus", json!(i16_be(record, 258))),
+        ("bonusAttacks", json!(i16_be(record, 260))),
+        ("maxAttacks", json!(i16_be(record, 262))),
+        ("victory", json!(read_i16s(record, 264, 30))),
+        ("startMoney", json!(i16_be(record, 384))),
+        ("startItems", json!(read_i16s(record, 386, 20))),
+        ("attacks", json!(record[426..436].to_vec())),
+        ("itemTypes", json!([i32_be(record, 436), i32_be(record, 440)])),
+        ("defaultIcon", json!(i16_be(record, 444))),
+        ("maxSpellsAttacks", json!(i16_be(record, 446))),
+        ("spellsSoFar", json!(i16_be(record, 448))),
+    ])
+}
+
+fn read_i16s(record: &[u8], offset: usize, count: usize) -> Vec<i16> {
+    (0..count).map(|index| i16_be(record, offset + index * 2)).collect()
+}
+
+fn signed_byte(value: u8) -> i8 {
+    value as i8
 }
 
 fn library_role(path: &Path) -> String {
@@ -1009,6 +1237,7 @@ fn migrate_catalog(catalog: &mut LibraryCatalog) {
     if catalog.schema_version < LIBRARY_SCHEMA_VERSION {
         catalog.schema_version = LIBRARY_SCHEMA_VERSION;
     }
+    decorate_rule_catalog(catalog);
     for asset in &mut catalog.assets {
         if asset.resource_type.is_none() || asset.resource_id.is_none() {
             if let Some((resource_type, resource_id)) =
@@ -1130,6 +1359,36 @@ fn i32_be(buffer: &[u8], offset: usize) -> i32 {
         buffer[offset + 2],
         buffer[offset + 3],
     ])
+}
+
+fn u16_be(buffer: &[u8], offset: usize) -> Option<u16> {
+    if offset + 2 > buffer.len() {
+        return None;
+    }
+    Some(u16::from_be_bytes([buffer[offset], buffer[offset + 1]]))
+}
+
+fn parse_string_list_resource(data: &[u8]) -> Vec<String> {
+    let Some(count) = u16_be(data, 0) else {
+        return Vec::new();
+    };
+    let mut strings = Vec::new();
+    let mut cursor = 2usize;
+    for _ in 0..count {
+        if cursor >= data.len() {
+            break;
+        }
+        let length = data[cursor] as usize;
+        cursor += 1;
+        let end = cursor.saturating_add(length);
+        if end > data.len() {
+            strings.push(decode_classic_text(&data[cursor..]));
+            break;
+        }
+        strings.push(decode_classic_text(&data[cursor..end]));
+        cursor = end;
+    }
+    strings
 }
 
 fn title(value: &str) -> String {

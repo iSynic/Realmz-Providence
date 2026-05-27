@@ -48,9 +48,9 @@ See `docs/archaeology-priorities.md` for the editor-first reverse-engineering ba
 | Creating Special Land Tiles | Assets/Maps | Import, preview, place, validate, and preserve special land/icon tiles as negative Realmz field values | Special tile asset creation/editing |
 | Pictures & Sounds | Assets/Text/Scripts | Managed assets, target picker for PICT/snd actions | Resource ID conflict resolution and richer previews |
 | Standard Land Tile Editor | Assets/Maps | Inspect/render standard tilesets; group tiles with source-backed landlook `mapstats`; use `Data Solids` as special/icon solidity evidence | Tile atlas and tile-attribute writing remains future work |
-| Spell Editor | Rules | Inspect spells and references | Spell record form and validation |
-| Race Editor | Rules | Inspect races and references | Race record form and restriction integration |
-| Caste Editor | Rules | Inspect castes and references | Caste record form and restriction integration |
+| Spell Editor | Rules | Scenario `Data Spell` override records are parsed into a source-backed editor for the 30 runtime bytes, with metadata-only names/descriptions and shared catalog reference | Decode exact resource/name packaging and richer spell validation |
+| Race Editor | Rules | Scenario `Data Race` overrides are parsed into editable source-backed fields for stats, age bands, caste permissions, item usability, descriptors, and conditions | Resource-fork names and remaining Divinity binary label checks |
+| Caste Editor | Rules | Scenario `Data Caste` overrides are parsed into editable source-backed matrices for stats, spellcasting, progression, item usability, conditions, and starting items | Finish Divinity label/order archaeology for advanced matrices |
 | Text Import / Export / Spell Checking | Text | Author `Data SD2` message records from script context, validate 255-byte limit, preserve imported bytes, and export Realmz message files | Text import/export and spell-check workflow |
 | Scenario Security / Registration Codes | Scenario/Scripts | Preserve marker/main registration code segments and inspect registration/security scripts | Legacy security field editor and compatibility warnings |
 | Release Checklist | Linter/Export | Validation and export readiness panels exist | Divinity-style release checklist with Realmz compatibility gates |

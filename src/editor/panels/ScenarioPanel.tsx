@@ -1,12 +1,14 @@
 import { Project, ProjectCommand } from "../types";
+import { REALMZ_CASTES, REALMZ_RACES } from "../rulesCatalog";
 
 type ScenarioPanelProps = {
   project: Project;
   onApplyCommand: (command: ProjectCommand) => void;
   onSelectMap: (id: string) => void;
+  onOpenTool: (tab: "assets" | "rules" | "scripts", editor: string) => void;
 };
 
-export function ScenarioPanel({ project, onApplyCommand, onSelectMap }: ScenarioPanelProps) {
+export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool }: ScenarioPanelProps) {
   const shell = project.scenario.shell ?? defaultShell(project);
   const contact = project.scenario.contactInfo ?? defaultContact(project);
   const restrictions = project.scenario.restrictions;
@@ -17,13 +19,13 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap }: Scenario
       <header className="scenario-hero">
         <div>
           <h1>Scenario</h1>
-          <p>Author startup, contact, party restrictions, and Realmz load-readiness from source-backed scenario files.</p>
+          <p>Author startup, contact, party restrictions, and Realmz load-readiness.</p>
         </div>
         <span>{project.scenario.name}</span>
       </header>
 
       <div className="scenario-grid">
-        <article className="scenario-card scenario-card-primary">
+        <article id="scenario-startup" className="scenario-card scenario-card-primary">
           <header>
             <div>
               <span>Startup Shell</span>
@@ -94,17 +96,17 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap }: Scenario
             <span>{startupMap ? `${startupMap.name} at ${shell.lookX},${shell.lookY}` : "Startup land does not resolve to a map."}</span>
           </div>
           <EvidenceBox
-            title="Source Evidence"
+            title="Technical Details"
             rows={[
-              ["Offsets 0-16", "reclevel, maxlevel, landlevel, lookx, looky are source-backed big-endian int32 fields."],
-              ["Offsets 20-59", "Legacy registration/security code segments are preserved raw."],
+              ["Startup fields", "Recommended level, maximum level, starting land, and starting position are editable Realmz fields."],
+              ["Security fields", "Legacy registration/security code segments are kept intact."],
               ["Offset 60", "Creator/user check is a Str255. Empty means no check."],
-              ["Trailing bytes", `${shell.trailingBytes?.length ?? 0} preserved byte(s).`]
+              ["Additional data", `${shell.trailingBytes?.length ?? 0} imported byte(s) kept intact.`]
             ]}
           />
         </article>
 
-        <article className="scenario-card">
+        <article id="scenario-contact" className="scenario-card">
           <header>
             <div>
               <span>Contact Info</span>
@@ -129,7 +131,55 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap }: Scenario
           </label>
         </article>
 
-        <article className="scenario-card">
+        <article id="scenario-authoring-hub" className="scenario-card">
+          <header>
+            <div>
+              <span>Divinity Scenario Hub</span>
+              <small>Scenario links into focused Providence tools</small>
+            </div>
+            <b>roadmap</b>
+          </header>
+          <div className="scenario-hub-grid">
+            <HubCard
+              title="Picture Editor"
+              detail="Scenario pictures 30000-30128; splash/default title picture 30128."
+              status={`${project.assets.filter((asset) => asset.kind === "picture").length} managed picture(s)`}
+              action="Open Assets"
+              onClick={() => onOpenTool("assets", "project-assets")}
+            />
+            <HubCard
+              title="Spell Overrides"
+              detail="Scenario custom spell records. Names and descriptions are editable notes until resource packaging is finished."
+              status={`${(project.spellOverrides ?? []).length}/105 parsed`}
+              action="Open Spells"
+              onClick={() => onOpenTool("rules", "spells")}
+            />
+            <HubCard
+              title="Race Overrides"
+              detail="Scenario Data Race replaces shared race data for third-party scenarios."
+              status={`${(project.raceOverrides ?? []).length}/30 parsed`}
+              action="Open Races"
+              onClick={() => onOpenTool("rules", "races")}
+            />
+            <HubCard
+              title="Caste Overrides"
+              detail="Scenario Data Caste replaces shared caste data for third-party scenarios."
+              status={`${(project.casteOverrides ?? []).length}/30 parsed`}
+              action="Open Castes"
+              onClick={() => onOpenTool("rules", "castes")}
+            />
+            <HubCard title="Security / Registration" detail="Legacy code segments are shown here, but editing them is not ready yet." status={shell.codeseg1.some(Boolean) || shell.codeseg2.some(Boolean) ? "already set" : "empty"} />
+            <HubCard
+              title="Global Macro Hooks"
+              detail="Start, death, quit, shop, and temple macro hook slots."
+              status={activeGlobalHookCount(project)}
+              action="Open Macros"
+              onClick={() => onOpenTool("scripts", "global-macros")}
+            />
+          </div>
+        </article>
+
+        <article id="scenario-restrictions" className="scenario-card">
           <header>
             <div>
               <span>Party Restrictions</span>
@@ -139,26 +189,50 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap }: Scenario
           </header>
           {restrictions ? (
             <>
+              <div className="scenario-restriction-toolbar">
+                <p>Choose the races and castes that cannot play this scenario.</p>
+                <button
+                  type="button"
+                  onClick={() => updateRestrictions(onApplyCommand, {
+                    description: "",
+                    maxPartyCharacters: 1,
+                    maxPartyLevel: 0,
+                    bannedRaces: [],
+                    bannedCastes: []
+                  })}
+                >
+                  Clear Restrictions
+                </button>
+              </div>
+              <div className="scenario-restriction-grid">
+                <RestrictionChecklist
+                  title="Races"
+                  options={REALMZ_RACES}
+                  selected={restrictions.bannedRaces}
+                  onChange={(bannedRaces) => updateRestrictions(onApplyCommand, { bannedRaces })}
+                />
+                <RestrictionChecklist
+                  title="Castes"
+                  options={REALMZ_CASTES}
+                  selected={restrictions.bannedCastes}
+                  onChange={(bannedCastes) => updateRestrictions(onApplyCommand, { bannedCastes })}
+                />
+              </div>
               <div className="scenario-form-grid">
                 <NumberField
-                  label="Max Characters"
+                  label="Maximum Number Of Characters"
                   value={restrictions.maxPartyCharacters}
-                  onCommit={(maxPartyCharacters) => updateRestrictions(onApplyCommand, { maxPartyCharacters })}
+                  min={1}
+                  max={6}
+                  hint="Divinity allows 1-6 here. Use no Data RI record for no party-size restriction."
+                  onCommit={(maxPartyCharacters) => updateRestrictions(onApplyCommand, { maxPartyCharacters: clampInt(maxPartyCharacters, 1, 6) })}
                 />
                 <NumberField
-                  label="Max Character Level"
+                  label="Maximum Level Of Any Character"
                   value={restrictions.maxPartyLevel}
+                  min={0}
+                  hint="0 means no maximum character level."
                   onCommit={(maxPartyLevel) => updateRestrictions(onApplyCommand, { maxPartyLevel })}
-                />
-                <TextField
-                  label="Banned Race IDs"
-                  value={restrictions.bannedRaces.join(", ")}
-                  onCommit={(value) => updateRestrictions(onApplyCommand, { bannedRaces: parseIdList(value) })}
-                />
-                <TextField
-                  label="Banned Caste IDs"
-                  value={restrictions.bannedCastes.join(", ")}
-                  onCommit={(value) => updateRestrictions(onApplyCommand, { bannedCastes: parseIdList(value) })}
                 />
               </div>
               <label className="scenario-field scenario-field-wide">
@@ -182,7 +256,7 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap }: Scenario
           )}
         </article>
 
-        <article className="scenario-card">
+        <article id="scenario-readiness" className="scenario-card">
           <header>
             <div>
               <span>Load Readiness</span>
@@ -199,8 +273,54 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap }: Scenario
             ))}
           </div>
         </article>
+
+        <article id="scenario-global-macros" className="scenario-card">
+          <header>
+            <div>
+              <span>Global Macro Hooks</span>
+              <small>Global file, seven Divinity-visible slots</small>
+            </div>
+            <b>{activeGlobalHookCount(project)}</b>
+          </header>
+          <p className="scenario-note">Shop and Temple hooks fire only from the shop/temple button flow. Sending the party to a shop by negative shop ID does not trigger these hooks.</p>
+          <div className="scenario-global-hook-grid">
+            {globalHooks(project).map((hook) => (
+              <label key={hook.slot} className={hook.sourceBacked ? "scenario-field" : "scenario-field is-preserved"}>
+                <span>{hook.label}</span>
+                <input
+                  type="number"
+                  defaultValue={hook.door}
+                  onBlur={(event) => {
+                    const door = Number(event.currentTarget.value);
+                    if (Number.isFinite(door) && door !== hook.door) {
+                      onApplyCommand({ kind: "updateGlobalMacroHook", label: `Update ${hook.label} global macro`, slot: hook.slot, door });
+                    }
+                  }}
+                />
+                <small>{hook.sourceBacked ? hook.runtimeConsumer : "Reserved slot kept intact."}</small>
+              </label>
+            ))}
+          </div>
+        </article>
       </div>
     </section>
+  );
+}
+
+function HubCard({ title, detail, status, action, onClick }: { title: string; detail: string; status: string; action?: string; onClick?: () => void }) {
+  return (
+    <div className="scenario-hub-card">
+      <strong>{title}</strong>
+      <span>{detail}</span>
+      <footer>
+        <small>{status}</small>
+        {action && onClick && (
+          <button type="button" className="btn btn-secondary btn-xs" onClick={onClick}>
+            {action}
+          </button>
+        )}
+      </footer>
+    </div>
   );
 }
 
@@ -220,20 +340,83 @@ function TextField({ label, value, onCommit }: { label: string; value: string; o
   );
 }
 
-function NumberField({ label, value, onCommit }: { label: string; value: number; onCommit: (value: number) => void }) {
+function NumberField({
+  label,
+  value,
+  min,
+  max,
+  hint,
+  onCommit
+}: {
+  label: string;
+  value: number;
+  min?: number;
+  max?: number;
+  hint?: string;
+  onCommit: (value: number) => void;
+}) {
   return (
     <label className="scenario-field">
       <span>{label}</span>
       <input
         key={value}
         type="number"
+        min={min}
+        max={max}
         defaultValue={value}
         onBlur={(event) => {
           const next = Number(event.currentTarget.value);
           if (Number.isFinite(next) && next !== value) onCommit(next);
         }}
       />
+      {hint && <small>{hint}</small>}
     </label>
+  );
+}
+
+function RestrictionChecklist({
+  title,
+  options,
+  selected,
+  onChange
+}: {
+  title: string;
+  options: string[];
+  selected: number[];
+  onChange: (selected: number[]) => void;
+}) {
+  const selectedSet = new Set(selected);
+  return (
+    <section className="scenario-restriction-list">
+      <header>
+        <span>{title}</span>
+        <b>{selected.length}</b>
+      </header>
+      <div>
+        {Array.from({ length: 30 }, (_, index) => {
+          const id = index + 1;
+          const label = options[index] ?? `Unused ${id}`;
+          const checked = selectedSet.has(id);
+          const disabled = index >= options.length;
+          return (
+            <label key={`${title}:${id}`} className={disabled ? "is-unused" : ""}>
+              <input
+                type="checkbox"
+                checked={checked}
+                disabled={disabled}
+                onChange={(event) => {
+                  const next = event.currentTarget.checked
+                    ? [...selectedSet, id]
+                    : selected.filter((candidate) => candidate !== id);
+                  onChange([...new Set(next)].sort((a, b) => a - b));
+                }}
+              />
+              <span>{label}</span>
+            </label>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -292,7 +475,7 @@ function defaultContact(project: Project): NonNullable<Project["scenario"]["cont
 function defaultRestrictions(): NonNullable<Project["scenario"]["restrictions"]> {
   return {
     description: "",
-    maxPartyCharacters: 0,
+    maxPartyCharacters: 1,
     maxPartyLevel: 0,
     bannedRaces: [],
     bannedCastes: [],
@@ -300,11 +483,28 @@ function defaultRestrictions(): NonNullable<Project["scenario"]["restrictions"]>
   };
 }
 
-function parseIdList(value: string) {
-  return value
-    .split(/[,\s]+/)
-    .map((part) => Number(part.trim()))
-    .filter((id) => Number.isInteger(id) && id >= 1 && id <= 30);
+function globalHooks(project: Project) {
+  const defaults = [
+    { slot: 0, label: "Start", door: 0, sourceBacked: true, runtimeConsumer: "mainscreeninit/new-game start" },
+    { slot: 1, label: "Death", door: 0, sourceBacked: true, runtimeConsumer: "partyloss death/revive path" },
+    { slot: 2, label: "Quit", door: 0, sourceBacked: true, runtimeConsumer: "end current game" },
+    { slot: 3, label: "Reserved", door: 0, sourceBacked: false, runtimeConsumer: "reserved" },
+    { slot: 4, label: "Shop", door: 0, sourceBacked: true, runtimeConsumer: "shop button when a shop is available" },
+    { slot: 5, label: "Temple", door: 0, sourceBacked: true, runtimeConsumer: "shop/temple button when a temple is available" },
+    { slot: 6, label: "Reserved", door: 0, sourceBacked: false, runtimeConsumer: "reserved" }
+  ];
+  const existing = project.scenario.globalMacroHooks?.slots ?? [];
+  return defaults.map((fallback) => existing.find((hook) => hook.slot === fallback.slot) ?? fallback);
+}
+
+function activeGlobalHookCount(project: Project) {
+  const count = globalHooks(project).filter((hook) => hook.door !== 0).length;
+  return count === 1 ? "1 active hook" : `${count} active hooks`;
+}
+
+function clampInt(value: number, min: number, max: number) {
+  if (!Number.isFinite(value)) return min;
+  return Math.max(min, Math.min(max, Math.trunc(value)));
 }
 
 function scenarioIssues(project: Project, shell: NonNullable<Project["scenario"]["shell"]>) {

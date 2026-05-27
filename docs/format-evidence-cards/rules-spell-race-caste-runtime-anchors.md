@@ -194,6 +194,28 @@ Scenario `Data Spell` is 9,016 bytes in all 17 local scenarios that include it. 
 - Whether Divinity writes complete 30-record race/caste override files every time or supports partial variants.
 - Exact scenario `Data Spell` data/resource packaging and name mapping.
 
+## Divinity Scenario Screen Evidence
+
+The May 2026 Scenario screenshots show Divinity's Scenario area as a hub for startup, restrictions, pictures, rule overrides, contact info, security, and global macro hooks. Providence should mirror the capability split, not the literal window layout:
+
+- Scenario startup fields include recommended starting level, starting land level, start position X/Y, and legacy security code segments.
+- Global Macro slots visible in Divinity are Start, Death, Quit, Reserved, Shop, Temple, and Reserved. Runtime source backs Start/Death/Quit/Shop/Temple consumers; other slots remain preserve-first.
+- Picture Editor exposes scenario picture IDs `30000..30128`; the default splash/title picture should use ID `30128`.
+- Spell Editor exposes source-backed `struct spell` fields for range, hit/save/resist modifiers, cost, damage, duration, target type, size, spell effect, sounds, icons, combat/camp availability, class, and damage type. Spell names/descriptions are resource/name evidence until `Data Spell` packaging is decoded.
+- Race Editor exposes `struct race` fields for attribute min/max/bonus values, special abilities, DRV modifiers, possible castes, item usability categories, descriptors, conditions, age bands, default portrait set, movement, regeneration, magic resistance, weapon modifiers, and attack counts.
+- Caste Editor should follow `struct caste` source anchors first; Divinity label/order evidence is still needed for several matrices.
+- Security/registration is visible in Divinity but remains preserve/read-only in Providence until the codec and write behavior are fixture-backed.
+
+### Field Confidence Policy
+
+| Family | Writable now | Preserve-first |
+| --- | --- | --- |
+| `Data Spell` | 105 runtime-read 30-byte spell records | Tail/resource fork names, descriptions, and packaging evidence |
+| `Data Race` | 30 x 408-byte scenario override fields mapped in `struct race` | Resource-fork names and any unknown spacer bytes |
+| `Data Caste` | 30 x 576-byte scenario override fields mapped in `struct caste` | Unknown spacer bytes and labels requiring Divinity binary evidence |
+| `Global` | Seven Divinity-visible hook doors, with source-backed labels on known consumers | Unlabeled/reserved hook slots |
+| Scenario pictures | Managed `PICT` range `30000..30128` when resource writing is available | Unrecognized resource metadata and non-picture fork content |
+
 ## Providence Follow-Up Slice
 
 1. Add shared-vs-override badges to Rules library records.
