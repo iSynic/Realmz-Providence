@@ -264,11 +264,15 @@ pub fn merge_resource_entries(
 }
 
 pub fn encode_pict_resource(payload: &RgbaImagePayload) -> Result<Vec<u8>> {
+    encode_pict_resource_with_dither(payload, true)
+}
+
+pub fn encode_pict_resource_with_dither(payload: &RgbaImagePayload, dither: bool) -> Result<Vec<u8>> {
     let rgba = STANDARD
         .decode(&payload.rgba_base64)
         .map_err(|error| ProvidenceError::message(error.to_string()))?;
     expected_rgba_len(payload.width, payload.height, rgba.len())?;
-    let (indices, palette) = quantize_rgba_to_palette(&rgba);
+    let (indices, palette) = quantize_rgba_to_palette(&rgba, payload.width as usize, dither);
     let row_bytes = payload.width as usize;
 
     let mut pict = vec![0; 10];
@@ -327,7 +331,7 @@ pub fn encode_cicn_resource(payload: &RgbaImagePayload) -> Result<Vec<u8>> {
         32,
         32,
     );
-    let (indices, palette) = quantize_rgba_to_palette(&resized);
+    let (indices, palette) = quantize_rgba_to_palette(&resized, 32, false);
     let width = 32usize;
     let height = 32usize;
     let row_bytes = width;
@@ -834,32 +838,191 @@ fn encode_wav_u8(sample_rate: u32, samples: &[u8]) -> Vec<u8> {
     wav
 }
 
-fn quantize_rgba_to_palette(rgba: &[u8]) -> (Vec<u8>, Vec<[u8; 3]>) {
-    let mut palette = Vec::<[u8; 3]>::new();
-    let mut lookup = BTreeMap::<[u8; 3], u8>::new();
-    let mut indices = Vec::with_capacity(rgba.len() / 4);
+#[derive(Clone)]
+struct QuantizedColor {
+    color: [u8; 3],
+    count: usize,
+}
+
+fn quantize_rgba_to_palette(rgba: &[u8], width: usize, dither: bool) -> (Vec<u8>, Vec<[u8; 3]>) {
+    let palette = adaptive_palette(rgba);
+    let indices = if dither {
+        quantize_with_floyd_steinberg(rgba, width, &palette)
+    } else {
+        quantize_nearest(rgba, &palette)
+    };
+    (indices, palette)
+}
+
+fn adaptive_palette(rgba: &[u8]) -> Vec<[u8; 3]> {
+    let mut histogram = BTreeMap::<[u8; 3], usize>::new();
     for pixel in rgba.chunks_exact(4) {
         let color = [
-            (pixel[0] / 51) * 51,
-            (pixel[1] / 51) * 51,
-            (pixel[2] / 51) * 51,
+            pixel[0] & 0xf8,
+            pixel[1] & 0xf8,
+            pixel[2] & 0xf8,
         ];
-        let index = if let Some(index) = lookup.get(&color) {
-            *index
-        } else if palette.len() < 256 {
-            let index = palette.len() as u8;
-            palette.push(color);
-            lookup.insert(color, index);
-            index
-        } else {
-            nearest_palette_index(&palette, color)
-        };
-        indices.push(index);
+        *histogram.entry(color).or_insert(0) += 1;
     }
+    if histogram.is_empty() {
+        return vec![[0, 0, 0]];
+    }
+    let colors = histogram
+        .into_iter()
+        .map(|(color, count)| QuantizedColor { color, count })
+        .collect::<Vec<_>>();
+    if colors.len() <= 256 {
+        return colors.into_iter().map(|entry| entry.color).collect();
+    }
+    let mut buckets = vec![colors];
+    while buckets.len() < 256 {
+        let Some(bucket_index) = buckets
+            .iter()
+            .enumerate()
+            .filter(|(_, bucket)| bucket.len() > 1)
+            .max_by_key(|(_, bucket)| bucket_score(bucket))
+            .map(|(index, _)| index)
+        else {
+            break;
+        };
+        let bucket = buckets.swap_remove(bucket_index);
+        let (left, right) = split_color_bucket(bucket);
+        if left.is_empty() || right.is_empty() {
+            buckets.push([left, right].concat());
+            break;
+        }
+        buckets.push(left);
+        buckets.push(right);
+    }
+    let mut palette = buckets
+        .iter()
+        .map(|bucket| weighted_average_color(bucket))
+        .collect::<Vec<_>>();
+    palette.sort();
+    palette.truncate(256);
     if palette.is_empty() {
         palette.push([0, 0, 0]);
     }
-    (indices, palette)
+    palette
+}
+
+fn bucket_score(bucket: &[QuantizedColor]) -> usize {
+    let (min, max) = bucket_bounds(bucket);
+    let range = (0..3).map(|channel| max[channel] as usize - min[channel] as usize).max().unwrap_or(0);
+    range * bucket.iter().map(|entry| entry.count).sum::<usize>()
+}
+
+fn split_color_bucket(mut bucket: Vec<QuantizedColor>) -> (Vec<QuantizedColor>, Vec<QuantizedColor>) {
+    let (min, max) = bucket_bounds(&bucket);
+    let channel = (0..3)
+        .max_by_key(|channel| max[*channel] as usize - min[*channel] as usize)
+        .unwrap_or(0);
+    bucket.sort_by_key(|entry| entry.color[channel]);
+    let total = bucket.iter().map(|entry| entry.count).sum::<usize>();
+    let half = total / 2;
+    let mut running = 0usize;
+    let mut split_index = 1usize;
+    for (index, entry) in bucket.iter().enumerate() {
+        running += entry.count;
+        if running >= half {
+            split_index = (index + 1).clamp(1, bucket.len().saturating_sub(1));
+            break;
+        }
+    }
+    let right = bucket.split_off(split_index);
+    (bucket, right)
+}
+
+fn bucket_bounds(bucket: &[QuantizedColor]) -> ([u8; 3], [u8; 3]) {
+    let mut min = [u8::MAX; 3];
+    let mut max = [u8::MIN; 3];
+    for entry in bucket {
+        for channel in 0..3 {
+            min[channel] = min[channel].min(entry.color[channel]);
+            max[channel] = max[channel].max(entry.color[channel]);
+        }
+    }
+    (min, max)
+}
+
+fn weighted_average_color(bucket: &[QuantizedColor]) -> [u8; 3] {
+    let total = bucket.iter().map(|entry| entry.count).sum::<usize>().max(1);
+    let mut sums = [0usize; 3];
+    for entry in bucket {
+        for (channel, sum) in sums.iter_mut().enumerate() {
+            *sum += entry.color[channel] as usize * entry.count;
+        }
+    }
+    [
+        (sums[0] / total) as u8,
+        (sums[1] / total) as u8,
+        (sums[2] / total) as u8,
+    ]
+}
+
+fn quantize_nearest(rgba: &[u8], palette: &[[u8; 3]]) -> Vec<u8> {
+    rgba.chunks_exact(4)
+        .map(|pixel| nearest_palette_index(palette, [pixel[0], pixel[1], pixel[2]]))
+        .collect()
+}
+
+fn quantize_with_floyd_steinberg(rgba: &[u8], width: usize, palette: &[[u8; 3]]) -> Vec<u8> {
+    let pixels = rgba.len() / 4;
+    if pixels == 0 || width == 0 {
+        return Vec::new();
+    }
+    let height = pixels.div_ceil(width);
+    let mut work = rgba
+        .chunks_exact(4)
+        .map(|pixel| [pixel[0] as f32, pixel[1] as f32, pixel[2] as f32])
+        .collect::<Vec<_>>();
+    let mut indices = vec![0u8; pixels];
+    for y in 0..height {
+        for x in 0..width {
+            let index = y * width + x;
+            if index >= pixels {
+                continue;
+            }
+            let old = [
+                work[index][0].clamp(0.0, 255.0) as u8,
+                work[index][1].clamp(0.0, 255.0) as u8,
+                work[index][2].clamp(0.0, 255.0) as u8,
+            ];
+            let palette_index = nearest_palette_index(palette, old);
+            let new = palette[palette_index as usize];
+            indices[index] = palette_index;
+            let error = [
+                old[0] as f32 - new[0] as f32,
+                old[1] as f32 - new[1] as f32,
+                old[2] as f32 - new[2] as f32,
+            ];
+            diffuse_error(&mut work, pixels, width, x + 1, y, error, 7.0 / 16.0);
+            if x > 0 {
+                diffuse_error(&mut work, pixels, width, x - 1, y + 1, error, 3.0 / 16.0);
+            }
+            diffuse_error(&mut work, pixels, width, x, y + 1, error, 5.0 / 16.0);
+            diffuse_error(&mut work, pixels, width, x + 1, y + 1, error, 1.0 / 16.0);
+        }
+    }
+    indices
+}
+
+fn diffuse_error(
+    work: &mut [[f32; 3]],
+    pixels: usize,
+    width: usize,
+    x: usize,
+    y: usize,
+    error: [f32; 3],
+    factor: f32,
+) {
+    let index = y * width + x;
+    if index >= pixels {
+        return;
+    }
+    for (channel, channel_error) in error.iter().enumerate() {
+        work[index][channel] += channel_error * factor;
+    }
 }
 
 fn nearest_palette_index(palette: &[[u8; 3]], color: [u8; 3]) -> u8 {
@@ -1200,6 +1363,43 @@ mod tests {
             .expect("cicn preview")
             .expect("cicn data url")
             .starts_with("data:image/png;base64,"));
+    }
+
+    #[test]
+    fn adaptive_quantizer_caps_palette_at_256_colors() {
+        let mut rgba = Vec::new();
+        for y in 0..40u8 {
+            for x in 0..40u8 {
+                rgba.extend_from_slice(&[
+                    x.wrapping_mul(17),
+                    y.wrapping_mul(11),
+                    x.wrapping_mul(7).wrapping_add(y.wrapping_mul(5)),
+                    255,
+                ]);
+            }
+        }
+        let (indices, palette) = quantize_rgba_to_palette(&rgba, 40, false);
+        assert_eq!(indices.len(), 40 * 40);
+        assert!(palette.len() <= 256);
+        assert!(indices.iter().all(|index| (*index as usize) < palette.len()));
+    }
+
+    #[test]
+    fn floyd_steinberg_quantizer_is_deterministic() {
+        let mut rgba = Vec::new();
+        for y in 0..24u8 {
+            for x in 0..24u8 {
+                rgba.extend_from_slice(&[
+                    x.wrapping_mul(23),
+                    y.wrapping_mul(19),
+                    x ^ y,
+                    255,
+                ]);
+            }
+        }
+        let first = quantize_rgba_to_palette(&rgba, 24, true);
+        let second = quantize_rgba_to_palette(&rgba, 24, true);
+        assert_eq!(first, second);
     }
 
     #[test]

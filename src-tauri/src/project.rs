@@ -204,6 +204,68 @@ pub struct ManagedAsset {
     pub export_state: ManagedAssetExportState,
     pub provenance: String,
     pub linked_entity: Option<String>,
+    #[serde(default)]
+    pub conversion: Option<ManagedAssetConversion>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ManagedAssetConversion {
+    pub target: AssetImportTarget,
+    pub fit_mode: Option<ImageFitMode>,
+    pub scale_mode: Option<ImageScaleMode>,
+    pub matte: Option<ImageMatte>,
+    pub palette_mode: Option<PaletteMode>,
+    pub dither_mode: Option<DitherMode>,
+    pub final_width: Option<u32>,
+    pub final_height: Option<u32>,
+    #[serde(default)]
+    pub warnings: Vec<String>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "kebab-case")]
+pub enum AssetImportTarget {
+    ScenarioPicture,
+    Icon,
+    SpecialLandTile,
+    Sound,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "kebab-case")]
+pub enum ImageFitMode {
+    Fit,
+    Crop,
+    Stretch,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "kebab-case")]
+pub enum ImageScaleMode {
+    Smooth,
+    Crisp,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "kebab-case")]
+pub enum ImageMatte {
+    Transparent,
+    White,
+    Black,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "kebab-case")]
+pub enum PaletteMode {
+    Adaptive256,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "kebab-case")]
+pub enum DitherMode {
+    None,
+    FloydSteinberg,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]

@@ -2,6 +2,27 @@ import { LibraryAsset, ManagedAsset, ManagedAssetKind, Project } from "./types";
 import { resourceUsageLinks, ContentUsageLink } from "./contentLinks";
 
 export type ResourceOrigin = "scenario" | "realmz-library" | "divinity-reference" | "ui-reference" | "unknown";
+export type ResourceExportScope =
+  | "ships-with-scenario"
+  | "scenario-preview-only"
+  | "scenario-blocked"
+  | "realmz-built-in-reference"
+  | "divinity-reference"
+  | "ui-reference"
+  | "unknown-advanced";
+export type ResourceRole =
+  | "scenario-picture"
+  | "picture"
+  | "sound"
+  | "icon"
+  | "special-land-tile"
+  | "tile-atlas"
+  | "text-resource"
+  | "string-list"
+  | "style"
+  | "version"
+  | "ui-art"
+  | "raw";
 
 export type ResolvedResource = {
   resourceType: string;
@@ -9,6 +30,8 @@ export type ResolvedResource = {
   label: string;
   kind: ManagedAssetKind;
   origin: ResourceOrigin;
+  exportScope: ResourceExportScope;
+  role: ResourceRole;
   available: boolean;
   placeableOnMap: boolean;
   projectAsset: ManagedAsset | null;
@@ -34,6 +57,53 @@ export function resourceOriginLabel(origin: ResourceOrigin) {
   if (origin === "divinity-reference") return "Divinity Reference";
   if (origin === "ui-reference") return "UI Reference";
   return "Unknown";
+}
+
+export function resourceExportScope(asset: ManagedAsset | LibraryAsset): ResourceExportScope {
+  if ("exportState" in asset) {
+    if (asset.exportState === "ready") return "ships-with-scenario";
+    if (asset.exportState === "blocked") return "scenario-blocked";
+    return "scenario-preview-only";
+  }
+  const origin = resourceOrigin(asset);
+  if (origin === "realmz-library") return "realmz-built-in-reference";
+  if (origin === "divinity-reference") return "divinity-reference";
+  if (origin === "ui-reference") return "ui-reference";
+  return "unknown-advanced";
+}
+
+export function resourceExportScopeLabel(scope: ResourceExportScope) {
+  if (scope === "ships-with-scenario") return "Ships with scenario";
+  if (scope === "scenario-preview-only") return "Project preview only";
+  if (scope === "scenario-blocked") return "Needs export setup";
+  if (scope === "realmz-built-in-reference") return "Reference only - built into Realmz";
+  if (scope === "divinity-reference") return "Reference only - Divinity";
+  if (scope === "ui-reference") return "UI reference - hidden by default";
+  return "Advanced / unknown";
+}
+
+export function resourceRole(asset: ManagedAsset | LibraryAsset): ResourceRole {
+  if ("exportState" in asset) {
+    if (asset.kind === "picture" && asset.resourceType === "PICT" && asset.resourceId >= 30000 && asset.resourceId <= 30128) return "scenario-picture";
+    if (asset.kind === "picture") return "picture";
+    if (asset.kind === "sound") return "sound";
+    if (asset.kind === "icon") return "icon";
+    if (asset.kind === "special-land-tile") return "special-land-tile";
+    if (asset.kind === "text") return "text-resource";
+    return "raw";
+  }
+  const type = `${asset.type} ${asset.resourceType ?? ""} ${asset.label} ${asset.relativePath}`.toLowerCase();
+  if (resourceOrigin(asset) === "ui-reference") return "ui-art";
+  if (asset.type === "special-land-tile") return "special-land-tile";
+  if (asset.resourceType === "PICT" || asset.type === "picture") return "picture";
+  if (asset.resourceType === "cicn" || asset.type.includes("icon")) return "icon";
+  if (asset.resourceType?.trim() === "snd" || asset.type === "sound") return "sound";
+  if (asset.resourceType === "TEXT" || asset.type === "text-resource" || asset.type === "text") return "text-resource";
+  if (asset.resourceType === "STR#" || asset.type === "string-list-resource") return "string-list";
+  if (asset.resourceType === "styl" || type.includes("style")) return "style";
+  if (asset.resourceType === "vers" || type.includes("version")) return "version";
+  if (type.includes("tile atlas") || type.includes("landlook")) return "tile-atlas";
+  return "raw";
 }
 
 export function managedAssetKindForLibrary(asset: LibraryAsset): ManagedAssetKind {
@@ -93,12 +163,15 @@ export function resolveResource(
   const libraryAsset = libraryAssets.find((asset) => asset.resourceType?.trim() === normalizedType && asset.resourceId === resourceId) ?? null;
   const origin = projectAsset ? resourceOrigin(projectAsset) : libraryAsset ? resourceOrigin(libraryAsset) : "unknown";
   const kind = projectAsset ? projectAsset.kind : libraryAsset ? managedAssetKindForLibrary(libraryAsset) : "other";
+  const asset = projectAsset ?? libraryAsset;
   return {
     resourceType: normalizedType,
     resourceId,
     label: projectAsset?.label ?? libraryAsset?.label ?? `${normalizedType} ${resourceId}`,
     kind,
     origin,
+    exportScope: asset ? resourceExportScope(asset) : "unknown-advanced",
+    role: asset ? resourceRole(asset) : "raw",
     available: Boolean(projectAsset || libraryAsset),
     placeableOnMap: Boolean(projectAsset?.kind === "special-land-tile" || (libraryAsset && isMapPlaceableLibraryAsset(libraryAsset))),
     projectAsset,

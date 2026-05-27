@@ -1,9 +1,13 @@
 use crate::error::Result;
 use crate::error::{IoPath, ProvidenceError};
 use crate::importer::save_project as save_project_impl;
-use crate::project::{ManagedAsset, ManagedAssetExportState, ManagedAssetKind, ProvidenceProject};
+use crate::project::{
+    AssetImportTarget, DitherMode, ImageFitMode, ImageMatte, ImageScaleMode, ManagedAsset,
+    ManagedAssetConversion, ManagedAssetExportState, ManagedAssetKind, PaletteMode,
+    ProvidenceProject,
+};
 use crate::resource_fork::{
-    encode_cicn_resource, encode_pict_resource, encode_snd_resource, PcmAudioPayload,
+    encode_cicn_resource, encode_pict_resource_with_dither, encode_snd_resource, PcmAudioPayload,
     RgbaImagePayload,
 };
 use crate::validation::validate_project as validate_project_impl;
@@ -25,6 +29,16 @@ pub struct MediaAssetImportRequest {
     pub image: Option<RgbaImagePayload>,
     pub audio: Option<PcmAudioPayload>,
     pub linked_entity: Option<String>,
+    pub target: AssetImportTarget,
+    pub fit_mode: Option<ImageFitMode>,
+    pub scale_mode: Option<ImageScaleMode>,
+    pub matte: Option<ImageMatte>,
+    pub palette_mode: Option<PaletteMode>,
+    pub dither_mode: Option<DitherMode>,
+    pub final_width: Option<u32>,
+    pub final_height: Option<u32>,
+    #[serde(default)]
+    pub warnings: Vec<String>,
 }
 
 #[tauri::command]
@@ -183,7 +197,10 @@ fn write_managed_media_asset(
             let image = request.image.as_ref().ok_or_else(|| {
                 ProvidenceError::message("PICT import requires decoded image pixels")
             })?;
-            encode_pict_resource(image)?
+            encode_pict_resource_with_dither(
+                image,
+                !matches!(request.dither_mode, Some(DitherMode::None)),
+            )?
         }
         "cicn" => {
             let image = request.image.as_ref().ok_or_else(|| {
@@ -249,6 +266,17 @@ fn write_managed_media_asset(
         export_state: ManagedAssetExportState::Ready,
         provenance: provenance.to_string(),
         linked_entity,
+        conversion: Some(ManagedAssetConversion {
+            target: request.target,
+            fit_mode: request.fit_mode,
+            scale_mode: request.scale_mode,
+            matte: request.matte,
+            palette_mode: request.palette_mode,
+            dither_mode: request.dither_mode,
+            final_width: request.final_width,
+            final_height: request.final_height,
+            warnings: request.warnings.clone(),
+        }),
     })
 }
 

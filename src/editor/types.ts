@@ -43,6 +43,24 @@ export type MapViewOptions = Record<MapViewFlag, boolean>;
 export type PaintCellChange = { x: number; y: number; index: number; from: number; to: number };
 export type ManagedAssetKind = "picture" | "icon" | "special-land-tile" | "sound" | "text" | "other";
 export type ManagedAssetExportState = "ready" | "blocked" | "preview-only";
+export type AssetImportTarget = "scenario-picture" | "icon" | "special-land-tile" | "sound";
+export type ImageFitMode = "fit" | "crop" | "stretch";
+export type ImageScaleMode = "smooth" | "crisp";
+export type ImageMatte = "transparent" | "white" | "black";
+export type PaletteMode = "adaptive-256";
+export type DitherMode = "none" | "floyd-steinberg";
+
+export type ManagedAssetConversion = {
+  target: AssetImportTarget;
+  fitMode: ImageFitMode | null;
+  scaleMode: ImageScaleMode | null;
+  matte: ImageMatte | null;
+  paletteMode: PaletteMode | null;
+  ditherMode: DitherMode | null;
+  finalWidth: number | null;
+  finalHeight: number | null;
+  warnings: string[];
+};
 export type ResourcePreviewStatus =
   | "preview-ready"
   | "playable"
@@ -168,6 +186,7 @@ export type ManagedAsset = {
   exportState: ManagedAssetExportState;
   provenance: string;
   linkedEntity: string | null;
+  conversion?: ManagedAssetConversion | null;
 };
 
 export type StampPaletteItem = {

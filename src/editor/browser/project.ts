@@ -382,8 +382,18 @@ export function validateBrowserProject(project: Project): ValidationReport {
     }
   }
   for (const asset of project.assets ?? []) {
-    if (asset.exportState === "blocked") errors.push(`${asset.label} is blocked from Realmz export.`);
+    if (asset.exportState === "blocked") errors.push(`${asset.label} needs adjustment before Realmz export.`);
+    if (asset.exportState === "preview-only") warnings.push(`${asset.label} is preview-only in the browser; desktop export needs converted resource bytes.`);
     if (!["PICT", "cicn", "snd "].includes(asset.resourceType)) errors.push(`${asset.label} uses unsupported resource type ${asset.resourceType}.`);
+    if (asset.kind === "picture" && asset.resourceType !== "PICT") errors.push(`${asset.label} must export as a PICT resource.`);
+    if (asset.kind === "sound" && asset.resourceType !== "snd ") errors.push(`${asset.label} must export as an snd resource.`);
+    if ((asset.kind === "icon" || asset.kind === "special-land-tile") && asset.resourceType !== "cicn") {
+      errors.push(`${asset.label} must export as a cicn resource.`);
+    }
+    if ((asset.kind === "icon" || asset.kind === "special-land-tile") && (asset.width !== 32 || asset.height !== 32)) {
+      warnings.push(`${asset.label} should be converted to 32 x 32 pixels before export.`);
+    }
+    for (const warning of asset.conversion?.warnings ?? []) warnings.push(`${asset.label} import note: ${warning}`);
   }
   for (const message of project.messages ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "message", message.id), errors, warnings);
   for (const battle of project.battles ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "battle", battle.id), errors, warnings);

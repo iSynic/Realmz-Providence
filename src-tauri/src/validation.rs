@@ -8,6 +8,10 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
     let mut warnings = Vec::new();
     let mut exportable_files = Vec::new();
     let mut pass_through_files = Vec::new();
+    const SCENARIO_PICTURE_MIN_ID: i16 = 30000;
+    const SCENARIO_PICTURE_MAX_ID: i16 = 30128;
+    const SCENARIO_SOUND_MIN_ID: i16 = 200;
+    const SCENARIO_SOUND_MAX_ID: i16 = 500;
     let supported: BTreeSet<&str> = SUPPORTED_WRITE_FILES.iter().copied().collect();
     let message_ids = project
         .messages
@@ -599,6 +603,62 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                 asset.label, asset.resource_type
             ));
         }
+        if matches!(asset.export_state, ManagedAssetExportState::PreviewOnly) {
+            warnings.push(format!(
+                "{} is preview-only in this environment; desktop export needs converted resource bytes.",
+                asset.label
+            ));
+        }
+        if matches!(asset.kind, ManagedAssetKind::Picture) {
+            if asset.resource_type != "PICT" {
+                errors.push(format!(
+                    "{} is a scenario picture but targets {}; pictures must export as PICT resources.",
+                    asset.label, asset.resource_type
+                ));
+            }
+            if asset.resource_id < SCENARIO_PICTURE_MIN_ID
+                || asset.resource_id > SCENARIO_PICTURE_MAX_ID
+            {
+                warnings.push(format!(
+                    "{} uses PICT id {}; scenario pictures normally use {}-{}.",
+                    asset.label,
+                    asset.resource_id,
+                    SCENARIO_PICTURE_MIN_ID,
+                    SCENARIO_PICTURE_MAX_ID
+                ));
+            }
+        }
+        if matches!(asset.kind, ManagedAssetKind::Sound) {
+            if asset.resource_type != "snd " {
+                errors.push(format!(
+                    "{} is a scenario sound but targets {}; sounds must export as snd resources.",
+                    asset.label, asset.resource_type
+                ));
+            }
+            if asset.resource_id < SCENARIO_SOUND_MIN_ID || asset.resource_id > SCENARIO_SOUND_MAX_ID {
+                warnings.push(format!(
+                    "{} uses snd id {}; custom scenario sounds normally use {}-{}.",
+                    asset.label,
+                    asset.resource_id,
+                    SCENARIO_SOUND_MIN_ID,
+                    SCENARIO_SOUND_MAX_ID
+                ));
+            }
+        }
+        if matches!(asset.kind, ManagedAssetKind::Icon | ManagedAssetKind::SpecialLandTile) {
+            if asset.resource_type != "cicn" {
+                errors.push(format!(
+                    "{} is an icon-style asset but targets {}; icon-style assets must export as cicn resources.",
+                    asset.label, asset.resource_type
+                ));
+            }
+            if asset.width != Some(32) || asset.height != Some(32) {
+                warnings.push(format!(
+                    "{} should be converted to 32 x 32 pixels before export.",
+                    asset.label
+                ));
+            }
+        }
         if matches!(asset.kind, ManagedAssetKind::SpecialLandTile) {
             if asset.resource_type != "cicn" {
                 errors.push(format!(
@@ -617,6 +677,25 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                     "{} has no original image dimensions recorded; its 32 x 32 cicn conversion should be rechecked before export.",
                     asset.label
                 ));
+            }
+        }
+        if let Some(conversion) = &asset.conversion {
+            if matches!(
+                conversion.target,
+                AssetImportTarget::Icon | AssetImportTarget::SpecialLandTile
+            ) && (conversion.final_width != Some(32) || conversion.final_height != Some(32))
+            {
+                warnings.push(format!(
+                    "{} conversion target is {}, not 32 x 32.",
+                    asset.label,
+                    match (conversion.final_width, conversion.final_height) {
+                        (Some(width), Some(height)) => format!("{width} x {height}"),
+                        _ => "unknown size".to_string(),
+                    }
+                ));
+            }
+            for warning in &conversion.warnings {
+                warnings.push(format!("{} import note: {}", asset.label, warning));
             }
         }
         if asset.resource_id == 0 {

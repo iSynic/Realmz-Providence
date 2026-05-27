@@ -156,15 +156,15 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     id: "assets",
     label: "Assets",
     shortLabel: "Ast",
-    description: "Project pictures, sounds, icons, special land tiles, and library media.",
-    help: "Project assets are editable. Bundled Realmz/Divinity media is read-only but previewable.",
+    description: "Scenario media and bundled reference libraries.",
+    help: "Scenario assets ship with your scenario. Bundled Realmz and Divinity resources are reference-only unless copied into the scenario.",
     tools: [
-      t({ id: "project-assets", label: "Project Assets", iconLabel: "PA", workbench: "project", description: "Imported pictures, icons, sounds, and text.", entityTypes: ["picture", "sound", "special-land-tile"], defaultInspector: "resource" }),
-      t({ id: "pictures", label: "Pictures", iconLabel: "PI", workbench: "both", description: "Scenario pictures and bundled PICT resources.", entityTypes: ["picture"], defaultInspector: "resource" }),
-      t({ id: "sounds", label: "Sounds", iconLabel: "SN", workbench: "both", description: "Scenario sounds and bundled snd resources.", entityTypes: ["sound"], defaultInspector: "resource" }),
-      t({ id: "icons", label: "Icons", iconLabel: "IC", workbench: "both", description: "cicn icons, portraits, and spell icons.", entityTypes: ["icon-resource"], defaultInspector: "resource" }),
-      t({ id: "special-land", label: "Special Land Tiles", iconLabel: "SL", workbench: "both", description: "32 x 32 placeable cicn land tiles.", entityTypes: ["special-land-tile"], defaultInspector: "resource" }),
-      t({ id: "library-assets", label: "Library Reference", iconLabel: "LA", workbench: "library", description: "Bundled read-only media and reference assets.", entityTypes: ["picture", "sound", "icon-resource", "special-land-tile"], defaultInspector: "resource" }),
+      t({ id: "project-assets", label: "Scenario Assets", iconLabel: "SA", workbench: "project", description: "Media that exports with this scenario.", entityTypes: ["picture", "sound", "special-land-tile"], defaultInspector: "resource" }),
+      t({ id: "pictures", label: "Scenario Pictures", iconLabel: "PI", workbench: "both", description: "Project-owned PICT resources.", entityTypes: ["picture"], defaultInspector: "resource" }),
+      t({ id: "sounds", label: "Scenario Sounds", iconLabel: "SN", workbench: "both", description: "Project-owned snd resources.", entityTypes: ["sound"], defaultInspector: "resource" }),
+      t({ id: "icons", label: "Scenario Icons", iconLabel: "IC", workbench: "both", description: "Project-owned cicn resources.", entityTypes: ["icon-resource"], defaultInspector: "resource" }),
+      t({ id: "special-land", label: "Special Land Tiles", iconLabel: "SL", workbench: "both", description: "Project-owned 32 x 32 placeable cicn land tiles.", entityTypes: ["special-land-tile"], defaultInspector: "resource" }),
+      t({ id: "library-assets", label: "Reference Libraries", iconLabel: "RL", workbench: "library", description: "Bundled read-only Realmz resources for previews and selectors.", entityTypes: ["picture", "sound", "icon-resource", "special-land-tile"], defaultInspector: "resource" }),
       t({ id: "resource-forks", label: "Advanced Resources", iconLabel: "RF", workbench: "both", description: "Raw PICT, cicn, snd, TEXT, STR#, styl, RLMZ inventory.", entityTypes: ["resource", "resource type"], defaultInspector: "resource" })
     ]
   },

@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { EditorState } from "../store";
 import { BenchmarkReport, ExportReport, ManagedAssetKind, MapEntity, MapViewFlag, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
+import { MediaAssetImportOptions } from "../mediaAssets";
 import { LibraryDraftSpec } from "../libraryDrafts";
 import { EncountersPanel } from "../panels/EncountersPanel";
 import { ExportPanel } from "../panels/ExportPanel";
@@ -87,7 +88,7 @@ export function WorkbenchRouter({
   onCancelPaintStroke: () => void;
   onCreateDraft: (spec: LibraryDraftSpec) => void;
   onUpdateDraft: (entityId: string, changes: { label?: string; notes?: string }) => void;
-  onImportAssets: (files: File[], kind: ManagedAssetKind) => void;
+  onImportAssets: (files: File[], kind: ManagedAssetKind, options?: MediaAssetImportOptions) => void;
   onReplaceAsset: (assetId: string, file: File) => void;
   onUpdateAsset: (assetId: string, changes: { label?: string; resourceId?: number }) => void;
   onDeleteAsset: (assetId: string) => void;

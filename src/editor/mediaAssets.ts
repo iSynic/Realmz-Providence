@@ -1,4 +1,14 @@
-import { ManagedAsset, ManagedAssetKind } from "./types";
+import {
+  AssetImportTarget,
+  DitherMode,
+  ImageFitMode,
+  ImageMatte,
+  ImageScaleMode,
+  ManagedAsset,
+  ManagedAssetConversion,
+  ManagedAssetKind,
+  PaletteMode
+} from "./types";
 
 const MAX_IMPORT_BYTES = 32 * 1024 * 1024;
 const MAX_IMAGE_PIXELS = 4096 * 4096;
@@ -8,6 +18,24 @@ export const SCENARIO_PICTURE_MAX_ID = 30128;
 export const SCENARIO_SPLASH_PICTURE_ID = 30128;
 export const SCENARIO_SOUND_MIN_ID = 200;
 export const SCENARIO_SOUND_MAX_ID = 500;
+
+export type MediaAssetImportOptions = {
+  target?: AssetImportTarget;
+  fitMode?: ImageFitMode;
+  scaleMode?: ImageScaleMode;
+  matte?: ImageMatte;
+  paletteMode?: PaletteMode;
+  ditherMode?: DitherMode;
+};
+
+export type MediaAssetSourceInfo = {
+  kind: "image" | "sound";
+  width: number | null;
+  height: number | null;
+  durationMs: number | null;
+  sampleRate: number | null;
+  channels: number | null;
+};
 
 export type MediaAssetImportRequest = {
   label: string;
@@ -20,16 +48,60 @@ export type MediaAssetImportRequest = {
   image: { width: number; height: number; rgbaBase64: string } | null;
   audio: { sampleRate: number; channels: number; durationMs: number | null; pcm8Base64: string } | null;
   linkedEntity: string | null;
+  target: AssetImportTarget;
+  fitMode: ImageFitMode | null;
+  scaleMode: ImageScaleMode | null;
+  matte: ImageMatte | null;
+  paletteMode: PaletteMode | null;
+  ditherMode: DitherMode | null;
+  finalWidth: number | null;
+  finalHeight: number | null;
+  warnings: string[];
 };
 
-export async function fileToMediaAssetRequest(file: File, kind: ManagedAssetKind, resourceId: number): Promise<MediaAssetImportRequest> {
+export async function inspectMediaAssetSource(file: File, kind: ManagedAssetKind): Promise<MediaAssetSourceInfo> {
+  if (kind === "sound") {
+    const decoded = await decodeAudioFile(file);
+    return {
+      kind: "sound",
+      width: null,
+      height: null,
+      durationMs: decoded.durationMs,
+      sampleRate: decoded.sampleRate,
+      channels: decoded.sourceChannels
+    };
+  }
+  const decoded = await decodeImageFile(file);
+  return {
+    kind: "image",
+    width: decoded.width,
+    height: decoded.height,
+    durationMs: null,
+    sampleRate: null,
+    channels: null
+  };
+}
+
+export async function fileToMediaAssetRequest(
+  file: File,
+  kind: ManagedAssetKind,
+  resourceId: number,
+  options: MediaAssetImportOptions = {}
+): Promise<MediaAssetImportRequest> {
   if (file.size > MAX_IMPORT_BYTES) {
     throw new Error(`${file.name} is ${(file.size / (1024 * 1024)).toFixed(1)} MB; asset imports are limited to 32 MB for now.`);
   }
   const original = new Uint8Array(await file.arrayBuffer());
   const label = stripExtension(file.name);
+  const target = options.target ?? assetTargetForKind(kind);
+  const warnings: string[] = [];
   if (kind === "sound") {
     const decoded = await decodeAudioFile(file);
+    if (decoded.pcm8.length === 0) warnings.push("Audio contains no decoded samples.");
+    if ((decoded.durationMs ?? 0) > 30_000) warnings.push("Long sounds may feel slow in Classic Realmz.");
+    if (resourceId < SCENARIO_SOUND_MIN_ID || resourceId > SCENARIO_SOUND_MAX_ID) {
+      warnings.push(`Custom scenario sounds normally use IDs ${SCENARIO_SOUND_MIN_ID}-${SCENARIO_SOUND_MAX_ID}.`);
+    }
     return {
       label,
       kind,
@@ -45,7 +117,16 @@ export async function fileToMediaAssetRequest(file: File, kind: ManagedAssetKind
         durationMs: decoded.durationMs,
         pcm8Base64: bytesToBase64(decoded.pcm8)
       },
-      linkedEntity: null
+      linkedEntity: null,
+      target,
+      fitMode: null,
+      scaleMode: null,
+      matte: null,
+      paletteMode: null,
+      ditherMode: null,
+      finalWidth: null,
+      finalHeight: null,
+      warnings
     };
   }
 
@@ -53,7 +134,18 @@ export async function fileToMediaAssetRequest(file: File, kind: ManagedAssetKind
   if (decoded.width * decoded.height > MAX_IMAGE_PIXELS) {
     throw new Error(`${file.name} is ${decoded.width} x ${decoded.height}; images over 16 megapixels are too large for this import path.`);
   }
-  const prepared = kind === "special-land-tile" ? resizeDecodedImage(decoded, 32, 32) : decoded;
+  const imageProfile = normalizeImageOptions(kind, decoded, options);
+  const prepared = prepareDecodedImage(decoded, kind, imageProfile);
+  if (resourceId === 0) warnings.push("Resource ID 0 is unusual; choose a nonzero ID before export.");
+  if (kind === "picture" && (resourceId < SCENARIO_PICTURE_MIN_ID || resourceId > SCENARIO_PICTURE_MAX_ID)) {
+    warnings.push(`Scenario pictures normally use IDs ${SCENARIO_PICTURE_MIN_ID}-${SCENARIO_PICTURE_MAX_ID}.`);
+  }
+  if (kind === "special-land-tile" && resourceId >= 0) {
+    warnings.push("Special Land Tiles should use negative cicn IDs such as -100.");
+  }
+  if ((kind === "icon" || kind === "special-land-tile") && (prepared.width !== 32 || prepared.height !== 32)) {
+    warnings.push("Icon-style Realmz resources must be converted to 32 x 32 pixels.");
+  }
   const preview = await canvasToPngBytes(prepared.canvas);
   return {
     label,
@@ -65,7 +157,16 @@ export async function fileToMediaAssetRequest(file: File, kind: ManagedAssetKind
     previewBase64: bytesToBase64(preview),
     image: { width: prepared.width, height: prepared.height, rgbaBase64: bytesToBase64(prepared.rgba) },
     audio: null,
-    linkedEntity: kind === "special-land-tile" ? `special-land-tile:${resourceId}` : null
+    linkedEntity: kind === "special-land-tile" ? `special-land-tile:${resourceId}` : null,
+    target,
+    fitMode: imageProfile.fitMode,
+    scaleMode: imageProfile.scaleMode,
+    matte: imageProfile.matte,
+    paletteMode: imageProfile.paletteMode,
+    ditherMode: imageProfile.ditherMode,
+    finalWidth: prepared.width,
+    finalHeight: prepared.height,
+    warnings
   };
 }
 
@@ -95,7 +196,8 @@ export function requestToBrowserAsset(request: MediaAssetImportRequest): Managed
     channels: request.audio?.channels ?? null,
     exportState: "preview-only",
     provenance: "browser media import",
-    linkedEntity: request.linkedEntity
+    linkedEntity: request.linkedEntity,
+    conversion: requestToConversion(request)
   };
 }
 
@@ -108,6 +210,13 @@ export function requestToBrowserReplacement(request: MediaAssetImportRequest, pr
     linkedEntity: previous.linkedEntity,
     provenance: `${previous.provenance}; replaced in browser preview`
   };
+}
+
+export function assetTargetForKind(kind: ManagedAssetKind): AssetImportTarget {
+  if (kind === "special-land-tile") return "special-land-tile";
+  if (kind === "icon") return "icon";
+  if (kind === "sound") return "sound";
+  return "scenario-picture";
 }
 
 export function nextResourceId(assets: ManagedAsset[], kind: ManagedAssetKind) {
@@ -144,6 +253,97 @@ function nextIdInRange(assets: ManagedAsset[], kind: ManagedAssetKind, min: numb
   return fallback;
 }
 
+function requestToConversion(request: MediaAssetImportRequest): ManagedAssetConversion {
+  return {
+    target: request.target,
+    fitMode: request.fitMode,
+    scaleMode: request.scaleMode,
+    matte: request.matte,
+    paletteMode: request.paletteMode,
+    ditherMode: request.ditherMode,
+    finalWidth: request.finalWidth,
+    finalHeight: request.finalHeight,
+    warnings: request.warnings
+  };
+}
+
+function normalizeImageOptions(
+  kind: ManagedAssetKind,
+  decoded: Awaited<ReturnType<typeof decodeImageFile>>,
+  options: MediaAssetImportOptions
+) {
+  const fixedSize = kind === "icon" || kind === "special-land-tile";
+  const alreadySmall = decoded.width <= 64 && decoded.height <= 64;
+  const scaleMode = options.scaleMode ?? (fixedSize && alreadySmall ? "crisp" : "smooth");
+  return {
+    fitMode: fixedSize ? options.fitMode ?? "fit" : null,
+    scaleMode,
+    matte: options.matte ?? (kind === "picture" ? "white" : "transparent"),
+    paletteMode: "adaptive-256" as PaletteMode,
+    ditherMode: options.ditherMode ?? (kind === "picture" ? "floyd-steinberg" : "none")
+  };
+}
+
+function prepareDecodedImage(
+  decoded: Awaited<ReturnType<typeof decodeImageFile>>,
+  kind: ManagedAssetKind,
+  profile: ReturnType<typeof normalizeImageOptions>
+) {
+  const fixedSize = kind === "icon" || kind === "special-land-tile";
+  const width = fixedSize ? 32 : decoded.width;
+  const height = fixedSize ? 32 : decoded.height;
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (!context) throw new Error("Canvas conversion is unavailable.");
+  context.imageSmoothingEnabled = profile.scaleMode === "smooth";
+  context.imageSmoothingQuality = profile.scaleMode === "smooth" ? "high" : "low";
+  if (profile.matte !== "transparent") {
+    context.fillStyle = profile.matte;
+    context.fillRect(0, 0, width, height);
+  } else {
+    context.clearRect(0, 0, width, height);
+  }
+  if (!fixedSize) {
+    context.drawImage(decoded.canvas, 0, 0);
+  } else if (profile.fitMode === "stretch") {
+    context.drawImage(decoded.canvas, 0, 0, width, height);
+  } else if (profile.fitMode === "crop") {
+    const sourceRatio = decoded.width / decoded.height;
+    const targetRatio = width / height;
+    let sx = 0;
+    let sy = 0;
+    let sw = decoded.width;
+    let sh = decoded.height;
+    if (sourceRatio > targetRatio) {
+      sw = decoded.height * targetRatio;
+      sx = (decoded.width - sw) / 2;
+    } else {
+      sh = decoded.width / targetRatio;
+      sy = (decoded.height - sh) / 2;
+    }
+    context.drawImage(decoded.canvas, sx, sy, sw, sh, 0, 0, width, height);
+  } else {
+    const scale = Math.min(width / decoded.width, height / decoded.height);
+    const dw = Math.max(1, Math.round(decoded.width * scale));
+    const dh = Math.max(1, Math.round(decoded.height * scale));
+    const dx = Math.floor((width - dw) / 2);
+    const dy = Math.floor((height - dh) / 2);
+    context.drawImage(decoded.canvas, dx, dy, dw, dh);
+  }
+  const imageData = context.getImageData(0, 0, width, height);
+  if (kind === "picture" && profile.matte !== "transparent") {
+    for (let offset = 3; offset < imageData.data.length; offset += 4) imageData.data[offset] = 255;
+  }
+  return {
+    width,
+    height,
+    rgba: new Uint8Array(imageData.data.buffer.slice(0)),
+    canvas
+  };
+}
+
 async function decodeImageFile(file: File) {
   const url = URL.createObjectURL(file);
   try {
@@ -172,23 +372,6 @@ async function decodeImageFile(file: File) {
   }
 }
 
-function resizeDecodedImage(decoded: Awaited<ReturnType<typeof decodeImageFile>>, width: number, height: number) {
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const context = canvas.getContext("2d", { willReadFrequently: true });
-  if (!context) throw new Error("Canvas resizing is unavailable.");
-  context.imageSmoothingEnabled = false;
-  context.drawImage(decoded.canvas, 0, 0, width, height);
-  const imageData = context.getImageData(0, 0, width, height);
-  return {
-    width,
-    height,
-    rgba: new Uint8Array(imageData.data.buffer.slice(0)),
-    canvas
-  };
-}
-
 async function decodeAudioFile(file: File) {
   const AudioContextCtor = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AudioContextCtor) throw new Error("Browser audio decoding is unavailable.");
@@ -207,6 +390,7 @@ async function decodeAudioFile(file: File) {
     }
     return {
       sampleRate: Math.round(buffer.sampleRate),
+      sourceChannels: buffer.numberOfChannels,
       durationMs: Math.round(buffer.duration * 1000),
       pcm8
     };

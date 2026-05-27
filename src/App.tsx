@@ -20,7 +20,7 @@ import { loadImage } from "./editor/components/TileSprite";
 import { PAINTABLE_REFERENCE_ACTOR_ICON_VALUES, PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES, referencedMapIconIds, tileIconCandidates } from "./editor/map/renderValues";
 import { editorReducer, initialEditorState, BROWSER_PREVIEW_STATUS } from "./editor/store";
 import { BenchmarkReport, ExportReport, LibraryCatalog, ManagedAssetKind, MapEntity, MapViewFlag, Project, ProjectCommand, ProvidenceWorkspace, SelectedEntity, SemanticEntity, TilesetAsset, ValidationReport } from "./editor/types";
-import { fileToMediaAssetRequest, nextResourceId, requestToBrowserAsset, requestToBrowserReplacement } from "./editor/mediaAssets";
+import { fileToMediaAssetRequest, MediaAssetImportOptions, nextResourceId, requestToBrowserAsset, requestToBrowserReplacement } from "./editor/mediaAssets";
 import { commandError, hasDesktopRuntime, issuesFor } from "./editor/utils";
 import {
   semanticMapRecordsForMap,
@@ -725,13 +725,13 @@ export function App() {
     dispatch({ type: "applyCommand", command });
   }
 
-  async function importMediaAssets(files: File[], kind: ManagedAssetKind) {
+  async function importMediaAssets(files: File[], kind: ManagedAssetKind, options: MediaAssetImportOptions = {}) {
     if (!state.project || files.length === 0) return;
     let project = state.project;
     try {
       dispatch({ type: "setStatus", status: `Importing ${files.length} ${kind} asset(s)...` });
       for (const file of files) {
-        const request = await fileToMediaAssetRequest(file, kind, nextResourceId(project.assets ?? [], kind));
+        const request = await fileToMediaAssetRequest(file, kind, nextResourceId(project.assets ?? [], kind), options);
         if (desktopRuntime) {
           project = await invoke<Project>("import_project_media_asset", { projectDir, project, request });
           dispatch({ type: "markSaved", project });
@@ -781,7 +781,13 @@ export function App() {
     }
     try {
       dispatch({ type: "setStatus", status: `Replacing ${existing.label}...` });
-      const request = await fileToMediaAssetRequest(file, existing.kind, existing.resourceId);
+      const request = await fileToMediaAssetRequest(file, existing.kind, existing.resourceId, {
+        target: existing.conversion?.target,
+        fitMode: existing.conversion?.fitMode ?? undefined,
+        scaleMode: existing.conversion?.scaleMode ?? undefined,
+        matte: existing.conversion?.matte ?? undefined,
+        ditherMode: existing.conversion?.ditherMode ?? undefined
+      });
       if (!desktopRuntime) {
         const asset = requestToBrowserReplacement(request, existing);
         dispatch({ type: "applyCommand", command: { kind: "replaceProjectAsset", label: `Replace ${existing.label}`, assetId, asset } });
