@@ -5,6 +5,7 @@ import {
   ExtraCodeRow,
   MapRecord,
   MessageRecord,
+  MonsterRecord,
   PaintCellChange,
   Project,
   ProjectCommand,
@@ -13,10 +14,13 @@ import {
   RandomRect,
   RealmzTargetRecordKind,
   ScenarioCasteOverride,
+  ScenarioItemRecord,
   ScenarioRaceOverride,
   ScenarioSpellOverride,
   ShopRecord,
   SimpleEncounterRecord,
+  ThiefEncounterRecord,
+  TimedEncounterRecord,
   TreasureRecord,
   TriggerRecord
 } from "./types";
@@ -26,10 +30,16 @@ import { isReusableDoorPlaceholder } from "./actionPointCapacity";
 const DOOR_RECORD_BYTES = 40;
 const DOORS_PER_LEVEL = 100;
 const EXTRACODE_BYTES = 10;
+const ITEM_BYTES = 100;
+const MONSTER_BYTES = 210;
 const RANDOM_LEVEL_BYTES = 644;
 const RANDOM_LEVEL_WORDS = RANDOM_LEVEL_BYTES / 2;
 const RANDOM_RECTS_PER_LEVEL = 20;
 const MAP_RECORD_BYTES = 340;
+const THIEF_ENCOUNTER_BYTES = 118;
+const TIMED_ENCOUNTER_BYTES = 40;
+const LAND_LAYOUT_ROWS = 8;
+const LAND_LAYOUT_COLS = 16;
 
 export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "paintTiles") return paintTiles(project, command.mapId, command.cells);
@@ -41,6 +51,9 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "updateTriggerHeader") return updateTriggerHeader(project, command.triggerId, command.fields);
   if (command.kind === "updateRandomLevelSettings") return updateRandomLevelSettings(project, command);
   if (command.kind === "updateMapRecord") return updateMapRecord(project, command.id, command.changes);
+  if (command.kind === "createLandLayout") return ensureLandLayout(project);
+  if (command.kind === "updateLandLayoutCell") return updateLandLayoutCell(project, command.row, command.col, command.value);
+  if (command.kind === "clearLandLayout") return clearLandLayout(project);
   if (command.kind === "createRandomRect") return createRandomRect(project, command);
   if (command.kind === "updateRandomRect") return updateRandomRect(project, command);
   if (command.kind === "clearRandomRect") return clearRandomRect(project, command);
@@ -54,11 +67,17 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "deleteTargetRecord") return deleteTargetRecord(project, command.recordType, command.id);
   if (command.kind === "duplicateMessageRecord") return duplicateMessageRecord(project, command.fromId, command.toId);
   if (command.kind === "updateMessageRecord") return updateRecord(project, "messages", command.id, command.changes);
+  if (command.kind === "bulkUpdateMessageRecords") return bulkUpdateMessageRecords(project, command.updates);
   if (command.kind === "updateBattleRecord") return updateRecord(project, "battles", command.id, command.changes);
+  if (command.kind === "updateMonsterRecord") return updateRecord(project, "monsters", command.id, command.changes);
+  if (command.kind === "updateScenarioItemRecord") return updateRecord(project, "scenarioItems", command.id, command.changes);
+  if (command.kind === "clearScenarioItemRecord") return updateRecord(project, "scenarioItems", command.id, emptyScenarioItem(command.id));
   if (command.kind === "updateTreasureRecord") return updateRecord(project, "treasures", command.id, command.changes);
   if (command.kind === "updateShopRecord") return updateRecord(project, "shops", command.id, command.changes);
   if (command.kind === "updateSimpleEncounterRecord") return updateRecord(project, "simpleEncounters", command.id, command.changes);
   if (command.kind === "updateComplexEncounterRecord") return updateRecord(project, "complexEncounters", command.id, command.changes);
+  if (command.kind === "updateThiefEncounterRecord") return updateRecord(project, "thiefEncounters", command.id, command.changes);
+  if (command.kind === "updateTimedEncounterRecord") return updateRecord(project, "timedEncounters", command.id, command.changes);
   if (command.kind === "upsertQuestLabel") return upsertQuestLabel(project, command.quest);
   if (command.kind === "deleteQuestLabel") return { ...project, questLabels: (project.questLabels ?? []).filter((quest) => quest.id !== command.id) };
   if (command.kind === "applyRealmzScriptStep") {
@@ -103,6 +122,7 @@ export function projectCommandLabel(command: ProjectCommand) {
 
 export function projectCommandChangeCount(command: ProjectCommand) {
   if (command.kind === "paintTiles") return command.cells.length;
+  if (command.kind === "bulkUpdateMessageRecords") return command.updates.length;
   return 1;
 }
 
@@ -315,6 +335,59 @@ function updateMapRecord(project: Project, id: number, changes: Extract<ProjectC
   return changed ? { ...project, mapRecords } : project;
 }
 
+function ensureLandLayout(project: Project) {
+  if (project.landLayout) return project;
+  return {
+    ...project,
+    landLayout: {
+      rows: LAND_LAYOUT_ROWS,
+      cols: LAND_LAYOUT_COLS,
+      cells: new Array(LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS).fill(0),
+      trailingBytes: [],
+      authored: true,
+      provenance: authoredProvenance("Layout", 0, 0, LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS * 2)
+    }
+  };
+}
+
+function updateLandLayoutCell(project: Project, row: number, col: number, value: number) {
+  if (row < 0 || row >= LAND_LAYOUT_ROWS || col < 0 || col >= LAND_LAYOUT_COLS) return project;
+  const withLayout = ensureLandLayout(project);
+  const layout = withLayout.landLayout;
+  if (!layout) return withLayout;
+  const cells = [...layout.cells];
+  const index = row * LAND_LAYOUT_COLS + col;
+  const nextValue = clampSignedShort(Math.trunc(value));
+  if (cells[index] === nextValue && layout.rows === LAND_LAYOUT_ROWS && layout.cols === LAND_LAYOUT_COLS && layout.authored) return withLayout;
+  cells[index] = nextValue;
+  return {
+    ...withLayout,
+    landLayout: {
+      ...layout,
+      rows: LAND_LAYOUT_ROWS,
+      cols: LAND_LAYOUT_COLS,
+      cells: normalizeLandLayoutCells(cells),
+      authored: true
+    }
+  };
+}
+
+function clearLandLayout(project: Project) {
+  const withLayout = ensureLandLayout(project);
+  const layout = withLayout.landLayout;
+  if (!layout) return withLayout;
+  return {
+    ...withLayout,
+    landLayout: {
+      ...layout,
+      rows: LAND_LAYOUT_ROWS,
+      cols: LAND_LAYOUT_COLS,
+      cells: new Array(LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS).fill(0),
+      authored: true
+    }
+  };
+}
+
 function createRandomRect(project: Project, command: Extract<ProjectCommand, { kind: "createRandomRect" }>) {
   const level = ensureRandomLevel(project, command.levelType, command.levelIndex);
   const rectIndex = command.rect.rectIndex ?? nextRandomRectIndex(level);
@@ -470,6 +543,8 @@ function createTargetRecord(project: Project, recordType: RealmzTargetRecordKind
       return upsertRecord(project, "messages", emptyMessage(id));
     case "battle":
       return upsertRecord(project, "battles", emptyBattle(id));
+    case "monster":
+      return upsertRecord(project, "monsters", emptyMonster(id));
     case "treasure":
       return upsertRecord(project, "treasures", emptyTreasure(id));
     case "shop":
@@ -478,6 +553,10 @@ function createTargetRecord(project: Project, recordType: RealmzTargetRecordKind
       return upsertRecord(project, "simpleEncounters", emptySimpleEncounter(id));
     case "complexEncounter":
       return upsertRecord(project, "complexEncounters", emptyComplexEncounter(id));
+    case "thiefEncounter":
+      return upsertRecord(project, "thiefEncounters", emptyThiefEncounter(id));
+    case "timedEncounter":
+      return upsertRecord(project, "timedEncounters", emptyTimedEncounter(id));
     case "questLabel":
       return upsertQuestLabel(project, { id, label: `Quest ${id}` });
   }
@@ -489,6 +568,8 @@ function deleteTargetRecord(project: Project, recordType: RealmzTargetRecordKind
       return upsertRecord(project, "messages", emptyMessage(id));
     case "battle":
       return upsertRecord(project, "battles", emptyBattle(id));
+    case "monster":
+      return upsertRecord(project, "monsters", emptyMonster(id));
     case "treasure":
       return upsertRecord(project, "treasures", emptyTreasure(id));
     case "shop":
@@ -497,6 +578,10 @@ function deleteTargetRecord(project: Project, recordType: RealmzTargetRecordKind
       return upsertRecord(project, "simpleEncounters", emptySimpleEncounter(id));
     case "complexEncounter":
       return upsertRecord(project, "complexEncounters", emptyComplexEncounter(id));
+    case "thiefEncounter":
+      return upsertRecord(project, "thiefEncounters", emptyThiefEncounter(id));
+    case "timedEncounter":
+      return upsertRecord(project, "timedEncounters", emptyTimedEncounter(id));
     case "questLabel":
       return { ...project, questLabels: (project.questLabels ?? []).filter((quest) => quest.id !== id) };
   }
@@ -514,14 +599,33 @@ function duplicateMessageRecord(project: Project, fromId: number, requestedId?: 
   });
 }
 
-type TargetCollectionName = "messages" | "battles" | "treasures" | "shops" | "simpleEncounters" | "complexEncounters";
+function bulkUpdateMessageRecords(project: Project, updates: Array<{ id: number; text: string }>): Project {
+  if (updates.length === 0) return project;
+  const messages = [...(project.messages ?? [])];
+  for (const update of updates) {
+    if (!Number.isInteger(update.id) || update.id < 0) continue;
+    const existingIndex = messages.findIndex((record) => record.id === update.id);
+    const base = existingIndex >= 0 ? messages[existingIndex] : emptyMessage(update.id);
+    const next = { ...base, text: update.text, authored: true };
+    if (existingIndex >= 0) messages[existingIndex] = next;
+    else messages.push(next);
+  }
+  messages.sort((a, b) => a.id - b.id);
+  return { ...project, messages };
+}
+
+type TargetCollectionName = "messages" | "battles" | "monsters" | "scenarioItems" | "treasures" | "shops" | "simpleEncounters" | "complexEncounters" | "thiefEncounters" | "timedEncounters";
 type TargetRecord =
   | MessageRecord
   | BattleRecord
+  | MonsterRecord
+  | ScenarioItemRecord
   | TreasureRecord
   | ShopRecord
   | SimpleEncounterRecord
-  | ComplexEncounterRecord;
+  | ComplexEncounterRecord
+  | ThiefEncounterRecord
+  | TimedEncounterRecord;
 
 function updateRecord<K extends TargetCollectionName>(project: Project, collection: K, id: number, changes: Partial<Project[K][number]>) {
   const existing = (project[collection] as TargetRecord[]).find((record) => record.id === id);
@@ -541,10 +645,14 @@ function upsertRecord<K extends TargetCollectionName>(project: Project, collecti
 function defaultRecordForCollection(collection: TargetCollectionName, id: number): TargetRecord {
   if (collection === "messages") return emptyMessage(id);
   if (collection === "battles") return emptyBattle(id);
+  if (collection === "monsters") return emptyMonster(id);
+  if (collection === "scenarioItems") return emptyScenarioItem(id);
   if (collection === "treasures") return emptyTreasure(id);
   if (collection === "shops") return emptyShop(id);
   if (collection === "simpleEncounters") return emptySimpleEncounter(id);
-  return emptyComplexEncounter(id);
+  if (collection === "complexEncounters") return emptyComplexEncounter(id);
+  if (collection === "thiefEncounters") return emptyThiefEncounter(id);
+  return emptyTimedEncounter(id);
 }
 
 function nextTargetId(project: Project, recordType: RealmzTargetRecordKind) {
@@ -559,10 +667,13 @@ function targetIds(project: Project, recordType: RealmzTargetRecordKind) {
   const values =
     recordType === "message" ? project.messages :
     recordType === "battle" ? project.battles :
+    recordType === "monster" ? project.monsters :
     recordType === "treasure" ? project.treasures :
     recordType === "shop" ? project.shops :
     recordType === "simpleEncounter" ? project.simpleEncounters :
     recordType === "complexEncounter" ? project.complexEncounters :
+    recordType === "thiefEncounter" ? project.thiefEncounters :
+    recordType === "timedEncounter" ? project.timedEncounters :
     project.questLabels;
   return new Set((values ?? []).map((record) => record.id));
 }
@@ -584,8 +695,113 @@ function emptyBattle(id: number): BattleRecord {
   return { id, grid: new Array(13 * 13).fill(0), dist: 0, messageBefore: 0, messageAfter: 0, battleMacro: 0, rawBytes: new Array(346).fill(0), authored: true, provenance: authoredProvenance("Data BD", id, id * 346, 346) };
 }
 
+function emptyMonster(id: number): MonsterRecord {
+  return {
+    id,
+    hitDice: 1,
+    staminaBonus: 0,
+    agility: 10,
+    nameId: 0,
+    movementMax: 10,
+    armor: 0,
+    magicResistance: 0,
+    distance: 0,
+    traitor: 0,
+    size: 1,
+    typeFlags: new Array(8).fill(0),
+    attackCount: 1,
+    magicAttackCount: 0,
+    attacks: Array.from({ length: 5 }, () => [0, 0, 0, 0]),
+    damageBonus: 0,
+    castPercent: 0,
+    runPercent: 0,
+    surrenderPercent: 0,
+    missilePercent: 0,
+    canSummon: 0,
+    saves: new Array(6).fill(0),
+    spellImmunities: new Array(6).fill(0),
+    money: [0, 0, 0],
+    spells: new Array(10).fill(0),
+    items: new Array(6).fill(0),
+    weapon: 0,
+    iconId: 0,
+    spellPoints: 0,
+    exp: 0,
+    stamina: 0,
+    staminaMax: 0,
+    underneath: new Array(4).fill(0),
+    target: 0,
+    guarding: 0,
+    notOnMenu: false,
+    beenAttacked: 0,
+    movement: 0,
+    magicToHit: 0,
+    conditions: new Array(40).fill(0),
+    lr: 0,
+    up: 0,
+    attackNum: 0,
+    bonusAttack: 0,
+    deathMacro: 0,
+    maxSpellPoints: 0,
+    displayName: `Monster ${id}`,
+    rawBytes: new Array(MONSTER_BYTES).fill(0),
+    authored: true,
+    provenance: authoredProvenance("Data MD", id, id * MONSTER_BYTES, MONSTER_BYTES)
+  };
+}
+
 function emptyTreasure(id: number): TreasureRecord {
   return { id, itemIds: new Array(20).fill(0), exp: 0, gold: 0, gems: 0, jewelry: 0, rawBytes: new Array(48).fill(0), authored: true, provenance: authoredProvenance("Data TD", id, id * 48, 48) };
+}
+
+function emptyScenarioItem(id: number): ScenarioItemRecord {
+  return {
+    id,
+    itemId: 800 + id,
+    iconId: 0,
+    type: 0,
+    st: 0,
+    blunt: 0,
+    hands: 0,
+    lu: 0,
+    movement: 0,
+    ac: 0,
+    magicResistance: 0,
+    damage: 0,
+    spellPoints: 0,
+    sound: 0,
+    weight: 0,
+    cost: 0,
+    charge: 0,
+    cursedItemId: 0,
+    magical: 0,
+    itemCat0: 0,
+    itemCat1: 0,
+    raceRestrictions: 0,
+    casteRestrictions: 0,
+    specificRace: 0,
+    specificCaste: 0,
+    raceClassOnly: 0,
+    casteClassOnly: 0,
+    vSmall: 0,
+    vLarge: 0,
+    heat: 0,
+    cold: 0,
+    electric: 0,
+    vsUndead: 0,
+    vsDemonDevil: 0,
+    vsEvil: 0,
+    special1: 0,
+    special2: 0,
+    special3: 0,
+    special4: 0,
+    special5: 0,
+    weightPerCharge: 0,
+    dropOnEmpty: 0,
+    rawBytes: new Array(ITEM_BYTES).fill(0),
+    authored: true,
+    provenance: authoredProvenance("Data NI", id, id * ITEM_BYTES, ITEM_BYTES)
+  };
 }
 
 function emptyShop(id: number): ShopRecord {
@@ -598,6 +814,50 @@ function emptySimpleEncounter(id: number): SimpleEncounterRecord {
 
 function emptyComplexEncounter(id: number): ComplexEncounterRecord {
   return { id, actions: [], choiceResults: [0, 0, 0, 0], wordResults: [0, 0, 0, 0], canBackOut: false, thief: false, maxTimes: 0, casteSuccess: 0, thiefSuccess: 0, thiefFail: 0, prompt: 0, texts: ["", "", "", "", "", "", "", "", ""], rawBytes: new Array(520).fill(0), authored: true, provenance: authoredProvenance("Data ED2", id, id * 520, 520) };
+}
+
+function emptyThiefEncounter(id: number): ThiefEncounterRecord {
+  return {
+    id,
+    typeFlags: new Array(10).fill(false),
+    modifiers: new Array(8).fill(0),
+    successCodes: new Array(8).fill(0),
+    failureCodes: new Array(8).fill(0),
+    successText: new Array(8).fill(0),
+    failureText: new Array(8).fill(0),
+    successSounds: new Array(8).fill(0),
+    failureSounds: new Array(8).fill(0),
+    spell: 0,
+    lowDamage: 0,
+    highDamage: 0,
+    tumblers: 0,
+    prompts: new Array(3).fill(0),
+    promptSounds: new Array(3).fill(0),
+    rawBytes: new Array(THIEF_ENCOUNTER_BYTES).fill(0),
+    authored: true,
+    provenance: authoredProvenance("Data TD2", id, id * THIEF_ENCOUNTER_BYTES, THIEF_ENCOUNTER_BYTES)
+  };
+}
+
+function emptyTimedEncounter(id: number): TimedEncounterRecord {
+  return {
+    id,
+    day: -1,
+    increment: -1,
+    percent: 100,
+    door: 0,
+    requiredLevel: -1,
+    requiredRandomRect: -1,
+    requiredX: -1,
+    requiredY: -1,
+    requiredItem: -1,
+    requiredQuest: -1,
+    locationKind: "any",
+    stuff: [-1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    rawBytes: new Array(TIMED_ENCOUNTER_BYTES).fill(0),
+    authored: true,
+    provenance: authoredProvenance("Data TD3", id, id * TIMED_ENCOUNTER_BYTES, TIMED_ENCOUNTER_BYTES)
+  };
 }
 
 function renameEditorEntity(project: Project, entityId: string, displayName: string) {
@@ -1151,6 +1411,18 @@ function authoredProvenance(sourceFile: string, recordIndex: number, byteOffset:
     byteLength,
     confidence: "inferred"
   };
+}
+
+function normalizeLandLayoutCells(cells: number[]) {
+  const out = new Array(LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS).fill(0);
+  for (let index = 0; index < out.length; index += 1) {
+    out[index] = clampSignedShort(Math.trunc(cells[index] ?? 0));
+  }
+  return out;
+}
+
+function clampSignedShort(value: number) {
+  return Math.max(-32768, Math.min(32767, Number.isFinite(value) ? value : 0));
 }
 
 function cloneTrigger(trigger: TriggerRecord, changes: Partial<TriggerRecord>): TriggerRecord {

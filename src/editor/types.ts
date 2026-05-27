@@ -338,7 +338,7 @@ export type ScenarioMeta = {
 };
 
 export type ScenarioStartupFields = Partial<ScenarioMeta>;
-export type RealmzTargetRecordKind = "message" | "battle" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "questLabel";
+export type RealmzTargetRecordKind = "message" | "battle" | "monster" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "thiefEncounter" | "timedEncounter" | "questLabel";
 
 export type MessageRecord = {
   id: number;
@@ -355,6 +355,59 @@ export type BattleRecord = {
   messageBefore: number;
   messageAfter: number;
   battleMacro: number;
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: Provenance;
+};
+
+export type MonsterRecord = {
+  id: number;
+  hitDice: number;
+  staminaBonus: number;
+  agility: number;
+  nameId: number;
+  movementMax: number;
+  armor: number;
+  magicResistance: number;
+  distance: number;
+  traitor: number;
+  size: number;
+  typeFlags: number[];
+  attackCount: number;
+  magicAttackCount: number;
+  attacks: number[][];
+  damageBonus: number;
+  castPercent: number;
+  runPercent: number;
+  surrenderPercent: number;
+  missilePercent: number;
+  canSummon: number;
+  saves: number[];
+  spellImmunities: number[];
+  money: number[];
+  spells: number[];
+  items: number[];
+  weapon: number;
+  iconId: number;
+  spellPoints: number;
+  exp: number;
+  stamina: number;
+  staminaMax: number;
+  underneath: number[];
+  target: number;
+  guarding: number;
+  notOnMenu: boolean;
+  beenAttacked: number;
+  movement: number;
+  magicToHit: number;
+  conditions: number[];
+  lr: number;
+  up: number;
+  attackNum: number;
+  bonusAttack: number;
+  deathMacro: number;
+  maxSpellPoints: number;
+  displayName: string;
   rawBytes?: number[];
   authored?: boolean;
   provenance?: Provenance;
@@ -377,6 +430,54 @@ export type ShopRecord = {
   itemIds: number[];
   quantities: number[];
   inflation: number;
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: Provenance;
+};
+
+export type ScenarioItemRecord = {
+  id: number;
+  itemId: number;
+  iconId: number;
+  type: number;
+  st: number;
+  blunt: number;
+  hands: number;
+  lu: number;
+  movement: number;
+  ac: number;
+  magicResistance: number;
+  damage: number;
+  spellPoints: number;
+  sound: number;
+  weight: number;
+  cost: number;
+  charge: number;
+  cursedItemId: number;
+  magical: number;
+  itemCat0: number;
+  itemCat1: number;
+  raceRestrictions: number;
+  casteRestrictions: number;
+  specificRace: number;
+  specificCaste: number;
+  raceClassOnly: number;
+  casteClassOnly: number;
+  vSmall: number;
+  vLarge: number;
+  heat: number;
+  cold: number;
+  electric: number;
+  vsUndead: number;
+  vsDemonDevil: number;
+  vsEvil: number;
+  special1: number;
+  special2: number;
+  special3: number;
+  special4: number;
+  special5: number;
+  weightPerCharge: number;
+  dropOnEmpty: number;
   rawBytes?: number[];
   authored?: boolean;
   provenance?: Provenance;
@@ -415,6 +516,48 @@ export type ComplexEncounterRecord = {
   thiefFail: number;
   prompt: number;
   texts: string[];
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: Provenance;
+};
+
+export type TimedEncounterLocationKind = "any" | "land" | "dungeon";
+
+export type TimedEncounterRecord = {
+  id: number;
+  day: number;
+  increment: number;
+  percent: number;
+  door: number;
+  requiredLevel: number;
+  requiredRandomRect: number;
+  requiredX: number;
+  requiredY: number;
+  requiredItem: number;
+  requiredQuest: number;
+  locationKind: TimedEncounterLocationKind;
+  stuff: number[];
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: Provenance;
+};
+
+export type ThiefEncounterRecord = {
+  id: number;
+  typeFlags: boolean[];
+  modifiers: number[];
+  successCodes: number[];
+  failureCodes: number[];
+  successText: number[];
+  failureText: number[];
+  successSounds: number[];
+  failureSounds: number[];
+  spell: number;
+  lowDamage: number;
+  highDamage: number;
+  tumblers: number;
+  prompts: number[];
+  promptSounds: number[];
   rawBytes?: number[];
   authored?: boolean;
   provenance?: Provenance;
@@ -594,6 +737,9 @@ export type ProjectCommand =
       id: number;
       changes: Partial<Pick<MapRecord, "startX" | "startY" | "level" | "pictId" | "iconSize" | "show" | "isDungeon" | "rect" | "note">>;
     }
+  | { kind: "createLandLayout"; label: string }
+  | { kind: "updateLandLayoutCell"; label: string; row: number; col: number; value: number }
+  | { kind: "clearLandLayout"; label: string }
   | {
       kind: "createRandomRect";
       label: string;
@@ -659,11 +805,17 @@ export type ProjectCommand =
   | { kind: "deleteTargetRecord"; label: string; recordType: RealmzTargetRecordKind; id: number }
   | { kind: "duplicateMessageRecord"; label: string; fromId: number; toId?: number }
   | { kind: "updateMessageRecord"; label: string; id: number; changes: Partial<Pick<MessageRecord, "text">> }
+  | { kind: "bulkUpdateMessageRecords"; label: string; updates: Array<{ id: number; text: string }> }
   | { kind: "updateBattleRecord"; label: string; id: number; changes: Partial<Pick<BattleRecord, "grid" | "dist" | "messageBefore" | "messageAfter" | "battleMacro">> }
+  | { kind: "updateMonsterRecord"; label: string; id: number; changes: Partial<MonsterRecord> }
+  | { kind: "updateScenarioItemRecord"; label: string; id: number; changes: Partial<ScenarioItemRecord> }
+  | { kind: "clearScenarioItemRecord"; label: string; id: number }
   | { kind: "updateTreasureRecord"; label: string; id: number; changes: Partial<Pick<TreasureRecord, "itemIds" | "exp" | "gold" | "gems" | "jewelry">> }
   | { kind: "updateShopRecord"; label: string; id: number; changes: Partial<Pick<ShopRecord, "itemIds" | "quantities" | "inflation">> }
   | { kind: "updateSimpleEncounterRecord"; label: string; id: number; changes: Partial<Pick<SimpleEncounterRecord, "actions" | "choiceResults" | "canBackOut" | "maxTimes" | "casteSuccess" | "prompt" | "texts">> }
   | { kind: "updateComplexEncounterRecord"; label: string; id: number; changes: Partial<Pick<ComplexEncounterRecord, "actions" | "choiceResults" | "wordResults" | "canBackOut" | "thief" | "maxTimes" | "casteSuccess" | "thiefSuccess" | "thiefFail" | "prompt" | "texts">> }
+  | { kind: "updateThiefEncounterRecord"; label: string; id: number; changes: Partial<Pick<ThiefEncounterRecord, "typeFlags" | "modifiers" | "successCodes" | "failureCodes" | "successText" | "failureText" | "successSounds" | "failureSounds" | "spell" | "lowDamage" | "highDamage" | "tumblers" | "prompts" | "promptSounds">> }
+  | { kind: "updateTimedEncounterRecord"; label: string; id: number; changes: Partial<Pick<TimedEncounterRecord, "day" | "increment" | "percent" | "door" | "requiredLevel" | "requiredRandomRect" | "requiredX" | "requiredY" | "requiredItem" | "requiredQuest" | "locationKind" | "stuff">> }
   | { kind: "upsertQuestLabel"; label: string; quest: QuestLabel }
   | { kind: "deleteQuestLabel"; label: string; id: number }
   | { kind: "applyRealmzScriptStep"; label: string; triggerId: string; slot: number; opcode: number; id: number; edcdValues?: number[] }
@@ -729,6 +881,7 @@ export type Project = {
   scenario: ScenarioMeta;
   source: { sourcePath: string; rawSourcesDir?: string; immutable: boolean; files: SourceFile[] };
   maps: MapEntity[];
+  landLayout?: LandLayout | null;
   triggers: TriggerRecord[];
   randomLevels: RandomLevel[];
   mapRecords: MapRecord[];
@@ -736,10 +889,14 @@ export type Project = {
   extracodes: ExtraCodeRow[];
   messages: MessageRecord[];
   battles: BattleRecord[];
+  monsters: MonsterRecord[];
+  scenarioItems: ScenarioItemRecord[];
   treasures: TreasureRecord[];
   shops: ShopRecord[];
   simpleEncounters: SimpleEncounterRecord[];
   complexEncounters: ComplexEncounterRecord[];
+  thiefEncounters: ThiefEncounterRecord[];
+  timedEncounters: TimedEncounterRecord[];
   questLabels: QuestLabel[];
   spellOverrides: ScenarioSpellOverride[];
   raceOverrides: ScenarioRaceOverride[];
@@ -874,6 +1031,15 @@ export type MapEntity = {
   height: number;
   tiles: number[];
   render: { tilesetId: string; landlook: number | null; mode: string };
+};
+
+export type LandLayout = {
+  rows: number;
+  cols: number;
+  cells: number[];
+  trailingBytes?: number[];
+  authored?: boolean;
+  provenance?: Provenance;
 };
 
 export type TriggerRecord = {

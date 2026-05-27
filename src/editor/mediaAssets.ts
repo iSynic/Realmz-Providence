@@ -3,6 +3,12 @@ import { ManagedAsset, ManagedAssetKind } from "./types";
 const MAX_IMPORT_BYTES = 32 * 1024 * 1024;
 const MAX_IMAGE_PIXELS = 4096 * 4096;
 
+export const SCENARIO_PICTURE_MIN_ID = 30000;
+export const SCENARIO_PICTURE_MAX_ID = 30128;
+export const SCENARIO_SPLASH_PICTURE_ID = 30128;
+export const SCENARIO_SOUND_MIN_ID = 200;
+export const SCENARIO_SOUND_MAX_ID = 500;
+
 export type MediaAssetImportRequest = {
   label: string;
   kind: ManagedAssetKind;
@@ -115,11 +121,27 @@ export function nextResourceId(assets: ManagedAsset[], kind: ManagedAssetKind) {
     while (used.has(id)) id -= 1;
     return id;
   }
-  const base = kind === "sound" ? 200 : kind === "icon" ? 30126 : 32000;
+  if (kind === "picture") {
+    return nextIdInRange(assets, kind, SCENARIO_PICTURE_MIN_ID, SCENARIO_PICTURE_MAX_ID);
+  }
+  if (kind === "sound") {
+    return nextIdInRange(assets, kind, SCENARIO_SOUND_MIN_ID, SCENARIO_SOUND_MAX_ID);
+  }
+  const base = kind === "icon" ? 30126 : SCENARIO_PICTURE_MIN_ID;
   const used = new Set(assets.filter((asset) => asset.kind === kind).map((asset) => asset.resourceId));
   let id = base;
   while (used.has(id)) id += 1;
   return id;
+}
+
+function nextIdInRange(assets: ManagedAsset[], kind: ManagedAssetKind, min: number, max: number) {
+  const used = new Set(assets.filter((asset) => asset.kind === kind).map((asset) => asset.resourceId));
+  for (let id = min; id <= max; id += 1) {
+    if (!used.has(id)) return id;
+  }
+  let fallback = max + 1;
+  while (used.has(fallback)) fallback += 1;
+  return fallback;
 }
 
 async function decodeImageFile(file: File) {

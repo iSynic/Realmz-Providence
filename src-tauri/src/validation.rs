@@ -19,6 +19,11 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         .iter()
         .filter_map(|record| i16::try_from(record.id).ok())
         .collect::<BTreeSet<_>>();
+    let monster_ids = project
+        .monsters
+        .iter()
+        .filter_map(|record| i16::try_from(record.id).ok())
+        .collect::<BTreeSet<_>>();
     let treasure_ids = project
         .treasures
         .iter()
@@ -39,6 +44,11 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         .iter()
         .filter_map(|record| i16::try_from(record.id).ok())
         .collect::<BTreeSet<_>>();
+    let thief_encounter_ids = project
+        .thief_encounters
+        .iter()
+        .filter_map(|record| i16::try_from(record.id).ok())
+        .collect::<BTreeSet<_>>();
     let macro_ids = project
         .triggers
         .iter()
@@ -53,6 +63,7 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
     let refs = TargetReferenceSets {
         messages: &message_ids,
         battles: &battle_ids,
+        monsters: &monster_ids,
         treasures: &treasure_ids,
         shops: &shop_ids,
         simple_encounters: &simple_encounter_ids,
@@ -213,6 +224,22 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                 battle.grid.len()
             ));
         }
+        let placed_monsters = battle.grid.iter().filter(|monster| **monster != 0).count();
+        if placed_monsters == 0 {
+            warnings.push(format!("Battle {} has no monsters placed.", battle.id));
+        }
+        if placed_monsters > 100 {
+            warnings.push(format!(
+                "Battle {} places {} monsters; Divinity documents a practical 100-monster limit.",
+                battle.id, placed_monsters
+            ));
+        }
+        if battle.authored && !(1..=30).contains(&battle.dist) {
+            warnings.push(format!(
+                "Battle {} distance {} is outside Divinity's usual 1-30 placement range.",
+                battle.id, battle.dist
+            ));
+        }
         validate_optional_reference(
             "Battle",
             battle.id,
@@ -232,6 +259,118 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
             &mut warnings,
         );
         validate_battle_macro_reference(battle.id, battle.battle_macro, &macro_ids, &mut warnings);
+        for (slot, monster) in battle.grid.iter().enumerate() {
+            if *monster != 0 && !monster_ids.contains(&monster.abs()) {
+                warnings.push(format!(
+                    "Battle {} grid slot {} references monster {}, but no matching Data MD monster record is present.",
+                    battle.id,
+                    slot,
+                    monster.abs()
+                ));
+            }
+        }
+    }
+    for monster in &project.monsters {
+        if monster.type_flags.len() > 8 {
+            errors.push(format!(
+                "Monster {} has {} trait flags; Data MD supports 8.",
+                monster.id,
+                monster.type_flags.len()
+            ));
+        }
+        if monster.attacks.len() > 5 {
+            errors.push(format!(
+                "Monster {} has {} attack rows; Data MD supports 5.",
+                monster.id,
+                monster.attacks.len()
+            ));
+        }
+        if monster.items.len() > 6 {
+            errors.push(format!(
+                "Monster {} has {} item slots; Data MD supports 6.",
+                monster.id,
+                monster.items.len()
+            ));
+        }
+        if monster.spells.len() > 10 {
+            errors.push(format!(
+                "Monster {} has {} spell slots; Data MD supports 10.",
+                monster.id,
+                monster.spells.len()
+            ));
+        }
+        if monster.saves.len() > 6 || monster.spell_immunities.len() > 6 {
+            errors.push(format!(
+                "Monster {} has malformed save or immunity fields; Data MD supports 6 each.",
+                monster.id
+            ));
+        }
+        if monster.conditions.len() > 40 {
+            errors.push(format!(
+                "Monster {} has {} condition fields; Data MD supports 40.",
+                monster.id,
+                monster.conditions.len()
+            ));
+        }
+        if monster.hit_dice == 255 {
+            warnings.push(format!(
+                "Monster {} has Stamina Level 255; Realmz uses this as a Bestiary list terminator.",
+                monster.id
+            ));
+        }
+        if monster.hit_dice != 0 && monster.display_name.trim().is_empty() {
+            warnings.push(format!(
+                "Monster {} is active but has no display name.",
+                monster.id
+            ));
+        }
+        if monster.hit_dice != 0 && !(1..=5).contains(&monster.attack_count) {
+            warnings.push(format!(
+                "Monster {} attack count {} is outside Divinity's 1..5 range.",
+                monster.id, monster.attack_count
+            ));
+        }
+        if !(0..=3).contains(&monster.size) {
+            warnings.push(format!(
+                "Monster {} size {} is outside Divinity's 0..3 range.",
+                monster.id, monster.size
+            ));
+        }
+        for (label, value) in [
+            ("Cast spell %", monster.cast_percent),
+            ("Run away %", monster.run_percent),
+            ("Surrender %", monster.surrender_percent),
+            ("Use missile %", monster.missile_percent),
+        ] {
+            if !(0..=100).contains(&value) {
+                warnings.push(format!(
+                    "Monster {} {} value {} is outside 0..100.",
+                    monster.id, label, value
+                ));
+            }
+        }
+        let has_spell_slots = monster.spells.iter().any(|spell| *spell != 0);
+        let magic_using = monster.type_flags.first().copied().unwrap_or_default() != 0;
+        if (monster.magic_attack_count > 0 || monster.cast_percent > 0 || has_spell_slots)
+            && !magic_using
+        {
+            warnings.push(format!(
+                "Monster {} can cast or has spell slots but is not marked Magic Using.",
+                monster.id
+            ));
+        }
+        validate_monster_macro_reference(
+            monster.id,
+            monster.death_macro,
+            &macro_ids,
+            &mut warnings,
+        );
+        if monster.display_name.as_bytes().len() > 40 {
+            warnings.push(format!(
+                "Monster {} name is longer than the fixed 40-byte Realmz field.",
+                monster.id
+            ));
+        }
     }
     for treasure in &project.treasures {
         if treasure.item_ids.len() > 20 {
@@ -239,6 +378,26 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                 "Treasure {} has {} item slots; Data TD supports 20.",
                 treasure.id,
                 treasure.item_ids.len()
+            ));
+        }
+    }
+    for item in &project.scenario_items {
+        if item.id > 199 {
+            errors.push(format!(
+                "Custom item record {} is outside the scenario item table capacity.",
+                item.id
+            ));
+        }
+        if item.item_id < 800 || item.item_id > 999 {
+            warnings.push(format!(
+                "Custom item record {} uses item ID {}; Realmz scenario item IDs are normally 800-999.",
+                item.id, item.item_id
+            ));
+        }
+        if item.id >= 100 && item.item_id < 900 {
+            warnings.push(format!(
+                "Custom item record {} is in the custom range but uses item ID {}.",
+                item.id, item.item_id
             ));
         }
     }
@@ -332,6 +491,15 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                 "message",
                 &mut warnings,
             );
+            if encounter.thief
+                && encounter.thief_success > 0
+                && !thief_encounter_ids.contains(&(encounter.thief_success as i16))
+            {
+                warnings.push(format!(
+                    "Complex encounter {} points to Rogue encounter {}, but that record does not exist.",
+                    encounter.id, encounter.thief_success
+                ));
+            }
             if encounter
                 .texts
                 .iter()
@@ -351,6 +519,69 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         } else if encounter.raw_bytes.len() != crate::realmz::COMPLEX_ENCOUNTER_BYTES {
             warnings.push(format!(
                 "Complex encounter {} has incomplete preserved source bytes and should be re-imported before editing.",
+                encounter.id
+            ));
+        }
+    }
+    for encounter in &project.thief_encounters {
+        if encounter.authored {
+            if encounter.type_flags.len() > 10 {
+                errors.push(format!(
+                    "Rogue encounter {} has {} state flags; Data TD2 supports 10.",
+                    encounter.id,
+                    encounter.type_flags.len()
+                ));
+            }
+            for (label, values) in [
+                ("modifiers", &encounter.modifiers),
+                ("success result codes", &encounter.success_codes),
+                ("failure result codes", &encounter.failure_codes),
+            ] {
+                if values.len() > 8 {
+                    errors.push(format!(
+                        "Rogue encounter {} has {} {}; Data TD2 supports 8.",
+                        encounter.id,
+                        values.len(),
+                        label
+                    ));
+                }
+            }
+            for (label, values) in [
+                ("success messages", &encounter.success_text),
+                ("failure messages", &encounter.failure_text),
+            ] {
+                if values.len() > 8 {
+                    errors.push(format!(
+                        "Rogue encounter {} has {} {}; Data TD2 supports 8.",
+                        encounter.id,
+                        values.len(),
+                        label
+                    ));
+                }
+                for (slot, message_id) in values.iter().enumerate() {
+                    validate_optional_reference(
+                        "Rogue encounter",
+                        encounter.id,
+                        &format!("{label} slot {slot}"),
+                        *message_id,
+                        &message_ids,
+                        "message",
+                        &mut warnings,
+                    );
+                }
+            }
+            if encounter.low_damage != 0
+                && encounter.high_damage != 0
+                && encounter.low_damage > encounter.high_damage
+            {
+                warnings.push(format!(
+                    "Rogue encounter {} trap damage low is greater than high.",
+                    encounter.id
+                ));
+            }
+        } else if encounter.raw_bytes.len() != crate::realmz::THIEF_ENCOUNTER_BYTES {
+            warnings.push(format!(
+                "Rogue encounter {} has incomplete preserved source bytes and should be re-imported before editing.",
                 encounter.id
             ));
         }
@@ -664,6 +895,7 @@ fn validate_map_records(
 struct TargetReferenceSets<'a> {
     messages: &'a BTreeSet<i16>,
     battles: &'a BTreeSet<i16>,
+    monsters: &'a BTreeSet<i16>,
     treasures: &'a BTreeSet<i16>,
     shops: &'a BTreeSet<i16>,
     simple_encounters: &'a BTreeSet<i16>,
@@ -771,6 +1003,7 @@ fn validate_action_target(
         6 | 49 | 51 => Some(("shop", refs.shops)),
         8 | 40 | 55 | 64 => Some(("Data ED3 macro", refs.macros)),
         10 => Some(("treasure", refs.treasures)),
+        127 => Some(("monster", refs.monsters)),
         _ => None,
     };
     let Some((target_label, ids)) = target else {
@@ -900,6 +1133,24 @@ fn validate_battle_macro_reference(
         warnings.push(format!(
             "Battle {} battle macro references Data ED3 macro {}, but Providence cannot prove that target exists.",
             battle_id, target_id
+        ));
+    }
+}
+
+fn validate_monster_macro_reference(
+    monster_id: usize,
+    id: i16,
+    macro_ids: &BTreeSet<i16>,
+    warnings: &mut Vec<String>,
+) {
+    if id == 0 {
+        return;
+    }
+    let target_id = id.checked_abs().unwrap_or(id);
+    if !macro_ids.contains(&target_id) {
+        warnings.push(format!(
+            "Monster {} death macro references Extra Action Point {}, but that macro is not present.",
+            monster_id, target_id
         ));
     }
 }
@@ -1269,6 +1520,7 @@ mod tests {
         let refs = TargetReferenceSets {
             messages: &messages,
             battles: &empty,
+            monsters: &empty,
             treasures: &empty,
             shops: &empty,
             simple_encounters: &empty,
@@ -1318,6 +1570,7 @@ mod tests {
         let refs = TargetReferenceSets {
             messages: &empty,
             battles: &empty,
+            monsters: &empty,
             treasures: &empty,
             shops: &empty,
             simple_encounters: &empty,
@@ -1583,6 +1836,7 @@ mod tests {
                 immutable: false,
             },
             maps: Vec::new(),
+            land_layout: None,
             map_records: Vec::new(),
             tile_attributes: Vec::new(),
             triggers: Vec::new(),
@@ -1590,10 +1844,14 @@ mod tests {
             extracodes: Vec::new(),
             messages: Vec::new(),
             battles: Vec::new(),
+            monsters: Vec::new(),
+            scenario_items: Vec::new(),
             treasures: Vec::new(),
             shops: Vec::new(),
             simple_encounters: Vec::new(),
             complex_encounters: Vec::new(),
+            thief_encounters: Vec::new(),
+            timed_encounters: Vec::new(),
             quest_labels: Vec::new(),
             spell_overrides: Vec::new(),
             race_overrides: Vec::new(),

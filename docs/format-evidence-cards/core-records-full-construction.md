@@ -25,7 +25,7 @@ Providence can recreate Divinity-authored monsters, items, spells, races, castes
 - Existing Providence support includes shell authoring for messages, battles, treasure, shops, simple encounters, and complex encounters.
 - Monsters are scenario-authored through `Data MD`; `monster-record-runtime-anchors.md` now provides a source-backed 210-byte layout, runtime/menu behavior, battle placement semantics, and death macro hooks.
 - Battles are scenario-authored through `Data BD`; `battle-record-runtime-anchors.md` provides the 346-byte layout, 13x13 signed monster grid, before/after message references, combat distance, and battle macro semantics.
-- Items are currently shared rules/library data loaded from `Data ID` and referenced by scenario records; scenario-local item writing is not source-backed in this pass.
+- Items split between shared `Data ID` families for IDs 0-799 and scenario `Data NI` supply/special records for IDs 800-999; full custom item writing should begin with Divinity's 900-999 range.
 - Treasure and shop records are source-backed through `Data TD` and `Data SD`; `item-treasure-shop-runtime-anchors.md` separates those authoring files from shared item definitions and runtime shop cache `CS`.
 - Simple and complex encounters are source-backed through `Data ED` and `Data ED2`; `encounter-record-runtime-anchors.md` separates source records from runtime `CE`/`CE2` mutation and corrects complex encounter field semantics.
 - Thief and timed encounters are source-backed through `Data TD2` and `Data TD3`; `thief-timed-encounter-runtime-anchors.md` separates source records from runtime `CT`/`CTD3` mutation and saved `Data H1` state.

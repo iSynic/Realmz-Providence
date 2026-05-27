@@ -14,6 +14,8 @@ pub struct ProvidenceProject {
     pub source: SourceSnapshot,
     pub maps: Vec<MapEntity>,
     #[serde(default)]
+    pub land_layout: Option<LandLayout>,
+    #[serde(default)]
     pub map_records: Vec<MapRecord>,
     #[serde(default)]
     pub tile_attributes: Vec<TileAttributeProfile>,
@@ -25,6 +27,10 @@ pub struct ProvidenceProject {
     #[serde(default)]
     pub battles: Vec<BattleRecord>,
     #[serde(default)]
+    pub monsters: Vec<MonsterRecord>,
+    #[serde(default)]
+    pub scenario_items: Vec<ScenarioItemRecord>,
+    #[serde(default)]
     pub treasures: Vec<TreasureRecord>,
     #[serde(default)]
     pub shops: Vec<ShopRecord>,
@@ -32,6 +38,10 @@ pub struct ProvidenceProject {
     pub simple_encounters: Vec<SimpleEncounterRecord>,
     #[serde(default)]
     pub complex_encounters: Vec<ComplexEncounterRecord>,
+    #[serde(default)]
+    pub thief_encounters: Vec<ThiefEncounterRecord>,
+    #[serde(default)]
+    pub timed_encounters: Vec<TimedEncounterRecord>,
     #[serde(default)]
     pub quest_labels: Vec<QuestLabel>,
     #[serde(default)]
@@ -462,6 +472,19 @@ pub struct MapEntity {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct LandLayout {
+    pub rows: usize,
+    pub cols: usize,
+    pub cells: Vec<i16>,
+    #[serde(default)]
+    pub trailing_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    pub provenance: Option<Provenance>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct MapRecord {
     pub id: usize,
     pub start_x: i16,
@@ -694,6 +717,63 @@ pub struct BattleRecord {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct MonsterRecord {
+    pub id: usize,
+    pub hit_dice: u8,
+    pub stamina_bonus: u8,
+    pub agility: u8,
+    pub name_id: u8,
+    pub movement_max: u8,
+    pub armor: i8,
+    pub magic_resistance: i8,
+    pub distance: i8,
+    pub traitor: i8,
+    pub size: i8,
+    pub type_flags: Vec<i8>,
+    pub attack_count: i8,
+    pub magic_attack_count: i8,
+    pub attacks: Vec<Vec<i8>>,
+    pub damage_bonus: i8,
+    pub cast_percent: i8,
+    pub run_percent: i8,
+    pub surrender_percent: i8,
+    pub missile_percent: i8,
+    pub can_summon: i8,
+    pub saves: Vec<i8>,
+    pub spell_immunities: Vec<i8>,
+    pub money: Vec<i16>,
+    pub spells: Vec<i16>,
+    pub items: Vec<i16>,
+    pub weapon: i16,
+    pub icon_id: i16,
+    pub spell_points: i16,
+    pub exp: i16,
+    pub stamina: i16,
+    pub stamina_max: i16,
+    pub underneath: Vec<i16>,
+    pub target: i8,
+    pub guarding: i8,
+    pub not_on_menu: bool,
+    pub been_attacked: i8,
+    pub movement: i8,
+    pub magic_to_hit: i8,
+    pub conditions: Vec<i8>,
+    pub lr: i8,
+    pub up: i8,
+    pub attack_num: i8,
+    pub bonus_attack: i8,
+    pub death_macro: i16,
+    pub max_spell_points: i16,
+    pub display_name: String,
+    #[serde(default)]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TreasureRecord {
     pub id: usize,
     pub item_ids: Vec<i16>,
@@ -715,6 +795,59 @@ pub struct ShopRecord {
     pub item_ids: Vec<i16>,
     pub quantities: Vec<u8>,
     pub inflation: i16,
+    #[serde(default)]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScenarioItemRecord {
+    pub id: usize,
+    pub item_id: i16,
+    pub icon_id: i16,
+    #[serde(rename = "type")]
+    pub item_type: i16,
+    pub st: i16,
+    pub blunt: i16,
+    pub hands: i16,
+    pub lu: i16,
+    pub movement: i16,
+    pub ac: i16,
+    pub magic_resistance: i16,
+    pub damage: i16,
+    pub spell_points: i16,
+    pub sound: i16,
+    pub weight: i16,
+    pub cost: i16,
+    pub charge: i16,
+    pub cursed_item_id: i16,
+    pub magical: i16,
+    pub item_cat0: i32,
+    pub item_cat1: i32,
+    pub race_restrictions: i16,
+    pub caste_restrictions: i16,
+    pub specific_race: i16,
+    pub specific_caste: i16,
+    pub race_class_only: i16,
+    pub caste_class_only: i16,
+    pub v_small: i16,
+    pub v_large: i16,
+    pub heat: i16,
+    pub cold: i16,
+    pub electric: i16,
+    pub vs_undead: i16,
+    pub vs_demon_devil: i16,
+    pub vs_evil: i16,
+    pub special1: i16,
+    pub special2: i16,
+    pub special3: i16,
+    pub special4: i16,
+    pub special5: i16,
+    pub weight_per_charge: i16,
+    pub drop_on_empty: i16,
     #[serde(default)]
     pub raw_bytes: Vec<u8>,
     #[serde(default)]
@@ -763,6 +896,54 @@ pub struct ComplexEncounterRecord {
     pub thief_fail: i8,
     pub prompt: i16,
     pub texts: Vec<String>,
+    #[serde(default)]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TimedEncounterRecord {
+    pub id: usize,
+    pub day: i16,
+    pub increment: i16,
+    pub percent: i16,
+    pub door: i16,
+    pub required_level: i16,
+    pub required_random_rect: i16,
+    pub required_x: i16,
+    pub required_y: i16,
+    pub required_item: i16,
+    pub required_quest: i16,
+    pub location_kind: String,
+    pub stuff: Vec<i16>,
+    #[serde(default)]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ThiefEncounterRecord {
+    pub id: usize,
+    pub type_flags: Vec<bool>,
+    pub modifiers: Vec<i8>,
+    pub success_codes: Vec<i8>,
+    pub failure_codes: Vec<i8>,
+    pub success_text: Vec<i16>,
+    pub failure_text: Vec<i16>,
+    pub success_sounds: Vec<i16>,
+    pub failure_sounds: Vec<i16>,
+    pub spell: i16,
+    pub low_damage: i16,
+    pub high_damage: i16,
+    pub tumblers: i16,
+    pub prompts: Vec<i16>,
+    pub prompt_sounds: Vec<i16>,
     #[serde(default)]
     pub raw_bytes: Vec<u8>,
     #[serde(default)]

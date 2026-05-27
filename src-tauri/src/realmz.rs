@@ -9,19 +9,26 @@ pub const DOORS_PER_LEVEL: usize = 100;
 pub const DOOR_LEVEL_BYTES: usize = DOOR_BYTES * DOORS_PER_LEVEL;
 pub const RANDLEVEL_BYTES: usize = 644;
 pub const EXTRACODE_BYTES: usize = 10;
+pub const LAND_LAYOUT_ROWS: usize = 8;
+pub const LAND_LAYOUT_COLS: usize = 16;
+pub const LAND_LAYOUT_BYTES: usize = LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS * 2;
 pub const SIMPLE_ENCOUNTER_BYTES: usize = 426;
 pub const COMPLEX_ENCOUNTER_BYTES: usize = 520;
+pub const TIMED_ENCOUNTER_BYTES: usize = 40;
 pub const BATTLE_BYTES: usize = 346;
+pub const MONSTER_BYTES: usize = 210;
 pub const SHOP_BYTES: usize = 3002;
 pub const MESSAGE_BYTES: usize = 256;
 pub const TREASURE_BYTES: usize = 48;
 pub const MAP_RECORD_BYTES: usize = 340;
 pub const MAPSTATS_RECORD_BYTES: usize = 40;
 pub const MAPSTATS_RECORDS: usize = 201;
+pub const ITEM_BYTES: usize = 100;
 pub const SPELL_BYTES: usize = 30;
 pub const SPELL_OVERRIDE_RECORDS: usize = 105;
 pub const RACE_BYTES: usize = 408;
 pub const CASTE_BYTES: usize = 576;
+pub const THIEF_ENCOUNTER_BYTES: usize = 118;
 
 pub const SUPPORTED_WRITE_FILES: &[&str] = &[
     "Data LD",
@@ -34,6 +41,9 @@ pub const SUPPORTED_WRITE_FILES: &[&str] = &[
     "Data EDCD",
     "Data ED",
     "Data ED2",
+    "Data TD2",
+    "Data TD3",
+    "Data MD",
     "Data BD",
     "Data SD",
     "Data SD2",
@@ -43,6 +53,8 @@ pub const SUPPORTED_WRITE_FILES: &[&str] = &[
     "Data Spell",
     "Data Race",
     "Data Caste",
+    "Data NI",
+    "Layout",
 ];
 
 pub const TRACKED_FILES: &[&str] = &[
@@ -70,9 +82,11 @@ pub const TRACKED_FILES: &[&str] = &[
     "Data RI",
     "Data MENU",
     "Data Solids",
+    "Data NI",
     "Data Spell",
     "Data Race",
     "Data Caste",
+    "Layout",
     "Data Custom 1 BD",
     "Data Custom 2 BD",
     "Data Custom 3 BD",
@@ -82,6 +96,7 @@ pub const TRACKED_FILES: &[&str] = &[
 #[serde(rename_all = "camelCase")]
 pub struct ParsedScenario {
     pub maps: Vec<MapEntity>,
+    pub land_layout: Option<LandLayout>,
     pub map_records: Vec<MapRecord>,
     pub tile_attributes: Vec<TileAttributeProfile>,
     pub triggers: Vec<TriggerRecord>,
@@ -89,10 +104,14 @@ pub struct ParsedScenario {
     pub extracodes: Vec<ExtraCodeRow>,
     pub messages: Vec<MessageRecord>,
     pub battles: Vec<BattleRecord>,
+    pub monsters: Vec<MonsterRecord>,
+    pub scenario_items: Vec<ScenarioItemRecord>,
     pub treasures: Vec<TreasureRecord>,
     pub shops: Vec<ShopRecord>,
     pub simple_encounters: Vec<SimpleEncounterRecord>,
     pub complex_encounters: Vec<ComplexEncounterRecord>,
+    pub thief_encounters: Vec<ThiefEncounterRecord>,
+    pub timed_encounters: Vec<TimedEncounterRecord>,
     pub spell_overrides: Vec<ScenarioSpellOverride>,
     pub race_overrides: Vec<ScenarioRaceOverride>,
     pub caste_overrides: Vec<ScenarioCasteOverride>,
@@ -112,10 +131,14 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
     let mut extracodes = Vec::new();
     let mut messages = Vec::new();
     let mut battles = Vec::new();
+    let mut monsters = Vec::new();
+    let mut scenario_items = Vec::new();
     let mut treasures = Vec::new();
     let mut shops = Vec::new();
     let mut simple_encounters = Vec::new();
     let mut complex_encounters = Vec::new();
+    let mut thief_encounters = Vec::new();
+    let mut timed_encounters = Vec::new();
     let mut spell_overrides = Vec::new();
     let mut race_overrides = Vec::new();
     let mut caste_overrides = Vec::new();
@@ -131,22 +154,24 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
         ("Data ED2", COMPLEX_ENCOUNTER_BYTES),
         ("Data ED3", DOOR_BYTES),
         ("Data EDCD", EXTRACODE_BYTES),
-        ("Data MD", 210),
+        ("Data MD", MONSTER_BYTES),
         ("Data BD", BATTLE_BYTES),
         ("Data SD", SHOP_BYTES),
         ("Data SD2", MESSAGE_BYTES),
         ("Data MD2", MAP_RECORD_BYTES),
         ("Data TD", TREASURE_BYTES),
-        ("Data TD2", 118),
-        ("Data TD3", 40),
+        ("Data TD2", THIEF_ENCOUNTER_BYTES),
+        ("Data TD3", TIMED_ENCOUNTER_BYTES),
         ("Data CI", 4608),
         ("Data RI", 320),
         ("Global", 60),
         ("Data MENU", 502),
         ("Data Solids", 1024),
+        ("Data NI", ITEM_BYTES),
         ("Data Spell", SPELL_BYTES),
         ("Data Race", RACE_BYTES),
         ("Data Caste", CASTE_BYTES),
+        ("Layout", LAND_LAYOUT_BYTES),
     ] {
         let alignment = alignment_for(name, buffers.get(name), record_bytes);
         records.counts.insert(name.to_string(), alignment.count);
@@ -177,6 +202,9 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
         random_levels.extend(parse_random_levels(buffer, LevelType::Dungeon, "Data RDD"));
     }
     attach_render_info(&mut maps, &random_levels);
+    let land_layout = buffers
+        .get("Layout")
+        .and_then(|buffer| parse_land_layout(buffer).ok());
     if let Some(buffer) = buffers.get("Data MD2") {
         map_records.extend(parse_map_records(buffer));
     }
@@ -211,6 +239,12 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
     if let Some(buffer) = buffers.get("Data BD") {
         battles.extend(parse_battles(buffer));
     }
+    if let Some(buffer) = buffers.get("Data MD") {
+        monsters.extend(parse_monsters(buffer));
+    }
+    if let Some(buffer) = buffers.get("Data NI") {
+        scenario_items.extend(parse_scenario_items(buffer));
+    }
     if let Some(buffer) = buffers.get("Data TD") {
         treasures.extend(parse_treasures(buffer));
     }
@@ -222,6 +256,12 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
     }
     if let Some(buffer) = buffers.get("Data ED2") {
         complex_encounters.extend(parse_complex_encounter_records(buffer));
+    }
+    if let Some(buffer) = buffers.get("Data TD2") {
+        thief_encounters.extend(parse_thief_encounters(buffer));
+    }
+    if let Some(buffer) = buffers.get("Data TD3") {
+        timed_encounters.extend(parse_timed_encounters(buffer));
     }
     if let Some(buffer) = buffers.get("Data Spell") {
         spell_overrides.extend(parse_spell_overrides(buffer));
@@ -236,6 +276,7 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
     let asset_catalog = build_asset_catalog(&maps, &random_levels);
     ParsedScenario {
         maps,
+        land_layout,
         map_records,
         tile_attributes,
         triggers,
@@ -243,10 +284,14 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
         extracodes,
         messages,
         battles,
+        monsters,
+        scenario_items,
         treasures,
         shops,
         simple_encounters,
         complex_encounters,
+        thief_encounters,
+        timed_encounters,
         spell_overrides,
         race_overrides,
         caste_overrides,
@@ -419,6 +464,46 @@ pub fn write_fields(maps: &[MapEntity], level_type: LevelType) -> Result<Vec<u8>
         for (index, value) in map.tiles.iter().enumerate() {
             write_i16_be(&mut output, start + index * 2, *value);
         }
+    }
+    Ok(output)
+}
+
+pub fn parse_land_layout(buffer: &[u8]) -> Result<LandLayout> {
+    if buffer.len() < LAND_LAYOUT_BYTES {
+        return Err(ProvidenceError::message(format!(
+            "Layout is {} byte(s); expected at least {} bytes",
+            buffer.len(),
+            LAND_LAYOUT_BYTES
+        )));
+    }
+    let mut cells = Vec::with_capacity(LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS);
+    for index in 0..LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS {
+        cells.push(i16_be(buffer, index * 2));
+    }
+    Ok(LandLayout {
+        rows: LAND_LAYOUT_ROWS,
+        cols: LAND_LAYOUT_COLS,
+        cells,
+        trailing_bytes: buffer.get(LAND_LAYOUT_BYTES..).unwrap_or(&[]).to_vec(),
+        authored: false,
+        provenance: Some(provenance("Layout", 0, 0, LAND_LAYOUT_BYTES)),
+    })
+}
+
+pub fn write_land_layout(layout: &LandLayout) -> Result<Vec<u8>> {
+    if layout.rows != LAND_LAYOUT_ROWS || layout.cols != LAND_LAYOUT_COLS {
+        return Err(ProvidenceError::message(format!(
+            "Layout must be {} rows by {} columns",
+            LAND_LAYOUT_ROWS, LAND_LAYOUT_COLS
+        )));
+    }
+    let mut output = vec![0u8; LAND_LAYOUT_BYTES + layout.trailing_bytes.len()];
+    for index in 0..LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS {
+        let value = layout.cells.get(index).copied().unwrap_or(0);
+        write_i16_be(&mut output, index * 2, value);
+    }
+    if !layout.trailing_bytes.is_empty() {
+        output[LAND_LAYOUT_BYTES..].copy_from_slice(&layout.trailing_bytes);
     }
     Ok(output)
 }
@@ -1470,6 +1555,245 @@ pub fn write_battles(records: &[BattleRecord]) -> Result<Vec<u8>> {
     })
 }
 
+pub fn parse_monsters(buffer: &[u8]) -> Vec<MonsterRecord> {
+    parse_fixed_records(buffer, MONSTER_BYTES)
+        .map(|(id, start, record)| MonsterRecord {
+            id,
+            hit_dice: record[0],
+            stamina_bonus: record[1],
+            agility: record[2],
+            name_id: record[3],
+            movement_max: record[4],
+            armor: record[5] as i8,
+            magic_resistance: record[6] as i8,
+            distance: record[7] as i8,
+            traitor: record[8] as i8,
+            size: record[9] as i8,
+            type_flags: signed_bytes(&record[10..18]),
+            attack_count: record[18] as i8,
+            magic_attack_count: record[19] as i8,
+            attacks: (0..5)
+                .map(|row| signed_bytes(&record[20 + row * 4..24 + row * 4]))
+                .collect(),
+            damage_bonus: record[40] as i8,
+            cast_percent: record[41] as i8,
+            run_percent: record[42] as i8,
+            surrender_percent: record[43] as i8,
+            missile_percent: record[44] as i8,
+            can_summon: record[45] as i8,
+            saves: signed_bytes(&record[46..52]),
+            spell_immunities: signed_bytes(&record[52..58]),
+            money: read_i16_array(record, 58, 3),
+            spells: read_i16_array(record, 64, 10),
+            items: read_i16_array(record, 84, 6),
+            weapon: i16_be(record, 96),
+            icon_id: i16_be(record, 98),
+            spell_points: i16_be(record, 100),
+            exp: i16_be(record, 102),
+            stamina: i16_be(record, 104),
+            stamina_max: i16_be(record, 106),
+            underneath: read_i16_array(record, 108, 4),
+            target: record[116] as i8,
+            guarding: record[117] as i8,
+            not_on_menu: record[118] != 0,
+            been_attacked: record[119] as i8,
+            movement: record[120] as i8,
+            magic_to_hit: record[121] as i8,
+            conditions: signed_bytes(&record[122..162]),
+            lr: record[162] as i8,
+            up: record[163] as i8,
+            attack_num: record[164] as i8,
+            bonus_attack: record[165] as i8,
+            death_macro: i16_be(record, 166),
+            max_spell_points: i16_be(record, 168),
+            display_name: {
+                let decoded = decode_fixed_text(&record[170..210]);
+                if decoded.is_empty() {
+                    format!("Monster {}", id)
+                } else {
+                    decoded
+                }
+            },
+            raw_bytes: record.to_vec(),
+            authored: false,
+            provenance: provenance("Data MD", id, start, MONSTER_BYTES),
+        })
+        .collect()
+}
+
+pub fn write_monsters(records: &[MonsterRecord]) -> Result<Vec<u8>> {
+    write_fixed_records(records, MONSTER_BYTES, |record, buffer| {
+        copy_raw(buffer, &record.raw_bytes);
+        if preserve_raw(record.authored, &record.raw_bytes, MONSTER_BYTES) {
+            return Ok(());
+        }
+        buffer[0] = record.hit_dice;
+        buffer[1] = record.stamina_bonus;
+        buffer[2] = record.agility;
+        buffer[3] = record.name_id;
+        buffer[4] = record.movement_max;
+        buffer[5] = record.armor as u8;
+        buffer[6] = record.magic_resistance as u8;
+        buffer[7] = record.distance as u8;
+        buffer[8] = record.traitor as u8;
+        buffer[9] = record.size as u8;
+        write_i8_array(buffer, 10, &record.type_flags, 8);
+        buffer[18] = record.attack_count as u8;
+        buffer[19] = record.magic_attack_count as u8;
+        for row in 0..5 {
+            let values = record
+                .attacks
+                .get(row)
+                .cloned()
+                .unwrap_or_else(|| vec![0, 0, 0, 0]);
+            write_i8_array(buffer, 20 + row * 4, &values, 4);
+        }
+        buffer[40] = record.damage_bonus as u8;
+        buffer[41] = record.cast_percent as u8;
+        buffer[42] = record.run_percent as u8;
+        buffer[43] = record.surrender_percent as u8;
+        buffer[44] = record.missile_percent as u8;
+        buffer[45] = record.can_summon as u8;
+        write_i8_array(buffer, 46, &record.saves, 6);
+        write_i8_array(buffer, 52, &record.spell_immunities, 6);
+        write_i16_array(buffer, 58, &record.money, 3);
+        write_i16_array(buffer, 64, &record.spells, 10);
+        write_i16_array(buffer, 84, &record.items, 6);
+        write_i16_be(buffer, 96, record.weapon);
+        write_i16_be(buffer, 98, record.icon_id);
+        write_i16_be(buffer, 100, record.spell_points);
+        write_i16_be(buffer, 102, record.exp);
+        write_i16_be(buffer, 104, record.stamina);
+        write_i16_be(buffer, 106, record.stamina_max);
+        write_i16_array(buffer, 108, &record.underneath, 4);
+        buffer[116] = record.target as u8;
+        buffer[117] = record.guarding as u8;
+        buffer[118] = u8::from(record.not_on_menu);
+        buffer[119] = record.been_attacked as u8;
+        buffer[120] = record.movement as u8;
+        buffer[121] = record.magic_to_hit as u8;
+        write_i8_array(buffer, 122, &record.conditions, 40);
+        buffer[162] = record.lr as u8;
+        buffer[163] = record.up as u8;
+        buffer[164] = record.attack_num as u8;
+        buffer[165] = record.bonus_attack as u8;
+        write_i16_be(buffer, 166, record.death_macro);
+        write_i16_be(buffer, 168, record.max_spell_points);
+        encode_fixed_text(&mut buffer[170..210], &record.display_name)?;
+        Ok(())
+    })
+}
+
+pub fn parse_scenario_items(buffer: &[u8]) -> Vec<ScenarioItemRecord> {
+    parse_fixed_records(buffer, ITEM_BYTES)
+        .map(|(id, start, record)| {
+            let stored_item_id = i16_be(record, 2);
+            ScenarioItemRecord {
+                id,
+                item_id: if stored_item_id != 0 {
+                    stored_item_id
+                } else {
+                    800 + id as i16
+                },
+                icon_id: i16_be(record, 4),
+                item_type: i16_be(record, 6),
+                st: i16_be(record, 0),
+                blunt: i16_be(record, 8),
+                hands: i16_be(record, 10),
+                lu: i16_be(record, 12),
+                movement: i16_be(record, 14),
+                ac: i16_be(record, 16),
+                magic_resistance: i16_be(record, 18),
+                damage: i16_be(record, 20),
+                spell_points: i16_be(record, 22),
+                sound: i16_be(record, 24),
+                weight: i16_be(record, 26),
+                cost: i16_be(record, 28),
+                charge: i16_be(record, 30),
+                cursed_item_id: i16_be(record, 32),
+                magical: i16_be(record, 34),
+                item_cat0: i32_be(record, 36),
+                item_cat1: i32_be(record, 40),
+                race_restrictions: i16_be(record, 44),
+                caste_restrictions: i16_be(record, 46),
+                specific_race: i16_be(record, 48),
+                specific_caste: i16_be(record, 50),
+                race_class_only: i16_be(record, 52),
+                caste_class_only: i16_be(record, 54),
+                v_small: i16_be(record, 70),
+                v_large: i16_be(record, 72),
+                heat: i16_be(record, 74),
+                cold: i16_be(record, 76),
+                electric: i16_be(record, 78),
+                vs_undead: i16_be(record, 80),
+                vs_demon_devil: i16_be(record, 82),
+                vs_evil: i16_be(record, 84),
+                special1: i16_be(record, 86),
+                special2: i16_be(record, 88),
+                special3: i16_be(record, 90),
+                special4: i16_be(record, 92),
+                special5: i16_be(record, 94),
+                weight_per_charge: i16_be(record, 96),
+                drop_on_empty: i16_be(record, 98),
+                raw_bytes: record.to_vec(),
+                authored: false,
+                provenance: provenance("Data NI", id, start, ITEM_BYTES),
+            }
+        })
+        .collect()
+}
+
+pub fn write_scenario_items(records: &[ScenarioItemRecord]) -> Result<Vec<u8>> {
+    write_fixed_records(records, ITEM_BYTES, |record, buffer| {
+        copy_raw(buffer, &record.raw_bytes);
+        if preserve_raw(record.authored, &record.raw_bytes, ITEM_BYTES) {
+            return Ok(());
+        }
+        write_i16_be(buffer, 0, record.st);
+        write_i16_be(buffer, 2, record.item_id);
+        write_i16_be(buffer, 4, record.icon_id);
+        write_i16_be(buffer, 6, record.item_type);
+        write_i16_be(buffer, 8, record.blunt);
+        write_i16_be(buffer, 10, record.hands);
+        write_i16_be(buffer, 12, record.lu);
+        write_i16_be(buffer, 14, record.movement);
+        write_i16_be(buffer, 16, record.ac);
+        write_i16_be(buffer, 18, record.magic_resistance);
+        write_i16_be(buffer, 20, record.damage);
+        write_i16_be(buffer, 22, record.spell_points);
+        write_i16_be(buffer, 24, record.sound);
+        write_i16_be(buffer, 26, record.weight);
+        write_i16_be(buffer, 28, record.cost);
+        write_i16_be(buffer, 30, record.charge);
+        write_i16_be(buffer, 32, record.cursed_item_id);
+        write_i16_be(buffer, 34, record.magical);
+        write_i32_be(buffer, 36, record.item_cat0);
+        write_i32_be(buffer, 40, record.item_cat1);
+        write_i16_be(buffer, 44, record.race_restrictions);
+        write_i16_be(buffer, 46, record.caste_restrictions);
+        write_i16_be(buffer, 48, record.specific_race);
+        write_i16_be(buffer, 50, record.specific_caste);
+        write_i16_be(buffer, 52, record.race_class_only);
+        write_i16_be(buffer, 54, record.caste_class_only);
+        write_i16_be(buffer, 70, record.v_small);
+        write_i16_be(buffer, 72, record.v_large);
+        write_i16_be(buffer, 74, record.heat);
+        write_i16_be(buffer, 76, record.cold);
+        write_i16_be(buffer, 78, record.electric);
+        write_i16_be(buffer, 80, record.vs_undead);
+        write_i16_be(buffer, 82, record.vs_demon_devil);
+        write_i16_be(buffer, 84, record.vs_evil);
+        write_i16_be(buffer, 86, record.special1);
+        write_i16_be(buffer, 88, record.special2);
+        write_i16_be(buffer, 90, record.special3);
+        write_i16_be(buffer, 92, record.special4);
+        write_i16_be(buffer, 94, record.special5);
+        write_i16_be(buffer, 96, record.weight_per_charge);
+        write_i16_be(buffer, 98, record.drop_on_empty);
+        Ok(())
+    })
+}
+
 pub fn parse_treasures(buffer: &[u8]) -> Vec<TreasureRecord> {
     parse_fixed_records(buffer, TREASURE_BYTES)
         .map(|(id, start, record)| TreasureRecord {
@@ -1646,6 +1970,117 @@ pub fn write_complex_encounters(records: &[ComplexEncounterRecord]) -> Result<Ve
     })
 }
 
+pub fn parse_timed_encounters(buffer: &[u8]) -> Vec<TimedEncounterRecord> {
+    parse_fixed_records(buffer, TIMED_ENCOUNTER_BYTES)
+        .map(|(id, start, record)| {
+            let stuff: Vec<i16> = (0..10).map(|slot| i16_be(record, 20 + slot * 2)).collect();
+            TimedEncounterRecord {
+                id,
+                day: i16_be(record, 0),
+                increment: i16_be(record, 2),
+                percent: i16_be(record, 4),
+                door: i16_be(record, 6),
+                required_level: i16_be(record, 8),
+                required_random_rect: i16_be(record, 10),
+                required_x: i16_be(record, 12),
+                required_y: i16_be(record, 14),
+                required_item: i16_be(record, 16),
+                required_quest: i16_be(record, 18),
+                location_kind: timed_location_kind(stuff.first().copied().unwrap_or_default())
+                    .to_string(),
+                stuff,
+                raw_bytes: record.to_vec(),
+                authored: false,
+                provenance: provenance("Data TD3", id, start, TIMED_ENCOUNTER_BYTES),
+            }
+        })
+        .collect()
+}
+
+pub fn write_timed_encounters(records: &[TimedEncounterRecord]) -> Result<Vec<u8>> {
+    write_fixed_records(records, TIMED_ENCOUNTER_BYTES, |record, buffer| {
+        copy_raw(buffer, &record.raw_bytes);
+        if preserve_raw(record.authored, &record.raw_bytes, TIMED_ENCOUNTER_BYTES) {
+            return Ok(());
+        }
+        write_i16_be(buffer, 0, record.day);
+        write_i16_be(buffer, 2, record.increment);
+        write_i16_be(buffer, 4, record.percent);
+        write_i16_be(buffer, 6, record.door);
+        write_i16_be(buffer, 8, record.required_level);
+        write_i16_be(buffer, 10, record.required_random_rect);
+        write_i16_be(buffer, 12, record.required_x);
+        write_i16_be(buffer, 14, record.required_y);
+        write_i16_be(buffer, 16, record.required_item);
+        write_i16_be(buffer, 18, record.required_quest);
+        let mut stuff = record.stuff.clone();
+        stuff.resize(10, 0);
+        for slot in 0..10 {
+            write_i16_be(buffer, 20 + slot * 2, stuff[slot]);
+        }
+        Ok(())
+    })
+}
+
+pub fn parse_thief_encounters(buffer: &[u8]) -> Vec<ThiefEncounterRecord> {
+    parse_fixed_records(buffer, THIEF_ENCOUNTER_BYTES)
+        .map(|(id, start, record)| ThiefEncounterRecord {
+            id,
+            type_flags: record[0..10].iter().map(|value| *value != 0).collect(),
+            modifiers: signed_bytes(&record[10..18]),
+            success_codes: signed_bytes(&record[18..26]),
+            failure_codes: signed_bytes(&record[26..34]),
+            success_text: read_i16_array(record, 34, 8),
+            failure_text: read_i16_array(record, 50, 8),
+            success_sounds: read_i16_array(record, 66, 8),
+            failure_sounds: read_i16_array(record, 82, 8),
+            spell: i16_be(record, 98),
+            low_damage: i16_be(record, 100),
+            high_damage: i16_be(record, 102),
+            tumblers: i16_be(record, 104),
+            prompts: read_i16_array(record, 106, 3),
+            prompt_sounds: read_i16_array(record, 112, 3),
+            raw_bytes: record.to_vec(),
+            authored: false,
+            provenance: provenance("Data TD2", id, start, THIEF_ENCOUNTER_BYTES),
+        })
+        .collect()
+}
+
+pub fn write_thief_encounters(records: &[ThiefEncounterRecord]) -> Result<Vec<u8>> {
+    write_fixed_records(records, THIEF_ENCOUNTER_BYTES, |record, buffer| {
+        copy_raw(buffer, &record.raw_bytes);
+        if preserve_raw(record.authored, &record.raw_bytes, THIEF_ENCOUNTER_BYTES) {
+            return Ok(());
+        }
+        for slot in 0..10 {
+            buffer[slot] = u8::from(*record.type_flags.get(slot).unwrap_or(&false));
+        }
+        write_i8_array(buffer, 10, &record.modifiers, 8);
+        write_i8_array(buffer, 18, &record.success_codes, 8);
+        write_i8_array(buffer, 26, &record.failure_codes, 8);
+        write_i16_array(buffer, 34, &record.success_text, 8);
+        write_i16_array(buffer, 50, &record.failure_text, 8);
+        write_i16_array(buffer, 66, &record.success_sounds, 8);
+        write_i16_array(buffer, 82, &record.failure_sounds, 8);
+        write_i16_be(buffer, 98, record.spell);
+        write_i16_be(buffer, 100, record.low_damage);
+        write_i16_be(buffer, 102, record.high_damage);
+        write_i16_be(buffer, 104, record.tumblers);
+        write_i16_array(buffer, 106, &record.prompts, 3);
+        write_i16_array(buffer, 112, &record.prompt_sounds, 3);
+        Ok(())
+    })
+}
+
+fn timed_location_kind(value: i16) -> &'static str {
+    match value {
+        1 => "land",
+        2 => "dungeon",
+        _ => "any",
+    }
+}
+
 fn parse_fixed_records(
     buffer: &[u8],
     record_bytes: usize,
@@ -1692,6 +2127,16 @@ impl IndexedRecord for BattleRecord {
         self.id
     }
 }
+impl IndexedRecord for MonsterRecord {
+    fn record_id(&self) -> usize {
+        self.id
+    }
+}
+impl IndexedRecord for ScenarioItemRecord {
+    fn record_id(&self) -> usize {
+        self.id
+    }
+}
 impl IndexedRecord for TreasureRecord {
     fn record_id(&self) -> usize {
         self.id
@@ -1708,6 +2153,16 @@ impl IndexedRecord for SimpleEncounterRecord {
     }
 }
 impl IndexedRecord for ComplexEncounterRecord {
+    fn record_id(&self) -> usize {
+        self.id
+    }
+}
+impl IndexedRecord for ThiefEncounterRecord {
+    fn record_id(&self) -> usize {
+        self.id
+    }
+}
+impl IndexedRecord for TimedEncounterRecord {
     fn record_id(&self) -> usize {
         self.id
     }
@@ -1746,6 +2201,28 @@ fn write_encounter_actions(buffer: &mut [u8], actions: &[EncounterActionRow]) ->
         write_i16_be(buffer, 32 + action.slot * 2, action.id);
     }
     Ok(())
+}
+
+fn signed_bytes(buffer: &[u8]) -> Vec<i8> {
+    buffer.iter().map(|value| *value as i8).collect()
+}
+
+fn read_i16_array(buffer: &[u8], offset: usize, count: usize) -> Vec<i16> {
+    (0..count)
+        .map(|index| i16_be(buffer, offset + index * 2))
+        .collect()
+}
+
+fn write_i8_array(buffer: &mut [u8], offset: usize, values: &[i8], count: usize) {
+    for index in 0..count {
+        buffer[offset + index] = values.get(index).copied().unwrap_or(0) as u8;
+    }
+}
+
+fn write_i16_array(buffer: &mut [u8], offset: usize, values: &[i16], count: usize) {
+    for index in 0..count {
+        write_i16_be(buffer, offset + index * 2, *values.get(index).unwrap_or(&0));
+    }
 }
 
 fn copy_raw(buffer: &mut [u8], raw: &[u8]) {
@@ -1812,6 +2289,20 @@ fn encode_pascal_text(buffer: &mut [u8], text: &str) -> Result<()> {
     buffer.fill(0);
     buffer[0] = bytes.len() as u8;
     buffer[1..1 + bytes.len()].copy_from_slice(&bytes);
+    Ok(())
+}
+
+fn encode_fixed_text(buffer: &mut [u8], text: &str) -> Result<()> {
+    let bytes = classic_text_bytes(text);
+    if bytes.len() > buffer.len() {
+        return Err(ProvidenceError::message(format!(
+            "Classic fixed text is {} byte(s); maximum is {}",
+            bytes.len(),
+            buffer.len()
+        )));
+    }
+    buffer.fill(0);
+    buffer[..bytes.len()].copy_from_slice(&bytes);
     Ok(())
 }
 
@@ -2164,6 +2655,28 @@ mod tests {
     }
 
     #[test]
+    fn land_layout_round_trip() {
+        let mut input = vec![0u8; LAND_LAYOUT_BYTES + 4];
+        write_i16_be(&mut input, 0, -1);
+        write_i16_be(&mut input, 2, 1);
+        write_i16_be(
+            &mut input,
+            (LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS - 1) * 2,
+            19,
+        );
+        input[LAND_LAYOUT_BYTES..].copy_from_slice(&[9, 8, 7, 6]);
+        let layout = parse_land_layout(&input).unwrap();
+        assert_eq!(layout.rows, LAND_LAYOUT_ROWS);
+        assert_eq!(layout.cols, LAND_LAYOUT_COLS);
+        assert_eq!(layout.cells[0], -1);
+        assert_eq!(layout.cells[1], 1);
+        assert_eq!(layout.cells[LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS - 1], 19);
+        assert_eq!(layout.trailing_bytes, vec![9, 8, 7, 6]);
+        let output = write_land_layout(&layout).unwrap();
+        assert_eq!(input, output);
+    }
+
+    #[test]
     fn doors_round_trip() {
         let mut input = vec![0u8; DOOR_LEVEL_BYTES];
         write_i32_be(&mut input, 0, 10000 + 42);
@@ -2365,12 +2878,18 @@ mod tests {
 
     #[test]
     fn target_records_round_trip_full_records() {
-        let cases: [(usize, fn(&[u8]) -> Vec<u8>); 6] = [
+        let cases: [(usize, fn(&[u8]) -> Vec<u8>); 10] = [
             (MESSAGE_BYTES, |bytes| {
                 write_messages(&parse_messages(bytes)).unwrap()
             }),
             (BATTLE_BYTES, |bytes| {
                 write_battles(&parse_battles(bytes)).unwrap()
+            }),
+            (MONSTER_BYTES, |bytes| {
+                write_monsters(&parse_monsters(bytes)).unwrap()
+            }),
+            (ITEM_BYTES, |bytes| {
+                write_scenario_items(&parse_scenario_items(bytes)).unwrap()
             }),
             (TREASURE_BYTES, |bytes| {
                 write_treasures(&parse_treasures(bytes)).unwrap()
@@ -2383,6 +2902,12 @@ mod tests {
             }),
             (COMPLEX_ENCOUNTER_BYTES, |bytes| {
                 write_complex_encounters(&parse_complex_encounter_records(bytes)).unwrap()
+            }),
+            (THIEF_ENCOUNTER_BYTES, |bytes| {
+                write_thief_encounters(&parse_thief_encounters(bytes)).unwrap()
+            }),
+            (TIMED_ENCOUNTER_BYTES, |bytes| {
+                write_timed_encounters(&parse_timed_encounters(bytes)).unwrap()
             }),
         ];
         for (record_bytes, parse_write) in cases {
@@ -2424,6 +2949,128 @@ mod tests {
         assert_eq!(i16_be(&battle_bytes, 24), 77);
         assert_eq!(battle_bytes[338] as i8, -2);
         assert_eq!(i16_be(&battle_bytes, 344), 5);
+
+        let monster = MonsterRecord {
+            id: 0,
+            hit_dice: 9,
+            stamina_bonus: 3,
+            agility: 12,
+            name_id: 4,
+            movement_max: 11,
+            armor: -4,
+            magic_resistance: 25,
+            distance: 2,
+            traitor: 1,
+            size: 6,
+            type_flags: vec![1, 0, 1, 0, 0, 0, 0, 0],
+            attack_count: 2,
+            magic_attack_count: 1,
+            attacks: vec![vec![4, 8, 0, 0], vec![5, 12, 1, 0]],
+            damage_bonus: 7,
+            cast_percent: 20,
+            run_percent: 5,
+            surrender_percent: 6,
+            missile_percent: 30,
+            can_summon: 1,
+            saves: vec![-5, 0, 5, 0, 0, 0],
+            spell_immunities: vec![0, 1, 0, 1, 0, 0],
+            money: vec![10, 20, 30],
+            spells: vec![1101, 1102],
+            items: vec![501, 502],
+            weapon: 601,
+            icon_id: -222,
+            spell_points: 40,
+            exp: 750,
+            stamina: 88,
+            stamina_max: 99,
+            underneath: vec![1, 2, 3, 4],
+            target: 3,
+            guarding: 1,
+            not_on_menu: true,
+            been_attacked: 0,
+            movement: 9,
+            magic_to_hit: 12,
+            conditions: vec![0; 40],
+            lr: 4,
+            up: 5,
+            attack_num: 1,
+            bonus_attack: 2,
+            death_macro: 77,
+            max_spell_points: 60,
+            display_name: "Test Monster".to_string(),
+            raw_bytes: vec![0; MONSTER_BYTES],
+            authored: true,
+            provenance: provenance("Data MD", 0, 0, MONSTER_BYTES),
+        };
+        let monster_bytes = write_monsters(&[monster]).unwrap();
+        assert_eq!(monster_bytes.len(), MONSTER_BYTES);
+        assert_eq!(monster_bytes[0], 9);
+        assert_eq!(monster_bytes[5] as i8, -4);
+        assert_eq!(monster_bytes[10], 1);
+        assert_eq!(monster_bytes[20], 4);
+        assert_eq!(i16_be(&monster_bytes, 64), 1101);
+        assert_eq!(i16_be(&monster_bytes, 84), 501);
+        assert_eq!(i16_be(&monster_bytes, 98), -222);
+        assert_eq!(monster_bytes[118], 1);
+        assert_eq!(i16_be(&monster_bytes, 166), 77);
+        assert_eq!(&monster_bytes[170..182], b"Test Monster");
+
+        let item = ScenarioItemRecord {
+            id: 100,
+            item_id: 900,
+            icon_id: -222,
+            item_type: 6,
+            st: 2,
+            blunt: 1,
+            hands: 1,
+            lu: 3,
+            movement: -1,
+            ac: 4,
+            magic_resistance: 5,
+            damage: 12,
+            spell_points: 9,
+            sound: 605,
+            weight: 7,
+            cost: -1500,
+            charge: 3,
+            cursed_item_id: 901,
+            magical: 1,
+            item_cat0: 0x01020304,
+            item_cat1: -2,
+            race_restrictions: 8,
+            caste_restrictions: 9,
+            specific_race: 10,
+            specific_caste: 11,
+            race_class_only: 12,
+            caste_class_only: 13,
+            v_small: 14,
+            v_large: 15,
+            heat: 16,
+            cold: 17,
+            electric: 18,
+            vs_undead: 19,
+            vs_demon_devil: 20,
+            vs_evil: 21,
+            special1: 22,
+            special2: 23,
+            special3: 24,
+            special4: 25,
+            special5: 26,
+            weight_per_charge: 27,
+            drop_on_empty: 1,
+            raw_bytes: vec![0; ITEM_BYTES],
+            authored: true,
+            provenance: provenance("Data NI", 100, 100 * ITEM_BYTES, ITEM_BYTES),
+        };
+        let item_bytes = write_scenario_items(&[item]).unwrap();
+        assert_eq!(item_bytes.len(), ITEM_BYTES * 101);
+        let item_offset = ITEM_BYTES * 100;
+        assert_eq!(i16_be(&item_bytes, item_offset), 2);
+        assert_eq!(i16_be(&item_bytes, item_offset + 2), 900);
+        assert_eq!(i16_be(&item_bytes, item_offset + 4), -222);
+        assert_eq!(i32_be(&item_bytes, item_offset + 36), 0x01020304);
+        assert_eq!(i16_be(&item_bytes, item_offset + 86), 22);
+        assert_eq!(i16_be(&item_bytes, item_offset + 98), 1);
 
         let treasure = TreasureRecord {
             id: 0,
@@ -2514,5 +3161,75 @@ mod tests {
         assert_eq!(i16_be(&complex_bytes, 158), 66);
         assert_eq!(complex_bytes[160], 4);
         assert_eq!(&complex_bytes[161..165], b"Nine");
+
+        let thief = ThiefEncounterRecord {
+            id: 0,
+            type_flags: vec![
+                true, false, true, false, true, false, true, false, true, false,
+            ],
+            modifiers: vec![0, -10, 20, 0, 0, 5, 0, 0],
+            success_codes: vec![0, 2, 3, 0, 0, 0, 0, 0],
+            failure_codes: vec![0, -1, -2, 0, 0, 0, 0, 0],
+            success_text: vec![101, 102, 0, 0, 0, 0, 0, 0],
+            failure_text: vec![201, 202, 0, 0, 0, 0, 0, 0],
+            success_sounds: vec![301, 302, 0, 0, 0, 0, 0, 0],
+            failure_sounds: vec![401, 402, 0, 0, 0, 0, 0, 0],
+            spell: 1201,
+            low_damage: 4,
+            high_damage: 12,
+            tumblers: 3,
+            prompts: vec![55, 77, 6],
+            prompt_sounds: vec![10136, 5, 10],
+            raw_bytes: vec![0; THIEF_ENCOUNTER_BYTES],
+            authored: true,
+            provenance: provenance("Data TD2", 0, 0, THIEF_ENCOUNTER_BYTES),
+        };
+        let thief_bytes = write_thief_encounters(&[thief]).unwrap();
+        assert_eq!(thief_bytes.len(), THIEF_ENCOUNTER_BYTES);
+        assert_eq!(thief_bytes[0], 1);
+        assert_eq!(thief_bytes[2], 1);
+        assert_eq!(thief_bytes[11] as i8, -10);
+        assert_eq!(thief_bytes[26] as i8, 0);
+        assert_eq!(thief_bytes[27] as i8, -1);
+        assert_eq!(i16_be(&thief_bytes, 34), 101);
+        assert_eq!(i16_be(&thief_bytes, 50), 201);
+        assert_eq!(i16_be(&thief_bytes, 66), 301);
+        assert_eq!(i16_be(&thief_bytes, 82), 401);
+        assert_eq!(i16_be(&thief_bytes, 98), 1201);
+        assert_eq!(i16_be(&thief_bytes, 100), 4);
+        assert_eq!(i16_be(&thief_bytes, 102), 12);
+        assert_eq!(i16_be(&thief_bytes, 104), 3);
+        assert_eq!(i16_be(&thief_bytes, 106), 55);
+        assert_eq!(i16_be(&thief_bytes, 112), 10136);
+
+        let timed = TimedEncounterRecord {
+            id: 0,
+            day: 35,
+            increment: 5,
+            percent: 50,
+            door: 24,
+            required_level: 8,
+            required_random_rect: 17,
+            required_x: -1,
+            required_y: -1,
+            required_item: 901,
+            required_quest: 7,
+            location_kind: "dungeon".to_string(),
+            stuff: vec![2, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            raw_bytes: vec![0; TIMED_ENCOUNTER_BYTES],
+            authored: true,
+            provenance: provenance("Data TD3", 0, 0, TIMED_ENCOUNTER_BYTES),
+        };
+        let timed_bytes = write_timed_encounters(&[timed]).unwrap();
+        assert_eq!(i16_be(&timed_bytes, 0), 35);
+        assert_eq!(i16_be(&timed_bytes, 2), 5);
+        assert_eq!(i16_be(&timed_bytes, 4), 50);
+        assert_eq!(i16_be(&timed_bytes, 6), 24);
+        assert_eq!(i16_be(&timed_bytes, 8), 8);
+        assert_eq!(i16_be(&timed_bytes, 10), 17);
+        assert_eq!(i16_be(&timed_bytes, 12), -1);
+        assert_eq!(i16_be(&timed_bytes, 16), 901);
+        assert_eq!(i16_be(&timed_bytes, 18), 7);
+        assert_eq!(i16_be(&timed_bytes, 20), 2);
     }
 }

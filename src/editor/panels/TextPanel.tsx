@@ -1,8 +1,10 @@
 import { ChevronLeft, ChevronRight, Copy, Eraser, List, MessageSquarePlus } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { LibraryCatalog, MessageRecord, Project, ProjectCommand, SelectedEntity } from "../types";
 import { selectEntityFromId } from "../utils";
 import { classicTextByteLength, messageUsageLinks, unsupportedClassicTextChars } from "../contentLinks";
+
+const DIVINITY_TEXT_SEPARATOR = `${" ".repeat(20)}\uf8ff${" ".repeat(20)}`;
 
 export function TextPanel({
   project,
@@ -20,9 +22,14 @@ export function TextPanel({
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
   const [query, setQuery] = useState("");
+  const [findQuery, setFindQuery] = useState("");
+  const [findCursor, setFindCursor] = useState(0);
   const [resourceQuery, setResourceQuery] = useState("");
-  const [showList, setShowList] = useState(activeEditor === "messages");
+  const [textFileStatus, setTextFileStatus] = useState<{ kind: "ok" | "warning"; text: string } | null>(null);
+  const [showList, setShowList] = useState(activeEditor === "messages" || activeEditor === "domain");
+  const [showReferences, setShowReferences] = useState(activeEditor === "text-resources" || activeEditor === "spell-check");
   const [selectedReferenceId, setSelectedReferenceId] = useState<string | null>(null);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
   const records = useMemo(() => [...(project.messages ?? [])].sort((a, b) => a.id - b.id), [project.messages]);
   const selectedId = selectedMessageId(selectedEntity, records) ?? records[0]?.id ?? 0;
   const selectedRecord = records.find((record) => record.id === selectedId) ?? null;
@@ -36,15 +43,48 @@ export function TextPanel({
     for (const record of records) counts.set(record.id, messageUsageLinks(project, record.id).length);
     return counts;
   }, [project, records]);
+  const findMatches = useMemo(() => {
+    const normalized = findQuery.trim().toLowerCase();
+    if (!normalized) return [];
+    return records
+      .filter((record) => `${record.id} ${record.text}`.toLowerCase().includes(normalized))
+      .map((record) => record.id);
+  }, [findQuery, records]);
+  const reviewStringIds = useMemo(() => records.filter(isStringReviewCandidate).map((record) => record.id), [records]);
   const nextId = nextMessageId(records);
   const resourceRows = useMemo(() => textReferenceRows(project, catalog, resourceQuery), [catalog, project, resourceQuery]);
   const selectedReference = selectedReferenceId ? resourceRows.find((row) => row.id === selectedReferenceId) ?? null : null;
+  const referencePanelOpen = showReferences || selectedReference != null;
+  const handleTextFileImport = async (file: File | null) => {
+    if (!file) return;
+    const content = await file.text();
+    const parts = content.split(DIVINITY_TEXT_SEPARATOR);
+    if (parts.length !== records.length) {
+      setTextFileStatus({
+        kind: "warning",
+        text: `Import found ${parts.length.toLocaleString()} string segment${parts.length === 1 ? "" : "s"}, but this project has ${records.length.toLocaleString()} strings. Nothing was changed.`
+      });
+      return;
+    }
+    const updates = records.map((record, index) => ({ id: record.id, text: normalizeImportedString(parts[index] ?? "") }));
+    onApplyCommand({ kind: "bulkUpdateMessageRecords", label: `Import ${updates.length} strings`, updates });
+    setTextFileStatus({ kind: "ok", text: `Imported ${updates.length.toLocaleString()} strings from ${file.name}. Review any maximum-length strings before export.` });
+  };
 
   useEffect(() => {
     if (!selectedRecord && records.length > 0) {
       onSelectEntity(selectEntityFromId(`message:${records[0].id}`));
     }
   }, [onSelectEntity, records, selectedRecord]);
+
+  useEffect(() => {
+    if (activeEditor === "text-resources" || activeEditor === "spell-check") {
+      setShowReferences(true);
+    }
+    if (activeEditor === "messages" || activeEditor === "domain") {
+      setShowList(true);
+    }
+  }, [activeEditor]);
 
   return (
     <section className="text-workbench">
@@ -55,6 +95,42 @@ export function TextPanel({
         </div>
         <div className="text-workbench-actions">
           <b>{records.length.toLocaleString()} strings</b>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".txt,text/plain"
+            className="sr-only-file"
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0] ?? null;
+              void handleTextFileImport(file);
+              event.currentTarget.value = "";
+            }}
+          />
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => exportDivinityTextFile(records)}
+            title="Export all strings as a plain text spell-check file with Divinity-style separators."
+          >
+            Export Text
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => importInputRef.current?.click()}
+            title="Import a plain text file previously exported from this Strings editor."
+          >
+            Import Text
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            disabled={resourceRows.length === 0}
+            onClick={() => setShowReferences((value) => !value)}
+            title="Show or hide readable TEXT, STR#, and style string resources."
+          >
+            <List size={14} /> {referencePanelOpen ? "Hide References" : "Reference Strings"}
+          </button>
           <button
             type="button"
             className="btn btn-primary btn-sm"
@@ -70,10 +146,40 @@ export function TextPanel({
       <StringNavigator
         records={records}
         selectedId={selectedId}
+        findQuery={findQuery}
+        findCount={findMatches.length}
         showList={showList}
         onToggleList={() => setShowList((value) => !value)}
         onSelect={(id) => onSelectEntity(selectEntityFromId(`message:${id}`))}
+        onFindQueryChange={(value) => {
+          setFindQuery(value);
+          setFindCursor(0);
+        }}
+        onFindFirst={() => {
+          const first = findMatches[0];
+          if (first != null) {
+            setFindCursor(0);
+            onSelectEntity(selectEntityFromId(`message:${first}`));
+          }
+        }}
+        onFindNext={() => {
+          if (!findMatches.length) return;
+          const currentIndex = findMatches.indexOf(selectedId);
+          const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % findMatches.length : findCursor % findMatches.length;
+          setFindCursor(nextIndex);
+          onSelectEntity(selectEntityFromId(`message:${findMatches[nextIndex]}`));
+        }}
+        reviewCount={reviewStringIds.length}
+        onFindNextReview={() => {
+          const nextReviewId = nextReviewStringId(reviewStringIds, selectedId);
+          if (nextReviewId != null) onSelectEntity(selectEntityFromId(`message:${nextReviewId}`));
+        }}
       />
+      {textFileStatus && (
+        <div className={`text-file-status ${textFileStatus.kind}`}>
+          {textFileStatus.text}
+        </div>
+      )}
       <div className="text-workbench-layout">
         {showList && <aside className="text-message-list-panel">
           <div className="text-search-row">
@@ -114,14 +220,22 @@ export function TextPanel({
           ) : (
             <div className="empty-copy">Create a string to begin authoring text.</div>
           )}
-          {(activeEditor === "text-resources" || activeEditor === "spell-check" || resourceRows.length > 0) && (
+          {referencePanelOpen && (
             <section className="text-reference-panel">
               <header>
                 <div>
                   <h2>Reference Strings</h2>
                   <p>Readable TEXT, STR#, and style resources are searchable reference material.</p>
                 </div>
-                <input value={resourceQuery} onChange={(event) => setResourceQuery(event.currentTarget.value)} placeholder="Search TEXT / STR#..." />
+                <div className="text-reference-actions">
+                  <input value={resourceQuery} onChange={(event) => setResourceQuery(event.currentTarget.value)} placeholder="Search TEXT / STR#..." />
+                  <button type="button" className="btn btn-secondary btn-xs" onClick={() => {
+                    setSelectedReferenceId(null);
+                    setShowReferences(false);
+                  }}>
+                    Hide
+                  </button>
+                </div>
               </header>
               {selectedReference ? (
                 <TextReferenceDetail row={selectedReference} onBack={() => setSelectedReferenceId(null)} onInspect={() => onSelectEntity(selectEntityFromId(selectedReference.id))} />
@@ -148,15 +262,29 @@ export function TextPanel({
 function StringNavigator({
   records,
   selectedId,
+  findQuery,
+  findCount,
   showList,
   onToggleList,
-  onSelect
+  onSelect,
+  onFindQueryChange,
+  onFindFirst,
+  onFindNext,
+  reviewCount,
+  onFindNextReview
 }: {
   records: MessageRecord[];
   selectedId: number;
+  findQuery: string;
+  findCount: number;
   showList: boolean;
   onToggleList: () => void;
   onSelect: (id: number) => void;
+  onFindQueryChange: (value: string) => void;
+  onFindFirst: () => void;
+  onFindNext: () => void;
+  reviewCount: number;
+  onFindNextReview: () => void;
 }) {
   const selectedIndex = Math.max(0, records.findIndex((record) => record.id === selectedId));
   const previous = records[Math.max(0, selectedIndex - 1)] ?? null;
@@ -181,6 +309,25 @@ function StringNavigator({
       </label>
       <button type="button" className="btn btn-secondary btn-sm" onClick={onToggleList}>
         <List size={14} /> {showList ? "Hide Search List" : "Show Search List"}
+      </button>
+      <label className="text-find-field">
+        <span>Find Occurrence</span>
+        <input value={findQuery} onChange={(event) => onFindQueryChange(event.currentTarget.value)} placeholder="Search all strings..." />
+      </label>
+      <button type="button" className="btn btn-secondary btn-sm" disabled={!findCount} onClick={onFindFirst}>
+        Find First
+      </button>
+      <button type="button" className="btn btn-secondary btn-sm" disabled={!findCount} onClick={onFindNext}>
+        Find Next {findCount ? `(${findCount})` : ""}
+      </button>
+      <button
+        type="button"
+        className="btn btn-secondary btn-sm"
+        disabled={!reviewCount}
+        onClick={onFindNextReview}
+        title="Find the next string at the Realmz length limit or with characters that need cleanup before export."
+      >
+        Find Long String {reviewCount ? `(${reviewCount})` : ""}
       </button>
     </nav>
   );
@@ -327,6 +474,34 @@ function nextMessageId(records: MessageRecord[]) {
     if (!used.has(id)) return id;
   }
   return records.length;
+}
+
+function isStringReviewCandidate(record: MessageRecord) {
+  return classicTextByteLength(record.text) >= 255 || unsupportedClassicTextChars(record.text).length > 0;
+}
+
+function nextReviewStringId(ids: number[], selectedId: number) {
+  if (ids.length === 0) return null;
+  const directIndex = ids.indexOf(selectedId);
+  if (directIndex >= 0) return ids[(directIndex + 1) % ids.length];
+  return ids.find((id) => id > selectedId) ?? ids[0];
+}
+
+function normalizeImportedString(text: string) {
+  return text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+}
+
+function exportDivinityTextFile(records: MessageRecord[]) {
+  const content = records.map((record) => record.text ?? "").join(DIVINITY_TEXT_SEPARATOR);
+  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "Export Text.txt";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
 function textReferenceRows(project: Project, catalog: LibraryCatalog | null | undefined, query: string) {

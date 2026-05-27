@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { TOOLS } from "../constants";
 import { EditorState } from "../store";
-import { EditorTool, MapEntity, MapPaintMode, MapPreviewFocalPoint, MapPreviewMode, MapRecord, MapRegionSelection, MapViewFlag, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
+import { EditorTool, IconEntry, MapEntity, MapPaintMode, MapPreviewFocalPoint, MapPreviewMode, MapRecord, MapRegionSelection, MapViewFlag, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TileAttributeFlag, TilesetAsset, TriggerRecord } from "../types";
 import { randomRectEntityId } from "../map/geometry";
 import { allMapCells, buildPaintChanges, buildReplaceChanges, dominantTiles, rectCells, regionCellCount, regionDimensions } from "../map/regionPaint";
 import { actionSlotEntitiesForTriggerRecord } from "../semanticGraph";
@@ -9,13 +9,17 @@ import { compactValue, linksFor, mapEntityId, selectEntityFromId, semanticLabel,
 import { InfoGrid } from "./InfoGrid";
 import { ActionPointCodeTable, CellTileEvidence, MapCapabilityPanel, RandomRectangleForm } from "./MapAffordances";
 import { PaintPalettePanel } from "./TileSelectionBar";
-import { classifyTileValue } from "../map/tileMetadata";
+import { classifyTileValue, standardTileValues, tileAttributeGroup } from "../map/tileMetadata";
 import { tileColor } from "./TileSprite";
 import { TileSwatch } from "./TileSwatch";
 import { TutorialTip } from "./TutorialTip";
 import { ScrollArea } from "../ui";
 import { ResizablePane } from "./ResizablePane";
 import { actionPointCapacity, nextActionPointRecordIndex } from "../actionPointCapacity";
+
+type MapContextFocus = "flags" | "atlas" | "layout" | "source";
+const LAND_LAYOUT_ROWS = 8;
+const LAND_LAYOUT_COLS = 16;
 
 export function MapContextSidebar({
   state,
@@ -98,6 +102,8 @@ export function MapSelectionSidebar({
   selectedRandomLevel,
   mapTriggers,
   mapRecords,
+  onSelectMap,
+  onSelectTile,
   contextFocus,
   onSetContextFocus,
   previewMode,
@@ -125,8 +131,10 @@ export function MapSelectionSidebar({
   selectedRandomLevel: RandomLevel | null;
   mapTriggers: TriggerRecord[];
   mapRecords: SemanticEntity[];
-  contextFocus: "flags" | "atlas" | "source";
-  onSetContextFocus: (focus: "flags" | "atlas" | "source") => void;
+  onSelectMap: (id: string) => void;
+  onSelectTile: (tile: number) => void;
+  contextFocus: MapContextFocus;
+  onSetContextFocus: (focus: MapContextFocus) => void;
   previewMode: MapPreviewMode;
   previewFocalPoint: MapPreviewFocalPoint;
   onSetPreviewMode: (mode: MapPreviewMode) => void;
@@ -202,6 +210,10 @@ export function MapSelectionSidebar({
             randomLevel={selectedRandomLevel}
             activeTool={state.activeTool}
             contextFocus={contextFocus}
+            icons={state.iconEntries}
+            selectedPaintTile={state.selectedTile}
+            onSelectMap={onSelectMap}
+            onSelectTile={onSelectTile}
             previewMode={previewMode}
             previewFocalPoint={previewFocalPoint}
             showRandomRects={state.showRandomRects}
@@ -235,10 +247,14 @@ function CoreMapSetup({
   randomLevel,
   activeTool,
   contextFocus,
+  onSelectMap,
+  onSelectTile,
   previewMode,
   previewFocalPoint,
   showRandomRects,
   onSetContextFocus,
+  icons,
+  selectedPaintTile,
   onSetPreviewMode,
   onSetPreviewFocalPoint,
   onSetTool,
@@ -253,11 +269,15 @@ function CoreMapSetup({
   atlas: EditorState["atlasEntries"][string] | null;
   randomLevel: RandomLevel | null;
   activeTool: EditorTool;
-  contextFocus: "flags" | "atlas" | "source";
+  contextFocus: MapContextFocus;
+  icons: EditorState["iconEntries"];
+  selectedPaintTile: number;
+  onSelectMap: (id: string) => void;
+  onSelectTile: (tile: number) => void;
   previewMode: MapPreviewMode;
   previewFocalPoint: MapPreviewFocalPoint;
   showRandomRects: boolean;
-  onSetContextFocus: (focus: "flags" | "atlas" | "source") => void;
+  onSetContextFocus: (focus: MapContextFocus) => void;
   onSetPreviewMode: (mode: MapPreviewMode) => void;
   onSetPreviewFocalPoint: (point: MapPreviewFocalPoint | null) => void;
   onSetTool: (tool: EditorTool) => void;
@@ -341,6 +361,28 @@ function CoreMapSetup({
         <p className="context-capacity-note">
           {atlas ? "Palette previews use the same renderer as the map canvas." : "No atlas image is loaded; Providence will show fallback swatches."}
         </p>
+        <LandTileAtlasEditor
+          project={project}
+          selectedTileset={selectedTileset}
+          atlas={atlas}
+          icons={icons}
+          selectedPaintTile={selectedPaintTile}
+          onSelectTile={onSelectTile}
+          onSetTool={onSetTool}
+          onOpenPalette={onOpenPalette}
+        />
+      </details>
+      <details className="context-section" open={contextFocus === "layout"}>
+        <summary>
+          <span>Land Layout</span>
+          <b>{project?.landLayout ? "configured" : "none"}</b>
+        </summary>
+        <LandLayoutEditor
+          project={project}
+          selectedMap={selectedMap}
+          onSelectMap={onSelectMap}
+          onApplyCommand={onApplyCommand}
+        />
       </details>
       {selectedMap && project && (
         <p className="context-capacity-note">
@@ -360,6 +402,7 @@ function CoreMapSetup({
         onOpenPalette={onOpenPalette}
         onFocusFlags={() => onSetContextFocus("flags")}
         onFocusAtlas={() => onSetContextFocus("atlas")}
+        onFocusLayout={() => onSetContextFocus("layout")}
         onClearLevel={clearLevel}
         onShowRandomRects={() => onSetViewFlag("showRandomRects", true)}
         onHighlightRandomRect={focusFirstRandomRect}
@@ -416,6 +459,131 @@ function MapOutliner({
       {!project && <p className="empty-copy compact">Create or import a scenario to browse maps.</p>}
     </section>
   );
+}
+
+function LandLayoutEditor({
+  project,
+  selectedMap,
+  onSelectMap,
+  onApplyCommand
+}: {
+  project: Project | null;
+  selectedMap: MapEntity | null;
+  onSelectMap: (id: string) => void;
+  onApplyCommand: (command: ProjectCommand) => void;
+}) {
+  const landMaps = (project?.maps ?? []).filter((map) => map.levelType === "land").sort((a, b) => a.index - b.index);
+  const layout = project?.landLayout ?? null;
+  const cells = normalizeLayoutCells(layout?.cells ?? []);
+  const stats = landLayoutStats(cells, landMaps);
+  if (!project) {
+    return <p className="empty-copy compact">Open or import a scenario to edit outdoor level layout.</p>;
+  }
+  if (!layout) {
+    return (
+      <div className="land-layout-editor">
+        <p className="empty-copy compact">
+          This scenario has no Layout file yet. Realmz will not automatically move between outdoor levels when the party walks off a map edge.
+        </p>
+        <button className="btn btn-primary btn-sm" type="button" onClick={() => onApplyCommand({ kind: "createLandLayout", label: "Create land layout" })}>
+          Create Layout Table
+        </button>
+      </div>
+    );
+  }
+  return (
+    <div className="land-layout-editor">
+      <p className="empty-copy compact">
+        Arrange outdoor levels in the grid. Blank cells disable edge travel; Land 0 is stored as -1 for Realmz compatibility.
+      </p>
+      <div className="land-layout-toolbar">
+        <button className="btn btn-secondary btn-xs" type="button" onClick={() => onApplyCommand({ kind: "clearLandLayout", label: "Clear land layout" })}>
+          Clear Layout
+        </button>
+        {selectedMap?.levelType === "land" && <span>Current: {selectedMap.name}</span>}
+      </div>
+      {stats.warnings.length > 0 && (
+        <div className="inline-diagnostics">
+          {stats.warnings.map((warning) => <div key={warning} className="diagnostic warning">{warning}</div>)}
+        </div>
+      )}
+      <div className="land-layout-grid" style={{ gridTemplateColumns: `repeat(${LAND_LAYOUT_COLS}, minmax(2.1rem, 1fr))` }}>
+        {Array.from({ length: LAND_LAYOUT_ROWS }, (_, row) =>
+          Array.from({ length: LAND_LAYOUT_COLS }, (_, col) => {
+            const index = row * LAND_LAYOUT_COLS + col;
+            const value = cells[index] ?? 0;
+            const target = mapForLayoutValue(value, landMaps);
+            const selected = selectedMap?.levelType === "land" && layoutValueForMapIndex(selectedMap.index) === value;
+            return (
+              <label key={`${row}:${col}`} className={`land-layout-cell${value !== 0 ? " filled" : ""}${selected ? " current" : ""}${value !== 0 && !target ? " missing" : ""}`} title={layoutCellTitle(value, target)}>
+                <span>{row + 1},{col + 1}</span>
+                <select
+                  value={String(value)}
+                  onChange={(event) => onApplyCommand({ kind: "updateLandLayoutCell", label: "Update land layout", row, col, value: Number(event.currentTarget.value) })}
+                >
+                  <option value="0">-</option>
+                  {landMaps.map((map) => (
+                    <option key={map.id} value={String(layoutValueForMapIndex(map.index))}>{map.index}</option>
+                  ))}
+                  {value !== 0 && !landMaps.some((map) => layoutValueForMapIndex(map.index) === value) && (
+                    <option value={String(value)}>{value}</option>
+                  )}
+                </select>
+                {target && (
+                  <button type="button" onClick={() => onSelectMap(target.id)} aria-label={`Open ${target.name}`}>
+                    Open
+                  </button>
+                )}
+              </label>
+            );
+          })
+        )}
+      </div>
+      <div className="land-layout-legend">
+        <span><b>-</b> No edge travel</span>
+        <span><b>0</b> Land level 0</span>
+        <span><b>1+</b> Matching land level</span>
+      </div>
+    </div>
+  );
+}
+
+function normalizeLayoutCells(cells: number[]) {
+  const normalized = new Array(LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS).fill(0);
+  for (let index = 0; index < normalized.length; index += 1) {
+    normalized[index] = Number.isFinite(cells[index]) ? Math.trunc(cells[index]) : 0;
+  }
+  return normalized;
+}
+
+function layoutValueForMapIndex(index: number) {
+  return index === 0 ? -1 : index;
+}
+
+function mapForLayoutValue(value: number, landMaps: MapEntity[]) {
+  if (value === 0) return null;
+  const mapIndex = value === -1 ? 0 : value;
+  return landMaps.find((map) => map.index === mapIndex) ?? null;
+}
+
+function layoutCellTitle(value: number, target: MapEntity | null) {
+  if (value === 0) return "Blank cell: no automatic edge travel.";
+  if (target) return `Opens ${target.name}.`;
+  return `References missing land level ${value === -1 ? 0 : value}.`;
+}
+
+function landLayoutStats(cells: number[], landMaps: MapEntity[]) {
+  const warnings: string[] = [];
+  const knownValues = new Set(landMaps.map((map) => layoutValueForMapIndex(map.index)));
+  const counts = new Map<number, number>();
+  for (const value of cells) {
+    if (value === 0) continue;
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+    if (!knownValues.has(value)) warnings.push(`Layout references missing land level ${value === -1 ? 0 : value}.`);
+  }
+  const duplicateLevels = [...counts.entries()].filter(([, count]) => count > 1).map(([value]) => value === -1 ? 0 : value);
+  if (duplicateLevels.length > 0) warnings.push(`Land level ${duplicateLevels.slice(0, 6).join(", ")} appears more than once; Realmz uses the first match for edge travel.`);
+  return { warnings: [...new Set(warnings)] };
 }
 
 function MapToolset({
@@ -590,6 +758,137 @@ function MapLevelSettings({
   );
 }
 
+const LAND_TILE_FILTERS: Array<{ id: TileAttributeFlag | "all"; label: string; hint: string }> = [
+  { id: "all", label: "All", hint: "Show the full current landlook atlas." },
+  { id: "walkable", label: "Walkable", hint: "Tiles Realmz treats as ordinary foot movement." },
+  { id: "solid", label: "Solid", hint: "Tiles Realmz treats as blocking, boat-only, or fly/float-gated." },
+  { id: "path", label: "Path", hint: "Road/path art and path-marked tiles." },
+  { id: "shore", label: "Shore / Water", hint: "Tiles marked as shore or water movement surfaces." },
+  { id: "boat-required", label: "Boat", hint: "Tiles that require boat-style movement." },
+  { id: "fly-float-required", label: "Fly / Float", hint: "Tiles that require fly or float movement." },
+  { id: "blocks-los", label: "Blocks LOS", hint: "Tiles that block line of sight." },
+  { id: "unknown-metadata", label: "Unknown", hint: "Tiles with no decoded attribute data yet." }
+];
+
+function LandTileAtlasEditor({
+  project,
+  selectedTileset,
+  atlas,
+  icons,
+  selectedPaintTile,
+  onSelectTile,
+  onSetTool,
+  onOpenPalette
+}: {
+  project: Project | null;
+  selectedTileset: TilesetAsset | null;
+  atlas: EditorState["atlasEntries"][string] | null;
+  icons: Record<number, IconEntry>;
+  selectedPaintTile: number;
+  onSelectTile: (tile: number) => void;
+  onSetTool: (tool: EditorTool) => void;
+  onOpenPalette: () => void;
+}) {
+  const [filter, setFilter] = useState<TileAttributeFlag | "all">("all");
+  const [inspectedTile, setInspectedTile] = useState(selectedPaintTile);
+  useEffect(() => {
+    setInspectedTile(selectedPaintTile);
+  }, [selectedPaintTile, selectedTileset?.id]);
+
+  if (!selectedTileset) {
+    return <p className="empty-copy compact">Select a land map to inspect its tile set.</p>;
+  }
+
+  const attributes = project?.tileAttributes ?? [];
+  const tiles = standardTileValues(selectedTileset);
+  const visibleTiles = filter === "all"
+    ? tiles
+    : tiles.filter((tile) => tileAttributeGroup(classifyTileValue(tile, selectedTileset, attributes, icons).attributes, tile, selectedTileset).includes(filter));
+  const meaning = classifyTileValue(inspectedTile, selectedTileset, attributes, icons);
+  const attributeRows = tileAttributeRows(meaning);
+
+  return (
+    <div className="land-tile-atlas-editor">
+      <div className="land-tile-atlas-toolbar" role="toolbar" aria-label="Tile attribute filters">
+        {LAND_TILE_FILTERS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            className={filter === item.id ? "active" : ""}
+            onClick={() => setFilter(item.id)}
+            title={item.hint}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+      <div className="land-tile-atlas-grid" style={{ gridTemplateColumns: `repeat(${Math.max(1, selectedTileset.columns)}, minmax(0, 1fr))` }}>
+        {visibleTiles.map((tile) => (
+          <button
+            key={tile}
+            type="button"
+            className={[
+              tile === selectedPaintTile ? "selected" : "",
+              tile === inspectedTile ? "inspected" : ""
+            ].filter(Boolean).join(" ")}
+            style={{ background: tileColor(tile) }}
+            onClick={() => {
+              setInspectedTile(tile);
+              onSelectTile(tile);
+            }}
+            title={`Tile ${tile}`}
+          >
+            <TileSwatch atlas={atlas} icons={icons} tile={tile} tileset={selectedTileset} />
+          </button>
+        ))}
+        {visibleTiles.length === 0 && <span className="empty-inline">No tiles match this filter.</span>}
+      </div>
+      <div className="land-tile-detail-card">
+        <div className="land-tile-detail-preview" style={{ background: tileColor(inspectedTile) }}>
+          <TileSwatch atlas={atlas} icons={icons} tile={inspectedTile} tileset={selectedTileset} showBadge={false} />
+        </div>
+        <div className="land-tile-detail-body">
+          <div className="tile-meaning-title">
+            <span>{meaning.label}</span>
+            <b>{attributeSourceLabel(meaning.attributes)}</b>
+          </div>
+          <InfoGrid rows={attributeRows} />
+          <div className="context-action-stack compact">
+            <button
+              className="btn btn-primary btn-xs context-action-button"
+              type="button"
+              onClick={() => {
+                onSelectTile(inspectedTile);
+                onSetTool("paint");
+                onOpenPalette();
+              }}
+            >
+              Paint With This Tile
+            </button>
+          </div>
+        </div>
+      </div>
+      <p className="context-capacity-note">
+        Tile attributes are shown from Realmz landlook data when available. Editing the attribute table is read-only for now.
+      </p>
+    </div>
+  );
+}
+
+function tileAttributeRows(meaning: ReturnType<typeof classifyTileValue>): [string, string | number][] {
+  const attributes = meaning.attributes;
+  return [
+    ["Raw Value", meaning.raw],
+    ["Rendered Tile", meaning.renderTile],
+    ["Solid Type", attributes?.solidType ?? "unknown"],
+    ["Move Sound", attributes?.movementSoundId ?? "unknown"],
+    ["Time / Move", attributes?.movementCost ?? "unknown"],
+    ["Traits", meaning.attributeFlags.map(tileAttributeLabel).join(", ") || "unknown"],
+    ["Icon Art", meaning.iconCandidates.length === 0 ? "none" : meaning.iconAvailable ? "available" : "missing"],
+    ["Status", userFacingConfidence(attributes?.confidence ?? (meaning.iconCandidates.length > 0 ? "preserved" : "unknown"))]
+  ];
+}
+
 function PaintTileSummary({
   selectedTile,
   inspectedTile,
@@ -656,7 +955,7 @@ function TileMeaningInspector({
       ? `loaded ${meaning.iconCandidates.join(", ")}`
       : `missing ${meaning.iconCandidates.join(", ")}`;
   const attributes = meaning.attributes;
-  const attributeFlags = meaning.attributeFlags.length ? meaning.attributeFlags.join(", ") : "unknown";
+  const attributeFlags = meaning.attributeFlags.length ? meaning.attributeFlags.map(tileAttributeLabel).join(", ") : "unknown";
   return (
     <div className={`tile-meaning-inspector${compact ? " compact" : ""}`}>
       <div className="tile-meaning-title">
@@ -676,10 +975,10 @@ function TileMeaningInspector({
         <b>{iconState}</b>
         <span>Solid Type</span>
         <b>{attributes?.solidType ?? "unknown"}</b>
-        <span>Metadata</span>
+        <span>Traits</span>
         <b>{attributeFlags}</b>
-        <span>Source</span>
-        <b>{attributes?.sourceKind ?? attributes?.source ?? "unknown"}</b>
+        <span>Attribute Table</span>
+        <b>{attributeSourceLabel(attributes)}</b>
         <span>Move Cost</span>
         <b>{attributes?.movementCost ?? "unknown"}</b>
         <span>Sound</span>
@@ -1620,6 +1919,30 @@ function userFacingConfidence(confidence: string | null | undefined) {
   if (confidence === "preserved") return "Imported";
   if (confidence === "unknown") return "Unknown";
   return confidence ?? "Unknown";
+}
+
+function attributeSourceLabel(attributes: ReturnType<typeof classifyTileValue>["attributes"]) {
+  if (!attributes) return "Unknown";
+  if (attributes.sourceKind === "mapstats") return "Realmz landlook table";
+  if (attributes.sourceKind === "data-solids") return "Special tile table";
+  if (attributes.sourceKind === "inferred") return "Inferred";
+  if (attributes.sourceKind === "preserved") return "Imported";
+  return attributes.source || "Unknown";
+}
+
+function tileAttributeLabel(flag: TileAttributeFlag) {
+  switch (flag) {
+    case "walkable": return "Walkable";
+    case "solid": return "Solid / blocking";
+    case "path": return "Path";
+    case "shore": return "Shore / water";
+    case "boat-required": return "Boat required";
+    case "fly-float-required": return "Fly / float required";
+    case "blocks-los": return "Blocks LOS";
+    case "special-icon": return "Special / icon";
+    case "unknown-metadata": return "Unknown";
+    default: return flag;
+  }
 }
 
 function nextAvailableRandomRectIndex(project: Project | null, levelType: MapEntity["levelType"], levelIndex: number) {

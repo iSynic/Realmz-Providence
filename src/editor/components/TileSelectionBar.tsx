@@ -3,6 +3,7 @@ import { EditorState } from "../store";
 import { IconEntry, LibraryAsset, MapEntity, Project, TileAttributeFlag, TilePaletteCategory, TilesetAsset } from "../types";
 import { classifyTileValue, isDivinityVisualPathTile, standardTileValues, tileAttributeGroup } from "../map/tileMetadata";
 import { PAINTABLE_REFERENCE_ACTOR_ICON_VALUES, PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES } from "../map/renderValues";
+import { isActorOrCreatureIconId, isMapPlaceableLibraryAsset } from "../resourceResolver";
 import { tileColor } from "./TileSprite";
 import { TileSwatch } from "./TileSwatch";
 import { TutorialTip } from "./TutorialTip";
@@ -269,13 +270,13 @@ export function paletteForMap(map: MapEntity | null, tileset: TilesetAsset | nul
 
 const ATTRIBUTE_FILTERS: Array<{ id: TileAttributeFlag | "all"; label: string; hint: string }> = [
   { id: "all", label: "All", hint: "Show all tiles with known or unknown metadata." },
-  { id: "walkable", label: "Walkable", hint: "Source-backed data says normal foot movement can enter this tile without boat or fly/float." },
-  { id: "solid", label: "Solid / Blocking", hint: "Source-backed data marks this tile as solid, boat-only, or fly/float-gated." },
-  { id: "path", label: "Path", hint: "Source-backed mapstats path flag plus Divinity-visible road/path atlas tiles 132-146." },
-  { id: "shore", label: "Shore / Water", hint: "Source-backed mapstats shore/water flag." },
-  { id: "boat-required", label: "Boat Required", hint: "Source-backed mapstats boat/water requirement." },
-  { id: "fly-float-required", label: "Fly / Float", hint: "Source-backed mapstats fly/float script flag." },
-  { id: "blocks-los", label: "Blocks LOS", hint: "Source-backed mapstats line-of-sight blocker." },
+  { id: "walkable", label: "Walkable", hint: "Realmz landlook data says normal foot movement can enter this tile without boat or fly/float." },
+  { id: "solid", label: "Solid / Blocking", hint: "Realmz landlook data marks this tile as solid, boat-only, or fly/float-gated." },
+  { id: "path", label: "Path", hint: "Realmz path flag plus Divinity-visible road/path atlas tiles 132-146." },
+  { id: "shore", label: "Shore / Water", hint: "Realmz shore/water tile data." },
+  { id: "boat-required", label: "Boat Required", hint: "Realmz boat/water movement requirement." },
+  { id: "fly-float-required", label: "Fly / Float", hint: "Realmz fly/float movement requirement." },
+  { id: "blocks-los", label: "Blocks LOS", hint: "Realmz line-of-sight blocker." },
   { id: "special-icon", label: "Special / Icon", hint: "Negative values or icon-backed tiles." },
   { id: "unknown-metadata", label: "Unknown", hint: "Tiles without decoded attribute metadata." }
 ];
@@ -310,7 +311,7 @@ function specialTilesForPalette(
     if (!isPaintableSpecialLandAsset(asset)) continue;
     if (asset.resourceId == null) continue;
     const value = asset.resourceId < 0 ? asset.resourceId : -asset.resourceId;
-    if (isActorIconResourceId(Math.abs(asset.resourceId))) actors.add(value);
+    if (isActorOrCreatureIconId(Math.abs(asset.resourceId))) actors.add(value);
     else placeable.add(value);
   }
   for (const tile of PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES) {
@@ -334,23 +335,7 @@ function specialTilesForPalette(
 }
 
 function isPaintableSpecialLandAsset(asset: LibraryAsset) {
-  if (asset.resourceType !== "cicn") return false;
-  return (
-    asset.type === "special-land-tile" ||
-    asset.relativePath.includes("Land Archive") ||
-    asset.label.includes("Special Land") ||
-    (typeof asset.resourceId === "number" && (asset.resourceId < 0 || isActorIconResourceId(Math.abs(asset.resourceId))))
-  );
-}
-
-function isActorIconResourceId(resourceId: number) {
-  return (
-    (resourceId >= 379 && resourceId <= 461) ||
-    (resourceId >= 464 && resourceId <= 496) ||
-    (resourceId >= 500 && resourceId <= 590) ||
-    (resourceId >= 600 && resourceId <= 619) ||
-    (resourceId >= 692 && resourceId <= 824)
-  );
+  return isMapPlaceableLibraryAsset(asset);
 }
 
 function entitySummaryNumber(summary: Record<string, unknown> | undefined, key: string) {
@@ -398,10 +383,16 @@ function tileTitle(
       : ` Missing icon art (${metadata.iconCandidates.join(", ")}).`
     : "";
   const attributes = metadata.attributes
-    ? ` Solid type ${metadata.attributes.solidType ?? "unknown"} from ${metadata.attributes.source}.`
+    ? ` Solid type ${metadata.attributes.solidType ?? "unknown"} from ${attributeTableLabel(metadata.attributes.sourceKind, metadata.attributes.source)}.`
     : " Tile attributes unknown.";
   const visualPath = isDivinityVisualPathTile(tile, tileset) && !metadata.attributes?.flags.includes("path")
     ? " Divinity shows this atlas range as road/path art; Realmz mapstats does not set its path flag."
     : "";
   return `${metadata.label}. Raw ${metadata.raw}; renders as ${metadata.renderTile}.${icon}${attributes}${visualPath} ${metadata.compatibility}`;
+}
+
+function attributeTableLabel(sourceKind: string | undefined, source: string) {
+  if (sourceKind === "mapstats") return "the landlook table";
+  if (sourceKind === "data-solids") return "the special tile table";
+  return source || "decoded tile data";
 }

@@ -83,7 +83,7 @@ These need UI badges that say whether the data is shared, scenario-local, or unr
 
 | Family | Source | Runtime Behavior | Providence Policy |
 | --- | --- | --- | --- |
-| Items | Shared `:Data Files:Data ID` plus supply defaults from `Data NI` evidence | `loaditem` resolves IDs into five 200-item groups: weapons, armor, helms, magic, supplies | Treat as rules/library data until Divinity binary proves scenario-local item authoring paths. Scenario records can reference items now. |
+| Items | Shared `:Data Files:Data ID` plus active scenario `Data NI` | `loaditem` resolves IDs into five 200-item groups: weapons, armor, accessories/helms, magic, supplies/special | Built-in IDs 0-799 remain library/reference data. Scenario `Data NI` supplies IDs 800-999; Divinity custom item editing starts at 900. |
 | Spells | Shared `:Data Files:Data S`; optional scenario `Data Spell` resource path is opened by `selectscenario` | `loadspell2` decodes packed IDs as caste/level/slot | Treat custom spell resources as high-priority archaeology before enabling scenario-local spell editing. |
 | Races | Shared `Data Race`; scenario `Data Race` override for third-party scenarios when present | `openrace` falls back to shared data | Editor can show shared fallback vs scenario override. Writer needs override fixture. |
 | Castes | Shared `Data Caste`; scenario `Data Caste` override for third-party scenarios when present | `opencaste` falls back to shared data | Editor can show shared fallback vs scenario override. Writer needs override fixture. |

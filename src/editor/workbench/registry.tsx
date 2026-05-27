@@ -75,10 +75,10 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
   },
   scripts: {
     id: "scripts",
-    label: "Scripts",
+    label: "Action Point Hub",
     shortLabel: "AP",
-    description: "Action Points, GOSUBs, macros, global macros, and quests.",
-    help: "Visual steps are a friendlier presentation over Realmz CODE/ID slots and EDCD rows.",
+    description: "Action Points, GOSUBs, macros, global macros, quests, and links to the rest of the scenario.",
+    help: "Action Points are the scenario behavior hub. Visual steps present Realmz CODE/ID slots and EDCD rows with guided targets.",
     tools: [
       t({ id: "action-points", label: "Action Points / GOSUBs", iconLabel: "AP", workbench: "project", description: "Create and edit map action slots.", entityTypes: ["trigger", "action-slot"], defaultInspector: "semantic" }),
       t({ id: "macros", label: "Macros", iconLabel: "M", workbench: "project", description: "Extra Action Point macros and branch targets.", entityTypes: ["macro"], defaultInspector: "semantic" }),

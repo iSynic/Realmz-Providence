@@ -6,16 +6,21 @@ import {
   Diagnostic,
   EncounterActionRow,
   ExtraCodeRow,
+  LandLayout,
   LevelType,
   MapEntity,
   MapRecord,
   MessageRecord,
+  MonsterRecord,
   RandomLevel,
+  ScenarioItemRecord,
   ScenarioCasteOverride,
   ScenarioRaceOverride,
   ScenarioSpellOverride,
   ShopRecord,
   SimpleEncounterRecord,
+  ThiefEncounterRecord,
+  TimedEncounterRecord,
   TileAttributeProfile,
   TilesetAsset,
   TreasureRecord,
@@ -33,11 +38,18 @@ export const DOORS_PER_LEVEL = 100;
 export const DOOR_LEVEL_BYTES = DOOR_BYTES * DOORS_PER_LEVEL;
 export const RANDLEVEL_BYTES = 644;
 export const EXTRACODE_BYTES = 10;
+export const MONSTER_BYTES = 210;
+export const LAND_LAYOUT_ROWS = 8;
+export const LAND_LAYOUT_COLS = 16;
+export const LAND_LAYOUT_BYTES = LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS * 2;
 export const MAP_RECORD_BYTES = 340;
+export const ITEM_BYTES = 100;
 export const SPELL_BYTES = 30;
 export const SPELL_OVERRIDE_RECORDS = 105;
 export const RACE_BYTES = 408;
 export const CASTE_BYTES = 576;
+export const THIEF_ENCOUNTER_BYTES = 118;
+export const TIMED_ENCOUNTER_BYTES = 40;
 
 export const TRACKED_FILES = [
   "Scenario",
@@ -64,12 +76,14 @@ export const TRACKED_FILES = [
   "Data RI",
   "Data MENU",
   "Data Solids",
+  "Data NI",
   "Data Custom 1 BD",
   "Data Custom 2 BD",
   "Data Custom 3 BD",
   "Data Spell",
   "Data Race",
-  "Data Caste"
+  "Data Caste",
+  "Layout"
 ] as const;
 
 const RECORD_BYTES: Record<string, number> = {
@@ -83,7 +97,7 @@ const RECORD_BYTES: Record<string, number> = {
   "Data ED2": 520,
   "Data ED3": DOOR_BYTES,
   "Data EDCD": EXTRACODE_BYTES,
-  "Data MD": 210,
+  "Data MD": MONSTER_BYTES,
   "Data BD": 346,
   "Data SD": 3002,
   "Data SD2": 256,
@@ -96,13 +110,16 @@ const RECORD_BYTES: Record<string, number> = {
   "Global": 60,
   "Data MENU": 502,
   "Data Solids": 1024,
+  "Data NI": ITEM_BYTES,
   "Data Spell": SPELL_BYTES,
   "Data Race": RACE_BYTES,
-  "Data Caste": CASTE_BYTES
+  "Data Caste": CASTE_BYTES,
+  "Layout": LAND_LAYOUT_BYTES
 };
 
 export type ParsedBrowserScenario = {
   maps: MapEntity[];
+  landLayout: LandLayout | null;
   mapRecords: MapRecord[];
   tileAttributes: TileAttributeProfile[];
   triggers: TriggerRecord[];
@@ -110,10 +127,14 @@ export type ParsedBrowserScenario = {
   extracodes: ExtraCodeRow[];
   messages: MessageRecord[];
   battles: BattleRecord[];
+  monsters: MonsterRecord[];
+  scenarioItems: ScenarioItemRecord[];
   treasures: TreasureRecord[];
   shops: ShopRecord[];
   simpleEncounters: SimpleEncounterRecord[];
   complexEncounters: ComplexEncounterRecord[];
+  thiefEncounters: ThiefEncounterRecord[];
+  timedEncounters: TimedEncounterRecord[];
   spellOverrides: ScenarioSpellOverride[];
   raceOverrides: ScenarioRaceOverride[];
   casteOverrides: ScenarioCasteOverride[];
@@ -148,6 +169,7 @@ export function parseScenarioBuffers(buffers: Map<string, Uint8Array>): ParsedBr
     ...parseRandomLevels(buffers.get("Data RDD"), "dungeon", "Data RDD")
   ];
   attachRenderInfo(maps, randomLevels);
+  const landLayout = parseLandLayout(buffers.get("Layout"));
   const mapRecords = parseMapRecords(buffers.get("Data MD2"));
   const tileAttributes = [
     ...parseTileAttributes(buffers.get("Data Solids")),
@@ -164,15 +186,37 @@ export function parseScenarioBuffers(buffers: Map<string, Uint8Array>): ParsedBr
   const extracodes = parseExtracodes(buffers.get("Data EDCD"));
   const messages = parseMessages(buffers.get("Data SD2"));
   const battles = parseBattles(buffers.get("Data BD"));
+  const monsters = parseMonsters(buffers.get("Data MD"));
+  const scenarioItems = parseScenarioItems(buffers.get("Data NI"));
   const treasures = parseTreasures(buffers.get("Data TD"));
   const shops = parseShops(buffers.get("Data SD"));
   const simpleEncounters = parseSimpleEncounters(buffers.get("Data ED"));
   const complexEncounters = parseComplexEncounters(buffers.get("Data ED2"));
+  const thiefEncounters = parseThiefEncounters(buffers.get("Data TD2"));
+  const timedEncounters = parseTimedEncounters(buffers.get("Data TD3"));
   const spellOverrides = parseSpellOverrides(buffers.get("Data Spell"));
   const raceOverrides = parseRaceOverrides(buffers.get("Data Race"));
   const casteOverrides = parseCasteOverrides(buffers.get("Data Caste"));
   const assetCatalog = { tilesets: buildAssetCatalog(maps, randomLevels, buffers, diagnostics) };
-  return { maps, mapRecords, tileAttributes, triggers, randomLevels, extracodes, messages, battles, treasures, shops, simpleEncounters, complexEncounters, spellOverrides, raceOverrides, casteOverrides, assetCatalog, records, diagnostics };
+  return { maps, landLayout, mapRecords, tileAttributes, triggers, randomLevels, extracodes, messages, battles, monsters, scenarioItems, treasures, shops, simpleEncounters, complexEncounters, thiefEncounters, timedEncounters, spellOverrides, raceOverrides, casteOverrides, assetCatalog, records, diagnostics };
+}
+
+function parseLandLayout(buffer: Uint8Array | undefined): LandLayout | null {
+  if (!buffer || buffer.byteLength < LAND_LAYOUT_BYTES) return null;
+  return {
+    rows: LAND_LAYOUT_ROWS,
+    cols: LAND_LAYOUT_COLS,
+    cells: Array.from({ length: LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS }, (_, index) => i16(buffer, index * 2)),
+    trailingBytes: Array.from(buffer.slice(LAND_LAYOUT_BYTES)),
+    authored: false,
+    provenance: {
+      sourceFile: "Layout",
+      recordIndex: 0,
+      byteOffset: 0,
+      byteLength: LAND_LAYOUT_BYTES,
+      confidence: "confirmed"
+    }
+  };
 }
 
 function parseTileAttributes(buffer: Uint8Array | undefined): TileAttributeProfile[] {
@@ -450,6 +494,61 @@ function parseBattles(buffer: Uint8Array | undefined): BattleRecord[] {
   }));
 }
 
+function parseMonsters(buffer: Uint8Array | undefined): MonsterRecord[] {
+  return fixedRecords(buffer, MONSTER_BYTES, "Data MD", (id, start, record) => ({
+    id,
+    hitDice: record[0] ?? 0,
+    staminaBonus: record[1] ?? 0,
+    agility: record[2] ?? 0,
+    nameId: record[3] ?? 0,
+    movementMax: record[4] ?? 0,
+    armor: signedByte(record[5] ?? 0),
+    magicResistance: signedByte(record[6] ?? 0),
+    distance: signedByte(record[7] ?? 0),
+    traitor: signedByte(record[8] ?? 0),
+    size: signedByte(record[9] ?? 0),
+    typeFlags: Array.from(record.slice(10, 18), signedByte),
+    attackCount: signedByte(record[18] ?? 0),
+    magicAttackCount: signedByte(record[19] ?? 0),
+    attacks: Array.from({ length: 5 }, (_, row) => Array.from(record.slice(20 + row * 4, 24 + row * 4), signedByte)),
+    damageBonus: signedByte(record[40] ?? 0),
+    castPercent: signedByte(record[41] ?? 0),
+    runPercent: signedByte(record[42] ?? 0),
+    surrenderPercent: signedByte(record[43] ?? 0),
+    missilePercent: signedByte(record[44] ?? 0),
+    canSummon: signedByte(record[45] ?? 0),
+    saves: Array.from(record.slice(46, 52), signedByte),
+    spellImmunities: Array.from(record.slice(52, 58), signedByte),
+    money: readI16s(record, 58, 3),
+    spells: readI16s(record, 64, 10),
+    items: readI16s(record, 84, 6),
+    weapon: i16(record, 96),
+    iconId: i16(record, 98),
+    spellPoints: i16(record, 100),
+    exp: i16(record, 102),
+    stamina: i16(record, 104),
+    staminaMax: i16(record, 106),
+    underneath: readI16s(record, 108, 4),
+    target: signedByte(record[116] ?? 0),
+    guarding: signedByte(record[117] ?? 0),
+    notOnMenu: (record[118] ?? 0) !== 0,
+    beenAttacked: signedByte(record[119] ?? 0),
+    movement: signedByte(record[120] ?? 0),
+    magicToHit: signedByte(record[121] ?? 0),
+    conditions: Array.from(record.slice(122, 162), signedByte),
+    lr: signedByte(record[162] ?? 0),
+    up: signedByte(record[163] ?? 0),
+    attackNum: signedByte(record[164] ?? 0),
+    bonusAttack: signedByte(record[165] ?? 0),
+    deathMacro: i16(record, 166),
+    maxSpellPoints: i16(record, 168),
+    displayName: decodeFixedText(record.slice(170, 210)) || `Monster ${id}`,
+    rawBytes: Array.from(record),
+    authored: false,
+    provenance: provenance("Data MD", id, start, MONSTER_BYTES, "source-backed")
+  }));
+}
+
 function parseTreasures(buffer: Uint8Array | undefined): TreasureRecord[] {
   return fixedRecords(buffer, 48, "Data TD", (id, start, record) => ({
     id,
@@ -474,6 +573,59 @@ function parseShops(buffer: Uint8Array | undefined): ShopRecord[] {
     authored: false,
     provenance: provenance("Data SD", id, start, 3002, "source-backed")
   }));
+}
+
+function parseScenarioItems(buffer: Uint8Array | undefined): ScenarioItemRecord[] {
+  return fixedRecords(buffer, ITEM_BYTES, "Data NI", (id, start, record) => {
+    const storedItemId = i16(record, 2);
+    return {
+      id,
+      itemId: storedItemId !== 0 ? storedItemId : 800 + id,
+      iconId: i16(record, 4),
+      type: i16(record, 6),
+      st: i16(record, 0),
+      blunt: i16(record, 8),
+      hands: i16(record, 10),
+      lu: i16(record, 12),
+      movement: i16(record, 14),
+      ac: i16(record, 16),
+      magicResistance: i16(record, 18),
+      damage: i16(record, 20),
+      spellPoints: i16(record, 22),
+      sound: i16(record, 24),
+      weight: i16(record, 26),
+      cost: i16(record, 28),
+      charge: i16(record, 30),
+      cursedItemId: i16(record, 32),
+      magical: i16(record, 34),
+      itemCat0: i32(record, 36),
+      itemCat1: i32(record, 40),
+      raceRestrictions: i16(record, 44),
+      casteRestrictions: i16(record, 46),
+      specificRace: i16(record, 48),
+      specificCaste: i16(record, 50),
+      raceClassOnly: i16(record, 52),
+      casteClassOnly: i16(record, 54),
+      vSmall: i16(record, 70),
+      vLarge: i16(record, 72),
+      heat: i16(record, 74),
+      cold: i16(record, 76),
+      electric: i16(record, 78),
+      vsUndead: i16(record, 80),
+      vsDemonDevil: i16(record, 82),
+      vsEvil: i16(record, 84),
+      special1: i16(record, 86),
+      special2: i16(record, 88),
+      special3: i16(record, 90),
+      special4: i16(record, 92),
+      special5: i16(record, 94),
+      weightPerCharge: i16(record, 96),
+      dropOnEmpty: i16(record, 98),
+      rawBytes: Array.from(record),
+      authored: false,
+      provenance: provenance("Data NI", id, start, ITEM_BYTES, "source-backed")
+    };
+  });
 }
 
 function parseSimpleEncounters(buffer: Uint8Array | undefined): SimpleEncounterRecord[] {
@@ -510,6 +662,59 @@ function parseComplexEncounters(buffer: Uint8Array | undefined): ComplexEncounte
     authored: false,
     provenance: provenance("Data ED2", id, start, 520, "source-backed")
   }));
+}
+
+function parseTimedEncounters(buffer: Uint8Array | undefined): TimedEncounterRecord[] {
+  return fixedRecords(buffer, TIMED_ENCOUNTER_BYTES, "Data TD3", (id, start, record) => {
+    const stuff = Array.from({ length: 10 }, (_, slot) => i16(record, 20 + slot * 2));
+    return {
+      id,
+      day: i16(record, 0),
+      increment: i16(record, 2),
+      percent: i16(record, 4),
+      door: i16(record, 6),
+      requiredLevel: i16(record, 8),
+      requiredRandomRect: i16(record, 10),
+      requiredX: i16(record, 12),
+      requiredY: i16(record, 14),
+      requiredItem: i16(record, 16),
+      requiredQuest: i16(record, 18),
+      locationKind: timedLocationKind(stuff[0]),
+      stuff,
+      rawBytes: Array.from(record),
+      authored: false,
+      provenance: provenance("Data TD3", id, start, TIMED_ENCOUNTER_BYTES, "source-backed")
+    };
+  });
+}
+
+function parseThiefEncounters(buffer: Uint8Array | undefined): ThiefEncounterRecord[] {
+  return fixedRecords(buffer, THIEF_ENCOUNTER_BYTES, "Data TD2", (id, start, record) => ({
+    id,
+    typeFlags: Array.from(record.slice(0, 10), (value) => value !== 0),
+    modifiers: Array.from(record.slice(10, 18), signedByte),
+    successCodes: Array.from(record.slice(18, 26), signedByte),
+    failureCodes: Array.from(record.slice(26, 34), signedByte),
+    successText: readI16s(record, 34, 8),
+    failureText: readI16s(record, 50, 8),
+    successSounds: readI16s(record, 66, 8),
+    failureSounds: readI16s(record, 82, 8),
+    spell: i16(record, 98),
+    lowDamage: i16(record, 100),
+    highDamage: i16(record, 102),
+    tumblers: i16(record, 104),
+    prompts: readI16s(record, 106, 3),
+    promptSounds: readI16s(record, 112, 3),
+    rawBytes: Array.from(record),
+    authored: false,
+    provenance: provenance("Data TD2", id, start, THIEF_ENCOUNTER_BYTES, "source-backed")
+  }));
+}
+
+function timedLocationKind(value: number): TimedEncounterRecord["locationKind"] {
+  if (value === 1) return "land";
+  if (value === 2) return "dungeon";
+  return "any";
 }
 
 function parseSpellOverrides(buffer: Uint8Array | undefined): ScenarioSpellOverride[] {

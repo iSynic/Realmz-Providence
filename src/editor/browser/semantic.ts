@@ -12,7 +12,7 @@ import {
   SourceFile,
   TriggerRecord
 } from "../types";
-import { FIELD_BYTES, RANDLEVEL_BYTES } from "./realmzParser";
+import { FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, RANDLEVEL_BYTES } from "./realmzParser";
 
 export function buildBrowserSemanticSchema(projectParts: {
   scenario: Project["scenario"];
@@ -189,6 +189,7 @@ function addSupportingRecords(schema: SemanticSchema, buffers: Map<string, Uint8
   addGlobalMacroRecords(schema, buffers.get("Global"));
   addMenuRecords(schema, buffers.get("Data MENU"));
   addSolidsRecords(schema, buffers.get("Data Solids"));
+  addItemRecords(schema, buffers.get("Data NI"));
 }
 
 function addTreasureRecords(schema: SemanticSchema, buffer?: Uint8Array) {
@@ -393,6 +394,105 @@ function addSolidsRecords(schema: SemanticSchema, buffer?: Uint8Array) {
     };
     upsertRecord(schema, browserRecord("Data Solids", index, 1024, "solidity-table", `Solids ${index}`, summary));
     schema.entities.push(browserEntity(`solids:${index}`, "solidity-table", `Solids ${index}`, "Data Solids", `record:Data Solids:${index}`, start, 1024, summary));
+  }
+}
+
+function itemRecordSummary(index: number, record: Uint8Array, sourceName: string): Record<string, unknown> {
+  const baseId = sourceName === "Data NI" ? 800 : 0;
+  const itemNumber = baseId + index;
+  const categoryIndex = Math.floor(itemNumber / 200);
+  const categorySlot = itemNumber % 200;
+  const category = itemCategory(categoryIndex);
+  const storedId = i16At(record, 2);
+  const itemId = storedId !== 0 ? storedId : itemNumber;
+  return {
+    id: index,
+    itemId,
+    category,
+    categorySlot,
+    sourceFile: sourceName,
+    scenarioLocal: sourceName === "Data NI",
+    divinityEditableRange: itemId >= 900 && itemId <= 999,
+    st: i16At(record, 0),
+    storedItemId: storedId,
+    iconId: i16At(record, 4),
+    type: i16At(record, 6),
+    blunt: i16At(record, 8),
+    hands: i16At(record, 10),
+    lu: i16At(record, 12),
+    movement: i16At(record, 14),
+    ac: i16At(record, 16),
+    magicResistance: i16At(record, 18),
+    damage: i16At(record, 20),
+    spellPoints: i16At(record, 22),
+    sound: i16At(record, 24),
+    weight: i16At(record, 26),
+    cost: i16At(record, 28),
+    charge: i16At(record, 30),
+    cursedItemId: i16At(record, 32),
+    magical: i16At(record, 34),
+    itemCat0: i32At(record, 36),
+    itemCat1: i32At(record, 40),
+    raceRestrictions: i16At(record, 44),
+    casteRestrictions: i16At(record, 46),
+    specificRace: i16At(record, 48),
+    specificCaste: i16At(record, 50),
+    raceClassOnly: i16At(record, 52),
+    casteClassOnly: i16At(record, 54),
+    vSmall: i16At(record, 70),
+    vLarge: i16At(record, 72),
+    heat: i16At(record, 74),
+    cold: i16At(record, 76),
+    electric: i16At(record, 78),
+    vsUndead: i16At(record, 80),
+    vsDemonDevil: i16At(record, 82),
+    vsEvil: i16At(record, 84),
+    special1: i16At(record, 86),
+    special2: i16At(record, 88),
+    special3: i16At(record, 90),
+    special4: i16At(record, 92),
+    special5: i16At(record, 94),
+    weightPerCharge: i16At(record, 96),
+    dropOnEmpty: i16At(record, 98),
+    preview: `${category} ${itemId}, cost ${i16At(record, 28)}, icon ${i16At(record, 4)}`
+  };
+}
+
+function itemCategory(categoryIndex: number) {
+  switch (categoryIndex) {
+    case 0:
+      return "Weapon";
+    case 1:
+      return "Armor";
+    case 2:
+      return "Accessory";
+    case 3:
+      return "Magic";
+    case 4:
+      return "Supply / Special";
+    default:
+      return "Item";
+  }
+}
+
+function addItemRecords(schema: SemanticSchema, buffer?: Uint8Array) {
+  if (!buffer) return;
+  const count = Math.floor(buffer.byteLength / ITEM_BYTES);
+  for (let index = 0; index < count; index += 1) {
+    const start = index * ITEM_BYTES;
+    const record = buffer.slice(start, start + ITEM_BYTES);
+    const summary = itemRecordSummary(index, record, "Data NI");
+    const itemId = typeof summary.itemId === "number" ? summary.itemId : 800 + index;
+    const category = typeof summary.category === "string" ? summary.category : "Item";
+    const label = `${category} ${itemId}`;
+    upsertRecord(schema, browserRecord("Data NI", index, ITEM_BYTES, "item", label, summary));
+    schema.entities.push(browserEntity(`item:${itemId}`, "item", label, "Data NI", `record:Data NI:${index}`, start, ITEM_BYTES, summary));
+    if (typeof summary.iconId === "number" && summary.iconId !== 0) {
+      pushLink(schema, `item:${itemId}`, `resource:cicn:${summary.iconId}`, "uses_resource", "source-backed", { field: "iconId" });
+    }
+    if (typeof summary.sound === "number" && summary.sound !== 0) {
+      pushLink(schema, `item:${itemId}`, `resource:snd :${summary.sound}`, "uses_resource", "source-backed", { field: "sound" });
+    }
   }
 }
 
@@ -1238,6 +1338,12 @@ function i16At(buffer: Uint8Array, offset: number) {
   return value & 0x8000 ? value - 0x10000 : value;
 }
 
+function i32At(buffer: Uint8Array, offset: number) {
+  if (offset + 4 > buffer.byteLength) return 0;
+  const value = (buffer[offset] << 24) | (buffer[offset + 1] << 16) | (buffer[offset + 2] << 8) | buffer[offset + 3];
+  return value | 0;
+}
+
 function i16Array(buffer: number[] | undefined, offset: number) {
   if (!buffer || offset + 2 > buffer.length) return 0;
   const value = ((buffer[offset] ?? 0) << 8) | (buffer[offset + 1] ?? 0);
@@ -1318,5 +1424,7 @@ const LAYOUTS: Record<string, [string, number]> = {
   "Data RI": ["scenario restrictions", 320],
   "Global": ["global macro hooks", 60],
   "Data MENU": ["monster menu cache", 502],
-  "Data Solids": ["solid tile table", 1024]
+  "Data Solids": ["solid tile table", 1024],
+  "Data NI": ["scenario item table", ITEM_BYTES],
+  "Layout": ["outdoor land layout", LAND_LAYOUT_BYTES]
 };

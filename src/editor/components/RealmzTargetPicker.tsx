@@ -120,7 +120,7 @@ export function targetPickerConfig(opcode: number) {
     97: { label: "Map Record", hint: "Select a map record." },
     104: { label: "Simple Encounter", hint: "Select the simple encounter this action mutates.", recordType: "simpleEncounter" },
     106: { label: "Map Record", hint: "Select the map record this action mutates." },
-    127: { label: "Monster Target", hint: "Select a monster record." }
+    127: { label: "Monster Target", hint: "Select a monster record.", recordType: "monster" }
   };
   return configs[code] ?? null;
 }
@@ -229,6 +229,21 @@ function addTypedProjectTargets(project: Project, code: number, options: ScriptT
       options.push({ key: `battle:${record.id}`, value: record.id, label: `Battle ${record.id}`, detail: `${record.grid.filter(Boolean).length} monster slot(s)`, summary: `messages ${record.messageBefore}/${record.messageAfter}, macro ${record.battleMacro}, ${used.get(record.id) ?? 0} script use(s)`, compatibility: "Editable", sourceState: record.authored ? "Authored" : "Imported", entity: { type: "battle", id: `battle:${record.id}` } });
     }
   }
+  if (code === 127) {
+    const used = usageCounts(project, [127]);
+    for (const record of project.monsters ?? []) {
+      options.push({
+        key: `monster:${record.id}`,
+        value: record.id,
+        label: `${record.displayName || `Monster ${record.id}`} (${record.id})`,
+        detail: `HD ${record.hitDice}, armor ${record.armor}, move ${record.movementMax}`,
+        summary: `${record.items.filter(Boolean).length} item(s), ${record.spells.filter(Boolean).length} spell(s), ${used.get(record.id) ?? 0} script use(s)`,
+        compatibility: "Editable",
+        sourceState: record.authored ? "Authored" : "Imported",
+        entity: { type: "monster", id: `monster:${record.id}` }
+      });
+    }
+  }
   if (code === 10) {
     const used = usageCounts(project, [10]);
     for (const record of project.treasures ?? []) {
@@ -289,10 +304,13 @@ function createTargetButtonLabel(recordType: RealmzTargetRecordKind, id?: number
   const labels: Record<RealmzTargetRecordKind, string> = {
     message: "Message",
     battle: "Battle",
+    monster: "Monster",
     treasure: "Treasure",
     shop: "Shop",
     simpleEncounter: "Simple Encounter",
     complexEncounter: "Complex Encounter",
+    thiefEncounter: "Rogue Encounter",
+    timedEncounter: "Time Encounter",
     questLabel: "Quest Label"
   };
   return id != null ? `Create ${labels[recordType]} ${id}` : `Create Next ${labels[recordType]}`;
@@ -359,11 +377,12 @@ function trailingNumber(value: string) {
 }
 
 function dedupeTargetOptions(options: ScriptTargetOption[]) {
-  const seen = new Set<string>();
+  const seenKeys = new Set<string>();
+  const seenValues = new Set<number>();
   return options.filter((option) => {
-    const key = `${option.value}:${option.label}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
+    if (seenKeys.has(option.key) || seenValues.has(option.value)) return false;
+    seenKeys.add(option.key);
+    seenValues.add(option.value);
     return true;
   });
 }

@@ -1,14 +1,26 @@
-import { LibraryCatalog, LibraryEntity, Project, SemanticEntity } from "./types";
+import { LibraryCatalog, LibraryEntity, Project, ScenarioItemRecord, SemanticEntity } from "./types";
 import { schemaEntities } from "./semanticGraph";
 
 export type ItemReferenceOption = {
   key: string;
   value: number;
   label: string;
+  category: ItemReferenceCategory;
   detail: string;
   summary: string;
   sourceState: string;
 };
+
+export type ItemReferenceCategory = "weapon" | "armor" | "accessory" | "magic" | "supply" | "unknown";
+
+export const ITEM_REFERENCE_CATEGORIES: { id: ItemReferenceCategory | "all"; label: string; range?: string }[] = [
+  { id: "all", label: "All Items" },
+  { id: "weapon", label: "Weapons", range: "1-199" },
+  { id: "armor", label: "Armor", range: "200-399" },
+  { id: "accessory", label: "Accessories", range: "400-599" },
+  { id: "magic", label: "Magic", range: "600-799" },
+  { id: "supply", label: "Supplies / Special", range: "800-999" }
+];
 
 type ItemUsage = {
   treasureSlots: number;
@@ -27,12 +39,19 @@ export function itemReferenceOptions(project: Project, catalog?: LibraryCatalog 
   const names = itemNamesFromStringLists(project, catalog);
   const ids = new Set<number>();
   const entityById = new Map<number, ItemEntity>();
+  const scenarioItemById = new Map<number, ScenarioItemRecord>();
   for (const entity of entities) {
     const id = itemIdFromEntity(entity);
     if (id == null) continue;
     ids.add(id);
     if (!entityById.has(id) || entity.type === "item") entityById.set(id, entity);
   }
+  for (const record of project.scenarioItems ?? []) {
+    const itemId = scenarioItemId(record);
+    ids.add(itemId);
+    scenarioItemById.set(itemId, record);
+  }
+  for (let itemId = 900; itemId < 1000; itemId += 1) ids.add(itemId);
   for (const treasure of project.treasures ?? []) {
     for (const id of treasure.itemIds) if (id !== 0) ids.add(id);
   }
@@ -48,17 +67,20 @@ export function itemReferenceOptions(project: Project, catalog?: LibraryCatalog 
   return [...ids]
     .map((id) => {
       const entity = entityById.get(id);
+      const scenarioItem = scenarioItemById.get(id);
       const usage = itemUsage(project, id);
       const usageSummary = formatItemUsage(usage);
       const named = names.get(Math.abs(id));
       const label = named ?? (entity ? itemLabel(entity, id) : itemCategoryLabel(id));
-      const sourceState = named ? "Named item" : entity?.type === "item" ? "Imported item catalog" : entity ? "Scenario reference" : "Used by authored records";
+      const category = itemReferenceCategory(id);
+      const sourceState = scenarioItem ? itemScenarioSourceLabel(id, scenarioItem) : itemSourceLabel(entity, named != null);
       return {
         key: entity?.id ?? `item:${id}`,
         value: id,
+        category,
         label: `${label} (${id})`,
-        detail: usageSummary || entityDetail(entity) || "No decoded usage yet",
-        summary: entityDetail(entity) || "Raw Realmz item ID",
+        detail: usageSummary || scenarioItemDetail(scenarioItem) || entityDetail(entity) || customItemDetail(id),
+        summary: scenarioItemDetail(scenarioItem) || entityDetail(entity) || customItemDetail(id),
         sourceState
       };
     })
@@ -69,6 +91,31 @@ export function itemReferenceDetail(project: Project, itemId: number, catalog?: 
   if (itemId === 0) return "No item selected.";
   const option = itemReferenceOptions(project, catalog).find((candidate) => candidate.value === itemId);
   return option ? [option.detail, option.sourceState].filter(Boolean).join(" | ") : `Raw item ID ${itemId}; no decoded project usage yet.`;
+}
+
+function scenarioItemId(record: ScenarioItemRecord) {
+  return record.itemId || 800 + record.id;
+}
+
+function scenarioItemDetail(record: ScenarioItemRecord | undefined) {
+  if (!record) return "";
+  const parts = [];
+  if (record.cost) parts.push(record.cost < 0 ? `${Math.abs(record.cost)} gp unique` : `${record.cost} gp`);
+  if (record.damage) parts.push(`damage ${record.damage}`);
+  if (record.ac) parts.push(`AC ${record.ac}`);
+  if (record.charge) parts.push(`${record.charge} charge${record.charge === 1 ? "" : "s"}`);
+  if (record.weight) parts.push(`weight ${record.weight}`);
+  if (record.iconId) parts.push(`icon ${record.iconId}`);
+  return parts.join(", ") || (scenarioItemId(record) >= 900 ? "Custom item slot" : "Scenario item");
+}
+
+function customItemDetail(itemId: number) {
+  return itemId >= 900 && itemId < 1000 ? "Custom item slot" : "Raw Realmz item ID";
+}
+
+function itemScenarioSourceLabel(itemId: number, record: ScenarioItemRecord) {
+  if (itemId >= 900 && itemId < 1000) return record.authored ? "Custom scenario item" : "Custom item slot";
+  return "Scenario item";
 }
 
 function itemIdFromEntity(entity: ItemEntity) {
@@ -91,6 +138,18 @@ function entityDetail(entity: ItemEntity | undefined) {
   return preview || referenceOnly || `${entity.type} | ${entity.editState}`;
 }
 
+function itemSourceLabel(entity: ItemEntity | undefined, named: boolean) {
+  if (entity?.type === "item") {
+    if (entity.source === "Data NI" || entity.summary.scenarioLocal === true || entity.summary.sourceFile === "Data NI") {
+      return named ? "Scenario item" : "Scenario item table";
+    }
+    return named ? "Named library item" : "Realmz library item";
+  }
+  if (entity) return "Referenced item";
+  if (named) return "Named item";
+  return "Used by records";
+}
+
 function itemUsage(project: Project, itemId: number): ItemUsage {
   let treasureSlots = 0;
   let shopSlots = 0;
@@ -108,7 +167,7 @@ function formatItemUsage(usage: ItemUsage) {
   const parts = [];
   if (usage.treasureSlots) parts.push(`${usage.treasureSlots} treasure slot${usage.treasureSlots === 1 ? "" : "s"}`);
   if (usage.shopSlots) parts.push(`${usage.shopSlots} shop slot${usage.shopSlots === 1 ? "" : "s"}`);
-  if (usage.semanticRefs) parts.push(`${usage.semanticRefs} semantic ref${usage.semanticRefs === 1 ? "" : "s"}`);
+  if (usage.semanticRefs) parts.push(`${usage.semanticRefs} linked use${usage.semanticRefs === 1 ? "" : "s"}`);
   return parts.join(", ");
 }
 
@@ -145,12 +204,22 @@ function itemCategoryLabel(itemId: number) {
   return category ? `${category} ${abs}` : `Item ${itemId}`;
 }
 
+export function itemReferenceCategory(itemId: number): ItemReferenceCategory {
+  const abs = Math.abs(itemId);
+  if (abs > 0 && abs < 200) return "weapon";
+  if (abs >= 200 && abs < 400) return "armor";
+  if (abs >= 400 && abs < 600) return "accessory";
+  if (abs >= 600 && abs < 800) return "magic";
+  if (abs >= 800 && abs < 1000) return "supply";
+  return "unknown";
+}
+
 function itemCategory(itemId: number) {
-  if (itemId >= 0 && itemId < 200) return "Weapon";
+  if (itemId > 0 && itemId < 200) return "Weapon";
   if (itemId >= 200 && itemId < 400) return "Armor";
-  if (itemId >= 400 && itemId < 600) return "Shield/Helm";
+  if (itemId >= 400 && itemId < 600) return "Accessory";
   if (itemId >= 600 && itemId < 800) return "Magic";
-  if (itemId >= 800 && itemId < 1000) return "Supply";
+  if (itemId >= 800 && itemId < 1000) return "Supply / Special";
   return "";
 }
 

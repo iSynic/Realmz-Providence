@@ -1,4 +1,5 @@
 import { actionOptionFor, normalizeStepOpcode } from "./realmzActions";
+import { racePortraitSetFirstIconId, spellAnimationFrameIds, spellSoundResourceId } from "./resourceIds";
 import { LibraryAsset, ManagedAsset, Project, SelectedEntity } from "./types";
 
 export type ContentUsageLink = {
@@ -93,7 +94,7 @@ export function resourceUsageLinks(project: Project, resourceType: string | null
       }
     }
     for (const spell of project.spellOverrides ?? []) {
-      if (spell.sound1 === resourceId || spell.sound2 === resourceId) {
+      if (spellSoundResourceId(spell.sound1) === resourceId || spellSoundResourceId(spell.sound2) === resourceId) {
         links.push({ key: `sound-spell:${spell.id}`, label: `Spell ${spell.id}`, detail: "Spell casting/resolution sound", entity: { type: "record", id: `spell:${spell.id}` } });
       }
     }
@@ -120,12 +121,15 @@ export function resourceUsageLinks(project: Project, resourceType: string | null
       }
     }
     for (const spell of project.spellOverrides ?? []) {
-      if ([spell.spellLook1, spell.spellLook2, spell.queueIcon].includes(resourceId)) {
+      const castFrames = spellAnimationFrameIds(spell.spellLook1, "blank-cast");
+      const resolutionFrames = spellAnimationFrameIds(spell.spellLook2, "default-resolution");
+      if (castFrames.includes(resourceId) || resolutionFrames.includes(resourceId)) {
         links.push({ key: `icon-spell:${spell.id}`, label: `Spell ${spell.id}`, detail: "Spell presentation icon", entity: { type: "record", id: `spell:${spell.id}` } });
       }
     }
     for (const race of project.raceOverrides ?? []) {
-      if (race.defaultIconSet === resourceId) {
+      const firstIcon = racePortraitSetFirstIconId(race.defaultIconSet);
+      if (resourceId >= firstIcon && resourceId < firstIcon + 6) {
         links.push({ key: `icon-race:${race.id}`, label: race.displayName ?? `Race ${race.id}`, detail: "Race portrait set", entity: { type: "record", id: `race:${race.id}` } });
       }
     }
@@ -139,8 +143,11 @@ export function resourceUsageLinks(project: Project, resourceType: string | null
 }
 
 export function assetOriginLabel(asset: ManagedAsset | LibraryAsset) {
-  if ("exportState" in asset) return "Project";
-  return "Library";
+  if ("exportState" in asset) return "Scenario";
+  const text = `${asset.source} ${asset.relativePath} ${asset.label} ${asset.type}`.toLowerCase();
+  if (/\b(ui|interface|manual|documentation|screenshot|button|window)\b/.test(text)) return "UI Reference";
+  if (text.includes("divinity") && !text.includes("realmz data")) return "Divinity Reference";
+  return "Realmz Library";
 }
 
 function triggerLabel(trigger: Project["triggers"][number]) {

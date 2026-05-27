@@ -21,13 +21,14 @@ export function ResourcePreviewDiagnostics({ diagnostics }: { diagnostics: Array
 }
 
 function statusLabel(status: PreviewStatus | "unknown") {
-  if (status === "preview-ready") return "preview";
-  if (status === "playable") return "playable";
-  if (status === "text-ready") return "text";
-  if (status === "metadata-only") return "metadata";
-  if (status === "missing-fallback") return "missing";
-  if (status === "unsupported-variant") return "unsupported";
-  return status;
+  if (status === "preview-ready") return "Preview";
+  if (status === "playable") return "Playable";
+  if (status === "text-ready") return "Readable";
+  if (status === "metadata-only") return "Info Only";
+  if (status === "missing-fallback") return "Missing";
+  if (status === "unsupported-variant") return "Cannot Preview";
+  if (status === "malformed") return "Problem";
+  return "Unknown";
 }
 
 function previewTone(status: PreviewStatus | "unknown") {

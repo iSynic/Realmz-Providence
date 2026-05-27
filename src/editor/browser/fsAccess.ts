@@ -201,6 +201,7 @@ const SUPPORTED_WRITE_FILES = new Set([
   "Data DDD",
   "Data RD",
   "Data RDD",
+  "Layout",
   "Data ED3",
   "Data EDCD"
 ]);

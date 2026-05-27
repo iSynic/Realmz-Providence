@@ -82,6 +82,14 @@ The sixth follow-up archaeology pass tightened `Text/messages`: Realmz source pr
 
 Detailed evidence lives in `docs/format-evidence-cards/text-message-runtime-anchors.md` and `docs/generated/text-message-evidence.json`.
 
+The current Text/Assets editor pass adds two open archaeology questions rather than inventing UI:
+
+- Divinity's Strings screen exposes a `Sound` value. Providence should not add this field until Realmz source, Divinity binary write routines, or before/after scenario fixtures identify where it is stored and how runtime consumes it.
+- Divinity's text export/import workflow is now confirmed by the Divinity Guide as plain text separated by an Apple-symbol tag padded with spaces. Providence implements that workflow for `Data SD2` strings, but any future classic-Mac interop needs a fixture before claiming byte-for-byte Divinity file compatibility.
+
+The Assets pass also formalizes a resource-origin split for future archaeology: scenario-owned assets, Realmz runtime library assets, Divinity editor/reference assets, and UI-only reference art must stay distinct in both pickers and map painting.
+The Divinity Guide picture/sound chapter is concrete enough for editor implementation: scenario picture imports should allocate inside PICT IDs `30000..30128` with `30128` reserved for the title picture, and custom sounds should allocate inside `snd ` IDs `200..500`. This is an authoring constraint, not a new Realmz runtime behavior.
+
 The seventh follow-up archaeology pass tightened `Core records` around monsters: Realmz source proves `Data MD` is the 210-byte scenario-authored monster template file. This makes a Monster editor concrete:
 
 - parse/write `Data MD` as dense 210-byte records with raw-byte preservation;
@@ -107,8 +115,9 @@ The ninth follow-up archaeology pass tightened `Core records` around items, trea
 - `Data TD` is the 48-byte scenario treasure source file;
 - `Data SD` is the 3,002-byte scenario shop source file;
 - first-start copies `Data SD` into runtime `CS`, and shop mutations alter `CS`;
-- item definitions resolve through shared/library 200-record families from `Data ID` and Bywater `Data NI`;
-- Providence should build item pickers before claiming full item-definition authoring.
+- item definitions resolve through 200-record families: shared `Data ID` for IDs 0-799 and the active scenario's `Data NI` for supply/special IDs 800-999;
+- Divinity's Item Editor promise is custom item authoring in the 900-999 range, with built-in items kept as reference/copy sources;
+- Providence should surface scenario `Data NI` in item pickers before deepening custom item editing.
 
 Detailed evidence lives in `docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md` and `docs/generated/item-treasure-shop-evidence.json`.
 

@@ -3,10 +3,11 @@ use crate::importer::RAW_SOURCES_DIR;
 use crate::project::{LevelType, ProvidenceProject};
 use crate::realmz::{
     write_battles, write_caste_overrides, write_complex_encounters, write_door_file,
-    write_extracodes, write_fields, write_global_macro_hooks, write_macro_file, write_map_records,
-    write_messages, write_race_overrides, write_random_levels, write_scenario_contact_info,
-    write_scenario_restrictions, write_scenario_shell, write_shops, write_simple_encounters,
-    write_spell_overrides, write_treasures,
+    write_extracodes, write_fields, write_global_macro_hooks, write_land_layout, write_macro_file,
+    write_map_records, write_messages, write_monsters, write_race_overrides, write_random_levels,
+    write_scenario_contact_info, write_scenario_items, write_scenario_restrictions,
+    write_scenario_shell, write_shops, write_simple_encounters, write_spell_overrides,
+    write_thief_encounters, write_timed_encounters, write_treasures,
 };
 use crate::resource_fork::{
     merge_resource_entries, parse_resource_fork_entries, ResourceForkEntry,
@@ -102,6 +103,14 @@ pub fn export_project(
         write_fields(&project.maps, LevelType::Dungeon)?,
         &mut written_files,
     )?;
+    if let Some(layout) = &project.land_layout {
+        write_if_nonempty(
+            output_dir,
+            "Layout",
+            write_land_layout(layout)?,
+            &mut written_files,
+        )?;
+    }
     write_if_nonempty(
         output_dir,
         "Data DD",
@@ -164,6 +173,22 @@ pub fn export_project(
     )?;
     write_fixed_if_nonempty(
         output_dir,
+        "Data MD",
+        write_monsters(&project.monsters)?,
+        crate::realmz::MONSTER_BYTES,
+        &raw_dir,
+        &mut written_files,
+    )?;
+    write_fixed_if_nonempty(
+        output_dir,
+        "Data NI",
+        write_scenario_items(&project.scenario_items)?,
+        crate::realmz::ITEM_BYTES,
+        &raw_dir,
+        &mut written_files,
+    )?;
+    write_fixed_if_nonempty(
+        output_dir,
         "Data TD",
         write_treasures(&project.treasures)?,
         crate::realmz::TREASURE_BYTES,
@@ -191,6 +216,22 @@ pub fn export_project(
         "Data ED2",
         write_complex_encounters(&project.complex_encounters)?,
         crate::realmz::COMPLEX_ENCOUNTER_BYTES,
+        &raw_dir,
+        &mut written_files,
+    )?;
+    write_fixed_if_nonempty(
+        output_dir,
+        "Data TD2",
+        write_thief_encounters(&project.thief_encounters)?,
+        crate::realmz::THIEF_ENCOUNTER_BYTES,
+        &raw_dir,
+        &mut written_files,
+    )?;
+    write_fixed_if_nonempty(
+        output_dir,
+        "Data TD3",
+        write_timed_encounters(&project.timed_encounters)?,
+        crate::realmz::TIMED_ENCOUNTER_BYTES,
         &raw_dir,
         &mut written_files,
     )?;

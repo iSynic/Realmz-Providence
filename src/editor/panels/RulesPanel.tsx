@@ -2,6 +2,8 @@ import { ReactNode, useEffect, useMemo, useState } from "react";
 import { loadBrowserBundledLibraryAssetPreview } from "../browser/library";
 import { LibraryAsset, LibraryCatalog, Project, ProjectCommand, ScenarioCasteOverride, ScenarioRaceOverride, ScenarioSpellOverride, SelectedEntity } from "../types";
 import { CONDITION_LABELS, ITEM_CATEGORY_LABELS, RACE_ATTRIBUTES, RACE_DESCRIPTOR_LABELS, REALMZ_CASTES, REALMZ_RACES, RESISTANCE_TYPES, SPELL_CASTER_CLASSES, SPELL_DAMAGE_TYPES, SPELL_RESIST_CLASSES, SPELL_TARGET_TYPES } from "../rulesCatalog";
+import { fastplotTileId, racePortraitSetFirstIconId, spellAnimationFrameIds, spellAnimationHint, spellAnimationIsBlank, SpellAnimationZeroMode, spellSoundResourceId } from "../resourceIds";
+import { findLibraryResourceAsset } from "../resourceResolver";
 
 type RulesFamily = "spells" | "races" | "castes";
 
@@ -594,7 +596,7 @@ function RaceForm({ record, hasScenarioVersion, iconAssets, onUpdate }: { record
       {!hasScenarioVersion && <div className="rules-help-callout">This is the built-in Realmz race. Changing a field creates a scenario-specific version of this race.</div>}
       <RuleSection title="Identity And Miscellaneous" badge="mixed" help="Race name, portrait set, movement, regeneration, and broad combat modifiers.">
         <TextField label="Race Name" value={record.displayName || REALMZ_RACES[record.id] || ""} onCommit={(displayName) => update({ displayName })} span help="Name shown for this race." />
-        <IconNumberField label="Default Portrait Set" value={record.defaultIconSet} assets={iconAssets} iconId={(value) => 251 + value * 6} onCommit={(defaultIconSet) => update({ defaultIconSet })} help="Portrait set used for this race." />
+        <IconNumberField label="Default Portrait Set" value={record.defaultIconSet} assets={iconAssets} iconId={racePortraitSetFirstIconId} onCommit={(defaultIconSet) => update({ defaultIconSet })} help="Portrait set used for this race." />
         <NumberField label="Can Regenerate" value={record.canRegenerate} onCommit={(canRegenerate) => update({ canRegenerate })} compact help="Whether this race regenerates naturally." />
         <NumberField label="Base Movement Points" value={record.baseMove} onCommit={(baseMove) => update({ baseMove })} compact help="Base movement points for this race." />
         <NumberField label="Magic Resistance +/-" value={record.magRes} onCommit={(magRes) => update({ magRes })} compact help="Race modifier to magic resistance." />
@@ -941,11 +943,11 @@ function SpellAnimationIconField({
   assets: LibraryAsset[];
   onCommit: (value: number) => void;
   disabled?: boolean;
-  zeroMode: "blank-cast" | "default-resolution";
+  zeroMode: SpellAnimationZeroMode;
   help?: string;
 }) {
   const range = spellAnimationIconRange(value, zeroMode);
-  const frameAssets = range.frameIconIds.map((iconId) => findRuleAsset(assets, "icon", iconId));
+  const frameAssets = range.frameIconIds.map((iconId) => findLibraryResourceAsset(assets, "cicn", iconId, "icon"));
   const previews = useRuleIconPreviews(frameAssets);
   const preview = useAnimatedPreview(previews);
   return (
@@ -988,7 +990,7 @@ function FastplotTileNumberField({
   disabled?: boolean;
   help?: string;
 }) {
-  const tile = value > 0 ? 200 + value : null;
+  const tile = fastplotTileId(value);
   const rect = tile === null ? null : fastplotTileRect(tile);
   const style = atlasUrl && rect ? {
     backgroundImage: `url(${atlasUrl})`,
@@ -1038,7 +1040,7 @@ function IconNumberField({
   help?: string;
 }) {
   const resolvedIconId = iconId === null ? null : iconId ? iconId(value) : value;
-  const asset = resolvedIconId === null ? null : findRuleAsset(assets, "icon", resolvedIconId);
+  const asset = resolvedIconId === null ? null : findLibraryResourceAsset(assets, "cicn", resolvedIconId, "icon");
   const preview = useRuleIconPreview(asset);
   return (
     <label className={classNames("scenario-field", "rules-icon-number", compact && "rules-icon-number-compact")} title={help}>
@@ -1062,12 +1064,12 @@ function IconNumberField({
 }
 
 function SoundNumberField({ label, value, assets, onCommit, disabled = false, help }: { label: string; value: number; assets: LibraryAsset[]; onCommit: (value: number) => void; disabled?: boolean; help?: string }) {
-  const soundId = 600 + value;
-  const asset = value > 0 ? findRuleAsset(assets, "sound", soundId) : null;
+  const soundId = spellSoundResourceId(value);
+  const asset = soundId !== null ? findLibraryResourceAsset(assets, "snd", soundId, "sound") : null;
   const [status, setStatus] = useState<string | null>(null);
   const play = async () => {
     if (!asset) {
-      setStatus(value > 0 ? `snd ${soundId} unavailable` : "No sound");
+      setStatus(soundId !== null ? `snd ${soundId} unavailable` : "No sound");
       return;
     }
     const url = await loadBrowserBundledLibraryAssetPreview(asset);
@@ -1094,24 +1096,17 @@ function SoundNumberField({ label, value, assets, onCommit, disabled = false, he
         />
         <button type="button" className="btn btn-secondary btn-xs" onClick={play} disabled={!asset}>Play</button>
       </div>
-      <small>{status ?? (value > 0 ? `snd ${soundId}` : "No sound")}</small>
+      <small>{status ?? (soundId !== null ? `snd ${soundId}` : "No sound")}</small>
     </label>
   );
 }
 
-function spellAnimationIconRange(value: number, zeroMode: "blank-cast" | "default-resolution") {
-  if (value <= 0 && zeroMode === "blank-cast") {
-    return {
-      blank: true,
-      frameIconIds: [],
-      hint: "Blank cast square"
-    };
-  }
-  const base = value <= 0 ? 12032 : 11992 + value * 8;
+function spellAnimationIconRange(value: number, zeroMode: SpellAnimationZeroMode) {
+  const frameIconIds = spellAnimationFrameIds(value, zeroMode);
   return {
-    blank: false,
-    frameIconIds: Array.from({ length: 8 }, (_, index) => base + index),
-    hint: `Animation frames ${base}-${base + 7}`
+    blank: spellAnimationIsBlank(value, zeroMode),
+    frameIconIds,
+    hint: spellAnimationHint(value, zeroMode)
   };
 }
 
@@ -1120,16 +1115,6 @@ function fastplotTileRect(tile: number) {
   const tileGroup = Math.floor((normalized - 1) / 20);
   const column = normalized - tileGroup * 20 - 1;
   return { column, row: tileGroup };
-}
-
-function findRuleAsset(assets: LibraryAsset[], kind: "icon" | "sound", resourceId: number) {
-  return assets.find((candidate) => {
-    if (candidate.resourceId !== resourceId) return false;
-    const type = candidate.type.toLowerCase();
-    const resourceType = candidate.resourceType?.trim().toLowerCase() ?? "";
-    if (kind === "icon") return type === "icon" || type.includes("icon") || resourceType === "cicn";
-    return type === "sound" || resourceType === "snd";
-  }) ?? null;
 }
 
 function useRuleIconPreview(asset: LibraryAsset | null) {

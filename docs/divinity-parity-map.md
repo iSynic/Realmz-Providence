@@ -23,7 +23,7 @@ See `docs/archaeology-priorities.md` for the editor-first reverse-engineering ba
 | Getting Started | Project/Scenario | Inspect imported projects; desktop save/export exists | Blank scenario creation flow |
 | Land Editor / Land Layout | Maps | Author tile painting, region fill/replace, Action Point placement, random rectangles, map flags, and special/icon tile placement; inspect map layout evidence | Land layout/start records and deeper dungeon geometry |
 | Scenario Startup Information | Scenario | Author marker/main startup shell, Data CI contact info, and optional Data RI party restrictions; preserve legacy security segments | Blank scenario resource defaults and release/security workflow |
-| Action Points / GOSUBs | Scripts | Author Action Points, callable/reachable macros, CODE/ID slots, EDCD rows, reordering, duplication, deletion, and inline diagnostics; preserve non-reachable ED3 rows as evidence | Broader opcode-specific forms and richer branch visualizations |
+| Action Points / GOSUBs | Action Point Hub | Author Action Points, callable/reachable macros, CODE/ID slots, EDCD rows, reordering, duplication, deletion, and inline diagnostics; preserve non-reachable ED3 rows as evidence | Broader opcode-specific forms and richer branch visualizations |
 | Scripting Codes 1-29 | Scripts | Guided opcode picker with descriptions, target picker, EDCD shape hints | Complete manual-derived notes and opcode examples |
 | Scripting Codes 30-59 | Scripts | Guided opcode picker with descriptions, target picker, EDCD shape hints | Complete manual-derived notes and opcode examples |
 | Scripting Codes 60-89 | Scripts | Guided opcode picker with descriptions, target picker, EDCD shape hints | Complete manual-derived notes and opcode examples |
@@ -44,14 +44,15 @@ See `docs/archaeology-priorities.md` for the editor-first reverse-engineering ba
 | Macros / Quests | Scripts | Author macros and quest flag script links; validate missing targets | Dedicated quest registry and macro graph view |
 | Monster Mash | Combat/Library | Inspect shared monster icon material | Scenario icon import/copy workflow |
 | Vault of Arcana | Economy/Library | Inspect shared item/icon material | Copy/adapt vault entries into scenario records |
+| Item Editor | Economy | Browse built-in item families and imported scenario `Data NI` special items; item pickers now distinguish scenario items from Realmz library items | Full 900-999 custom item editor, including names/descriptions/icons |
 | Adding Monster & Item Icons | Assets | Import managed picture/icon/sound assets; preview resource forks | Icon assignment to monster/item records |
 | Creating Special Land Tiles | Assets/Maps | Import, preview, place, validate, and preserve special land/icon tiles as negative Realmz field values | Special tile asset creation/editing |
-| Pictures & Sounds | Assets/Text/Scripts | Managed assets, target picker for PICT/snd actions | Resource ID conflict resolution and richer previews |
-| Standard Land Tile Editor | Assets/Maps | Inspect/render standard tilesets; group tiles with source-backed landlook `mapstats`; use `Data Solids` as special/icon solidity evidence | Tile atlas and tile-attribute writing remains future work |
+| Pictures & Sounds | Assets/Strings/Action Point Hub | Managed scenario assets, Realmz library resources, Divinity/UI reference assets, target picker for PICT/snd actions | Resource ID conflict resolution and richer previews |
+| Standard Land Tile Editor | Assets/Maps | Full current-landlook atlas browser, per-tile property inspector, paint-from-inspector action, and decoded attribute grouping from landlook `mapstats`; `Data Solids` remains special/icon solidity evidence | Tile-attribute writing remains future work |
 | Spell Editor | Rules | Scenario `Data Spell` override records are parsed into a source-backed editor for the 30 runtime bytes, with metadata-only names/descriptions and shared catalog reference | Decode exact resource/name packaging and richer spell validation |
 | Race Editor | Rules | Scenario `Data Race` overrides are parsed into editable source-backed fields for stats, age bands, caste permissions, item usability, descriptors, and conditions | Resource-fork names and remaining Divinity binary label checks |
 | Caste Editor | Rules | Scenario `Data Caste` overrides are parsed into editable source-backed matrices for stats, spellcasting, progression, item usability, conditions, and starting items | Finish Divinity label/order archaeology for advanced matrices |
-| Text Import / Export / Spell Checking | Text | Author `Data SD2` message records from script context, validate 255-byte limit, preserve imported bytes, and export Realmz message files | Text import/export and spell-check workflow |
+| Text Import / Export / Spell Checking | Strings | Author `Data SD2` message records from script context, validate 255-byte limit, preserve imported bytes, search/find occurrences, export/import plain text spell-check files, and find long strings for cleanup | Divinity string sound-field archaeology |
 | Scenario Security / Registration Codes | Scenario/Scripts | Preserve marker/main registration code segments and inspect registration/security scripts | Legacy security field editor and compatibility warnings |
 | Release Checklist | Linter/Export | Validation and export readiness panels exist | Divinity-style release checklist with Realmz compatibility gates |
 | Realmz Win95/98/NT4, FAQ, What's New, License | Docs | Reference only | No editor feature work unless scenario compatibility demands it |
@@ -113,6 +114,14 @@ The current source-backed tile attribute layer is split deliberately. Standard p
 - Imported data that is not yet safely editable must be preserved, not rewritten destructively.
 - User-facing edit controls should exist only where Providence has a typed command path and known export behavior.
 - Raw fields stay visible for expert auditing, but normal authoring should prefer guided controls and validation.
+
+## Strings And Assets Contract
+
+The Strings workbench now follows Divinity's one-record-at-a-time flow while keeping a searchable list optional. It supports previous/next navigation, Go To String, find first/next occurrence, create, duplicate, clear, byte-limit validation, export/import plain text spell-check files using Divinity-style separators, find-long-string cleanup, and links back to known uses. `TEXT`, `STR#`, and style resources remain readable references with a back path from detail view.
+
+The Divinity Strings screenshot shows a `Sound` field, but Providence does not expose that as an editable message field until Realmz source, scenario data, or Divinity binary evidence proves where it is stored and how Realmz consumes it.
+
+Assets are split by authoring role rather than raw resource inventory. `Scenario Assets` are project-owned resources that Providence can import, replace, rename, delete, and export. Divinity's picture/sound authoring flow reserves scenario picture PICT IDs `30000..30128` with `30128` as the title picture, and custom scenario sounds use `snd ` IDs `200..500`. `Realmz Library` is built-in runtime/reference material. `Divinity Reference` includes editor/manual/UI resources and should not appear as placeable scenario art unless it is also a valid Realmz resource target. `Advanced Inventory` remains available for raw resource browsing.
 
 ## Next Milestones
 

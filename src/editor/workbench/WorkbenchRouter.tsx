@@ -183,7 +183,7 @@ export function WorkbenchRouter({
   }
 
   if (state.activeTab === "encounters") {
-    if (state.activeEditor === "domain" || state.activeEditor === "simple" || state.activeEditor === "complex") {
+    if (state.activeEditor === "domain" || state.activeEditor === "simple" || state.activeEditor === "complex" || state.activeEditor === "timed") {
       return (
         <SuiteDomainPanel
           tab="encounters"

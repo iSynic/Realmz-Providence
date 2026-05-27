@@ -30,6 +30,11 @@ $commands = @(
   @{ kind = "createTargetRecord"; label = "Create smoke message"; recordType = "message"; id = 252 },
   @{ kind = "updateMessageRecord"; label = "Write smoke message"; id = 252; changes = @{ text = "Providence text and assets smoke message." } },
   @{ kind = "duplicateMessageRecord"; label = "Duplicate smoke message"; fromId = 252; toId = 253 },
+  @{ kind = "bulkUpdateMessageRecords"; label = "Import smoke text batch"; updates = @(
+      @{ id = 252; text = "Providence text import/export smoke message." },
+      @{ id = 253; text = "Duplicated message edited through batch import." }
+    )
+  },
   @{ kind = "updateMessageRecord"; label = "Edit duplicated smoke message"; id = 253; changes = @{ text = "Duplicated message edited in Text workbench smoke." } },
   @{ kind = "deleteTargetRecord"; label = "Clear duplicated smoke message"; recordType = "message"; id = 253 },
   @{ kind = "updateActionSlot"; label = "Reference smoke message"; triggerId = "Data DD:0:5"; slot = 0; rawCode = 1; id = 252 }
@@ -46,12 +51,12 @@ $script = @{
   commands = $commands
   assertions = @{
     validationOk = $true
-    commandsAppliedAtLeast = 6
+    commandsAppliedAtLeast = 7
     actionSlots = @(
       @{ triggerId = "Data DD:0:5"; slot = 0; rawCode = 1; id = 252 }
     )
     targetRecords = @(
-      @{ recordType = "message"; id = 252; fields = @{ text = "Providence text and assets smoke message." } },
+      @{ recordType = "message"; id = 252; fields = @{ text = "Providence text import/export smoke message." } },
       @{ recordType = "message"; id = 253; fields = @{ text = "" } }
     )
     exportContains = @("Data SD2", "Data DD", "Scenario")

@@ -60,6 +60,7 @@ pub fn create_project(
             immutable: true,
         },
         maps: Vec::new(),
+        land_layout: None,
         map_records: Vec::new(),
         tile_attributes: Vec::new(),
         triggers: Vec::new(),
@@ -67,10 +68,14 @@ pub fn create_project(
         extracodes: Vec::new(),
         messages: Vec::new(),
         battles: Vec::new(),
+        monsters: Vec::new(),
+        scenario_items: Vec::new(),
         treasures: Vec::new(),
         shops: Vec::new(),
         simple_encounters: Vec::new(),
         complex_encounters: Vec::new(),
+        thief_encounters: Vec::new(),
+        timed_encounters: Vec::new(),
         quest_labels: Vec::new(),
         spell_overrides: Vec::new(),
         race_overrides: Vec::new(),
@@ -194,6 +199,7 @@ fn import_scenario_with_name(
             immutable: true,
         },
         maps: parsed.maps,
+        land_layout: parsed.land_layout,
         map_records: parsed.map_records,
         tile_attributes: parsed.tile_attributes,
         triggers: parsed.triggers,
@@ -201,10 +207,14 @@ fn import_scenario_with_name(
         extracodes: parsed.extracodes,
         messages: parsed.messages,
         battles: parsed.battles,
+        monsters: parsed.monsters,
+        scenario_items: parsed.scenario_items,
         treasures: parsed.treasures,
         shops: parsed.shops,
         simple_encounters: parsed.simple_encounters,
         complex_encounters: parsed.complex_encounters,
+        thief_encounters: parsed.thief_encounters,
+        timed_encounters: parsed.timed_encounters,
         quest_labels: Vec::new(),
         spell_overrides: parsed.spell_overrides,
         race_overrides: parsed.race_overrides,
@@ -221,6 +231,7 @@ fn import_scenario_with_name(
     import_icon_overlays(&assets_dir, &mut project)?;
     let semantic_parsed = ParsedScenario {
         maps: project.maps.clone(),
+        land_layout: project.land_layout.clone(),
         map_records: project.map_records.clone(),
         tile_attributes: project.tile_attributes.clone(),
         triggers: project.triggers.clone(),
@@ -228,10 +239,14 @@ fn import_scenario_with_name(
         extracodes: project.extracodes.clone(),
         messages: project.messages.clone(),
         battles: project.battles.clone(),
+        monsters: project.monsters.clone(),
+        scenario_items: project.scenario_items.clone(),
         treasures: project.treasures.clone(),
         shops: project.shops.clone(),
         simple_encounters: project.simple_encounters.clone(),
         complex_encounters: project.complex_encounters.clone(),
+        thief_encounters: project.thief_encounters.clone(),
+        timed_encounters: project.timed_encounters.clone(),
         spell_overrides: project.spell_overrides.clone(),
         race_overrides: project.race_overrides.clone(),
         caste_overrides: project.caste_overrides.clone(),
@@ -291,6 +306,7 @@ fn refresh_semantic_schema(project_dir: &Path, project: &mut ProvidenceProject) 
     backfill_target_records(project, &buffers);
     let semantic_parsed = ParsedScenario {
         maps: project.maps.clone(),
+        land_layout: project.land_layout.clone(),
         map_records: project.map_records.clone(),
         tile_attributes: project.tile_attributes.clone(),
         triggers: project.triggers.clone(),
@@ -298,10 +314,14 @@ fn refresh_semantic_schema(project_dir: &Path, project: &mut ProvidenceProject) 
         extracodes: project.extracodes.clone(),
         messages: project.messages.clone(),
         battles: project.battles.clone(),
+        monsters: project.monsters.clone(),
+        scenario_items: project.scenario_items.clone(),
         treasures: project.treasures.clone(),
         shops: project.shops.clone(),
         simple_encounters: project.simple_encounters.clone(),
         complex_encounters: project.complex_encounters.clone(),
+        thief_encounters: project.thief_encounters.clone(),
+        timed_encounters: project.timed_encounters.clone(),
         spell_overrides: project.spell_overrides.clone(),
         race_overrides: project.race_overrides.clone(),
         caste_overrides: project.caste_overrides.clone(),
@@ -332,6 +352,12 @@ fn backfill_target_records(project: &mut ProvidenceProject, buffers: &BTreeMap<S
     if project.battles.is_empty() {
         project.battles = parsed.battles;
     }
+    if project.monsters.is_empty() {
+        project.monsters = parsed.monsters;
+    }
+    if project.scenario_items.is_empty() {
+        project.scenario_items = parsed.scenario_items;
+    }
     if project.treasures.is_empty() {
         project.treasures = parsed.treasures;
     }
@@ -343,6 +369,12 @@ fn backfill_target_records(project: &mut ProvidenceProject, buffers: &BTreeMap<S
     }
     if project.complex_encounters.is_empty() {
         project.complex_encounters = parsed.complex_encounters;
+    }
+    if project.thief_encounters.is_empty() {
+        project.thief_encounters = parsed.thief_encounters;
+    }
+    if project.timed_encounters.is_empty() {
+        project.timed_encounters = parsed.timed_encounters;
     }
     if project.spell_overrides.is_empty() {
         project.spell_overrides = parsed.spell_overrides;

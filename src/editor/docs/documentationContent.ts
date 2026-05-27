@@ -382,7 +382,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         ],
         cards: [
           { title: "Pictures", body: "Imported images are converted into PICT resources for picture display actions.", facts: ["PICT"] },
-          { title: "Sounds", body: "Imported audio is decoded and exported as classic sampled snd resources when supported.", facts: ["snd"] },
+          { title: "Scenario Pictures", body: "Divinity-style scenario pictures use IDs 30000 through 30128; 30128 is the title picture.", facts: ["PICT"] },
+          { title: "Sounds", body: "Imported audio is decoded for custom scenario snd resources in the 200 through 500 range when supported.", facts: ["snd"] },
           { title: "Icons", body: "Icon-like art can become cicn resources for Realmz-compatible icon workflows.", facts: ["cicn"] },
           { title: "Special Land Tiles", body: "32 x 32 cicn-backed negative tile IDs that can be selected for painting on land maps.", facts: ["negative ID"] }
         ]
@@ -415,18 +416,18 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     relatedTopicIds: ["scripts", "encounters-targets", "assets"],
     sections: [
       {
-        title: "Message Records",
+        title: "String Records",
         paragraphs: [
-          "Providence currently authors Data SD2 message records from script context and validates the Realmz-friendly limits around those records.",
-          "Message targets should be created through the target picker when they are tied to a script action. That keeps the reference, text body, and diagnostics in the same workflow."
+          "Providence authors the scenario strings used by scripts, encounters, battles, and random areas. The editor follows Divinity's one-string-at-a-time flow with previous/next navigation, Go To String, optional search, duplicate, clear, and create actions.",
+          "Use Find Occurrence to search text across all strings, and Find Long String after a spell-check import to review strings at the Realmz length limit."
         ]
       },
       {
-        title: "Text Resources",
+        title: "Import, Export, and References",
         points: [
-          "TEXT and STR# resources remain part of the resource fork inventory.",
-          "Readable decoded previews should be preferred over raw byte inspection whenever Providence has enough format evidence.",
-          "Text import, export, and spell-check workflows are future-facing but documented in the Divinity crosswalk."
+          "Export Text creates a plain text spell-check file with Divinity-style separators between strings.",
+          "Import Text expects a file produced by this workflow and refuses files with the wrong number of string segments.",
+          "TEXT and STR# resources remain searchable read-only references."
         ]
       }
     ]

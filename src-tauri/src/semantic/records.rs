@@ -146,6 +146,7 @@ pub(super) fn add_fixed_collections(
         "solids",
         parse_solids,
     );
+    parse_item_collection(schema, buffers);
     parse_fixed_collection(
         schema,
         buffers,
@@ -331,11 +332,90 @@ fn parse_fixed_collection(
             edit_state: SemanticEditState::InspectOnly,
             confidence: Confidence::SourceBacked,
             source: source.to_string(),
-            record_ref: Some(record_id),
+            record_ref: Some(record_id.clone()),
             byte_range: Some(byte_range(start, record_bytes)),
             editable: false,
             summary: record_summary,
         });
+    }
+    if buffer.len() % record_bytes != 0 {
+        add_trailing_diagnostic(schema, source, buffer.len(), record_bytes);
+    }
+}
+
+fn parse_item_collection(schema: &mut SemanticSchema, buffers: &BTreeMap<String, Vec<u8>>) {
+    let source = "Data NI";
+    let record_bytes = 100;
+    let Some(buffer) = buffers.get(source) else {
+        return;
+    };
+    let count = buffer.len() / record_bytes;
+    for index in 0..count {
+        let start = index * record_bytes;
+        let record_summary = parse_item(&buffer[start..start + record_bytes], index, source);
+        let item_id = record_summary
+            .get("itemId")
+            .and_then(Value::as_i64)
+            .unwrap_or((800 + index) as i64);
+        let category = record_summary
+            .get("category")
+            .and_then(Value::as_str)
+            .unwrap_or("Item");
+        let label = format!("{category} {item_id}");
+        let record_id = format!("record:{source}:{index}");
+        let icon_id = record_summary
+            .get("iconId")
+            .and_then(Value::as_i64)
+            .unwrap_or(0);
+        let sound_id = record_summary
+            .get("sound")
+            .and_then(Value::as_i64)
+            .unwrap_or(0);
+        schema.records.push(SemanticRecord {
+            id: record_id.clone(),
+            source: source_id(source),
+            record_type: "item".to_string(),
+            label: label.clone(),
+            edit_state: SemanticEditState::InspectOnly,
+            byte_range: Some(byte_range(start, record_bytes)),
+            confidence: Confidence::SourceBacked,
+            summary: record_summary.clone(),
+        });
+        let entity_id = format!("item:{item_id}");
+        schema.entities.push(SemanticEntity {
+            id: entity_id.clone(),
+            entity_type: "item".to_string(),
+            label,
+            edit_state: SemanticEditState::InspectOnly,
+            confidence: Confidence::SourceBacked,
+            source: source.to_string(),
+            record_ref: Some(record_id.clone()),
+            byte_range: Some(byte_range(start, record_bytes)),
+            editable: false,
+            summary: record_summary,
+        });
+        if icon_id != 0 {
+            push_link(
+                schema,
+                &entity_id,
+                &format!("resource:cicn:{icon_id}"),
+                "uses_resource",
+                Confidence::SourceBacked,
+                vec![record_id.clone()],
+                summary([("field", json!("iconId"))]),
+            );
+        }
+        if sound_id != 0 {
+            push_link(
+                schema,
+                &entity_id,
+                &format!("resource:snd :{sound_id}"),
+                "uses_resource",
+                Confidence::SourceBacked,
+                vec![record_id.clone()],
+                summary([("field", json!("sound"))]),
+            );
+        }
     }
     if buffer.len() % record_bytes != 0 {
         add_trailing_diagnostic(schema, source, buffer.len(), record_bytes);
@@ -390,6 +470,89 @@ fn parse_map_record_collection(
     if buffer.len() % record_bytes != 0 {
         add_trailing_diagnostic(schema, source, buffer.len(), record_bytes);
     }
+}
+
+fn parse_item(buffer: &[u8], index: usize, source_name: &str) -> BTreeMap<String, Value> {
+    let base_id = if source_name == "Data NI" { 800 } else { 0 };
+    let item_number = base_id + index;
+    let category_index = item_number / 200;
+    let category_slot = item_number % 200;
+    let category = match category_index {
+        0 => "Weapon",
+        1 => "Armor",
+        2 => "Accessory",
+        3 => "Magic",
+        4 => "Supply / Special",
+        _ => "Item",
+    };
+    let stored_id = i16_be(buffer, 2);
+    let item_id = if stored_id != 0 {
+        stored_id
+    } else {
+        item_number as i16
+    };
+    summary([
+        ("id", json!(index)),
+        ("itemId", json!(item_id)),
+        ("category", json!(category)),
+        ("categorySlot", json!(category_slot)),
+        ("sourceFile", json!(source_name)),
+        ("scenarioLocal", json!(source_name == "Data NI")),
+        (
+            "divinityEditableRange",
+            json!((900..=999).contains(&item_id)),
+        ),
+        ("st", json!(i16_be(buffer, 0))),
+        ("storedItemId", json!(stored_id)),
+        ("iconId", json!(i16_be(buffer, 4))),
+        ("type", json!(i16_be(buffer, 6))),
+        ("blunt", json!(i16_be(buffer, 8))),
+        ("hands", json!(i16_be(buffer, 10))),
+        ("lu", json!(i16_be(buffer, 12))),
+        ("movement", json!(i16_be(buffer, 14))),
+        ("ac", json!(i16_be(buffer, 16))),
+        ("magicResistance", json!(i16_be(buffer, 18))),
+        ("damage", json!(i16_be(buffer, 20))),
+        ("spellPoints", json!(i16_be(buffer, 22))),
+        ("sound", json!(i16_be(buffer, 24))),
+        ("weight", json!(i16_be(buffer, 26))),
+        ("cost", json!(i16_be(buffer, 28))),
+        ("charge", json!(i16_be(buffer, 30))),
+        ("cursedItemId", json!(i16_be(buffer, 32))),
+        ("magical", json!(i16_be(buffer, 34))),
+        ("itemCat0", json!(i32_be(buffer, 36))),
+        ("itemCat1", json!(i32_be(buffer, 40))),
+        ("raceRestrictions", json!(i16_be(buffer, 44))),
+        ("casteRestrictions", json!(i16_be(buffer, 46))),
+        ("specificRace", json!(i16_be(buffer, 48))),
+        ("specificCaste", json!(i16_be(buffer, 50))),
+        ("raceClassOnly", json!(i16_be(buffer, 52))),
+        ("casteClassOnly", json!(i16_be(buffer, 54))),
+        ("vSmall", json!(i16_be(buffer, 70))),
+        ("vLarge", json!(i16_be(buffer, 72))),
+        ("heat", json!(i16_be(buffer, 74))),
+        ("cold", json!(i16_be(buffer, 76))),
+        ("electric", json!(i16_be(buffer, 78))),
+        ("vsUndead", json!(i16_be(buffer, 80))),
+        ("vsDemonDevil", json!(i16_be(buffer, 82))),
+        ("vsEvil", json!(i16_be(buffer, 84))),
+        ("special1", json!(i16_be(buffer, 86))),
+        ("special2", json!(i16_be(buffer, 88))),
+        ("special3", json!(i16_be(buffer, 90))),
+        ("special4", json!(i16_be(buffer, 92))),
+        ("special5", json!(i16_be(buffer, 94))),
+        ("weightPerCharge", json!(i16_be(buffer, 96))),
+        ("dropOnEmpty", json!(i16_be(buffer, 98))),
+        (
+            "preview",
+            json!(format!(
+                "{category} {}, cost {}, icon {}",
+                item_id,
+                i16_be(buffer, 28),
+                i16_be(buffer, 4)
+            )),
+        ),
+    ])
 }
 
 fn add_monster_links(schema: &mut SemanticSchema) {
@@ -1478,6 +1641,18 @@ fn read_short_array(buffer: &[u8], offset: usize, count: usize) -> Vec<i16> {
     (0..count)
         .map(|index| i16_be(buffer, offset + index * 2))
         .collect()
+}
+
+fn i32_be(buffer: &[u8], offset: usize) -> i32 {
+    if offset + 4 > buffer.len() {
+        return 0;
+    }
+    i32::from_be_bytes([
+        buffer[offset],
+        buffer[offset + 1],
+        buffer[offset + 2],
+        buffer[offset + 3],
+    ])
 }
 
 fn signed_bytes(buffer: &[u8]) -> Vec<i8> {

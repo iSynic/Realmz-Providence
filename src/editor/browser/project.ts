@@ -28,6 +28,7 @@ export function createBrowserProject(projectName: string): Project {
       immutable: true
     },
     maps: [],
+    landLayout: null,
     mapRecords: [],
     tileAttributes: [],
     triggers: [],
@@ -35,10 +36,14 @@ export function createBrowserProject(projectName: string): Project {
     extracodes: [],
     messages: [],
     battles: [],
+    monsters: [],
+    scenarioItems: [],
     treasures: [],
     shops: [],
     simpleEncounters: [],
     complexEncounters: [],
+    thiefEncounters: [],
+    timedEncounters: [],
     questLabels: [],
     spellOverrides: [],
     raceOverrides: [],
@@ -80,6 +85,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
       immutable: true
     },
     maps: parsed.maps,
+    landLayout: parsed.landLayout,
     mapRecords: parsed.mapRecords,
     tileAttributes: parsed.tileAttributes,
     triggers: parsed.triggers,
@@ -87,10 +93,14 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
     extracodes: parsed.extracodes,
     messages: parsed.messages,
     battles: parsed.battles,
+    monsters: parsed.monsters,
+    scenarioItems: parsed.scenarioItems,
     treasures: parsed.treasures,
     shops: parsed.shops,
     simpleEncounters: parsed.simpleEncounters,
     complexEncounters: parsed.complexEncounters,
+    thiefEncounters: parsed.thiefEncounters,
+    timedEncounters: parsed.timedEncounters,
     questLabels: [],
     spellOverrides: parsed.spellOverrides,
     raceOverrides: parsed.raceOverrides,
@@ -237,10 +247,14 @@ export async function openBrowserProject(source: BrowserScenarioSource): Promise
   project.tileAttributes ??= [];
   project.messages ??= [];
   project.battles ??= [];
+  project.monsters ??= [];
+  project.scenarioItems ??= [];
   project.treasures ??= [];
   project.shops ??= [];
   project.simpleEncounters ??= [];
   project.complexEncounters ??= [];
+  project.thiefEncounters ??= [];
+  project.timedEncounters ??= [];
   project.questLabels ??= [];
   project.spellOverrides ??= [];
   project.raceOverrides ??= [];
@@ -373,10 +387,13 @@ export function validateBrowserProject(project: Project): ValidationReport {
   }
   for (const message of project.messages ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "message", message.id), errors, warnings);
   for (const battle of project.battles ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "battle", battle.id), errors, warnings);
+  for (const monster of project.monsters ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "monster", monster.id), errors, warnings);
   for (const treasure of project.treasures ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "treasure", treasure.id), errors, warnings);
   for (const shop of project.shops ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "shop", shop.id), errors, warnings);
   for (const encounter of project.simpleEncounters ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "simpleEncounter", encounter.id), errors, warnings);
   for (const encounter of project.complexEncounters ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "complexEncounter", encounter.id), errors, warnings);
+  for (const encounter of project.thiefEncounters ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "thiefEncounter", encounter.id), errors, warnings);
+  for (const encounter of project.timedEncounters ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "timedEncounter", encounter.id), errors, warnings);
   if ((project.assets ?? []).length > 0) {
     warnings.push(`${project.assets.length.toLocaleString()} managed media asset(s) are present; desktop export writes them to the Scenario resource fork.`);
   }
@@ -417,8 +434,8 @@ export function validateBrowserProject(project: Project): ValidationReport {
   const sourceNames = new Set(project.source.files.map((file) => file.name));
   validateTileAttributes(project, sourceNames, warnings);
   validateMapRecords(project, errors, warnings);
-  const exportableFiles = ["Data LD", "Data DL", "Data DD", "Data DDD", "Data RD", "Data RDD", "Data ED3", "Data EDCD", "Data ED", "Data ED2", "Data BD", "Data SD", "Data SD2", "Data MD2", "Data TD"].filter((name) =>
-    sourceNames.has(name)
+  const exportableFiles = ["Data LD", "Data DL", "Data DD", "Data DDD", "Data RD", "Data RDD", "Layout", "Data ED3", "Data EDCD", "Data ED", "Data ED2", "Data TD2", "Data TD3", "Data MD", "Data BD", "Data SD", "Data SD2", "Data MD2", "Data TD"].filter((name) =>
+    sourceNames.has(name) || (name === "Layout" && project.landLayout)
   );
   const passThroughFiles = project.source.files.filter((file) => !file.editable).map((file) => file.name);
   if (passThroughFiles.length > 0) {

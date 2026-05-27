@@ -3,7 +3,7 @@ import { BrowserDirectoryHandle, BrowserFileSelection, BrowserScenarioSource } f
 import { inspectResourcePreview } from "./resourcePreview";
 
 export const BROWSER_WORKSPACE_PATH = "browser://workspace";
-const LIBRARY_SCHEMA_VERSION = 2;
+const LIBRARY_SCHEMA_VERSION = 4;
 const bundledResourceCache = new Map<string, Promise<ResourceEntry[]>>();
 type BrowserLibraryFile = { name: string; relativePath: string; bytes: Uint8Array };
 type BrowserLibrarySourceKind = "divinity-import" | "realmz-reference";
@@ -319,7 +319,7 @@ function addRecordSlots(
     const start = index * recordBytes;
     const record = file.bytes.slice(start, start + recordBytes);
     const recordId = `library-record:${sourceKind}:${type}:${index}`;
-    const summary = recordSummary(type, index, recordBytes, record);
+    const summary = recordSummary(type, index, recordBytes, record, file.name);
     const label = recordLabel(type, index, summary);
     records.push({
       id: recordId,
@@ -658,6 +658,7 @@ function familyFor(relativePath: string, name: string) {
   if (relativePath.includes("Vault of Arcana")) return family("vault-of-arcana", "library-file", "Vault of Arcana");
   if (relativePath.includes("Bag of Holding")) return family("bag-of-holding", "library-file", "Bag of Holding");
   if (name === "Data ID") return family("items", "library-file", "Shared item catalog");
+  if (name === "Data NI") return family("items", "library-file", "Supply and special item catalog");
   if (name === "Data Spell" || name === "Data S") return family("spells", "library-file", "Shared/custom spell catalog");
   if (name === "Data Race") return family("races", "library-file", "Shared/custom race catalog");
   if (name === "Data Caste") return family("castes", "library-file", "Shared/custom caste catalog");
@@ -677,7 +678,7 @@ function family(name: string, entityType: string, label: string) {
 
 function recordLayout(name: string): [string, number] | null {
   if (name === "Monster Scrap Book") return ["monster-scrapbook-entry", 210];
-  if (name === "Data ID") return ["item", 80];
+  if (name === "Data ID" || name === "Data NI") return ["item", 100];
   if (name === "Data Race") return ["race", 408];
   if (name === "Data Caste") return ["caste", 576];
   if (name === "Data Spell") return ["spell", 30];
@@ -685,7 +686,7 @@ function recordLayout(name: string): [string, number] | null {
   return null;
 }
 
-function recordSummary(type: string, index: number, recordBytes: number, record: Uint8Array) {
+function recordSummary(type: string, index: number, recordBytes: number, record: Uint8Array, sourceName: string) {
   const summary: Record<string, unknown> = {
     index,
     recordBytes,
@@ -693,8 +694,8 @@ function recordSummary(type: string, index: number, recordBytes: number, record:
     preview: hexPreview(record, 20),
     note: "Built-in Realmz catalog record."
   };
-  if (type === "item" && record.byteLength >= 80) {
-    Object.assign(summary, itemRecordSummary(index, record));
+  if (type === "item" && record.byteLength >= 100) {
+    Object.assign(summary, itemRecordSummary(index, record, sourceName));
   } else if (type === "spell" && record.byteLength >= 30) {
     Object.assign(summary, spellRecordSummary(index, record));
   } else if (type === "race" && record.byteLength >= 408) {
@@ -875,18 +876,24 @@ function signedByte(value: number | undefined) {
   return byte > 127 ? byte - 256 : byte;
 }
 
-function itemRecordSummary(index: number, record: Uint8Array) {
-  const categoryIndex = Math.floor(index / 200);
-  const categorySlot = index % 200;
+function itemRecordSummary(index: number, record: Uint8Array, sourceName: string) {
+  const baseId = sourceName === "Data NI" ? 800 : 0;
+  const itemNumber = baseId + index;
+  const categoryIndex = Math.floor(itemNumber / 200);
+  const categorySlot = itemNumber % 200;
   const category = itemCategory(categoryIndex);
-  const fallbackId = categoryIndex * 200 + categorySlot;
+  const fallbackId = itemNumber;
   const storedId = i16At(record, 2);
   const itemId = storedId !== 0 ? storedId : fallbackId;
   return {
     itemId,
     category,
     categorySlot,
+    sourceFile: sourceName,
+    scenarioLocal: sourceName === "Data NI",
+    divinityEditableRange: itemId >= 900 && itemId <= 999,
     st: i16At(record, 0),
+    storedItemId: storedId,
     iconId: i16At(record, 4),
     type: i16At(record, 6),
     blunt: i16At(record, 8),
@@ -915,7 +922,17 @@ function itemRecordSummary(index: number, record: Uint8Array) {
     vLarge: i16At(record, 72),
     heat: i16At(record, 74),
     cold: i16At(record, 76),
-    electric: i16At(record, 78)
+    electric: i16At(record, 78),
+    vsUndead: i16At(record, 80),
+    vsDemonDevil: i16At(record, 82),
+    vsEvil: i16At(record, 84),
+    special1: i16At(record, 86),
+    special2: i16At(record, 88),
+    special3: i16At(record, 90),
+    special4: i16At(record, 92),
+    special5: i16At(record, 94),
+    weightPerCharge: i16At(record, 96),
+    dropOnEmpty: i16At(record, 98)
   };
 }
 
@@ -926,11 +943,11 @@ function itemCategory(categoryIndex: number) {
     case 1:
       return "Armor";
     case 2:
-      return "Shield/Helm";
+      return "Accessory";
     case 3:
       return "Magic";
     case 4:
-      return "Supply";
+      return "Supply / Special";
     default:
       return "Item";
   }
@@ -938,7 +955,7 @@ function itemCategory(categoryIndex: number) {
 
 function roleForFile(name: string) {
   if (isResourceFile(name)) return "resource-fork";
-  if (["Data ID", "Data Spell", "Data S", "Data Race", "Data Caste"].includes(name)) return "shared-data";
+  if (["Data ID", "Data NI", "Data Spell", "Data S", "Data Race", "Data Caste"].includes(name)) return "shared-data";
   if (name.startsWith("Data ")) return "template-data";
   return "library-file";
 }

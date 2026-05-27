@@ -1,7 +1,7 @@
 use crate::project::*;
 use crate::realmz::{
     COMPLEX_ENCOUNTER_BYTES, DOOR_BYTES, DOOR_LEVEL_BYTES, EXTRACODE_BYTES, FIELD_BYTES,
-    RANDLEVEL_BYTES, SIMPLE_ENCOUNTER_BYTES,
+    LAND_LAYOUT_BYTES, RANDLEVEL_BYTES, SIMPLE_ENCOUNTER_BYTES,
 };
 use serde_json::Value;
 use std::collections::BTreeMap;
@@ -99,6 +99,8 @@ pub(super) fn layout_for(name: &str) -> Option<SemanticLayout> {
         "Global" => ("global macro hooks", 60),
         "Data MENU" => ("monster menu cache", 502),
         "Data Solids" => ("solid tile table", 1024),
+        "Data NI" => ("scenario item table", 100),
+        "Layout" => ("outdoor land layout", LAND_LAYOUT_BYTES),
         _ => return None,
     };
     Some(SemanticLayout {

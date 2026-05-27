@@ -28,13 +28,94 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
     if (!record) return [];
     const issues = validateRecordId(recordType, recordId);
     if (record.grid.length !== 13 * 13) issues.push(recordIssue("error", recordType, recordId, "battle-grid-shape", "Battle grid is malformed.", `Battle ${recordId} has ${record.grid.length} cells; Realmz requires 169.`));
+    const placedMonsters = record.grid.filter((monster) => monster !== 0).length;
+    if (placedMonsters === 0) issues.push(recordIssue("warning", recordType, recordId, "battle-empty", "Battle has no monsters placed.", "Place at least one monster unless this is an intentionally empty battle shell."));
+    if (placedMonsters > 100) issues.push(recordIssue("warning", recordType, recordId, "battle-monster-cap", "Battle places more than 100 monsters.", `Divinity's Battle Editor documents a 100-monster practical limit; this battle places ${placedMonsters}.`));
+    if (record.authored && (record.dist < 1 || record.dist > 30)) {
+      issues.push(recordIssue("warning", recordType, recordId, "battle-distance-range", "Battle distance is outside Divinity's usual 1-30 range.", `Distance is ${record.dist}; use 1-30 for normal random placement distance.`));
+    }
     issues.push(...validateI16Field(recordType, recordId, "Distance", record.dist));
     issues.push(...validateReference(project, recordType, recordId, "Before message", 1, record.messageBefore, undefined, catalog));
     issues.push(...validateReference(project, recordType, recordId, "After message", 1, record.messageAfter, undefined, catalog));
     issues.push(...validateReference(project, recordType, recordId, "Battle macro", 8, record.battleMacro, undefined, catalog));
     for (const [slot, monster] of record.grid.entries()) {
       if (!isI16(monster)) issues.push(recordIssue("error", recordType, recordId, `battle-monster-${slot}`, "Battle monster ID is outside Realmz integer range.", `Grid slot ${slot} has ${monster}.`));
+      else if (monster !== 0 && !(project.monsters ?? []).some((candidate) => candidate.id === Math.abs(monster))) {
+        issues.push(recordIssue("warning", recordType, recordId, `battle-monster-missing-${slot}`, "Battle grid points at a missing monster.", `Grid slot ${slot} uses monster ${Math.abs(monster)}, but no matching monster record is editable in this project.`));
+      }
     }
+    return issues;
+  }
+  if (recordType === "monster") {
+    const record = project.monsters?.find((candidate) => candidate.id === recordId);
+    if (!record) return [];
+    const issues = validateRecordId(recordType, recordId);
+    for (const field of ["weapon", "iconId", "spellPoints", "exp", "stamina", "staminaMax", "deathMacro", "maxSpellPoints"] as const) {
+      issues.push(...validateI16Field(recordType, recordId, field, record[field]));
+    }
+    if (record.hitDice === 255) {
+      issues.push(recordIssue("warning", recordType, recordId, "monster-hit-dice-terminator", "Stamina Level 255 stops the Bestiary list.", "Use this only when you intentionally want Realmz to stop scanning monsters for the Bestiary at this record."));
+    }
+    if (record.hitDice !== 0 && !(record.displayName ?? "").trim()) {
+      issues.push(recordIssue("warning", recordType, recordId, "monster-empty-name", "Active monster has no name.", "Give this monster a display name unless it is a hidden placeholder."));
+    }
+    if (record.hitDice !== 0 && (record.attackCount < 1 || record.attackCount > 5)) {
+      issues.push(recordIssue("warning", recordType, recordId, "monster-attack-range", "No. of Attacks is outside Divinity's 1..5 range.", `Current attack count is ${record.attackCount}.`));
+    }
+    if (record.size < 0 || record.size > 3) {
+      issues.push(recordIssue("warning", recordType, recordId, "monster-size-range", "Monster size is outside Divinity's 0..3 range.", "Use 0 one-hex, 1 tall, 2 wide, or 3 large unless preserving imported data."));
+    }
+    if ((record.magicAttackCount > 0 || record.castPercent > 0 || record.spells.some(Boolean)) && !record.typeFlags?.[0]) {
+      issues.push(recordIssue("warning", recordType, recordId, "monster-magic-trait", "Spellcasting monster is not marked Magic Using.", "Realmz checks the Magic Using trait before the creature can cast spells."));
+    }
+    for (const [slot, value] of [
+      ["Hit dice", record.hitDice],
+      ["Stamina bonus", record.staminaBonus],
+      ["Agility", record.agility],
+      ["Movement", record.movementMax],
+      ["Armor", record.armor],
+      ["Magic resistance", record.magicResistance],
+      ["Attack count", record.attackCount],
+      ["Magic attack count", record.magicAttackCount],
+      ["Cast percent", record.castPercent],
+      ["Run percent", record.runPercent],
+      ["Surrender percent", record.surrenderPercent],
+      ["Missile percent", record.missilePercent]
+    ] as const) {
+      if (!Number.isInteger(value) || value < -128 || value > 255) {
+        issues.push(recordIssue("warning", recordType, recordId, `${slot}:byte-range`, `${slot} is outside the usual byte range.`, `${value} will be preserved or written as a Realmz byte-style field; keep values small unless this is intentional.`));
+      }
+    }
+    for (const [label, value] of [
+      ["Cast spell %", record.castPercent],
+      ["Run away %", record.runPercent],
+      ["Surrender %", record.surrenderPercent],
+      ["Use missile %", record.missilePercent]
+    ] as const) {
+      if (value < 0 || value > 100) {
+        issues.push(recordIssue("warning", recordType, recordId, `${label}:percent-range`, `${label} is outside 0..100.`, `Current value is ${value}; Divinity treats these as percentages.`));
+      }
+    }
+    if ((record.displayName ?? "").length > 39) {
+      issues.push(recordIssue("warning", recordType, recordId, "monster-name-length", "Monster name may be too long.", "Realmz stores monster names in a fixed 40-byte field."));
+    }
+    if (record.typeFlags.length > 8) issues.push(recordIssue("error", recordType, recordId, "monster-trait-count", "Monster has too many trait flags.", "Realmz stores eight physical trait bytes."));
+    if (record.attacks.length > 5) issues.push(recordIssue("error", recordType, recordId, "monster-attack-count", "Monster has too many attack rows.", "Realmz stores five attack rows."));
+    if (record.items.length > 6) issues.push(recordIssue("error", recordType, recordId, "monster-item-count", "Monster has too many item slots.", "Realmz stores six item references."));
+    if (record.spells.length > 10) issues.push(recordIssue("error", recordType, recordId, "monster-spell-count", "Monster has too many spell slots.", "Realmz stores ten spell references."));
+    for (const [slot, item] of record.items.entries()) {
+      issues.push(...validateI16Field(recordType, recordId, `Item ${slot + 1}`, item));
+    }
+    for (const [slot, spell] of record.spells.entries()) {
+      issues.push(...validateI16Field(recordType, recordId, `Spell ${slot + 1}`, spell));
+    }
+    for (const [slot, money] of record.money.entries()) {
+      issues.push(...validateI16Field(recordType, recordId, `Treasure ${slot + 1}`, money));
+    }
+    for (const [slot, row] of record.attacks.entries()) {
+      if (row.length > 4) issues.push(recordIssue("error", recordType, recordId, `monster-attack-row-${slot}`, "Monster attack row has too many fields.", "Realmz stores four values per attack row."));
+    }
+    if (record.deathMacro !== 0) issues.push(...validateReference(project, recordType, recordId, "Monster macro", 8, record.deathMacro, undefined, catalog));
     return issues;
   }
   if (recordType === "treasure") {
@@ -79,6 +160,58 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
     if (Array.isArray(wordResults) && wordResults.length > 4) issues.push(recordIssue("error", recordType, recordId, "word-result-count", "Complex encounter has too many word result rows.", "Realmz stores four word result bytes."));
     issues.push(...validateReference(project, recordType, recordId, "Prompt message", 1, record.prompt, undefined, catalog));
     issues.push(...validateEncounterActions(project, recordType, recordId, record.actions, catalog));
+    return issues;
+  }
+  if (recordType === "timedEncounter") {
+    const record = project.timedEncounters?.find((candidate) => candidate.id === recordId);
+    if (!record) return [];
+    const issues = validateRecordId(recordType, recordId);
+    for (const field of ["day", "increment", "percent", "door", "requiredLevel", "requiredRandomRect", "requiredX", "requiredY", "requiredItem", "requiredQuest"] as const) {
+      issues.push(...validateI16Field(recordType, recordId, field, record[field]));
+    }
+    if (record.percent < 0 || record.percent > 100) {
+      issues.push(recordIssue("warning", recordType, recordId, "timed-percent-range", "Timed encounter chance is outside 0..100%.", "Realmz normally treats this as a percentage chance; preserve imported values only when you know they are intentional."));
+    }
+    if (!["any", "land", "dungeon"].includes(record.locationKind)) {
+      issues.push(recordIssue("error", recordType, recordId, "timed-location-kind", "Timed encounter location requirement is invalid.", "Choose Any, Land, or Dungeon."));
+    }
+    if (record.stuff.length > 10) {
+      issues.push(recordIssue("error", recordType, recordId, "timed-extra-field-count", "Timed encounter has too many extra fields.", "Data TD3 stores exactly ten extra signed-short fields."));
+    }
+    issues.push(...validateReference(project, recordType, recordId, "Extra Action Point", 8, record.door, undefined, catalog));
+    if (record.requiredQuest >= 0 && record.requiredQuest > 9999) {
+      issues.push(recordIssue("warning", recordType, recordId, "timed-quest-range", "Required quest ID is unusually high.", "Use -1 when no quest is required."));
+    }
+    return issues;
+  }
+  if (recordType === "thiefEncounter") {
+    const record = project.thiefEncounters?.find((candidate) => candidate.id === recordId);
+    if (!record) return [];
+    const issues = validateRecordId(recordType, recordId);
+    if (record.typeFlags.length > 10) issues.push(recordIssue("error", recordType, recordId, "rogue-flag-count", "Rogue encounter has too many state flags.", "Data TD2 stores ten state flags."));
+    for (const [label, values, max] of [
+      ["modifiers", record.modifiers, 8],
+      ["success result codes", record.successCodes, 8],
+      ["failure result codes", record.failureCodes, 8],
+      ["success messages", record.successText, 8],
+      ["failure messages", record.failureText, 8],
+      ["success sounds", record.successSounds, 8],
+      ["failure sounds", record.failureSounds, 8],
+      ["prompt/support fields", record.prompts, 3],
+      ["prompt sounds", record.promptSounds, 3]
+    ] as const) {
+      if (values.length > max) issues.push(recordIssue("error", recordType, recordId, `rogue-${label.replace(/\W+/g, "-")}`, `Rogue encounter has too many ${label}.`, `Data TD2 stores ${max} ${label}.`));
+      for (const [slot, value] of values.entries()) {
+        if (!isI16(value)) issues.push(recordIssue("error", recordType, recordId, `rogue-${label}-${slot}`, "Rogue encounter value is outside Realmz integer range.", `${label} slot ${slot} has ${value}.`));
+      }
+    }
+    for (const [slot, message] of record.successText.entries()) issues.push(...validateReference(project, recordType, recordId, `Success message ${slot}`, 1, message, undefined, catalog));
+    for (const [slot, message] of record.failureText.entries()) issues.push(...validateReference(project, recordType, recordId, `Failure message ${slot}`, 1, message, undefined, catalog));
+    if (record.prompts[0]) issues.push(...validateReference(project, recordType, recordId, "Prompt message", 1, record.prompts[0], undefined, catalog));
+    for (const field of ["spell", "lowDamage", "highDamage", "tumblers"] as const) issues.push(...validateI16Field(recordType, recordId, field, record[field]));
+    if (record.lowDamage !== 0 && record.highDamage !== 0 && record.lowDamage > record.highDamage) {
+      issues.push(recordIssue("warning", recordType, recordId, "rogue-damage-range", "Trap damage low is greater than high.", "Swap the low/high trap damage values unless this is intentional imported data."));
+    }
     return issues;
   }
   return [];

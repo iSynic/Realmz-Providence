@@ -40,23 +40,23 @@ export type ProvidenceHarnessScript = {
     actionSlots?: Array<{ triggerId: string; slot: number; rawCode: number; id: number }>;
     edcdRows?: Array<{ rowId: number; values: number[] }>;
     targetRecords?: Array<{
-      recordType: "message" | "battle" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "questLabel";
+      recordType: "message" | "battle" | "monster" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "questLabel";
       id: number;
       fields?: Record<string, unknown>;
     }>;
     targetRecordsAbsent?: Array<{
-      recordType: "message" | "battle" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "questLabel";
+      recordType: "message" | "battle" | "monster" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "questLabel";
       id: number;
     }>;
     scriptDiagnosticsContain?: Array<{ triggerId: string; text: string }>;
     scriptDiagnosticsNotContain?: Array<{ triggerId: string; text: string }>;
     targetDiagnosticsContain?: Array<{
-      recordType: "message" | "battle" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "questLabel";
+      recordType: "message" | "battle" | "monster" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "questLabel";
       id: number;
       text: string;
     }>;
     targetDiagnosticsNotContain?: Array<{
-      recordType: "message" | "battle" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "questLabel";
+      recordType: "message" | "battle" | "monster" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "questLabel";
       id: number;
       text: string;
     }>;
@@ -443,6 +443,7 @@ function targetRecordForAssertion(project: Project, recordType: HarnessTargetRec
   const records =
     recordType === "message" ? project.messages :
     recordType === "battle" ? project.battles :
+    recordType === "monster" ? project.monsters :
     recordType === "treasure" ? project.treasures :
     recordType === "shop" ? project.shops :
     recordType === "simpleEncounter" ? project.simpleEncounters :

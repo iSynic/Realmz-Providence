@@ -13,7 +13,22 @@ import { ScriptDiagnostic, validateActionDraft, validateScriptTrigger } from "..
 import { actionPointCapacity, isReusableDoorPlaceholder, nextActionPointRecordIndex } from "../actionPointCapacity";
 import { realmzScriptStepDescriptorFor } from "../realmzScriptDescriptors";
 import { validateRealmzTargetRecord } from "../targetValidation";
-import { itemReferenceDetail, itemReferenceOptions } from "../itemReferences";
+import { ITEM_REFERENCE_CATEGORIES, itemReferenceDetail, itemReferenceOptions, type ItemReferenceCategory } from "../itemReferences";
+import { monsterReferenceDetail, monsterReferenceOptions } from "../monsterReferences";
+import { CONDITION_LABELS, RESISTANCE_TYPES } from "../rulesCatalog";
+
+const MONSTER_TRAIT_LABELS = [
+  "Magic Using",
+  "Undead",
+  "Demonic/Devil",
+  "Reptilian",
+  "Very Evil",
+  "Intelligent",
+  "Giant Size",
+  "Non-Humanoid"
+];
+
+const MONSTER_MONEY_LABELS = ["Gold", "Gems", "Jewelry"];
 
 export function ScriptsPanel({
   project,
@@ -250,7 +265,7 @@ function ScriptAuthoringPanel({
   const floatingDetail = detailSurface === "floating";
   const directTargetDrawerAvailable = !selectedOption.edcdShape;
   const targetRecordType = realmzScriptStepDescriptorFor(selectedDraft.rawCode).targetType;
-  const wideTargetRecord = targetRecordType === "battle" || targetRecordType === "treasure" || targetRecordType === "shop" || targetRecordType === "simpleEncounter" || targetRecordType === "complexEncounter";
+  const wideTargetRecord = targetRecordType === "battle" || targetRecordType === "treasure" || targetRecordType === "shop" || targetRecordType === "simpleEncounter" || targetRecordType === "complexEncounter" || targetRecordType === "thiefEncounter" || targetRecordType === "timedEncounter";
   const detailSurfaceButton = (
     <button
       type="button"
@@ -893,16 +908,19 @@ export function TargetRecordEditor({
   catalog,
   opcode,
   targetId,
+  recordType,
   onApplyCommand
 }: {
   project: Project;
   catalog?: LibraryCatalog | null;
   opcode: number;
   targetId: number;
+  recordType?: RealmzTargetRecordKind;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const descriptor = realmzScriptStepDescriptorFor(opcode);
-  if (!descriptor.targetType || !Number.isInteger(targetId) || targetId < 0) {
+  const targetType = recordType ?? descriptor.targetType;
+  if (!targetType || !Number.isInteger(targetId) || targetId < 0) {
     if (descriptor.edcdShape) {
       return (
         <EmptyState
@@ -914,12 +932,12 @@ export function TargetRecordEditor({
     }
     return <EmptyState compact title="No editable target" body="Choose an opcode with a Realmz target record to edit message, battle, treasure, shop, or encounter details here." />;
   }
-  if (targetId === 0 && !targetRecordExists(project, descriptor.targetType, targetId)) {
+  if (targetId === 0 && !targetRecordExists(project, targetType, targetId)) {
     return <EmptyState compact title="No target selected" body="Choose an existing target or use the picker to create the next available Realmz record." />;
   }
   const badge = descriptor.compatibility ?? "realmz-writable";
-  const targetIssues = validateRealmzTargetRecord(project, descriptor.targetType, targetId, catalog);
-  if (descriptor.targetType === "message") {
+  const targetIssues = validateRealmzTargetRecord(project, targetType, targetId, catalog);
+  if (targetType === "message") {
     const record = project.messages?.find((candidate) => candidate.id === targetId);
     return (
       <InlineTargetShell
@@ -944,7 +962,7 @@ export function TargetRecordEditor({
       </InlineTargetShell>
     );
   }
-  if (descriptor.targetType === "battle") {
+  if (targetType === "battle") {
     const record = project.battles?.find((candidate) => candidate.id === targetId);
     return (
       <InlineTargetShell
@@ -990,6 +1008,8 @@ export function TargetRecordEditor({
               onCommit={(battleMacro) => onApplyCommand?.({ kind: "updateBattleRecord", label: "Update battle macro", id: targetId, changes: { battleMacro } })}
             />
             <BattleGridEditor
+              project={project}
+              catalog={catalog}
               grid={record.grid}
               onCommit={(index, value) => onApplyCommand?.({ kind: "updateBattleRecord", label: "Update battle grid", id: targetId, changes: { grid: updateArraySlot(record.grid, index, value, 13 * 13) } })}
             />
@@ -998,7 +1018,240 @@ export function TargetRecordEditor({
       </InlineTargetShell>
     );
   }
-  if (descriptor.targetType === "treasure") {
+  if (targetType === "monster") {
+    const record = project.monsters?.find((candidate) => candidate.id === targetId);
+    const update = (changes: Partial<NonNullable<Project["monsters"]>[number]>) => onApplyCommand?.({ kind: "updateMonsterRecord", label: "Update monster", id: targetId, changes });
+    return (
+      <InlineTargetShell
+        title={`Monster ${targetId}`}
+        badge={badge}
+        exists={Boolean(record)}
+        issues={targetIssues}
+        onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create monster", recordType: "monster", id: targetId })}
+        onClear={() => onApplyCommand?.({ kind: "deleteTargetRecord", label: "Clear monster", recordType: "monster", id: targetId })}
+      >
+        {record && (
+          <div className="monster-editor-shell">
+            <section className="monster-editor-section">
+              <header>
+                <strong>Identity</strong>
+                <small>Name, bestiary visibility, icon, and death macro.</small>
+              </header>
+              <div className="monster-editor-grid">
+                <label className="script-target-wide-field monster-name-field">
+                  <span>Monster Name</span>
+                  <input
+                    defaultValue={record.displayName}
+                    maxLength={40}
+                    onBlur={(event) => update({ displayName: event.currentTarget.value })}
+                  />
+                  <small>{record.displayName.length}/40 characters</small>
+                </label>
+                <NumberField label="Monster Name ID" value={record.nameId} onCommit={(nameId) => update({ nameId })} compact />
+                <NumberField label="Icon" value={record.iconId} onCommit={(iconId) => update({ iconId })} compact />
+                <label className="script-target-checkbox">
+                  <span>Hide From Bestiary</span>
+                  <input type="checkbox" checked={record.notOnMenu} onChange={(event) => update({ notOnMenu: event.currentTarget.checked })} />
+                </label>
+                <ReferenceIdField
+                  project={project}
+                  catalog={catalog}
+                  label="Monster Macro"
+                  emptyLabel="No death macro"
+                  opcode={8}
+                  value={record.deathMacro}
+                  onCommit={(deathMacro) => update({ deathMacro })}
+                />
+              </div>
+            </section>
+
+            <section className="monster-editor-section">
+              <header>
+                <strong>Combat Stats</strong>
+                <small>Divinity's stamina level, movement, armor, resistance, and victory reward fields.</small>
+              </header>
+              <div className="monster-editor-grid">
+                <NumberField label="Stamina Level" value={record.hitDice} onCommit={(hitDice) => update({ hitDice })} compact />
+                <NumberField label="Bonus Stamina" value={record.staminaBonus} onCommit={(staminaBonus) => update({ staminaBonus })} compact />
+                <NumberField label="Agility" value={record.agility} onCommit={(agility) => update({ agility })} compact />
+                <NumberField label="Move Max" value={record.movementMax} onCommit={(movementMax) => update({ movementMax })} compact />
+                <NumberField label="Armor Rating" value={record.armor} onCommit={(armor) => update({ armor })} compact />
+                <NumberField label="Magic Resist %" value={record.magicResistance} onCommit={(magicResistance) => update({ magicResistance })} compact />
+                <NumberField label="Magic + Req To Hit" value={record.magicToHit} onCommit={(magicToHit) => update({ magicToHit })} compact />
+                <NumberField label="Extra Victory Points" value={record.exp} onCommit={(exp) => update({ exp })} compact />
+                <NumberField label="Spell Points" value={record.spellPoints} onCommit={(spellPoints) => update({ spellPoints })} compact />
+                <NumberField label="Max Spell Points" value={record.maxSpellPoints} onCommit={(maxSpellPoints) => update({ maxSpellPoints })} compact />
+              </div>
+            </section>
+
+            <section className="monster-editor-section">
+              <header>
+                <strong>Battle Behavior</strong>
+                <small>Team side, size, attacks, spellcasting, missile use, and retreat logic.</small>
+              </header>
+              <div className="monster-editor-grid">
+                <NumberField label="Traitor / Side" value={record.traitor} onCommit={(traitor) => update({ traitor })} compact />
+                <NumberField label="Size" value={record.size} onCommit={(size) => update({ size })} compact />
+                <NumberField label="Distance" value={record.distance} onCommit={(distance) => update({ distance })} compact />
+                <NumberField label="No. Of Attacks" value={record.attackCount} onCommit={(attackCount) => update({ attackCount })} compact />
+                <NumberField label="Magical Attacks" value={record.magicAttackCount} onCommit={(magicAttackCount) => update({ magicAttackCount })} compact />
+                <NumberField label="Damage Plus" value={record.damageBonus} onCommit={(damageBonus) => update({ damageBonus })} compact />
+                <NumberField label="Cast Spell %" value={record.castPercent} onCommit={(castPercent) => update({ castPercent })} compact />
+                <NumberField label="Run Away %" value={record.runPercent} onCommit={(runPercent) => update({ runPercent })} compact />
+                <NumberField label="Surrender %" value={record.surrenderPercent} onCommit={(surrenderPercent) => update({ surrenderPercent })} compact />
+                <NumberField label="Use Missile %" value={record.missilePercent} onCommit={(missilePercent) => update({ missilePercent })} compact />
+                <NumberField label="Summon Eligible" value={record.canSummon} onCommit={(canSummon) => update({ canSummon })} compact />
+                <ItemIdField project={project} catalog={catalog} label="Weapon Used" value={record.weapon} onCommit={(weapon) => update({ weapon })} compact />
+              </div>
+            </section>
+
+            <section className="monster-editor-section">
+              <header>
+                <strong>Physical Traits</strong>
+                <small>Used by race/caste bonuses, turning, targeting, and special attack logic.</small>
+              </header>
+              <div className="monster-trait-grid">
+                {MONSTER_TRAIT_LABELS.map((label, slot) => (
+                  <label key={label} className="script-target-checkbox">
+                    <span>{label}</span>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(record.typeFlags?.[slot])}
+                      onChange={(event) => update({ typeFlags: updateArraySlot(record.typeFlags ?? [], slot, event.currentTarget.checked ? 1 : 0, 8) })}
+                    />
+                  </label>
+                ))}
+              </div>
+            </section>
+
+            <CollapsibleSection title="Attack Rows" eyebrow="combat" count="5 rows" density="compact" className="monster-editor-wide-section" defaultOpen>
+              <div className="monster-attack-grid">
+                {Array.from({ length: 5 }, (_, row) => {
+                  const values = record.attacks?.[row] ?? [0, 0, 0, 0];
+                  return (
+                    <div key={row} className="encounter-action-row monster-attack-row">
+                      <strong>Attack {row + 1}</strong>
+                      {["Damage Low", "Damage High", "Form", "Special"].map((label, slot) => (
+                        <NumberField
+                          key={label}
+                          label={label}
+                          value={values[slot] ?? 0}
+                          onCommit={(value) => {
+                            const attacks = [...(record.attacks ?? [])];
+                            while (attacks.length < 5) attacks.push([0, 0, 0, 0]);
+                            attacks[row] = updateArraySlot(attacks[row] ?? [], slot, value, 4);
+                            update({ attacks });
+                          }}
+                          compact
+                        />
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            </CollapsibleSection>
+
+            <CollapsibleSection title="Spells" eyebrow="10 slots" count={`${record.spells.filter(Boolean).length} filled`} density="compact" className="monster-editor-wide-section" defaultOpen>
+              <div className="monster-compact-field-grid">
+                {Array.from({ length: 10 }, (_, slot) => (
+                  <NumberField
+                    key={slot}
+                    label={`Spell ${slot + 1}`}
+                    value={record.spells[slot] ?? 0}
+                    onCommit={(value) => update({ spells: updateArraySlot(record.spells ?? [], slot, value, 10) })}
+                    compact
+                  />
+                ))}
+              </div>
+            </CollapsibleSection>
+
+            <CollapsibleSection title="Items And Treasure" eyebrow="loot" count={`${record.items.filter(Boolean).length} item(s)`} density="compact" className="monster-editor-wide-section" defaultOpen>
+              <div className="monster-editor-grid">
+                {MONSTER_MONEY_LABELS.map((label, slot) => (
+                  <NumberField
+                    key={label}
+                    label={label}
+                    value={record.money[slot] ?? 0}
+                    onCommit={(value) => update({ money: updateArraySlot(record.money ?? [], slot, value, 3) })}
+                    compact
+                  />
+                ))}
+              </div>
+              <div className="monster-item-grid">
+                {Array.from({ length: 6 }, (_, slot) => (
+                  <ItemIdField
+                    key={slot}
+                    project={project}
+                    catalog={catalog}
+                    label={`Item ${slot + 1}`}
+                    value={record.items[slot] ?? 0}
+                    onCommit={(value) => update({ items: updateArraySlot(record.items ?? [], slot, value, 6) })}
+                    compact
+                  />
+                ))}
+              </div>
+            </CollapsibleSection>
+
+            <CollapsibleSection title="Saves And Immunities" eyebrow="spells" count="6 classes" density="compact" className="monster-editor-wide-section">
+              <div className="monster-save-grid">
+                {Array.from({ length: 6 }, (_, slot) => {
+                  const label = RESISTANCE_TYPES[slot] ?? `Class ${slot}`;
+                  return (
+                    <div key={label} className="monster-save-row">
+                      <NumberField
+                        label={`${label} DRVs`}
+                        value={record.saves[slot] ?? 0}
+                        onCommit={(value) => update({ saves: updateArraySlot(record.saves ?? [], slot, value, 6) })}
+                        compact
+                      />
+                      <label className="script-target-checkbox">
+                        <span>Immune</span>
+                        <input
+                          type="checkbox"
+                          checked={Boolean(record.spellImmunities?.[slot])}
+                          onChange={(event) => update({ spellImmunities: updateArraySlot(record.spellImmunities ?? [], slot, event.currentTarget.checked ? 1 : 0, 6) })}
+                        />
+                      </label>
+                    </div>
+                  );
+                })}
+              </div>
+            </CollapsibleSection>
+
+            <CollapsibleSection title="Conditions" eyebrow="40 fields" count={`${record.conditions.filter(Boolean).length} set`} density="compact" className="monster-editor-wide-section">
+              <div className="monster-condition-grid">
+                {CONDITION_LABELS.map((label, slot) => (
+                  <NumberField
+                    key={label}
+                    label={label}
+                    value={record.conditions[slot] ?? 0}
+                    onCommit={(value) => update({ conditions: updateArraySlot(record.conditions ?? [], slot, value, 40) })}
+                    compact
+                  />
+                ))}
+              </div>
+            </CollapsibleSection>
+
+            <CollapsibleSection title="Advanced Combat Defaults" eyebrow="runtime fields" count="template" density="compact" className="monster-editor-wide-section">
+              <div className="monster-editor-grid">
+                <NumberField label="Template Stamina" value={record.stamina} onCommit={(stamina) => update({ stamina })} compact />
+                <NumberField label="Template Max Stamina" value={record.staminaMax} onCommit={(staminaMax) => update({ staminaMax })} compact />
+                <NumberField label="Target" value={record.target} onCommit={(target) => update({ target })} compact />
+                <NumberField label="Guarding" value={record.guarding} onCommit={(guarding) => update({ guarding })} compact />
+                <NumberField label="Been Attacked" value={record.beenAttacked} onCommit={(beenAttacked) => update({ beenAttacked })} compact />
+                <NumberField label="Movement" value={record.movement} onCommit={(movement) => update({ movement })} compact />
+                <NumberField label="Left / Right" value={record.lr} onCommit={(lr) => update({ lr })} compact />
+                <NumberField label="Up / Down" value={record.up} onCommit={(up) => update({ up })} compact />
+                <NumberField label="Attack Number" value={record.attackNum} onCommit={(attackNum) => update({ attackNum })} compact />
+                <NumberField label="Bonus Attack" value={record.bonusAttack} onCommit={(bonusAttack) => update({ bonusAttack })} compact />
+              </div>
+            </CollapsibleSection>
+          </div>
+        )}
+      </InlineTargetShell>
+    );
+  }
+  if (targetType === "treasure") {
     const record = project.treasures?.find((candidate) => candidate.id === targetId);
     return (
       <InlineTargetShell
@@ -1011,10 +1264,19 @@ export function TargetRecordEditor({
       >
         {record && (
           <div className="script-target-grid">
-            <NumberField label="Exp" value={record.exp} onCommit={(exp) => onApplyCommand?.({ kind: "updateTreasureRecord", label: "Update treasure exp", id: targetId, changes: { exp } })} />
-            <NumberField label="Gold" value={record.gold} onCommit={(gold) => onApplyCommand?.({ kind: "updateTreasureRecord", label: "Update treasure gold", id: targetId, changes: { gold } })} />
-            <NumberField label="Gems" value={record.gems} onCommit={(gems) => onApplyCommand?.({ kind: "updateTreasureRecord", label: "Update treasure gems", id: targetId, changes: { gems } })} />
-            <NumberField label="Jewelry" value={record.jewelry} onCommit={(jewelry) => onApplyCommand?.({ kind: "updateTreasureRecord", label: "Update treasure jewelry", id: targetId, changes: { jewelry } })} />
+            <TreasureRewardField label="Victory Points" value={record.exp} onCommit={(exp) => onApplyCommand?.({ kind: "updateTreasureRecord", label: "Update treasure victory points", id: targetId, changes: { exp } })} />
+            <TreasureRewardField label="Gold" value={record.gold} onCommit={(gold) => onApplyCommand?.({ kind: "updateTreasureRecord", label: "Update treasure gold", id: targetId, changes: { gold } })} />
+            <TreasureRewardField label="Gems" value={record.gems} onCommit={(gems) => onApplyCommand?.({ kind: "updateTreasureRecord", label: "Update treasure gems", id: targetId, changes: { gems } })} />
+            <TreasureRewardField label="Jewelry" value={record.jewelry} onCommit={(jewelry) => onApplyCommand?.({ kind: "updateTreasureRecord", label: "Update treasure jewelry", id: targetId, changes: { jewelry } })} />
+            <TreasureCatalogAdder
+              project={project}
+              catalog={catalog}
+              itemIds={record.itemIds}
+              onAddItem={(itemId) => {
+                const slot = firstOpenTreasureSlot(record.itemIds);
+                if (slot >= 0) onApplyCommand?.({ kind: "updateTreasureRecord", label: "Add treasure item", id: targetId, changes: { itemIds: updateArraySlot(record.itemIds, slot, itemId, 20) } });
+              }}
+            />
             <TreasureItemGrid
               project={project}
               catalog={catalog}
@@ -1026,7 +1288,7 @@ export function TargetRecordEditor({
       </InlineTargetShell>
     );
   }
-  if (descriptor.targetType === "shop") {
+  if (targetType === "shop") {
     const record = project.shops?.find((candidate) => candidate.id === targetId);
     return (
       <InlineTargetShell
@@ -1040,6 +1302,22 @@ export function TargetRecordEditor({
         {record && (
           <div className="script-target-grid">
             <NumberField label="Inflation" value={record.inflation} onCommit={(inflation) => onApplyCommand?.({ kind: "updateShopRecord", label: "Update shop inflation", id: targetId, changes: { inflation } })} />
+            <div className="script-shop-source-note">
+              <strong>Scenario shop stock</strong>
+              <span>These values define what Realmz copies into a new game. Parties already inside a saved game keep their current shop inventory.</span>
+              <button
+                type="button"
+                className="btn btn-danger btn-xs"
+                onClick={() => onApplyCommand?.({
+                  kind: "updateShopRecord",
+                  label: "Clear shop stock",
+                  id: targetId,
+                  changes: { itemIds: new Array(1000).fill(0), quantities: new Array(1000).fill(0) }
+                })}
+              >
+                Clear Shop Stock
+              </button>
+            </div>
             <ShopStockEditor
               project={project}
               catalog={catalog}
@@ -1047,6 +1325,7 @@ export function TargetRecordEditor({
               quantities={record.quantities}
               onCommitItem={(index, value) => onApplyCommand?.({ kind: "updateShopRecord", label: "Update shop item", id: targetId, changes: { itemIds: updateArraySlot(record.itemIds, index, value, 1000) } })}
               onCommitQuantity={(index, value) => onApplyCommand?.({ kind: "updateShopRecord", label: "Update shop quantity", id: targetId, changes: { quantities: updateArraySlot(record.quantities, index, value, 1000) } })}
+              onReplaceStock={(itemIds, quantities) => onApplyCommand?.({ kind: "updateShopRecord", label: "Update shop stock", id: targetId, changes: { itemIds, quantities } })}
               onClearSlot={(index) => onApplyCommand?.({
                 kind: "updateShopRecord",
                 label: "Clear shop stock slot",
@@ -1062,7 +1341,7 @@ export function TargetRecordEditor({
       </InlineTargetShell>
     );
   }
-  if (descriptor.targetType === "simpleEncounter") {
+  if (targetType === "simpleEncounter") {
     const record = project.simpleEncounters?.find((candidate) => candidate.id === targetId);
     return (
       <InlineTargetShell
@@ -1092,7 +1371,7 @@ export function TargetRecordEditor({
       </InlineTargetShell>
     );
   }
-  if (descriptor.targetType === "complexEncounter") {
+  if (targetType === "complexEncounter") {
     const record = project.complexEncounters?.find((candidate) => candidate.id === targetId);
     return (
       <InlineTargetShell
@@ -1126,7 +1405,53 @@ export function TargetRecordEditor({
       </InlineTargetShell>
     );
   }
-  if (descriptor.targetType === "questLabel") {
+  if (targetType === "timedEncounter") {
+    const record = project.timedEncounters?.find((candidate) => candidate.id === targetId);
+    return (
+      <InlineTargetShell
+        title={`Time Encounter ${targetId}`}
+        badge={badge}
+        exists={Boolean(record)}
+        issues={targetIssues}
+        onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create time encounter", recordType: "timedEncounter", id: targetId })}
+        onClear={() => onApplyCommand?.({ kind: "deleteTargetRecord", label: "Clear time encounter", recordType: "timedEncounter", id: targetId })}
+      >
+        {record && (
+          <TimedEncounterShell
+            project={project}
+            catalog={catalog}
+            id={targetId}
+            record={record}
+            onApplyCommand={onApplyCommand}
+          />
+        )}
+      </InlineTargetShell>
+    );
+  }
+  if (targetType === "thiefEncounter") {
+    const record = project.thiefEncounters?.find((candidate) => candidate.id === targetId);
+    return (
+      <InlineTargetShell
+        title={`Rogue Encounter ${targetId}`}
+        badge={badge}
+        exists={Boolean(record)}
+        issues={targetIssues}
+        onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create rogue encounter", recordType: "thiefEncounter", id: targetId })}
+        onClear={() => onApplyCommand?.({ kind: "deleteTargetRecord", label: "Clear rogue encounter", recordType: "thiefEncounter", id: targetId })}
+      >
+        {record && (
+          <ThiefEncounterShell
+            project={project}
+            catalog={catalog}
+            id={targetId}
+            record={record}
+            onApplyCommand={onApplyCommand}
+          />
+        )}
+      </InlineTargetShell>
+    );
+  }
+  if (targetType === "questLabel") {
     const record = project.questLabels?.find((candidate) => candidate.id === targetId);
     return (
       <InlineTargetShell
@@ -1297,6 +1622,230 @@ function EncounterShell({
       />
     </div>
   );
+}
+
+const ROGUE_ACTION_LABELS = [
+  "Rogue Check 0",
+  "Detect Trap",
+  "Disarm Trap",
+  "Acrobatic Act",
+  "Force Lock",
+  "Pick Lock",
+  "Open Lock Magic",
+  "Disarm Trap Magic"
+];
+
+function ThiefEncounterShell({
+  project,
+  catalog,
+  id,
+  record,
+  onApplyCommand
+}: {
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  id: number;
+  record: Project["thiefEncounters"][number];
+  onApplyCommand?: (command: ProjectCommand) => void;
+}) {
+  const update = (changes: Extract<ProjectCommand, { kind: "updateThiefEncounterRecord" }>["changes"]) => {
+    onApplyCommand?.({ kind: "updateThiefEncounterRecord", label: "Update rogue encounter", id, changes });
+  };
+  return (
+    <div className="script-target-grid thief-encounter-editor">
+      <div className="script-shop-source-note">
+        <strong>Rogue action setup</strong>
+        <span>Complex encounters can call this record when the player chooses a rogue action. Detecting a trap can reveal Disarm Trap; failed actions can spring the trap.</span>
+      </div>
+      <ReferenceIdField
+        project={project}
+        catalog={catalog}
+        label="Prompt String"
+        emptyLabel="No prompt string"
+        opcode={1}
+        value={record.prompts?.[0] ?? 0}
+        createRecordType="message"
+        onCommit={(value) => update({ prompts: updateArraySlot(record.prompts ?? [], 0, value, 3) })}
+        onCreateTarget={(targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create rogue prompt", recordType: "message", id: targetId })}
+      />
+      <NumberField label="Prompt Sound" value={record.promptSounds?.[0] ?? 0} onCommit={(value) => update({ promptSounds: updateArraySlot(record.promptSounds ?? [], 0, value, 3) })} />
+      <NumberField label="Tumblers" value={record.tumblers} onCommit={(tumblers) => update({ tumblers })} />
+      <NumberField label="Trap Damage Low" value={record.lowDamage} onCommit={(lowDamage) => update({ lowDamage })} />
+      <NumberField label="Trap Damage High" value={record.highDamage} onCommit={(highDamage) => update({ highDamage })} />
+      <NumberField label="Trap Spell" value={record.spell} onCommit={(spell) => update({ spell })} />
+      <NumberField label="Trap Sound" value={record.prompts?.[1] ?? 0} onCommit={(value) => update({ prompts: updateArraySlot(record.prompts ?? [], 1, value, 3) })} />
+      <NumberField label="Spell Power" value={record.prompts?.[2] ?? 0} onCommit={(value) => update({ prompts: updateArraySlot(record.prompts ?? [], 2, value, 3) })} />
+      <NumberField label="% / Level To Knock" value={record.promptSounds?.[1] ?? 0} onCommit={(value) => update({ promptSounds: updateArraySlot(record.promptSounds ?? [], 1, value, 3) })} />
+      <NumberField label="% / Level To Disarm" value={record.promptSounds?.[2] ?? 0} onCommit={(value) => update({ promptSounds: updateArraySlot(record.promptSounds ?? [], 2, value, 3) })} />
+      <div className="script-encounter-action-grid rogue-action-grid">
+        {Array.from({ length: 8 }, (_, slot) => (
+          <RogueActionRow
+            key={slot}
+            slot={slot}
+            record={record}
+            project={project}
+            catalog={catalog}
+            onUpdate={update}
+            onCreateMessage={(targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create rogue message", recordType: "message", id: targetId })}
+          />
+        ))}
+      </div>
+      <CollapsibleSection title="Rogue State Flags" eyebrow="advanced" count="10 flags" density="compact" className="script-encounter-text-section">
+        <p className="script-encounter-text-note">
+          These flags control which rogue actions are initially available and which trap states Realmz can change during play. Imported scenarios may rely on exact combinations.
+        </p>
+        <div className="script-encounter-outcome-grid">
+          {Array.from({ length: 10 }, (_, slot) => (
+            <label key={slot} className="script-target-checkbox">
+              <span>{rogueFlagLabel(slot)}</span>
+              <input
+                type="checkbox"
+                checked={Boolean(record.typeFlags?.[slot])}
+                onChange={(event) => update({ typeFlags: updateArraySlot(record.typeFlags ?? [], slot, event.currentTarget.checked, 10) })}
+              />
+            </label>
+          ))}
+        </div>
+      </CollapsibleSection>
+    </div>
+  );
+}
+
+function RogueActionRow({
+  slot,
+  record,
+  project,
+  catalog,
+  onUpdate,
+  onCreateMessage
+}: {
+  slot: number;
+  record: Project["thiefEncounters"][number];
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  onUpdate: (changes: Extract<ProjectCommand, { kind: "updateThiefEncounterRecord" }>["changes"]) => void;
+  onCreateMessage: (targetId: number) => void;
+}) {
+  return (
+    <div className="script-encounter-action-row">
+      <header>
+        <strong>{ROGUE_ACTION_LABELS[slot] ?? `Rogue Action ${slot}`}</strong>
+      </header>
+      <NumberField label="% Modifier" value={record.modifiers?.[slot] ?? 0} onCommit={(value) => onUpdate({ modifiers: updateArraySlot(record.modifiers ?? [], slot, value, 8) })} />
+      <NumberField label="Success Result" value={record.successCodes?.[slot] ?? 0} onCommit={(value) => onUpdate({ successCodes: updateArraySlot(record.successCodes ?? [], slot, value, 8) })} />
+      <NumberField label="Failure Result" value={record.failureCodes?.[slot] ?? 0} onCommit={(value) => onUpdate({ failureCodes: updateArraySlot(record.failureCodes ?? [], slot, value, 8) })} />
+      <ReferenceIdField
+        project={project}
+        catalog={catalog}
+        label="Success String"
+        emptyLabel="No success string"
+        opcode={1}
+        value={record.successText?.[slot] ?? 0}
+        createRecordType="message"
+        onCommit={(value) => onUpdate({ successText: updateArraySlot(record.successText ?? [], slot, value, 8) })}
+        onCreateTarget={onCreateMessage}
+      />
+      <ReferenceIdField
+        project={project}
+        catalog={catalog}
+        label="Failure String"
+        emptyLabel="No failure string"
+        opcode={1}
+        value={record.failureText?.[slot] ?? 0}
+        createRecordType="message"
+        onCommit={(value) => onUpdate({ failureText: updateArraySlot(record.failureText ?? [], slot, value, 8) })}
+        onCreateTarget={onCreateMessage}
+      />
+      <NumberField label="Success Sound" value={record.successSounds?.[slot] ?? 0} onCommit={(value) => onUpdate({ successSounds: updateArraySlot(record.successSounds ?? [], slot, value, 8) })} />
+      <NumberField label="Failure Sound" value={record.failureSounds?.[slot] ?? 0} onCommit={(value) => onUpdate({ failureSounds: updateArraySlot(record.failureSounds ?? [], slot, value, 8) })} />
+    </div>
+  );
+}
+
+function rogueFlagLabel(slot: number) {
+  if (slot === 8) return "Trap affects whole party";
+  if (slot === 9) return "Trap is armed";
+  return ROGUE_ACTION_LABELS[slot] ?? `Flag ${slot}`;
+}
+
+function TimedEncounterShell({
+  project,
+  catalog,
+  id,
+  record,
+  onApplyCommand
+}: {
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  id: number;
+  record: Project["timedEncounters"][number];
+  onApplyCommand?: (command: ProjectCommand) => void;
+}) {
+  const update = (changes: Extract<ProjectCommand, { kind: "updateTimedEncounterRecord" }>["changes"]) => {
+    onApplyCommand?.({ kind: "updateTimedEncounterRecord", label: "Update time encounter", id, changes });
+  };
+  const setLocationKind = (locationKind: Project["timedEncounters"][number]["locationKind"]) => {
+    update({ locationKind, stuff: updateArraySlot(record.stuff ?? [], 0, locationKindValue(locationKind), 10) });
+  };
+  return (
+    <div className="script-target-grid timed-encounter-editor">
+      <div className="script-shop-source-note">
+        <strong>Midnight schedule</strong>
+        <span>Time Encounters are checked at midnight. Day and Increment set to -1 keeps this record inactive until an Action Point activates it.</span>
+      </div>
+      <NumberField label="Day" value={record.day} onCommit={(day) => update({ day })} />
+      <NumberField label="Increment" value={record.increment} onCommit={(increment) => update({ increment })} />
+      <NumberField label="% Chance" value={record.percent} onCommit={(percent) => update({ percent })} />
+      <ReferenceIdField
+        project={project}
+        catalog={catalog}
+        label="Extra AP to Activate"
+        emptyLabel="No Extra AP"
+        opcode={8}
+        value={record.door}
+        onCommit={(door) => update({ door })}
+      />
+      <NumberField label="Required Item ID" value={record.requiredItem} onCommit={(requiredItem) => update({ requiredItem })} />
+      <NumberField label="Required Quest ID" value={record.requiredQuest} onCommit={(requiredQuest) => update({ requiredQuest })} />
+      <label className="script-target-wide-field">
+        <span>Position Requirement</span>
+        <select value={record.locationKind} onChange={(event) => setLocationKind(event.currentTarget.value as Project["timedEncounters"][number]["locationKind"])}>
+          <option value="any">No position required</option>
+          <option value="land">Land level</option>
+          <option value="dungeon">Dungeon level</option>
+        </select>
+        <small>Use -1 in level, rectangle, X, or Y when that location field is not required.</small>
+      </label>
+      <NumberField label="Required Level" value={record.requiredLevel} onCommit={(requiredLevel) => update({ requiredLevel })} />
+      <NumberField label="Required Rect" value={record.requiredRandomRect} onCommit={(requiredRandomRect) => update({ requiredRandomRect })} />
+      <NumberField label="Required X" value={record.requiredX} onCommit={(requiredX) => update({ requiredX })} />
+      <NumberField label="Required Y" value={record.requiredY} onCommit={(requiredY) => update({ requiredY })} />
+      <CollapsibleSection title="Additional Data" eyebrow="advanced" count="9 fields" density="compact" className="script-encounter-text-section">
+        <p className="script-encounter-text-note">
+          Realmz reserves additional signed-number fields in Time Encounters. Keep imported values unless you are matching a known Divinity setup.
+        </p>
+        <div className="script-target-grid">
+          {Array.from({ length: 9 }, (_, index) => {
+            const slot = index + 1;
+            return (
+              <NumberField
+                key={slot}
+                label={`Extra ${slot}`}
+                value={record.stuff?.[slot] ?? 0}
+                onCommit={(value) => update({ stuff: updateArraySlot(record.stuff ?? [], slot, value, 10) })}
+              />
+            );
+          })}
+        </div>
+      </CollapsibleSection>
+    </div>
+  );
+}
+
+function locationKindValue(locationKind: Project["timedEncounters"][number]["locationKind"]) {
+  if (locationKind === "land") return 1;
+  if (locationKind === "dungeon") return 2;
+  return -1;
 }
 
 function EncounterTextGrid({
@@ -1523,13 +2072,216 @@ function encounterTextBufferLabel(recordKind: "simple" | "complex", slot: number
   return labels[slot] ?? `Text Buffer ${slot}`;
 }
 
-function BattleGridEditor({ grid, onCommit }: { grid: number[]; onCommit: (index: number, value: number) => void }) {
+function BattleGridEditor({
+  project,
+  catalog,
+  grid,
+  onCommit
+}: {
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  grid: number[];
+  onCommit: (index: number, value: number) => void;
+}) {
+  const [selectedIndex, setSelectedIndex] = useState(() => Math.max(0, grid.findIndex((value) => value !== 0)));
+  const selectedValue = grid[selectedIndex] ?? 0;
+  const selectedMonsterId = Math.abs(selectedValue);
+  const [placementMonsterId, setPlacementMonsterId] = useState(selectedMonsterId);
+  const [forceFriend, setForceFriend] = useState(selectedValue < 0);
+  const [eraseMode, setEraseMode] = useState(false);
+  const row = Math.floor(selectedIndex / 13);
+  const col = selectedIndex % 13;
+  const selectedDetail = monsterReferenceDetail(project, selectedValue, catalog);
+  const placedCount = grid.filter(Boolean).length;
+  const placementDetail = placementMonsterId ? monsterReferenceDetail(project, placementMonsterId, catalog) : "Choose a monster, then click cells to place it.";
+  useEffect(() => {
+    if (selectedMonsterId) {
+      setPlacementMonsterId(selectedMonsterId);
+      setForceFriend(selectedValue < 0);
+    }
+  }, [selectedIndex, selectedMonsterId, selectedValue]);
+  const commitMonsterId = (monsterId: number) => {
+    const sign = selectedValue < 0 ? -1 : 1;
+    onCommit(selectedIndex, monsterId === 0 ? 0 : sign * Math.abs(monsterId));
+  };
+  const commitSide = (otherSide: boolean) => {
+    if (selectedMonsterId === 0) return;
+    onCommit(selectedIndex, otherSide ? -selectedMonsterId : selectedMonsterId);
+  };
+  const handleCellClick = (index: number) => {
+    setSelectedIndex(index);
+    if (eraseMode) {
+      if ((grid[index] ?? 0) !== 0) onCommit(index, 0);
+      return;
+    }
+    if (placementMonsterId) {
+      onCommit(index, forceFriend ? -Math.abs(placementMonsterId) : Math.abs(placementMonsterId));
+    }
+  };
   return (
-    <CollapsibleSection title="Monster Grid" eyebrow="13 x 13" count={`${grid.filter(Boolean).length} placed`} density="compact" className="script-battle-grid-section" defaultOpen={false}>
+    <CollapsibleSection title="Monster Grid" eyebrow="13 x 13" count={`${placedCount} placed`} density="compact" className="script-battle-grid-section" defaultOpen>
+      <div className="script-battle-placement-panel">
+        <header>
+          <strong>Placement</strong>
+          <small>{placementDetail}</small>
+        </header>
+        <MonsterIdField
+          project={project}
+          catalog={catalog}
+          label="Monster To Place"
+          value={placementMonsterId}
+          onCommit={(monsterId) => {
+            setPlacementMonsterId(Math.abs(monsterId));
+            setEraseMode(false);
+          }}
+          compact
+        />
+        <label className="script-target-checkbox">
+          <span>Force Friend</span>
+          <input type="checkbox" checked={forceFriend} disabled={!placementMonsterId || eraseMode} onChange={(event) => setForceFriend(event.currentTarget.checked)} />
+        </label>
+        <label className="script-target-checkbox">
+          <span>Erase Mode</span>
+          <input type="checkbox" checked={eraseMode} onChange={(event) => setEraseMode(event.currentTarget.checked)} />
+        </label>
+        <small className="script-battle-placement-note">
+          Divinity allows up to 100 placed monsters. Force Friend stores a flipped battle-grid side value.
+        </small>
+      </div>
       <div className="script-battle-grid-editor" role="grid" aria-label="Battle monster grid">
-        {Array.from({ length: 13 * 13 }, (_, index) => (
-          <NumberField key={index} label={`M${index}`} value={grid[index] ?? 0} onCommit={(value) => onCommit(index, value)} compact />
+        {Array.from({ length: 13 * 13 }, (_, index) => {
+          const value = grid[index] ?? 0;
+          const filled = value !== 0;
+          return (
+            <button
+              key={index}
+              type="button"
+              role="gridcell"
+              className={`${index === selectedIndex ? "selected" : ""}${filled ? " filled" : ""}${value < 0 ? " other-side" : ""}`}
+              title={filled ? monsterReferenceDetail(project, value, catalog) : `Empty battle cell ${Math.floor(index / 13)},${index % 13}`}
+              onClick={() => handleCellClick(index)}
+            >
+              {filled ? Math.abs(value) : ""}
+            </button>
+          );
+        })}
+      </div>
+      <div className="script-battle-selected-cell">
+        <header>
+          <strong>Selected Cell {col}, {row}</strong>
+          <small>{selectedDetail}</small>
+        </header>
+        <MonsterIdField
+          project={project}
+          catalog={catalog}
+          label="Selected Cell Monster"
+          value={selectedMonsterId}
+          onCommit={(monsterId) => {
+            setPlacementMonsterId(Math.abs(monsterId));
+            commitMonsterId(monsterId);
+          }}
+          compact
+        />
+        <label className="script-target-checkbox">
+          <span>Force Friend / flip side</span>
+          <input type="checkbox" checked={selectedValue < 0} disabled={selectedMonsterId === 0} onChange={(event) => commitSide(event.currentTarget.checked)} />
+        </label>
+        <button type="button" className="btn btn-secondary btn-xs" onClick={() => onCommit(selectedIndex, 0)}>Clear Cell</button>
+      </div>
+    </CollapsibleSection>
+  );
+}
+
+function MonsterIdField({
+  project,
+  catalog,
+  label,
+  value,
+  onCommit,
+  compact = false
+}: {
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  label: string;
+  value: number;
+  onCommit: (value: number) => void;
+  compact?: boolean;
+}) {
+  const [query, setQuery] = useState("");
+  const options = useMemo(() => monsterReferenceOptions(project, catalog), [project, catalog]);
+  const selected = options.find((option) => option.value === Math.abs(value));
+  const filteredOptions = useMemo(() => filterMonsterTargetOptions(options, query), [options, query]);
+  const visibleOptions = useMemo(() => {
+    const visible = filteredOptions.slice(0, 260);
+    if (selected && !visible.some((option) => option.value === selected.value)) return [selected, ...visible.slice(0, 259)];
+    return visible;
+  }, [filteredOptions, selected]);
+  return (
+    <label className={`script-monster-id-field${compact ? " compact" : ""}`}>
+      <span>{label}</span>
+      <input
+        value={query}
+        onChange={(event) => setQuery(event.currentTarget.value)}
+        placeholder="Search monsters..."
+        aria-label={`Search ${label} monsters`}
+      />
+      <select value={value} onChange={(event) => onCommit(Number(event.currentTarget.value))}>
+        <option value={0}>Empty / none</option>
+        {value !== 0 && !options.some((option) => option.value === Math.abs(value)) && <option value={Math.abs(value)}>Current monster ID {Math.abs(value)}</option>}
+        {visibleOptions.map((option) => (
+          <option key={option.key} value={option.value}>{option.label}</option>
         ))}
+      </select>
+      <input type="number" value={value} onChange={(event) => onCommit(Number(event.currentTarget.value))} aria-label={`${label} raw monster ID`} />
+      <small>{selected ? [selected.detail, selected.sourceState].filter(Boolean).join(" | ") : filteredOptions.length === 0 && query.trim() ? "No monsters match this search." : monsterReferenceDetail(project, value, catalog)}</small>
+    </label>
+  );
+}
+
+function TreasureRewardField({ label, value, onCommit }: { label: string; value: number; onCommit: (value: number) => void }) {
+  return (
+    <div className="script-treasure-reward-field">
+      <NumberField label={label} value={value} onCommit={onCommit} compact />
+      <small>{treasureRewardHint(label, value)}</small>
+    </div>
+  );
+}
+
+function TreasureCatalogAdder({
+  project,
+  catalog,
+  itemIds,
+  onAddItem
+}: {
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  itemIds: number[];
+  onAddItem: (itemId: number) => void;
+}) {
+  const [category, setCategory] = useState<ItemReferenceCategory | "all">("weapon");
+  const [query, setQuery] = useState("");
+  const options = useMemo(() => itemReferenceOptions(project, catalog), [project, catalog]);
+  const openSlot = firstOpenTreasureSlot(itemIds);
+  const filteredOptions = useMemo(() => filterItemTargetOptionsByCategory(options, query, category).slice(0, 36), [options, query, category]);
+  return (
+    <CollapsibleSection title="Add Items" eyebrow="Divinity categories" count={openSlot >= 0 ? `next open slot ${openSlot}` : "full"} density="compact" className="script-item-catalog-section" defaultOpen>
+      <div className="script-item-category-tabs">
+        {ITEM_REFERENCE_CATEGORIES.filter((entry) => entry.id !== "all").map((entry) => (
+          <button key={entry.id} type="button" className={category === entry.id ? "active" : ""} onClick={() => setCategory(entry.id)}>
+            <strong>{entry.label}</strong>
+            {entry.range && <span>{entry.range}</span>}
+          </button>
+        ))}
+      </div>
+      <input className="script-item-catalog-search" value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search items to add..." />
+      <div className="script-item-catalog-list compact">
+        {filteredOptions.map((option) => (
+          <button key={option.key} type="button" disabled={openSlot < 0} onClick={() => onAddItem(option.value)}>
+            <strong>{option.label}</strong>
+            <span>{[option.detail, option.sourceState].filter(Boolean).join(" | ")}</span>
+          </button>
+        ))}
+        {filteredOptions.length === 0 && <small>No items match this category/search.</small>}
       </div>
     </CollapsibleSection>
   );
@@ -1554,6 +2306,7 @@ function ShopStockEditor({
   quantities,
   onCommitItem,
   onCommitQuantity,
+  onReplaceStock,
   onClearSlot
 }: {
   project: Project;
@@ -1562,11 +2315,17 @@ function ShopStockEditor({
   quantities: number[];
   onCommitItem: (index: number, value: number) => void;
   onCommitQuantity: (index: number, value: number) => void;
+  onReplaceStock: (itemIds: number[], quantities: number[]) => void;
   onClearSlot: (index: number) => void;
 }) {
   const [page, setPage] = useState(0);
   const [filledOnly, setFilledOnly] = useState(false);
   const [jumpSlot, setJumpSlot] = useState("");
+  const [catalogCategory, setCatalogCategory] = useState<ItemReferenceCategory | "all">("weapon");
+  const [catalogQuery, setCatalogQuery] = useState("");
+  const [changeAmount, setChangeAmount] = useState(1);
+  const itemOptions = useMemo(() => itemReferenceOptions(project, catalog), [project, catalog]);
+  const catalogItems = useMemo(() => filterItemTargetOptionsByCategory(itemOptions, catalogQuery, catalogCategory).slice(0, 72), [itemOptions, catalogQuery, catalogCategory]);
   const filledSlots = useMemo(() => {
     const slots: number[] = [];
     for (let index = 0; index < 1000; index += 1) {
@@ -1589,8 +2348,52 @@ function ShopStockEditor({
     setFilledOnly(false);
     setPage(Math.floor(slot / pageSize));
   };
+  const adjustItem = (itemId: number) => {
+    const next = adjustShopStock(itemIds, quantities, itemId, changeAmount);
+    onReplaceStock(next.itemIds, next.quantities);
+  };
   return (
     <CollapsibleSection title="Shop Stock" eyebrow="1000 slots" count={`${filledSlots.length} filled`} density="compact" className="script-shop-stock-section" defaultOpen>
+      <div className="script-shop-catalog-editor">
+        <header>
+          <div>
+            <strong>Item Catalog</strong>
+            <small>Click an item to change this shop's quantity by the current amount.</small>
+          </div>
+          <label>
+            <span>Change</span>
+            <input type="number" value={changeAmount} onChange={(event) => setChangeAmount(Number(event.currentTarget.value) || 0)} />
+            <button type="button" className="btn btn-secondary btn-xs" onClick={() => setChangeAmount((value) => (value === 0 ? -1 : -value))}>
+              +/-
+            </button>
+          </label>
+        </header>
+        <div className="script-item-category-tabs">
+          {ITEM_REFERENCE_CATEGORIES.map((entry) => (
+            <button key={entry.id} type="button" className={catalogCategory === entry.id ? "active" : ""} onClick={() => setCatalogCategory(entry.id)}>
+              <strong>{entry.label}</strong>
+              {entry.range && <span>{entry.range}</span>}
+            </button>
+          ))}
+        </div>
+        <input className="script-item-catalog-search" value={catalogQuery} onChange={(event) => setCatalogQuery(event.currentTarget.value)} placeholder="Search shop items..." />
+        <div className="script-shop-catalog-list">
+          {catalogItems.map((option) => {
+            const quantity = shopQuantityForItem(itemIds, quantities, option.value);
+            return (
+              <button key={option.key} type="button" onClick={() => adjustItem(option.value)}>
+                <b>{quantity}</b>
+                <span>
+                  <strong>{option.label}</strong>
+                  <small>{[option.detail, option.sourceState].filter(Boolean).join(" | ")}</small>
+                </span>
+                <i>{option.value}</i>
+              </button>
+            );
+          })}
+          {catalogItems.length === 0 && <small>No items match this category/search.</small>}
+        </div>
+      </div>
       <div className="script-shop-stock-toolbar">
         <button type="button" className="btn btn-secondary btn-xs" disabled={safePage <= 0} onClick={() => setPage(Math.max(0, safePage - 1))}>Prev</button>
         <span>Page {safePage + 1} / {pageCount}</span>
@@ -1681,14 +2484,76 @@ function filterItemTargetOptions(options: ReturnType<typeof itemReferenceOptions
   ].join(" ").toLowerCase().includes(normalized));
 }
 
+function filterItemTargetOptionsByCategory(options: ReturnType<typeof itemReferenceOptions>, query: string, category: ItemReferenceCategory | "all") {
+  return filterItemTargetOptions(options, query)
+    .filter((option) => option.value !== 0)
+    .filter((option) => category === "all" || option.category === category);
+}
+
+function filterMonsterTargetOptions(options: ReturnType<typeof monsterReferenceOptions>, query: string) {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return options;
+  return options.filter((option) => [
+    option.value,
+    option.label,
+    option.detail,
+    option.summary,
+    option.sourceState
+  ].join(" ").toLowerCase().includes(normalized));
+}
+
+function treasureRewardHint(label: string, value: number) {
+  if (value < 0) return `Random ${label.toLowerCase()} from 1 to ${Math.abs(value)}.`;
+  if (value > 0) return `Fixed ${label.toLowerCase()} reward.`;
+  return "No reward.";
+}
+
+function firstOpenTreasureSlot(itemIds: number[]) {
+  for (let index = 0; index < 20; index += 1) {
+    if ((itemIds[index] ?? 0) === 0) return index;
+  }
+  return -1;
+}
+
+function shopQuantityForItem(itemIds: number[], quantities: number[], itemId: number) {
+  let total = 0;
+  for (let index = 0; index < 1000; index += 1) {
+    if ((itemIds[index] ?? 0) === itemId) total += Math.max(0, quantities[index] ?? 0);
+  }
+  return total;
+}
+
+function adjustShopStock(itemIds: number[], quantities: number[], itemId: number, delta: number) {
+  const nextItems = [...itemIds];
+  const nextQuantities = [...quantities];
+  while (nextItems.length < 1000) nextItems.push(0);
+  while (nextQuantities.length < 1000) nextQuantities.push(0);
+  const existingIndex = nextItems.findIndex((candidate) => candidate === itemId);
+  const slot = existingIndex >= 0 ? existingIndex : nextItems.findIndex((candidate, index) => candidate === 0 && (nextQuantities[index] ?? 0) === 0);
+  if (slot < 0) return { itemIds: nextItems, quantities: nextQuantities };
+  const current = existingIndex >= 0 ? Math.max(0, nextQuantities[slot] ?? 0) : 0;
+  const nextQuantity = Math.max(0, Math.min(255, current + delta));
+  if (nextQuantity === 0) {
+    nextItems[slot] = 0;
+    nextQuantities[slot] = 0;
+  } else {
+    nextItems[slot] = itemId;
+    nextQuantities[slot] = nextQuantity;
+  }
+  return { itemIds: nextItems, quantities: nextQuantities };
+}
+
 function targetRecordExists(project: Project, recordType: RealmzTargetRecordKind, id: number) {
   const records =
     recordType === "message" ? project.messages :
     recordType === "battle" ? project.battles :
+    recordType === "monster" ? project.monsters :
     recordType === "treasure" ? project.treasures :
     recordType === "shop" ? project.shops :
     recordType === "simpleEncounter" ? project.simpleEncounters :
     recordType === "complexEncounter" ? project.complexEncounters :
+    recordType === "thiefEncounter" ? project.thiefEncounters :
+    recordType === "timedEncounter" ? project.timedEncounters :
     project.questLabels;
   return Boolean((records ?? []).some((record) => record.id === id));
 }
@@ -1801,10 +2666,13 @@ function nextAuthorableTargetId(project: Project, recordType: RealmzTargetRecord
   const records =
     recordType === "message" ? project.messages :
     recordType === "battle" ? project.battles :
+    recordType === "monster" ? project.monsters :
     recordType === "treasure" ? project.treasures :
     recordType === "shop" ? project.shops :
     recordType === "simpleEncounter" ? project.simpleEncounters :
     recordType === "complexEncounter" ? project.complexEncounters :
+    recordType === "thiefEncounter" ? project.thiefEncounters :
+    recordType === "timedEncounter" ? project.timedEncounters :
     project.questLabels;
   const used = new Set((records ?? []).map((record) => record.id));
   for (let id = 1; id < 10000; id += 1) {

@@ -34,7 +34,7 @@ export const TILE_CHOICES = [
 
 export const TABS: { id: EditorTab; label: string; icon: JSX.Element }[] = [
   { id: "maps", label: "Maps", icon: <Grid3X3 size={15} /> },
-  { id: "scripts", label: "Scripts", icon: <Spline size={15} /> },
+  { id: "scripts", label: "Action Point Hub", icon: <Spline size={15} /> },
   { id: "scenario", label: "Scenario", icon: <Flag size={15} /> },
   { id: "encounters", label: "Encounters", icon: <BookOpen size={15} /> },
   { id: "combat", label: "Combat", icon: <Sword size={15} /> },

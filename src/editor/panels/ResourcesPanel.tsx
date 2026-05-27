@@ -10,6 +10,8 @@ import { ResourcePreviewBadge, ResourcePreviewDiagnostics } from "../components/
 import { inspectBrowserBundledLibraryAssetPreview } from "../browser/library";
 import { ScrollArea } from "../ui";
 import { renderListKey } from "../renderKeys";
+import { isMapPlaceableLibraryAsset, managedAssetKindForLibrary, resourceOrigin, resourceOriginLabel } from "../resourceResolver";
+import { SCENARIO_PICTURE_MAX_ID, SCENARIO_PICTURE_MIN_ID, SCENARIO_SOUND_MAX_ID, SCENARIO_SOUND_MIN_ID, SCENARIO_SPLASH_PICTURE_ID } from "../mediaAssets";
 
 export function ResourcesPanel({
   project,
@@ -47,8 +49,10 @@ export function ResourcesPanel({
   const libraryAssets = catalog?.assets ?? [];
   const [sectionOverride, setSectionOverride] = useState<AssetSection | null>(null);
   const section = sectionOverride ?? assetSectionFromEditor(activeEditor);
+  const [kindFilter, setKindFilter] = useState<ManagedAssetKind | "all">(() => assetKindFilterFromEditor(activeEditor));
   useEffect(() => {
     setSectionOverride(null);
+    setKindFilter(assetKindFilterFromEditor(activeEditor));
   }, [activeEditor]);
   const [libraryPreviewFilter, setLibraryPreviewFilter] = useState<ResourcePreviewStatus | "all">("all");
   const [libraryPreviewStatuses, setLibraryPreviewStatuses] = useState<Record<string, ResourcePreviewStatus>>({});
@@ -56,16 +60,19 @@ export function ResourcesPanel({
   const normalizedQuery = query.trim().toLowerCase();
   const projectAssets = (project?.assets ?? []).filter((asset) =>
     assetMatchesSection(asset, section) &&
+    assetMatchesKind(asset.kind, kindFilter) &&
     (!normalizedQuery || `${asset.label} ${asset.resourceType} ${asset.resourceId} ${asset.fileName}`.toLowerCase().includes(normalizedQuery))
   );
   const visibleLibraryAssets = libraryAssets
     .filter((asset) => {
       if (!libraryAssetMatchesSection(asset, section)) return false;
+      if (!assetMatchesKind(managedAssetKindForLibrary(asset), kindFilter)) return false;
       if (normalizedQuery && !`${asset.label} ${asset.resourceType ?? ""} ${asset.resourceId ?? ""} ${asset.relativePath}`.toLowerCase().includes(normalizedQuery)) return false;
       if (libraryPreviewFilter === "all") return true;
       return (libraryPreviewStatuses[asset.id] ?? estimatedPreviewStatus(asset)) === libraryPreviewFilter;
     })
     .slice(0, 240);
+  const authoringGuidance = assetAuthoringGuidance(section, kindFilter);
   return (
     <section className="editor-full-panel asset-workbench">
       <header className="asset-workbench-header">
@@ -91,6 +98,15 @@ export function ResourcesPanel({
       </div>
       <div className="asset-filter-row">
         <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search assets..." />
+        <select value={kindFilter} onChange={(event) => setKindFilter(event.currentTarget.value as ManagedAssetKind | "all")} aria-label="Asset kind filter">
+          <option value="all">All Types</option>
+          <option value="picture">Pictures</option>
+          <option value="sound">Sounds</option>
+          <option value="icon">Icons</option>
+          <option value="special-land-tile">Special Land Tiles</option>
+          <option value="text">Text Resources</option>
+          <option value="other">Other</option>
+        </select>
         <PreviewStatusFilters value={libraryPreviewFilter} onChange={setLibraryPreviewFilter} />
       </div>
       <ScrollArea className="asset-workbench-main" aria-label="Assets workbench">
@@ -98,19 +114,24 @@ export function ResourcesPanel({
         <section className="tab-panel asset-authoring-panel">
           <div className="panel-header">
             <span>{assetSectionTitle(section)}</span>
-            <b>{projectAssets.length.toLocaleString()} project / {visibleLibraryAssets.length.toLocaleString()} library</b>
+            <b>{section === "project" ? `${projectAssets.length.toLocaleString()} scenario asset${projectAssets.length === 1 ? "" : "s"}` : `${visibleLibraryAssets.length.toLocaleString()} reference asset${visibleLibraryAssets.length === 1 ? "" : "s"}`}</b>
           </div>
-          {section === "special-land" && (
+          {kindFilter === "special-land-tile" && (
             <div className="special-land-explainer">
               Special Land Tiles are 32 x 32 <code>cicn</code> resources addressed by negative tile ids. They paint directly onto map cells.
             </div>
           )}
-          {section === "special-land" && (
+          {authoringGuidance && (
+            <div className="asset-authoring-note">
+              {authoringGuidance}
+            </div>
+          )}
+          {section === "project" && kindFilter === "special-land-tile" && (
             <AssetImportBar compact fixedKind="special-land-tile" label="Import Tile" onImportAssets={project ? onImportAssets : undefined} />
           )}
-          <div className="asset-subsection-heading">Project Assets</div>
+          {section === "project" && <div className="asset-subsection-heading">Scenario Assets</div>}
           <div className="managed-asset-grid" aria-label="Project assets">
-            {projectAssets.map((asset, index) => section === "special-land" ? (
+            {section === "project" && projectAssets.map((asset, index) => asset.kind === "special-land-tile" ? (
               <SpecialLandAssetCard
                 key={renderListKey("project-special-land", asset, index)}
                 asset={asset}
@@ -133,29 +154,33 @@ export function ResourcesPanel({
                 onSelectEntity={onSelectEntity}
               />
             ))}
-            {project && projectAssets.length === 0 && (
+            {section === "project" && project && projectAssets.length === 0 && (
               <p className="empty-copy compact">No project assets in this section yet.</p>
             )}
-            {!project && <p className="empty-copy compact">Open a project to manage scenario assets.</p>}
+            {section === "project" && !project && <p className="empty-copy compact">Open a project to manage scenario assets.</p>}
           </div>
-          <div className="asset-subsection-heading">Library Reference</div>
-          <div className="library-asset-strip" aria-label="Library assets">
-            {visibleLibraryAssets.map((asset, index) => (
-              <LibraryAssetCard
-                key={renderListKey("library-asset", asset, index)}
-                asset={asset}
-                project={project}
-                desktopRuntime={desktopRuntime}
-                workspaceDir={workspaceDir}
-                onSelectEntity={onSelectEntity}
-                onPreviewStatus={(assetId, status) => setLibraryPreviewStatuses((statuses) => statuses[assetId] === status ? statuses : { ...statuses, [assetId]: status })}
-              />
-            ))}
-            {visibleLibraryAssets.length === 0 && libraryAssets.length > 0 && (
-              <p className="empty-copy compact">No library assets match this search.</p>
-            )}
-            {libraryAssets.length === 0 && <p className="empty-copy compact">Bundled libraries did not expose media assets.</p>}
-          </div>
+          {section !== "project" && (
+            <>
+              <div className="asset-subsection-heading">{assetSectionTitle(section)}</div>
+              <div className="library-asset-strip" aria-label="Library assets">
+                {visibleLibraryAssets.map((asset, index) => (
+                  <LibraryAssetCard
+                    key={renderListKey("library-asset", asset, index)}
+                    asset={asset}
+                    project={project}
+                    desktopRuntime={desktopRuntime}
+                    workspaceDir={workspaceDir}
+                    onSelectEntity={onSelectEntity}
+                    onPreviewStatus={(assetId, status) => setLibraryPreviewStatuses((statuses) => statuses[assetId] === status ? statuses : { ...statuses, [assetId]: status })}
+                  />
+                ))}
+                {visibleLibraryAssets.length === 0 && libraryAssets.length > 0 && (
+                  <p className="empty-copy compact">No reference assets match this search.</p>
+                )}
+                {libraryAssets.length === 0 && <p className="empty-copy compact">Bundled libraries did not expose media assets.</p>}
+              </div>
+            </>
+          )}
         </section>
       )}
       {section === "advanced" && (
@@ -230,54 +255,64 @@ export function ResourcesPanel({
   );
 }
 
-type AssetSection = "project" | "pictures" | "sounds" | "icons" | "special-land" | "library" | "advanced";
+type AssetSection = "project" | "realmz" | "divinity" | "advanced";
 
 const ASSET_SECTIONS: Array<{ id: AssetSection; editor: string; label: string }> = [
-  { id: "project", editor: "project-assets", label: "Project Assets" },
-  { id: "pictures", editor: "pictures", label: "Pictures" },
-  { id: "sounds", editor: "sounds", label: "Sounds" },
-  { id: "icons", editor: "icons", label: "Icons" },
-  { id: "special-land", editor: "special-land", label: "Special Land Tiles" },
-  { id: "library", editor: "library-assets", label: "Library Reference" },
-  { id: "advanced", editor: "resource-forks", label: "Advanced" }
+  { id: "project", editor: "project-assets", label: "Scenario Assets" },
+  { id: "realmz", editor: "library-assets", label: "Realmz Library" },
+  { id: "divinity", editor: "divinity-reference", label: "Divinity Reference" },
+  { id: "advanced", editor: "resource-forks", label: "Advanced Inventory" }
 ];
 
 function assetSectionFromEditor(activeEditor: string): AssetSection {
-  if (activeEditor === "pictures") return "pictures";
-  if (activeEditor === "sounds") return "sounds";
-  if (activeEditor === "icons") return "icons";
-  if (activeEditor === "special-land") return "special-land";
-  if (activeEditor === "library-assets") return "library";
+  if (activeEditor === "pictures" || activeEditor === "sounds" || activeEditor === "icons" || activeEditor === "special-land" || activeEditor === "library-assets") return "realmz";
+  if (activeEditor === "divinity-reference") return "divinity";
   if (activeEditor === "resource-forks" || activeEditor === "render-assets") return "advanced";
   return "project";
 }
 
+function assetKindFilterFromEditor(activeEditor: string): ManagedAssetKind | "all" {
+  if (activeEditor === "pictures") return "picture";
+  if (activeEditor === "sounds") return "sound";
+  if (activeEditor === "icons") return "icon";
+  if (activeEditor === "special-land") return "special-land-tile";
+  return "all";
+}
+
 function assetSectionTitle(section: AssetSection) {
-  if (section === "pictures") return "Pictures";
-  if (section === "sounds") return "Sounds";
-  if (section === "icons") return "Icons";
-  if (section === "special-land") return "Special Land Tiles";
-  if (section === "library") return "Library Reference";
-  if (section === "advanced") return "Advanced Resources";
-  return "Project Assets";
+  if (section === "realmz") return "Realmz Library";
+  if (section === "divinity") return "Divinity Reference";
+  if (section === "advanced") return "Advanced Inventory";
+  return "Scenario Assets";
 }
 
 function assetMatchesSection(asset: ManagedAsset, section: AssetSection) {
-  if (section === "pictures") return asset.kind === "picture";
-  if (section === "sounds") return asset.kind === "sound";
-  if (section === "icons") return asset.kind === "icon";
-  if (section === "special-land") return asset.kind === "special-land-tile";
-  if (section === "library" || section === "advanced") return false;
-  return true;
+  return section === "project";
 }
 
 function libraryAssetMatchesSection(asset: LibraryAsset, section: AssetSection) {
-  if (section === "project" || section === "library") return true;
-  if (section === "pictures") return asset.type === "picture" || asset.resourceType?.trim() === "PICT";
-  if (section === "sounds") return asset.type === "sound" || asset.resourceType?.trim() === "snd";
-  if (section === "icons") return asset.type === "icon" || asset.type === "icon-resource" || asset.resourceType?.trim() === "cicn";
-  if (section === "special-land") return asset.type === "special-land-tile";
-  return false;
+  if (section !== "realmz" && section !== "divinity") return false;
+  const origin = resourceOrigin(asset);
+  if (section === "realmz") return origin === "realmz-library" || origin === "unknown";
+  return origin === "divinity-reference" || origin === "ui-reference";
+}
+
+function assetMatchesKind(kind: ManagedAssetKind, filter: ManagedAssetKind | "all") {
+  return filter === "all" || kind === filter;
+}
+
+function assetAuthoringGuidance(section: AssetSection, kindFilter: ManagedAssetKind | "all") {
+  if (section !== "project") return "";
+  if (kindFilter === "picture") {
+    return `Scenario pictures use PICT IDs ${SCENARIO_PICTURE_MIN_ID}-${SCENARIO_PICTURE_MAX_ID}. ID ${SCENARIO_SPLASH_PICTURE_ID} is the title picture.`;
+  }
+  if (kindFilter === "sound") {
+    return `Custom scenario sounds use snd IDs ${SCENARIO_SOUND_MIN_ID}-${SCENARIO_SOUND_MAX_ID}.`;
+  }
+  if (kindFilter === "all") {
+    return `Scenario pictures use PICT IDs ${SCENARIO_PICTURE_MIN_ID}-${SCENARIO_PICTURE_MAX_ID}; custom sounds use snd IDs ${SCENARIO_SOUND_MIN_ID}-${SCENARIO_SOUND_MAX_ID}.`;
+  }
+  return "";
 }
 
 function AssetImportBar({
@@ -430,7 +465,7 @@ function SpecialLandAssetCard({
       <div className="asset-facts">
         <span>tile {asset.resourceId}</span>
         <span>cicn</span>
-        <span>{asset.exportState}</span>
+        <span>{assetExportLabel(asset.exportState)}</span>
         <span>32 x 32 export</span>
       </div>
       <div className="asset-card-actions">
@@ -481,6 +516,7 @@ function ManagedAssetCard({
   const preview = useProjectPreview(asset.previewPath, desktopRuntime, projectDir);
   const replaceInputRef = useRef<HTMLInputElement>(null);
   const usages = project ? resourceUsageLinks(project, asset.resourceType, asset.resourceId) : [];
+  const rangeNotes = projectAssetRangeNotes(asset);
   return (
     <article className="managed-asset-card">
       <AssetPreview kind={asset.kind} label={asset.label} preview={preview} />
@@ -507,11 +543,16 @@ function ManagedAssetCard({
       </label>
       <div className="asset-facts">
         <span>{asset.kind}</span>
-        <span>{asset.exportState}</span>
+        <span>{assetExportLabel(asset.exportState)}</span>
         <span>{usages.length} use{usages.length === 1 ? "" : "s"}</span>
         {asset.width && asset.height ? <span>{asset.width} x {asset.height}</span> : null}
         {asset.durationMs ? <span>{(asset.durationMs / 1000).toFixed(1)}s</span> : null}
       </div>
+      {rangeNotes.length > 0 && (
+        <div className="asset-range-notes">
+          {rangeNotes.map((note) => <span key={note}>{note}</span>)}
+        </div>
+      )}
       {usages.length > 0 && (
         <div className="asset-usage-list">
           {usages.slice(0, 4).map((usage) => (
@@ -545,6 +586,21 @@ function ManagedAssetCard({
   );
 }
 
+function projectAssetRangeNotes(asset: ManagedAsset) {
+  const notes: string[] = [];
+  if (asset.kind === "picture") {
+    if (asset.resourceId === SCENARIO_SPLASH_PICTURE_ID) {
+      notes.push("Title picture ID");
+    } else if (asset.resourceId < SCENARIO_PICTURE_MIN_ID || asset.resourceId > SCENARIO_PICTURE_MAX_ID) {
+      notes.push(`Outside scenario picture IDs ${SCENARIO_PICTURE_MIN_ID}-${SCENARIO_PICTURE_MAX_ID}`);
+    }
+  }
+  if (asset.kind === "sound" && (asset.resourceId < SCENARIO_SOUND_MIN_ID || asset.resourceId > SCENARIO_SOUND_MAX_ID)) {
+    notes.push(`Outside custom sound IDs ${SCENARIO_SOUND_MIN_ID}-${SCENARIO_SOUND_MAX_ID}`);
+  }
+  return notes;
+}
+
 function PreviewStatusFilters({
   value,
   onChange
@@ -571,11 +627,23 @@ function PreviewStatusFilters({
           className={value === option ? "active" : ""}
           onClick={() => onChange(option)}
         >
-          {option === "all" ? "All" : option}
+          {previewFilterLabel(option)}
         </button>
       ))}
     </div>
   );
+}
+
+function previewFilterLabel(status: ResourcePreviewStatus | "all") {
+  if (status === "all") return "All";
+  if (status === "preview-ready") return "Previewable";
+  if (status === "playable") return "Playable";
+  if (status === "text-ready") return "Readable Text";
+  if (status === "metadata-only") return "Info Only";
+  if (status === "unsupported-variant") return "Cannot Preview";
+  if (status === "malformed") return "Problem";
+  if (status === "missing-fallback") return "Missing";
+  return status;
 }
 
 function LibraryAssetCard({
@@ -595,6 +663,8 @@ function LibraryAssetCard({
 }) {
   const preview = useLibraryPreview(asset, desktopRuntime, workspaceDir);
   const usages = project ? resourceUsageLinks(project, asset.resourceType, asset.resourceId) : [];
+  const origin = resourceOrigin(asset);
+  const placeable = isMapPlaceableLibraryAsset(asset);
   useEffect(() => {
     onPreviewStatus?.(asset.id, preview.status === "unknown" ? estimatedPreviewStatus(asset) : preview.status);
   }, [asset, onPreviewStatus, preview.status]);
@@ -610,9 +680,11 @@ function LibraryAssetCard({
       <strong>{asset.label}</strong>
       <small>{asset.resourceType ?? asset.type} {asset.resourceId ?? ""}</small>
       <div className="asset-facts">
+        <span>{resourceOriginLabel(origin)}</span>
         <ResourcePreviewBadge status={preview.status} />
         <span>{formatBytes(asset.bytes)}</span>
         <span>{usages.length} use{usages.length === 1 ? "" : "s"}</span>
+        {placeable && <span>Map paintable</span>}
         {preview.summary.format && <span>{preview.summary.format}</span>}
       </div>
       {usages.length > 0 && (
@@ -796,10 +868,17 @@ function estimatedPreviewStatus(asset: LibraryAsset): ResourcePreviewStatus {
 function previewFallbackLabel(kind: ManagedAssetKind, status: ResourcePreviewStatus | "unknown") {
   if (status === "missing-fallback") return "Missing fallback";
   if (status === "malformed") return "Malformed resource";
-  if (status === "unsupported-variant") return "Unsupported variant";
-  if (status === "metadata-only") return "Metadata only";
+  if (status === "unsupported-variant") return "Cannot preview";
+  if (status === "metadata-only") return "Info only";
   if (kind === "sound") return "Not playable yet";
   return "No preview";
+}
+
+function assetExportLabel(state: ManagedAsset["exportState"]) {
+  if (state === "ready") return "Exports with scenario";
+  if (state === "preview-only") return "Preview only";
+  if (state === "blocked") return "Needs attention";
+  return "Project asset";
 }
 
 function diagnosticPreviewText(diagnostic: string | ResourcePreviewDiagnostic) {

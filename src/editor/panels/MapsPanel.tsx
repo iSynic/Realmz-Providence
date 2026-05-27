@@ -52,7 +52,7 @@ export function MapsPanel({
   onCancelPaintStroke: () => void;
 }) {
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [contextFocus, setContextFocus] = useState<"flags" | "atlas" | "source">("flags");
+  const [contextFocus, setContextFocus] = useState<"flags" | "atlas" | "layout" | "source">("flags");
   const [paintMode, setPaintMode] = useState<MapPaintMode>("brush");
   const [previewMode, setPreviewMode] = useState<MapPreviewMode>("off");
   const [previewFocalPoint, setPreviewFocalPoint] = useState<MapPreviewFocalPoint | null>(null);
@@ -143,6 +143,8 @@ export function MapsPanel({
         selectedRandomLevel={selectedRandomLevel}
         mapTriggers={mapTriggers}
         mapRecords={mapRecords}
+        onSelectMap={onSelectMap}
+        onSelectTile={onSelectTile}
         contextFocus={contextFocus}
         onSetContextFocus={setContextFocus}
         previewMode={previewMode}

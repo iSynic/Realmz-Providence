@@ -12,7 +12,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use walkdir::WalkDir;
 
 pub const WORKSPACE_SCHEMA_VERSION: u32 = 1;
-pub const LIBRARY_SCHEMA_VERSION: u32 = 3;
+pub const LIBRARY_SCHEMA_VERSION: u32 = 4;
 pub const WORKSPACE_FILE_NAME: &str = "workspace.json";
 pub const LIBRARY_DIR: &str = "library";
 pub const LIBRARY_CATALOG_FILE: &str = "catalog.json";
@@ -259,6 +259,9 @@ fn should_refresh_bundled_library(
     if bundled_source_signatures_changed(catalog, source_kind, source_path)? {
         return Ok(true);
     }
+    if bundled_item_catalog_is_stale(catalog, source_kind) {
+        return Ok(true);
+    }
     if source_kind == LibrarySourceKind::RealmzReference
         && realmz_reference_rule_catalog_is_stale(catalog)
     {
@@ -303,6 +306,45 @@ fn bundled_source_signatures_changed(
         }
     }
     Ok(false)
+}
+
+fn bundled_item_catalog_is_stale(catalog: &LibraryCatalog, source_kind: LibrarySourceKind) -> bool {
+    let item_sources = catalog
+        .sources
+        .iter()
+        .filter(|source| {
+            source.source_kind == source_kind
+                && matches!(source.name.as_str(), "Data ID" | "Data NI")
+        })
+        .collect::<Vec<_>>();
+    for source in item_sources {
+        let source_items = catalog
+            .entities
+            .iter()
+            .filter(|entity| entity.source == source.id && entity.entity_type == "item")
+            .collect::<Vec<_>>();
+        if source_items.is_empty() {
+            return true;
+        }
+        if source_items
+            .iter()
+            .any(|entity| entity.summary.get("recordBytes").and_then(Value::as_u64) != Some(100))
+        {
+            return true;
+        }
+        if source.name == "Data NI"
+            && !source_items.iter().any(|entity| {
+                entity
+                    .summary
+                    .get("itemId")
+                    .and_then(Value::as_i64)
+                    .is_some_and(|id| (800..1000).contains(&id))
+            })
+        {
+            return true;
+        }
+    }
+    false
 }
 
 fn realmz_reference_rule_catalog_is_stale(catalog: &LibraryCatalog) -> bool {
@@ -714,7 +756,13 @@ fn add_record_slots(catalog: &mut LibraryCatalog, source: &LibrarySource, bytes:
             entity_type,
             index
         );
-        let record_summary = library_record_summary(entity_type, index, record_bytes, record);
+        let record_summary = library_record_summary(
+            source.name.as_str(),
+            entity_type,
+            index,
+            record_bytes,
+            record,
+        );
         let record_label = library_record_label(entity_type, index, &record_summary);
         catalog.records.push(LibraryRecord {
             id: record_id.clone(),
@@ -854,7 +902,7 @@ fn source_family(source: &LibrarySource) -> LibraryFamily {
         LibraryFamily::VaultOfArcana
     } else if path.contains("Bag of Holding") {
         LibraryFamily::BagOfHolding
-    } else if name == "Data ID" {
+    } else if name == "Data ID" || name == "Data NI" {
         LibraryFamily::Items
     } else if name == "Data Spell" || name == "Data S" {
         LibraryFamily::Spells
@@ -917,7 +965,7 @@ fn resource_mime_type(resource_type: &str) -> &'static str {
 fn library_record_layout(source: &LibrarySource) -> Option<(&'static str, usize)> {
     match source.name.as_str() {
         "Monster Scrap Book" => Some(("monster-scrapbook-entry", 210)),
-        "Data ID" => Some(("item", 80)),
+        "Data ID" | "Data NI" => Some(("item", 100)),
         "Data Race" => Some(("race", 408)),
         "Data Caste" => Some(("caste", 576)),
         "Data Spell" => Some(("spell", 30)),
@@ -927,6 +975,7 @@ fn library_record_layout(source: &LibrarySource) -> Option<(&'static str, usize)
 }
 
 fn library_record_summary(
+    source_name: &str,
     entity_type: &str,
     index: usize,
     record_bytes: usize,
@@ -939,8 +988,8 @@ fn library_record_summary(
         ("preview", json!(hex_preview(record, 20))),
         ("note", json!("Built-in Realmz catalog record.")),
     ]);
-    if entity_type == "item" && record.len() >= 80 {
-        out.extend(item_record_summary(index, record));
+    if entity_type == "item" && record.len() >= 100 {
+        out.extend(item_record_summary(index, record, source_name));
     } else if entity_type == "spell" && record.len() >= 30 {
         out.extend(spell_record_summary(index, record));
     } else if entity_type == "race" && record.len() >= 408 {
@@ -982,18 +1031,20 @@ fn library_record_label(
     format!("{} {}", title(entity_type), index)
 }
 
-fn item_record_summary(index: usize, record: &[u8]) -> BTreeMap<String, Value> {
-    let category_index = index / 200;
-    let category_slot = index % 200;
+fn item_record_summary(index: usize, record: &[u8], source_name: &str) -> BTreeMap<String, Value> {
+    let base_id = if source_name == "Data NI" { 800 } else { 0 };
+    let item_number = base_id + index;
+    let category_index = item_number / 200;
+    let category_slot = item_number % 200;
     let category = match category_index {
         0 => "Weapon",
         1 => "Armor",
-        2 => "Shield/Helm",
+        2 => "Accessory",
         3 => "Magic",
-        4 => "Supply",
+        4 => "Supply / Special",
         _ => "Item",
     };
-    let fallback_id = category_index * 200 + category_slot;
+    let fallback_id = item_number;
     let stored_id = i16_be(record, 2);
     let item_id = if stored_id != 0 {
         stored_id
@@ -1004,7 +1055,14 @@ fn item_record_summary(index: usize, record: &[u8]) -> BTreeMap<String, Value> {
         ("itemId", json!(item_id)),
         ("category", json!(category)),
         ("categorySlot", json!(category_slot)),
+        ("sourceFile", json!(source_name)),
+        ("scenarioLocal", json!(source_name == "Data NI")),
+        (
+            "divinityEditableRange",
+            json!((900..=999).contains(&item_id)),
+        ),
         ("st", json!(i16_be(record, 0))),
+        ("storedItemId", json!(stored_id)),
         ("iconId", json!(i16_be(record, 4))),
         ("type", json!(i16_be(record, 6))),
         ("blunt", json!(i16_be(record, 8))),
@@ -1034,6 +1092,16 @@ fn item_record_summary(index: usize, record: &[u8]) -> BTreeMap<String, Value> {
         ("heat", json!(i16_be(record, 74))),
         ("cold", json!(i16_be(record, 76))),
         ("electric", json!(i16_be(record, 78))),
+        ("vsUndead", json!(i16_be(record, 80))),
+        ("vsDemonDevil", json!(i16_be(record, 82))),
+        ("vsEvil", json!(i16_be(record, 84))),
+        ("special1", json!(i16_be(record, 86))),
+        ("special2", json!(i16_be(record, 88))),
+        ("special3", json!(i16_be(record, 90))),
+        ("special4", json!(i16_be(record, 92))),
+        ("special5", json!(i16_be(record, 94))),
+        ("weightPerCharge", json!(i16_be(record, 96))),
+        ("dropOnEmpty", json!(i16_be(record, 98))),
     ])
 }
 
@@ -1206,7 +1274,7 @@ fn library_role(path: &Path) -> String {
         "resource-fork".to_string()
     } else if matches!(
         name,
-        "Data ID" | "Data Spell" | "Data S" | "Data Race" | "Data Caste"
+        "Data ID" | "Data NI" | "Data Spell" | "Data S" | "Data Race" | "Data Caste"
     ) {
         "shared-data".to_string()
     } else if name.starts_with("Data ") {
@@ -1574,7 +1642,7 @@ mod tests {
     }
 
     fn item_record(item_id: i16, icon_id: i16, damage: i16, cost: i16) -> Vec<u8> {
-        let mut bytes = vec![0u8; 80];
+        let mut bytes = vec![0u8; 100];
         write_i16(&mut bytes, 2, item_id);
         write_i16(&mut bytes, 4, icon_id);
         write_i16(&mut bytes, 20, damage);
@@ -1658,7 +1726,7 @@ mod tests {
         let temp = tempfile::tempdir().expect("tempdir");
         let source = temp.path().join("Data Files");
         fs::create_dir_all(&source).expect("source");
-        fs::write(source.join("Data ID"), vec![1u8; 800]).expect("items");
+        fs::write(source.join("Data ID"), vec![1u8; 1000]).expect("items");
         fs::write(source.join("Data Spell"), vec![2u8; 224]).expect("spells");
         fs::write(source.join("Data Race"), vec![3u8; 576]).expect("races");
         fs::write(source.join("Data Caste"), vec![4u8; 576]).expect("castes");
@@ -1696,7 +1764,7 @@ mod tests {
             .expect("item entity");
 
         assert_eq!(item.label, "Weapon 12");
-        assert_eq!(item.summary.get("recordBytes"), Some(&json!(80)));
+        assert_eq!(item.summary.get("recordBytes"), Some(&json!(100)));
         assert_eq!(item.summary.get("itemId"), Some(&json!(12)));
         assert_eq!(item.summary.get("category"), Some(&json!("Weapon")));
         assert_eq!(item.summary.get("iconId"), Some(&json!(345)));
@@ -1713,7 +1781,7 @@ mod tests {
         fs::create_dir_all(&divinity).expect("divinity");
         fs::create_dir_all(&realmz).expect("realmz");
         fs::write(divinity.join("Monster Scrap Book"), vec![1u8; 420]).expect("scrapbook");
-        fs::write(realmz.join("Data ID"), vec![2u8; 800]).expect("items");
+        fs::write(realmz.join("Data ID"), vec![2u8; 1000]).expect("items");
         let workspace_dir = temp.path().join("workspace");
 
         let workspace = open_workspace_with_bundled_libraries(&workspace_dir, Some(&bundled))

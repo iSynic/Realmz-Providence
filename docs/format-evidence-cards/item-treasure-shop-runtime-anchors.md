@@ -2,9 +2,10 @@
 
 ## User-Facing Unlock
 
-This note gives Providence enough source-backed evidence to improve Treasure and Shop authoring without overclaiming item-definition editing. The immediate editor unlock is:
+This note gives Providence enough source-backed evidence to improve Treasure, Shop, and scenario item awareness without overclaiming every item-definition editing workflow. The immediate editor unlock is:
 
-- item pickers with weapon/armor/helm/magic/supply grouping;
+- item pickers with weapon/armor/accessory/magic/supply grouping;
+- scenario `Data NI` import as the 800-999 supply/special item table;
 - Treasure records with 20 item slots plus random/fixed experience, gold, gems, and jewelry rewards;
 - Shop records with item stock, quantities, and inflation;
 - clear source-vs-runtime labeling for shops, because Realmz copies `Data SD` to runtime `CS` and mutates the runtime copy.
@@ -13,11 +14,13 @@ This note gives Providence enough source-backed evidence to improve Treasure and
 
 Realmz splits this area into three data roles:
 
-- **Item definitions** are loaded from shared/library data into five 200-record arrays: weapons, armor, helms, magic, and supplies.
+- **Item definitions** are loaded into five 200-record arrays: weapons, armor, accessories/helms, magic, and supplies/special items.
+- **Shared item definitions** for IDs 0-799 come from `:Data Files:Data ID`.
+- **Scenario supply/special item definitions** for IDs 800-999 come from the active scenario's `Data NI`.
 - **Treasure source records** live in scenario `Data TD` and are loaded directly when a treasure action fires.
 - **Shop source records** live in scenario `Data SD`, but first-start copies them into runtime `CS`. Active shop changes mutate `CS`, not the scenario source file.
 
-Providence should therefore prioritize source-backed Treasure and Shop editors plus a strong item picker/library. Full scenario-local item definition authoring needs a separate Divinity/resource evidence pass.
+Providence should therefore prioritize Treasure and Shop editors plus a strong item picker/library. Scenario `Data NI` can now be imported and preserved as the local supply/special item table; full item editing should start with the Divinity-supported 900-999 custom item range.
 
 ## Realmz Source Anchors
 
@@ -31,6 +34,7 @@ Providence should therefore prioritize source-backed Treasure and Shop editors p
 | `F:\Realmz\src\realmz_orig\convert.c:282` | `CvtShopToPc` converts shop item IDs and inflation; quantity bytes are not endian-converted. |
 | `F:\Realmz\src\realmz_orig\main.c:952` | Startup reads shared `:Data Files:Data ID` into weapons, armor, helms, and magic arrays. |
 | `F:\Realmz\src\realmz_orig\main.c:962` | Startup reads `City of Bywater:Data NI` into the supplies array. |
+| `F:\Realmz\src\realmz_orig\misc.c:2036` | Scenario menu update calls `getfilename("Data NI")` and reads the active scenario's `Data NI` into `allsupply`. |
 | `F:\Realmz\src\realmz_orig\loaditem.c:5` | `loaditem` resolves IDs by 200-record families and uses `abs(id)`. |
 | `F:\Realmz\src\realmz_orig\setupnewgame.c:128` | First-start copies scenario `Data SD` into runtime `:Data Files:CS`. |
 | `F:\Realmz\src\realmz_orig\loadsavedgame.c:846` | `loadshop` reads current shop state from runtime `CS`, not scenario `Data SD`. |
@@ -51,9 +55,11 @@ Providence should therefore prioritize source-backed Treasure and Shop editors p
 | 200-399 | `allarmor` | `:Data Files:Data ID` group 2 |
 | 400-599 | `allhelms` | `:Data Files:Data ID` group 3 |
 | 600-799 | `allmagic` | `:Data Files:Data ID` group 4 |
-| 800-999 | `allsupply` | `Scenarios:City of Bywater:Data NI` |
+| 800-999 | `allsupply` | active scenario `Data NI` |
 
-Local output evidence agrees with this split: `Data ID` is 80,000 bytes, which is 800 itemattr records at 100 bytes each, and Bywater `Data NI` is 20,000 bytes, which is 200 supply records.
+Local output evidence agrees with this split: `Data ID` is 80,000 bytes, which is 800 itemattr records at 100 bytes each, and scenario `Data NI` files are 20,000 bytes, which is 200 supply/special records.
+
+The Divinity guide narrows the authoring promise further: the Item Editor can edit custom/special scenario items in IDs 900-999, while permanent built-in items are browse/copy/reference data.
 
 ## Treasure Byte Layout
 
@@ -90,12 +96,12 @@ The authored source file is scenario `Data SD`. Runtime shop state is copied int
 | `Data TD` | Appears in all 44 analyzed scenarios; Price of Power has 11,424 bytes = 238 records. |
 | `Data SD` | Appears in all 44 analyzed scenarios; large scenarios have 117,078 bytes = 39 records. |
 | `Data ID` | Shared output file is 80,000 bytes = 800 itemattr records. |
-| `Data NI` | Bywater output file is 20,000 bytes = 200 supply itemattr records. |
+| `Data NI` | Scenario item table: 20,000 bytes = 200 supply/special itemattr records. |
 
 ## Providence Editor Implications
 
-- Add a shared `ItemLibrary` reader before deepening Monster, Treasure, Shop, and Encounter target editors.
-- Item pickers should show family, ID, name/resource evidence, icon, type, cost, charge, curse/fake-item status, restrictions, and source confidence when available.
+- Add `Data NI` to imported scenario tracking so scenario special items are visible even without a library refresh.
+- Item pickers should show family, ID, name/resource evidence, icon, type, cost, charge, curse/fake-item status, restrictions, and whether the item comes from the scenario or Realmz library when available.
 - Treasure editors should expose 20 item slots and reward fields, with negative reward fields labeled as random ranges.
 - Shop editors should expose stock as item rows with quantity and inflation, not 1000 raw IDs by default.
 - Script/AP opcode target drawers should link:
@@ -118,7 +124,7 @@ The authored source file is scenario `Data SD`. Runtime shop state is copied int
 
 ## Divinity Evidence Still Needed
 
-- Item editor/source ownership: whether Divinity writes shared item data, scenario-local item resources, or both.
+- Exact Divinity write behavior for item names/descriptions and icon resources in the 900-999 custom range.
 - Item names/resources and field labels for every `itemattr` field.
 - Treasure editor labels for fixed vs random reward values.
 - Shop editor UI grouping, defaults, quantity limits, and inflation labels.
@@ -127,6 +133,6 @@ The authored source file is scenario `Data SD`. Runtime shop state is copied int
 ## Providence Follow-Up
 
 - Follow-up: `parser-writer`, `editor-ui`, `validation`.
-- Build item library parsing/read-only picker support first.
+- Build item library plus scenario `Data NI` picker support first.
 - Deepen Treasure and Shop editors after item picker summaries exist.
-- Keep item definition editing preserve/read-only until Divinity binary/write evidence proves authoring ownership.
+- Add item definition editing first for the Divinity-supported custom range 900-999; keep built-in item families read-only unless global Realmz library editing is deliberately added.
