@@ -446,29 +446,38 @@ function renderLandLayoutThumbnail(
   const context = canvas.getContext("2d");
   if (!context) return null;
 
-  const width = Math.max(1, map.width || 90);
-  const height = Math.max(1, map.height || 90);
-  const cellWidth = LAND_LAYOUT_THUMBNAIL_SIZE / width;
-  const cellHeight = LAND_LAYOUT_THUMBNAIL_SIZE / height;
-  context.imageSmoothingEnabled = true;
-  context.imageSmoothingQuality = "low";
   context.fillStyle = "#0b1117";
   context.fillRect(0, 0, LAND_LAYOUT_THUMBNAIL_SIZE, LAND_LAYOUT_THUMBNAIL_SIZE);
+
+  const width = Math.max(1, map.width || 90);
+  const height = Math.max(1, map.height || 90);
+  const sourceTileSize = Math.max(4, Math.min(32, atlas?.asset.tileWidth ?? 16));
+  const sourceCanvas = document.createElement("canvas");
+  sourceCanvas.width = width * sourceTileSize;
+  sourceCanvas.height = height * sourceTileSize;
+  const sourceContext = sourceCanvas.getContext("2d");
+  if (!sourceContext) return null;
+
+  sourceContext.imageSmoothingEnabled = false;
+  sourceContext.fillStyle = "#0b1117";
+  sourceContext.fillRect(0, 0, sourceCanvas.width, sourceCanvas.height);
 
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       const tile = tileValueAt(map, x, y);
-      const dx = Math.floor(x * cellWidth);
-      const dy = Math.floor(y * cellHeight);
-      const dw = Math.max(1, Math.ceil((x + 1) * cellWidth) - dx);
-      const dh = Math.max(1, Math.ceil((y + 1) * cellHeight) - dy);
-      const drew = drawTileSprite(context, atlas, tile, dx, dy, dw, dh, icons);
+      const dx = x * sourceTileSize;
+      const dy = y * sourceTileSize;
+      const drew = drawTileSprite(sourceContext, atlas, tile, dx, dy, sourceTileSize, sourceTileSize, icons);
       if (!drew) {
-        context.fillStyle = tileColor(tile);
-        context.fillRect(dx, dy, dw, dh);
+        sourceContext.fillStyle = tileColor(tile);
+        sourceContext.fillRect(dx, dy, sourceTileSize, sourceTileSize);
       }
     }
   }
+
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = "high";
+  context.drawImage(sourceCanvas, 0, 0, LAND_LAYOUT_THUMBNAIL_SIZE, LAND_LAYOUT_THUMBNAIL_SIZE);
 
   const url = canvas.toDataURL("image/png");
   landLayoutThumbnailCache.set(key, url);

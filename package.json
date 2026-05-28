@@ -24,6 +24,7 @@
     "smoke:editor": "powershell -ExecutionPolicy Bypass -File scripts/run_editor_smoke_matrix.ps1",
     "smoke:editor:text-assets": "powershell -ExecutionPolicy Bypass -File scripts/run_text_assets_editor_smoke.ps1",
     "smoke:editor:maps": "powershell -ExecutionPolicy Bypass -File scripts/run_maps_authoring_editor_smoke.ps1",
+    "smoke:ui:map-paint": "node scripts/smoke_ui_map_paint.mjs",
     "smoke:editor:scripts-v2": "powershell -ExecutionPolicy Bypass -File scripts/run_scripts_v2_editor_smoke.ps1",
     "smoke:editor:scripts-v2:diagnostics": "powershell -ExecutionPolicy Bypass -File scripts/run_scripts_v2_diagnostics_smoke.ps1",
     "check": "npm run typecheck && npm run build && npm run test:rust"
