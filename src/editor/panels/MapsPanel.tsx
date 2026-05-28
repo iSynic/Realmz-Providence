@@ -3,7 +3,7 @@ import { EditorState } from "../store";
 import { MapEntity, MapPaintMode, MapPreviewFocalPoint, MapPreviewMode, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
 import { triggerOverlayKinds } from "../semanticGraph";
 import { RealmzMapCanvas } from "../components/MapCanvas";
-import { LandLayoutEditor, LandTileAtlasEditor, MapContextSidebar, MapRecordsWorkbench, MapSelectionSidebar, RandomAreasWorkbench } from "../components/MapContextSidebar";
+import { LandLayoutEditor, LandTileAtlasEditor, MapContextSidebar, MapRecordsWorkbench, MapSelectionSidebar, RandomAreasWorkbench, type LandLayoutCellSelection } from "../components/MapContextSidebar";
 import { MapViewFilters } from "../components/MapViewFilters";
 
 const MAP_WORKBENCH_MODE_STORAGE_KEY = "providence.mapWorkbenchMode.v1";
@@ -12,7 +12,7 @@ const MAP_WORKBENCH_MODES: Array<{ id: MapWorkbenchMode; label: string; descript
   { id: "canvas", label: "Canvas", description: "Paint, sample, place Action Points, edit regions, and work directly on the map." },
   { id: "land-layout", label: "Land Layout", description: "Edit outdoor level adjacency for off-map travel." },
   { id: "land-tiles", label: "Land Tiles", description: "Inspect landlook tiles, movement metadata, and combat expansion." },
-  { id: "random-areas", label: "Random Areas", description: "Edit random rectangle priority, chance, battles, text, sounds, and extra AP doors." },
+  { id: "random-areas", label: "Random Encounters", description: "Edit random encounter rectangles: priority, chance, battles, text, sounds, and extra AP doors." },
   { id: "map-records", label: "Map Records", description: "Browse and edit Data MD2 map records, starts, picture links, rectangles, and notes." }
 ];
 
@@ -68,6 +68,7 @@ export function MapsPanel({
   const [previewMode, setPreviewMode] = useState<MapPreviewMode>("off");
   const [previewFocalPoint, setPreviewFocalPoint] = useState<MapPreviewFocalPoint | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<MapRegionSelection | null>(null);
+  const [selectedLayoutCell, setSelectedLayoutCell] = useState<LandLayoutCellSelection>(null);
   const [replaceSourceTile, setReplaceSourceTile] = useState<number | null>(null);
   const visibleTriggers = state.showTriggers ? mapTriggers.filter((trigger) => triggerMatchesViewFilters(state.project, trigger, state)) : [];
   useEffect(() => {
@@ -172,6 +173,8 @@ export function MapsPanel({
               selectedMap={selectedMap}
               atlasEntries={state.atlasEntries}
               icons={state.iconEntries}
+              selectedCell={selectedLayoutCell}
+              onSetSelectedCell={setSelectedLayoutCell}
               onSelectMap={onSelectMap}
               onApplyCommand={onApplyCommand}
             />
@@ -199,8 +202,8 @@ export function MapsPanel({
         )}
         {workbenchMode === "random-areas" && (
           <MapModeSurface
-            title="Random Areas"
-            subtitle="Realmz checks rectangle slots from 19 down to 0. Edit fields here or draw rectangles on the canvas."
+            title="Random Encounter Areas"
+            subtitle="Realmz checks random encounter rectangle slots from 19 down to 0. Edit fields here or draw rectangles on the canvas."
           >
             <RandomAreasWorkbench
               selectedMap={selectedMap}
