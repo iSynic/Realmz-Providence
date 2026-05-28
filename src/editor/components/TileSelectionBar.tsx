@@ -272,11 +272,14 @@ const ATTRIBUTE_FILTERS: Array<{ id: TileAttributeFlag | "all"; label: string; h
   { id: "all", label: "All", hint: "Show all tiles with known or unknown metadata." },
   { id: "walkable", label: "Walkable", hint: "Realmz landlook data says normal foot movement can enter this tile without boat or fly/float." },
   { id: "solid", label: "Solid / Blocking", hint: "Realmz landlook data marks this tile as solid, boat-only, or fly/float-gated." },
-  { id: "path", label: "Path", hint: "Realmz path flag plus Divinity-visible road/path atlas tiles 132-146." },
+  { id: "path", label: "Runtime Path", hint: "Realmz landlook data marks this tile with the runtime path flag." },
+  { id: "visual-path", label: "Road Art", hint: "Road/path-looking atlas tiles. These are visual art unless Realmz also marks them as runtime paths." },
   { id: "shore", label: "Shore / Water", hint: "Realmz shore/water tile data." },
   { id: "boat-required", label: "Boat Required", hint: "Realmz boat/water movement requirement." },
   { id: "fly-float-required", label: "Fly / Float", hint: "Realmz fly/float movement requirement." },
   { id: "blocks-los", label: "Blocks LOS", hint: "Realmz line-of-sight blocker." },
+  { id: "forest", label: "Forest", hint: "Realmz forest type used for outdoor and combat behavior." },
+  { id: "combat-build", label: "Combat Map", hint: "Tiles with a decoded 3x3 combat expansion grid." },
   { id: "special-icon", label: "Special / Icon", hint: "Negative values or icon-backed tiles." },
   { id: "unknown-metadata", label: "Unknown", hint: "Tiles without decoded attribute metadata." }
 ];

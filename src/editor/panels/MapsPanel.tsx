@@ -1,10 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { EditorState } from "../store";
-import { MapEntity, MapPaintMode, MapPreviewFocalPoint, MapPreviewMode, MapRegionSelection, MapViewFlag, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
+import { MapEntity, MapPaintMode, MapPreviewFocalPoint, MapPreviewMode, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
 import { triggerOverlayKinds } from "../semanticGraph";
 import { RealmzMapCanvas } from "../components/MapCanvas";
-import { MapContextSidebar, MapSelectionSidebar } from "../components/MapContextSidebar";
+import { LandLayoutEditor, LandTileAtlasEditor, MapContextSidebar, MapRecordsWorkbench, MapSelectionSidebar, RandomAreasWorkbench } from "../components/MapContextSidebar";
 import { MapViewFilters } from "../components/MapViewFilters";
+
+const MAP_WORKBENCH_MODE_STORAGE_KEY = "providence.mapWorkbenchMode.v1";
+
+const MAP_WORKBENCH_MODES: Array<{ id: MapWorkbenchMode; label: string; description: string }> = [
+  { id: "canvas", label: "Canvas", description: "Paint, sample, place Action Points, edit regions, and work directly on the map." },
+  { id: "land-layout", label: "Land Layout", description: "Edit outdoor level adjacency for off-map travel." },
+  { id: "land-tiles", label: "Land Tiles", description: "Inspect landlook tiles, movement metadata, and combat expansion." },
+  { id: "random-areas", label: "Random Areas", description: "Edit random rectangle priority, chance, battles, text, sounds, and extra AP doors." },
+  { id: "map-records", label: "Map Records", description: "Browse and edit Data MD2 map records, starts, picture links, rectangles, and notes." }
+];
 
 export function MapsPanel({
   state,
@@ -53,6 +63,7 @@ export function MapsPanel({
 }) {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [contextFocus, setContextFocus] = useState<"flags" | "atlas" | "layout" | "source">("flags");
+  const [workbenchMode, setWorkbenchMode] = useState<MapWorkbenchMode>(() => readStoredWorkbenchMode());
   const [paintMode, setPaintMode] = useState<MapPaintMode>("brush");
   const [previewMode, setPreviewMode] = useState<MapPreviewMode>("off");
   const [previewFocalPoint, setPreviewFocalPoint] = useState<MapPreviewFocalPoint | null>(null);
@@ -64,6 +75,17 @@ export function MapsPanel({
     setReplaceSourceTile(null);
     setPreviewFocalPoint(null);
   }, [selectedMap?.id]);
+  useEffect(() => {
+    localStorage.setItem(MAP_WORKBENCH_MODE_STORAGE_KEY, workbenchMode);
+  }, [workbenchMode]);
+  const switchWorkbenchMode = (mode: MapWorkbenchMode) => {
+    setWorkbenchMode(mode);
+  };
+  const openCanvasTool = (tool: EditorState["activeTool"]) => {
+    setWorkbenchMode("canvas");
+    onSetTool(tool);
+    if (tool === "paint") setPaletteOpen(true);
+  };
   return (
     <>
       <MapContextSidebar
@@ -71,11 +93,10 @@ export function MapsPanel({
         selectedMap={selectedMap}
         selectedTileset={selectedTileset}
         atlas={atlas}
+        workbenchMode={workbenchMode}
+        onSetWorkbenchMode={switchWorkbenchMode}
         onSelectMap={onSelectMap}
-        onSetTool={(tool) => {
-          onSetTool(tool);
-          if (tool === "paint") setPaletteOpen(true);
-        }}
+        onSetTool={openCanvasTool}
         onSelectTile={onSelectTile}
         paintMode={paintMode}
         onSetPaintMode={setPaintMode}
@@ -88,51 +109,126 @@ export function MapsPanel({
         onSetPaletteOpen={setPaletteOpen}
       />
 
-      <section className="editor-canvas-area">
-        <MapViewFilters
-          state={state}
-          onSetZoom={onSetZoom}
-          onSetSmoothTiles={onSetSmoothTiles}
-          onSetViewFlag={onSetViewFlag}
+      <section className={`editor-canvas-area map-workbench-area map-workbench-${workbenchMode}`}>
+        <MapWorkbenchModeSwitcher
+          modes={MAP_WORKBENCH_MODES}
+          activeMode={workbenchMode}
+          onSetMode={switchWorkbenchMode}
         />
-        {selectedMap ? (
+        {workbenchMode === "canvas" && (
           <>
-            <RealmzMapCanvas
-              map={selectedMap}
-              tileset={selectedTileset}
+            <MapViewFilters
+              state={state}
+              onSetZoom={onSetZoom}
+              onSetSmoothTiles={onSetSmoothTiles}
+              onSetViewFlag={onSetViewFlag}
+            />
+            {selectedMap ? (
+              <RealmzMapCanvas
+                map={selectedMap}
+                tileset={selectedTileset}
+                atlas={atlas}
+                icons={state.iconEntries}
+                triggers={visibleTriggers}
+                allTriggers={mapTriggers}
+                randomLevel={selectedRandomLevel}
+                mapRecords={mapRecords}
+                activeTool={state.activeTool}
+                paintMode={paintMode}
+                selectedTile={state.selectedTile}
+                zoom={state.zoom}
+                smoothTiles={state.smoothTiles}
+                viewOptions={state}
+                tileAttributes={state.project?.tileAttributes ?? []}
+                showRandomRects={state.showRandomRects}
+                showMapRecords={state.showMapRecords}
+                previewMode={previewMode}
+                previewFocalPoint={previewFocalPoint ?? state.selectedCell ?? defaultPreviewFocalPoint(selectedMap)}
+                selectedEntity={state.selectedEntity}
+                selectedCell={state.selectedCell}
+                selectedRegion={selectedRegion}
+                focusTarget={state.focusTarget}
+                onSelectCell={onSelectCell}
+                onSetSelectedRegion={setSelectedRegion}
+                onSampleTile={onSelectTile}
+                onSelectEntity={onSelectEntity}
+                onBeginPaintStroke={onBeginPaintStroke}
+                onApplyCommand={onApplyCommand}
+                onCommitPaintStroke={onCommitPaintStroke}
+                onCancelPaintStroke={onCancelPaintStroke}
+              />
+            ) : (
+              <div className="room-canvas-placeholder">Import or open a Providence project.</div>
+            )}
+          </>
+        )}
+        {workbenchMode === "land-layout" && (
+          <MapModeSurface
+            title="Land Layout"
+            subtitle="Outdoor level adjacency. Blank cells disable edge travel; Land 0 is stored as -1 for Realmz."
+          >
+            <LandLayoutEditor
+              project={state.project}
+              selectedMap={selectedMap}
+              atlasEntries={state.atlasEntries}
+              icons={state.iconEntries}
+              onSelectMap={onSelectMap}
+              onApplyCommand={onApplyCommand}
+            />
+          </MapModeSurface>
+        )}
+        {workbenchMode === "land-tiles" && (
+          <MapModeSurface
+            title="Land Tiles And Combat Tiles"
+            subtitle="Inspect the current landlook, tile movement metadata, and Realmz combat-map expansion."
+          >
+            <LandTileAtlasEditor
+              project={state.project}
+              selectedTileset={selectedTileset}
               atlas={atlas}
               icons={state.iconEntries}
-              triggers={visibleTriggers}
-              allTriggers={mapTriggers}
-              randomLevel={selectedRandomLevel}
-              mapRecords={mapRecords}
-              activeTool={state.activeTool}
-              paintMode={paintMode}
-              selectedTile={state.selectedTile}
-              zoom={state.zoom}
-              smoothTiles={state.smoothTiles}
-              viewOptions={state}
-              tileAttributes={state.project?.tileAttributes ?? []}
-              showRandomRects={state.showRandomRects}
-              showMapRecords={state.showMapRecords}
-              previewMode={previewMode}
-              previewFocalPoint={previewFocalPoint ?? state.selectedCell ?? defaultPreviewFocalPoint(selectedMap)}
-              selectedEntity={state.selectedEntity}
-              selectedCell={state.selectedCell}
-              selectedRegion={selectedRegion}
-              focusTarget={state.focusTarget}
-              onSelectCell={onSelectCell}
-              onSetSelectedRegion={setSelectedRegion}
-              onSampleTile={onSelectTile}
-              onSelectEntity={onSelectEntity}
-              onBeginPaintStroke={onBeginPaintStroke}
-              onApplyCommand={onApplyCommand}
-              onCommitPaintStroke={onCommitPaintStroke}
-              onCancelPaintStroke={onCancelPaintStroke}
+              selectedPaintTile={state.selectedTile}
+              onSelectTile={onSelectTile}
+              onSetTool={openCanvasTool}
+              onOpenPalette={() => {
+                setPaletteOpen(true);
+                setWorkbenchMode("canvas");
+              }}
             />
-          </>
-        ) : (
-          <div className="room-canvas-placeholder">Import or open a Providence project.</div>
+          </MapModeSurface>
+        )}
+        {workbenchMode === "random-areas" && (
+          <MapModeSurface
+            title="Random Areas"
+            subtitle="Realmz checks rectangle slots from 19 down to 0. Edit fields here or draw rectangles on the canvas."
+          >
+            <RandomAreasWorkbench
+              selectedMap={selectedMap}
+              randomLevel={selectedRandomLevel}
+              onSetWorkbenchMode={switchWorkbenchMode}
+              onSetViewFlag={onSetViewFlag}
+              onSetTool={openCanvasTool}
+              onSelectEntity={onSelectEntity}
+              onApplyCommand={onApplyCommand}
+            />
+          </MapModeSurface>
+        )}
+        {workbenchMode === "map-records" && (
+          <MapModeSurface
+            title="Map Records"
+            subtitle="Data MD2 records describe map starts, picture links, rectangles, notes, and related map navigation."
+          >
+            <MapRecordsWorkbench
+              project={state.project}
+              selectedMap={selectedMap}
+              mapRecords={mapRecords}
+              onSelectMap={onSelectMap}
+              onSelectEntity={onSelectEntity}
+              onSetWorkbenchMode={switchWorkbenchMode}
+              onSetViewFlag={onSetViewFlag}
+              onApplyCommand={onApplyCommand}
+            />
+          </MapModeSurface>
         )}
       </section>
       <MapSelectionSidebar
@@ -140,6 +236,8 @@ export function MapsPanel({
         selectedMap={selectedMap}
         selectedTileset={selectedTileset}
         atlas={atlas}
+        workbenchMode={workbenchMode}
+        onSetWorkbenchMode={switchWorkbenchMode}
         selectedRandomLevel={selectedRandomLevel}
         mapTriggers={mapTriggers}
         mapRecords={mapRecords}
@@ -151,10 +249,7 @@ export function MapsPanel({
         previewFocalPoint={previewFocalPoint ?? state.selectedCell ?? defaultPreviewFocalPoint(selectedMap)}
         onSetPreviewMode={setPreviewMode}
         onSetPreviewFocalPoint={setPreviewFocalPoint}
-        onSetTool={(tool) => {
-          onSetTool(tool);
-          if (tool === "paint") setPaletteOpen(true);
-        }}
+        onSetTool={openCanvasTool}
         onSetViewFlag={onSetViewFlag}
         onOpenPalette={() => setPaletteOpen(true)}
         onOpenScripts={onOpenScripts}
@@ -169,6 +264,84 @@ export function MapsPanel({
         onApplyCommand={onApplyCommand}
       />
     </>
+  );
+}
+
+function readStoredWorkbenchMode(): MapWorkbenchMode {
+  if (typeof localStorage === "undefined") return "canvas";
+  const stored = localStorage.getItem(MAP_WORKBENCH_MODE_STORAGE_KEY);
+  return MAP_WORKBENCH_MODES.some((mode) => mode.id === stored) ? (stored as MapWorkbenchMode) : "canvas";
+}
+
+function MapWorkbenchModeSwitcher({
+  modes,
+  activeMode,
+  onSetMode
+}: {
+  modes: typeof MAP_WORKBENCH_MODES;
+  activeMode: MapWorkbenchMode;
+  onSetMode: (mode: MapWorkbenchMode) => void;
+}) {
+  return (
+    <div className="map-workbench-mode-switcher" role="tablist" aria-label="Map workbench mode">
+      {modes.map((mode) => (
+        <button
+          key={mode.id}
+          type="button"
+          className={activeMode === mode.id ? "active" : ""}
+          onClick={() => onSetMode(mode.id)}
+          title={mode.description}
+        >
+          {mode.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function MapModeSurface({
+  title,
+  subtitle,
+  children
+}: {
+  title: string;
+  subtitle: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="map-mode-surface">
+      <div className="map-mode-header">
+        <div>
+          <h2>{title}</h2>
+          <p>{subtitle}</p>
+        </div>
+      </div>
+      <div className="map-mode-body">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function MapModePlaceholder({
+  count,
+  body,
+  primaryLabel,
+  onPrimary
+}: {
+  count: string;
+  body: string;
+  primaryLabel: string;
+  onPrimary: () => void;
+}) {
+  return (
+    <div className="map-mode-placeholder">
+      <strong>{count}</strong>
+      <p>{body}</p>
+      <button className="btn btn-primary" type="button" onClick={onPrimary}>
+        {primaryLabel}
+      </button>
+    </div>
   );
 }
 

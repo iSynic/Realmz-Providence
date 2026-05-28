@@ -6,11 +6,11 @@ Providence's tile palette can group and validate terrain like Divinity: walkable
 
 ## Realmz Anchors
 
-- `structs.h:87`: `struct mapstats { sound, time, solid, shore, needboad, ispath, los, flyfloat, forest, spare }`.
+- `structs.h:87`: `struct mapstats { sound, time, solid, shore, needboad, ispath, los, flyfloat, forest, spare, build[3][3], clearlandid }`.
 - `variables.h`: `mapstats[402]`, `solids[1024]`.
 - `buttonchoice.c`: movement, boats, shore, solid, and special negative tile behavior.
 - `cansee.c`, `cast.c`, `centerpict.c`: line-of-sight and darkness consumers.
-- `combatmap.c`: combat-map terrain summaries.
+- `combatmap.c`: outdoor combat expands each 32x32 land tile into a 3x3 combat grid using `mapstats[tile].build[row][col]`.
 - `loadland-loadpixmap.c`: landlook and tile atlas runtime behavior.
 
 ## Divinity Evidence Needed
@@ -22,8 +22,9 @@ Providence's tile palette can group and validate terrain like Divinity: walkable
 
 ## Byte Layout Notes
 
-- `Data Solids` is 1024 bytes and currently parsed as source-backed partial.
+- `Data Solids` is 1024 bytes and currently parsed as source-backed special-tile solidity.
 - `mapstats` is the richer Divinity-visible attribute model for standard landlook tiles. Realmz loads it from standard/custom landlook `* BD` files, not from scenario `Data Solids`.
+- `mapstats` records are 40 bytes each: ten scalar `short` fields, nine `build[3][3]` combat expansion `short`s, and one `clearlandid` `short`. Realmz then reads landlook-level `basetile` and `basescale` shorts after the 201 records.
 - `Data Solids` is scenario-local special negative tile solidity: Realmz checks it only for raw map values `-1..-998`.
 - Land tiles and negative/special `cicn` values are both field-grid values, not separate overlay storage.
 - Negative/special field values render through an icon-aware path: draw the current landlook base tile, normalize the negative field value into a `cicn` ID, then draw the icon. Terrain-only rendering (`fastplot`) intentionally ignores negative IDs.
@@ -43,13 +44,14 @@ See `outdoor-visibility-runtime-anchors.md` for why dark/LOS controls are source
 ## Providence Follow-Up
 
 - Follow-up: `parser-writer`, `editor-ui`, `validation`.
-- Expand `TileAttributeProfile` from `Data Solids` into source-backed `mapstats` fields from bundled landlook `* BD` files.
+- Expand `TileAttributeProfile` from `Data Solids` into full `mapstats` fields from bundled landlook `* BD` files, including movement, LOS, forest type, clear/base tile, base scale, and combat `build[3][3]`.
 - Treat `Data Solids` as special/icon tile solidity, not standard land tile solidity.
 - Add selected-cell field-value evidence for raw value, normalized terrain, icon candidates, note/path bits, positive state band, and secret/door suspicion.
 - Keep arbitrary positive values above `999` in `Raw / Advanced` unless they are authored through a known Action Point, secret, note, or path workflow.
 - Validate random rectangle chance as times in 10000, extra AP percent as chance out of 100, and positive extra AP percent as one-shot.
 - Treat dark/LOS visual effects as preview layers with a chosen focal point; do not export generated `site` cache data as scenario source.
 - Add tile-attribute writer fixtures only after Divinity and Realmz write/read paths agree.
+- Keep built-in Realmz landlooks read-only. Enable scenario-custom landlook editing only after `Custom 1/2/3` tile maps, picture IDs, `mapstats` tails, and Divinity save/load behavior are fixture-backed.
 
 ## Acceptance Evidence
 

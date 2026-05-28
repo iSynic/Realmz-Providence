@@ -309,9 +309,21 @@ fn parse_tile_attributes(buffer: &[u8]) -> Vec<TileAttributeProfile> {
         .map(|(tile, solid_type)| TileAttributeProfile {
             tile: tile as i16,
             landlook: None,
-            solid_type: Some(*solid_type),
+            solid_type: Some(*solid_type as i16),
             movement_sound_id: None,
             movement_cost: None,
+            shore: None,
+            boat_requirement: None,
+            path_flag: None,
+            blocks_los: None,
+            fly_float_required: None,
+            forest_type: None,
+            spare: None,
+            combat_build: Vec::new(),
+            clear_land_id: None,
+            base_tile: None,
+            base_scale: None,
+            editable_scope: "special-tile".to_string(),
             flags: if *solid_type == 0 {
                 vec![TileAttributeFlag::Walkable]
             } else {
@@ -331,6 +343,22 @@ pub fn parse_landlook_mapstats_data(
     source: &str,
 ) -> Vec<TileAttributeProfile> {
     let count = (buffer.len() / MAPSTATS_RECORD_BYTES).min(MAPSTATS_RECORDS);
+    let base_offset = MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS;
+    let base_tile = if buffer.len() >= base_offset + 2 {
+        Some(i16_be(buffer, base_offset))
+    } else {
+        None
+    };
+    let base_scale = if buffer.len() >= base_offset + 4 {
+        Some(i16_be(buffer, base_offset + 2))
+    } else {
+        None
+    };
+    let editable_scope = if source.to_ascii_lowercase().contains("custom") {
+        "scenario-custom"
+    } else {
+        "built-in-reference"
+    };
     (0..count)
         .map(|tile| {
             let start = tile * MAPSTATS_RECORD_BYTES;
@@ -342,7 +370,14 @@ pub fn parse_landlook_mapstats_data(
             let is_path = i16_be(buffer, start + 10) != 0;
             let los = i16_be(buffer, start + 12) != 0;
             let fly_float = i16_be(buffer, start + 14) != 0;
-            let forest = i16_be(buffer, start + 16) != 0;
+            let forest = i16_be(buffer, start + 16);
+            let spare = i16_be(buffer, start + 18);
+            let combat_build = vec![
+                vec![i16_be(buffer, start + 20), i16_be(buffer, start + 22), i16_be(buffer, start + 24)],
+                vec![i16_be(buffer, start + 26), i16_be(buffer, start + 28), i16_be(buffer, start + 30)],
+                vec![i16_be(buffer, start + 32), i16_be(buffer, start + 34), i16_be(buffer, start + 36)],
+            ];
+            let clear_land_id = i16_be(buffer, start + 38);
             let mut flags = Vec::new();
             if solid == 0 && need_boat == 0 && !fly_float {
                 flags.push(TileAttributeFlag::Walkable);
@@ -364,15 +399,30 @@ pub fn parse_landlook_mapstats_data(
             if fly_float {
                 flags.push(TileAttributeFlag::FlyFloatRequired);
             }
-            if forest && !flags.contains(&TileAttributeFlag::Solid) {
-                flags.push(TileAttributeFlag::Walkable);
+            if forest != 0 {
+                flags.push(TileAttributeFlag::Forest);
+            }
+            if combat_build.iter().flatten().any(|value| *value != 0) {
+                flags.push(TileAttributeFlag::CombatBuild);
             }
             TileAttributeProfile {
                 tile: tile as i16,
                 landlook: Some(landlook),
-                solid_type: Some(solid as u8),
+                solid_type: Some(solid),
                 movement_sound_id: Some(sound),
                 movement_cost: Some(time),
+                shore: Some(shore),
+                boat_requirement: Some(need_boat),
+                path_flag: Some(is_path),
+                blocks_los: Some(los),
+                fly_float_required: Some(fly_float),
+                forest_type: Some(forest),
+                spare: Some(spare),
+                combat_build,
+                clear_land_id: Some(clear_land_id),
+                base_tile,
+                base_scale,
+                editable_scope: editable_scope.to_string(),
                 flags,
                 confidence: TileAttributeConfidence::SourceBacked,
                 source_kind: TileAttributeSourceKind::Mapstats,
@@ -2717,6 +2767,20 @@ mod tests {
         write_i16_be(&mut input, tile_start + 10, 1);
         write_i16_be(&mut input, tile_start + 12, 1);
         write_i16_be(&mut input, tile_start + 14, 1);
+        write_i16_be(&mut input, tile_start + 16, 3);
+        write_i16_be(&mut input, tile_start + 18, 77);
+        write_i16_be(&mut input, tile_start + 20, 101);
+        write_i16_be(&mut input, tile_start + 22, 102);
+        write_i16_be(&mut input, tile_start + 24, 103);
+        write_i16_be(&mut input, tile_start + 26, 104);
+        write_i16_be(&mut input, tile_start + 28, 105);
+        write_i16_be(&mut input, tile_start + 30, 106);
+        write_i16_be(&mut input, tile_start + 32, 107);
+        write_i16_be(&mut input, tile_start + 34, 108);
+        write_i16_be(&mut input, tile_start + 36, 109);
+        write_i16_be(&mut input, tile_start + 38, 12);
+        write_i16_be(&mut input, MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS, 1);
+        write_i16_be(&mut input, MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 2, 4);
         let profiles = parse_landlook_mapstats_data(&input, 0, "Data P BD");
         assert_eq!(profiles.len(), MAPSTATS_RECORDS);
         let tile = &profiles[1];
@@ -2724,12 +2788,27 @@ mod tests {
         assert_eq!(tile.movement_sound_id, Some(9));
         assert_eq!(tile.movement_cost, Some(4));
         assert_eq!(tile.solid_type, Some(2));
+        assert_eq!(tile.shore, Some(true));
+        assert_eq!(tile.boat_requirement, Some(2));
+        assert_eq!(tile.path_flag, Some(true));
+        assert_eq!(tile.blocks_los, Some(true));
+        assert_eq!(tile.fly_float_required, Some(true));
+        assert_eq!(tile.forest_type, Some(3));
+        assert_eq!(tile.spare, Some(77));
+        assert_eq!(tile.combat_build[0], vec![101, 102, 103]);
+        assert_eq!(tile.combat_build[2], vec![107, 108, 109]);
+        assert_eq!(tile.clear_land_id, Some(12));
+        assert_eq!(tile.base_tile, Some(1));
+        assert_eq!(tile.base_scale, Some(4));
+        assert_eq!(tile.editable_scope, "built-in-reference");
         assert!(tile.flags.contains(&TileAttributeFlag::Solid));
         assert!(tile.flags.contains(&TileAttributeFlag::Shore));
         assert!(tile.flags.contains(&TileAttributeFlag::BoatRequired));
         assert!(tile.flags.contains(&TileAttributeFlag::Path));
         assert!(tile.flags.contains(&TileAttributeFlag::BlocksLos));
         assert!(tile.flags.contains(&TileAttributeFlag::FlyFloatRequired));
+        assert!(tile.flags.contains(&TileAttributeFlag::Forest));
+        assert!(tile.flags.contains(&TileAttributeFlag::CombatBuild));
         assert!(matches!(
             tile.source_kind,
             TileAttributeSourceKind::Mapstats

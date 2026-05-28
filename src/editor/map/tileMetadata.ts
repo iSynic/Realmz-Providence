@@ -164,7 +164,7 @@ export function tileAttributeGroup(profile: TileAttributeProfile | null, tile: n
   }
   const flags = profile?.flags.length ? [...profile.flags] : ["unknown-metadata" as TileAttributeFlag];
   if (isDivinityVisualPathTile(tile, tileset) && !flags.includes("path")) {
-    flags.push("path");
+    flags.push("visual-path");
   }
   return flags;
 }

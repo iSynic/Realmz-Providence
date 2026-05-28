@@ -45,7 +45,7 @@ export function MapCapabilityPanel({
           <AffordanceButton label="Special / Icons" body="Open the Paint palette's special land and icon-backed Realmz tile values." tone="ready" onClick={() => { onSetTool("paint"); onOpenPalette(); }} />
           <AffordanceButton label="Action Points" body="Use the Action Point tool or selected-cell actions to create, move, edit, and clear AP records." tone="ready" onClick={() => onSetTool("trigger")} />
           <AffordanceButton label="Map Flags" body="Landlook, darkness, and LOS are writable through the current map setup controls." tone="ready" onClick={onFocusFlags} />
-          <AffordanceButton label="Edit Land Tiles" body="Open the current landlook atlas and decoded tile properties. Attribute editing is read-only for now." tone="ready" onClick={() => { onFocusAtlas(); onOpenPalette(); }} />
+          <AffordanceButton label="Edit Land Tiles" body="Open the current landlook atlas and decoded tile properties in the Land Tiles workbench." tone="ready" onClick={onFocusAtlas} />
           <AffordanceButton label="Clear Level" body="Clear every cell to the level's base tile after confirmation." tone="danger" onClick={onClearLevel} />
         </div>
       </details>
@@ -56,7 +56,7 @@ export function MapCapabilityPanel({
         </summary>
         <p className="empty-copy compact">Edit the outdoor level layout grid used when the party walks off a map edge. Blank cells mean no automatic edge travel.</p>
         <div className="affordance-button-grid compact">
-          <AffordanceButton label="Open Layout" body="Open the land-level adjacency grid in the map setup panel." tone="ready" onClick={onFocusLayout} />
+          <AffordanceButton label="Open Layout" body="Open the land-level adjacency grid in the Land Layout workbench." tone="ready" onClick={onFocusLayout} />
         </div>
       </details>
       <details className="context-section affordance-section" open>

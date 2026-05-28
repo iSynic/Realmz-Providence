@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TOOLS } from "../constants";
 import { EditorState } from "../store";
-import { EditorTool, IconEntry, MapEntity, MapPaintMode, MapPreviewFocalPoint, MapPreviewMode, MapRecord, MapRegionSelection, MapViewFlag, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TileAttributeFlag, TilesetAsset, TriggerRecord } from "../types";
-import { randomRectEntityId } from "../map/geometry";
+import { EditorTool, IconEntry, MapEntity, MapPaintMode, MapPreviewFocalPoint, MapPreviewMode, MapRecord, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TileAttributeFlag, TilesetAsset, TriggerRecord } from "../types";
+import { randomRectEntityId, tileValueAt } from "../map/geometry";
 import { allMapCells, buildPaintChanges, buildReplaceChanges, dominantTiles, rectCells, regionCellCount, regionDimensions } from "../map/regionPaint";
 import { actionSlotEntitiesForTriggerRecord } from "../semanticGraph";
 import { compactValue, linksFor, mapEntityId, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
@@ -10,7 +10,7 @@ import { InfoGrid } from "./InfoGrid";
 import { ActionPointCodeTable, CellTileEvidence, MapCapabilityPanel, RandomRectangleForm } from "./MapAffordances";
 import { PaintPalettePanel } from "./TileSelectionBar";
 import { classifyTileValue, standardTileValues, tileAttributeGroup } from "../map/tileMetadata";
-import { tileColor } from "./TileSprite";
+import { drawTileSprite, tileColor } from "./TileSprite";
 import { TileSwatch } from "./TileSwatch";
 import { TutorialTip } from "./TutorialTip";
 import { ScrollArea } from "../ui";
@@ -20,12 +20,21 @@ import { actionPointCapacity, nextActionPointRecordIndex } from "../actionPointC
 type MapContextFocus = "flags" | "atlas" | "layout" | "source";
 const LAND_LAYOUT_ROWS = 8;
 const LAND_LAYOUT_COLS = 16;
+const MAP_TOOLSET_MODES: Array<{ id: MapWorkbenchMode; label: string; body: string }> = [
+  { id: "canvas", label: "Canvas", body: "Map painting and placement" },
+  { id: "land-layout", label: "Land Layout", body: "Outdoor adjacency grid" },
+  { id: "land-tiles", label: "Land Tiles", body: "Tile attributes and combat map" },
+  { id: "random-areas", label: "Random Areas", body: "Canvas-backed rectangles" },
+  { id: "map-records", label: "Map Records", body: "Canvas-backed starts and notes" }
+];
 
 export function MapContextSidebar({
   state,
   selectedMap,
   selectedTileset,
   atlas,
+  workbenchMode,
+  onSetWorkbenchMode,
   onSelectMap,
   onSetTool,
   onSelectTile,
@@ -43,6 +52,8 @@ export function MapContextSidebar({
   selectedMap: MapEntity | null;
   selectedTileset: TilesetAsset | null;
   atlas: EditorState["atlasEntries"][string] | null;
+  workbenchMode: MapWorkbenchMode;
+  onSetWorkbenchMode: (mode: MapWorkbenchMode) => void;
   onSelectMap: (id: string) => void;
   onSetTool: (tool: EditorTool) => void;
   onSelectTile: (tile: number) => void;
@@ -77,6 +88,8 @@ export function MapContextSidebar({
           selectedMap={selectedMap}
           selectedTileset={selectedTileset}
           atlas={atlas}
+          workbenchMode={workbenchMode}
+          onSetWorkbenchMode={onSetWorkbenchMode}
           onSetTool={onSetTool}
           onSelectTile={onSelectTile}
           paintMode={paintMode}
@@ -99,6 +112,8 @@ export function MapSelectionSidebar({
   selectedMap,
   selectedTileset,
   atlas,
+  workbenchMode,
+  onSetWorkbenchMode,
   selectedRandomLevel,
   mapTriggers,
   mapRecords,
@@ -128,6 +143,8 @@ export function MapSelectionSidebar({
   selectedMap: MapEntity | null;
   selectedTileset: TilesetAsset | null;
   atlas: EditorState["atlasEntries"][string] | null;
+  workbenchMode: MapWorkbenchMode;
+  onSetWorkbenchMode: (mode: MapWorkbenchMode) => void;
   selectedRandomLevel: RandomLevel | null;
   mapTriggers: TriggerRecord[];
   mapRecords: SemanticEntity[];
@@ -158,6 +175,7 @@ export function MapSelectionSidebar({
     localStorage.setItem("providence.mapRightContextOpen.v1", open ? "1" : "0");
   }, [open]);
   const selection = selectionSummary(selectedMap, state.selectedEntity, state.selectedCell, selectedRegion, mapTriggers, selectedRandomLevel, mapRecords);
+  const activeSelection = workbenchMode === "canvas" ? selection : null;
   if (!open) {
     return (
       <aside className="map-context-rail">
@@ -179,12 +197,12 @@ export function MapSelectionSidebar({
     >
       <ScrollArea className="editor-inspector-scroll map-context-scroll" aria-label="Map contextual inspector">
         <div className="panel-header map-context-header">
-          <span>{selection ? "Selection Inspector" : "Map Setup"}</span>
-          <button className="btn btn-ghost btn-xs" type="button" onClick={() => setOpen(false)}>Collapse</button>
-        </div>
-        {selection ? (
+        <span>{activeSelection ? "Selection Inspector" : "Map Setup"}</span>
+        <button className="btn btn-ghost btn-xs" type="button" onClick={() => setOpen(false)}>Collapse</button>
+      </div>
+        {activeSelection ? (
           <SelectionInspector
-            selection={selection}
+            selection={activeSelection}
             map={selectedMap}
             project={state.project}
             selectedPaintTile={state.selectedTile}
@@ -201,6 +219,16 @@ export function MapSelectionSidebar({
             onClearSelection={onClearSelection}
             onApplyCommand={onApplyCommand}
           />
+        ) : workbenchMode !== "canvas" ? (
+          <MapModeInspector
+            mode={workbenchMode}
+            project={state.project}
+            selectedMap={selectedMap}
+            selectedTileset={selectedTileset}
+            randomLevel={selectedRandomLevel}
+            mapRecords={mapRecords}
+            onSetWorkbenchMode={onSetWorkbenchMode}
+          />
         ) : (
           <CoreMapSetup
             project={state.project}
@@ -209,6 +237,7 @@ export function MapSelectionSidebar({
             atlas={atlas}
             randomLevel={selectedRandomLevel}
             activeTool={state.activeTool}
+            workbenchMode={workbenchMode}
             contextFocus={contextFocus}
             icons={state.iconEntries}
             selectedPaintTile={state.selectedTile}
@@ -218,6 +247,7 @@ export function MapSelectionSidebar({
             previewFocalPoint={previewFocalPoint}
             showRandomRects={state.showRandomRects}
             onSetContextFocus={onSetContextFocus}
+            onSetWorkbenchMode={onSetWorkbenchMode}
             onSetPreviewMode={onSetPreviewMode}
             onSetPreviewFocalPoint={onSetPreviewFocalPoint}
             onSetTool={onSetTool}
@@ -239,6 +269,101 @@ type Selection =
   | { kind: "random"; rect: RandomLevel["rects"][number] }
   | { kind: "record"; record: SemanticEntity };
 
+function MapModeInspector({
+  mode,
+  project,
+  selectedMap,
+  selectedTileset,
+  randomLevel,
+  mapRecords,
+  onSetWorkbenchMode
+}: {
+  mode: MapWorkbenchMode;
+  project: Project | null;
+  selectedMap: MapEntity | null;
+  selectedTileset: TilesetAsset | null;
+  randomLevel: RandomLevel | null;
+  mapRecords: SemanticEntity[];
+  onSetWorkbenchMode: (mode: MapWorkbenchMode) => void;
+}) {
+  const landMaps = (project?.maps ?? []).filter((map) => map.levelType === "land");
+  const layoutCells = normalizeLayoutCells(project?.landLayout?.cells ?? []);
+  const layoutWarnings = project?.landLayout ? landLayoutStats(layoutCells, landMaps).warnings : [];
+  const modeTitle = modeLabel(mode);
+  return (
+    <section className="context-panel map-mode-inspector">
+      <div className="panel-header">
+        <span>{modeTitle}</span>
+        <small>Mode</small>
+      </div>
+      {mode === "land-layout" && (
+        <>
+          <InfoGrid
+            rows={[
+              ["Layout", project?.landLayout ? "configured" : "not created"],
+              ["Outdoor Maps", landMaps.length],
+              ["Current Map", selectedMap?.levelType === "land" ? selectedMap.name : "none"],
+              ["Warnings", layoutWarnings.length]
+            ]}
+          />
+          {layoutWarnings.length > 0 && (
+            <div className="inline-diagnostics mode-summary">
+              {layoutWarnings.slice(0, 4).map((warning) => <div key={warning} className="diagnostic warning">{warning}</div>)}
+            </div>
+          )}
+        </>
+      )}
+      {mode === "land-tiles" && (
+        <InfoGrid
+          rows={[
+            ["Tileset", selectedTileset?.name ?? "none"],
+            ["Scope", selectedTileset ? "Built into Realmz" : "none"],
+            ["Editing", selectedTileset ? "Read-only" : "none"],
+            ["Tile Count", selectedTileset ? selectedTileset.columns * selectedTileset.rows : 0],
+            ["Base Tile", selectedTileset?.baseTile ?? "none"],
+            ["Current Map", selectedMap?.name ?? "none"]
+          ]}
+        />
+      )}
+      {mode === "random-areas" && (
+        <InfoGrid
+          rows={[
+            ["Current Map", selectedMap?.name ?? "none"],
+            ["Rectangles", `${randomLevel?.rects.length ?? 0} / 20`],
+            ["Editing", "Canvas-backed"],
+            ["Next Step", "Full table planned"]
+          ]}
+        />
+      )}
+      {mode === "map-records" && (
+        <InfoGrid
+          rows={[
+            ["Current Map", selectedMap?.name ?? "none"],
+            ["Records", mapRecords.length],
+            ["Editing", "Canvas-backed"],
+            ["Next Step", "Full table planned"]
+          ]}
+        />
+      )}
+      <div className="context-action-stack compact">
+        <button className="btn btn-primary btn-xs context-action-button" type="button" onClick={() => onSetWorkbenchMode("canvas")}>
+          Return To Canvas
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function modeLabel(mode: MapWorkbenchMode) {
+  switch (mode) {
+    case "canvas": return "Canvas";
+    case "land-layout": return "Land Layout";
+    case "land-tiles": return "Land Tiles";
+    case "random-areas": return "Random Areas";
+    case "map-records": return "Map Records";
+  }
+}
+
 function CoreMapSetup({
   project,
   selectedMap,
@@ -246,6 +371,7 @@ function CoreMapSetup({
   atlas,
   randomLevel,
   activeTool,
+  workbenchMode,
   contextFocus,
   onSelectMap,
   onSelectTile,
@@ -253,6 +379,7 @@ function CoreMapSetup({
   previewFocalPoint,
   showRandomRects,
   onSetContextFocus,
+  onSetWorkbenchMode,
   icons,
   selectedPaintTile,
   onSetPreviewMode,
@@ -269,6 +396,7 @@ function CoreMapSetup({
   atlas: EditorState["atlasEntries"][string] | null;
   randomLevel: RandomLevel | null;
   activeTool: EditorTool;
+  workbenchMode: MapWorkbenchMode;
   contextFocus: MapContextFocus;
   icons: EditorState["iconEntries"];
   selectedPaintTile: number;
@@ -278,6 +406,7 @@ function CoreMapSetup({
   previewFocalPoint: MapPreviewFocalPoint;
   showRandomRects: boolean;
   onSetContextFocus: (focus: MapContextFocus) => void;
+  onSetWorkbenchMode: (mode: MapWorkbenchMode) => void;
   onSetPreviewMode: (mode: MapPreviewMode) => void;
   onSetPreviewFocalPoint: (point: MapPreviewFocalPoint | null) => void;
   onSetTool: (tool: EditorTool) => void;
@@ -313,7 +442,7 @@ function CoreMapSetup({
     <section className="context-panel">
       <div className="panel-header">
         <span>Core Map Setup</span>
-        <small>{selectedMap?.levelType ?? "none"}</small>
+        <small>{modeLabel(workbenchMode)} | {selectedMap?.levelType ?? "none"}</small>
       </div>
       <details className="context-section" open>
         <summary>
@@ -345,45 +474,6 @@ function CoreMapSetup({
           onApplyCommand={onApplyCommand}
         />
       </details>
-      <details className="context-section" open={contextFocus === "atlas"}>
-        <summary>
-          <span>Tile Atlas</span>
-          <b>{selectedTileset?.id ?? "none"}</b>
-        </summary>
-        <InfoGrid
-          rows={[
-            ["Tileset", selectedTileset?.name ?? "none"],
-            ["Atlas", selectedTileset?.imagePath ? "available" : "missing"],
-            ["Tile Count", selectedTileset ? selectedTileset.columns * selectedTileset.rows : 0],
-            ["Base Tile", selectedTileset?.baseTile ?? "none"]
-          ]}
-        />
-        <p className="context-capacity-note">
-          {atlas ? "Palette previews use the same renderer as the map canvas." : "No atlas image is loaded; Providence will show fallback swatches."}
-        </p>
-        <LandTileAtlasEditor
-          project={project}
-          selectedTileset={selectedTileset}
-          atlas={atlas}
-          icons={icons}
-          selectedPaintTile={selectedPaintTile}
-          onSelectTile={onSelectTile}
-          onSetTool={onSetTool}
-          onOpenPalette={onOpenPalette}
-        />
-      </details>
-      <details className="context-section" open={contextFocus === "layout"}>
-        <summary>
-          <span>Land Layout</span>
-          <b>{project?.landLayout ? "configured" : "none"}</b>
-        </summary>
-        <LandLayoutEditor
-          project={project}
-          selectedMap={selectedMap}
-          onSelectMap={onSelectMap}
-          onApplyCommand={onApplyCommand}
-        />
-      </details>
       {selectedMap && project && (
         <p className="context-capacity-note">
           {actionPointCapacity(project.triggers, selectedMap.levelType, selectedMap.index).active}/100 Action Point records used.{" "}
@@ -401,12 +491,12 @@ function CoreMapSetup({
         }}
         onOpenPalette={onOpenPalette}
         onFocusFlags={() => onSetContextFocus("flags")}
-        onFocusAtlas={() => onSetContextFocus("atlas")}
-        onFocusLayout={() => onSetContextFocus("layout")}
+        onFocusAtlas={() => onSetWorkbenchMode("land-tiles")}
+        onFocusLayout={() => onSetWorkbenchMode("land-layout")}
         onClearLevel={clearLevel}
         onShowRandomRects={() => onSetViewFlag("showRandomRects", true)}
         onHighlightRandomRect={focusFirstRandomRect}
-        onEditRandomRect={focusFirstRandomRect}
+        onEditRandomRect={() => onSetWorkbenchMode("random-areas")}
         onSelectRandomRect={
           selectedMap
             ? (rectIndex) => onSelectEntity({ type: "encounter", id: randomRectEntityId(selectedMap, rectIndex) })
@@ -461,21 +551,43 @@ function MapOutliner({
   );
 }
 
-function LandLayoutEditor({
+export function LandLayoutEditor({
   project,
   selectedMap,
+  atlasEntries,
+  icons,
   onSelectMap,
   onApplyCommand
 }: {
   project: Project | null;
   selectedMap: MapEntity | null;
+  atlasEntries: EditorState["atlasEntries"];
+  icons: Record<number, IconEntry>;
   onSelectMap: (id: string) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
+  const [showPreviews, setShowPreviews] = useState(() => readStoredBoolean("providence.landLayout.showPreviews.v1", false));
   const landMaps = (project?.maps ?? []).filter((map) => map.levelType === "land").sort((a, b) => a.index - b.index);
   const layout = project?.landLayout ?? null;
   const cells = normalizeLayoutCells(layout?.cells ?? []);
   const stats = landLayoutStats(cells, landMaps);
+  const tilesetByMapId = useMemo(() => {
+    const table = new Map<string, TilesetAsset>();
+    if (!project) return table;
+    for (const map of landMaps) {
+      const tileset =
+        project.assetCatalog.tilesets.find((candidate) => candidate.id === map.render.tilesetId) ??
+        project.assetCatalog.tilesets.find((candidate) => candidate.landlook === map.render.landlook) ??
+        null;
+      if (tileset) table.set(map.id, tileset);
+    }
+    return table;
+  }, [landMaps, project]);
+
+  useEffect(() => {
+    storeBoolean("providence.landLayout.showPreviews.v1", showPreviews);
+  }, [showPreviews]);
+
   if (!project) {
     return <p className="empty-copy compact">Open or import a scenario to edit outdoor level layout.</p>;
   }
@@ -500,6 +612,10 @@ function LandLayoutEditor({
         <button className="btn btn-secondary btn-xs" type="button" onClick={() => onApplyCommand({ kind: "clearLandLayout", label: "Clear land layout" })}>
           Clear Layout
         </button>
+        <label className="compact-toggle">
+          <input type="checkbox" checked={showPreviews} onChange={(event) => setShowPreviews(event.currentTarget.checked)} />
+          Show previews
+        </label>
         {selectedMap?.levelType === "land" && <span>Current: {selectedMap.name}</span>}
       </div>
       {stats.warnings.length > 0 && (
@@ -507,16 +623,24 @@ function LandLayoutEditor({
           {stats.warnings.map((warning) => <div key={warning} className="diagnostic warning">{warning}</div>)}
         </div>
       )}
-      <div className="land-layout-grid" style={{ gridTemplateColumns: `repeat(${LAND_LAYOUT_COLS}, minmax(2.1rem, 1fr))` }}>
+      <div
+        className={`land-layout-grid${showPreviews ? " preview-grid" : ""}`}
+        style={{ gridTemplateColumns: `repeat(${LAND_LAYOUT_COLS}, minmax(${showPreviews ? "56px" : "2.1rem"}, 1fr))` }}
+      >
         {Array.from({ length: LAND_LAYOUT_ROWS }, (_, row) =>
           Array.from({ length: LAND_LAYOUT_COLS }, (_, col) => {
             const index = row * LAND_LAYOUT_COLS + col;
             const value = cells[index] ?? 0;
             const target = mapForLayoutValue(value, landMaps);
+            const targetTileset = target ? tilesetByMapId.get(target.id) ?? null : null;
+            const targetAtlas = targetTileset ? atlasEntries[targetTileset.id] ?? null : null;
             const selected = selectedMap?.levelType === "land" && layoutValueForMapIndex(selectedMap.index) === value;
             return (
-              <label key={`${row}:${col}`} className={`land-layout-cell${value !== 0 ? " filled" : ""}${selected ? " current" : ""}${value !== 0 && !target ? " missing" : ""}`} title={layoutCellTitle(value, target)}>
+              <label key={`${row}:${col}`} className={`land-layout-cell${showPreviews ? " with-preview" : ""}${value !== 0 ? " filled" : ""}${selected ? " current" : ""}${value !== 0 && !target ? " missing" : ""}`} title={layoutCellTitle(value, target)}>
                 <span>{row + 1},{col + 1}</span>
+                {showPreviews && value !== 0 && (
+                  <LandLayoutCellPreview map={target} atlas={targetAtlas} icons={icons} value={value} />
+                )}
                 <select
                   value={String(value)}
                   onChange={(event) => onApplyCommand({ kind: "updateLandLayoutCell", label: "Update land layout", row, col, value: Number(event.currentTarget.value) })}
@@ -546,6 +670,102 @@ function LandLayoutEditor({
       </div>
     </div>
   );
+}
+
+function LandLayoutCellPreview({
+  map,
+  atlas,
+  icons,
+  value
+}: {
+  map: MapEntity | null;
+  atlas: EditorState["atlasEntries"][string] | null;
+  icons: Record<number, IconEntry>;
+  value: number;
+}) {
+  const previewUrl = useMemo(() => {
+    if (!map) return null;
+    return renderLandLayoutThumbnail(map, atlas, icons);
+  }, [atlas, icons, map]);
+
+  if (!map) {
+    return <span className="land-layout-preview missing-preview">Missing {value === -1 ? 0 : value}</span>;
+  }
+
+  return (
+    <span className="land-layout-preview" aria-hidden="true">
+      {previewUrl ? <img src={previewUrl} alt="" /> : <span>{map.index}</span>}
+    </span>
+  );
+}
+
+const LAND_LAYOUT_THUMBNAIL_SIZE = 96;
+const landLayoutThumbnailCache = new Map<string, string>();
+
+function renderLandLayoutThumbnail(
+  map: MapEntity,
+  atlas: EditorState["atlasEntries"][string] | null,
+  icons: Record<number, IconEntry>
+) {
+  if (typeof document === "undefined") return null;
+  const key = `${map.id}:${map.width}x${map.height}:${atlas?.url ?? "no-atlas"}:${Object.keys(icons).length}:${checksumMapTiles(map.tiles)}`;
+  const cached = landLayoutThumbnailCache.get(key);
+  if (cached) return cached;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = LAND_LAYOUT_THUMBNAIL_SIZE;
+  canvas.height = LAND_LAYOUT_THUMBNAIL_SIZE;
+  const context = canvas.getContext("2d");
+  if (!context) return null;
+
+  const width = Math.max(1, map.width || 90);
+  const height = Math.max(1, map.height || 90);
+  const cellWidth = LAND_LAYOUT_THUMBNAIL_SIZE / width;
+  const cellHeight = LAND_LAYOUT_THUMBNAIL_SIZE / height;
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = "low";
+  context.fillStyle = "#0b1117";
+  context.fillRect(0, 0, LAND_LAYOUT_THUMBNAIL_SIZE, LAND_LAYOUT_THUMBNAIL_SIZE);
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const tile = tileValueAt(map, x, y);
+      const dx = Math.floor(x * cellWidth);
+      const dy = Math.floor(y * cellHeight);
+      const dw = Math.max(1, Math.ceil((x + 1) * cellWidth) - dx);
+      const dh = Math.max(1, Math.ceil((y + 1) * cellHeight) - dy);
+      const drew = drawTileSprite(context, atlas, tile, dx, dy, dw, dh, icons);
+      if (!drew) {
+        context.fillStyle = tileColor(tile);
+        context.fillRect(dx, dy, dw, dh);
+      }
+    }
+  }
+
+  const url = canvas.toDataURL("image/png");
+  landLayoutThumbnailCache.set(key, url);
+  return url;
+}
+
+function checksumMapTiles(tiles: number[]) {
+  let hash = 2166136261;
+  for (const tile of tiles) {
+    hash = Math.imul(hash ^ (tile & 0xffff), 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function readStoredBoolean(key: string, fallback: boolean) {
+  if (typeof localStorage === "undefined") return fallback;
+  const stored = localStorage.getItem(key);
+  if (stored === "1") return true;
+  if (stored === "0") return false;
+  return fallback;
+}
+
+function storeBoolean(key: string, value: boolean) {
+  if (typeof localStorage === "undefined") return;
+  localStorage.setItem(key, value ? "1" : "0");
 }
 
 function normalizeLayoutCells(cells: number[]) {
@@ -591,6 +811,8 @@ function MapToolset({
   selectedMap,
   selectedTileset,
   atlas,
+  workbenchMode,
+  onSetWorkbenchMode,
   onSetTool,
   onSelectTile,
   paintMode,
@@ -607,6 +829,8 @@ function MapToolset({
   selectedMap: MapEntity | null;
   selectedTileset: TilesetAsset | null;
   atlas: EditorState["atlasEntries"][string] | null;
+  workbenchMode: MapWorkbenchMode;
+  onSetWorkbenchMode: (mode: MapWorkbenchMode) => void;
   onSetTool: (tool: EditorTool) => void;
   onSelectTile: (tile: number) => void;
   paintMode: MapPaintMode;
@@ -629,6 +853,20 @@ function MapToolset({
       <div className="panel-header">
         <span>Map Toolset</span>
         <small>{toolLabel(state.activeTool)}</small>
+      </div>
+      <div className="map-toolset-mode-grid" role="group" aria-label="Map workbench modes">
+        {MAP_TOOLSET_MODES.map((mode) => (
+          <button
+            key={mode.id}
+            type="button"
+            className={workbenchMode === mode.id ? "active" : ""}
+            onClick={() => onSetWorkbenchMode(mode.id)}
+            title={mode.body}
+          >
+            <span>{mode.label}</span>
+            <small>{mode.body}</small>
+          </button>
+        ))}
       </div>
       <div className="sidebar-tool-grid">
         {TOOLS.map((tool) => (
@@ -758,19 +996,110 @@ function MapLevelSettings({
   );
 }
 
+function LandTileSidebarSummary({
+  project,
+  selectedTileset,
+  atlas,
+  icons,
+  selectedPaintTile,
+  onSelectTile,
+  onSetTool,
+  onOpenPalette
+}: {
+  project: Project | null;
+  selectedTileset: TilesetAsset | null;
+  atlas: EditorState["atlasEntries"][string] | null;
+  icons: Record<number, IconEntry>;
+  selectedPaintTile: number;
+  onSelectTile: (tile: number) => void;
+  onSetTool: (tool: EditorTool) => void;
+  onOpenPalette: () => void;
+}) {
+  if (!selectedTileset) {
+    return <p className="empty-copy compact">Select a land map to inspect its tile set.</p>;
+  }
+
+  const meaning = classifyTileValue(selectedPaintTile, selectedTileset, project?.tileAttributes ?? [], icons);
+  const coreRows: [string, string | number][] = [
+    ["Paint Tile", selectedPaintTile],
+    ["Rendered Tile", meaning.renderTile],
+    ["Solid Type", meaning.attributes?.solidType ?? "unknown"],
+    ["Time / Move", meaning.attributes?.movementCost ?? "unknown"],
+    ["Move Sound", meaning.attributes?.movementSoundId ?? "unknown"],
+    ["Runtime Path", yesNo(meaning.attributes?.pathFlag)],
+    ["Road Art", meaning.attributeFlags.includes("visual-path") ? "yes" : "no"],
+    ["Blocks LOS", yesNo(meaning.attributes?.blocksLos)]
+  ];
+
+  return (
+    <div className="land-tile-sidebar-summary">
+      <div className="land-tile-compact-card">
+        <div className="land-tile-detail-preview" style={{ background: tileColor(selectedPaintTile) }}>
+          <TileSwatch atlas={atlas} icons={icons} tile={selectedPaintTile} tileset={selectedTileset} showBadge={false} />
+        </div>
+        <div className="land-tile-detail-body">
+          <div className="tile-meaning-title">
+            <span>{meaning.label}</span>
+            <b>{attributeSourceLabel(meaning.attributes)}</b>
+          </div>
+          <InfoGrid rows={coreRows} />
+        </div>
+      </div>
+      <div className="context-action-stack compact">
+        <button
+          className="btn btn-primary btn-xs context-action-button"
+          type="button"
+          onClick={() => {
+            onSelectTile(selectedPaintTile);
+            onSetTool("paint");
+            onOpenPalette();
+          }}
+        >
+          Open Tile Palette
+        </button>
+      </div>
+      <details className="context-section subtle">
+        <summary>
+          <span>Selected Tile Details</span>
+          <b>{meaning.attributeFlags.length}</b>
+        </summary>
+        <InfoGrid rows={tileAttributeRows(meaning)} />
+      </details>
+      <details className="context-section subtle">
+        <summary>
+          <span>Combat Map Expansion</span>
+          <b>{normalizedCombatBuild(meaning.attributes) ? "3 x 3" : "none"}</b>
+        </summary>
+        <CombatBuildPreview
+          atlas={atlas}
+          icons={icons}
+          profile={meaning.attributes}
+          tileset={selectedTileset}
+        />
+      </details>
+      <p className="context-capacity-note">
+        Built-in Realmz landlooks are read-only. Use the paint palette for full browsing and filtering.
+      </p>
+    </div>
+  );
+}
+
 const LAND_TILE_FILTERS: Array<{ id: TileAttributeFlag | "all"; label: string; hint: string }> = [
   { id: "all", label: "All", hint: "Show the full current landlook atlas." },
   { id: "walkable", label: "Walkable", hint: "Tiles Realmz treats as ordinary foot movement." },
   { id: "solid", label: "Solid", hint: "Tiles Realmz treats as blocking, boat-only, or fly/float-gated." },
-  { id: "path", label: "Path", hint: "Road/path art and path-marked tiles." },
+  { id: "path", label: "Runtime Path", hint: "Tiles Realmz marks with the runtime path flag." },
+  { id: "visual-path", label: "Road Art", hint: "Road/path-looking art tiles. These are not runtime path tiles unless Realmz marks them that way." },
   { id: "shore", label: "Shore / Water", hint: "Tiles marked as shore or water movement surfaces." },
   { id: "boat-required", label: "Boat", hint: "Tiles that require boat-style movement." },
   { id: "fly-float-required", label: "Fly / Float", hint: "Tiles that require fly or float movement." },
   { id: "blocks-los", label: "Blocks LOS", hint: "Tiles that block line of sight." },
+  { id: "forest", label: "Forest", hint: "Tiles with decoded forest behavior." },
+  { id: "combat-build", label: "Combat Map", hint: "Tiles with a decoded 3x3 combat expansion." },
   { id: "unknown-metadata", label: "Unknown", hint: "Tiles with no decoded attribute data yet." }
 ];
 
-function LandTileAtlasEditor({
+export function LandTileAtlasEditor({
   project,
   selectedTileset,
   atlas,
@@ -790,6 +1119,7 @@ function LandTileAtlasEditor({
   onOpenPalette: () => void;
 }) {
   const [filter, setFilter] = useState<TileAttributeFlag | "all">("all");
+  const [query, setQuery] = useState("");
   const [inspectedTile, setInspectedTile] = useState(selectedPaintTile);
   useEffect(() => {
     setInspectedTile(selectedPaintTile);
@@ -801,76 +1131,126 @@ function LandTileAtlasEditor({
 
   const attributes = project?.tileAttributes ?? [];
   const tiles = standardTileValues(selectedTileset);
-  const visibleTiles = filter === "all"
-    ? tiles
-    : tiles.filter((tile) => tileAttributeGroup(classifyTileValue(tile, selectedTileset, attributes, icons).attributes, tile, selectedTileset).includes(filter));
+  const normalizedQuery = query.trim().toLowerCase();
+  const visibleTiles = tiles.filter((tile) => {
+    const profile = classifyTileValue(tile, selectedTileset, attributes, icons);
+    if (filter !== "all" && !tileAttributeGroup(profile.attributes, tile, selectedTileset).includes(filter)) return false;
+    if (!normalizedQuery) return true;
+    return String(tile).includes(normalizedQuery)
+      || profile.label.toLowerCase().includes(normalizedQuery)
+      || profile.attributeFlags.map(tileAttributeLabel).join(" ").toLowerCase().includes(normalizedQuery);
+  });
   const meaning = classifyTileValue(inspectedTile, selectedTileset, attributes, icons);
   const attributeRows = tileAttributeRows(meaning);
+  const quickFilters = meaning.attributeFlags.filter((flag) => LAND_TILE_FILTERS.some((item) => item.id === flag));
 
   return (
     <div className="land-tile-atlas-editor">
-      <div className="land-tile-atlas-toolbar" role="toolbar" aria-label="Tile attribute filters">
-        {LAND_TILE_FILTERS.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={filter === item.id ? "active" : ""}
-            onClick={() => setFilter(item.id)}
-            title={item.hint}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-      <div className="land-tile-atlas-grid" style={{ gridTemplateColumns: `repeat(${Math.max(1, selectedTileset.columns)}, minmax(0, 1fr))` }}>
-        {visibleTiles.map((tile) => (
-          <button
-            key={tile}
-            type="button"
-            className={[
-              tile === selectedPaintTile ? "selected" : "",
-              tile === inspectedTile ? "inspected" : ""
-            ].filter(Boolean).join(" ")}
-            style={{ background: tileColor(tile) }}
-            onClick={() => {
-              setInspectedTile(tile);
-              onSelectTile(tile);
-            }}
-            title={`Tile ${tile}`}
-          >
-            <TileSwatch atlas={atlas} icons={icons} tile={tile} tileset={selectedTileset} />
-          </button>
-        ))}
-        {visibleTiles.length === 0 && <span className="empty-inline">No tiles match this filter.</span>}
-      </div>
-      <div className="land-tile-detail-card">
-        <div className="land-tile-detail-preview" style={{ background: tileColor(inspectedTile) }}>
-          <TileSwatch atlas={atlas} icons={icons} tile={inspectedTile} tileset={selectedTileset} showBadge={false} />
+      <div className="land-tile-atlas-top">
+        <div className="land-tile-atlas-status">
+          <InfoGrid
+            rows={[
+              ["Tileset", selectedTileset.name],
+              ["Scope", "Built into Realmz"],
+              ["Editing", "Read-only"],
+              ["Tile Count", tiles.length],
+              ["Base Tile", selectedTileset.baseTile],
+              ["Shown", visibleTiles.length]
+            ]}
+          />
         </div>
-        <div className="land-tile-detail-body">
-          <div className="tile-meaning-title">
-            <span>{meaning.label}</span>
-            <b>{attributeSourceLabel(meaning.attributes)}</b>
+        <div className="land-tile-atlas-controls">
+          <input
+            className="map-search-input"
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.currentTarget.value)}
+            placeholder="Search tile id, label, or trait..."
+          />
+          <div className="land-tile-atlas-toolbar" role="toolbar" aria-label="Tile attribute filters">
+            {LAND_TILE_FILTERS.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={filter === item.id ? "active" : ""}
+                onClick={() => setFilter(item.id)}
+                title={item.hint}
+              >
+                {item.label}
+              </button>
+            ))}
           </div>
-          <InfoGrid rows={attributeRows} />
-          <div className="context-action-stack compact">
+        </div>
+      </div>
+      <div className="land-tile-atlas-main">
+        <div className="land-tile-atlas-grid" style={{ gridTemplateColumns: `repeat(${Math.max(1, selectedTileset.columns)}, minmax(34px, 1fr))` }}>
+          {visibleTiles.map((tile) => (
             <button
-              className="btn btn-primary btn-xs context-action-button"
+              key={tile}
               type="button"
+              className={[
+                tile === selectedPaintTile ? "selected" : "",
+                tile === inspectedTile ? "inspected" : ""
+              ].filter(Boolean).join(" ")}
+              style={{ background: tileColor(tile) }}
               onClick={() => {
-                onSelectTile(inspectedTile);
-                onSetTool("paint");
-                onOpenPalette();
+                setInspectedTile(tile);
+                onSelectTile(tile);
               }}
+              title={`Tile ${tile}`}
             >
-              Paint With This Tile
+              <TileSwatch atlas={atlas} icons={icons} tile={tile} tileset={selectedTileset} />
             </button>
-          </div>
+          ))}
+          {visibleTiles.length === 0 && <span className="empty-inline">No tiles match this filter.</span>}
         </div>
+        <aside className="land-tile-detail-rail">
+          <div className="land-tile-detail-card">
+            <div className="land-tile-detail-preview" style={{ background: tileColor(inspectedTile) }}>
+              <TileSwatch atlas={atlas} icons={icons} tile={inspectedTile} tileset={selectedTileset} showBadge={false} />
+            </div>
+            <div className="land-tile-detail-body">
+              <div className="tile-meaning-title">
+                <span>{meaning.label}</span>
+                <b>{attributeSourceLabel(meaning.attributes)}</b>
+              </div>
+              <InfoGrid rows={attributeRows} />
+              {quickFilters.length > 0 && (
+                <div className="land-tile-quick-filters" aria-label="Matching tile filters">
+                  {quickFilters.map((flag) => (
+                    <button key={flag} type="button" onClick={() => setFilter(flag)} title={`Show all ${tileAttributeLabel(flag)} tiles`}>
+                      Show {tileAttributeLabel(flag)}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="context-action-stack compact">
+                <button
+                  className="btn btn-primary btn-xs context-action-button"
+                  type="button"
+                  onClick={() => {
+                    onSelectTile(inspectedTile);
+                    onSetTool("paint");
+                    onOpenPalette();
+                  }}
+                >
+                  Paint With This Tile
+                </button>
+              </div>
+            </div>
+          </div>
+          <CombatBuildPreview
+            atlas={atlas}
+            icons={icons}
+            profile={meaning.attributes}
+            sourceTile={inspectedTile}
+            tileset={selectedTileset}
+          />
+          <p className="context-capacity-note">
+            Built-in Realmz landlooks are read-only. Scenario custom landlook editing is hidden until custom tile-map writing is proven.
+          </p>
+        </aside>
       </div>
-      <p className="context-capacity-note">
-        Tile attributes are shown from Realmz landlook data when available. Editing the attribute table is read-only for now.
-      </p>
     </div>
   );
 }
@@ -883,10 +1263,326 @@ function tileAttributeRows(meaning: ReturnType<typeof classifyTileValue>): [stri
     ["Solid Type", attributes?.solidType ?? "unknown"],
     ["Move Sound", attributes?.movementSoundId ?? "unknown"],
     ["Time / Move", attributes?.movementCost ?? "unknown"],
+    ["Shore / Water", yesNo(attributes?.shore)],
+    ["Boat Required", attributes?.boatRequirement ?? "unknown"],
+    ["Runtime Path", yesNo(attributes?.pathFlag)],
+    ["Road Art", meaning.attributeFlags.includes("visual-path") ? "yes" : "no"],
+    ["Blocks LOS", yesNo(attributes?.blocksLos)],
+    ["Fly / Float", yesNo(attributes?.flyFloatRequired)],
+    ["Forest Type", forestTypeLabel(attributes?.forestType)],
+    ["Clear Tile", attributes?.clearLandId ?? "unknown"],
+    ["Base Tile", attributes?.baseTile ?? "unknown"],
+    ["Base Scale", attributes?.baseScale ?? "unknown"],
+    ["Tile Scope", tileEditableScopeLabel(attributes?.editableScope)],
     ["Traits", meaning.attributeFlags.map(tileAttributeLabel).join(", ") || "unknown"],
     ["Icon Art", meaning.iconCandidates.length === 0 ? "none" : meaning.iconAvailable ? "available" : "missing"],
     ["Status", userFacingConfidence(attributes?.confidence ?? (meaning.iconCandidates.length > 0 ? "preserved" : "unknown"))]
   ];
+}
+
+function CombatBuildPreview({
+  profile,
+  sourceTile,
+  tileset,
+  atlas,
+  icons
+}: {
+  profile: ReturnType<typeof classifyTileValue>["attributes"];
+  sourceTile?: number;
+  tileset: TilesetAsset;
+  atlas: EditorState["atlasEntries"][string] | null;
+  icons: Record<number, IconEntry>;
+}) {
+  const rows = normalizedCombatBuild(profile);
+  if (!rows) {
+    return (
+      <div className="combat-build-preview compact">
+        <div className="tile-meaning-title">
+          <span>Combat Map Expansion</span>
+          <b>none</b>
+        </div>
+        <p>This land tile does not expose a decoded 3x3 combat expansion in the current table.</p>
+      </div>
+    );
+  }
+  return (
+    <div className="combat-build-preview">
+      <div className="tile-meaning-title">
+        <span>Combat Map Expansion</span>
+        <b>3 x 3</b>
+      </div>
+      <div className="combat-build-visuals">
+        {sourceTile != null && (
+          <div className="combat-build-source">
+            <span>Land Tile</span>
+            <div className="combat-build-source-tile" style={{ background: tileColor(sourceTile) }}>
+              <TileSwatch atlas={atlas} icons={icons} tile={sourceTile} tileset={tileset} />
+              <b>{sourceTile}</b>
+            </div>
+          </div>
+        )}
+        <div className="combat-build-expanded">
+          <span>Combat Map</span>
+          <div className="combat-build-grid">
+            {rows.flatMap((row, rowIndex) => row.map((tile, columnIndex) => (
+              <div className="combat-build-cell" key={`${rowIndex}-${columnIndex}`} title={`Combat tile ${tile}`}>
+                <TileSwatch atlas={atlas} icons={icons} tile={tile} tileset={tileset} />
+                <span>{tile}</span>
+              </div>
+            )))}
+          </div>
+        </div>
+      </div>
+      <p>Realmz expands this land tile into these combat-map cells when outdoor combat starts.</p>
+    </div>
+  );
+}
+
+export function RandomAreasWorkbench({
+  selectedMap,
+  randomLevel,
+  onSetWorkbenchMode,
+  onSetViewFlag,
+  onSetTool,
+  onSelectEntity,
+  onApplyCommand
+}: {
+  selectedMap: MapEntity | null;
+  randomLevel: RandomLevel | null;
+  onSetWorkbenchMode: (mode: MapWorkbenchMode) => void;
+  onSetViewFlag: (flag: MapViewFlag, value: boolean) => void;
+  onSetTool: (tool: EditorTool) => void;
+  onSelectEntity: (entity: SelectedEntity) => void;
+  onApplyCommand: (command: ProjectCommand) => void;
+}) {
+  const rects = randomLevel?.rects ?? [];
+  const activeRectIndexes = new Set(rects.map((rect) => rect.rectIndex));
+  const orderedSlots = Array.from({ length: 20 }, (_, index) => 19 - index);
+  const [selectedRectIndex, setSelectedRectIndex] = useState(() => rects[0]?.rectIndex ?? 19);
+  const rectIndexKey = rects.map((rect) => rect.rectIndex).join(",");
+  useEffect(() => {
+    if (!activeRectIndexes.has(selectedRectIndex)) setSelectedRectIndex(rects[0]?.rectIndex ?? 19);
+  }, [rectIndexKey, selectedRectIndex]);
+  if (!selectedMap) return <p className="empty-copy compact">Select a map to edit random areas.</p>;
+  const selectedRect = rects.find((rect) => rect.rectIndex === selectedRectIndex) ?? null;
+  const overlapWarnings = randomRectOverlapWarnings(rects);
+  const selectOnCanvas = (rectIndex: number) => {
+    onSetViewFlag("showRandomRects", true);
+    onSelectEntity({ type: "encounter", id: randomRectEntityId(selectedMap, rectIndex) });
+  };
+  const createSelected = () => {
+    onApplyCommand({
+      kind: "createRandomRect",
+      label: `Create Random Rectangle ${selectedRectIndex}`,
+      levelType: selectedMap.levelType,
+      levelIndex: selectedMap.index,
+      rect: {
+        rectIndex: selectedRectIndex,
+        left: 0,
+        top: 0,
+        right: 4,
+        bottom: 4,
+        percent: 1000,
+        battleRange: [0, 0],
+        randomDoors: [0, 0, 0],
+        randomDoorPercent: [0, 0, 0],
+        only: false,
+        option: 0,
+        sound: 0,
+        text: 0
+      }
+    });
+  };
+  return (
+    <div className="random-areas-workbench">
+      <div className="random-areas-toolbar">
+        <InfoGrid
+          rows={[
+            ["Map", selectedMap.name],
+            ["Active Rectangles", `${rects.length} / 20`],
+            ["Priority", "Realmz checks 19 down to 0"],
+            ["Source", selectedMap.levelType === "land" ? "Data RD" : "Data RDD"]
+          ]}
+        />
+        <div className="context-action-stack compact">
+          <button className="btn btn-primary btn-xs context-action-button" type="button" onClick={() => {
+            onSetWorkbenchMode("canvas");
+            onSetViewFlag("showRandomRects", true);
+            onSetTool("random");
+          }}>
+            Draw On Canvas
+          </button>
+          <button className="btn btn-ghost btn-xs context-action-button" type="button" onClick={() => onSetViewFlag("showRandomRects", true)}>
+            Show All On Map
+          </button>
+        </div>
+      </div>
+      <div className="random-areas-layout">
+        <div className="random-areas-list" role="list" aria-label="Random rectangle priority slots">
+          {orderedSlots.map((rectIndex) => {
+            const rect = rects.find((candidate) => candidate.rectIndex === rectIndex);
+            const warnings = overlapWarnings.get(rectIndex) ?? [];
+            return (
+              <button
+                key={rectIndex}
+                type="button"
+                className={[
+                  "random-area-row",
+                  selectedRectIndex === rectIndex ? "selected" : "",
+                  rect ? "active" : "empty"
+                ].filter(Boolean).join(" ")}
+                onClick={() => setSelectedRectIndex(rectIndex)}
+              >
+                <span>
+                  <b>Rect {rectIndex}</b>
+                  <small>{rect ? rectSummary(rect) : "Reusable slot"}</small>
+                </span>
+                <em>{rect ? `${rect.percent} / 10000` : "empty"}</em>
+                {warnings.length > 0 && <strong>{warnings.length} warning{warnings.length === 1 ? "" : "s"}</strong>}
+              </button>
+            );
+          })}
+        </div>
+        <div className="random-area-detail">
+          <div className="panel-header compact">
+            <span>Random Rectangle {selectedRectIndex}</span>
+            <button className="btn btn-ghost btn-xs" type="button" onClick={() => selectOnCanvas(selectedRectIndex)} disabled={!activeRectIndexes.has(selectedRectIndex)}>
+              Show On Canvas
+            </button>
+          </div>
+          {selectedRect ? (
+            <>
+              {(overlapWarnings.get(selectedRect.rectIndex) ?? []).length > 0 && (
+                <MapDiagnostics diagnostics={overlapWarnings.get(selectedRect.rectIndex) ?? []} />
+              )}
+              <RandomRectangleEditor map={selectedMap} rect={selectedRect} onApplyCommand={onApplyCommand} />
+            </>
+          ) : (
+            <div className="map-mode-placeholder compact">
+              <strong>Reusable Random Rectangle Slot</strong>
+              <p>This slot is empty. Creating it adds a small default rectangle that you can resize here or on the canvas.</p>
+              <button className="btn btn-primary btn-xs context-action-button" type="button" onClick={createSelected}>Create Rectangle {selectedRectIndex}</button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function MapRecordsWorkbench({
+  project,
+  selectedMap,
+  mapRecords,
+  onSelectMap,
+  onSelectEntity,
+  onSetWorkbenchMode,
+  onSetViewFlag,
+  onApplyCommand
+}: {
+  project: Project | null;
+  selectedMap: MapEntity | null;
+  mapRecords: SemanticEntity[];
+  onSelectMap: (id: string) => void;
+  onSelectEntity: (entity: SelectedEntity) => void;
+  onSetWorkbenchMode: (mode: MapWorkbenchMode) => void;
+  onSetViewFlag: (flag: MapViewFlag, value: boolean) => void;
+  onApplyCommand: (command: ProjectCommand) => void;
+}) {
+  const records = project?.mapRecords ?? [];
+  const visibleRecords = selectedMap
+    ? records.filter((record) => record.level === selectedMap.index && record.isDungeon === (selectedMap.levelType === "dungeon"))
+    : records;
+  const [selectedRecordId, setSelectedRecordId] = useState<number | null>(() => visibleRecords[0]?.id ?? null);
+  const visibleRecordKey = visibleRecords.map((record) => record.id).join(",");
+  useEffect(() => {
+    if (!visibleRecords.some((record) => record.id === selectedRecordId)) setSelectedRecordId(visibleRecords[0]?.id ?? null);
+  }, [selectedMap?.id, selectedRecordId, visibleRecordKey]);
+  const selectedRecord = visibleRecords.find((record) => record.id === selectedRecordId) ?? null;
+  const selectedSemantic = selectedRecord ? mapRecords.find((record) => summaryNumber(record, "id") === selectedRecord.id) ?? semanticForMapRecord(selectedRecord) : null;
+  if (!project) return <p className="empty-copy compact">Open a project to browse map records.</p>;
+  return (
+    <div className="map-records-workbench">
+      <div className="map-records-toolbar">
+        <InfoGrid
+          rows={[
+            ["Shown", visibleRecords.length],
+            ["Total Records", records.length],
+            ["Current Map", selectedMap?.name ?? "All maps"],
+            ["Source", "Data MD2"]
+          ]}
+        />
+        <div className="context-action-stack compact">
+          <button className="btn btn-primary btn-xs context-action-button" type="button" onClick={() => {
+            onSetWorkbenchMode("canvas");
+            onSetViewFlag("showMapRecords", true);
+          }}>
+            Show On Canvas
+          </button>
+        </div>
+      </div>
+      <div className="map-records-layout">
+        <div className="map-records-table" role="list" aria-label="Map records">
+          {visibleRecords.map((record) => (
+            <button
+              key={record.id}
+              type="button"
+              className={record.id === selectedRecordId ? "selected" : ""}
+              onClick={() => setSelectedRecordId(record.id)}
+            >
+              <span>
+                <b>{record.primaryName || record.name || `Map Record ${record.id}`}</b>
+                <small>{record.isDungeon ? "Dungeon" : "Land"} {record.level} at {record.startX},{record.startY}</small>
+              </span>
+              <em>PICT {record.pictId || "none"}</em>
+            </button>
+          ))}
+          {visibleRecords.length === 0 && <span className="empty-inline">No map records resolve to the current map.</span>}
+        </div>
+        <div className="map-record-detail">
+          {selectedRecord && selectedSemantic ? (
+            <>
+              <div className="map-record-summary-card">
+                <InfoGrid
+                  rows={[
+                    ["Name", selectedRecord.primaryName || selectedRecord.name || `Map Record ${selectedRecord.id}`],
+                    ["Level", `${selectedRecord.isDungeon ? "Dungeon" : "Land"} ${selectedRecord.level}`],
+                    ["Start", `${selectedRecord.startX}, ${selectedRecord.startY}`],
+                    ["Picture", selectedRecord.pictId || "none"],
+                    ["Show", selectedRecord.show],
+                    ["Rect", `${selectedRecord.rect.left},${selectedRecord.rect.top} to ${selectedRecord.rect.right},${selectedRecord.rect.bottom}`],
+                    ["Note", selectedRecord.note || "none"]
+                  ]}
+                />
+                <div className="context-action-stack compact">
+                  <button className="btn btn-primary btn-xs context-action-button" type="button" onClick={() => {
+                    onSelectMap(`map:${selectedRecord.isDungeon ? "dungeon" : "land"}:${selectedRecord.level}`);
+                    onSetWorkbenchMode("canvas");
+                    onSetViewFlag("showMapRecords", true);
+                    onSelectEntity(selectEntityFromId(`map-record:${selectedRecord.id}`));
+                  }}>
+                    Open Related Map
+                  </button>
+                  <button className="btn btn-ghost btn-xs context-action-button" type="button" onClick={() => navigator.clipboard?.writeText(`${selectedRecord.startX},${selectedRecord.startY}`)}>
+                    Copy Coordinates
+                  </button>
+                </div>
+              </div>
+              <RecordSelectionDetails
+                project={project}
+                map={selectedMap}
+                record={selectedSemantic}
+                onSelectEntity={onSelectEntity}
+                onApplyCommand={onApplyCommand}
+              />
+            </>
+          ) : (
+            <p className="empty-copy compact">Select a map record to inspect or edit it.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function PaintTileSummary({
@@ -983,6 +1679,20 @@ function TileMeaningInspector({
         <b>{attributes?.movementCost ?? "unknown"}</b>
         <span>Sound</span>
         <b>{attributes?.movementSoundId ?? "unknown"}</b>
+        <span>Shore / Water</span>
+        <b>{yesNo(attributes?.shore)}</b>
+        <span>Runtime Path</span>
+        <b>{yesNo(attributes?.pathFlag)}</b>
+        <span>Road Art</span>
+        <b>{meaning.attributeFlags.includes("visual-path") ? "yes" : "no"}</b>
+        <span>Blocks LOS</span>
+        <b>{yesNo(attributes?.blocksLos)}</b>
+        <span>Fly / Float</span>
+        <b>{yesNo(attributes?.flyFloatRequired)}</b>
+        <span>Forest</span>
+        <b>{forestTypeLabel(attributes?.forestType)}</b>
+        <span>Combat Map</span>
+        <b>{normalizedCombatBuild(attributes) ? "3 x 3 expansion" : "none"}</b>
         <span>Status</span>
         <b>{userFacingConfidence(attributes?.confidence ?? (meaning.iconCandidates.length > 0 ? "preserved" : "unknown"))}</b>
       </div>
@@ -1638,6 +2348,60 @@ function RandomRectangleEditor({
   );
 }
 
+function rectSummary(rect: RandomLevel["rects"][number]) {
+  return `${rect.left},${rect.top} to ${rect.right},${rect.bottom} | battles ${rect.battleRange[0]}-${rect.battleRange[1]}`;
+}
+
+function randomRectOverlapWarnings(rects: RandomLevel["rects"]) {
+  const warnings = new Map<number, string[]>();
+  for (let a = 0; a < rects.length; a += 1) {
+    for (let b = a + 1; b < rects.length; b += 1) {
+      const first = rects[a];
+      const second = rects[b];
+      if (!rectanglesOverlap(first, second)) continue;
+      const higher = first.rectIndex > second.rectIndex ? first : second;
+      const lower = higher === first ? second : first;
+      const message = `Overlaps rectangle ${higher === first ? second.rectIndex : first.rectIndex}; rectangle ${higher.rectIndex} has priority over ${lower.rectIndex}.`;
+      warnings.set(first.rectIndex, [...(warnings.get(first.rectIndex) ?? []), message]);
+      warnings.set(second.rectIndex, [...(warnings.get(second.rectIndex) ?? []), message]);
+    }
+  }
+  return warnings;
+}
+
+function rectanglesOverlap(a: RandomLevel["rects"][number], b: RandomLevel["rects"][number]) {
+  return a.left <= b.right && a.right >= b.left && a.top <= b.bottom && a.bottom >= b.top;
+}
+
+function semanticForMapRecord(record: MapRecord): SemanticEntity {
+  return {
+    id: `map-record:${record.id}`,
+    type: "map record",
+    label: record.primaryName || record.name || `Map Record ${record.id}`,
+    editState: "editable",
+    confidence: "confirmed",
+    source: "Data MD2",
+    recordRef: `record:Data MD2:${record.id}`,
+    byteRange: record.provenance
+      ? { start: record.provenance.byteOffset, endExclusive: record.provenance.byteOffset + record.provenance.byteLength, length: record.provenance.byteLength }
+      : null,
+    editable: true,
+    summary: {
+      id: record.id,
+      name: record.primaryName || record.name || `Map Record ${record.id}`,
+      startX: record.startX,
+      startY: record.startY,
+      level: record.level,
+      pictId: record.pictId,
+      iconSize: record.iconSize,
+      show: record.show,
+      isDungeon: record.isDungeon,
+      rect: record.rect,
+      note: record.note
+    }
+  };
+}
+
 function SelectionLinks({
   map,
   triggers,
@@ -1930,15 +2694,48 @@ function attributeSourceLabel(attributes: ReturnType<typeof classifyTileValue>["
   return attributes.source || "Unknown";
 }
 
+function yesNo(value: boolean | null | undefined) {
+  if (value == null) return "unknown";
+  return value ? "yes" : "no";
+}
+
+function forestTypeLabel(value: number | null | undefined) {
+  if (value == null) return "unknown";
+  if (value === 0) return "not forest";
+  if (value === 1) return "normal forest";
+  if (value === 2) return "desert forest";
+  if (value === 3) return "mushroom grove";
+  return `type ${value}`;
+}
+
+function tileEditableScopeLabel(scope: string | null | undefined) {
+  if (scope === "built-in-reference") return "Built into Realmz";
+  if (scope === "scenario-custom") return "Scenario Custom";
+  if (scope === "special-tile") return "Special Tile Table";
+  return "Unknown";
+}
+
+function normalizedCombatBuild(attributes: ReturnType<typeof classifyTileValue>["attributes"]) {
+  const rows = attributes?.combatBuild;
+  if (!rows || rows.length < 3) return null;
+  const normalizedRows = rows.slice(0, 3).map((row) => row.slice(0, 3));
+  if (!normalizedRows.every((row) => row.length === 3)) return null;
+  if (!normalizedRows.flat().some((value) => value !== 0)) return null;
+  return normalizedRows;
+}
+
 function tileAttributeLabel(flag: TileAttributeFlag) {
   switch (flag) {
     case "walkable": return "Walkable";
     case "solid": return "Solid / blocking";
-    case "path": return "Path";
+    case "path": return "Runtime path";
+    case "visual-path": return "Road art";
     case "shore": return "Shore / water";
     case "boat-required": return "Boat required";
     case "fly-float-required": return "Fly / float required";
     case "blocks-los": return "Blocks LOS";
+    case "forest": return "Forest";
+    case "combat-build": return "Combat map";
     case "special-icon": return "Special / icon";
     case "unknown-metadata": return "Unknown";
     default: return flag;

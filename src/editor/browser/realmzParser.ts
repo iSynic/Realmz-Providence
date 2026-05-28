@@ -230,6 +230,7 @@ function parseTileAttributes(buffer: Uint8Array | undefined): TileAttributeProfi
       solidType,
       movementSoundId: null,
       movementCost: null,
+      editableScope: "special-tile",
       flags: solidType === 0 ? ["walkable"] : ["solid"],
       confidence: "source-backed",
       sourceKind: "data-solids",
@@ -245,6 +246,10 @@ const MAPSTATS_RECORDS = 201;
 export function parseLandlookMapstats(buffer: Uint8Array | undefined, landlook: number, source: string): TileAttributeProfile[] {
   if (!buffer) return [];
   const count = Math.min(MAPSTATS_RECORDS, Math.floor(buffer.byteLength / MAPSTATS_RECORD_BYTES));
+  const baseOffset = MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS;
+  const baseTile = buffer.byteLength >= baseOffset + 2 ? i16(buffer, baseOffset) : null;
+  const baseScale = buffer.byteLength >= baseOffset + 4 ? i16(buffer, baseOffset + 2) : null;
+  const editableScope = source.toLowerCase().includes("custom") ? "scenario-custom" : "built-in-reference";
   return Array.from({ length: count }, (_, tile) => {
     const start = tile * MAPSTATS_RECORD_BYTES;
     const sound = i16(buffer, start);
@@ -255,18 +260,40 @@ export function parseLandlookMapstats(buffer: Uint8Array | undefined, landlook: 
     const isPath = i16(buffer, start + 10) !== 0;
     const los = i16(buffer, start + 12) !== 0;
     const flyFloat = i16(buffer, start + 14) !== 0;
+    const forest = i16(buffer, start + 16);
+    const spare = i16(buffer, start + 18);
+    const combatBuild = [
+      [i16(buffer, start + 20), i16(buffer, start + 22), i16(buffer, start + 24)],
+      [i16(buffer, start + 26), i16(buffer, start + 28), i16(buffer, start + 30)],
+      [i16(buffer, start + 32), i16(buffer, start + 34), i16(buffer, start + 36)]
+    ];
+    const clearLandId = i16(buffer, start + 38);
     const flags: TileAttributeProfile["flags"] = [solid === 0 && needBoat === 0 && !flyFloat ? "walkable" : "solid"];
     if (shore) flags.push("shore");
     if (needBoat !== 0) flags.push("boat-required");
     if (isPath) flags.push("path");
     if (los) flags.push("blocks-los");
     if (flyFloat) flags.push("fly-float-required");
+    if (forest !== 0) flags.push("forest");
+    if (combatBuild.flat().some((value) => value !== 0)) flags.push("combat-build");
     return {
       tile,
       landlook,
       solidType: solid,
       movementSoundId: sound,
       movementCost: time,
+      shore,
+      boatRequirement: needBoat,
+      pathFlag: isPath,
+      blocksLos: los,
+      flyFloatRequired: flyFloat,
+      forestType: forest,
+      spare,
+      combatBuild,
+      clearLandId,
+      baseTile,
+      baseScale,
+      editableScope,
       flags,
       confidence: "source-backed",
       sourceKind: "mapstats",

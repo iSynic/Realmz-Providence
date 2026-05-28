@@ -1205,10 +1205,13 @@ pub enum TileAttributeFlag {
     Walkable,
     Solid,
     Path,
+    VisualPath,
     Shore,
     BoatRequired,
     FlyFloatRequired,
     BlocksLos,
+    Forest,
+    CombatBuild,
     SpecialIcon,
     UnknownMetadata,
 }
@@ -1218,15 +1221,43 @@ pub enum TileAttributeFlag {
 pub struct TileAttributeProfile {
     pub tile: i16,
     pub landlook: Option<i8>,
-    pub solid_type: Option<u8>,
+    pub solid_type: Option<i16>,
     pub movement_sound_id: Option<i16>,
     pub movement_cost: Option<i16>,
+    #[serde(default)]
+    pub shore: Option<bool>,
+    #[serde(default)]
+    pub boat_requirement: Option<i16>,
+    #[serde(default)]
+    pub path_flag: Option<bool>,
+    #[serde(default)]
+    pub blocks_los: Option<bool>,
+    #[serde(default)]
+    pub fly_float_required: Option<bool>,
+    #[serde(default)]
+    pub forest_type: Option<i16>,
+    #[serde(default)]
+    pub spare: Option<i16>,
+    #[serde(default)]
+    pub combat_build: Vec<Vec<i16>>,
+    #[serde(default)]
+    pub clear_land_id: Option<i16>,
+    #[serde(default)]
+    pub base_tile: Option<i16>,
+    #[serde(default)]
+    pub base_scale: Option<i16>,
+    #[serde(default = "default_tile_editable_scope")]
+    pub editable_scope: String,
     pub flags: Vec<TileAttributeFlag>,
     pub confidence: TileAttributeConfidence,
     #[serde(default = "default_tile_attribute_source_kind")]
     pub source_kind: TileAttributeSourceKind,
     pub source: String,
     pub raw_byte: Option<u8>,
+}
+
+fn default_tile_editable_scope() -> String {
+    "unknown".to_string()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -14,6 +14,7 @@ export type EditorTab =
   | "export";
 export type ActiveWorkbench = "project" | "library";
 export type EditorTool = "select" | "paint" | "stamp" | "trigger" | "random" | "sample" | "pan";
+export type MapWorkbenchMode = "canvas" | "land-layout" | "land-tiles" | "random-areas" | "map-records";
 export type MapPaintMode = "brush" | "rectangle" | "region" | "replace" | "clear";
 export type MapRegionSelection = { left: number; top: number; right: number; bottom: number };
 export type MapPreviewMode = "off" | "los" | "darkness" | "both";
@@ -210,10 +211,13 @@ export type TileAttributeFlag =
   | "walkable"
   | "solid"
   | "path"
+  | "visual-path"
   | "shore"
   | "boat-required"
   | "fly-float-required"
   | "blocks-los"
+  | "forest"
+  | "combat-build"
   | "special-icon"
   | "unknown-metadata";
 
@@ -223,6 +227,18 @@ export type TileAttributeProfile = {
   solidType: number | null;
   movementSoundId: number | null;
   movementCost: number | null;
+  shore?: boolean | null;
+  boatRequirement?: number | null;
+  pathFlag?: boolean | null;
+  blocksLos?: boolean | null;
+  flyFloatRequired?: boolean | null;
+  forestType?: number | null;
+  spare?: number | null;
+  combatBuild?: number[][];
+  clearLandId?: number | null;
+  baseTile?: number | null;
+  baseScale?: number | null;
+  editableScope?: "built-in-reference" | "scenario-custom" | "special-tile" | "unknown";
   flags: TileAttributeFlag[];
   confidence: TileAttributeConfidence;
   sourceKind?: TileAttributeSourceKind;
