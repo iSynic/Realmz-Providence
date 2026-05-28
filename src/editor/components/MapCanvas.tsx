@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AtlasEntry,
   EditorTool,
@@ -9,6 +9,7 @@ import {
   MapHitTarget,
   MapEntity,
   MapPaintMode,
+  MapPaintVariation,
   MapRegionSelection,
   MapViewOptions,
   ProjectCommand,
@@ -28,10 +29,12 @@ import {
   rectCenter
 } from "../map/geometry";
 import { useMapInteractions } from "../map/useMapInteractions";
+import { hasSecretMarkerTile, isSecretWalkableTile } from "../map/secrets";
 import { triggerEntityId } from "../utils";
 import { ScrollArea } from "../ui";
 import {
   drawBaseMap,
+  drawBaseMapCell,
   drawHover,
   drawMapRecords,
   drawMapVisibilityPreview,
@@ -39,6 +42,7 @@ import {
   drawRegionSelection,
   drawSecretTileOverlay,
   drawSelectedCell,
+  drawTileValueCell,
   drawTriggers,
   syncCanvasSize
 } from "../map/drawMapCanvas";
@@ -57,6 +61,8 @@ export function RealmzMapCanvas({
   mapRecords,
   activeTool,
   paintMode,
+  paintVariation,
+  activePaintGroupId,
   selectedTile,
   zoom,
   smoothTiles,
@@ -89,6 +95,8 @@ export function RealmzMapCanvas({
   mapRecords: SemanticEntity[];
   activeTool: EditorTool;
   paintMode: MapPaintMode;
+  paintVariation: MapPaintVariation;
+  activePaintGroupId: string;
   selectedTile: number;
   zoom: number;
   smoothTiles: boolean;
@@ -116,16 +124,40 @@ export function RealmzMapCanvas({
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const hudRef = useRef<HTMLDivElement | null>(null);
   const focusKeyRef = useRef<string | null>(null);
+  const baseRenderRef = useRef<BaseRenderSnapshot | null>(null);
   const [hudPosition, setHudPosition] = useState({ left: 10, top: 10 });
   const setHudNode = useCallback((node: HTMLDivElement | null) => {
     hudRef.current = node;
   }, []);
   const canvasCssSize = Math.round(BASE_CANVAS_SIZE * zoom);
+  const previewPaintChange = useCallback((change: { x: number; y: number; to: number }) => {
+    const canvas = baseCanvasRef.current;
+    if (!canvas) return;
+    const size = syncCanvasSize(canvas, canvasCssSize);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const cell = size / MAP_CELLS;
+    ctx.imageSmoothingEnabled = smoothTiles;
+    ctx.imageSmoothingQuality = smoothTiles ? "high" : "low";
+    drawTileValueCell(ctx, { tile: change.to, x: change.x, y: change.y, atlas, icons, viewOptions, cell });
+  }, [atlas, canvasCssSize, icons, smoothTiles, viewOptions]);
+  const resetPaintPreview = useCallback(() => {
+    const canvas = baseCanvasRef.current;
+    if (!canvas) return;
+    const size = syncCanvasSize(canvas, canvasCssSize);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    drawBaseMap(ctx, { map, atlas, icons, smoothTiles, viewOptions, size });
+    baseRenderRef.current = baseRenderSnapshot({ map, atlas, icons, smoothTiles, viewOptions, size });
+  }, [atlas, canvasCssSize, icons, map, smoothTiles, viewOptions]);
   const { hover, hoverTarget, regionPreview, overlayHandlers } = useMapInteractions({
     map,
     activeTool,
     paintMode,
+    paintVariation,
+    activePaintGroupId,
     selectedTile,
+    selectedTileset: tileset,
     triggers,
     randomLevel,
     mapRecords,
@@ -141,8 +173,15 @@ export function RealmzMapCanvas({
     onBeginPaintStroke,
     onApplyCommand,
     onCommitPaintStroke,
-    onCancelPaintStroke
+    onCancelPaintStroke,
+    onPreviewPaintChange: previewPaintChange,
+    onResetPaintPreview: resetPaintPreview
   });
+  const secretOverlayDependency = useMemo(
+    () => viewOptions.showSecretOverlays ? secretOverlaySignature(map) : "secrets-off",
+    [map.tiles, map.levelType, map.render.mode, viewOptions.showSecretOverlays]
+  );
+  const overlayMapDependency = previewMode !== "off" ? map : `${map.id}:${secretOverlayDependency}`;
 
   useEffect(() => {
     const canvas = baseCanvasRef.current;
@@ -150,7 +189,23 @@ export function RealmzMapCanvas({
     const size = syncCanvasSize(canvas, canvasCssSize);
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    drawBaseMap(ctx, { map, atlas, icons, smoothTiles, viewOptions, size });
+    const nextSnapshot = baseRenderSnapshot({ map, atlas, icons, smoothTiles, viewOptions, size });
+    const previous = baseRenderRef.current;
+    const changedCells = previous && canPatchBaseMap(previous, nextSnapshot)
+      ? changedTileCells(previous.tiles, map.tiles, map.width)
+      : null;
+
+    ctx.imageSmoothingEnabled = smoothTiles;
+    ctx.imageSmoothingQuality = smoothTiles ? "high" : "low";
+    if (changedCells && changedCells.length > 0) {
+      const cell = size / MAP_CELLS;
+      for (const changed of changedCells) {
+        drawBaseMapCell(ctx, { map, x: changed.x, y: changed.y, atlas, icons, viewOptions, cell });
+      }
+    } else if (!changedCells || changedCells.length > 0) {
+      drawBaseMap(ctx, { map, atlas, icons, smoothTiles, viewOptions, size });
+    }
+    baseRenderRef.current = nextSnapshot;
   }, [
     map,
     atlas,
@@ -200,7 +255,7 @@ export function RealmzMapCanvas({
     tileAttributes,
     tileset,
     canvasCssSize,
-    map
+    overlayMapDependency
   ]);
 
   useEffect(() => {
@@ -292,6 +347,78 @@ export function RealmzMapCanvas({
       </div>
     </ScrollArea>
   );
+}
+
+type BaseRenderSnapshot = {
+  mapId: string;
+  tiles: number[];
+  width: number;
+  size: number;
+  atlas: AtlasEntry | null;
+  icons: Record<number, IconEntry>;
+  smoothTiles: boolean;
+  showRealTiles: boolean;
+  showRealmzCoordinates: boolean;
+};
+
+function baseRenderSnapshot({
+  map,
+  atlas,
+  icons,
+  smoothTiles,
+  viewOptions,
+  size
+}: {
+  map: MapEntity;
+  atlas: AtlasEntry | null;
+  icons: Record<number, IconEntry>;
+  smoothTiles: boolean;
+  viewOptions: MapViewOptions;
+  size: number;
+}): BaseRenderSnapshot {
+  return {
+    mapId: map.id,
+    tiles: map.tiles,
+    width: map.width,
+    size,
+    atlas,
+    icons,
+    smoothTiles,
+    showRealTiles: viewOptions.showRealTiles,
+    showRealmzCoordinates: viewOptions.showRealmzCoordinates
+  };
+}
+
+function canPatchBaseMap(previous: BaseRenderSnapshot, next: BaseRenderSnapshot) {
+  return previous.mapId === next.mapId &&
+    previous.width === next.width &&
+    previous.size === next.size &&
+    previous.atlas === next.atlas &&
+    previous.icons === next.icons &&
+    previous.smoothTiles === next.smoothTiles &&
+    previous.showRealTiles === next.showRealTiles &&
+    previous.showRealmzCoordinates === next.showRealmzCoordinates;
+}
+
+function changedTileCells(previous: number[], next: number[], width: number) {
+  if (previous.length !== next.length || width <= 0) return null;
+  const cells: Array<{ x: number; y: number }> = [];
+  for (let index = 0; index < next.length; index += 1) {
+    if (previous[index] === next[index]) continue;
+    cells.push({ x: index % width, y: Math.floor(index / width) });
+  }
+  return cells;
+}
+
+function secretOverlaySignature(map: MapEntity) {
+  let hash = map.levelType === "dungeon" || map.render.mode === "dungeon-top-down" ? 0x811c9dc5 : 0x45d9f3b;
+  for (const value of map.tiles) {
+    let marker = 0;
+    if (isSecretWalkableTile(value, map)) marker |= 1;
+    if (hasSecretMarkerTile(value, map)) marker |= 2;
+    hash = Math.imul(hash ^ marker, 16777619);
+  }
+  return (hash >>> 0).toString(36);
 }
 
 function cursorForTool(tool: EditorTool, target: MapHitTarget | null) {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { TOOLS } from "../constants";
 import { EditorState } from "../store";
-import { EditorTool, IconEntry, MapEntity, MapPaintMode, MapPreviewFocalPoint, MapPreviewMode, MapRecord, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TileAttributeFlag, TilesetAsset, TriggerRecord } from "../types";
+import { EditorTool, IconEntry, MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRecord, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TileAttributeFlag, TilesetAsset, TriggerRecord } from "../types";
 import { randomRectEntityId, tileValueAt } from "../map/geometry";
 import { allMapCells, buildReplaceChanges, dominantTiles, rectCells, regionCellCount, regionDimensions } from "../map/regionPaint";
 import { actionSlotEntitiesForTriggerRecord } from "../semanticGraph";
@@ -23,6 +23,7 @@ import { MapDiagnostics, MapNumberField } from "./maps/MapFormControls";
 import { RandomAreasWorkbench, RandomRectangleEditor, randomRectDiagnostics } from "./maps/RandomEncountersWorkbench";
 import { clearRegion, clearTileForMap, fillRegion, paintModeLabel, regionLabel, replaceRegion, replaceWholeMap } from "./maps/mapRegionUiUtils";
 import { MapRecordsWorkbench, RecordSelectionDetails } from "./maps/MapRecordsWorkbench";
+import { landlookGroupById, landlookGroupRangeLabel } from "../map/paintGroups";
 
 export { LandLayoutEditor };
 export type { LandLayoutCellSelection };
@@ -51,6 +52,10 @@ export function MapContextSidebar({
   onSelectTile,
   paintMode,
   onSetPaintMode,
+  paintVariation,
+  onSetPaintVariation,
+  activePaintGroupId,
+  onSetActivePaintGroup,
   selectedRegion,
   onSetSelectedRegion,
   replaceSourceTile,
@@ -70,6 +75,10 @@ export function MapContextSidebar({
   onSelectTile: (tile: number) => void;
   paintMode: MapPaintMode;
   onSetPaintMode: (mode: MapPaintMode) => void;
+  paintVariation: MapPaintVariation;
+  onSetPaintVariation: (variation: MapPaintVariation) => void;
+  activePaintGroupId: string;
+  onSetActivePaintGroup: (groupId: string) => void;
   selectedRegion: MapRegionSelection | null;
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
   replaceSourceTile: number | null;
@@ -105,6 +114,10 @@ export function MapContextSidebar({
           onSelectTile={onSelectTile}
           paintMode={paintMode}
           onSetPaintMode={onSetPaintMode}
+          paintVariation={paintVariation}
+          onSetPaintVariation={onSetPaintVariation}
+          activePaintGroupId={activePaintGroupId}
+          onSetActivePaintGroup={onSetActivePaintGroup}
           selectedRegion={selectedRegion}
           onSetSelectedRegion={onSetSelectedRegion}
           replaceSourceTile={replaceSourceTile}
@@ -142,6 +155,10 @@ export function MapSelectionSidebar({
   onOpenScripts,
   paintMode,
   onSetPaintMode,
+  paintVariation,
+  onSetPaintVariation,
+  activePaintGroupId,
+  onSetActivePaintGroup,
   selectedRegion,
   onSetSelectedRegion,
   replaceSourceTile,
@@ -173,6 +190,10 @@ export function MapSelectionSidebar({
   onOpenScripts: (entity: SelectedEntity) => void;
   paintMode: MapPaintMode;
   onSetPaintMode: (mode: MapPaintMode) => void;
+  paintVariation: MapPaintVariation;
+  onSetPaintVariation: (variation: MapPaintVariation) => void;
+  activePaintGroupId: string;
+  onSetActivePaintGroup: (groupId: string) => void;
   selectedRegion: MapRegionSelection | null;
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
   replaceSourceTile: number | null;
@@ -573,6 +594,10 @@ function MapToolset({
   onSelectTile,
   paintMode,
   onSetPaintMode,
+  paintVariation,
+  onSetPaintVariation,
+  activePaintGroupId,
+  onSetActivePaintGroup,
   selectedRegion,
   onSetSelectedRegion,
   replaceSourceTile,
@@ -591,6 +616,10 @@ function MapToolset({
   onSelectTile: (tile: number) => void;
   paintMode: MapPaintMode;
   onSetPaintMode: (mode: MapPaintMode) => void;
+  paintVariation: MapPaintVariation;
+  onSetPaintVariation: (variation: MapPaintVariation) => void;
+  activePaintGroupId: string;
+  onSetActivePaintGroup: (groupId: string) => void;
   selectedRegion: MapRegionSelection | null;
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
   replaceSourceTile: number | null;
@@ -651,6 +680,9 @@ function MapToolset({
             selectedTile={state.selectedTile}
             paintMode={paintMode}
             onSetPaintMode={setPaintSubmode}
+            paintVariation={paintVariation}
+            onSetPaintVariation={onSetPaintVariation}
+            activePaintGroupId={activePaintGroupId}
             selectedRegion={selectedRegion}
             onSetSelectedRegion={onSetSelectedRegion}
             replaceSourceTile={replaceSourceTile}
@@ -673,6 +705,10 @@ function MapToolset({
               atlas={atlas}
               icons={state.iconEntries}
               atlasStatus={state.atlasStatus}
+              activePaintGroupId={activePaintGroupId}
+              onSetActivePaintGroup={onSetActivePaintGroup}
+              paintVariation={paintVariation}
+              onSetPaintVariation={onSetPaintVariation}
               variant="sidebar"
             />
           )}
@@ -929,12 +965,21 @@ const PAINT_MODES: Array<{ id: MapPaintMode; label: string; body: string }> = [
   { id: "clear", label: "Clear Region", body: "Reset a selected region to the base tile." }
 ];
 
+const PAINT_VARIATION_OPTIONS: Array<{ id: MapPaintVariation; label: string; hint: string }> = [
+  { id: "single", label: "Single Tile", hint: "Paint only the selected tile." },
+  { id: "cycle-group", label: "Cycle Group", hint: "Advance through the active tile group once per newly painted cell." },
+  { id: "random-group", label: "Random Group", hint: "Choose a stable random tile from the active group for each newly painted cell." }
+];
+
 function PaintModePanel({
   map,
   selectedTileset,
   selectedTile,
   paintMode,
   onSetPaintMode,
+  paintVariation,
+  onSetPaintVariation,
+  activePaintGroupId,
   selectedRegion,
   onSetSelectedRegion,
   replaceSourceTile,
@@ -946,6 +991,9 @@ function PaintModePanel({
   selectedTile: number;
   paintMode: MapPaintMode;
   onSetPaintMode: (mode: MapPaintMode) => void;
+  paintVariation: MapPaintVariation;
+  onSetPaintVariation: (variation: MapPaintVariation) => void;
+  activePaintGroupId: string;
   selectedRegion: MapRegionSelection | null;
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
   replaceSourceTile: number | null;
@@ -953,6 +1001,7 @@ function PaintModePanel({
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
   const clearTile = clearTileForMap(map, selectedTileset);
+  const activeGroup = landlookGroupById(activePaintGroupId);
   return (
     <div className="paint-mode-panel">
       <div className="paint-mode-header">
@@ -967,12 +1016,29 @@ function PaintModePanel({
         ))}
       </div>
       <p className="paint-mode-hint">
-        {paintMode === "brush" && "Brush keeps the current single-cell and drag painting behavior."}
+        {paintMode === "brush" && (paintVariation === "single"
+          ? "Brush paints the selected tile while dragging."
+          : `${paintVariation === "cycle-group" ? "Cycle" : "Random"} paints from ${activeGroup.label} (${landlookGroupRangeLabel(activePaintGroupId)}) while dragging.`)}
         {paintMode === "rectangle" && "Drag on the map to preview a rectangle; release fills it with the selected paint tile."}
         {paintMode === "region" && "Drag on the map to select a rectangular region for later fill, replace, or clear operations."}
         {paintMode === "replace" && "Select a region, then replace one tile value with the selected paint tile."}
         {paintMode === "clear" && `Select a region, then clear it to tile ${clearTile}.`}
       </p>
+      {paintMode === "brush" && (
+        <div className="paint-variation-compact" role="toolbar" aria-label="Brush variation">
+          {PAINT_VARIATION_OPTIONS.map((variation) => (
+            <button
+              key={variation.id}
+              type="button"
+              className={paintVariation === variation.id ? "active" : ""}
+              onClick={() => onSetPaintVariation(variation.id)}
+              title={variation.hint}
+            >
+              {variation.label}
+            </button>
+          ))}
+        </div>
+      )}
       {selectedRegion && (
         <div className="paint-region-quick-actions">
           <span>{regionLabel(selectedRegion)}</span>

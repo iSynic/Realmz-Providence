@@ -189,7 +189,7 @@ export function useAppBootstrapEffects({
     return () => {
       disposed = true;
     };
-  }, [atlasLoadKey, desktopRuntime, dispatch, projectDir, state.project]);
+  }, [atlasLoadKey, desktopRuntime, dispatch, projectDir]);
 
   useEffect(() => {
     let disposed = false;
@@ -264,5 +264,5 @@ export function useAppBootstrapEffects({
     return () => {
       disposed = true;
     };
-  }, [desktopRuntime, dispatch, iconLoadKey, projectDir, state.libraryCatalog, state.project, workspaceDir]);
+  }, [desktopRuntime, dispatch, iconLoadKey, projectDir, workspaceDir]);
 }

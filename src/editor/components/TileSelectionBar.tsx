@@ -1,7 +1,8 @@
-import { MutableRefObject, useEffect, useMemo, useRef, useState } from "react";
+import { memo, MutableRefObject, useEffect, useMemo, useRef, useState } from "react";
 import { EditorState } from "../store";
-import { IconEntry, LibraryAsset, MapEntity, Project, TileAttributeFlag, TilePaletteCategory, TilesetAsset } from "../types";
+import { IconEntry, LibraryAsset, MapEntity, MapPaintVariation, Project, TileAttributeFlag, TilePaletteCategory, TilesetAsset } from "../types";
 import { classifyTileValue, isDivinityVisualPathTile, standardTileValues, tileAttributeGroup } from "../map/tileMetadata";
+import { LANDLOOK_TILE_GROUPS, landlookGroupById, landlookGroupRangeLabel, landlookGroupTiles } from "../map/paintGroups";
 import { PAINTABLE_REFERENCE_ACTOR_ICON_VALUES, PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES } from "../map/renderValues";
 import { isActorOrCreatureIconId, isMapPlaceableLibraryAsset } from "../resourceResolver";
 import { tileColor } from "./TileSprite";
@@ -25,6 +26,10 @@ type PaintPalettePanelProps = {
   atlas: EditorState["atlasEntries"][string] | null;
   icons?: Record<number, IconEntry>;
   atlasStatus: string;
+  activePaintGroupId: string;
+  paintVariation: MapPaintVariation;
+  onSetActivePaintGroup: (groupId: string) => void;
+  onSetPaintVariation: (variation: MapPaintVariation) => void;
   variant?: "bar" | "sidebar";
 };
 
@@ -45,30 +50,42 @@ export function PaintPalettePanel({
   atlas,
   icons,
   atlasStatus,
+  activePaintGroupId,
+  paintVariation,
+  onSetActivePaintGroup,
+  onSetPaintVariation,
   variant = "sidebar"
 }: PaintPalettePanelProps) {
-  const standardTiles = standardTileValues(tileset);
-  const usedTiles = usedTilesForMap(map);
-  const rawTiles = rawTilesForMap(map, tileset);
+  const standardTiles = useMemo(() => standardTileValues(tileset), [tileset]);
   const [mode, setMode] = useState<TilePaletteCategory>("landlook");
   const [specialFilter, setSpecialFilter] = useState<SpecialIconFilter>("all");
-  const specialTiles = specialTilesForPalette(project ?? null, map, libraryAssets, icons, specialFilter);
   const [attributeFilter, setAttributeFilter] = useState<TileAttributeFlag | "all">("all");
   const tileAttributes = project?.tileAttributes ?? [];
+  const usedTiles = useMemo(() => {
+    if (mode !== "used" && mode !== "attributes") return [];
+    return usedTilesForMap(map);
+  }, [map, mode]);
+  const rawTiles = useMemo(() => (mode === "raw" ? rawTilesForMap(map, tileset) : []), [map, mode, tileset]);
+  const specialTiles = useMemo(
+    () => (mode === "special" ? specialTilesForPalette(project ?? null, map, libraryAssets, icons, specialFilter) : []),
+    [icons, libraryAssets, map, mode, project, specialFilter]
+  );
   const attributeTiles = useMemo(() => {
+    if (mode !== "attributes") return [];
     const candidates = [...new Set([...standardTiles, ...usedTiles])].sort((a, b) => a - b);
     if (attributeFilter === "all") return candidates;
     return candidates.filter((tile) => tileAttributeGroup(classifyTileValue(tile, tileset, tileAttributes, icons).attributes, tile, tileset).includes(attributeFilter));
-  }, [attributeFilter, icons, standardTiles, tileAttributes, tileset, usedTiles]);
-  const paletteTiles = mode === "used"
-    ? usedTiles
-    : mode === "raw"
-      ? rawTiles
-      : mode === "special"
-        ? specialTiles
-        : mode === "attributes"
-          ? attributeTiles
-          : standardTiles;
+  }, [attributeFilter, icons, mode, standardTiles, tileAttributes, tileset, usedTiles]);
+  const groupedStandardTiles = useMemo(() => {
+    return landlookGroupTiles(tileset, activePaintGroupId);
+  }, [activePaintGroupId, tileset]);
+  const paletteTiles = useMemo(() => {
+    if (mode === "used") return usedTiles;
+    if (mode === "raw") return rawTiles;
+    if (mode === "special") return specialTiles;
+    if (mode === "attributes") return attributeTiles;
+    return groupedStandardTiles;
+  }, [attributeTiles, groupedStandardTiles, mode, rawTiles, specialTiles, usedTiles]);
   const [query, setQuery] = useState("");
   const buttonRefs = useRef(new Map<number, HTMLButtonElement>());
   const focusTile = inspectedTile ?? selectedTile;
@@ -78,6 +95,11 @@ export function PaintPalettePanel({
     return paletteTiles.filter((tile) => String(tile).includes(normalized));
   }, [paletteTiles, query]);
   const selectedMeta = classifyTileValue(selectedTile, tileset, tileAttributes, icons);
+  const activeGroup = landlookGroupById(activePaintGroupId);
+  const activeGroupTiles = useMemo(() => landlookGroupTiles(tileset, activePaintGroupId), [activePaintGroupId, tileset]);
+  const groupWarning = paintVariation !== "single" && activeGroupTiles.length === 0
+    ? "This group has no tiles in the current landlook; Brush will use the selected tile."
+    : null;
 
   useEffect(() => {
     const button = buttonRefs.current.get(focusTile);
@@ -109,6 +131,63 @@ export function PaintPalettePanel({
           <button type="button" className={mode === "used" ? "active" : ""} onClick={() => setMode("used")}>Used</button>
           <button type="button" className={mode === "attributes" ? "active" : ""} onClick={() => setMode("attributes")}>Attributes</button>
           <button type="button" className={mode === "raw" ? "active" : ""} onClick={() => setMode("raw")}>Raw / Advanced</button>
+        </div>
+      )}
+      {variant === "sidebar" && mode === "landlook" && (
+        <div className="paint-tile-groups" role="toolbar" aria-label="Landlook tile groups">
+          {LANDLOOK_TILE_GROUPS.map((group) => (
+            <button
+              key={group.id}
+              type="button"
+              className={activePaintGroupId === group.id ? "active" : ""}
+              onClick={() => onSetActivePaintGroup(group.id)}
+              title={group.hint}
+            >
+              {group.label}
+            </button>
+          ))}
+        </div>
+      )}
+      {variant === "sidebar" && (
+        <div className="paint-variation-panel" aria-label="Brush variation">
+          <div className="paint-variation-header">
+            <span>Brush Variation</span>
+            <b>{paintVariationLabel(paintVariation, activeGroup.label)}</b>
+          </div>
+          <div className="paint-variation-buttons" role="toolbar" aria-label="Brush variation mode">
+            {PAINT_VARIATIONS.map((variation) => (
+              <button
+                key={variation.id}
+                type="button"
+                className={paintVariation === variation.id ? "active" : ""}
+                onClick={() => onSetPaintVariation(variation.id)}
+                title={variation.hint}
+              >
+                {variation.label}
+              </button>
+            ))}
+          </div>
+          {paintVariation !== "single" && (
+            <div className="paint-group-preview">
+              <small>{activeGroup.label} {landlookGroupRangeLabel(activePaintGroupId)}</small>
+              <div className="paint-group-preview-strip">
+                {activeGroupTiles.slice(0, 14).map((tile) => (
+                  <button
+                    key={tile}
+                    type="button"
+                    className={tile === selectedTile ? "selected" : ""}
+                    style={{ background: tileColor(tile) }}
+                    onClick={() => setSelectedTile(tile)}
+                    title={tileTitle(tile, tileset, tileAttributes, icons)}
+                  >
+                    <TileSwatch atlas={atlas} icons={icons} tile={tile} tileset={tileset} />
+                  </button>
+                ))}
+                {activeGroupTiles.length > 14 && <span>+{activeGroupTiles.length - 14}</span>}
+              </div>
+              {groupWarning && <small className="paint-variation-warning">{groupWarning}</small>}
+            </div>
+          )}
         </div>
       )}
       {variant === "sidebar" && mode === "attributes" && (
@@ -187,7 +266,7 @@ export function PaintPalettePanel({
   );
 }
 
-function PaletteButtons({
+const PaletteButtons = memo(function PaletteButtons({
   atlas,
   icons,
   inspectedTile,
@@ -228,7 +307,7 @@ function PaletteButtons({
       {tiles.length === 0 && <small>No tiles match that search.</small>}
     </>
   );
-}
+});
 
 export function tileButtonClass(tile: number, selectedTile: number, inspectedTile: number | null) {
   return tileButtonClassFor(tile, selectedTile, inspectedTile, null, [], undefined);
@@ -290,6 +369,18 @@ const SPECIAL_ICON_FILTERS: Array<{ id: SpecialIconFilter; label: string; hint: 
   { id: "placeable", label: "Special Land", hint: "Project/library special land tiles and negative icon values commonly authored as map field values." },
   { id: "used", label: "Used Here", hint: "Negative icon values already used in the current map." },
 ];
+
+const PAINT_VARIATIONS: Array<{ id: MapPaintVariation; label: string; hint: string }> = [
+  { id: "single", label: "Single Tile", hint: "Paint the selected tile, matching the current behavior." },
+  { id: "cycle-group", label: "Cycle Group", hint: "Advance through the active tile group once for each newly painted cell." },
+  { id: "random-group", label: "Random Group", hint: "Pick a stable pseudo-random tile from the active tile group for each newly painted cell." }
+];
+
+function paintVariationLabel(variation: MapPaintVariation, groupLabel: string) {
+  if (variation === "cycle-group") return `Cycle: ${groupLabel}`;
+  if (variation === "random-group") return `Random: ${groupLabel}`;
+  return "Single Tile";
+}
 
 function specialTilesForPalette(
   project: Project | null,

@@ -16,6 +16,7 @@ export type ActiveWorkbench = "project" | "library";
 export type EditorTool = "select" | "paint" | "stamp" | "trigger" | "random" | "sample" | "pan";
 export type MapWorkbenchMode = "canvas" | "land-layout" | "land-tiles" | "random-areas" | "map-records";
 export type MapPaintMode = "brush" | "rectangle" | "region" | "replace" | "clear";
+export type MapPaintVariation = "single" | "cycle-group" | "random-group";
 export type MapRegionSelection = { left: number; top: number; right: number; bottom: number };
 export type MapPreviewMode = "off" | "los" | "darkness" | "both";
 export type MapPreviewFocalPoint = { x: number; y: number };

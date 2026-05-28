@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import { classifyTileValue } from "../map/tileMetadata";
 import { AtlasEntry, IconEntry, TilesetAsset } from "../types";
 import { drawTileSprite, tileColor } from "./TileSprite";
 
-export function TileSwatch({
+function TileSwatchComponent({
   atlas,
   icons,
   tile,
@@ -38,3 +38,5 @@ export function TileSwatch({
     </span>
   );
 }
+
+export const TileSwatch = memo(TileSwatchComponent);

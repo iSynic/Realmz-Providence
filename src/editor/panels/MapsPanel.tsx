@@ -1,6 +1,6 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { EditorState } from "../store";
-import { MapEntity, MapPaintMode, MapPreviewFocalPoint, MapPreviewMode, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
+import { MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
 import { triggerOverlayKinds } from "../semanticGraph";
 import { RealmzMapCanvas } from "../components/MapCanvas";
 import { LandLayoutEditor, LandTileAtlasEditor, MapContextSidebar, MapRecordsWorkbench, MapSelectionSidebar, RandomAreasWorkbench, type LandLayoutCellSelection } from "../components/MapContextSidebar";
@@ -65,12 +65,28 @@ export function MapsPanel({
   const [contextFocus, setContextFocus] = useState<"flags" | "atlas" | "layout" | "source">("flags");
   const [workbenchMode, setWorkbenchMode] = useState<MapWorkbenchMode>(() => readStoredWorkbenchMode());
   const [paintMode, setPaintMode] = useState<MapPaintMode>("brush");
+  const [paintVariation, setPaintVariation] = useState<MapPaintVariation>("single");
+  const [activePaintGroupId, setActivePaintGroupId] = useState("all");
   const [previewMode, setPreviewMode] = useState<MapPreviewMode>("off");
   const [previewFocalPoint, setPreviewFocalPoint] = useState<MapPreviewFocalPoint | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<MapRegionSelection | null>(null);
   const [selectedLayoutCell, setSelectedLayoutCell] = useState<LandLayoutCellSelection>(null);
   const [replaceSourceTile, setReplaceSourceTile] = useState<number | null>(null);
-  const visibleTriggers = state.showTriggers ? mapTriggers.filter((trigger) => triggerMatchesViewFilters(state.project, trigger, state)) : [];
+  const semanticSchema = state.project?.semanticSchema;
+  const visibleTriggers = useMemo(
+    () => state.showTriggers ? mapTriggers.filter((trigger) => triggerMatchesViewFilters(state.project, trigger, state)) : [],
+    [
+      mapTriggers,
+      semanticSchema,
+      state.showBattleOverlays,
+      state.showEncounterOverlays,
+      state.showMapOverlays,
+      state.showQuestOverlays,
+      state.showTextOverlays,
+      state.showTriggers,
+      state.showUnknownOverlays
+    ]
+  );
   useEffect(() => {
     setSelectedRegion(null);
     setReplaceSourceTile(null);
@@ -101,6 +117,10 @@ export function MapsPanel({
         onSelectTile={onSelectTile}
         paintMode={paintMode}
         onSetPaintMode={setPaintMode}
+        paintVariation={paintVariation}
+        onSetPaintVariation={setPaintVariation}
+        activePaintGroupId={activePaintGroupId}
+        onSetActivePaintGroup={setActivePaintGroupId}
         selectedRegion={selectedRegion}
         onSetSelectedRegion={setSelectedRegion}
         replaceSourceTile={replaceSourceTile}
@@ -136,6 +156,8 @@ export function MapsPanel({
                 mapRecords={mapRecords}
                 activeTool={state.activeTool}
                 paintMode={paintMode}
+                paintVariation={paintVariation}
+                activePaintGroupId={activePaintGroupId}
                 selectedTile={state.selectedTile}
                 zoom={state.zoom}
                 smoothTiles={state.smoothTiles}
@@ -258,6 +280,10 @@ export function MapsPanel({
         onOpenScripts={onOpenScripts}
         paintMode={paintMode}
         onSetPaintMode={setPaintMode}
+        paintVariation={paintVariation}
+        onSetPaintVariation={setPaintVariation}
+        activePaintGroupId={activePaintGroupId}
+        onSetActivePaintGroup={setActivePaintGroupId}
         selectedRegion={selectedRegion}
         onSetSelectedRegion={setSelectedRegion}
         replaceSourceTile={replaceSourceTile}

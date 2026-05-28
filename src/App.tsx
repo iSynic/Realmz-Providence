@@ -1,4 +1,4 @@
-import { Suspense, useMemo, useReducer, useState } from "react";
+import { Suspense, useMemo, useReducer, useRef, useState } from "react";
 import { DEFAULT_DIVINITY_ROOT, DEFAULT_EXPORT, DEFAULT_REALMZ_DATA_ROOT, DEFAULT_WORKSPACE } from "./editor/constants";
 import { ProjectNameDialog, ProjectStart } from "./editor/app/AppStart";
 import {
@@ -38,6 +38,14 @@ const DEFAULT_SCENARIO_ROOT = "F:\\Realmz\\base\\Realmz\\Scenarios";
 const DEFAULT_PROJECT_ROOT = "F:\\Realmz - Providence\\projects";
 const DEFAULT_EXPORT_ROOT = "F:\\Realmz - Providence\\exports";
 
+function importedMapIconCacheKey(project: { source: { sourcePath: string }; maps: MapEntity[] }) {
+  return [
+    project.source.sourcePath,
+    project.maps.length,
+    project.maps.map((map) => `${map.id}:${map.width}x${map.height}`).join("|")
+  ].join("::");
+}
+
 export function App() {
   const desktopRuntime = hasDesktopRuntime();
   const browserFileSystem = !desktopRuntime && canUseBrowserFileSystem();
@@ -48,22 +56,33 @@ export function App() {
   const [documentsOpen, setDocumentsOpen] = useState(false);
   const [projectNameDraft, setProjectNameDraft] = useState("Untitled Scenario");
   const [state, dispatch] = useReducer(editorReducer, desktopRuntime, initialEditorState);
+  const importedMapIconCacheRef = useRef<{ key: string; ids: number[] }>({ key: "", ids: [] });
 
   const selectedMap = useMemo(
     () => state.project?.maps.find((map) => map.id === state.selectedMapId) ?? state.project?.maps[0] ?? null,
-    [state.project, state.selectedMapId]
+    [state.project?.maps, state.selectedMapId]
   );
+  const selectedMapLocationKey = selectedMap ? `${selectedMap.levelType}:${selectedMap.index}` : "";
+  const selectedMapRenderKey = selectedMap
+    ? `${selectedMap.render.tilesetId}:${selectedMap.render.landlook}:${selectedMap.render.mode}`
+    : "";
   const selectedRandomLevel = useMemo(() => {
     return semanticRandomLevelForMap(state.project, selectedMap);
-  }, [state.project, selectedMap]);
+  }, [state.project?.randomLevels, state.project?.semanticSchema, selectedMapLocationKey]);
   const mapTriggers = useMemo(() => {
     return semanticTriggersForMap(state.project, selectedMap);
-  }, [state.project, selectedMap]);
+  }, [state.project?.triggers, state.project?.semanticSchema, selectedMapLocationKey]);
   const selectedTileset = useMemo(() => {
     return semanticTilesetForMap(state.project, selectedMap);
-  }, [state.project, selectedMap]);
-  const selectedMapRecords = useMemo(() => semanticMapRecordsForMap(state.project, selectedMap), [state.project, selectedMap]);
-  const visibleIssues = useMemo(() => issuesFor(state.project), [state.project]);
+  }, [state.project?.assetCatalog.tilesets, state.project?.semanticSchema, selectedMapLocationKey, selectedMapRenderKey]);
+  const selectedMapRecords = useMemo(
+    () => semanticMapRecordsForMap(state.project, selectedMap),
+    [state.project?.semanticSchema, selectedMapLocationKey]
+  );
+  const visibleIssues = useMemo(
+    () => issuesFor(state.project),
+    [state.project?.validation, state.project?.semanticSchema.diagnostics, state.project?.diagnostics]
+  );
   const selectedAtlas = selectedTileset ? state.atlasEntries[selectedTileset.id] ?? null : null;
   const atlasLoadKey = useMemo(
     () =>
@@ -72,14 +91,31 @@ export function App() {
             .map((asset) => `${asset.id}:${asset.imagePath ?? ""}:${asset.available ? "1" : "0"}:${asset.columns}x${asset.rows}:${asset.baseTile ?? ""}`)
             .join("|")
         : "",
-    [state.project]
+    [state.project?.assetCatalog.tilesets]
   );
+  const importedMapIconIds = useMemo(() => {
+    const project = state.project;
+    if (!project) return [];
+    const key = importedMapIconCacheKey(project);
+    if (importedMapIconCacheRef.current.key !== key) {
+      importedMapIconCacheRef.current = {
+        key,
+        ids: [...new Set(project.maps.flatMap((map) => referencedMapIconIds(map.tiles)))].sort((a, b) => a - b)
+      };
+    }
+    return importedMapIconCacheRef.current.ids;
+  }, [
+    state.project?.source.sourcePath,
+    state.project?.maps.length,
+    state.project?.maps.map((map) => `${map.id}:${map.width}x${map.height}`).join("|")
+  ]);
   const iconLoadKey = useMemo(
     () =>
       state.project
         ? [
             ...new Set([
-              ...state.project.maps.flatMap((map) => referencedMapIconIds(map.tiles)),
+              ...importedMapIconIds,
+              ...tileIconCandidates(state.selectedTile),
               ...(state.project.assetCatalog.icons ?? [])
                 .filter((asset) => asset.resourceType === "cicn")
                 .flatMap((asset) => tileIconCandidates(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId)),
@@ -93,7 +129,14 @@ export function App() {
             ])
           ].sort((a, b) => a - b).join(",")
         : "",
-    [desktopRuntime, state.project, state.libraryCatalog]
+    [
+      desktopRuntime,
+      importedMapIconIds,
+      state.libraryCatalog?.assets,
+      state.project?.assetCatalog.icons,
+      state.project?.assets,
+      state.selectedTile
+    ]
   );
   const undoLabel = state.past.length > 0 ? state.past[state.past.length - 1].label : null;
   const redoLabel = state.future.length > 0 ? state.future[0].label : null;

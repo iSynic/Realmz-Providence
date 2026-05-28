@@ -36,19 +36,67 @@ export function drawBaseMap(
 
   for (let y = 0; y < MAP_CELLS; y += 1) {
     for (let x = 0; x < MAP_CELLS; x += 1) {
-      const tile = tileValueAt(map, x, y);
-      const drewSprite = viewOptions.showRealTiles
-        ? drawTileSprite(ctx, atlas, tile, x * cell, y * cell, Math.ceil(cell), Math.ceil(cell), icons)
-        : false;
-      if (!drewSprite) {
-        ctx.fillStyle = tileColor(tile);
-        ctx.fillRect(x * cell, y * cell, Math.ceil(cell), Math.ceil(cell));
-      }
+      drawBaseMapCell(ctx, { map, x, y, atlas, icons, viewOptions, cell });
     }
   }
 
-  drawGrid(ctx, cell, size);
   if (viewOptions.showRealmzCoordinates) drawCoordinateLabels(ctx, cell, size);
+}
+
+export function drawBaseMapCell(
+  ctx: CanvasRenderingContext2D,
+  {
+    map,
+    x,
+    y,
+    atlas,
+    icons,
+    viewOptions,
+    cell
+  }: {
+    map: MapEntity;
+    x: number;
+    y: number;
+    atlas: AtlasEntry | null;
+    icons: Record<number, IconEntry>;
+    viewOptions: MapViewOptions;
+    cell: number;
+  }
+) {
+  const tile = tileValueAt(map, x, y);
+  drawTileValueCell(ctx, { tile, x, y, atlas, icons, viewOptions, cell });
+}
+
+export function drawTileValueCell(
+  ctx: CanvasRenderingContext2D,
+  {
+    tile,
+    x,
+    y,
+    atlas,
+    icons,
+    viewOptions,
+    cell
+  }: {
+    tile: number;
+    x: number;
+    y: number;
+    atlas: AtlasEntry | null;
+    icons: Record<number, IconEntry>;
+    viewOptions: MapViewOptions;
+    cell: number;
+  }
+) {
+  const left = x * cell;
+  const top = y * cell;
+  const size = Math.ceil(cell);
+  const drewSprite = viewOptions.showRealTiles
+    ? drawTileSprite(ctx, atlas, tile, left, top, size, size, icons)
+    : false;
+  if (!drewSprite) {
+    ctx.fillStyle = tileColor(tile);
+    ctx.fillRect(left, top, size, size);
+  }
 }
 
 export function syncCanvasSize(canvas: HTMLCanvasElement, cssSize: number) {
@@ -63,19 +111,6 @@ export function syncCanvasSize(canvas: HTMLCanvasElement, cssSize: number) {
 function canvasBackingSize(cssSize: number) {
   const deviceRatio = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
   return Math.max(900, Math.min(4096, Math.round(cssSize * deviceRatio)));
-}
-
-export function drawGrid(ctx: CanvasRenderingContext2D, cell: number, size: number) {
-  ctx.strokeStyle = "rgba(210, 220, 232, 0.13)";
-  ctx.lineWidth = 0.5;
-  for (let line = 0; line <= MAP_CELLS; line += 5) {
-    ctx.beginPath();
-    ctx.moveTo(line * cell, 0);
-    ctx.lineTo(line * cell, size);
-    ctx.moveTo(0, line * cell);
-    ctx.lineTo(size, line * cell);
-    ctx.stroke();
-  }
 }
 
 export function drawCoordinateLabels(ctx: CanvasRenderingContext2D, cell: number, size: number) {

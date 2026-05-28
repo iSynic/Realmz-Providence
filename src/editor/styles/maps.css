@@ -621,7 +621,8 @@
 
 
 .paint-palette-tabs button,
-.paint-attribute-filters button {
+.paint-attribute-filters button,
+.paint-tile-groups button {
   min-width: 0;
   border: 1px solid #2d3946;
   border-radius: 5px;
@@ -637,7 +638,8 @@
 
 
 .paint-palette-tabs button.active,
-.paint-attribute-filters button.active {
+.paint-attribute-filters button.active,
+.paint-tile-groups button.active {
   border-color: #3c78b2;
   background: #172d48;
   color: #d8ecff;
@@ -645,7 +647,8 @@
 
 
 
-.paint-attribute-filters {
+.paint-attribute-filters,
+.paint-tile-groups {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
@@ -653,9 +656,129 @@
 
 
 
-.paint-attribute-filters button {
+.paint-attribute-filters button,
+.paint-tile-groups button {
   flex: 1 1 86px;
   padding: 5px 6px;
+}
+
+
+
+.paint-variation-panel {
+  display: grid;
+  gap: 6px;
+  padding: 7px;
+  border: 1px solid #263341;
+  border-radius: 6px;
+  background: #10161d;
+}
+
+
+
+.paint-variation-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: #8ea5ba;
+  font-size: 10px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+
+
+.paint-variation-header b {
+  color: #f3c869;
+  text-align: right;
+}
+
+
+
+.paint-variation-buttons,
+.paint-variation-compact {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+
+
+.paint-variation-buttons button,
+.paint-variation-compact button {
+  min-width: 0;
+  border: 1px solid #2d3946;
+  border-radius: 5px;
+  background: #11161d;
+  color: #8da2b8;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 5px;
+  cursor: pointer;
+}
+
+
+
+.paint-variation-buttons button.active,
+.paint-variation-compact button.active {
+  border-color: #3c78b2;
+  background: #172d48;
+  color: #d8ecff;
+}
+
+
+
+.paint-group-preview {
+  display: grid;
+  gap: 5px;
+}
+
+
+
+.paint-group-preview-strip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+
+
+.paint-group-preview-strip button {
+  position: relative;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.13);
+  border-radius: 4px;
+  background: #11151a;
+  color: #fff;
+  cursor: pointer;
+}
+
+
+
+.paint-group-preview-strip button.selected {
+  border-color: #f3c869;
+}
+
+
+
+.paint-group-preview-strip span {
+  flex-shrink: 0;
+  color: #8da2b8;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+
+
+.paint-variation-warning {
+  color: #f2c46d;
 }
 
 
@@ -2111,7 +2234,7 @@
 
 .paint-palette-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
   gap: 5px;
   padding: 1px;
 }
@@ -2149,14 +2272,15 @@
 
 .tile-strip button {
   flex: 0 0 42px;
-  height: 36px;
+  height: 42px;
 }
 
 
 
 .paint-palette-grid button {
   min-width: 0;
-  height: 34px;
+  aspect-ratio: 1 / 1;
+  height: auto;
   font-size: 10px;
 }
 
