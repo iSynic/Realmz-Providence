@@ -1,23 +1,38 @@
-import { ReactNode } from "react";
+import { ReactNode, Suspense } from "react";
 import { EditorState } from "../store";
 import { BenchmarkReport, ExportReport, ManagedAssetKind, MapEntity, MapViewFlag, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
 import { MediaAssetImportOptions } from "../mediaAssets";
 import { LibraryDraftSpec } from "../libraryDrafts";
-import { EncountersPanel } from "../panels/EncountersPanel";
-import { ExportPanel } from "../panels/ExportPanel";
-import { LibraryHubPanel } from "../panels/LibraryHubPanel";
-import { LinterPanel } from "../panels/LinterPanel";
-import { MapsPanel } from "../panels/MapsPanel";
-import { RecordsPanel } from "../panels/RecordsPanel";
-import { ResourcesPanel } from "../panels/ResourcesPanel";
-import { RulesPanel } from "../panels/RulesPanel";
-import { ScenarioPanel } from "../panels/ScenarioPanel";
-import { ScriptsPanel } from "../panels/ScriptsPanel";
-import { SuiteDomainPanel } from "../panels/SuiteDomainPanel";
-import { TextPanel } from "../panels/TextPanel";
 import { Issue } from "../types";
+import {
+  LazyEncountersPanel as EncountersPanel,
+  LazyExportPanel as ExportPanel,
+  LazyLibraryHubPanel as LibraryHubPanel,
+  LazyLinterPanel as LinterPanel,
+  LazyMapsPanel as MapsPanel,
+  LazyRecordsPanel as RecordsPanel,
+  LazyResourcesPanel as ResourcesPanel,
+  LazyRulesPanel as RulesPanel,
+  LazyScenarioPanel as ScenarioPanel,
+  LazyScriptsPanel as ScriptsPanel,
+  LazySuiteDomainPanel as SuiteDomainPanel,
+  LazyTextPanel as TextPanel,
+  WorkbenchChunkErrorBoundary,
+  WorkbenchLoading
+} from "./LazyWorkbenchPanels";
 
-export function WorkbenchRouter({
+export function WorkbenchRouter(props: WorkbenchRouterProps) {
+  const resetKey = `${props.state.activeWorkbench}:${props.state.activeTab}:${props.state.activeEditor}`;
+  return (
+    <WorkbenchChunkErrorBoundary resetKey={resetKey}>
+      <Suspense fallback={<WorkbenchLoading label="Loading editor section..." />}>
+        <WorkbenchRouterContent {...props} />
+      </Suspense>
+    </WorkbenchChunkErrorBoundary>
+  );
+}
+
+function WorkbenchRouterContent({
   state,
   emptyProjectView,
   selectedMap,
@@ -56,46 +71,7 @@ export function WorkbenchRouter({
   onValidate,
   onExport,
   onBenchmark
-}: {
-  state: EditorState;
-  emptyProjectView: ReactNode;
-  selectedMap: MapEntity | null;
-  selectedRandomLevel: RandomLevel | null;
-  mapTriggers: TriggerRecord[];
-  selectedTileset: TilesetAsset | null;
-  mapRecords: SemanticEntity[];
-  atlas: EditorState["atlasEntries"][string] | null;
-  desktopRuntime: boolean;
-  projectDir: string;
-  workspaceDir: string;
-  exportReport: ExportReport | null;
-  benchmark: BenchmarkReport | null;
-  issues: Issue[];
-  onSelectMap: (id: string) => void;
-  onSelectTile: (tile: number) => void;
-  onSelectCell: (cell: { x: number; y: number; tile: number }) => void;
-  onSelectEntity: (entity: SelectedEntity) => void;
-  onSetTool: EditorStateSetter<"activeTool">;
-  onSetZoom: (zoom: number) => void;
-  onSetSmoothTiles: (value: boolean) => void;
-  onSetViewFlag: (flag: MapViewFlag, value: boolean) => void;
-  onClearSelection: () => void;
-  onOpenScripts: (entity: SelectedEntity) => void;
-  onOpenTool: (tab: "assets" | "rules" | "scripts", editor: string) => void;
-  onBeginPaintStroke: (label: string) => void;
-  onApplyCommand: (command: ProjectCommand) => void;
-  onCommitPaintStroke: () => void;
-  onCancelPaintStroke: () => void;
-  onCreateDraft: (spec: LibraryDraftSpec) => void;
-  onUpdateDraft: (entityId: string, changes: { label?: string; notes?: string }) => void;
-  onImportAssets: (files: File[], kind: ManagedAssetKind, options?: MediaAssetImportOptions) => void;
-  onReplaceAsset: (assetId: string, file: File) => void;
-  onUpdateAsset: (assetId: string, changes: { label?: string; resourceId?: number }) => void;
-  onDeleteAsset: (assetId: string) => void;
-  onValidate: () => void;
-  onExport: () => void;
-  onBenchmark: () => void;
-}) {
+}: WorkbenchRouterProps) {
   if (!state.project && state.activeWorkbench === "project") {
     return <>{emptyProjectView}</>;
   }
@@ -260,7 +236,7 @@ export function WorkbenchRouter({
         onReplaceAsset={onReplaceAsset}
         onUpdateAsset={onUpdateAsset}
         onDeleteAsset={onDeleteAsset}
-        onSelectPaintTile={(tile) => {
+        onSelectPaintTile={(tile: number) => {
           onSelectTile(tile);
           onSetTool("paint");
         }}
@@ -298,5 +274,46 @@ export function WorkbenchRouter({
 
   return null;
 }
+
+type WorkbenchRouterProps = {
+  state: EditorState;
+  emptyProjectView: ReactNode;
+  selectedMap: MapEntity | null;
+  selectedRandomLevel: RandomLevel | null;
+  mapTriggers: TriggerRecord[];
+  selectedTileset: TilesetAsset | null;
+  mapRecords: SemanticEntity[];
+  atlas: EditorState["atlasEntries"][string] | null;
+  desktopRuntime: boolean;
+  projectDir: string;
+  workspaceDir: string;
+  exportReport: ExportReport | null;
+  benchmark: BenchmarkReport | null;
+  issues: Issue[];
+  onSelectMap: (id: string) => void;
+  onSelectTile: (tile: number) => void;
+  onSelectCell: (cell: { x: number; y: number; tile: number }) => void;
+  onSelectEntity: (entity: SelectedEntity) => void;
+  onSetTool: EditorStateSetter<"activeTool">;
+  onSetZoom: (zoom: number) => void;
+  onSetSmoothTiles: (value: boolean) => void;
+  onSetViewFlag: (flag: MapViewFlag, value: boolean) => void;
+  onClearSelection: () => void;
+  onOpenScripts: (entity: SelectedEntity) => void;
+  onOpenTool: (tab: "assets" | "rules" | "scripts", editor: string) => void;
+  onBeginPaintStroke: (label: string) => void;
+  onApplyCommand: (command: ProjectCommand) => void;
+  onCommitPaintStroke: () => void;
+  onCancelPaintStroke: () => void;
+  onCreateDraft: (spec: LibraryDraftSpec) => void;
+  onUpdateDraft: (entityId: string, changes: { label?: string; notes?: string }) => void;
+  onImportAssets: (files: File[], kind: ManagedAssetKind, options?: MediaAssetImportOptions) => void;
+  onReplaceAsset: (assetId: string, file: File) => void;
+  onUpdateAsset: (assetId: string, changes: { label?: string; resourceId?: number }) => void;
+  onDeleteAsset: (assetId: string) => void;
+  onValidate: () => void;
+  onExport: () => void;
+  onBenchmark: () => void;
+};
 
 type EditorStateSetter<Key extends keyof EditorState> = (value: EditorState[Key]) => void;

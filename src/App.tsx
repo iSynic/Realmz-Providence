@@ -1,4 +1,4 @@
-import { useMemo, useReducer, useState } from "react";
+import { Suspense, useMemo, useReducer, useState } from "react";
 import { DEFAULT_DIVINITY_ROOT, DEFAULT_EXPORT, DEFAULT_REALMZ_DATA_ROOT, DEFAULT_WORKSPACE } from "./editor/constants";
 import { ProjectNameDialog, ProjectStart } from "./editor/app/AppStart";
 import {
@@ -26,18 +26,13 @@ import {
   semanticTilesetForMap,
   semanticTriggersForMap
 } from "./editor/semanticGraph";
-import { EncountersPanel } from "./editor/panels/EncountersPanel";
-import { ExportPanel } from "./editor/panels/ExportPanel";
-import { LibraryHubPanel } from "./editor/panels/LibraryHubPanel";
-import { LinterPanel } from "./editor/panels/LinterPanel";
-import { MapsPanel } from "./editor/panels/MapsPanel";
-import { RecordsPanel } from "./editor/panels/RecordsPanel";
-import { ResourcesPanel } from "./editor/panels/ResourcesPanel";
-import { ScriptsPanel } from "./editor/panels/ScriptsPanel";
-import { SuiteDomainPanel } from "./editor/panels/SuiteDomainPanel";
-import { DocumentsView } from "./editor/views/DocumentsView";
 import { ProvidenceEditorShell } from "./editor/workbench/ProvidenceEditorShell";
 import { WorkbenchRouter } from "./editor/workbench/WorkbenchRouter";
+import {
+  LazyDocumentsView as DocumentsView,
+  WorkbenchChunkErrorBoundary,
+  WorkbenchLoading
+} from "./editor/workbench/LazyWorkbenchPanels";
 
 const DEFAULT_SCENARIO_ROOT = "F:\\Realmz\\base\\Realmz\\Scenarios";
 const DEFAULT_PROJECT_ROOT = "F:\\Realmz - Providence\\projects";
@@ -350,11 +345,15 @@ export function App() {
         />
       )}
       {documentsOpen && (
-        <DocumentsView
-          initialSection={state.docsSection}
-          onSectionChange={(section) => dispatch({ type: "setDocsSection", section })}
-          onClose={() => setDocumentsOpen(false)}
-        />
+        <WorkbenchChunkErrorBoundary resetKey={state.docsSection}>
+          <Suspense fallback={<WorkbenchLoading label="Loading documents..." />}>
+            <DocumentsView
+              initialSection={state.docsSection}
+              onSectionChange={(section: string) => dispatch({ type: "setDocsSection", section })}
+              onClose={() => setDocumentsOpen(false)}
+            />
+          </Suspense>
+        </WorkbenchChunkErrorBoundary>
       )}
     </ProvidenceEditorShell>
   );
