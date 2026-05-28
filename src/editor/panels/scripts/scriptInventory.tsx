@@ -25,7 +25,7 @@ export const ScriptListItem = memo(function ScriptListItem({
       type="button"
       ref={buttonRef}
       className={`${selected ? "selected" : ""}${isReusableActionPoint(trigger) ? " reusable" : ""}`}
-      onClick={() => onSelectEntity(selectEntityFromId(trigger.source === "Data ED3" ? `macro:${trigger.recordIndex}` : trigger.id))}
+      onClick={() => onSelectEntity(selectEntityFromId(triggerSelectionId(trigger)))}
     >
       <strong>{scriptLabel(project, trigger)}</strong>
       <small>{scriptSubtitle(project, trigger)}</small>
@@ -167,7 +167,9 @@ export function triggerMatchesSelection(trigger: TriggerRecord, entityId: string
 }
 
 export function triggerSelectionId(trigger: TriggerRecord) {
-  return trigger.source === "Data ED3" ? `macro:${trigger.recordIndex}` : trigger.id;
+  return trigger.source === "Data ED3"
+    ? `macro:${trigger.recordIndex}`
+    : triggerEntityId(trigger.levelType, trigger.levelIndex, trigger.recordIndex, trigger.source);
 }
 
 export function triggerSemanticSelectionId(trigger: TriggerRecord) {

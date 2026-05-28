@@ -186,7 +186,7 @@ function ScriptAuthoringPanel({
       const scriptSwitch = await measure("script-row-switch", scriptIndexes, (index) => {
         const trigger = filteredScripts[index];
         if (!trigger) return false;
-        onSelectEntity(selectEntityFromId(trigger.source === "Data ED3" ? `macro:${trigger.recordIndex}` : trigger.id));
+        onSelectEntity(selectEntityFromId(triggerSelectionId(trigger)));
         return true;
       });
       const slotSwitch = await measure("slot-switch", slotIndexes, (slot) => {

@@ -231,7 +231,7 @@ export function App() {
       dispatch({ type: "setSelectedMap", id: mapId });
       dispatch({ type: "selectEntity", entity });
       focusEntityOnMap(mapId, entity);
-      if (state.activeTab === "scripts" || state.activeTab === "records" || state.activeTab === "encounters") {
+      if (state.activeTab === "records" || state.activeTab === "encounters") {
         dispatch({ type: "setTab", tab: "maps" });
       }
       return;
