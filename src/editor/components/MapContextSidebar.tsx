@@ -23,7 +23,6 @@ import { MapDiagnostics, MapNumberField } from "./maps/MapFormControls";
 import { RandomAreasWorkbench, RandomRectangleEditor, randomRectDiagnostics } from "./maps/RandomEncountersWorkbench";
 import { clearRegion, clearTileForMap, fillRegion, paintModeLabel, regionLabel, replaceRegion, replaceWholeMap } from "./maps/mapRegionUiUtils";
 import { MapRecordsWorkbench, RecordSelectionDetails } from "./maps/MapRecordsWorkbench";
-import { landlookGroupById, landlookGroupRangeLabel } from "../map/paintGroups";
 
 export { LandLayoutEditor };
 export type { LandLayoutCellSelection };
@@ -649,7 +648,6 @@ function MapToolset({
             title={mode.body}
           >
             <span>{mode.label}</span>
-            <small>{mode.body}</small>
           </button>
         ))}
       </div>
@@ -680,9 +678,6 @@ function MapToolset({
             selectedTile={state.selectedTile}
             paintMode={paintMode}
             onSetPaintMode={setPaintSubmode}
-            paintVariation={paintVariation}
-            onSetPaintVariation={onSetPaintVariation}
-            activePaintGroupId={activePaintGroupId}
             selectedRegion={selectedRegion}
             onSetSelectedRegion={onSetSelectedRegion}
             replaceSourceTile={replaceSourceTile}
@@ -880,10 +875,37 @@ function PaintTileSummary({
           {inspectedTile != null && <small>Selected cell tile {inspectedTile}</small>}
         </div>
       </div>
-      <TileMeaningInspector title="Paint Tile Meaning" meaning={paintMeaning} />
-      {inspectedMeaning && <TileMeaningInspector title="Selected Cell Meaning" meaning={inspectedMeaning} compact />}
+      <CompactTileReadout label="Paint" meaning={paintMeaning} />
+      {inspectedMeaning && <CompactTileReadout label="Cell" meaning={inspectedMeaning} />}
     </div>
   );
+}
+
+function CompactTileReadout({
+  label,
+  meaning
+}: {
+  label: string;
+  meaning: ReturnType<typeof classifyTileValue>;
+}) {
+  const traits = compactTileTraits(meaning);
+  return (
+    <div className="compact-tile-readout">
+      <span>{label}</span>
+      <b>{meaning.raw}</b>
+      <small>{traits}</small>
+    </div>
+  );
+}
+
+function compactTileTraits(meaning: ReturnType<typeof classifyTileValue>) {
+  const traits: string[] = meaning.attributeFlags
+    .filter((flag) => flag !== "unknown-metadata")
+    .slice(0, 3)
+    .map(tileAttributeLabel);
+  if (meaning.attributes?.movementSoundId != null) traits.push(`snd ${meaning.attributes.movementSoundId}`);
+  if (meaning.attributes?.movementCost != null) traits.push(`move ${meaning.attributes.movementCost}`);
+  return traits.length ? traits.join(" | ") : meaning.kind.replace(/-/g, " ");
 }
 
 function TileMeaningInspector({
@@ -965,21 +987,12 @@ const PAINT_MODES: Array<{ id: MapPaintMode; label: string; body: string }> = [
   { id: "clear", label: "Clear Region", body: "Reset a selected region to the base tile." }
 ];
 
-const PAINT_VARIATION_OPTIONS: Array<{ id: MapPaintVariation; label: string; hint: string }> = [
-  { id: "single", label: "Single Tile", hint: "Paint only the selected tile." },
-  { id: "cycle-group", label: "Cycle Group", hint: "Advance through the active tile group once per newly painted cell." },
-  { id: "random-group", label: "Random Group", hint: "Choose a stable random tile from the active group for each newly painted cell." }
-];
-
 function PaintModePanel({
   map,
   selectedTileset,
   selectedTile,
   paintMode,
   onSetPaintMode,
-  paintVariation,
-  onSetPaintVariation,
-  activePaintGroupId,
   selectedRegion,
   onSetSelectedRegion,
   replaceSourceTile,
@@ -991,9 +1004,6 @@ function PaintModePanel({
   selectedTile: number;
   paintMode: MapPaintMode;
   onSetPaintMode: (mode: MapPaintMode) => void;
-  paintVariation: MapPaintVariation;
-  onSetPaintVariation: (variation: MapPaintVariation) => void;
-  activePaintGroupId: string;
   selectedRegion: MapRegionSelection | null;
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
   replaceSourceTile: number | null;
@@ -1001,7 +1011,6 @@ function PaintModePanel({
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
   const clearTile = clearTileForMap(map, selectedTileset);
-  const activeGroup = landlookGroupById(activePaintGroupId);
   return (
     <div className="paint-mode-panel">
       <div className="paint-mode-header">
@@ -1016,29 +1025,12 @@ function PaintModePanel({
         ))}
       </div>
       <p className="paint-mode-hint">
-        {paintMode === "brush" && (paintVariation === "single"
-          ? "Brush paints the selected tile while dragging."
-          : `${paintVariation === "cycle-group" ? "Cycle" : "Random"} paints from ${activeGroup.label} (${landlookGroupRangeLabel(activePaintGroupId)}) while dragging.`)}
-        {paintMode === "rectangle" && "Drag on the map to preview a rectangle; release fills it with the selected paint tile."}
-        {paintMode === "region" && "Drag on the map to select a rectangular region for later fill, replace, or clear operations."}
-        {paintMode === "replace" && "Select a region, then replace one tile value with the selected paint tile."}
-        {paintMode === "clear" && `Select a region, then clear it to tile ${clearTile}.`}
+        {paintMode === "brush" && "Drag to paint."}
+        {paintMode === "rectangle" && "Drag a rectangle to fill."}
+        {paintMode === "region" && "Drag to select a region."}
+        {paintMode === "replace" && "Replace one tile in the selected region."}
+        {paintMode === "clear" && `Clear region to tile ${clearTile}.`}
       </p>
-      {paintMode === "brush" && (
-        <div className="paint-variation-compact" role="toolbar" aria-label="Brush variation">
-          {PAINT_VARIATION_OPTIONS.map((variation) => (
-            <button
-              key={variation.id}
-              type="button"
-              className={paintVariation === variation.id ? "active" : ""}
-              onClick={() => onSetPaintVariation(variation.id)}
-              title={variation.hint}
-            >
-              {variation.label}
-            </button>
-          ))}
-        </div>
-      )}
       {selectedRegion && (
         <div className="paint-region-quick-actions">
           <span>{regionLabel(selectedRegion)}</span>

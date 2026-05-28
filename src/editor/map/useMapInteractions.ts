@@ -1,4 +1,4 @@
-import { KeyboardEvent, PointerEvent, RefObject, useRef, useState } from "react";
+import { KeyboardEvent, PointerEvent, RefObject, useEffect, useRef, useState } from "react";
 import {
   EditorTool,
   MapEntity,
@@ -100,7 +100,18 @@ export function useMapInteractions({
   const lastPaintCellRef = useRef<{ x: number; y: number; tile: number } | null>(null);
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
   const [hoverTarget, setHoverTarget] = useState<MapHitTarget | null>(null);
+  const [paintCursor, setPaintCursor] = useState<{ x: number; y: number; tile: number } | null>(null);
   const [regionPreview, setRegionPreview] = useState<MapRegionSelection | null>(null);
+
+  useEffect(() => {
+    if ((activeTool === "paint" && paintMode === "brush") || activeTool === "stamp") return;
+    setPaintCursor(null);
+  }, [activeTool, paintMode]);
+
+  useEffect(() => {
+    if (!hover || !((activeTool === "paint" && paintMode === "brush") || activeTool === "stamp")) return;
+    setPaintCursor({ ...hover, tile: brushTileForCell(hover) });
+  }, [activePaintGroupId, activeTool, hover, paintMode, paintVariation, selectedTile, selectedTileset]);
 
   function cellFromEvent(event: PointerEvent<HTMLCanvasElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -159,9 +170,18 @@ export function useMapInteractions({
     return groupTiles[stableRandomIndex(paintStrokeSeedRef.current, cell.x, cell.y, sequence, groupTiles.length)];
   }
 
+  function updatePaintCursor(cell: { x: number; y: number }) {
+    if (!((activeTool === "paint" && paintMode === "brush") || activeTool === "stamp")) {
+      setPaintCursor(null);
+      return;
+    }
+    setPaintCursor({ ...cell, tile: brushTileForCell(cell) });
+  }
+
   function applyToolAt(event: PointerEvent<HTMLCanvasElement>) {
     const cell = cellFromEvent(event);
     setHover(cell);
+    updatePaintCursor(cell);
     if (activeTool === "sample") {
       const tile = tileValueAt(map, cell.x, cell.y);
       setHoverTarget({ kind: "cell", cell: { ...cell, tile } });
@@ -220,6 +240,9 @@ export function useMapInteractions({
     if (commit && lastPaintCellRef.current) selectTargetCell(lastPaintCellRef.current);
     lastPaintCellRef.current = null;
     strokeCellsRef.current.clear();
+    if (hover && ((activeTool === "paint" && paintMode === "brush") || activeTool === "stamp")) {
+      setPaintCursor({ ...hover, tile: brushTileForCell(hover) });
+    }
     if (commit) onCommitPaintStroke();
     else onCancelPaintStroke();
   }
@@ -227,6 +250,7 @@ export function useMapInteractions({
   return {
     hover,
     hoverTarget,
+    paintCursor,
     regionPreview,
     overlayHandlers: {
       onPointerDown(event: PointerEvent<HTMLCanvasElement>) {
@@ -339,11 +363,15 @@ export function useMapInteractions({
         }
         const cell = cellFromEvent(event);
         if (paintActiveRef.current) {
+          setHover(cell);
+          setHoverTarget({ kind: "cell", cell: { ...cell, tile: tileValueAt(map, cell.x, cell.y) } });
+          updatePaintCursor(cell);
           paintAt(cell);
           return;
         }
         setHover(cell);
         setHoverTarget(targetAt(cell));
+        updatePaintCursor(cell);
       },
       onPointerUp(event: PointerEvent<HTMLCanvasElement>) {
         if (selectDragRef.current) {
@@ -437,6 +465,7 @@ export function useMapInteractions({
         regionDragRef.current = null;
         setRegionPreview(null);
         setHoverTarget(null);
+        setPaintCursor(null);
         finishPaintStroke(false);
         if (event.currentTarget.hasPointerCapture(event.pointerId)) {
           event.currentTarget.releasePointerCapture(event.pointerId);
@@ -446,11 +475,13 @@ export function useMapInteractions({
         if (paintActiveRef.current || panRef.current || selectDragRef.current || randomDragRef.current || regionDragRef.current) return;
         setHover(null);
         setHoverTarget(null);
+        setPaintCursor(null);
       },
       onKeyDown(event: KeyboardEvent<HTMLCanvasElement>) {
         if (event.key !== "Escape") return;
         regionDragRef.current = null;
         setRegionPreview(null);
+        setPaintCursor(null);
         finishPaintStroke(false);
       }
     }

@@ -131,11 +131,6 @@ export function MapsPanel({
       />
 
       <section className={`editor-canvas-area map-workbench-area map-workbench-${workbenchMode}`}>
-        <MapWorkbenchModeSwitcher
-          modes={MAP_WORKBENCH_MODES}
-          activeMode={workbenchMode}
-          onSetMode={switchWorkbenchMode}
-        />
         {workbenchMode === "canvas" && (
           <>
             <MapViewFilters
@@ -302,32 +297,6 @@ function readStoredWorkbenchMode(): MapWorkbenchMode {
   return MAP_WORKBENCH_MODES.some((mode) => mode.id === stored) ? (stored as MapWorkbenchMode) : "canvas";
 }
 
-function MapWorkbenchModeSwitcher({
-  modes,
-  activeMode,
-  onSetMode
-}: {
-  modes: typeof MAP_WORKBENCH_MODES;
-  activeMode: MapWorkbenchMode;
-  onSetMode: (mode: MapWorkbenchMode) => void;
-}) {
-  return (
-    <div className="map-workbench-mode-switcher" role="tablist" aria-label="Map workbench mode">
-      {modes.map((mode) => (
-        <button
-          key={mode.id}
-          type="button"
-          className={activeMode === mode.id ? "active" : ""}
-          onClick={() => onSetMode(mode.id)}
-          title={mode.description}
-        >
-          {mode.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function MapModeSurface({
   title,
   subtitle,
@@ -348,28 +317,6 @@ function MapModeSurface({
       <div className="map-mode-body">
         {children}
       </div>
-    </div>
-  );
-}
-
-function MapModePlaceholder({
-  count,
-  body,
-  primaryLabel,
-  onPrimary
-}: {
-  count: string;
-  body: string;
-  primaryLabel: string;
-  onPrimary: () => void;
-}) {
-  return (
-    <div className="map-mode-placeholder">
-      <strong>{count}</strong>
-      <p>{body}</p>
-      <button className="btn btn-primary" type="button" onClick={onPrimary}>
-        {primaryLabel}
-      </button>
     </div>
   );
 }

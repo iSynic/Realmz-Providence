@@ -37,6 +37,7 @@ import {
   drawBaseMapCell,
   drawHover,
   drawMapRecords,
+  drawPaintCursor,
   drawMapVisibilityPreview,
   drawRandomRectangles,
   drawRegionSelection,
@@ -150,7 +151,7 @@ export function RealmzMapCanvas({
     drawBaseMap(ctx, { map, atlas, icons, smoothTiles, viewOptions, size });
     baseRenderRef.current = baseRenderSnapshot({ map, atlas, icons, smoothTiles, viewOptions, size });
   }, [atlas, canvasCssSize, icons, map, smoothTiles, viewOptions]);
-  const { hover, hoverTarget, regionPreview, overlayHandlers } = useMapInteractions({
+  const { hover, hoverTarget, paintCursor, regionPreview, overlayHandlers } = useMapInteractions({
     map,
     activeTool,
     paintMode,
@@ -235,14 +236,16 @@ export function RealmzMapCanvas({
     drawTriggers(ctx, triggers, selectedEntity, cell);
     if (showMapRecords) drawMapRecords(ctx, mapRecords, selectedEntity, cell);
     if (selectedRegion) drawRegionSelection(ctx, selectedRegion, cell, "selected");
-    if (selectedCell) drawSelectedCell(ctx, selectedCell, cell);
+    if (selectedCell && !paintCursor) drawSelectedCell(ctx, selectedCell, cell);
     if (regionPreview) drawRegionSelection(ctx, regionPreview, cell, "preview");
-    if (hover) drawHover(ctx, hover, cell);
+    if (paintCursor) drawPaintCursor(ctx, { cursor: paintCursor, atlas, icons, viewOptions, cell });
+    else if (hover) drawHover(ctx, hover, cell);
   }, [
     triggers,
     randomLevel,
     mapRecords,
     hover,
+    paintCursor,
     showRandomRects,
     showMapRecords,
     selectedEntity,
@@ -254,6 +257,9 @@ export function RealmzMapCanvas({
     previewFocalPoint,
     tileAttributes,
     tileset,
+    atlas,
+    icons,
+    viewOptions,
     canvasCssSize,
     overlayMapDependency
   ]);
@@ -423,7 +429,7 @@ function secretOverlaySignature(map: MapEntity) {
 
 function cursorForTool(tool: EditorTool, target: MapHitTarget | null) {
   if (tool === "pan") return "grab";
-  if (tool === "paint") return "crosshair";
+  if (tool === "paint" || tool === "stamp") return "none";
   if (tool === "random") return target?.kind === "randomRect" ? "move" : "crosshair";
   if (tool === "sample") return "copy";
   if (tool === "select" && target?.kind === "cell") return "grab";

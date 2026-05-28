@@ -309,6 +309,37 @@ export function drawHover(ctx: CanvasRenderingContext2D, hover: { x: number; y: 
   ctx.strokeRect(hover.x * cell + 1, hover.y * cell + 1, cell - 2, cell - 2);
 }
 
+export function drawPaintCursor(
+  ctx: CanvasRenderingContext2D,
+  {
+    cursor,
+    atlas,
+    icons,
+    viewOptions,
+    cell
+  }: {
+    cursor: { x: number; y: number; tile: number };
+    atlas: AtlasEntry | null;
+    icons: Record<number, IconEntry>;
+    viewOptions: MapViewOptions;
+    cell: number;
+  }
+) {
+  const left = cursor.x * cell;
+  const top = cursor.y * cell;
+  ctx.save();
+  ctx.globalAlpha = 0.92;
+  drawTileValueCell(ctx, { tile: cursor.tile, x: cursor.x, y: cursor.y, atlas, icons, viewOptions, cell });
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = "#f8fafc";
+  ctx.lineWidth = Math.max(2, Math.min(5, cell * 0.14));
+  ctx.strokeRect(left + 1, top + 1, cell - 2, cell - 2);
+  ctx.strokeStyle = "rgba(5, 7, 10, 0.75)";
+  ctx.lineWidth = Math.max(1, Math.min(3, cell * 0.07));
+  ctx.strokeRect(left + 4, top + 4, Math.max(1, cell - 8), Math.max(1, cell - 8));
+  ctx.restore();
+}
+
 export function drawSelectedCell(ctx: CanvasRenderingContext2D, selectedCell: { x: number; y: number }, cell: number) {
   const inset = Math.max(2, cell * 0.12);
   ctx.save();

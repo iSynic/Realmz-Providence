@@ -118,11 +118,10 @@ export function PaintPalettePanel({
           body="Click a tile to choose what the Paint tool will place. Sprite thumbnails use the loaded Realmz atlas; color-only swatches are decoded fallback or special tile values."
           side={variant === "bar" ? "above" : "right"}
         >
-          <strong>Paint Palette</strong>
+          <strong>Palette</strong>
         </TutorialTip>
-        <span>{tileset ? `${tileset.name} | ${standardTiles.length} art tiles` : "No tileset"}</span>
-        {inspectedTile != null && <b className="cell-tile-readout">Cell tile {inspectedTile}</b>}
-        <b>Paint {selectedTile}</b>
+        <span>{tileset ? `${tileset.name} | ${standardTiles.length} tiles` : "No tileset"}</span>
+        <b>{paintVariation === "single" ? `Paint ${selectedTile}` : paintVariationLabel(paintVariation, activeGroup.label)}</b>
       </div>
       {variant === "sidebar" && (
         <div className="paint-palette-tabs" role="tablist" aria-label="Tile palette mode">
@@ -151,7 +150,7 @@ export function PaintPalettePanel({
       {variant === "sidebar" && (
         <div className="paint-variation-panel" aria-label="Brush variation">
           <div className="paint-variation-header">
-            <span>Brush Variation</span>
+            <span>Brush</span>
             <b>{paintVariationLabel(paintVariation, activeGroup.label)}</b>
           </div>
           <div className="paint-variation-buttons" role="toolbar" aria-label="Brush variation mode">
