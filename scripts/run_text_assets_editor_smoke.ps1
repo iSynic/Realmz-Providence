@@ -37,7 +37,15 @@ $commands = @(
   },
   @{ kind = "updateMessageRecord"; label = "Edit duplicated smoke message"; id = 253; changes = @{ text = "Duplicated message edited in Text workbench smoke." } },
   @{ kind = "deleteTargetRecord"; label = "Clear duplicated smoke message"; recordType = "message"; id = 253 },
-  @{ kind = "updateActionSlot"; label = "Reference smoke message"; triggerId = "Data DD:0:5"; slot = 0; rawCode = 1; id = 252 }
+  @{ kind = "updateActionSlot"; label = "Reference smoke message"; triggerId = "Data DD:0:5"; slot = 0; rawCode = 1; id = 252 },
+  @{ kind = "createOptionLabel"; label = "Create smoke option label"; id = 24 },
+  @{ kind = "updateOptionLabel"; label = "Write smoke option label"; id = 24; changes = @{ text = "Rescue" } },
+  @{ kind = "duplicateOptionLabel"; label = "Duplicate smoke option label"; fromId = 24; toId = 25 },
+  @{ kind = "updateOptionLabel"; label = "Write second smoke option label"; id = 25; changes = @{ text = "Leave" } },
+  @{ kind = "duplicateOptionLabel"; label = "Duplicate option label for clear"; fromId = 25; toId = 26 },
+  @{ kind = "clearOptionLabel"; label = "Clear duplicate option label"; id = 26 },
+  @{ kind = "updateEdcdRow"; label = "Reference option labels from player option"; rowId = 252; values = @(1, 0, 0, -24, -25) },
+  @{ kind = "updateActionSlot"; label = "Reference option label parameter row"; triggerId = "Data DD:0:5"; slot = 1; rawCode = 3; id = 252 }
 )
 
 $script = @{
@@ -51,15 +59,22 @@ $script = @{
   commands = $commands
   assertions = @{
     validationOk = $true
-    commandsAppliedAtLeast = 7
+    commandsAppliedAtLeast = 15
     actionSlots = @(
-      @{ triggerId = "Data DD:0:5"; slot = 0; rawCode = 1; id = 252 }
+      @{ triggerId = "Data DD:0:5"; slot = 0; rawCode = 1; id = 252 },
+      @{ triggerId = "Data DD:0:5"; slot = 1; rawCode = 3; id = 252 }
+    )
+    edcdRows = @(
+      @{ rowId = 252; values = @(1, 0, 0, -24, -25) }
     )
     targetRecords = @(
       @{ recordType = "message"; id = 252; fields = @{ text = "Providence text import/export smoke message." } },
-      @{ recordType = "message"; id = 253; fields = @{ text = "" } }
+      @{ recordType = "message"; id = 253; fields = @{ text = "" } },
+      @{ recordType = "optionLabel"; id = 24; fields = @{ text = "Rescue" } },
+      @{ recordType = "optionLabel"; id = 25; fields = @{ text = "Leave" } },
+      @{ recordType = "optionLabel"; id = 26; fields = @{ text = "" } }
     )
-    exportContains = @("Data SD2", "Data DD", "Scenario")
+    exportContains = @("Data SD2", "Data OD", "Data EDCD", "Data DD", "Scenario")
   }
 }
 

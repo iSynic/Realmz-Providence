@@ -32,21 +32,22 @@ export function WorkbenchLoading({ label = "Loading editor..." }: { label?: stri
 
 export class WorkbenchChunkErrorBoundary extends Component<
   { children: ReactNode; resetKey?: string },
-  { hasError: boolean }
+  { hasError: boolean; errorMessage: string | null }
 > {
-  state = { hasError: false };
+  state = { hasError: false, errorMessage: null };
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, errorMessage: error?.message ?? "Unknown editor load error" };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error("Workbench chunk failed to load", error, info);
+    this.setState({ errorMessage: error?.message ?? String(error ?? "Unknown editor load error") });
   }
 
   componentDidUpdate(prevProps: { resetKey?: string }) {
     if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
-      this.setState({ hasError: false });
+      this.setState({ hasError: false, errorMessage: null });
     }
   }
 
@@ -57,9 +58,19 @@ export class WorkbenchChunkErrorBoundary extends Component<
           <div className="section-kicker">Could Not Load</div>
           <h2>This editor section could not be opened.</h2>
           <p>Try switching tools again, or reload the app if this keeps happening.</p>
+          {isDevelopmentRuntime() && (
+            <details className="advanced-details">
+              <summary>Developer Details</summary>
+              <p>{this.state.errorMessage ?? "No error details were reported."}</p>
+            </details>
+          )}
         </section>
       );
     }
     return this.props.children;
   }
+}
+
+function isDevelopmentRuntime() {
+  return Boolean((import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV);
 }

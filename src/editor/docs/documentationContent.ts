@@ -409,8 +409,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     groupId: "authoring",
     label: "Text",
     title: "Scenario Text and Message Records",
-    summary: "Work with scenario strings, message records, TEXT and STR# resources, and text-linked script targets.",
-    tags: ["text", "messages", "Data SD2", "TEXT", "STR#", "spell check"],
+    summary: "Work with scenario strings, option labels, TEXT and STR# resources, and text-linked script targets.",
+    tags: ["text", "messages", "option labels", "Data SD2", "Data OD", "TEXT", "STR#", "spell check"],
     badges: ["authoring", "resource-aware"],
     references: [DIVINITY_CHAPTERS.text, MARKDOWN_REFERENCES.scriptsV2],
     relatedTopicIds: ["scripts", "encounters-targets", "assets"],
@@ -420,6 +420,12 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         paragraphs: [
           "Providence authors the scenario strings used by scripts, encounters, battles, and random areas. The editor follows Divinity's one-string-at-a-time flow with previous/next navigation, Go To String, optional search, duplicate, clear, and create actions.",
           "Use Find Occurrence to search text across all strings, and Find Long String after a spell-check import to review strings at the Realmz length limit."
+        ]
+      },
+      {
+        title: "Option Labels",
+        paragraphs: [
+          "Option Labels authors the short two-choice labels used by player-option dialogs. Providence validates the classic 24-byte limit and links labels back to known script rows that use them."
         ]
       },
       {

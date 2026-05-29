@@ -52,7 +52,7 @@ See `docs/archaeology-priorities.md` for the editor-first reverse-engineering ba
 | Spell Editor | Rules | Scenario `Data Spell` override records are parsed into a source-backed editor for the 30 runtime bytes, with metadata-only names/descriptions and shared catalog reference | Decode exact resource/name packaging and richer spell validation |
 | Race Editor | Rules | Scenario `Data Race` overrides are parsed into editable source-backed fields for stats, age bands, caste permissions, item usability, descriptors, and conditions | Resource-fork names and remaining Divinity binary label checks |
 | Caste Editor | Rules | Scenario `Data Caste` overrides are parsed into editable source-backed matrices for stats, spellcasting, progression, item usability, conditions, and starting items | Finish Divinity label/order archaeology for advanced matrices |
-| Text Import / Export / Spell Checking | Strings | Author `Data SD2` message records from script context, validate 255-byte limit, preserve imported bytes, search/find occurrences, export/import plain text spell-check files, and find long strings for cleanup | Divinity string sound-field archaeology |
+| Text Import / Export / Spell Checking | Strings | Author `Data SD2` message records and `Data OD` two-choice option labels from script context, validate classic byte limits, preserve imported bytes, search/find occurrences, export/import plain text spell-check files, and find long strings for cleanup | Divinity string sound-field archaeology |
 | Scenario Security / Registration Codes | Scenario/Scripts | Preserve marker/main registration code segments and inspect registration/security scripts | Legacy security field editor and compatibility warnings |
 | Release Checklist | Linter/Export | Validation and export readiness panels exist | Divinity-style release checklist with Realmz compatibility gates |
 | Realmz Win95/98/NT4, FAQ, What's New, License | Docs | Reference only | No editor feature work unless scenario compatibility demands it |
@@ -117,7 +117,7 @@ The current source-backed tile attribute layer is split deliberately. Standard p
 
 ## Strings And Assets Contract
 
-The Strings workbench now follows Divinity's one-record-at-a-time flow while keeping a searchable list optional. It supports previous/next navigation, Go To String, find first/next occurrence, create, duplicate, clear, byte-limit validation, export/import plain text spell-check files using Divinity-style separators, find-long-string cleanup, and links back to known uses. `TEXT`, `STR#`, and style resources remain readable references with a back path from detail view.
+The Strings workbench now follows Divinity's one-record-at-a-time flow while keeping a searchable list optional. It supports previous/next navigation, Go To String, find first/next occurrence, create, duplicate, clear, byte-limit validation, export/import plain text spell-check files using Divinity-style separators, find-long-string cleanup, and links back to known uses. The adjacent Option Labels tab authors two-choice labels from `Data OD` with the 24-byte classic text limit, duplicate/clear/create controls, and usage links from player-option script rows. `TEXT`, `STR#`, and style resources remain readable references with a back path from detail view.
 
 The Divinity Strings screenshot shows a `Sound` field, but Providence does not expose that as an editable message field until Realmz source, scenario data, or Divinity binary evidence proves where it is stored and how Realmz consumes it.
 

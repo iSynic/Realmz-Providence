@@ -32,7 +32,7 @@ Current highest-priority targets:
 | ---: | --- | --- | --- |
 | 1 | `Data ED3` reachability and Extra Action Point terminology | `understood-runtime-writer-gated` | `docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md` |
 | 2 | `Data EDCD` rare/multi-row opcode shapes | `understood-runtime-writer-gated` | `docs/format-evidence-cards/edcd-opcode-source-map.md` |
-| 3 | `Data OD` option strings and Divinity Strings `Sound` field | `understood-runtime-writer-gated` | `docs/format-evidence-cards/strings-data-od-string-sound.md` |
+| 3 | `Data OD` option strings and Divinity Strings `Sound` field | `understood-runtime` for option labels; `divinity-labels-needed` for Sound | `docs/format-evidence-cards/strings-data-od-string-sound.md` |
 | 4 | Custom landlook / Edit Land Tiles writer behavior | `understood-runtime-writer-gated` | `docs/format-evidence-cards/custom-landlook-writers.md` |
 | 5 | Dungeon wall/door/secret writer safety | `understood-runtime-writer-gated` | `docs/format-evidence-cards/dungeon-editor-writer-safety.md` |
 | 6 | `PICT`, `cicn`, `snd `, `STR#`, `TEXT`, `styl`, `RLMZ`, `vers` resource taxonomy | `resource-packaging-needed` | `docs/format-evidence-cards/resource-fork-taxonomy-authoring.md` |

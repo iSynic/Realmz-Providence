@@ -75,6 +75,31 @@ export function messageUsageLinks(project: Project, messageId: number): ContentU
   return links;
 }
 
+export function optionLabelUsageLinks(project: Project, optionLabelId: number): ContentUsageLink[] {
+  const links: ContentUsageLink[] = [];
+  const rows = edcdRowsById(project);
+  forEachScriptAction(project, (action, context) => {
+    const code = normalizeStepOpcode(action.rawCode);
+    if (code !== 3 || !actionOptionFor(action.rawCode).edcdShape) return;
+    const row = rows.get(edcdRowId(action));
+    if (!row) return;
+    const options = [
+      { fieldIndex: 3, value: row.values[3] ?? 0, label: "Choice option A" },
+      { fieldIndex: 4, value: row.values[4] ?? 0, label: "Choice option B" }
+    ];
+    for (const option of options) {
+      if (option.value >= 0 || Math.abs(option.value) !== optionLabelId) continue;
+      links.push({
+        key: `${context.key}:option-label:${option.fieldIndex}`,
+        label: context.label,
+        detail: `${context.actionLabel}: ${option.label}`,
+        entity: context.entity
+      });
+    }
+  });
+  return links;
+}
+
 export function resourceUsageLinks(project: Project, resourceType: string | null | undefined, resourceId: number | null | undefined): ContentUsageLink[] {
   if (resourceId == null) return [];
   const type = (resourceType ?? "").trim();

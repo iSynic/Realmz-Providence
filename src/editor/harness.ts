@@ -40,23 +40,23 @@ export type ProvidenceHarnessScript = {
     actionSlots?: Array<{ triggerId: string; slot: number; rawCode: number; id: number }>;
     edcdRows?: Array<{ rowId: number; values: number[] }>;
     targetRecords?: Array<{
-      recordType: "message" | "battle" | "monster" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "questLabel";
+      recordType: "message" | "optionLabel" | "battle" | "monster" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "questLabel";
       id: number;
       fields?: Record<string, unknown>;
     }>;
     targetRecordsAbsent?: Array<{
-      recordType: "message" | "battle" | "monster" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "questLabel";
+      recordType: "message" | "optionLabel" | "battle" | "monster" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "questLabel";
       id: number;
     }>;
     scriptDiagnosticsContain?: Array<{ triggerId: string; text: string }>;
     scriptDiagnosticsNotContain?: Array<{ triggerId: string; text: string }>;
     targetDiagnosticsContain?: Array<{
-      recordType: "message" | "battle" | "monster" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "questLabel";
+      recordType: "message" | "optionLabel" | "battle" | "monster" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "questLabel";
       id: number;
       text: string;
     }>;
     targetDiagnosticsNotContain?: Array<{
-      recordType: "message" | "battle" | "monster" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "questLabel";
+      recordType: "message" | "optionLabel" | "battle" | "monster" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "questLabel";
       id: number;
       text: string;
     }>;
@@ -442,6 +442,7 @@ function assertionError(name: string, expected: unknown, observed: unknown) {
 function targetRecordForAssertion(project: Project, recordType: HarnessTargetRecordType, id: number) {
   const records =
     recordType === "message" ? project.messages :
+    recordType === "optionLabel" ? project.optionLabels :
     recordType === "battle" ? project.battles :
     recordType === "monster" ? project.monsters :
     recordType === "treasure" ? project.treasures :
@@ -459,6 +460,14 @@ function scriptDiagnosticsForAssertion(project: Project, triggerId: string) {
 }
 
 function targetDiagnosticsForAssertion(project: Project, recordType: HarnessTargetRecordType, id: number) {
+  if (recordType === "optionLabel") {
+    const record = project.optionLabels.find((candidate) => candidate.id === id);
+    if (!record) return [`missing option label ${id}`];
+    const diagnostics: string[] = [];
+    if (record.text.length > 24) diagnostics.push(`Option label ${id} is too long for Realmz's 24-character option string slot.`);
+    if (!/^[\x00-\x7F]*$/.test(record.text)) diagnostics.push(`Option label ${id} contains non-ASCII text and may not render as intended.`);
+    return diagnostics;
+  }
   return validateRealmzTargetRecord(project, recordType, id).map(formatDiagnostic);
 }
 

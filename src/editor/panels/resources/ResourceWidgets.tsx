@@ -576,7 +576,11 @@ export function ResourcePreviewWindow({
         )}
         {item.type === "library" && (
           <>
-            <ResourcePreviewMedia kind={managedAssetKindForLibrary(item.asset)} preview={item.preview.dataUrl} label={item.asset.label} />
+            {managedAssetKindForLibrary(item.asset) === "text" && libraryPreviewText(item.preview) ? (
+              <pre className="resource-detail-text" aria-label={item.asset.label}>{libraryPreviewText(item.preview)}</pre>
+            ) : (
+              <ResourcePreviewMedia kind={managedAssetKindForLibrary(item.asset)} preview={item.preview.dataUrl} label={item.asset.label} />
+            )}
             <ResourceFactGrid rows={[
               ["Resource", `${item.asset.resourceType ?? item.asset.type} ${item.asset.resourceId ?? ""}`.trim()],
               ["Role", roleLabel(resourceRole(item.asset))],
@@ -592,6 +596,7 @@ export function ResourcePreviewWindow({
         )}
         {item.type === "resource" && (
           <>
+            {resourceSummaryText(item.entity.summary) && <pre className="resource-detail-text">{resourceSummaryText(item.entity.summary)}</pre>}
             <ResourceFactGrid rows={[
               ["ID", item.entity.id],
               ["Type", item.entity.type],
@@ -673,7 +678,7 @@ export function ResourcePreviewMedia({ kind, preview, label }: { kind: ManagedAs
   return (
     <div className="resource-detail-missing">
       {kind === "sound" ? <Music size={28} /> : kind === "text" ? <FileText size={28} /> : <ImageIcon size={28} />}
-      <span>No preview available</span>
+      <span>{kind === "text" ? "No readable text available" : "No preview available"}</span>
     </div>
   );
 }
@@ -694,6 +699,20 @@ function decodeTextDataUrl(dataUrl: string) {
   } catch {
     return null;
   }
+}
+
+function libraryPreviewText(preview: AssetPreviewState) {
+  if (typeof preview.summary.text === "string" && preview.summary.text.trim()) return preview.summary.text;
+  if (typeof preview.summary.textPreview === "string" && preview.summary.textPreview.trim()) return preview.summary.textPreview;
+  if (typeof preview.summary.preview === "string" && preview.summary.preview.trim()) return preview.summary.preview;
+  return "";
+}
+
+function resourceSummaryText(summary: Record<string, unknown>) {
+  if (typeof summary.text === "string" && summary.text.trim()) return summary.text;
+  if (typeof summary.textPreview === "string" && summary.textPreview.trim()) return summary.textPreview;
+  if (typeof summary.preview === "string" && summary.preview.trim()) return summary.preview;
+  return "";
 }
 
 export function managedOutputSummary(asset: ManagedAsset) {

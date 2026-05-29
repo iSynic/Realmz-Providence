@@ -44,10 +44,14 @@ import {
 } from "./projectCommands/scriptCommands";
 import {
   bulkUpdateMessageRecords,
+  clearOptionLabel,
+  createOptionLabel,
   createTargetRecord,
   deleteTargetRecord,
   duplicateMessageRecord,
+  duplicateOptionLabel,
   emptyScenarioItem,
+  updateOptionLabel,
   updateRecord,
   upsertQuestLabel
 } from "./projectCommands/targetRecordCommands";
@@ -79,6 +83,10 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "duplicateMessageRecord") return duplicateMessageRecord(project, command.fromId, command.toId);
   if (command.kind === "updateMessageRecord") return updateRecord(project, "messages", command.id, command.changes);
   if (command.kind === "bulkUpdateMessageRecords") return bulkUpdateMessageRecords(project, command.updates);
+  if (command.kind === "createOptionLabel") return createOptionLabel(project, command.id);
+  if (command.kind === "clearOptionLabel") return clearOptionLabel(project, command.id);
+  if (command.kind === "duplicateOptionLabel") return duplicateOptionLabel(project, command.fromId, command.toId);
+  if (command.kind === "updateOptionLabel") return updateOptionLabel(project, command.id, command.changes);
   if (command.kind === "updateBattleRecord") return updateRecord(project, "battles", command.id, command.changes);
   if (command.kind === "updateMonsterRecord") return updateRecord(project, "monsters", command.id, command.changes);
   if (command.kind === "updateScenarioItemRecord") return updateRecord(project, "scenarioItems", command.id, command.changes);

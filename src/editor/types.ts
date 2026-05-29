@@ -870,6 +870,10 @@ export type ProjectCommand =
   | { kind: "duplicateMessageRecord"; label: string; fromId: number; toId?: number }
   | { kind: "updateMessageRecord"; label: string; id: number; changes: Partial<Pick<MessageRecord, "text">> }
   | { kind: "bulkUpdateMessageRecords"; label: string; updates: Array<{ id: number; text: string }> }
+  | { kind: "createOptionLabel"; label: string; id?: number }
+  | { kind: "clearOptionLabel"; label: string; id: number }
+  | { kind: "duplicateOptionLabel"; label: string; fromId: number; toId?: number }
+  | { kind: "updateOptionLabel"; label: string; id: number; changes: Partial<Pick<OptionLabelRecord, "text">> }
   | { kind: "updateBattleRecord"; label: string; id: number; changes: Partial<Pick<BattleRecord, "grid" | "dist" | "messageBefore" | "messageAfter" | "battleMacro">> }
   | { kind: "updateMonsterRecord"; label: string; id: number; changes: Partial<MonsterRecord> }
   | { kind: "updateScenarioItemRecord"; label: string; id: number; changes: Partial<ScenarioItemRecord> }

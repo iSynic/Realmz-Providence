@@ -478,6 +478,32 @@
   font-size: 11px;
 }
 
+.text-authoring-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  border-bottom: 1px solid #24313c;
+  padding-bottom: 8px;
+}
+
+.text-authoring-tabs button {
+  border: 1px solid #2b3947;
+  border-radius: 6px;
+  background: #0d151d;
+  color: #dcecff;
+  padding: 8px 12px;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.text-authoring-tabs button.active {
+  border-color: #2b8fd8;
+  background: #123251;
+  color: #fff;
+}
+
 
 
 .text-workbench-layout {
@@ -726,6 +752,17 @@
   padding: 10px;
   font: inherit;
   line-height: 1.45;
+}
+
+.text-message-field.option-label-field input {
+  max-width: 420px;
+  min-height: 34px;
+  border: 1px solid #2d3b49;
+  border-radius: 6px;
+  background: #0b1118;
+  color: #f5fbff;
+  padding: 8px 10px;
+  font: inherit;
 }
 
 

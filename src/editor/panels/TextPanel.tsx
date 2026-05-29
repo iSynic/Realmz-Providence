@@ -1,10 +1,11 @@
 import { ChevronLeft, ChevronRight, Copy, Eraser, List, MessageSquarePlus } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { LibraryCatalog, MessageRecord, Project, ProjectCommand, SelectedEntity } from "../types";
+import { LibraryCatalog, MessageRecord, OptionLabelRecord, Project, ProjectCommand, SelectedEntity } from "../types";
 import { selectEntityFromId } from "../utils";
-import { classicTextByteLength, messageUsageLinks, unsupportedClassicTextChars } from "../contentLinks";
+import { classicTextByteLength, messageUsageLinks, optionLabelUsageLinks, unsupportedClassicTextChars } from "../contentLinks";
 
 const DIVINITY_TEXT_SEPARATOR = `${" ".repeat(20)}\uf8ff${" ".repeat(20)}`;
+type TextAuthoringTab = "strings" | "option-labels";
 
 export function TextPanel({
   project,
@@ -29,10 +30,15 @@ export function TextPanel({
   const [showList, setShowList] = useState(activeEditor === "messages" || activeEditor === "domain");
   const [showReferences, setShowReferences] = useState(activeEditor === "text-resources" || activeEditor === "spell-check");
   const [selectedReferenceId, setSelectedReferenceId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TextAuthoringTab>(() => activeEditor === "option-labels" ? "option-labels" : "strings");
+  const [selectedOptionId, setSelectedOptionId] = useState<number | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const records = useMemo(() => [...(project.messages ?? [])].sort((a, b) => a.id - b.id), [project.messages]);
+  const optionRecords = useMemo(() => [...(project.optionLabels ?? [])].sort((a, b) => a.id - b.id), [project.optionLabels]);
   const selectedId = selectedMessageId(selectedEntity, records) ?? records[0]?.id ?? 0;
   const selectedRecord = records.find((record) => record.id === selectedId) ?? null;
+  const effectiveOptionId = selectedOptionId ?? optionRecords[0]?.id ?? 0;
+  const selectedOption = optionRecords.find((record) => record.id === effectiveOptionId) ?? null;
   const filteredRecords = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return records;
@@ -72,10 +78,10 @@ export function TextPanel({
   };
 
   useEffect(() => {
-    if (!selectedRecord && records.length > 0) {
+    if (activeTab === "strings" && !selectedRecord && records.length > 0) {
       onSelectEntity(selectEntityFromId(`message:${records[0].id}`));
     }
-  }, [onSelectEntity, records, selectedRecord]);
+  }, [activeTab, onSelectEntity, records, selectedRecord]);
 
   useEffect(() => {
     if (activeEditor === "text-resources" || activeEditor === "spell-check") {
@@ -83,18 +89,28 @@ export function TextPanel({
     }
     if (activeEditor === "messages" || activeEditor === "domain") {
       setShowList(true);
+      setActiveTab("strings");
+    }
+    if (activeEditor === "option-labels") {
+      setActiveTab("option-labels");
     }
   }, [activeEditor]);
+
+  useEffect(() => {
+    if (selectedOptionId == null && optionRecords.length > 0) {
+      setSelectedOptionId(optionRecords[0].id);
+    }
+  }, [optionRecords, selectedOptionId]);
 
   return (
     <section className="text-workbench">
       <header className="text-workbench-header">
         <div>
           <h1>String Editor</h1>
-          <p>Edit Realmz strings used by scripts, encounters, battles, and random areas.</p>
+          <p>Edit scenario strings and two-choice option labels used by Realmz dialogs.</p>
         </div>
         <div className="text-workbench-actions">
-          <b>{records.length.toLocaleString()} strings</b>
+          <b>{records.length.toLocaleString()} strings | {optionRecords.length.toLocaleString()} option labels</b>
           <input
             ref={importInputRef}
             type="file"
@@ -143,44 +159,54 @@ export function TextPanel({
           </button>
         </div>
       </header>
-      <StringNavigator
-        records={records}
-        selectedId={selectedId}
-        findQuery={findQuery}
-        findCount={findMatches.length}
-        showList={showList}
-        onToggleList={() => setShowList((value) => !value)}
-        onSelect={(id) => onSelectEntity(selectEntityFromId(`message:${id}`))}
-        onFindQueryChange={(value) => {
-          setFindQuery(value);
-          setFindCursor(0);
-        }}
-        onFindFirst={() => {
-          const first = findMatches[0];
-          if (first != null) {
+      <div className="text-authoring-tabs" role="tablist" aria-label="String editors">
+        <button type="button" className={activeTab === "strings" ? "active" : ""} role="tab" aria-selected={activeTab === "strings"} onClick={() => setActiveTab("strings")}>
+          Strings
+        </button>
+        <button type="button" className={activeTab === "option-labels" ? "active" : ""} role="tab" aria-selected={activeTab === "option-labels"} onClick={() => setActiveTab("option-labels")}>
+          Option Labels
+        </button>
+      </div>
+      {activeTab === "strings" && (
+        <StringNavigator
+          records={records}
+          selectedId={selectedId}
+          findQuery={findQuery}
+          findCount={findMatches.length}
+          showList={showList}
+          onToggleList={() => setShowList((value) => !value)}
+          onSelect={(id) => onSelectEntity(selectEntityFromId(`message:${id}`))}
+          onFindQueryChange={(value) => {
+            setFindQuery(value);
             setFindCursor(0);
-            onSelectEntity(selectEntityFromId(`message:${first}`));
-          }
-        }}
-        onFindNext={() => {
-          if (!findMatches.length) return;
-          const currentIndex = findMatches.indexOf(selectedId);
-          const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % findMatches.length : findCursor % findMatches.length;
-          setFindCursor(nextIndex);
-          onSelectEntity(selectEntityFromId(`message:${findMatches[nextIndex]}`));
-        }}
-        reviewCount={reviewStringIds.length}
-        onFindNextReview={() => {
-          const nextReviewId = nextReviewStringId(reviewStringIds, selectedId);
-          if (nextReviewId != null) onSelectEntity(selectEntityFromId(`message:${nextReviewId}`));
-        }}
-      />
+          }}
+          onFindFirst={() => {
+            const first = findMatches[0];
+            if (first != null) {
+              setFindCursor(0);
+              onSelectEntity(selectEntityFromId(`message:${first}`));
+            }
+          }}
+          onFindNext={() => {
+            if (!findMatches.length) return;
+            const currentIndex = findMatches.indexOf(selectedId);
+            const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % findMatches.length : findCursor % findMatches.length;
+            setFindCursor(nextIndex);
+            onSelectEntity(selectEntityFromId(`message:${findMatches[nextIndex]}`));
+          }}
+          reviewCount={reviewStringIds.length}
+          onFindNextReview={() => {
+            const nextReviewId = nextReviewStringId(reviewStringIds, selectedId);
+            if (nextReviewId != null) onSelectEntity(selectEntityFromId(`message:${nextReviewId}`));
+          }}
+        />
+      )}
       {textFileStatus && (
         <div className={`text-file-status ${textFileStatus.kind}`}>
           {textFileStatus.text}
         </div>
       )}
-      <div className="text-workbench-layout">
+      {activeTab === "strings" ? <div className="text-workbench-layout">
         {showList && <aside className="text-message-list-panel">
           <div className="text-search-row">
             <span>{filteredRecords.length.toLocaleString()} shown</span>
@@ -254,7 +280,17 @@ export function TextPanel({
             </section>
           )}
         </main>
-      </div>
+      </div> : (
+        <OptionLabelsWorkbench
+          project={project}
+          records={optionRecords}
+          selectedId={effectiveOptionId}
+          selectedRecord={selectedOption}
+          onSelect={setSelectedOptionId}
+          onSelectEntity={onSelectEntity}
+          onApplyCommand={onApplyCommand}
+        />
+      )}
     </section>
   );
 }
@@ -424,6 +460,213 @@ function MessageEditor({
   );
 }
 
+function OptionLabelsWorkbench({
+  project,
+  records,
+  selectedId,
+  selectedRecord,
+  onSelect,
+  onSelectEntity,
+  onApplyCommand
+}: {
+  project: Project;
+  records: OptionLabelRecord[];
+  selectedId: number;
+  selectedRecord: OptionLabelRecord | null;
+  onSelect: (id: number) => void;
+  onSelectEntity: (entity: SelectedEntity) => void;
+  onApplyCommand: (command: ProjectCommand) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [showList, setShowList] = useState(true);
+  const filteredRecords = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) return records;
+    return records.filter((record) => `${record.id} ${record.text}`.toLowerCase().includes(normalized));
+  }, [query, records]);
+  const selectedIndex = Math.max(0, records.findIndex((record) => record.id === selectedId));
+  const previous = records[Math.max(0, selectedIndex - 1)] ?? null;
+  const next = records[Math.min(records.length - 1, selectedIndex + 1)] ?? null;
+  const nextId = nextOptionLabelId(records);
+  return (
+    <>
+      <nav className="text-string-navigator" aria-label="Option label navigator">
+        <button type="button" className="btn btn-secondary btn-sm icon-only" disabled={!previous || previous.id === selectedId} onClick={() => previous && onSelect(previous.id)} title="Previous option label">
+          <ChevronLeft size={15} />
+        </button>
+        <button type="button" className="btn btn-secondary btn-sm icon-only" disabled={!next || next.id === selectedId} onClick={() => next && onSelect(next.id)} title="Next option label">
+          <ChevronRight size={15} />
+        </button>
+        <label>
+          <span>Go To Label</span>
+          <select value={selectedId} onChange={(event) => onSelect(Number(event.currentTarget.value))}>
+            {records.map((record) => (
+              <option key={record.id} value={record.id}>
+                {record.id}: {record.text || "Empty"}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowList((value) => !value)}>
+          <List size={14} /> {showList ? "Hide Search List" : "Show Search List"}
+        </button>
+        <label className="text-find-field">
+          <span>Search Labels</span>
+          <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search option labels..." />
+        </label>
+        <button
+          type="button"
+          className="btn btn-primary btn-sm"
+          onClick={() => {
+            onApplyCommand({ kind: "createOptionLabel", label: `Create Option Label ${nextId}`, id: nextId });
+            onSelect(nextId);
+          }}
+        >
+          <MessageSquarePlus size={14} /> New Label {nextId}
+        </button>
+      </nav>
+      <div className="text-workbench-layout">
+        {showList && (
+          <aside className="text-message-list-panel">
+            <div className="text-search-row">
+              <span>{filteredRecords.length.toLocaleString()} shown</span>
+              <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search option labels..." />
+            </div>
+            <div className="text-message-list" role="list" aria-label="Option labels">
+              {filteredRecords.map((record) => {
+                const selected = record.id === selectedId;
+                const usages = optionLabelUsageLinks(project, record.id);
+                const byteLength = classicTextByteLength(record.text);
+                return (
+                  <button key={record.id} type="button" className={selected ? "selected" : ""} onClick={() => onSelect(record.id)}>
+                    <strong>Option Label {record.id}</strong>
+                    <span>{record.text || "Empty label"}</span>
+                    <small>{usages.length} use{usages.length === 1 ? "" : "s"} | {byteLength}/24 bytes</small>
+                  </button>
+                );
+              })}
+              {filteredRecords.length === 0 && <p>No option labels match this search.</p>}
+            </div>
+          </aside>
+        )}
+        <main className="text-editor-surface">
+          {selectedRecord ? (
+            <OptionLabelEditor
+              key={selectedRecord.id}
+              project={project}
+              record={selectedRecord}
+              records={records}
+              onSelect={onSelect}
+              onSelectEntity={onSelectEntity}
+              onApplyCommand={onApplyCommand}
+            />
+          ) : (
+            <div className="empty-copy">Create an option label to begin authoring two-choice dialog labels.</div>
+          )}
+        </main>
+      </div>
+    </>
+  );
+}
+
+function OptionLabelEditor({
+  project,
+  record,
+  records,
+  onSelect,
+  onSelectEntity,
+  onApplyCommand
+}: {
+  project: Project;
+  record: OptionLabelRecord;
+  records: OptionLabelRecord[];
+  onSelect: (id: number) => void;
+  onSelectEntity: (entity: SelectedEntity) => void;
+  onApplyCommand: (command: ProjectCommand) => void;
+}) {
+  const [text, setText] = useState(record.text);
+  const byteLength = classicTextByteLength(text);
+  const unsupportedChars = unsupportedClassicTextChars(text);
+  const changed = text !== record.text;
+  const usages = optionLabelUsageLinks(project, record.id);
+  const shortcut = optionLabelShortcut(text);
+  const duplicateShortcut = shortcut ? records.some((candidate) => candidate.id !== record.id && optionLabelShortcut(candidate.text) === shortcut) : false;
+  const nextId = nextOptionLabelId(records);
+  return (
+    <article className="text-message-editor">
+      <header>
+        <div>
+          <span>Option Label {record.id}</span>
+          <small>{usages.length} use{usages.length === 1 ? "" : "s"} across two-choice dialogs</small>
+        </div>
+        <div className="text-message-actions">
+          <button
+            type="button"
+            className="btn btn-secondary btn-xs"
+            onClick={() => {
+              onApplyCommand({ kind: "duplicateOptionLabel", label: `Duplicate Option Label ${record.id}`, fromId: record.id, toId: nextId });
+              onSelect(nextId);
+            }}
+          >
+            <Copy size={12} /> Duplicate
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary btn-xs"
+            onClick={() => {
+              setText("");
+              onApplyCommand({ kind: "clearOptionLabel", label: `Clear Option Label ${record.id}`, id: record.id });
+            }}
+          >
+            <Eraser size={12} /> Clear
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary btn-xs"
+            disabled={!changed || byteLength > 24}
+            onClick={() => onApplyCommand({ kind: "updateOptionLabel", label: `Update Option Label ${record.id}`, id: record.id, changes: { text } })}
+          >
+            Apply Label
+          </button>
+        </div>
+      </header>
+      <label className="text-message-field option-label-field">
+        <span>Option Label</span>
+        <input value={text} onChange={(event) => setText(event.currentTarget.value)} />
+      </label>
+      <div className={`text-message-status ${byteLength > 24 || unsupportedChars.length || duplicateShortcut ? "warning" : "ok"}`}>
+        <span>{byteLength}/24 bytes before export</span>
+        {shortcut && <span>Shortcut: {shortcut.toUpperCase()}</span>}
+        {!shortcut && <b>First visible character becomes the keyboard shortcut.</b>}
+        {duplicateShortcut && <b>Another option label uses this shortcut.</b>}
+        {byteLength > 24 && <b>Too long for a Realmz option label.</b>}
+        {unsupportedChars.length > 0 && <b>{unsupportedChars.length} non-ASCII character{unsupportedChars.length === 1 ? "" : "s"} will export as ?.</b>}
+        {!changed && byteLength <= 24 && unsupportedChars.length === 0 && !duplicateShortcut && <b>Ready</b>}
+      </div>
+      <section className="text-used-by-panel">
+        <header>Used By</header>
+        <div>
+          {usages.map((usage) => (
+            <button key={usage.key} type="button" onClick={() => usage.entity && onSelectEntity(usage.entity)} disabled={!usage.entity}>
+              <strong>{usage.label}</strong>
+              <small>{usage.detail}</small>
+            </button>
+          ))}
+          {usages.length === 0 && <p>No known two-choice references yet.</p>}
+        </div>
+      </section>
+      <details className="advanced-details">
+        <summary>Advanced Details</summary>
+        <div className="summary-table">
+          <div><dt>Record</dt><dd>Data OD #{record.id}</dd></div>
+          <div><dt>State</dt><dd>{record.authored ? "Editable option label" : "Imported option label"}</dd></div>
+          <div><dt>Bytes</dt><dd>{record.rawBytes?.length ?? 0} preserved bytes</dd></div>
+        </div>
+      </details>
+    </article>
+  );
+}
+
 function selectedMessageId(selectedEntity: SelectedEntity | null, records: MessageRecord[]) {
   if (selectedEntity?.id.startsWith("message:")) {
     const id = Number(selectedEntity.id.slice("message:".length));
@@ -476,6 +719,21 @@ function nextMessageId(records: MessageRecord[]) {
   return records.length;
 }
 
+function nextOptionLabelId(records: OptionLabelRecord[]) {
+  const used = new Set(records.map((record) => record.id));
+  for (let id = 0; id < 10000; id += 1) {
+    if (!used.has(id)) return id;
+  }
+  return records.length;
+}
+
+function optionLabelShortcut(text: string) {
+  return text
+    .split("")
+    .find((char) => char.trim().length > 0)
+    ?.toLowerCase() ?? "";
+}
+
 function isStringReviewCandidate(record: MessageRecord) {
   return classicTextByteLength(record.text) >= 255 || unsupportedClassicTextChars(record.text).length > 0;
 }
@@ -510,16 +768,16 @@ function textReferenceRows(project: Project, catalog: LibraryCatalog | null | un
     ...project.semanticSchema.entities.filter((entity) => wantedTypes.has(entity.type)).map((entity) => ({
       id: entity.id,
       label: entity.label,
-      detail: textResourceDetail(entity.summary),
+      detail: textResourceDetail(entity.summary ?? {}),
       source: "Project",
-      preview: textResourcePreview(entity.summary)
+      preview: textResourcePreview(entity.summary ?? {})
     })),
     ...(catalog?.entities ?? []).filter((entity) => wantedTypes.has(entity.type)).map((entity) => ({
       id: entity.id,
       label: entity.label,
-      detail: textResourceDetail(entity.summary),
+      detail: textResourceDetail(entity.summary ?? {}),
       source: "Library",
-      preview: textResourcePreview(entity.summary)
+      preview: textResourcePreview(entity.summary ?? {})
     }))
   ];
   const normalized = query.trim().toLowerCase();

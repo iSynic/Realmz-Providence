@@ -52,7 +52,8 @@ Providence can make the Text tool match Divinity's **Strings** workflow without 
 
 - Follow-up: `parser-writer`, `editor-ui`, `validation`.
 - `Data OD` parser/writer support is implemented as `optionLabels` with 25-byte raw preservation.
-- Add Text/Strings UI for two-choice option labels when the authoring flow needs it.
+- Text/Strings now has an `Option Labels` editor for two-choice labels, including navigation, search, duplicate, clear, byte-limit validation, and usage links from player-option script parameter rows.
+- Readable `TEXT`, `STR#`, and `styl` resources should display decoded text in reference previews, or an explicit no-readable-text state when no decoded text exists.
 - Keep the Strings `Sound` field out of the default editor; use caller-specific sound controls where Realmz source proves them.
 - Add a String Sound archaeology subtask using Divinity binary write tracing or a before/after fixture only if we need to reproduce that exact Divinity UI affordance.
 - Present `TEXT` and `STR#` resources as read-only resource viewers unless resource writing is explicitly implemented.

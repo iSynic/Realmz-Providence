@@ -3,6 +3,7 @@ import {
   ComplexEncounterRecord,
   MessageRecord,
   MonsterRecord,
+  OptionLabelRecord,
   Project,
   Provenance,
   RealmzTargetRecordKind,
@@ -18,6 +19,7 @@ const ITEM_BYTES = 100;
 const MONSTER_BYTES = 210;
 const THIEF_ENCOUNTER_BYTES = 118;
 const TIMED_ENCOUNTER_BYTES = 40;
+const OPTION_LABEL_BYTES = 25;
 
 export function createTargetRecord(project: Project, recordType: RealmzTargetRecordKind, requestedId?: number): Project {
   const id = requestedId ?? nextTargetId(project, recordType);
@@ -98,6 +100,36 @@ export function bulkUpdateMessageRecords(project: Project, updates: Array<{ id: 
   return { ...project, messages };
 }
 
+export function createOptionLabel(project: Project, requestedId?: number): Project {
+  const id = requestedId ?? nextOptionLabelId(project);
+  if (!Number.isInteger(id) || id < 0) return project;
+  return upsertOptionLabel(project, emptyOptionLabel(id));
+}
+
+export function clearOptionLabel(project: Project, id: number): Project {
+  if (!Number.isInteger(id) || id < 0) return project;
+  return upsertOptionLabel(project, emptyOptionLabel(id));
+}
+
+export function duplicateOptionLabel(project: Project, fromId: number, requestedId?: number): Project {
+  const source = (project.optionLabels ?? []).find((record) => record.id === fromId);
+  if (!source) return project;
+  const id = requestedId ?? nextOptionLabelId(project);
+  if (!Number.isInteger(id) || id < 0) return project;
+  return upsertOptionLabel(project, {
+    ...emptyOptionLabel(id),
+    text: source.text,
+    authored: true
+  });
+}
+
+export function updateOptionLabel(project: Project, id: number, changes: Partial<Pick<OptionLabelRecord, "text">>): Project {
+  if (!Number.isInteger(id) || id < 0) return project;
+  const existing = (project.optionLabels ?? []).find((record) => record.id === id);
+  const base = existing ?? emptyOptionLabel(id);
+  return upsertOptionLabel(project, { ...base, ...changes, authored: true });
+}
+
 type TargetCollectionName = "messages" | "battles" | "monsters" | "scenarioItems" | "treasures" | "shops" | "simpleEncounters" | "complexEncounters" | "thiefEncounters" | "timedEncounters";
 type TargetRecord =
   | MessageRecord
@@ -147,6 +179,23 @@ function nextTargetId(project: Project, recordType: RealmzTargetRecordKind) {
   return ids.size;
 }
 
+function nextOptionLabelId(project: Project) {
+  const used = new Set((project.optionLabels ?? []).map((record) => record.id));
+  for (let id = 0; id < 10000; id += 1) {
+    if (!used.has(id)) return id;
+  }
+  return used.size;
+}
+
+function upsertOptionLabel(project: Project, record: OptionLabelRecord) {
+  const current = [...(project.optionLabels ?? [])];
+  const index = current.findIndex((candidate) => candidate.id === record.id);
+  if (index >= 0) current[index] = { ...current[index], ...record };
+  else current.push(record);
+  current.sort((a, b) => a.id - b.id);
+  return { ...project, optionLabels: current };
+}
+
 function targetIds(project: Project, recordType: RealmzTargetRecordKind) {
   const values =
     recordType === "message" ? project.messages :
@@ -173,6 +222,10 @@ export function upsertQuestLabel(project: Project, quest: { id: number; label: s
 
 function emptyMessage(id: number): MessageRecord {
   return { id, text: "", rawBytes: new Array(256).fill(0), authored: true, provenance: authoredProvenance("Data SD2", id, id * 256, 256) };
+}
+
+function emptyOptionLabel(id: number): OptionLabelRecord {
+  return { id, text: "", rawBytes: new Array(OPTION_LABEL_BYTES).fill(0), authored: true, provenance: authoredProvenance("Data OD", id, id * OPTION_LABEL_BYTES, OPTION_LABEL_BYTES) };
 }
 
 function emptyBattle(id: number): BattleRecord {
