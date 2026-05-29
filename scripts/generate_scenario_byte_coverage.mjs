@@ -8,6 +8,7 @@ const repoRoot = path.resolve(__dirname, "..");
 const roundtripLedgerPath = path.join(repoRoot, "docs/generated/scenario-byte-roundtrip-ledger.json");
 const unknownBacklogPath = path.join(repoRoot, "docs/generated/unknown-data-backlog.json");
 const runtimeCachePath = path.join(repoRoot, "docs/generated/runtime-cache-classification.json");
+const resourceByteOwnershipPath = path.join(repoRoot, "docs/generated/resource-byte-ownership.json");
 const realmzRsPath = path.join(repoRoot, "src-tauri/src/realmz.rs");
 
 const fileInventoryPath = path.join(repoRoot, "docs/generated/scenario-file-inventory.json");
@@ -66,15 +67,15 @@ const PASS_THROUGH_POLICIES = {
   "Custom 7": { status: "preserved-known", label: "Custom scenario media or landlook data" },
   "Custom 8": { status: "preserved-known", label: "Custom scenario media or landlook data" },
   "Custom 9": { status: "preserved-known", label: "Custom scenario media or landlook data" },
-  "Custom 1 Music": { status: "preserved-known", label: "Custom music" },
-  "Custom 2 Music": { status: "preserved-known", label: "Custom music" },
-  "Custom 3 Music": { status: "preserved-known", label: "Custom music" },
-  "Custom 4 Music": { status: "preserved-known", label: "Custom music" },
-  "Custom 5 Music": { status: "preserved-known", label: "Custom music" },
-  "Custom 6 Music": { status: "preserved-known", label: "Custom music" },
-  "Custom 7 Music": { status: "preserved-known", label: "Custom music" },
-  "Custom 8 Music": { status: "preserved-known", label: "Custom music" },
-  "Custom 9 Music": { status: "preserved-known", label: "Custom music" },
+  "Custom 1 Music": { status: "custom-media-payload", label: "Custom music" },
+  "Custom 2 Music": { status: "custom-media-payload", label: "Custom music" },
+  "Custom 3 Music": { status: "custom-media-payload", label: "Custom music" },
+  "Custom 4 Music": { status: "custom-media-payload", label: "Custom music" },
+  "Custom 5 Music": { status: "custom-media-payload", label: "Custom music" },
+  "Custom 6 Music": { status: "custom-media-payload", label: "Custom music" },
+  "Custom 7 Music": { status: "custom-media-payload", label: "Custom music" },
+  "Custom 8 Music": { status: "custom-media-payload", label: "Custom music" },
+  "Custom 9 Music": { status: "custom-media-payload", label: "Custom music" },
   Format: { status: "preserved-known", label: "Scenario compatibility marker" },
   "Icon_": { status: "preserved-known", label: "Classic Mac resource companion" },
   "Read Me (nice to know)": { status: "ignored-non-scenario", label: "Distribution documentation" }
@@ -94,11 +95,20 @@ const RESOURCE_TYPE_POLICIES = {
 const MAX_RESOURCE_TYPES = 512;
 const MAX_RESOURCES_PER_TYPE = 20000;
 const MAX_RESOURCE_FORK_BYTES_TO_SCAN = 50 * 1024 * 1024;
+const APPLE_SINGLE_MAGIC = 0x00051600;
+const APPLE_DOUBLE_MAGIC = 0x00051607;
+const RESOURCE_FORK_ENTRY_ID = 2;
 
 const roundtripLedger = readJson(roundtripLedgerPath);
 const unknownBacklog = readJson(unknownBacklogPath);
 const runtimeCaches = readJson(runtimeCachePath);
+const resourceByteOwnership = readOptionalJson(resourceByteOwnershipPath);
 const rustRegistry = parseRustRegistry(fs.readFileSync(realmzRsPath, "utf8"));
+const parsedResourceForkNames = new Set(
+  (resourceByteOwnership?.forks ?? [])
+    .filter((fork) => fork.parseStatus === "parsed")
+    .map((fork) => fork.fileName)
+);
 
 const scanned = scanScenarioRoots(roundtripLedger.scenarios ?? []);
 const aggregate = aggregateFiles(roundtripLedger.scenarios ?? [], scanned);
@@ -137,7 +147,8 @@ function buildInventory(scanned, aggregate) {
     sources: {
       roundtripLedger: "docs/generated/scenario-byte-roundtrip-ledger.json",
       rustRegistry: "src-tauri/src/realmz.rs",
-      runtimeCaches: "docs/generated/runtime-cache-classification.json"
+      runtimeCaches: "docs/generated/runtime-cache-classification.json",
+      resourceCoverage: "docs/generated/resource-byte-ownership.json"
     },
     policy: {
       ignoredNonScenarioFiles: [...NON_SCENARIO_IGNORES].sort(),
@@ -183,12 +194,18 @@ function buildOwnership(aggregate) {
       "preserved-unknown",
       "runtime-cache",
       "ignored-non-scenario",
-      "unknown-active-risk"
+      "unknown-active-risk",
+      "understood-resource-container",
+      "decoded-resource-payload",
+      "preserved-standard-media-payload",
+      "custom-media-payload",
+      "needs-codec-work"
     ],
     sources: {
       fileInventory: "docs/generated/scenario-file-inventory.json",
       unknownBacklog: "docs/generated/unknown-data-backlog.json",
       runtimeCaches: "docs/generated/runtime-cache-classification.json",
+      resourceCoverage: "docs/generated/resource-byte-ownership.json",
       ed3Reachability: "docs/generated/extra-ap-reachability-source-map.json",
       edcdCrosswalk: "docs/generated/opcode-edcd-crosswalk.json"
     },
@@ -243,6 +260,11 @@ function buildUiManifest(inventory, ownership, unknownReport) {
     "runtime-cache": "Runtime state",
     "ignored-non-scenario": "Ignored",
     "unknown-active-risk": "Needs format work",
+    "understood-resource-container": "Understood resource container",
+    "decoded-resource-payload": "Decoded resource payload",
+    "preserved-standard-media-payload": "Preserved standard media payload",
+    "custom-media-payload": "Custom media payload",
+    "needs-codec-work": "Needs codec work",
     "understood-runtime-writer-gated": "Needs writer proof",
     "resource-packaging-needed": "Needs packaging work",
     "divinity-labels-needed": "Needs editor labels"
@@ -268,7 +290,20 @@ function buildUiManifest(inventory, ownership, unknownReport) {
       fileFamilies: inventory.summary.fileFamilies,
       ignoredNonScenarioFiles: inventory.summary.ignoredNonScenarioFiles,
       editableContainers: ownership.summary.statusCounts["decoded-writable"] ?? 0,
-      preservedContainers: (ownership.summary.statusCounts["preserved-known"] ?? 0) + (ownership.summary.statusCounts["preserved-unknown"] ?? 0),
+      preservedContainers:
+        (ownership.summary.statusCounts["preserved-known"] ?? 0) +
+        (ownership.summary.statusCounts["preserved-unknown"] ?? 0) +
+        (ownership.summary.statusCounts["preserved-standard-media-payload"] ?? 0) +
+        (ownership.summary.statusCounts["custom-media-payload"] ?? 0),
+      understoodResourceContainers: ownership.summary.statusCounts["understood-resource-container"] ?? 0,
+      resourceCoverage: resourceByteOwnership
+        ? {
+            resourceForkFiles: resourceByteOwnership.summary?.resourceForkFiles ?? 0,
+            parsedResourceForks: resourceByteOwnership.summary?.parsedResourceForks ?? 0,
+            resourceEntries: resourceByteOwnership.summary?.resourceEntries ?? 0,
+            payloadBytesByStatus: resourceByteOwnership.summary?.statusObservedBytes ?? {}
+          }
+        : null,
       runtimeStateContainers: ownership.summary.statusCounts["runtime-cache"] ?? 0,
       needsFormatWork: ownership.summary.statusCounts["unknown-active-risk"] ?? 0,
       ed3: ed3Summary(),
@@ -432,7 +467,9 @@ function coverageStatusForFile(file) {
   if (PASS_THROUGH_POLICIES[name]) return PASS_THROUGH_POLICIES[name].status;
   if (roles.has("supported-binary") && file.byteSizes.size > 0 && [...file.byteSizes].every((size) => size === 316 || size === 320)) return "decoded-writable";
   if (rustRegistry.supportedWriteFiles.has(name)) return "decoded-writable";
-  if (roles.has("resource-fork") || name.endsWith(".rsrc") || name.endsWith(".rsf") || name.startsWith("._") || name === "Scenario") return "preserved-known";
+  if (roles.has("resource-fork") || name.endsWith(".rsrc") || name.endsWith(".rsf") || name.startsWith("._") || name === "Scenario") {
+    return parsedResourceForkNames.has(name) ? "understood-resource-container" : "preserved-known";
+  }
   if (rustRegistry.trackedFiles.has(name)) return "preserved-known";
   return "unknown-active-risk";
 }
@@ -531,6 +568,16 @@ function editorPolicyFor(status) {
       return "Runtime/generated state. Providence inspects it only when useful and writes the authored source file instead.";
     case "ignored-non-scenario":
       return "Ignored as non-scenario metadata or packaging documentation.";
+    case "understood-resource-container":
+      return "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately.";
+    case "decoded-resource-payload":
+      return "Resource payload bytes are decoded for reference or validation; normal editing still follows supported project-owned resource workflows.";
+    case "preserved-standard-media-payload":
+      return "Standard classic media payload preserved byte-for-byte until the specific resource is replaced through a supported import workflow.";
+    case "custom-media-payload":
+      return "Scenario-owned custom media payload preserved byte-for-byte until a dedicated codec writer owns the format.";
+    case "needs-codec-work":
+      return "Resource payload or container needs further codec archaeology before semantic ownership can be claimed.";
     default:
       return "Needs format work before Providence can claim safe authoring behavior.";
   }
@@ -566,6 +613,7 @@ function resourceForkTypesFor(filePath) {
 }
 
 function parseResourceForkEntries(buffer) {
+  buffer = extractResourceForkBuffer(buffer);
   if (buffer.length < 16) return [];
   const dataOffset = u32At(buffer, 0);
   const mapOffset = u32At(buffer, 4);
@@ -601,6 +649,24 @@ function parseResourceForkEntries(buffer) {
     }
   }
   return entries;
+}
+
+function extractResourceForkBuffer(buffer) {
+  if (buffer.length < 26) return buffer;
+  const magic = u32At(buffer, 0);
+  if (magic !== APPLE_SINGLE_MAGIC && magic !== APPLE_DOUBLE_MAGIC) return buffer;
+  const entryCount = u16At(buffer, 24);
+  if (entryCount === null) return buffer;
+  for (let index = 0; index < entryCount; index += 1) {
+    const entryOffset = 26 + index * 12;
+    const entryId = u32At(buffer, entryOffset);
+    const offset = u32At(buffer, entryOffset + 4);
+    const length = u32At(buffer, entryOffset + 8);
+    if (entryId === RESOURCE_FORK_ENTRY_ID && offset !== null && length !== null && offset + length <= buffer.length) {
+      return buffer.subarray(offset, offset + length);
+    }
+  }
+  return buffer;
 }
 
 function parseRustRegistry(source) {
@@ -650,11 +716,16 @@ function statusSort(status) {
   return {
     "unknown-active-risk": 0,
     "preserved-unknown": 1,
-    "decoded-readonly": 2,
-    "runtime-cache": 3,
-    "preserved-known": 4,
-    "decoded-writable": 5,
-    "ignored-non-scenario": 6
+    "needs-codec-work": 2,
+    "decoded-readonly": 3,
+    "runtime-cache": 4,
+    "preserved-known": 5,
+    "custom-media-payload": 6,
+    "preserved-standard-media-payload": 7,
+    "understood-resource-container": 8,
+    "decoded-resource-payload": 9,
+    "decoded-writable": 10,
+    "ignored-non-scenario": 11
   }[status] ?? 99;
 }
 
@@ -683,6 +754,11 @@ function textAt(buffer, offset, length) {
 }
 
 function readJson(filePath) {
+  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
+function readOptionalJson(filePath) {
+  if (!fs.existsSync(filePath)) return null;
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 

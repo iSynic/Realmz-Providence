@@ -1,12 +1,24 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-29T16:50:46.395Z",
+  "generatedAt": "2026-05-29T22:23:01.695Z",
   "summary": {
     "scenarioRoots": 87,
     "fileFamilies": 88,
     "ignoredNonScenarioFiles": 1,
     "editableContainers": 62,
-    "preservedContainers": 23,
+    "preservedContainers": 11,
+    "understoodResourceContainers": 12,
+    "resourceCoverage": {
+      "resourceForkFiles": 207,
+      "parsedResourceForks": 207,
+      "resourceEntries": 16847,
+      "payloadBytesByStatus": {
+        "understood-resource-container": 323478,
+        "resource-container-padding": 52143,
+        "preserved-standard-media-payload": 78110189,
+        "decoded-resource-payload": 841240
+      }
+    },
     "runtimeStateContainers": 1,
     "needsFormatWork": 0,
     "ed3": {
@@ -18,7 +30,7 @@
     "edcd": {
       "status": "Action parameter rows structurally decoded; opcode-specific labels come from the crosswalk.",
       "edcdBackedOpcodes": 70,
-      "fieldComparisonGaps": 27,
+      "fieldComparisonGaps": 0,
       "evidence": "docs/generated/opcode-edcd-crosswalk.json"
     }
   },
@@ -30,6 +42,11 @@
     "runtime-cache": "Runtime state",
     "ignored-non-scenario": "Ignored",
     "unknown-active-risk": "Needs format work",
+    "understood-resource-container": "Understood resource container",
+    "decoded-resource-payload": "Decoded resource payload",
+    "preserved-standard-media-payload": "Preserved standard media payload",
+    "custom-media-payload": "Custom media payload",
+    "needs-codec-work": "Needs codec work",
     "understood-runtime-writer-gated": "Needs writer proof",
     "resource-packaging-needed": "Needs packaging work",
     "divinity-labels-needed": "Needs editor labels"
@@ -146,10 +163,115 @@
       "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
     },
     {
-      "container": "Scenario.rsrc",
-      "label": "Resource fork",
+      "container": "Format",
+      "label": "Scenario compatibility marker",
       "status": "Preserved",
       "coverageStatus": "preserved-known",
+      "count": 19,
+      "sizes": [
+        0
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Data Custom 1 BD",
+      "label": "Custom landlook mapstats",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 13,
+      "sizes": [
+        8104
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Data Custom 2 BD",
+      "label": "Custom landlook mapstats",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 5,
+      "sizes": [
+        8104
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Data Custom 3 BD",
+      "label": "Custom landlook mapstats",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 3,
+      "sizes": [
+        8104
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Custom 1",
+      "label": "Custom scenario media or landlook data",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 1,
+      "sizes": [
+        85324
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Icon_",
+      "label": "Classic Mac resource companion",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 1,
+      "sizes": [
+        0
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Custom 1 Music",
+      "label": "Custom music",
+      "status": "Custom media payload",
+      "coverageStatus": "custom-media-payload",
+      "count": 5,
+      "sizes": [
+        60224,
+        143039,
+        170360,
+        241158
+      ],
+      "policy": "Scenario-owned custom media payload preserved byte-for-byte until a dedicated codec writer owns the format."
+    },
+    {
+      "container": "Custom 2 Music",
+      "label": "Custom music",
+      "status": "Custom media payload",
+      "coverageStatus": "custom-media-payload",
+      "count": 3,
+      "sizes": [
+        60224,
+        137064,
+        184221
+      ],
+      "policy": "Scenario-owned custom media payload preserved byte-for-byte until a dedicated codec writer owns the format."
+    },
+    {
+      "container": "Custom 3 Music",
+      "label": "Custom music",
+      "status": "Custom media payload",
+      "coverageStatus": "custom-media-payload",
+      "count": 2,
+      "sizes": [
+        73480,
+        184108
+      ],
+      "policy": "Scenario-owned custom media payload preserved byte-for-byte until a dedicated codec writer owns the format."
+    },
+    {
+      "container": "Scenario.rsrc",
+      "label": "Resource fork",
+      "status": "Understood resource container",
+      "coverageStatus": "understood-resource-container",
       "count": 32,
       "sizes": [
         100210,
@@ -195,13 +317,13 @@
         5168595,
         5174545
       ],
-      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+      "policy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
       "container": "Icon_.rsrc",
       "label": "Resource fork",
-      "status": "Preserved",
-      "coverageStatus": "preserved-known",
+      "status": "Understood resource container",
+      "coverageStatus": "understood-resource-container",
       "count": 26,
       "sizes": [
         368,
@@ -214,24 +336,13 @@
         5072,
         26209
       ],
-      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
-    },
-    {
-      "container": "Format",
-      "label": "Scenario compatibility marker",
-      "status": "Preserved",
-      "coverageStatus": "preserved-known",
-      "count": 19,
-      "sizes": [
-        0
-      ],
-      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+      "policy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
       "container": "Data Spell.rsrc",
       "label": "Resource fork",
-      "status": "Preserved",
-      "coverageStatus": "preserved-known",
+      "status": "Understood resource container",
+      "coverageStatus": "understood-resource-container",
       "count": 16,
       "sizes": [
         995,
@@ -239,208 +350,114 @@
         2219,
         2301
       ],
-      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
-    },
-    {
-      "container": "Data Custom 1 BD",
-      "label": "Custom landlook mapstats",
-      "status": "Preserved",
-      "coverageStatus": "preserved-known",
-      "count": 13,
-      "sizes": [
-        8104
-      ],
-      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
-    },
-    {
-      "container": "Custom 1 Music",
-      "label": "Custom music",
-      "status": "Preserved",
-      "coverageStatus": "preserved-known",
-      "count": 5,
-      "sizes": [
-        60224,
-        143039,
-        170360,
-        241158
-      ],
-      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
-    },
-    {
-      "container": "Data Custom 2 BD",
-      "label": "Custom landlook mapstats",
-      "status": "Preserved",
-      "coverageStatus": "preserved-known",
-      "count": 5,
-      "sizes": [
-        8104
-      ],
-      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
-    },
-    {
-      "container": "Custom 2 Music",
-      "label": "Custom music",
-      "status": "Preserved",
-      "coverageStatus": "preserved-known",
-      "count": 3,
-      "sizes": [
-        60224,
-        137064,
-        184221
-      ],
-      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
-    },
-    {
-      "container": "Data Custom 3 BD",
-      "label": "Custom landlook mapstats",
-      "status": "Preserved",
-      "coverageStatus": "preserved-known",
-      "count": 3,
-      "sizes": [
-        8104
-      ],
-      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+      "policy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
       "container": "Data Spell.rsf",
       "label": "Resource fork",
-      "status": "Preserved",
-      "coverageStatus": "preserved-known",
+      "status": "Understood resource container",
+      "coverageStatus": "understood-resource-container",
       "count": 3,
       "sizes": [
         2177,
         2219,
         2221
       ],
-      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+      "policy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
       "container": "Scenario.rsf",
       "label": "Resource fork",
-      "status": "Preserved",
-      "coverageStatus": "preserved-known",
+      "status": "Understood resource container",
+      "coverageStatus": "understood-resource-container",
       "count": 3,
       "sizes": [
         109039,
         950639,
         1312488
       ],
-      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
-    },
-    {
-      "container": "Custom 3 Music",
-      "label": "Custom music",
-      "status": "Preserved",
-      "coverageStatus": "preserved-known",
-      "count": 2,
-      "sizes": [
-        73480,
-        184108
-      ],
-      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+      "policy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
       "container": "Data SD2.rsrc",
       "label": "Resource fork",
-      "status": "Preserved",
-      "coverageStatus": "preserved-known",
+      "status": "Understood resource container",
+      "coverageStatus": "understood-resource-container",
       "count": 2,
       "sizes": [
         378,
         460
       ],
-      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
-    },
-    {
-      "container": "Custom 1",
-      "label": "Custom scenario media or landlook data",
-      "status": "Preserved",
-      "coverageStatus": "preserved-known",
-      "count": 1,
-      "sizes": [
-        85324
-      ],
-      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+      "policy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
       "container": "Custom 1.rsf",
       "label": "Resource fork",
-      "status": "Preserved",
-      "coverageStatus": "preserved-known",
+      "status": "Understood resource container",
+      "coverageStatus": "understood-resource-container",
       "count": 1,
       "sizes": [
         7377
       ],
-      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+      "policy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
       "container": "Custom 3 Music.rsrc",
       "label": "Resource fork",
-      "status": "Preserved",
-      "coverageStatus": "preserved-known",
+      "status": "Understood resource container",
+      "coverageStatus": "understood-resource-container",
       "count": 1,
       "sizes": [
         7377,
         7459
       ],
-      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+      "policy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
       "container": "Data NI.rsrc",
       "label": "Resource fork",
-      "status": "Preserved",
-      "coverageStatus": "preserved-known",
+      "status": "Understood resource container",
+      "coverageStatus": "understood-resource-container",
       "count": 1,
       "sizes": [
         286,
         368
       ],
-      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
-    },
-    {
-      "container": "Icon_",
-      "label": "Classic Mac resource companion",
-      "status": "Preserved",
-      "coverageStatus": "preserved-known",
-      "count": 1,
-      "sizes": [
-        0
-      ],
-      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+      "policy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
       "container": "Read Me (nice to know).rsf",
       "label": "Resource fork",
-      "status": "Preserved",
-      "coverageStatus": "preserved-known",
+      "status": "Understood resource container",
+      "coverageStatus": "understood-resource-container",
       "count": 1,
       "sizes": [
         332
       ],
-      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+      "policy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
       "container": "Spires of Steel.rsrc",
       "label": "Resource fork",
-      "status": "Preserved",
-      "coverageStatus": "preserved-known",
+      "status": "Understood resource container",
+      "coverageStatus": "understood-resource-container",
       "count": 1,
       "sizes": [
         368
       ],
-      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+      "policy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
       "container": "Trouble in the Sword Lands.rsrc",
       "label": "Resource fork",
-      "status": "Preserved",
-      "coverageStatus": "preserved-known",
+      "status": "Understood resource container",
+      "coverageStatus": "understood-resource-container",
       "count": 1,
       "sizes": [
         286,
         368
       ],
-      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+      "policy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
       "container": "Data BD",

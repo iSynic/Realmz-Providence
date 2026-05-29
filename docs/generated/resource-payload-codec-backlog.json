@@ -1,0 +1,1170 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-05-29T22:22:44.477Z",
+  "summary": {
+    "payloadFamilies": 18,
+    "needsCodecWork": 0,
+    "preservedStandardMediaFamilies": 13,
+    "decodedPayloadFamilies": 5
+  },
+  "families": [
+    {
+      "type": "PICT",
+      "role": "Picture resource",
+      "payloadStatus": "preserved-standard-media-payload",
+      "codecStatus": "standard-media-preserved",
+      "entries": 280,
+      "bytes": 31570654,
+      "scenarioCount": 87,
+      "resourceForkCount": 87,
+      "examples": [
+        {
+          "scenario": "Araman's Ring",
+          "fileName": "Scenario.rsrc",
+          "id": 30128,
+          "name": "\u000f",
+          "bytes": 93992
+        },
+        {
+          "scenario": "Assault on Giant Mountain",
+          "fileName": "Scenario.rsrc",
+          "id": 32128,
+          "name": "",
+          "bytes": 97588
+        },
+        {
+          "scenario": "Begining of the End",
+          "fileName": "Scenario.rsrc",
+          "id": 32128,
+          "name": "",
+          "bytes": 88698
+        },
+        {
+          "scenario": "Castle in the Clouds",
+          "fileName": "Scenario.rsrc",
+          "id": 32128,
+          "name": "",
+          "bytes": 96002
+        },
+        {
+          "scenario": "City of Bywater",
+          "fileName": "Scenario.rsrc",
+          "id": 32128,
+          "name": "",
+          "bytes": 94962
+        },
+        {
+          "scenario": "City of Port Hyrtin",
+          "fileName": "Scenario.rsrc",
+          "id": 32128,
+          "name": "",
+          "bytes": 164894
+        },
+        {
+          "scenario": "Dagger of Shine",
+          "fileName": "Scenario.rsrc",
+          "id": 32128,
+          "name": "",
+          "bytes": 174156
+        },
+        {
+          "scenario": "Destroy the Necronomicon",
+          "fileName": "Scenario.rsrc",
+          "id": 32128,
+          "name": "",
+          "bytes": 88172
+        }
+      ],
+      "nextCodecWork": "PICT container entries are located and preserved; opcode-level PICT decode/write remains a stage-two media codec task."
+    },
+    {
+      "type": "cicn",
+      "role": "Color icon resource",
+      "payloadStatus": "preserved-standard-media-payload",
+      "codecStatus": "standard-media-preserved",
+      "entries": 14111,
+      "bytes": 31233238,
+      "scenarioCount": 87,
+      "resourceForkCount": 87,
+      "examples": [
+        {
+          "scenario": "Araman's Ring",
+          "fileName": "Scenario.rsrc",
+          "id": -100,
+          "name": "",
+          "bytes": 354
+        },
+        {
+          "scenario": "Araman's Ring",
+          "fileName": "Scenario.rsrc",
+          "id": -111,
+          "name": "",
+          "bytes": 354
+        },
+        {
+          "scenario": "Araman's Ring",
+          "fileName": "Scenario.rsrc",
+          "id": -110,
+          "name": "",
+          "bytes": 354
+        },
+        {
+          "scenario": "Araman's Ring",
+          "fileName": "Scenario.rsrc",
+          "id": -109,
+          "name": "",
+          "bytes": 354
+        },
+        {
+          "scenario": "Araman's Ring",
+          "fileName": "Scenario.rsrc",
+          "id": -108,
+          "name": "",
+          "bytes": 354
+        },
+        {
+          "scenario": "Araman's Ring",
+          "fileName": "Scenario.rsrc",
+          "id": -107,
+          "name": "",
+          "bytes": 354
+        },
+        {
+          "scenario": "Araman's Ring",
+          "fileName": "Scenario.rsrc",
+          "id": -106,
+          "name": "",
+          "bytes": 354
+        },
+        {
+          "scenario": "Araman's Ring",
+          "fileName": "Scenario.rsrc",
+          "id": -105,
+          "name": "",
+          "bytes": 354
+        }
+      ],
+      "nextCodecWork": "cicn entries are located and previewable by Providence; full internal bitplane/mask ownership remains a stage-two codec task."
+    },
+    {
+      "type": "snd ",
+      "role": "Sound resource",
+      "payloadStatus": "preserved-standard-media-payload",
+      "codecStatus": "standard-media-preserved",
+      "entries": 594,
+      "bytes": 15183984,
+      "scenarioCount": 40,
+      "resourceForkCount": 40,
+      "examples": [
+        {
+          "scenario": "Assault on Giant Mountain",
+          "fileName": "Scenario.rsrc",
+          "id": 24000,
+          "name": "Horn",
+          "bytes": 5530
+        },
+        {
+          "scenario": "Elemental Strife",
+          "fileName": "Scenario.rsrc",
+          "id": 201,
+          "name": "Long Call",
+          "bytes": 155220
+        },
+        {
+          "scenario": "Elemental Strife",
+          "fileName": "Scenario.rsrc",
+          "id": 200,
+          "name": "Hornsmall",
+          "bytes": 86100
+        },
+        {
+          "scenario": "Grilochs Revenge",
+          "fileName": "Scenario.rsrc",
+          "id": 648,
+          "name": "Squak",
+          "bytes": 31001
+        },
+        {
+          "scenario": "Half Truth",
+          "fileName": "Scenario.rsrc",
+          "id": 206,
+          "name": "Croaklong",
+          "bytes": 36632
+        },
+        {
+          "scenario": "Half Truth",
+          "fileName": "Scenario.rsrc",
+          "id": 219,
+          "name": "Low Growl",
+          "bytes": 3326
+        },
+        {
+          "scenario": "Half Truth",
+          "fileName": "Scenario.rsrc",
+          "id": 232,
+          "name": "gaunt growl",
+          "bytes": 13777
+        },
+        {
+          "scenario": "Half Truth",
+          "fileName": "Scenario.rsrc",
+          "id": 236,
+          "name": "Horn1",
+          "bytes": 5530
+        }
+      ],
+      "nextCodecWork": "snd resources are located and playable where supported; every classic snd command variant still needs deeper codec ownership."
+    },
+    {
+      "type": "STR#",
+      "role": "String list resource",
+      "payloadStatus": "decoded-resource-payload",
+      "codecStatus": "decoded-text-payload",
+      "entries": 809,
+      "bytes": 515284,
+      "scenarioCount": 87,
+      "resourceForkCount": 140,
+      "examples": [
+        {
+          "scenario": "Araman's Ring",
+          "fileName": "Scenario.rsrc",
+          "id": 800,
+          "name": "SUPPLIES",
+          "bytes": 366
+        },
+        {
+          "scenario": "Araman's Ring",
+          "fileName": "Scenario.rsrc",
+          "id": 801,
+          "name": "SUPPLIES Short",
+          "bytes": 402
+        },
+        {
+          "scenario": "Araman's Ring",
+          "fileName": "Scenario.rsrc",
+          "id": 802,
+          "name": "SUPPLIES LONG",
+          "bytes": 917
+        },
+        {
+          "scenario": "Araman's Ring",
+          "fileName": "Scenario.rsrc",
+          "id": -102,
+          "name": "Map Names",
+          "bytes": 399
+        },
+        {
+          "scenario": "Araman's Ring",
+          "fileName": "Scenario.rsrc",
+          "id": -101,
+          "name": "Map Names",
+          "bytes": 415
+        },
+        {
+          "scenario": "Assault on Giant Mountain",
+          "fileName": "Scenario.rsrc",
+          "id": -102,
+          "name": "Map Names",
+          "bytes": 526
+        },
+        {
+          "scenario": "Assault on Giant Mountain",
+          "fileName": "Scenario.rsrc",
+          "id": -101,
+          "name": "Map Names",
+          "bytes": 429
+        },
+        {
+          "scenario": "Assault on Giant Mountain",
+          "fileName": "Scenario.rsrc",
+          "id": 800,
+          "name": "SUPPLIES",
+          "bytes": 494
+        }
+      ],
+      "nextCodecWork": "String-list structure is decoded for reference viewing; broad STR# authoring is still outside normal scenario editing."
+    },
+    {
+      "type": "TEXT",
+      "role": "Text resource",
+      "payloadStatus": "decoded-resource-payload",
+      "codecStatus": "decoded-text-payload",
+      "entries": 311,
+      "bytes": 297148,
+      "scenarioCount": 52,
+      "resourceForkCount": 52,
+      "examples": [
+        {
+          "scenario": "Araman's Ring",
+          "fileName": "Scenario.rsrc",
+          "id": -200,
+          "name": "",
+          "bytes": 727
+        },
+        {
+          "scenario": "Araman's Ring",
+          "fileName": "Scenario.rsrc",
+          "id": -201,
+          "name": "",
+          "bytes": 283
+        },
+        {
+          "scenario": "Araman's Ring",
+          "fileName": "Scenario.rsrc",
+          "id": -206,
+          "name": "",
+          "bytes": 283
+        },
+        {
+          "scenario": "Araman's Ring",
+          "fileName": "Scenario.rsrc",
+          "id": -205,
+          "name": "",
+          "bytes": 283
+        },
+        {
+          "scenario": "Araman's Ring",
+          "fileName": "Scenario.rsrc",
+          "id": -204,
+          "name": "",
+          "bytes": 283
+        },
+        {
+          "scenario": "Araman's Ring",
+          "fileName": "Scenario.rsrc",
+          "id": -203,
+          "name": "",
+          "bytes": 283
+        },
+        {
+          "scenario": "Araman's Ring",
+          "fileName": "Scenario.rsrc",
+          "id": -202,
+          "name": "",
+          "bytes": 283
+        },
+        {
+          "scenario": "City of Bywater",
+          "fileName": "Scenario.rsrc",
+          "id": -200,
+          "name": "",
+          "bytes": 1999
+        }
+      ],
+      "nextCodecWork": "Classic text bytes are decoded for reference viewing; writing remains scoped to project-owned text assets."
+    },
+    {
+      "type": "icns",
+      "role": "Classic Mac file/icon resource",
+      "payloadStatus": "preserved-standard-media-payload",
+      "codecStatus": "classic-icon-family-preserved",
+      "entries": 17,
+      "bytes": 78837,
+      "scenarioCount": 16,
+      "resourceForkCount": 17,
+      "examples": [
+        {
+          "scenario": "Araman's Ring",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 2296
+        },
+        {
+          "scenario": "Lachis",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 2296
+        },
+        {
+          "scenario": "Lord of the Abyss",
+          "fileName": "Custom 1.rsf",
+          "id": -16455,
+          "name": "",
+          "bytes": 5371
+        },
+        {
+          "scenario": "Price of Power",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 23433
+        },
+        {
+          "scenario": "Wrath of the Mind Lords",
+          "fileName": "Custom 3 Music.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 5371
+        },
+        {
+          "scenario": "Wrath of the Mind Lords",
+          "fileName": "Custom 3 Music.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 5371
+        },
+        {
+          "scenario": "Araman's Ring",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 2296
+        },
+        {
+          "scenario": "Lachis",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 2296
+        }
+      ],
+      "nextCodecWork": "Classic Mac file/icon-family resource preserved for Finder/interface compatibility; detailed bitplane decoding is stage-two media work, not scenario authoring data."
+    },
+    {
+      "type": "styl",
+      "role": "Text style resource",
+      "payloadStatus": "decoded-resource-payload",
+      "codecStatus": "decoded-style-payload",
+      "entries": 164,
+      "bytes": 25668,
+      "scenarioCount": 58,
+      "resourceForkCount": 58,
+      "examples": [
+        {
+          "scenario": "Araman's Ring",
+          "fileName": "Scenario.rsrc",
+          "id": -200,
+          "name": "",
+          "bytes": 82
+        },
+        {
+          "scenario": "Assault on Giant Mountain",
+          "fileName": "Data SD2.rsrc",
+          "id": 1000,
+          "name": "styles",
+          "bytes": 22
+        },
+        {
+          "scenario": "City of Bywater",
+          "fileName": "Scenario.rsrc",
+          "id": -200,
+          "name": "",
+          "bytes": 362
+        },
+        {
+          "scenario": "City of Bywater",
+          "fileName": "Scenario.rsrc",
+          "id": -201,
+          "name": "",
+          "bytes": 182
+        },
+        {
+          "scenario": "City of Bywater",
+          "fileName": "Scenario.rsrc",
+          "id": -202,
+          "name": "",
+          "bytes": 142
+        },
+        {
+          "scenario": "Destroy the Necronomicon",
+          "fileName": "Scenario.rsrc",
+          "id": -128,
+          "name": "",
+          "bytes": 42
+        },
+        {
+          "scenario": "Elemental Strife",
+          "fileName": "Scenario.rsrc",
+          "id": -200,
+          "name": "",
+          "bytes": 82
+        },
+        {
+          "scenario": "Half Truth",
+          "fileName": "Scenario.rsrc",
+          "id": -200,
+          "name": "",
+          "bytes": 62
+        }
+      ],
+      "nextCodecWork": "Style payloads are classified as text companion metadata; full style-run authoring remains deferred."
+    },
+    {
+      "type": "icl8",
+      "role": "Classic Mac file/icon resource",
+      "payloadStatus": "preserved-standard-media-payload",
+      "codecStatus": "classic-icon-family-preserved",
+      "entries": 19,
+      "bytes": 19456,
+      "scenarioCount": 19,
+      "resourceForkCount": 19,
+      "examples": [
+        {
+          "scenario": "Lord of the Abyss",
+          "fileName": "Custom 1.rsf",
+          "id": -16455,
+          "name": "",
+          "bytes": 1024
+        },
+        {
+          "scenario": "Price of Power",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 1024
+        },
+        {
+          "scenario": "Wrath of the Mind Lords",
+          "fileName": "Custom 3 Music.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 1024
+        },
+        {
+          "scenario": "Wrath of the Mind Lords",
+          "fileName": "Custom 3 Music.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 1024
+        },
+        {
+          "scenario": "Lord of the Abyss",
+          "fileName": "Custom 1.rsf",
+          "id": -16455,
+          "name": "",
+          "bytes": 1024
+        },
+        {
+          "scenario": "Lord of the Abyss",
+          "fileName": "Custom 1.rsf",
+          "id": -16455,
+          "name": "",
+          "bytes": 1024
+        },
+        {
+          "scenario": "Assault On Giant Mountain",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 1024
+        },
+        {
+          "scenario": "Castle in the Clouds",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 1024
+        }
+      ],
+      "nextCodecWork": "Classic Mac file/icon-family resource preserved for Finder/interface compatibility; detailed bitplane decoding is stage-two media work, not scenario authoring data."
+    },
+    {
+      "type": "icl4",
+      "role": "Classic Mac file/icon resource",
+      "payloadStatus": "preserved-standard-media-payload",
+      "codecStatus": "classic-icon-family-preserved",
+      "entries": 12,
+      "bytes": 6144,
+      "scenarioCount": 12,
+      "resourceForkCount": 12,
+      "examples": [
+        {
+          "scenario": "Price of Power",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 512
+        },
+        {
+          "scenario": "Assault On Giant Mountain",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 512
+        },
+        {
+          "scenario": "Castle in the Clouds",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 512
+        },
+        {
+          "scenario": "Destroy The Necronomicon",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 512
+        },
+        {
+          "scenario": "Grilochs Revenge",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 512
+        },
+        {
+          "scenario": "Half Truth",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 512
+        },
+        {
+          "scenario": "Mithril Vault",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 512
+        },
+        {
+          "scenario": "New Scenario",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 512
+        }
+      ],
+      "nextCodecWork": "Classic Mac file/icon-family resource preserved for Finder/interface compatibility; detailed bitplane decoding is stage-two media work, not scenario authoring data."
+    },
+    {
+      "type": "ICN#",
+      "role": "Classic Mac file/icon resource",
+      "payloadStatus": "preserved-standard-media-payload",
+      "codecStatus": "classic-icon-family-preserved",
+      "entries": 19,
+      "bytes": 4864,
+      "scenarioCount": 19,
+      "resourceForkCount": 19,
+      "examples": [
+        {
+          "scenario": "Lord of the Abyss",
+          "fileName": "Custom 1.rsf",
+          "id": -16455,
+          "name": "",
+          "bytes": 256
+        },
+        {
+          "scenario": "Price of Power",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 256
+        },
+        {
+          "scenario": "Wrath of the Mind Lords",
+          "fileName": "Custom 3 Music.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 256
+        },
+        {
+          "scenario": "Wrath of the Mind Lords",
+          "fileName": "Custom 3 Music.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 256
+        },
+        {
+          "scenario": "Lord of the Abyss",
+          "fileName": "Custom 1.rsf",
+          "id": -16455,
+          "name": "",
+          "bytes": 256
+        },
+        {
+          "scenario": "Lord of the Abyss",
+          "fileName": "Custom 1.rsf",
+          "id": -16455,
+          "name": "",
+          "bytes": 256
+        },
+        {
+          "scenario": "Assault On Giant Mountain",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 256
+        },
+        {
+          "scenario": "Castle in the Clouds",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 256
+        }
+      ],
+      "nextCodecWork": "Classic Mac file/icon-family resource preserved for Finder/interface compatibility; detailed bitplane decoding is stage-two media work, not scenario authoring data."
+    },
+    {
+      "type": "ics8",
+      "role": "Classic Mac file/icon resource",
+      "payloadStatus": "preserved-standard-media-payload",
+      "codecStatus": "classic-icon-family-preserved",
+      "entries": 18,
+      "bytes": 4608,
+      "scenarioCount": 18,
+      "resourceForkCount": 18,
+      "examples": [
+        {
+          "scenario": "Lord of the Abyss",
+          "fileName": "Custom 1.rsf",
+          "id": -16455,
+          "name": "",
+          "bytes": 256
+        },
+        {
+          "scenario": "Price of Power",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 256
+        },
+        {
+          "scenario": "Wrath of the Mind Lords",
+          "fileName": "Custom 3 Music.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 256
+        },
+        {
+          "scenario": "Wrath of the Mind Lords",
+          "fileName": "Custom 3 Music.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 256
+        },
+        {
+          "scenario": "Lord of the Abyss",
+          "fileName": "Custom 1.rsf",
+          "id": -16455,
+          "name": "",
+          "bytes": 256
+        },
+        {
+          "scenario": "Lord of the Abyss",
+          "fileName": "Custom 1.rsf",
+          "id": -16455,
+          "name": "",
+          "bytes": 256
+        },
+        {
+          "scenario": "Assault On Giant Mountain",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 256
+        },
+        {
+          "scenario": "Castle in the Clouds",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 256
+        }
+      ],
+      "nextCodecWork": "Classic Mac file/icon-family resource preserved for Finder/interface compatibility; detailed bitplane decoding is stage-two media work, not scenario authoring data."
+    },
+    {
+      "type": "RLMZ",
+      "role": "Realmz metadata resource",
+      "payloadStatus": "preserved-standard-media-payload",
+      "codecStatus": "standard-metadata-preserved",
+      "entries": 402,
+      "bytes": 3216,
+      "scenarioCount": 38,
+      "resourceForkCount": 38,
+      "examples": [
+        {
+          "scenario": "Assault on Giant Mountain",
+          "fileName": "Scenario.rsrc",
+          "id": 128,
+          "name": "",
+          "bytes": 8
+        },
+        {
+          "scenario": "Assault on Giant Mountain",
+          "fileName": "Scenario.rsrc",
+          "id": 129,
+          "name": "",
+          "bytes": 8
+        },
+        {
+          "scenario": "Assault on Giant Mountain",
+          "fileName": "Scenario.rsrc",
+          "id": 130,
+          "name": "",
+          "bytes": 8
+        },
+        {
+          "scenario": "Assault on Giant Mountain",
+          "fileName": "Scenario.rsrc",
+          "id": 131,
+          "name": "",
+          "bytes": 8
+        },
+        {
+          "scenario": "Assault on Giant Mountain",
+          "fileName": "Scenario.rsrc",
+          "id": 132,
+          "name": "",
+          "bytes": 8
+        },
+        {
+          "scenario": "Assault on Giant Mountain",
+          "fileName": "Scenario.rsrc",
+          "id": 133,
+          "name": "",
+          "bytes": 8
+        },
+        {
+          "scenario": "Assault on Giant Mountain",
+          "fileName": "Scenario.rsrc",
+          "id": 134,
+          "name": "",
+          "bytes": 8
+        },
+        {
+          "scenario": "Castle in the Clouds",
+          "fileName": "Scenario.rsrc",
+          "id": 128,
+          "name": "",
+          "bytes": 8
+        }
+      ],
+      "nextCodecWork": "Realmz metadata resources are preserved and inventoried; semantic fields still need focused evidence."
+    },
+    {
+      "type": "vers",
+      "role": "Version resource",
+      "payloadStatus": "decoded-resource-payload",
+      "codecStatus": "decoded-metadata-payload",
+      "entries": 48,
+      "bytes": 3116,
+      "scenarioCount": 48,
+      "resourceForkCount": 48,
+      "examples": [
+        {
+          "scenario": "Assault on Giant Mountain",
+          "fileName": "Scenario.rsrc",
+          "id": 2,
+          "name": "",
+          "bytes": 60
+        },
+        {
+          "scenario": "Castle in the Clouds",
+          "fileName": "Scenario.rsrc",
+          "id": 2,
+          "name": "",
+          "bytes": 60
+        },
+        {
+          "scenario": "City of Bywater",
+          "fileName": "Scenario.rsrc",
+          "id": 2,
+          "name": "",
+          "bytes": 60
+        },
+        {
+          "scenario": "Destroy the Necronomicon",
+          "fileName": "Scenario.rsrc",
+          "id": 2,
+          "name": "",
+          "bytes": 60
+        },
+        {
+          "scenario": "Grilochs Revenge",
+          "fileName": "Scenario.rsrc",
+          "id": 2,
+          "name": "",
+          "bytes": 59
+        },
+        {
+          "scenario": "Half Truth",
+          "fileName": "Scenario.rsrc",
+          "id": 2,
+          "name": "",
+          "bytes": 66
+        },
+        {
+          "scenario": "Mithril Vault",
+          "fileName": "Scenario.rsrc",
+          "id": 2,
+          "name": "",
+          "bytes": 59
+        },
+        {
+          "scenario": "Prelude to Pestilence",
+          "fileName": "Scenario.rsrc",
+          "id": 2,
+          "name": "",
+          "bytes": 59
+        }
+      ],
+      "nextCodecWork": "Version resource bytes are small metadata payloads; Providence treats them as decoded reference metadata."
+    },
+    {
+      "type": "\u0000\u0000\u0000\u0000",
+      "role": "Malformed compatibility baggage resource",
+      "payloadStatus": "preserved-standard-media-payload",
+      "codecStatus": "malformed-compatibility-resource-preserved",
+      "entries": 6,
+      "bytes": 1908,
+      "scenarioCount": 3,
+      "resourceForkCount": 3,
+      "examples": [
+        {
+          "scenario": "Hax",
+          "fileName": "Scenario.rsf",
+          "id": -1,
+          "name": "",
+          "bytes": 318
+        },
+        {
+          "scenario": "Hax",
+          "fileName": "Scenario.rsf",
+          "id": -1,
+          "name": "",
+          "bytes": 318
+        },
+        {
+          "scenario": "Hax",
+          "fileName": "Scenario.rsf",
+          "id": -1,
+          "name": "",
+          "bytes": 318
+        },
+        {
+          "scenario": "Hax",
+          "fileName": "Scenario.rsf",
+          "id": -1,
+          "name": "",
+          "bytes": 318
+        },
+        {
+          "scenario": "Hax",
+          "fileName": "Scenario.rsf",
+          "id": -1,
+          "name": "",
+          "bytes": 318
+        },
+        {
+          "scenario": "Hax",
+          "fileName": "Scenario.rsf",
+          "id": -1,
+          "name": "",
+          "bytes": 318
+        }
+      ],
+      "nextCodecWork": "Zero-type resources are preserved as malformed Scenario.rsf compatibility baggage and are not treated as authoring data."
+    },
+    {
+      "type": "ics4",
+      "role": "Classic Mac file/icon resource",
+      "payloadStatus": "preserved-standard-media-payload",
+      "codecStatus": "classic-icon-family-preserved",
+      "entries": 12,
+      "bytes": 1536,
+      "scenarioCount": 12,
+      "resourceForkCount": 12,
+      "examples": [
+        {
+          "scenario": "Price of Power",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 128
+        },
+        {
+          "scenario": "Assault On Giant Mountain",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 128
+        },
+        {
+          "scenario": "Castle in the Clouds",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 128
+        },
+        {
+          "scenario": "Destroy The Necronomicon",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 128
+        },
+        {
+          "scenario": "Grilochs Revenge",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 128
+        },
+        {
+          "scenario": "Half Truth",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 128
+        },
+        {
+          "scenario": "Mithril Vault",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 128
+        },
+        {
+          "scenario": "New Scenario",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 128
+        }
+      ],
+      "nextCodecWork": "Classic Mac file/icon-family resource preserved for Finder/interface compatibility; detailed bitplane decoding is stage-two media work, not scenario authoring data."
+    },
+    {
+      "type": "ics#",
+      "role": "Classic Mac file/icon resource",
+      "payloadStatus": "preserved-standard-media-payload",
+      "codecStatus": "classic-icon-family-preserved",
+      "entries": 19,
+      "bytes": 1216,
+      "scenarioCount": 19,
+      "resourceForkCount": 19,
+      "examples": [
+        {
+          "scenario": "Lord of the Abyss",
+          "fileName": "Custom 1.rsf",
+          "id": -16455,
+          "name": "",
+          "bytes": 64
+        },
+        {
+          "scenario": "Price of Power",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 64
+        },
+        {
+          "scenario": "Wrath of the Mind Lords",
+          "fileName": "Custom 3 Music.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 64
+        },
+        {
+          "scenario": "Wrath of the Mind Lords",
+          "fileName": "Custom 3 Music.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 64
+        },
+        {
+          "scenario": "Lord of the Abyss",
+          "fileName": "Custom 1.rsf",
+          "id": -16455,
+          "name": "",
+          "bytes": 64
+        },
+        {
+          "scenario": "Lord of the Abyss",
+          "fileName": "Custom 1.rsf",
+          "id": -16455,
+          "name": "",
+          "bytes": 64
+        },
+        {
+          "scenario": "Assault On Giant Mountain",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 64
+        },
+        {
+          "scenario": "Castle in the Clouds",
+          "fileName": "Icon_.rsrc",
+          "id": -16455,
+          "name": "",
+          "bytes": 64
+        }
+      ],
+      "nextCodecWork": "Classic Mac file/icon-family resource preserved for Finder/interface compatibility; detailed bitplane decoding is stage-two media work, not scenario authoring data."
+    },
+    {
+      "type": "colm",
+      "role": "Classic Mac color companion metadata",
+      "payloadStatus": "preserved-standard-media-payload",
+      "codecStatus": "classic-color-metadata-preserved",
+      "entries": 3,
+      "bytes": 528,
+      "scenarioCount": 3,
+      "resourceForkCount": 3,
+      "examples": [
+        {
+          "scenario": "Trouble in the Sword Lands",
+          "fileName": "Icon_.rsrc",
+          "id": 256,
+          "name": "",
+          "bytes": 176
+        },
+        {
+          "scenario": "War in the Sword Lands",
+          "fileName": "Icon_.rsrc",
+          "id": 256,
+          "name": "",
+          "bytes": 176
+        },
+        {
+          "scenario": "Wrath of the Mind Lords",
+          "fileName": "Icon_.rsrc",
+          "id": 256,
+          "name": "",
+          "bytes": 176
+        }
+      ],
+      "nextCodecWork": "colm resources are inventoried and preserved as classic color companion metadata; no Realmz gameplay consumer is proven."
+    },
+    {
+      "type": "wrct",
+      "role": "Window rectangle metadata",
+      "payloadStatus": "decoded-resource-payload",
+      "codecStatus": "decoded-window-rectangle",
+      "entries": 3,
+      "bytes": 24,
+      "scenarioCount": 3,
+      "resourceForkCount": 3,
+      "examples": [
+        {
+          "scenario": "Assault on Giant Mountain",
+          "fileName": "Data SD2.rsrc",
+          "id": 1000,
+          "name": "window",
+          "bytes": 8
+        },
+        {
+          "scenario": "Assault on Giant Mountain",
+          "fileName": "Data SD2.rsrc",
+          "id": 1000,
+          "name": "window",
+          "bytes": 8
+        },
+        {
+          "scenario": "Assault On Giant Mountain",
+          "fileName": "Data SD2.rsrc",
+          "id": 1000,
+          "name": "window",
+          "bytes": 8
+        }
+      ],
+      "nextCodecWork": "wrct payloads are decoded as four 16-bit rectangle coordinates and preserved as classic UI companion metadata."
+    }
+  ]
+}
