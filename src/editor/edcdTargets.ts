@@ -1,8 +1,9 @@
 import { Project, RealmzTargetRecordKind, SelectedEntity } from "./types";
 import { isCallableMacro } from "./semanticGraph";
 import { selectEntityFromId } from "./utils";
+import { choiceBranchTargetKind, parseChoicePromptValue } from "./choiceDialogs";
 
-export type EdcdTargetKind = "message" | "battle" | "shop" | "simpleEncounter" | "complexEncounter" | "questLabel" | "macro";
+export type EdcdTargetKind = "message" | "optionLabel" | "battle" | "shop" | "simpleEncounter" | "complexEncounter" | "questLabel" | "macro";
 
 export type EdcdTargetOption = {
   key: string;
@@ -66,6 +67,15 @@ export function edcdFieldTargetKind(shape: string, name: string, fieldNames: str
 }
 
 export function edcdTargetOptions(project: Project, targetKind: EdcdTargetKind): EdcdTargetOption[] {
+  if (targetKind === "optionLabel") {
+    return (project.optionLabels ?? []).map((record) => ({
+      key: `option-label:${record.id}`,
+      value: record.id,
+      label: `Option Label ${record.id}`,
+      detail: record.text || "empty option label",
+      entity: selectEntityFromId(`option-label:${record.id}`)
+    }));
+  }
   if (targetKind === "macro") {
     return project.triggers
       .filter((trigger) => trigger.source === "Data ED3" && isCallableMacro(project, trigger))
@@ -132,6 +142,9 @@ export function edcdTargetOptions(project: Project, targetKind: EdcdTargetKind):
 }
 
 export function missingEdcdTargetReferences(project: Project, shape: string, fieldNames: string[], values: number[], opcode?: number, preservedIndexes?: Iterable<number>): EdcdTargetReferenceIssue[] {
+  if (shape.toLowerCase() === "choice" && Math.abs(opcode ?? 0) === 3) {
+    return missingChoiceDialogReferences(project, fieldNames, values, preservedIndexes);
+  }
   const issues: EdcdTargetReferenceIssue[] = [];
   const preserved = new Set(preservedIndexes ?? []);
   for (const [index, field] of fieldNames.entries()) {
@@ -161,13 +174,14 @@ function normalizedEdcdTargetValueForValidation(targetKind: EdcdTargetKind, rawV
 }
 
 export function createRecordTypeForEdcdTarget(targetKind: EdcdTargetKind | null): RealmzTargetRecordKind | null {
-  if (!targetKind || targetKind === "macro") return null;
+  if (!targetKind || targetKind === "macro" || targetKind === "optionLabel") return null;
   return targetKind;
 }
 
 export function edcdTargetLabel(targetKind: EdcdTargetKind) {
   const labels: Record<EdcdTargetKind, string> = {
     message: "message",
+    optionLabel: "option label",
     battle: "battle",
     shop: "shop",
     simpleEncounter: "simple encounter",
@@ -176,6 +190,39 @@ export function edcdTargetLabel(targetKind: EdcdTargetKind) {
     macro: "Extra Action Point"
   };
   return labels[targetKind];
+}
+
+function missingChoiceDialogReferences(project: Project, fieldNames: string[], values: number[], preservedIndexes?: Iterable<number>): EdcdTargetReferenceIssue[] {
+  const issues: EdcdTargetReferenceIssue[] = [];
+  const preserved = new Set(preservedIndexes ?? []);
+  const addIssue = (index: number, field: string, targetKind: EdcdTargetKind, value: number) => {
+    issues.push({
+      index,
+      field,
+      targetKind,
+      targetLabel: edcdTargetLabel(targetKind),
+      value
+    });
+  };
+
+  const branchKind = choiceBranchTargetKind(values[1] ?? 0);
+  const branchTarget = values[2] ?? 0;
+  if (!preserved.has(2) && branchKind && branchTarget > 0 && !edcdTargetOptions(project, branchKind).some((option) => option.value === branchTarget)) {
+    addIssue(2, fieldNames[2] ?? "branchTarget", branchKind, branchTarget);
+  }
+
+  for (const index of [3, 4]) {
+    if (preserved.has(index)) continue;
+    const prompt = parseChoicePromptValue(values[index] ?? 0);
+    if (prompt.kind === "message" && !project.messages.some((record) => record.id === prompt.id)) {
+      addIssue(index, fieldNames[index] ?? `prompt${index - 2}`, "message", prompt.id);
+    }
+    if (prompt.kind === "option-label" && !project.optionLabels.some((record) => record.id === prompt.id)) {
+      addIssue(index, fieldNames[index] ?? `prompt${index - 2}`, "optionLabel", prompt.id);
+    }
+  }
+
+  return issues;
 }
 
 function isBranchTargetField(normalizedName: string) {

@@ -284,7 +284,7 @@ export function App() {
     dispatch({ type: "setStatus", status: "Opened selected Action Point in Scripts/AP" });
   }
 
-  function openProjectTool(tab: "assets" | "rules" | "scripts", editor: string) {
+  function openProjectTool(tab: "assets" | "rules" | "scripts" | "text", editor: string) {
     dispatch({ type: "setActiveDomain", domain: tab });
     dispatch({ type: "setActiveEditor", editor });
     dispatch({ type: "setStatus", status: `Opened ${editor.replace(/-/g, " ")}.` });

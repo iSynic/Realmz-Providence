@@ -2,7 +2,7 @@
 
 ## User-Facing Unlock
 
-Providence can make the Text tool match Divinity's **Strings** workflow without exposing fake fields. The editor should support one-record-at-a-time string editing, searching, import/export, and two-choice option labels. `Data OD` is now source-backed as the compact option-label table. The `Sound` field visible in Divinity's Strings screen remains writer-gated until runtime storage is proven.
+Providence can make the Text tool match Divinity's **Strings** workflow without exposing fake fields. The editor should support one-record-at-a-time string editing, searching, import/export, and two-choice option labels. `Data OD` is now source-backed as the compact option-label table. The `Sound` field visible in Divinity's Strings screen is classified as a caller/action sound concern, not a writable string-record field.
 
 ## Realmz Source Anchors
 
@@ -38,8 +38,8 @@ Providence can make the Text tool match Divinity's **Strings** workflow without 
 - Realmz reads option labels with negative string indexes: `editstring` uses `abs(stringindex) * 25`, while normal strings use `stringindex * 256`.
 - If `Data OD` is absent, `question2` falls back to `Data SD2` and uses 256-byte message records for the two choices.
 - The first visible character of each loaded option label becomes the keyboard shortcut in the two-choice prompt.
-- Realmz has no proven central per-string sound field: text display uses a generic sound, and caller records such as Action Points, battles, random areas, and thief encounters carry their own sound IDs beside message IDs.
-- The Divinity `Sound` field is not tied to a proven `Data SD2`/`Data OD` file offset or Realmz runtime consumer. Current best classification is an unresolved Divinity editor affordance or a caller-record helper, not a message-field writer. Providence should not expose it as writable until binary or fixture evidence proves storage and runtime consumption.
+- Realmz has no central per-string sound field in the audited runtime path: text display uses a generic sound, and caller records such as Action Points, battles, random areas, and thief encounters carry their own sound IDs beside message IDs.
+- The Divinity `Sound` field is not tied to a `Data SD2`/`Data OD` file offset or message-table runtime consumer. Current classification for Providence is `runtime caller field`: sound editing belongs on the action/encounter/battle record that actually owns and plays the sound.
 
 ## Corpus Evidence
 
@@ -55,9 +55,9 @@ Providence can make the Text tool match Divinity's **Strings** workflow without 
 - Text/Strings now has an `Option Labels` editor for two-choice labels, including navigation, search, duplicate, clear, byte-limit validation, and usage links from player-option script parameter rows.
 - Readable `TEXT`, `STR#`, and `styl` resources should display decoded text in reference previews, or an explicit no-readable-text state when no decoded text exists.
 - Keep the Strings `Sound` field out of the default editor; use caller-specific sound controls where Realmz source proves them.
-- Add a String Sound archaeology subtask using Divinity binary write tracing or a before/after fixture only if we need to reproduce that exact Divinity UI affordance.
+- Add a Divinity binary/fixture task only if we later need to reproduce that exact editor affordance as a caller-record shortcut.
 - Present `TEXT` and `STR#` resources as read-only resource viewers unless resource writing is explicitly implemented.
 
 ## Writer Gate
 
-`Data SD2` writing is safe when byte-length and Classic encoding are validated. `Data OD` writing is now source-backed and fixture-covered for 25-byte Pascal option labels; imported raw bytes are preserved until a label is authored. String Sound writing is blocked.
+`Data SD2` writing is safe when byte-length and Classic encoding are validated. `Data OD` writing is now source-backed and fixture-covered for 25-byte Pascal option labels; imported raw bytes are preserved until a label is authored. String Sound is not a Strings writer target; supported sound bytes are edited on their owning caller records.

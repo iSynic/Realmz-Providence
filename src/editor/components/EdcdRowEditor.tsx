@@ -5,6 +5,8 @@ import { CollapsibleSection, EmptyState, FieldRow, PanelSection } from "../ui";
 import { itemReferenceDetail, itemReferenceOptions } from "../itemReferences";
 import { createRecordTypeForEdcdTarget, edcdFieldTargetKind, edcdTargetLabel, edcdTargetOptions, missingEdcdTargetReferences } from "../edcdTargets";
 import { type OpcodeParameterLabel } from "../opcodeCrosswalk";
+import { CHOICE_BRANCH_MODES, choiceBranchModeLabel, choiceBranchTargetKind, choiceContinueLabel, nextOptionLabelId, parseChoicePromptValue, serializeChoicePromptValue, type ChoicePromptKind } from "../choiceDialogs";
+import { selectEntityFromId } from "../utils";
 
 type EdcdField = {
   name?: string;
@@ -34,6 +36,7 @@ export function EdcdRowEditor({
   parameterLabels,
   selectedSlotLabel,
   onSelectEntity,
+  onOpenText,
   onApplyCommand
 }: {
   project: Project;
@@ -46,6 +49,7 @@ export function EdcdRowEditor({
   parameterLabels?: OpcodeParameterLabel[];
   selectedSlotLabel: string;
   onSelectEntity?: (entity: SelectedEntity) => void;
+  onOpenText?: (editor: "messages" | "option-labels") => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const rowId = edcdUsage?.rowId ?? (fallbackShape ? Math.max(0, fallbackRowId) : null);
@@ -90,6 +94,22 @@ export function EdcdRowEditor({
   const preservedFields = fieldMetadata.filter((field) => field.preserved);
   const preservedIndexes = preservedFields.map((field) => field.index);
   const targetIssues = missingEdcdTargetReferences(project, shapeId, fieldNames, numericDraft, opcode, preservedIndexes);
+
+  if (shapeId.toLowerCase() === "choice" && Math.abs(opcode ?? 0) === 3) {
+    return (
+      <ChoiceDialogEditor
+        project={project}
+        rowId={rowId}
+        rowExists={Boolean(row)}
+        initialValues={initialValues}
+        targetIssues={targetIssues}
+        selectedSlotLabel={selectedSlotLabel}
+        onSelectEntity={onSelectEntity}
+        onOpenText={onOpenText}
+        onApplyCommand={onApplyCommand}
+      />
+    );
+  }
 
   return (
     <PanelSection
@@ -270,6 +290,301 @@ export function EdcdRowEditor({
       </label>
     );
   }
+}
+
+function ChoiceDialogEditor({
+  project,
+  rowId,
+  rowExists,
+  initialValues,
+  targetIssues,
+  selectedSlotLabel,
+  onSelectEntity,
+  onOpenText,
+  onApplyCommand
+}: {
+  project: Project;
+  rowId: number;
+  rowExists: boolean;
+  initialValues: number[];
+  targetIssues: ReturnType<typeof missingEdcdTargetReferences>;
+  selectedSlotLabel: string;
+  onSelectEntity?: (entity: SelectedEntity) => void;
+  onOpenText?: (editor: "messages" | "option-labels") => void;
+  onApplyCommand?: (command: ProjectCommand) => void;
+}) {
+  const [draft, setDraft] = useState(initialValues.map(String));
+
+  useEffect(() => {
+    setDraft(initialValues.map(String));
+  }, [initialValues]);
+
+  const numericDraft = draft.map((value) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  });
+  const changed = numericDraft.some((value, index) => value !== initialValues[index]);
+  const continueValue = numericDraft[0] ?? 0;
+  const branchMode = numericDraft[1] ?? 0;
+  const branchKind = choiceBranchTargetKind(branchMode);
+  const branchOptions = branchKind ? edcdTargetOptions(project, branchKind) : [];
+  const branchTarget = numericDraft[2] ?? 0;
+  const selectedBranch = branchOptions.find((option) => option.value === branchTarget);
+
+  const setField = (index: number, value: number) => {
+    const next = [...draft];
+    next[index] = String(value);
+    setDraft(next);
+  };
+
+  return (
+    <PanelSection
+      title={`Choice Dialog ${rowId}`}
+      eyebrow="Player Option"
+      density="compact"
+      actions={
+        <>
+          <button
+            type="button"
+            className="btn btn-primary btn-xs"
+            disabled={!onApplyCommand || !changed}
+            onClick={() => onApplyCommand?.({
+              kind: "updateEdcdRow",
+              label: `Update choice dialog ${rowId}`,
+              rowId,
+              values: numericDraft
+            })}
+          >
+            <Save size={12} /> Apply Choice
+          </button>
+          {rowExists && (
+            <button
+              type="button"
+              className="btn btn-danger btn-xs"
+              disabled={!onApplyCommand}
+              onClick={() => onApplyCommand?.({ kind: "deleteEdcdRow", label: `Delete choice dialog ${rowId}`, rowId })}
+            >
+              <Trash2 size={12} /> Delete Row
+            </button>
+          )}
+        </>
+      }
+    >
+      <div className="choice-dialog-editor">
+        {!rowExists && (
+          <EmptyState
+            compact
+            title="Missing choice dialog settings"
+            body={`This ${selectedSlotLabel} references choice dialog ${rowId}; applying values here will create the parameter row Realmz uses for the Player Option action.`}
+          />
+        )}
+        <div className="choice-dialog-grid">
+          <label>
+            <span>Continue When</span>
+            <select value={continueValue === 0 || continueValue === 1 ? String(continueValue) : `raw:${continueValue}`} onChange={(event) => {
+              const raw = event.currentTarget.value;
+              if (raw.startsWith("raw:")) return;
+              setField(0, Number(raw));
+            }}>
+              {continueValue !== 0 && continueValue !== 1 && <option value={`raw:${continueValue}`}>{choiceContinueLabel(continueValue)}</option>}
+              <option value="1">Left / Yes continues</option>
+              <option value="0">Right / No continues</option>
+            </select>
+            <small>The other choice branches using the behavior below.</small>
+          </label>
+          <label>
+            <span>Otherwise</span>
+            <select value={CHOICE_BRANCH_MODES.some((mode) => mode.value === branchMode) ? String(branchMode) : `raw:${branchMode}`} onChange={(event) => {
+              const raw = event.currentTarget.value;
+              if (raw.startsWith("raw:")) return;
+              setField(1, Number(raw));
+            }}>
+              {!CHOICE_BRANCH_MODES.some((mode) => mode.value === branchMode) && <option value={`raw:${branchMode}`}>{choiceBranchModeLabel(branchMode)}</option>}
+              {CHOICE_BRANCH_MODES.map((mode) => (
+                <option key={mode.value} value={mode.value}>{mode.label}</option>
+              ))}
+            </select>
+            <small>{CHOICE_BRANCH_MODES.find((mode) => mode.value === branchMode)?.help ?? "Imported branch behavior; edit with care."}</small>
+          </label>
+          <label className={targetIssues.some((issue) => issue.index === 2) ? "has-warning" : ""}>
+            <span>Branch Target</span>
+            {branchKind ? (
+              <select
+                value={selectedBranch ? String(branchTarget) : branchTarget === 0 ? "0" : `raw:${branchTarget}`}
+                onChange={(event) => {
+                  const raw = event.currentTarget.value;
+                  if (raw.startsWith("raw:")) return;
+                  setField(2, Number(raw));
+                }}
+              >
+                <option value="0">No target</option>
+                {branchTarget !== 0 && !selectedBranch && <option value={`raw:${branchTarget}`}>Current target {branchTarget}</option>}
+                {branchOptions.map((option) => (
+                  <option key={option.key} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            ) : (
+              <input type="number" value={draft[2] ?? "0"} onChange={(event) => setField(2, Number(event.currentTarget.value))} />
+            )}
+            <small>{branchKind ? selectedBranch?.detail ?? `${choiceBranchModeLabel(branchMode)} target.` : "Preserved unless the branch mode uses a target."}</small>
+          </label>
+        </div>
+        <div className="choice-prompt-grid">
+          <ChoicePromptField
+            project={project}
+            label="Left Option"
+            value={numericDraft[3] ?? 0}
+            warning={targetIssues.find((issue) => issue.index === 3)?.targetLabel}
+            onChange={(value) => setField(3, value)}
+            onSelectEntity={onSelectEntity}
+            onOpenText={onOpenText}
+            onApplyCommand={onApplyCommand}
+          />
+          <ChoicePromptField
+            project={project}
+            label="Right Option"
+            value={numericDraft[4] ?? 0}
+            warning={targetIssues.find((issue) => issue.index === 4)?.targetLabel}
+            onChange={(value) => setField(4, value)}
+            onSelectEntity={onSelectEntity}
+            onOpenText={onOpenText}
+            onApplyCommand={onApplyCommand}
+          />
+        </div>
+        {targetIssues.map((issue) => (
+          <p key={`${issue.index}-${issue.targetKind}-${issue.value}`} className="field-warning">
+            Missing {issue.targetLabel} {issue.value} for {issue.index === 2 ? "branch target" : issue.index === 3 ? "left option" : "right option"}.
+          </p>
+        ))}
+        <CollapsibleSection title="Advanced Details" eyebrow="raw row" density="compact" storageKey={`scripts.choiceDialog.${rowId}.advanced.open`} defaultOpen={false}>
+          <div className="realmz-raw-preview">
+            <FieldRow label="Data EDCD Row" value={rowId} />
+            <FieldRow label="Internal Shape" value="choice" />
+            <FieldRow label="Internal Fields" value="replyPolarity, branchMode, branchTarget, promptA, promptB" />
+            <FieldRow label="Raw Values" value={numericDraft.join(", ")} />
+          </div>
+        </CollapsibleSection>
+      </div>
+    </PanelSection>
+  );
+}
+
+function ChoicePromptField({
+  project,
+  label,
+  value,
+  warning,
+  onChange,
+  onSelectEntity,
+  onOpenText,
+  onApplyCommand
+}: {
+  project: Project;
+  label: string;
+  value: number;
+  warning?: string;
+  onChange: (value: number) => void;
+  onSelectEntity?: (entity: SelectedEntity) => void;
+  onOpenText?: (editor: "messages" | "option-labels") => void;
+  onApplyCommand?: (command: ProjectCommand) => void;
+}) {
+  const prompt = parseChoicePromptValue(value);
+  const messages = [...(project.messages ?? [])].sort((a, b) => a.id - b.id);
+  const optionLabels = [...(project.optionLabels ?? [])].sort((a, b) => a.id - b.id);
+  const selectedMessage = prompt.kind === "message" ? messages.find((record) => record.id === prompt.id) : null;
+  const selectedOptionLabel = prompt.kind === "option-label" ? optionLabels.find((record) => record.id === prompt.id) : null;
+  const selectKind = (kind: ChoicePromptKind) => {
+    if (kind === "message") onChange(serializeChoicePromptValue(kind, selectedMessage?.id ?? messages[0]?.id ?? 0));
+    else if (kind === "option-label") {
+      const existingId = selectedOptionLabel?.id ?? optionLabels[0]?.id;
+      if (existingId != null) {
+        onChange(serializeChoicePromptValue(kind, existingId));
+        return;
+      }
+      const id = nextOptionLabelId(optionLabels);
+      onApplyCommand?.({ kind: "createOptionLabel", label: `Create Option Label ${id}`, id });
+      onChange(-id);
+      openOptionLabel(id);
+    }
+    else onChange(0);
+  };
+  const openMessage = (id: number) => {
+    onSelectEntity?.(selectEntityFromId(`message:${id}`));
+    onOpenText?.("messages");
+  };
+  const openOptionLabel = (id: number) => {
+    onSelectEntity?.(selectEntityFromId(`option-label:${id}`));
+    onOpenText?.("option-labels");
+  };
+  const createOptionLabel = () => {
+    const id = prompt.kind === "option-label" && prompt.id > 0 ? prompt.id : nextOptionLabelId(optionLabels);
+    onApplyCommand?.({ kind: "createOptionLabel", label: `Create Option Label ${id}`, id });
+    onChange(-id);
+    openOptionLabel(id);
+  };
+
+  return (
+    <div className={`choice-prompt-field${warning ? " has-warning" : ""}`}>
+      <label>
+        <span>{label}</span>
+        <select value={prompt.kind} onChange={(event) => selectKind(event.currentTarget.value as ChoicePromptKind)}>
+          <option value="default">Default Yes/No</option>
+          <option value="message">String</option>
+          <option value="option-label">Option Label</option>
+        </select>
+      </label>
+      {prompt.kind === "message" && (
+        <label>
+          <span>String</span>
+          <select value={selectedMessage ? String(prompt.id) : `raw:${prompt.id}`} onChange={(event) => {
+            const raw = event.currentTarget.value;
+            if (raw.startsWith("raw:")) return;
+            onChange(Number(raw));
+          }}>
+            {!selectedMessage && prompt.id > 0 && <option value={`raw:${prompt.id}`}>Missing String {prompt.id}</option>}
+            {messages.map((record) => (
+              <option key={record.id} value={record.id}>{record.id}: {record.text || "Empty"}</option>
+            ))}
+          </select>
+          <small>{selectedMessage?.text || "Choose a scenario string."}</small>
+        </label>
+      )}
+      {prompt.kind === "option-label" && (
+        <label>
+          <span>Option Label</span>
+          <select value={selectedOptionLabel ? String(prompt.id) : `raw:${prompt.id}`} onChange={(event) => {
+            const raw = event.currentTarget.value;
+            if (raw.startsWith("raw:")) return;
+            onChange(-Number(raw));
+          }}>
+            {!selectedOptionLabel && prompt.id > 0 && <option value={`raw:${prompt.id}`}>Missing Option Label {prompt.id}</option>}
+            {optionLabels.map((record) => (
+              <option key={record.id} value={record.id}>{record.id}: {record.text || "Empty"}</option>
+            ))}
+          </select>
+          <small>{selectedOptionLabel?.text || "Option labels are compact choice text."}</small>
+        </label>
+      )}
+      {prompt.kind === "default" && <p>Uses Realmz's standard Yes / No option text.</p>}
+      <div className="choice-prompt-actions">
+        {prompt.kind === "message" && prompt.id > 0 && (
+          <button type="button" className="btn btn-secondary btn-xs" onClick={() => openMessage(prompt.id)}>
+            Edit String
+          </button>
+        )}
+        {prompt.kind === "option-label" && prompt.id > 0 && selectedOptionLabel && (
+          <button type="button" className="btn btn-secondary btn-xs" onClick={() => openOptionLabel(prompt.id)}>
+            Edit Label
+          </button>
+        )}
+        {prompt.kind === "option-label" && (!selectedOptionLabel || prompt.id === 0) && (
+          <button type="button" className="btn btn-primary btn-xs" onClick={createOptionLabel}>
+            {prompt.id > 0 ? "Create Label" : "New Label"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function edcdFieldLooksLikeItem(shape: string, name: string) {

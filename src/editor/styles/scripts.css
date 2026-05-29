@@ -1905,6 +1905,80 @@
 
 
 
+.choice-dialog-editor {
+  display: grid;
+  gap: 8px;
+}
+
+
+
+.choice-dialog-grid,
+.choice-prompt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 8px;
+}
+
+
+
+.choice-dialog-grid label,
+.choice-prompt-field {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  border: 1px solid #243240;
+  border-radius: 6px;
+  background: #0b141c;
+  padding: 8px;
+}
+
+
+
+.choice-dialog-grid label.has-warning,
+.choice-prompt-field.has-warning {
+  border-color: rgba(242, 188, 104, 0.65);
+  background: rgba(242, 188, 104, 0.08);
+}
+
+
+
+.choice-dialog-grid span,
+.choice-prompt-field span {
+  color: #7eaedf;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+
+
+.choice-dialog-grid small,
+.choice-prompt-field small,
+.choice-prompt-field p {
+  margin: 0;
+  color: #8ba1b3;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+
+
+.choice-prompt-field label {
+  display: grid;
+  gap: 4px;
+}
+
+
+
+.choice-prompt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+
+
 .edcd-secondary-row {
   display: grid;
   gap: 0;

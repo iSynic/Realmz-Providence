@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-29T18:33:11.231Z",
+  "generatedAt": "2026-05-29T21:01:12.899Z",
   "source": "docs/generated/opcode-edcd-crosswalk.json",
   "entries": {
     "0": {
@@ -141,7 +141,7 @@
           "help": "Prompt, left side (Optional)",
           "internalName": "promptA",
           "preserved": false,
-          "targetFamily": "message"
+          "targetFamily": "message-or-option-label"
         },
         {
           "index": 4,
@@ -149,7 +149,7 @@
           "help": "Prompt, right side (Optional)",
           "internalName": "promptB",
           "preserved": false,
-          "targetFamily": "message"
+          "targetFamily": "message-or-option-label"
         }
       ]
     },

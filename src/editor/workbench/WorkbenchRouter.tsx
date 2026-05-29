@@ -146,7 +146,7 @@ function WorkbenchRouterContent({
   }
 
   if (state.activeTab === "scripts") {
-    return <ScriptsPanel project={state.project} catalog={state.libraryCatalog} activeEditor={state.activeEditor} selectedEntity={state.selectedEntity} onSelectEntity={onSelectEntity} onSelectEditor={onSelectEditor} onApplyCommand={onApplyCommand} />;
+    return <ScriptsPanel project={state.project} catalog={state.libraryCatalog} activeEditor={state.activeEditor} selectedEntity={state.selectedEntity} onSelectEntity={onSelectEntity} onSelectEditor={onSelectEditor} onOpenTool={onOpenTool} onApplyCommand={onApplyCommand} />;
   }
 
   if (state.activeTab === "scenario") {
@@ -302,7 +302,7 @@ type WorkbenchRouterProps = {
   onSetViewFlag: (flag: MapViewFlag, value: boolean) => void;
   onClearSelection: () => void;
   onOpenScripts: (entity: SelectedEntity) => void;
-  onOpenTool: (tab: "assets" | "rules" | "scripts", editor: string) => void;
+  onOpenTool: (tab: "assets" | "rules" | "scripts" | "text", editor: string) => void;
   onBeginPaintStroke: (label: string) => void;
   onApplyCommand: (command: ProjectCommand) => void;
   onCommitPaintStroke: () => void;

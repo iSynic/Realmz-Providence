@@ -84,6 +84,7 @@ export function selectEntityFromId(id: string): SelectedEntity {
   if (id.startsWith("battle:")) return { type: "battle", id };
   if (id.startsWith("monster:")) return { type: "monster", id };
   if (id.startsWith("message:")) return { type: "message", id };
+  if (id.startsWith("option-label:")) return { type: "record", id };
   if (id.startsWith("shop:")) return { type: "shop", id };
   if (id.startsWith("treasure:") || id.startsWith("thief:") || id.startsWith("time:") || id.startsWith("contact:") || id.startsWith("solids:") || id.startsWith("menu:") || id.startsWith("item:") || id.startsWith("spell:")) {
     return { type: "record", id };

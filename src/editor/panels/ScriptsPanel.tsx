@@ -112,6 +112,7 @@ export function ScriptsPanel({
   selectedEntity,
   onSelectEntity,
   onSelectEditor,
+  onOpenTool,
   onApplyCommand,
   activeEditor = "domain"
 }: {
@@ -120,6 +121,7 @@ export function ScriptsPanel({
   selectedEntity: SelectedEntity | null;
   onSelectEntity: (entity: SelectedEntity) => void;
   onSelectEditor?: (editor: string) => void;
+  onOpenTool?: (tab: "text", editor: string) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
   activeEditor?: string;
 }) {
@@ -133,7 +135,7 @@ export function ScriptsPanel({
   return (
     <div className="editor-full-panel scripts-workbench">
       <ScriptEditorTabs activeEditor={activeEditor} onSelectEditor={onSelectEditor} />
-      <ScriptAuthoringPanel project={project} catalog={catalog} activeEditor={activeEditor} selectedEntity={selectedEntity} onSelectEntity={handleSelectEntity} onApplyCommand={handleApplyCommand} />
+      <ScriptAuthoringPanel project={project} catalog={catalog} activeEditor={activeEditor} selectedEntity={selectedEntity} onSelectEntity={handleSelectEntity} onOpenTool={onOpenTool} onApplyCommand={handleApplyCommand} />
     </div>
   );
 }
@@ -173,6 +175,7 @@ function ScriptAuthoringPanel({
   activeEditor,
   selectedEntity,
   onSelectEntity,
+  onOpenTool,
   onApplyCommand
 }: {
   project: Project | null;
@@ -180,6 +183,7 @@ function ScriptAuthoringPanel({
   activeEditor: string;
   selectedEntity: SelectedEntity | null;
   onSelectEntity: (entity: SelectedEntity) => void;
+  onOpenTool?: (tab: "text", editor: string) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const scripts = useMemo(
@@ -472,6 +476,7 @@ function ScriptAuthoringPanel({
       onSetOpcodeQuery={setOpcodeQuery}
       onSetSelectedDraft={setSelectedDraft}
       onSelectEntity={onSelectEntity}
+      onOpenTool={onOpenTool}
       onApplyCommand={onApplyCommand}
     />
   ) : null;
@@ -878,6 +883,7 @@ function SelectedStepDetail({
   onSetOpcodeQuery,
   onSetSelectedDraft,
   onSelectEntity,
+  onOpenTool,
   onApplyCommand
 }: {
   project: Project;
@@ -907,6 +913,7 @@ function SelectedStepDetail({
   onSetOpcodeQuery: (query: string) => void;
   onSetSelectedDraft: (values: { rawCode: number; id: number }) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
+  onOpenTool?: (tab: "text", editor: string) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const selectedCrosswalk = crosswalkForOpcode(selectedDraft.rawCode);
@@ -1051,6 +1058,7 @@ function SelectedStepDetail({
           parameterLabels={selectedParameterLabels}
           selectedSlotLabel={`slot ${selectedSlot}`}
           onSelectEntity={onSelectEntity}
+          onOpenText={(editor) => onOpenTool?.("text", editor)}
           onApplyCommand={onApplyCommand}
         />
       </CollapsibleSection>

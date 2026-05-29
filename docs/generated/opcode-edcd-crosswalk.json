@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-29T18:33:11.231Z",
+  "generatedAt": "2026-05-29T21:01:12.899Z",
   "sources": {
     "divinityOpcodeHelp": "docs/generated/divinity-opcode-help.json",
     "edcdSourceMap": "docs/generated/edcd-opcode-source-map.json",
@@ -102,8 +102,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2298",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2299",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2301",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2302",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -138,7 +138,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1920",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1923",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -212,7 +212,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1427",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1430",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -303,8 +303,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1444",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1453",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1447",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1456",
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1444",
         "consumerStatus": "corrected-field-semantics",
         "runtimeNote": "Field 2 is normally the optional pre-battle sound. When field 4 equals 10, Realmz revives the party after a loss and then calls loaddoor2(field 2), so the same field is the Extra Action Point to run on revived losses. Divinity warns not to specify an optional sound for revive battles."
@@ -394,8 +394,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1523",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1524",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1526",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1527",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -432,7 +432,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1566",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1569",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -470,7 +470,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1628",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1631",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -508,7 +508,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1696",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1699",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -599,8 +599,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1729",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1731",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1732",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1734",
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1729",
         "consumerStatus": "confirmed-extra-ap-copy-source",
         "runtimeNote": "Realmz loads Extra Action Point row field 2 with loaddoor2(), then copies that row's eight CODE/ID slots into a simple encounter result row, complex encounter result row, or Action Point record on a loaded land/dungeon level. This makes field 2 a source-backed Extra Action Point reference even though opcode 7 mutates/copies records instead of branching immediately."
@@ -657,7 +657,7 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1810",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1813",
         "edcdLoadAnchor": null,
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1810",
         "consumerStatus": "confirmed-same-map-action-point-copy",
@@ -695,7 +695,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1819",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1822",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -733,7 +733,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1823",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1826",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -771,7 +771,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1836",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1839",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -862,8 +862,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1845",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1846",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1848",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1849",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -953,8 +953,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1874",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1875",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1877",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1878",
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1874",
         "consumerStatus": "confirmed-runtime-mutation-not-macro",
         "runtimeNote": "Realmz sets one Action Point percent and/or a range of Action Point percent fields on the selected land/dungeon level. This EDCD row mutates Action Point state and does not call Data ED3."
@@ -991,7 +991,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1912",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1915",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -1082,8 +1082,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1934",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1935",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1937",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1938",
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1934",
         "consumerStatus": "corrected-link-semantics",
         "runtimeNote": "Realmz displays abs(extracode[4]) as the message target, so negative values are still message references."
@@ -1173,8 +1173,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1947",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1948",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1950",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1951",
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1947",
         "consumerStatus": "corrected-link-semantics",
         "runtimeNote": "Realmz displays abs(extracode[4]) as the message target, so negative values are still message references."
@@ -1286,8 +1286,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1959",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1960",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1962",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1963",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -1373,8 +1373,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1984",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1985",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1987",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1988",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -1452,8 +1452,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1998",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1999",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2001",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2002",
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1998",
         "consumerStatus": "added-edcd-shape",
         "runtimeNote": "Realmz displays one random Data SD2 message from messageLow..messageHigh and does not call sound() for this opcode."
@@ -1543,8 +1543,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2003",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2004",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2006",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2007",
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2013",
         "consumerStatus": "corrected-field-semantics",
         "runtimeNote": "Realmz leaves level/x/y unchanged when the corresponding field is -1; opcode 45 uses the same EDCD shape for teleport-only behavior."
@@ -1634,8 +1634,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2055",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2056",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2058",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2059",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -1725,8 +1725,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3675",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3676",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3678",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3679",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -1816,8 +1816,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2267",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2268",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2270",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2271",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -1854,7 +1854,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2329",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2332",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -1892,7 +1892,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2334",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2337",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -1930,7 +1930,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2345",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2348",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -1968,7 +1968,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2349",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2352",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -2006,7 +2006,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2376",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2379",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -2044,7 +2044,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2396",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2399",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -2131,8 +2131,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2406",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2407",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2409",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2410",
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2421",
         "consumerStatus": "corrected-field-semantics",
         "runtimeNote": "Realmz uses abs(extracode[0]) for the ability/attribute index. A negative value reverses the picked-character result after the check."
@@ -2222,8 +2222,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2482",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2484",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2485",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2487",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -2260,7 +2260,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2553",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2556",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -2351,8 +2351,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2560",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2561",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2563",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2564",
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2566",
         "consumerStatus": "corrected-field-semantics",
         "runtimeNote": "Realmz takes positive amounts directly and uses abs(amount) through its alternate path for zero/negative amounts; failureMarker -1 enters the hard-coded failure branch."
@@ -2389,7 +2389,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2574",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2577",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -2427,7 +2427,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2581",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2584",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -2465,7 +2465,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2588",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2591",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -2556,8 +2556,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2655",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2656",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2658",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2659",
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2655",
         "consumerStatus": "corrected-field-semantics",
         "runtimeNote": "Realmz uses the row to move between dungeon/land views; fields 3 and 4 are coordinate/heading data, not sound/message data."
@@ -2647,8 +2647,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2692",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2693",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2695",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2696",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -2723,7 +2723,7 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2738",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2741",
         "edcdLoadAnchor": null,
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2738",
         "consumerStatus": "removed-edcd-shape",
@@ -2810,8 +2810,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2745",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2746",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2748",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2749",
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2745",
         "consumerStatus": "added-edcd-shape",
         "runtimeNote": null
@@ -2889,8 +2889,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2782",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2783",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2785",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2786",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -2980,8 +2980,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2797",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2798",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2800",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2801",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -3067,8 +3067,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2831",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2832",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2834",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2835",
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2831",
         "consumerStatus": "corrected-link-semantics",
         "runtimeNote": "Realmz plays extracode[3] when applying the condition to each eligible character."
@@ -3105,7 +3105,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2825",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2828",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -3192,8 +3192,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2865",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2866",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2868",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2869",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -3283,8 +3283,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2871",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2872",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2874",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2875",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -3321,7 +3321,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3061",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3064",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -3412,8 +3412,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3069",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3070",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3072",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3073",
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3069",
         "consumerStatus": "split-from-generic-battle-variant",
         "runtimeNote": "Field 4 is an optional treasure, not a branch target."
@@ -3450,7 +3450,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3124",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3127",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -3541,8 +3541,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3133",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3134",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3136",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3137",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -3628,8 +3628,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3174",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3175",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3177",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3178",
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3174",
         "consumerStatus": "added-edcd-shape",
         "runtimeNote": null
@@ -3711,8 +3711,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3188",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3189",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3191",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3192",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -3794,8 +3794,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3250",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3251",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3253",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3254",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -3885,8 +3885,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3281",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3282",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3284",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3285",
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3289",
         "consumerStatus": "corrected-field-semantics",
         "runtimeNote": "Realmz uses -1 to keep percent, increment, and day-offset fields unchanged; resetDayFlag resets the encounter day to the current game day before applying the offset."
@@ -3976,8 +3976,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3306",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3308",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3309",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3311",
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3306",
         "consumerStatus": "added-edcd-shape",
         "runtimeNote": null
@@ -4067,8 +4067,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3382",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3391",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3385",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3394",
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3382",
         "consumerStatus": "split-from-generic-battle-variant",
         "runtimeNote": "Field 2 is an Extra Action Point called when the party flees/cowards out; fields 3 and 4 are sound/message."
@@ -4150,8 +4150,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3448",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3450",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3451",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3453",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -4241,8 +4241,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2811",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2812",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2814",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2815",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -4332,8 +4332,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3560",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3561",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3563",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3564",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -4411,8 +4411,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3586",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3587",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3589",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3590",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -4498,8 +4498,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3615",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3616",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3618",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3619",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -4536,7 +4536,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3600",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3603",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -4623,8 +4623,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3482",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3483",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3485",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3486",
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3487",
         "consumerStatus": "corrected-field-semantics",
         "runtimeNote": "In set-clock mode, -1 keeps each clock field unchanged; in offset mode, the same fields are added as deltas."
@@ -4714,8 +4714,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3514",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3516",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3517",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3519",
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3514",
         "consumerStatus": "added-edcd-shape",
         "runtimeNote": null
@@ -4797,8 +4797,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3539",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3540",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3542",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3543",
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3542",
         "consumerStatus": "corrected-field-semantics",
         "runtimeNote": "Realmz treats a negative first field as a random item count limit via Rand(abs(extracode[0])); positive values are fixed counts."
@@ -4835,7 +4835,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2380",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2383",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -4926,8 +4926,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2115",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2116",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2118",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2119",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -5005,8 +5005,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2170",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2171",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2173",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2174",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -5096,8 +5096,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2193",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2196",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2196",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2199",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -5171,8 +5171,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2209",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2210",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2212",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2213",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -5209,7 +5209,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2203",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2206",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -5300,8 +5300,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2891",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2892",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2894",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2895",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -5391,8 +5391,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2929",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2931",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2932",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2934",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -5478,8 +5478,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2969",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2971",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2972",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2974",
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2978",
         "consumerStatus": "corrected-field-semantics",
         "runtimeNote": "Realmz uses abs(extracode[0]) as roll count; a negative first field takes spell points. If playSound is nonzero, field 1 is also passed to sound() before the roll range is applied."
@@ -5569,8 +5569,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3002",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3004",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3005",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3007",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -6005,8 +6005,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1385",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1387",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1388",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1390",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -6043,7 +6043,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1378",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1381",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -6081,7 +6081,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1371",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1374",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -6119,7 +6119,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1358",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1361",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -6210,8 +6210,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1324",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1326",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1327",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1329",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -6301,8 +6301,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1194",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1198",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1197",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1201",
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1197",
         "consumerStatus": "split-from-ally-conditional-branch",
         "runtimeNote": "Opcode 86 stores the zero-based branch mode in field 2. For caste/race/gender/class/descriptor tests, a negative test value compares abs(value) only against picked characters."
@@ -6392,8 +6392,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1123",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1125",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1126",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1128",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -6430,7 +6430,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1105",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1108",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -6468,7 +6468,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1047",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1050",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -6547,8 +6547,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1023",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1024",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1026",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1027",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -6585,7 +6585,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1010",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1013",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -6676,8 +6676,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:942",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:944",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:945",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:947",
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:942",
         "consumerStatus": "confirmed-multi-row-shape",
         "runtimeNote": "Realmz loads the action ID row, mutates randlevel.percent[rect], then loads ID+1 to apply no-change, absolute, offset, or per-bound warp rectangle updates."
@@ -6714,7 +6714,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:931",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:934",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -6752,7 +6752,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:920",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:923",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -6790,7 +6790,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:909",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:912",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -6828,7 +6828,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:893",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:896",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -6866,7 +6866,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:882",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:885",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -6904,7 +6904,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:867",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:870",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -6942,7 +6942,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:838",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:841",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -6980,7 +6980,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:761",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:764",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -7018,7 +7018,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:771",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:774",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -7056,7 +7056,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:781",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:784",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -7139,8 +7139,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:797",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:799",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:800",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:802",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -7177,7 +7177,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:820",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:823",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -7215,7 +7215,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:824",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:827",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",
@@ -7302,8 +7302,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:828",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:829",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:831",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:832",
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:828",
         "consumerStatus": "added-edcd-shape",
         "runtimeNote": null
@@ -7393,8 +7393,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:705",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:714",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:708",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:717",
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:705",
         "consumerStatus": "split-from-generic-battle-variant",
         "runtimeNote": "Field 4 is an Extra Action Point called when the party flees/cowards out; field 2 is sound."
@@ -7472,8 +7472,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:617",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:619",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:620",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:622",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -8217,8 +8217,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:399",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:402",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:402",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:405",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -8308,8 +8308,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:423",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:426",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:426",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:429",
         "auditAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:423",
         "consumerStatus": "corrected-link-semantics",
         "runtimeNote": "Realmz treats a negative count as a random limit via Rand(abs(extracode[2])), spawns monsters from Data MD, and plays extracode[3] after placing each spawned monster when the value is nonzero."
@@ -8399,8 +8399,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:561",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:564",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:564",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:567",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -8490,8 +8490,8 @@
         ]
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:577",
-        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:582",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:580",
+        "edcdLoadAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:585",
         "auditAnchor": null,
         "consumerStatus": "source-audited-edcd-consumer",
         "runtimeNote": null
@@ -8528,7 +8528,7 @@
         "fieldComparison": []
       },
       "realmzSource": {
-        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:604",
+        "caseAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:607",
         "edcdLoadAnchor": null,
         "auditAnchor": null,
         "consumerStatus": "manual-or-direct-consumer",

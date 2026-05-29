@@ -39,6 +39,10 @@ export function TextPanel({
   const selectedRecord = records.find((record) => record.id === selectedId) ?? null;
   const effectiveOptionId = selectedOptionId ?? optionRecords[0]?.id ?? 0;
   const selectedOption = optionRecords.find((record) => record.id === effectiveOptionId) ?? null;
+  const selectOptionLabel = (id: number) => {
+    setSelectedOptionId(id);
+    onSelectEntity(selectEntityFromId(`option-label:${id}`));
+  };
   const filteredRecords = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return records;
@@ -101,6 +105,13 @@ export function TextPanel({
       setSelectedOptionId(optionRecords[0].id);
     }
   }, [optionRecords, selectedOptionId]);
+
+  useEffect(() => {
+    const optionId = selectedOptionLabelId(selectedEntity);
+    if (optionId == null) return;
+    setActiveTab("option-labels");
+    setSelectedOptionId(optionId);
+  }, [selectedEntity]);
 
   return (
     <section className="text-workbench">
@@ -286,7 +297,7 @@ export function TextPanel({
           records={optionRecords}
           selectedId={effectiveOptionId}
           selectedRecord={selectedOption}
-          onSelect={setSelectedOptionId}
+          onSelect={selectOptionLabel}
           onSelectEntity={onSelectEntity}
           onApplyCommand={onApplyCommand}
         />
@@ -673,6 +684,16 @@ function selectedMessageId(selectedEntity: SelectedEntity | null, records: Messa
     if (Number.isInteger(id)) return id;
   }
   return records[0]?.id ?? null;
+}
+
+function selectedOptionLabelId(selectedEntity: SelectedEntity | null) {
+  if (selectedEntity?.id.startsWith("option-label:")) {
+    const id = Number(selectedEntity.id.slice("option-label:".length));
+    if (Number.isInteger(id)) return id;
+  }
+  const match = selectedEntity?.id.match(/^record:Data OD:(\d+)$/);
+  if (match) return Number(match[1]);
+  return null;
 }
 
 function TextReferenceDetail({
