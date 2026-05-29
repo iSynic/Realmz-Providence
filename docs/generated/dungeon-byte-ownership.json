@@ -1,11 +1,12 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-29T22:49:07.576Z",
+  "generatedAt": "2026-05-29T23:44:24.871Z",
   "container": "Data DL",
   "authorFacingName": "Dungeon cell bitfields",
   "sources": {
     "bitTaxonomy": "docs/generated/dungeon-cell-bit-taxonomy.json",
     "primitiveGate": "docs/generated/dungeon-primitive-writer-gate.json",
+    "highBitAudit": "docs/generated/dungeon-high-bit-audit.json",
     "priorEvidence": "docs/generated/dungeon-bitfield-evidence.json"
   },
   "summary": {
@@ -15,19 +16,23 @@
     "bytes": 3159000,
     "cells": 1579500,
     "nonzeroCells": 1561493,
-    "unknownBitCells": 66113,
+    "highBitCells": 66113,
+    "unresolvedHighSignBitCells": 27429,
+    "noWallInBattleCells": 51356,
+    "bothHighBitCells": 12672,
+    "asciiLikeHighBitCells": 14817,
     "bytesPerLevel": 16200,
     "cellsPerLevel": 8100,
     "bitStatuses": {
-      "preserved-unknown": 2,
-      "runtime-state": 2,
-      "decoded-writable": 12
+      "preserved-unknown": 1,
+      "decoded-writable": 13,
+      "runtime-state": 2
     },
     "writerStatuses": {
-      "preserve-only": 2,
+      "preserve-only": 1,
+      "writer-safe-primitive": 11,
       "read-only-preserve": 2,
       "route-through-action-point-workflow": 1,
-      "writer-safe-primitive": 10,
       "route-through-note-workflow": 1
     },
     "alignmentIssues": 0
@@ -72946,9 +72951,9 @@
   "bitOwnership": [
     {
       "realmzBit": 0,
-      "key": "reservedHighBit0",
+      "key": "unresolvedHighSignBit",
       "mask": "0x8000",
-      "label": "Reserved high bit 0",
+      "label": "Unresolved high/sign bit",
       "ownershipStatus": "preserved-unknown",
       "writerStatus": "preserve-only",
       "observedCells": 27429,
@@ -72956,11 +72961,11 @@
     },
     {
       "realmzBit": 1,
-      "key": "reservedHighBit1",
+      "key": "noWallInBattle",
       "mask": "0x4000",
-      "label": "Reserved high bit 1",
-      "ownershipStatus": "preserved-unknown",
-      "writerStatus": "preserve-only",
+      "label": "No Wall in Battle",
+      "ownershipStatus": "decoded-writable",
+      "writerStatus": "writer-safe-primitive",
       "observedCells": 51356,
       "observedPercent": 3.2514
     },
@@ -73115,7 +73120,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8100,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Assault on Giant Mountain",
@@ -73126,7 +73135,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 16200,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Begining of the End",
@@ -73137,7 +73150,11 @@
       "trailingBytes": 0,
       "cells": 24300,
       "nonzeroCells": 24222,
-      "unknownBitCells": 14
+      "highBitCells": 14,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 14,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Castle in the Clouds",
@@ -73148,7 +73165,11 @@
       "trailingBytes": 0,
       "cells": 40500,
       "nonzeroCells": 40203,
-      "unknownBitCells": 749
+      "highBitCells": 749,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 749,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "City of Bywater",
@@ -73159,7 +73180,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 16189,
-      "unknownBitCells": 1
+      "highBitCells": 1,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 1,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "City of Port Hyrtin",
@@ -73170,7 +73195,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8090,
-      "unknownBitCells": 17
+      "highBitCells": 17,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 17,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Dagger of Shine",
@@ -73181,7 +73210,11 @@
       "trailingBytes": 0,
       "cells": 24300,
       "nonzeroCells": 24295,
-      "unknownBitCells": 24
+      "highBitCells": 24,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 24,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Destroy the Necronomicon",
@@ -73192,7 +73225,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 16194,
-      "unknownBitCells": 105
+      "highBitCells": 105,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 105,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Elemental Strife",
@@ -73203,7 +73240,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 14785,
-      "unknownBitCells": 95
+      "highBitCells": 95,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 95,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Grilochs Revenge",
@@ -73214,7 +73255,11 @@
       "trailingBytes": 0,
       "cells": 40500,
       "nonzeroCells": 40010,
-      "unknownBitCells": 131
+      "highBitCells": 131,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 131,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Half Truth",
@@ -73225,7 +73270,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8100,
-      "unknownBitCells": 18
+      "highBitCells": 18,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 18,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Hax",
@@ -73236,7 +73285,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 16199,
-      "unknownBitCells": 102
+      "highBitCells": 102,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 102,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Journey into the Mire",
@@ -73247,7 +73300,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8100,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Kalypso's Island",
@@ -73258,7 +73315,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8100,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Lachis",
@@ -73269,7 +73330,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8100,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Lord of the Abyss",
@@ -73280,7 +73345,11 @@
       "trailingBytes": 0,
       "cells": 24300,
       "nonzeroCells": 24094,
-      "unknownBitCells": 11927
+      "highBitCells": 11927,
+      "unresolvedHighSignBitCells": 7673,
+      "noWallInBattleCells": 8168,
+      "bothHighBitCells": 3914,
+      "asciiLikeHighBitCells": 1830
     },
     {
       "scenario": "Mithril Vault",
@@ -73291,7 +73360,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 15024,
-      "unknownBitCells": 3842
+      "highBitCells": 3842,
+      "unresolvedHighSignBitCells": 1406,
+      "noWallInBattleCells": 2721,
+      "bothHighBitCells": 285,
+      "asciiLikeHighBitCells": 1980
     },
     {
       "scenario": "Prelude to Pestilence",
@@ -73302,7 +73375,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8034,
-      "unknownBitCells": 67
+      "highBitCells": 67,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 67,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Price of Power",
@@ -73313,7 +73390,11 @@
       "trailingBytes": 0,
       "cells": 24300,
       "nonzeroCells": 24294,
-      "unknownBitCells": 634
+      "highBitCells": 634,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 634,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Search for the Lost City",
@@ -73324,7 +73405,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 15422,
-      "unknownBitCells": 32
+      "highBitCells": 32,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 32,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Spires of Steel",
@@ -73335,7 +73420,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 15464,
-      "unknownBitCells": 1204
+      "highBitCells": 1204,
+      "unresolvedHighSignBitCells": 64,
+      "noWallInBattleCells": 1165,
+      "bothHighBitCells": 25,
+      "asciiLikeHighBitCells": 1129
     },
     {
       "scenario": "The End Worlds",
@@ -73346,7 +73435,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 16200,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Trial by Fire",
@@ -73357,7 +73450,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8100,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Trouble in the Sword Lands",
@@ -73368,7 +73465,11 @@
       "trailingBytes": 0,
       "cells": 32400,
       "nonzeroCells": 32392,
-      "unknownBitCells": 1084
+      "highBitCells": 1084,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 1084,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Twin Sands of Time",
@@ -73379,7 +73480,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 15536,
-      "unknownBitCells": 38
+      "highBitCells": 38,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 38,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "War in the Sword Lands",
@@ -73390,7 +73495,11 @@
       "trailingBytes": 0,
       "cells": 24300,
       "nonzeroCells": 24300,
-      "unknownBitCells": 1281
+      "highBitCells": 1281,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 1281,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "White Dragon",
@@ -73401,7 +73510,11 @@
       "trailingBytes": 0,
       "cells": 32400,
       "nonzeroCells": 32348,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Wrath of the Mind Lords",
@@ -73412,7 +73525,11 @@
       "trailingBytes": 0,
       "cells": 32400,
       "nonzeroCells": 32400,
-      "unknownBitCells": 1095
+      "highBitCells": 1095,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 1095,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Assault on Giant Mountain",
@@ -73423,7 +73540,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 16200,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Castle in the Clouds",
@@ -73434,7 +73555,11 @@
       "trailingBytes": 0,
       "cells": 40500,
       "nonzeroCells": 40203,
-      "unknownBitCells": 749
+      "highBitCells": 749,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 749,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "City of Bywater",
@@ -73445,7 +73570,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 16189,
-      "unknownBitCells": 1
+      "highBitCells": 1,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 1,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Destroy the Necronomicon",
@@ -73456,7 +73585,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 16194,
-      "unknownBitCells": 105
+      "highBitCells": 105,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 105,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Grilochs Revenge",
@@ -73467,7 +73600,11 @@
       "trailingBytes": 0,
       "cells": 40500,
       "nonzeroCells": 40010,
-      "unknownBitCells": 131
+      "highBitCells": 131,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 131,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Half Truth",
@@ -73478,7 +73615,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8100,
-      "unknownBitCells": 18
+      "highBitCells": 18,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 18,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Mithril Vault",
@@ -73489,7 +73630,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 15024,
-      "unknownBitCells": 3842
+      "highBitCells": 3842,
+      "unresolvedHighSignBitCells": 1406,
+      "noWallInBattleCells": 2721,
+      "bothHighBitCells": 285,
+      "asciiLikeHighBitCells": 1980
     },
     {
       "scenario": "New Scenario",
@@ -73500,7 +73645,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8100,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Prelude to Pestilence",
@@ -73511,7 +73660,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8034,
-      "unknownBitCells": 67
+      "highBitCells": 67,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 67,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Test",
@@ -73522,7 +73675,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 16196,
-      "unknownBitCells": 1
+      "highBitCells": 1,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 1,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Trouble in the Sword Lands",
@@ -73533,7 +73690,11 @@
       "trailingBytes": 0,
       "cells": 32400,
       "nonzeroCells": 32392,
-      "unknownBitCells": 1084
+      "highBitCells": 1084,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 1084,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Tutorial",
@@ -73544,7 +73705,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8100,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Twin Sands of Time",
@@ -73555,7 +73720,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 15536,
-      "unknownBitCells": 38
+      "highBitCells": 38,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 38,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "War in the Sword Lands",
@@ -73566,7 +73735,11 @@
       "trailingBytes": 0,
       "cells": 24300,
       "nonzeroCells": 24300,
-      "unknownBitCells": 1281
+      "highBitCells": 1281,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 1281,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "White Dragon",
@@ -73577,7 +73750,11 @@
       "trailingBytes": 0,
       "cells": 32400,
       "nonzeroCells": 32348,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Wrath of the Mind Lords",
@@ -73588,7 +73765,11 @@
       "trailingBytes": 0,
       "cells": 32400,
       "nonzeroCells": 32400,
-      "unknownBitCells": 1095
+      "highBitCells": 1095,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 1095,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Araman's Ring",
@@ -73599,7 +73780,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8100,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Begining of the End",
@@ -73610,7 +73795,11 @@
       "trailingBytes": 0,
       "cells": 24300,
       "nonzeroCells": 24222,
-      "unknownBitCells": 14
+      "highBitCells": 14,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 14,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "City of Port Hyrtin",
@@ -73621,7 +73810,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8090,
-      "unknownBitCells": 17
+      "highBitCells": 17,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 17,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Dagger of Shine",
@@ -73632,7 +73825,11 @@
       "trailingBytes": 0,
       "cells": 24300,
       "nonzeroCells": 24295,
-      "unknownBitCells": 24
+      "highBitCells": 24,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 24,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Elemental Strife",
@@ -73643,7 +73840,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 14785,
-      "unknownBitCells": 95
+      "highBitCells": 95,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 95,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Hax",
@@ -73654,7 +73855,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 16199,
-      "unknownBitCells": 102
+      "highBitCells": 102,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 102,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Journey into the Mire",
@@ -73665,7 +73870,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8100,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Kalypso's Island",
@@ -73676,7 +73885,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8100,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Lachis",
@@ -73687,7 +73900,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8100,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Lord of the Abyss",
@@ -73698,7 +73915,11 @@
       "trailingBytes": 0,
       "cells": 24300,
       "nonzeroCells": 24094,
-      "unknownBitCells": 11927
+      "highBitCells": 11927,
+      "unresolvedHighSignBitCells": 7673,
+      "noWallInBattleCells": 8168,
+      "bothHighBitCells": 3914,
+      "asciiLikeHighBitCells": 1830
     },
     {
       "scenario": "Search for the Lost City",
@@ -73709,7 +73930,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 15422,
-      "unknownBitCells": 32
+      "highBitCells": 32,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 32,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Spires of Steel",
@@ -73720,7 +73945,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 15464,
-      "unknownBitCells": 1204
+      "highBitCells": 1204,
+      "unresolvedHighSignBitCells": 64,
+      "noWallInBattleCells": 1165,
+      "bothHighBitCells": 25,
+      "asciiLikeHighBitCells": 1129
     },
     {
       "scenario": "The End Worlds",
@@ -73731,7 +73960,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 16200,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Trial by Fire",
@@ -73742,7 +73975,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8100,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Araman's Ring",
@@ -73753,7 +73990,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8100,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Begining of the End",
@@ -73764,7 +74005,11 @@
       "trailingBytes": 0,
       "cells": 24300,
       "nonzeroCells": 24222,
-      "unknownBitCells": 14
+      "highBitCells": 14,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 14,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "City of Port Hyrtin",
@@ -73775,7 +74020,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8090,
-      "unknownBitCells": 17
+      "highBitCells": 17,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 17,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Dagger of Shine",
@@ -73786,7 +74035,11 @@
       "trailingBytes": 0,
       "cells": 24300,
       "nonzeroCells": 24295,
-      "unknownBitCells": 24
+      "highBitCells": 24,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 24,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Elemental Strife",
@@ -73797,7 +74050,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 14785,
-      "unknownBitCells": 95
+      "highBitCells": 95,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 95,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Hax",
@@ -73808,7 +74065,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 16199,
-      "unknownBitCells": 102
+      "highBitCells": 102,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 102,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Journey into the Mire",
@@ -73819,7 +74080,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8100,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Kalypso's Island",
@@ -73830,7 +74095,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8100,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Lachis",
@@ -73841,7 +74110,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8100,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Lord of the Abyss",
@@ -73852,7 +74125,11 @@
       "trailingBytes": 0,
       "cells": 24300,
       "nonzeroCells": 24094,
-      "unknownBitCells": 11927
+      "highBitCells": 11927,
+      "unresolvedHighSignBitCells": 7673,
+      "noWallInBattleCells": 8168,
+      "bothHighBitCells": 3914,
+      "asciiLikeHighBitCells": 1830
     },
     {
       "scenario": "Search for the Lost City",
@@ -73863,7 +74140,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 15422,
-      "unknownBitCells": 32
+      "highBitCells": 32,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 32,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Spires of Steel",
@@ -73874,7 +74155,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 15464,
-      "unknownBitCells": 1204
+      "highBitCells": 1204,
+      "unresolvedHighSignBitCells": 64,
+      "noWallInBattleCells": 1165,
+      "bothHighBitCells": 25,
+      "asciiLikeHighBitCells": 1129
     },
     {
       "scenario": "The End Worlds",
@@ -73885,7 +74170,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 16200,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Trial by Fire",
@@ -73896,7 +74185,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8100,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Assault On Giant Mountain",
@@ -73907,7 +74200,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 16200,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Castle in the Clouds",
@@ -73918,7 +74215,11 @@
       "trailingBytes": 0,
       "cells": 40500,
       "nonzeroCells": 40203,
-      "unknownBitCells": 749
+      "highBitCells": 749,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 749,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "City Of Bywater",
@@ -73929,7 +74230,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 16189,
-      "unknownBitCells": 1
+      "highBitCells": 1,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 1,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Destroy The Necronomicon",
@@ -73940,7 +74245,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 16194,
-      "unknownBitCells": 105
+      "highBitCells": 105,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 105,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Grilochs Revenge",
@@ -73951,7 +74260,11 @@
       "trailingBytes": 0,
       "cells": 40500,
       "nonzeroCells": 40010,
-      "unknownBitCells": 131
+      "highBitCells": 131,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 131,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Half Truth",
@@ -73962,7 +74275,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8100,
-      "unknownBitCells": 18
+      "highBitCells": 18,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 18,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Mithril Vault",
@@ -73973,7 +74290,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 15024,
-      "unknownBitCells": 3842
+      "highBitCells": 3842,
+      "unresolvedHighSignBitCells": 1406,
+      "noWallInBattleCells": 2721,
+      "bothHighBitCells": 285,
+      "asciiLikeHighBitCells": 1980
     },
     {
       "scenario": "New Scenario",
@@ -73984,7 +74305,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8100,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Prelude To Pestilence",
@@ -73995,7 +74320,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8034,
-      "unknownBitCells": 67
+      "highBitCells": 67,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 67,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Trouble in the Sword Lands",
@@ -74006,7 +74335,11 @@
       "trailingBytes": 0,
       "cells": 32400,
       "nonzeroCells": 32392,
-      "unknownBitCells": 1084
+      "highBitCells": 1084,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 1084,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Tutorial",
@@ -74017,7 +74350,11 @@
       "trailingBytes": 0,
       "cells": 8100,
       "nonzeroCells": 8100,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Twin Sands of Time",
@@ -74028,7 +74365,11 @@
       "trailingBytes": 0,
       "cells": 16200,
       "nonzeroCells": 15536,
-      "unknownBitCells": 38
+      "highBitCells": 38,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 38,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "War in the Sword Lands",
@@ -74039,7 +74380,11 @@
       "trailingBytes": 0,
       "cells": 24300,
       "nonzeroCells": 24300,
-      "unknownBitCells": 1281
+      "highBitCells": 1281,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 1281,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "White Dragon",
@@ -74050,7 +74395,11 @@
       "trailingBytes": 0,
       "cells": 32400,
       "nonzeroCells": 32348,
-      "unknownBitCells": 0
+      "highBitCells": 0,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 0,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     },
     {
       "scenario": "Wrath of the Mind Lords",
@@ -74061,7 +74410,11 @@
       "trailingBytes": 0,
       "cells": 32400,
       "nonzeroCells": 32400,
-      "unknownBitCells": 1095
+      "highBitCells": 1095,
+      "unresolvedHighSignBitCells": 0,
+      "noWallInBattleCells": 1095,
+      "bothHighBitCells": 0,
+      "asciiLikeHighBitCells": 0
     }
   ],
   "alignmentIssues": [],

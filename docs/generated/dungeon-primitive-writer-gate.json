@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-29T22:49:07.576Z",
+  "generatedAt": "2026-05-29T23:44:24.871Z",
   "container": "Data DL",
   "policy": {
     "normalEditor": "Expose named primitives only. Do not expose a normal raw dungeon bit editor; raw masks stay under Advanced Details.",
@@ -290,31 +290,43 @@
       "testStatus": "preserve-or-route-only"
     },
     {
-      "id": "reservedHighBits",
-      "label": "Reserved high bits",
+      "id": "noWallInBattle",
+      "label": "No Wall in Battle",
       "bitKeys": [
-        "reservedHighBit0",
-        "reservedHighBit1"
+        "noWallInBattle"
+      ],
+      "writerStatus": "writer-safe-primitive",
+      "normalEditorPolicy": "May be edited by named dungeon primitive commands after fixture proof; raw bit editing stays Advanced-only.",
+      "bits": [
+        {
+          "key": "noWallInBattle",
+          "mask": "0x4000",
+          "realmzBit": 1,
+          "ownershipStatus": "decoded-writable",
+          "observedCells": 51356
+        }
+      ],
+      "observedCells": 51356,
+      "testStatus": "covered-by-dungeon-cell-helper-tests"
+    },
+    {
+      "id": "unresolvedHighSignBit",
+      "label": "Unresolved high/sign bit",
+      "bitKeys": [
+        "unresolvedHighSignBit"
       ],
       "writerStatus": "preserve-only",
       "normalEditorPolicy": "Preserve and display only until runtime/editor ownership is proven.",
       "bits": [
         {
-          "key": "reservedHighBit0",
+          "key": "unresolvedHighSignBit",
           "mask": "0x8000",
           "realmzBit": 0,
           "ownershipStatus": "preserved-unknown",
           "observedCells": 27429
-        },
-        {
-          "key": "reservedHighBit1",
-          "mask": "0x4000",
-          "realmzBit": 1,
-          "ownershipStatus": "preserved-unknown",
-          "observedCells": 51356
         }
       ],
-      "observedCells": 78785,
+      "observedCells": 27429,
       "testStatus": "preserve-or-route-only"
     }
   ],
@@ -571,7 +583,7 @@
         ]
       }
     ],
-    "unknownBitPatterns": [
+    "highBitPatterns": [
       {
         "value": 16513,
         "signedValue": 16513,
@@ -579,7 +591,7 @@
         "count": 13992,
         "percent": 0.8858,
         "labels": [
-          "Reserved high bit 1",
+          "No Wall in Battle",
           "Unmapped",
           "Wall"
         ]
@@ -591,7 +603,7 @@
         "count": 1488,
         "percent": 0.0942,
         "labels": [
-          "Reserved high bit 0",
+          "Unresolved high/sign bit",
           "Allow Move Left",
           "Allow Move Down",
           "Allow Move Right",
@@ -605,7 +617,7 @@
         "count": 1122,
         "percent": 0.071,
         "labels": [
-          "Reserved high bit 1",
+          "No Wall in Battle",
           "Unmapped",
           "Column",
           "Wall"
@@ -618,7 +630,7 @@
         "count": 927,
         "percent": 0.0587,
         "labels": [
-          "Reserved high bit 0",
+          "Unresolved high/sign bit",
           "Action Point marker"
         ]
       },
@@ -629,7 +641,7 @@
         "count": 363,
         "percent": 0.023,
         "labels": [
-          "Reserved high bit 1",
+          "No Wall in Battle",
           "Wall"
         ]
       },
@@ -640,7 +652,7 @@
         "count": 273,
         "percent": 0.0173,
         "labels": [
-          "Reserved high bit 1",
+          "No Wall in Battle",
           "Revealed passage / arch",
           "Allow Move Down",
           "Allow Move Up",
@@ -654,7 +666,7 @@
         "count": 240,
         "percent": 0.0152,
         "labels": [
-          "Reserved high bit 1",
+          "No Wall in Battle",
           "Action Point marker",
           "Secret discovered",
           "Horizontal Door"
@@ -667,7 +679,7 @@
         "count": 156,
         "percent": 0.0099,
         "labels": [
-          "Reserved high bit 1",
+          "No Wall in Battle",
           "Revealed passage / arch",
           "Allow Move Down",
           "Allow Move Up",
@@ -684,7 +696,7 @@
         "count": 153,
         "percent": 0.0097,
         "labels": [
-          "Reserved high bit 1",
+          "No Wall in Battle",
           "Revealed passage / arch",
           "Allow Move Left",
           "Allow Move Down",
@@ -701,7 +713,7 @@
         "count": 150,
         "percent": 0.0095,
         "labels": [
-          "Reserved high bit 1",
+          "No Wall in Battle",
           "Action Point marker",
           "Allow Move Right",
           "Allow Move Up",
@@ -718,7 +730,7 @@
         "count": 147,
         "percent": 0.0093,
         "labels": [
-          "Reserved high bit 1",
+          "No Wall in Battle",
           "Allow Move Down",
           "Allow Move Right",
           "Allow Move Up",
@@ -735,7 +747,7 @@
         "count": 129,
         "percent": 0.0082,
         "labels": [
-          "Reserved high bit 1",
+          "No Wall in Battle",
           "Revealed passage / arch",
           "Allow Move Down",
           "Allow Move Up",
@@ -752,7 +764,7 @@
         "count": 120,
         "percent": 0.0076,
         "labels": [
-          "Reserved high bit 1",
+          "No Wall in Battle",
           "Revealed passage / arch",
           "Allow Move Left",
           "Secret discovered",
@@ -768,7 +780,7 @@
         "count": 117,
         "percent": 0.0074,
         "labels": [
-          "Reserved high bit 1",
+          "No Wall in Battle",
           "Revealed passage / arch",
           "Allow Move Up",
           "Secret discovered",
@@ -784,7 +796,7 @@
         "count": 111,
         "percent": 0.007,
         "labels": [
-          "Reserved high bit 1",
+          "No Wall in Battle",
           "Revealed passage / arch",
           "Action Point marker",
           "Allow Move Right",
@@ -799,7 +811,7 @@
         "count": 108,
         "percent": 0.0068,
         "labels": [
-          "Reserved high bit 1",
+          "No Wall in Battle",
           "Revealed passage / arch",
           "Allow Move Up",
           "Secret discovered",
@@ -816,7 +828,7 @@
         "count": 102,
         "percent": 0.0065,
         "labels": [
-          "Reserved high bit 1",
+          "No Wall in Battle",
           "Revealed passage / arch",
           "Allow Move Left",
           "Allow Move Down",
@@ -831,7 +843,7 @@
         "count": 99,
         "percent": 0.0063,
         "labels": [
-          "Reserved high bit 1",
+          "No Wall in Battle",
           "Revealed passage / arch",
           "Allow Move Left",
           "Allow Move Up",
@@ -849,7 +861,7 @@
         "count": 96,
         "percent": 0.0061,
         "labels": [
-          "Reserved high bit 1",
+          "No Wall in Battle",
           "Revealed passage / arch",
           "Allow Move Down",
           "Allow Move Up",
@@ -867,11 +879,269 @@
         "count": 90,
         "percent": 0.0057,
         "labels": [
-          "Reserved high bit 1",
+          "No Wall in Battle",
           "Revealed passage / arch",
           "Action Point marker",
           "Allow Move Down",
           "Note marker"
+        ]
+      }
+    ],
+    "unknownBitPatterns": [
+      {
+        "value": 36608,
+        "signedValue": -28928,
+        "hex": "0x8F00",
+        "count": 1488,
+        "percent": 0.0942,
+        "labels": [
+          "Unresolved high/sign bit",
+          "Allow Move Left",
+          "Allow Move Down",
+          "Allow Move Right",
+          "Allow Move Up"
+        ]
+      },
+      {
+        "value": 36864,
+        "signedValue": -28672,
+        "hex": "0x9000",
+        "count": 927,
+        "percent": 0.0587,
+        "labels": [
+          "Unresolved high/sign bit",
+          "Action Point marker"
+        ]
+      },
+      {
+        "value": 34816,
+        "signedValue": -30720,
+        "hex": "0x8800",
+        "count": 57,
+        "percent": 0.0036,
+        "labels": [
+          "Unresolved high/sign bit",
+          "Allow Move Left"
+        ]
+      },
+      {
+        "value": 35328,
+        "signedValue": -30208,
+        "hex": "0x8A00",
+        "count": 57,
+        "percent": 0.0036,
+        "labels": [
+          "Unresolved high/sign bit",
+          "Allow Move Left",
+          "Allow Move Right"
+        ]
+      },
+      {
+        "value": 37376,
+        "signedValue": -28160,
+        "hex": "0x9200",
+        "count": 57,
+        "percent": 0.0036,
+        "labels": [
+          "Unresolved high/sign bit",
+          "Action Point marker",
+          "Allow Move Right"
+        ]
+      },
+      {
+        "value": 41472,
+        "signedValue": -24064,
+        "hex": "0xA200",
+        "count": 57,
+        "percent": 0.0036,
+        "labels": [
+          "Unresolved high/sign bit",
+          "Revealed passage / arch",
+          "Allow Move Right"
+        ]
+      },
+      {
+        "value": 45568,
+        "signedValue": -19968,
+        "hex": "0xB200",
+        "count": 57,
+        "percent": 0.0036,
+        "labels": [
+          "Unresolved high/sign bit",
+          "Revealed passage / arch",
+          "Action Point marker",
+          "Allow Move Right"
+        ]
+      },
+      {
+        "value": 49664,
+        "signedValue": -15872,
+        "hex": "0xC200",
+        "count": 57,
+        "percent": 0.0036,
+        "labels": [
+          "Unresolved high/sign bit",
+          "No Wall in Battle",
+          "Allow Move Right"
+        ]
+      },
+      {
+        "value": 43520,
+        "signedValue": -22016,
+        "hex": "0xAA00",
+        "count": 54,
+        "percent": 0.0034,
+        "labels": [
+          "Unresolved high/sign bit",
+          "Revealed passage / arch",
+          "Allow Move Left",
+          "Allow Move Right"
+        ]
+      },
+      {
+        "value": 51712,
+        "signedValue": -13824,
+        "hex": "0xCA00",
+        "count": 54,
+        "percent": 0.0034,
+        "labels": [
+          "Unresolved high/sign bit",
+          "No Wall in Battle",
+          "Allow Move Left",
+          "Allow Move Right"
+        ]
+      },
+      {
+        "value": 57856,
+        "signedValue": -7680,
+        "hex": "0xE200",
+        "count": 54,
+        "percent": 0.0034,
+        "labels": [
+          "Unresolved high/sign bit",
+          "No Wall in Battle",
+          "Revealed passage / arch",
+          "Allow Move Right"
+        ]
+      },
+      {
+        "value": 39424,
+        "signedValue": -26112,
+        "hex": "0x9A00",
+        "count": 51,
+        "percent": 0.0032,
+        "labels": [
+          "Unresolved high/sign bit",
+          "Action Point marker",
+          "Allow Move Left",
+          "Allow Move Right"
+        ]
+      },
+      {
+        "value": 59904,
+        "signedValue": -5632,
+        "hex": "0xEA00",
+        "count": 51,
+        "percent": 0.0032,
+        "labels": [
+          "Unresolved high/sign bit",
+          "No Wall in Battle",
+          "Revealed passage / arch",
+          "Allow Move Left",
+          "Allow Move Right"
+        ]
+      },
+      {
+        "value": 53760,
+        "signedValue": -11776,
+        "hex": "0xD200",
+        "count": 48,
+        "percent": 0.003,
+        "labels": [
+          "Unresolved high/sign bit",
+          "No Wall in Battle",
+          "Action Point marker",
+          "Allow Move Right"
+        ]
+      },
+      {
+        "value": 33280,
+        "signedValue": -32256,
+        "hex": "0x8200",
+        "count": 45,
+        "percent": 0.0028,
+        "labels": [
+          "Unresolved high/sign bit",
+          "Allow Move Right"
+        ]
+      },
+      {
+        "value": 47616,
+        "signedValue": -17920,
+        "hex": "0xBA00",
+        "count": 45,
+        "percent": 0.0028,
+        "labels": [
+          "Unresolved high/sign bit",
+          "Revealed passage / arch",
+          "Action Point marker",
+          "Allow Move Left",
+          "Allow Move Right"
+        ]
+      },
+      {
+        "value": 55808,
+        "signedValue": -9728,
+        "hex": "0xDA00",
+        "count": 45,
+        "percent": 0.0028,
+        "labels": [
+          "Unresolved high/sign bit",
+          "No Wall in Battle",
+          "Action Point marker",
+          "Allow Move Left",
+          "Allow Move Right"
+        ]
+      },
+      {
+        "value": 64000,
+        "signedValue": -1536,
+        "hex": "0xFA00",
+        "count": 45,
+        "percent": 0.0028,
+        "labels": [
+          "Unresolved high/sign bit",
+          "No Wall in Battle",
+          "Revealed passage / arch",
+          "Action Point marker",
+          "Allow Move Left",
+          "Allow Move Right"
+        ]
+      },
+      {
+        "value": 61952,
+        "signedValue": -3584,
+        "hex": "0xF200",
+        "count": 42,
+        "percent": 0.0027,
+        "labels": [
+          "Unresolved high/sign bit",
+          "No Wall in Battle",
+          "Revealed passage / arch",
+          "Action Point marker",
+          "Allow Move Right"
+        ]
+      },
+      {
+        "value": 41984,
+        "signedValue": -23552,
+        "hex": "0xA400",
+        "count": 27,
+        "percent": 0.0017,
+        "labels": [
+          "Unresolved high/sign bit",
+          "Revealed passage / arch",
+          "Allow Move Down"
         ]
       }
     ]

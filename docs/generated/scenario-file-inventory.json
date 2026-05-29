@@ -1,12 +1,13 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-29T22:57:15.552Z",
+  "generatedAt": "2026-05-29T23:44:38.836Z",
   "sources": {
     "roundtripLedger": "docs/generated/scenario-byte-roundtrip-ledger.json",
     "rustRegistry": "src-tauri/src/realmz.rs",
     "runtimeCaches": "docs/generated/runtime-cache-classification.json",
     "resourceCoverage": "docs/generated/resource-byte-ownership.json",
-    "dungeonCoverage": "docs/generated/dungeon-byte-ownership.json"
+    "dungeonCoverage": "docs/generated/dungeon-byte-ownership.json",
+    "dungeonHighBitAudit": "docs/generated/dungeon-high-bit-audit.json"
   },
   "policy": {
     "ignoredNonScenarioFiles": [

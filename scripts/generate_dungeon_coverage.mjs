@@ -9,20 +9,24 @@ const roundtripLedgerPath = path.join(repoRoot, "docs/generated/scenario-byte-ro
 const byteOwnershipPath = path.join(repoRoot, "docs/generated/dungeon-byte-ownership.json");
 const bitTaxonomyPath = path.join(repoRoot, "docs/generated/dungeon-cell-bit-taxonomy.json");
 const primitiveGatePath = path.join(repoRoot, "docs/generated/dungeon-primitive-writer-gate.json");
+const highBitAuditPath = path.join(repoRoot, "docs/generated/dungeon-high-bit-audit.json");
 
 const MAP_SIZE = 90;
 const CELL_COUNT = MAP_SIZE * MAP_SIZE;
 const CELL_BYTES = 2;
 const FIELD_BYTES = CELL_COUNT * CELL_BYTES;
-const UNKNOWN_MASK = 0xc000;
+const HIGH_BIT_MASK = 0xc000;
+const UNRESOLVED_HIGH_SIGN_MASK = 0x8000;
+const NO_WALL_IN_BATTLE_MASK = 0x4000;
 
 const BIT_TAXONOMY = [
   {
     realmzBit: 0,
     mask: 0x8000,
-    key: "reservedHighBit0",
-    authorLabel: "Reserved high bit 0",
-    runtimeMeaning: "No source-backed Realmz runtime consumer identified.",
+    key: "unresolvedHighSignBit",
+    authorLabel: "Unresolved high/sign bit",
+    runtimeMeaning:
+      "No source-backed Realmz runtime or Divinity editor consumer identified. Corpus examples include both plausible legacy dungeon combinations and malformed/ASCII-like imported runs, so Providence preserves this bit.",
     ownershipStatus: "preserved-unknown",
     writerStatus: "preserve-only",
     editorSurface: "Advanced Details",
@@ -31,13 +35,14 @@ const BIT_TAXONOMY = [
   {
     realmzBit: 1,
     mask: 0x4000,
-    key: "reservedHighBit1",
-    authorLabel: "Reserved high bit 1",
-    runtimeMeaning: "No source-backed Realmz runtime consumer identified.",
-    ownershipStatus: "preserved-unknown",
-    writerStatus: "preserve-only",
-    editorSurface: "Advanced Details",
-    confidence: "unknown-active-risk"
+    key: "noWallInBattle",
+    authorLabel: "No Wall in Battle",
+    runtimeMeaning:
+      "Divinity labels this as No Wall in Battle. Realmz dungeon combat map conversion includes 0x4000 in mask 0x4F0E, making matching dungeon cells clear floor during outdoor-style combat expansion.",
+    ownershipStatus: "decoded-writable",
+    writerStatus: "writer-safe-primitive",
+    editorSurface: "Dungeon primitive",
+    confidence: "source-backed-manual-backed"
   },
   {
     realmzBit: 2,
@@ -219,12 +224,17 @@ const SOURCE_ANCHORS = [
   {
     source: "F:/Realmz/src/realmz_orig/combatmap.c",
     topics: ["dungeon combat map conversion"],
-    note: "Dungeon combat terrain uses the 0x4F0E runtime mask after clearing the visible-arch marker."
+    note: "Dungeon combat terrain uses the 0x4F0E runtime mask after clearing the visible-arch marker; the mask includes 0x4000 No Wall in Battle."
   },
   {
     source: "F:/DocMaker/out/divinity-manual.txt:4087-4166",
     topics: ["Divinity Dungeon Editor labels"],
     note: "Manual labels wall, horizontal door, vertical door, stairs, column, unmapped, and Allow Move directions."
+  },
+  {
+    source: "F:/DocMaker/out/divinity-manual.txt:4169-4173",
+    topics: ["Divinity Dungeon Editor high-bit label"],
+    note: "Manual labels No Wall in Battle and explains that such dungeon walls become clear floor tiles on combat maps."
   }
 ];
 
@@ -243,7 +253,8 @@ const PRIMITIVES = [
   primitive("actionPointMarker", "Action Point marker", ["actionPointMarker"], "route-through-action-point-workflow"),
   primitive("revealedSecret", "Secret discovered", ["revealedSecret"], "read-only-preserve"),
   primitive("visibleArch", "Revealed passage / arch", ["visibleArch"], "read-only-preserve"),
-  primitive("reservedHighBits", "Reserved high bits", ["reservedHighBit0", "reservedHighBit1"], "preserve-only")
+  primitive("noWallInBattle", "No Wall in Battle", ["noWallInBattle"], "writer-safe-primitive"),
+  primitive("unresolvedHighSignBit", "Unresolved high/sign bit", ["unresolvedHighSignBit"], "preserve-only")
 ];
 
 const roundtripLedger = readJson(roundtripLedgerPath);
@@ -251,18 +262,22 @@ const scan = scanDungeonFiles(roundtripLedger.scenarios ?? []);
 const taxonomy = buildTaxonomy(scan);
 const ownership = buildOwnership(scan, taxonomy);
 const gate = buildPrimitiveGate(scan, taxonomy);
+const highBitAudit = buildHighBitAudit(scan, taxonomy);
 
 validateTaxonomy(taxonomy);
 validateOwnership(ownership);
 validatePrimitiveGate(gate);
+validateHighBitAudit(highBitAudit, scan);
 
 writeJson(bitTaxonomyPath, taxonomy);
 writeJson(byteOwnershipPath, ownership);
 writeJson(primitiveGatePath, gate);
+writeCompactJson(highBitAuditPath, highBitAudit);
 
 console.log(`Wrote ${path.relative(repoRoot, bitTaxonomyPath)}`);
 console.log(`Wrote ${path.relative(repoRoot, byteOwnershipPath)}`);
 console.log(`Wrote ${path.relative(repoRoot, primitiveGatePath)}`);
+console.log(`Wrote ${path.relative(repoRoot, highBitAuditPath)}`);
 console.log(JSON.stringify(ownership.summary, null, 2));
 
 function primitive(id, label, bitKeys, writerStatus) {
@@ -292,6 +307,11 @@ function scanDungeonFiles(scenarios) {
   let totalLevels = 0;
   let nonzeroCells = 0;
   let unknownBitCells = 0;
+  let highBitCells = 0;
+  let noWallInBattleCells = 0;
+  let bothHighBitCells = 0;
+  let asciiLikeHighBitCells = 0;
+  const highBitCellDetails = [];
   const alignmentIssues = [];
 
   for (const scenario of scenarios) {
@@ -322,18 +342,66 @@ function scanDungeonFiles(scenarios) {
       trailingBytes,
       cells: levels * CELL_COUNT,
       nonzeroCells: 0,
-      unknownBitCells: 0
+      highBitCells: 0,
+      unresolvedHighSignBitCells: 0,
+      noWallInBattleCells: 0,
+      bothHighBitCells: 0,
+      asciiLikeHighBitCells: 0
     };
     for (let offset = 0; offset + 1 < levels * FIELD_BYTES; offset += 2) {
       const value = buffer.readUInt16BE(offset);
+      const level = Math.floor(offset / FIELD_BYTES);
+      const cellOffset = offset % FIELD_BYTES;
+      const cellIndex = Math.floor(cellOffset / CELL_BYTES);
+      const x = cellIndex % MAP_SIZE;
+      const y = Math.floor(cellIndex / MAP_SIZE);
       totalCells += 1;
       if (value !== 0) {
         nonzeroCells += 1;
         fileSummary.nonzeroCells += 1;
       }
-      if ((value & UNKNOWN_MASK) !== 0) {
+      if ((value & UNRESOLVED_HIGH_SIGN_MASK) !== 0) {
         unknownBitCells += 1;
-        fileSummary.unknownBitCells += 1;
+        fileSummary.unresolvedHighSignBitCells += 1;
+      }
+      if ((value & NO_WALL_IN_BATTLE_MASK) !== 0) {
+        noWallInBattleCells += 1;
+        fileSummary.noWallInBattleCells += 1;
+      }
+      if ((value & HIGH_BIT_MASK) !== 0) {
+        highBitCells += 1;
+        fileSummary.highBitCells += 1;
+        if ((value & HIGH_BIT_MASK) === HIGH_BIT_MASK) {
+          bothHighBitCells += 1;
+          fileSummary.bothHighBitCells += 1;
+        }
+        const asciiPair = asciiPairForValue(value);
+        const asciiLike = Boolean(asciiPair);
+        if (asciiLike) {
+          asciiLikeHighBitCells += 1;
+          fileSummary.asciiLikeHighBitCells += 1;
+        }
+        highBitCellDetails.push({
+          scenario: scenario.name,
+          sourceRoot: scenario.sourceRoot,
+          level,
+          x,
+          y,
+          cellIndex,
+          offset,
+          rawValue: value,
+          signedValue: value > 0x7fff ? value - 0x10000 : value,
+          rawHex: hex16(value),
+          knownMask: value & ~UNRESOLVED_HIGH_SIGN_MASK,
+          highBits: {
+            unresolvedHighSignBit: (value & UNRESOLVED_HIGH_SIGN_MASK) !== 0,
+            noWallInBattle: (value & NO_WALL_IN_BATTLE_MASK) !== 0
+          },
+          knownBits: labelsForValue(value).filter((label) => label !== "Unresolved high/sign bit"),
+          asciiPair,
+          asciiLike,
+          neighbors: neighborContext(buffer, levels, level, x, y)
+        });
       }
       histogram.set(value, (histogram.get(value) ?? 0) + 1);
       for (const bit of BIT_TAXONOMY) {
@@ -361,8 +429,11 @@ function scanDungeonFiles(scenarios) {
     .slice(0, 60);
 
   const unknownPatterns = observedPatterns
-    .filter((entry) => (entry.value & UNKNOWN_MASK) !== 0)
+    .filter((entry) => (entry.value & UNRESOLVED_HIGH_SIGN_MASK) !== 0)
     .slice(0, 40);
+  const highBitPatterns = observedPatterns
+    .filter((entry) => (entry.value & HIGH_BIT_MASK) !== 0)
+    .slice(0, 80);
 
   return {
     files,
@@ -373,10 +444,16 @@ function scanDungeonFiles(scenarios) {
     totalCells,
     nonzeroCells,
     unknownBitCells,
+    highBitCells,
+    noWallInBattleCells,
+    bothHighBitCells,
+    asciiLikeHighBitCells,
+    highBitCellDetails,
     bitCounts,
     observedPatterns,
     rarePatterns,
     unknownPatterns,
+    highBitPatterns,
     alignmentIssues
   };
 }
@@ -390,6 +467,7 @@ function buildTaxonomy(scan) {
       divinityManual: "F:/DocMaker/out/divinity-manual.txt",
       priorEvidence: [
         "docs/generated/dungeon-bitfield-evidence.json",
+        "docs/generated/dungeon-high-bit-audit.json",
         "docs/format-evidence-cards/dungeon-runtime-anchors.md",
         "docs/format-evidence-cards/dungeon-editor-writer-safety.md"
       ]
@@ -411,13 +489,16 @@ function buildTaxonomy(scan) {
     })),
     masks: {
       knownMask: hex16(BIT_TAXONOMY.filter((bit) => bit.ownershipStatus !== "preserved-unknown").reduce((mask, bit) => mask | bit.mask, 0)),
-      unknownMask: hex16(UNKNOWN_MASK),
+      highBitMask: hex16(HIGH_BIT_MASK),
+      unknownMask: hex16(UNRESOLVED_HIGH_SIGN_MASK),
+      noWallInBattleMask: hex16(NO_WALL_IN_BATTLE_MASK),
       directionalAllowMoveMask: "0x0F00",
       doorOrientationMask: "0x0006",
       dungeonCombatHoleMask: "0x4F0E"
     },
     observedPatterns: scan.observedPatterns.slice(0, 120),
     rarePatterns: scan.rarePatterns,
+    highBitPatterns: scan.highBitPatterns,
     unknownBitPatterns: scan.unknownPatterns
   };
 }
@@ -444,6 +525,7 @@ function buildOwnership(scan, taxonomy) {
     sources: {
       bitTaxonomy: "docs/generated/dungeon-cell-bit-taxonomy.json",
       primitiveGate: "docs/generated/dungeon-primitive-writer-gate.json",
+      highBitAudit: "docs/generated/dungeon-high-bit-audit.json",
       priorEvidence: "docs/generated/dungeon-bitfield-evidence.json"
     },
     summary: {
@@ -453,7 +535,11 @@ function buildOwnership(scan, taxonomy) {
       bytes: scan.totalBytes,
       cells: scan.totalCells,
       nonzeroCells: scan.nonzeroCells,
-      unknownBitCells: scan.unknownBitCells,
+      highBitCells: scan.highBitCells,
+      unresolvedHighSignBitCells: scan.unknownBitCells,
+      noWallInBattleCells: scan.noWallInBattleCells,
+      bothHighBitCells: scan.bothHighBitCells,
+      asciiLikeHighBitCells: scan.asciiLikeHighBitCells,
       bytesPerLevel: FIELD_BYTES,
       cellsPerLevel: CELL_COUNT,
       bitStatuses: countBy(taxonomy.bits, "ownershipStatus"),
@@ -532,9 +618,146 @@ function buildPrimitiveGate(scan, taxonomy) {
       levels: scan.totalLevels,
       cells: scan.totalCells,
       rarePatterns: scan.rarePatterns.slice(0, 20),
+      highBitPatterns: scan.highBitPatterns.slice(0, 20),
       unknownBitPatterns: scan.unknownPatterns.slice(0, 20)
     }
   };
+}
+
+function buildHighBitAudit(scan, taxonomy) {
+  const scenarioSummaries = scan.files
+    .filter((file) => file.highBitCells > 0)
+    .map((file) => ({
+      scenario: file.scenario,
+      sourceRoot: file.sourceRoot,
+      sourcePath: file.sourcePath,
+      levels: file.levels,
+      highBitCells: file.highBitCells,
+      unresolvedHighSignBitCells: file.unresolvedHighSignBitCells,
+      noWallInBattleCells: file.noWallInBattleCells,
+      bothHighBitCells: file.bothHighBitCells,
+      asciiLikeHighBitCells: file.asciiLikeHighBitCells
+    }))
+    .sort((a, b) => b.highBitCells - a.highBitCells || a.scenario.localeCompare(b.scenario));
+  const cellsByScenario = groupHighBitCells(scan.highBitCellDetails);
+
+  return {
+    schemaVersion: 1,
+    generatedAt: new Date().toISOString(),
+    container: "Data DL",
+    purpose:
+      "Focused audit for dungeon field high bits 0x8000 and 0x4000. This separates the proven No Wall in Battle primitive from the unresolved high/sign bit.",
+    verdicts: {
+      "0x4000": {
+        key: "noWallInBattle",
+        verdict: "decoded-writable",
+        authorLabel: "No Wall in Battle",
+        preservationReason:
+          "Realmz consumes this bit in dungeon combat-map conversion and Divinity exposes the matching editor label.",
+        evidence: [
+          "F:/Realmz/src/realmz_orig/combatmap.c:64-68",
+          "F:/DocMaker/out/divinity-manual.txt:4169-4173"
+        ]
+      },
+      "0x8000": {
+        key: "unresolvedHighSignBit",
+        verdict: "preserved-unknown",
+        authorLabel: "Unresolved high/sign bit",
+        preservationReason:
+          "No Realmz runtime consumer or Divinity editor label has been identified. Corpus includes plausible legacy bit combinations and malformed/ASCII-like runs, so the safest scenario-semantic model is preserve-only.",
+        evidence: [
+          "docs/generated/dungeon-high-bit-audit.json",
+          "docs/format-evidence-cards/dungeon-runtime-anchors.md"
+        ]
+      }
+    },
+    sourceAnchors: SOURCE_ANCHORS.filter((anchor) =>
+      anchor.topics.some((topic) => topic.toLowerCase().includes("combat") || topic.toLowerCase().includes("high-bit"))
+    ),
+    summary: {
+      scenarioCount: scan.scenarioCount,
+      dataDlFiles: scan.dataDlFiles,
+      highBitCells: scan.highBitCells,
+      unresolvedHighSignBitCells: scan.unknownBitCells,
+      noWallInBattleCells: scan.noWallInBattleCells,
+      bothHighBitCells: scan.bothHighBitCells,
+      asciiLikeHighBitCells: scan.asciiLikeHighBitCells,
+      scenariosWithHighBits: scenarioSummaries.length
+    },
+    patterns: {
+      highBitPatterns: scan.highBitPatterns,
+      unresolvedHighSignBitPatterns: scan.unknownPatterns,
+      topObservedPatterns: scan.observedPatterns.slice(0, 60)
+    },
+    scenarioSummaries,
+    cellColumns: [
+      "level",
+      "x",
+      "y",
+      "rawValue",
+      "signedValue",
+      "highMask",
+      "knownMask",
+      "asciiPair",
+      "north",
+      "east",
+      "south",
+      "west"
+    ],
+    cellsByScenario,
+    taxonomy: taxonomy.bits
+      .filter((bit) => (bit.mask & HIGH_BIT_MASK) !== 0)
+      .map((bit) => ({
+        key: bit.key,
+        label: bit.authorLabel,
+        mask: bit.maskHex,
+        ownershipStatus: bit.ownershipStatus,
+        writerStatus: bit.writerStatus,
+        observedCells: bit.observedCells,
+        observedPercent: bit.observedPercent
+      })),
+    validation: {
+      allHighBitCellsAccountedFor: countGroupedCells(cellsByScenario) === scan.highBitCells,
+      noWallInBattleSourceBacked: true,
+      unresolvedHighSignBitPreserved: true
+    }
+  };
+}
+
+function groupHighBitCells(cells) {
+  const grouped = new Map();
+  for (const cell of cells) {
+    const key = `${cell.sourceRoot}/${cell.scenario}`;
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        scenario: cell.scenario,
+        sourceRoot: cell.sourceRoot,
+        cells: []
+      });
+    }
+    grouped.get(key).cells.push([
+      cell.level,
+      cell.x,
+      cell.y,
+      cell.rawValue,
+      cell.signedValue,
+      (cell.highBits.unresolvedHighSignBit ? UNRESOLVED_HIGH_SIGN_MASK : 0) |
+        (cell.highBits.noWallInBattle ? NO_WALL_IN_BATTLE_MASK : 0),
+      cell.knownMask,
+      cell.asciiPair ?? "",
+      cell.neighbors.north?.rawValue ?? null,
+      cell.neighbors.east?.rawValue ?? null,
+      cell.neighbors.south?.rawValue ?? null,
+      cell.neighbors.west?.rawValue ?? null
+    ]);
+  }
+  return [...grouped.values()].sort((a, b) =>
+    b.cells.length - a.cells.length || `${a.sourceRoot}/${a.scenario}`.localeCompare(`${b.sourceRoot}/${b.scenario}`)
+  );
+}
+
+function countGroupedCells(groups) {
+  return groups.reduce((sum, group) => sum + group.cells.length, 0);
 }
 
 function validateTaxonomy(taxonomy) {
@@ -551,6 +774,18 @@ function validateTaxonomy(taxonomy) {
   }
   const maskUnion = taxonomy.bits.reduce((mask, bit) => mask | bit.mask, 0);
   if (maskUnion !== 0xffff) throw new Error(`Dungeon bit taxonomy does not cover all 16 bits: ${hex16(maskUnion)}`);
+}
+
+function validateHighBitAudit(audit, scan) {
+  if (!audit.validation.allHighBitCellsAccountedFor) {
+    throw new Error(`High-bit audit has ${countGroupedCells(audit.cellsByScenario)} cells, expected ${scan.highBitCells}`);
+  }
+  if (audit.verdicts["0x4000"].verdict !== "decoded-writable") {
+    throw new Error("No Wall in Battle is not marked decoded-writable");
+  }
+  if (audit.verdicts["0x8000"].verdict !== "preserved-unknown") {
+    throw new Error("Unresolved high/sign bit is not marked preserved-unknown");
+  }
 }
 
 function validateOwnership(ownership) {
@@ -592,6 +827,40 @@ function labelsForValue(value) {
     .map((bit) => bit.authorLabel);
 }
 
+function neighborContext(buffer, levels, level, x, y) {
+  return {
+    north: compactCellAt(buffer, levels, level, x, y - 1),
+    east: compactCellAt(buffer, levels, level, x + 1, y),
+    south: compactCellAt(buffer, levels, level, x, y + 1),
+    west: compactCellAt(buffer, levels, level, x - 1, y)
+  };
+}
+
+function compactCellAt(buffer, levels, level, x, y) {
+  if (level < 0 || level >= levels || x < 0 || x >= MAP_SIZE || y < 0 || y >= MAP_SIZE) {
+    return null;
+  }
+  const offset = level * FIELD_BYTES + (y * MAP_SIZE + x) * CELL_BYTES;
+  const value = buffer.readUInt16BE(offset);
+  return {
+    rawValue: value,
+    signedValue: value > 0x7fff ? value - 0x10000 : value
+  };
+}
+
+function asciiPairForValue(value) {
+  const high = (value >> 8) & 0xff;
+  const low = value & 0xff;
+  if (isLikelyTextByte(high) && isLikelyTextByte(low)) {
+    return String.fromCharCode(high, low);
+  }
+  return null;
+}
+
+function isLikelyTextByte(value) {
+  return value === 0x09 || value === 0x0a || value === 0x0d || (value >= 0x20 && value <= 0x7e);
+}
+
 function cellIndexToCoord(cellIndex) {
   const x = cellIndex % MAP_SIZE;
   const y = Math.floor(cellIndex / MAP_SIZE);
@@ -626,4 +895,9 @@ function readJson(filePath) {
 function writeJson(filePath, data) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, `${JSON.stringify(data, null, 2)}\n`);
+}
+
+function writeCompactJson(filePath, data) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, `${JSON.stringify(data)}\n`);
 }

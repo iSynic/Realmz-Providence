@@ -1,5 +1,6 @@
-pub const DUNGEON_UNKNOWN_MASK: u16 = 0xc000;
+pub const DUNGEON_UNKNOWN_MASK: u16 = 0x8000;
 
+pub const NO_WALL_IN_BATTLE_MASK: u16 = 0x4000;
 pub const WALL_MASK: u16 = 0x0001;
 pub const HORIZONTAL_DOOR_MASK: u16 = 0x0002;
 pub const VERTICAL_DOOR_MASK: u16 = 0x0004;
@@ -21,6 +22,7 @@ pub const DUNGEON_COMBAT_HOLE_MASK: u16 = 0x4f0e;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DungeonPrimitive {
+    NoWallInBattle,
     Wall,
     HorizontalDoor,
     VerticalDoor,
@@ -40,6 +42,7 @@ pub enum DungeonPrimitive {
 impl DungeonPrimitive {
     pub fn mask(self) -> u16 {
         match self {
+            Self::NoWallInBattle => NO_WALL_IN_BATTLE_MASK,
             Self::Wall => WALL_MASK,
             Self::HorizontalDoor => HORIZONTAL_DOOR_MASK,
             Self::VerticalDoor => VERTICAL_DOOR_MASK,
@@ -60,6 +63,7 @@ impl DungeonPrimitive {
     pub fn writer_status(self) -> DungeonPrimitiveWriterStatus {
         match self {
             Self::Wall
+            | Self::NoWallInBattle
             | Self::HorizontalDoor
             | Self::VerticalDoor
             | Self::Stairs
@@ -108,6 +112,7 @@ pub struct DungeonCellProfile {
     pub allow_move_west: bool,
     pub action_point_marker: bool,
     pub visible_arch: bool,
+    pub no_wall_in_battle: bool,
     pub unknown_bits: u16,
 }
 
@@ -130,6 +135,7 @@ pub fn decode_dungeon_cell(value: i16) -> DungeonCellProfile {
         allow_move_west: raw_mask & ALLOW_MOVE_WEST_MASK != 0,
         action_point_marker: raw_mask & ACTION_POINT_MARKER_MASK != 0,
         visible_arch: raw_mask & VISIBLE_ARCH_MASK != 0,
+        no_wall_in_battle: raw_mask & NO_WALL_IN_BATTLE_MASK != 0,
         unknown_bits: raw_mask & DUNGEON_UNKNOWN_MASK,
     }
 }
@@ -163,7 +169,8 @@ mod tests {
             | UNMAPPED_MASK
             | ALLOW_MOVE_NORTH_MASK
             | ACTION_POINT_MARKER_MASK
-            | VISIBLE_ARCH_MASK) as i16;
+            | VISIBLE_ARCH_MASK
+            | NO_WALL_IN_BATTLE_MASK) as i16;
         let profile = decode_dungeon_cell(value);
         assert!(profile.wall);
         assert!(profile.horizontal_door);
@@ -174,6 +181,7 @@ mod tests {
         assert!(!profile.allow_move_east);
         assert!(profile.action_point_marker);
         assert!(profile.visible_arch);
+        assert!(profile.no_wall_in_battle);
         assert_eq!(profile.unknown_bits, 0);
     }
 
@@ -211,6 +219,7 @@ mod tests {
     #[test]
     fn writer_safe_primitives_are_directly_writable() {
         for primitive in [
+            DungeonPrimitive::NoWallInBattle,
             DungeonPrimitive::Wall,
             DungeonPrimitive::HorizontalDoor,
             DungeonPrimitive::VerticalDoor,

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-29T22:57:15.553Z",
+  "generatedAt": "2026-05-29T23:44:38.837Z",
   "classifications": [
     "decoded-writable",
     "decoded-readonly",
@@ -21,6 +21,7 @@
     "runtimeCaches": "docs/generated/runtime-cache-classification.json",
     "resourceCoverage": "docs/generated/resource-byte-ownership.json",
     "dungeonCoverage": "docs/generated/dungeon-byte-ownership.json",
+    "dungeonHighBitAudit": "docs/generated/dungeon-high-bit-audit.json",
     "ed3Reachability": "docs/generated/extra-ap-reachability-source-map.json",
     "edcdCrosswalk": "docs/generated/opcode-edcd-crosswalk.json"
   },
@@ -234,15 +235,16 @@
       "evidence": [
         "docs/generated/dungeon-byte-ownership.json",
         "docs/generated/dungeon-cell-bit-taxonomy.json",
+        "docs/generated/dungeon-high-bit-audit.json",
         "docs/format-evidence-cards/dungeon-runtime-anchors.md"
       ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range.",
       "bitOwnership": [
         {
           "realmzBit": 0,
-          "key": "reservedHighBit0",
+          "key": "unresolvedHighSignBit",
           "mask": "0x8000",
-          "label": "Reserved high bit 0",
+          "label": "Unresolved high/sign bit",
           "ownershipStatus": "preserved-unknown",
           "writerStatus": "preserve-only",
           "observedCells": 27429,
@@ -250,11 +252,11 @@
         },
         {
           "realmzBit": 1,
-          "key": "reservedHighBit1",
+          "key": "noWallInBattle",
           "mask": "0x4000",
-          "label": "Reserved high bit 1",
-          "ownershipStatus": "preserved-unknown",
-          "writerStatus": "preserve-only",
+          "label": "No Wall in Battle",
+          "ownershipStatus": "decoded-writable",
+          "writerStatus": "writer-safe-primitive",
           "observedCells": 51356,
           "observedPercent": 3.2514
         },
@@ -406,19 +408,23 @@
         "bytes": 3159000,
         "cells": 1579500,
         "nonzeroCells": 1561493,
-        "unknownBitCells": 66113,
+        "highBitCells": 66113,
+        "unresolvedHighSignBitCells": 27429,
+        "noWallInBattleCells": 51356,
+        "bothHighBitCells": 12672,
+        "asciiLikeHighBitCells": 14817,
         "bytesPerLevel": 16200,
         "cellsPerLevel": 8100,
         "bitStatuses": {
-          "preserved-unknown": 2,
-          "runtime-state": 2,
-          "decoded-writable": 12
+          "preserved-unknown": 1,
+          "decoded-writable": 13,
+          "runtime-state": 2
         },
         "writerStatuses": {
-          "preserve-only": 2,
+          "preserve-only": 1,
+          "writer-safe-primitive": 11,
           "read-only-preserve": 2,
           "route-through-action-point-workflow": 1,
-          "writer-safe-primitive": 10,
           "route-through-note-workflow": 1
         },
         "alignmentIssues": 0

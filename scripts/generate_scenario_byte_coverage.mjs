@@ -149,9 +149,10 @@ function buildInventory(scanned, aggregate) {
     sources: {
       roundtripLedger: "docs/generated/scenario-byte-roundtrip-ledger.json",
       rustRegistry: "src-tauri/src/realmz.rs",
-      runtimeCaches: "docs/generated/runtime-cache-classification.json",
-      resourceCoverage: "docs/generated/resource-byte-ownership.json",
-      dungeonCoverage: "docs/generated/dungeon-byte-ownership.json"
+        runtimeCaches: "docs/generated/runtime-cache-classification.json",
+        resourceCoverage: "docs/generated/resource-byte-ownership.json",
+        dungeonCoverage: "docs/generated/dungeon-byte-ownership.json",
+        dungeonHighBitAudit: "docs/generated/dungeon-high-bit-audit.json"
     },
     policy: {
       ignoredNonScenarioFiles: [...NON_SCENARIO_IGNORES].sort(),
@@ -215,11 +216,12 @@ function buildOwnership(aggregate) {
     sources: {
       fileInventory: "docs/generated/scenario-file-inventory.json",
       unknownBacklog: "docs/generated/unknown-data-backlog.json",
-      runtimeCaches: "docs/generated/runtime-cache-classification.json",
-      resourceCoverage: "docs/generated/resource-byte-ownership.json",
-      dungeonCoverage: "docs/generated/dungeon-byte-ownership.json",
-      ed3Reachability: "docs/generated/extra-ap-reachability-source-map.json",
-      edcdCrosswalk: "docs/generated/opcode-edcd-crosswalk.json"
+        runtimeCaches: "docs/generated/runtime-cache-classification.json",
+        resourceCoverage: "docs/generated/resource-byte-ownership.json",
+        dungeonCoverage: "docs/generated/dungeon-byte-ownership.json",
+        dungeonHighBitAudit: "docs/generated/dungeon-high-bit-audit.json",
+        ed3Reachability: "docs/generated/extra-ap-reachability-source-map.json",
+        edcdCrosswalk: "docs/generated/opcode-edcd-crosswalk.json"
     },
     summary: summarizeOwnership(containers),
     containers
@@ -568,6 +570,7 @@ function evidenceForFile(name, status) {
   if (name === "Data DL") {
     evidence.push("docs/generated/dungeon-byte-ownership.json");
     evidence.push("docs/generated/dungeon-cell-bit-taxonomy.json");
+    evidence.push("docs/generated/dungeon-high-bit-audit.json");
     evidence.push("docs/format-evidence-cards/dungeon-runtime-anchors.md");
   } else if (name === "Data ED3") {
     evidence.push("docs/generated/extra-ap-reachability-source-map.json");
