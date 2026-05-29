@@ -5,7 +5,12 @@ export type CoverageStatus =
   | "preserved-unknown"
   | "runtime-cache"
   | "ignored-non-scenario"
-  | "unknown-active-risk";
+  | "unknown-active-risk"
+  | "understood-resource-container"
+  | "decoded-resource-payload"
+  | "preserved-standard-media-payload"
+  | "custom-media-payload"
+  | "needs-codec-work";
 
 export type ScenarioCoverageContainer = {
   container: string;
@@ -35,6 +40,22 @@ export type ScenarioCoverageManifest = {
     ignoredNonScenarioFiles: number;
     editableContainers: number;
     preservedContainers: number;
+    understoodResourceContainers?: number;
+    resourceCoverage?: {
+      resourceForkFiles: number;
+      parsedResourceForks: number;
+      resourceEntries: number;
+      payloadBytesByStatus: Record<string, number>;
+    } | null;
+    dungeon?: {
+      status: string;
+      bits: number | null;
+      writerSafeBits: number | null;
+      routedWorkflowBits?: number | null;
+      runtimeStateBits: number | null;
+      preservedUnknownBits: number | null;
+      evidence: string;
+    };
     runtimeStateContainers: number;
     needsFormatWork: number;
     ed3: { status: string; recordBytes: number; runtimeCallsites: number | null; evidence: string };

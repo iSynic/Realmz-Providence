@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-29T22:23:01.695Z",
+  "generatedAt": "2026-05-29T22:57:15.553Z",
   "classifications": [
     "decoded-writable",
     "decoded-readonly",
@@ -20,6 +20,7 @@
     "unknownBacklog": "docs/generated/unknown-data-backlog.json",
     "runtimeCaches": "docs/generated/runtime-cache-classification.json",
     "resourceCoverage": "docs/generated/resource-byte-ownership.json",
+    "dungeonCoverage": "docs/generated/dungeon-byte-ownership.json",
     "ed3Reachability": "docs/generated/extra-ap-reachability-source-map.json",
     "edcdCrosswalk": "docs/generated/opcode-edcd-crosswalk.json"
   },
@@ -223,13 +224,206 @@
           "length": 16200,
           "endExclusive": 16200,
           "status": "decoded-writable",
-          "field": "Dungeon tile fields",
-          "internal": "fixed record"
+          "field": "Dungeon cell bitfields",
+          "internal": "field[90][90]",
+          "bitOwnership": "docs/generated/dungeon-byte-ownership.json",
+          "bitTaxonomy": "docs/generated/dungeon-cell-bit-taxonomy.json"
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+      "evidence": [
+        "docs/generated/dungeon-byte-ownership.json",
+        "docs/generated/dungeon-cell-bit-taxonomy.json",
+        "docs/format-evidence-cards/dungeon-runtime-anchors.md"
+      ],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range.",
+      "bitOwnership": [
+        {
+          "realmzBit": 0,
+          "key": "reservedHighBit0",
+          "mask": "0x8000",
+          "label": "Reserved high bit 0",
+          "ownershipStatus": "preserved-unknown",
+          "writerStatus": "preserve-only",
+          "observedCells": 27429,
+          "observedPercent": 1.7366
+        },
+        {
+          "realmzBit": 1,
+          "key": "reservedHighBit1",
+          "mask": "0x4000",
+          "label": "Reserved high bit 1",
+          "ownershipStatus": "preserved-unknown",
+          "writerStatus": "preserve-only",
+          "observedCells": 51356,
+          "observedPercent": 3.2514
+        },
+        {
+          "realmzBit": 2,
+          "key": "visibleArch",
+          "mask": "0x2000",
+          "label": "Revealed passage / arch",
+          "ownershipStatus": "runtime-state",
+          "writerStatus": "read-only-preserve",
+          "observedCells": 39805,
+          "observedPercent": 2.5201
+        },
+        {
+          "realmzBit": 3,
+          "key": "actionPointMarker",
+          "mask": "0x1000",
+          "label": "Action Point marker",
+          "ownershipStatus": "decoded-writable",
+          "writerStatus": "route-through-action-point-workflow",
+          "observedCells": 35977,
+          "observedPercent": 2.2777
+        },
+        {
+          "realmzBit": 4,
+          "key": "allowMoveWest",
+          "mask": "0x0800",
+          "label": "Allow Move Left",
+          "ownershipStatus": "decoded-writable",
+          "writerStatus": "writer-safe-primitive",
+          "observedCells": 33123,
+          "observedPercent": 2.0971
+        },
+        {
+          "realmzBit": 5,
+          "key": "allowMoveSouth",
+          "mask": "0x0400",
+          "label": "Allow Move Down",
+          "ownershipStatus": "decoded-writable",
+          "writerStatus": "writer-safe-primitive",
+          "observedCells": 34409,
+          "observedPercent": 2.1785
+        },
+        {
+          "realmzBit": 6,
+          "key": "allowMoveEast",
+          "mask": "0x0200",
+          "label": "Allow Move Right",
+          "ownershipStatus": "decoded-writable",
+          "writerStatus": "writer-safe-primitive",
+          "observedCells": 32696,
+          "observedPercent": 2.07
+        },
+        {
+          "realmzBit": 7,
+          "key": "allowMoveNorth",
+          "mask": "0x0100",
+          "label": "Allow Move Up",
+          "ownershipStatus": "decoded-writable",
+          "writerStatus": "writer-safe-primitive",
+          "observedCells": 35509,
+          "observedPercent": 2.2481
+        },
+        {
+          "realmzBit": 8,
+          "key": "unmapped",
+          "mask": "0x0080",
+          "label": "Unmapped",
+          "ownershipStatus": "decoded-writable",
+          "writerStatus": "writer-safe-primitive",
+          "observedCells": 1290965,
+          "observedPercent": 81.7325
+        },
+        {
+          "realmzBit": 9,
+          "key": "revealedSecret",
+          "mask": "0x0040",
+          "label": "Secret discovered",
+          "ownershipStatus": "runtime-state",
+          "writerStatus": "read-only-preserve",
+          "observedCells": 35037,
+          "observedPercent": 2.2182
+        },
+        {
+          "realmzBit": 10,
+          "key": "noteMarker",
+          "mask": "0x0020",
+          "label": "Note marker",
+          "ownershipStatus": "decoded-writable",
+          "writerStatus": "route-through-note-workflow",
+          "observedCells": 43878,
+          "observedPercent": 2.778
+        },
+        {
+          "realmzBit": 11,
+          "key": "column",
+          "mask": "0x0010",
+          "label": "Column",
+          "ownershipStatus": "decoded-writable",
+          "writerStatus": "writer-safe-primitive",
+          "observedCells": 69698,
+          "observedPercent": 4.4127
+        },
+        {
+          "realmzBit": 12,
+          "key": "stairs",
+          "mask": "0x0008",
+          "label": "Stairs",
+          "ownershipStatus": "decoded-writable",
+          "writerStatus": "writer-safe-primitive",
+          "observedCells": 45117,
+          "observedPercent": 2.8564
+        },
+        {
+          "realmzBit": 13,
+          "key": "verticalDoor",
+          "mask": "0x0004",
+          "label": "Vertical Door",
+          "ownershipStatus": "decoded-writable",
+          "writerStatus": "writer-safe-primitive",
+          "observedCells": 51053,
+          "observedPercent": 3.2322
+        },
+        {
+          "realmzBit": 14,
+          "key": "horizontalDoor",
+          "mask": "0x0002",
+          "label": "Horizontal Door",
+          "ownershipStatus": "decoded-writable",
+          "writerStatus": "writer-safe-primitive",
+          "observedCells": 33368,
+          "observedPercent": 2.1126
+        },
+        {
+          "realmzBit": 15,
+          "key": "wall",
+          "mask": "0x0001",
+          "label": "Wall",
+          "ownershipStatus": "decoded-writable",
+          "writerStatus": "writer-safe-primitive",
+          "observedCells": 1408050,
+          "observedPercent": 89.1453
+        }
+      ],
+      "dungeonSummary": {
+        "scenarioCount": 87,
+        "dataDlFiles": 87,
+        "levels": 195,
+        "bytes": 3159000,
+        "cells": 1579500,
+        "nonzeroCells": 1561493,
+        "unknownBitCells": 66113,
+        "bytesPerLevel": 16200,
+        "cellsPerLevel": 8100,
+        "bitStatuses": {
+          "preserved-unknown": 2,
+          "runtime-state": 2,
+          "decoded-writable": 12
+        },
+        "writerStatuses": {
+          "preserve-only": 2,
+          "read-only-preserve": 2,
+          "route-through-action-point-workflow": 1,
+          "writer-safe-primitive": 10,
+          "route-through-note-workflow": 1
+        },
+        "alignmentIssues": 0
+      },
+      "dungeonCoverage": "docs/generated/dungeon-byte-ownership.json"
     },
     {
       "container": "Data ED",

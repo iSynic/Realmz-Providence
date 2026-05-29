@@ -9,6 +9,7 @@ const roundtripLedgerPath = path.join(repoRoot, "docs/generated/scenario-byte-ro
 const unknownBacklogPath = path.join(repoRoot, "docs/generated/unknown-data-backlog.json");
 const runtimeCachePath = path.join(repoRoot, "docs/generated/runtime-cache-classification.json");
 const resourceByteOwnershipPath = path.join(repoRoot, "docs/generated/resource-byte-ownership.json");
+const dungeonByteOwnershipPath = path.join(repoRoot, "docs/generated/dungeon-byte-ownership.json");
 const realmzRsPath = path.join(repoRoot, "src-tauri/src/realmz.rs");
 
 const fileInventoryPath = path.join(repoRoot, "docs/generated/scenario-file-inventory.json");
@@ -103,6 +104,7 @@ const roundtripLedger = readJson(roundtripLedgerPath);
 const unknownBacklog = readJson(unknownBacklogPath);
 const runtimeCaches = readJson(runtimeCachePath);
 const resourceByteOwnership = readOptionalJson(resourceByteOwnershipPath);
+const dungeonByteOwnership = readOptionalJson(dungeonByteOwnershipPath);
 const rustRegistry = parseRustRegistry(fs.readFileSync(realmzRsPath, "utf8"));
 const parsedResourceForkNames = new Set(
   (resourceByteOwnership?.forks ?? [])
@@ -148,7 +150,8 @@ function buildInventory(scanned, aggregate) {
       roundtripLedger: "docs/generated/scenario-byte-roundtrip-ledger.json",
       rustRegistry: "src-tauri/src/realmz.rs",
       runtimeCaches: "docs/generated/runtime-cache-classification.json",
-      resourceCoverage: "docs/generated/resource-byte-ownership.json"
+      resourceCoverage: "docs/generated/resource-byte-ownership.json",
+      dungeonCoverage: "docs/generated/dungeon-byte-ownership.json"
     },
     policy: {
       ignoredNonScenarioFiles: [...NON_SCENARIO_IGNORES].sort(),
@@ -170,6 +173,13 @@ function buildOwnership(aggregate) {
   const containers = aggregate.files.map((file) => {
     const layout = RECORD_LAYOUTS[file.name];
     const byteRanges = byteRangesForFile(file, layout);
+    const dungeonDetails = file.name === "Data DL" && dungeonByteOwnership
+      ? {
+          bitOwnership: dungeonByteOwnership.bitOwnership,
+          dungeonSummary: dungeonByteOwnership.summary,
+          dungeonCoverage: "docs/generated/dungeon-byte-ownership.json"
+        }
+      : {};
     return {
       container: file.name,
       authorFacingName: layout?.label ?? PASS_THROUGH_POLICIES[file.name]?.label ?? labelForFile(file),
@@ -181,7 +191,8 @@ function buildOwnership(aggregate) {
       byteRanges,
       resourceTypes: file.resourceTypes,
       evidence: evidenceForFile(file.name, file.coverageStatus),
-      editorPolicy: editorPolicyFor(file.coverageStatus)
+      editorPolicy: editorPolicyFor(file.coverageStatus),
+      ...dungeonDetails
     };
   });
   return {
@@ -206,6 +217,7 @@ function buildOwnership(aggregate) {
       unknownBacklog: "docs/generated/unknown-data-backlog.json",
       runtimeCaches: "docs/generated/runtime-cache-classification.json",
       resourceCoverage: "docs/generated/resource-byte-ownership.json",
+      dungeonCoverage: "docs/generated/dungeon-byte-ownership.json",
       ed3Reachability: "docs/generated/extra-ap-reachability-source-map.json",
       edcdCrosswalk: "docs/generated/opcode-edcd-crosswalk.json"
     },
@@ -304,6 +316,7 @@ function buildUiManifest(inventory, ownership, unknownReport) {
             payloadBytesByStatus: resourceByteOwnership.summary?.statusObservedBytes ?? {}
           }
         : null,
+      dungeon: dungeonSummary(),
       runtimeStateContainers: ownership.summary.statusCounts["runtime-cache"] ?? 0,
       needsFormatWork: ownership.summary.statusCounts["unknown-active-risk"] ?? 0,
       ed3: ed3Summary(),
@@ -475,6 +488,20 @@ function coverageStatusForFile(file) {
 }
 
 function byteRangesForFile(file, layout) {
+  if (file.name === "Data DL" && dungeonByteOwnership?.recordByteRanges?.length) {
+    return [
+      {
+        start: 0,
+        length: dungeonByteOwnership.recordLayout?.bytesPerLevel ?? layout?.recordBytes ?? 16200,
+        endExclusive: dungeonByteOwnership.recordLayout?.bytesPerLevel ?? layout?.recordBytes ?? 16200,
+        status: "decoded-writable",
+        field: "Dungeon cell bitfields",
+        internal: "field[90][90]",
+        bitOwnership: "docs/generated/dungeon-byte-ownership.json",
+        bitTaxonomy: "docs/generated/dungeon-cell-bit-taxonomy.json"
+      }
+    ];
+  }
   if (file.name === "Data ED3") {
     return [
       { start: 0, length: 4, endExclusive: 4, status: "decoded-writable", field: "Extra Action Point ID", internal: "doorid" },
@@ -538,7 +565,11 @@ function summarizeOwnership(containers) {
 
 function evidenceForFile(name, status) {
   const evidence = [];
-  if (name === "Data ED3") {
+  if (name === "Data DL") {
+    evidence.push("docs/generated/dungeon-byte-ownership.json");
+    evidence.push("docs/generated/dungeon-cell-bit-taxonomy.json");
+    evidence.push("docs/format-evidence-cards/dungeon-runtime-anchors.md");
+  } else if (name === "Data ED3") {
     evidence.push("docs/generated/extra-ap-reachability-source-map.json");
     evidence.push("docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md");
   } else if (name === "Data EDCD") {
@@ -701,6 +732,32 @@ function edcdSummary() {
     edcdBackedOpcodes: data.summary?.edcdBacked ?? null,
     fieldComparisonGaps: data.summary?.fieldComparisonGaps?.length ?? null,
     evidence: "docs/generated/opcode-edcd-crosswalk.json"
+  };
+}
+
+function dungeonSummary() {
+  if (!dungeonByteOwnership) {
+    return {
+      status: "Dungeon bit coverage has not been generated yet.",
+      bits: null,
+      writerSafeBits: null,
+      runtimeStateBits: null,
+      preservedUnknownBits: null,
+      evidence: "docs/generated/dungeon-byte-ownership.json"
+    };
+  }
+  const bitStatuses = dungeonByteOwnership.summary?.bitStatuses ?? {};
+  const writerStatuses = dungeonByteOwnership.summary?.writerStatuses ?? {};
+  return {
+    status: "Dungeon cells are classified as signed-short bitfields with per-bit ownership.",
+    bits: dungeonByteOwnership.bitOwnership?.length ?? 16,
+    writerSafeBits: writerStatuses["writer-safe-primitive"] ?? 0,
+    routedWorkflowBits:
+      (writerStatuses["route-through-note-workflow"] ?? 0) +
+      (writerStatuses["route-through-action-point-workflow"] ?? 0),
+    runtimeStateBits: bitStatuses["runtime-state"] ?? 0,
+    preservedUnknownBits: bitStatuses["preserved-unknown"] ?? 0,
+    evidence: "docs/generated/dungeon-byte-ownership.json"
   };
 }
 

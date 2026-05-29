@@ -1,4 +1,5 @@
 mod commands;
+pub mod dungeon;
 pub mod error;
 pub mod exporter;
 pub mod harness;

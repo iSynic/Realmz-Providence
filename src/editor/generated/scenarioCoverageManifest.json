@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-29T22:23:01.695Z",
+  "generatedAt": "2026-05-29T22:57:15.554Z",
   "summary": {
     "scenarioRoots": 87,
     "fileFamilies": 88,
@@ -18,6 +18,15 @@
         "preserved-standard-media-payload": 78110189,
         "decoded-resource-payload": 841240
       }
+    },
+    "dungeon": {
+      "status": "Dungeon cells are classified as signed-short bitfields with per-bit ownership.",
+      "bits": 16,
+      "writerSafeBits": 10,
+      "routedWorkflowBits": 2,
+      "runtimeStateBits": 2,
+      "preservedUnknownBits": 2,
+      "evidence": "docs/generated/dungeon-byte-ownership.json"
     },
     "runtimeStateContainers": 1,
     "needsFormatWork": 0,

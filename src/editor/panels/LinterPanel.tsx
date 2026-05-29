@@ -120,6 +120,11 @@ function ScenarioCoverageSummary({ coverage }: { coverage: ScenarioCoverageManif
       <div className="scenario-coverage-note">
         Action Points: {summary.ed3.recordBytes}-byte Extra Action rows, {summary.ed3.runtimeCallsites ?? "known"} runtime callsite(s).
         Parameters: {summary.edcd.edcdBackedOpcodes ?? "known"} opcode-backed shapes, {summary.edcd.fieldComparisonGaps ?? 0} label gap(s) left.
+        {summary.dungeon && (
+          <>
+            {" "}Dungeons: {summary.dungeon.bits ?? "known"} cell bits, {summary.dungeon.writerSafeBits ?? 0} primitive bit(s), {summary.dungeon.preservedUnknownBits ?? 0} preserved unknown bit(s).
+          </>
+        )}
       </div>
       {coverage.topRisks.length > 0 && (
         <div className="scenario-coverage-risks">

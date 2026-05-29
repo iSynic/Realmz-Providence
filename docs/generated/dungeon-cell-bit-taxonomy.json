@@ -1,0 +1,3335 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-05-29T22:49:07.573Z",
+  "sources": {
+    "realmzRuntime": "F:/Realmz/src/realmz_orig",
+    "divinityManual": "F:/DocMaker/out/divinity-manual.txt",
+    "priorEvidence": [
+      "docs/generated/dungeon-bitfield-evidence.json",
+      "docs/format-evidence-cards/dungeon-runtime-anchors.md",
+      "docs/format-evidence-cards/dungeon-editor-writer-safety.md"
+    ]
+  },
+  "convention": {
+    "cellBytes": 2,
+    "cellType": "signed big-endian 16-bit field",
+    "realmzBitIndex": "MyrBitTstShort(&value, b) maps source bit index b to mask 1 << (15 - b).",
+    "mapSize": "90 x 90",
+    "cellsPerLevel": 8100,
+    "bytesPerLevel": 16200
+  },
+  "sourceAnchors": [
+    {
+      "source": "F:/Realmz/src/realmz_orig/threed.c",
+      "topics": [
+        "movement",
+        "top-down render",
+        "Action Point marker"
+      ],
+      "note": "Movement/rendering consume Data DL field bits; bit index 3 dispatches Action Points."
+    },
+    {
+      "source": "F:/Realmz/src/realmz_orig/checkforsecret.c",
+      "topics": [
+        "secret discovery",
+        "directional pass-through"
+      ],
+      "note": "Search checks 0x0F00 directional bits and sets discovered/visible-arch markers."
+    },
+    {
+      "source": "F:/Realmz/src/realmz_orig/handlemenuchoice.c",
+      "topics": [
+        "dungeon notes"
+      ],
+      "note": "Dungeon note save/clear owns the note marker bit."
+    },
+    {
+      "source": "F:/Realmz/src/realmz_orig/MacrocosmMain.c",
+      "topics": [
+        "3D dungeon perspective"
+      ],
+      "note": "Perspective view derives walls, doors, arches, stairs, and columns from Data DL bits."
+    },
+    {
+      "source": "F:/Realmz/src/realmz_orig/combatmap.c",
+      "topics": [
+        "dungeon combat map conversion"
+      ],
+      "note": "Dungeon combat terrain uses the 0x4F0E runtime mask after clearing the visible-arch marker."
+    },
+    {
+      "source": "F:/DocMaker/out/divinity-manual.txt:4087-4166",
+      "topics": [
+        "Divinity Dungeon Editor labels"
+      ],
+      "note": "Manual labels wall, horizontal door, vertical door, stairs, column, unmapped, and Allow Move directions."
+    }
+  ],
+  "bits": [
+    {
+      "realmzBit": 0,
+      "mask": 32768,
+      "key": "reservedHighBit0",
+      "authorLabel": "Reserved high bit 0",
+      "runtimeMeaning": "No source-backed Realmz runtime consumer identified.",
+      "ownershipStatus": "preserved-unknown",
+      "writerStatus": "preserve-only",
+      "editorSurface": "Advanced Details",
+      "confidence": "unknown-active-risk",
+      "maskHex": "0x8000",
+      "observedCells": 27429,
+      "observedPercent": 1.7366
+    },
+    {
+      "realmzBit": 1,
+      "mask": 16384,
+      "key": "reservedHighBit1",
+      "authorLabel": "Reserved high bit 1",
+      "runtimeMeaning": "No source-backed Realmz runtime consumer identified.",
+      "ownershipStatus": "preserved-unknown",
+      "writerStatus": "preserve-only",
+      "editorSurface": "Advanced Details",
+      "confidence": "unknown-active-risk",
+      "maskHex": "0x4000",
+      "observedCells": 51356,
+      "observedPercent": 3.2514
+    },
+    {
+      "realmzBit": 2,
+      "mask": 8192,
+      "key": "visibleArch",
+      "authorLabel": "Revealed passage / arch",
+      "runtimeMeaning": "Realmz sets this when a directional secret is discovered; perspective view draws the revealed archway.",
+      "ownershipStatus": "runtime-state",
+      "writerStatus": "read-only-preserve",
+      "editorSurface": "Dungeon state preview",
+      "confidence": "source-backed-runtime-mutated",
+      "maskHex": "0x2000",
+      "observedCells": 39805,
+      "observedPercent": 2.5201
+    },
+    {
+      "realmzBit": 3,
+      "mask": 4096,
+      "key": "actionPointMarker",
+      "authorLabel": "Action Point marker",
+      "runtimeMeaning": "Dungeon movement calls the Action Point dispatcher after moving onto cells with this marker.",
+      "ownershipStatus": "decoded-writable",
+      "writerStatus": "route-through-action-point-workflow",
+      "editorSurface": "Action Point placement",
+      "confidence": "source-backed",
+      "maskHex": "0x1000",
+      "observedCells": 35977,
+      "observedPercent": 2.2777
+    },
+    {
+      "realmzBit": 4,
+      "mask": 2048,
+      "key": "allowMoveWest",
+      "authorLabel": "Allow Move Left",
+      "runtimeMeaning": "Directional secret/pass-through bit used by dungeon movement and secret discovery.",
+      "ownershipStatus": "decoded-writable",
+      "writerStatus": "writer-safe-primitive",
+      "editorSurface": "Dungeon primitive",
+      "confidence": "source-backed-manual-backed",
+      "maskHex": "0x0800",
+      "observedCells": 33123,
+      "observedPercent": 2.0971
+    },
+    {
+      "realmzBit": 5,
+      "mask": 1024,
+      "key": "allowMoveSouth",
+      "authorLabel": "Allow Move Down",
+      "runtimeMeaning": "Directional secret/pass-through bit used by dungeon movement and secret discovery.",
+      "ownershipStatus": "decoded-writable",
+      "writerStatus": "writer-safe-primitive",
+      "editorSurface": "Dungeon primitive",
+      "confidence": "source-backed-manual-backed",
+      "maskHex": "0x0400",
+      "observedCells": 34409,
+      "observedPercent": 2.1785
+    },
+    {
+      "realmzBit": 6,
+      "mask": 512,
+      "key": "allowMoveEast",
+      "authorLabel": "Allow Move Right",
+      "runtimeMeaning": "Directional secret/pass-through bit used by dungeon movement and secret discovery.",
+      "ownershipStatus": "decoded-writable",
+      "writerStatus": "writer-safe-primitive",
+      "editorSurface": "Dungeon primitive",
+      "confidence": "source-backed-manual-backed",
+      "maskHex": "0x0200",
+      "observedCells": 32696,
+      "observedPercent": 2.07
+    },
+    {
+      "realmzBit": 7,
+      "mask": 256,
+      "key": "allowMoveNorth",
+      "authorLabel": "Allow Move Up",
+      "runtimeMeaning": "Directional secret/pass-through bit used by dungeon movement and secret discovery.",
+      "ownershipStatus": "decoded-writable",
+      "writerStatus": "writer-safe-primitive",
+      "editorSurface": "Dungeon primitive",
+      "confidence": "source-backed-manual-backed",
+      "maskHex": "0x0100",
+      "observedCells": 35509,
+      "observedPercent": 2.2481
+    },
+    {
+      "realmzBit": 8,
+      "mask": 128,
+      "key": "unmapped",
+      "authorLabel": "Unmapped",
+      "runtimeMeaning": "Top-down dungeon view suppresses unmapped cells until runtime exploration reveals them.",
+      "ownershipStatus": "decoded-writable",
+      "writerStatus": "writer-safe-primitive",
+      "editorSurface": "Dungeon primitive",
+      "confidence": "source-backed-manual-backed-runtime-mutated",
+      "maskHex": "0x0080",
+      "observedCells": 1290965,
+      "observedPercent": 81.7325
+    },
+    {
+      "realmzBit": 9,
+      "mask": 64,
+      "key": "revealedSecret",
+      "authorLabel": "Secret discovered",
+      "runtimeMeaning": "Secret-search runtime sets this discovered marker.",
+      "ownershipStatus": "runtime-state",
+      "writerStatus": "read-only-preserve",
+      "editorSurface": "Dungeon state preview",
+      "confidence": "source-backed-runtime-mutated",
+      "maskHex": "0x0040",
+      "observedCells": 35037,
+      "observedPercent": 2.2182
+    },
+    {
+      "realmzBit": 10,
+      "mask": 32,
+      "key": "noteMarker",
+      "authorLabel": "Note marker",
+      "runtimeMeaning": "Dungeon note save/clear workflow sets this marker on cells with notes.",
+      "ownershipStatus": "decoded-writable",
+      "writerStatus": "route-through-note-workflow",
+      "editorSurface": "Notes workflow",
+      "confidence": "source-backed",
+      "maskHex": "0x0020",
+      "observedCells": 43878,
+      "observedPercent": 2.778
+    },
+    {
+      "realmzBit": 11,
+      "mask": 16,
+      "key": "column",
+      "authorLabel": "Column",
+      "runtimeMeaning": "Perspective renderer draws columns; columns can combine with walls.",
+      "ownershipStatus": "decoded-writable",
+      "writerStatus": "writer-safe-primitive",
+      "editorSurface": "Dungeon primitive",
+      "confidence": "source-backed-manual-backed",
+      "maskHex": "0x0010",
+      "observedCells": 69698,
+      "observedPercent": 4.4127
+    },
+    {
+      "realmzBit": 12,
+      "mask": 8,
+      "key": "stairs",
+      "authorLabel": "Stairs",
+      "runtimeMeaning": "Dungeon renderer draws stairs; movement requires an Action Point if stairs should change level/location.",
+      "ownershipStatus": "decoded-writable",
+      "writerStatus": "writer-safe-primitive",
+      "editorSurface": "Dungeon primitive",
+      "confidence": "source-backed-manual-backed",
+      "maskHex": "0x0008",
+      "observedCells": 45117,
+      "observedPercent": 2.8564
+    },
+    {
+      "realmzBit": 13,
+      "mask": 4,
+      "key": "verticalDoor",
+      "authorLabel": "Vertical Door",
+      "runtimeMeaning": "Door orientation bit; Divinity describes vertical doors as visible while looking east or west.",
+      "ownershipStatus": "decoded-writable",
+      "writerStatus": "writer-safe-primitive",
+      "editorSurface": "Dungeon primitive",
+      "confidence": "source-backed-manual-backed",
+      "maskHex": "0x0004",
+      "observedCells": 51053,
+      "observedPercent": 3.2322
+    },
+    {
+      "realmzBit": 14,
+      "mask": 2,
+      "key": "horizontalDoor",
+      "authorLabel": "Horizontal Door",
+      "runtimeMeaning": "Door orientation bit; Divinity describes horizontal doors as visible while looking north or south.",
+      "ownershipStatus": "decoded-writable",
+      "writerStatus": "writer-safe-primitive",
+      "editorSurface": "Dungeon primitive",
+      "confidence": "source-backed-manual-backed",
+      "maskHex": "0x0002",
+      "observedCells": 33368,
+      "observedPercent": 2.1126
+    },
+    {
+      "realmzBit": 15,
+      "mask": 1,
+      "key": "wall",
+      "authorLabel": "Wall",
+      "runtimeMeaning": "Solid dungeon wall for rendering and normal movement collision.",
+      "ownershipStatus": "decoded-writable",
+      "writerStatus": "writer-safe-primitive",
+      "editorSurface": "Dungeon primitive",
+      "confidence": "source-backed-manual-backed",
+      "maskHex": "0x0001",
+      "observedCells": 1408050,
+      "observedPercent": 89.1453
+    }
+  ],
+  "masks": {
+    "knownMask": "0x3FFF",
+    "unknownMask": "0xC000",
+    "directionalAllowMoveMask": "0x0F00",
+    "doorOrientationMask": "0x0006",
+    "dungeonCombatHoleMask": "0x4F0E"
+  },
+  "observedPatterns": [
+    {
+      "value": 129,
+      "signedValue": 129,
+      "hex": "0x0081",
+      "count": 1121236,
+      "percent": 70.9868,
+      "labels": [
+        "Unmapped",
+        "Wall"
+      ]
+    },
+    {
+      "value": 1,
+      "signedValue": 1,
+      "hex": "0x0001",
+      "count": 206118,
+      "percent": 13.0496,
+      "labels": [
+        "Wall"
+      ]
+    },
+    {
+      "value": 128,
+      "signedValue": 128,
+      "hex": "0x0080",
+      "count": 87028,
+      "percent": 5.5098,
+      "labels": [
+        "Unmapped"
+      ]
+    },
+    {
+      "value": 145,
+      "signedValue": 145,
+      "hex": "0x0091",
+      "count": 18945,
+      "percent": 1.1994,
+      "labels": [
+        "Unmapped",
+        "Column",
+        "Wall"
+      ]
+    },
+    {
+      "value": 0,
+      "signedValue": 0,
+      "hex": "0x0000",
+      "count": 18007,
+      "percent": 1.14,
+      "labels": []
+    },
+    {
+      "value": 16513,
+      "signedValue": 16513,
+      "hex": "0x4081",
+      "count": 13992,
+      "percent": 0.8858,
+      "labels": [
+        "Reserved high bit 1",
+        "Unmapped",
+        "Wall"
+      ]
+    },
+    {
+      "value": 61,
+      "signedValue": 61,
+      "hex": "0x003D",
+      "count": 9234,
+      "percent": 0.5846,
+      "labels": [
+        "Note marker",
+        "Column",
+        "Stairs",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 156,
+      "signedValue": 156,
+      "hex": "0x009C",
+      "count": 5538,
+      "percent": 0.3506,
+      "labels": [
+        "Unmapped",
+        "Column",
+        "Stairs",
+        "Vertical Door"
+      ]
+    },
+    {
+      "value": 144,
+      "signedValue": 144,
+      "hex": "0x0090",
+      "count": 5057,
+      "percent": 0.3202,
+      "labels": [
+        "Unmapped",
+        "Column"
+      ]
+    },
+    {
+      "value": 8320,
+      "signedValue": 8320,
+      "hex": "0x2080",
+      "count": 3060,
+      "percent": 0.1937,
+      "labels": [
+        "Revealed passage / arch",
+        "Unmapped"
+      ]
+    },
+    {
+      "value": 4224,
+      "signedValue": 4224,
+      "hex": "0x1080",
+      "count": 2988,
+      "percent": 0.1892,
+      "labels": [
+        "Action Point marker",
+        "Unmapped"
+      ]
+    },
+    {
+      "value": 256,
+      "signedValue": 256,
+      "hex": "0x0100",
+      "count": 2541,
+      "percent": 0.1609,
+      "labels": [
+        "Allow Move Up"
+      ]
+    },
+    {
+      "value": 36608,
+      "signedValue": -28928,
+      "hex": "0x8F00",
+      "count": 1488,
+      "percent": 0.0942,
+      "labels": [
+        "Reserved high bit 0",
+        "Allow Move Left",
+        "Allow Move Down",
+        "Allow Move Right",
+        "Allow Move Up"
+      ]
+    },
+    {
+      "value": 130,
+      "signedValue": 130,
+      "hex": "0x0082",
+      "count": 1320,
+      "percent": 0.0836,
+      "labels": [
+        "Unmapped",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 132,
+      "signedValue": 132,
+      "hex": "0x0084",
+      "count": 1317,
+      "percent": 0.0834,
+      "labels": [
+        "Unmapped",
+        "Vertical Door"
+      ]
+    },
+    {
+      "value": 16529,
+      "signedValue": 16529,
+      "hex": "0x4091",
+      "count": 1122,
+      "percent": 0.071,
+      "labels": [
+        "Reserved high bit 1",
+        "Unmapped",
+        "Column",
+        "Wall"
+      ]
+    },
+    {
+      "value": 16,
+      "signedValue": 16,
+      "hex": "0x0010",
+      "count": 996,
+      "percent": 0.0631,
+      "labels": [
+        "Column"
+      ]
+    },
+    {
+      "value": 8192,
+      "signedValue": 8192,
+      "hex": "0x2000",
+      "count": 975,
+      "percent": 0.0617,
+      "labels": [
+        "Revealed passage / arch"
+      ]
+    },
+    {
+      "value": 4096,
+      "signedValue": 4096,
+      "hex": "0x1000",
+      "count": 933,
+      "percent": 0.0591,
+      "labels": [
+        "Action Point marker"
+      ]
+    },
+    {
+      "value": 36864,
+      "signedValue": -28672,
+      "hex": "0x9000",
+      "count": 927,
+      "percent": 0.0587,
+      "labels": [
+        "Reserved high bit 0",
+        "Action Point marker"
+      ]
+    },
+    {
+      "value": 5,
+      "signedValue": 5,
+      "hex": "0x0005",
+      "count": 843,
+      "percent": 0.0534,
+      "labels": [
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 4,
+      "signedValue": 4,
+      "hex": "0x0004",
+      "count": 657,
+      "percent": 0.0416,
+      "labels": [
+        "Vertical Door"
+      ]
+    },
+    {
+      "value": 8224,
+      "signedValue": 8224,
+      "hex": "0x2020",
+      "count": 633,
+      "percent": 0.0401,
+      "labels": [
+        "Revealed passage / arch",
+        "Note marker"
+      ]
+    },
+    {
+      "value": 4232,
+      "signedValue": 4232,
+      "hex": "0x1088",
+      "count": 484,
+      "percent": 0.0306,
+      "labels": [
+        "Action Point marker",
+        "Unmapped",
+        "Stairs"
+      ]
+    },
+    {
+      "value": 149,
+      "signedValue": 149,
+      "hex": "0x0095",
+      "count": 462,
+      "percent": 0.0292,
+      "labels": [
+        "Unmapped",
+        "Column",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 2,
+      "signedValue": 2,
+      "hex": "0x0002",
+      "count": 456,
+      "percent": 0.0289,
+      "labels": [
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 71,
+      "signedValue": 71,
+      "hex": "0x0047",
+      "count": 399,
+      "percent": 0.0253,
+      "labels": [
+        "Secret discovered",
+        "Vertical Door",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 3969,
+      "signedValue": 3969,
+      "hex": "0x0F81",
+      "count": 384,
+      "percent": 0.0243,
+      "labels": [
+        "Allow Move Left",
+        "Allow Move Down",
+        "Allow Move Right",
+        "Allow Move Up",
+        "Unmapped",
+        "Wall"
+      ]
+    },
+    {
+      "value": 4226,
+      "signedValue": 4226,
+      "hex": "0x1082",
+      "count": 383,
+      "percent": 0.0242,
+      "labels": [
+        "Action Point marker",
+        "Unmapped",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 4228,
+      "signedValue": 4228,
+      "hex": "0x1084",
+      "count": 378,
+      "percent": 0.0239,
+      "labels": [
+        "Action Point marker",
+        "Unmapped",
+        "Vertical Door"
+      ]
+    },
+    {
+      "value": 6,
+      "signedValue": 6,
+      "hex": "0x0006",
+      "count": 363,
+      "percent": 0.023,
+      "labels": [
+        "Vertical Door",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 16385,
+      "signedValue": 16385,
+      "hex": "0x4001",
+      "count": 363,
+      "percent": 0.023,
+      "labels": [
+        "Reserved high bit 1",
+        "Wall"
+      ]
+    },
+    {
+      "value": 112,
+      "signedValue": 112,
+      "hex": "0x0070",
+      "count": 330,
+      "percent": 0.0209,
+      "labels": [
+        "Secret discovered",
+        "Note marker",
+        "Column"
+      ]
+    },
+    {
+      "value": 2689,
+      "signedValue": 2689,
+      "hex": "0x0A81",
+      "count": 328,
+      "percent": 0.0208,
+      "labels": [
+        "Allow Move Left",
+        "Allow Move Right",
+        "Unmapped",
+        "Wall"
+      ]
+    },
+    {
+      "value": 1409,
+      "signedValue": 1409,
+      "hex": "0x0581",
+      "count": 302,
+      "percent": 0.0191,
+      "labels": [
+        "Allow Move Down",
+        "Allow Move Up",
+        "Unmapped",
+        "Wall"
+      ]
+    },
+    {
+      "value": 12416,
+      "signedValue": 12416,
+      "hex": "0x3080",
+      "count": 293,
+      "percent": 0.0186,
+      "labels": [
+        "Revealed passage / arch",
+        "Action Point marker",
+        "Unmapped"
+      ]
+    },
+    {
+      "value": 3,
+      "signedValue": 3,
+      "hex": "0x0003",
+      "count": 291,
+      "percent": 0.0184,
+      "labels": [
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 69,
+      "signedValue": 69,
+      "hex": "0x0045",
+      "count": 276,
+      "percent": 0.0175,
+      "labels": [
+        "Secret discovered",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 25888,
+      "signedValue": 25888,
+      "hex": "0x6520",
+      "count": 273,
+      "percent": 0.0173,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Down",
+        "Allow Move Up",
+        "Note marker"
+      ]
+    },
+    {
+      "value": 3081,
+      "signedValue": 3081,
+      "hex": "0x0C09",
+      "count": 243,
+      "percent": 0.0154,
+      "labels": [
+        "Allow Move Left",
+        "Allow Move Down",
+        "Stairs",
+        "Wall"
+      ]
+    },
+    {
+      "value": 20546,
+      "signedValue": 20546,
+      "hex": "0x5042",
+      "count": 240,
+      "percent": 0.0152,
+      "labels": [
+        "Reserved high bit 1",
+        "Action Point marker",
+        "Secret discovered",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 158,
+      "signedValue": 158,
+      "hex": "0x009E",
+      "count": 201,
+      "percent": 0.0127,
+      "labels": [
+        "Unmapped",
+        "Column",
+        "Stairs",
+        "Vertical Door",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 1153,
+      "signedValue": 1153,
+      "hex": "0x0481",
+      "count": 194,
+      "percent": 0.0123,
+      "labels": [
+        "Allow Move Down",
+        "Unmapped",
+        "Wall"
+      ]
+    },
+    {
+      "value": 8308,
+      "signedValue": 8308,
+      "hex": "0x2074",
+      "count": 192,
+      "percent": 0.0122,
+      "labels": [
+        "Revealed passage / arch",
+        "Secret discovered",
+        "Note marker",
+        "Column",
+        "Vertical Door"
+      ]
+    },
+    {
+      "value": 133,
+      "signedValue": 133,
+      "hex": "0x0085",
+      "count": 181,
+      "percent": 0.0115,
+      "labels": [
+        "Unmapped",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 74,
+      "signedValue": 74,
+      "hex": "0x004A",
+      "count": 177,
+      "percent": 0.0112,
+      "labels": [
+        "Secret discovered",
+        "Stairs",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 3082,
+      "signedValue": 3082,
+      "hex": "0x0C0A",
+      "count": 177,
+      "percent": 0.0112,
+      "labels": [
+        "Allow Move Left",
+        "Allow Move Down",
+        "Stairs",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 131,
+      "signedValue": 131,
+      "hex": "0x0083",
+      "count": 175,
+      "percent": 0.0111,
+      "labels": [
+        "Unmapped",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 2313,
+      "signedValue": 2313,
+      "hex": "0x0909",
+      "count": 174,
+      "percent": 0.011,
+      "labels": [
+        "Allow Move Left",
+        "Allow Move Up",
+        "Stairs",
+        "Wall"
+      ]
+    },
+    {
+      "value": 8323,
+      "signedValue": 8323,
+      "hex": "0x2083",
+      "count": 169,
+      "percent": 0.0107,
+      "labels": [
+        "Revealed passage / arch",
+        "Unmapped",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 155,
+      "signedValue": 155,
+      "hex": "0x009B",
+      "count": 165,
+      "percent": 0.0104,
+      "labels": [
+        "Unmapped",
+        "Column",
+        "Stairs",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 641,
+      "signedValue": 641,
+      "hex": "0x0281",
+      "count": 164,
+      "percent": 0.0104,
+      "labels": [
+        "Allow Move Right",
+        "Unmapped",
+        "Wall"
+      ]
+    },
+    {
+      "value": 25972,
+      "signedValue": 25972,
+      "hex": "0x6574",
+      "count": 156,
+      "percent": 0.0099,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Down",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Column",
+        "Vertical Door"
+      ]
+    },
+    {
+      "value": 135,
+      "signedValue": 135,
+      "hex": "0x0087",
+      "count": 153,
+      "percent": 0.0097,
+      "labels": [
+        "Unmapped",
+        "Vertical Door",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 27749,
+      "signedValue": 27749,
+      "hex": "0x6C65",
+      "count": 153,
+      "percent": 0.0097,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Left",
+        "Allow Move Down",
+        "Secret discovered",
+        "Note marker",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 21349,
+      "signedValue": 21349,
+      "hex": "0x5365",
+      "count": 150,
+      "percent": 0.0095,
+      "labels": [
+        "Reserved high bit 1",
+        "Action Point marker",
+        "Allow Move Right",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 136,
+      "signedValue": 136,
+      "hex": "0x0088",
+      "count": 147,
+      "percent": 0.0093,
+      "labels": [
+        "Unmapped",
+        "Stairs"
+      ]
+    },
+    {
+      "value": 18277,
+      "signedValue": 18277,
+      "hex": "0x4765",
+      "count": 147,
+      "percent": 0.0093,
+      "labels": [
+        "Reserved high bit 1",
+        "Allow Move Down",
+        "Allow Move Right",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 109,
+      "signedValue": 109,
+      "hex": "0x006D",
+      "count": 144,
+      "percent": 0.0091,
+      "labels": [
+        "Secret discovered",
+        "Note marker",
+        "Stairs",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 3080,
+      "signedValue": 3080,
+      "hex": "0x0C08",
+      "count": 138,
+      "percent": 0.0087,
+      "labels": [
+        "Allow Move Left",
+        "Allow Move Down",
+        "Stairs"
+      ]
+    },
+    {
+      "value": 7,
+      "signedValue": 7,
+      "hex": "0x0007",
+      "count": 135,
+      "percent": 0.0085,
+      "labels": [
+        "Vertical Door",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 2055,
+      "signedValue": 2055,
+      "hex": "0x0807",
+      "count": 132,
+      "percent": 0.0084,
+      "labels": [
+        "Allow Move Left",
+        "Vertical Door",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 3083,
+      "signedValue": 3083,
+      "hex": "0x0C0B",
+      "count": 129,
+      "percent": 0.0082,
+      "labels": [
+        "Allow Move Left",
+        "Allow Move Down",
+        "Stairs",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 25970,
+      "signedValue": 25970,
+      "hex": "0x6572",
+      "count": 129,
+      "percent": 0.0082,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Down",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Column",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 2177,
+      "signedValue": 2177,
+      "hex": "0x0881",
+      "count": 123,
+      "percent": 0.0078,
+      "labels": [
+        "Allow Move Left",
+        "Unmapped",
+        "Wall"
+      ]
+    },
+    {
+      "value": 26725,
+      "signedValue": 26725,
+      "hex": "0x6865",
+      "count": 120,
+      "percent": 0.0076,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Left",
+        "Secret discovered",
+        "Note marker",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 4240,
+      "signedValue": 4240,
+      "hex": "0x1090",
+      "count": 119,
+      "percent": 0.0075,
+      "labels": [
+        "Action Point marker",
+        "Unmapped",
+        "Column"
+      ]
+    },
+    {
+      "value": 8,
+      "signedValue": 8,
+      "hex": "0x0008",
+      "count": 117,
+      "percent": 0.0074,
+      "labels": [
+        "Stairs"
+      ]
+    },
+    {
+      "value": 24948,
+      "signedValue": 24948,
+      "hex": "0x6174",
+      "count": 117,
+      "percent": 0.0074,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Column",
+        "Vertical Door"
+      ]
+    },
+    {
+      "value": 385,
+      "signedValue": 385,
+      "hex": "0x0181",
+      "count": 112,
+      "percent": 0.0071,
+      "labels": [
+        "Allow Move Up",
+        "Unmapped",
+        "Wall"
+      ]
+    },
+    {
+      "value": 29472,
+      "signedValue": 29472,
+      "hex": "0x7320",
+      "count": 111,
+      "percent": 0.007,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Action Point marker",
+        "Allow Move Right",
+        "Allow Move Up",
+        "Note marker"
+      ]
+    },
+    {
+      "value": 4225,
+      "signedValue": 4225,
+      "hex": "0x1081",
+      "count": 110,
+      "percent": 0.007,
+      "labels": [
+        "Action Point marker",
+        "Unmapped",
+        "Wall"
+      ]
+    },
+    {
+      "value": 24942,
+      "signedValue": 24942,
+      "hex": "0x616E",
+      "count": 108,
+      "percent": 0.0068,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Stairs",
+        "Vertical Door",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 28192,
+      "signedValue": 28192,
+      "hex": "0x6E20",
+      "count": 102,
+      "percent": 0.0065,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Left",
+        "Allow Move Down",
+        "Allow Move Right",
+        "Note marker"
+      ]
+    },
+    {
+      "value": 26990,
+      "signedValue": 26990,
+      "hex": "0x696E",
+      "count": 99,
+      "percent": 0.0063,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Left",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Stairs",
+        "Vertical Door",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 512,
+      "signedValue": 512,
+      "hex": "0x0200",
+      "count": 96,
+      "percent": 0.0061,
+      "labels": [
+        "Allow Move Right"
+      ]
+    },
+    {
+      "value": 25971,
+      "signedValue": 25971,
+      "hex": "0x6573",
+      "count": 96,
+      "percent": 0.0061,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Down",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Column",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 8325,
+      "signedValue": 8325,
+      "hex": "0x2085",
+      "count": 94,
+      "percent": 0.006,
+      "labels": [
+        "Revealed passage / arch",
+        "Unmapped",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 4233,
+      "signedValue": 4233,
+      "hex": "0x1089",
+      "count": 91,
+      "percent": 0.0058,
+      "labels": [
+        "Action Point marker",
+        "Unmapped",
+        "Stairs",
+        "Wall"
+      ]
+    },
+    {
+      "value": 29728,
+      "signedValue": 29728,
+      "hex": "0x7420",
+      "count": 90,
+      "percent": 0.0057,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Action Point marker",
+        "Allow Move Down",
+        "Note marker"
+      ]
+    },
+    {
+      "value": 28526,
+      "signedValue": 28526,
+      "hex": "0x6F6E",
+      "count": 87,
+      "percent": 0.0055,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Left",
+        "Allow Move Down",
+        "Allow Move Right",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Stairs",
+        "Vertical Door",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 2054,
+      "signedValue": 2054,
+      "hex": "0x0806",
+      "count": 84,
+      "percent": 0.0053,
+      "labels": [
+        "Allow Move Left",
+        "Vertical Door",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 25966,
+      "signedValue": 25966,
+      "hex": "0x656E",
+      "count": 84,
+      "percent": 0.0053,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Down",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Stairs",
+        "Vertical Door",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 29797,
+      "signedValue": 29797,
+      "hex": "0x7465",
+      "count": 84,
+      "percent": 0.0053,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Action Point marker",
+        "Allow Move Down",
+        "Secret discovered",
+        "Note marker",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 29800,
+      "signedValue": 29800,
+      "hex": "0x7468",
+      "count": 84,
+      "percent": 0.0053,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Action Point marker",
+        "Allow Move Down",
+        "Secret discovered",
+        "Note marker",
+        "Stairs"
+      ]
+    },
+    {
+      "value": 137,
+      "signedValue": 137,
+      "hex": "0x0089",
+      "count": 81,
+      "percent": 0.0051,
+      "labels": [
+        "Unmapped",
+        "Stairs",
+        "Wall"
+      ]
+    },
+    {
+      "value": 17263,
+      "signedValue": 17263,
+      "hex": "0x436F",
+      "count": 81,
+      "percent": 0.0051,
+      "labels": [
+        "Reserved high bit 1",
+        "Allow Move Right",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Stairs",
+        "Vertical Door",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 157,
+      "signedValue": 157,
+      "hex": "0x009D",
+      "count": 78,
+      "percent": 0.0049,
+      "labels": [
+        "Unmapped",
+        "Column",
+        "Stairs",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 28260,
+      "signedValue": 28260,
+      "hex": "0x6E64",
+      "count": 78,
+      "percent": 0.0049,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Left",
+        "Allow Move Down",
+        "Allow Move Right",
+        "Secret discovered",
+        "Note marker",
+        "Vertical Door"
+      ]
+    },
+    {
+      "value": 28530,
+      "signedValue": 28530,
+      "hex": "0x6F72",
+      "count": 78,
+      "percent": 0.0049,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Left",
+        "Allow Move Down",
+        "Allow Move Right",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Column",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 29285,
+      "signedValue": 29285,
+      "hex": "0x7265",
+      "count": 78,
+      "percent": 0.0049,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Action Point marker",
+        "Allow Move Right",
+        "Secret discovered",
+        "Note marker",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 134,
+      "signedValue": 134,
+      "hex": "0x0086",
+      "count": 75,
+      "percent": 0.0047,
+      "labels": [
+        "Unmapped",
+        "Vertical Door",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 25856,
+      "signedValue": 25856,
+      "hex": "0x6500",
+      "count": 75,
+      "percent": 0.0047,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Down",
+        "Allow Move Up"
+      ]
+    },
+    {
+      "value": 29281,
+      "signedValue": 29281,
+      "hex": "0x7261",
+      "count": 75,
+      "percent": 0.0047,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Action Point marker",
+        "Allow Move Right",
+        "Secret discovered",
+        "Note marker",
+        "Wall"
+      ]
+    },
+    {
+      "value": 4109,
+      "signedValue": 4109,
+      "hex": "0x100D",
+      "count": 72,
+      "percent": 0.0046,
+      "labels": [
+        "Action Point marker",
+        "Stairs",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 138,
+      "signedValue": 138,
+      "hex": "0x008A",
+      "count": 66,
+      "percent": 0.0042,
+      "labels": [
+        "Unmapped",
+        "Stairs",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 6656,
+      "signedValue": 6656,
+      "hex": "0x1A00",
+      "count": 66,
+      "percent": 0.0042,
+      "labels": [
+        "Action Point marker",
+        "Allow Move Left",
+        "Allow Move Right"
+      ]
+    },
+    {
+      "value": 10752,
+      "signedValue": 10752,
+      "hex": "0x2A00",
+      "count": 66,
+      "percent": 0.0042,
+      "labels": [
+        "Revealed passage / arch",
+        "Allow Move Left",
+        "Allow Move Right"
+      ]
+    },
+    {
+      "value": 25701,
+      "signedValue": 25701,
+      "hex": "0x6465",
+      "count": 66,
+      "percent": 0.0042,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Down",
+        "Secret discovered",
+        "Note marker",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 29216,
+      "signedValue": 29216,
+      "hex": "0x7220",
+      "count": 66,
+      "percent": 0.0042,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Action Point marker",
+        "Allow Move Right",
+        "Note marker"
+      ]
+    },
+    {
+      "value": 169,
+      "signedValue": 169,
+      "hex": "0x00A9",
+      "count": 63,
+      "percent": 0.004,
+      "labels": [
+        "Unmapped",
+        "Note marker",
+        "Stairs",
+        "Wall"
+      ]
+    },
+    {
+      "value": 3338,
+      "signedValue": 3338,
+      "hex": "0x0D0A",
+      "count": 63,
+      "percent": 0.004,
+      "labels": [
+        "Allow Move Left",
+        "Allow Move Down",
+        "Allow Move Up",
+        "Stairs",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 10528,
+      "signedValue": 10528,
+      "hex": "0x2920",
+      "count": 63,
+      "percent": 0.004,
+      "labels": [
+        "Revealed passage / arch",
+        "Allow Move Left",
+        "Allow Move Up",
+        "Note marker"
+      ]
+    },
+    {
+      "value": 28516,
+      "signedValue": 28516,
+      "hex": "0x6F64",
+      "count": 63,
+      "percent": 0.004,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Left",
+        "Allow Move Down",
+        "Allow Move Right",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Vertical Door"
+      ]
+    },
+    {
+      "value": 31008,
+      "signedValue": 31008,
+      "hex": "0x7920",
+      "count": 63,
+      "percent": 0.004,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Action Point marker",
+        "Allow Move Left",
+        "Allow Move Up",
+        "Note marker"
+      ]
+    },
+    {
+      "value": 70,
+      "signedValue": 70,
+      "hex": "0x0046",
+      "count": 60,
+      "percent": 0.0038,
+      "labels": [
+        "Secret discovered",
+        "Vertical Door",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 2560,
+      "signedValue": 2560,
+      "hex": "0x0A00",
+      "count": 60,
+      "percent": 0.0038,
+      "labels": [
+        "Allow Move Left",
+        "Allow Move Right"
+      ]
+    },
+    {
+      "value": 4608,
+      "signedValue": 4608,
+      "hex": "0x1200",
+      "count": 60,
+      "percent": 0.0038,
+      "labels": [
+        "Action Point marker",
+        "Allow Move Right"
+      ]
+    },
+    {
+      "value": 16896,
+      "signedValue": 16896,
+      "hex": "0x4200",
+      "count": 60,
+      "percent": 0.0038,
+      "labels": [
+        "Reserved high bit 1",
+        "Allow Move Right"
+      ]
+    },
+    {
+      "value": 26223,
+      "signedValue": 26223,
+      "hex": "0x666F",
+      "count": 60,
+      "percent": 0.0038,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Down",
+        "Allow Move Right",
+        "Secret discovered",
+        "Note marker",
+        "Stairs",
+        "Vertical Door",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 28448,
+      "signedValue": 28448,
+      "hex": "0x6F20",
+      "count": 60,
+      "percent": 0.0038,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Left",
+        "Allow Move Down",
+        "Allow Move Right",
+        "Allow Move Up",
+        "Note marker"
+      ]
+    },
+    {
+      "value": 2053,
+      "signedValue": 2053,
+      "hex": "0x0805",
+      "count": 57,
+      "percent": 0.0036,
+      "labels": [
+        "Allow Move Left",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 4108,
+      "signedValue": 4108,
+      "hex": "0x100C",
+      "count": 57,
+      "percent": 0.0036,
+      "labels": [
+        "Action Point marker",
+        "Stairs",
+        "Vertical Door"
+      ]
+    },
+    {
+      "value": 8341,
+      "signedValue": 8341,
+      "hex": "0x2095",
+      "count": 57,
+      "percent": 0.0036,
+      "labels": [
+        "Revealed passage / arch",
+        "Unmapped",
+        "Column",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 15648,
+      "signedValue": 15648,
+      "hex": "0x3D20",
+      "count": 57,
+      "percent": 0.0036,
+      "labels": [
+        "Revealed passage / arch",
+        "Action Point marker",
+        "Allow Move Left",
+        "Allow Move Down",
+        "Allow Move Up",
+        "Note marker"
+      ]
+    },
+    {
+      "value": 23040,
+      "signedValue": 23040,
+      "hex": "0x5A00",
+      "count": 57,
+      "percent": 0.0036,
+      "labels": [
+        "Reserved high bit 1",
+        "Action Point marker",
+        "Allow Move Left",
+        "Allow Move Right"
+      ]
+    },
+    {
+      "value": 24946,
+      "signedValue": 24946,
+      "hex": "0x6172",
+      "count": 57,
+      "percent": 0.0036,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Column",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 25451,
+      "signedValue": 25451,
+      "hex": "0x636B",
+      "count": 57,
+      "percent": 0.0036,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Right",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Stairs",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 26996,
+      "signedValue": 26996,
+      "hex": "0x6974",
+      "count": 57,
+      "percent": 0.0036,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Left",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Column",
+        "Vertical Door"
+      ]
+    },
+    {
+      "value": 27648,
+      "signedValue": 27648,
+      "hex": "0x6C00",
+      "count": 57,
+      "percent": 0.0036,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Left",
+        "Allow Move Down"
+      ]
+    }
+  ],
+  "rarePatterns": [
+    {
+      "value": 18,
+      "signedValue": 18,
+      "hex": "0x0012",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Column",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 20,
+      "signedValue": 20,
+      "hex": "0x0014",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Column",
+        "Vertical Door"
+      ]
+    },
+    {
+      "value": 27,
+      "signedValue": 27,
+      "hex": "0x001B",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Column",
+        "Stairs",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 28,
+      "signedValue": 28,
+      "hex": "0x001C",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Column",
+        "Stairs",
+        "Vertical Door"
+      ]
+    },
+    {
+      "value": 30,
+      "signedValue": 30,
+      "hex": "0x001E",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Column",
+        "Stairs",
+        "Vertical Door",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 38,
+      "signedValue": 38,
+      "hex": "0x0026",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Note marker",
+        "Vertical Door",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 40,
+      "signedValue": 40,
+      "hex": "0x0028",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Note marker",
+        "Stairs"
+      ]
+    },
+    {
+      "value": 44,
+      "signedValue": 44,
+      "hex": "0x002C",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Note marker",
+        "Stairs",
+        "Vertical Door"
+      ]
+    },
+    {
+      "value": 49,
+      "signedValue": 49,
+      "hex": "0x0031",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Note marker",
+        "Column",
+        "Wall"
+      ]
+    },
+    {
+      "value": 53,
+      "signedValue": 53,
+      "hex": "0x0035",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Note marker",
+        "Column",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 59,
+      "signedValue": 59,
+      "hex": "0x003B",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Note marker",
+        "Column",
+        "Stairs",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 64,
+      "signedValue": 64,
+      "hex": "0x0040",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Secret discovered"
+      ]
+    },
+    {
+      "value": 67,
+      "signedValue": 67,
+      "hex": "0x0043",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Secret discovered",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 89,
+      "signedValue": 89,
+      "hex": "0x0059",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Secret discovered",
+        "Column",
+        "Stairs",
+        "Wall"
+      ]
+    },
+    {
+      "value": 93,
+      "signedValue": 93,
+      "hex": "0x005D",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Secret discovered",
+        "Column",
+        "Stairs",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 99,
+      "signedValue": 99,
+      "hex": "0x0063",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Secret discovered",
+        "Note marker",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 103,
+      "signedValue": 103,
+      "hex": "0x0067",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Secret discovered",
+        "Note marker",
+        "Vertical Door",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 104,
+      "signedValue": 104,
+      "hex": "0x0068",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Secret discovered",
+        "Note marker",
+        "Stairs"
+      ]
+    },
+    {
+      "value": 108,
+      "signedValue": 108,
+      "hex": "0x006C",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Secret discovered",
+        "Note marker",
+        "Stairs",
+        "Vertical Door"
+      ]
+    },
+    {
+      "value": 140,
+      "signedValue": 140,
+      "hex": "0x008C",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Unmapped",
+        "Stairs",
+        "Vertical Door"
+      ]
+    },
+    {
+      "value": 142,
+      "signedValue": 142,
+      "hex": "0x008E",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Unmapped",
+        "Stairs",
+        "Vertical Door",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 146,
+      "signedValue": 146,
+      "hex": "0x0092",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Unmapped",
+        "Column",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 159,
+      "signedValue": 159,
+      "hex": "0x009F",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Unmapped",
+        "Column",
+        "Stairs",
+        "Vertical Door",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 165,
+      "signedValue": 165,
+      "hex": "0x00A5",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Unmapped",
+        "Note marker",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 180,
+      "signedValue": 180,
+      "hex": "0x00B4",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Unmapped",
+        "Note marker",
+        "Column",
+        "Vertical Door"
+      ]
+    },
+    {
+      "value": 181,
+      "signedValue": 181,
+      "hex": "0x00B5",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Unmapped",
+        "Note marker",
+        "Column",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 184,
+      "signedValue": 184,
+      "hex": "0x00B8",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Unmapped",
+        "Note marker",
+        "Column",
+        "Stairs"
+      ]
+    },
+    {
+      "value": 190,
+      "signedValue": 190,
+      "hex": "0x00BE",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Unmapped",
+        "Note marker",
+        "Column",
+        "Stairs",
+        "Vertical Door",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 196,
+      "signedValue": 196,
+      "hex": "0x00C4",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Unmapped",
+        "Secret discovered",
+        "Vertical Door"
+      ]
+    },
+    {
+      "value": 204,
+      "signedValue": 204,
+      "hex": "0x00CC",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Unmapped",
+        "Secret discovered",
+        "Stairs",
+        "Vertical Door"
+      ]
+    },
+    {
+      "value": 205,
+      "signedValue": 205,
+      "hex": "0x00CD",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Unmapped",
+        "Secret discovered",
+        "Stairs",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 215,
+      "signedValue": 215,
+      "hex": "0x00D7",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Unmapped",
+        "Secret discovered",
+        "Column",
+        "Vertical Door",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 217,
+      "signedValue": 217,
+      "hex": "0x00D9",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Unmapped",
+        "Secret discovered",
+        "Column",
+        "Stairs",
+        "Wall"
+      ]
+    },
+    {
+      "value": 222,
+      "signedValue": 222,
+      "hex": "0x00DE",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Unmapped",
+        "Secret discovered",
+        "Column",
+        "Stairs",
+        "Vertical Door",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 223,
+      "signedValue": 223,
+      "hex": "0x00DF",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Unmapped",
+        "Secret discovered",
+        "Column",
+        "Stairs",
+        "Vertical Door",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 225,
+      "signedValue": 225,
+      "hex": "0x00E1",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Unmapped",
+        "Secret discovered",
+        "Note marker",
+        "Wall"
+      ]
+    },
+    {
+      "value": 227,
+      "signedValue": 227,
+      "hex": "0x00E3",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Unmapped",
+        "Secret discovered",
+        "Note marker",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 231,
+      "signedValue": 231,
+      "hex": "0x00E7",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Unmapped",
+        "Secret discovered",
+        "Note marker",
+        "Vertical Door",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 232,
+      "signedValue": 232,
+      "hex": "0x00E8",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Unmapped",
+        "Secret discovered",
+        "Note marker",
+        "Stairs"
+      ]
+    },
+    {
+      "value": 237,
+      "signedValue": 237,
+      "hex": "0x00ED",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Unmapped",
+        "Secret discovered",
+        "Note marker",
+        "Stairs",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 261,
+      "signedValue": 261,
+      "hex": "0x0105",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Allow Move Up",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 278,
+      "signedValue": 278,
+      "hex": "0x0116",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Allow Move Up",
+        "Column",
+        "Vertical Door",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 289,
+      "signedValue": 289,
+      "hex": "0x0121",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Allow Move Up",
+        "Note marker",
+        "Wall"
+      ]
+    },
+    {
+      "value": 293,
+      "signedValue": 293,
+      "hex": "0x0125",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Allow Move Up",
+        "Note marker",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 295,
+      "signedValue": 295,
+      "hex": "0x0127",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Allow Move Up",
+        "Note marker",
+        "Vertical Door",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 301,
+      "signedValue": 301,
+      "hex": "0x012D",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Allow Move Up",
+        "Note marker",
+        "Stairs",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 302,
+      "signedValue": 302,
+      "hex": "0x012E",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Allow Move Up",
+        "Note marker",
+        "Stairs",
+        "Vertical Door",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 304,
+      "signedValue": 304,
+      "hex": "0x0130",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Allow Move Up",
+        "Note marker",
+        "Column"
+      ]
+    },
+    {
+      "value": 308,
+      "signedValue": 308,
+      "hex": "0x0134",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Allow Move Up",
+        "Note marker",
+        "Column",
+        "Vertical Door"
+      ]
+    },
+    {
+      "value": 320,
+      "signedValue": 320,
+      "hex": "0x0140",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Allow Move Up",
+        "Secret discovered"
+      ]
+    },
+    {
+      "value": 327,
+      "signedValue": 327,
+      "hex": "0x0147",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Allow Move Up",
+        "Secret discovered",
+        "Vertical Door",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 335,
+      "signedValue": 335,
+      "hex": "0x014F",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Allow Move Up",
+        "Secret discovered",
+        "Stairs",
+        "Vertical Door",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 339,
+      "signedValue": 339,
+      "hex": "0x0153",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Allow Move Up",
+        "Secret discovered",
+        "Column",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 343,
+      "signedValue": 343,
+      "hex": "0x0157",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Allow Move Up",
+        "Secret discovered",
+        "Column",
+        "Vertical Door",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 364,
+      "signedValue": 364,
+      "hex": "0x016C",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Stairs",
+        "Vertical Door"
+      ]
+    },
+    {
+      "value": 365,
+      "signedValue": 365,
+      "hex": "0x016D",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Stairs",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 371,
+      "signedValue": 371,
+      "hex": "0x0173",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Column",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 379,
+      "signedValue": 379,
+      "hex": "0x017B",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Column",
+        "Stairs",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 380,
+      "signedValue": 380,
+      "hex": "0x017C",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Column",
+        "Stairs",
+        "Vertical Door"
+      ]
+    },
+    {
+      "value": 381,
+      "signedValue": 381,
+      "hex": "0x017D",
+      "count": 3,
+      "percent": 0.0002,
+      "labels": [
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Column",
+        "Stairs",
+        "Vertical Door",
+        "Wall"
+      ]
+    }
+  ],
+  "unknownBitPatterns": [
+    {
+      "value": 16513,
+      "signedValue": 16513,
+      "hex": "0x4081",
+      "count": 13992,
+      "percent": 0.8858,
+      "labels": [
+        "Reserved high bit 1",
+        "Unmapped",
+        "Wall"
+      ]
+    },
+    {
+      "value": 36608,
+      "signedValue": -28928,
+      "hex": "0x8F00",
+      "count": 1488,
+      "percent": 0.0942,
+      "labels": [
+        "Reserved high bit 0",
+        "Allow Move Left",
+        "Allow Move Down",
+        "Allow Move Right",
+        "Allow Move Up"
+      ]
+    },
+    {
+      "value": 16529,
+      "signedValue": 16529,
+      "hex": "0x4091",
+      "count": 1122,
+      "percent": 0.071,
+      "labels": [
+        "Reserved high bit 1",
+        "Unmapped",
+        "Column",
+        "Wall"
+      ]
+    },
+    {
+      "value": 36864,
+      "signedValue": -28672,
+      "hex": "0x9000",
+      "count": 927,
+      "percent": 0.0587,
+      "labels": [
+        "Reserved high bit 0",
+        "Action Point marker"
+      ]
+    },
+    {
+      "value": 16385,
+      "signedValue": 16385,
+      "hex": "0x4001",
+      "count": 363,
+      "percent": 0.023,
+      "labels": [
+        "Reserved high bit 1",
+        "Wall"
+      ]
+    },
+    {
+      "value": 25888,
+      "signedValue": 25888,
+      "hex": "0x6520",
+      "count": 273,
+      "percent": 0.0173,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Down",
+        "Allow Move Up",
+        "Note marker"
+      ]
+    },
+    {
+      "value": 20546,
+      "signedValue": 20546,
+      "hex": "0x5042",
+      "count": 240,
+      "percent": 0.0152,
+      "labels": [
+        "Reserved high bit 1",
+        "Action Point marker",
+        "Secret discovered",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 25972,
+      "signedValue": 25972,
+      "hex": "0x6574",
+      "count": 156,
+      "percent": 0.0099,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Down",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Column",
+        "Vertical Door"
+      ]
+    },
+    {
+      "value": 27749,
+      "signedValue": 27749,
+      "hex": "0x6C65",
+      "count": 153,
+      "percent": 0.0097,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Left",
+        "Allow Move Down",
+        "Secret discovered",
+        "Note marker",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 21349,
+      "signedValue": 21349,
+      "hex": "0x5365",
+      "count": 150,
+      "percent": 0.0095,
+      "labels": [
+        "Reserved high bit 1",
+        "Action Point marker",
+        "Allow Move Right",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 18277,
+      "signedValue": 18277,
+      "hex": "0x4765",
+      "count": 147,
+      "percent": 0.0093,
+      "labels": [
+        "Reserved high bit 1",
+        "Allow Move Down",
+        "Allow Move Right",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 25970,
+      "signedValue": 25970,
+      "hex": "0x6572",
+      "count": 129,
+      "percent": 0.0082,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Down",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Column",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 26725,
+      "signedValue": 26725,
+      "hex": "0x6865",
+      "count": 120,
+      "percent": 0.0076,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Left",
+        "Secret discovered",
+        "Note marker",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 24948,
+      "signedValue": 24948,
+      "hex": "0x6174",
+      "count": 117,
+      "percent": 0.0074,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Column",
+        "Vertical Door"
+      ]
+    },
+    {
+      "value": 29472,
+      "signedValue": 29472,
+      "hex": "0x7320",
+      "count": 111,
+      "percent": 0.007,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Action Point marker",
+        "Allow Move Right",
+        "Allow Move Up",
+        "Note marker"
+      ]
+    },
+    {
+      "value": 24942,
+      "signedValue": 24942,
+      "hex": "0x616E",
+      "count": 108,
+      "percent": 0.0068,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Stairs",
+        "Vertical Door",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 28192,
+      "signedValue": 28192,
+      "hex": "0x6E20",
+      "count": 102,
+      "percent": 0.0065,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Left",
+        "Allow Move Down",
+        "Allow Move Right",
+        "Note marker"
+      ]
+    },
+    {
+      "value": 26990,
+      "signedValue": 26990,
+      "hex": "0x696E",
+      "count": 99,
+      "percent": 0.0063,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Left",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Stairs",
+        "Vertical Door",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 25971,
+      "signedValue": 25971,
+      "hex": "0x6573",
+      "count": 96,
+      "percent": 0.0061,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Down",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Column",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 29728,
+      "signedValue": 29728,
+      "hex": "0x7420",
+      "count": 90,
+      "percent": 0.0057,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Action Point marker",
+        "Allow Move Down",
+        "Note marker"
+      ]
+    },
+    {
+      "value": 28526,
+      "signedValue": 28526,
+      "hex": "0x6F6E",
+      "count": 87,
+      "percent": 0.0055,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Left",
+        "Allow Move Down",
+        "Allow Move Right",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Stairs",
+        "Vertical Door",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 25966,
+      "signedValue": 25966,
+      "hex": "0x656E",
+      "count": 84,
+      "percent": 0.0053,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Down",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Stairs",
+        "Vertical Door",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 29797,
+      "signedValue": 29797,
+      "hex": "0x7465",
+      "count": 84,
+      "percent": 0.0053,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Action Point marker",
+        "Allow Move Down",
+        "Secret discovered",
+        "Note marker",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 29800,
+      "signedValue": 29800,
+      "hex": "0x7468",
+      "count": 84,
+      "percent": 0.0053,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Action Point marker",
+        "Allow Move Down",
+        "Secret discovered",
+        "Note marker",
+        "Stairs"
+      ]
+    },
+    {
+      "value": 17263,
+      "signedValue": 17263,
+      "hex": "0x436F",
+      "count": 81,
+      "percent": 0.0051,
+      "labels": [
+        "Reserved high bit 1",
+        "Allow Move Right",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Stairs",
+        "Vertical Door",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 28260,
+      "signedValue": 28260,
+      "hex": "0x6E64",
+      "count": 78,
+      "percent": 0.0049,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Left",
+        "Allow Move Down",
+        "Allow Move Right",
+        "Secret discovered",
+        "Note marker",
+        "Vertical Door"
+      ]
+    },
+    {
+      "value": 28530,
+      "signedValue": 28530,
+      "hex": "0x6F72",
+      "count": 78,
+      "percent": 0.0049,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Left",
+        "Allow Move Down",
+        "Allow Move Right",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Column",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 29285,
+      "signedValue": 29285,
+      "hex": "0x7265",
+      "count": 78,
+      "percent": 0.0049,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Action Point marker",
+        "Allow Move Right",
+        "Secret discovered",
+        "Note marker",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 25856,
+      "signedValue": 25856,
+      "hex": "0x6500",
+      "count": 75,
+      "percent": 0.0047,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Down",
+        "Allow Move Up"
+      ]
+    },
+    {
+      "value": 29281,
+      "signedValue": 29281,
+      "hex": "0x7261",
+      "count": 75,
+      "percent": 0.0047,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Action Point marker",
+        "Allow Move Right",
+        "Secret discovered",
+        "Note marker",
+        "Wall"
+      ]
+    },
+    {
+      "value": 25701,
+      "signedValue": 25701,
+      "hex": "0x6465",
+      "count": 66,
+      "percent": 0.0042,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Down",
+        "Secret discovered",
+        "Note marker",
+        "Vertical Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 29216,
+      "signedValue": 29216,
+      "hex": "0x7220",
+      "count": 66,
+      "percent": 0.0042,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Action Point marker",
+        "Allow Move Right",
+        "Note marker"
+      ]
+    },
+    {
+      "value": 28516,
+      "signedValue": 28516,
+      "hex": "0x6F64",
+      "count": 63,
+      "percent": 0.004,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Left",
+        "Allow Move Down",
+        "Allow Move Right",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Vertical Door"
+      ]
+    },
+    {
+      "value": 31008,
+      "signedValue": 31008,
+      "hex": "0x7920",
+      "count": 63,
+      "percent": 0.004,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Action Point marker",
+        "Allow Move Left",
+        "Allow Move Up",
+        "Note marker"
+      ]
+    },
+    {
+      "value": 16896,
+      "signedValue": 16896,
+      "hex": "0x4200",
+      "count": 60,
+      "percent": 0.0038,
+      "labels": [
+        "Reserved high bit 1",
+        "Allow Move Right"
+      ]
+    },
+    {
+      "value": 26223,
+      "signedValue": 26223,
+      "hex": "0x666F",
+      "count": 60,
+      "percent": 0.0038,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Down",
+        "Allow Move Right",
+        "Secret discovered",
+        "Note marker",
+        "Stairs",
+        "Vertical Door",
+        "Horizontal Door",
+        "Wall"
+      ]
+    },
+    {
+      "value": 28448,
+      "signedValue": 28448,
+      "hex": "0x6F20",
+      "count": 60,
+      "percent": 0.0038,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Left",
+        "Allow Move Down",
+        "Allow Move Right",
+        "Allow Move Up",
+        "Note marker"
+      ]
+    },
+    {
+      "value": 23040,
+      "signedValue": 23040,
+      "hex": "0x5A00",
+      "count": 57,
+      "percent": 0.0036,
+      "labels": [
+        "Reserved high bit 1",
+        "Action Point marker",
+        "Allow Move Left",
+        "Allow Move Right"
+      ]
+    },
+    {
+      "value": 24946,
+      "signedValue": 24946,
+      "hex": "0x6172",
+      "count": 57,
+      "percent": 0.0036,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Column",
+        "Horizontal Door"
+      ]
+    },
+    {
+      "value": 25451,
+      "signedValue": 25451,
+      "hex": "0x636B",
+      "count": 57,
+      "percent": 0.0036,
+      "labels": [
+        "Reserved high bit 1",
+        "Revealed passage / arch",
+        "Allow Move Right",
+        "Allow Move Up",
+        "Secret discovered",
+        "Note marker",
+        "Stairs",
+        "Horizontal Door",
+        "Wall"
+      ]
+    }
+  ]
+}

@@ -44,6 +44,10 @@ Providence can turn dungeon authoring from raw bitfields into named primitives: 
 
 - Follow-up: `parser-writer`, `editor-ui`, `validation`.
 - Build named dungeon primitives from the existing bitfield profile.
+- Generated coverage artifacts:
+  - `docs/generated/dungeon-byte-ownership.json`
+  - `docs/generated/dungeon-cell-bit-taxonomy.json`
+  - `docs/generated/dungeon-primitive-writer-gate.json`
 - Route note markers and Action Point trigger markers through Notes and Action Point workflows where possible.
 - Treat visible arch/revealed passage and hidden visual markers as runtime-sensitive until Divinity writer fixtures prove authored defaults.
 - Keep dangerous raw bit toggles under Advanced Details.
