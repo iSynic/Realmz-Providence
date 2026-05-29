@@ -118,7 +118,10 @@ export function App() {
               ...tileIconCandidates(state.selectedTile),
               ...(state.project.assetCatalog.icons ?? [])
                 .filter((asset) => asset.resourceType === "cicn")
-                .flatMap((asset) => tileIconCandidates(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId)),
+                .flatMap((asset) => [
+                  ...tileIconCandidates(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId),
+                  ...(asset.previewPath ? [asset.previewPath] : [])
+                ]),
               ...(state.project.assets ?? [])
                 .filter((asset) => asset.kind === "special-land-tile" && asset.resourceType === "cicn")
                 .flatMap((asset) => tileIconCandidates(asset.resourceId)),
@@ -127,7 +130,7 @@ export function App() {
                 .flatMap((asset) => asset.resourceId == null ? [] : tileIconCandidates(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId)),
               ...(!desktopRuntime ? [...PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES, ...PAINTABLE_REFERENCE_ACTOR_ICON_VALUES].flatMap(tileIconCandidates) : [])
             ])
-          ].sort((a, b) => a - b).join(",")
+          ].map(String).sort().join(",")
         : "",
     [
       desktopRuntime,

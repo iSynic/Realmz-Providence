@@ -53,18 +53,8 @@ export const PAINTABLE_REFERENCE_ACTOR_ICON_VALUES = [
 
 export function tileIconCandidates(value: number) {
   if (value >= 0) return [];
-  const candidates: number[] = [];
   const normalized = normalizeIconId(value);
-  if (normalized !== null && normalized < 0) {
-    candidates.push(normalized);
-    const positive = Math.abs(normalized);
-    if (positive <= 999) candidates.push(positive);
-    // Realmz looks up the normalized negative cicn ID, while our reference
-    // asset export also contains Divinity/library icon ranges such as 6000+n.
-    if (value !== normalized || positive <= 199) candidates.push(6000 + positive, 12000 + positive);
-  }
-  if (value !== normalized) candidates.push(value);
-  return [...new Set(candidates)];
+  return normalized !== null && normalized < 0 ? [normalized] : [];
 }
 
 export function referencedMapIconIds(tiles: number[]) {

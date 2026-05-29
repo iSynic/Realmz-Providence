@@ -1188,6 +1188,8 @@ pub struct ResourceAsset {
     pub resource_id: i32,
     pub name: Option<String>,
     pub source: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub preview_path: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

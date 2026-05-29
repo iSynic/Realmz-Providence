@@ -1163,6 +1163,7 @@ export type ResourceAsset = {
   resourceId: number;
   name?: string | null;
   source: string;
+  previewPath?: string | null;
 };
 
 export type AtlasEntry = { image: HTMLImageElement; url: string; asset: TilesetAsset };

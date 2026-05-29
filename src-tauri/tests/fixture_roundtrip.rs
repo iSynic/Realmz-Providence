@@ -95,6 +95,53 @@ fn imports_kalypso_custom_landlook_atlas() {
 }
 
 #[test]
+fn imports_destroy_scenario_local_map_icons() {
+    let Some(source) = fixture_path("Destroy the Necronomicon") else {
+        eprintln!("Skipping Destroy the Necronomicon fixture; base scenario is absent.");
+        return;
+    };
+    let temp = tempdir().unwrap();
+    let project_dir = temp.path().join("destroy_the_necronomicon");
+    let project = import_scenario(&source, &project_dir).unwrap();
+    for icon_id in [-102, -23, -22] {
+        let relative_path = format!("assets/icons/icon_{icon_id}.png");
+        assert!(
+            project_dir.join(&relative_path).is_file(),
+            "{relative_path} should be decoded from the scenario resource fork"
+        );
+        assert!(
+            project.asset_catalog.icons.iter().any(|asset| {
+                asset.resource_type == "cicn"
+                    && asset.resource_id == icon_id as i32
+                    && asset.preview_path.as_deref() == Some(relative_path.as_str())
+            }),
+            "cicn {icon_id} should be cataloged as a project-local map icon"
+        );
+    }
+    assert!(
+        !project
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "missing-map-icon-overlay"),
+        "scenario-local map icons should satisfy negative map icon references"
+    );
+    fs::remove_file(project_dir.join("assets/icons/icon_-102.png")).unwrap();
+    let reopened = open_project(&project_dir).unwrap();
+    assert!(
+        project_dir.join("assets/icons/icon_-102.png").is_file(),
+        "opening an existing project should restore scenario-local map icon previews from raw sources"
+    );
+    assert!(
+        reopened.asset_catalog.icons.iter().any(|asset| {
+            asset.resource_type == "cicn"
+                && asset.resource_id == -102
+                && asset.preview_path.as_deref() == Some("assets/icons/icon_-102.png")
+        }),
+        "reopened project should retain the scenario-local pyramid icon preview path"
+    );
+}
+
+#[test]
 fn generated_corpus_summary_contract_is_readable() {
     let Some(summary) = generated_corpus_summary() else {
         eprintln!("Skipping generated corpus expectations; Scenario Utility summary is absent.");

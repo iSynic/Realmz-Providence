@@ -24,12 +24,14 @@ import {
   TileAttributeProfile,
   TilesetAsset,
   TreasureRecord,
-  TriggerRecord
+  TriggerRecord,
+  ResourceAsset
 } from "../types";
 import { browserReferenceAtlasUrl, hasBrowserReferenceAtlas } from "./atlasPaths";
 import { parseResourceFork, type ResourceEntry } from "./library";
 import { inspectResourcePreview } from "./resourcePreview";
 import { actionOptionFor, normalizeStepOpcode } from "../realmzActions";
+import { referencedMapIconIds } from "../map/renderValues";
 
 export const MAP_SIZE = 90;
 export const FIELD_BYTES = MAP_SIZE * MAP_SIZE * 2;
@@ -138,7 +140,7 @@ export type ParsedBrowserScenario = {
   spellOverrides: ScenarioSpellOverride[];
   raceOverrides: ScenarioRaceOverride[];
   casteOverrides: ScenarioCasteOverride[];
-  assetCatalog: { tilesets: TilesetAsset[] };
+  assetCatalog: { tilesets: TilesetAsset[]; icons: ResourceAsset[] };
   records: { counts: Record<string, number>; alignments: Alignment[] };
   diagnostics: Diagnostic[];
 };
@@ -197,7 +199,7 @@ export function parseScenarioBuffers(buffers: Map<string, Uint8Array>): ParsedBr
   const spellOverrides = parseSpellOverrides(buffers.get("Data Spell"));
   const raceOverrides = parseRaceOverrides(buffers.get("Data Race"));
   const casteOverrides = parseCasteOverrides(buffers.get("Data Caste"));
-  const assetCatalog = { tilesets: buildAssetCatalog(maps, randomLevels, buffers, diagnostics) };
+  const assetCatalog = buildAssetCatalog(maps, randomLevels, buffers, diagnostics);
   return { maps, landLayout, mapRecords, tileAttributes, triggers, randomLevels, extracodes, messages, battles, monsters, scenarioItems, treasures, shops, simpleEncounters, complexEncounters, thiefEncounters, timedEncounters, spellOverrides, raceOverrides, casteOverrides, assetCatalog, records, diagnostics };
 }
 
@@ -960,7 +962,46 @@ function buildAssetCatalog(
       custom: false
     });
   }
-  return tilesets;
+  return {
+    tilesets,
+    icons: buildScenarioIconCatalog(maps, scenarioResources, diagnostics)
+  };
+}
+
+function buildScenarioIconCatalog(
+  maps: MapEntity[],
+  resources: Array<{ source: string; resource: ResourceEntry }>,
+  diagnostics: Diagnostic[]
+): ResourceAsset[] {
+  const referenced = new Set(maps.flatMap((map) => referencedMapIconIds(map.tiles)));
+  if (referenced.size === 0) return [];
+  const seen = new Set<number>();
+  const icons: ResourceAsset[] = [];
+  for (const match of resources) {
+    const { source, resource } = match;
+    if (resource.resourceType !== "cicn" || !referenced.has(resource.id) || seen.has(resource.id)) continue;
+    const preview = inspectResourcePreview("cicn", resource.data);
+    if (preview.status !== "preview-ready" || !preview.dataUrl) {
+      const detail = preview.diagnostics[0]?.message ?? `Preview status was ${preview.status}.`;
+      diagnostics.push({
+        severity: preview.status === "malformed" ? "error" : "warning",
+        code: "unsupported-map-icon-overlay",
+        message: `Scenario cicn ${resource.id} in ${source} could not be decoded as a map icon overlay: ${detail}`,
+        source
+      });
+      continue;
+    }
+    icons.push({
+      id: `scenario-cicn-${resource.id}`,
+      resourceType: "cicn",
+      resourceId: resource.id,
+      name: resource.name || null,
+      source: `Browser import: ${source} cicn ${resource.id}`,
+      previewPath: preview.dataUrl
+    });
+    seen.add(resource.id);
+  }
+  return icons.sort((a, b) => a.resourceId - b.resourceId);
 }
 
 function scenarioResourceEntries(buffers: Map<string, Uint8Array>) {

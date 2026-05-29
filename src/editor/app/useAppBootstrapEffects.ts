@@ -199,6 +199,7 @@ export function useAppBootstrapEffects({
         return;
       }
       const projectStampAssets = (state.project.assets ?? []).filter((asset) => asset.kind === "special-land-tile" && asset.resourceType === "cicn");
+      const projectCatalogIconAssets = (state.project.assetCatalog.icons ?? []).filter((asset) => asset.resourceType === "cicn");
       const libraryIconAssets = (state.libraryCatalog?.assets ?? []).filter(isPaintableSpecialLandLibraryAsset);
       const ids = [
         ...new Set([
@@ -224,25 +225,63 @@ export function useAppBootstrapEffects({
         ids.map(async (id) => {
           try {
             const projectStamp = projectStampAssets.find((asset) => asset.resourceId === id || tileIconCandidates(asset.resourceId).includes(id));
+            const projectCatalogIcon = projectCatalogIconAssets.find((asset) => {
+              const resourceId = asset.resourceId < 0 ? asset.resourceId : -asset.resourceId;
+              return tileIconCandidates(resourceId).includes(id);
+            });
             const libraryAsset = libraryIconAssets.find((asset) => {
               if (asset.resourceId == null) return false;
               return tileIconCandidates(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId).includes(id);
             });
-            let url: string;
+            const urls: string[] = [];
             if (projectStamp) {
               const relativePath = projectStamp.previewPath ?? `assets/icons/icon_${id}.png`;
-              url = desktopRuntime
-                ? await invoke<string>("load_project_asset", { projectDir, relativePath })
-                : browserReferenceIconUrl(id);
+              if (desktopRuntime && !isInlineAssetUrl(relativePath)) {
+                try {
+                  urls.push(await invoke<string>("load_project_asset", { projectDir, relativePath }));
+                } catch {
+                  // Fall through to the generic project icon path and reference PNG.
+                }
+              } else {
+                urls.push(relativePath);
+              }
+            } else if (projectCatalogIcon?.previewPath) {
+              const relativePath = projectCatalogIcon.previewPath;
+              if (desktopRuntime && !isInlineAssetUrl(relativePath)) {
+                try {
+                  urls.push(await invoke<string>("load_project_asset", { projectDir, relativePath }));
+                } catch {
+                  // Fall through to the generic project icon path and reference PNG.
+                }
+              } else {
+                urls.push(relativePath);
+              }
             } else if (libraryAsset) {
-              url = desktopRuntime
-                ? await invoke<string>("load_library_asset_preview", { workspaceDir, source: libraryAsset.source, relativePath: libraryAsset.relativePath })
-                : (await loadBrowserBundledLibraryAssetPreview(libraryAsset)) ?? browserReferenceIconUrl(id);
-            } else {
-              url = browserReferenceIconUrl(id);
+              try {
+                urls.push(desktopRuntime
+                  ? await invoke<string>("load_library_asset_preview", { workspaceDir, source: libraryAsset.source, relativePath: libraryAsset.relativePath })
+                  : (await loadBrowserBundledLibraryAssetPreview(libraryAsset)) ?? browserReferenceIconUrl(id));
+              } catch {
+                // Fall through to project/reference icon paths.
+              }
             }
-            const image = await loadImage(url);
-            return [id, { id, image, url }] as const;
+            if (desktopRuntime) {
+              try {
+                urls.push(await invoke<string>("load_project_asset", { projectDir, relativePath: `assets/icons/icon_${id}.png` }));
+              } catch {
+                // Older projects may not have a local overlay for every reference icon.
+              }
+            }
+            urls.push(browserReferenceIconUrl(id));
+            for (const url of [...new Set(urls)]) {
+              try {
+                const image = await loadImage(url);
+                return [id, { id, image, url }] as const;
+              } catch {
+                // Try the next source: project-local icons, library previews, then reference PNGs.
+              }
+            }
+            throw new Error(`No preview source could load for map icon overlay ${id}`);
           } catch (error) {
             console.warn(`Failed to load map icon overlay ${id}`, error);
             return null;
@@ -265,4 +304,8 @@ export function useAppBootstrapEffects({
       disposed = true;
     };
   }, [desktopRuntime, dispatch, iconLoadKey, projectDir, workspaceDir]);
+}
+
+function isInlineAssetUrl(value: string) {
+  return value.startsWith("data:") || value.startsWith("blob:") || value.startsWith("http:") || value.startsWith("https:") || value.startsWith("/");
 }

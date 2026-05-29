@@ -228,7 +228,7 @@ fn import_scenario_with_name(
         validation: ValidationReport::default(),
     };
     import_tile_atlases(&source_path, &assets_dir, &mut project)?;
-    import_icon_overlays(&assets_dir, &mut project)?;
+    import_icon_overlays(&source_path, &assets_dir, &mut project)?;
     let semantic_parsed = ParsedScenario {
         maps: project.maps.clone(),
         land_layout: project.land_layout.clone(),
@@ -276,7 +276,12 @@ pub fn open_project(project_dir: impl AsRef<Path>) -> Result<ProvidenceProject> 
     ensure_reference_tile_attributes(&mut project)?;
     hydrate_scenario_metadata(project_dir, &mut project)?;
     refresh_custom_tile_atlases(project_dir, &mut project)?;
-    import_icon_overlays(&project_dir.join(ASSETS_DIR), &mut project)?;
+    let raw_dir = project_dir.join(if project.source.raw_sources_dir.is_empty() {
+        RAW_SOURCES_DIR
+    } else {
+        project.source.raw_sources_dir.as_str()
+    });
+    import_icon_overlays(&raw_dir, &project_dir.join(ASSETS_DIR), &mut project)?;
     project.validation = crate::validation::validate_project(&project);
     save_project(project_dir, &project)?;
     Ok(project)
@@ -739,9 +744,14 @@ fn import_tile_atlases(
     Ok(())
 }
 
-fn import_icon_overlays(assets_dir: &Path, project: &mut ProvidenceProject) -> Result<()> {
+fn import_icon_overlays(
+    source_path: &Path,
+    assets_dir: &Path,
+    project: &mut ProvidenceProject,
+) -> Result<()> {
     let icon_dir = assets_dir.join(ICONS_DIR);
     fs::create_dir_all(&icon_dir).with_path(&icon_dir)?;
+    let referenced_icon_ids = map_icon_ids(&project.maps);
     let reference_icon_dir = Path::new(REFERENCE_UTILITY_ROOT)
         .join("assets")
         .join("realmz")
@@ -758,8 +768,12 @@ fn import_icon_overlays(assets_dir: &Path, project: &mut ProvidenceProject) -> R
             fs::copy(&path, &dest).with_path(&dest)?;
         }
     }
+    import_scenario_icon_overlays(source_path, &icon_dir, &referenced_icon_ids, project)?;
+    project
+        .diagnostics
+        .retain(|diagnostic| diagnostic.code != "missing-map-icon-overlay");
     let mut missing = BTreeSet::new();
-    for icon_id in map_icon_ids(&project.maps) {
+    for icon_id in referenced_icon_ids {
         let file_name = format!("icon_{icon_id}.png");
         if !icon_dir.join(&file_name).is_file() {
             missing.insert(icon_id);
@@ -777,6 +791,112 @@ fn import_icon_overlays(assets_dir: &Path, project: &mut ProvidenceProject) -> R
         });
     }
     Ok(())
+}
+
+fn import_scenario_icon_overlays(
+    source_path: &Path,
+    icon_dir: &Path,
+    icon_ids: &BTreeSet<i16>,
+    project: &mut ProvidenceProject,
+) -> Result<()> {
+    if icon_ids.is_empty() {
+        return Ok(());
+    }
+    let mut imported = BTreeSet::new();
+    for resource_path in scenario_resource_candidates(source_path) {
+        if !resource_path.is_file() {
+            continue;
+        }
+        let bytes = fs::read(&resource_path).with_path(&resource_path)?;
+        for entry in crate::resource_fork::parse_resource_fork_entries(&bytes) {
+            if entry.resource_type != "cicn"
+                || !icon_ids.contains(&entry.id)
+                || imported.contains(&entry.id)
+            {
+                continue;
+            }
+            let preview = crate::resource_preview::inspect_resource_preview("cicn", &entry.data)?;
+            let Some(data_url) = preview.data_url else {
+                let detail = preview
+                    .diagnostics
+                    .first()
+                    .map(|diagnostic| diagnostic.message.clone())
+                    .unwrap_or_else(|| format!("preview status was {:?}", preview.status));
+                project.diagnostics.push(Diagnostic {
+                    severity: DiagnosticSeverity::Warning,
+                    code: "unsupported-map-icon-overlay".to_string(),
+                    message: format!(
+                        "Scenario cicn {} in {} could not be decoded as a map icon overlay: {}",
+                        entry.id,
+                        resource_path.display(),
+                        detail
+                    ),
+                    source: Some(resource_path.display().to_string()),
+                });
+                continue;
+            };
+            let Some(png_bytes) = png_bytes_from_data_url(&data_url) else {
+                project.diagnostics.push(Diagnostic {
+                    severity: DiagnosticSeverity::Warning,
+                    code: "unsupported-map-icon-overlay".to_string(),
+                    message: format!(
+                        "Scenario cicn {} decoded, but did not produce a PNG map icon overlay",
+                        entry.id
+                    ),
+                    source: Some(resource_path.display().to_string()),
+                });
+                continue;
+            };
+            let file_name = format!("icon_{}.png", entry.id);
+            let dest = icon_dir.join(&file_name);
+            fs::write(&dest, png_bytes).with_path(&dest)?;
+            upsert_scenario_icon_asset(
+                project,
+                entry.id,
+                entry.name,
+                resource_path
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    .unwrap_or("Scenario resource fork"),
+                format!("{ASSETS_DIR}/{ICONS_DIR}/{file_name}"),
+            );
+            imported.insert(entry.id);
+        }
+    }
+    project
+        .asset_catalog
+        .icons
+        .sort_by_key(|asset| asset.resource_id);
+    Ok(())
+}
+
+fn upsert_scenario_icon_asset(
+    project: &mut ProvidenceProject,
+    icon_id: i16,
+    name: String,
+    source_file: &str,
+    preview_path: String,
+) {
+    if let Some(asset) = project
+        .asset_catalog
+        .icons
+        .iter_mut()
+        .find(|asset| asset.resource_type == "cicn" && asset.resource_id == i32::from(icon_id))
+    {
+        if asset.name.is_none() && !name.is_empty() {
+            asset.name = Some(name);
+        }
+        asset.preview_path = Some(preview_path);
+        return;
+    }
+    project.asset_catalog.icons.push(ResourceAsset {
+        id: format!("scenario-cicn-{icon_id}"),
+        resource_type: "cicn".to_string(),
+        resource_id: i32::from(icon_id),
+        name: (!name.is_empty()).then_some(name),
+        source: format!("Scenario resource fork: {source_file}"),
+        preview_path: Some(preview_path),
+    });
 }
 
 fn map_icon_ids(maps: &[MapEntity]) -> BTreeSet<i16> {
