@@ -10,6 +10,7 @@ import { CollapsibleSection, EmptyState, FieldRow, FloatingWorkbenchPanel, Panel
 import { ACTION_CATEGORIES, ACTION_OPTIONS, actionOptionFor, isDispatcherNoopOpcode } from "../realmzActions";
 import { edcdFieldNamesForShape } from "../realmzEdcd";
 import { crosswalkForOpcode, opcodeIdMeaning, parameterLabelsForOpcode } from "../opcodeCrosswalk";
+import { divinityHelpForOpcode, divinityHelpSearchText } from "../divinityOpcodeHelp";
 import { ScriptDiagnostic, validateActionDraft, validateScriptTrigger } from "../scriptValidation";
 import { actionPointCapacity, isReusableDoorPlaceholder, nextActionPointRecordIndex } from "../actionPointCapacity";
 import { realmzScriptStepDescriptorFor } from "../realmzScriptDescriptors";
@@ -351,7 +352,7 @@ function ScriptAuthoringPanel({
       option.description,
       crosswalk?.idMeaning,
       crosswalk?.parameters.map((parameter) => parameter.label).join(" "),
-      option.divinityHelpSearchText
+      divinityHelpSearchText(option.code)
     ].filter(Boolean).join(" ").toLowerCase().includes(query);
   });
   const actionSlots = selectedTrigger ? actionSlotEntitiesForTriggerRecord(project, selectedTrigger) : [];
@@ -907,6 +908,7 @@ function SelectedStepDetail({
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const selectedCrosswalk = crosswalkForOpcode(selectedDraft.rawCode);
+  const selectedDivinityHelp = divinityHelpForOpcode(selectedDraft.rawCode);
   const selectedIdLabel = selectedOption.edcdShape ? "Parameter Row" : opcodeIdMeaning(selectedDraft.rawCode);
   const selectedParameterLabels = parameterLabelsForOpcode(selectedDraft.rawCode);
   return (
@@ -924,11 +926,11 @@ function SelectedStepDetail({
           <span>{selectedOption.category}</span>
         </div>
         <p>{selectedOption.description}</p>
-        {selectedOption.divinityHelp && (
+        {selectedDivinityHelp && (
           <details className="realmz-divinity-opcode-help">
             <summary>Action Help</summary>
             <div className="realmz-divinity-opcode-help-body">
-              <FieldRow label="ID Means" value={(selectedCrosswalk?.idMeaning ?? selectedOption.divinityHelp.idField) || "Not used"} />
+              <FieldRow label="ID Means" value={(selectedCrosswalk?.idMeaning ?? selectedDivinityHelp.idField) || "Not used"} />
               {selectedCrosswalk?.idHelp && <p>{selectedCrosswalk.idHelp}</p>}
               {selectedCrosswalk?.parameters?.some((parameter) => !parameter.preserved) && (
                 <FieldRow
@@ -939,14 +941,14 @@ function SelectedStepDetail({
                     .join("; ")}
                 />
               )}
-              {selectedOption.divinityHelp.use && <p>{selectedOption.divinityHelp.use}</p>}
-              {selectedOption.divinityHelp.options && selectedOption.divinityHelp.options.toLowerCase() !== "none" && (
-                <FieldRow label="Original Options" value={selectedOption.divinityHelp.options} />
+              {selectedDivinityHelp.use && <p>{selectedDivinityHelp.use}</p>}
+              {selectedDivinityHelp.options && selectedDivinityHelp.options.toLowerCase() !== "none" && (
+                <FieldRow label="Original Options" value={selectedDivinityHelp.options} />
               )}
-              {selectedOption.divinityHelp.extraCodes && selectedOption.divinityHelp.extraCodes.toLowerCase() !== "none" && (
+              {selectedDivinityHelp.extraCodes && selectedDivinityHelp.extraCodes.toLowerCase() !== "none" && (
                 <details className="realmz-original-help">
                   <summary>Original Divinity E-Codes</summary>
-                  <p>{selectedOption.divinityHelp.extraCodes}</p>
+                  <p>{selectedDivinityHelp.extraCodes}</p>
                 </details>
               )}
             </div>
@@ -1025,7 +1027,7 @@ function SelectedStepDetail({
               >
                 <strong>{option.shortLabel}</strong>
                 <span>{option.description}</span>
-                {option.divinityHelp && <small>Action help available</small>}
+                {divinityHelpForOpcode(option.code) && <small>Action help available</small>}
               </button>
             ))}
           </div>

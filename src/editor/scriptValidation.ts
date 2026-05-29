@@ -4,7 +4,6 @@ import { isDirectMacroOpcode, targetOptionsForOpcode, targetPickerConfig } from 
 import { isCallableMacro } from "./semanticGraph";
 import { missingEdcdTargetReferences } from "./edcdTargets";
 import { edcdFieldNamesForShape } from "./realmzEdcd";
-import { parameterLabelsForOpcode } from "./opcodeCrosswalk";
 
 export type ScriptDiagnosticSeverity = "error" | "warning" | "info";
 
@@ -150,6 +149,17 @@ function slotIssue(severity: ScriptDiagnosticSeverity, triggerId: string, slot: 
   return { id: `${triggerId}:${slot}:${code}`, severity, slot, message, detail };
 }
 
-function parameterLabelForIssue(opcode: number, index: number, fallback: string) {
-  return parameterLabelsForOpcode(opcode).find((parameter) => parameter.index === index)?.label ?? fallback;
+function parameterLabelForIssue(_opcode: number, _index: number, fallback: string) {
+  return humanizeParameterName(fallback);
+}
+
+function humanizeParameterName(name: string) {
+  return String(name || "parameter")
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/[-_]+/g, " ")
+    .replace(/\bmessage\b/i, "String")
+    .replace(/\bmacro\b/i, "Extra Action Point")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (match) => match.toUpperCase());
 }

@@ -1,5 +1,3 @@
-import { divinityHelpForOpcode, divinityHelpSearchText, type DivinityOpcodeHelpEntry } from "./divinityOpcodeHelp";
-
 export type RealmzActionOption = {
   code: number;
   label: string;
@@ -7,8 +5,6 @@ export type RealmzActionOption = {
   category: string;
   description: string;
   edcdShape?: string;
-  divinityHelp?: DivinityOpcodeHelpEntry;
-  divinityHelpSearchText?: string;
 };
 
 const DOCUMENTED_OPCODE_CODES = [
@@ -122,17 +118,14 @@ const ACTION_DETAILS: Record<number, Partial<RealmzActionOption>> = {
 
 export const ACTION_OPTIONS: RealmzActionOption[] = DOCUMENTED_OPCODE_CODES.map((code) => {
   const detail = ACTION_DETAILS[code];
-  const divinityHelp = divinityHelpForOpcode(code);
-  const shortLabel = detail?.shortLabel ?? divinityHelp?.title ?? `Opcode ${code}`;
+  const shortLabel = detail?.shortLabel ?? `Opcode ${code}`;
   return {
     code,
     label: `${code} ${shortLabel}`,
     shortLabel,
     category: detail?.category ?? "Advanced",
-    description: detail?.description ?? divinityHelp?.summary ?? "Documented Realmz opcode. Use raw CODE/ID and the details inspector for advanced fields.",
-    edcdShape: detail?.edcdShape,
-    divinityHelp,
-    divinityHelpSearchText: divinityHelpSearchText(code)
+    description: detail?.description ?? "Documented Realmz opcode. Use raw CODE/ID and the details inspector for advanced fields.",
+    edcdShape: detail?.edcdShape
   };
 });
 
@@ -142,18 +135,6 @@ export function actionOptionFor(rawCode: number): RealmzActionOption {
   const normalizedCode = normalizeStepOpcode(rawCode);
   const known = ACTION_OPTIONS.find((option) => option.code === normalizedCode);
   if (known) return known;
-  const divinityHelp = divinityHelpForOpcode(rawCode);
-  if (divinityHelp) {
-    return {
-      code: normalizedCode,
-      label: `${rawCode} ${divinityHelp.title}`,
-      shortLabel: divinityHelp.title,
-      category: "Advanced",
-      description: divinityHelp.summary,
-      divinityHelp,
-      divinityHelpSearchText: divinityHelpSearchText(rawCode)
-    };
-  }
   if (isDispatcherNoopOpcode(rawCode)) {
     return {
       code: normalizedCode,
