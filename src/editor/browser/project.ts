@@ -1,4 +1,4 @@
-import { BenchmarkReport, Project, ValidationReport } from "../types";
+import { BenchmarkReport, Project, ScenarioShell, ValidationReport } from "../types";
 import { BrowserScenarioSource, readProjectJson, readScenarioSource } from "./fsAccess";
 import { browserReferenceAtlasUrl, browserTilesetAtlasUrl, hasBrowserReferenceAtlas } from "./atlasPaths";
 import { buildBrowserSemanticSchema } from "./semantic";
@@ -19,7 +19,8 @@ export function createBrowserProject(projectName: string): Project {
       shell: defaultScenarioShell(safeName),
       contactInfo: defaultScenarioContactInfo(safeName),
       restrictions: null,
-      globalMacroHooks: null
+      globalMacroHooks: null,
+      securityBackup: null
     },
     source: {
       sourcePath: "",
@@ -35,8 +36,11 @@ export function createBrowserProject(projectName: string): Project {
     randomLevels: [],
     extracodes: [],
     messages: [],
+    optionLabels: [],
     battles: [],
     monsters: [],
+    monsterSets: [],
+    monsterDescriptions: [],
     scenarioItems: [],
     treasures: [],
     shops: [],
@@ -76,7 +80,8 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
       shell: defaultScenarioShell(scenarioName),
       contactInfo: parseScenarioContactInfo(files.get("Data CI")) ?? defaultScenarioContactInfo(scenarioName),
       restrictions: parseScenarioRestrictions(files.get("Data RI")),
-      globalMacroHooks: parseGlobalMacroHooks(files.get("Global"))
+      globalMacroHooks: parseGlobalMacroHooks(files.get("Global")),
+      securityBackup: parseScenarioShell("Data CS", files.get("Data CS"))
     },
     source: {
       sourcePath: `browser://${scenarioName}`,
@@ -92,8 +97,11 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
     randomLevels: parsed.randomLevels,
     extracodes: parsed.extracodes,
     messages: parsed.messages,
+    optionLabels: parsed.optionLabels,
     battles: parsed.battles,
     monsters: parsed.monsters,
+    monsterSets: parsed.monsterSets,
+    monsterDescriptions: parsed.monsterDescriptions,
     scenarioItems: parsed.scenarioItems,
     treasures: parsed.treasures,
     shops: parsed.shops,
@@ -182,6 +190,30 @@ function parseScenarioContactInfo(buffer?: Uint8Array): Project["scenario"]["con
   };
 }
 
+function parseScenarioShell(sourceFile: string, buffer?: Uint8Array): ScenarioShell | null {
+  if (!buffer || buffer.byteLength < 316) return null;
+  return {
+    sourceFile,
+    recLevel: i32At(buffer, 0),
+    maxLevel: i32At(buffer, 4),
+    landLevel: i32At(buffer, 8),
+    lookX: i32At(buffer, 12),
+    lookY: i32At(buffer, 16),
+    codeseg1: Array.from(buffer.slice(20, 40)),
+    codeseg2: Array.from(buffer.slice(40, 60)),
+    creatorUser: pascalString(buffer.slice(60, 316)),
+    trailingBytes: Array.from(buffer.slice(316)),
+    authored: false,
+    provenance: {
+      sourceFile,
+      recordIndex: 0,
+      byteOffset: 0,
+      byteLength: buffer.byteLength,
+      confidence: "confirmed"
+    }
+  };
+}
+
 function parseScenarioRestrictions(buffer?: Uint8Array): Project["scenario"]["restrictions"] {
   if (!buffer || buffer.byteLength < 320) return null;
   return {
@@ -235,6 +267,11 @@ function i16At(buffer: Uint8Array, offset: number) {
   return value & 0x8000 ? value - 0x10000 : value;
 }
 
+function i32At(buffer: Uint8Array, offset: number) {
+  const value = ((buffer[offset] << 24) | (buffer[offset + 1] << 16) | (buffer[offset + 2] << 8) | buffer[offset + 3]) >>> 0;
+  return value & 0x80000000 ? value - 0x100000000 : value;
+}
+
 export async function openBrowserProject(source: BrowserScenarioSource): Promise<Project> {
   const text = await readProjectJson(source);
   const project = JSON.parse(text) as Project;
@@ -243,11 +280,15 @@ export async function openBrowserProject(source: BrowserScenarioSource): Promise
   project.scenario.contactInfo ??= defaultScenarioContactInfo(project.scenario.name);
   project.scenario.restrictions ??= null;
   project.scenario.globalMacroHooks ??= null;
+  project.scenario.securityBackup ??= null;
   project.mapRecords ??= [];
   project.tileAttributes ??= [];
   project.messages ??= [];
+  project.optionLabels ??= [];
   project.battles ??= [];
   project.monsters ??= [];
+  project.monsterSets ??= [];
+  project.monsterDescriptions ??= [];
   project.scenarioItems ??= [];
   project.treasures ??= [];
   project.shops ??= [];
@@ -396,7 +437,15 @@ export function validateBrowserProject(project: Project): ValidationReport {
     for (const warning of asset.conversion?.warnings ?? []) warnings.push(`${asset.label} import note: ${warning}`);
   }
   for (const message of project.messages ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "message", message.id), errors, warnings);
+  for (const option of project.optionLabels ?? []) {
+    if (option.text.length > 24) errors.push(`Option label ${option.id} is too long for Realmz's 24-character option string slot.`);
+    if (!/^[\x00-\x7F]*$/.test(option.text)) warnings.push(`Option label ${option.id} contains non-ASCII text and may not render as intended.`);
+  }
   for (const battle of project.battles ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "battle", battle.id), errors, warnings);
+  for (const description of project.monsterDescriptions ?? []) {
+    if (description.text.length > 255) errors.push(`Monster description ${description.id} is too long for Realmz's 255-character description slot.`);
+    if (!/^[\x00-\x7F]*$/.test(description.text)) warnings.push(`Monster description ${description.id} contains non-ASCII text and may not render as intended.`);
+  }
   for (const monster of project.monsters ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "monster", monster.id), errors, warnings);
   for (const treasure of project.treasures ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "treasure", treasure.id), errors, warnings);
   for (const shop of project.shops ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "shop", shop.id), errors, warnings);
@@ -444,7 +493,7 @@ export function validateBrowserProject(project: Project): ValidationReport {
   const sourceNames = new Set(project.source.files.map((file) => file.name));
   validateTileAttributes(project, sourceNames, warnings);
   validateMapRecords(project, errors, warnings);
-  const exportableFiles = ["Data LD", "Data DL", "Data DD", "Data DDD", "Data RD", "Data RDD", "Layout", "Data ED3", "Data EDCD", "Data ED", "Data ED2", "Data TD2", "Data TD3", "Data MD", "Data BD", "Data SD", "Data SD2", "Data MD2", "Data TD"].filter((name) =>
+  const exportableFiles = ["Data LD", "Data DL", "Data DD", "Data DDD", "Data RD", "Data RDD", "Layout", "Data ED3", "Data EDCD", "Data ED", "Data ED2", "Data TD2", "Data TD3", "Data MD", "Data MD1", "Data MD-1", "Data DES", "Data BD", "Data SD", "Data SD2", "Data OD", "Data MD2", "Data TD"].filter((name) =>
     sourceNames.has(name) || (name === "Layout" && project.landLayout)
   );
   const passThroughFiles = project.source.files.filter((file) => !file.editable).map((file) => file.name);

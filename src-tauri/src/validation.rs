@@ -218,6 +218,36 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
             ));
         }
     }
+    for option in &project.option_labels {
+        let option_bytes = classic_text_len(&option.text);
+        if option_bytes > crate::realmz::OPTION_LABEL_BYTES - 1 {
+            errors.push(format!(
+                "Option label {} is {} byte(s); Data OD supports at most 24 ASCII bytes.",
+                option.id, option_bytes
+            ));
+        }
+        if !option.text.is_ascii() {
+            warnings.push(format!(
+                "Option label {} contains non-ASCII text; Classic option records are byte-oriented and may not render it as intended.",
+                option.id
+            ));
+        }
+    }
+    for description in &project.monster_descriptions {
+        let description_bytes = classic_text_len(&description.text);
+        if description_bytes > crate::realmz::MONSTER_DESCRIPTION_BYTES - 1 {
+            errors.push(format!(
+                "Monster description {} is {} byte(s); Data DES supports at most 255 ASCII bytes.",
+                description.id, description_bytes
+            ));
+        }
+        if !description.text.is_ascii() {
+            warnings.push(format!(
+                "Monster description {} contains non-ASCII text; Classic text records are byte-oriented and may not render it as intended.",
+                description.id
+            ));
+        }
+    }
     for battle in &project.battles {
         if battle.grid.len() != 13 * 13 {
             errors.push(format!(
@@ -371,6 +401,14 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
             warnings.push(format!(
                 "Monster {} name is longer than the fixed 40-byte Realmz field.",
                 monster.id
+            ));
+        }
+    }
+    for monster_set in &project.monster_sets {
+        if monster_set.source_file != "Data MD1" && monster_set.source_file != "Data MD-1" {
+            warnings.push(format!(
+                "{} is an unusual alternate monster-set filename; Realmz normally uses Data MD1 or Data MD-1.",
+                monster_set.source_file
             ));
         }
     }
@@ -1075,12 +1113,14 @@ fn validate_action_target(
         return;
     }
     let target = match code {
-        1 | 19 | 62 | 71 => Some(("message", refs.messages)),
+        1 | 62 | 71 => Some(("message", refs.messages)),
         2 | 48 | 56 | 107 => Some(("battle", refs.battles)),
         4 | 35 | 104 => Some(("simple encounter", refs.simple_encounters)),
         5 | 44 => Some(("complex encounter", refs.complex_encounters)),
-        6 | 49 | 51 => Some(("shop", refs.shops)),
-        8 | 40 | 55 | 64 => Some(("Data ED3 macro", refs.macros)),
+        6 | 49 => Some(("shop", refs.shops)),
+        // Opcode 8 is "Same as Other Action Point": Realmz copies door[id]
+        // from the currently loaded map and does not resolve Data ED3.
+        39 => Some(("Data ED3 macro", refs.macros)),
         10 => Some(("treasure", refs.treasures)),
         127 => Some(("monster", refs.monsters)),
         _ => None,
@@ -1108,6 +1148,7 @@ fn action_code_consumes_edcd(code: i16) -> bool {
             | 16
             | 17
             | 18
+            | 19
             | 20
             | 21
             | 22
@@ -1117,7 +1158,7 @@ fn action_code_consumes_edcd(code: i16) -> bool {
             | 33
             | 37
             | 38
-            | 39
+            | 40
             | 41
             | 42
             | 43
@@ -1125,9 +1166,11 @@ fn action_code_consumes_edcd(code: i16) -> bool {
             | 46
             | 48
             | 50
+            | 51
             | 52
             | 53
             | 54
+            | 55
             | 56
             | 57
             | 58
@@ -1135,6 +1178,7 @@ fn action_code_consumes_edcd(code: i16) -> bool {
             | 60
             | 61
             | 63
+            | 64
             | 65
             | 67
             | 68
@@ -1154,6 +1198,7 @@ fn action_code_consumes_edcd(code: i16) -> bool {
             | 90
             | 92
             | 103
+            | 106
             | 107
             | 108
             | 120
@@ -1672,6 +1717,30 @@ mod tests {
     }
 
     #[test]
+    fn opcode_8_is_not_validated_as_data_ed3_macro() {
+        let empty = BTreeSet::new();
+        let refs = TargetReferenceSets {
+            messages: &empty,
+            battles: &empty,
+            monsters: &empty,
+            treasures: &empty,
+            shops: &empty,
+            simple_encounters: &empty,
+            complex_encounters: &empty,
+            macros: &empty,
+            edcd_rows: &empty,
+        };
+        let trigger = trigger_with_actions(vec![action(0, 8, 42)]);
+        let mut errors = Vec::new();
+        let mut warnings = Vec::new();
+
+        validate_trigger_actions(&trigger, &refs, &mut errors, &mut warnings);
+
+        assert!(!warnings.iter().any(|message| message.contains("Data ED3 macro")));
+        assert!(!warnings.iter().any(|message| message.contains("Data EDCD row")));
+    }
+
+    #[test]
     fn validates_battle_macro_references_with_negative_roots() {
         let macros = BTreeSet::from([2]);
         let mut warnings = Vec::new();
@@ -1907,6 +1976,7 @@ mod tests {
                 contact_info: None,
                 restrictions: None,
                 global_macro_hooks: None,
+                security_backup: None,
             },
             source: SourceSnapshot {
                 source_path: String::new(),
@@ -1922,8 +1992,11 @@ mod tests {
             random_levels: Vec::new(),
             extracodes: Vec::new(),
             messages: Vec::new(),
+            option_labels: Vec::new(),
             battles: Vec::new(),
             monsters: Vec::new(),
+            monster_sets: Vec::new(),
+            monster_descriptions: Vec::new(),
             scenario_items: Vec::new(),
             treasures: Vec::new(),
             shops: Vec::new(),

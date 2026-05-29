@@ -110,6 +110,21 @@
       }
     }
   ],
+  "customLandlookRangeTail": {
+    "bytes": 60,
+    "offset": 8044,
+    "slotBytes": 6,
+    "slotCount": 10,
+    "layout": ["firstTile", "lastTile", "reserved"],
+    "knownSlots": [
+      { "slot": 0, "label": "Mountain range", "commonFirst": 62, "commonLast": 85 },
+      { "slot": 1, "label": "Open range", "commonFirst": 155, "commonLast": 158 },
+      { "slot": 2, "label": "Rubble range", "commonFirst": 159, "commonLast": 167 },
+      { "slot": 3, "label": "House range", "commonFirst": 190, "commonLast": 200 }
+    ],
+    "corpusObservation": "25 local Divinity CD Data Custom * BD files sampled; all were 8104 bytes, and their tails reduce to five patterns. The most common pattern appears 18 times and matches Divinity's visible range fields.",
+    "writerStatus": "parser-proven-preserve-until-fixture-backed"
+  },
   "dataSolidsCorpus": {
     "root": "F:\\Realmz\\out_win_clang\\Scenarios",
     "scenarioFilesObserved": 28,
@@ -130,6 +145,7 @@
     "Parse bundled landlook * BD files to populate TileAttributeProfile for normal terrain.",
     "Classify raw Data LD field values before attribute lookup: negative values are special/icon candidates, while positive values over 999 are door/action/secret/note/path field state.",
     "Keep landlook attribute writing disabled until Divinity binary write routines or fixtures prove trailing bytes and custom landlook behavior.",
+    "Treat the 60-byte landlook tail as Divinity tile-range metadata and preserve all ten slots until writer fixtures prove ownership.",
     "Expose needboad using a user-facing label such as boat/water requirement while preserving the source spelling in evidence."
   ]
 }

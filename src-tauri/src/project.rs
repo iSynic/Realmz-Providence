@@ -25,9 +25,15 @@ pub struct ProvidenceProject {
     #[serde(default)]
     pub messages: Vec<MessageRecord>,
     #[serde(default)]
+    pub option_labels: Vec<OptionLabelRecord>,
+    #[serde(default)]
     pub battles: Vec<BattleRecord>,
     #[serde(default)]
     pub monsters: Vec<MonsterRecord>,
+    #[serde(default)]
+    pub monster_sets: Vec<MonsterSet>,
+    #[serde(default)]
+    pub monster_descriptions: Vec<MonsterDescriptionRecord>,
     #[serde(default)]
     pub scenario_items: Vec<ScenarioItemRecord>,
     #[serde(default)]
@@ -77,6 +83,8 @@ pub struct ScenarioMeta {
     pub restrictions: Option<ScenarioRestrictions>,
     #[serde(default)]
     pub global_macro_hooks: Option<ScenarioGlobalMacroHooks>,
+    #[serde(default)]
+    pub security_backup: Option<ScenarioShell>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -779,6 +787,18 @@ pub struct MessageRecord {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct OptionLabelRecord {
+    pub id: usize,
+    pub text: String,
+    #[serde(default)]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BattleRecord {
     pub id: usize,
     pub grid: Vec<i16>,
@@ -852,6 +872,14 @@ pub struct MonsterRecord {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct MonsterSet {
+    pub source_file: String,
+    pub set_id: i16,
+    pub monsters: Vec<MonsterRecord>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TreasureRecord {
     pub id: usize,
     pub item_ids: Vec<i16>,
@@ -873,6 +901,18 @@ pub struct ShopRecord {
     pub item_ids: Vec<i16>,
     pub quantities: Vec<u8>,
     pub inflation: i16,
+    #[serde(default)]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MonsterDescriptionRecord {
+    pub id: usize,
+    pub text: String,
     #[serde(default)]
     pub raw_bytes: Vec<u8>,
     #[serde(default)]

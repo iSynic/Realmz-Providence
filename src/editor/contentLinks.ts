@@ -22,7 +22,7 @@ export function messageUsageLinks(project: Project, messageId: number): ContentU
   for (const trigger of project.triggers ?? []) {
     for (const action of trigger.actions ?? []) {
       const code = normalizeStepOpcode(action.rawCode);
-      if (![1, 19, 62, 71].includes(code) || action.id !== messageId) continue;
+      if (![1, 62, 71].includes(code) || action.id !== messageId) continue;
       links.push({
         key: `script:${trigger.id}:${action.slot}`,
         label: triggerLabel(trigger),
@@ -44,7 +44,7 @@ export function messageUsageLinks(project: Project, messageId: number): ContentU
       links.push({ key: `simple:${encounter.id}:prompt`, label: `Simple Encounter ${encounter.id}`, detail: "Prompt message", entity: { type: "encounter", id: `encounter:simple:${encounter.id}` } });
     }
     for (const action of encounter.actions ?? []) {
-      if ([1, 19, 62, 71].includes(normalizeStepOpcode(action.rawCode)) && action.id === messageId) {
+      if ([1, 62, 71].includes(normalizeStepOpcode(action.rawCode)) && action.id === messageId) {
         links.push({ key: `simple:${encounter.id}:action:${action.slot}`, label: `Simple Encounter ${encounter.id}`, detail: `Action row ${action.slot} message`, entity: { type: "encounter", id: `encounter:simple:${encounter.id}` } });
       }
     }
@@ -54,11 +54,12 @@ export function messageUsageLinks(project: Project, messageId: number): ContentU
       links.push({ key: `complex:${encounter.id}:prompt`, label: `Complex Encounter ${encounter.id}`, detail: "Prompt message", entity: { type: "encounter", id: `encounter:complex:${encounter.id}` } });
     }
     for (const action of encounter.actions ?? []) {
-      if ([1, 19, 62, 71].includes(normalizeStepOpcode(action.rawCode)) && action.id === messageId) {
+      if ([1, 62, 71].includes(normalizeStepOpcode(action.rawCode)) && action.id === messageId) {
         links.push({ key: `complex:${encounter.id}:action:${action.slot}`, label: `Complex Encounter ${encounter.id}`, detail: `Action row ${action.slot} message`, entity: { type: "encounter", id: `encounter:complex:${encounter.id}` } });
       }
     }
   }
+  links.push(...edcdMessageUsageLinks(project, messageId));
   for (const level of project.randomLevels ?? []) {
     for (const rect of level.rects ?? []) {
       if (rect.text === messageId) {
@@ -79,13 +80,8 @@ export function resourceUsageLinks(project: Project, resourceType: string | null
   const type = (resourceType ?? "").trim();
   const links: ContentUsageLink[] = [];
   if (type === "snd") {
-    for (const trigger of project.triggers ?? []) {
-      for (const action of trigger.actions ?? []) {
-        if (normalizeStepOpcode(action.rawCode) === 9 && action.id === resourceId) {
-          links.push({ key: `sound-script:${trigger.id}:${action.slot}`, label: triggerLabel(trigger), detail: `Action slot ${action.slot} sound`, entity: { type: "trigger", id: trigger.id } });
-        }
-      }
-    }
+    links.push(...directSoundUsageLinks(project, resourceId));
+    links.push(...edcdSoundUsageLinks(project, resourceId));
     for (const level of project.randomLevels ?? []) {
       for (const rect of level.rects ?? []) {
         if (rect.sound === resourceId) {
@@ -100,13 +96,7 @@ export function resourceUsageLinks(project: Project, resourceType: string | null
     }
   }
   if (type === "PICT") {
-    for (const trigger of project.triggers ?? []) {
-      for (const action of trigger.actions ?? []) {
-        if (normalizeStepOpcode(action.rawCode) === 27 && action.id === resourceId) {
-          links.push({ key: `picture-script:${trigger.id}:${action.slot}`, label: triggerLabel(trigger), detail: `Action slot ${action.slot} picture`, entity: { type: "trigger", id: trigger.id } });
-        }
-      }
-    }
+    links.push(...directPictureUsageLinks(project, resourceId));
     for (const record of project.mapRecords ?? []) {
       if (record.pictId === resourceId) {
         links.push({ key: `picture-map-record:${record.id}`, label: record.name ?? `Map Record ${record.id}`, detail: "Map record picture", entity: { type: "record", id: `map-record:${record.id}` } });
@@ -120,6 +110,7 @@ export function resourceUsageLinks(project: Project, resourceType: string | null
         links.push({ key: `icon-map:${map.id}`, label: map.name, detail: `${count.toLocaleString()} tile${count === 1 ? "" : "s"} on map`, entity: { type: "map", id: `map:${map.levelType}:${map.index}` } });
       }
     }
+    links.push(...edcdCicnUsageLinks(project, resourceId));
     for (const spell of project.spellOverrides ?? []) {
       const castFrames = spellAnimationFrameIds(spell.spellLook1, "blank-cast");
       const resolutionFrames = spellAnimationFrameIds(spell.spellLook2, "default-resolution");
@@ -140,6 +131,204 @@ export function resourceUsageLinks(project: Project, resourceType: string | null
     }
   }
   return links;
+}
+
+type ScriptActionLike = {
+  slot: number;
+  rawCode: number;
+  id: number;
+};
+
+type ScriptActionUsageContext = {
+  key: string;
+  label: string;
+  actionLabel: string;
+  entity?: SelectedEntity;
+};
+
+type EdcdUsageTarget = {
+  fieldIndex: number;
+  value: number;
+  label: string;
+};
+
+function edcdMessageUsageLinks(project: Project, messageId: number) {
+  const links: ContentUsageLink[] = [];
+  const rows = edcdRowsById(project);
+  forEachScriptAction(project, (action, context) => {
+    const code = normalizeStepOpcode(action.rawCode);
+    if (!actionOptionFor(action.rawCode).edcdShape) return;
+    const row = rows.get(edcdRowId(action));
+    if (!row) return;
+    for (const target of edcdMessageTargets(code, row.values)) {
+      if (target.value !== messageId) continue;
+      links.push({
+        key: `${context.key}:edcd-message:${target.fieldIndex}`,
+        label: context.label,
+        detail: `${context.actionLabel}: ${target.label}`,
+        entity: context.entity
+      });
+    }
+  });
+  return links;
+}
+
+function directSoundUsageLinks(project: Project, resourceId: number) {
+  const links: ContentUsageLink[] = [];
+  forEachScriptAction(project, (action, context) => {
+    if (normalizeStepOpcode(action.rawCode) !== 9 || action.id !== resourceId) return;
+    links.push({
+      key: `${context.key}:sound`,
+      label: context.label,
+      detail: `${context.actionLabel}: sound`,
+      entity: context.entity
+    });
+  });
+  return links;
+}
+
+function directPictureUsageLinks(project: Project, resourceId: number) {
+  const links: ContentUsageLink[] = [];
+  forEachScriptAction(project, (action, context) => {
+    if (normalizeStepOpcode(action.rawCode) !== 27 || action.id !== resourceId) return;
+    links.push({
+      key: `${context.key}:picture`,
+      label: context.label,
+      detail: `${context.actionLabel}: picture`,
+      entity: context.entity
+    });
+  });
+  return links;
+}
+
+function edcdSoundUsageLinks(project: Project, resourceId: number) {
+  const links: ContentUsageLink[] = [];
+  const rows = edcdRowsById(project);
+  forEachScriptAction(project, (action, context) => {
+    const code = normalizeStepOpcode(action.rawCode);
+    if (!actionOptionFor(action.rawCode).edcdShape) return;
+    const row = rows.get(edcdRowId(action));
+    if (!row) return;
+    for (const target of edcdSoundTargets(code, row.values)) {
+      if (target.value !== resourceId) continue;
+      links.push({
+        key: `${context.key}:edcd-sound:${target.fieldIndex}`,
+        label: context.label,
+        detail: `${context.actionLabel}: ${target.label}`,
+        entity: context.entity
+      });
+    }
+  });
+  return links;
+}
+
+function edcdCicnUsageLinks(project: Project, resourceId: number) {
+  const links: ContentUsageLink[] = [];
+  const rows = edcdRowsById(project);
+  forEachScriptAction(project, (action, context) => {
+    const code = normalizeStepOpcode(action.rawCode);
+    if (code !== 120 || !actionOptionFor(action.rawCode).edcdShape) return;
+    const row = rows.get(edcdRowId(action));
+    const icon = row?.values[3] ?? 0;
+    if (icon !== resourceId) return;
+    links.push({
+      key: `${context.key}:edcd-icon:3`,
+      label: context.label,
+      detail: `${context.actionLabel}: replacement monster icon`,
+      entity: context.entity
+    });
+  });
+  return links;
+}
+
+function forEachScriptAction(project: Project, visit: (action: ScriptActionLike, context: ScriptActionUsageContext) => void) {
+  for (const trigger of project.triggers ?? []) {
+    for (const action of trigger.actions ?? []) {
+      visit(action, {
+        key: `script:${trigger.id}:${action.slot}`,
+        label: triggerLabel(trigger),
+        actionLabel: `Action slot ${action.slot}`,
+        entity: { type: "trigger", id: trigger.id }
+      });
+    }
+  }
+  for (const encounter of project.simpleEncounters ?? []) {
+    for (const action of encounter.actions ?? []) {
+      visit(action, {
+        key: `simple:${encounter.id}:action:${action.slot}`,
+        label: `Simple Encounter ${encounter.id}`,
+        actionLabel: `Action row ${action.slot}`,
+        entity: { type: "encounter", id: `encounter:simple:${encounter.id}` }
+      });
+    }
+  }
+  for (const encounter of project.complexEncounters ?? []) {
+    for (const action of encounter.actions ?? []) {
+      visit(action, {
+        key: `complex:${encounter.id}:action:${action.slot}`,
+        label: `Complex Encounter ${encounter.id}`,
+        actionLabel: `Action row ${action.slot}`,
+        entity: { type: "encounter", id: `encounter:complex:${encounter.id}` }
+      });
+    }
+  }
+}
+
+function edcdRowsById(project: Project) {
+  return new Map((project.extracodes ?? []).map((row) => [row.id, row]));
+}
+
+function edcdRowId(action: ScriptActionLike) {
+  return Math.max(0, action.id);
+}
+
+function edcdMessageTargets(code: number, values: number[]): EdcdUsageTarget[] {
+  const value = (index: number) => values[index] ?? 0;
+  const targets: EdcdUsageTarget[] = [];
+  const add = (fieldIndex: number, label: string, rawValue = value(fieldIndex)) => {
+    const id = code === 15 || code === 16 ? Math.abs(rawValue) : rawValue;
+    if (id > 0) targets.push({ fieldIndex, value: id, label });
+  };
+
+  if (code === 2 || code === 48 || code === 107) add(3, "battle message");
+  else if (code === 56) add(4, "battle message");
+  else if (code === 3) {
+    add(3, "choice prompt A");
+    add(4, "choice prompt B");
+  } else if (code === 15 || code === 16) add(4, "damage/heal message");
+  else if (code === 19) {
+    add(0, "random message range start");
+    add(1, "random message range end");
+  } else if (code === 20 || code === 45) add(4, "teleport message");
+  else if (code === 21 && value(2) === 2) add(4, "missing-item message");
+  else if (code === 55 && value(1) === 2) add(4, "no-selection message");
+  else if (code === 74) add(4, "spell-points message");
+  else if (code === 85) add(4, "random-branch message");
+  else if (code === 87 && value(2) === 2) add(4, "missing-ally message");
+  else if (code === 122) add(0, "fumble message");
+
+  return targets;
+}
+
+function edcdSoundTargets(code: number, values: number[]): EdcdUsageTarget[] {
+  const value = (index: number) => values[index] ?? 0;
+  const targets: EdcdUsageTarget[] = [];
+  const add = (fieldIndex: number, label: string) => {
+    const id = value(fieldIndex);
+    if (id !== 0) targets.push({ fieldIndex, value: id, label });
+  };
+
+  if ((code === 2 && value(4) !== 10) || code === 48 || code === 107) add(2, "battle sound");
+  else if (code === 56) add(3, "battle sound");
+  else if (code === 15 || code === 16) add(3, "damage/heal sound");
+  else if (code === 20 || code === 45) add(3, "teleport sound");
+  else if (code === 43) add(3, "condition sound");
+  else if (code === 74 && value(3) !== 0) add(1, "spell-points sound");
+  else if (code === 85) add(3, "random-branch sound");
+  else if (code === 122) add(1, "fumble sound");
+  else if (code === 124) add(3, "spawn sound");
+
+  return targets;
 }
 
 export function assetOriginLabel(asset: ManagedAsset | LibraryAsset) {

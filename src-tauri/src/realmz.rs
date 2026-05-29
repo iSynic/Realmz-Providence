@@ -17,12 +17,17 @@ pub const COMPLEX_ENCOUNTER_BYTES: usize = 520;
 pub const TIMED_ENCOUNTER_BYTES: usize = 40;
 pub const BATTLE_BYTES: usize = 346;
 pub const MONSTER_BYTES: usize = 210;
+pub const MONSTER_DESCRIPTION_BYTES: usize = 256;
 pub const SHOP_BYTES: usize = 3002;
 pub const MESSAGE_BYTES: usize = 256;
+pub const OPTION_LABEL_BYTES: usize = 25;
 pub const TREASURE_BYTES: usize = 48;
 pub const MAP_RECORD_BYTES: usize = 340;
 pub const MAPSTATS_RECORD_BYTES: usize = 40;
 pub const MAPSTATS_RECORDS: usize = 201;
+pub const LANDLOOK_RANGE_TAIL_BYTES: usize = 60;
+pub const LANDLOOK_RANGE_SLOT_BYTES: usize = 6;
+pub const LANDLOOK_RANGE_SLOTS: usize = LANDLOOK_RANGE_TAIL_BYTES / LANDLOOK_RANGE_SLOT_BYTES;
 pub const ITEM_BYTES: usize = 100;
 pub const SPELL_BYTES: usize = 30;
 pub const SPELL_OVERRIDE_RECORDS: usize = 105;
@@ -44,15 +49,23 @@ pub const SUPPORTED_WRITE_FILES: &[&str] = &[
     "Data TD2",
     "Data TD3",
     "Data MD",
+    "Data MD1",
+    "Data MD-1",
+    "Data DES",
     "Data BD",
     "Data SD",
     "Data SD2",
+    "Data OD",
     "Data MD2",
     "Data TD",
     "Global",
     "Data Spell",
     "Data Race",
     "Data Caste",
+    "Data CS",
+    "Data CI",
+    "Data RI",
+    "Data Solids",
     "Data NI",
     "Layout",
 ];
@@ -129,8 +142,11 @@ pub struct ParsedScenario {
     pub random_levels: Vec<RandomLevel>,
     pub extracodes: Vec<ExtraCodeRow>,
     pub messages: Vec<MessageRecord>,
+    pub option_labels: Vec<OptionLabelRecord>,
     pub battles: Vec<BattleRecord>,
     pub monsters: Vec<MonsterRecord>,
+    pub monster_sets: Vec<MonsterSet>,
+    pub monster_descriptions: Vec<MonsterDescriptionRecord>,
     pub scenario_items: Vec<ScenarioItemRecord>,
     pub treasures: Vec<TreasureRecord>,
     pub shops: Vec<ShopRecord>,
@@ -156,8 +172,11 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
     let mut triggers = Vec::new();
     let mut extracodes = Vec::new();
     let mut messages = Vec::new();
+    let mut option_labels = Vec::new();
     let mut battles = Vec::new();
     let mut monsters = Vec::new();
+    let mut monster_sets = Vec::new();
+    let mut monster_descriptions = Vec::new();
     let mut scenario_items = Vec::new();
     let mut treasures = Vec::new();
     let mut shops = Vec::new();
@@ -181,15 +200,20 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
         ("Data ED3", DOOR_BYTES),
         ("Data EDCD", EXTRACODE_BYTES),
         ("Data MD", MONSTER_BYTES),
+        ("Data MD1", MONSTER_BYTES),
+        ("Data MD-1", MONSTER_BYTES),
+        ("Data DES", MONSTER_DESCRIPTION_BYTES),
         ("Data BD", BATTLE_BYTES),
         ("Data SD", SHOP_BYTES),
         ("Data SD2", MESSAGE_BYTES),
+        ("Data OD", OPTION_LABEL_BYTES),
         ("Data MD2", MAP_RECORD_BYTES),
         ("Data TD", TREASURE_BYTES),
         ("Data TD2", THIEF_ENCOUNTER_BYTES),
         ("Data TD3", TIMED_ENCOUNTER_BYTES),
         ("Data CI", 4608),
         ("Data RI", 320),
+        ("Data CS", 316),
         ("Global", 60),
         ("Data MENU", 502),
         ("Data Solids", 1024),
@@ -262,11 +286,23 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
     if let Some(buffer) = buffers.get("Data SD2") {
         messages.extend(parse_messages(buffer));
     }
+    if let Some(buffer) = buffers.get("Data OD") {
+        option_labels.extend(parse_option_labels(buffer));
+    }
     if let Some(buffer) = buffers.get("Data BD") {
         battles.extend(parse_battles(buffer));
     }
     if let Some(buffer) = buffers.get("Data MD") {
         monsters.extend(parse_monsters(buffer));
+    }
+    if let Some(buffer) = buffers.get("Data MD1") {
+        monster_sets.push(parse_monster_set(buffer, "Data MD1", 1));
+    }
+    if let Some(buffer) = buffers.get("Data MD-1") {
+        monster_sets.push(parse_monster_set(buffer, "Data MD-1", -1));
+    }
+    if let Some(buffer) = buffers.get("Data DES") {
+        monster_descriptions.extend(parse_monster_descriptions(buffer));
     }
     if let Some(buffer) = buffers.get("Data NI") {
         scenario_items.extend(parse_scenario_items(buffer));
@@ -309,8 +345,11 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
         random_levels,
         extracodes,
         messages,
+        option_labels,
         battles,
         monsters,
+        monster_sets,
+        monster_descriptions,
         scenario_items,
         treasures,
         shops,
@@ -361,6 +400,34 @@ fn parse_tile_attributes(buffer: &[u8]) -> Vec<TileAttributeProfile> {
             raw_byte: Some(*solid_type),
         })
         .collect()
+}
+
+pub fn write_tile_solids(attributes: &[TileAttributeProfile]) -> Result<Vec<u8>> {
+    let mut output = vec![0u8; 1024];
+    let mut saw_solids = false;
+    for attribute in attributes
+        .iter()
+        .filter(|attribute| matches!(attribute.source_kind, TileAttributeSourceKind::DataSolids))
+    {
+        if !(0..1024).contains(&i32::from(attribute.tile)) {
+            continue;
+        }
+        saw_solids = true;
+        let value = attribute
+            .raw_byte
+            .or_else(|| {
+                attribute
+                    .solid_type
+                    .and_then(|value| u8::try_from(value).ok())
+            })
+            .unwrap_or(0);
+        output[attribute.tile as usize] = value;
+    }
+    if saw_solids {
+        Ok(output)
+    } else {
+        Ok(Vec::new())
+    }
 }
 
 pub fn parse_landlook_mapstats_data(
@@ -469,6 +536,47 @@ pub fn parse_landlook_mapstats_data(
             }
         })
         .collect()
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LandlookRangeSlot {
+    pub slot: usize,
+    pub label: String,
+    pub first_tile: i16,
+    pub last_tile: i16,
+    pub reserved: i16,
+}
+
+pub fn parse_landlook_range_tail(buffer: &[u8]) -> Vec<LandlookRangeSlot> {
+    let tail_offset = MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 4;
+    if buffer.len() < tail_offset + LANDLOOK_RANGE_SLOT_BYTES {
+        return Vec::new();
+    }
+    let slots =
+        ((buffer.len() - tail_offset) / LANDLOOK_RANGE_SLOT_BYTES).min(LANDLOOK_RANGE_SLOTS);
+    (0..slots)
+        .map(|slot| {
+            let start = tail_offset + slot * LANDLOOK_RANGE_SLOT_BYTES;
+            LandlookRangeSlot {
+                slot,
+                label: landlook_range_label(slot).to_string(),
+                first_tile: i16_be(buffer, start),
+                last_tile: i16_be(buffer, start + 2),
+                reserved: i16_be(buffer, start + 4),
+            }
+        })
+        .collect()
+}
+
+fn landlook_range_label(slot: usize) -> &'static str {
+    match slot {
+        0 => "Mountain range",
+        1 => "Open range",
+        2 => "Rubble range",
+        3 => "House range",
+        _ => "Reserved range",
+    }
 }
 
 fn alignment_for(name: &str, buffer: Option<&Vec<u8>>, record_bytes: usize) -> RecordAlignment {
@@ -1605,6 +1713,29 @@ pub fn write_messages(records: &[MessageRecord]) -> Result<Vec<u8>> {
     })
 }
 
+pub fn parse_option_labels(buffer: &[u8]) -> Vec<OptionLabelRecord> {
+    parse_fixed_records(buffer, OPTION_LABEL_BYTES)
+        .map(|(id, start, record)| OptionLabelRecord {
+            id,
+            text: decode_pascal_text(record),
+            raw_bytes: record.to_vec(),
+            authored: false,
+            provenance: provenance("Data OD", id, start, OPTION_LABEL_BYTES),
+        })
+        .collect()
+}
+
+pub fn write_option_labels(records: &[OptionLabelRecord]) -> Result<Vec<u8>> {
+    write_fixed_records(records, OPTION_LABEL_BYTES, |record, buffer| {
+        copy_raw(buffer, &record.raw_bytes);
+        if preserve_raw(record.authored, &record.raw_bytes, OPTION_LABEL_BYTES) {
+            return Ok(());
+        }
+        encode_pascal_text(buffer, &record.text)?;
+        Ok(())
+    })
+}
+
 pub fn parse_battles(buffer: &[u8]) -> Vec<BattleRecord> {
     parse_fixed_records(buffer, BATTLE_BYTES)
         .map(|(id, start, record)| {
@@ -1648,6 +1779,18 @@ pub fn write_battles(records: &[BattleRecord]) -> Result<Vec<u8>> {
 }
 
 pub fn parse_monsters(buffer: &[u8]) -> Vec<MonsterRecord> {
+    parse_monsters_from_source(buffer, "Data MD")
+}
+
+pub fn parse_monster_set(buffer: &[u8], source_file: &str, set_id: i16) -> MonsterSet {
+    MonsterSet {
+        source_file: source_file.to_string(),
+        set_id,
+        monsters: parse_monsters_from_source(buffer, source_file),
+    }
+}
+
+fn parse_monsters_from_source(buffer: &[u8], source_file: &str) -> Vec<MonsterRecord> {
     parse_fixed_records(buffer, MONSTER_BYTES)
         .map(|(id, start, record)| MonsterRecord {
             id,
@@ -1708,7 +1851,7 @@ pub fn parse_monsters(buffer: &[u8]) -> Vec<MonsterRecord> {
             },
             raw_bytes: record.to_vec(),
             authored: false,
-            provenance: provenance("Data MD", id, start, MONSTER_BYTES),
+            provenance: provenance(source_file, id, start, MONSTER_BYTES),
         })
         .collect()
 }
@@ -1772,6 +1915,37 @@ pub fn write_monsters(records: &[MonsterRecord]) -> Result<Vec<u8>> {
         write_i16_be(buffer, 166, record.death_macro);
         write_i16_be(buffer, 168, record.max_spell_points);
         encode_fixed_text(&mut buffer[170..210], &record.display_name)?;
+        Ok(())
+    })
+}
+
+pub fn write_monster_set(monster_set: &MonsterSet) -> Result<Vec<u8>> {
+    write_monsters(&monster_set.monsters)
+}
+
+pub fn parse_monster_descriptions(buffer: &[u8]) -> Vec<MonsterDescriptionRecord> {
+    parse_fixed_records(buffer, MONSTER_DESCRIPTION_BYTES)
+        .map(|(id, start, record)| MonsterDescriptionRecord {
+            id,
+            text: decode_pascal_text(record),
+            raw_bytes: record.to_vec(),
+            authored: false,
+            provenance: provenance("Data DES", id, start, MONSTER_DESCRIPTION_BYTES),
+        })
+        .collect()
+}
+
+pub fn write_monster_descriptions(records: &[MonsterDescriptionRecord]) -> Result<Vec<u8>> {
+    write_fixed_records(records, MONSTER_DESCRIPTION_BYTES, |record, buffer| {
+        copy_raw(buffer, &record.raw_bytes);
+        if preserve_raw(
+            record.authored,
+            &record.raw_bytes,
+            MONSTER_DESCRIPTION_BYTES,
+        ) {
+            return Ok(());
+        }
+        encode_pascal_text(buffer, &record.text)?;
         Ok(())
     })
 }
@@ -2214,12 +2388,22 @@ impl IndexedRecord for MessageRecord {
         self.id
     }
 }
+impl IndexedRecord for OptionLabelRecord {
+    fn record_id(&self) -> usize {
+        self.id
+    }
+}
 impl IndexedRecord for BattleRecord {
     fn record_id(&self) -> usize {
         self.id
     }
 }
 impl IndexedRecord for MonsterRecord {
+    fn record_id(&self) -> usize {
+        self.id
+    }
+}
+impl IndexedRecord for MonsterDescriptionRecord {
     fn record_id(&self) -> usize {
         self.id
     }
@@ -2784,6 +2968,27 @@ mod tests {
     }
 
     #[test]
+    fn extra_action_points_round_trip() {
+        let mut input = vec![0u8; DOOR_BYTES * 2];
+        write_i32_be(&mut input, 0, 0);
+        input[4] = 0;
+        input[5] = 2;
+        input[6] = 3;
+        input[7] = 100;
+        write_i16_be(&mut input, 8, 1);
+        write_i16_be(&mut input, 24, 55);
+        write_i16_be(&mut input, DOOR_BYTES + 8, 24);
+        let macros = parse_macro_file(&input);
+        assert_eq!(macros.len(), 2);
+        assert_eq!(macros[0].source, "Data ED3");
+        assert!(macros[0].coordinate.is_none());
+        assert_eq!(macros[0].actions[0].code, 1);
+        assert_eq!(macros[0].actions[0].id, 55);
+        let output = write_macro_file(&macros).unwrap();
+        assert_eq!(input, output);
+    }
+
+    #[test]
     fn random_levels_round_trip() {
         let mut input = vec![0u8; RANDLEVEL_BYTES];
         write_i16_be(&mut input, 0, 1);
@@ -2855,6 +3060,73 @@ mod tests {
             tile.source_kind,
             TileAttributeSourceKind::Mapstats
         ));
+    }
+
+    #[test]
+    fn mapstats_tail_parses_divinity_tile_ranges() {
+        let mut input =
+            vec![0u8; MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 4 + LANDLOOK_RANGE_TAIL_BYTES];
+        let tail_start = MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 4;
+        for (slot, first, last) in [(0, 62, 85), (1, 155, 158), (2, 159, 167), (3, 190, 200)] {
+            let offset = tail_start + slot * LANDLOOK_RANGE_SLOT_BYTES;
+            write_i16_be(&mut input, offset, first);
+            write_i16_be(&mut input, offset + 2, last);
+            write_i16_be(&mut input, offset + 4, 0);
+        }
+
+        let ranges = parse_landlook_range_tail(&input);
+
+        assert_eq!(ranges.len(), LANDLOOK_RANGE_SLOTS);
+        assert_eq!(ranges[0].label, "Mountain range");
+        assert_eq!(
+            (
+                ranges[0].first_tile,
+                ranges[0].last_tile,
+                ranges[0].reserved
+            ),
+            (62, 85, 0)
+        );
+        assert_eq!(ranges[1].label, "Open range");
+        assert_eq!(
+            (
+                ranges[1].first_tile,
+                ranges[1].last_tile,
+                ranges[1].reserved
+            ),
+            (155, 158, 0)
+        );
+        assert_eq!(ranges[2].label, "Rubble range");
+        assert_eq!(
+            (
+                ranges[2].first_tile,
+                ranges[2].last_tile,
+                ranges[2].reserved
+            ),
+            (159, 167, 0)
+        );
+        assert_eq!(ranges[3].label, "House range");
+        assert_eq!(
+            (
+                ranges[3].first_tile,
+                ranges[3].last_tile,
+                ranges[3].reserved
+            ),
+            (190, 200, 0)
+        );
+        assert!(ranges[4..]
+            .iter()
+            .all(|slot| slot.first_tile == 0 && slot.last_tile == 0 && slot.reserved == 0));
+    }
+
+    #[test]
+    fn data_solids_round_trip_from_tile_attributes() {
+        let mut input = vec![0u8; 1024];
+        input[35] = 1;
+        input[190] = 2;
+        input[998] = 1;
+        let profiles = parse_tile_attributes(&input);
+        let output = write_tile_solids(&profiles).unwrap();
+        assert_eq!(output, input);
     }
 
     #[test]
@@ -3002,9 +3274,15 @@ mod tests {
 
     #[test]
     fn target_records_round_trip_full_records() {
-        let cases: [(usize, fn(&[u8]) -> Vec<u8>); 10] = [
+        let cases: [(usize, fn(&[u8]) -> Vec<u8>); 12] = [
             (MESSAGE_BYTES, |bytes| {
                 write_messages(&parse_messages(bytes)).unwrap()
+            }),
+            (OPTION_LABEL_BYTES, |bytes| {
+                write_option_labels(&parse_option_labels(bytes)).unwrap()
+            }),
+            (MONSTER_DESCRIPTION_BYTES, |bytes| {
+                write_monster_descriptions(&parse_monster_descriptions(bytes)).unwrap()
             }),
             (BATTLE_BYTES, |bytes| {
                 write_battles(&parse_battles(bytes)).unwrap()
@@ -3044,6 +3322,23 @@ mod tests {
     }
 
     #[test]
+    fn alternate_monster_sets_round_trip_with_source_filename() {
+        let mut input = vec![0u8; MONSTER_BYTES * 2];
+        input[0] = 12;
+        input[170] = b'A';
+        input[171] = b'l';
+        input[MONSTER_BYTES + 98] = 0xff;
+        input[MONSTER_BYTES + 99] = 0x22;
+
+        let monster_set = parse_monster_set(&input, "Data MD-1", -1);
+        assert_eq!(monster_set.source_file, "Data MD-1");
+        assert_eq!(monster_set.set_id, -1);
+        assert_eq!(monster_set.monsters.len(), 2);
+        assert_eq!(monster_set.monsters[0].provenance.source_file, "Data MD-1");
+        assert_eq!(write_monster_set(&monster_set).unwrap(), input);
+    }
+
+    #[test]
     fn authored_target_records_write_realmz_offsets() {
         let message = MessageRecord {
             id: 0,
@@ -3055,6 +3350,29 @@ mod tests {
         let message_bytes = write_messages(&[message]).unwrap();
         assert_eq!(message_bytes.len(), MESSAGE_BYTES);
         assert_eq!(&message_bytes[..6], &[5, b'H', b'e', b'l', b'l', b'o']);
+
+        let option_label = OptionLabelRecord {
+            id: 0,
+            text: "Attack".to_string(),
+            raw_bytes: vec![0; OPTION_LABEL_BYTES],
+            authored: true,
+            provenance: provenance("Data OD", 0, 0, OPTION_LABEL_BYTES),
+        };
+        let option_bytes = write_option_labels(&[option_label]).unwrap();
+        assert_eq!(option_bytes.len(), OPTION_LABEL_BYTES);
+        assert_eq!(&option_bytes[..7], &[6, b'A', b't', b't', b'a', b'c', b'k']);
+
+        let monster_description = MonsterDescriptionRecord {
+            id: 0,
+            text: "A rather dramatic monster.".to_string(),
+            raw_bytes: vec![0; MONSTER_DESCRIPTION_BYTES],
+            authored: true,
+            provenance: provenance("Data DES", 0, 0, MONSTER_DESCRIPTION_BYTES),
+        };
+        let description_bytes = write_monster_descriptions(&[monster_description]).unwrap();
+        assert_eq!(description_bytes.len(), MONSTER_DESCRIPTION_BYTES);
+        assert_eq!(description_bytes[0], 26);
+        assert_eq!(&description_bytes[1..4], b"A r");
 
         let mut grid = vec![0; 13 * 13];
         grid[12] = 77;

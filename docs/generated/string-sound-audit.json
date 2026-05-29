@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-29T00:00:00.000-05:00",
+  "scope": "Data SD2, Data OD, and the Divinity Strings Sound field",
+  "conclusion": "Data SD2 and Data OD are byte-owned text tables. No Realmz runtime source path proves a central per-string sound field. Sounds are carried by caller records that reference messages, not by message records themselves.",
+  "dataFamilies": [
+    {
+      "family": "Data SD2",
+      "recordBytes": 256,
+      "runtimeRole": "Dense Str255 scenario message table.",
+      "writerStatus": "writable-with-byte-length-validation",
+      "sourceAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\textbox-time.c:34",
+        "F:\\Realmz\\src\\realmz_orig\\textbox-time.c:37",
+        "F:\\Realmz\\src\\realmz_orig\\editstring.c:42",
+        "F:\\Realmz\\src\\realmz_orig\\editstring.c:48"
+      ]
+    },
+    {
+      "family": "Data OD",
+      "recordBytes": 25,
+      "runtimeRole": "Optional two-choice prompt label table preferred by question2 for negative/option indexes.",
+      "writerStatus": "writable-with-byte-length-validation",
+      "sourceAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\question.c:104",
+        "F:\\Realmz\\src\\realmz_orig\\question.c:122",
+        "F:\\Realmz\\src\\realmz_orig\\editstring.c:32",
+        "F:\\Realmz\\src\\realmz_orig\\editstring.c:38"
+      ]
+    },
+    {
+      "family": "Divinity Strings Sound",
+      "recordBytes": null,
+      "runtimeRole": "No central message-sound runtime consumer proven.",
+      "writerStatus": "blocked-until-binary-or-fixture-evidence",
+      "sourceAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\textbox-time.c:73",
+        "F:\\Realmz\\src\\realmz_orig\\editstring.c:678",
+        "F:\\Realmz\\src\\realmz_orig\\newland.c:1998",
+        "F:\\Realmz\\src\\realmz_orig\\newland.c:2000"
+      ],
+      "notes": [
+        "Text display plays generic sound 5000 when appropriate.",
+        "Action, battle, encounter, random-area, and thief records carry sound IDs beside message IDs where runtime behavior requires sound.",
+        "Opcode 19 Display Random String ignores EDCD sound-like slots in Realmz source even though Divinity guide text mentions optional sound for some string-related actions."
+      ]
+    }
+  ],
+  "providencePolicy": [
+    "Do not add a per-string Sound field to the default Strings editor.",
+    "Expose sound fields only on source-backed caller records that actually play sounds.",
+    "Keep the Divinity Strings Sound UI as an unresolved binary/fixture target, not a scenario byte family."
+  ]
+}

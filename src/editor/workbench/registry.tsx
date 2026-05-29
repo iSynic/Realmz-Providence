@@ -78,11 +78,11 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     label: "Action Point Hub",
     shortLabel: "AP",
     description: "Action Points, GOSUBs, macros, global macros, quests, and links to the rest of the scenario.",
-    help: "Action Points are the scenario behavior hub. Visual steps present Realmz CODE/ID slots and EDCD rows with guided targets.",
+    help: "Action Points are the scenario behavior hub. Visual steps present Realmz action slots with guided targets and parameters.",
     tools: [
       t({ id: "action-points", label: "Action Points / GOSUBs", iconLabel: "AP", workbench: "project", description: "Create and edit map action slots.", entityTypes: ["trigger", "action-slot"], defaultInspector: "semantic" }),
       t({ id: "macros", label: "Macros", iconLabel: "M", workbench: "project", description: "Extra Action Point macros and branch targets.", entityTypes: ["macro"], defaultInspector: "semantic" }),
-      t({ id: "ed3-evidence", label: "Imported ED3 Rows", iconLabel: "E3", workbench: "project", description: "Imported Data ED3 rows that are not callable macros yet.", entityTypes: ["ed3-action-record"], defaultInspector: "semantic" }),
+      t({ id: "ed3-evidence", label: "Imported Extra Actions", iconLabel: "EA", workbench: "project", description: "Imported Extra Action Point rows that are not callable macros yet.", entityTypes: ["ed3-action-record"], defaultInspector: "semantic" }),
       t({ id: "global-macros", label: "Global Macros", iconLabel: "GM", workbench: "project", description: "Scenario-wide macro hooks and startup logic.", entityTypes: ["global-macro"], defaultInspector: "semantic" }),
       t({ id: "quests", label: "Quests", iconLabel: "Q", workbench: "project", description: "Quest flags and script references.", entityTypes: ["quest flag"], defaultInspector: "semantic" })
     ]

@@ -28,7 +28,7 @@ pub(super) fn classify_ed3_reachability(schema: &mut SemanticSchema, triggers: &
     let mut roots: BTreeMap<String, ReachabilityRoot> = BTreeMap::new();
     for (target, links) in &incoming {
         for link in links {
-            if link.kind == "calls_macro" && !is_ed3_action_slot(&link.from) {
+            if is_macro_reachability_link(link) && !is_ed3_action_slot(&link.from) {
                 roots
                     .entry(target.clone())
                     .or_insert_with(|| ReachabilityRoot {
@@ -62,7 +62,7 @@ pub(super) fn classify_ed3_reachability(schema: &mut SemanticSchema, triggers: &
         let outgoing: Vec<_> = schema
             .links
             .iter()
-            .filter(|link| link.kind == "calls_macro" && link.from.starts_with(&prefix))
+            .filter(|link| is_macro_reachability_link(link) && link.from.starts_with(&prefix))
             .cloned()
             .collect();
         for link in outgoing {
@@ -202,6 +202,20 @@ fn is_ed3_action_slot(id: &str) -> bool {
     id.starts_with("action-slot:macro:")
 }
 
+fn is_macro_reachability_link(link: &SemanticLink) -> bool {
+    matches!(
+        link.kind.as_str(),
+        "calls_macro"
+            | "branches_to"
+            | "branches_true"
+            | "branches_false"
+            | "branches_keep"
+            | "branches_drop"
+            | "branches_on_coward"
+            | "branches_on_revived_loss"
+    )
+}
+
 fn root_type_for(from: &str) -> String {
     if from.starts_with("action-slot:trigger:") {
         "map-trigger-call".to_string()
@@ -209,6 +223,8 @@ fn root_type_for(from: &str) -> String {
         "random-region-door".to_string()
     } else if from.starts_with("time:") {
         "timed-encounter-door".to_string()
+    } else if from.starts_with("item:") {
+        "door-item-macro".to_string()
     } else if from.starts_with("monster:") {
         "monster-death-hook".to_string()
     } else if from.contains("global") {
@@ -273,6 +289,33 @@ mod tests {
         }
     }
 
+    fn macro_entity(record_index: usize) -> SemanticEntity {
+        SemanticEntity {
+            id: format!("macro:{record_index}"),
+            entity_type: "ed3-action-record".to_string(),
+            label: format!("ED3 record {record_index}"),
+            edit_state: SemanticEditState::InspectOnly,
+            confidence: Confidence::SourceBacked,
+            source: "Data ED3".to_string(),
+            record_ref: Some(format!("record:Data ED3:{record_index}")),
+            byte_range: None,
+            editable: false,
+            summary: BTreeMap::new(),
+        }
+    }
+
+    fn macro_link(id: &str, from: &str, to_record: usize, kind: &str) -> SemanticLink {
+        SemanticLink {
+            id: id.to_string(),
+            from: from.to_string(),
+            to: format!("macro:{to_record}"),
+            kind: kind.to_string(),
+            confidence: Confidence::SourceBacked,
+            evidence: vec!["record:Data DD:0:1".to_string()],
+            metadata: BTreeMap::new(),
+        }
+    }
+
     #[test]
     fn nonreachable_empty_ed3_is_editor_padding() {
         let trigger = ed3_trigger(4, Vec::new());
@@ -332,5 +375,212 @@ mod tests {
             schema.decoding.ed3_reachability[0].classification,
             "reachable-macro"
         );
+    }
+
+    #[test]
+    fn edcd_branch_from_map_trigger_promotes_ed3_record() {
+        let trigger = ed3_trigger(
+            7,
+            vec![Action {
+                slot: 0,
+                raw_code: 1,
+                code: 1,
+                id: 12,
+                label: "Message".to_string(),
+                category: ActionCategory::UiText,
+                gosub: false,
+            }],
+        );
+        let mut schema = SemanticSchema::default();
+        schema.entities.push(macro_entity(7));
+        schema.links.push(macro_link(
+            "link:branch:true",
+            "action-slot:trigger:land:0:1:0",
+            7,
+            "branches_true",
+        ));
+
+        classify_ed3_reachability(&mut schema, &[trigger]);
+
+        let row = &schema.decoding.ed3_reachability[0];
+        assert!(row.reachable);
+        assert_eq!(row.classification, "reachable-macro");
+        assert_eq!(row.root_type.as_deref(), Some("map-trigger-call"));
+    }
+
+    #[test]
+    fn edcd_branch_from_reachable_macro_recurses_to_ed3_record() {
+        let root_trigger = ed3_trigger(
+            2,
+            vec![Action {
+                slot: 0,
+                raw_code: 39,
+                code: 39,
+                id: 7,
+                label: "Extend AP".to_string(),
+                category: ActionCategory::Branch,
+                gosub: false,
+            }],
+        );
+        let nested_trigger = ed3_trigger(
+            7,
+            vec![Action {
+                slot: 0,
+                raw_code: 1,
+                code: 1,
+                id: 12,
+                label: "Message".to_string(),
+                category: ActionCategory::UiText,
+                gosub: false,
+            }],
+        );
+        let mut schema = SemanticSchema::default();
+        schema.entities.push(macro_entity(2));
+        schema.entities.push(macro_entity(7));
+        schema.links.push(macro_link(
+            "link:root",
+            "action-slot:trigger:land:0:1:0",
+            2,
+            "calls_macro",
+        ));
+        schema.links.push(macro_link(
+            "link:recursive:branch",
+            "action-slot:macro:2:0",
+            7,
+            "branches_false",
+        ));
+
+        classify_ed3_reachability(&mut schema, &[root_trigger, nested_trigger]);
+
+        let row = schema
+            .decoding
+            .ed3_reachability
+            .iter()
+            .find(|row| row.record_index == 7)
+            .unwrap();
+        assert!(row.reachable);
+        assert_eq!(row.root_type.as_deref(), Some("recursive-macro-call"));
+        assert_eq!(row.evidence, vec!["link:root", "link:recursive:branch"]);
+    }
+
+    #[test]
+    fn battle_outcome_macro_roles_promote_ed3_records() {
+        let coward_trigger = ed3_trigger(
+            12,
+            vec![Action {
+                slot: 0,
+                raw_code: 1,
+                code: 1,
+                id: 12,
+                label: "Message".to_string(),
+                category: ActionCategory::UiText,
+                gosub: false,
+            }],
+        );
+        let revive_trigger = ed3_trigger(
+            17,
+            vec![Action {
+                slot: 0,
+                raw_code: 1,
+                code: 1,
+                id: 17,
+                label: "Message".to_string(),
+                category: ActionCategory::UiText,
+                gosub: false,
+            }],
+        );
+        let mut schema = SemanticSchema::default();
+        schema.entities.push(macro_entity(12));
+        schema.entities.push(macro_entity(17));
+        schema.links.push(macro_link(
+            "link:coward",
+            "action-slot:trigger:land:0:1:0",
+            12,
+            "branches_on_coward",
+        ));
+        schema.links.push(macro_link(
+            "link:revive",
+            "action-slot:trigger:land:0:1:1",
+            17,
+            "branches_on_revived_loss",
+        ));
+
+        classify_ed3_reachability(&mut schema, &[coward_trigger, revive_trigger]);
+
+        assert!(schema
+            .decoding
+            .ed3_reachability
+            .iter()
+            .any(|row| row.record_index == 12 && row.reachable));
+        assert!(schema
+            .decoding
+            .ed3_reachability
+            .iter()
+            .any(|row| row.record_index == 17 && row.reachable));
+    }
+
+    #[test]
+    fn positive_battle_macro_does_not_promote_ed3_record() {
+        let trigger = ed3_trigger(
+            3,
+            vec![Action {
+                slot: 0,
+                raw_code: 1,
+                code: 1,
+                id: 12,
+                label: "Message".to_string(),
+                category: ActionCategory::UiText,
+                gosub: false,
+            }],
+        );
+        let mut schema = SemanticSchema::default();
+        schema.entities.push(macro_entity(3));
+        let mut metadata = BTreeMap::new();
+        metadata.insert("rawValue".to_string(), json!(3));
+        schema.links.push(SemanticLink {
+            id: "link:battle:positive".to_string(),
+            from: "battle:1".to_string(),
+            to: "macro:3".to_string(),
+            kind: "calls_battle_macro".to_string(),
+            confidence: Confidence::SourceBacked,
+            evidence: vec!["record:Data BD:1".to_string()],
+            metadata,
+        });
+
+        classify_ed3_reachability(&mut schema, &[trigger]);
+
+        let row = &schema.decoding.ed3_reachability[0];
+        assert!(!row.reachable);
+        assert_ne!(row.classification, "reachable-macro");
+    }
+
+    #[test]
+    fn door_item_macro_promotes_ed3_record() {
+        let trigger = ed3_trigger(
+            5,
+            vec![Action {
+                slot: 0,
+                raw_code: 1,
+                code: 1,
+                id: 12,
+                label: "Message".to_string(),
+                category: ActionCategory::UiText,
+                gosub: false,
+            }],
+        );
+        let mut schema = SemanticSchema::default();
+        schema.entities.push(macro_entity(5));
+        schema.links.push(macro_link(
+            "link:item:door",
+            "item:923",
+            5,
+            "calls_macro",
+        ));
+
+        classify_ed3_reachability(&mut schema, &[trigger]);
+
+        let row = &schema.decoding.ed3_reachability[0];
+        assert!(row.reachable);
+        assert_eq!(row.root_type.as_deref(), Some("door-item-macro"));
     }
 }

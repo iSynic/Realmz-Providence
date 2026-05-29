@@ -1,0 +1,441 @@
+{
+  "version": 5,
+  "generatedAt": "2026-05-29T00:00:00.000-05:00",
+  "family": "Data ED3",
+  "authorFacingName": "Extra Action Points",
+  "purpose": "Source-backed runtime reachability map for Extra Action Point rows. A row is callable when a scenario source file, script step, or runtime hook reaches loaddoor2(id).",
+  "storage": {
+    "file": "Data ED3",
+    "runtimeLoader": "loaddoor2(id)",
+    "recordShape": "struct door",
+    "recordBytes": 40,
+    "recordLayout": [
+      {
+        "field": "doorid",
+        "type": "int32"
+      },
+      {
+        "field": "landid",
+        "type": "char"
+      },
+      {
+        "field": "landx",
+        "type": "char"
+      },
+      {
+        "field": "landy",
+        "type": "char"
+      },
+      {
+        "field": "percent",
+        "type": "char"
+      },
+      {
+        "field": "code[8]",
+        "type": "short[8]"
+      },
+      {
+        "field": "id[8]",
+        "type": "short[8]"
+      }
+    ],
+    "sourceAnchors": [
+      "F:\\Realmz\\src\\realmz_orig\\structs.h:49",
+      "F:\\Realmz\\src\\realmz_orig\\flashrange-loaddoor.c:43"
+    ],
+    "byteRoundtripProof": {
+      "ledger": "docs/generated/scenario-byte-roundtrip-ledger.json",
+      "scenarioRoots": 87,
+      "allLengthsMultipleOfRecordBytes": true,
+      "observedSourceBytesRange": [320, 147840],
+      "allByteIdentical": true
+    }
+  },
+  "loaddoor2CallsiteAudit": {
+    "status": "source-audited",
+    "sourceSearch": "rg -n \"loaddoor2\\\\s*\\\\(\" F:\\\\Realmz\\\\src\\\\realmz_orig",
+    "totalRuntimeCallsites": 36,
+    "definitionAndPrototype": [
+      "F:\\Realmz\\src\\realmz_orig\\flashrange-loaddoor.c:43",
+      "F:\\Realmz\\src\\realmz_orig\\prototypes.h:112"
+    ],
+    "nonDispatcherCallsites": [
+      {
+        "anchor": "F:\\Realmz\\src\\realmz_orig\\getup.c:78",
+        "valueSource": "abs(battle.battlemacro)",
+        "rootId": "battle-negative-macro"
+      },
+      {
+        "anchor": "F:\\Realmz\\src\\realmz_orig\\killbody.c:116",
+        "valueSource": "monster[mon - 10].todoondeath",
+        "rootId": "monster-death-macro"
+      },
+      {
+        "anchor": "F:\\Realmz\\src\\realmz_orig\\killbody.c:124",
+        "valueSource": "todoque[performque - 1].doorid",
+        "rootId": "queued-monster-death-macro"
+      }
+    ],
+    "newlandDispatcherCallsites": [
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:38", "opcode": null, "valueSource": "modecode", "rootId": "direct-newland-mode" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:140", "opcode": 76, "valueSource": "extracode[4] only when extracode[3] threshold is nonzero and reached", "rootId": "edcd-branch-targets" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:178", "opcode": 77, "valueSource": "extracode[3 + reply] only when that side target is nonzero", "rootId": "edcd-branch-targets" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:269", "opcode": 78, "valueSource": "extracode[3 + reply] only when that side target is nonzero", "rootId": "edcd-branch-targets" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:596", "opcode": 126, "valueSource": "randrange(extracode[3], extracode[4])", "rootId": "edcd-branch-targets" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:598", "opcode": 126, "valueSource": "extracode[3]", "rootId": "edcd-branch-targets" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:750", "opcode": 107, "valueSource": "branchdoorcode", "rootId": "edcd-branch-targets" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1141", "opcode": 87, "valueSource": "extracode[3]", "rootId": "edcd-branch-targets" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1167", "opcode": 87, "valueSource": "extracode[4]", "rootId": "edcd-branch-targets" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1303", "opcode": 86, "valueSource": "resolved id only when nonzero", "rootId": "edcd-branch-targets" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1337", "opcode": 85, "valueSource": "randrange(extracode[1], extracode[2])", "rootId": "edcd-branch-targets" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1417", "opcode": 81, "valueSource": "extracode[3]", "rootId": "edcd-branch-targets" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1422", "opcode": 81, "valueSource": "extracode[4]", "rootId": "edcd-branch-targets" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1493", "opcode": 2, "valueSource": "extracode[2] when extracode[4] == 10; otherwise the same field is the pre-battle sound", "rootId": "edcd-branch-targets" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1538", "opcode": 3, "valueSource": "extracode[2]", "rootId": "edcd-branch-targets" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1736", "opcode": 7, "valueSource": "extracode[2]", "rootId": "opcode-7-action-data-patching" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1755", "opcode": 7, "valueSource": "extracode[2]", "rootId": "opcode-7-action-data-patching" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1789", "opcode": 7, "valueSource": "extracode[2]", "rootId": "opcode-7-action-data-patching" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2062", "opcode": 21, "valueSource": "extracode[3]", "rootId": "edcd-branch-targets" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2088", "opcode": 21, "valueSource": "extracode[4]", "rootId": "edcd-branch-targets" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2122", "opcode": 67, "valueSource": "extracode[3]", "rootId": "edcd-branch-targets" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2148", "opcode": 67, "valueSource": "extracode[4]", "rootId": "edcd-branch-targets" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2541", "opcode": 31, "valueSource": "extracode[3]", "rootId": "edcd-branch-targets" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2547", "opcode": 31, "valueSource": "extracode[4]", "rootId": "edcd-branch-targets" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2740", "opcode": 39, "valueSource": "id", "rootId": "opcode-39" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2756", "opcode": 40, "valueSource": "extracode[2]", "rootId": "edcd-branch-targets" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2906", "opcode": 72, "valueSource": "id", "rootId": "edcd-branch-targets" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3037", "opcode": 75, "valueSource": "id", "rootId": "edcd-branch-targets" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3363", "opcode": 55, "valueSource": "extracode[3]", "rootId": "edcd-branch-targets" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3369", "opcode": 55, "valueSource": "extracode[4]", "rootId": "edcd-branch-targets" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3440", "opcode": 56, "valueSource": "branchdoorcode", "rootId": "edcd-branch-targets" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3523", "opcode": 64, "valueSource": "extracode[3]", "rootId": "edcd-branch-targets" },
+      { "anchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3532", "opcode": 64, "valueSource": "extracode[4]", "rootId": "edcd-branch-targets" }
+    ],
+    "conclusion": "Every runtime loaddoor2 callsite is covered by one of the reachable roots above. Remaining ED3 work is promotion policy, UI terminology, validation, and writer safety, not an unknown runtime entry path."
+  },
+  "reachableRoots": [
+    {
+      "id": "direct-newland-mode",
+      "label": "Direct macro/newland entry",
+      "container": "Runtime call into newland(mode=1)",
+      "valueSource": "modecode",
+      "runtimePath": "newland(..., 1, modecode, ...) -> loaddoor2(modecode)",
+      "sourceAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\newland.c:33",
+        "F:\\Realmz\\src\\realmz_orig\\newland.c:38"
+      ],
+      "manualAnchors": [
+        "Divinity guide lines 6120-6128"
+      ],
+      "providenceUse": "Treat source-backed macro hook values as Extra Action Point references."
+    },
+    {
+      "id": "opcode-39",
+      "label": "Extend codes / jump to Extra AP",
+      "container": "Action Point or Extra Action Point script step",
+      "valueSource": "step ID",
+      "runtimePath": "opcode 39 -> loaddoor2(id)",
+      "sourceAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\newland.c:2738",
+        "F:\\Realmz\\src\\realmz_orig\\newland.c:2740"
+      ],
+      "manualAnchors": [
+        "Divinity guide lines 784-863"
+      ],
+      "providenceUse": "Use an Extra Action Point picker for opcode 39 ID values, not an EDCD picker."
+    },
+    {
+      "id": "edcd-branch-targets",
+      "label": "EDCD branch targets",
+      "container": "Opcode-specific five-field Data EDCD parameter rows",
+      "valueSource": "opcode-specific EDCD fields",
+      "runtimePath": "loadextracode(id) -> conditional branch -> loaddoor2(extra/action target)",
+      "sourceAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\misc.c:560",
+        "F:\\Realmz\\src\\realmz_orig\\newland.c:140",
+        "F:\\Realmz\\src\\realmz_orig\\newland.c:178",
+        "F:\\Realmz\\src\\realmz_orig\\newland.c:596",
+        "F:\\Realmz\\src\\realmz_orig\\newland.c:1417",
+        "F:\\Realmz\\src\\realmz_orig\\newland.c:2541",
+        "F:\\Realmz\\src\\realmz_orig\\newland.c:3363"
+      ],
+      "manualAnchors": [
+        "Divinity guide lines 784-863",
+        "Divinity guide lines 6371-6458"
+      ],
+      "providenceUse": "Use docs/generated/edcd-opcode-source-map.json to resolve which EDCD fields point to Extra Action Points versus messages, encounters, shops, or raw values."
+    },
+    {
+      "id": "opcode-7-action-data-patching",
+      "label": "Action data patching source row",
+      "container": "Opcode 7 Data EDCD parameter row",
+      "valueSource": "extracode[2]",
+      "runtimePath": "opcode 7 -> loadextracode(id) -> loaddoor2(extracode[2]) -> copy loaded Extra Action Point CODE/ID slots into an Action Point or encounter result row",
+      "sourceAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\newland.c:1729",
+        "F:\\Realmz\\src\\realmz_orig\\newland.c:1736",
+        "F:\\Realmz\\src\\realmz_orig\\newland.c:1755",
+        "F:\\Realmz\\src\\realmz_orig\\newland.c:1789"
+      ],
+      "manualAnchors": [
+        "Divinity guide lines 784-863"
+      ],
+      "providenceUse": "Treat field 2 as an Extra Action Point picker/source row, while labeling opcode 7 as patching/copying rather than an immediate branch."
+    },
+    {
+      "id": "global-start-hook",
+      "label": "Global start macro",
+      "container": "Global slot 0",
+      "valueSource": "globalmacro[0]",
+      "runtimePath": "new game/startup hook -> newland(..., 1, globalmacro[0], 0)",
+      "sourceAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\handlemenuchoice.c:1204",
+        "F:\\Realmz\\src\\realmz_orig\\handlemenuchoice.c:1211",
+        "F:\\Realmz\\src\\realmz_orig\\misc.c:510",
+        "F:\\Realmz\\src\\realmz_orig\\misc.c:512"
+      ],
+      "manualAnchors": [
+        "Divinity guide lines 689-691",
+        "Divinity guide lines 4304-4306",
+        "Divinity guide lines 6252-6259"
+      ],
+      "providenceUse": "Expose as Start Global Macro and validate the value as an Extra Action Point reference when nonzero."
+    },
+    {
+      "id": "global-death-hook",
+      "label": "Global death macro",
+      "container": "Global slot 1",
+      "valueSource": "globalmacro[1]",
+      "runtimePath": "party loss/death hook -> newland(..., 1, globalmacro[1], 0)",
+      "sourceAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\partyloss.c:15",
+        "F:\\Realmz\\src\\realmz_orig\\partyloss.c:23"
+      ],
+      "manualAnchors": [
+        "Divinity guide lines 689-691",
+        "Divinity guide lines 4304-4306",
+        "Divinity guide lines 6252-6259"
+      ],
+      "providenceUse": "Expose as Death Global Macro and validate the value as an Extra Action Point reference when nonzero."
+    },
+    {
+      "id": "global-quit-hook",
+      "label": "Global quit macro",
+      "container": "Global slot 2",
+      "valueSource": "globalmacro[2]",
+      "runtimePath": "end-game hook -> newland(..., 1, globalmacro[2], 0)",
+      "sourceAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\handlemenuchoice.c:1227",
+        "F:\\Realmz\\src\\realmz_orig\\handlemenuchoice.c:1235"
+      ],
+      "manualAnchors": [
+        "Divinity guide lines 689-691",
+        "Divinity guide lines 4304-4306",
+        "Divinity guide lines 6252-6259"
+      ],
+      "providenceUse": "Expose as Quit Global Macro and validate the value as an Extra Action Point reference when nonzero."
+    },
+    {
+      "id": "global-shop-hook",
+      "label": "Global shop macro",
+      "container": "Global slot 4",
+      "valueSource": "globalmacro[4]",
+      "runtimePath": "shop button flow -> newland(..., 1, globalmacro[4], 0)",
+      "sourceAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\buttonchoice.c:419",
+        "F:\\Realmz\\src\\realmz_orig\\buttonchoice.c:421"
+      ],
+      "manualAnchors": [
+        "Divinity guide lines 689-691",
+        "Divinity guide lines 4304-4306",
+        "Divinity guide lines 6252-6259"
+      ],
+      "providenceUse": "Expose as Shop Global Macro. Do not imply this runs for ordinary negative shop routing."
+    },
+    {
+      "id": "global-temple-hook",
+      "label": "Global temple macro",
+      "container": "Global slot 5",
+      "valueSource": "globalmacro[5]",
+      "runtimePath": "temple button flow -> newland(..., 1, globalmacro[5], 0)",
+      "sourceAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\buttonchoice.c:435",
+        "F:\\Realmz\\src\\realmz_orig\\buttonchoice.c:437"
+      ],
+      "manualAnchors": [
+        "Divinity guide lines 689-691",
+        "Divinity guide lines 4304-4306",
+        "Divinity guide lines 6252-6259"
+      ],
+      "providenceUse": "Expose as Temple Global Macro. Do not imply this runs for ordinary negative temple routing."
+    },
+    {
+      "id": "battle-negative-macro",
+      "label": "Battle macro",
+      "container": "Data BD battle.battlemacro",
+      "valueSource": "negative battlemacro value",
+      "runtimePath": "if battlemacro < 0 -> loaddoor2(abs(battlemacro)) -> newland(..., -1, ...)",
+      "sourceAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\structs.h:130",
+        "F:\\Realmz\\src\\realmz_orig\\getup.c:75",
+        "F:\\Realmz\\src\\realmz_orig\\getup.c:78",
+        "F:\\Realmz\\src\\realmz_orig\\newland.c:579"
+      ],
+      "manualAnchors": [
+        "Divinity guide lines 3025-3031"
+      ],
+      "providenceUse": "Treat negative battle macro values as Extra Action Point references. Preserve sign semantics."
+    },
+    {
+      "id": "monster-death-macro",
+      "label": "Monster death macro",
+      "container": "Data MD monster.todoondeath",
+      "valueSource": "todoondeath",
+      "runtimePath": "monster death -> loaddoor2(todoondeath) -> newland(..., -1, todoondeath, monster)",
+      "sourceAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\structs.h:169",
+        "F:\\Realmz\\src\\realmz_orig\\killbody.c:87",
+        "F:\\Realmz\\src\\realmz_orig\\killbody.c:116",
+        "F:\\Realmz\\src\\realmz_orig\\killbody.c:120"
+      ],
+      "manualAnchors": [
+        "Divinity guide lines 3196-3198"
+      ],
+      "providenceUse": "Treat nonzero monster death macro values as Extra Action Point references."
+    },
+    {
+      "id": "queued-monster-death-macro",
+      "label": "Queued monster death macro",
+      "container": "Runtime todo queue",
+      "valueSource": "queued todoondeath doorid",
+      "runtimePath": "queued death hook -> loaddoor2(todoque[].doorid) -> newland(..., -1, ...)",
+      "sourceAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\killbody.c:93",
+        "F:\\Realmz\\src\\realmz_orig\\killbody.c:124",
+        "F:\\Realmz\\src\\realmz_orig\\emptyque.c:9"
+      ],
+      "manualAnchors": [
+        "Divinity guide lines 3196-3198"
+      ],
+      "providenceUse": "Explain as runtime queue behavior, not a separate authored source file."
+    },
+    {
+      "id": "timed-encounter-door",
+      "label": "Timed encounter macro",
+      "container": "Data TD3 timeencounter.door",
+      "valueSource": "door",
+      "runtimePath": "timed encounter conditions pass -> newland(..., 1, dotime.door, 0)",
+      "sourceAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\structs.h:133",
+        "F:\\Realmz\\src\\realmz_orig\\textbox-time.c:228",
+        "F:\\Realmz\\src\\realmz_orig\\textbox-time.c:369"
+      ],
+      "manualAnchors": [
+        "Divinity guide lines 6120-6128"
+      ],
+      "providenceUse": "Treat timed encounter door values as Extra Action Point references."
+    },
+    {
+      "id": "random-rectangle-extra-aps",
+      "label": "Random rectangle extra Action Points",
+      "container": "Data RD/Data RDD randdoor[20][3] and randdoorpercent[20][3]",
+      "valueSource": "randdoor[t][0..2]",
+      "runtimePath": "random rectangle priority check -> chance check -> newland(..., 1, randdoor[t][tt], 0)",
+      "sourceAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\structs.h:210",
+        "F:\\Realmz\\src\\realmz_orig\\structs.h:211",
+        "F:\\Realmz\\src\\realmz_orig\\textbox-time.c:373",
+        "F:\\Realmz\\src\\realmz_orig\\textbox-time.c:389"
+      ],
+      "manualAnchors": [
+        "Divinity guide lines 351-365",
+        "Divinity guide lines 473-502",
+        "Divinity guide lines 5935-5937"
+      ],
+      "providenceUse": "Expose random rectangle extra AP fields with positive one-shot and negative repeat percent semantics."
+    },
+    {
+      "id": "hidden-encounter-extra-ap",
+      "label": "Hidden encounter button extra Action Point",
+      "container": "Runtime random rectangle data copied from Data RD/Data RDD",
+      "valueSource": "randdoor[t][0..2] where randlevel.percent[t] < 0",
+      "runtimePath": "encounter button hidden-encounter path -> select temp randdoor -> newland(..., 1, temp, 0)",
+      "sourceAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\buttonchoice.c:457",
+        "F:\\Realmz\\src\\realmz_orig\\buttonchoice.c:461",
+        "F:\\Realmz\\src\\realmz_orig\\buttonchoice.c:472"
+      ],
+      "manualAnchors": [
+        "Divinity guide lines 512-524",
+        "Divinity guide lines 5971-5977"
+      ],
+      "providenceUse": "Explain negative random rectangle percent as an Encounter-button hidden encounter macro path."
+    },
+    {
+      "id": "door-item-extra-ap",
+      "label": "Door item extra Action Point",
+      "container": "Data NI item records",
+      "valueSource": "item.sp5 when abs(item.type) == 23 or item.sp1 == -23",
+      "runtimePath": "item use -> itemused = -(item.sp5 + 100) -> newland(..., 1, abs(itemused) - 100, 0)",
+      "sourceAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\items.c:578",
+        "F:\\Realmz\\src\\realmz_orig\\items.c:592",
+        "F:\\Realmz\\src\\realmz_orig\\buttonchoice.c:545",
+        "F:\\Realmz\\src\\realmz_orig\\combatinfo-combatchoice.c:525",
+        "F:\\Realmz\\src\\realmz_orig\\encounters.c:1057",
+        "F:\\Realmz\\src\\realmz_orig\\encounters.c:1059"
+      ],
+      "manualAnchors": [
+        "Divinity guide item editor / action-point hub chapters, exact line anchor pending"
+      ],
+      "providenceUse": "Treat door-item sp5 values as Extra Action Point references in item pickers, validation, and reachability."
+    },
+    {
+      "id": "gosub-stack",
+      "label": "GOSUB stack",
+      "container": "Runtime script stack",
+      "valueSource": "negative script code branch, excluding special negative opcodes",
+      "runtimePath": "negative code -> push current script state -> execute target -> opcode 111 returns",
+      "sourceAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\newland.c:102",
+        "F:\\Realmz\\src\\realmz_orig\\newland.c:110",
+        "F:\\Realmz\\src\\realmz_orig\\stack.c:5",
+        "F:\\Realmz\\src\\realmz_orig\\stack.c:10"
+      ],
+      "manualAnchors": [
+        "Divinity guide lines 6120-6128"
+      ],
+      "providenceUse": "Model as macro/call behavior layered on top of Action Point and Extra Action Point execution, not as a separate storage file."
+    }
+  ],
+  "promotionRules": [
+    "Treat a Data ED3 row as callable when referenced by one of the reachable roots in this file or by an EDCD field classified as an Extra Action Point target in docs/generated/edcd-opcode-source-map.json.",
+    "Rows with no source-backed incoming path should remain advanced imported Extra AP data until a user edits, links, or promotes them.",
+    "Do not delete or compact Data ED3 rows automatically; fixed row numbers are meaningful references from other scenario files.",
+    "Keep raw storage names out of normal UI labels; use Extra Action Point, Macro, Global Macro, Battle Macro, Monster Macro, or Timed Encounter Macro as appropriate."
+  ],
+  "implementedSemanticLinkKinds": {
+    "extraActionPointCalls": [
+      "calls_macro",
+      "branches_to",
+      "branches_true",
+      "branches_false",
+      "branches_keep",
+      "branches_drop",
+      "branches_on_coward",
+      "branches_on_revived_loss"
+    ],
+    "battleMacroCalls": [
+      "calls_battle_macro with negative rawValue"
+    ],
+    "notes": [
+      "Branch link kinds only promote rows when the resolved target is a Data ED3 macro entity.",
+      "Recursive reachability follows the same Extra Action Point call link kinds from reachable macro action slots."
+    ]
+  },
+  "remainingQuestions": [
+    "Project-level reachability now computes incoming references from known source roots; remaining UI work is to label orphan imported rows without raw Data ED3 terminology in normal authoring views.",
+    "Divinity binary evidence may refine labels/defaults for reserved Global slots 3 and 6-29, but no Realmz source consumer is currently proven.",
+    "Validation now uses opcode-specific EDCD shape data for target kinds and guarded zero/no-branch cases; remaining work is broader fixture coverage for rare EDCD rows."
+  ]
+}

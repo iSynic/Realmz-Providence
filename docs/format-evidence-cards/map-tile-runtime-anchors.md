@@ -22,7 +22,7 @@ This note narrows the Map Tile Intelligence card from "Data Solids probably expl
 
 ## Proven Runtime Split
 
-`Data Solids` should not be treated as Divinity's whole "Edit Land Tiles" attribute table. It is a scenario-local solidity override for special negative values. The normal tile semantics shown in Divinity's land tile editor map to `mapstats` fields loaded from standard/custom landlook `* BD` data.
+`Data Solids` should not be treated as Divinity's whole "Edit Land Tiles" attribute table. It is a scenario-local solidity override for special negative values. The normal tile semantics shown in Divinity's land tile editor map to `mapstats` fields loaded from standard/custom landlook `* BD` data. Providence now treats the 1024-byte `Data Solids` table as writer-owned by regenerating it from decoded special-tile solidity profiles.
 
 Providence should therefore model tile attributes in layers:
 
@@ -63,7 +63,7 @@ Current Oracle output `F:\Realmz\out_win_clang\Data Files` contains these standa
 - `Data Snow BD`
 - `Combat Data BD`
 
-Runtime consumes the first 8,044 bytes as 201 `mapstats` records plus `basetile` and `basescale`. The remaining 60 bytes in these files need ownership proof before Providence writes landlook attribute files.
+Runtime consumes the first 8,044 bytes as 201 `mapstats` records plus `basetile` and `basescale` in the source-audited load path. The remaining 60 bytes align with Divinity's Edit Land Tiles range metadata: ten 6-byte slots of `first tile`, `last tile`, and a reserved short. In observed custom landlooks the first four slots are Mountain, Open, Rubble, and House ranges. The common tail encodes Mountain `62..85`, Open `155..158`, Rubble `159..167`, and House `190..200`. Providence now has a parser/test for that tail, but still keeps landlook attribute writing gated until Divinity save behavior and resource packaging are fixture-backed.
 
 ## Observed Corpus `Data Solids`
 
@@ -88,6 +88,7 @@ Immediate editor-unblocking tasks:
 - Add a `mapstats` parser for standard landlook `* BD` files from bundled Realmz data.
 - Extend `TileAttributeProfile` with two evidence sources: `mapstats` and `Data Solids`.
 - Group palette values by source-backed `mapstats` flags for standard tiles and by `Data Solids` for special negative tiles.
+- Keep `Data Solids` export byte-for-byte reproducible from the parsed 1024 one-byte table.
 - Keep landlook attribute writing disabled until Divinity binary write routines or field fixtures prove the 60 trailing bytes and custom landlook behavior.
 
 ## Divinity Work Remaining

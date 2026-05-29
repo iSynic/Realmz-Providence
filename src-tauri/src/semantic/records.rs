@@ -72,6 +72,33 @@ pub(super) fn add_fixed_collections(
         "monster",
         parse_monster,
     );
+    parse_fixed_collection(
+        schema,
+        buffers,
+        "Data MD1",
+        210,
+        "alternate-monster",
+        "monster-set:1",
+        parse_monster,
+    );
+    parse_fixed_collection(
+        schema,
+        buffers,
+        "Data MD-1",
+        210,
+        "alternate-monster",
+        "monster-set:-1",
+        parse_monster,
+    );
+    parse_fixed_collection(
+        schema,
+        buffers,
+        "Data DES",
+        256,
+        "monster-description",
+        "monster-description",
+        parse_monster_description,
+    );
     parse_fixed_collection(schema, buffers, "Data SD", 3002, "shop", "shop", parse_shop);
     parse_fixed_collection(
         schema,
@@ -81,6 +108,15 @@ pub(super) fn add_fixed_collections(
         "message",
         "message",
         parse_message,
+    );
+    parse_fixed_collection(
+        schema,
+        buffers,
+        "Data OD",
+        25,
+        "option-label",
+        "option-label",
+        parse_option_label,
     );
     parse_map_record_collection(schema, buffers, map_names);
     parse_fixed_collection(
@@ -371,6 +407,18 @@ fn parse_item_collection(schema: &mut SemanticSchema, buffers: &BTreeMap<String,
             .get("sound")
             .and_then(Value::as_i64)
             .unwrap_or(0);
+        let item_type = record_summary
+            .get("type")
+            .and_then(Value::as_i64)
+            .unwrap_or_default();
+        let special1 = record_summary
+            .get("special1")
+            .and_then(Value::as_i64)
+            .unwrap_or_default();
+        let special5 = record_summary
+            .get("special5")
+            .and_then(Value::as_i64)
+            .unwrap_or(-1);
         schema.records.push(SemanticRecord {
             id: record_id.clone(),
             source: source_id(source),
@@ -414,6 +462,22 @@ fn parse_item_collection(schema: &mut SemanticSchema, buffers: &BTreeMap<String,
                 Confidence::SourceBacked,
                 vec![record_id.clone()],
                 summary([("field", json!("sound"))]),
+            );
+        }
+        if (item_type.abs() == 23 || special1 == -23) && special5 >= 0 {
+            push_link(
+                schema,
+                &entity_id,
+                &format!("macro:{special5}"),
+                "calls_macro",
+                Confidence::SourceBacked,
+                vec![record_id.clone()],
+                summary([
+                    ("field", json!("special5")),
+                    ("itemType", json!(item_type)),
+                    ("special1", json!(special1)),
+                    ("reason", json!("door item activates an Extra Action Point")),
+                ]),
             );
         }
     }
@@ -624,16 +688,30 @@ fn add_battle_links(schema: &mut SemanticSchema) {
         for (field, kind) in [
             ("messageBefore", "shows_message_before"),
             ("messageAfter", "shows_message_after"),
-            ("battleMacro", "calls_battle_macro"),
         ] {
             if let Some(id) = battle.summary.get(field).and_then(Value::as_i64) {
                 if id != 0 {
-                    let target = if field == "battleMacro" {
-                        format!("macro:{id}")
-                    } else {
-                        format!("message:{id}")
-                    };
+                    let target = format!("message:{id}");
                     push_link_if_known(schema, &known, &battle.id, &target, kind);
+                }
+            }
+        }
+        if let Some(id) = battle.summary.get("battleMacro").and_then(Value::as_i64) {
+            if id != 0 {
+                let target = format!("macro:{}", id.abs());
+                if known.contains(&target) {
+                    push_link(
+                        schema,
+                        &battle.id,
+                        &target,
+                        "calls_battle_macro",
+                        Confidence::SourceBacked,
+                        vec![battle
+                            .record_ref
+                            .clone()
+                            .unwrap_or_else(|| battle.id.clone())],
+                        summary([("rawValue", json!(id))]),
+                    );
                 }
             }
         }
@@ -1260,6 +1338,31 @@ fn parse_message(buffer: &[u8], id: usize) -> BTreeMap<String, Value> {
     ])
 }
 
+fn parse_monster_description(buffer: &[u8], id: usize) -> BTreeMap<String, Value> {
+    let text = decode_pascal_text(buffer);
+    summary([
+        ("id", json!(id)),
+        ("length", json!(buffer.first().copied().unwrap_or(0))),
+        ("text", json!(text)),
+        ("preview", json!(text.chars().take(96).collect::<String>())),
+    ])
+}
+
+fn parse_option_label(buffer: &[u8], id: usize) -> BTreeMap<String, Value> {
+    let text = decode_pascal_text(buffer);
+    let shortcut = text
+        .chars()
+        .find(|value| !value.is_whitespace())
+        .map(|value| value.to_ascii_lowercase().to_string());
+    summary([
+        ("id", json!(id)),
+        ("length", json!(buffer.first().copied().unwrap_or(0))),
+        ("text", json!(text)),
+        ("preview", json!(text.chars().take(24).collect::<String>())),
+        ("shortcut", json!(shortcut)),
+    ])
+}
+
 fn parse_map_record(
     buffer: &[u8],
     id: usize,
@@ -1719,4 +1822,48 @@ fn add_trailing_diagnostic(
             ("trailingBytes", json!(bytes % record_bytes)),
         ]),
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn entity(id: &str, entity_type: &str, summary: BTreeMap<String, Value>) -> SemanticEntity {
+        SemanticEntity {
+            id: id.to_string(),
+            entity_type: entity_type.to_string(),
+            label: id.to_string(),
+            edit_state: SemanticEditState::InspectOnly,
+            confidence: Confidence::SourceBacked,
+            source: "test".to_string(),
+            record_ref: Some(format!("record:{id}")),
+            byte_range: None,
+            editable: false,
+            summary,
+        }
+    }
+
+    #[test]
+    fn negative_battle_macro_links_to_positive_ed3_row() {
+        let mut schema = SemanticSchema::default();
+        schema.entities.push(entity(
+            "battle:3",
+            "battle",
+            summary([("battleMacro", json!(-7)), ("monsters", json!([]))]),
+        ));
+        schema
+            .entities
+            .push(entity("macro:7", "ed3-action-record", BTreeMap::new()));
+
+        add_battle_links(&mut schema);
+
+        let link = schema
+            .links
+            .iter()
+            .find(|link| link.kind == "calls_battle_macro")
+            .expect("negative battle macro should link to the positive ED3 row");
+        assert_eq!(link.from, "battle:3");
+        assert_eq!(link.to, "macro:7");
+        assert_eq!(link.metadata.get("rawValue"), Some(&json!(-7)));
+    }
 }

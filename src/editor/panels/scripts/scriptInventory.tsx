@@ -105,7 +105,7 @@ export function triggerVisibleForEditor(project: Project | null, trigger: Trigge
 export function scriptPanelTitle(activeEditor: string) {
   if (activeEditor === "action-points") return "Action Points / GOSUBs";
   if (activeEditor === "macros") return "Macro Editor";
-  if (activeEditor === "ed3-evidence") return "Imported ED3 Rows";
+  if (activeEditor === "ed3-evidence") return "Imported Extra Actions";
   if (activeEditor === "global-macros") return "Global Macro Editor";
   if (activeEditor === "quests") return "Quest Script Links";
   return "Triggers And Macros";
@@ -148,7 +148,7 @@ export function actionSummary(action?: Action, slotEntity?: SemanticEntity) {
   if (!action) return "empty";
   const edcdUsage = slotEntity?.summary.edcdUsage as { summary?: string; rowId?: number; shape?: string } | undefined;
   if (edcdUsage?.summary) {
-    const prefix = edcdUsage.rowId != null ? `EDCD ${edcdUsage.rowId}` : "EDCD";
+    const prefix = edcdUsage.rowId != null ? `Parameter row ${edcdUsage.rowId}` : "Parameters";
     return `${action.rawCode} / ${action.id} · ${prefix}: ${edcdUsage.summary}`;
   }
   return `${action.rawCode} / ${action.id} · ${action.label}${action.gosub ? " · GOSUB" : ""}`;

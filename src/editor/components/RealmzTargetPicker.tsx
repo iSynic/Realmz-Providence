@@ -105,25 +105,19 @@ export function targetPickerConfig(opcode: number) {
     4: { label: "Simple Encounter", hint: "Select a simple encounter record.", recordType: "simpleEncounter" },
     5: { label: "Complex Encounter", hint: "Select a complex encounter record.", recordType: "complexEncounter" },
     6: { label: "Shop Target", hint: "Select a shop record.", recordType: "shop" },
-    8: { label: "Macro Target", hint: "Select a reusable Data ED3 macro." },
     9: { label: "Sound Resource", hint: "Select a playable sound resource or managed sound asset." },
     10: { label: "Treasure Target", hint: "Select a treasure record.", recordType: "treasure" },
-    19: { label: "Message Target", hint: "Select the scenario message this action displays.", recordType: "message" },
     27: { label: "Picture Resource", hint: "Select a picture resource or managed picture asset." },
     29: { label: "Map Reference", hint: "Select a map or map record." },
     35: { label: "Simple Encounter", hint: "Select the simple encounter this action mutates.", recordType: "simpleEncounter" },
-    40: { label: "Macro Target", hint: "Select a reusable Data ED3 macro." },
+    39: { label: "Extra Action Point", hint: "Select the Extra Action Point this action runs." },
     44: { label: "Complex Encounter", hint: "Select the complex encounter this action mutates.", recordType: "complexEncounter" },
     47: { label: "Quest Flag", hint: "Select a quest flag to write.", recordType: "questLabel" },
     49: { label: "Shop Target", hint: "Select a shop record.", recordType: "shop" },
-    51: { label: "Shop Target", hint: "Select a shop record.", recordType: "shop" },
-    55: { label: "Macro Target", hint: "Select a reusable Data ED3 macro." },
     62: { label: "Message Target", hint: "Select the scenario message this action displays.", recordType: "message" },
-    64: { label: "Macro Target", hint: "Select a reusable Data ED3 macro." },
     71: { label: "Message Target", hint: "Select the scenario message this action displays.", recordType: "message" },
     97: { label: "Map Record", hint: "Select a map record." },
     104: { label: "Simple Encounter", hint: "Select the simple encounter this action mutates.", recordType: "simpleEncounter" },
-    106: { label: "Map Record", hint: "Select the map record this action mutates." },
     127: { label: "Monster Target", hint: "Select a monster record.", recordType: "monster" }
   };
   return configs[code] ?? null;
@@ -200,7 +194,7 @@ export function targetOptionsForOpcode(project: Project | null, opcode: number, 
       options.push({
         key: `macro:${trigger.recordIndex}`,
         value: trigger.recordIndex,
-        label: `Macro ${trigger.recordIndex}`,
+        label: `Extra Action Point ${trigger.recordIndex}`,
         detail: `${trigger.actions.length} action slot(s)`,
         entity: selectEntityFromId(`macro:${trigger.recordIndex}`)
       });
@@ -336,35 +330,29 @@ export function targetSemanticTypes(code: number) {
     4: ["simple encounter"],
     5: ["complex encounter"],
     6: ["shop"],
-    8: ["macro"],
     9: ["sound", "resource"],
     10: ["treasure"],
-    19: ["message"],
     27: ["picture", "resource"],
     29: ["map", "map record"],
     35: ["simple encounter"],
-    40: ["macro"],
+    39: ["macro"],
     44: ["complex encounter"],
     47: ["quest flag"],
     48: ["battle"],
     49: ["shop"],
-    51: ["shop"],
-    55: ["macro"],
     56: ["battle"],
     62: ["message"],
-    64: ["macro"],
     71: ["message"],
     97: ["map", "map record"],
     104: ["simple encounter"],
     107: ["battle"],
-    106: ["map", "map record"],
     127: ["monster"]
   };
   return types[code] ?? [];
 }
 
 export function isDirectMacroOpcode(code: number) {
-  return code === 8 || code === 40 || code === 55 || code === 64;
+  return code === 39;
 }
 
 function numericTargetValue(entity: SemanticEntity) {

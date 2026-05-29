@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-29T00:00:00.000-05:00",
+  "source": "Local Divinity CD scenario files plus Realmz loadland-loadpixmap.c",
+  "filePattern": "Data Custom * BD",
+  "observedFiles": 25,
+  "observedLengthBytes": 8104,
+  "decodedLayout": {
+    "mapstatsRecords": 201,
+    "mapstatsRecordBytes": 40,
+    "baseTileOffset": 8040,
+    "baseScaleOffset": 8042,
+    "rangeTailOffset": 8044,
+    "rangeTailBytes": 60,
+    "rangeSlotBytes": 6,
+    "rangeSlotLayout": ["firstTile", "lastTile", "reserved"]
+  },
+  "knownSlots": [
+    { "slot": 0, "label": "Mountain range" },
+    { "slot": 1, "label": "Open range" },
+    { "slot": 2, "label": "Rubble range" },
+    { "slot": 3, "label": "House range" }
+  ],
+  "patterns": [
+    {
+      "count": 18,
+      "ranges": [
+        { "slot": 0, "first": 62, "last": 85, "reserved": 0 },
+        { "slot": 1, "first": 155, "last": 158, "reserved": 0 },
+        { "slot": 2, "first": 159, "last": 167, "reserved": 0 },
+        { "slot": 3, "first": 190, "last": 200, "reserved": 0 }
+      ],
+      "example": "F:\\Divinity CD\\Divinity CD\\Install Options\\3rd Party Scenarios\\Hax\\Data Custom 1 BD"
+    },
+    {
+      "count": 2,
+      "ranges": [
+        { "slot": 0, "first": 0, "last": 0, "reserved": 0 },
+        { "slot": 1, "first": 142, "last": 148, "reserved": 0 }
+      ],
+      "example": "F:\\Divinity CD\\Divinity CD\\Install Options\\3rd Party Scenarios\\Spires of Steel\\Data Custom 2 BD"
+    },
+    {
+      "count": 2,
+      "ranges": [
+        { "slot": 0, "first": 62, "last": 85, "reserved": 0 },
+        { "slot": 1, "first": 155, "last": 158, "reserved": 0 },
+        { "slot": 2, "first": 156, "last": 167, "reserved": 0 },
+        { "slot": 3, "first": 190, "last": 200, "reserved": 0 }
+      ],
+      "example": "F:\\Divinity CD\\Divinity CD\\Realmz 8.0.7 Beta\\Scenarios\\Half Truth\\Data Custom 2 BD"
+    },
+    {
+      "count": 2,
+      "ranges": [
+        { "slot": 0, "first": 200, "last": 200, "reserved": 0 },
+        { "slot": 1, "first": 1, "last": 7, "reserved": 0 },
+        { "slot": 2, "first": 15, "last": 18, "reserved": 0 },
+        { "slot": 3, "first": 190, "last": 200, "reserved": 0 }
+      ],
+      "example": "F:\\Divinity CD\\Divinity CD\\Install Options\\3rd Party Scenarios\\Spires of Steel\\Data Custom 1 BD"
+    },
+    {
+      "count": 1,
+      "ranges": [],
+      "example": "F:\\Divinity CD\\Divinity CD\\Realmz 8.0.7 Beta\\Scenarios\\Half Truth\\Data Custom 1 BD"
+    }
+  ],
+  "writerStatus": "Do not synthesize or drop these bytes; preserve all ten 6-byte slots until Divinity save fixtures prove edit ownership."
+}

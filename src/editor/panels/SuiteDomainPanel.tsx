@@ -27,7 +27,7 @@ const DOMAIN_CONFIG: Record<EditorTab, { title: string; subtitle: string; editor
     editors: [
       { id: "action-points", label: "Action Points / GOSUBs", entityTypes: ["trigger", "action-slot"] },
       { id: "macros", label: "Macros", entityTypes: ["macro"], createType: "macro" },
-      { id: "ed3-evidence", label: "Imported ED3 Rows", entityTypes: ["ed3-action-record"] },
+      { id: "ed3-evidence", label: "Imported Extra Actions", entityTypes: ["ed3-action-record"] },
       { id: "global-macros", label: "Global Macros", entityTypes: ["global-macro"], createType: "global-macro" },
       { id: "quests", label: "Quests", entityTypes: ["quest flag"], createType: "quest flag" }
     ]

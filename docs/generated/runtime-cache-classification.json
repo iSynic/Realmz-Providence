@@ -28,9 +28,9 @@
     {
       "cache": "scenario Data CS",
       "sourceFiles": ["scenario marker/security code segments"],
-      "classification": "understood-runtime-writer-gated",
+      "classification": "understood-runtime",
       "realmzAnchors": ["F:\\Realmz\\src\\realmz_orig\\main.c:2031", "F:\\Realmz\\src\\realmz_orig\\loadsavedgame.c:772"],
-      "editorPolicy": "Scenario registration/security support file; preserve and inspect under Security/Registration until Divinity writer behavior is proven."
+      "editorPolicy": "Scenario registration/security support file; Providence parses and writes it raw-preserved, but normal Security/Registration editing stays hidden until Divinity writer behavior is proven."
     },
     {
       "cache": "CT",

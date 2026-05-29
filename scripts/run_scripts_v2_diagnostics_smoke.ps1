@@ -29,10 +29,10 @@ $exportDir = Join-Path $RunRoot "exported-Tutorial"
 $commands = @(
   @{ kind = "deleteTrigger"; label = "Clear AP 6 for diagnostics"; triggerId = "Data DD:0:6" },
   @{ kind = "createActionPoint"; label = "Reuse AP 6 at 24,24"; levelType = "land"; levelIndex = 0; x = 24; y = 24; displayName = "Diagnostics AP" },
-  @{ kind = "updateEdcdRow"; label = "Create EDCD row with missing battle/message"; rowId = 777; values = @(9999, 0, 0, 8888, 0) },
-  @{ kind = "updateActionSlot"; label = "AP slot uses missing EDCD targets"; triggerId = "Data DD:0:6"; slot = 0; rawCode = 2; id = 777 },
-  @{ kind = "createTargetRecord"; label = "Create encounter with missing EDCD targets"; recordType = "simpleEncounter"; id = 77 },
-  @{ kind = "updateSimpleEncounterRecord"; label = "Encounter row uses missing EDCD targets"; id = 77; changes = @{ prompt = 0; canBackOut = $true; maxTimes = 1; casteSuccess = 0; choiceResults = @(0, 0, 0, 0); texts = @("Diagnostics", "", "", ""); actions = @(@{ slot = 0; rawCode = 2; id = 777 }) } }
+  @{ kind = "updateEdcdRow"; label = "Create parameter row with missing battle/message"; rowId = 777; values = @(9999, 0, 0, 8888, 0) },
+  @{ kind = "updateActionSlot"; label = "AP slot uses missing parameter targets"; triggerId = "Data DD:0:6"; slot = 0; rawCode = 2; id = 777 },
+  @{ kind = "createTargetRecord"; label = "Create encounter with missing parameter targets"; recordType = "simpleEncounter"; id = 77 },
+  @{ kind = "updateSimpleEncounterRecord"; label = "Encounter row uses missing parameter targets"; id = 77; changes = @{ prompt = 0; canBackOut = $true; maxTimes = 1; casteSuccess = 0; choiceResults = @(0, 0, 0, 0); texts = @("Diagnostics", "", "", ""); actions = @(@{ slot = 0; rawCode = 2; id = 777 }) } }
 )
 
 $script = @{
@@ -57,12 +57,12 @@ $script = @{
       @{ recordType = "simpleEncounter"; id = 77; fields = @{ "actions.0.rawCode" = 2; "actions.0.id" = 777 } }
     )
     scriptDiagnosticsContain = @(
-      @{ triggerId = "Data DD:0:6"; text = "EDCD battleLow target is missing" },
-      @{ triggerId = "Data DD:0:6"; text = "EDCD message target is missing" }
+      @{ triggerId = "Data DD:0:6"; text = "Missing battle number target" },
+      @{ triggerId = "Data DD:0:6"; text = "Missing string to display before battle target" }
     )
     targetDiagnosticsContain = @(
-      @{ recordType = "simpleEncounter"; id = 77; text = "EDCD battleLow target is missing" },
-      @{ recordType = "simpleEncounter"; id = 77; text = "EDCD message target is missing" }
+      @{ recordType = "simpleEncounter"; id = 77; text = "Missing battle number target" },
+      @{ recordType = "simpleEncounter"; id = 77; text = "Missing string to display before battle target" }
     )
     exportContains = @("Data DD", "Data EDCD", "Data ED")
   }

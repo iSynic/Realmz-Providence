@@ -44,6 +44,7 @@ Divinity generally presents source editors: Land Editor, Dungeon Editor, Shops, 
 - Core source files appear in all scenarios.
 - Runtime/generated files appear variably; `Data MENU` appears in 28/44 scenarios in the generated summaries.
 - The byte-roundtrip audit sees scenario `Data CS` in 81/87 visible roots at 316 bytes. That file is registration/security support data, not the runtime shop cache.
+- Providence reads and writes scenario `Data CS` through the same raw-preserving 316-byte scenario-shell codec used for marker/main scenario files, but does not expose security editing in the normal UI.
 - Cache/source conflicts should be tracked as diagnostics, not resolved by editing caches first.
 
 ## Providence Follow-Up
@@ -52,6 +53,7 @@ Divinity generally presents source editors: Land Editor, Dungeon Editor, Shops, 
 - Generate `runtime-cache-classification.json` and keep it updated.
 - In the UI, name cache data as imported/runtime data under Advanced Details.
 - Prefer source editors for shops, encounters, timed encounters, thief encounters, maps, and scripts.
+- Keep scenario `Data CS` under advanced Security/Registration details until Divinity's Set Security writer behavior is fixture-backed.
 
 ## Writer Gate
 

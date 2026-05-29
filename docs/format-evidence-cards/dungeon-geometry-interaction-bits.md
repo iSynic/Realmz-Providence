@@ -23,7 +23,7 @@ Dungeon maps become authorable as walls, doors, stairs, secret/pass-through cell
 - `Data DL` uses the same 90 x 90 signed-short grid size as land, but values are dungeon bitfields.
 - Current render model maps high bits to top-down dungeon sprites and treats secret/pass-through as separate semantics needing fixtures.
 - `Data RDD` shares the 644-byte random metadata layout with dungeon-specific meaning. See `random-level-runtime-anchors.md` for the source-backed shared `randlevel` layout and rectangle semantics.
-- The first source-backed bit taxonomy is now recorded in `dungeon-runtime-anchors.md`: walls, door orientation bits, stairs, pillars, revealed/hidden state, directional secret/pass-through bits, and note/interaction evidence.
+- The first source-backed bit taxonomy is now recorded in `dungeon-runtime-anchors.md`: walls, door orientation bits, stairs, pillars, dungeon notes, Action Point trigger markers, revealed/hidden state, directional secret/pass-through bits, visible arches, and combat-map conversion masks.
 
 ## Corpus Evidence
 
@@ -34,7 +34,8 @@ Dungeon maps become authorable as walls, doors, stairs, secret/pass-through cell
 
 - Follow-up: `parser-writer`, `editor-ui`, `validation`.
 - Add a dungeon cell semantic model with named bits, raw bit visibility, and preservation.
-- Start with named primitives for wall, door orientation, stair, hidden visual, revealed secret marker, and directional secret/pass-through.
+- Start with named primitives for wall, door orientation, stair, hidden visual, revealed secret marker, visible arch, Action Point trigger marker, dungeon note marker, and directional secret/pass-through.
+- Prefer dedicated workflows for Action Point and note markers instead of exposing them only as raw dungeon paint bits.
 - Add fixtures for known secret passage, visible door, hidden door, stair, and blocked wall examples.
 
 ## Acceptance Evidence

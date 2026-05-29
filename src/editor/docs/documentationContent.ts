@@ -293,7 +293,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
             facts: ["callable"]
           },
           {
-            title: "Imported ED3 Rows",
+            title: "Extra AP Data",
             body: "Imported rows that are not callable macros yet. Promote or duplicate them before using as authored behavior.",
             facts: ["inspect first"]
           }

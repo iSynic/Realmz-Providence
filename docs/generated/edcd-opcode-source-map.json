@@ -1,0 +1,438 @@
+{
+  "version": 11,
+  "generatedAt": "2026-05-29T00:00:00.000-05:00",
+  "source": "Realmz newland.c top-level dispatcher audit against Providence EDCD shape tables.",
+  "loaderAnchors": {
+    "dataEdcd": "F:\\Realmz\\src\\realmz_orig\\misc.c:560",
+    "dataEd3": "F:\\Realmz\\src\\realmz_orig\\flashrange-loaddoor.c:43"
+  },
+  "coverage": {
+    "realmzSourceLoadextracodeCases": 70,
+    "providenceActionShapeCases": 70,
+    "missingInProvidence": [],
+    "extraInProvidence": [],
+    "guard": "src-tauri/src/semantic/opcodes.rs::source_backed_edcd_shape_corrections_match_dispatcher",
+    "byteRoundtripProof": {
+      "ledger": "docs/generated/scenario-byte-roundtrip-ledger.json",
+      "scenarioRoots": 87,
+      "allLengthsMultipleOfRecordBytes": true,
+      "recordBytes": 10,
+      "observedSourceBytesRange": [40, 648630],
+      "allByteIdentical": true
+    }
+  },
+  "corrections": [
+    {
+      "opcode": 15,
+      "shape": "damage-heal",
+      "status": "corrected-link-semantics",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1934",
+      "fields": ["multiplier", "low", "high", "sound", "message"],
+      "runtimeNote": "Realmz displays abs(extracode[4]) as the message target, so negative values are still message references."
+    },
+    {
+      "opcode": 16,
+      "shape": "damage-heal",
+      "status": "corrected-link-semantics",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1947",
+      "fields": ["multiplier", "low", "high", "sound", "message"],
+      "runtimeNote": "Realmz displays abs(extracode[4]) as the message target, so negative values are still message references."
+    },
+    {
+      "opcode": 19,
+      "shape": "random-message",
+      "status": "added-edcd-shape",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1998",
+      "fields": ["messageLow", "messageHigh", "unused", "unused", "unused"],
+      "runtimeNote": "Realmz displays one random Data SD2 message from messageLow..messageHigh and does not call sound() for this opcode."
+    },
+    {
+      "opcode": 20,
+      "shape": "teleport",
+      "status": "corrected-field-semantics",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2013",
+      "fields": ["levelOrKeep", "xOrKeep", "yOrKeep", "sound", "message"],
+      "runtimeNote": "Realmz leaves level/x/y unchanged when the corresponding field is -1; opcode 45 uses the same EDCD shape for teleport-only behavior."
+    },
+    {
+      "opcode": 30,
+      "shape": "ability-check-pick",
+      "status": "corrected-field-semantics",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2421",
+      "fields": ["signedAbilityOrAttribute", "adjustment", "sourceSet", "attributeFlag", "unused"],
+      "runtimeNote": "Realmz uses abs(extracode[0]) for the ability/attribute index. A negative value reverses the picked-character result after the check."
+    },
+    {
+      "opcode": 2,
+      "shape": "battle",
+      "status": "corrected-field-semantics",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1444",
+      "fields": ["battleLow", "battleHigh", "soundOrReviveLossMacro", "message", "revivePartyFlag"],
+      "runtimeNote": "Field 2 is normally the optional pre-battle sound. When field 4 equals 10, Realmz revives the party after a loss and then calls loaddoor2(field 2), so the same field is the Extra Action Point to run on revived losses. Divinity warns not to specify an optional sound for revive battles."
+    },
+    {
+      "opcode": 7,
+      "shape": "action-data-patching",
+      "status": "confirmed-extra-ap-copy-source",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1729",
+      "fields": ["levelOrCache", "targetRecord", "macro", "levelKind", "resultSlot"],
+      "runtimeNote": "Realmz loads Extra Action Point row field 2 with loaddoor2(), then copies that row's eight CODE/ID slots into a simple encounter result row, complex encounter result row, or Action Point record on a loaded land/dungeon level. This makes field 2 a source-backed Extra Action Point reference even though opcode 7 mutates/copies records instead of branching immediately."
+    },
+    {
+      "opcode": 8,
+      "shape": null,
+      "status": "confirmed-same-map-action-point-copy",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1810",
+      "fields": ["actionPointRecord"],
+      "runtimeNote": "Realmz does not call loadextracode() for opcode 8. It copies door[id].code/id from the currently loaded map into the active Action Point, so this is a same-map Action Point copy and not a Data ED3 macro/Extra AP call."
+    },
+    {
+      "opcode": 13,
+      "shape": "trigger-mutation",
+      "status": "confirmed-runtime-mutation-not-macro",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1874",
+      "fields": ["level", "singleTrigger", "percent", "rangeStartWithSign", "rangeEnd"],
+      "runtimeNote": "Realmz sets one Action Point percent and/or a range of Action Point percent fields on the selected land/dungeon level. This EDCD row mutates Action Point state and does not call Data ED3."
+    },
+    {
+      "opcode": 37,
+      "shape": "dungeon-move",
+      "status": "corrected-field-semantics",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2655",
+      "fields": ["mode", "level", "x", "y", "signedHeading"],
+      "runtimeNote": "Realmz uses the row to move between dungeon/land views; fields 3 and 4 are coordinate/heading data, not sound/message data."
+    },
+    {
+      "opcode": 33,
+      "shape": "gold",
+      "status": "corrected-field-semantics",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2566",
+      "fields": ["signedAmount", "failureMarker", "unused", "unused", "unused"],
+      "runtimeNote": "Realmz takes positive amounts directly and uses abs(amount) through its alternate path for zero/negative amounts; failureMarker -1 enters the hard-coded failure branch."
+    },
+    {
+      "opcode": 39,
+      "shape": null,
+      "status": "removed-edcd-shape",
+      "before": "extended-door-codes",
+      "after": "direct Extra Action Point row via loaddoor2(id)",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2738"
+    },
+    {
+      "opcode": 40,
+      "shape": "party-condition-branch",
+      "status": "added-edcd-shape",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2745",
+      "fields": ["expectedState", "branchMode", "branchTarget", "condition", "unused"]
+    },
+    {
+      "opcode": 43,
+      "shape": "condition",
+      "status": "corrected-link-semantics",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2831",
+      "fields": ["scope", "condition", "durationOrDelta", "sound", "unused"],
+      "runtimeNote": "Realmz plays extracode[3] when applying the condition to each eligible character."
+    },
+    {
+      "opcode": 51,
+      "shape": "shop-mutation",
+      "status": "added-edcd-shape",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3174",
+      "fields": ["shop", "inflationDelta", "item", "stockDelta", "unused"]
+    },
+    {
+      "opcode": 54,
+      "shape": "timed-encounter-mutation",
+      "status": "corrected-field-semantics",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3289",
+      "fields": ["timedEncounter", "percentOrKeep", "incrementOrKeep", "resetDayFlag", "dayOffsetOrKeep"],
+      "runtimeNote": "Realmz uses -1 to keep percent, increment, and day-offset fields unchanged; resetDayFlag resets the encounter day to the current game day before applying the offset."
+    },
+    {
+      "opcode": 48,
+      "shape": "selective-battle",
+      "status": "split-from-generic-battle-variant",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3069",
+      "fields": ["battleLow", "battleHigh", "sound", "message", "treasure"],
+      "runtimeNote": "Field 4 is an optional treasure, not a branch target."
+    },
+    {
+      "opcode": 55,
+      "shape": "picked-branch",
+      "status": "added-edcd-shape",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3306",
+      "fields": ["pickedSelector", "failureBehavior", "unused", "successMacro", "failureTarget"]
+    },
+    {
+      "opcode": 56,
+      "shape": "battle-outcome-branch",
+      "status": "split-from-generic-battle-variant",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3382",
+      "fields": ["battleLow", "battleHigh", "cowardMacro", "sound", "message"],
+      "runtimeNote": "Field 2 is an Extra Action Point called when the party flees/cowards out; fields 3 and 4 are sound/message."
+    },
+    {
+      "opcode": 64,
+      "shape": "game-time-branch",
+      "status": "added-edcd-shape",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3514",
+      "fields": ["dayLimit", "hourLimit", "unused", "successMacro", "failureMacro"]
+    },
+    {
+      "opcode": 63,
+      "shape": "time-mutation",
+      "status": "corrected-field-semantics",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3487",
+      "fields": ["mode", "dayOrDelta", "hourOrDelta", "minuteOrDelta", "unused"],
+      "runtimeNote": "In set-clock mode, -1 keeps each clock field unchanged; in offset mode, the same fields are added as deltas."
+    },
+    {
+      "opcode": 65,
+      "shape": "random-items",
+      "status": "corrected-field-semantics",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:3542",
+      "fields": ["countOrRandomLimit", "itemLow", "itemHigh", "unused", "unused"],
+      "runtimeNote": "Realmz treats a negative first field as a random item count limit via Rand(abs(extracode[0])); positive values are fixed counts."
+    },
+    {
+      "opcode": 74,
+      "shape": "spell-points",
+      "status": "corrected-field-semantics",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:2978",
+      "fields": ["signedRollCount", "lowOrSound", "high", "playSound", "message"],
+      "runtimeNote": "Realmz uses abs(extracode[0]) as roll count; a negative first field takes spell points. If playSound is nonzero, field 1 is also passed to sound() before the roll range is applied."
+    },
+    {
+      "opcode": 86,
+      "shape": "misc-conditional-branch",
+      "status": "split-from-ally-conditional-branch",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:1197",
+      "fields": ["testSelector", "signedTestValue", "branchMode", "trueTarget", "falseTarget"],
+      "runtimeNote": "Opcode 86 stores the zero-based branch mode in field 2. For caste/race/gender/class/descriptor tests, a negative test value compares abs(value) only against picked characters."
+    },
+    {
+      "opcode": 92,
+      "shape": "random-region-shape-mutation",
+      "secondaryShape": "random-region-shape-details",
+      "status": "confirmed-multi-row-shape",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:942",
+      "primaryFields": ["level", "rect", "isDungeon", "percentDelta", "shapeMode"],
+      "secondaryRow": "id + 1",
+      "secondaryFields": ["shapeX1", "shapeY1", "shapeX2", "shapeY2", "shapeFlags"],
+      "runtimeNote": "Realmz loads the action ID row, mutates randlevel.percent[rect], then loads ID+1 to apply no-change, absolute, offset, or per-bound warp rectangle updates."
+    },
+    {
+      "opcode": 106,
+      "shape": "dark-level-state",
+      "status": "added-edcd-shape",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:828",
+      "fields": ["darkStatePlusOne", "stopIfAlready", "unused", "unused", "unused"]
+    },
+    {
+      "opcode": 107,
+      "shape": "improved-selective-battle",
+      "status": "split-from-generic-battle-variant",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:705",
+      "fields": ["battleLow", "battleHigh", "sound", "message", "cowardMacro"],
+      "runtimeNote": "Field 4 is an Extra Action Point called when the party flees/cowards out; field 2 is sound."
+    },
+    {
+      "opcode": 122,
+      "shape": "fumble",
+      "status": "corrected-link-semantics",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:351",
+      "fields": ["message", "sound", "unused", "unused", "unused"],
+      "runtimeNote": "Realmz displays extracode[0] as an optional message and plays extracode[1] as an optional sound during eligible combat fumbles. Fields 2, 3, and 4 are loaded but not consumed."
+    },
+    {
+      "opcode": 124,
+      "shape": "spawn",
+      "status": "corrected-link-semantics",
+      "realmzAnchor": "F:\\Realmz\\src\\realmz_orig\\newland.c:423",
+      "fields": ["unused", "monster", "countOrRandomLimit", "sound", "traitorOverride"],
+      "runtimeNote": "Realmz treats a negative count as a random limit via Rand(abs(extracode[2])), spawns monsters from Data MD, and plays extracode[3] after placing each spawned monster when the value is nonzero."
+    }
+  ],
+  "multiRowShapes": [
+    {
+      "opcode": 92,
+      "primaryShape": "random-region-shape-mutation",
+      "secondaryShape": "random-region-shape-details",
+      "primaryRow": "action.id",
+      "secondaryRow": "action.id + 1",
+      "shapeModes": {
+        "-1": "leave rectangle bounds unchanged",
+        "0": "set absolute left/right/top/bottom bounds from secondary row",
+        "1": "offset left/right by secondary[0] and top/bottom by secondary[1]",
+        "2": "warp left/right/top/bottom independently from secondary row"
+      },
+      "writerRule": "Treat the two rows as one logical authoring unit; preserve and validate the secondary row even though the Data EDCD file remains ordinary five-short rows."
+    }
+  ],
+  "implementationGuards": [
+    "src-tauri/src/semantic/opcodes.rs::opcode_92_reads_secondary_edcd_row",
+    "src-tauri/src/semantic/opcodes.rs::opcode_92_missing_secondary_row_is_diagnostic",
+    "src-tauri/src/semantic/opcodes.rs::fumble_uses_message_and_sound_only",
+    "src-tauri/src/semantic/opcodes.rs::condition_and_spawn_rows_expose_sound_targets",
+    "src-tauri/src/semantic/opcodes.rs::battle_shapes_keep_sound_branch_and_treasure_fields_distinct",
+    "src-tauri/src/semantic/opcodes.rs::dungeon_move_fields_are_coordinates_not_sound_or_message",
+    "src-tauri/src/semantic/opcodes.rs::action_data_patching_uses_extra_ap_source_row",
+    "src-tauri/src/semantic/opcodes.rs::trigger_mutation_edcd_does_not_create_macro_target",
+    "src/editor/edcdTargets.ts::edcdFieldTargetKind mirrors opcode-specific target families and guarded zero/no-branch cases for editor validation",
+    "src/editor/browser/semantic.ts mirrors opcode 92 secondary-row usage and opcode 122 message/sound links for browser imports"
+  ],
+  "branchModeConventions": [
+    {
+      "name": "row-zero-is-valid-when-branching",
+      "shapes": ["choice", "party-condition-branch", "quest-value", "item-branch", "item-charge-branch", "false-true-branch", "range-branch", "random-branch", "misc-conditional-branch", "conditional-branch", "force-branch", "percent-branch"],
+      "meaning": "Target value 0 is a valid Extra Action Point, simple encounter result, or complex encounter result whenever the branch mode selects that target family and Realmz reaches the branch call. Zero only means no branch when opcode source guards the target field before branching."
+    },
+    {
+      "name": "guarded-zero-no-branch",
+      "shapes": ["quest-value", "false-true-branch", "misc-conditional-branch"],
+      "meaning": {
+        "opcode 76": "target is ignored unless the threshold field is nonzero and the updated quest value reaches it",
+        "opcode 77": "falseTarget or trueTarget value 0 means that side does not branch",
+        "opcode 78": "falseTarget or trueTarget value 0 means that side does not branch",
+        "opcode 86": "resolved trueTarget or falseTarget value 0 means the branch is skipped"
+      },
+      "sourceAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\newland.c:140",
+        "F:\\Realmz\\src\\realmz_orig\\newland.c:178",
+        "F:\\Realmz\\src\\realmz_orig\\newland.c:269",
+        "F:\\Realmz\\src\\realmz_orig\\newland.c:1194"
+      ]
+    },
+    {
+      "name": "one-based-external",
+      "shapes": ["choice", "party-condition-branch", "quest-value"],
+      "meaning": {
+        "1": "Extra Action Point",
+        "2": "simple encounter",
+        "3": "complex encounter"
+      }
+    },
+    {
+      "name": "zero-based-external",
+      "shapes": [
+        "item-branch",
+        "item-charge-branch",
+        "false-true-branch",
+        "range-branch",
+        "random-branch",
+        "misc-conditional-branch",
+        "conditional-branch"
+      ],
+      "meaning": {
+        "0": "Extra Action Point",
+        "1": "simple encounter",
+        "2": "complex encounter"
+      },
+      "notes": [
+        "Opcode 86 stores the zero-based branch mode in extracode[2].",
+        "Opcode 87 stores the zero-based branch mode in extracode[1]."
+      ]
+    },
+    {
+      "name": "force-branch",
+      "shapes": ["force-branch", "percent-branch"],
+      "meaning": {
+        "0": "Extra Action Point",
+        "1": "inline simple encounter action row",
+        "2": "inline complex encounter action row",
+        "3": "exit/keep code path"
+      }
+    },
+    {
+      "name": "behavior-dependent-target",
+      "shapes": ["item-branch", "conditional-branch"],
+      "meaning": {
+        "item-branch.missingTarget": "missingBehavior 0 branches through branchMode; missingBehavior 2 displays a message.",
+        "conditional-branch opcode 87 falseTarget": "falseBehavior 0 branches through branchMode; falseBehavior 2 displays a message."
+      }
+    },
+    {
+      "name": "battle-macro-range",
+      "shapes": ["battle-macro"],
+      "meaning": {
+        "repeatMode 2": "inclusive Extra Action Point range macroLow..macroHigh",
+        "other repeatMode values": "single Extra Action Point macroLow"
+      }
+    }
+  ],
+  "edcdBackedOpcodes": [
+    -23,
+    2,
+    3,
+    7,
+    12,
+    13,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    30,
+    31,
+    33,
+    37,
+    38,
+    40,
+    41,
+    42,
+    43,
+    45,
+    46,
+    48,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    63,
+    64,
+    65,
+    67,
+    68,
+    69,
+    70,
+    72,
+    73,
+    74,
+    75,
+    76,
+    77,
+    78,
+    81,
+    85,
+    86,
+    87,
+    90,
+    92,
+    103,
+    106,
+    107,
+    108,
+    120,
+    121,
+    122,
+    123,
+    124,
+    125,
+    126
+  ],
+  "directNonEdcdOpcodes": [8, 39],
+  "directExtraActionPointOpcodes": [39],
+  "sameMapActionPointCopyOpcodes": [8]
+}

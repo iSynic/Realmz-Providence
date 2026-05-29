@@ -665,7 +665,10 @@ export function ManagedResourceDetail({
 
 export function ResourcePreviewMedia({ kind, preview, label }: { kind: ManagedAssetKind; preview: string | null; label: string }) {
   if (preview && kind === "sound") return <audio className="resource-detail-audio" src={preview} controls preload="metadata" />;
-  if (preview && kind === "text") return <iframe className="resource-detail-text" src={preview} title={label} />;
+  if (preview && kind === "text") {
+    const text = decodeTextDataUrl(preview);
+    if (text != null) return <pre className="resource-detail-text" aria-label={label}>{text}</pre>;
+  }
   if (preview) return <img className="resource-detail-image" src={preview} alt={label} />;
   return (
     <div className="resource-detail-missing">
@@ -673,6 +676,24 @@ export function ResourcePreviewMedia({ kind, preview, label }: { kind: ManagedAs
       <span>No preview available</span>
     </div>
   );
+}
+
+function decodeTextDataUrl(dataUrl: string) {
+  const comma = dataUrl.indexOf(",");
+  if (comma < 0 || !dataUrl.startsWith("data:text/")) return null;
+  const metadata = dataUrl.slice(0, comma).toLowerCase();
+  const payload = dataUrl.slice(comma + 1);
+  try {
+    if (metadata.includes(";base64")) {
+      const binary = atob(payload);
+      const bytes = new Uint8Array(binary.length);
+      for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+      return new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+    }
+    return decodeURIComponent(payload);
+  } catch {
+    return null;
+  }
 }
 
 export function managedOutputSummary(asset: ManagedAsset) {

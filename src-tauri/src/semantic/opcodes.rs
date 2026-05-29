@@ -191,13 +191,13 @@ fn decode_edcd(
 
 fn add_direct_targets(
     action: &Action,
-    _trigger: &TriggerRecord,
+    trigger: &TriggerRecord,
     counts: ReferenceCounts,
     semantics: &mut ActionSemantics,
 ) {
     let id = action.id.max(0) as usize;
     match normalize_opcode(action.code) {
-        1 | 19 | 62 | 71 => {
+        1 | 62 | 71 => {
             add_message_target(&mut semantics.targets, action.id, counts, "shows_message")
         }
         4 => semantics.targets.push(target(
@@ -212,15 +212,14 @@ fn add_direct_targets(
             "starts_encounter",
             id < counts.complex,
         )),
-        6 | 49 | 51 => semantics.targets.push(target(
+        6 | 49 => semantics.targets.push(target(
             format!("shop:{id}"),
             "shop",
             "opens_shop",
             id < counts.shop,
         )),
-        8 | 40 | 55 | 64 | 85 => {
-            add_macro_target(&mut semantics.targets, action.id, None, "calls_macro")
-        }
+        8 => add_same_map_action_point_target(&mut semantics.targets, action.id, trigger),
+        39 => add_macro_target_allow_zero(&mut semantics.targets, action.id, None, "calls_macro"),
         9 => semantics.targets.push(target(
             format!("resource:snd :{id}"),
             "sound resource",
@@ -303,17 +302,46 @@ fn add_edcd_targets(
 ) {
     let code = normalize_opcode(action.code);
     match code {
-        2 | 48 | 56 | 107 => {
+        2 => {
             add_battle_range_targets(&mut semantics.targets, values, counts);
-            add_message_target(&mut semantics.targets, values[3], counts, "shows_message");
-            if values[2] > 0 {
-                add_macro_target(
+            add_sound_target(&mut semantics.targets, values[2], Some(values), "plays_sound");
+            if values[4] == 10 && values[2] >= 0 {
+                add_macro_target_allow_zero(
                     &mut semantics.targets,
                     values[2],
                     Some(values),
-                    "calls_macro",
+                    "branches_on_revived_loss",
                 );
             }
+            add_message_target(&mut semantics.targets, values[3], counts, "shows_message");
+        }
+        48 => {
+            add_battle_range_targets(&mut semantics.targets, values, counts);
+            add_sound_target(&mut semantics.targets, values[2], Some(values), "plays_sound");
+            add_message_target(&mut semantics.targets, values[3], counts, "shows_message");
+            add_treasure_target(&mut semantics.targets, values[4], Some(values), counts, "gives_treasure");
+        }
+        56 => {
+            add_battle_range_targets(&mut semantics.targets, values, counts);
+            add_macro_target_allow_zero(
+                &mut semantics.targets,
+                values[2],
+                Some(values),
+                "branches_on_coward",
+            );
+            add_sound_target(&mut semantics.targets, values[3], Some(values), "plays_sound");
+            add_message_target(&mut semantics.targets, values[4], counts, "shows_message");
+        }
+        107 => {
+            add_battle_range_targets(&mut semantics.targets, values, counts);
+            add_sound_target(&mut semantics.targets, values[2], Some(values), "plays_sound");
+            add_message_target(&mut semantics.targets, values[3], counts, "shows_message");
+            add_macro_target_allow_zero(
+                &mut semantics.targets,
+                values[4],
+                Some(values),
+                "branches_on_coward",
+            );
         }
         3 => {
             add_branch_target(
@@ -330,8 +358,8 @@ fn add_edcd_targets(
             add_message_target(&mut semantics.targets, values[4], counts, "shows_message");
         }
         7 => {
-            if values[2] > 0 {
-                add_macro_target(
+            if values[2] >= 0 {
+                add_macro_target_allow_zero(
                     &mut semantics.targets,
                     values[2],
                     Some(values),
@@ -407,7 +435,13 @@ fn add_edcd_targets(
                 true,
                 values,
             ));
-            add_message_target(&mut semantics.targets, values[4], counts, "shows_message");
+            add_sound_target(&mut semantics.targets, values[3], Some(values), "plays_sound");
+            add_message_target(
+                &mut semantics.targets,
+                values[4].abs(),
+                counts,
+                "shows_message",
+            );
         }
         17 | 18 => semantics.targets.push(target_with_edcd(
             "runtime-cache:CE".to_string(),
@@ -420,6 +454,10 @@ fn add_edcd_targets(
             true,
             values,
         )),
+        19 => {
+            add_message_target(&mut semantics.targets, values[0], counts, "shows_message");
+            add_message_target(&mut semantics.targets, values[1], counts, "shows_message");
+        }
         20 | 45 => {
             let level = values[0].max(0);
             let level_type = trigger.level_type.unwrap_or(LevelType::Land);
@@ -437,6 +475,7 @@ fn add_edcd_targets(
                 true,
                 values,
             ));
+            add_sound_target(&mut semantics.targets, values[3], Some(values), "plays_sound");
             add_message_target(&mut semantics.targets, values[4], counts, "shows_message");
         }
         21 => {
@@ -447,16 +486,30 @@ fn add_edcd_targets(
                 true,
                 values,
             ));
-            add_branch_target(
+            add_zero_based_branch_target(
                 &mut semantics.targets,
                 &mut semantics.diagnostics,
                 values[1],
-                values[3].max(values[4]),
+                values[3],
                 values,
                 counts,
-                "branches_to",
+                "branches_true",
                 action,
             );
+            if values[2] == 0 {
+                add_zero_based_branch_target(
+                    &mut semantics.targets,
+                    &mut semantics.diagnostics,
+                    values[1],
+                    values[4],
+                    values,
+                    counts,
+                    "branches_false",
+                    action,
+                );
+            } else if values[2] == 2 {
+                add_message_target(&mut semantics.targets, values[4], counts, "shows_message");
+            }
         }
         22 => semantics.targets.push(target_with_edcd(
             "runtime-cache:CS".to_string(),
@@ -490,13 +543,13 @@ fn add_edcd_targets(
                 true,
                 values,
             ));
-            add_macro_target(
+            add_macro_target_allow_zero(
                 &mut semantics.targets,
                 values[3],
                 Some(values),
                 "branches_true",
             );
-            add_macro_target(
+            add_macro_target_allow_zero(
                 &mut semantics.targets,
                 values[4],
                 Some(values),
@@ -518,9 +571,8 @@ fn add_edcd_targets(
                 true,
                 values,
             ));
-            add_message_target(&mut semantics.targets, values[4], counts, "shows_message");
         }
-        38 | 58 | 59 => add_branch_target(
+        38 | 58 | 59 => add_force_branch_target(
             &mut semantics.targets,
             &mut semantics.diagnostics,
             values[2],
@@ -530,11 +582,15 @@ fn add_edcd_targets(
             "branches_to",
             action,
         ),
-        39 => add_macro_target(
+        40 => add_branch_target(
             &mut semantics.targets,
-            values[0],
-            Some(values),
-            "calls_macro",
+            &mut semantics.diagnostics,
+            values[1],
+            values[2],
+            values,
+            counts,
+            "branches_to",
+            action,
         ),
         41 => semantics.targets.push(target_with_edcd(
             format!("encounter:simple:{}", values[0].max(0)),
@@ -543,7 +599,7 @@ fn add_edcd_targets(
             (values[0].max(0) as usize) < counts.simple,
             values,
         )),
-        42 => add_branch_target(
+        42 => add_force_branch_target(
             &mut semantics.targets,
             &mut semantics.diagnostics,
             values[2],
@@ -553,13 +609,16 @@ fn add_edcd_targets(
             "branches_to",
             action,
         ),
-        43 => semantics.targets.push(target_with_edcd(
-            "runtime-cache:CE".to_string(),
-            "runtime cache",
-            "alters_character_state",
-            true,
-            values,
-        )),
+        43 => {
+            semantics.targets.push(target_with_edcd(
+                "runtime-cache:CE".to_string(),
+                "runtime cache",
+                "alters_character_state",
+                true,
+                values,
+            ));
+            add_sound_target(&mut semantics.targets, values[3], Some(values), "plays_sound");
+        }
         46 => {
             semantics.targets.push(target_with_edcd(
                 format!("quest-flag:{}", values[0].max(0)),
@@ -568,7 +627,7 @@ fn add_edcd_targets(
                 true,
                 values,
             ));
-            add_branch_target(
+            add_force_branch_target(
                 &mut semantics.targets,
                 &mut semantics.diagnostics,
                 values[2],
@@ -586,6 +645,22 @@ fn add_edcd_targets(
             true,
             values,
         )),
+        51 => {
+            semantics.targets.push(target_with_edcd(
+                format!("shop:{}", values[0].max(0)),
+                "shop",
+                "mutates_shop",
+                (values[0].max(0) as usize) < counts.shop,
+                values,
+            ));
+            semantics.targets.push(target_with_edcd(
+                "runtime-cache:CS".to_string(),
+                "runtime cache",
+                "mutates_cache",
+                true,
+                values,
+            ));
+        }
         54 => semantics.targets.push(target_with_edcd(
             format!("time:{}", values[0].max(0)),
             "timed-encounter",
@@ -593,6 +668,24 @@ fn add_edcd_targets(
             (values[0].max(0) as usize) < counts.timed || counts.timed == 0,
             values,
         )),
+        55 => {
+            add_macro_target_allow_zero(
+                &mut semantics.targets,
+                values[3],
+                Some(values),
+                "branches_true",
+            );
+            if values[1] == 1 {
+                add_macro_target_allow_zero(
+                    &mut semantics.targets,
+                    values[4],
+                    Some(values),
+                    "branches_false",
+                );
+            } else if values[1] == 2 {
+                add_message_target(&mut semantics.targets, values[4], counts, "shows_message");
+            }
+        }
         57 => {
             semantics.targets.push(target_with_edcd(
                 format!("map:land:{}", values[2].max(0)),
@@ -620,6 +713,13 @@ fn add_edcd_targets(
             true,
             values,
         )),
+        106 => semantics.targets.push(target_with_edcd(
+            "runtime-cache:CL".to_string(),
+            "runtime cache",
+            "changes_rendering",
+            true,
+            values,
+        )),
         61 => semantics.targets.push(target_with_edcd(
             cache_target_from_level_kind(values[0]),
             "runtime cache",
@@ -634,6 +734,20 @@ fn add_edcd_targets(
             true,
             values,
         )),
+        64 => {
+            add_macro_target_allow_zero(
+                &mut semantics.targets,
+                values[3],
+                Some(values),
+                "branches_true",
+            );
+            add_macro_target_allow_zero(
+                &mut semantics.targets,
+                values[4],
+                Some(values),
+                "branches_false",
+            );
+        }
         65 => semantics.targets.push(target_with_edcd(
             "runtime-cache:CS".to_string(),
             "runtime cache",
@@ -649,7 +763,7 @@ fn add_edcd_targets(
                 true,
                 values,
             ));
-            add_branch_target(
+            add_zero_based_branch_target(
                 &mut semantics.targets,
                 &mut semantics.diagnostics,
                 values[1],
@@ -659,7 +773,7 @@ fn add_edcd_targets(
                 "branches_true",
                 action,
             );
-            add_branch_target(
+            add_zero_based_branch_target(
                 &mut semantics.targets,
                 &mut semantics.diagnostics,
                 values[1],
@@ -671,7 +785,7 @@ fn add_edcd_targets(
             );
         }
         72 | 75 => {
-            add_branch_target(
+            add_zero_based_branch_target(
                 &mut semantics.targets,
                 &mut semantics.diagnostics,
                 values[3],
@@ -697,6 +811,9 @@ fn add_edcd_targets(
                 true,
                 values,
             ));
+            if values[3] != 0 {
+                add_sound_target(&mut semantics.targets, values[1], Some(values), "plays_sound");
+            }
             add_message_target(&mut semantics.targets, values[4], counts, "shows_message");
         }
         76 => {
@@ -707,16 +824,18 @@ fn add_edcd_targets(
                 true,
                 values,
             ));
-            add_branch_target(
-                &mut semantics.targets,
-                &mut semantics.diagnostics,
-                values[2],
-                values[4],
-                values,
-                counts,
-                "branches_to",
-                action,
-            );
+            if values[3] != 0 {
+                add_branch_target(
+                    &mut semantics.targets,
+                    &mut semantics.diagnostics,
+                    values[2],
+                    values[4],
+                    values,
+                    counts,
+                    "branches_to",
+                    action,
+                );
+            }
         }
         77 | 78 => {
             semantics.targets.push(target_with_edcd(
@@ -730,26 +849,30 @@ fn add_edcd_targets(
                 true,
                 values,
             ));
-            add_branch_target(
-                &mut semantics.targets,
-                &mut semantics.diagnostics,
-                values[2],
-                values[3],
-                values,
-                counts,
-                "branches_false",
-                action,
-            );
-            add_branch_target(
-                &mut semantics.targets,
-                &mut semantics.diagnostics,
-                values[2],
-                values[4],
-                values,
-                counts,
-                "branches_true",
-                action,
-            );
+            if values[3] != 0 {
+                add_zero_based_branch_target(
+                    &mut semantics.targets,
+                    &mut semantics.diagnostics,
+                    values[2],
+                    values[3],
+                    values,
+                    counts,
+                    "branches_false",
+                    action,
+                );
+            }
+            if values[4] != 0 {
+                add_zero_based_branch_target(
+                    &mut semantics.targets,
+                    &mut semantics.diagnostics,
+                    values[2],
+                    values[4],
+                    values,
+                    counts,
+                    "branches_true",
+                    action,
+                );
+            }
         }
         81 => {
             semantics.targets.push(target_with_edcd(
@@ -759,13 +882,13 @@ fn add_edcd_targets(
                 true,
                 values,
             ));
-            add_macro_target(
+            add_macro_target_allow_zero(
                 &mut semantics.targets,
                 values[3],
                 Some(values),
                 "branches_true",
             );
-            add_macro_target(
+            add_macro_target_allow_zero(
                 &mut semantics.targets,
                 values[4],
                 Some(values),
@@ -773,39 +896,73 @@ fn add_edcd_targets(
             );
         }
         85 => {
-            add_branch_target(
+            add_zero_based_branch_range_targets(
                 &mut semantics.targets,
                 &mut semantics.diagnostics,
                 values[0],
-                values[3],
+                values[1],
+                values[2],
                 values,
                 counts,
                 "branches_to",
                 action,
             );
+            add_sound_target(&mut semantics.targets, values[3], Some(values), "plays_sound");
             add_message_target(&mut semantics.targets, values[4], counts, "shows_message");
         }
-        86 | 87 => {
-            add_branch_target(
+        86 => {
+            let branch_mode = values[2];
+            if values[3] != 0 {
+                add_zero_based_branch_target(
+                    &mut semantics.targets,
+                    &mut semantics.diagnostics,
+                    branch_mode,
+                    values[3],
+                    values,
+                    counts,
+                    "branches_true",
+                    action,
+                );
+            }
+            if values[4] != 0 {
+                add_zero_based_branch_target(
+                    &mut semantics.targets,
+                    &mut semantics.diagnostics,
+                    branch_mode,
+                    values[4],
+                    values,
+                    counts,
+                    "branches_false",
+                    action,
+                );
+            }
+        }
+        87 => {
+            let branch_mode = values[1];
+            add_zero_based_branch_target(
                 &mut semantics.targets,
                 &mut semantics.diagnostics,
-                values[1],
+                branch_mode,
                 values[3],
                 values,
                 counts,
                 "branches_true",
                 action,
             );
-            add_branch_target(
-                &mut semantics.targets,
-                &mut semantics.diagnostics,
-                values[1],
-                values[4],
-                values,
-                counts,
-                "branches_false",
-                action,
-            );
+            if values[2] == 0 {
+                add_zero_based_branch_target(
+                    &mut semantics.targets,
+                    &mut semantics.diagnostics,
+                    branch_mode,
+                    values[4],
+                    values,
+                    counts,
+                    "branches_false",
+                    action,
+                );
+            } else if values[2] == 2 {
+                add_message_target(&mut semantics.targets, values[4], counts, "shows_message");
+            }
         }
         92 => add_random_region_mutation(&mut semantics.targets, code, values, trigger),
         120 => {
@@ -842,7 +999,7 @@ fn add_edcd_targets(
         )),
         122 => {
             add_message_target(&mut semantics.targets, values[0], counts, "shows_message");
-            add_message_target(&mut semantics.targets, values[4], counts, "shows_message");
+            add_sound_target(&mut semantics.targets, values[1], Some(values), "plays_sound");
         }
         123 => {
             for value in values {
@@ -863,6 +1020,7 @@ fn add_edcd_targets(
                 counts,
                 "uses_monster",
             );
+            add_sound_target(&mut semantics.targets, values[3], Some(values), "plays_sound");
             semantics.targets.push(target_with_edcd(
                 "runtime-cache:CE".to_string(),
                 "runtime cache",
@@ -888,18 +1046,22 @@ fn add_edcd_targets(
             ));
         }
         126 => {
-            add_macro_target(
-                &mut semantics.targets,
-                values[3],
-                Some(values),
-                "calls_macro",
-            );
-            add_macro_target(
-                &mut semantics.targets,
-                values[4],
-                Some(values),
-                "calls_macro",
-            );
+            if values[2] == 2 {
+                add_macro_range_targets(
+                    &mut semantics.targets,
+                    values[3],
+                    values[4],
+                    Some(values),
+                    "calls_macro",
+                );
+            } else {
+                add_macro_target_allow_zero(
+                    &mut semantics.targets,
+                    values[3],
+                    Some(values),
+                    "calls_macro",
+                );
+            }
         }
         _ => {}
     }
@@ -975,13 +1137,48 @@ fn add_message_target(
     }
 }
 
-fn add_macro_target(
+fn add_sound_target(
     targets: &mut Vec<ActionTarget>,
     id: i16,
     values: Option<[i16; 5]>,
     role: &str,
 ) {
+    if id != 0 {
+        targets.push(target_with_optional_edcd(
+            format!("resource:snd :{id}"),
+            "sound resource",
+            role,
+            true,
+            values,
+        ));
+    }
+}
+
+fn add_treasure_target(
+    targets: &mut Vec<ActionTarget>,
+    id: i16,
+    values: Option<[i16; 5]>,
+    counts: ReferenceCounts,
+    role: &str,
+) {
     if id > 0 {
+        targets.push(target_with_optional_edcd(
+            format!("treasure:{id}"),
+            "treasure",
+            role,
+            (id as usize) < counts.treasure || counts.treasure == 0,
+            values,
+        ));
+    }
+}
+
+fn add_macro_target_allow_zero(
+    targets: &mut Vec<ActionTarget>,
+    id: i16,
+    values: Option<[i16; 5]>,
+    role: &str,
+) {
+    if id >= 0 {
         targets.push(target_with_optional_edcd(
             format!("macro:{id}"),
             "macro",
@@ -989,6 +1186,57 @@ fn add_macro_target(
             true,
             values,
         ));
+    }
+}
+
+fn add_same_map_action_point_target(
+    targets: &mut Vec<ActionTarget>,
+    id: i16,
+    trigger: &TriggerRecord,
+) {
+    if id < 0 {
+        return;
+    }
+    let target_id = if let (Some(level_type), Some(level_index)) =
+        (trigger.level_type, trigger.level_index)
+    {
+        format!(
+            "trigger:{}:{}:{}",
+            level_type.as_str(),
+            level_index,
+            id
+        )
+    } else {
+        format!("trigger:current-map:{id}")
+    };
+    targets.push(target_with_optional_edcd(
+        target_id,
+        "action point",
+        "copies_action_point",
+        true,
+        None,
+    ));
+}
+
+fn add_macro_range_targets(
+    targets: &mut Vec<ActionTarget>,
+    low: i16,
+    high: i16,
+    values: Option<[i16; 5]>,
+    role: &str,
+) {
+    if high < 0 {
+        return;
+    }
+    let low = low.max(0);
+    let high = high.max(low);
+    let ids: Vec<i16> = if high.saturating_sub(low) > 32 {
+        vec![low, high]
+    } else {
+        (low..=high).collect()
+    };
+    for id in ids {
+        add_macro_target_allow_zero(targets, id, values, role);
     }
 }
 
@@ -1020,7 +1268,7 @@ fn add_branch_target(
     role: &str,
     action: &Action,
 ) {
-    if id <= 0 {
+    if id < 0 {
         return;
     }
     if matches!(mode, -1 | 0) {
@@ -1051,6 +1299,167 @@ fn add_branch_target(
     targets.push(target);
 }
 
+fn add_zero_based_branch_target(
+    targets: &mut Vec<ActionTarget>,
+    diagnostics: &mut Vec<ActionDiagnostic>,
+    mode: i16,
+    id: i16,
+    values: [i16; 5],
+    counts: ReferenceCounts,
+    role: &str,
+    action: &Action,
+) {
+    if id < 0 || mode == -1 {
+        return;
+    }
+    let Some((target_id, kind, resolved)) = zero_based_branch_target(mode, id, counts) else {
+        diagnostics.push(ActionDiagnostic {
+            diagnostic_type: "unknown-branch-mode".to_string(),
+            severity: DiagnosticSeverity::Warning,
+            message: format!(
+                "Opcode {} action slot {} uses undocumented zero-based branch mode {}",
+                action.code, action.slot, mode
+            ),
+            target: None,
+            data: metadata([
+                ("slot", json!(action.slot)),
+                ("code", json!(action.code)),
+                ("branchMode", json!(mode)),
+                ("branchTarget", json!(id)),
+            ]),
+        });
+        return;
+    };
+    let mut target = target_with_edcd(target_id, kind, role, resolved, values);
+    target.metadata.insert(
+        "branchMode".to_string(),
+        json!(zero_based_branch_mode_label(mode)),
+    );
+    targets.push(target);
+}
+
+fn add_force_branch_target(
+    targets: &mut Vec<ActionTarget>,
+    diagnostics: &mut Vec<ActionDiagnostic>,
+    mode: i16,
+    id: i16,
+    values: [i16; 5],
+    counts: ReferenceCounts,
+    role: &str,
+    action: &Action,
+) {
+    if id < 0 || matches!(mode, -1 | 1 | 2 | 3) {
+        return;
+    }
+    let Some((target_id, kind, resolved)) = force_branch_target(mode, id, counts) else {
+        diagnostics.push(ActionDiagnostic {
+            diagnostic_type: "unknown-branch-mode".to_string(),
+            severity: DiagnosticSeverity::Warning,
+            message: format!(
+                "Opcode {} action slot {} uses undocumented force-branch mode {}",
+                action.code, action.slot, mode
+            ),
+            target: None,
+            data: metadata([
+                ("slot", json!(action.slot)),
+                ("code", json!(action.code)),
+                ("branchMode", json!(mode)),
+                ("branchTarget", json!(id)),
+            ]),
+        });
+        return;
+    };
+    let mut target = target_with_edcd(target_id, kind, role, resolved, values);
+    target.metadata.insert(
+        "branchMode".to_string(),
+        json!(force_branch_mode_label(mode)),
+    );
+    targets.push(target);
+}
+
+fn add_zero_based_branch_range_targets(
+    targets: &mut Vec<ActionTarget>,
+    diagnostics: &mut Vec<ActionDiagnostic>,
+    mode: i16,
+    low: i16,
+    high: i16,
+    values: [i16; 5],
+    counts: ReferenceCounts,
+    role: &str,
+    action: &Action,
+) {
+    if high < 0 || mode == -1 {
+        return;
+    }
+    match mode {
+        0 => add_macro_range_targets(targets, low, high, Some(values), role),
+        1 => add_record_range_targets(
+            targets,
+            low,
+            high,
+            "encounter:simple",
+            "simple encounter",
+            counts.simple,
+            Some(values),
+            role,
+        ),
+        2 => add_record_range_targets(
+            targets,
+            low,
+            high,
+            "encounter:complex",
+            "complex encounter",
+            counts.complex,
+            Some(values),
+            role,
+        ),
+        _ => diagnostics.push(ActionDiagnostic {
+            diagnostic_type: "unknown-branch-mode".to_string(),
+            severity: DiagnosticSeverity::Warning,
+            message: format!(
+                "Opcode {} action slot {} uses undocumented zero-based branch mode {}",
+                action.code, action.slot, mode
+            ),
+            target: None,
+            data: metadata([
+                ("slot", json!(action.slot)),
+                ("code", json!(action.code)),
+                ("branchMode", json!(mode)),
+                ("branchLow", json!(low)),
+                ("branchHigh", json!(high)),
+            ]),
+        }),
+    }
+}
+
+fn add_record_range_targets(
+    targets: &mut Vec<ActionTarget>,
+    low: i16,
+    high: i16,
+    prefix: &str,
+    kind: &str,
+    count: usize,
+    values: Option<[i16; 5]>,
+    role: &str,
+) {
+    let low = low.max(0);
+    let high = high.max(low);
+    let ids: Vec<i16> = if high.saturating_sub(low) > 32 {
+        vec![low, high]
+    } else {
+        (low..=high).collect()
+    };
+    for id in ids {
+        targets.push(target_with_optional_edcd(
+            format!("{prefix}:{id}"),
+            kind,
+            role,
+            (id as usize) < count,
+            values,
+        ));
+    }
+}
+
 fn branch_target(
     mode: i16,
     id: i16,
@@ -1074,6 +1483,40 @@ fn branch_target(
     }
 }
 
+fn zero_based_branch_target(
+    mode: i16,
+    id: i16,
+    counts: ReferenceCounts,
+) -> Option<(String, &'static str, bool)> {
+    match mode {
+        0 => Some((format!("macro:{id}"), "macro", true)),
+        1 => Some((
+            format!("encounter:simple:{id}"),
+            "simple encounter",
+            (id as usize) < counts.simple,
+        )),
+        2 => Some((
+            format!("encounter:complex:{id}"),
+            "complex encounter",
+            (id as usize) < counts.complex,
+        )),
+        -1 => None,
+        _ => None,
+    }
+}
+
+fn force_branch_target(
+    mode: i16,
+    id: i16,
+    _counts: ReferenceCounts,
+) -> Option<(String, &'static str, bool)> {
+    match mode {
+        0 => Some((format!("macro:{id}"), "macro", true)),
+        -1 | 1 | 2 | 3 => None,
+        _ => None,
+    }
+}
+
 fn edcd_usage_json(
     action: &Action,
     row_id: usize,
@@ -1084,7 +1527,7 @@ fn edcd_usage_json(
     diagnostics: Vec<String>,
 ) -> Value {
     let fields = values
-        .map(|values| edcd_fields(shape.fields, values))
+        .map(|values| edcd_fields(shape.name, shape.fields, values))
         .unwrap_or_default();
     let target_hints: Vec<Value> = targets
         .iter()
@@ -1111,6 +1554,7 @@ fn edcd_usage_json(
         object["secondaryRowId"] = json!(secondary_id);
         object["secondaryShape"] = json!("random-region-shape-details");
         object["secondaryFields"] = json!(edcd_fields(
+            "random-region-shape-details",
             ["shapeX1", "shapeY1", "shapeX2", "shapeY2", "shapeFlags"],
             secondary_values,
         ));
@@ -1119,20 +1563,39 @@ fn edcd_usage_json(
     object
 }
 
-fn edcd_fields(labels: [&'static str; 5], values: [i16; 5]) -> Vec<Value> {
+fn edcd_fields(shape: &str, labels: [&'static str; 5], values: [i16; 5]) -> Vec<Value> {
     labels
         .iter()
         .zip(values)
         .map(|(name, value)| {
             let mut field = json!({ "name": name, "value": value });
-            if name.to_ascii_lowercase().contains("branch")
-                || name.to_ascii_lowercase().contains("behavior")
-            {
-                field["meaning"] = json!(branch_mode_label(value));
+            if let Some(meaning) = branch_field_meaning(shape, name, value) {
+                field["meaning"] = json!(meaning);
             }
             field
         })
         .collect()
+}
+
+fn branch_field_meaning(shape: &str, name: &str, value: i16) -> Option<&'static str> {
+    let normalized_name = name.to_ascii_lowercase();
+    if normalized_name == "failurebehavior" && shape == "picked-branch" {
+        return Some(match value {
+            0 => "stop",
+            1 => "macro",
+            2 => "message",
+            _ => "undocumented",
+        });
+    }
+    if !normalized_name.contains("branchmode") {
+        return None;
+    }
+    Some(match shape {
+        "force-branch" | "percent-branch" => force_branch_mode_label(value),
+        "item-branch" | "item-charge-branch" | "false-true-branch" | "range-branch"
+        | "random-branch" | "conditional-branch" => zero_based_branch_mode_label(value),
+        _ => branch_mode_label(value),
+    })
 }
 
 fn usage_summary(shape: &str, fields: [&'static str; 5], values: Option<[i16; 5]>) -> String {
@@ -1169,9 +1632,9 @@ fn edcd_shape(code: i16) -> Option<EdcdShapeSpec> {
             fields: [
                 "battleLow",
                 "battleHigh",
-                "soundOrReviveMacro",
+                "soundOrReviveLossMacro",
                 "message",
-                "bootyMode",
+                "revivePartyFlag",
             ],
         },
         3 => EdcdShapeSpec {
@@ -1222,9 +1685,13 @@ fn edcd_shape(code: i16) -> Option<EdcdShapeSpec> {
             name: "spell-cast",
             fields: ["spell", "powerLevel", "saveAdjust", "forceAffect", "unused"],
         },
+        19 => EdcdShapeSpec {
+            name: "random-message",
+            fields: ["messageLow", "messageHigh", "unused", "unused", "unused"],
+        },
         20 | 45 => EdcdShapeSpec {
             name: "teleport",
-            fields: ["level", "x", "y", "sound", "message"],
+            fields: ["levelOrKeep", "xOrKeep", "yOrKeep", "sound", "message"],
         },
         21 => EdcdShapeSpec {
             name: "item-branch",
@@ -1259,7 +1726,7 @@ fn edcd_shape(code: i16) -> Option<EdcdShapeSpec> {
         30 => EdcdShapeSpec {
             name: "ability-check-pick",
             fields: [
-                "abilityOrAttribute",
+                "signedAbilityOrAttribute",
                 "adjustment",
                 "sourceSet",
                 "attributeFlag",
@@ -1278,19 +1745,25 @@ fn edcd_shape(code: i16) -> Option<EdcdShapeSpec> {
         },
         33 => EdcdShapeSpec {
             name: "gold",
-            fields: ["amount", "failureMarker", "unused", "unused", "unused"],
+            fields: ["signedAmount", "failureMarker", "unused", "unused", "unused"],
         },
         37 => EdcdShapeSpec {
             name: "dungeon-move",
-            fields: ["mode", "xOrDirection", "yOrDirection", "sound", "message"],
+            fields: ["mode", "level", "x", "y", "signedHeading"],
         },
         38 | 46 | 58 | 59 => EdcdShapeSpec {
             name: "force-branch",
             fields: ["testA", "testB", "branchMode", "target", "slot"],
         },
-        39 => EdcdShapeSpec {
-            name: "extended-door-codes",
-            fields: ["macro", "unused", "unused", "unused", "unused"],
+        40 => EdcdShapeSpec {
+            name: "party-condition-branch",
+            fields: [
+                "expectedState",
+                "branchMode",
+                "branchTarget",
+                "condition",
+                "unused",
+            ],
         },
         41 => EdcdShapeSpec {
             name: "encounter-mutation",
@@ -1310,18 +1783,20 @@ fn edcd_shape(code: i16) -> Option<EdcdShapeSpec> {
             name: "condition",
             fields: ["scope", "condition", "durationOrDelta", "sound", "unused"],
         },
-        48 | 56 | 107 => EdcdShapeSpec {
-            name: "battle-variant",
-            fields: [
-                "battleLow",
-                "battleHigh",
-                "branchOrSound",
-                "message",
-                "extra",
-            ],
+        48 => EdcdShapeSpec {
+            name: "selective-battle",
+            fields: ["battleLow", "battleHigh", "sound", "message", "treasure"],
+        },
+        56 => EdcdShapeSpec {
+            name: "battle-outcome-branch",
+            fields: ["battleLow", "battleHigh", "cowardMacro", "sound", "message"],
+        },
+        107 => EdcdShapeSpec {
+            name: "improved-selective-battle",
+            fields: ["battleLow", "battleHigh", "sound", "message", "cowardMacro"],
         },
         50 => EdcdShapeSpec {
-            name: "character-selector",
+            name: "race-caste-gender-selector",
             fields: [
                 "selector",
                 "gender",
@@ -1340,7 +1815,27 @@ fn edcd_shape(code: i16) -> Option<EdcdShapeSpec> {
         },
         54 => EdcdShapeSpec {
             name: "timed-encounter-mutation",
-            fields: ["timedEncounter", "mode", "dayOrInterval", "hour", "minute"],
+            fields: [
+                "timedEncounter",
+                "percentOrKeep",
+                "incrementOrKeep",
+                "resetDayFlag",
+                "dayOffsetOrKeep",
+            ],
+        },
+        51 => EdcdShapeSpec {
+            name: "shop-mutation",
+            fields: ["shop", "inflationDelta", "item", "stockDelta", "unused"],
+        },
+        55 => EdcdShapeSpec {
+            name: "picked-branch",
+            fields: [
+                "pickedSelector",
+                "failureBehavior",
+                "unused",
+                "successMacro",
+                "failureTarget",
+            ],
         },
         57 => EdcdShapeSpec {
             name: "render-mutation",
@@ -1356,11 +1851,21 @@ fn edcd_shape(code: i16) -> Option<EdcdShapeSpec> {
         },
         63 => EdcdShapeSpec {
             name: "time-mutation",
-            fields: ["mode", "day", "hour", "minute", "unused"],
+            fields: ["mode", "dayOrDelta", "hourOrDelta", "minuteOrDelta", "unused"],
+        },
+        64 => EdcdShapeSpec {
+            name: "game-time-branch",
+            fields: [
+                "dayLimit",
+                "hourLimit",
+                "unused",
+                "successMacro",
+                "failureMacro",
+            ],
         },
         65 => EdcdShapeSpec {
             name: "random-items",
-            fields: ["count", "itemLow", "itemHigh", "unused", "unused"],
+            fields: ["countOrRandomLimit", "itemLow", "itemHigh", "unused", "unused"],
         },
         67 => EdcdShapeSpec {
             name: "item-charge-branch",
@@ -1400,7 +1905,7 @@ fn edcd_shape(code: i16) -> Option<EdcdShapeSpec> {
         },
         74 => EdcdShapeSpec {
             name: "spell-points",
-            fields: ["rollCount", "low", "high", "playSound", "message"],
+            fields: ["signedRollCount", "lowOrSound", "high", "playSound", "message"],
         },
         76 => EdcdShapeSpec {
             name: "quest-value",
@@ -1424,7 +1929,17 @@ fn edcd_shape(code: i16) -> Option<EdcdShapeSpec> {
             name: "random-branch",
             fields: ["branchMode", "rangeLow", "rangeHigh", "sound", "message"],
         },
-        86 | 87 => EdcdShapeSpec {
+        86 => EdcdShapeSpec {
+            name: "misc-conditional-branch",
+            fields: [
+                "testSelector",
+                "signedTestValue",
+                "branchMode",
+                "trueTarget",
+                "falseTarget",
+            ],
+        },
+        87 => EdcdShapeSpec {
             name: "conditional-branch",
             fields: [
                 "testSelector",
@@ -1450,6 +1965,16 @@ fn edcd_shape(code: i16) -> Option<EdcdShapeSpec> {
                 "branchModeOrBehavior",
                 "targetOrValueA",
                 "targetOrValueB",
+            ],
+        },
+        106 => EdcdShapeSpec {
+            name: "dark-level-state",
+            fields: [
+                "darkStatePlusOne",
+                "stopIfAlready",
+                "unused",
+                "unused",
+                "unused",
             ],
         },
         108 => EdcdShapeSpec {
@@ -1480,7 +2005,13 @@ fn edcd_shape(code: i16) -> Option<EdcdShapeSpec> {
         },
         124 => EdcdShapeSpec {
             name: "spawn",
-            fields: ["unused", "monster", "count", "sound", "traitorOverride"],
+            fields: [
+                "unused",
+                "monster",
+                "countOrRandomLimit",
+                "sound",
+                "traitorOverride",
+            ],
         },
         125 => EdcdShapeSpec {
             name: "destroy-related",
@@ -1513,6 +2044,27 @@ fn branch_mode_label(mode: i16) -> &'static str {
         1 => "macro",
         2 => "simple-encounter",
         3 => "complex-encounter",
+        _ => "undocumented",
+    }
+}
+
+fn zero_based_branch_mode_label(mode: i16) -> &'static str {
+    match mode {
+        -1 => "drop-stop",
+        0 => "macro",
+        1 => "simple-encounter",
+        2 => "complex-encounter",
+        _ => "undocumented",
+    }
+}
+
+fn force_branch_mode_label(mode: i16) -> &'static str {
+    match mode {
+        -1 => "drop-stop",
+        0 => "extra-action-point",
+        1 => "inline-simple-result",
+        2 => "inline-complex-result",
+        3 => "exit-keep-codes",
         _ => "undocumented",
     }
 }
@@ -1650,6 +2202,31 @@ mod tests {
     }
 
     #[test]
+    fn direct_macro_and_same_action_point_targets_follow_runtime_dispatch() {
+        let jump = action_semantics(
+            &dummy_action(39, 0),
+            &dummy_trigger(),
+            &BTreeMap::new(),
+            ReferenceCounts::default(),
+        );
+        assert!(jump
+            .targets
+            .iter()
+            .any(|target| target.id == "macro:0" && target.role == "calls_macro"));
+
+        let same = action_semantics(
+            &dummy_action(8, 12),
+            &dummy_trigger(),
+            &BTreeMap::new(),
+            ReferenceCounts::default(),
+        );
+        assert!(same.targets.iter().any(|target| {
+            target.id == "trigger:land:0:12" && target.role == "copies_action_point"
+        }));
+        assert!(!same.targets.iter().any(|target| target.id == "macro:12"));
+    }
+
+    #[test]
     fn branch_modes_resolve_documented_targets() {
         let counts = ReferenceCounts {
             simple: 4,
@@ -1666,6 +2243,444 @@ mod tests {
         assert!(!complex_target.2);
         assert!(branch_target(0, 1, counts).is_none());
         assert!(branch_target(-1, 1, counts).is_none());
+        let zero_direct_macro = branch_target(1, 0, counts).unwrap();
+        assert_eq!(zero_direct_macro.0, "macro:0");
+        let zero_macro = zero_based_branch_target(0, 7, counts).unwrap();
+        assert_eq!(zero_macro.0, "macro:7");
+        let zero_based_macro_zero = zero_based_branch_target(0, 0, counts).unwrap();
+        assert_eq!(zero_based_macro_zero.0, "macro:0");
+        let zero_simple = zero_based_branch_target(1, 3, counts).unwrap();
+        assert_eq!(zero_simple.0, "encounter:simple:3");
+        let zero_simple_zero = zero_based_branch_target(1, 0, counts).unwrap();
+        assert_eq!(zero_simple_zero.0, "encounter:simple:0");
+        let force_macro = force_branch_target(0, 9, counts).unwrap();
+        assert_eq!(force_macro.0, "macro:9");
+        let force_macro_zero = force_branch_target(0, 0, counts).unwrap();
+        assert_eq!(force_macro_zero.0, "macro:0");
+        assert!(force_branch_target(1, 9, counts).is_none());
+    }
+
+    #[test]
+    fn edcd_branch_conventions_follow_realmz_source() {
+        let mut rows = BTreeMap::new();
+        let counts = ReferenceCounts {
+            simple: 20,
+            complex: 20,
+            ..ReferenceCounts::default()
+        };
+
+        rows.insert(1, [123, 0, 0, 7, 8]);
+        let item_branch = action_semantics(&dummy_action(21, 1), &dummy_trigger(), &rows, counts);
+        assert!(item_branch
+            .targets
+            .iter()
+            .any(|target| target.id == "macro:7" && target.role == "branches_true"));
+        assert!(item_branch
+            .targets
+            .iter()
+            .any(|target| target.id == "macro:8" && target.role == "branches_false"));
+
+        rows.clear();
+        rows.insert(5, [123, 0, 2, 7, 44]);
+        let item_branch_message =
+            action_semantics(&dummy_action(21, 5), &dummy_trigger(), &rows, counts);
+        assert!(item_branch_message
+            .targets
+            .iter()
+            .any(|target| target.id == "message:44" && target.role == "shows_message"));
+        assert!(!item_branch_message
+            .targets
+            .iter()
+            .any(|target| target.id == "macro:44"));
+
+        rows.clear();
+        rows.insert(2, [0, 0, 0, 9, 0]);
+        let force_branch = action_semantics(&dummy_action(38, 2), &dummy_trigger(), &rows, counts);
+        assert!(force_branch
+            .targets
+            .iter()
+            .any(|target| target.id == "macro:9" && target.role == "branches_to"));
+
+        rows.clear();
+        rows.insert(3, [0, 4, 6, 0, 0]);
+        let random_branch = action_semantics(&dummy_action(85, 3), &dummy_trigger(), &rows, counts);
+        for id in 4..=6 {
+            assert!(random_branch
+                .targets
+                .iter()
+                .any(|target| target.id == format!("macro:{id}")));
+        }
+
+        rows.clear();
+        rows.insert(13, [0, 0, 0, 0, 0]);
+        let random_branch_zero =
+            action_semantics(&dummy_action(85, 13), &dummy_trigger(), &rows, counts);
+        assert!(random_branch_zero
+            .targets
+            .iter()
+            .any(|target| target.id == "macro:0" && target.role == "branches_to"));
+
+        rows.clear();
+        rows.insert(7, [0, 0, 0, 0, 0]);
+        let action_data_patch =
+            action_semantics(&dummy_action(7, 7), &dummy_trigger(), &rows, counts);
+        assert!(action_data_patch
+            .targets
+            .iter()
+            .any(|target| target.id == "macro:0" && target.role == "calls_macro"));
+
+        rows.clear();
+        rows.insert(31, [0, 0, 0, 0, 0]);
+        let ability_branch =
+            action_semantics(&dummy_action(31, 31), &dummy_trigger(), &rows, counts);
+        assert!(ability_branch
+            .targets
+            .iter()
+            .any(|target| target.id == "macro:0" && target.role == "branches_true"));
+        assert!(ability_branch
+            .targets
+            .iter()
+            .any(|target| target.id == "macro:0" && target.role == "branches_false"));
+
+        rows.clear();
+        rows.insert(77, [0, 0, 0, 0, 0]);
+        let false_true_zero =
+            action_semantics(&dummy_action(77, 77), &dummy_trigger(), &rows, counts);
+        assert!(!false_true_zero
+            .targets
+            .iter()
+            .any(|target| target.id == "macro:0"));
+
+        rows.clear();
+        rows.insert(86, [0, 0, 0, 0, 0]);
+        let misc_conditional_zero =
+            action_semantics(&dummy_action(86, 86), &dummy_trigger(), &rows, counts);
+        assert!(!misc_conditional_zero
+            .targets
+            .iter()
+            .any(|target| target.id == "macro:0"));
+
+        rows.clear();
+        rows.insert(6, [500, 0, 2, 11, 45]);
+        let ally_branch_message =
+            action_semantics(&dummy_action(87, 6), &dummy_trigger(), &rows, counts);
+        assert!(ally_branch_message
+            .targets
+            .iter()
+            .any(|target| target.id == "macro:11" && target.role == "branches_true"));
+        assert!(ally_branch_message
+            .targets
+            .iter()
+            .any(|target| target.id == "message:45" && target.role == "shows_message"));
+        assert!(!ally_branch_message
+            .targets
+            .iter()
+            .any(|target| target.id == "macro:45"));
+
+        rows.clear();
+        rows.insert(14, [500, 0, 0, 0, 0]);
+        let ally_branch_zero =
+            action_semantics(&dummy_action(87, 14), &dummy_trigger(), &rows, counts);
+        assert!(ally_branch_zero
+            .targets
+            .iter()
+            .any(|target| target.id == "macro:0" && target.role == "branches_true"));
+        assert!(ally_branch_zero
+            .targets
+            .iter()
+            .any(|target| target.id == "macro:0" && target.role == "branches_false"));
+
+        rows.clear();
+        rows.insert(4, [0, 0, 2, 10, 12]);
+        let battle_macro = action_semantics(&dummy_action(126, 4), &dummy_trigger(), &rows, counts);
+        for id in 10..=12 {
+            assert!(battle_macro
+                .targets
+                .iter()
+                .any(|target| target.id == format!("macro:{id}")));
+        }
+
+        rows.clear();
+        rows.insert(15, [0, 0, 0, 0, 0]);
+        let battle_macro_zero =
+            action_semantics(&dummy_action(126, 15), &dummy_trigger(), &rows, counts);
+        assert!(battle_macro_zero
+            .targets
+            .iter()
+            .any(|target| target.id == "macro:0" && target.role == "calls_macro"));
+    }
+
+    #[test]
+    fn action_data_patching_uses_extra_ap_source_row() {
+        let mut rows = BTreeMap::new();
+        rows.insert(1, [-1, 3, 0, 0, 2]);
+        let simple_patch = action_semantics(
+            &dummy_action(7, 1),
+            &dummy_trigger(),
+            &rows,
+            ReferenceCounts::default(),
+        );
+        assert!(simple_patch
+            .targets
+            .iter()
+            .any(|target| target.id == "macro:0" && target.role == "calls_macro"));
+        assert!(simple_patch.targets.iter().any(|target| {
+            target.id == "runtime-cache:CE" && target.role == "mutates_encounter_state"
+        }));
+
+        rows.insert(2, [4, 9, 12, 0, 0]);
+        let trigger_patch = action_semantics(
+            &dummy_action(7, 2),
+            &dummy_trigger(),
+            &rows,
+            ReferenceCounts::default(),
+        );
+        assert!(trigger_patch
+            .targets
+            .iter()
+            .any(|target| target.id == "macro:12" && target.role == "calls_macro"));
+        assert!(trigger_patch
+            .targets
+            .iter()
+            .any(|target| target.id == "runtime-cache:CL" && target.role == "mutates_trigger"));
+    }
+
+    #[test]
+    fn trigger_mutation_edcd_does_not_create_macro_target() {
+        let mut rows = BTreeMap::new();
+        rows.insert(1, [4, 8, 0, -2, 6]);
+        let semantics = action_semantics(
+            &dummy_action(13, 1),
+            &dummy_trigger(),
+            &rows,
+            ReferenceCounts::default(),
+        );
+        assert!(semantics
+            .targets
+            .iter()
+            .any(|target| target.id == "runtime-cache:CD" && target.role == "mutates_trigger"));
+        assert!(semantics
+            .targets
+            .iter()
+            .any(|target| target.id == "runtime-cache:CD" && target.role == "mutates_cache"));
+        assert!(!semantics
+            .targets
+            .iter()
+            .any(|target| target.id.starts_with("macro:")));
+    }
+
+    #[test]
+    fn fumble_uses_message_and_sound_only() {
+        let mut rows = BTreeMap::new();
+        rows.insert(12, [44, 655, 0, 0, 99]);
+        let semantics = action_semantics(
+            &dummy_action(122, 12),
+            &dummy_trigger(),
+            &rows,
+            ReferenceCounts {
+                message: 100,
+                ..ReferenceCounts::default()
+            },
+        );
+
+        assert!(semantics
+            .targets
+            .iter()
+            .any(|target| target.id == "message:44" && target.role == "shows_message"));
+        assert!(semantics
+            .targets
+            .iter()
+            .any(|target| target.id == "resource:snd :655" && target.role == "plays_sound"));
+        assert!(!semantics
+            .targets
+            .iter()
+            .any(|target| target.id == "message:99"));
+    }
+
+    #[test]
+    fn condition_and_spawn_rows_expose_sound_targets() {
+        let mut rows = BTreeMap::new();
+
+        rows.insert(15, [1, 1, 4, 611, -52]);
+        let damage = action_semantics(
+            &dummy_action(15, 15),
+            &dummy_trigger(),
+            &rows,
+            ReferenceCounts {
+                message: 100,
+                ..ReferenceCounts::default()
+            },
+        );
+        assert!(damage
+            .targets
+            .iter()
+            .any(|target| target.id == "message:52" && target.role == "shows_message"));
+
+        rows.clear();
+        rows.insert(43, [0, 3, 10, 609, 0]);
+        let condition = action_semantics(
+            &dummy_action(43, 43),
+            &dummy_trigger(),
+            &rows,
+            ReferenceCounts::default(),
+        );
+        assert!(condition.targets.iter().any(|target| {
+            target.id == "resource:snd :609" && target.role == "plays_sound"
+        }));
+
+        rows.clear();
+        rows.insert(124, [0, 17, 2, 610, -1]);
+        let spawn = action_semantics(
+            &dummy_action(124, 124),
+            &dummy_trigger(),
+            &rows,
+            ReferenceCounts {
+                monster: 100,
+                ..ReferenceCounts::default()
+            },
+        );
+        assert!(spawn
+            .targets
+            .iter()
+            .any(|target| target.id == "monster:17" && target.role == "uses_monster"));
+        assert!(spawn
+            .targets
+            .iter()
+            .any(|target| target.id == "resource:snd :610" && target.role == "plays_sound"));
+    }
+
+    #[test]
+    fn battle_shapes_keep_sound_branch_and_treasure_fields_distinct() {
+        let counts = ReferenceCounts {
+            battle: 100,
+            message: 100,
+            treasure: 100,
+            ..ReferenceCounts::default()
+        };
+        let mut rows = BTreeMap::new();
+
+        rows.insert(2, [1, 3, 605, 44, 0]);
+        let battle = action_semantics(&dummy_action(2, 2), &dummy_trigger(), &rows, counts);
+        assert!(battle
+            .targets
+            .iter()
+            .any(|target| target.id == "resource:snd :605" && target.role == "plays_sound"));
+        assert!(battle
+            .targets
+            .iter()
+            .any(|target| target.id == "message:44" && target.role == "shows_message"));
+        assert!(!battle
+            .targets
+            .iter()
+            .any(|target| target.id == "macro:605"));
+
+        rows.clear();
+        rows.insert(2, [1, 3, 17, 44, 10]);
+        let revive_battle = action_semantics(&dummy_action(2, 2), &dummy_trigger(), &rows, counts);
+        assert!(revive_battle
+            .targets
+            .iter()
+            .any(|target| target.id == "macro:17"
+                && target.role == "branches_on_revived_loss"));
+
+        rows.clear();
+        rows.insert(48, [2, 4, 606, 45, 7]);
+        let selective = action_semantics(&dummy_action(48, 48), &dummy_trigger(), &rows, counts);
+        assert!(selective
+            .targets
+            .iter()
+            .any(|target| target.id == "resource:snd :606"));
+        assert!(selective
+            .targets
+            .iter()
+            .any(|target| target.id == "treasure:7" && target.role == "gives_treasure"));
+
+        rows.clear();
+        rows.insert(56, [5, 0, 12, 607, 46]);
+        let outcome = action_semantics(&dummy_action(56, 56), &dummy_trigger(), &rows, counts);
+        assert!(outcome
+            .targets
+            .iter()
+            .any(|target| target.id == "macro:12" && target.role == "branches_on_coward"));
+        assert!(outcome
+            .targets
+            .iter()
+            .any(|target| target.id == "resource:snd :607"));
+
+        rows.clear();
+        rows.insert(107, [6, 8, 608, 47, 13]);
+        let improved = action_semantics(&dummy_action(107, 107), &dummy_trigger(), &rows, counts);
+        assert!(improved
+            .targets
+            .iter()
+            .any(|target| target.id == "resource:snd :608"));
+        assert!(improved
+            .targets
+            .iter()
+            .any(|target| target.id == "macro:13" && target.role == "branches_on_coward"));
+    }
+
+    #[test]
+    fn dungeon_move_fields_are_coordinates_not_sound_or_message() {
+        let mut rows = BTreeMap::new();
+        rows.insert(37, [0, 2, 10, 11, -3]);
+        let semantics = action_semantics(
+            &dummy_action(37, 37),
+            &dummy_trigger(),
+            &rows,
+            ReferenceCounts {
+                message: 100,
+                ..ReferenceCounts::default()
+            },
+        );
+        let usage = semantics.edcd_usage.expect("dungeon move emits usage");
+        assert_eq!(usage["shape"], json!("dungeon-move"));
+        assert_eq!(usage["fields"][3]["name"], json!("y"));
+        assert_eq!(usage["fields"][4]["name"], json!("signedHeading"));
+        assert!(!semantics
+            .targets
+            .iter()
+            .any(|target| target.kind == "message" || target.kind == "sound resource"));
+    }
+
+    #[test]
+    fn signed_edcd_fields_keep_opcode_specific_branch_shapes() {
+        let ability_pick = edcd_shape(30).expect("ability check shape");
+        assert_eq!(ability_pick.fields[0], "signedAbilityOrAttribute");
+
+        let random_items = edcd_shape(65).expect("random item shape");
+        assert_eq!(random_items.fields[0], "countOrRandomLimit");
+
+        let spell_points = edcd_shape(74).expect("spell point shape");
+        assert_eq!(spell_points.fields[0], "signedRollCount");
+        assert_eq!(spell_points.fields[1], "lowOrSound");
+
+        let teleport = edcd_shape(20).expect("teleport shape");
+        assert_eq!(teleport.fields[0], "levelOrKeep");
+        assert_eq!(teleport.fields[1], "xOrKeep");
+
+        let gold = edcd_shape(33).expect("gold shape");
+        assert_eq!(gold.fields[0], "signedAmount");
+
+        let timed = edcd_shape(54).expect("timed encounter shape");
+        assert_eq!(timed.fields[1], "percentOrKeep");
+        assert_eq!(timed.fields[4], "dayOffsetOrKeep");
+
+        let clock = edcd_shape(63).expect("time mutation shape");
+        assert_eq!(clock.fields[1], "dayOrDelta");
+
+        let spawn = edcd_shape(124).expect("spawn shape");
+        assert_eq!(spawn.fields[2], "countOrRandomLimit");
+
+        let misc_branch = edcd_shape(86).expect("misc branch shape");
+        assert_eq!(misc_branch.name, "misc-conditional-branch");
+        assert_eq!(misc_branch.fields[1], "signedTestValue");
+        assert_eq!(misc_branch.fields[2], "branchMode");
+
+        let ally_branch = edcd_shape(87).expect("ally branch shape");
+        assert_eq!(ally_branch.name, "conditional-branch");
+        assert_eq!(ally_branch.fields[1], "branchModeOrValue");
+        assert_eq!(ally_branch.fields[2], "falseBehavior");
     }
 
     #[test]
@@ -1715,6 +2730,72 @@ mod tests {
             .any(|diagnostic| diagnostic.diagnostic_type == "missing-edcd-row"));
         let usage = semantics.edcd_usage.expect("missing row still emits usage");
         assert_eq!(usage["shape"], json!("battle"));
+    }
+
+    #[test]
+    fn source_backed_edcd_shape_corrections_match_dispatcher() {
+        let source_backed_edcd_opcodes = [
+            -23, 2, 3, 7, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 23, 30, 31, 33, 37, 38, 40, 41,
+            42, 43, 45, 46, 48, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 63, 64, 65, 67, 68,
+            69, 70, 72, 73, 74, 75, 76, 77, 78, 81, 85, 86, 87, 90, 92, 103, 106, 107, 108, 120,
+            121, 122, 123, 124, 125, 126,
+        ];
+        for code in source_backed_edcd_opcodes {
+            let spec = opcode_spec(code);
+            assert!(
+                spec.known,
+                "opcode {code} should be a known dispatcher case"
+            );
+            assert!(
+                spec.consumes_edcd,
+                "opcode {code} should load Data EDCD according to the newland.c source audit"
+            );
+            assert!(
+                edcd_shape(code).is_some(),
+                "opcode {code} should have an EDCD shape"
+            );
+        }
+
+        for direct_code in [8, 39] {
+            let spec = opcode_spec(direct_code);
+            assert!(spec.known);
+            assert!(
+                !spec.consumes_edcd,
+                "opcode {direct_code} is a direct non-EDCD dispatcher case"
+            );
+        }
+
+        let corrected_shapes = [
+            (7, "action-data-patching"),
+            (13, "trigger-mutation"),
+            (19, "random-message"),
+            (40, "party-condition-branch"),
+            (51, "shop-mutation"),
+            (50, "race-caste-gender-selector"),
+            (52, "character-selector"),
+            (55, "picked-branch"),
+            (64, "game-time-branch"),
+            (86, "misc-conditional-branch"),
+            (106, "dark-level-state"),
+        ];
+        for (code, shape) in corrected_shapes {
+            let spec = opcode_spec(code);
+            assert!(spec.consumes_edcd, "opcode {code} should load Data EDCD");
+            assert_eq!(edcd_shape(code).expect("shape").name, shape);
+        }
+
+        let action = dummy_action(39, 12);
+        let semantics = action_semantics(
+            &action,
+            &dummy_trigger(),
+            &BTreeMap::new(),
+            ReferenceCounts::default(),
+        );
+        assert!(semantics.edcd_usage.is_none());
+        assert!(semantics
+            .targets
+            .iter()
+            .any(|target| target.id == "macro:12" && target.role == "calls_macro"));
     }
 
     #[test]

@@ -4,6 +4,7 @@ import { isDirectMacroOpcode, targetOptionsForOpcode, targetPickerConfig } from 
 import { isCallableMacro } from "./semanticGraph";
 import { missingEdcdTargetReferences } from "./edcdTargets";
 import { edcdFieldNamesForShape } from "./realmzEdcd";
+import { parameterLabelsForOpcode } from "./opcodeCrosswalk";
 
 export type ScriptDiagnosticSeverity = "error" | "warning" | "info";
 
@@ -64,20 +65,21 @@ function validateAction(project: Project, trigger: TriggerRecord, slot: number, 
     const rowId = Math.max(0, id);
     const row = project.extracodes.find((candidate) => candidate.id === rowId);
     if (!row) {
-      diagnostics.push(slotIssue("warning", trigger.id, slot, "missing-edcd-row", "This action expects an EDCD parameter row, but none is present.", `${option.shortLabel} uses ${option.edcdShape}; create Data EDCD row ${rowId} before relying on this behavior.`));
+      diagnostics.push(slotIssue("warning", trigger.id, slot, "missing-edcd-row", "Missing parameter row.", `${option.shortLabel} stores extra settings in parameter row ${rowId}; create that row before relying on this behavior.`));
     } else if (row.values.length !== 5 || row.values.some((value) => !Number.isFinite(value))) {
-      diagnostics.push(slotIssue("error", trigger.id, slot, "malformed-edcd-row", "The attached EDCD row is malformed.", `Data EDCD row ${rowId} must contain five finite numeric values.`));
+      diagnostics.push(slotIssue("error", trigger.id, slot, "malformed-edcd-row", "Parameter row is malformed.", `Parameter row ${rowId} must contain five finite numeric values.`));
     } else {
       const fieldNames = edcdFieldNamesForShape(option.edcdShape);
       if (fieldNames) {
-        for (const issue of missingEdcdTargetReferences(project, option.edcdShape, fieldNames, row.values)) {
+        for (const issue of missingEdcdTargetReferences(project, option.edcdShape, fieldNames, row.values, rawCode)) {
+          const fieldLabel = parameterLabelForIssue(rawCode, issue.index, issue.field);
           diagnostics.push(slotIssue(
             "warning",
             trigger.id,
             slot,
             `missing-edcd-${issue.field}`,
-            `EDCD ${issue.field} target is missing.`,
-            `Data EDCD row ${rowId} field ${issue.index} points at ${issue.targetLabel} ${issue.value}, but Providence cannot prove that target exists.`
+            `Missing ${fieldLabel.toLowerCase()} target.`,
+            `Parameter row ${rowId} field ${issue.index + 1} (${fieldLabel}) points at ${issue.targetLabel} ${issue.value}, but Providence cannot prove that target exists.`
           ));
         }
       }
@@ -97,9 +99,9 @@ function validateAction(project: Project, trigger: TriggerRecord, slot: number, 
   if (isDirectMacroOpcode(code) && id !== 0) {
     const macro = project.triggers.find((candidate) => candidate.source === "Data ED3" && candidate.recordIndex === id);
     if (!macro) {
-      diagnostics.push(slotIssue("error", trigger.id, slot, "dangling-macro", "Macro/GOSUB target is missing.", `No Data ED3 macro with record index ${id} exists.`));
+      diagnostics.push(slotIssue("error", trigger.id, slot, "dangling-macro", "Extra Action Point target is missing.", `No callable Extra Action Point ${id} exists.`));
     } else if (!isCallableMacro(project, macro)) {
-      diagnostics.push(slotIssue("warning", trigger.id, slot, "ed3-evidence-target", "Macro target is an imported ED3 row, not a callable macro.", `Data ED3 record ${id} is read-only until it is duplicated into an authored macro.`));
+      diagnostics.push(slotIssue("warning", trigger.id, slot, "ed3-evidence-target", "Target is an imported Extra Action Point row.", `Extra Action Point ${id} is preserved from the imported scenario but is not currently callable from normal macro paths.`));
     }
   }
 
@@ -146,4 +148,8 @@ function issue(severity: ScriptDiagnosticSeverity, triggerId: string, code: stri
 
 function slotIssue(severity: ScriptDiagnosticSeverity, triggerId: string, slot: number, code: string, message: string, detail: string): ScriptDiagnostic {
   return { id: `${triggerId}:${slot}:${code}`, severity, slot, message, detail };
+}
+
+function parameterLabelForIssue(opcode: number, index: number, fallback: string) {
+  return parameterLabelsForOpcode(opcode).find((parameter) => parameter.index === index)?.label ?? fallback;
 }

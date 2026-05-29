@@ -30,6 +30,8 @@ const QUEST_LINK_KINDS = new Set([
   "branches_false",
   "branches_keep",
   "branches_drop",
+  "branches_on_coward",
+  "branches_on_revived_loss",
   "selects_characters",
   "alters_party_state",
   "alters_character_state",

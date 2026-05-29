@@ -4,6 +4,7 @@ import { isDirectMacroOpcode, targetOptionsForOpcode, targetPickerConfig } from 
 import { isCallableMacro } from "./semanticGraph";
 import { missingEdcdTargetReferences } from "./edcdTargets";
 import { edcdFieldNamesForShape } from "./realmzEdcd";
+import { parameterLabelsForOpcode } from "./opcodeCrosswalk";
 
 export type TargetRecordDiagnostic = {
   id: string;
@@ -234,23 +235,25 @@ function validateEncounterActions(project: Project, recordType: RealmzTargetReco
       issues.push(slotIssue("info", recordType, recordId, action.slot, "dispatcher-noop", "Realmz ignores this CODE value.", `CODE ${action.rawCode} has no newland.c dispatcher case, so it is preserved as no-op data.`));
     }
     if (option.edcdShape) {
-      const row = project.extracodes.find((candidate) => candidate.id === action.id);
+      const rowId = Math.max(0, action.id);
+      const row = project.extracodes.find((candidate) => candidate.id === rowId);
       if (!row) {
-        issues.push(slotIssue("warning", recordType, recordId, action.slot, "missing-edcd-row", "Encounter action expects an EDCD parameter row, but none is present.", `CODE ${action.rawCode} uses ${option.edcdShape}; create Data EDCD row ${action.id} before relying on this behavior.`));
+        issues.push(slotIssue("warning", recordType, recordId, action.slot, "missing-edcd-row", "Missing parameter row.", `CODE ${action.rawCode} stores extra settings in parameter row ${rowId}; create that row before relying on this behavior.`));
       } else if (row.values.length !== 5 || row.values.some((value) => !Number.isFinite(value))) {
-        issues.push(slotIssue("error", recordType, recordId, action.slot, "malformed-edcd-row", "Encounter action EDCD row is malformed.", `Data EDCD row ${action.id} must contain five finite numeric values.`));
+        issues.push(slotIssue("error", recordType, recordId, action.slot, "malformed-edcd-row", "Parameter row is malformed.", `Parameter row ${rowId} must contain five finite numeric values.`));
       } else {
         const fieldNames = edcdFieldNamesForShape(option.edcdShape);
         if (fieldNames) {
-          for (const issue of missingEdcdTargetReferences(project, option.edcdShape, fieldNames, row.values)) {
+          for (const issue of missingEdcdTargetReferences(project, option.edcdShape, fieldNames, row.values, action.rawCode)) {
+            const fieldLabel = parameterLabelForIssue(action.rawCode, issue.index, issue.field);
             issues.push(slotIssue(
               "warning",
               recordType,
               recordId,
               action.slot,
               `missing-edcd-${issue.field}`,
-              `EDCD ${issue.field} target is missing.`,
-              `Data EDCD row ${action.id} field ${issue.index} points at ${issue.targetLabel} ${issue.value}, but Providence cannot prove that target exists.`
+              `Missing ${fieldLabel.toLowerCase()} target.`,
+              `Parameter row ${rowId} field ${issue.index + 1} (${fieldLabel}) points at ${issue.targetLabel} ${issue.value}, but Providence cannot prove that target exists.`
             ));
           }
         }
@@ -259,8 +262,8 @@ function validateEncounterActions(project: Project, recordType: RealmzTargetReco
     issues.push(...validateReference(project, recordType, recordId, `Action row ${action.slot}`, code, action.id, action.slot, catalog));
     if (isDirectMacroOpcode(code) && action.id !== 0) {
       const macro = project.triggers.find((candidate) => candidate.source === "Data ED3" && candidate.recordIndex === action.id);
-      if (!macro) issues.push(slotIssue("error", recordType, recordId, action.slot, "dangling-macro", "Macro/GOSUB target is missing.", `No callable Data ED3 macro ${action.id} exists.`));
-      else if (!isCallableMacro(project, macro)) issues.push(slotIssue("warning", recordType, recordId, action.slot, "ed3-evidence-target", "Macro target is an imported ED3 row, not a callable macro.", `Data ED3 record ${action.id} is read-only until duplicated into an authored macro.`));
+      if (!macro) issues.push(slotIssue("error", recordType, recordId, action.slot, "dangling-macro", "Extra Action Point target is missing.", `No callable Extra Action Point ${action.id} exists.`));
+      else if (!isCallableMacro(project, macro)) issues.push(slotIssue("warning", recordType, recordId, action.slot, "ed3-evidence-target", "Target is an imported Extra Action Point row.", `Extra Action Point ${action.id} is preserved from the imported scenario but is not currently callable from normal macro paths.`));
     }
   }
   return issues;
@@ -297,6 +300,10 @@ function asciiByteLength(value: string) {
 
 function hasNonAscii(value: string) {
   return /[^\x00-\x7f]/.test(value);
+}
+
+function parameterLabelForIssue(opcode: number, index: number, fallback: string) {
+  return parameterLabelsForOpcode(opcode).find((parameter) => parameter.index === index)?.label ?? fallback;
 }
 
 function recordIssue(severity: TargetRecordDiagnostic["severity"], recordType: RealmzTargetRecordKind, recordId: number, code: string, message: string, detail: string): TargetRecordDiagnostic {

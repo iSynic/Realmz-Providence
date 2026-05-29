@@ -22,9 +22,10 @@ Providence's tile palette can group and validate terrain like Divinity: walkable
 
 ## Byte Layout Notes
 
-- `Data Solids` is 1024 bytes and currently parsed as source-backed special-tile solidity.
+- `Data Solids` is 1024 bytes and is parsed/written as source-backed special-tile solidity.
 - `mapstats` is the richer Divinity-visible attribute model for standard landlook tiles. Realmz loads it from standard/custom landlook `* BD` files, not from scenario `Data Solids`.
 - `mapstats` records are 40 bytes each: ten scalar `short` fields, nine `build[3][3]` combat expansion `short`s, and one `clearlandid` `short`. Realmz then reads landlook-level `basetile` and `basescale` shorts after the 201 records.
+- The remaining 60 bytes in 8,104-byte landlook `* BD` files are now parsed as ten 6-byte range slots. The first four slots match Divinity's Mountain/Open/Rubble/House ranges; common observed values are `62..85`, `155..158`, `159..167`, and `190..200`.
 - `Data Solids` is scenario-local special negative tile solidity: Realmz checks it only for raw map values `-1..-998`.
 - Land tiles and negative/special `cicn` values are both field-grid values, not separate overlay storage.
 - Negative/special field values render through an icon-aware path: draw the current landlook base tile, normalize the negative field value into a `cicn` ID, then draw the icon. Terrain-only rendering (`fastplot`) intentionally ignores negative IDs.
@@ -43,9 +44,10 @@ See `outdoor-visibility-runtime-anchors.md` for why dark/LOS controls are source
 
 ## Providence Follow-Up
 
-- Follow-up: `parser-writer`, `editor-ui`, `validation`.
+- Follow-up: `editor-ui`, `validation`, `custom-landlook-parser-writer`.
 - Expand `TileAttributeProfile` from `Data Solids` into full `mapstats` fields from bundled landlook `* BD` files, including movement, LOS, forest type, clear/base tile, base scale, and combat `build[3][3]`.
-- Treat `Data Solids` as special/icon tile solidity, not standard land tile solidity.
+- Use decoded landlook range slots to make custom landlook tile groups explainable instead of hardcoded.
+- Treat `Data Solids` as special/icon tile solidity, not standard land tile solidity. Providence can roundtrip the 1024-byte table from its decoded special-tile profiles.
 - Add selected-cell field-value evidence for raw value, normalized terrain, icon candidates, note/path bits, positive state band, and secret/door suspicion.
 - Keep arbitrary positive values above `999` in `Raw / Advanced` unless they are authored through a known Action Point, secret, note, or path workflow.
 - Validate random rectangle chance as times in 10000, extra AP percent as chance out of 100, and positive extra AP percent as one-shot.

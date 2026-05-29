@@ -31,20 +31,24 @@ Current highest-priority targets:
 | Priority | Target | Status | Evidence Card |
 | ---: | --- | --- | --- |
 | 1 | `Data ED3` reachability and Extra Action Point terminology | `understood-runtime-writer-gated` | `docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md` |
-| 2 | `Data EDCD` rare/multi-row opcode shapes | `divinity-labels-needed` | `docs/format-evidence-cards/scripts-runtime-state-semantics.md` |
-| 3 | `Data OD` option strings and Divinity Strings `Sound` field | `unknown-active-risk` | `docs/format-evidence-cards/strings-data-od-string-sound.md` |
+| 2 | `Data EDCD` rare/multi-row opcode shapes | `understood-runtime-writer-gated` | `docs/format-evidence-cards/edcd-opcode-source-map.md` |
+| 3 | `Data OD` option strings and Divinity Strings `Sound` field | `understood-runtime-writer-gated` | `docs/format-evidence-cards/strings-data-od-string-sound.md` |
 | 4 | Custom landlook / Edit Land Tiles writer behavior | `understood-runtime-writer-gated` | `docs/format-evidence-cards/custom-landlook-writers.md` |
 | 5 | Dungeon wall/door/secret writer safety | `understood-runtime-writer-gated` | `docs/format-evidence-cards/dungeon-editor-writer-safety.md` |
 | 6 | `PICT`, `cicn`, `snd `, `STR#`, `TEXT`, `styl`, `RLMZ`, `vers` resource taxonomy | `resource-packaging-needed` | `docs/format-evidence-cards/resource-fork-taxonomy-authoring.md` |
 | 7 | Runtime/generated caches: `Data MENU`, runtime `CS`, `CT`, `CTD3`, `CE`, `CE2`, `Data H1` | `runtime-cache-not-authoring-source` | `docs/format-evidence-cards/runtime-caches-vs-authored-source.md` |
-| 8 | `Data DES` monster descriptions | `understood-runtime-writer-gated` | `docs/format-evidence-cards/monster-descriptions-and-sets-runtime-anchors.md` |
-| 9 | `Data MD1` / `Data MD-1` alternate monster sets | `understood-runtime-writer-gated` | `docs/format-evidence-cards/monster-descriptions-and-sets-runtime-anchors.md` |
-| 10 | Scenario `Data CS` security/code-segment support | `understood-runtime-writer-gated` | `docs/format-evidence-cards/runtime-caches-vs-authored-source.md` |
+| 8 | `Data DES` monster descriptions | `understood-runtime` | `docs/format-evidence-cards/monster-descriptions-and-sets-runtime-anchors.md` |
+| 9 | `Data MD1` / `Data MD-1` alternate monster sets | `understood-runtime` | `docs/format-evidence-cards/monster-descriptions-and-sets-runtime-anchors.md` |
+| 10 | Scenario `Data CS` security/code-segment support | `understood-runtime` | `docs/format-evidence-cards/runtime-caches-vs-authored-source.md` |
 | 11 | `Custom N Music` scenario module files | `resource-packaging-needed` | `docs/format-evidence-cards/scenario-music-and-format-files.md` |
 | 12 | `Format` zero-byte marker files | `unknown-active-risk` | `docs/format-evidence-cards/scenario-music-and-format-files.md` |
 
 Supporting generated ledgers:
 
+- `docs/generated/extra-ap-reachability-source-map.json`: source-backed Extra Action Point callable roots, including opcode 39, EDCD branch targets, Global hooks, battle macros, monster death macros, timed encounters, random rectangles, hidden encounter button paths, and GOSUB stack behavior.
+- `docs/generated/edcd-opcode-source-map.json`: source-backed action opcode to EDCD shape corrections, including direct Extra Action Point opcode exceptions.
+- `docs/generated/string-sound-audit.json`: Data SD2/Data OD text storage and the blocked Divinity Strings Sound affordance.
+- `docs/generated/dungeon-bitfield-evidence.json`: Dungeon bit masks, runtime-sensitive markers, and combat-map conversion masks.
 - `docs/generated/runtime-cache-classification.json`: source files, generated caches, and UI/export policy.
 - `docs/generated/divinity-editor-field-map.json`: Divinity screen labels mapped to Realmz containers and Providence UI policy.
 - `docs/generated/scenario-byte-roundtrip-ledger.json`: no-edit import/export byte-preservation audit across available known-valid scenario roots.
@@ -75,10 +79,20 @@ The first follow-up archaeology pass tightened `Map tile intelligence`: Realmz s
 
 Detailed evidence lives in `docs/format-evidence-cards/map-tile-runtime-anchors.md` and `docs/generated/tile-attribute-evidence.json`.
 
-The second follow-up archaeology pass tightened `Dungeon geometry and interaction bits`: Realmz source proves `Data DL` is a bitfield with source-backed masks for walls, door orientation, stairs, pillars, hidden/revealed secret state, directional secret pass-through, and note/interaction evidence. This makes the next dungeon editor slice concrete:
+The latest custom-landlook pass decoded the formerly unknown 60-byte tail at the end of 8,104-byte landlook `* BD` metadata files. After the 201 `mapstats` records, `basetile`, and `basescale`, the tail is ten 6-byte range slots. The first four slots match Divinity's Edit Land Tiles range fields: Mountain, Open, Rubble, and House. The common observed values are `62..85`, `155..158`, `159..167`, and `190..200`.
+
+- Providence now has a parser/test for the tail shape.
+- The tail should inform tile grouping and custom-landlook inspection.
+- Writer support remains gated until Divinity save/load fixtures prove which range slots are editable and how the paired `PICT 300+landlook` resources are packaged.
+
+Detailed evidence lives in `docs/format-evidence-cards/custom-landlook-writers.md` and `docs/generated/custom-landlook-tail-patterns.json`.
+
+The second follow-up archaeology pass tightened `Dungeon geometry and interaction bits`: Realmz source proves `Data DL` is a bitfield with source-backed masks for walls, door orientation, stairs, pillars, hidden/revealed secret state, directional secret pass-through, visible arches, dungeon notes, Action Point trigger markers, and combat-map conversion. This makes the next dungeon editor slice concrete:
 
 - add a `DungeonCellProfile` helper with named masks and raw visibility;
 - replace raw dungeon painting with named primitives;
+- route dungeon note and Action Point marker bits through their dedicated workflows where possible;
+- treat visible arch/revealed passage and hidden visual markers as runtime-sensitive until Divinity writer fixtures prove authored defaults;
 - keep directional secret/pass-through guided rather than a single vague toggle;
 - require fixture checks before broad writer controls.
 
@@ -119,6 +133,39 @@ The sixth follow-up archaeology pass tightened `Text/messages`: Realmz source pr
 - prompt search controls should behave as message target pickers, not text search fields.
 
 Detailed evidence lives in `docs/format-evidence-cards/text-message-runtime-anchors.md` and `docs/generated/text-message-evidence.json`.
+
+The latest follow-up archaeology pass tightened `Data EDCD` opcode semantics: Realmz source proves opcode `39` is a direct Extra Action Point call through `loaddoor2(id)`, opcodes `19`, `40`, `51`, `55`, `64`, and `106` load five-field `Data EDCD` parameter rows, opcode `92` is a paired EDCD shape that loads row `ID` plus row `ID + 1`, opcode `122` uses field `0` as a fumble message plus field `1` as a fumble sound while preserving fields `2..4` as loaded-unused data, battle-like opcodes `2`, `48`, `56`, and `107` have distinct sound/message/treasure/coward-branch ownership, character-picking opcodes `50` and `52` now have separate race/caste/gender versus movement/item/source-set shapes, opcodes `15`/`16` resolve negative message fields by absolute value, opcode `37` is destination movement data rather than sound/message, opcodes `43`/`124` expose source-backed condition/spawn sound fields, opcodes `30`, `65`, and `74` use signed fields for reverse-pick/random-count/take-vs-give behavior, and opcode `86` is no longer conflated with opcode `87` because its branch mode lives in field `2` while field `1` is a signed test value. This fixes the core opcode-to-parameter-row table:
+
+- remove fake EDCD shape `extended-door-codes` from opcode `39`;
+- add source-backed EDCD shapes for random message, party-condition branch, shop mutation, picked branch, game-time branch, and dark-level state;
+- treat opcode `92` random-rectangle shape edits as a primary/secondary row pair so writers preserve and validate both rows together;
+- treat opcode `122` fumble field `1` as a sound resource and stop treating field `4` as a message target;
+- use opcode-specific battle labels for revive, treasure, coward branch, sound, and message fields instead of one generic battle variant;
+- keep opcode `37` as movement/heading data, and route opcode `43`/`124` sound fields through normal sound resolution;
+- preserve signed semantics in the field model for opcodes `30`, `65`, `74`, and `86`;
+- align validation and semantic links so the editor no longer treats those IDs as the wrong target kind.
+- classify EDCD branch-mode conventions separately: some rows use one-based modes, some use zero-based modes, force-branch rows use `0` for Extra Action Point with other modes staying inside encounter action rows, and opcode `87`/`21` can turn a target field into a message depending on a behavior flag.
+- distinguish valid row `0` branch targets from opcode-specific guarded zero/no-branch fields: opcodes `76`, `77`, `78`, and `86` can store zero values that Realmz skips rather than resolving as Extra Action Point row `0`.
+- classify mutation-style EDCD rows separately: opcode `7` loads the Extra Action Point in `extracode[2]` and copies its CODE/ID slots into another record, while opcode `13` mutates Action Point percent fields and does not call `Data ED3`.
+- keep opcode `8` out of the macro/Extra AP family: Realmz copies `door[id]` from the currently loaded map, so this is same-map Action Point reuse rather than a `Data ED3` call.
+
+Detailed evidence lives in `docs/format-evidence-cards/edcd-opcode-source-map.md` and `docs/generated/edcd-opcode-source-map.json`.
+
+The current follow-up archaeology pass tightened `Data ED3` / Extra Action Point reachability. Realmz source proves `Data ED3` is the same 40-byte `struct door` script row shape as fixed Action Points, loaded by `loaddoor2(id)`. The source-backed callable roots are now explicit:
+
+- direct `newland(..., 1, id, ...)` macro entry;
+- opcode `39`, which jumps directly to an Extra Action Point and does not use `Data EDCD`;
+- opcode-specific `Data EDCD` branch fields that choose an Extra AP target;
+- Global hooks for start, death, quit, shop, and temple;
+- negative battle macros;
+- monster death macros and their runtime queue;
+- timed encounter `door` values;
+- random rectangle extra AP doors, including hidden Encounter-button paths;
+- door items whose `sp5` field is executed as an Extra Action Point when the item is used;
+- GOSUB stack behavior layered on script execution.
+- battle outcome branches for coward/flee and revived-loss paths now promote Extra Action Point rows through dedicated semantic roles.
+
+This changes the Providence follow-up from "figure out ED3" to "scan project references and label callable Extra AP rows versus unreferenced imported advanced data." Detailed evidence lives in `docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md` and `docs/generated/extra-ap-reachability-source-map.json`.
 
 The current Text/Assets editor pass adds two open archaeology questions rather than inventing UI:
 
@@ -265,12 +312,14 @@ The nineteenth follow-up archaeology pass added a full no-edit byte-preservation
 
 The twentieth follow-up archaeology pass reclassified several byte-preserved files from "mystery data" into concrete runtime families:
 
-- `Data DES` is a 256-byte monster-description pool read by the bestiary/monster inspection path.
-- `Data MD1` and `Data MD-1` are alternate monster template sets produced by appending the selected `monsterset` value to `Data MD`; they use the same 210-byte `struct monster` layout as `Data MD`.
-- `Data OD` is a 25-byte option-label table used by two-choice prompts and negative string indexes; the Divinity Strings `Sound` field remains unproven and blocked.
-- scenario-file `Data CS` is a 316-byte registration/security code-segment backup; it is distinct from runtime `:Data Files:CS`, which is the shop cache generated from `Data SD`.
+- `Data DES` is a 256-byte monster-description pool read by the bestiary/monster inspection path; Providence now parses/writes it with raw-byte preservation.
+- `Data MD1` and `Data MD-1` are alternate monster template sets produced by appending the selected `monsterset` value to `Data MD`; Providence now parses/writes them through the same raw-preserving 210-byte `struct monster` codec as `Data MD`.
+- `Data OD` is a 25-byte option-label table used by two-choice prompts and negative string indexes; Providence now parses/writes it with raw-byte preservation. The Divinity Strings `Sound` field remains unproven and blocked.
+- scenario-file `Data CS` is a 316-byte registration/security code-segment backup; it is distinct from runtime `:Data Files:CS`, which is the shop cache generated from `Data SD`. Providence now reads/writes it through the raw-preserving scenario-shell codec while keeping security editing hidden.
 
 Detailed evidence lives in `docs/format-evidence-cards/monster-descriptions-and-sets-runtime-anchors.md`, `docs/format-evidence-cards/strings-data-od-string-sound.md`, and `docs/format-evidence-cards/runtime-caches-vs-authored-source.md`.
+
+The latest focused string audit downgraded the Divinity Strings `Sound` box from "unknown scenario byte family" to "unproven Divinity editor affordance." Realmz runtime source proves central string storage in `Data SD2` and option labels in `Data OD`; it also shows that message display uses a generic textbox sound and that caller records carry sound IDs when a message needs audio. Providence should not add a per-string sound writer unless Divinity binary tracing or a before/after fixture proves a separate storage path. Opcode `19` is a useful guardrail: the Divinity guide mentions optional sound around string-related actions, but Realmz source displays the random message range without calling `sound()`.
 
 The twenty-first follow-up archaeology pass classified the remaining high-frequency non-record pass-through files:
 
@@ -284,7 +333,7 @@ The twenty-second follow-up archaeology pass tightened the byte-roundtrip ledger
 
 - scenario marker/main files named after the scenario are now classified as supported scenario shell data when they parse through the existing source-backed shell parser, including case-only folder/file name differences from classic Mac scenario folders;
 - the no-edit audit still reports 87/87 scenarios and 3,072/3,072 files exported byte-identically;
-- `Data DES`, `Data MD1`, `Data MD-1`, scenario `Data CS`, `Data OD`, custom music, `Format`, empty resource-fork data companions such as `Icon_`, and distribution readme files are now tracked as known preserve-only/pass-through families rather than unknown files;
+- custom music, `Format`, empty resource-fork data companions such as `Icon_`, and distribution readme files are now tracked as known preserve-only/pass-through families rather than unknown files; `Data OD`, `Data DES`, `Data MD1`, `Data MD-1`, and scenario `Data CS` have since moved into typed raw-preserving parser/writer support;
 - `.DS_Store` is Finder metadata, not Realmz scenario data; Providence ignores it during import instead of preserving or classifying it.
 
 The generated ledger lives in `docs/generated/scenario-byte-roundtrip-ledger.json`. Re-run it with `npm run archaeology:roundtrip-audit` whenever writer behavior changes.

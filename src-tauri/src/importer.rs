@@ -52,6 +52,7 @@ pub fn create_project(
             contact_info: Some(default_contact_info(&project_name)),
             restrictions: None,
             global_macro_hooks: None,
+            security_backup: None,
         },
         source: SourceSnapshot {
             source_path: String::new(),
@@ -67,8 +68,11 @@ pub fn create_project(
         random_levels: Vec::new(),
         extracodes: Vec::new(),
         messages: Vec::new(),
+        option_labels: Vec::new(),
         battles: Vec::new(),
         monsters: Vec::new(),
+        monster_sets: Vec::new(),
+        monster_descriptions: Vec::new(),
         scenario_items: Vec::new(),
         treasures: Vec::new(),
         shops: Vec::new(),
@@ -178,6 +182,9 @@ fn import_scenario_with_name(
     let global_macro_hooks = buffers
         .get("Global")
         .map(|buffer| crate::realmz::parse_global_macro_hooks(buffer));
+    let security_backup = buffers
+        .get("Data CS")
+        .and_then(|buffer| crate::realmz::parse_scenario_shell("Data CS", buffer).ok());
 
     let mut project = ProvidenceProject {
         schema_version: PROJECT_SCHEMA_VERSION,
@@ -191,6 +198,7 @@ fn import_scenario_with_name(
             contact_info,
             restrictions,
             global_macro_hooks,
+            security_backup,
         },
         source: SourceSnapshot {
             source_path: source_path.to_string_lossy().to_string(),
@@ -206,8 +214,11 @@ fn import_scenario_with_name(
         random_levels: parsed.random_levels,
         extracodes: parsed.extracodes,
         messages: parsed.messages,
+        option_labels: parsed.option_labels,
         battles: parsed.battles,
         monsters: parsed.monsters,
+        monster_sets: parsed.monster_sets,
+        monster_descriptions: parsed.monster_descriptions,
         scenario_items: parsed.scenario_items,
         treasures: parsed.treasures,
         shops: parsed.shops,
@@ -238,8 +249,11 @@ fn import_scenario_with_name(
         random_levels: project.random_levels.clone(),
         extracodes: project.extracodes.clone(),
         messages: project.messages.clone(),
+        option_labels: project.option_labels.clone(),
         battles: project.battles.clone(),
         monsters: project.monsters.clone(),
+        monster_sets: project.monster_sets.clone(),
+        monster_descriptions: project.monster_descriptions.clone(),
         scenario_items: project.scenario_items.clone(),
         treasures: project.treasures.clone(),
         shops: project.shops.clone(),
@@ -318,8 +332,11 @@ fn refresh_semantic_schema(project_dir: &Path, project: &mut ProvidenceProject) 
         random_levels: project.random_levels.clone(),
         extracodes: project.extracodes.clone(),
         messages: project.messages.clone(),
+        option_labels: project.option_labels.clone(),
         battles: project.battles.clone(),
         monsters: project.monsters.clone(),
+        monster_sets: project.monster_sets.clone(),
+        monster_descriptions: project.monster_descriptions.clone(),
         scenario_items: project.scenario_items.clone(),
         treasures: project.treasures.clone(),
         shops: project.shops.clone(),
@@ -348,6 +365,9 @@ fn backfill_target_records(project: &mut ProvidenceProject, buffers: &BTreeMap<S
     if project.messages.is_empty() {
         project.messages = parsed.messages;
     }
+    if project.option_labels.is_empty() {
+        project.option_labels = parsed.option_labels;
+    }
     if project.map_records.is_empty() {
         project.map_records = parsed.map_records;
     }
@@ -359,6 +379,12 @@ fn backfill_target_records(project: &mut ProvidenceProject, buffers: &BTreeMap<S
     }
     if project.monsters.is_empty() {
         project.monsters = parsed.monsters;
+    }
+    if project.monster_sets.is_empty() {
+        project.monster_sets = parsed.monster_sets;
+    }
+    if project.monster_descriptions.is_empty() {
+        project.monster_descriptions = parsed.monster_descriptions;
     }
     if project.scenario_items.is_empty() {
         project.scenario_items = parsed.scenario_items;
@@ -424,6 +450,14 @@ fn hydrate_scenario_metadata(project_dir: &Path, project: &mut ProvidenceProject
             let bytes = fs::read(&path).with_path(&path)?;
             project.scenario.global_macro_hooks =
                 Some(crate::realmz::parse_global_macro_hooks(&bytes));
+        }
+    }
+    if project.scenario.security_backup.is_none() {
+        let path = raw_dir.join("Data CS");
+        if path.is_file() {
+            let bytes = fs::read(&path).with_path(&path)?;
+            project.scenario.security_backup =
+                crate::realmz::parse_scenario_shell("Data CS", &bytes).ok();
         }
     }
     Ok(())
@@ -667,17 +701,16 @@ fn snapshot_sources(source_path: &Path, raw_dir: &Path) -> Result<Vec<SourceFile
         let dest = raw_dir.join(name);
         fs::copy(path, &dest).with_path(&dest)?;
         let bytes = fs::read(path).with_path(path)?;
-        let role = if supported.contains(name)
-            || is_scenario_marker_source(source_path, name, &bytes)
-        {
-            SourceFileRole::SupportedBinary
-        } else if is_resource_file_name(name) {
-            SourceFileRole::ResourceFork
-        } else if tracked.contains(name) {
-            SourceFileRole::PassThrough
-        } else {
-            SourceFileRole::Unknown
-        };
+        let role =
+            if supported.contains(name) || is_scenario_marker_source(source_path, name, &bytes) {
+                SourceFileRole::SupportedBinary
+            } else if is_resource_file_name(name) {
+                SourceFileRole::ResourceFork
+            } else if tracked.contains(name) {
+                SourceFileRole::PassThrough
+            } else {
+                SourceFileRole::Unknown
+            };
         let editable = matches!(role, SourceFileRole::SupportedBinary);
         files.push(SourceFile {
             name: name.to_string(),

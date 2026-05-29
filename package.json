@@ -13,6 +13,8 @@
     "dist": "tauri build",
     "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml",
     "archaeology:roundtrip-audit": "cargo run --manifest-path src-tauri/Cargo.toml --example no_edit_roundtrip_audit -- --output docs/generated/scenario-byte-roundtrip-ledger.json",
+    "archaeology:divinity-opcodes": "node scripts/extract_divinity_opcode_help.mjs",
+    "archaeology:opcode-crosswalk": "node scripts/generate_opcode_edcd_crosswalk.mjs",
     "smoke:oracle": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_smoke.ps1",
     "smoke:oracle:matrix": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_smoke_matrix.ps1",
     "smoke:oracle:gameplay": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_gameplay.ps1",

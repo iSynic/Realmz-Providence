@@ -4,10 +4,12 @@ use crate::project::{LevelType, ProvidenceProject};
 use crate::realmz::{
     write_battles, write_caste_overrides, write_complex_encounters, write_door_file,
     write_extracodes, write_fields, write_global_macro_hooks, write_land_layout, write_macro_file,
-    write_map_records, write_messages, write_monsters, write_race_overrides, write_random_levels,
+    write_map_records, write_messages, write_monster_descriptions, write_monster_set,
+    write_monsters, write_option_labels, write_race_overrides, write_random_levels,
     write_scenario_contact_info, write_scenario_items, write_scenario_restrictions,
     write_scenario_shell, write_shops, write_simple_encounters, write_spell_overrides,
-    write_thief_encounters, write_timed_encounters, write_treasures,
+    write_thief_encounters, write_tile_solids, write_timed_encounters, write_treasures,
+    DOOR_BYTES, EXTRACODE_BYTES,
 };
 use crate::resource_fork::{
     merge_resource_entries, parse_resource_fork_entries, ResourceForkEntry,
@@ -91,6 +93,14 @@ pub fn export_project(
             &mut written_files,
         )?;
     }
+    if let Some(security_backup) = &project.scenario.security_backup {
+        write_if_nonempty(
+            output_dir,
+            "Data CS",
+            write_scenario_shell(security_backup)?,
+            &mut written_files,
+        )?;
+    }
     write_if_nonempty(
         output_dir,
         "Data LD",
@@ -111,6 +121,12 @@ pub fn export_project(
             &mut written_files,
         )?;
     }
+    write_if_nonempty(
+        output_dir,
+        "Data Solids",
+        write_tile_solids(&project.tile_attributes)?,
+        &mut written_files,
+    )?;
     write_if_nonempty(
         output_dir,
         "Data DD",
@@ -138,13 +154,23 @@ pub fn export_project(
     write_if_nonempty(
         output_dir,
         "Data ED3",
-        write_macro_file(&project.triggers)?,
+        preserve_imported_fixed_length(
+            "Data ED3",
+            write_macro_file(&project.triggers)?,
+            DOOR_BYTES,
+            &raw_dir,
+        )?,
         &mut written_files,
     )?;
     write_if_nonempty(
         output_dir,
         "Data EDCD",
-        write_extracodes(&project.extracodes)?,
+        preserve_imported_fixed_length(
+            "Data EDCD",
+            write_extracodes(&project.extracodes)?,
+            EXTRACODE_BYTES,
+            &raw_dir,
+        )?,
         &mut written_files,
     )?;
     write_fixed_if_nonempty(
@@ -152,6 +178,14 @@ pub fn export_project(
         "Data SD2",
         write_messages(&project.messages)?,
         crate::realmz::MESSAGE_BYTES,
+        &raw_dir,
+        &mut written_files,
+    )?;
+    write_fixed_if_nonempty(
+        output_dir,
+        "Data OD",
+        write_option_labels(&project.option_labels)?,
+        crate::realmz::OPTION_LABEL_BYTES,
         &raw_dir,
         &mut written_files,
     )?;
@@ -176,6 +210,24 @@ pub fn export_project(
         "Data MD",
         write_monsters(&project.monsters)?,
         crate::realmz::MONSTER_BYTES,
+        &raw_dir,
+        &mut written_files,
+    )?;
+    for monster_set in &project.monster_sets {
+        write_fixed_if_nonempty(
+            output_dir,
+            &monster_set.source_file,
+            write_monster_set(monster_set)?,
+            crate::realmz::MONSTER_BYTES,
+            &raw_dir,
+            &mut written_files,
+        )?;
+    }
+    write_fixed_if_nonempty(
+        output_dir,
+        "Data DES",
+        write_monster_descriptions(&project.monster_descriptions)?,
+        crate::realmz::MONSTER_DESCRIPTION_BYTES,
         &raw_dir,
         &mut written_files,
     )?;
@@ -317,6 +369,28 @@ fn write_fixed_if_nonempty(
     write_if_nonempty(output_dir, name, bytes, written)
 }
 
+fn preserve_imported_fixed_length(
+    name: &str,
+    mut bytes: Vec<u8>,
+    record_bytes: usize,
+    raw_dir: &Path,
+) -> Result<Vec<u8>> {
+    let raw_path = raw_dir.join(name);
+    if !raw_path.is_file() {
+        return Ok(bytes);
+    }
+    let raw = fs::read(&raw_path).with_path(&raw_path)?;
+    if raw.len() <= bytes.len() {
+        return Ok(bytes);
+    }
+    if raw.len() % record_bytes == 0 {
+        bytes.resize(raw.len(), 0);
+    } else {
+        bytes.extend_from_slice(&raw[bytes.len()..]);
+    }
+    Ok(bytes)
+}
+
 fn write_spell_overrides_preserving_tail(
     output_dir: &Path,
     raw_dir: &Path,
@@ -444,4 +518,34 @@ fn scenario_shell_file_name(project: &ProvidenceProject) -> &str {
         .map(|shell| shell.source_file.as_str())
         .filter(|value| !value.trim().is_empty())
         .unwrap_or(project.scenario.name.as_str())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::preserve_imported_fixed_length;
+    use std::fs;
+
+    #[test]
+    fn preserves_imported_fixed_row_file_length_when_export_model_shrinks() {
+        let temp = tempfile::tempdir().unwrap();
+        let raw_dir = temp.path();
+        fs::write(raw_dir.join("Data EDCD"), vec![0x7Au8; 30]).unwrap();
+
+        let bytes = preserve_imported_fixed_length("Data EDCD", vec![1u8; 10], 10, raw_dir).unwrap();
+
+        assert_eq!(bytes.len(), 30);
+        assert_eq!(&bytes[..10], &[1u8; 10]);
+        assert_eq!(&bytes[10..], &[0u8; 20]);
+    }
+
+    #[test]
+    fn preserves_unknown_tail_bytes_for_malformed_fixed_row_file() {
+        let temp = tempfile::tempdir().unwrap();
+        let raw_dir = temp.path();
+        fs::write(raw_dir.join("Data EDCD"), vec![9u8, 8, 7, 6, 5]).unwrap();
+
+        let bytes = preserve_imported_fixed_length("Data EDCD", vec![1u8, 2], 10, raw_dir).unwrap();
+
+        assert_eq!(bytes, vec![1u8, 2, 7, 6, 5]);
+    }
 }

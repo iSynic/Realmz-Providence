@@ -1,7 +1,8 @@
 use crate::project::*;
 use crate::realmz::{
     COMPLEX_ENCOUNTER_BYTES, DOOR_BYTES, DOOR_LEVEL_BYTES, EXTRACODE_BYTES, FIELD_BYTES,
-    LAND_LAYOUT_BYTES, RANDLEVEL_BYTES, SIMPLE_ENCOUNTER_BYTES,
+    LAND_LAYOUT_BYTES, MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RANDLEVEL_BYTES,
+    SIMPLE_ENCOUNTER_BYTES,
 };
 use serde_json::Value;
 use std::collections::BTreeMap;
@@ -87,15 +88,20 @@ pub(super) fn layout_for(name: &str) -> Option<SemanticLayout> {
         "Data ED3" => ("macro/action records", DOOR_BYTES),
         "Data EDCD" => ("extra-code rows", EXTRACODE_BYTES),
         "Data MD" => ("monsters", 210),
+        "Data MD1" => ("alternate monster set", 210),
+        "Data MD-1" => ("alternate monster set", 210),
+        "Data DES" => ("monster descriptions", MONSTER_DESCRIPTION_BYTES),
         "Data BD" => ("battles", 346),
         "Data SD" => ("shops", 3002),
         "Data SD2" => ("messages", 256),
+        "Data OD" => ("option labels", OPTION_LABEL_BYTES),
         "Data MD2" => ("map records", 340),
         "Data TD" => ("treasure", 48),
         "Data TD2" => ("thief encounters", 118),
         "Data TD3" => ("timed encounters", 40),
         "Data CI" => ("scenario contact", 4608),
         "Data RI" => ("scenario restrictions", 320),
+        "Data CS" => ("scenario security backup", 316),
         "Global" => ("global macro hooks", 60),
         "Data MENU" => ("monster menu cache", 502),
         "Data Solids" => ("solid tile table", 1024),

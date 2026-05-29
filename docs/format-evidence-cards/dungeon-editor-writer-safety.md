@@ -14,6 +14,9 @@ Providence can turn dungeon authoring from raw bitfields into named primitives: 
 | `F:\Realmz\src\realmz_orig\editstring.c:550` | Realmz internal editor/source utility references dungeon trigger data `Data DDD`. |
 | `F:\Realmz\src\realmz_orig\editstring.c:553` | Realmz internal editor/source utility references dungeon field data `Data DL`. |
 | `F:\Realmz\src\realmz_orig\editstring.c:556` | Realmz internal editor/source utility references dungeon random data `Data RDD`. |
+| `F:\Realmz\src\realmz_orig\threed.c:580` | Dungeon cells with bit index `3` call `newland(floorx, floory, ...)`, so this is the Action Point / encounter trigger marker, not a generic wall flag. |
+| `F:\Realmz\src\realmz_orig\handlemenuchoice.c:970` | Dungeon note saving owns bit index `10`; notes should be edited through a note workflow, not raw geometry painting. |
+| `F:\Realmz\src\realmz_orig\combatmap.c:68` | Dungeon combat map conversion uses mask `0x4F0E`, so combat preview needs the runtime mask model in addition to top-down dungeon sprites. |
 | Existing card | `docs/format-evidence-cards/dungeon-runtime-anchors.md` contains current bitfield masks and runtime consumers. |
 
 ## Divinity Evidence
@@ -35,12 +38,14 @@ Providence can turn dungeon authoring from raw bitfields into named primitives: 
 ## Corpus Evidence
 
 - `Data DL`, `Data DDD`, and `Data RDD` are present in 44/44 scenarios.
-- Existing dungeon evidence marks writer confidence low until fixture coverage proves named primitive writes.
+- Existing dungeon evidence now distinguishes geometry bits, note markers, Action Point trigger markers, runtime reveal/hidden markers, and combat-map conversion masks. Writer confidence remains gated until fixture coverage proves named primitive writes and default combinations.
 
 ## Providence Follow-Up
 
 - Follow-up: `parser-writer`, `editor-ui`, `validation`.
 - Build named dungeon primitives from the existing bitfield profile.
+- Route note markers and Action Point trigger markers through Notes and Action Point workflows where possible.
+- Treat visible arch/revealed passage and hidden visual markers as runtime-sensitive until Divinity writer fixtures prove authored defaults.
 - Keep dangerous raw bit toggles under Advanced Details.
 - Add fixtures for each primitive before exposing broad brush tools.
 - Link dungeon Action Points and Random Encounters through the same Action Point Hub concepts as land maps.
@@ -48,4 +53,3 @@ Providence can turn dungeon authoring from raw bitfields into named primitives: 
 ## Writer Gate
 
 No new dungeon primitive writer is ready until the exact bit masks, compatible combinations, runtime render effect, and save/reopen/export roundtrip are fixture-tested.
-

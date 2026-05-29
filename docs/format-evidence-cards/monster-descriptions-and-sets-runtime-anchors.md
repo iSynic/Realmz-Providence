@@ -8,7 +8,7 @@ Providence can stop treating `Data DES`, `Data MD1`, and `Data MD-1` as unrelate
 - `Data MD1` and `Data MD-1` are alternate monster template sets selected by the runtime `monsterset` preference.
 - All monster set files use the same 210-byte `struct monster` layout as `Data MD`.
 
-This unlocks a safer Monster workbench plan: parse all monster sets, show descriptions alongside monster templates, preserve unknown/extra description slots, and only write after fixtures prove Divinity's monster editor behavior.
+This unlocks a safer Monster workbench plan: parse all monster sets, show descriptions alongside monster templates, preserve unknown/extra description slots, and only expose editing controls after fixtures prove Divinity's monster editor behavior.
 
 ## Realmz Source Anchors
 
@@ -36,14 +36,14 @@ This unlocks a safer Monster workbench plan: parse all monster sets, show descri
 - Runtime use: Pascal-style text is read directly into a dialog item.
 - Indexing: same menu/specific monster index used for `Data MD`, but corpus files can contain more description slots than active monster records.
 - Endian behavior: none; this is text/byte data.
-- Writer status: parser-ready, writer-gated until Divinity Monster editor behavior is confirmed.
+- Writer status: parser/writer-backed with raw preservation. Default UI editing remains gated until Divinity Monster editor behavior is confirmed.
 
 ### `Data MD1` / `Data MD-1`
 
 - Fixed record size: 210 bytes, same as `Data MD`.
 - Runtime use: selected when `monsterset` is nonzero.
 - Filename construction: `getfilename("Data MD")` followed by appending `monsterset`.
-- Writer status: parser-ready through the normal `Data MD` monster parser, writer-gated until monster-set editing semantics are proven.
+- Writer status: parser/writer-backed through the normal `Data MD` monster record codec. Providence preserves raw bytes by default and writes the original source filename (`Data MD1` or `Data MD-1`). Normal editor controls remain gated until monster-set editing semantics are proven.
 
 ## Corpus Evidence
 
@@ -68,18 +68,15 @@ Representative observed sizes:
 
 ## Providence Follow-Up
 
-- Follow-up: `parser-only`, then `parser-writer` after fixture proof.
-- Add a monster-set resolver that treats `Data MD`, `Data MD1`, and `Data MD-1` as variants of the same record family.
-- Add a `Data DES` parser that exposes description slots by monster index and preserves extra slots.
+- Follow-up: `editor-ui` after Divinity Monster editor behavior is confirmed.
+- Add a monster-set resolver that treats `Data MD`, `Data MD1`, and `Data MD-1` as variants of the same record family in author-facing monster pickers.
+- `Data DES` parser/writer support now exposes description slots by monster index and preserves extra slots.
 - In normal UI, call these "Monster Sets" and "Monster Descriptions" rather than showing raw filenames.
 - Keep write controls hidden until Divinity Monster editor labels, set behavior, and before/after fixtures prove safe mutation.
 
 ## Writer Gate
 
-Do not write `Data DES`, `Data MD1`, or `Data MD-1` yet. Before enabling writes, Providence needs:
+`Data DES`, `Data MD1`, and `Data MD-1` can be round-tripped through Providence's fixed-record writers with raw preservation. Do not expose normal editor controls for alternate monster sets yet. Before enabling UI editing, Providence needs:
 
-- record-level fixtures for all three monster template files;
-- a fixture that changes a monster description in Divinity or a source-backed writer test for the 256-byte text slot;
 - confirmation whether Divinity edits all monster sets, only the active set, or only `Data MD`;
 - validation for description slots that have no matching active monster template.
-

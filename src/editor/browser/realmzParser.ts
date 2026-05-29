@@ -11,7 +11,10 @@ import {
   MapEntity,
   MapRecord,
   MessageRecord,
+  MonsterDescriptionRecord,
   MonsterRecord,
+  MonsterSet,
+  OptionLabelRecord,
   RandomLevel,
   ScenarioItemRecord,
   ScenarioCasteOverride,
@@ -41,6 +44,8 @@ export const DOOR_LEVEL_BYTES = DOOR_BYTES * DOORS_PER_LEVEL;
 export const RANDLEVEL_BYTES = 644;
 export const EXTRACODE_BYTES = 10;
 export const MONSTER_BYTES = 210;
+export const MONSTER_DESCRIPTION_BYTES = 256;
+export const OPTION_LABEL_BYTES = 25;
 export const LAND_LAYOUT_ROWS = 8;
 export const LAND_LAYOUT_COLS = 16;
 export const LAND_LAYOUT_BYTES = LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS * 2;
@@ -67,15 +72,20 @@ export const TRACKED_FILES = [
   "Data ED3",
   "Data EDCD",
   "Data MD",
+  "Data MD1",
+  "Data MD-1",
+  "Data DES",
   "Data BD",
   "Data SD",
   "Data SD2",
+  "Data OD",
   "Data MD2",
   "Data TD",
   "Data TD2",
   "Data TD3",
   "Data CI",
   "Data RI",
+  "Data CS",
   "Data MENU",
   "Data Solids",
   "Data NI",
@@ -100,15 +110,20 @@ const RECORD_BYTES: Record<string, number> = {
   "Data ED3": DOOR_BYTES,
   "Data EDCD": EXTRACODE_BYTES,
   "Data MD": MONSTER_BYTES,
+  "Data MD1": MONSTER_BYTES,
+  "Data MD-1": MONSTER_BYTES,
+  "Data DES": MONSTER_DESCRIPTION_BYTES,
   "Data BD": 346,
   "Data SD": 3002,
   "Data SD2": 256,
+  "Data OD": OPTION_LABEL_BYTES,
   "Data MD2": 340,
   "Data TD": 48,
   "Data TD2": 118,
   "Data TD3": 40,
   "Data CI": 4608,
   "Data RI": 320,
+  "Data CS": 316,
   "Global": 60,
   "Data MENU": 502,
   "Data Solids": 1024,
@@ -128,8 +143,11 @@ export type ParsedBrowserScenario = {
   randomLevels: RandomLevel[];
   extracodes: ExtraCodeRow[];
   messages: MessageRecord[];
+  optionLabels: OptionLabelRecord[];
   battles: BattleRecord[];
   monsters: MonsterRecord[];
+  monsterSets: MonsterSet[];
+  monsterDescriptions: MonsterDescriptionRecord[];
   scenarioItems: ScenarioItemRecord[];
   treasures: TreasureRecord[];
   shops: ShopRecord[];
@@ -187,8 +205,14 @@ export function parseScenarioBuffers(buffers: Map<string, Uint8Array>): ParsedBr
   ];
   const extracodes = parseExtracodes(buffers.get("Data EDCD"));
   const messages = parseMessages(buffers.get("Data SD2"));
+  const optionLabels = parseOptionLabels(buffers.get("Data OD"));
   const battles = parseBattles(buffers.get("Data BD"));
   const monsters = parseMonsters(buffers.get("Data MD"));
+  const monsterSets = [
+    parseMonsterSet(buffers.get("Data MD1"), "Data MD1", 1),
+    parseMonsterSet(buffers.get("Data MD-1"), "Data MD-1", -1)
+  ].filter((set): set is MonsterSet => set != null);
+  const monsterDescriptions = parseMonsterDescriptions(buffers.get("Data DES"));
   const scenarioItems = parseScenarioItems(buffers.get("Data NI"));
   const treasures = parseTreasures(buffers.get("Data TD"));
   const shops = parseShops(buffers.get("Data SD"));
@@ -200,7 +224,7 @@ export function parseScenarioBuffers(buffers: Map<string, Uint8Array>): ParsedBr
   const raceOverrides = parseRaceOverrides(buffers.get("Data Race"));
   const casteOverrides = parseCasteOverrides(buffers.get("Data Caste"));
   const assetCatalog = buildAssetCatalog(maps, randomLevels, buffers, diagnostics);
-  return { maps, landLayout, mapRecords, tileAttributes, triggers, randomLevels, extracodes, messages, battles, monsters, scenarioItems, treasures, shops, simpleEncounters, complexEncounters, thiefEncounters, timedEncounters, spellOverrides, raceOverrides, casteOverrides, assetCatalog, records, diagnostics };
+  return { maps, landLayout, mapRecords, tileAttributes, triggers, randomLevels, extracodes, messages, optionLabels, battles, monsters, monsterSets, monsterDescriptions, scenarioItems, treasures, shops, simpleEncounters, complexEncounters, thiefEncounters, timedEncounters, spellOverrides, raceOverrides, casteOverrides, assetCatalog, records, diagnostics };
 }
 
 function parseLandLayout(buffer: Uint8Array | undefined): LandLayout | null {
@@ -509,6 +533,16 @@ function parseMessages(buffer: Uint8Array | undefined): MessageRecord[] {
   }));
 }
 
+function parseOptionLabels(buffer: Uint8Array | undefined): OptionLabelRecord[] {
+  return fixedRecords(buffer, OPTION_LABEL_BYTES, "Data OD", (id, start, record) => ({
+    id,
+    text: decodePascalText(record),
+    rawBytes: Array.from(record),
+    authored: false,
+    provenance: provenance("Data OD", id, start, OPTION_LABEL_BYTES, "source-backed")
+  }));
+}
+
 function parseBattles(buffer: Uint8Array | undefined): BattleRecord[] {
   return fixedRecords(buffer, 346, "Data BD", (id, start, record) => ({
     id,
@@ -523,8 +557,23 @@ function parseBattles(buffer: Uint8Array | undefined): BattleRecord[] {
   }));
 }
 
-function parseMonsters(buffer: Uint8Array | undefined): MonsterRecord[] {
-  return fixedRecords(buffer, MONSTER_BYTES, "Data MD", (id, start, record) => ({
+function parseMonsterDescriptions(buffer: Uint8Array | undefined): MonsterDescriptionRecord[] {
+  return fixedRecords(buffer, MONSTER_DESCRIPTION_BYTES, "Data DES", (id, start, record) => ({
+    id,
+    text: decodePascalText(record),
+    rawBytes: Array.from(record),
+    authored: false,
+    provenance: provenance("Data DES", id, start, MONSTER_DESCRIPTION_BYTES, "source-backed")
+  }));
+}
+
+function parseMonsterSet(buffer: Uint8Array | undefined, sourceFile: string, setId: number): MonsterSet | null {
+  if (!buffer) return null;
+  return { sourceFile, setId, monsters: parseMonsters(buffer, sourceFile) };
+}
+
+function parseMonsters(buffer: Uint8Array | undefined, source = "Data MD"): MonsterRecord[] {
+  return fixedRecords(buffer, MONSTER_BYTES, source, (id, start, record) => ({
     id,
     hitDice: record[0] ?? 0,
     staminaBonus: record[1] ?? 0,
@@ -574,7 +623,7 @@ function parseMonsters(buffer: Uint8Array | undefined): MonsterRecord[] {
     displayName: decodeFixedText(record.slice(170, 210)) || `Monster ${id}`,
     rawBytes: Array.from(record),
     authored: false,
-    provenance: provenance("Data MD", id, start, MONSTER_BYTES, "source-backed")
+    provenance: provenance(source, id, start, MONSTER_BYTES, "source-backed")
   }));
 }
 

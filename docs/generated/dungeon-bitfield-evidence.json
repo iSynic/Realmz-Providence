@@ -1,6 +1,6 @@
 {
-  "version": 1,
-  "generatedAt": "2026-05-25T23:45:00.000-05:00",
+  "version": 2,
+  "generatedAt": "2026-05-29T00:00:00.000-05:00",
   "source": "Manual archaeology pass over Realmz dungeon source and local Oracle output",
   "realmzBitIndexConvention": "MyrBitTstShort(&value, b) maps source bit index b to mask 1 << (15 - b).",
   "sourceAnchors": [
@@ -13,6 +13,11 @@
       "path": "F:\\Realmz\\src\\realmz_orig\\checkforsecret.c",
       "topic": "secret discovery",
       "finding": "Dungeon search checks mask 0x0F00, then sets bit index 9 and bit index 2."
+    },
+    {
+      "path": "F:\\Realmz\\src\\realmz_orig\\handlemenuchoice.c",
+      "topic": "dungeon notes",
+      "finding": "Dungeon note creation sets or clears bit index 10 on the current dungeon cell."
     },
     {
       "path": "F:\\Realmz\\src\\realmz_orig\\MacrocosmMain.c",
@@ -29,15 +34,37 @@
     { "realmzBit": 15, "mask": "0x0001", "label": "wall", "confidence": "source-backed" },
     { "realmzBit": 14, "mask": "0x0002", "label": "door orientation", "confidence": "source-backed" },
     { "realmzBit": 13, "mask": "0x0004", "label": "door orientation", "confidence": "source-backed" },
-    { "realmzBit": 12, "mask": "0x0008", "label": "stair", "confidence": "source-backed" },
+    { "realmzBit": 12, "mask": "0x0008", "label": "stair / combat hole", "confidence": "source-backed" },
     { "realmzBit": 11, "mask": "0x0010", "label": "pillar", "confidence": "source-backed" },
-    { "realmzBit": 10, "mask": "0x0020", "label": "note or interaction evidence", "confidence": "source-backed-partial" },
+    { "realmzBit": 10, "mask": "0x0020", "label": "dungeon note marker", "confidence": "source-backed" },
     { "realmzBit": 9, "mask": "0x0040", "label": "revealed secret marker", "confidence": "source-backed" },
-    { "realmzBit": 8, "mask": "0x0080", "label": "hidden visual", "confidence": "source-backed" },
+    { "realmzBit": 8, "mask": "0x0080", "label": "hidden visual", "confidence": "source-backed-runtime-mutated" },
     { "realmzBit": 7, "mask": "0x0100", "label": "directional secret pass-through", "confidence": "source-backed-partial" },
     { "realmzBit": 6, "mask": "0x0200", "label": "directional secret pass-through", "confidence": "source-backed-partial" },
     { "realmzBit": 5, "mask": "0x0400", "label": "directional secret pass-through", "confidence": "source-backed-partial" },
-    { "realmzBit": 4, "mask": "0x0800", "label": "directional secret pass-through", "confidence": "source-backed-partial" }
+    { "realmzBit": 4, "mask": "0x0800", "label": "directional secret pass-through", "confidence": "source-backed-partial" },
+    { "realmzBit": 3, "mask": "0x1000", "label": "dungeon encounter / Action Point trigger marker", "confidence": "source-backed" },
+    { "realmzBit": 2, "mask": "0x2000", "label": "visible arch / revealed passage marker", "confidence": "source-backed-runtime-mutated" }
+  ],
+  "runtimeMasks": [
+    {
+      "mask": "0x0F00",
+      "source": "F:\\Realmz\\src\\realmz_orig\\checkforsecret.c",
+      "label": "directional secret/pass-through group",
+      "notes": "Search checks this mask before setting revealed marker and arch bits."
+    },
+    {
+      "mask": "0x4F0E",
+      "source": "F:\\Realmz\\src\\realmz_orig\\combatmap.c",
+      "label": "dungeon combat hole group",
+      "notes": "After clearing the arch/path marker, combatmap treats this mask as cells that use floor-like combat expansion instead of wall expansion."
+    },
+    {
+      "mask": "0x0006",
+      "source": "F:\\Realmz\\src\\realmz_orig\\threed.c",
+      "label": "door orientation group",
+      "notes": "Movement sound logic treats either door bit as a door."
+    }
   ],
   "corpus": {
     "root": "F:\\Realmz\\out_win_clang\\Scenarios",
@@ -67,7 +94,8 @@
     "Model Data DL as a DungeonCellProfile bitfield, not a terrain tile ID.",
     "Provide named dungeon drawing primitives before exposing raw masks.",
     "Treat secret pass-through as directional, not as a single secret toggle.",
-    "Keep note/interaction bit labeling conservative until Divinity fixtures clarify it.",
+    "Route dungeon notes and Action Point trigger markers through their dedicated workflows where possible.",
+    "Treat visible arch/revealed markers and hidden visual markers as runtime-sensitive until Divinity writer fixtures clarify author defaults.",
     "Require writer fixtures before enabling broad dungeon geometry edits."
   ]
 }

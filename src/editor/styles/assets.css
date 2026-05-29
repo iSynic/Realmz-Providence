@@ -1072,6 +1072,13 @@
 
 .resource-detail-text {
   color-scheme: dark;
+  margin: 0;
+  overflow: auto;
+  padding: 10px;
+  color: #d9ecff;
+  font: 12px/1.45 var(--font-mono, ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace);
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 

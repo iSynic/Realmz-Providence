@@ -9,6 +9,7 @@ import { categoryColor } from "../components/TileSprite";
 import { CollapsibleSection, EmptyState, FieldRow, FloatingWorkbenchPanel, PanelSection, ScrollArea } from "../ui";
 import { ACTION_CATEGORIES, ACTION_OPTIONS, actionOptionFor, isDispatcherNoopOpcode } from "../realmzActions";
 import { edcdFieldNamesForShape } from "../realmzEdcd";
+import { crosswalkForOpcode, opcodeIdMeaning, parameterLabelsForOpcode } from "../opcodeCrosswalk";
 import { ScriptDiagnostic, validateActionDraft, validateScriptTrigger } from "../scriptValidation";
 import { actionPointCapacity, isReusableDoorPlaceholder, nextActionPointRecordIndex } from "../actionPointCapacity";
 import { realmzScriptStepDescriptorFor } from "../realmzScriptDescriptors";
@@ -52,7 +53,7 @@ const SCRIPT_EDITOR_TABS = [
   { id: "domain", label: "All", title: "Show all Action Point Hub sections." },
   { id: "action-points", label: "Action Points", title: "Create and edit map action slots." },
   { id: "macros", label: "Macros", title: "Extra Action Point macros and branch targets." },
-  { id: "ed3-evidence", label: "ED3 Rows", title: "Imported ED3 rows that are not callable macros yet." },
+  { id: "ed3-evidence", label: "Imported Extra Actions", title: "Imported Extra Action Point rows that are not callable macros yet." },
   { id: "global-macros", label: "Global Macros", title: "Scenario-wide macro hooks and startup logic." },
   { id: "quests", label: "Quests", title: "Quest flags and script references." }
 ];
@@ -340,10 +341,18 @@ function ScriptAuthoringPanel({
     : selectedDraft.rawCode !== 0 || selectedDraft.id !== 0;
   const selectedOption = actionOptionFor(selectedDraft.rawCode);
   const filteredOptions = ACTION_OPTIONS.filter((option) => {
-    const query = opcodeQuery.trim().toLowerCase();
-    if (option.category !== categoryFilter) return false;
-    if (!query) return true;
-    return `${option.code} ${option.label} ${option.description} ${option.edcdShape ?? ""}`.toLowerCase().includes(query);
+      const query = opcodeQuery.trim().toLowerCase();
+      if (option.category !== categoryFilter) return false;
+      if (!query) return true;
+    const crosswalk = crosswalkForOpcode(option.code);
+    return [
+      option.code,
+      option.label,
+      option.description,
+      crosswalk?.idMeaning,
+      crosswalk?.parameters.map((parameter) => parameter.label).join(" "),
+      option.divinityHelpSearchText
+    ].filter(Boolean).join(" ").toLowerCase().includes(query);
   });
   const actionSlots = selectedTrigger ? actionSlotEntitiesForTriggerRecord(project, selectedTrigger) : [];
   const selectedSlotEntity = actionSlots.find((entity) => Number(entity.summary.slot) === selectedSlot);
@@ -351,6 +360,7 @@ function ScriptAuthoringPanel({
     | {
         rowId?: number;
         shape?: string;
+        opcode?: number;
         fields?: { name?: string; value?: number }[];
         secondaryRowId?: number;
         secondaryShape?: string;
@@ -422,7 +432,7 @@ function ScriptAuthoringPanel({
       <button
         type="button"
         className={`btn btn-secondary btn-xs${targetDrawerOpen && directTargetDrawerAvailable ? " active" : ""}`}
-        title={directTargetDrawerAvailable ? targetDrawerOpen ? "Hide target details" : "Show target details" : "This opcode stores target fields in EDCD Attachment."}
+        title={directTargetDrawerAvailable ? targetDrawerOpen ? "Hide target details" : "Show target details" : "This action stores target fields in Parameters."}
         disabled={!directTargetDrawerAvailable}
         onClick={() => directTargetDrawerAvailable && setTargetDrawerOpen(!targetDrawerOpen)}
       >
@@ -478,7 +488,7 @@ function ScriptAuthoringPanel({
       <header>
         <div>
           <strong>{scriptPanelTitle(activeEditor)}</strong>
-          <small>Guided Realmz CODE/ID authoring with raw slots, EDCD rows, and compatibility checks kept visible.</small>
+          <small>Guided Action Point authoring with targets, parameters, and compatibility checks kept visible.</small>
         </div>
         <div className="script-toolbar">
           <button type="button" className="btn btn-secondary btn-xs" onClick={() => onApplyCommand?.({ kind: "createMacro", label: "Create macro" })}>
@@ -584,14 +594,14 @@ function ScriptAuthoringPanel({
             )}
           </ScrollArea>
           {ed3Evidence.length > 0 && (
-            <CollapsibleSection className="ed3-evidence-strip" title="Imported ED3 Rows" eyebrow="advanced" count={ed3Evidence.length.toLocaleString()} density="compact" storageKey="scripts.ed3Evidence.open" defaultOpen={false}>
-              <small>{ed3Evidence.length.toLocaleString()} imported Data ED3 row(s) are kept intact and are not callable macros yet.</small>
-              <ScrollArea className="ed3-evidence-list" aria-label="Imported ED3 rows">
+            <CollapsibleSection className="ed3-evidence-strip" title="Imported Extra Action Points" eyebrow="advanced" count={ed3Evidence.length.toLocaleString()} density="compact" storageKey="scripts.ed3Evidence.open" defaultOpen={false}>
+              <small>{ed3Evidence.length.toLocaleString()} imported Extra Action Point row(s) are kept intact and are not callable macros yet.</small>
+              <ScrollArea className="ed3-evidence-list" aria-label="Imported Extra Action Point rows">
                 {ed3Evidence.slice(0, 80).map((trigger) => {
                   const row = ed3ReachabilityFor(project, trigger.recordIndex);
                   return (
                     <button key={trigger.id} type="button" onClick={() => onSelectEntity(selectEntityFromId(`macro:${trigger.recordIndex}`))}>
-                      <strong>ED3 row {trigger.recordIndex}</strong>
+                      <strong>Extra AP row {trigger.recordIndex}</strong>
                       <small>{row?.classification ?? "unclassified"} | {trigger.actions.length} slot(s)</small>
                     </button>
                   );
@@ -714,7 +724,7 @@ function ScriptAuthoringPanel({
                             <small>{actionSummary(action, slotEntity)}</small>
                           </span>
                           <b>
-                            {option.edcdShape && <em>EDCD</em>}
+                            {option.edcdShape && <em>Parameters</em>}
                             {slotIssues.errors + slotIssues.warnings > 0 && <em className={slotIssues.errors ? "danger" : "warning"}>{slotIssues.errors + slotIssues.warnings}</em>}
                             {option.category}
                           </b>
@@ -804,13 +814,13 @@ function SourceEvidence({
           <FieldRow label="Draft CODE/ID" value={`${selectedDraft.rawCode} / ${selectedDraft.id}`} />
           <FieldRow label="Opcode" value={selectedOption.label} />
           <FieldRow label="Dispatcher" value={isDispatcherNoopOpcode(selectedDraft.rawCode) ? "dispatcher no-op; Realmz ignores this CODE" : "has documented dispatcher behavior"} />
-          <FieldRow label="EDCD" value={selectedEdcdRowId != null ? `row ${selectedEdcdRowId}${edcdUsage?.shape ? ` (${edcdUsage.shape})` : ""}` : "none"} />
+          <FieldRow label="Data EDCD Row" value={selectedEdcdRowId != null ? `row ${selectedEdcdRowId}${edcdUsage?.shape ? ` (${edcdUsage.shape})` : ""}` : "none"} />
           <FieldRow label="Edit State" value={selectedSlotEntity?.editState ?? "authored/draft"} />
         </div>
         {edcdUsage?.summary && <p className="field-help">{edcdUsage.summary}</p>}
         {selectedEdcdRowId != null && (
           <button className="btn btn-secondary btn-xs" type="button" onClick={() => onSelectEntity(selectEntityFromId(`record:Data EDCD:${selectedEdcdRowId}`))}>
-            Inspect Data EDCD row {selectedEdcdRowId}
+            Inspect parameter row {selectedEdcdRowId}
           </button>
         )}
         <EvidenceLinkGroup title="Script Links" project={project} links={[...triggerLinks.outgoing, ...triggerLinks.incoming]} onSelectEntity={onSelectEntity} />
@@ -896,7 +906,9 @@ function SelectedStepDetail({
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
-  const selectedIdLabel = selectedOption.edcdShape ? "Data EDCD Row" : "ID / Parameter";
+  const selectedCrosswalk = crosswalkForOpcode(selectedDraft.rawCode);
+  const selectedIdLabel = selectedOption.edcdShape ? "Parameter Row" : opcodeIdMeaning(selectedDraft.rawCode);
+  const selectedParameterLabels = parameterLabelsForOpcode(selectedDraft.rawCode);
   return (
     <div className="realmz-step-detail selected-step-detail">
       {selectedDraftDirty && (
@@ -912,7 +924,35 @@ function SelectedStepDetail({
           <span>{selectedOption.category}</span>
         </div>
         <p>{selectedOption.description}</p>
-        {selectedOption.edcdShape && <em>Uses Data EDCD shape {selectedOption.edcdShape}</em>}
+        {selectedOption.divinityHelp && (
+          <details className="realmz-divinity-opcode-help">
+            <summary>Action Help</summary>
+            <div className="realmz-divinity-opcode-help-body">
+              <FieldRow label="ID Means" value={(selectedCrosswalk?.idMeaning ?? selectedOption.divinityHelp.idField) || "Not used"} />
+              {selectedCrosswalk?.idHelp && <p>{selectedCrosswalk.idHelp}</p>}
+              {selectedCrosswalk?.parameters?.some((parameter) => !parameter.preserved) && (
+                <FieldRow
+                  label="Parameters"
+                  value={selectedCrosswalk.parameters
+                    .filter((parameter) => !parameter.preserved)
+                    .map((parameter) => `${parameter.index + 1}. ${parameter.label}`)
+                    .join("; ")}
+                />
+              )}
+              {selectedOption.divinityHelp.use && <p>{selectedOption.divinityHelp.use}</p>}
+              {selectedOption.divinityHelp.options && selectedOption.divinityHelp.options.toLowerCase() !== "none" && (
+                <FieldRow label="Original Options" value={selectedOption.divinityHelp.options} />
+              )}
+              {selectedOption.divinityHelp.extraCodes && selectedOption.divinityHelp.extraCodes.toLowerCase() !== "none" && (
+                <details className="realmz-original-help">
+                  <summary>Original Divinity E-Codes</summary>
+                  <p>{selectedOption.divinityHelp.extraCodes}</p>
+                </details>
+              )}
+            </div>
+          </details>
+        )}
+        {selectedOption.edcdShape && <em>This action stores its extra settings in a parameter row.</em>}
       </div>
       <div className="realmz-step-form-grid">
         <label>
@@ -936,7 +976,7 @@ function SelectedStepDetail({
           />
           {selectedOption.edcdShape && (
             <small>
-              Realmz treats this value as a Data EDCD row number. Edit the typed target fields in EDCD Attachment below.
+              Realmz treats this value as the parameter row number. Edit the typed fields in Parameters below.
             </small>
           )}
         </label>
@@ -972,7 +1012,7 @@ function SelectedStepDetail({
             className="realmz-opcode-search"
             value={opcodeQuery}
             onChange={(event) => onSetOpcodeQuery(event.currentTarget.value)}
-            placeholder="Search opcodes, descriptions, EDCD shapes..."
+            placeholder="Search actions, descriptions, parameters..."
             aria-label="Search Realmz opcodes"
           />
           <div className="realmz-step-picker-grid">
@@ -985,12 +1025,13 @@ function SelectedStepDetail({
               >
                 <strong>{option.shortLabel}</strong>
                 <span>{option.description}</span>
+                {option.divinityHelp && <small>Action help available</small>}
               </button>
             ))}
           </div>
         </div>
       </CollapsibleSection>
-      <CollapsibleSection title="EDCD Attachment" eyebrow={selectedOption.edcdShape ?? "optional"} density="compact" storageKey="scripts.edcdEditor.open" defaultOpen={Boolean(selectedOption.edcdShape || selectedEdcdUsage)}>
+      <CollapsibleSection title="Parameters" eyebrow={selectedOption.edcdShape ? "parameter row" : "optional"} density="compact" storageKey="scripts.edcdEditor.open" defaultOpen={Boolean(selectedOption.edcdShape || selectedEdcdUsage)}>
         <EdcdRowEditor
           project={project}
           catalog={catalog}
@@ -998,6 +1039,8 @@ function SelectedStepDetail({
           fallbackRowId={selectedDraft.id}
           fallbackShape={selectedOption.edcdShape}
           fallbackFieldNames={edcdFieldNamesForShape(selectedOption.edcdShape)}
+          fallbackOpcode={selectedDraft.rawCode}
+          parameterLabels={selectedParameterLabels}
           selectedSlotLabel={`slot ${selectedSlot}`}
           onSelectEntity={onSelectEntity}
           onApplyCommand={onApplyCommand}
@@ -1007,14 +1050,14 @@ function SelectedStepDetail({
         <div className="realmz-raw-preview">
           <FieldRow label="Raw CODE" value={selectedDraft.rawCode} />
           <FieldRow label="Raw ID" value={selectedDraft.id} />
-          <FieldRow label="EDCD Shape" value={selectedOption.edcdShape ?? "none"} />
+          <FieldRow label="Internal Shape" value={selectedOption.edcdShape ?? "none"} />
           <FieldRow label="Source Summary" value={selectedSlotEntity?.summary.edcdUsage ? String((selectedSlotEntity.summary.edcdUsage as { summary?: string }).summary ?? selectedOption.description) : selectedOption.description} />
         </div>
       </CollapsibleSection>
       <div className="selected-step-detail-links">
         {selectedEdcdRowId != null && (
           <button className="btn btn-secondary btn-xs" type="button" onClick={() => onSelectEntity(selectEntityFromId(`record:Data EDCD:${selectedEdcdRowId}`))}>
-            Inspect attached EDCD row {selectedEdcdRowId}
+            Inspect parameter row {selectedEdcdRowId}
           </button>
         )}
         {selectedSlotEntity ? (
@@ -1053,8 +1096,8 @@ export function TargetRecordEditor({
       return (
         <EmptyState
           compact
-          title="Target is stored in EDCD"
-          body={`This opcode uses Data EDCD shape "${descriptor.edcdShape}". The action ID selects the EDCD row; edit the typed message, battle, shop, item, or branch fields in the EDCD Attachment section.`}
+          title="Target is stored in Parameters"
+          body={`This action uses a parameter row for its message, battle, shop, item, or branch fields. Choose the row in the ID field, then edit its typed fields in Parameters.`}
         />
       );
     }
@@ -1131,7 +1174,7 @@ export function TargetRecordEditor({
               catalog={catalog}
               label="Battle Macro"
               emptyLabel="No battle macro"
-              opcode={8}
+              opcode={39}
               value={record.battleMacro}
               onCommit={(battleMacro) => onApplyCommand?.({ kind: "updateBattleRecord", label: "Update battle macro", id: targetId, changes: { battleMacro } })}
             />
@@ -1186,7 +1229,7 @@ export function TargetRecordEditor({
                   catalog={catalog}
                   label="Monster Macro"
                   emptyLabel="No death macro"
-                  opcode={8}
+                  opcode={39}
                   value={record.deathMacro}
                   onCommit={(deathMacro) => update({ deathMacro })}
                 />
@@ -1929,7 +1972,7 @@ function TimedEncounterShell({
         catalog={catalog}
         label="Extra AP to Activate"
         emptyLabel="No Extra AP"
-        opcode={8}
+        opcode={39}
         value={record.door}
         onCommit={(door) => update({ door })}
       />

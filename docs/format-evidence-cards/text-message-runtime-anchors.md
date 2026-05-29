@@ -83,7 +83,7 @@ The local 28-scenario output corpus shows:
 - Replace "Do Not Use" as a dominant label with a clearer state such as `Empty / unused message slot` when the record is only a placeholder.
 - In encounter editors, rename inline buffer sections to `Choice Display Text` or `Encounter Button Text`.
 - Show decoded action/result rows next to the display text so users can understand what happens when that line is chosen.
-- Keep `Data OD` as an optional two-choice prompt source; if missing, show `Data SD2` fallback explicitly.
+- Keep `Data OD` as an optional two-choice prompt source backed by 25-byte option-label records; if missing, show `Data SD2` fallback explicitly.
 - Runtime `CE`/`CE2` mutation should remain generated state evidence. Edits should write source `Data ED`/`Data ED2`.
 
 ## Validation Rules
@@ -99,5 +99,5 @@ The local 28-scenario output corpus shows:
 
 - Whether Divinity used leading punctuation in encounter text as editor-only hints or purely left it as author-authored display text.
 - Exact Divinity labels for simple/complex encounter text buffers.
-- `Data OD` authoring UI and how Divinity decides between `Data OD` and `Data SD2`.
+- Exact Divinity authoring labels for `Data OD`; Realmz runtime preference for `Data OD` over `Data SD2` is source-backed.
 - Text import/export workflow, spell-check behavior, and style/external text resource interactions.

@@ -1,3 +1,5 @@
+import { divinityHelpForOpcode, divinityHelpSearchText, type DivinityOpcodeHelpEntry } from "./divinityOpcodeHelp";
+
 export type RealmzActionOption = {
   code: number;
   label: string;
@@ -5,6 +7,8 @@ export type RealmzActionOption = {
   category: string;
   description: string;
   edcdShape?: string;
+  divinityHelp?: DivinityOpcodeHelpEntry;
+  divinityHelpSearchText?: string;
 };
 
 const DOCUMENTED_OPCODE_CODES = [
@@ -29,7 +33,7 @@ const ACTION_DETAILS: Record<number, Partial<RealmzActionOption>> = {
   5: { shortLabel: "Complex Encounter", category: "Encounter", description: "Start a complex encounter." },
   6: { shortLabel: "Shop", category: "Economy", description: "Open a shop by ID." },
   7: { shortLabel: "Patch Actions", category: "Advanced", description: "Copy or patch action data through EDCD parameters.", edcdShape: "action-data-patching" },
-  8: { shortLabel: "Macro", category: "Branch", description: "Call a macro/GOSUB-style action record." },
+  8: { shortLabel: "Same AP", category: "Branch", description: "Copy action slots from another Action Point on the current map." },
   9: { shortLabel: "Sound", category: "Media", description: "Play a snd resource." },
   10: { shortLabel: "Treasure", category: "Economy", description: "Give treasure or reward data." },
   12: { shortLabel: "Tile Patch", category: "Map", description: "Mutate land/dungeon tile data.", edcdShape: "tile-mutation" },
@@ -38,7 +42,7 @@ const ACTION_DETAILS: Record<number, Partial<RealmzActionOption>> = {
   16: { shortLabel: "Heal", category: "Characters", description: "Heal selected characters or party through EDCD roll fields.", edcdShape: "damage-heal" },
   17: { shortLabel: "Cast Spell", category: "Rules", description: "Cast a spell using EDCD spell parameters.", edcdShape: "spell-cast" },
   18: { shortLabel: "Force Spell", category: "Rules", description: "Cast or force a spell through EDCD spell parameters.", edcdShape: "spell-cast" },
-  19: { shortLabel: "Message", category: "Text", description: "Display a scenario message variant by ID." },
+  19: { shortLabel: "Random Message", category: "Text", description: "Display a random scenario message from an EDCD range.", edcdShape: "random-message" },
   20: { shortLabel: "Teleport", category: "Map", description: "Move the party to a level/cell.", edcdShape: "teleport" },
   21: { shortLabel: "Item Branch", category: "Economy", description: "Branch based on item possession or missing-item behavior.", edcdShape: "item-branch" },
   22: { shortLabel: "Item Mutation", category: "Economy", description: "Drop, charge, or replace item data.", edcdShape: "item-mutation" },
@@ -52,23 +56,23 @@ const ACTION_DETAILS: Record<number, Partial<RealmzActionOption>> = {
   35: { shortLabel: "Encounter State", category: "Encounter", description: "Mutate simple encounter state." },
   37: { shortLabel: "Dungeon Move", category: "Map", description: "Move in dungeon coordinates through EDCD fields.", edcdShape: "dungeon-move" },
   38: { shortLabel: "Force Branch", category: "Branch", description: "Branch to macro/simple/complex targets through EDCD.", edcdShape: "force-branch" },
-  39: { shortLabel: "Extend Codes", category: "Branch", description: "Use extended CODE/ID behavior.", edcdShape: "extended-door-codes" },
-  40: { shortLabel: "Macro", category: "Branch", description: "Call a macro/GOSUB-style action record." },
+  39: { shortLabel: "Extend Codes", category: "Branch", description: "Call an Extra Action Point row directly." },
+  40: { shortLabel: "Condition Branch", category: "Branch", description: "Branch based on party condition state.", edcdShape: "party-condition-branch" },
   41: { shortLabel: "Encounter Mutation", category: "Encounter", description: "Clear or mutate simple encounter choice state.", edcdShape: "encounter-mutation" },
   42: { shortLabel: "Percent Branch", category: "Branch", description: "Branch based on a percent roll.", edcdShape: "percent-branch" },
   43: { shortLabel: "Condition", category: "Characters", description: "Give or alter party/character condition state.", edcdShape: "condition" },
   45: { shortLabel: "Teleport Only", category: "Map", description: "Teleport without the arrival trigger behavior of opcode 20.", edcdShape: "teleport" },
   46: { shortLabel: "Force Branch", category: "Branch", description: "Force branch using EDCD target fields.", edcdShape: "force-branch" },
   47: { shortLabel: "Set Quest Flag", category: "Quest", description: "Set a quest flag." },
-  48: { shortLabel: "Battle Variant", category: "Combat", description: "Start a battle variant/range.", edcdShape: "battle-variant" },
+  48: { shortLabel: "Selective Battle", category: "Combat", description: "Start a selective battle with optional sound, message, and treasure.", edcdShape: "selective-battle" },
   49: { shortLabel: "Shop", category: "Economy", description: "Open or route to a shop record." },
-  50: { shortLabel: "Race/Caste Pick", category: "Characters", description: "Pick characters by race, caste, class, or gender.", edcdShape: "character-selector" },
-  51: { shortLabel: "Shop", category: "Economy", description: "Open or route to a shop record." },
+  50: { shortLabel: "Race/Caste Pick", category: "Characters", description: "Pick characters by race, caste, class, or gender.", edcdShape: "race-caste-gender-selector" },
+  51: { shortLabel: "Shop Mutation", category: "Economy", description: "Alter shop inflation or stock fields.", edcdShape: "shop-mutation" },
   52: { shortLabel: "Character Selector", category: "Characters", description: "Select characters by movement, position, item, saves, or similar state.", edcdShape: "character-selector" },
   53: { shortLabel: "Caste Selector", category: "Characters", description: "Select characters by exact caste or caste group.", edcdShape: "caste-selector" },
   54: { shortLabel: "Timed Encounter", category: "Encounter", description: "Mutate timed encounter schedule/state.", edcdShape: "timed-encounter-mutation" },
-  55: { shortLabel: "Macro", category: "Branch", description: "Call a macro/GOSUB-style action record." },
-  56: { shortLabel: "Battle Variant", category: "Combat", description: "Start a battle variant/range.", edcdShape: "battle-variant" },
+  55: { shortLabel: "Picked Branch", category: "Branch", description: "Branch based on whether characters are currently picked.", edcdShape: "picked-branch" },
+  56: { shortLabel: "Battle Outcome", category: "Combat", description: "Start a battle and optionally branch if the party flees.", edcdShape: "battle-outcome-branch" },
   57: { shortLabel: "Landlook", category: "Map", description: "Change map render/landlook state.", edcdShape: "render-mutation" },
   58: { shortLabel: "Force Branch", category: "Branch", description: "Force branch using EDCD target fields.", edcdShape: "force-branch" },
   59: { shortLabel: "Force Branch", category: "Branch", description: "Force branch using EDCD target fields.", edcdShape: "force-branch" },
@@ -76,7 +80,7 @@ const ACTION_DETAILS: Record<number, Partial<RealmzActionOption>> = {
   61: { shortLabel: "Position Shift", category: "Map", description: "Shift current party position.", edcdShape: "position-shift" },
   62: { shortLabel: "Message", category: "Text", description: "Display a scenario message variant by ID." },
   63: { shortLabel: "Time", category: "Scenario", description: "Set or offset game time.", edcdShape: "time-mutation" },
-  64: { shortLabel: "Macro", category: "Branch", description: "Call a macro/GOSUB-style action record." },
+  64: { shortLabel: "Game Time Branch", category: "Branch", description: "Branch based on current game day and hour.", edcdShape: "game-time-branch" },
   65: { shortLabel: "Random Items", category: "Economy", description: "Give a random item range.", edcdShape: "random-items" },
   67: { shortLabel: "Charge Branch", category: "Economy", description: "Branch based on item charges.", edcdShape: "item-charge-branch" },
   68: { shortLabel: "Fatigue", category: "Characters", description: "Alter party or character fatigue.", edcdShape: "fatigue" },
@@ -93,7 +97,7 @@ const ACTION_DETAILS: Record<number, Partial<RealmzActionOption>> = {
   81: { shortLabel: "Condition Branch", category: "Branch", description: "Branch to macros based on condition state.", edcdShape: "condition-branch" },
   84: { shortLabel: "Registration", category: "Scenario", description: "Legacy registration check." },
   85: { shortLabel: "Random Branch", category: "Branch", description: "Branch to a random target in range.", edcdShape: "random-branch" },
-  86: { shortLabel: "Conditional Branch", category: "Branch", description: "Branch based on conditional EDCD tests.", edcdShape: "conditional-branch" },
+  86: { shortLabel: "Misc Branch", category: "Branch", description: "Branch based on party, race, caste, gender, boat, camp, or level tests.", edcdShape: "misc-conditional-branch" },
   87: { shortLabel: "Conditional Branch", category: "Branch", description: "Branch based on conditional EDCD tests, with message behavior in some cases.", edcdShape: "conditional-branch" },
   90: { shortLabel: "Party State", category: "Characters", description: "Alter victory/experience-style party state.", edcdShape: "party-state" },
   92: { shortLabel: "Random Rect Shape", category: "Encounter", description: "Mutate random rectangle percent and shape using a secondary EDCD row.", edcdShape: "random-region-shape-mutation" },
@@ -102,7 +106,8 @@ const ACTION_DETAILS: Record<number, Partial<RealmzActionOption>> = {
   99: { shortLabel: "Reg Gate", category: "Scenario", description: "Legacy registration gate." },
   103: { shortLabel: "Boat/Camp State", category: "Scenario", description: "Mutate boat/camp runtime state.", edcdShape: "boat-camp-state" },
   104: { shortLabel: "Encounter Status", category: "Encounter", description: "Set encounter status." },
-  107: { shortLabel: "Battle Variant", category: "Combat", description: "Start a battle variant/range.", edcdShape: "battle-variant" },
+  106: { shortLabel: "Dark Level State", category: "Map", description: "Set outdoor darkness state.", edcdShape: "dark-level-state" },
+  107: { shortLabel: "Selective Battle", category: "Combat", description: "Start an improved selective battle and optionally branch if the party flees.", edcdShape: "improved-selective-battle" },
   108: { shortLabel: "Selected Character", category: "Characters", description: "Alter selected-character combat/stat fields.", edcdShape: "selected-character-state" },
   111: { shortLabel: "Return", category: "Core", description: "Return from a GOSUB macro." },
   112: { shortLabel: "Pop", category: "Core", description: "Pop script stack state." },
@@ -117,14 +122,17 @@ const ACTION_DETAILS: Record<number, Partial<RealmzActionOption>> = {
 
 export const ACTION_OPTIONS: RealmzActionOption[] = DOCUMENTED_OPCODE_CODES.map((code) => {
   const detail = ACTION_DETAILS[code];
-  const shortLabel = detail?.shortLabel ?? `Opcode ${code}`;
+  const divinityHelp = divinityHelpForOpcode(code);
+  const shortLabel = detail?.shortLabel ?? divinityHelp?.title ?? `Opcode ${code}`;
   return {
     code,
     label: `${code} ${shortLabel}`,
     shortLabel,
     category: detail?.category ?? "Advanced",
-    description: detail?.description ?? "Documented Realmz opcode. Use raw CODE/ID and the details inspector for advanced fields.",
-    edcdShape: detail?.edcdShape
+    description: detail?.description ?? divinityHelp?.summary ?? "Documented Realmz opcode. Use raw CODE/ID and the details inspector for advanced fields.",
+    edcdShape: detail?.edcdShape,
+    divinityHelp,
+    divinityHelpSearchText: divinityHelpSearchText(code)
   };
 });
 
@@ -134,6 +142,18 @@ export function actionOptionFor(rawCode: number): RealmzActionOption {
   const normalizedCode = normalizeStepOpcode(rawCode);
   const known = ACTION_OPTIONS.find((option) => option.code === normalizedCode);
   if (known) return known;
+  const divinityHelp = divinityHelpForOpcode(rawCode);
+  if (divinityHelp) {
+    return {
+      code: normalizedCode,
+      label: `${rawCode} ${divinityHelp.title}`,
+      shortLabel: divinityHelp.title,
+      category: "Advanced",
+      description: divinityHelp.summary,
+      divinityHelp,
+      divinityHelpSearchText: divinityHelpSearchText(rawCode)
+    };
+  }
   if (isDispatcherNoopOpcode(rawCode)) {
     return {
       code: normalizedCode,

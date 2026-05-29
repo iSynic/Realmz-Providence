@@ -33,12 +33,24 @@ Providence can show the current landlook's tiles, movement metadata, and combat-
 - Built-in landlook data is Realmz library/reference data and should not be changed by scenario export.
 - `mapstats.build[3][3]` is the source-backed outdoor combat expansion grid.
 - `Data Solids` is not the standard land tile attribute table; it supplies special negative/icon solidity evidence.
-- Custom landlook files and resource IDs need a dedicated binary/source/fixture pass before writer support.
+- Custom landlook metadata files observed in the corpus are 8,104 bytes:
+  - bytes `0..8039`: 201 `mapstats` records, 40 bytes each.
+  - bytes `8040..8041`: `basetile`.
+  - bytes `8042..8043`: `basescale`.
+  - bytes `8044..8103`: ten 6-byte range slots, each `first tile`, `last tile`, `reserved`.
+- The first four range slots match Divinity's Edit Land Tiles range UI:
+  - slot 0: Mountain range.
+  - slot 1: Open range.
+  - slot 2: Rubble range.
+  - slot 3: House range.
+- Common observed tail: `62..85`, `155..158`, `159..167`, and `190..200`, with zero reserved values and unused slots zeroed.
+- Custom landlook picture/resource writes still need a dedicated binary/source/fixture pass before full writer support.
 
 ## Corpus Evidence
 
 - Map files and `Data Solids` appear in 44/44 corpus scenarios.
-- Custom landlook file frequency is not yet present in the generated summaries and should be added to `unknown-data-backlog.json`.
+- Custom landlook mapstats files are already present in the generated summaries: `Data Custom 1 BD` 32/87, `Data Custom 2 BD` 15/87, and `Data Custom 3 BD` 9/87 visible byte-roundtrip scenario roots.
+- In the local Divinity CD scenario set, 25 `Data Custom * BD` files were sampled and all were 8,104 bytes. Their 60-byte tails reduce to five observed patterns. The most common pattern appears 18 times and encodes Mountain `62..85`, Open `155..158`, Rubble `159..167`, and House `190..200`.
 
 ## Providence Follow-Up
 
@@ -49,5 +61,4 @@ Providence can show the current landlook's tiles, movement metadata, and combat-
 
 ## Writer Gate
 
-Do not add writable landlook metadata controls until these are proven: custom file names, record counts, `mapstats` record size/order, graphic/resource IDs, endianness, trailing bytes, and Divinity save/load behavior.
-
+Do not add writable landlook metadata controls until these are proven: custom file names, record counts, `mapstats` record size/order, graphic/resource IDs, endianness, range-tail write behavior, and Divinity save/load behavior. The 60-byte tail is now partially decoded as Divinity tile-range metadata, but Providence should still preserve all ten slots byte-for-byte until writer fixtures prove which slots Divinity owns.

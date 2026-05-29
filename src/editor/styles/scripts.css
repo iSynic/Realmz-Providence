@@ -2453,6 +2453,36 @@
   line-height: 1.4;
 }
 
+.realmz-divinity-opcode-help {
+  border-top: 1px solid #27313c;
+  padding-top: 6px;
+}
+
+.realmz-divinity-opcode-help summary {
+  cursor: pointer;
+  color: #f2c94c;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.realmz-divinity-opcode-help-body {
+  display: grid;
+  gap: 5px;
+  margin-top: 6px;
+  color: #a5b5c5;
+}
+
+.realmz-divinity-opcode-help-body .field-row {
+  align-items: start;
+}
+
+.realmz-divinity-opcode-help-body .field-row span:last-child {
+  white-space: normal;
+  line-height: 1.35;
+}
+
 
 
 

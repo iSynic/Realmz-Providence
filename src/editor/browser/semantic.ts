@@ -12,7 +12,7 @@ import {
   SourceFile,
   TriggerRecord
 } from "../types";
-import { FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, RANDLEVEL_BYTES } from "./realmzParser";
+import { FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RANDLEVEL_BYTES } from "./realmzParser";
 
 export function buildBrowserSemanticSchema(projectParts: {
   scenario: Project["scenario"];
@@ -493,6 +493,17 @@ function addItemRecords(schema: SemanticSchema, buffer?: Uint8Array) {
     if (typeof summary.sound === "number" && summary.sound !== 0) {
       pushLink(schema, `item:${itemId}`, `resource:snd :${summary.sound}`, "uses_resource", "source-backed", { field: "sound" });
     }
+    const itemType = typeof summary.type === "number" ? summary.type : 0;
+    const special1 = typeof summary.special1 === "number" ? summary.special1 : 0;
+    const special5 = typeof summary.special5 === "number" ? summary.special5 : -1;
+    if ((Math.abs(itemType) === 23 || special1 === -23) && special5 >= 0) {
+      pushLink(schema, `item:${itemId}`, `macro:${special5}`, "calls_macro", "source-backed", {
+        field: "special5",
+        itemType,
+        special1,
+        reason: "door item activates an Extra Action Point"
+      });
+    }
   }
 }
 
@@ -617,6 +628,22 @@ function addRandomLevels(schema: SemanticSchema, randomLevels: RandomLevel[]) {
         }
       });
       pushLink(schema, id, mapEntityId(level.levelType, level.levelIndex), "contains_region", "source-backed");
+      for (const battle of rect.battleRange) {
+        if (battle > 0) pushLink(schema, id, `battle:${battle}`, "spawns_battle", "source-backed", { battleRange: rect.battleRange });
+      }
+      for (const [slot, door] of rect.randomDoors.entries()) {
+        if (door <= 0) continue;
+        pushLink(schema, id, `macro:${door}`, "calls_macro", "inferred", {
+          slot,
+          percent: rect.randomDoorPercent[slot] ?? 0,
+          cache: level.levelType === "dungeon" ? "CD" : "CL"
+        });
+        pushLink(schema, id, `runtime-cache:${level.levelType === "dungeon" ? "CD" : "CL"}`, "mutates_cache", "source-backed", {
+          reason: "positive random-door percent can be zeroed after firing"
+        });
+      }
+      if (rect.text > 0) pushLink(schema, id, `message:${rect.text}`, "shows_message", "source-backed", { randomRect: rect.rectIndex });
+      if (rect.sound > 0) pushLink(schema, id, `resource:snd :${rect.sound}`, "uses_resource", "inferred", { resourceType: "snd " });
     }
   }
 }
@@ -699,7 +726,7 @@ function addTriggers(schema: SemanticSchema, triggers: TriggerRecord[], extracod
         summary: { trigger: id, ...actionSummary(action, edcdRows) }
       });
       pushLink(schema, id, slotId, "has_action_slot", "source-backed");
-      addActionLink(schema, slotId, action.code, action.id, edcdRows);
+      addActionLink(schema, slotId, action.code, action.id, edcdRows, trigger.levelType, trigger.levelIndex);
       if (action.rawCode !== 0 && actionOptionLooksNoop(action.label)) {
         schema.decoding.dispatcherNoops.push({
           source: trigger.source,
@@ -734,8 +761,16 @@ function actionSummary(action: Action, edcdRows: Map<number, number[]>) {
   };
 }
 
-function addActionLink(schema: SemanticSchema, from: string, code: number, id: number, edcdRows: Map<number, number[]>) {
-  if (!id) return;
+function addActionLink(
+  schema: SemanticSchema,
+  from: string,
+  code: number,
+  id: number,
+  edcdRows: Map<number, number[]>,
+  triggerLevelType: string | null,
+  triggerLevelIndex: number | null
+) {
+  if (code === 0 || id < 0) return;
   const target = Math.abs(id);
   const shape = edcdShape(code);
   if (shape) {
@@ -753,14 +788,36 @@ function addActionLink(schema: SemanticSchema, from: string, code: number, id: n
       });
       return;
     }
-    addBrowserEdcdLinks(schema, from, code, row);
+    if (code === 92) {
+      const secondaryRowId = target + 1;
+      const secondaryRow = edcdRows.get(secondaryRowId);
+      pushLink(schema, from, `record:Data EDCD:${secondaryRowId}`, "uses_secondary_parameter_row", secondaryRow ? "source-backed" : "inferred", { opcode: code, shape: "random-region-shape-details" });
+      if (!secondaryRow) {
+        schema.diagnostics.push({
+          id: `diagnostic:browser-missing-edcd-secondary:${schema.diagnostics.length}`,
+          type: "missing-secondary-edcd-row",
+          severity: "warning",
+          confidence: "source-backed",
+          source: null,
+          message: `Browser import action opcode ${code} references missing secondary Data EDCD row ${secondaryRowId}.`,
+          data: { actionSlot: from, code, primaryRowId: target, secondaryRowId }
+        });
+      }
+    }
+    addBrowserEdcdLinks(schema, from, code, row, triggerLevelType);
     return;
   }
-  if (code === 1 || code === 19 || code === 62 || code === 71) pushLink(schema, from, `message:${target}`, "shows_message", "source-backed", { opcode: code });
+  if (code === 1 || code === 62 || code === 71) pushLink(schema, from, `message:${target}`, "shows_message", "source-backed", { opcode: code });
   else if (code === 4) pushLink(schema, from, `encounter:simple:${target}`, "starts_encounter", "source-backed", { opcode: code });
   else if (code === 5) pushLink(schema, from, `encounter:complex:${target}`, "starts_encounter", "source-backed", { opcode: code });
-  else if (code === 6) pushLink(schema, from, `shop:${target}`, "opens_shop", "source-backed", { opcode: code });
-  else if (code === 8) pushLink(schema, from, `macro:${target}`, "calls_macro", "inferred", { opcode: code });
+  else if (code === 6 || code === 49) pushLink(schema, from, `shop:${target}`, "opens_shop", "source-backed", { opcode: code });
+  else if (code === 8) {
+    const sameMapTarget = triggerLevelType && triggerLevelIndex != null
+      ? `trigger:${triggerLevelType}:${triggerLevelIndex}:${target}`
+      : `trigger:current-map:${target}`;
+    pushLink(schema, from, sameMapTarget, "copies_action_point", "source-backed", { opcode: code });
+  }
+  else if (code === 39) pushLink(schema, from, `macro:${target}`, "calls_macro", "inferred", { opcode: code });
   else if (code === 10) pushLink(schema, from, `treasure:${target}`, "gives_treasure", "source-backed", { opcode: code });
   else if (code === 27) pushLink(schema, from, `resource:PICT:${target}`, "uses_resource", "source-backed", { opcode: code });
   else if (code === 29 || code === 97) pushLink(schema, from, `map-record:${target}`, "uses_map_record", "source-backed", { opcode: code });
@@ -768,19 +825,59 @@ function addActionLink(schema: SemanticSchema, from: string, code: number, id: n
   else if (code === 127) pushLink(schema, from, `monster:${target}`, "uses_monster", "inferred", { opcode: code });
 }
 
-function addBrowserEdcdLinks(schema: SemanticSchema, from: string, code: number, row: number[]) {
+function addBrowserEdcdLinks(
+  schema: SemanticSchema,
+  from: string,
+  code: number,
+  row: number[],
+  triggerLevelType: string | null
+) {
   const value = (index: number) => row[index] ?? 0;
-  const addBranch = (mode: number, target: number, kind = "branches_to") => {
-    if (target <= 0 || mode === 0 || mode === -1) return;
+  const addOneBasedBranch = (mode: number, target: number, kind = "branches_to") => {
+    if (target < 0 || mode === 0 || mode === -1) return;
     if (mode === 1) pushLink(schema, from, `macro:${target}`, kind, "inferred", { opcode: code, branchMode: mode });
     else if (mode === 2) pushLink(schema, from, `encounter:simple:${target}`, kind, "inferred", { opcode: code, branchMode: mode });
     else if (mode === 3) pushLink(schema, from, `encounter:complex:${target}`, kind, "inferred", { opcode: code, branchMode: mode });
   };
+  const addZeroBasedBranch = (mode: number, target: number, kind = "branches_to") => {
+    if (target < 0 || mode === -1) return;
+    if (mode === 0) pushLink(schema, from, `macro:${target}`, kind, "inferred", { opcode: code, branchMode: mode });
+    else if (mode === 1) pushLink(schema, from, `encounter:simple:${target}`, kind, "inferred", { opcode: code, branchMode: mode });
+    else if (mode === 2) pushLink(schema, from, `encounter:complex:${target}`, kind, "inferred", { opcode: code, branchMode: mode });
+  };
+  const addForceBranch = (mode: number, target: number, kind = "branches_to") => {
+    if (target < 0) return;
+    if (mode === 0) pushLink(schema, from, `macro:${target}`, kind, "inferred", { opcode: code, branchMode: mode });
+  };
   const addMessage = (id: number) => {
     if (id > 0) pushLink(schema, from, `message:${id}`, "shows_message", "source-backed", { opcode: code });
   };
+  const addSound = (id: number) => {
+    if (id) pushLink(schema, from, `resource:snd :${id}`, "plays_sound", "source-backed", { opcode: code });
+  };
   const addMacro = (id: number, kind = "calls_macro") => {
     if (id > 0) pushLink(schema, from, `macro:${id}`, kind, "inferred", { opcode: code });
+  };
+  const addMacroAllowZero = (id: number, kind = "calls_macro") => {
+    if (id >= 0) pushLink(schema, from, `macro:${id}`, kind, "inferred", { opcode: code });
+  };
+  const addMacroRange = (lowValue: number, highValue: number, kind = "branches_to") => {
+    if (highValue < 0) return;
+    const low = Math.max(0, lowValue);
+    const high = Math.max(low, highValue);
+    const ids = high - low > 32 ? [low, high] : Array.from({ length: high - low + 1 }, (_, index) => low + index);
+    for (const id of ids) pushLink(schema, from, `macro:${id}`, kind, "inferred", { opcode: code });
+  };
+  const addZeroBasedBranchRange = (mode: number, lowValue: number, highValue: number, kind = "branches_to") => {
+    if (highValue < 0 || mode === -1) return;
+    const low = Math.max(0, lowValue);
+    const high = Math.max(low, highValue);
+    const ids = high - low > 32 ? [low, high] : Array.from({ length: high - low + 1 }, (_, index) => low + index);
+    for (const id of ids) {
+      if (mode === 0 && id >= 0) pushLink(schema, from, `macro:${id}`, kind, "inferred", { opcode: code, branchMode: mode });
+      else if (mode === 1) pushLink(schema, from, `encounter:simple:${id}`, kind, "inferred", { opcode: code, branchMode: mode });
+      else if (mode === 2) pushLink(schema, from, `encounter:complex:${id}`, kind, "inferred", { opcode: code, branchMode: mode });
+    }
   };
   const addBattleRange = (lowValue: number, highValue: number) => {
     const low = Math.abs(lowValue);
@@ -791,14 +888,23 @@ function addBrowserEdcdLinks(schema: SemanticSchema, from: string, code: number,
 
   if (code === 2 || code === 48 || code === 56 || code === 107) {
     addBattleRange(value(0), value(1));
-    addMessage(value(3));
-    addMacro(value(2));
+    if (code === 56) {
+      addMacroAllowZero(value(2), "branches_on_coward");
+      addSound(value(3));
+      addMessage(value(4));
+    } else {
+      addSound(value(2));
+      if (code === 2 && value(4) === 10) addMacroAllowZero(value(2), "branches_on_revived_loss");
+      addMessage(value(3));
+      if (code === 48 && value(4) > 0) pushLink(schema, from, `treasure:${value(4)}`, "gives_treasure", "source-backed", { opcode: code });
+      if (code === 107) addMacroAllowZero(value(4), "branches_on_coward");
+    }
   } else if (code === 3) {
-    addBranch(value(1), value(2));
+    addOneBasedBranch(value(1), value(2));
     addMessage(value(3));
     addMessage(value(4));
   } else if (code === 7) {
-    addMacro(value(2));
+    addMacroAllowZero(value(2));
     pushLink(schema, from, value(0) === -2 ? "runtime-cache:CE2" : value(0) === -1 ? "runtime-cache:CE" : "runtime-cache:CL", "mutates_cache", "inferred", { opcode: code });
   } else if (code === 12) {
     const levelType = value(4) ? "dungeon" : "land";
@@ -808,61 +914,108 @@ function addBrowserEdcdLinks(schema: SemanticSchema, from: string, code: number,
     const cache = value(3) < 0 ? "runtime-cache:CD" : "runtime-cache:CL";
     pushLink(schema, from, cache, "mutates_trigger", "source-backed", { opcode: code });
     pushLink(schema, from, cache, "mutates_cache", "source-backed", { opcode: code });
+  } else if (code === 19) {
+    addMessage(value(0));
+    addMessage(value(1));
   } else if (code === 20 || code === 45) {
-    pushLink(schema, from, `map:land:${Math.max(0, value(0))}`, "uses_map_record", "source-backed", { opcode: code });
-    pushLink(schema, from, "runtime-cache:CL", "writes_runtime_state", "inferred", { opcode: code });
+    const levelType = triggerLevelType === "dungeon" ? "dungeon" : "land";
+    pushLink(schema, from, `map:${levelType}:${Math.max(0, value(0))}`, "uses_map_record", "source-backed", { opcode: code });
+    pushLink(schema, from, `runtime-cache:${levelType === "dungeon" ? "CD" : "CL"}`, "writes_runtime_state", "inferred", { opcode: code });
+    addSound(value(3));
     addMessage(value(4));
+  } else if (code === 21) {
+    pushLink(schema, from, `treasure:${Math.max(0, value(0))}`, "reads_flag", "source-backed", { opcode: code });
+    addZeroBasedBranch(value(1), value(3), "branches_true");
+    if (value(2) === 0) addZeroBasedBranch(value(1), value(4), "branches_false");
+    else if (value(2) === 2) addMessage(value(4));
   } else if (code === 23 || code === -23 || code === 92) {
     const levelType = code === -23 || value(2) ? "dungeon" : "land";
     pushLink(schema, from, `random:${levelType}:${Math.max(0, value(0))}:${Math.max(0, value(1))}`, "mutates_random_region", "source-backed", { opcode: code });
     pushLink(schema, from, `runtime-cache:${levelType === "dungeon" ? "CD" : "CL"}`, "mutates_cache", "source-backed", { opcode: code });
   } else if (code === 31) {
     pushLink(schema, from, "runtime-cache:CE", "selects_characters", "inferred", { opcode: code });
-    addMacro(value(3), "branches_true");
-    addMacro(value(4), "branches_false");
+    addMacroAllowZero(value(3), "branches_true");
+    addMacroAllowZero(value(4), "branches_false");
+  } else if (code === 15 || code === 16) {
+    pushLink(schema, from, "runtime-cache:CE", code === 15 ? "alters_character_state" : "alters_party_state", "inferred", { opcode: code });
+    addSound(value(3));
+    addMessage(Math.abs(value(4)));
+  } else if (code === 37) {
+    pushLink(schema, from, "runtime-cache:CD", "writes_runtime_state", "inferred", { opcode: code });
   } else if (code === 38 || code === 42 || code === 58 || code === 59) {
-    addBranch(value(2), value(3));
+    addForceBranch(value(2), value(3));
+  } else if (code === 40) {
+    addOneBasedBranch(value(1), value(2));
   } else if (code === 46) {
     pushLink(schema, from, `quest-flag:${Math.max(0, value(0))}`, "reads_flag", "source-backed", { opcode: code });
-    addBranch(value(2), value(3));
+    addForceBranch(value(2), value(3));
   } else if (code === 47 || code === 76) {
     pushLink(schema, from, `quest-flag:${Math.max(0, value(0))}`, "writes_flag", "source-backed", { opcode: code });
+    if (code === 76 && value(3) !== 0) addOneBasedBranch(value(2), value(4));
+  } else if (code === 51) {
+    pushLink(schema, from, `shop:${Math.max(0, value(0))}`, "mutates_shop", "source-backed", { opcode: code });
+    pushLink(schema, from, "runtime-cache:CS", "mutates_cache", "source-backed", { opcode: code });
+  } else if (code === 55) {
+    addMacroAllowZero(value(3), "branches_true");
+    if (value(1) === 1) addMacroAllowZero(value(4), "branches_false");
+    else if (value(1) === 2) addMessage(value(4));
   } else if (code === 57) {
     pushLink(schema, from, `map:land:${Math.max(0, value(2))}`, "changes_rendering", "source-backed", { opcode: code });
     pushLink(schema, from, "runtime-cache:CL", "mutates_cache", "source-backed", { opcode: code });
+  } else if (code === 64) {
+    addMacroAllowZero(value(3), "branches_true");
+    addMacroAllowZero(value(4), "branches_false");
   } else if (code === 67) {
-    addBranch(value(1), value(3), "branches_true");
-    addBranch(value(1), value(4), "branches_false");
+    addZeroBasedBranch(value(1), value(3), "branches_true");
+    addZeroBasedBranch(value(1), value(4), "branches_false");
   } else if (code === 72 || code === 75) {
-    addBranch(value(3), value(4), "branches_false");
+    addZeroBasedBranch(value(3), value(4), "branches_false");
   } else if (code === 73) {
     pushLink(schema, from, `shop:${Math.max(0, value(0))}`, "opens_shop", "source-backed", { opcode: code });
+  } else if (code === 43) {
+    pushLink(schema, from, "runtime-cache:CE", "alters_character_state", "inferred", { opcode: code });
+    addSound(value(3));
+  } else if (code === 74) {
+    pushLink(schema, from, "runtime-cache:CS", "alters_party_state", "inferred", { opcode: code });
+    if (value(3)) addSound(value(1));
+    addMessage(value(4));
   } else if (code === 77 || code === 78) {
     pushLink(schema, from, code === 77 ? `quest-flag:${Math.max(0, value(0))}` : `map-record:${Math.max(0, value(0))}`, "reads_flag", "inferred", { opcode: code });
-    addBranch(value(2), value(3), "branches_false");
-    addBranch(value(2), value(4), "branches_true");
+    if (value(3) !== 0) addZeroBasedBranch(value(2), value(3), "branches_false");
+    if (value(4) !== 0) addZeroBasedBranch(value(2), value(4), "branches_true");
   } else if (code === 81) {
     pushLink(schema, from, "runtime-cache:CE", "reads_flag", "inferred", { opcode: code });
-    addMacro(value(3), "branches_true");
-    addMacro(value(4), "branches_false");
+    addMacroAllowZero(value(3), "branches_true");
+    addMacroAllowZero(value(4), "branches_false");
   } else if (code === 85) {
-    addBranch(value(0), value(3));
+    addZeroBasedBranchRange(value(0), value(1), value(2));
+    addSound(value(3));
     addMessage(value(4));
-  } else if (code === 86 || code === 87) {
-    addBranch(value(1), value(3), "branches_true");
-    addBranch(value(1), value(4), "branches_false");
+  } else if (code === 86) {
+    if (value(3) !== 0) addZeroBasedBranch(value(2), value(3), "branches_true");
+    if (value(4) !== 0) addZeroBasedBranch(value(2), value(4), "branches_false");
+  } else if (code === 87) {
+    addZeroBasedBranch(value(1), value(3), "branches_true");
+    if (value(2) === 0) addZeroBasedBranch(value(1), value(4), "branches_false");
+    else if (value(2) === 2) addMessage(value(4));
+  } else if (code === 106) {
+    pushLink(schema, from, "runtime-cache:CL", "changes_rendering", "source-backed", { opcode: code });
   } else if (code === 120) {
     pushLink(schema, from, `monster:${Math.max(0, value(1))}`, "uses_monster", "source-backed", { opcode: code });
     if (value(3) > 0) pushLink(schema, from, `resource:cicn:${value(3)}`, "uses_resource", "source-backed", { opcode: code });
     pushLink(schema, from, "runtime-cache:CE", "mutates_cache", "inferred", { opcode: code });
+  } else if (code === 122) {
+    addMessage(value(0));
+    addSound(value(1));
   } else if (code === 123) {
     for (const monster of row) if (monster > 0) pushLink(schema, from, `monster:${monster}`, "uses_monster", "source-backed", { opcode: code });
   } else if (code === 124 || code === 125) {
     pushLink(schema, from, `monster:${Math.max(0, value(code === 124 ? 1 : 0))}`, "uses_monster", "source-backed", { opcode: code });
+    if (code === 124) addSound(value(3));
     pushLink(schema, from, "runtime-cache:CE", "mutates_encounter_state", "inferred", { opcode: code });
   } else if (code === 126) {
-    addMacro(value(3));
-    addMacro(value(4));
+    if (value(2) === 2) addMacroRange(value(3), value(4));
+    else addMacroAllowZero(value(3));
   }
 }
 
@@ -883,17 +1036,30 @@ function browserEdcdUsage(action: Action, edcdRows: Map<number, number[]>) {
       opcode: action.code
     };
   }
+  const diagnostics: string[] = [];
+  const secondaryRowId = action.code === 92 ? rowId + 1 : null;
+  const secondaryValues = secondaryRowId == null ? null : edcdRows.get(secondaryRowId);
+  if (secondaryRowId != null && !secondaryValues) diagnostics.push(`Missing secondary Data EDCD row ${secondaryRowId}`);
   return {
     rowId,
     shape: shape.name,
     fields: shape.fields.map((name, index) => ({ name, value: values[index] ?? 0 })),
     targetHints: [],
     confidence: "source-backed",
-    diagnostics: [],
+    diagnostics,
     summary: `${shape.name}: ${shape.fields.map((name, index) => `${name}=${values[index] ?? 0}`).join(", ")}`,
-    opcode: action.code
+    opcode: action.code,
+    ...(secondaryRowId != null && secondaryValues
+      ? {
+          secondaryRowId,
+          secondaryShape: "random-region-shape-details",
+          secondaryFields: RANDOM_REGION_SHAPE_DETAIL_FIELDS.map((name, index) => ({ name, value: secondaryValues[index] ?? 0 }))
+        }
+      : {})
   };
 }
+
+const RANDOM_REGION_SHAPE_DETAIL_FIELDS = ["shapeX1", "shapeY1", "shapeX2", "shapeY2", "shapeFlags"];
 
 function edcdShape(code: number): { name: string; fields: string[] } | null {
   const shape = EDCD_SHAPES[code];
@@ -902,7 +1068,7 @@ function edcdShape(code: number): { name: string; fields: string[] } | null {
 
 const EDCD_SHAPES: Record<number, { name: string; fields: string[] }> = {
   [-23]: { name: "random-region-mutation", fields: ["level", "randomRegion", "percent", "battleLowOrKeep", "battleHighOrKeep"] },
-  2: { name: "battle", fields: ["battleLow", "battleHigh", "soundOrReviveMacro", "message", "bootyMode"] },
+  2: { name: "battle", fields: ["battleLow", "battleHigh", "soundOrReviveLossMacro", "message", "revivePartyFlag"] },
   3: { name: "choice", fields: ["replyPolarity", "branchMode", "branchTarget", "promptA", "promptB"] },
   7: { name: "action-data-patching", fields: ["levelOrCache", "targetRecord", "macro", "levelKind", "resultSlot"] },
   12: { name: "tile-mutation", fields: ["level", "xOrDungeonY", "yOrDungeonX", "tileValue", "isDungeon"] },
@@ -911,59 +1077,64 @@ const EDCD_SHAPES: Record<number, { name: string; fields: string[] }> = {
   16: { name: "damage-heal", fields: ["multiplier", "low", "high", "sound", "message"] },
   17: { name: "spell-cast", fields: ["spell", "powerLevel", "saveAdjust", "forceAffect", "unused"] },
   18: { name: "spell-cast", fields: ["spell", "powerLevel", "saveAdjust", "forceAffect", "unused"] },
-  20: { name: "teleport", fields: ["level", "x", "y", "sound", "message"] },
+  19: { name: "random-message", fields: ["messageLow", "messageHigh", "unused", "unused", "unused"] },
+  20: { name: "teleport", fields: ["levelOrKeep", "xOrKeep", "yOrKeep", "sound", "message"] },
   21: { name: "item-branch", fields: ["item", "branchMode", "missingBehavior", "hasTarget", "missingTarget"] },
   22: { name: "item-mutation", fields: ["item", "maxMatches", "mode", "chargeDelta", "replacementItem"] },
   23: { name: "random-region-mutation", fields: ["level", "randomRegion", "percent", "battleLowOrKeep", "battleHighOrKeep"] },
-  30: { name: "ability-check-pick", fields: ["abilityOrAttribute", "adjustment", "sourceSet", "attributeFlag", "unused"] },
+  30: { name: "ability-check-pick", fields: ["signedAbilityOrAttribute", "adjustment", "sourceSet", "attributeFlag", "unused"] },
   31: { name: "ability-check-branch", fields: ["abilityOrAttribute", "adjustment", "attributeFlag", "successMacro", "failureMacro"] },
-  33: { name: "gold", fields: ["amount", "failureMarker", "unused", "unused", "unused"] },
-  37: { name: "dungeon-move", fields: ["mode", "xOrDirection", "yOrDirection", "sound", "message"] },
+  33: { name: "gold", fields: ["signedAmount", "failureMarker", "unused", "unused", "unused"] },
+  37: { name: "dungeon-move", fields: ["mode", "level", "x", "y", "signedHeading"] },
   38: { name: "force-branch", fields: ["testA", "testB", "branchMode", "target", "slot"] },
-  39: { name: "extended-door-codes", fields: ["macro", "unused", "unused", "unused", "unused"] },
+  40: { name: "party-condition-branch", fields: ["expectedState", "branchMode", "branchTarget", "condition", "unused"] },
   41: { name: "encounter-mutation", fields: ["simpleEncounter", "oneBasedChoiceSlot", "unused", "unused", "unused"] },
   42: { name: "percent-branch", fields: ["percent", "successBehavior", "branchMode", "target", "slot"] },
   43: { name: "condition", fields: ["scope", "condition", "durationOrDelta", "sound", "unused"] },
-  45: { name: "teleport", fields: ["level", "x", "y", "sound", "message"] },
+  45: { name: "teleport", fields: ["levelOrKeep", "xOrKeep", "yOrKeep", "sound", "message"] },
   46: { name: "force-branch", fields: ["testA", "testB", "branchMode", "target", "slot"] },
-  48: { name: "battle-variant", fields: ["battleLow", "battleHigh", "branchOrSound", "message", "extra"] },
-  50: { name: "character-selector", fields: ["selector", "gender", "raceCasteOrClass", "unused", "livingOnly"] },
+  48: { name: "selective-battle", fields: ["battleLow", "battleHigh", "sound", "message", "treasure"] },
+  50: { name: "race-caste-gender-selector", fields: ["selector", "gender", "raceCasteOrClass", "unused", "livingOnly"] },
   52: { name: "character-selector", fields: ["selector", "value", "sourceSet", "unused", "unused"] },
   53: { name: "caste-selector", fields: ["exactCaste", "casteGroup", "sourceSet", "unused", "unused"] },
-  54: { name: "timed-encounter-mutation", fields: ["timedEncounter", "mode", "dayOrInterval", "hour", "minute"] },
-  56: { name: "battle-variant", fields: ["battleLow", "battleHigh", "branchOrSound", "message", "extra"] },
+  54: { name: "timed-encounter-mutation", fields: ["timedEncounter", "percentOrKeep", "incrementOrKeep", "resetDayFlag", "dayOffsetOrKeep"] },
+  51: { name: "shop-mutation", fields: ["shop", "inflationDelta", "item", "stockDelta", "unused"] },
+  55: { name: "picked-branch", fields: ["pickedSelector", "failureBehavior", "unused", "successMacro", "failureTarget"] },
+  56: { name: "battle-outcome-branch", fields: ["battleLow", "battleHigh", "cowardMacro", "sound", "message"] },
   57: { name: "render-mutation", fields: ["landlook", "isDark", "targetLandLevel", "unused", "unused"] },
   58: { name: "force-branch", fields: ["testA", "testB", "branchMode", "target", "slot"] },
   59: { name: "force-branch", fields: ["testA", "testB", "branchMode", "target", "slot"] },
   60: { name: "party-money-state", fields: ["moneyType", "pickedOnly", "unused", "unused", "unused"] },
   61: { name: "position-shift", fields: ["legacyLevel", "xShift", "yShift", "randomize", "unused"] },
-  63: { name: "time-mutation", fields: ["mode", "day", "hour", "minute", "unused"] },
-  65: { name: "random-items", fields: ["count", "itemLow", "itemHigh", "unused", "unused"] },
+  63: { name: "time-mutation", fields: ["mode", "dayOrDelta", "hourOrDelta", "minuteOrDelta", "unused"] },
+  64: { name: "game-time-branch", fields: ["dayLimit", "hourLimit", "unused", "successMacro", "failureMacro"] },
+  65: { name: "random-items", fields: ["countOrRandomLimit", "itemLow", "itemHigh", "unused", "unused"] },
   67: { name: "item-charge-branch", fields: ["item", "branchMode", "minimumCharges", "successTarget", "failureTarget"] },
   68: { name: "fatigue", fields: ["mode", "unused", "percent", "unused", "unused"] },
   69: { name: "spell-flags", fields: ["spellcasting", "monstercasting", "spellcharging", "unused", "unused"] },
   70: { name: "save-restore-position", fields: ["mode", "unused", "unused", "unused", "unused"] },
   72: { name: "range-branch", fields: ["testA", "testB", "falseBehavior", "branchMode", "target"] },
   73: { name: "restricted-shop", fields: ["shop", "range1Low", "range1High", "range2Low", "range2High"] },
-  74: { name: "spell-points", fields: ["rollCount", "low", "high", "playSound", "message"] },
+  74: { name: "spell-points", fields: ["signedRollCount", "lowOrSound", "high", "playSound", "message"] },
   75: { name: "range-branch", fields: ["testA", "testB", "falseBehavior", "branchMode", "target"] },
   76: { name: "quest-value", fields: ["quest", "delta", "branchMode", "threshold", "target"] },
   77: { name: "false-true-branch", fields: ["testA", "testB", "branchMode", "falseTarget", "trueTarget"] },
   78: { name: "false-true-branch", fields: ["testA", "testB", "branchMode", "falseTarget", "trueTarget"] },
   81: { name: "condition-branch", fields: ["condition", "characterSelector", "unused", "trueMacro", "falseMacro"] },
   85: { name: "random-branch", fields: ["branchMode", "rangeLow", "rangeHigh", "sound", "message"] },
-  86: { name: "conditional-branch", fields: ["testSelector", "branchModeOrValue", "falseBehavior", "trueTarget", "falseTarget"] },
+  86: { name: "misc-conditional-branch", fields: ["testSelector", "signedTestValue", "branchMode", "trueTarget", "falseTarget"] },
   87: { name: "conditional-branch", fields: ["testSelector", "branchModeOrValue", "falseBehavior", "trueTarget", "falseTarget"] },
   90: { name: "party-state", fields: ["amount", "scope", "unused", "unused", "unused"] },
   92: { name: "random-region-shape-mutation", fields: ["level", "rect", "isDungeon", "percentDelta", "shapeMode"] },
   103: { name: "boat-camp-state", fields: ["mode", "statusValue", "branchModeOrBehavior", "targetOrValueA", "targetOrValueB"] },
-  107: { name: "battle-variant", fields: ["battleLow", "battleHigh", "branchOrSound", "message", "extra"] },
+  106: { name: "dark-level-state", fields: ["darkStatePlusOne", "stopIfAlready", "unused", "unused", "unused"] },
+  107: { name: "improved-selective-battle", fields: ["battleLow", "battleHigh", "sound", "message", "cowardMacro"] },
   108: { name: "selected-character-state", fields: ["statSelector", "delta", "unused", "unused", "unused"] },
   120: { name: "combat-monster-mutation", fields: ["targetClass", "monsterId", "count", "replacementIcon", "traitorOverride"] },
   121: { name: "unused-edcd-load", fields: ["unused0", "unused1", "unused2", "unused3", "unused4"] },
   122: { name: "fumble", fields: ["message", "sound", "unused", "unused", "unused"] },
   123: { name: "rout", fields: ["monster1", "monster2", "monster3", "monster4", "monster5"] },
-  124: { name: "spawn", fields: ["unused", "monster", "count", "sound", "traitorOverride"] },
+  124: { name: "spawn", fields: ["unused", "monster", "countOrRandomLimit", "sound", "traitorOverride"] },
   125: { name: "destroy-related", fields: ["monsterId", "maxCount", "unused", "unused", "includeTraitorSide"] },
   126: { name: "battle-macro", fields: ["mode", "roundOrPercent", "repeatMode", "macroLow", "macroHigh"] }
 };
@@ -1162,15 +1333,24 @@ function classifyEd3Reachability(schema: SemanticSchema, triggers: TriggerRecord
   }
   const reachable = new Map<string, { rootType: string; evidence: string[] }>();
   for (const [target, links] of incoming) {
-    const root = links.find((link) => link.kind === "calls_macro" && !link.from.startsWith("action-slot:macro:"));
-    if (root) reachable.set(target, { rootType: browserRootType(root.from), evidence: [root.id] });
+    const root = links.find(
+      (link) =>
+        (isMacroReachabilityLink(link) && !link.from.startsWith("action-slot:macro:")) ||
+        (link.kind === "calls_battle_macro" && isNegativeBattleMacroLink(link))
+    );
+    if (root) {
+      reachable.set(target, {
+        rootType: root.kind === "calls_battle_macro" ? "negative-battle-macro" : browserRootType(root.from),
+        evidence: [root.id]
+      });
+    }
   }
   const queue = Array.from(reachable.keys());
   while (queue.length > 0) {
     const current = queue.shift()!;
     const [, recordIndex] = current.split(":");
     const prefix = `action-slot:macro:${recordIndex}:`;
-    for (const link of schema.links.filter((candidate) => candidate.kind === "calls_macro" && candidate.from.startsWith(prefix))) {
+    for (const link of schema.links.filter((candidate) => isMacroReachabilityLink(candidate) && candidate.from.startsWith(prefix))) {
       if (!ed3Ids.has(link.to) || reachable.has(link.to)) continue;
       reachable.set(link.to, { rootType: "recursive-macro-call", evidence: [...(reachable.get(current)?.evidence ?? []), link.id] });
       queue.push(link.to);
@@ -1222,10 +1402,31 @@ function classifyEd3Reachability(schema: SemanticSchema, triggers: TriggerRecord
   }
 }
 
+const MACRO_REACHABILITY_LINK_KINDS = new Set([
+  "calls_macro",
+  "branches_to",
+  "branches_true",
+  "branches_false",
+  "branches_keep",
+  "branches_drop",
+  "branches_on_coward",
+  "branches_on_revived_loss"
+]);
+
+function isMacroReachabilityLink(link: SemanticLink) {
+  return MACRO_REACHABILITY_LINK_KINDS.has(link.kind);
+}
+
+function isNegativeBattleMacroLink(link: SemanticLink) {
+  const rawValue = link.metadata?.rawValue;
+  return typeof rawValue === "number" && rawValue < 0;
+}
+
 function browserRootType(from: string) {
   if (from.startsWith("action-slot:trigger:")) return "map-trigger-call";
   if (from.startsWith("random:")) return "random-region-door";
   if (from.startsWith("time:")) return "timed-encounter-door";
+  if (from.startsWith("item:")) return "door-item-macro";
   if (from.startsWith("monster:")) return "monster-death-hook";
   if (from.startsWith("global:")) return "global-macro-slot";
   return "source-backed-root";
@@ -1414,14 +1615,19 @@ const LAYOUTS: Record<string, [string, number]> = {
   "Data ED2": ["complex encounter", 520],
   "Data BD": ["battle record", 346],
   "Data MD": ["monster record", 210],
+  "Data MD1": ["alternate monster set", 210],
+  "Data MD-1": ["alternate monster set", 210],
+  "Data DES": ["monster description", MONSTER_DESCRIPTION_BYTES],
   "Data SD": ["shop record", 3002],
   "Data SD2": ["message record", 256],
+  "Data OD": ["option label", OPTION_LABEL_BYTES],
   "Data MD2": ["map record", 340],
   "Data TD": ["treasure", 48],
   "Data TD2": ["thief encounters", 118],
   "Data TD3": ["timed encounters", 40],
   "Data CI": ["scenario contact", 4608],
   "Data RI": ["scenario restrictions", 320],
+  "Data CS": ["scenario security backup", 316],
   "Global": ["global macro hooks", 60],
   "Data MENU": ["monster menu cache", 502],
   "Data Solids": ["solid tile table", 1024],

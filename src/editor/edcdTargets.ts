@@ -20,16 +20,48 @@ export type EdcdTargetReferenceIssue = {
   value: number;
 };
 
-export function edcdFieldTargetKind(shape: string, name: string, fieldNames: string[], values: number[]): EdcdTargetKind | null {
+export function edcdFieldTargetKind(shape: string, name: string, fieldNames: string[], values: number[], opcode?: number): EdcdTargetKind | null {
   const normalizedShape = shape.toLowerCase();
   const normalizedName = name.toLowerCase();
+  const fieldValue = valueForField(fieldNames, values, normalizedName);
+  if (normalizedShape === "quest-value" && opcode === 76 && normalizedName === "target") {
+    const threshold = valueForField(fieldNames, values, "threshold") ?? 0;
+    if (threshold === 0) return null;
+  }
+  if (normalizedShape === "false-true-branch" && (opcode === 77 || opcode === 78) && (normalizedName === "falsetarget" || normalizedName === "truetarget")) {
+    if ((fieldValue ?? 0) === 0) return null;
+  }
+  if (normalizedShape === "misc-conditional-branch" && opcode === 86 && (normalizedName === "truetarget" || normalizedName === "falsetarget")) {
+    if ((fieldValue ?? 0) === 0) return null;
+  }
+  if (normalizedShape === "picked-branch" && normalizedName === "failuretarget") {
+    const failureBehavior = values[1] ?? 0;
+    if (failureBehavior === 1) return "macro";
+    if (failureBehavior === 2) return "message";
+    return null;
+  }
+  if (normalizedShape === "item-branch" && normalizedName === "missingtarget") {
+    const missingBehavior = values[2] ?? 0;
+    if (missingBehavior === 0) return zeroBasedBranchTargetKind(values[1] ?? 0);
+    if (missingBehavior === 2) return "message";
+    return null;
+  }
+  if (normalizedShape === "conditional-branch" && opcode === 87 && normalizedName === "falsetarget") {
+    const falseBehavior = values[2] ?? 0;
+    if (falseBehavior === 0) return zeroBasedBranchTargetKind(values[1] ?? 0);
+    if (falseBehavior === 2) return "message";
+    return null;
+  }
+  if (normalizedShape === "battle" && opcode === 2 && normalizedName === "soundorrevivelossmacro") {
+    return (values[4] ?? 0) === 10 ? "macro" : null;
+  }
   if (normalizedName === "shop") return "shop";
   if (normalizedName === "simpleencounter") return "simpleEncounter";
   if (normalizedName === "quest") return "questLabel";
   if (normalizedName.includes("macro")) return "macro";
   if (normalizedName.includes("message") || normalizedName.startsWith("prompt")) return "message";
   if (normalizedShape.includes("battle") && (normalizedName === "battlelow" || normalizedName === "battlehigh")) return "battle";
-  if (isBranchTargetField(normalizedName)) return branchTargetKind(fieldNames, values);
+  if (isBranchTargetField(normalizedName)) return branchTargetKind(normalizedShape, fieldNames, values, opcode);
   return null;
 }
 
@@ -40,7 +72,7 @@ export function edcdTargetOptions(project: Project, targetKind: EdcdTargetKind):
       .map((trigger) => ({
         key: `macro:${trigger.recordIndex}`,
         value: trigger.recordIndex,
-        label: `Macro ${trigger.recordIndex}`,
+        label: `Extra Action Point ${trigger.recordIndex}`,
         detail: `${trigger.actions.length} action slot(s)`,
         entity: selectEntityFromId(`macro:${trigger.recordIndex}`)
       }));
@@ -99,13 +131,15 @@ export function edcdTargetOptions(project: Project, targetKind: EdcdTargetKind):
   }));
 }
 
-export function missingEdcdTargetReferences(project: Project, shape: string, fieldNames: string[], values: number[]): EdcdTargetReferenceIssue[] {
+export function missingEdcdTargetReferences(project: Project, shape: string, fieldNames: string[], values: number[], opcode?: number): EdcdTargetReferenceIssue[] {
   const issues: EdcdTargetReferenceIssue[] = [];
   for (const [index, field] of fieldNames.entries()) {
-    const value = values[index] ?? 0;
-    if (!Number.isFinite(value) || value <= 0) continue;
-    const targetKind = edcdFieldTargetKind(shape, field, fieldNames, values);
+    const rawValue = values[index] ?? 0;
+    const targetKind = edcdFieldTargetKind(shape, field, fieldNames, values, opcode);
     if (!targetKind || targetKind === "questLabel") continue;
+    const value = normalizedEdcdTargetValueForValidation(targetKind, rawValue, field, opcode);
+    if (!Number.isFinite(value) || value < 0) continue;
+    if (value === 0 && !["macro", "simpleEncounter", "complexEncounter"].includes(targetKind)) continue;
     if (edcdTargetOptions(project, targetKind).some((option) => option.value === value)) continue;
     issues.push({
       index,
@@ -116,6 +150,12 @@ export function missingEdcdTargetReferences(project: Project, shape: string, fie
     });
   }
   return issues;
+}
+
+function normalizedEdcdTargetValueForValidation(targetKind: EdcdTargetKind, rawValue: number, field: string, opcode?: number) {
+  if (targetKind === "battle") return Math.abs(rawValue);
+  if (targetKind === "message" && (opcode === 15 || opcode === 16) && field.toLowerCase() === "message") return Math.abs(rawValue);
+  return rawValue;
 }
 
 export function createRecordTypeForEdcdTarget(targetKind: EdcdTargetKind | null): RealmzTargetRecordKind | null {
@@ -131,7 +171,7 @@ export function edcdTargetLabel(targetKind: EdcdTargetKind) {
     simpleEncounter: "simple encounter",
     complexEncounter: "complex encounter",
     questLabel: "quest label",
-    macro: "macro"
+    macro: "Extra Action Point"
   };
   return labels[targetKind];
 }
@@ -149,12 +189,49 @@ function isBranchTargetField(normalizedName: string) {
   ].includes(normalizedName);
 }
 
-function branchTargetKind(fieldNames: string[], values: number[]): EdcdTargetKind | null {
-  const branchModeIndex = fieldNames.findIndex((field) => field.toLowerCase().includes("branchmode"));
+function branchTargetKind(shape: string, fieldNames: string[], values: number[], opcode?: number): EdcdTargetKind | null {
+  const branchModeIndex = branchModeFieldIndex(shape, fieldNames, opcode);
   if (branchModeIndex < 0) return null;
   const mode = values[branchModeIndex] ?? 0;
+  if (shape === "force-branch" || shape === "percent-branch") return forceBranchTargetKind(mode);
+  if ([
+    "item-branch",
+    "item-charge-branch",
+    "false-true-branch",
+    "range-branch",
+    "random-branch",
+    "conditional-branch",
+    "misc-conditional-branch"
+  ].includes(shape)) {
+    return zeroBasedBranchTargetKind(mode);
+  }
+  return oneBasedBranchTargetKind(mode);
+}
+
+function branchModeFieldIndex(shape: string, fieldNames: string[], opcode?: number) {
+  return fieldNames.findIndex((field) => field.toLowerCase().includes("branchmode"));
+}
+
+function valueForField(fieldNames: string[], values: number[], normalizedName: string) {
+  const index = fieldNames.findIndex((field) => field.toLowerCase() === normalizedName);
+  return index >= 0 ? values[index] : undefined;
+}
+
+function oneBasedBranchTargetKind(mode: number): EdcdTargetKind | null {
   if (mode === 1) return "macro";
   if (mode === 2) return "simpleEncounter";
   if (mode === 3) return "complexEncounter";
+  return null;
+}
+
+function zeroBasedBranchTargetKind(mode: number): EdcdTargetKind | null {
+  if (mode === 0) return "macro";
+  if (mode === 1) return "simpleEncounter";
+  if (mode === 2) return "complexEncounter";
+  return null;
+}
+
+function forceBranchTargetKind(mode: number): EdcdTargetKind | null {
+  if (mode === 0) return "macro";
   return null;
 }

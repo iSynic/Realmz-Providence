@@ -376,12 +376,21 @@ export type ScenarioMeta = {
   contactInfo?: ScenarioContactInfo | null;
   restrictions?: ScenarioRestrictions | null;
   globalMacroHooks?: ScenarioGlobalMacroHooks | null;
+  securityBackup?: ScenarioShell | null;
 };
 
 export type ScenarioStartupFields = Partial<ScenarioMeta>;
 export type RealmzTargetRecordKind = "message" | "battle" | "monster" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "thiefEncounter" | "timedEncounter" | "questLabel";
 
 export type MessageRecord = {
+  id: number;
+  text: string;
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: Provenance;
+};
+
+export type OptionLabelRecord = {
   id: number;
   text: string;
   rawBytes?: number[];
@@ -454,6 +463,12 @@ export type MonsterRecord = {
   provenance?: Provenance;
 };
 
+export type MonsterSet = {
+  sourceFile: string;
+  setId: number;
+  monsters: MonsterRecord[];
+};
+
 export type TreasureRecord = {
   id: number;
   itemIds: number[];
@@ -471,6 +486,14 @@ export type ShopRecord = {
   itemIds: number[];
   quantities: number[];
   inflation: number;
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: Provenance;
+};
+
+export type MonsterDescriptionRecord = {
+  id: number;
+  text: string;
   rawBytes?: number[];
   authored?: boolean;
   provenance?: Provenance;
@@ -929,8 +952,11 @@ export type Project = {
   tileAttributes: TileAttributeProfile[];
   extracodes: ExtraCodeRow[];
   messages: MessageRecord[];
+  optionLabels: OptionLabelRecord[];
   battles: BattleRecord[];
   monsters: MonsterRecord[];
+  monsterSets: MonsterSet[];
+  monsterDescriptions: MonsterDescriptionRecord[];
   scenarioItems: ScenarioItemRecord[];
   treasures: TreasureRecord[];
   shops: ShopRecord[];
