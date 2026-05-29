@@ -75,7 +75,6 @@ export function EdcdRowEditor({
     return Number.isFinite(parsed) ? parsed : 0;
   });
   const opcode = edcdUsage?.opcode ?? fallbackOpcode;
-  const targetIssues = missingEdcdTargetReferences(project, shapeId, fieldNames, numericDraft, opcode);
   const changed = numericDraft.some((value, index) => value !== initialValues[index]);
   const fieldMetadata = fieldNames.map((name, index) => {
     const metadata = parameterLabels?.find((label) => label.index === index);
@@ -89,6 +88,8 @@ export function EdcdRowEditor({
   });
   const primaryFields = fieldMetadata.filter((field) => !field.preserved);
   const preservedFields = fieldMetadata.filter((field) => field.preserved);
+  const preservedIndexes = preservedFields.map((field) => field.index);
+  const targetIssues = missingEdcdTargetReferences(project, shapeId, fieldNames, numericDraft, opcode, preservedIndexes);
 
   return (
     <PanelSection
@@ -240,7 +241,7 @@ export function EdcdRowEditor({
         )}
         {targetIssue && (
           <p className="field-warning">
-            Create or select {targetIssue.targetLabel} {targetIssue.value}; Realmz will receive this ID, but Providence cannot prove it exists yet.
+            Missing {targetIssue.targetLabel} target {targetIssue.value}. Create or select it before export.
           </p>
         )}
         {selectedTarget?.entity && onSelectEntity && (

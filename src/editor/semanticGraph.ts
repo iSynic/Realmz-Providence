@@ -233,6 +233,26 @@ export function ed3ReachabilityFor(project: Project | null, recordIndex: number)
   return cache.get(recordIndex) ?? null;
 }
 
+export function extraActionPointClassification(project: Project | null, trigger: TriggerRecord) {
+  if (trigger.source !== "Data ED3") return "Action Point";
+  const row = ed3ReachabilityFor(project, trigger.recordIndex);
+  if (!row?.reachable) return importedExtraActionLabel(row?.classification);
+  const rootType = String(row.rootType ?? "");
+  if (rootType.includes("global")) return "Global Macro";
+  if (rootType.includes("random")) return "Random Encounter Action";
+  if (rootType.includes("time")) return "Timed Encounter Action";
+  if (rootType.includes("battle") || rootType.includes("monster") || rootType.includes("item")) return "Battle / Monster / Item Action";
+  return "Callable Extra Action Point";
+}
+
+function importedExtraActionLabel(classification: string | null | undefined) {
+  if (classification === "probable-editor-padding") return "Imported Empty Slot";
+  if (classification === "runtime-mutation-candidate") return "Imported Runtime Mutation";
+  if (classification === "orphan-authored-content") return "Imported Extra Action";
+  if (classification === "needs-runtime-trace") return "Imported Extra Action";
+  return "Imported Extra Action";
+}
+
 export function isCallableMacro(project: Project | null, trigger: TriggerRecord) {
   if (trigger.source !== "Data ED3") return false;
   const entity = triggerEntityForRecord(project, trigger);

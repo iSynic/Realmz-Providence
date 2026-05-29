@@ -115,14 +115,14 @@ fn decode_edcd(
 
     semantics.targets.push(target(
         format!("record:Data EDCD:{row_id}"),
-        "edcd row",
+        "parameter row",
         "uses_parameter_row",
         extra_rows.contains_key(&row_id),
     ));
 
     let Some(values) = row else {
         let message = format!(
-            "Opcode {} action slot {} references missing Data EDCD row {}",
+            "Opcode {} action slot {} references missing parameter row {}",
             code, action.slot, row_id
         );
         usage_diagnostics.push(message.clone());
@@ -159,7 +159,7 @@ fn decode_edcd(
             secondary = Some((secondary_id, secondary_values));
         } else {
             let message = format!(
-                "Opcode 92 action slot {} is missing secondary Data EDCD row {} for random-region shape details",
+                "Opcode 92 action slot {} is missing secondary parameter row {} for random-region shape details",
                 action.slot, secondary_id
             );
             usage_diagnostics.push(message.clone());
@@ -1600,7 +1600,7 @@ fn branch_field_meaning(shape: &str, name: &str, value: i16) -> Option<&'static 
 
 fn usage_summary(shape: &str, fields: [&'static str; 5], values: Option<[i16; 5]>) -> String {
     let Some(values) = values else {
-        return format!("{shape}: missing EDCD row");
+        return format!("{shape}: missing parameter row");
     };
     let named_values: Vec<String> = fields
         .iter()

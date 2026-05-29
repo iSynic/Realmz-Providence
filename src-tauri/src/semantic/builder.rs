@@ -226,7 +226,7 @@ fn add_extracodes(schema: &mut SemanticSchema, extracodes: &[ExtraCodeRow]) {
             id: id.clone(),
             source: source_id("Data EDCD"),
             record_type: "extra-code row".to_string(),
-            label: format!("EDCD row {}", row.id),
+            label: format!("Parameter Row {}", row.id),
             edit_state: SemanticEditState::InspectOnly,
             byte_range: Some(byte_range(
                 row.provenance.byte_offset,
@@ -238,7 +238,7 @@ fn add_extracodes(schema: &mut SemanticSchema, extracodes: &[ExtraCodeRow]) {
         schema.entities.push(SemanticEntity {
             id,
             entity_type: "edcd-row".to_string(),
-            label: format!("EDCD row {}", row.id),
+            label: format!("Parameter Row {}", row.id),
             edit_state: SemanticEditState::InspectOnly,
             confidence: Confidence::SourceBacked,
             source: "Data EDCD".to_string(),

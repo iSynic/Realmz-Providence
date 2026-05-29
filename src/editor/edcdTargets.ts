@@ -131,9 +131,11 @@ export function edcdTargetOptions(project: Project, targetKind: EdcdTargetKind):
   }));
 }
 
-export function missingEdcdTargetReferences(project: Project, shape: string, fieldNames: string[], values: number[], opcode?: number): EdcdTargetReferenceIssue[] {
+export function missingEdcdTargetReferences(project: Project, shape: string, fieldNames: string[], values: number[], opcode?: number, preservedIndexes?: Iterable<number>): EdcdTargetReferenceIssue[] {
   const issues: EdcdTargetReferenceIssue[] = [];
+  const preserved = new Set(preservedIndexes ?? []);
   for (const [index, field] of fieldNames.entries()) {
+    if (preserved.has(index)) continue;
     const rawValue = values[index] ?? 0;
     const targetKind = edcdFieldTargetKind(shape, field, fieldNames, values, opcode);
     if (!targetKind || targetKind === "questLabel") continue;

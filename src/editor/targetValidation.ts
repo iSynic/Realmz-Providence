@@ -4,6 +4,7 @@ import { isDirectMacroOpcode, targetOptionsForOpcode, targetPickerConfig } from 
 import { isCallableMacro } from "./semanticGraph";
 import { missingEdcdTargetReferences } from "./edcdTargets";
 import { edcdFieldNamesForShape } from "./realmzEdcd";
+import { parameterLabelsForOpcode } from "./opcodeCrosswalk";
 
 export type TargetRecordDiagnostic = {
   id: string;
@@ -243,7 +244,8 @@ function validateEncounterActions(project: Project, recordType: RealmzTargetReco
       } else {
         const fieldNames = edcdFieldNamesForShape(option.edcdShape);
         if (fieldNames) {
-          for (const issue of missingEdcdTargetReferences(project, option.edcdShape, fieldNames, row.values, action.rawCode)) {
+          const preservedIndexes = parameterLabelsForOpcode(action.rawCode).filter((label) => label.preserved).map((label) => label.index);
+          for (const issue of missingEdcdTargetReferences(project, option.edcdShape, fieldNames, row.values, action.rawCode, preservedIndexes)) {
             const fieldLabel = parameterLabelForIssue(action.rawCode, issue.index, issue.field);
             issues.push(slotIssue(
               "warning",
@@ -301,8 +303,8 @@ function hasNonAscii(value: string) {
   return /[^\x00-\x7f]/.test(value);
 }
 
-function parameterLabelForIssue(_opcode: number, _index: number, fallback: string) {
-  return humanizeParameterName(fallback);
+function parameterLabelForIssue(opcode: number, index: number, fallback: string) {
+  return parameterLabelsForOpcode(opcode).find((label) => label.index === index)?.label ?? humanizeParameterName(fallback);
 }
 
 function humanizeParameterName(name: string) {

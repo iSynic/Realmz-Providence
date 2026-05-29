@@ -7,7 +7,8 @@ export type OpcodeWriterStatus =
   | "writer-ready-map-action-point-copy"
   | "writer-ready-direct-code-id"
   | "writer-gated-direct-target-family"
-  | "writer-gated-missing-edcd-shape";
+  | "writer-gated-missing-edcd-shape"
+  | "writer-gated-not-used";
 
 export type OpcodeParameterLabel = {
   index: number;
@@ -15,6 +16,7 @@ export type OpcodeParameterLabel = {
   help: string;
   internalName: string;
   preserved: boolean;
+  targetFamily?: string | null;
 };
 
 export type OpcodeCrosswalkEntry = {
@@ -22,6 +24,7 @@ export type OpcodeCrosswalkEntry = {
   title: string;
   idMeaning: string;
   idHelp: string;
+  targetFamily?: string | null;
   use: string;
   options: string;
   extraCodes: string;
@@ -62,6 +65,10 @@ export function opcodeWriterStatus(rawCode: number): OpcodeWriterStatus | undefi
 
 export function opcodeWriterNote(rawCode: number) {
   return crosswalkForOpcode(rawCode)?.writerNote ?? "";
+}
+
+export function opcodeTargetFamily(rawCode: number) {
+  return crosswalkForOpcode(rawCode)?.targetFamily ?? "direct-id";
 }
 
 export function opcodeActionHelpTitle(rawCode: number) {

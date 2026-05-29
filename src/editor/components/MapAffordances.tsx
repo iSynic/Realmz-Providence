@@ -150,7 +150,7 @@ export function RandomRectangleForm({ rect }: { rect: RandomLevel["rects"][numbe
       <ReadOnlyField label="% Option" value={rect.option} />
       <ReadOnlyField label="Text" value={rect.text} />
       {rect.randomDoors.map((door, index) => (
-        <ReadOnlyField key={index} label={`Extra AP ${index + 1}`} value={`${door} @ ${doorPercentLabel(rect.randomDoorPercent[index])}`} />
+        <ReadOnlyField key={index} label={`Extra Action ${index + 1}`} value={`${door} @ ${doorPercentLabel(rect.randomDoorPercent[index])}`} />
       ))}
     </div>
   );

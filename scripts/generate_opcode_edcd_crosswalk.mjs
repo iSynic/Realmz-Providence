@@ -30,6 +30,104 @@ for (const code of edcdSourceMap.directNonEdcdOpcodes ?? []) allCodes.add(Number
 for (const code of edcdSourceMap.directExtraActionPointOpcodes ?? []) allCodes.add(Number(code));
 allCodes.add(0);
 
+const MANUAL_NOT_USED_OPCODES = new Set([79, 80, 109, 110, 113, 114, 115, 116, 117, 118]);
+
+const FIELD_OVERRIDES = new Map([
+  fieldOverride(45, 4, {
+    label: "Message",
+    help: "Optional message after teleport. Realmz consumes this field through the shared Teleport path."
+  }),
+  fieldOverride(68, 1, {
+    label: "Preserved Value 2",
+    help: "Realmz does not consume this slot for fatigue changes; Providence preserves imported values.",
+    preserved: true
+  }),
+  fieldOverride(68, 2, {
+    label: "Calculated Fatigue %",
+    help: "Used when Mode calculates a new fatigue value; Realmz multiplies current fatigue by this percent."
+  }),
+  fieldOverride(74, 0, {
+    label: "Multiplier",
+    help: "Absolute value controls how many random rolls are applied; negative values take spell points."
+  }),
+  fieldOverride(74, 1, {
+    label: "Low Range / Sound",
+    help: "Low random range. Realmz also plays this sound when the Play Sound flag is set."
+  }),
+  fieldOverride(74, 2, {
+    label: "High Range",
+    help: "High random range for spell point change."
+  }),
+  fieldOverride(74, 3, {
+    label: "Play Sound",
+    help: "Non-zero plays the sound stored in Low Range / Sound."
+  }),
+  fieldOverride(74, 4, {
+    label: "Message",
+    help: "Optional message after the spell point change."
+  }),
+  fieldOverride(77, 0, {
+    label: "Quest Flag",
+    help: "Quest flag to compare."
+  }),
+  fieldOverride(77, 1, {
+    label: "Test Value",
+    help: "Realmz branches based on whether the quest flag is less than this value."
+  }),
+  fieldOverride(77, 2, {
+    label: "Branch Type",
+    help: "0 = Extra Action Point, 1 = Simple Encounter, 2 = Complex Encounter."
+  }),
+  fieldOverride(77, 3, {
+    label: "Less Than Target",
+    help: "Target when the quest flag is less than the test value. Zero means no branch."
+  }),
+  fieldOverride(77, 4, {
+    label: "Equal Or Greater Target",
+    help: "Target when the quest flag is equal to or greater than the test value. Zero means no branch."
+  }),
+  fieldOverride(103, 3, {
+    label: "Preserved Value 4",
+    help: "Realmz does not consume this slot for boat/camp status; Providence preserves imported values.",
+    preserved: true
+  }),
+  fieldOverride(103, 4, {
+    label: "Preserved Value 5",
+    help: "Realmz does not consume this slot for boat/camp status; Providence preserves imported values.",
+    preserved: true
+  }),
+  fieldOverride(106, 2, {
+    label: "Preserved LOS Value",
+    help: "Divinity labels a line-of-sight value here, but the audited Realmz dispatcher only consumes the first two dark-level fields. Providence preserves this value.",
+    preserved: true
+  }),
+  fieldOverride(106, 3, {
+    label: "Preserved LOS Skip Value",
+    help: "Divinity labels a line-of-sight skip value here, but the audited Realmz dispatcher only consumes the first two dark-level fields. Providence preserves this value.",
+    preserved: true
+  }),
+  fieldOverride(120, 0, {
+    label: "Target Type",
+    help: "1 = NPC, 2 = Monster."
+  }),
+  fieldOverride(120, 1, {
+    label: "NPC / Monster ID",
+    help: "ID of the NPC or monster to alter."
+  }),
+  fieldOverride(120, 2, {
+    label: "Count",
+    help: "How many matching combatants to alter."
+  }),
+  fieldOverride(120, 3, {
+    label: "New Icon ID",
+    help: "New icon ID; -1 means no icon change."
+  }),
+  fieldOverride(120, 4, {
+    label: "New Traitor Value",
+    help: "New traitor value; -1 means no traitor change."
+  })
+]);
+
 const rows = [...allCodes]
   .sort((a, b) => a - b)
   .map((code) => buildCrosswalkRow(code));
@@ -42,11 +140,11 @@ const summary = {
   missingProvidenceShape: rows.filter((row) => row.providence.edcdBacked && !row.providence.shape).map((row) => row.opcode),
   missingDivinityHelp: rows.filter((row) => row.opcode !== 0 && row.divinity.resourceIds.length === 0).map((row) => row.opcode),
   missingRealmzSourceAnchor: rows
-    .filter((row) => row.opcode !== 0 && !row.realmzSource.caseAnchor && !row.realmzSource.edcdLoadAnchor && !row.realmzSource.auditAnchor)
+    .filter((row) => row.opcode !== 0 && !isManualNotUsedOpcode(row) && !row.realmzSource.caseAnchor && !row.realmzSource.edcdLoadAnchor && !row.realmzSource.auditAnchor)
     .map((row) => row.opcode),
   sourceAnchoredRows: rows.filter((row) => row.realmzSource.caseAnchor || row.realmzSource.edcdLoadAnchor || row.realmzSource.auditAnchor).length,
   fieldComparisonGaps: rows
-    .filter((row) => row.providence.edcdBacked && row.providence.fieldComparison.some((field) => !field.divinity || !field.providence))
+    .filter((row) => row.providence.edcdBacked && row.providence.fieldComparison.some((field) => fieldComparisonHasGap(row, field)))
     .map((row) => row.opcode)
 };
 
@@ -64,8 +162,10 @@ const artifact = {
   rows
 };
 
+const uiCrosswalk = buildUiCrosswalk(artifact);
+assertCrosswalk(artifact, uiCrosswalk);
 writeJson(outputJsonPath, artifact);
-writeJson(uiOutputPath, buildUiCrosswalk(artifact));
+writeJson(uiOutputPath, uiCrosswalk);
 fs.mkdirSync(path.dirname(outputMarkdownPath), { recursive: true });
 fs.writeFileSync(outputMarkdownPath, renderMarkdown(artifact));
 
@@ -78,6 +178,7 @@ function buildCrosswalkRow(code) {
   const action = actionDetails.get(code);
   const divinityEntries = divinityEntriesByCode.get(code) ?? [];
   const primaryDivinity = divinityEntries[0];
+  const manualNotUsed = MANUAL_NOT_USED_OPCODES.has(code) && primaryDivinity?.title?.toLowerCase() === "not used";
   const source = sourceAnchors.get(code);
   const correction = correctionsByOpcode.get(code);
   const edcdBacked = (edcdSourceMap.edcdBackedOpcodes ?? []).map(Number).includes(code);
@@ -121,14 +222,22 @@ function buildCrosswalkRow(code) {
       caseAnchor: source?.caseLine ? `${newlandPath}:${source.caseLine}` : null,
       edcdLoadAnchor: source?.loadextracodeLine ? `${newlandPath}:${source.loadextracodeLine}` : null,
       auditAnchor: correction?.realmzAnchor ?? null,
-      consumerStatus: correction?.status ?? (edcdBacked ? "source-audited-edcd-consumer" : directExtraActionPoint ? "direct-extra-action-point-consumer" : directNonEdcd ? "direct-code-id-consumer" : "manual-or-direct-consumer"),
-      runtimeNote: correction?.runtimeNote ?? null
+      consumerStatus: manualNotUsed ? "manual-not-used-no-runtime-dispatch" : correction?.status ?? (edcdBacked ? "source-audited-edcd-consumer" : directExtraActionPoint ? "direct-extra-action-point-consumer" : directNonEdcd ? "direct-code-id-consumer" : "manual-or-direct-consumer"),
+      runtimeNote: manualNotUsed
+        ? "Divinity labels this opcode Not Used and Realmz has no dispatcher case; Providence preserves imported CODE/ID values without exposing normal authoring controls."
+        : correction?.runtimeNote ?? null
     },
-    writerStatus: writerStatusFor({ edcdBacked, shape, directExtraActionPoint, sameMapActionPointCopy, directNonEdcd })
+    writerStatus: writerStatusFor({ edcdBacked, shape, directExtraActionPoint, sameMapActionPointCopy, directNonEdcd, manualNotUsed })
   };
 }
 
-function writerStatusFor({ edcdBacked, shape, directExtraActionPoint, sameMapActionPointCopy, directNonEdcd }) {
+function writerStatusFor({ edcdBacked, shape, directExtraActionPoint, sameMapActionPointCopy, directNonEdcd, manualNotUsed }) {
+  if (manualNotUsed) {
+    return {
+      status: "writer-gated-not-used",
+      note: "Divinity labels this opcode Not Used and Realmz has no dispatcher case. Imported values are preserved, but Providence should not offer normal authoring controls."
+    };
+  }
   if (edcdBacked && shape) {
     return {
       status: "writer-ready-data-edcd",
@@ -178,19 +287,45 @@ function compareFields(extraCodeItems, fields) {
   return comparison;
 }
 
+function fieldOverride(opcode, index, data) {
+  return [`${opcode}:${index}`, data];
+}
+
+function fieldOverrideFor(opcode, index) {
+  return FIELD_OVERRIDES.get(`${opcode}:${index}`) ?? null;
+}
+
+function isManualNotUsedOpcode(row) {
+  return MANUAL_NOT_USED_OPCODES.has(row.opcode) && row.divinity.title?.toLowerCase() === "not used";
+}
+
+function fieldComparisonHasGap(row, field) {
+  if (isManualNotUsedOpcode(row)) return false;
+  if (fieldOverrideFor(row.opcode, field.index)) return false;
+  const divinity = cleanParameterHelp(field.divinity ?? "");
+  const providence = field.providence ?? "";
+  if (!providence && divinity) return true;
+  if (!divinity && !providence) return false;
+  if (isPreservedField(providence, divinity)) return false;
+  if (!divinity && providence) return true;
+  return false;
+}
+
 function buildUiCrosswalk(artifact) {
   const entries = {};
   for (const row of artifact.rows) {
     const parameters = row.providence.fields.map((fieldName, index) => {
       const comparison = row.providence.fieldComparison.find((field) => field.index === index);
       const divinity = cleanParameterHelp(comparison?.divinity ?? "");
-      const preserved = isPreservedField(fieldName, divinity);
+      const override = fieldOverrideFor(row.opcode, index);
+      const preserved = override?.preserved ?? isPreservedField(fieldName, divinity);
       return {
         index,
-        label: preserved ? `Preserved Value ${index + 1}` : parameterLabel(divinity, fieldName, index),
-        help: divinity,
+        label: override?.label ?? (preserved ? `Preserved Value ${index + 1}` : parameterLabel(divinity, fieldName, index)),
+        help: override?.help ?? divinity,
         internalName: fieldName,
-        preserved
+        preserved,
+        targetFamily: preserved ? override?.targetFamily ?? null : override?.targetFamily ?? targetFamilyForField(fieldName, row.providence.shape)
       };
     });
     entries[String(row.opcode)] = {
@@ -198,6 +333,7 @@ function buildUiCrosswalk(artifact) {
       title: row.divinity.title,
       idMeaning: idMeaningForRow(row),
       idHelp: idHelpForRow(row),
+      targetFamily: targetFamilyForRow(row),
       use: row.divinity.use,
       options: row.divinity.options,
       extraCodes: row.divinity.extraCodes,
@@ -218,6 +354,74 @@ function buildUiCrosswalk(artifact) {
   };
 }
 
+function assertCrosswalk(artifact, uiCrosswalk) {
+  const failures = [];
+  for (const row of artifact.rows) {
+    const entry = uiCrosswalk.entries[String(row.opcode)];
+    if (!entry) {
+      failures.push(`missing UI entry for opcode ${row.opcode}`);
+      continue;
+    }
+    if (row.providence.edcdBacked && entry.parameters.length !== 5) {
+      failures.push(`opcode ${row.opcode} is EDCD-backed but exposes ${entry.parameters.length} UI parameter(s)`);
+    }
+    for (const parameter of entry.parameters) {
+      if (parameter.preserved && parameter.targetFamily) {
+        failures.push(`opcode ${row.opcode} parameter ${parameter.index + 1} is preserved but still has target family ${parameter.targetFamily}`);
+      }
+    }
+  }
+  const opcode39 = uiCrosswalk.entries["39"];
+  if (opcode39?.idMeaning !== "Extra Action Point" || opcode39?.edcdBacked) {
+    failures.push("opcode 39 must remain a direct Extra Action Point action, not a parameter-row action");
+  }
+  const opcode8 = uiCrosswalk.entries["8"];
+  if (opcode8?.idMeaning !== "Same-map Action Point" || opcode8?.edcdBacked) {
+    failures.push("opcode 8 must remain a same-map Action Point copy, not EDCD or Extra Action Point data");
+  }
+  if (artifact.summary.fieldComparisonGaps.length) {
+    failures.push(`unresolved EDCD field comparison gaps: ${artifact.summary.fieldComparisonGaps.join(", ")}`);
+  }
+  if (artifact.summary.missingRealmzSourceAnchor.length) {
+    failures.push(`missing Realmz source anchors: ${artifact.summary.missingRealmzSourceAnchor.join(", ")}`);
+  }
+  if (failures.length) {
+    throw new Error(`Opcode crosswalk static checks failed:\n- ${failures.join("\n- ")}`);
+  }
+}
+
+function targetFamilyForRow(row) {
+  if (row.writerStatus.status === "writer-ready-data-edcd") return "parameter-row";
+  if (row.writerStatus.status === "writer-ready-data-ed3-direct") return "extra-action-point";
+  if (row.writerStatus.status === "writer-ready-map-action-point-copy") return "same-map-action-point";
+  const id = cleanParameterHelp(row.divinity.idField ?? "").toLowerCase();
+  if (id.includes("string") || id.includes("message")) return "message";
+  if (id.includes("sound")) return "sound";
+  if (id.includes("picture")) return "picture";
+  if (id.includes("battle")) return "battle";
+  if (id.includes("shop")) return "shop";
+  if (id.includes("simple encounter")) return "simple-encounter";
+  if (id.includes("complex encounter")) return "complex-encounter";
+  if (id.includes("extra action") || id.includes("x-ap")) return "extra-action-point";
+  return "direct-id";
+}
+
+function targetFamilyForField(fieldName, shape) {
+  const normalized = String(fieldName ?? "").toLowerCase();
+  const normalizedShape = String(shape ?? "").toLowerCase();
+  if (normalized.includes("message") || normalized.startsWith("prompt")) return "message";
+  if (normalized.includes("sound")) return "sound";
+  if (normalized.includes("battle")) return "battle";
+  if (normalized.includes("shop")) return "shop";
+  if (normalized.includes("simpleencounter")) return "simple-encounter";
+  if (normalized.includes("complexencounter")) return "complex-encounter";
+  if (normalized.includes("macro") || normalized.includes("target") || normalizedShape.includes("branch")) return "extra-action-point-or-encounter";
+  if (normalized.includes("item")) return "item";
+  if (normalized.includes("monster")) return "monster";
+  if (normalized.includes("quest")) return "quest";
+  return null;
+}
+
 function idMeaningForRow(row) {
   if (row.writerStatus.status === "writer-ready-data-edcd") return "Parameter Row";
   if (row.writerStatus.status === "writer-ready-data-ed3-direct") return "Extra Action Point";
@@ -233,6 +437,7 @@ function uiWriterNote(status) {
   if (status === "writer-ready-map-action-point-copy") return "This action's ID copies another Action Point on the current map.";
   if (status === "writer-ready-direct-code-id") return "This action stores its target directly in the ID field.";
   if (status === "writer-gated-missing-edcd-shape") return "This action is preserved, but its parameter layout still needs archaeology before editing.";
+  if (status === "writer-gated-not-used") return "Divinity marks this action as not used; imported values are preserved.";
   return "This action uses direct ID behavior; target editing depends on the selected record family.";
 }
 
@@ -445,6 +650,7 @@ function renderMarkdown(artifact) {
   lines.push("- `writer-ready-direct-code-id`: opcode has direct CODE/ID behavior without EDCD.");
   lines.push("- `writer-gated-direct-target-family`: no EDCD row; writer readiness belongs to the referenced record family.");
   lines.push("- `writer-gated-missing-edcd-shape`: Realmz consumes EDCD but Providence has no typed shape yet.");
+  lines.push("- `writer-gated-not-used`: Divinity labels the opcode Not Used and Realmz has no dispatcher case; imported values are preserved.");
   lines.push("");
   lines.push("## Follow-Up Use");
   lines.push("");

@@ -655,7 +655,7 @@ function addExtracodes(schema: SemanticSchema, rows: ExtraCodeRow[]) {
       id,
       source: sourceId("Data EDCD"),
       type: "extra-code row",
-      label: `EDCD row ${row.id}`,
+      label: `Parameter Row ${row.id}`,
       editState: "inspect-only",
       byteRange: byteRange(row.id * 10, 10),
       confidence: "source-backed",
@@ -664,7 +664,7 @@ function addExtracodes(schema: SemanticSchema, rows: ExtraCodeRow[]) {
     schema.entities.push({
       id,
       type: "edcd-row",
-      label: `EDCD row ${row.id}`,
+      label: `Parameter Row ${row.id}`,
       editState: "inspect-only",
       confidence: "source-backed",
       source: "Data EDCD",
@@ -687,7 +687,7 @@ function addTriggers(schema: SemanticSchema, triggers: TriggerRecord[], extracod
     schema.entities.push({
       id,
       type: trigger.source === "Data ED3" ? "ed3-action-record" : "trigger",
-      label: trigger.source === "Data ED3" ? `ED3 record ${trigger.recordIndex}` : `Trigger ${trigger.recordIndex}`,
+      label: trigger.source === "Data ED3" ? `Imported Extra Action ${trigger.recordIndex}` : `Trigger ${trigger.recordIndex}`,
       editState: "inspect-only",
       confidence: "source-backed",
       source: trigger.source,
@@ -716,7 +716,7 @@ function addTriggers(schema: SemanticSchema, triggers: TriggerRecord[], extracod
       schema.entities.push({
         id: slotId,
         type: "action-slot",
-        label: `${trigger.source === "Data ED3" ? "Macro" : "Trigger"} ${trigger.recordIndex} action ${action.slot}`,
+        label: `${trigger.source === "Data ED3" ? "Extra Action Point" : "Trigger"} ${trigger.recordIndex} action ${action.slot}`,
         editState: "inspect-only",
         confidence: "source-backed",
         source: trigger.source,
@@ -783,7 +783,7 @@ function addActionLink(
         severity: "warning",
         confidence: "source-backed",
         source: null,
-        message: `Browser import action opcode ${code} references missing Data EDCD row ${target}.`,
+        message: `Browser import action opcode ${code} references missing parameter row ${target}.`,
         data: { actionSlot: from, code, rowId: target, shape: shape.name }
       });
       return;
@@ -799,7 +799,7 @@ function addActionLink(
           severity: "warning",
           confidence: "source-backed",
           source: null,
-          message: `Browser import action opcode ${code} references missing secondary Data EDCD row ${secondaryRowId}.`,
+          message: `Browser import action opcode ${code} references missing secondary parameter row ${secondaryRowId}.`,
           data: { actionSlot: from, code, primaryRowId: target, secondaryRowId }
         });
       }
@@ -1031,15 +1031,15 @@ function browserEdcdUsage(action: Action, edcdRows: Map<number, number[]>) {
       fields: [],
       targetHints: [],
       confidence: "source-backed",
-      diagnostics: [`Missing Data EDCD row ${rowId}`],
-      summary: `${shape.name}: missing EDCD row`,
+      diagnostics: [`Missing parameter row ${rowId}`],
+      summary: `${shape.name}: missing parameter row`,
       opcode: action.code
     };
   }
   const diagnostics: string[] = [];
   const secondaryRowId = action.code === 92 ? rowId + 1 : null;
   const secondaryValues = secondaryRowId == null ? null : edcdRows.get(secondaryRowId);
-  if (secondaryRowId != null && !secondaryValues) diagnostics.push(`Missing secondary Data EDCD row ${secondaryRowId}`);
+  if (secondaryRowId != null && !secondaryValues) diagnostics.push(`Missing secondary parameter row ${secondaryRowId}`);
   return {
     rowId,
     shape: shape.name,
@@ -1363,6 +1363,7 @@ function classifyEd3Reachability(schema: SemanticSchema, triggers: TriggerRecord
     const actionCount = trigger.actions.filter((action) => action.rawCode !== 0 || action.id !== 0).length;
     const classification = root ? "reachable-macro" : browserNonreachableClassification(trigger, actionCount);
     if (!root) debtCounts.set(classification, (debtCounts.get(classification) ?? 0) + 1);
+    const authorLabel = browserExtraActionClassification(root?.rootType ?? null, classification, Boolean(root));
     const row = {
       recordIndex: trigger.recordIndex,
       entityId,
@@ -1382,7 +1383,7 @@ function classifyEd3Reachability(schema: SemanticSchema, triggers: TriggerRecord
     const entity = schema.entities.find((candidate) => candidate.id === entityId);
     if (entity) {
       entity.type = row.reachable ? "macro" : "ed3-action-record";
-      entity.label = row.reachable ? `Macro ${trigger.recordIndex}` : `ED3 evidence ${trigger.recordIndex}`;
+      entity.label = `${authorLabel} ${trigger.recordIndex}`;
       entity.editable = row.reachable;
       entity.summary.callable = row.reachable;
       entity.summary.reachability = row.pathStatus;
@@ -1400,6 +1401,18 @@ function classifyEd3Reachability(schema: SemanticSchema, triggers: TriggerRecord
       nextStep: "Use source-backed links, runtime traces, or explicit duplicate/promote authoring before editing."
     });
   }
+}
+
+function browserExtraActionClassification(rootType: string | null, classification: string, reachable: boolean) {
+  if (!reachable) {
+    if (classification === "probable-editor-padding") return "Imported Empty Slot";
+    return "Imported Extra Action";
+  }
+  if (rootType?.includes("global")) return "Global Macro";
+  if (rootType?.includes("random")) return "Random Encounter Action";
+  if (rootType?.includes("time")) return "Timed Encounter Action";
+  if (rootType?.includes("battle") || rootType?.includes("monster") || rootType?.includes("item")) return "Battle / Monster / Item Action";
+  return "Callable Extra Action Point";
 }
 
 const MACRO_REACHABILITY_LINK_KINDS = new Set([

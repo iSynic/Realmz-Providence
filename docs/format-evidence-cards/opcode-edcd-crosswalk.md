@@ -12,8 +12,8 @@ Providence can now compare Divinity's author-facing Action Point help against th
 - Direct Extra Action Point opcodes: 1
 - Missing Providence EDCD shapes: none
 - Missing Divinity help entries: -14
-- Missing Realmz source anchors: 79, 80, 109, 110, 113, 114, 115, 116, 117, 118
-- EDCD field-comparison gaps: 17, 18, 19, 30, 40, 41, 43, 45, 51, 52, 53, 57, 60, 61, 63, 65, 68, 70, 74, 77, 90, 103, 106, 108, 120, 121, 122
+- Missing Realmz source anchors: none
+- EDCD field-comparison gaps: none
 
 ## Crosswalk
 
@@ -100,8 +100,8 @@ Providence can now compare Divinity's author-facing Action Point help against th
 | 76 | Increment • Decrement Quest Value | 1) Which Quest Flag To Increment • Decrement 2) Amount to add: +/- 127. Valid value of Quest is -127 through +127. You can't decrease it to less than -127 or increase it to more... | quest-value | quest, delta, branchMode, threshold, target | F:\Realmz\src\realmz_orig\newland.c:125 | writer-ready-data-edcd |
 | 77 | Branch on Quest Value | 1) Quest Flag To Test (1 through 100) 2) Test Value: 3) Type of Branch: 0 = X-AP, 1 = Simple Encounter, 2 = Complex Encounter 4) X-AP/ Encounter ID: If Quest Is Less Than Test V... | false-true-branch | testA, testB, branchMode, falseTarget, trueTarget | F:\Realmz\src\realmz_orig\newland.c:166 | writer-ready-data-edcd |
 | 78 | Branch on Tile Parameters | 1) Attribute To Test For: 1 = Shoreline, 2 = Is/Needs Boat, 3 = Path, 4 = Blocks LOS, 5 = Need Fly/Float 6 = Special Type (Forests), 7 = Tile ID 2) Use Only For Type 7 Test: Til... | false-true-branch | testA, testB, branchMode, falseTarget, trueTarget | F:\Realmz\src\realmz_orig\newland.c:203 | writer-ready-data-edcd |
-| 79 | Not Used | None | none | none |  | writer-gated-direct-target-family |
-| 80 | Not Used | None | none | none |  | writer-gated-direct-target-family |
+| 79 | Not Used | None | none | none |  | writer-gated-not-used |
+| 80 | Not Used | None | none | none |  | writer-gated-not-used |
 | 81 | Branch on Character Condition | 1) What Condition To Test 2) 0 = Check whole party, -1 = Check Picked, 1-6 Check character by position (1 = Top Character) 3) String ID to Display on Fail. Will then Exit Withou... | condition-branch | condition, characterSelector, unused, trueMacro, falseMacro | F:\Realmz\src\realmz_orig\newland.c:1387 | writer-ready-data-edcd |
 | 82 | Turn Cleric Turning OFF. | None | none | none | F:\Realmz\src\realmz_orig\newland.c:1378 | writer-gated-direct-target-family |
 | 83 | Turn Cleric Turning ON. | None | none | none | F:\Realmz\src\realmz_orig\newland.c:1371 | writer-gated-direct-target-family |
@@ -130,16 +130,16 @@ Providence can now compare Divinity's author-facing Action Point help against th
 | 106 | Set Darkland / Line of Site Status | 1) 1 = Make Current Land Level Light, 2 = Make Current Land Level Dark 2) 1 = Skip remainder of Action Point if no light change needed. 3) 1 = Current Land Level Uses Line Of Si... | dark-level-state | darkStatePlusOne, stopIfAlready, unused, unused, unused | F:\Realmz\src\realmz_orig\newland.c:828 | writer-ready-data-edcd |
 | 107 | Improved Selective Battle | 1) Battle ID -OR- Low Range of Random Battle 2) High Range of Random Battle. ---Optional--- 3) Sound (Optional) 4) String ID (Optional) 5) X-AP to branch to on failure to achive... | improved-selective-battle | battleLow, battleHigh, sound, message, cowardMacro | F:\Realmz\src\realmz_orig\newland.c:705 | writer-ready-data-edcd |
 | 108 | Alter Picked Characters | 1) Alter: 1 = Melee Attacks, 2 = Spells Attacks, 3 = Movement, 4 = Damage, 5 = SPs, 6 = Hand2Hand, 7 = Stamina, 8 = AR, 9 = ToHit, 10 = ProJo ToHit, 11 = Magic Resistance, 12 =... | selected-character-state | statSelector, delta, unused, unused, unused | F:\Realmz\src\realmz_orig\newland.c:619 | writer-ready-data-edcd |
-| 109 | Not Used | None | none | none |  | writer-gated-direct-target-family |
-| 110 | Not Used | None | none | none |  | writer-gated-direct-target-family |
+| 109 | Not Used | None | none | none |  | writer-gated-not-used |
+| 110 | Not Used | None | none | none |  | writer-gated-not-used |
 | 111 | Return From Gosub | Not Used | none | none | F:\Realmz\src\realmz_orig\newland.c:110 | writer-gated-direct-target-family |
 | 112 | POP The Stack | Not Used | none | none | F:\Realmz\src\realmz_orig\newland.c:118 | writer-gated-direct-target-family |
-| 113 | Not Used | None | none | none |  | writer-gated-direct-target-family |
-| 114 | Not Used | None | none | none |  | writer-gated-direct-target-family |
-| 115 | Not Used | None | none | none |  | writer-gated-direct-target-family |
-| 116 | Not Used | None | none | none |  | writer-gated-direct-target-family |
-| 117 | Not Used | None | none | none |  | writer-gated-direct-target-family |
-| 118 | Not Used | None | none | none |  | writer-gated-direct-target-family |
+| 113 | Not Used | None | none | none |  | writer-gated-not-used |
+| 114 | Not Used | None | none | none |  | writer-gated-not-used |
+| 115 | Not Used | None | none | none |  | writer-gated-not-used |
+| 116 | Not Used | None | none | none |  | writer-gated-not-used |
+| 117 | Not Used | None | none | none |  | writer-gated-not-used |
+| 118 | Not Used | None | none | none |  | writer-gated-not-used |
 | 119 | Revive NPC After Combat | Not Used | none | none | F:\Realmz\src\realmz_orig\newland.c:292 | writer-gated-direct-target-family |
 | 120 | Alter NPC • Monster During Combat | 1) 1 = Alter NPC, 2 = Alter Monster 2) ID of NPC or Monster to Alter 3) How Many To Alter: 1 to 99 (Default is 1) 4) New Icon ID (-1 = No Change) 5) New Traitor Value (-1 = No C... | combat-monster-mutation | targetClass, monsterId, count, replacementIcon, traitorOverride | F:\Realmz\src\realmz_orig\newland.c:311 | writer-ready-data-edcd |
 | 121 | De-animate Lower Undead (Monster & Battle Macros Only) | None Script Tip: A good use for this is to destroy all vampire rats when the main vampire is killed or some other such use. | unused-edcd-load | unused0, unused1, unused2, unused3, unused4 | F:\Realmz\src\realmz_orig\newland.c:341 | writer-ready-data-edcd |
@@ -154,8 +154,8 @@ Providence can now compare Divinity's author-facing Action Point help against th
 
 - Missing Providence EDCD shape: none.
 - Missing Divinity help: -14.
-- Missing Realmz source anchor: 79, 80, 109, 110, 113, 114, 115, 116, 117, 118.
-- EDCD field-comparison gaps: 17, 18, 19, 30, 40, 41, 43, 45, 51, 52, 53, 57, 60, 61, 63, 65, 68, 70, 74, 77, 90, 103, 106, 108, 120, 121, 122.
+- Missing Realmz source anchor: none.
+- EDCD field-comparison gaps: none.
 
 ## Writer Status Legend
 
@@ -165,6 +165,7 @@ Providence can now compare Divinity's author-facing Action Point help against th
 - `writer-ready-direct-code-id`: opcode has direct CODE/ID behavior without EDCD.
 - `writer-gated-direct-target-family`: no EDCD row; writer readiness belongs to the referenced record family.
 - `writer-gated-missing-edcd-shape`: Realmz consumes EDCD but Providence has no typed shape yet.
+- `writer-gated-not-used`: Divinity labels the opcode Not Used and Realmz has no dispatcher case; imported values are preserved.
 
 ## Follow-Up Use
 

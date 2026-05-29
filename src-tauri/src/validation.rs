@@ -1106,7 +1106,7 @@ fn validate_action_target(
     if action_code_consumes_edcd(code) {
         if !refs.edcd_rows.contains(&id) {
             warnings.push(format!(
-                "{} action slot {} references Data EDCD row {}, but Providence cannot prove that row exists.",
+                "{} action slot {} references missing parameter row {}.",
                 label, slot, id
             ));
         }
@@ -1712,7 +1712,7 @@ mod tests {
             .iter()
             .any(|message| message.contains("references battle 2")));
         assert!(warnings.iter().any(|message| {
-            message.contains("references Data EDCD row 3") && message.contains("slot 1")
+            message.contains("references missing parameter row 3") && message.contains("slot 1")
         }));
     }
 
@@ -1737,7 +1737,7 @@ mod tests {
         validate_trigger_actions(&trigger, &refs, &mut errors, &mut warnings);
 
         assert!(!warnings.iter().any(|message| message.contains("Data ED3 macro")));
-        assert!(!warnings.iter().any(|message| message.contains("Data EDCD row")));
+        assert!(!warnings.iter().any(|message| message.contains("parameter row")));
     }
 
     #[test]

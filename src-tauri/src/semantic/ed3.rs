@@ -124,6 +124,7 @@ pub(super) fn classify_ed3_reachability(schema: &mut SemanticSchema, triggers: &
                 )
         };
         let is_reachable = root.is_some();
+        let author_label = extra_action_classification(root_type.as_deref(), &classification, is_reachable);
 
         if let Some(entity) = schema
             .entities
@@ -135,11 +136,7 @@ pub(super) fn classify_ed3_reachability(schema: &mut SemanticSchema, triggers: &
             } else {
                 "ed3-action-record".to_string()
             };
-            entity.label = if is_reachable {
-                format!("Macro {}", trigger.record_index)
-            } else {
-                format!("ED3 evidence {}", trigger.record_index)
-            };
+            entity.label = format!("{author_label} {}", trigger.record_index);
             entity.editable = is_reachable;
             entity.edit_state = if is_reachable {
                 SemanticEditState::InspectOnly
@@ -186,6 +183,27 @@ pub(super) fn classify_ed3_reachability(schema: &mut SemanticSchema, triggers: &
             claim_count,
             next_step: "Use source-backed links, runtime traces, or explicit duplicate/promote authoring before editing.".to_string(),
         });
+    }
+}
+
+fn extra_action_classification(root_type: Option<&str>, classification: &str, reachable: bool) -> &'static str {
+    if !reachable {
+        if classification == "probable-editor-padding" {
+            return "Imported Empty Slot";
+        }
+        return "Imported Extra Action";
+    }
+    let root_type = root_type.unwrap_or_default();
+    if root_type.contains("global") {
+        "Global Macro"
+    } else if root_type.contains("random") {
+        "Random Encounter Action"
+    } else if root_type.contains("time") {
+        "Timed Encounter Action"
+    } else if root_type.contains("battle") || root_type.contains("monster") || root_type.contains("item") {
+        "Battle / Monster / Item Action"
+    } else {
+        "Callable Extra Action Point"
     }
 }
 
@@ -293,7 +311,7 @@ mod tests {
         SemanticEntity {
             id: format!("macro:{record_index}"),
             entity_type: "ed3-action-record".to_string(),
-            label: format!("ED3 record {record_index}"),
+            label: format!("Imported Extra Action {record_index}"),
             edit_state: SemanticEditState::InspectOnly,
             confidence: Confidence::SourceBacked,
             source: "Data ED3".to_string(),

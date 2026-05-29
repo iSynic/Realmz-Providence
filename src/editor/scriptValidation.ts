@@ -4,6 +4,7 @@ import { isDirectMacroOpcode, targetOptionsForOpcode, targetPickerConfig } from 
 import { isCallableMacro } from "./semanticGraph";
 import { missingEdcdTargetReferences } from "./edcdTargets";
 import { edcdFieldNamesForShape } from "./realmzEdcd";
+import { parameterLabelsForOpcode } from "./opcodeCrosswalk";
 
 export type ScriptDiagnosticSeverity = "error" | "warning" | "info";
 
@@ -70,7 +71,8 @@ function validateAction(project: Project, trigger: TriggerRecord, slot: number, 
     } else {
       const fieldNames = edcdFieldNamesForShape(option.edcdShape);
       if (fieldNames) {
-        for (const issue of missingEdcdTargetReferences(project, option.edcdShape, fieldNames, row.values, rawCode)) {
+        const preservedIndexes = parameterLabelsForOpcode(rawCode).filter((label) => label.preserved).map((label) => label.index);
+        for (const issue of missingEdcdTargetReferences(project, option.edcdShape, fieldNames, row.values, rawCode, preservedIndexes)) {
           const fieldLabel = parameterLabelForIssue(rawCode, issue.index, issue.field);
           diagnostics.push(slotIssue(
             "warning",
@@ -149,8 +151,8 @@ function slotIssue(severity: ScriptDiagnosticSeverity, triggerId: string, slot: 
   return { id: `${triggerId}:${slot}:${code}`, severity, slot, message, detail };
 }
 
-function parameterLabelForIssue(_opcode: number, _index: number, fallback: string) {
-  return humanizeParameterName(fallback);
+function parameterLabelForIssue(opcode: number, index: number, fallback: string) {
+  return parameterLabelsForOpcode(opcode).find((label) => label.index === index)?.label ?? humanizeParameterName(fallback);
 }
 
 function humanizeParameterName(name: string) {

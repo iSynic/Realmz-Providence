@@ -2,14 +2,14 @@ import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState, useT
 import { AlertTriangle, ArrowDown, ArrowUp, Copy, CopyPlus, Plus, Save, Trash2, X } from "lucide-react";
 import { Action, EncounterActionRow, LevelType, LibraryCatalog, Project, ProjectCommand, RealmzTargetRecordKind, ScriptDetailSurface, ScriptInventoryFilter, SelectedEntity, SemanticEntity, TriggerRecord } from "../types";
 import { linksFor, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
-import { actionSlotEntitiesForTriggerRecord, ed3EvidenceRecords, ed3ReachabilityFor, isCallableMacro } from "../semanticGraph";
+import { actionSlotEntitiesForTriggerRecord, ed3EvidenceRecords, ed3ReachabilityFor, extraActionPointClassification, isCallableMacro } from "../semanticGraph";
 import { EdcdRowEditor } from "../components/EdcdRowEditor";
 import { TargetPicker, targetOptionsForOpcode } from "../components/RealmzTargetPicker";
 import { categoryColor } from "../components/TileSprite";
 import { CollapsibleSection, EmptyState, FieldRow, FloatingWorkbenchPanel, PanelSection, ScrollArea } from "../ui";
 import { ACTION_CATEGORIES, ACTION_OPTIONS, actionOptionFor, isDispatcherNoopOpcode } from "../realmzActions";
 import { edcdFieldNamesForShape } from "../realmzEdcd";
-import { crosswalkForOpcode, opcodeIdMeaning, parameterLabelsForOpcode } from "../opcodeCrosswalk";
+import { crosswalkForOpcode, opcodeIdMeaning, opcodeWriterNote, parameterLabelsForOpcode } from "../opcodeCrosswalk";
 import { divinityHelpForOpcode, divinityHelpSearchText } from "../divinityOpcodeHelp";
 import { ScriptDiagnostic, validateActionDraft, validateScriptTrigger } from "../scriptValidation";
 import { actionPointCapacity, isReusableDoorPlaceholder, nextActionPointRecordIndex } from "../actionPointCapacity";
@@ -376,6 +376,8 @@ function ScriptAuthoringPanel({
     : [];
   const selectedEdcdRowId = selectedEdcdUsage?.rowId ?? (selectedOption.edcdShape ? Math.max(0, selectedDraft.id) : null);
   const isMacro = selectedTrigger?.source === "Data ED3";
+  const selectedExtraActionClassification = selectedTrigger && isMacro ? extraActionPointClassification(project, selectedTrigger) : "Action Point";
+  const deleteMacroLabel = selectedExtraActionClassification === "Global Macro" ? "Delete Global Macro" : "Delete Extra Action Point";
   const moveMapKey = selectedTrigger && !isMacro && selectedTrigger.levelType && selectedTrigger.levelIndex != null
     ? `${selectedTrigger.levelType}:${selectedTrigger.levelIndex}`
     : "";
@@ -599,11 +601,11 @@ function ScriptAuthoringPanel({
               <small>{ed3Evidence.length.toLocaleString()} imported Extra Action Point row(s) are kept intact and are not callable macros yet.</small>
               <ScrollArea className="ed3-evidence-list" aria-label="Imported Extra Action Point rows">
                 {ed3Evidence.slice(0, 80).map((trigger) => {
-                  const row = ed3ReachabilityFor(project, trigger.recordIndex);
+                  const classification = extraActionPointClassification(project, trigger);
                   return (
                     <button key={trigger.id} type="button" onClick={() => onSelectEntity(selectEntityFromId(`macro:${trigger.recordIndex}`))}>
-                      <strong>Extra AP row {trigger.recordIndex}</strong>
-                      <small>{row?.classification ?? "unclassified"} | {trigger.actions.length} slot(s)</small>
+                      <strong>Extra Action Point {trigger.recordIndex}</strong>
+                      <small>{classification} | {trigger.actions.length} slot(s)</small>
                     </button>
                   );
                 })}
@@ -632,8 +634,8 @@ function ScriptAuthoringPanel({
                   <button className="btn btn-secondary btn-xs" type="button" onClick={() => onApplyCommand?.({ kind: "duplicateTrigger", label: "Duplicate script", triggerId: selectedTrigger.id })}>
                     <Copy size={12} /> Duplicate
                   </button>
-                  <button className="btn btn-danger btn-xs" type="button" title={isMacro ? "Delete this macro record" : "Clear this fixed Realmz Action Point record so it can be reused"} onClick={() => onApplyCommand?.({ kind: "deleteTrigger", label: isMacro ? "Delete macro" : "Clear Action Point", triggerId: selectedTrigger.id })}>
-                    <Trash2 size={12} /> {isMacro ? "Delete Macro" : "Clear Action Point"}
+                  <button className="btn btn-danger btn-xs" type="button" title={isMacro ? "Delete this Extra Action Point record" : "Clear this fixed Realmz Action Point record so it can be reused"} onClick={() => onApplyCommand?.({ kind: "deleteTrigger", label: isMacro ? deleteMacroLabel : "Clear Action Point", triggerId: selectedTrigger.id })}>
+                    <Trash2 size={12} /> {isMacro ? deleteMacroLabel : "Clear Action Point"}
                   </button>
                 </div>
               </div>
@@ -909,7 +911,7 @@ function SelectedStepDetail({
 }) {
   const selectedCrosswalk = crosswalkForOpcode(selectedDraft.rawCode);
   const selectedDivinityHelp = divinityHelpForOpcode(selectedDraft.rawCode);
-  const selectedIdLabel = selectedOption.edcdShape ? "Parameter Row" : opcodeIdMeaning(selectedDraft.rawCode);
+  const selectedIdLabel = opcodeIdMeaning(selectedDraft.rawCode);
   const selectedParameterLabels = parameterLabelsForOpcode(selectedDraft.rawCode);
   return (
     <div className="realmz-step-detail selected-step-detail">
@@ -930,8 +932,10 @@ function SelectedStepDetail({
           <details className="realmz-divinity-opcode-help">
             <summary>Action Help</summary>
             <div className="realmz-divinity-opcode-help-body">
+              <FieldRow label="Action" value={selectedCrosswalk?.title ?? selectedDivinityHelp.title} />
               <FieldRow label="ID Means" value={(selectedCrosswalk?.idMeaning ?? selectedDivinityHelp.idField) || "Not used"} />
               {selectedCrosswalk?.idHelp && <p>{selectedCrosswalk.idHelp}</p>}
+              {opcodeWriterNote(selectedDraft.rawCode) && <p>{opcodeWriterNote(selectedDraft.rawCode)}</p>}
               {selectedCrosswalk?.parameters?.some((parameter) => !parameter.preserved) && (
                 <FieldRow
                   label="Parameters"
@@ -941,14 +945,16 @@ function SelectedStepDetail({
                     .join("; ")}
                 />
               )}
-              {selectedDivinityHelp.use && <p>{selectedDivinityHelp.use}</p>}
-              {selectedDivinityHelp.options && selectedDivinityHelp.options.toLowerCase() !== "none" && (
-                <FieldRow label="Original Options" value={selectedDivinityHelp.options} />
-              )}
-              {selectedDivinityHelp.extraCodes && selectedDivinityHelp.extraCodes.toLowerCase() !== "none" && (
+              {(selectedDivinityHelp.use || selectedDivinityHelp.options || selectedDivinityHelp.extraCodes) && (
                 <details className="realmz-original-help">
-                  <summary>Original Divinity E-Codes</summary>
-                  <p>{selectedDivinityHelp.extraCodes}</p>
+                  <summary>Original Divinity Text</summary>
+                  {selectedDivinityHelp.use && <p>{selectedDivinityHelp.use}</p>}
+                  {selectedDivinityHelp.options && selectedDivinityHelp.options.toLowerCase() !== "none" && (
+                    <FieldRow label="Options" value={selectedDivinityHelp.options} />
+                  )}
+                  {selectedDivinityHelp.extraCodes && selectedDivinityHelp.extraCodes.toLowerCase() !== "none" && (
+                    <FieldRow label="E-Codes" value={selectedDivinityHelp.extraCodes} />
+                  )}
                 </details>
               )}
             </div>
@@ -1972,8 +1978,8 @@ function TimedEncounterShell({
       <ReferenceIdField
         project={project}
         catalog={catalog}
-        label="Extra AP to Activate"
-        emptyLabel="No Extra AP"
+        label="Extra Action Point To Activate"
+        emptyLabel="No Extra Action Point"
         opcode={39}
         value={record.door}
         onCommit={(door) => update({ door })}

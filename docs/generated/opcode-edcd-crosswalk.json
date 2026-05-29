@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-29T15:38:12.691Z",
+  "generatedAt": "2026-05-29T18:33:11.231Z",
   "sources": {
     "divinityOpcodeHelp": "docs/generated/divinity-opcode-help.json",
     "edcdSourceMap": "docs/generated/edcd-opcode-source-map.json",
@@ -17,48 +17,9 @@
     "missingDivinityHelp": [
       -14
     ],
-    "missingRealmzSourceAnchor": [
-      79,
-      80,
-      109,
-      110,
-      113,
-      114,
-      115,
-      116,
-      117,
-      118
-    ],
+    "missingRealmzSourceAnchor": [],
     "sourceAnchoredRows": 119,
-    "fieldComparisonGaps": [
-      17,
-      18,
-      19,
-      30,
-      40,
-      41,
-      43,
-      45,
-      51,
-      52,
-      53,
-      57,
-      60,
-      61,
-      63,
-      65,
-      68,
-      70,
-      74,
-      77,
-      90,
-      103,
-      106,
-      108,
-      120,
-      121,
-      122
-    ]
+    "fieldComparisonGaps": []
   },
   "rows": [
     {
@@ -5918,12 +5879,12 @@
         "caseAnchor": null,
         "edcdLoadAnchor": null,
         "auditAnchor": null,
-        "consumerStatus": "manual-or-direct-consumer",
-        "runtimeNote": null
+        "consumerStatus": "manual-not-used-no-runtime-dispatch",
+        "runtimeNote": "Divinity labels this opcode Not Used and Realmz has no dispatcher case; Providence preserves imported CODE/ID values without exposing normal authoring controls."
       },
       "writerStatus": {
-        "status": "writer-gated-direct-target-family",
-        "note": "No EDCD shape. Writer readiness depends on the direct target family for this opcode."
+        "status": "writer-gated-not-used",
+        "note": "Divinity labels this opcode Not Used and Realmz has no dispatcher case. Imported values are preserved, but Providence should not offer normal authoring controls."
       }
     },
     {
@@ -5956,12 +5917,12 @@
         "caseAnchor": null,
         "edcdLoadAnchor": null,
         "auditAnchor": null,
-        "consumerStatus": "manual-or-direct-consumer",
-        "runtimeNote": null
+        "consumerStatus": "manual-not-used-no-runtime-dispatch",
+        "runtimeNote": "Divinity labels this opcode Not Used and Realmz has no dispatcher case; Providence preserves imported CODE/ID values without exposing normal authoring controls."
       },
       "writerStatus": {
-        "status": "writer-gated-direct-target-family",
-        "note": "No EDCD shape. Writer readiness depends on the direct target family for this opcode."
+        "status": "writer-gated-not-used",
+        "note": "Divinity labels this opcode Not Used and Realmz has no dispatcher case. Imported values are preserved, but Providence should not offer normal authoring controls."
       }
     },
     {
@@ -7552,12 +7513,12 @@
         "caseAnchor": null,
         "edcdLoadAnchor": null,
         "auditAnchor": null,
-        "consumerStatus": "manual-or-direct-consumer",
-        "runtimeNote": null
+        "consumerStatus": "manual-not-used-no-runtime-dispatch",
+        "runtimeNote": "Divinity labels this opcode Not Used and Realmz has no dispatcher case; Providence preserves imported CODE/ID values without exposing normal authoring controls."
       },
       "writerStatus": {
-        "status": "writer-gated-direct-target-family",
-        "note": "No EDCD shape. Writer readiness depends on the direct target family for this opcode."
+        "status": "writer-gated-not-used",
+        "note": "Divinity labels this opcode Not Used and Realmz has no dispatcher case. Imported values are preserved, but Providence should not offer normal authoring controls."
       }
     },
     {
@@ -7590,12 +7551,12 @@
         "caseAnchor": null,
         "edcdLoadAnchor": null,
         "auditAnchor": null,
-        "consumerStatus": "manual-or-direct-consumer",
-        "runtimeNote": null
+        "consumerStatus": "manual-not-used-no-runtime-dispatch",
+        "runtimeNote": "Divinity labels this opcode Not Used and Realmz has no dispatcher case; Providence preserves imported CODE/ID values without exposing normal authoring controls."
       },
       "writerStatus": {
-        "status": "writer-gated-direct-target-family",
-        "note": "No EDCD shape. Writer readiness depends on the direct target family for this opcode."
+        "status": "writer-gated-not-used",
+        "note": "Divinity labels this opcode Not Used and Realmz has no dispatcher case. Imported values are preserved, but Providence should not offer normal authoring controls."
       }
     },
     {
@@ -7704,12 +7665,12 @@
         "caseAnchor": null,
         "edcdLoadAnchor": null,
         "auditAnchor": null,
-        "consumerStatus": "manual-or-direct-consumer",
-        "runtimeNote": null
+        "consumerStatus": "manual-not-used-no-runtime-dispatch",
+        "runtimeNote": "Divinity labels this opcode Not Used and Realmz has no dispatcher case; Providence preserves imported CODE/ID values without exposing normal authoring controls."
       },
       "writerStatus": {
-        "status": "writer-gated-direct-target-family",
-        "note": "No EDCD shape. Writer readiness depends on the direct target family for this opcode."
+        "status": "writer-gated-not-used",
+        "note": "Divinity labels this opcode Not Used and Realmz has no dispatcher case. Imported values are preserved, but Providence should not offer normal authoring controls."
       }
     },
     {
@@ -7742,12 +7703,12 @@
         "caseAnchor": null,
         "edcdLoadAnchor": null,
         "auditAnchor": null,
-        "consumerStatus": "manual-or-direct-consumer",
-        "runtimeNote": null
+        "consumerStatus": "manual-not-used-no-runtime-dispatch",
+        "runtimeNote": "Divinity labels this opcode Not Used and Realmz has no dispatcher case; Providence preserves imported CODE/ID values without exposing normal authoring controls."
       },
       "writerStatus": {
-        "status": "writer-gated-direct-target-family",
-        "note": "No EDCD shape. Writer readiness depends on the direct target family for this opcode."
+        "status": "writer-gated-not-used",
+        "note": "Divinity labels this opcode Not Used and Realmz has no dispatcher case. Imported values are preserved, but Providence should not offer normal authoring controls."
       }
     },
     {
@@ -7780,12 +7741,12 @@
         "caseAnchor": null,
         "edcdLoadAnchor": null,
         "auditAnchor": null,
-        "consumerStatus": "manual-or-direct-consumer",
-        "runtimeNote": null
+        "consumerStatus": "manual-not-used-no-runtime-dispatch",
+        "runtimeNote": "Divinity labels this opcode Not Used and Realmz has no dispatcher case; Providence preserves imported CODE/ID values without exposing normal authoring controls."
       },
       "writerStatus": {
-        "status": "writer-gated-direct-target-family",
-        "note": "No EDCD shape. Writer readiness depends on the direct target family for this opcode."
+        "status": "writer-gated-not-used",
+        "note": "Divinity labels this opcode Not Used and Realmz has no dispatcher case. Imported values are preserved, but Providence should not offer normal authoring controls."
       }
     },
     {
@@ -7818,12 +7779,12 @@
         "caseAnchor": null,
         "edcdLoadAnchor": null,
         "auditAnchor": null,
-        "consumerStatus": "manual-or-direct-consumer",
-        "runtimeNote": null
+        "consumerStatus": "manual-not-used-no-runtime-dispatch",
+        "runtimeNote": "Divinity labels this opcode Not Used and Realmz has no dispatcher case; Providence preserves imported CODE/ID values without exposing normal authoring controls."
       },
       "writerStatus": {
-        "status": "writer-gated-direct-target-family",
-        "note": "No EDCD shape. Writer readiness depends on the direct target family for this opcode."
+        "status": "writer-gated-not-used",
+        "note": "Divinity labels this opcode Not Used and Realmz has no dispatcher case. Imported values are preserved, but Providence should not offer normal authoring controls."
       }
     },
     {
@@ -7856,12 +7817,12 @@
         "caseAnchor": null,
         "edcdLoadAnchor": null,
         "auditAnchor": null,
-        "consumerStatus": "manual-or-direct-consumer",
-        "runtimeNote": null
+        "consumerStatus": "manual-not-used-no-runtime-dispatch",
+        "runtimeNote": "Divinity labels this opcode Not Used and Realmz has no dispatcher case; Providence preserves imported CODE/ID values without exposing normal authoring controls."
       },
       "writerStatus": {
-        "status": "writer-gated-direct-target-family",
-        "note": "No EDCD shape. Writer readiness depends on the direct target family for this opcode."
+        "status": "writer-gated-not-used",
+        "note": "Divinity labels this opcode Not Used and Realmz has no dispatcher case. Imported values are preserved, but Providence should not offer normal authoring controls."
       }
     },
     {
@@ -7894,12 +7855,12 @@
         "caseAnchor": null,
         "edcdLoadAnchor": null,
         "auditAnchor": null,
-        "consumerStatus": "manual-or-direct-consumer",
-        "runtimeNote": null
+        "consumerStatus": "manual-not-used-no-runtime-dispatch",
+        "runtimeNote": "Divinity labels this opcode Not Used and Realmz has no dispatcher case; Providence preserves imported CODE/ID values without exposing normal authoring controls."
       },
       "writerStatus": {
-        "status": "writer-gated-direct-target-family",
-        "note": "No EDCD shape. Writer readiness depends on the direct target family for this opcode."
+        "status": "writer-gated-not-used",
+        "note": "Divinity labels this opcode Not Used and Realmz has no dispatcher case. Imported values are preserved, but Providence should not offer normal authoring controls."
       }
     },
     {

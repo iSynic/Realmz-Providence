@@ -315,7 +315,7 @@ fn action_slot_entity_id(trigger_entity_id: &str, slot: usize) -> String {
 
 fn trigger_label(trigger: &TriggerRecord) -> String {
     if trigger.source == "Data ED3" {
-        format!("ED3 record {}", trigger.record_index)
+        format!("Imported Extra Action {}", trigger.record_index)
     } else {
         format!(
             "{} {} trigger {}",

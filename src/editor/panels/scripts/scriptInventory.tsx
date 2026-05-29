@@ -1,7 +1,7 @@
 import { memo, type RefObject, useEffect, useState } from "react";
 import { Action, Project, ScriptInventoryFilter, SelectedEntity, SemanticEntity, TriggerRecord } from "../../types";
 import { selectEntityFromId, triggerEntityId } from "../../utils";
-import { ed3ReachabilityFor, isCallableMacro } from "../../semanticGraph";
+import { extraActionPointClassification, isCallableMacro } from "../../semanticGraph";
 import { isReusableDoorPlaceholder } from "../../actionPointCapacity";
 import { ScriptDiagnostic } from "../../scriptValidation";
 
@@ -29,7 +29,7 @@ export const ScriptListItem = memo(function ScriptListItem({
     >
       <strong>{scriptLabel(project, trigger)}</strong>
       <small>{scriptSubtitle(project, trigger)}</small>
-      {trigger.source === "Data ED3" && <small className="script-reachability-badge">{ed3ReachabilityFor(project, trigger.recordIndex)?.rootType ?? "authored"}</small>}
+      {trigger.source === "Data ED3" && <small className="script-reachability-badge">{extraActionPointClassification(project, trigger)}</small>}
       <ScriptIssueBadge issues={issues} />
     </button>
   );
@@ -113,7 +113,7 @@ export function scriptPanelTitle(activeEditor: string) {
 
 export function scriptLabel(project: Project, trigger: TriggerRecord) {
   const fallback = trigger.source === "Data ED3"
-    ? `Macro ${trigger.recordIndex}`
+    ? `Extra Action Point ${trigger.recordIndex}`
     : isReusableDoorPlaceholder(trigger)
       ? `Empty Action Point ${trigger.recordIndex}`
     : trigger.coordinate
@@ -124,8 +124,7 @@ export function scriptLabel(project: Project, trigger: TriggerRecord) {
 
 export function scriptSubtitle(project: Project, trigger: TriggerRecord) {
   if (trigger.source === "Data ED3") {
-    const row = ed3ReachabilityFor(project, trigger.recordIndex);
-    return `macro | record ${trigger.recordIndex} | ${row?.pathStatus ?? "authored"}`;
+    return `${extraActionPointClassification(project, trigger)} | record ${trigger.recordIndex}`;
   }
   const map = project.maps.find((candidate) => candidate.levelType === trigger.levelType && candidate.index === trigger.levelIndex);
   const mapLabel = map?.name ?? `${trigger.levelType ?? "map"} ${trigger.levelIndex ?? 0}`;
