@@ -51,6 +51,7 @@ function WorkbenchRouterContent({
   onSelectTile,
   onSelectCell,
   onSelectEntity,
+  onSelectEditor,
   onSetTool,
   onSetZoom,
   onSetSmoothTiles,
@@ -145,7 +146,7 @@ function WorkbenchRouterContent({
   }
 
   if (state.activeTab === "scripts") {
-    return <ScriptsPanel project={state.project} catalog={state.libraryCatalog} activeEditor={state.activeEditor} selectedEntity={state.selectedEntity} onSelectEntity={onSelectEntity} onApplyCommand={onApplyCommand} />;
+    return <ScriptsPanel project={state.project} catalog={state.libraryCatalog} activeEditor={state.activeEditor} selectedEntity={state.selectedEntity} onSelectEntity={onSelectEntity} onSelectEditor={onSelectEditor} onApplyCommand={onApplyCommand} />;
   }
 
   if (state.activeTab === "scenario") {
@@ -294,6 +295,7 @@ type WorkbenchRouterProps = {
   onSelectTile: (tile: number) => void;
   onSelectCell: (cell: { x: number; y: number; tile: number }) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
+  onSelectEditor: (editor: string) => void;
   onSetTool: EditorStateSetter<"activeTool">;
   onSetZoom: (zoom: number) => void;
   onSetSmoothTiles: (value: boolean) => void;

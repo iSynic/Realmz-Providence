@@ -1,0 +1,301 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-28T00:00:00.000-05:00",
+  "source": "Seeded from archaeology plan, Realmz source anchors, Divinity guide line references, and existing generated coverage docs.",
+  "classifications": [
+    "understood-runtime",
+    "understood-runtime-writer-gated",
+    "divinity-labels-needed",
+    "resource-packaging-needed",
+    "runtime-cache-not-authoring-source",
+    "unknown-active-risk"
+  ],
+  "targets": [
+    {
+      "id": "data-ed3-reachability",
+      "family": "Data ED3",
+      "classification": "understood-runtime-writer-gated",
+      "priority": 1,
+      "why": "Current UI confusion comes from exposing storage names instead of Divinity concepts: Extra Action Points, Macros, GOSUBs, Global Macros, battle macros, and monster macros.",
+      "realmzAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\flashrange-loaddoor.c:43",
+        "F:\\Realmz\\src\\realmz_orig\\newland.c:38",
+        "F:\\Realmz\\src\\realmz_orig\\getup.c:78",
+        "F:\\Realmz\\src\\realmz_orig\\killbody.c:116"
+      ],
+      "divinityManualLines": [
+        351,
+        363,
+        784,
+        857,
+        2858,
+        2891,
+        2893,
+        3025,
+        3196,
+        5935
+      ],
+      "corpusFrequency": "44/44 scenarios contain Data ED3",
+      "followUp": [
+        "editor-ui",
+        "validation",
+        "docs-only"
+      ],
+      "evidenceCard": "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md"
+    },
+    {
+      "id": "data-edcd-rare-shapes",
+      "family": "Data EDCD",
+      "classification": "divinity-labels-needed",
+      "priority": 2,
+      "why": "Most active opcode shapes are source-backed, but low-frequency shapes and Divinity labels still need editor-facing names and fixture coverage.",
+      "realmzAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\misc.c:560",
+        "F:\\Realmz\\src\\realmz_orig\\newland.c"
+      ],
+      "divinityManualLines": [
+        932,
+        2423,
+        2427,
+        2429,
+        6371,
+        6428,
+        6458
+      ],
+      "corpusFrequency": "44/44 scenarios contain Data EDCD",
+      "followUp": [
+        "validation",
+        "editor-ui"
+      ],
+      "evidenceCard": "docs/format-evidence-cards/scripts-runtime-state-semantics.md"
+    },
+    {
+      "id": "data-od-and-string-sound",
+      "family": "Data OD / Strings Sound",
+      "classification": "unknown-active-risk",
+      "priority": 3,
+      "why": "Realmz source proves Data OD option labels, but the Divinity Strings Sound field has no proven storage or runtime consumer yet.",
+      "realmzAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\question.c:104",
+        "F:\\Realmz\\src\\realmz_orig\\question.c:122",
+        "F:\\Realmz\\src\\realmz_orig\\editstring.c:32",
+        "F:\\Realmz\\src\\realmz_orig\\editstring.c:42"
+      ],
+      "divinityManualLines": [
+        5748,
+        5769,
+        5778
+      ],
+      "corpusFrequency": "Data SD2 core; Data OD appears in 22/87 visible byte-roundtrip scenario roots",
+      "followUp": [
+        "parser-writer",
+        "editor-ui",
+        "validation"
+      ],
+      "evidenceCard": "docs/format-evidence-cards/strings-data-od-string-sound.md"
+    },
+    {
+      "id": "custom-landlook-writers",
+      "family": "Custom landlook files / mapstats",
+      "classification": "understood-runtime-writer-gated",
+      "priority": 4,
+      "why": "Runtime mapstats and combat build grids are proven, but custom landlook file/resource writing must be proven before editing built land tile metadata.",
+      "realmzAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\structs.h:87",
+        "F:\\Realmz\\src\\realmz_orig\\loadland-loadpixmap.c:36",
+        "F:\\Realmz\\src\\realmz_orig\\loadland-loadpixmap.c:132",
+        "F:\\Realmz\\src\\realmz_orig\\combatmap.c:102"
+      ],
+      "divinityManualLines": [
+        4526,
+        4852,
+        4864,
+        4872,
+        5017
+      ],
+      "corpusFrequency": "Custom landlook mapstats: Data Custom 1 BD 32/87, Data Custom 2 BD 15/87, Data Custom 3 BD 9/87 visible byte-roundtrip scenario roots",
+      "followUp": [
+        "parser-only",
+        "editor-ui",
+        "validation"
+      ],
+      "evidenceCard": "docs/format-evidence-cards/custom-landlook-writers.md"
+    },
+    {
+      "id": "dungeon-writer-safety",
+      "family": "Data DL / Data DDD / Data RDD",
+      "classification": "understood-runtime-writer-gated",
+      "priority": 5,
+      "why": "Dungeon bit masks are partially source-backed, but safe named authoring requires primitive-level writer fixtures.",
+      "realmzAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\setupnewgame.c:104",
+        "F:\\Realmz\\src\\realmz_orig\\setupnewgame.c:107",
+        "F:\\Realmz\\src\\realmz_orig\\setupnewgame.c:110"
+      ],
+      "divinityManualLines": [
+        4087,
+        4094,
+        4124,
+        4157,
+        5959
+      ],
+      "corpusFrequency": "44/44 scenarios contain Data DL/Data DDD/Data RDD",
+      "followUp": [
+        "parser-writer",
+        "editor-ui",
+        "validation"
+      ],
+      "evidenceCard": "docs/format-evidence-cards/dungeon-editor-writer-safety.md"
+    },
+    {
+      "id": "resource-taxonomy",
+      "family": "Scenario resource fork",
+      "classification": "resource-packaging-needed",
+      "priority": 6,
+      "why": "Scenario-owned assets, Realmz built-ins, Divinity references, and UI-only artwork must not be mixed in pickers or export scope.",
+      "realmzAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\misc.c:2753",
+        "F:\\Realmz\\src\\realmz_orig\\loadland-loadpixmap.c:36",
+        "F:\\Realmz\\src\\realmz_orig\\textbox-time.c:34"
+      ],
+      "divinityManualLines": [
+        4526,
+        4632,
+        4700,
+        4993,
+        5017
+      ],
+      "corpusFrequency": "resource fork typed resources counted in docs/generated/corpus-field-usage.json",
+      "followUp": [
+        "parser-writer",
+        "editor-ui",
+        "validation"
+      ],
+      "evidenceCard": "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+    },
+    {
+      "id": "runtime-caches",
+      "family": "Data MENU / CS / CT / CTD3 / CE / CE2 / Data H1",
+      "classification": "runtime-cache-not-authoring-source",
+      "priority": 7,
+      "why": "Runtime caches explain imported scenario state but should not become default authoring surfaces when source files exist. Scenario-file Data CS is now split out as security/code-segment support rather than a shop cache.",
+      "realmzAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\setupnewgame.c:128",
+        "F:\\Realmz\\src\\realmz_orig\\setupnewgame.c:140",
+        "F:\\Realmz\\src\\realmz_orig\\setupnewgame.c:152",
+        "F:\\Realmz\\src\\realmz_orig\\setupnewgame.c:164",
+        "F:\\Realmz\\src\\realmz_orig\\setupnewgame.c:184",
+        "F:\\Realmz\\src\\realmz_orig\\menuinit.c:388",
+        "F:\\Realmz\\src\\realmz_orig\\fileprep.c:178"
+      ],
+      "divinityManualLines": [
+        2887,
+        3638,
+        3826,
+        3918
+      ],
+      "corpusFrequency": "Visible byte-roundtrip roots: Data MENU 55/87. Scenario-file Data CS appears in 81/87 roots but is security/code-segment support, not runtime :Data Files:CS.",
+      "followUp": [
+        "docs-only",
+        "validation",
+        "preserve-only"
+      ],
+      "evidenceCard": "docs/format-evidence-cards/runtime-caches-vs-authored-source.md"
+    },
+    {
+      "id": "data-des-monster-descriptions",
+      "family": "Data DES",
+      "classification": "understood-runtime-writer-gated",
+      "priority": 8,
+      "why": "Realmz source proves Data DES is a 256-byte monster-description pool indexed beside monster menu/specific monster selection. Providence needs parser support and writer fixtures before editing.",
+      "realmzAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\beast.c:102",
+        "F:\\Realmz\\src\\realmz_orig\\beast.c:113",
+        "F:\\Realmz\\src\\realmz_orig\\beast.c:117"
+      ],
+      "divinityManualLines": [],
+      "corpusFrequency": "87/87 visible byte-roundtrip scenario roots",
+      "followUp": [
+        "parser-only",
+        "docs-only"
+      ],
+      "evidenceCard": "docs/format-evidence-cards/monster-descriptions-and-sets-runtime-anchors.md"
+    },
+    {
+      "id": "data-md1-mdminus1",
+      "family": "Data MD1 / Data MD-1",
+      "classification": "understood-runtime-writer-gated",
+      "priority": 9,
+      "why": "Realmz constructs these filenames by appending the selected monsterset value to Data MD. They are alternate monster template sets using the same 210-byte struct monster layout.",
+      "realmzAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\beast.c:56",
+        "F:\\Realmz\\src\\realmz_orig\\beast.c:58",
+        "F:\\Realmz\\src\\realmz_orig\\partyselect.c:266",
+        "F:\\Realmz\\src\\realmz_orig\\spelllist.c:168",
+        "F:\\Realmz\\src\\realmz_orig\\newland.c:1052"
+      ],
+      "divinityManualLines": [],
+      "corpusFrequency": "Data MD1 87/87 and Data MD-1 87/87 visible byte-roundtrip scenario roots",
+      "followUp": [
+        "parser-only",
+        "docs-only"
+      ],
+      "evidenceCard": "docs/format-evidence-cards/monster-descriptions-and-sets-runtime-anchors.md"
+    },
+    {
+      "id": "scenario-data-cs-security",
+      "family": "Data CS",
+      "classification": "understood-runtime-writer-gated",
+      "priority": 10,
+      "why": "Scenario Data CS is a 316-byte registration/security support file used to demix code segments, not the runtime shop cache. It should stay preserve-only until Divinity security writer behavior is proven.",
+      "realmzAnchors": [
+        "F:\\Realmz\\src\\realmz_orig\\main.c:2031",
+        "F:\\Realmz\\src\\realmz_orig\\loadsavedgame.c:772",
+        "F:\\Realmz\\src\\realmz_orig\\setupnewgame.c:230"
+      ],
+      "divinityManualLines": [],
+      "corpusFrequency": "81/87 visible byte-roundtrip scenario roots, all observed at 316 bytes",
+      "followUp": [
+        "docs-only",
+        "preserve-only"
+      ],
+      "evidenceCard": "docs/format-evidence-cards/runtime-caches-vs-authored-source.md"
+    },
+    {
+      "id": "custom-scenario-music",
+      "family": "Custom N / Custom N Music",
+      "classification": "resource-packaging-needed",
+      "priority": 11,
+      "why": "Realmz source supports scenario-local custom music playlists as module files. Providence preserves modern Custom N Music files and observed legacy unsuffixed Custom N files today, but Assets needs a distinct music-module path separate from snd sound effects.",
+      "realmzAnchors": [
+        "F:\\Realmz\\src\\MusicManager.cpp:45",
+        "F:\\Realmz\\src\\MusicManager.cpp:46",
+        "F:\\Realmz\\src\\MusicManager.cpp:47",
+        "F:\\Realmz\\src\\MusicManager.cpp:118"
+      ],
+      "divinityManualLines": [],
+      "corpusFrequency": "Custom 1 Music 13/87, Custom 2 Music 9/87, Custom 3 Music 6/87, and legacy Custom 1 3/87 visible byte-roundtrip scenario roots",
+      "followUp": [
+        "editor-ui",
+        "validation",
+        "preserve-only"
+      ],
+      "evidenceCard": "docs/format-evidence-cards/scenario-music-and-format-files.md"
+    },
+    {
+      "id": "format-marker-file",
+      "family": "Format",
+      "classification": "unknown-active-risk",
+      "priority": 12,
+      "why": "Format appears as a zero-byte file in many Divinity-era scenario folders. No Realmz source consumer is known yet, so Providence should preserve it exactly and keep it out of normal UI.",
+      "realmzAnchors": [],
+      "divinityManualLines": [],
+      "corpusFrequency": "47/87 visible byte-roundtrip scenario roots, all observed at 0 bytes",
+      "followUp": [
+        "docs-only",
+        "preserve-only"
+      ],
+      "evidenceCard": "docs/format-evidence-cards/scenario-music-and-format-files.md"
+    }
+  ]
+}

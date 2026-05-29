@@ -46,6 +46,8 @@ const MUTATION_LINK_KINDS = new Set([
   "copied_to_cache"
 ]);
 
+const ed3ReachabilityCache = new WeakMap<Project, Map<number, NonNullable<Project["semanticSchema"]["decoding"]>["ed3Reachability"][number]>>();
+
 export type SemanticRecordGroup = {
   source: SemanticSource;
   records: SemanticRecord[];
@@ -220,7 +222,13 @@ export function triggerEntityForRecord(project: Project | null, trigger: Trigger
 }
 
 export function ed3ReachabilityFor(project: Project | null, recordIndex: number) {
-  return project?.semanticSchema.decoding?.ed3Reachability?.find((row) => row.recordIndex === recordIndex) ?? null;
+  if (!project) return null;
+  let cache = ed3ReachabilityCache.get(project);
+  if (!cache) {
+    cache = new Map((project.semanticSchema.decoding?.ed3Reachability ?? []).map((row) => [row.recordIndex, row]));
+    ed3ReachabilityCache.set(project, cache);
+  }
+  return cache.get(recordIndex) ?? null;
 }
 
 export function isCallableMacro(project: Project | null, trigger: TriggerRecord) {

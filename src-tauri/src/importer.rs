@@ -481,6 +481,7 @@ fn default_scenario_shell(source_file: &str) -> ScenarioShell {
         codeseg1: vec![0; 20],
         codeseg2: vec![0; 20],
         trailing_bytes: Vec::new(),
+        raw_bytes: Vec::new(),
         authored: true,
         provenance: None,
     }
@@ -498,6 +499,7 @@ fn default_contact_info(name: &str) -> ScenarioContactInfo {
         pay_info: vec![String::new(); 5],
         titles: vec![String::new(); 5],
         description: String::new(),
+        raw_bytes: Vec::new(),
         authored: true,
         provenance: None,
     }
@@ -659,10 +661,15 @@ fn snapshot_sources(source_path: &Path, raw_dir: &Path) -> Result<Vec<SourceFile
         let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
             continue;
         };
+        if is_ignored_os_metadata_file(name) {
+            continue;
+        }
         let dest = raw_dir.join(name);
         fs::copy(path, &dest).with_path(&dest)?;
         let bytes = fs::read(path).with_path(path)?;
-        let role = if supported.contains(name) {
+        let role = if supported.contains(name)
+            || is_scenario_marker_source(source_path, name, &bytes)
+        {
             SourceFileRole::SupportedBinary
         } else if is_resource_file_name(name) {
             SourceFileRole::ResourceFork
@@ -685,11 +692,23 @@ fn snapshot_sources(source_path: &Path, raw_dir: &Path) -> Result<Vec<SourceFile
     Ok(files)
 }
 
+fn is_scenario_marker_source(source_path: &Path, name: &str, bytes: &[u8]) -> bool {
+    let Some(scenario_dir_name) = source_path.file_name().and_then(|name| name.to_str()) else {
+        return false;
+    };
+    name.eq_ignore_ascii_case(scenario_dir_name)
+        && crate::realmz::parse_scenario_shell(name, bytes).is_ok()
+}
+
 fn is_resource_file_name(name: &str) -> bool {
     name == "Scenario"
         || name.ends_with(".rsrc")
         || name.ends_with(".rsf")
         || name.starts_with("._")
+}
+
+fn is_ignored_os_metadata_file(name: &str) -> bool {
+    name == ".DS_Store"
 }
 
 fn import_tile_atlases(

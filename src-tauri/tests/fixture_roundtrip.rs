@@ -3,7 +3,7 @@ use realmz_providence_lib::importer::{import_scenario, open_project, RAW_SOURCES
 use realmz_providence_lib::project::{
     ProvidenceProject, PROJECT_SCHEMA_VERSION, SEMANTIC_SCHEMA_VERSION,
 };
-use realmz_providence_lib::realmz::SUPPORTED_WRITE_FILES;
+use realmz_providence_lib::realmz::{SUPPORTED_WRITE_FILES, TRACKED_FILES};
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -1359,4 +1359,67 @@ fn exports_supported_files_and_preserves_passthrough_snapshot() {
         export_dir.join("Scenario").is_file(),
         "Scenario should pass through"
     );
+}
+
+#[test]
+fn exports_hardened_fixtures_byte_identically_without_edits() {
+    let supported: BTreeSet<&str> = SUPPORTED_WRITE_FILES.iter().copied().collect();
+    let tracked: BTreeSet<&str> = TRACKED_FILES.iter().copied().collect();
+    for name in HARDENED_FIXTURES {
+        let Some(source) = fixture_path(name) else {
+            eprintln!("Skipping missing fixture scenario: {name}");
+            continue;
+        };
+        let temp = tempdir().unwrap();
+        let project_dir = temp.path().join(name.replace(' ', "_"));
+        let export_dir = temp.path().join("exported");
+        import_scenario(&source, &project_dir).unwrap();
+        let project = open_project(&project_dir).unwrap();
+        let report = export_project(&project_dir, &project, &export_dir).unwrap();
+
+        for file_name in supported.iter().chain(tracked.difference(&supported)) {
+            let source_file = source.join(file_name);
+            if !source_file.is_file() {
+                continue;
+            }
+            let exported_file = export_dir.join(file_name);
+            assert!(
+                exported_file.is_file(),
+                "{name} should export imported file {file_name}"
+            );
+            assert_eq!(
+                fs::read(&source_file).unwrap(),
+                fs::read(&exported_file).unwrap(),
+                "{name} {file_name} should export byte-identically without edits"
+            );
+        }
+
+        for source_file in &project.source.files {
+            let file_name = source_file.name.as_str();
+            if supported.contains(file_name) || tracked.contains(file_name) {
+                continue;
+            }
+            let source_path = source.join(&source_file.relative_path);
+            if !source_path.is_file() {
+                continue;
+            }
+            let exported_path = export_dir.join(&source_file.relative_path);
+            assert!(
+                exported_path.is_file(),
+                "{name} should pass through non-tracked source file {}",
+                source_file.relative_path
+            );
+            assert_eq!(
+                fs::read(&source_path).unwrap(),
+                fs::read(&exported_path).unwrap(),
+                "{name} {} should pass through byte-identically",
+                source_file.relative_path
+            );
+        }
+
+        assert!(
+            !report.written_files.is_empty() || !report.pass_through_files.is_empty(),
+            "{name} should report written or pass-through files"
+        );
+    }
 }

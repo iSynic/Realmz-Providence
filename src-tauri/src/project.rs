@@ -96,6 +96,8 @@ pub struct ScenarioShell {
     #[serde(default)]
     pub trailing_bytes: Vec<u8>,
     #[serde(default)]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
     pub authored: bool,
     #[serde(default)]
     pub provenance: Option<Provenance>,
@@ -117,6 +119,8 @@ pub struct ScenarioContactInfo {
     pub titles: Vec<String>,
     pub description: String,
     #[serde(default)]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
     pub authored: bool,
     #[serde(default)]
     pub provenance: Option<Provenance>,
@@ -132,6 +136,8 @@ pub struct ScenarioRestrictions {
     pub banned_races: Vec<u8>,
     #[serde(default)]
     pub banned_castes: Vec<u8>,
+    #[serde(default)]
+    pub raw_bytes: Vec<u8>,
     #[serde(default)]
     pub authored: bool,
     #[serde(default)]

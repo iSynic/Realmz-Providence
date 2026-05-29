@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-28T00:00:00.000-05:00",
+  "target": "monster-descriptions-and-sets",
+  "classification": "understood-runtime-writer-gated",
+  "families": [
+    {
+      "file": "Data DES",
+      "role": "monster-description-pool",
+      "recordSizeBytes": 256,
+      "runtimeIndexing": "specific monster id or bestiary menupos index multiplied by 256",
+      "sourceAnchors": [
+        {
+          "path": "F:\\Realmz\\src\\realmz_orig\\beast.c",
+          "line": 113,
+          "evidence": "Monster/bestiary display opens Data DES."
+        },
+        {
+          "path": "F:\\Realmz\\src\\realmz_orig\\beast.c",
+          "line": 117,
+          "evidence": "Data DES seeks by specific * 256 or menu index * 256."
+        }
+      ],
+      "editorReadiness": {
+        "parse": "high",
+        "write": "blocked-until-fixture",
+        "ui": "monster-editor-companion"
+      }
+    },
+    {
+      "file": "Data MD1",
+      "role": "alternate-monster-template-set",
+      "recordSizeBytes": 210,
+      "runtimeIndexing": "same struct monster index as Data MD; selected by monsterset == 1",
+      "sourceAnchors": [
+        {
+          "path": "F:\\Realmz\\src\\realmz_orig\\beast.c",
+          "line": 58,
+          "evidence": "Realmz appends nonzero monsterset to the Data MD filename."
+        },
+        {
+          "path": "F:\\Realmz\\src\\realmz_orig\\partyselect.c",
+          "line": 266,
+          "evidence": "Party selection sets monsterset from UI choice."
+        }
+      ],
+      "editorReadiness": {
+        "parse": "high",
+        "write": "blocked-until-fixture",
+        "ui": "monster-set-variant"
+      }
+    },
+    {
+      "file": "Data MD-1",
+      "role": "alternate-monster-template-set",
+      "recordSizeBytes": 210,
+      "runtimeIndexing": "same struct monster index as Data MD; selected by monsterset == -1",
+      "sourceAnchors": [
+        {
+          "path": "F:\\Realmz\\src\\realmz_orig\\beast.c",
+          "line": 58,
+          "evidence": "Realmz appends nonzero monsterset to the Data MD filename."
+        },
+        {
+          "path": "F:\\Realmz\\src\\realmz_orig\\partyselect.c",
+          "line": 266,
+          "evidence": "Party selection can set monsterset to -1 from UI choice."
+        }
+      ],
+      "editorReadiness": {
+        "parse": "high",
+        "write": "blocked-until-fixture",
+        "ui": "monster-set-variant"
+      }
+    }
+  ],
+  "corpusEvidence": {
+    "visibleByteRoundtripRoots": 87,
+    "frequency": {
+      "Data DES": "87/87",
+      "Data MD1": "87/87",
+      "Data MD-1": "87/87"
+    },
+    "sizeRules": [
+      "All observed Data DES sizes are divisible by 256.",
+      "All observed Data MD1 sizes are divisible by 210.",
+      "All observed Data MD-1 sizes are divisible by 210."
+    ]
+  },
+  "writerGate": [
+    "Divinity monster editor set-selection behavior",
+    "before/after fixture for monster description edit",
+    "record ownership tests for Data MD variant edits",
+    "validation for description slots without matching active monster templates"
+  ]
+}

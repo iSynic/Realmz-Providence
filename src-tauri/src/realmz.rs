@@ -71,6 +71,9 @@ pub const TRACKED_FILES: &[&str] = &[
     "Data ED3",
     "Data EDCD",
     "Data MD",
+    "Data MD1",
+    "Data MD-1",
+    "Data DES",
     "Data BD",
     "Data SD",
     "Data SD2",
@@ -80,6 +83,8 @@ pub const TRACKED_FILES: &[&str] = &[
     "Data TD3",
     "Data CI",
     "Data RI",
+    "Data CS",
+    "Data OD",
     "Data MENU",
     "Data Solids",
     "Data NI",
@@ -90,6 +95,27 @@ pub const TRACKED_FILES: &[&str] = &[
     "Data Custom 1 BD",
     "Data Custom 2 BD",
     "Data Custom 3 BD",
+    "Custom 1",
+    "Custom 2",
+    "Custom 3",
+    "Custom 4",
+    "Custom 5",
+    "Custom 6",
+    "Custom 7",
+    "Custom 8",
+    "Custom 9",
+    "Custom 1 Music",
+    "Custom 2 Music",
+    "Custom 3 Music",
+    "Custom 4 Music",
+    "Custom 5 Music",
+    "Custom 6 Music",
+    "Custom 7 Music",
+    "Custom 8 Music",
+    "Custom 9 Music",
+    "Format",
+    "Icon_",
+    "Read Me (nice to know)",
 ];
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -373,9 +399,21 @@ pub fn parse_landlook_mapstats_data(
             let forest = i16_be(buffer, start + 16);
             let spare = i16_be(buffer, start + 18);
             let combat_build = vec![
-                vec![i16_be(buffer, start + 20), i16_be(buffer, start + 22), i16_be(buffer, start + 24)],
-                vec![i16_be(buffer, start + 26), i16_be(buffer, start + 28), i16_be(buffer, start + 30)],
-                vec![i16_be(buffer, start + 32), i16_be(buffer, start + 34), i16_be(buffer, start + 36)],
+                vec![
+                    i16_be(buffer, start + 20),
+                    i16_be(buffer, start + 22),
+                    i16_be(buffer, start + 24),
+                ],
+                vec![
+                    i16_be(buffer, start + 26),
+                    i16_be(buffer, start + 28),
+                    i16_be(buffer, start + 30),
+                ],
+                vec![
+                    i16_be(buffer, start + 32),
+                    i16_be(buffer, start + 34),
+                    i16_be(buffer, start + 36),
+                ],
             ];
             let clear_land_id = i16_be(buffer, start + 38);
             let mut flags = Vec::new();
@@ -648,13 +686,24 @@ pub fn parse_scenario_shell(source_file: &str, buffer: &[u8]) -> Result<Scenario
         codeseg2: buffer[40..60].to_vec(),
         creator_user: decode_pascal_text(&buffer[60..316]),
         trailing_bytes: buffer.get(316..).unwrap_or(&[]).to_vec(),
+        raw_bytes: buffer.to_vec(),
         authored: false,
         provenance: Some(provenance(source_file, 0, 0, buffer.len())),
     })
 }
 
 pub fn write_scenario_shell(shell: &ScenarioShell) -> Result<Vec<u8>> {
-    let mut output = vec![0u8; 316 + shell.trailing_bytes.len()];
+    if !shell.authored && !shell.raw_bytes.is_empty() {
+        return Ok(shell.raw_bytes.clone());
+    }
+    let mut output = if !shell.raw_bytes.is_empty() {
+        shell.raw_bytes.clone()
+    } else {
+        vec![0u8; 316 + shell.trailing_bytes.len()]
+    };
+    if output.len() < 316 + shell.trailing_bytes.len() {
+        output.resize(316 + shell.trailing_bytes.len(), 0);
+    }
     write_i32_be(&mut output, 0, shell.rec_level);
     write_i32_be(&mut output, 4, shell.max_level);
     write_i32_be(&mut output, 8, shell.land_level);
@@ -691,13 +740,21 @@ pub fn parse_scenario_contact_info(buffer: &[u8]) -> Result<ScenarioContactInfo>
             .map(|slot| pascal_record_string(buffer, slot))
             .collect(),
         description: pascal_record_string(buffer, 17),
+        raw_bytes: buffer[..4608].to_vec(),
         authored: false,
         provenance: Some(provenance("Data CI", 0, 0, 4608)),
     })
 }
 
 pub fn write_scenario_contact_info(contact: &ScenarioContactInfo) -> Result<Vec<u8>> {
-    let mut output = vec![0u8; 4608];
+    if !contact.authored && contact.raw_bytes.len() == 4608 {
+        return Ok(contact.raw_bytes.clone());
+    }
+    let mut output = if contact.raw_bytes.len() == 4608 {
+        contact.raw_bytes.clone()
+    } else {
+        vec![0u8; 4608]
+    };
     let fields = [
         contact.scenario_name.as_str(),
         contact.version.as_str(),
@@ -749,16 +806,25 @@ pub fn parse_scenario_restrictions(buffer: &[u8]) -> Result<ScenarioRestrictions
             .enumerate()
             .filter_map(|(index, value)| (*value != 0).then_some((index + 1) as u8))
             .collect(),
+        raw_bytes: buffer[..320].to_vec(),
         authored: false,
         provenance: Some(provenance("Data RI", 0, 0, 320)),
     })
 }
 
 pub fn write_scenario_restrictions(restrictions: &ScenarioRestrictions) -> Result<Vec<u8>> {
-    let mut output = vec![0u8; 320];
+    if !restrictions.authored && restrictions.raw_bytes.len() == 320 {
+        return Ok(restrictions.raw_bytes.clone());
+    }
+    let mut output = if restrictions.raw_bytes.len() == 320 {
+        restrictions.raw_bytes.clone()
+    } else {
+        vec![0u8; 320]
+    };
     encode_pascal_text(&mut output[0..256], &restrictions.description)?;
     write_i16_be(&mut output, 256, restrictions.max_party_characters);
     write_i16_be(&mut output, 258, restrictions.max_party_level);
+    output[260..320].fill(0);
     for race in &restrictions.banned_races {
         if (1..=30).contains(race) {
             output[260 + *race as usize - 1] = 1;
@@ -1267,9 +1333,9 @@ pub fn write_random_levels(levels: &[RandomLevel], level_type: LevelType) -> Res
         for (index, value) in level.raw_values.iter().enumerate() {
             write_i16_be(&mut output, start + index * 2, *value);
         }
-        output[start + 520] = level.landlook as u8;
-        output[start + 521] = u8::from(level.is_dark);
-        output[start + 522] = u8::from(level.use_los);
+        // Random-level raw bytes are the export authority. Authoring commands update
+        // raw_values alongside decoded fields, and preserving the raw stream avoids
+        // canonicalizing Divinity-authored flag bytes during no-edit exports.
         for rect in &level.rects {
             if rect.rect_index >= 20 {
                 return Err(ProvidenceError::message(format!(
@@ -1277,30 +1343,6 @@ pub fn write_random_levels(levels: &[RandomLevel], level_type: LevelType) -> Res
                     level.id, rect.rect_index
                 )));
             }
-            let r = rect.rect_index;
-            write_i16_be(&mut output, start + r * 8, rect.top);
-            write_i16_be(&mut output, start + r * 8 + 2, rect.left);
-            write_i16_be(&mut output, start + r * 8 + 4, rect.bottom);
-            write_i16_be(&mut output, start + r * 8 + 6, rect.right);
-            write_i16_be(&mut output, start + 160 + r * 2, rect.percent);
-            write_i16_be(&mut output, start + 200 + r * 4, rect.battle_range[0]);
-            write_i16_be(&mut output, start + 202 + r * 4, rect.battle_range[1]);
-            for slot in 0..3 {
-                write_i16_be(
-                    &mut output,
-                    start + 280 + r * 6 + slot * 2,
-                    rect.random_doors[slot],
-                );
-                write_i16_be(
-                    &mut output,
-                    start + 400 + r * 6 + slot * 2,
-                    rect.random_door_percent[slot],
-                );
-            }
-            output[start + 523 + r] = u8::from(rect.only);
-            output[start + 543 + r] = rect.option as u8;
-            write_i16_be(&mut output, start + 563 + r * 2, rect.sound);
-            write_i16_be(&mut output, start + 603 + r * 2, rect.text);
         }
     }
     Ok(output)
@@ -2828,6 +2870,7 @@ mod tests {
             codeseg1: (0..20).collect(),
             codeseg2: (20..40).collect(),
             trailing_bytes: vec![9, 8, 7, 6],
+            raw_bytes: Vec::new(),
             authored: true,
             provenance: None,
         };
@@ -2866,6 +2909,7 @@ mod tests {
                 "T5".to_string(),
             ],
             description: "Description".to_string(),
+            raw_bytes: Vec::new(),
             authored: true,
             provenance: None,
         };
@@ -2882,6 +2926,7 @@ mod tests {
             max_party_level: 20,
             banned_races: vec![1, 30],
             banned_castes: vec![2, 29],
+            raw_bytes: Vec::new(),
             authored: true,
             provenance: None,
         };

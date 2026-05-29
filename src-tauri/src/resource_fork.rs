@@ -267,7 +267,10 @@ pub fn encode_pict_resource(payload: &RgbaImagePayload) -> Result<Vec<u8>> {
     encode_pict_resource_with_dither(payload, true)
 }
 
-pub fn encode_pict_resource_with_dither(payload: &RgbaImagePayload, dither: bool) -> Result<Vec<u8>> {
+pub fn encode_pict_resource_with_dither(
+    payload: &RgbaImagePayload,
+    dither: bool,
+) -> Result<Vec<u8>> {
     let rgba = STANDARD
         .decode(&payload.rgba_base64)
         .map_err(|error| ProvidenceError::message(error.to_string()))?;
@@ -857,11 +860,7 @@ fn quantize_rgba_to_palette(rgba: &[u8], width: usize, dither: bool) -> (Vec<u8>
 fn adaptive_palette(rgba: &[u8]) -> Vec<[u8; 3]> {
     let mut histogram = BTreeMap::<[u8; 3], usize>::new();
     for pixel in rgba.chunks_exact(4) {
-        let color = [
-            pixel[0] & 0xf8,
-            pixel[1] & 0xf8,
-            pixel[2] & 0xf8,
-        ];
+        let color = [pixel[0] & 0xf8, pixel[1] & 0xf8, pixel[2] & 0xf8];
         *histogram.entry(color).or_insert(0) += 1;
     }
     if histogram.is_empty() {
@@ -908,11 +907,16 @@ fn adaptive_palette(rgba: &[u8]) -> Vec<[u8; 3]> {
 
 fn bucket_score(bucket: &[QuantizedColor]) -> usize {
     let (min, max) = bucket_bounds(bucket);
-    let range = (0..3).map(|channel| max[channel] as usize - min[channel] as usize).max().unwrap_or(0);
+    let range = (0..3)
+        .map(|channel| max[channel] as usize - min[channel] as usize)
+        .max()
+        .unwrap_or(0);
     range * bucket.iter().map(|entry| entry.count).sum::<usize>()
 }
 
-fn split_color_bucket(mut bucket: Vec<QuantizedColor>) -> (Vec<QuantizedColor>, Vec<QuantizedColor>) {
+fn split_color_bucket(
+    mut bucket: Vec<QuantizedColor>,
+) -> (Vec<QuantizedColor>, Vec<QuantizedColor>) {
     let (min, max) = bucket_bounds(&bucket);
     let channel = (0..3)
         .max_by_key(|channel| max[*channel] as usize - min[*channel] as usize)
@@ -1381,7 +1385,9 @@ mod tests {
         let (indices, palette) = quantize_rgba_to_palette(&rgba, 40, false);
         assert_eq!(indices.len(), 40 * 40);
         assert!(palette.len() <= 256);
-        assert!(indices.iter().all(|index| (*index as usize) < palette.len()));
+        assert!(indices
+            .iter()
+            .all(|index| (*index as usize) < palette.len()));
     }
 
     #[test]
@@ -1389,12 +1395,7 @@ mod tests {
         let mut rgba = Vec::new();
         for y in 0..24u8 {
             for x in 0..24u8 {
-                rgba.extend_from_slice(&[
-                    x.wrapping_mul(23),
-                    y.wrapping_mul(19),
-                    x ^ y,
-                    255,
-                ]);
+                rgba.extend_from_slice(&[x.wrapping_mul(23), y.wrapping_mul(19), x ^ y, 255]);
             }
         }
         let first = quantize_rgba_to_palette(&rgba, 24, true);

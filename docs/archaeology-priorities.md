@@ -15,6 +15,44 @@ Every target uses the same evidence card shape:
 
 An editor slice is ready only when byte layout, runtime meaning, validation behavior, and export ownership are classified. Unknown bytes stay preserved and visible.
 
+## Known / Unknown / Writer-Gated Ledger
+
+The current scenario-data ledger lives in `docs/generated/unknown-data-backlog.json`. It ranks each open target by user-facing editor value, runtime importance, corpus frequency, and evidence confidence. Use these status labels consistently:
+
+- `understood-runtime`: Realmz runtime meaning is source-backed; remaining work is UI naming, validation, or docs.
+- `understood-runtime-writer-gated`: runtime meaning is source-backed, but writer offsets/defaults/export ownership still need fixtures before Providence edits it.
+- `divinity-labels-needed`: runtime meaning is mostly known, but Divinity labels/defaults/ranges are needed before the editor should claim parity.
+- `resource-packaging-needed`: resource fork or library/scenario ownership is not fully classified.
+- `runtime-cache-not-authoring-source`: useful imported state, but not a normal scenario authoring target.
+- `unknown-active-risk`: source/corpus evidence shows the data may affect runtime, but Providence does not yet know enough to edit or hide it.
+
+Current highest-priority targets:
+
+| Priority | Target | Status | Evidence Card |
+| ---: | --- | --- | --- |
+| 1 | `Data ED3` reachability and Extra Action Point terminology | `understood-runtime-writer-gated` | `docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md` |
+| 2 | `Data EDCD` rare/multi-row opcode shapes | `divinity-labels-needed` | `docs/format-evidence-cards/scripts-runtime-state-semantics.md` |
+| 3 | `Data OD` option strings and Divinity Strings `Sound` field | `unknown-active-risk` | `docs/format-evidence-cards/strings-data-od-string-sound.md` |
+| 4 | Custom landlook / Edit Land Tiles writer behavior | `understood-runtime-writer-gated` | `docs/format-evidence-cards/custom-landlook-writers.md` |
+| 5 | Dungeon wall/door/secret writer safety | `understood-runtime-writer-gated` | `docs/format-evidence-cards/dungeon-editor-writer-safety.md` |
+| 6 | `PICT`, `cicn`, `snd `, `STR#`, `TEXT`, `styl`, `RLMZ`, `vers` resource taxonomy | `resource-packaging-needed` | `docs/format-evidence-cards/resource-fork-taxonomy-authoring.md` |
+| 7 | Runtime/generated caches: `Data MENU`, runtime `CS`, `CT`, `CTD3`, `CE`, `CE2`, `Data H1` | `runtime-cache-not-authoring-source` | `docs/format-evidence-cards/runtime-caches-vs-authored-source.md` |
+| 8 | `Data DES` monster descriptions | `understood-runtime-writer-gated` | `docs/format-evidence-cards/monster-descriptions-and-sets-runtime-anchors.md` |
+| 9 | `Data MD1` / `Data MD-1` alternate monster sets | `understood-runtime-writer-gated` | `docs/format-evidence-cards/monster-descriptions-and-sets-runtime-anchors.md` |
+| 10 | Scenario `Data CS` security/code-segment support | `understood-runtime-writer-gated` | `docs/format-evidence-cards/runtime-caches-vs-authored-source.md` |
+| 11 | `Custom N Music` scenario module files | `resource-packaging-needed` | `docs/format-evidence-cards/scenario-music-and-format-files.md` |
+| 12 | `Format` zero-byte marker files | `unknown-active-risk` | `docs/format-evidence-cards/scenario-music-and-format-files.md` |
+
+Supporting generated ledgers:
+
+- `docs/generated/runtime-cache-classification.json`: source files, generated caches, and UI/export policy.
+- `docs/generated/divinity-editor-field-map.json`: Divinity screen labels mapped to Realmz containers and Providence UI policy.
+- `docs/generated/scenario-byte-roundtrip-ledger.json`: no-edit import/export byte-preservation audit across available known-valid scenario roots.
+- `docs/generated/monster-description-set-evidence.json`: monster description and alternate monster-set classification.
+- `docs/generated/scenario-music-format-evidence.json`: custom music module and zero-byte `Format` marker classification.
+- `docs/generated/corpus-field-usage.json`: corpus breadth and resource counts.
+- `docs/generated/coverage-matrix.json`: long-running editor coverage ranking.
+
 ## Priority Order
 
 | Rank | Target | Why It Comes Now | Follow-up Slice |
@@ -216,6 +254,41 @@ The eighteenth follow-up archaeology pass tightened `Map tile intelligence` arou
 
 Detailed evidence lives in `docs/format-evidence-cards/outdoor-visibility-runtime-anchors.md` and `docs/generated/outdoor-visibility-evidence.json`.
 
+The nineteenth follow-up archaeology pass added a full no-edit byte-preservation audit. The audit imports and immediately exports every scenario found under the available Realmz output/base roots and Divinity CD/Beta scenario roots, then compares each imported source file byte-for-byte:
+
+- 87 candidate scenarios import and export without import/export errors;
+- 3,072 of 3,072 source files export byte-identically;
+- there are currently zero missing exports, extra exports, or byte mismatches;
+- the audit caught and fixed earlier no-edit mutations in `Data CI`, scenario marker/startup files, `Data RD`, and `Data RDD`;
+- random-level raw bytes are now the export authority, so Divinity-authored byte flags are preserved unless an authoring command deliberately updates the raw byte stream.
+- the top remaining preserved files needing deeper semantics were `Data DES`, `Data MD1`, `Data MD-1`, scenario `Data CS`, `Format`, `Data OD`, and custom music files.
+
+The twentieth follow-up archaeology pass reclassified several byte-preserved files from "mystery data" into concrete runtime families:
+
+- `Data DES` is a 256-byte monster-description pool read by the bestiary/monster inspection path.
+- `Data MD1` and `Data MD-1` are alternate monster template sets produced by appending the selected `monsterset` value to `Data MD`; they use the same 210-byte `struct monster` layout as `Data MD`.
+- `Data OD` is a 25-byte option-label table used by two-choice prompts and negative string indexes; the Divinity Strings `Sound` field remains unproven and blocked.
+- scenario-file `Data CS` is a 316-byte registration/security code-segment backup; it is distinct from runtime `:Data Files:CS`, which is the shop cache generated from `Data SD`.
+
+Detailed evidence lives in `docs/format-evidence-cards/monster-descriptions-and-sets-runtime-anchors.md`, `docs/format-evidence-cards/strings-data-od-string-sound.md`, and `docs/format-evidence-cards/runtime-caches-vs-authored-source.md`.
+
+The twenty-first follow-up archaeology pass classified the remaining high-frequency non-record pass-through files:
+
+- `Custom 1 Music`, `Custom 2 Music`, and `Custom 3 Music` are scenario-local custom music module files. Realmz runtime support maps them to playlists 12, 13, and 14, with source support continuing through `Custom 9 Music`.
+- Custom music is not `snd ` sound-effect data and should live in Assets as scenario-shipped music modules, not in the normal sound picker.
+- `Format` is observed as a zero-byte file in 47/87 visible byte-roundtrip roots. No source consumer is known yet, so Providence should preserve it and keep it under Advanced compatibility details.
+
+Detailed evidence lives in `docs/format-evidence-cards/scenario-music-and-format-files.md` and `docs/generated/scenario-music-format-evidence.json`.
+
+The twenty-second follow-up archaeology pass tightened the byte-roundtrip ledger itself:
+
+- scenario marker/main files named after the scenario are now classified as supported scenario shell data when they parse through the existing source-backed shell parser, including case-only folder/file name differences from classic Mac scenario folders;
+- the no-edit audit still reports 87/87 scenarios and 3,072/3,072 files exported byte-identically;
+- `Data DES`, `Data MD1`, `Data MD-1`, scenario `Data CS`, `Data OD`, custom music, `Format`, empty resource-fork data companions such as `Icon_`, and distribution readme files are now tracked as known preserve-only/pass-through families rather than unknown files;
+- `.DS_Store` is Finder metadata, not Realmz scenario data; Providence ignores it during import instead of preserving or classifying it.
+
+The generated ledger lives in `docs/generated/scenario-byte-roundtrip-ledger.json`. Re-run it with `npm run archaeology:roundtrip-audit` whenever writer behavior changes.
+
 ## Divinity Binary Workflow
 
 Use Ghidra against the Mac Divinity binary and data files under `F:\Divinity CD`. Each binary-derived claim must cite one of:
@@ -261,4 +334,5 @@ Generated runtime/cache files remain evidence, not authored export sources.
 - Spell/race/caste rules evidence lives in `docs/generated/rules-spell-race-caste-evidence.json`.
 - Global macro hook evidence lives in `docs/generated/global-macro-evidence.json`.
 - Map record evidence lives in `docs/generated/map-record-evidence.json`.
+- Scenario byte-preservation ledger lives in `docs/generated/scenario-byte-roundtrip-ledger.json`.
 - External technical evidence remains linked to `F:\Realmz Scenario Utility\docs\scenario-format` instead of copied wholesale.

@@ -25,6 +25,13 @@ These cards are the working archaeology backlog for Providence editor coverage. 
 - `thief-timed-encounter-runtime-anchors.md`: source-backed `Data TD2` thief/rogue encounters, `Data TD3` timed encounters, runtime `CT`/`CTD3` cache mutation, and save-state split.
 - `text-message-runtime-anchors.md`: central `Data SD2` message records, encounter inline display buffers, prompt pickers, and text validation.
 - `scripts-runtime-state-semantics.md`: opcodes, EDCD, ED3 reachability, global macros, random/timed dispatch, and runtime cache separation.
+- `action-point-extra-ap-storage-reachability.md`: Action Point, Extra Action Point, Macro/GOSUB, and ED3 reachability terminology and promotion rules.
+- `strings-data-od-string-sound.md`: Divinity Strings editor, `Data SD2`, `Data OD`, text import/export, and unresolved String Sound field.
+- `custom-landlook-writers.md`: Divinity Edit Land Tiles, custom landlook files, `mapstats`, combat build grids, and writer gate.
+- `dungeon-editor-writer-safety.md`: Dungeon Editor authoring safety gates for walls, doors, stairs, secrets, and Action Point integration.
+- `resource-fork-taxonomy-authoring.md`: resource fork taxonomy across scenario-owned, Realmz library, Divinity reference, and UI-only assets.
+- `runtime-caches-vs-authored-source.md`: generated/runtime cache classification and UI/export policy.
+- `scenario-music-and-format-files.md`: scenario-local custom music modules and zero-byte `Format` compatibility marker files.
 - `global-macro-runtime-anchors.md`: source-backed `Global` hook slots for scenario start, party death, end/quit, shop, and temple macro dispatch.
 - `resource-authoring.md`: `PICT`, `cicn`, `snd `, `STR#`, `TEXT`, `styl`, `RLMZ`, shared fallback, and resource writing.
 - `resource-icon-runtime-anchors.md`: source-backed negative map field rendering through base terrain plus normalized `cicn` icons.

@@ -1,0 +1,51 @@
+# Evidence Card: Dungeon Editor Writer Safety
+
+## User-Facing Unlock
+
+Providence can turn dungeon authoring from raw bitfields into named primitives: walls, doors, stairs, secret passages, pass-throughs, pillars, notes, and Action Point placement. The editor should only expose controls where the bit layout and runtime consumer are proven.
+
+## Realmz Source Anchors
+
+| Source | Evidence |
+| --- | --- |
+| `F:\Realmz\src\realmz_orig\setupnewgame.c:104` | First-start copies source `Data DDD` into runtime dungeon trigger cache. |
+| `F:\Realmz\src\realmz_orig\setupnewgame.c:107` | First-start copies source `Data DL` into runtime dungeon field cache. |
+| `F:\Realmz\src\realmz_orig\setupnewgame.c:110` | First-start copies source `Data RDD` into runtime random-level cache. |
+| `F:\Realmz\src\realmz_orig\editstring.c:550` | Realmz internal editor/source utility references dungeon trigger data `Data DDD`. |
+| `F:\Realmz\src\realmz_orig\editstring.c:553` | Realmz internal editor/source utility references dungeon field data `Data DL`. |
+| `F:\Realmz\src\realmz_orig\editstring.c:556` | Realmz internal editor/source utility references dungeon random data `Data RDD`. |
+| Existing card | `docs/format-evidence-cards/dungeon-runtime-anchors.md` contains current bitfield masks and runtime consumers. |
+
+## Divinity Evidence
+
+| Manual Line | Evidence |
+| ---: | --- |
+| 4087-4094 | Dungeon levels have Action Points and Random Rectangles like land levels, but land and dungeon levels are separate. |
+| 4124 | Dungeon Editor uses Command/Control like the Land Editor; Option erases any location including Action Points. |
+| 4157 | Stairs are visual/geometry primitives and need Action Points to actually move the party. |
+| 5959 | Manual FAQ discusses secret Action Points in the Dungeon Editor. |
+
+## Byte Layout Notes
+
+- `Data DL` is the source dungeon map/geometry file.
+- `Data DDD` is the source dungeon Action Point file.
+- `Data RDD` is the source dungeon random rectangle file.
+- Runtime `CD`/related caches are generated on new game and should not be treated as source authoring files.
+
+## Corpus Evidence
+
+- `Data DL`, `Data DDD`, and `Data RDD` are present in 44/44 scenarios.
+- Existing dungeon evidence marks writer confidence low until fixture coverage proves named primitive writes.
+
+## Providence Follow-Up
+
+- Follow-up: `parser-writer`, `editor-ui`, `validation`.
+- Build named dungeon primitives from the existing bitfield profile.
+- Keep dangerous raw bit toggles under Advanced Details.
+- Add fixtures for each primitive before exposing broad brush tools.
+- Link dungeon Action Points and Random Encounters through the same Action Point Hub concepts as land maps.
+
+## Writer Gate
+
+No new dungeon primitive writer is ready until the exact bit masks, compatible combinations, runtime render effect, and save/reopen/export roundtrip are fixture-tested.
+

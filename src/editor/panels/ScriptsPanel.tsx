@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { AlertTriangle, ArrowDown, ArrowUp, Copy, CopyPlus, Plus, Save, Trash2, X } from "lucide-react";
 import { Action, EncounterActionRow, LevelType, LibraryCatalog, Project, ProjectCommand, RealmzTargetRecordKind, ScriptDetailSurface, ScriptInventoryFilter, SelectedEntity, SemanticEntity, TriggerRecord } from "../types";
 import { linksFor, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
@@ -48,11 +48,68 @@ const MONSTER_TRAIT_LABELS = [
 
 const MONSTER_MONEY_LABELS = ["Gold", "Gems", "Jewelry"];
 
+const SCRIPT_EDITOR_TABS = [
+  { id: "domain", label: "All", title: "Show all Action Point Hub sections." },
+  { id: "action-points", label: "Action Points", title: "Create and edit map action slots." },
+  { id: "macros", label: "Macros", title: "Extra Action Point macros and branch targets." },
+  { id: "ed3-evidence", label: "ED3 Rows", title: "Imported ED3 rows that are not callable macros yet." },
+  { id: "global-macros", label: "Global Macros", title: "Scenario-wide macro hooks and startup logic." },
+  { id: "quests", label: "Quests", title: "Quest flags and script references." }
+];
+
+const scriptDiagnosticCache = new WeakMap<TriggerRecord, { key: string; diagnostics: ScriptDiagnostic[] }>();
+const objectIdentity = new WeakMap<object, number>();
+let nextObjectIdentity = 1;
+
+function refKey(value: object | null | undefined) {
+  if (!value) return "none";
+  const existing = objectIdentity.get(value);
+  if (existing) return existing;
+  const next = nextObjectIdentity++;
+  objectIdentity.set(value, next);
+  return next;
+}
+
+function scriptDiagnosticDependencyKey(project: Project, catalog?: LibraryCatalog | null) {
+  const macroKey = project.triggers
+    .filter((trigger) => trigger.source === "Data ED3")
+    .map((trigger) => `${trigger.recordIndex}:${trigger.actions.length}:${trigger.active ? 1 : 0}`)
+    .join(",");
+  return [
+    refKey(catalog ?? null),
+    refKey(project.extracodes),
+    refKey(project.messages),
+    refKey(project.battles),
+    refKey(project.monsters),
+    refKey(project.treasures),
+    refKey(project.shops),
+    refKey(project.simpleEncounters),
+    refKey(project.complexEncounters),
+    refKey(project.thiefEncounters),
+    refKey(project.timedEncounters),
+    refKey(project.questLabels),
+    refKey(project.assets),
+    refKey(project.maps),
+    refKey(project.mapRecords),
+    refKey(project.semanticSchema),
+    macroKey
+  ].join("|");
+}
+
+function cachedValidateScriptTrigger(project: Project, trigger: TriggerRecord, catalog: LibraryCatalog | null | undefined, dependencyKey: string) {
+  const cached = scriptDiagnosticCache.get(trigger);
+  if (cached?.key === dependencyKey) return cached.diagnostics;
+  const diagnostics = validateScriptTrigger(project, trigger, catalog);
+  scriptDiagnosticCache.set(trigger, { key: dependencyKey, diagnostics });
+  return diagnostics;
+}
+
 export function ScriptsPanel({
   project,
   catalog,
   selectedEntity,
   onSelectEntity,
+  onSelectEditor,
   onApplyCommand,
   activeEditor = "domain"
 }: {
@@ -60,12 +117,50 @@ export function ScriptsPanel({
   catalog?: LibraryCatalog | null;
   selectedEntity: SelectedEntity | null;
   onSelectEntity: (entity: SelectedEntity) => void;
+  onSelectEditor?: (editor: string) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
   activeEditor?: string;
 }) {
+  const [, startScriptTransition] = useTransition();
+  const handleSelectEntity = useCallback((entity: SelectedEntity) => {
+    startScriptTransition(() => onSelectEntity(entity));
+  }, [onSelectEntity]);
+  const handleApplyCommand = useCallback((command: ProjectCommand) => {
+    startScriptTransition(() => onApplyCommand?.(command));
+  }, [onApplyCommand]);
   return (
     <div className="editor-full-panel scripts-workbench">
-      <ScriptAuthoringPanel project={project} catalog={catalog} activeEditor={activeEditor} selectedEntity={selectedEntity} onSelectEntity={onSelectEntity} onApplyCommand={onApplyCommand} />
+      <ScriptEditorTabs activeEditor={activeEditor} onSelectEditor={onSelectEditor} />
+      <ScriptAuthoringPanel project={project} catalog={catalog} activeEditor={activeEditor} selectedEntity={selectedEntity} onSelectEntity={handleSelectEntity} onApplyCommand={handleApplyCommand} />
+    </div>
+  );
+}
+
+function ScriptEditorTabs({
+  activeEditor,
+  onSelectEditor
+}: {
+  activeEditor: string;
+  onSelectEditor?: (editor: string) => void;
+}) {
+  return (
+    <div className="script-editor-tabs" role="tablist" aria-label="Action Point Hub sections">
+      {SCRIPT_EDITOR_TABS.map((tab) => {
+        const selected = activeEditor === tab.id;
+        return (
+          <button
+            key={tab.id}
+            className={selected ? "active" : ""}
+            type="button"
+            role="tab"
+            aria-selected={selected}
+            title={tab.title}
+            onClick={() => onSelectEditor?.(tab.id)}
+          >
+            {tab.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -89,7 +184,7 @@ function ScriptAuthoringPanel({
     () => project?.triggers.filter((trigger) => triggerVisibleForEditor(project, trigger, activeEditor)) ?? [],
     [project, activeEditor]
   );
-  const ed3Evidence = useMemo(() => ed3EvidenceRecords(project), [project]);
+  const ed3Evidence = useMemo(() => activeEditor === "ed3-evidence" ? ed3EvidenceRecords(project) : [], [project, activeEditor]);
   const projectMaps = project?.maps ?? [];
   const [draft, setDraft] = useState<Record<string, { rawCode: number; id: number }>>({});
   const [selectedSlot, setSelectedSlot] = useState(0);
@@ -118,24 +213,30 @@ function ScriptAuthoringPanel({
   }, [selectedEntity?.id, inventoryFilter, scriptQuery, scripts.length]);
   const selectedMap = projectMaps.find((map) => map.id === newActionPoint.mapId) ?? projectMaps[0] ?? null;
   const canScopeToMap = Boolean(selectedMap && activeEditor !== "macros" && activeEditor !== "global-macros");
-  const triggerDiagnosticsById = useMemo(() => {
+  const diagnosticDependencyKey = useMemo(() => project ? scriptDiagnosticDependencyKey(project, catalog) : "", [project, catalog]);
+  const fullWarningDiagnosticsById = useMemo(() => {
     const map = new Map<string, ScriptDiagnostic[]>();
-    if (!project) return map;
+    if (!project || inventoryFilter !== "warnings") return map;
     for (const trigger of scripts) {
-      map.set(trigger.id, validateScriptTrigger(project, trigger, catalog));
+      const diagnostics = cachedValidateScriptTrigger(project, trigger, catalog, diagnosticDependencyKey);
+      if (diagnostics.length > 0) map.set(trigger.id, diagnostics);
     }
     return map;
-  }, [project, scripts, catalog]);
+  }, [project, scripts, catalog, diagnosticDependencyKey, inventoryFilter]);
   const inventoryCounts = useMemo(() => {
-    const counts = new Map<ScriptInventoryFilter, number>();
+    const counts = new Map<ScriptInventoryFilter, number | null>();
     for (const filter of SCRIPT_INVENTORY_FILTERS) {
-      counts.set(filter.id, filterScriptsByInventory(project, scripts, filter.id, selectedMap, canScopeToMap, triggerDiagnosticsById).length);
+      if (filter.id === "warnings" && inventoryFilter !== "warnings") {
+        counts.set(filter.id, null);
+        continue;
+      }
+      counts.set(filter.id, filterScriptsByInventory(project, scripts, filter.id, selectedMap, canScopeToMap, fullWarningDiagnosticsById).length);
     }
     return counts;
-  }, [project, scripts, selectedMap, canScopeToMap, triggerDiagnosticsById]);
+  }, [project, scripts, selectedMap, canScopeToMap, fullWarningDiagnosticsById, inventoryFilter]);
   const scopedScripts = useMemo(
-    () => filterScriptsByInventory(project, scripts, inventoryFilter, selectedMap, canScopeToMap, triggerDiagnosticsById),
-    [project, scripts, inventoryFilter, selectedMap, canScopeToMap, triggerDiagnosticsById]
+    () => filterScriptsByInventory(project, scripts, inventoryFilter, selectedMap, canScopeToMap, fullWarningDiagnosticsById),
+    [project, scripts, inventoryFilter, selectedMap, canScopeToMap, fullWarningDiagnosticsById]
   );
   const filteredScripts = useMemo(
     () => project ? scopedScripts.filter((trigger) => scriptMatchesQuery(project, trigger, scriptQuery)) : [],
@@ -214,13 +315,22 @@ function ScriptAuthoringPanel({
       benchmarkStartedRef.current = false;
     };
   }, [filteredScripts, onSelectEntity, setDetailSurface]);
-  if (!project) return null;
-  const selectedMapCapacity = selectedMap ? actionPointCapacity(project.triggers, selectedMap.levelType, selectedMap.index) : null;
   const selectedTrigger =
     scripts.find((trigger) => triggerMatchesSelection(trigger, selectedEntity?.id ?? "")) ??
     filteredScripts[0] ??
     scripts[0] ??
     null;
+  const visibleScripts = useMemo(() => filteredScripts.slice(0, 240), [filteredScripts]);
+  const visibleDiagnosticsById = useMemo(() => {
+    const map = new Map(fullWarningDiagnosticsById);
+    if (!project) return map;
+    if (selectedTrigger && !map.has(selectedTrigger.id)) {
+      map.set(selectedTrigger.id, cachedValidateScriptTrigger(project, selectedTrigger, catalog, diagnosticDependencyKey));
+    }
+    return map;
+  }, [project, selectedTrigger, catalog, diagnosticDependencyKey, fullWarningDiagnosticsById]);
+  if (!project) return null;
+  const selectedMapCapacity = selectedMap ? actionPointCapacity(project.triggers, selectedMap.levelType, selectedMap.index) : null;
   const slotDraft = (slot: number, action?: Action) => draft[`${selectedTrigger?.id}:${slot}`] ?? { rawCode: action?.rawCode ?? 0, id: action?.id ?? 0 };
   const selectedAction = selectedTrigger?.actions.find((candidate) => candidate.slot === selectedSlot);
   const selectedKey = `${selectedTrigger?.id}:${selectedSlot}`;
@@ -249,7 +359,7 @@ function ScriptAuthoringPanel({
         summary?: string;
       }
     | undefined;
-  const triggerDiagnostics = selectedTrigger ? triggerDiagnosticsById.get(selectedTrigger.id) ?? [] : [];
+  const triggerDiagnostics = selectedTrigger ? visibleDiagnosticsById.get(selectedTrigger.id) ?? [] : [];
   const selectedSlotDiagnostics = selectedTrigger
     ? validateActionDraft(project, selectedTrigger, selectedSlot, selectedDraft.rawCode, selectedDraft.id, catalog)
     : [];
@@ -391,8 +501,8 @@ function ScriptAuthoringPanel({
               ))}
             </select>
           </label>
-          <NumberField label="X" value={newActionPoint.x} onCommit={(x) => setNewActionPoint({ ...newActionPoint, x: clampRealmzCoordinate(x) })} />
-          <NumberField label="Y" value={newActionPoint.y} onCommit={(y) => setNewActionPoint({ ...newActionPoint, y: clampRealmzCoordinate(y) })} />
+          <NumberField label="X" value={newActionPoint.x} onCommit={(x) => setNewActionPoint({ ...newActionPoint, x: clampRealmzCoordinate(x) })} compact />
+          <NumberField label="Y" value={newActionPoint.y} onCommit={(y) => setNewActionPoint({ ...newActionPoint, y: clampRealmzCoordinate(y) })} compact />
           <button
             type="button"
             className="btn btn-primary btn-xs"
@@ -445,20 +555,20 @@ function ScriptAuthoringPanel({
                   onClick={() => setInventoryFilter(filter.id)}
                 >
                   <span>{filter.label}</span>
-                  <b>{inventoryCounts.get(filter.id) ?? 0}</b>
+                  <b>{inventoryCounts.get(filter.id) == null ? "—" : inventoryCounts.get(filter.id)}</b>
                 </button>
               ))}
             </div>
           </div>
           <ScrollArea className="realmz-script-list" aria-label="Triggers and macros">
-            {filteredScripts.slice(0, 240).map((trigger) => (
+            {visibleScripts.map((trigger) => (
               <ScriptListItem
                 key={trigger.id}
                 project={project}
                 trigger={trigger}
                 selected={trigger.id === selectedTrigger?.id}
                 buttonRef={trigger.id === selectedTrigger?.id ? selectedScriptButtonRef : undefined}
-                issues={triggerDiagnosticsById.get(trigger.id) ?? []}
+                issues={visibleDiagnosticsById.get(trigger.id) ?? []}
                 onSelectEntity={onSelectEntity}
               />
             ))}

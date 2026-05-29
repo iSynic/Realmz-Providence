@@ -163,7 +163,24 @@
 
 
 .script-create-strip {
-  grid-template-columns: minmax(160px, 1fr) 70px 70px auto;
+  grid-template-columns: minmax(220px, 520px) 52px 52px max-content;
+  justify-content: start;
+}
+
+.script-create-strip > .btn {
+  justify-self: start;
+  min-width: 0;
+  white-space: nowrap;
+  justify-content: center;
+}
+
+.script-create-strip .script-number-field {
+  min-width: 0;
+}
+
+.script-create-strip .script-number-field input {
+  width: 100%;
+  min-width: 0;
 }
 
 
@@ -2042,6 +2059,17 @@
   }
 }
 
+@media (max-width: 1220px) {
+  .script-create-strip {
+    grid-template-columns: minmax(180px, 1fr) minmax(58px, 72px) minmax(58px, 72px);
+  }
+
+  .script-create-strip > .btn {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+}
+
 
 
 @media (max-width: 1700px) {
@@ -2758,6 +2786,38 @@
   display: block;
   overflow: auto;
   padding: 10px;
+}
+
+.script-editor-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #21313f;
+}
+
+.script-editor-tabs button {
+  min-height: 30px;
+  border: 1px solid #2b3a49;
+  border-radius: 5px;
+  background: #0d151d;
+  color: #b9cee2;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.script-editor-tabs button:hover {
+  border-color: #3d6486;
+  color: #e0f0ff;
+}
+
+.script-editor-tabs button.active {
+  border-color: #2b8fd8;
+  background: #12304a;
+  color: #ffffff;
 }
 
 .subsection-label {

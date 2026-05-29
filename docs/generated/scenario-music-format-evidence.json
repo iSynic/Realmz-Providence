@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-28T00:00:00.000-05:00",
+  "target": "scenario-music-and-format-files",
+  "classification": "preserve-only-with-runtime-music-support",
+  "files": [
+    {
+      "name": "Custom 1 Music",
+      "role": "scenario-local custom music playlist",
+      "playlist": 12,
+      "frequency": "13/87 visible byte-roundtrip roots",
+      "sourceAnchors": [
+        "F:\\Realmz\\src\\MusicManager.cpp:45",
+        "F:\\Realmz\\src\\MusicManager.cpp:118"
+      ],
+      "editorPolicy": "Scenario asset that ships with the scenario; preview/import is future work."
+    },
+    {
+      "name": "Custom 2 Music",
+      "role": "scenario-local custom music playlist",
+      "playlist": 13,
+      "frequency": "9/87 visible byte-roundtrip roots",
+      "sourceAnchors": [
+        "F:\\Realmz\\src\\MusicManager.cpp:46",
+        "F:\\Realmz\\src\\MusicManager.cpp:118"
+      ],
+      "editorPolicy": "Scenario asset that ships with the scenario; preview/import is future work."
+    },
+    {
+      "name": "Custom 3 Music",
+      "role": "scenario-local custom music playlist",
+      "playlist": 14,
+      "frequency": "6/87 visible byte-roundtrip roots",
+      "sourceAnchors": [
+        "F:\\Realmz\\src\\MusicManager.cpp:47",
+        "F:\\Realmz\\src\\MusicManager.cpp:118"
+      ],
+      "editorPolicy": "Scenario asset that ships with the scenario; preview/import is future work."
+    },
+    {
+      "name": "Custom 1",
+      "role": "legacy unsuffixed scenario-local custom music/module file",
+      "playlist": null,
+      "frequency": "3/87 visible byte-roundtrip roots",
+      "sourceAnchors": [
+        "F:\\Realmz\\src\\MusicManager.cpp:62",
+        "F:\\Realmz\\src\\MusicManager.cpp:134"
+      ],
+      "editorPolicy": "Known pass-through legacy custom music/module data fork; preserve exactly until Divinity or binary evidence proves lookup and replacement behavior."
+    },
+    {
+      "name": "Format",
+      "role": "zero-byte compatibility marker",
+      "frequency": "47/87 visible byte-roundtrip roots",
+      "sourceAnchors": [],
+      "editorPolicy": "Preserve exactly; hide from normal authoring UI unless Advanced details are open."
+    }
+  ],
+  "runtimeNotes": [
+    "Realmz custom music playlists are scenario-local files named Custom 1 Music through Custom 9 Music.",
+    "The modern Realmz source parses PlayerPRO MADG and ResourceDASM-supported module files.",
+    "Custom music files are not short snd sound effects and should not be mixed with script/rules sound pickers.",
+    "Legacy unsuffixed Custom N files are preserved as compatibility data; modern Realmz source looks for Custom N Music filenames."
+  ],
+  "writerGate": [
+    "fixture-backed import/replace path for module files",
+    "preview parser error handling",
+    "Divinity/manual evidence for Format file creation/removal behavior"
+  ]
+}

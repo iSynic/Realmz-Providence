@@ -318,7 +318,7 @@ export function App() {
       onExport={exportProject}
       onSelectDomain={(domain) => {
         dispatch({ type: "setActiveDomain", domain });
-        dispatch({ type: "setActiveEditor", editor: "domain" });
+        dispatch({ type: "setActiveEditor", editor: domain === "scripts" ? "action-points" : "domain" });
       }}
       onSelectEditor={(editor) => dispatch({ type: "setActiveEditor", editor })}
     >
@@ -358,6 +358,7 @@ export function App() {
         }}
         onSelectCell={(cell) => dispatch({ type: "setSelectedCell", cell })}
         onSelectEntity={selectEntity}
+        onSelectEditor={(editor) => dispatch({ type: "setActiveEditor", editor })}
         onSetTool={(tool) => dispatch({ type: "setTool", tool })}
         onSetZoom={(zoom) => dispatch({ type: "setZoom", zoom })}
         onSetSmoothTiles={(value) => dispatch({ type: "setSmoothTiles", value })}

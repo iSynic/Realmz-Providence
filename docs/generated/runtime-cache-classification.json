@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-28T00:00:00.000-05:00",
+  "source": "Seeded from Realmz setupnewgame/menuinit/fileprep/loadsavedgame source anchors.",
+  "policy": "Runtime caches are inspectable imported state, not default Providence authoring targets, when a separate source file exists.",
+  "entries": [
+    {
+      "cache": "CL",
+      "sourceFiles": ["Data DD", "Data LD", "Data RD"],
+      "classification": "runtime-cache-not-authoring-source",
+      "realmzAnchors": ["F:\\Realmz\\src\\realmz_orig\\setupnewgame.c:76", "F:\\Realmz\\src\\realmz_orig\\setupnewgame.c:79", "F:\\Realmz\\src\\realmz_orig\\setupnewgame.c:82"],
+      "editorPolicy": "Inspect outdoor runtime state only; author Data DD/Data LD/Data RD."
+    },
+    {
+      "cache": "CD",
+      "sourceFiles": ["Data DDD", "Data DL", "Data RDD"],
+      "classification": "runtime-cache-not-authoring-source",
+      "realmzAnchors": ["F:\\Realmz\\src\\realmz_orig\\setupnewgame.c:104", "F:\\Realmz\\src\\realmz_orig\\setupnewgame.c:107", "F:\\Realmz\\src\\realmz_orig\\setupnewgame.c:110"],
+      "editorPolicy": "Inspect dungeon runtime state only; author Data DDD/Data DL/Data RDD."
+    },
+    {
+      "cache": "CS",
+      "sourceFiles": ["Data SD"],
+      "classification": "runtime-cache-not-authoring-source",
+      "realmzAnchors": ["F:\\Realmz\\src\\realmz_orig\\setupnewgame.c:128"],
+      "editorPolicy": "Shop runtime stock/state cache stored as :Data Files:CS; author Data SD and keep runtime mutation notes separate. Do not confuse this runtime cache with scenario-file Data CS, which is security/code-segment backup data."
+    },
+    {
+      "cache": "scenario Data CS",
+      "sourceFiles": ["scenario marker/security code segments"],
+      "classification": "understood-runtime-writer-gated",
+      "realmzAnchors": ["F:\\Realmz\\src\\realmz_orig\\main.c:2031", "F:\\Realmz\\src\\realmz_orig\\loadsavedgame.c:772"],
+      "editorPolicy": "Scenario registration/security support file; preserve and inspect under Security/Registration until Divinity writer behavior is proven."
+    },
+    {
+      "cache": "CT",
+      "sourceFiles": ["Data TD2"],
+      "classification": "runtime-cache-not-authoring-source",
+      "realmzAnchors": ["F:\\Realmz\\src\\realmz_orig\\setupnewgame.c:140"],
+      "editorPolicy": "Rogue/thief runtime cache; author Data TD2."
+    },
+    {
+      "cache": "CTD3",
+      "sourceFiles": ["Data TD3"],
+      "classification": "runtime-cache-not-authoring-source",
+      "realmzAnchors": ["F:\\Realmz\\src\\realmz_orig\\setupnewgame.c:152"],
+      "editorPolicy": "Timed encounter runtime cache; author Data TD3."
+    },
+    {
+      "cache": "CE",
+      "sourceFiles": ["Data ED"],
+      "classification": "runtime-cache-not-authoring-source",
+      "realmzAnchors": ["F:\\Realmz\\src\\realmz_orig\\setupnewgame.c:164"],
+      "editorPolicy": "Simple encounter runtime cache; author Data ED."
+    },
+    {
+      "cache": "CE2",
+      "sourceFiles": ["Data ED2"],
+      "classification": "runtime-cache-not-authoring-source",
+      "realmzAnchors": ["F:\\Realmz\\src\\realmz_orig\\setupnewgame.c:184"],
+      "editorPolicy": "Complex encounter runtime cache; author Data ED2."
+    },
+    {
+      "cache": "Data MENU",
+      "sourceFiles": ["Data MD"],
+      "classification": "runtime-cache-not-authoring-source",
+      "realmzAnchors": ["F:\\Realmz\\src\\realmz_orig\\menuinit.c:388", "F:\\Realmz\\src\\realmz_orig\\menuinit.c:408", "F:\\Realmz\\src\\realmz_orig\\menuinit.c:498"],
+      "editorPolicy": "Generated/effective monster menu evidence; author Data MD."
+    },
+    {
+      "cache": "Data H1",
+      "sourceFiles": ["runtime save state"],
+      "classification": "runtime-save-state",
+      "realmzAnchors": ["F:\\Realmz\\src\\realmz_orig\\fileprep.c:178", "F:\\Realmz\\src\\realmz_orig\\loadsavedgame.c:575", "F:\\Realmz\\src\\realmz_orig\\save-direction-order.c:147"],
+      "editorPolicy": "Saved-game state; not a blank-scenario authoring target."
+    }
+  ]
+}

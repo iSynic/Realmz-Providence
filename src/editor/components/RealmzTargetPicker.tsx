@@ -42,6 +42,9 @@ export function TargetPicker({
   if (!config) return null;
   const filteredTargets = filterTargetOptions(targets, query);
   const selected = targets.find((target) => target.value === value) ?? null;
+  const visibleTargets = selected && !filteredTargets.some((target) => target.key === selected.key)
+    ? [selected, ...filteredTargets.slice(0, 159)]
+    : filteredTargets.slice(0, 160);
   const hasCurrentValue = Number.isFinite(value) && value !== 0 && !selected;
   const canCreateTarget = Boolean(config.recordType && onCreate && (!selected || hasCurrentValue || value === 0));
   const detail = selected ? [selected.detail, selected.summary, selected.compatibility, selected.sourceState].filter(Boolean).join(" | ") : config.hint;
@@ -65,7 +68,7 @@ export function TargetPicker({
         >
           <option value="">Choose {config.label.toLowerCase()}</option>
           {hasCurrentValue && <option value={`raw:${value}`}>Current raw ID {value}</option>}
-          {filteredTargets.map((target) => (
+          {visibleTargets.map((target) => (
             <option key={target.key} value={target.value}>
               {target.label}
             </option>
@@ -89,6 +92,7 @@ export function TargetPicker({
       )}
       {targets.length === 0 && <span className="target-picker-empty">No authorable targets are available yet.</span>}
       {targets.length > 0 && filteredTargets.length === 0 && <span className="target-picker-empty">No targets match this search.</span>}
+      {filteredTargets.length > visibleTargets.length && <span className="target-picker-empty">{filteredTargets.length - visibleTargets.length} more target(s); search to narrow.</span>}
     </div>
   );
 }

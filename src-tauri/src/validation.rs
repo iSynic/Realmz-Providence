@@ -1,5 +1,4 @@
 use crate::project::*;
-use crate::realmz::SUPPORTED_WRITE_FILES;
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -12,7 +11,6 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
     const SCENARIO_PICTURE_MAX_ID: i16 = 30128;
     const SCENARIO_SOUND_MIN_ID: i16 = 200;
     const SCENARIO_SOUND_MAX_ID: i16 = 500;
-    let supported: BTreeSet<&str> = SUPPORTED_WRITE_FILES.iter().copied().collect();
     let message_ids = project
         .messages
         .iter()
@@ -635,17 +633,19 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                     asset.label, asset.resource_type
                 ));
             }
-            if asset.resource_id < SCENARIO_SOUND_MIN_ID || asset.resource_id > SCENARIO_SOUND_MAX_ID {
+            if asset.resource_id < SCENARIO_SOUND_MIN_ID
+                || asset.resource_id > SCENARIO_SOUND_MAX_ID
+            {
                 warnings.push(format!(
                     "{} uses snd id {}; custom scenario sounds normally use {}-{}.",
-                    asset.label,
-                    asset.resource_id,
-                    SCENARIO_SOUND_MIN_ID,
-                    SCENARIO_SOUND_MAX_ID
+                    asset.label, asset.resource_id, SCENARIO_SOUND_MIN_ID, SCENARIO_SOUND_MAX_ID
                 ));
             }
         }
-        if matches!(asset.kind, ManagedAssetKind::Icon | ManagedAssetKind::SpecialLandTile) {
+        if matches!(
+            asset.kind,
+            ManagedAssetKind::Icon | ManagedAssetKind::SpecialLandTile
+        ) {
             if asset.resource_type != "cicn" {
                 errors.push(format!(
                     "{} is an icon-style asset but targets {}; icon-style assets must export as cicn resources.",
@@ -747,7 +747,7 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
     }
     validate_rules_overrides(project, &mut errors, &mut warnings);
     for file in &project.source.files {
-        if supported.contains(file.name.as_str()) {
+        if matches!(file.role, SourceFileRole::SupportedBinary) {
             exportable_files.push(file.name.clone());
         } else {
             pass_through_files.push(file.name.clone());

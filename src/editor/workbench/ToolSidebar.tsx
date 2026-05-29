@@ -22,6 +22,7 @@ export function ToolSidebar({
   const tools = domain.tools.filter((tool) => tool.workbench === "both" || tool.workbench === activeWorkbench);
   if (tools.length === 0) return null;
   if (activeDomain === "assets") return null;
+  if (activeDomain === "scripts" && activeWorkbench === "project") return null;
   if (activeDomain === "rules" && activeWorkbench === "project") return null;
   if (activeDomain === "text" && activeWorkbench === "project") return null;
   if (activeDomain === "scenario" && activeWorkbench === "project") {

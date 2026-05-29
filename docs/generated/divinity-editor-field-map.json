@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-28T00:00:00.000-05:00",
+  "source": "Seeded from Divinity manual line references and existing evidence cards.",
+  "screens": [
+    {
+      "id": "action-point-hub",
+      "manualLines": [784, 807, 2858, 2887, 2891, 2893],
+      "divinityNames": ["Action Points", "GOSUBs", "Extra Action Points", "Hub", "Clear AP", "Erase AP"],
+      "realmzContainers": ["Data DD", "Data DDD", "Data ED3", "Data EDCD", "Global"],
+      "providencePolicy": "Use Action Point Hub as the normal UI. Storage names are Advanced Details only."
+    },
+    {
+      "id": "random-rectangles",
+      "manualLines": [195, 306, 333, 351, 363, 365, 488, 500, 506],
+      "divinityNames": ["Random Rectangles", "Times in 10,000", "Battle Range", "Extra Action Points", "This Rect Only"],
+      "realmzContainers": ["Data RD", "Data RDD", "Data ED3"],
+      "providencePolicy": "Label as Random Encounters/Random Rectangles depending context; preserve negative extra AP percent semantics."
+    },
+    {
+      "id": "strings",
+      "manualLines": [5748, 5769, 5778],
+      "divinityNames": ["Strings", "String", "Sound", "Find First Occurrence", "Find Next Occurrence", "Export Text", "Import Text"],
+      "realmzContainers": ["Data SD2", "Data OD", "TEXT", "STR#", "styl"],
+      "providencePolicy": "Edit Data SD2 and eventually Data OD. String Sound remains unresolved and hidden until proven."
+    },
+    {
+      "id": "edit-land-tiles",
+      "manualLines": [4526, 4852, 4864, 4872, 5017, 5023],
+      "divinityNames": ["Edit Land Tiles", "Sound", "Time/Move", "Solid Type", "Shore", "Path", "Blocks Line of Sight", "Need Fly/Float", "Special Type", "Combat Map"],
+      "realmzContainers": ["landlook * BD", "Data Solids", "cicn", "PICT"],
+      "providencePolicy": "Built-in landlooks are read-only; scenario-custom landlook writing is gated."
+    },
+    {
+      "id": "dungeon-editor",
+      "manualLines": [4087, 4094, 4124, 4157, 5959],
+      "divinityNames": ["Dungeon Editor", "Stairs", "Secret Action Point"],
+      "realmzContainers": ["Data DL", "Data DDD", "Data RDD"],
+      "providencePolicy": "Expose named primitives only after bit/writer fixtures."
+    },
+    {
+      "id": "picture-sound-assets",
+      "manualLines": [4632, 4700, 4704, 4993, 5017],
+      "divinityNames": ["Picture Editor", "Adding Pictures & Sounds", "Special Land Tiles"],
+      "realmzContainers": ["PICT", "cicn", "snd "],
+      "providencePolicy": "Scenario-owned assets ship with scenario; Realmz/Divinity libraries are reference-only unless imported."
+    },
+    {
+      "id": "spell-editor",
+      "manualLines": [5062, 5104, 5213],
+      "divinityNames": ["Spell Editor", "Spell Casting / Resolution Sounds", "Custom Spells"],
+      "realmzContainers": ["Data S", "Data Spell", "cicn", "snd "],
+      "providencePolicy": "Browse built-ins, edit scenario custom spell class data, and use shared resolver for icons/sounds."
+    },
+    {
+      "id": "race-editor",
+      "manualLines": [5259],
+      "divinityNames": ["Race Editor", "Data Race"],
+      "realmzContainers": ["Data Race", "cicn"],
+      "providencePolicy": "Built-in race reference plus scenario override writer after fixtures."
+    },
+    {
+      "id": "caste-editor",
+      "manualLines": [5528],
+      "divinityNames": ["Caste Editor", "Data Caste"],
+      "realmzContainers": ["Data Caste", "cicn"],
+      "providencePolicy": "Built-in caste reference plus scenario override writer after fixtures."
+    }
+  ]
+}
