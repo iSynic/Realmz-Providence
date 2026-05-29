@@ -1,0 +1,567 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-05-29T16:50:46.395Z",
+  "summary": {
+    "scenarioRoots": 87,
+    "fileFamilies": 88,
+    "ignoredNonScenarioFiles": 1,
+    "editableContainers": 62,
+    "preservedContainers": 23,
+    "runtimeStateContainers": 1,
+    "needsFormatWork": 0,
+    "ed3": {
+      "status": "Extra Action Point bytes structurally decoded; reachability is source-audited.",
+      "recordBytes": 40,
+      "runtimeCallsites": 36,
+      "evidence": "docs/generated/extra-ap-reachability-source-map.json"
+    },
+    "edcd": {
+      "status": "Action parameter rows structurally decoded; opcode-specific labels come from the crosswalk.",
+      "edcdBackedOpcodes": 70,
+      "fieldComparisonGaps": 27,
+      "evidence": "docs/generated/opcode-edcd-crosswalk.json"
+    }
+  },
+  "statusLabels": {
+    "decoded-writable": "Editable",
+    "decoded-readonly": "Read-only",
+    "preserved-known": "Preserved",
+    "preserved-unknown": "Preserved",
+    "runtime-cache": "Runtime state",
+    "ignored-non-scenario": "Ignored",
+    "unknown-active-risk": "Needs format work",
+    "understood-runtime-writer-gated": "Needs writer proof",
+    "resource-packaging-needed": "Needs packaging work",
+    "divinity-labels-needed": "Needs editor labels"
+  },
+  "topRisks": [
+    {
+      "id": "data-ed3-reachability",
+      "family": "Data ED3",
+      "priority": 1,
+      "status": "Needs writer proof",
+      "summary": "Realmz source now maps Data ED3 to 40-byte Extra Action Point script rows loaded by loaddoor2(id), with callable roots for direct opcode 39, EDCD branch fields, opcode 7 action-data patching source rows, Global hooks, battle macros, monster death macros, timed encounters, random rectangles, hidden encounter button paths, and door items that store an Extra Action Point row in item sp5. Providence's semantic import now promotes EDCD branch link kinds, opcode 7 copy-source rows, negative battle macros, random rectangle doors, timed doors, and door-item macro links; remaining work is default UI terminology, validation polish, and safe fixed-row authoring.",
+      "evidenceCard": "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md"
+    },
+    {
+      "id": "data-edcd-rare-shapes",
+      "family": "Data EDCD",
+      "priority": 2,
+      "status": "Needs writer proof",
+      "summary": "Realmz source now anchors the top-level loadextracode opcode table, including opcode 39 as direct ED3, opcode 7 as action-data patching that loads an Extra Action Point source row before copying its script slots, opcode 8 as same-map Action Point copy rather than an EDCD or Extra AP call, the added shapes for opcodes 19/40/51/55/64/106, opcode 13 as Action Point percent mutation rather than an Extra AP call, opcode 92 as a two-row random-rectangle shape mutation using ID and ID+1, opcode 122 as message+sound fumble parameters with preserved unused fields, opcode 37 as movement/heading rather than sound/message, opcode-specific battle fields for 2/48/56/107, opcode 2's dual-use sound-or-revived-loss-Extra-AP field, absolute-value message targets for damage/heal opcodes 15/16, source-backed sound fields for condition/spawn opcodes 43/124, signed count/test fields for opcodes 30/65/74, and opcode 86 split from opcode 87 because its branch mode lives in a different EDCD field. The one-based/zero-based/force branch-mode conventions now decide whether EDCD targets are Extra AP, simple encounters, complex encounters, or messages.",
+      "evidenceCard": "docs/format-evidence-cards/edcd-opcode-source-map.md"
+    },
+    {
+      "id": "data-od-and-string-sound",
+      "family": "Data OD / Strings Sound",
+      "priority": 3,
+      "status": "Needs writer proof",
+      "summary": "Realmz source proves Data SD2 and Data OD text storage, and Providence parses/writes both with raw-byte preservation. The Divinity Strings Sound field has no central Realmz message-storage consumer; sounds belong to caller records unless binary evidence proves a separate Divinity-only write path.",
+      "evidenceCard": "docs/format-evidence-cards/strings-data-od-string-sound.md"
+    },
+    {
+      "id": "custom-landlook-writers",
+      "family": "Custom landlook files / mapstats",
+      "priority": 4,
+      "status": "Needs writer proof",
+      "summary": "Runtime mapstats, combat build grids, base tile/base scale, and the 60-byte Divinity tile-range tail are now parsed, but custom landlook file/resource writing must be fixture-proven before editing built land tile metadata.",
+      "evidenceCard": "docs/format-evidence-cards/custom-landlook-writers.md"
+    },
+    {
+      "id": "dungeon-writer-safety",
+      "family": "Data DL / Data DDD / Data RDD",
+      "priority": 5,
+      "status": "Needs writer proof",
+      "summary": "Dungeon bit masks are source-backed enough to separate geometry, notes, Action Point trigger markers, runtime reveal/hidden state, and combat-map conversion; safe named authoring still requires primitive-level writer fixtures.",
+      "evidenceCard": "docs/format-evidence-cards/dungeon-editor-writer-safety.md"
+    },
+    {
+      "id": "resource-taxonomy",
+      "family": "Scenario resource fork",
+      "priority": 6,
+      "status": "Needs packaging work",
+      "summary": "Scenario-owned assets, Realmz built-ins, Divinity references, and UI-only artwork must not be mixed in pickers or export scope.",
+      "evidenceCard": "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+    },
+    {
+      "id": "custom-scenario-music",
+      "family": "Custom N / Custom N Music",
+      "priority": 11,
+      "status": "Needs packaging work",
+      "summary": "Realmz source supports scenario-local custom music playlists as module files. Providence preserves modern Custom N Music files and observed legacy unsuffixed Custom N files today, but Assets needs a distinct music-module path separate from snd sound effects.",
+      "evidenceCard": "docs/format-evidence-cards/scenario-music-and-format-files.md"
+    },
+    {
+      "id": "format-marker-file",
+      "family": "Format",
+      "priority": 12,
+      "status": "Needs format work",
+      "summary": "Format appears as a zero-byte file in many Divinity-era scenario folders. No Realmz source consumer is known yet, so Providence should preserve it exactly and keep it out of normal UI.",
+      "evidenceCard": "docs/format-evidence-cards/scenario-music-and-format-files.md"
+    }
+  ],
+  "containers": [
+    {
+      "container": "Data Solids",
+      "label": "Special tile solidity table",
+      "status": "Read-only",
+      "coverageStatus": "decoded-readonly",
+      "count": 35,
+      "sizes": [
+        1024
+      ],
+      "policy": "Decoded for inspection and validation; editing is hidden until writer coverage exists."
+    },
+    {
+      "container": "Data MENU",
+      "label": "Generated monster menu cache",
+      "status": "Runtime state",
+      "coverageStatus": "runtime-cache",
+      "count": 23,
+      "sizes": [
+        502
+      ],
+      "policy": "Runtime/generated state. Providence inspects it only when useful and writes the authored source file instead."
+    },
+    {
+      "container": "Scenario",
+      "label": "Resource fork",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 35,
+      "sizes": [
+        600
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Data CS",
+      "label": "Scenario security backup",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 33,
+      "sizes": [
+        316
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Scenario.rsrc",
+      "label": "Resource fork",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 32,
+      "sizes": [
+        100210,
+        100293,
+        102459,
+        102541,
+        104934,
+        113707,
+        113789,
+        113861,
+        198724,
+        198806,
+        232475,
+        232557,
+        235269,
+        235351,
+        268822,
+        326898,
+        326980,
+        422083,
+        436249,
+        457580,
+        457662,
+        481035,
+        481117,
+        516703,
+        516785,
+        539660,
+        605322,
+        778038,
+        809118,
+        881066,
+        908646,
+        1161708,
+        1448682,
+        1448764,
+        1835947,
+        1842294,
+        2857546,
+        2857628,
+        3641975,
+        3695646,
+        5168595,
+        5174545
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Icon_.rsrc",
+      "label": "Resource fork",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 26,
+      "sizes": [
+        368,
+        1784,
+        2688,
+        2752,
+        2888,
+        4098,
+        4280,
+        5072,
+        26209
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Format",
+      "label": "Scenario compatibility marker",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 19,
+      "sizes": [
+        0
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Data Spell.rsrc",
+      "label": "Resource fork",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 16,
+      "sizes": [
+        995,
+        1202,
+        2219,
+        2301
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Data Custom 1 BD",
+      "label": "Custom landlook mapstats",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 13,
+      "sizes": [
+        8104
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Custom 1 Music",
+      "label": "Custom music",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 5,
+      "sizes": [
+        60224,
+        143039,
+        170360,
+        241158
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Data Custom 2 BD",
+      "label": "Custom landlook mapstats",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 5,
+      "sizes": [
+        8104
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Custom 2 Music",
+      "label": "Custom music",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 3,
+      "sizes": [
+        60224,
+        137064,
+        184221
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Data Custom 3 BD",
+      "label": "Custom landlook mapstats",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 3,
+      "sizes": [
+        8104
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Data Spell.rsf",
+      "label": "Resource fork",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 3,
+      "sizes": [
+        2177,
+        2219,
+        2221
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Scenario.rsf",
+      "label": "Resource fork",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 3,
+      "sizes": [
+        109039,
+        950639,
+        1312488
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Custom 3 Music",
+      "label": "Custom music",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 2,
+      "sizes": [
+        73480,
+        184108
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Data SD2.rsrc",
+      "label": "Resource fork",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 2,
+      "sizes": [
+        378,
+        460
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Custom 1",
+      "label": "Custom scenario media or landlook data",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 1,
+      "sizes": [
+        85324
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Custom 1.rsf",
+      "label": "Resource fork",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 1,
+      "sizes": [
+        7377
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Custom 3 Music.rsrc",
+      "label": "Resource fork",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 1,
+      "sizes": [
+        7377,
+        7459
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Data NI.rsrc",
+      "label": "Resource fork",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 1,
+      "sizes": [
+        286,
+        368
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Icon_",
+      "label": "Classic Mac resource companion",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 1,
+      "sizes": [
+        0
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Read Me (nice to know).rsf",
+      "label": "Resource fork",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 1,
+      "sizes": [
+        332
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Spires of Steel.rsrc",
+      "label": "Resource fork",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 1,
+      "sizes": [
+        368
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Trouble in the Sword Lands.rsrc",
+      "label": "Resource fork",
+      "status": "Preserved",
+      "coverageStatus": "preserved-known",
+      "count": 1,
+      "sizes": [
+        286,
+        368
+      ],
+      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Data BD",
+      "label": "Battle records",
+      "status": "Editable",
+      "coverageStatus": "decoded-writable",
+      "count": 35,
+      "sizes": [
+        1730,
+        3460,
+        7612,
+        8304,
+        12110,
+        18338,
+        19030,
+        26988,
+        32178,
+        45326,
+        47748,
+        55706,
+        59858,
+        67124,
+        73352,
+        75774,
+        79926,
+        81310,
+        84424,
+        86154,
+        88576,
+        88922,
+        99648,
+        103454,
+        123868,
+        124906,
+        128366,
+        172308,
+        173346,
+        186148,
+        257770
+      ],
+      "policy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data DD",
+      "label": "Land Action Point records",
+      "status": "Editable",
+      "coverageStatus": "decoded-writable",
+      "count": 35,
+      "sizes": [
+        4000,
+        8000,
+        12000,
+        16000,
+        20000,
+        24000,
+        28000,
+        32000,
+        36000,
+        40000,
+        44000,
+        48000,
+        52000,
+        56000,
+        60000,
+        80000,
+        84000
+      ],
+      "policy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data DDD",
+      "label": "Dungeon Action Point records",
+      "status": "Editable",
+      "coverageStatus": "decoded-writable",
+      "count": 35,
+      "sizes": [
+        4000,
+        8000,
+        12000,
+        16000,
+        20000
+      ],
+      "policy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data DES",
+      "label": "Monster description records",
+      "status": "Editable",
+      "coverageStatus": "decoded-writable",
+      "count": 35,
+      "sizes": [
+        50688,
+        55296,
+        56320,
+        57856,
+        58880,
+        61952,
+        74496,
+        75520,
+        76800,
+        77056,
+        84992,
+        86016,
+        121856
+      ],
+      "policy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data DL",
+      "label": "Dungeon tile fields",
+      "status": "Editable",
+      "coverageStatus": "decoded-writable",
+      "count": 35,
+      "sizes": [
+        16200,
+        32400,
+        48600,
+        64800,
+        81000
+      ],
+      "policy": "Editable fields may be written when the record-specific writer owns the byte range."
+    }
+  ]
+}

@@ -1,0 +1,4076 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-05-29T16:50:46.395Z",
+  "classifications": [
+    "decoded-writable",
+    "decoded-readonly",
+    "preserved-known",
+    "preserved-unknown",
+    "runtime-cache",
+    "ignored-non-scenario",
+    "unknown-active-risk"
+  ],
+  "sources": {
+    "fileInventory": "docs/generated/scenario-file-inventory.json",
+    "unknownBacklog": "docs/generated/unknown-data-backlog.json",
+    "runtimeCaches": "docs/generated/runtime-cache-classification.json",
+    "ed3Reachability": "docs/generated/extra-ap-reachability-source-map.json",
+    "edcdCrosswalk": "docs/generated/opcode-edcd-crosswalk.json"
+  },
+  "summary": {
+    "containerCount": 88,
+    "statusCounts": {
+      "decoded-writable": 62,
+      "decoded-readonly": 1,
+      "preserved-known": 23,
+      "runtime-cache": 1,
+      "ignored-non-scenario": 1
+    },
+    "statusObservedBytes": {
+      "decoded-writable": 944704931,
+      "decoded-readonly": 35840,
+      "preserved-known": 1374620116,
+      "runtime-cache": 11546,
+      "ignored-non-scenario": 1711
+    }
+  },
+  "containers": [
+    {
+      "container": "Data BD",
+      "authorFacingName": "Battle records",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        1730,
+        3460,
+        7612,
+        8304,
+        12110,
+        18338,
+        19030,
+        26988,
+        32178,
+        45326,
+        47748,
+        55706,
+        59858,
+        67124,
+        73352,
+        75774,
+        79926,
+        81310,
+        84424,
+        86154,
+        88576,
+        88922,
+        99648,
+        103454,
+        123868,
+        124906,
+        128366,
+        172308,
+        173346,
+        186148,
+        257770
+      ],
+      "recordBytes": 346,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 346,
+          "endExclusive": 346,
+          "status": "decoded-writable",
+          "field": "Battle records",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data DD",
+      "authorFacingName": "Land Action Point records",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        4000,
+        8000,
+        12000,
+        16000,
+        20000,
+        24000,
+        28000,
+        32000,
+        36000,
+        40000,
+        44000,
+        48000,
+        52000,
+        56000,
+        60000,
+        80000,
+        84000
+      ],
+      "recordBytes": 4000,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 4000,
+          "endExclusive": 4000,
+          "status": "decoded-writable",
+          "field": "Land Action Point records",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data DDD",
+      "authorFacingName": "Dungeon Action Point records",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        4000,
+        8000,
+        12000,
+        16000,
+        20000
+      ],
+      "recordBytes": 4000,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 4000,
+          "endExclusive": 4000,
+          "status": "decoded-writable",
+          "field": "Dungeon Action Point records",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data DES",
+      "authorFacingName": "Monster description records",
+      "coverageStatus": "decoded-writable",
+      "role": "pass-through",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        50688,
+        55296,
+        56320,
+        57856,
+        58880,
+        61952,
+        74496,
+        75520,
+        76800,
+        77056,
+        84992,
+        86016,
+        121856
+      ],
+      "recordBytes": 256,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 256,
+          "endExclusive": 256,
+          "status": "decoded-writable",
+          "field": "Monster description records",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data DL",
+      "authorFacingName": "Dungeon tile fields",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        16200,
+        32400,
+        48600,
+        64800,
+        81000
+      ],
+      "recordBytes": 16200,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 16200,
+          "endExclusive": 16200,
+          "status": "decoded-writable",
+          "field": "Dungeon tile fields",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data ED",
+      "authorFacingName": "Simple encounter records",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        1704,
+        2982,
+        3120,
+        3408,
+        3640,
+        4160,
+        4680,
+        5112,
+        5720,
+        5964,
+        7280,
+        7668,
+        7800,
+        8094,
+        8520,
+        8840,
+        9120,
+        9360,
+        9880,
+        10650,
+        14040,
+        14058,
+        23520,
+        24000,
+        57720,
+        61440,
+        64320
+      ],
+      "recordBytes": 426,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 426,
+          "endExclusive": 426,
+          "status": "decoded-writable",
+          "field": "Simple encounter records",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data ED2",
+      "authorFacingName": "Complex encounter records",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        1560,
+        2080,
+        3120,
+        4160,
+        5200,
+        5720,
+        6760,
+        7280,
+        8840,
+        9360,
+        10400,
+        11440,
+        13520,
+        16640,
+        17160,
+        18200,
+        18720,
+        19760,
+        22360,
+        24960,
+        43680,
+        44200,
+        47320,
+        47840,
+        48360
+      ],
+      "recordBytes": 520,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 520,
+          "endExclusive": 520,
+          "status": "decoded-writable",
+          "field": "Complex encounter records",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data ED3",
+      "authorFacingName": "Extra Action Point records",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        320,
+        440,
+        1360,
+        1520,
+        1560,
+        2040,
+        2120,
+        2840,
+        3000,
+        4320,
+        6760,
+        9120,
+        9160,
+        9640,
+        9960,
+        10120,
+        11480,
+        11520,
+        11640,
+        11680,
+        13240,
+        17520,
+        19200,
+        21240,
+        21680,
+        23000,
+        27560,
+        85120,
+        85240,
+        86040,
+        92760,
+        93360,
+        144000,
+        147840
+      ],
+      "recordBytes": 40,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 4,
+          "endExclusive": 4,
+          "status": "decoded-writable",
+          "field": "Extra Action Point ID",
+          "internal": "doorid"
+        },
+        {
+          "start": 4,
+          "length": 1,
+          "endExclusive": 5,
+          "status": "decoded-writable",
+          "field": "Level",
+          "internal": "landid"
+        },
+        {
+          "start": 5,
+          "length": 1,
+          "endExclusive": 6,
+          "status": "decoded-writable",
+          "field": "X",
+          "internal": "landx"
+        },
+        {
+          "start": 6,
+          "length": 1,
+          "endExclusive": 7,
+          "status": "decoded-writable",
+          "field": "Y",
+          "internal": "landy"
+        },
+        {
+          "start": 7,
+          "length": 1,
+          "endExclusive": 8,
+          "status": "decoded-writable",
+          "field": "Chance",
+          "internal": "percent"
+        },
+        {
+          "start": 8,
+          "length": 16,
+          "endExclusive": 24,
+          "status": "decoded-writable",
+          "field": "Action codes",
+          "internal": "code[8]"
+        },
+        {
+          "start": 24,
+          "length": 16,
+          "endExclusive": 40,
+          "status": "decoded-writable",
+          "field": "Action IDs",
+          "internal": "id[8]"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [
+        "docs/generated/extra-ap-reachability-source-map.json",
+        "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md"
+      ],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data EDCD",
+      "authorFacingName": "Action parameter rows",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        40,
+        350,
+        890,
+        1010,
+        1020,
+        1530,
+        2050,
+        3560,
+        3630,
+        5820,
+        6160,
+        6370,
+        6480,
+        8100,
+        10170,
+        12830,
+        14980,
+        15850,
+        16720,
+        23650,
+        23920,
+        37910,
+        37970,
+        49030,
+        52820,
+        145930,
+        160090,
+        160200,
+        215410,
+        259710,
+        644660,
+        644730,
+        648630
+      ],
+      "recordBytes": 10,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 2,
+          "endExclusive": 2,
+          "status": "decoded-writable",
+          "field": "Parameter 1",
+          "internal": "extracode[0]"
+        },
+        {
+          "start": 2,
+          "length": 2,
+          "endExclusive": 4,
+          "status": "decoded-writable",
+          "field": "Parameter 2",
+          "internal": "extracode[1]"
+        },
+        {
+          "start": 4,
+          "length": 2,
+          "endExclusive": 6,
+          "status": "decoded-writable",
+          "field": "Parameter 3",
+          "internal": "extracode[2]"
+        },
+        {
+          "start": 6,
+          "length": 2,
+          "endExclusive": 8,
+          "status": "decoded-writable",
+          "field": "Parameter 4",
+          "internal": "extracode[3]"
+        },
+        {
+          "start": 8,
+          "length": 2,
+          "endExclusive": 10,
+          "status": "decoded-writable",
+          "field": "Parameter 5",
+          "internal": "extracode[4]"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [
+        "docs/generated/opcode-edcd-crosswalk.json",
+        "docs/format-evidence-cards/edcd-opcode-source-map.md"
+      ],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data LD",
+      "authorFacingName": "Outdoor land tile fields",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        16200,
+        32400,
+        48600,
+        64800,
+        81000,
+        97200,
+        113400,
+        129600,
+        145800,
+        162000,
+        178200,
+        194400,
+        210600,
+        226800,
+        243000,
+        324000,
+        340200
+      ],
+      "recordBytes": 16200,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 16200,
+          "endExclusive": 16200,
+          "status": "decoded-writable",
+          "field": "Outdoor land tile fields",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data MD",
+      "authorFacingName": "Monster records",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        19950,
+        21630,
+        23940,
+        27930,
+        28560,
+        32550,
+        34230,
+        34650,
+        34860,
+        36120,
+        36540,
+        36960,
+        37170,
+        37380,
+        38010,
+        39060,
+        40740,
+        42420,
+        42840,
+        44100,
+        46200,
+        48300,
+        50820,
+        52710,
+        56910,
+        63210,
+        69720,
+        70560
+      ],
+      "recordBytes": 210,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 210,
+          "endExclusive": 210,
+          "status": "decoded-writable",
+          "field": "Monster records",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data MD-1",
+      "authorFacingName": "Monster set records",
+      "coverageStatus": "decoded-writable",
+      "role": "pass-through",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        20160,
+        21630,
+        23940,
+        27930,
+        28560,
+        28980,
+        34230,
+        34650,
+        34860,
+        35910,
+        36120,
+        36750,
+        36960,
+        37380,
+        37590,
+        38010,
+        39060,
+        39270,
+        40740,
+        42420,
+        42840,
+        44100,
+        46410,
+        50820,
+        56910,
+        63210,
+        69930,
+        70560
+      ],
+      "recordBytes": 210,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 210,
+          "endExclusive": 210,
+          "status": "decoded-writable",
+          "field": "Monster set records",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data MD1",
+      "authorFacingName": "Monster set records",
+      "coverageStatus": "decoded-writable",
+      "role": "pass-through",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        20160,
+        21630,
+        23940,
+        27930,
+        28560,
+        28770,
+        34230,
+        34650,
+        34860,
+        35910,
+        36120,
+        36750,
+        36960,
+        37380,
+        37590,
+        38010,
+        39060,
+        39270,
+        40740,
+        42420,
+        42840,
+        44100,
+        46410,
+        50820,
+        56910,
+        63210,
+        69930,
+        70560
+      ],
+      "recordBytes": 210,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 210,
+          "endExclusive": 210,
+          "status": "decoded-writable",
+          "field": "Monster set records",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data MD2",
+      "authorFacingName": "Map records",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        680,
+        1020,
+        1360,
+        2040,
+        2380,
+        3740,
+        4080,
+        5440,
+        6120,
+        6800,
+        7140,
+        8160
+      ],
+      "recordBytes": 340,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 340,
+          "endExclusive": 340,
+          "status": "decoded-writable",
+          "field": "Map records",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data NI",
+      "authorFacingName": "Scenario item records",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        20000
+      ],
+      "recordBytes": 100,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 100,
+          "endExclusive": 100,
+          "status": "decoded-writable",
+          "field": "Scenario item records",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data RD",
+      "authorFacingName": "Land random encounter settings",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        644,
+        1288,
+        1932,
+        2576,
+        3220,
+        3864,
+        4508,
+        5152,
+        5796,
+        6440,
+        7084,
+        7728,
+        8372,
+        9016,
+        9660,
+        12880,
+        13524
+      ],
+      "recordBytes": 644,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 644,
+          "endExclusive": 644,
+          "status": "decoded-writable",
+          "field": "Land random encounter settings",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data RDD",
+      "authorFacingName": "Dungeon random encounter settings",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        644,
+        1288,
+        1932,
+        2576,
+        3220
+      ],
+      "recordBytes": 644,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 644,
+          "endExclusive": 644,
+          "status": "decoded-writable",
+          "field": "Dungeon random encounter settings",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data SD",
+      "authorFacingName": "Shop records",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        15010,
+        18012,
+        27018,
+        30020,
+        33022,
+        36024,
+        45030,
+        54036,
+        63042,
+        66044,
+        81054,
+        90060,
+        111074,
+        114076,
+        117078
+      ],
+      "recordBytes": 3002,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 3002,
+          "endExclusive": 3002,
+          "status": "decoded-writable",
+          "field": "Shop records",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data SD2",
+      "authorFacingName": "Strings/messages",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        12800,
+        13053,
+        13056,
+        41216,
+        51456,
+        54016,
+        63488,
+        64256,
+        84992,
+        120576,
+        130560,
+        138752,
+        187904,
+        189184,
+        202472,
+        223232,
+        225280,
+        225536,
+        241664,
+        250112,
+        251648,
+        276736,
+        285952,
+        288000,
+        295936,
+        299776,
+        347392,
+        348416,
+        386304,
+        545536,
+        720128,
+        720640,
+        812544,
+        1044224,
+        1063680
+      ],
+      "recordBytes": 256,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 256,
+          "endExclusive": 256,
+          "status": "decoded-writable",
+          "field": "Strings/messages",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [
+        "docs/format-evidence-cards/strings-data-od-string-sound.md"
+      ],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data Solids",
+      "authorFacingName": "Special tile solidity table",
+      "coverageStatus": "decoded-readonly",
+      "role": "pass-through",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        1024
+      ],
+      "recordBytes": 1024,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 1024,
+          "endExclusive": 1024,
+          "status": "decoded-readonly",
+          "field": "Special tile solidity table",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Decoded for inspection and validation; editing is hidden until writer coverage exists."
+    },
+    {
+      "container": "Data TD",
+      "authorFacingName": "Treasure records",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        528,
+        624,
+        816,
+        1248,
+        1296,
+        1776,
+        2160,
+        2208,
+        2256,
+        2304,
+        2544,
+        2688,
+        2784,
+        3312,
+        3504,
+        3648,
+        3696,
+        3744,
+        3888,
+        3936,
+        4320,
+        4464,
+        4848,
+        4896,
+        6384,
+        6432,
+        6528,
+        7296,
+        9312,
+        11424
+      ],
+      "recordBytes": 48,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 48,
+          "endExclusive": 48,
+          "status": "decoded-writable",
+          "field": "Treasure records",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data TD2",
+      "authorFacingName": "Thief encounter records",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        118,
+        236,
+        354,
+        472,
+        590,
+        708,
+        944,
+        1062,
+        1298,
+        1534,
+        1652,
+        2360,
+        2714,
+        3186,
+        3540,
+        3776,
+        4366,
+        4484,
+        7198,
+        10266,
+        117410
+      ],
+      "recordBytes": 118,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 118,
+          "endExclusive": 118,
+          "status": "decoded-writable",
+          "field": "Thief encounter records",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data TD3",
+      "authorFacingName": "Timed encounter records",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        40,
+        120,
+        160,
+        240,
+        280,
+        320,
+        480,
+        520,
+        560,
+        800,
+        840,
+        960,
+        2080
+      ],
+      "recordBytes": 40,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 40,
+          "endExclusive": 40,
+          "status": "decoded-writable",
+          "field": "Timed encounter records",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Global",
+      "authorFacingName": "Global macro hooks",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        60
+      ],
+      "recordBytes": 60,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 60,
+          "endExclusive": 60,
+          "status": "decoded-writable",
+          "field": "Global macro hooks",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Scenario",
+      "authorFacingName": "Resource fork",
+      "coverageStatus": "preserved-known",
+      "role": "resource-fork",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        600
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "preserved-known",
+          "field": "Resource fork",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Data CS",
+      "authorFacingName": "Scenario security backup",
+      "coverageStatus": "preserved-known",
+      "role": "pass-through",
+      "observedScenarioCount": 33,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": 316,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 316,
+          "endExclusive": 316,
+          "status": "preserved-known",
+          "field": "Scenario security backup",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Data CI",
+      "authorFacingName": "Contact information",
+      "coverageStatus": "decoded-writable",
+      "role": "pass-through",
+      "observedScenarioCount": 32,
+      "observedByteSizes": [
+        4608
+      ],
+      "recordBytes": 4608,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 4608,
+          "endExclusive": 4608,
+          "status": "decoded-writable",
+          "field": "Contact information",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Scenario.rsrc",
+      "authorFacingName": "Resource fork",
+      "coverageStatus": "preserved-known",
+      "role": "resource-fork",
+      "observedScenarioCount": 32,
+      "observedByteSizes": [
+        100210,
+        100293,
+        102459,
+        102541,
+        104934,
+        113707,
+        113789,
+        113861,
+        198724,
+        198806,
+        232475,
+        232557,
+        235269,
+        235351,
+        268822,
+        326898,
+        326980,
+        422083,
+        436249,
+        457580,
+        457662,
+        481035,
+        481117,
+        516703,
+        516785,
+        539660,
+        605322,
+        778038,
+        809118,
+        881066,
+        908646,
+        1161708,
+        1448682,
+        1448764,
+        1835947,
+        1842294,
+        2857546,
+        2857628,
+        3641975,
+        3695646,
+        5168595,
+        5174545
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "preserved-known",
+          "field": "Resource fork",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [
+        {
+          "type": "\u0000\u0000\u0000\u0000",
+          "count": 402,
+          "bytes": 9026265,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0001\u000e\u0001\u0001",
+          "count": 15,
+          "bytes": 369242,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u0000\u0015\u0007",
+          "count": 46,
+          "bytes": 845380,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u0015\u0014\u0000",
+          "count": 35,
+          "bytes": 837763,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0014\u0010\u0010\u0010",
+          "count": 14,
+          "bytes": 182568,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u0007\u0011\u0011",
+          "count": 11,
+          "bytes": 268209,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u000e\u0000\u0000",
+          "count": 53,
+          "bytes": 1112830,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u000f\u0000\u0000",
+          "count": 37,
+          "bytes": 857962,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u0010\u0000\u0000",
+          "count": 25,
+          "bytes": 670664,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u0000\u0000\u0002",
+          "count": 41,
+          "bytes": 959939,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u000e\u0014\u0013\u0014",
+          "count": 42,
+          "bytes": 999328,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0001\u0015\u0013\u0014",
+          "count": 43,
+          "bytes": 1007810,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0011\u0011\u0011\u0011",
+          "count": 19,
+          "bytes": 417782,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "",
+          "count": 41,
+          "bytes": 1016292,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u0000\u0000\u0001",
+          "count": 3,
+          "bytes": 13515,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u0001\u0007\u0018",
+          "count": 23,
+          "bytes": 531827,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u0000\u0000\u001e",
+          "count": 17,
+          "bytes": 460692,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u0000\u0000\u001d",
+          "count": 23,
+          "bytes": 590150,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u001b\u0010\u0017\u0002",
+          "count": 32,
+          "bytes": 746014,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u0000\u0011\u0011",
+          "count": 35,
+          "bytes": 837763,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\b\t\u0013\u001a",
+          "count": 42,
+          "bytes": 981596,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\b\t\u0014\u0014",
+          "count": 30,
+          "bytes": 719722,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\b\t\u0001\u0015",
+          "count": 30,
+          "bytes": 719722,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0013\u0001\u0001\t",
+          "count": 28,
+          "bytes": 700233,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u001c\t\u0014\u000f",
+          "count": 15,
+          "bytes": 314256,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\t\u0019\u000b\f",
+          "count": 7,
+          "bytes": 238709,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0019\t(\u001d",
+          "count": 28,
+          "bytes": 685651,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0013\t)\u0016",
+          "count": 40,
+          "bytes": 921388,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0010\u0014\t)",
+          "count": 39,
+          "bytes": 1131783,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\t)\"2",
+          "count": 2,
+          "bytes": 39399,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0014\t$\u001b",
+          "count": 23,
+          "bytes": 601332,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\t23\t",
+          "count": 24,
+          "bytes": 528976,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\t\u0013ÿ\u0010",
+          "count": 19,
+          "bytes": 532502,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0013\u0006\n\u000f",
+          "count": 18,
+          "bytes": 420448,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u001f\n\u0002\u0017",
+          "count": 32,
+          "bytes": 746014,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0014\u0014\u0010\u000b",
+          "count": 8,
+          "bytes": 291137,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u000b\u0000\u0000",
+          "count": 45,
+          "bytes": 1034026,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0015\u0001\u000b\r",
+          "count": 16,
+          "bytes": 379581,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000 ",
+          "count": 41,
+          "bytes": 790588,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": " \".\u0000",
+          "count": 41,
+          "bytes": 959939,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u0000\u0000-",
+          "count": 45,
+          "bytes": 1034026,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "-\u0000\u0000\u0000",
+          "count": 43,
+          "bytes": 1042099,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u000e\u0001\u0014-",
+          "count": 31,
+          "bytes": 631412,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u0000-\u0014",
+          "count": 17,
+          "bytes": 310581,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0012-\u0001\u0001",
+          "count": 30,
+          "bytes": 631412,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0014-\u0001\u0011",
+          "count": 36,
+          "bytes": 920500,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "-\u001b\u0012\t",
+          "count": 30,
+          "bytes": 719722,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000--'",
+          "count": 11,
+          "bytes": 270753,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "-\u0000,,",
+          "count": 40,
+          "bytes": 921388,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u001b-\u0001.",
+          "count": 22,
+          "bytes": 452590,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0015\u0000-)",
+          "count": 25,
+          "bytes": 585544,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "-)\t\u0015",
+          "count": 5,
+          "bytes": 139903,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "-))\u0001",
+          "count": 49,
+          "bytes": 1086454,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u0000-#",
+          "count": 36,
+          "bytes": 920500,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000-1\u0013",
+          "count": 2,
+          "bytes": 26214,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "-\u00142)",
+          "count": 41,
+          "bytes": 959939,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "-\u0012ÿ\u0001",
+          "count": 30,
+          "bytes": 719722,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": ",.\u0000\u0000",
+          "count": 43,
+          "bytes": 1172682,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000,33",
+          "count": 45,
+          "bytes": 1034026,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u0000\u0000!",
+          "count": 40,
+          "bytes": 921388,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000!",
+          "count": 45,
+          "bytes": 1034026,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0001!\u0015/",
+          "count": 26,
+          "bytes": 579989,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0014?ÿÀ",
+          "count": 3,
+          "bytes": 52506,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0005¿ð\u0000",
+          "count": 2,
+          "bytes": 26292,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": ".\u0014-\u0013",
+          "count": 11,
+          "bytes": 276885,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "..\u0000\b",
+          "count": 8,
+          "bytes": 204336,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "...-",
+          "count": 20,
+          "bytes": 455993,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0014.\u00011",
+          "count": 53,
+          "bytes": 1235550,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000'ff",
+          "count": 45,
+          "bytes": 1034026,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\"\t\u0014ÿ",
+          "count": 13,
+          "bytes": 188799,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\" \u0013\u0013",
+          "count": 4,
+          "bytes": 173036,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\"\"\"\"",
+          "count": 37,
+          "bytes": 857962,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\"\u001c)",
+          "count": 38,
+          "bytes": 1113240,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "(\u0018\u0014\u0010",
+          "count": 15,
+          "bytes": 436939,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u0014)\u0015",
+          "count": 28,
+          "bytes": 601447,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": ")\u0000\u0000\u0000",
+          "count": 88,
+          "bytes": 2007842,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u0000\u0000)",
+          "count": 40,
+          "bytes": 946832,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u0000)\u0014",
+          "count": 17,
+          "bytes": 510940,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0010\u0014\u0013)",
+          "count": 36,
+          "bytes": 855698,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": ")\u0013\u000b\u000e",
+          "count": 16,
+          "bytes": 429878,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0013)-\t",
+          "count": 24,
+          "bytes": 606851,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": ")-..",
+          "count": 49,
+          "bytes": 1086454,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0013\u0014).",
+          "count": 32,
+          "bytes": 774523,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0013)()",
+          "count": 44,
+          "bytes": 1034024,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0006\u0013))",
+          "count": 38,
+          "bytes": 1076955,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0014\u0014))",
+          "count": 42,
+          "bytes": 981596,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000)#\t",
+          "count": 17,
+          "bytes": 429956,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": ")#\u0013\t",
+          "count": 8,
+          "bytes": 264923,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000)#\"",
+          "count": 42,
+          "bytes": 999328,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": ")#(\u0014",
+          "count": 10,
+          "bytes": 317864,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000)$\t",
+          "count": 10,
+          "bytes": 317864,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": ")0\u0015\u001a",
+          "count": 3,
+          "bytes": 89439,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": ")1-.",
+          "count": 49,
+          "bytes": 1086454,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u0000\u0001*",
+          "count": 3,
+          "bytes": 113765,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "#\u001d\u0013\u0013",
+          "count": 16,
+          "bytes": 290460,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "#\u0013\u0014\u000b",
+          "count": 18,
+          "bytes": 407341,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "#\u0013\u000b\u000b",
+          "count": 11,
+          "bytes": 268209,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u001d#-\u0000",
+          "count": 11,
+          "bytes": 276885,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "#)\u0000\u0000",
+          "count": 11,
+          "bytes": 276885,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u0000\u0000%",
+          "count": 11,
+          "bytes": 276885,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u0000\u0000+",
+          "count": 48,
+          "bytes": 1320516,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000+33",
+          "count": 48,
+          "bytes": 1320516,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": ">\u0000\u0000<",
+          "count": 53,
+          "bytes": 1112830,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u00000-",
+          "count": 34,
+          "bytes": 824656,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "0)2.",
+          "count": 49,
+          "bytes": 1086454,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u0000\u00001",
+          "count": 53,
+          "bytes": 1112830,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "1\u0000\u0000\u0000",
+          "count": 32,
+          "bytes": 746014,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u00001\u001c\u0019",
+          "count": 20,
+          "bytes": 496495,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "1)\u0013\u0014",
+          "count": 11,
+          "bytes": 268209,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u0000\u00002",
+          "count": 37,
+          "bytes": 857962,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u00142\u000f\u000e",
+          "count": 10,
+          "bytes": 317864,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "2\u0014\t)",
+          "count": 37,
+          "bytes": 920500,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "2\u0012!\u0014",
+          "count": 30,
+          "bytes": 719722,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "2*-)",
+          "count": 45,
+          "bytes": 1275228,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u00122\u00112",
+          "count": 30,
+          "bytes": 719722,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "33",
+          "count": 45,
+          "bytes": 1036259,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u000033",
+          "count": 49,
+          "bytes": 1403988,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "33\u0000,",
+          "count": 48,
+          "bytes": 1320516,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "33\u0000.",
+          "count": 45,
+          "bytes": 1034026,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "3333",
+          "count": 33,
+          "bytes": 726424,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "33ff",
+          "count": 49,
+          "bytes": 1156692,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u0000\u00184",
+          "count": 29,
+          "bytes": 700311,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u0000\u00005",
+          "count": 7,
+          "bytes": 152112,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u00007",
+          "count": 22,
+          "bytes": 628566,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0014\u000e7\u000b",
+          "count": 18,
+          "bytes": 420448,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u00007\"\"",
+          "count": 22,
+          "bytes": 628566,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u001e\u0000\u00008",
+          "count": 35,
+          "bytes": 837763,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u000e\u000fà\u0000",
+          "count": 12,
+          "bytes": 304777,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0007àà",
+          "count": 18,
+          "bytes": 366928,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0006\u0007Àà",
+          "count": 12,
+          "bytes": 276691,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0001À\u0001à",
+          "count": 1,
+          "bytes": 13107,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "cicn",
+          "count": 5309,
+          "bytes": 12119330,
+          "status": "preserved-known",
+          "role": "icon resource"
+        },
+        {
+          "type": "DD\u0000\u0007",
+          "count": 11,
+          "bytes": 268209,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u0006DD",
+          "count": 47,
+          "bytes": 744733,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "DDDD",
+          "count": 56,
+          "bytes": 1085856,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "ff",
+          "count": 45,
+          "bytes": 1074049,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u0000ff",
+          "count": 38,
+          "bytes": 701400,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "ff33",
+          "count": 29,
+          "bytes": 812483,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "ffff",
+          "count": 45,
+          "bytes": 1034026,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u001aÌÌ",
+          "count": 45,
+          "bytes": 1034026,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "ÌÌ",
+          "count": 43,
+          "bytes": 767146,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "ÌÌ",
+          "count": 33,
+          "bytes": 726424,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "ÌÌÌÌ",
+          "count": 29,
+          "bytes": 812483,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0004ø\u0000",
+          "count": 1,
+          "bytes": 26214,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "PICT",
+          "count": 131,
+          "bytes": 13603314,
+          "status": "preserved-known",
+          "role": "picture resource"
+        },
+        {
+          "type": "RLMZ",
+          "count": 259,
+          "bytes": 2072,
+          "status": "preserved-known",
+          "role": "Realmz metadata resource"
+        },
+        {
+          "type": "snd ",
+          "count": 370,
+          "bytes": 9322126,
+          "status": "preserved-known",
+          "role": "sound resource"
+        },
+        {
+          "type": "STR#",
+          "count": 147,
+          "bytes": 163829,
+          "status": "preserved-known",
+          "role": "string-list resource"
+        },
+        {
+          "type": "styl",
+          "count": 64,
+          "bytes": 11808,
+          "status": "preserved-known",
+          "role": "text style resource"
+        },
+        {
+          "type": "TEXT",
+          "count": 82,
+          "bytes": 128338,
+          "status": "preserved-known",
+          "role": "text resource"
+        },
+        {
+          "type": "\u001c\u000fûÀ",
+          "count": 10,
+          "bytes": 201666,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "UU\u0000\u0006",
+          "count": 47,
+          "bytes": 744733,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "vers",
+          "count": 29,
+          "bytes": 1849,
+          "status": "preserved-known",
+          "role": "version resource"
+        },
+        {
+          "type": "\u001f\u0000\u0000x",
+          "count": 22,
+          "bytes": 591944,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0007\u0000x",
+          "count": 7,
+          "bytes": 152112,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000ÿ\u0000\u0000",
+          "count": 20610,
+          "bytes": 27589383,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "ÿ\u0010\u0010\u0010",
+          "count": 13,
+          "bytes": 446085,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0004ÿ",
+          "count": 3,
+          "bytes": 52506,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "ÿ\u0001\u000f\u0015",
+          "count": 39,
+          "bytes": 1131783,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0007ÿà\u0000",
+          "count": 4,
+          "bytes": 118041,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u000fÿð\u0000",
+          "count": 4,
+          "bytes": 118041,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0006ÿø\u0000",
+          "count": 8,
+          "bytes": 149238,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0004ÿø\u0000",
+          "count": 2,
+          "bytes": 91749,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "ÿÿ\u0000\u0001",
+          "count": 25,
+          "bytes": 670664,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0005ÿÿ\u0000",
+          "count": 4,
+          "bytes": 118041,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0007ÿÿ",
+          "count": 5,
+          "bytes": 171774,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0000\u0015ÿÿ",
+          "count": 45,
+          "bytes": 1034026,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "\u0007ÿÿÀ",
+          "count": 3,
+          "bytes": 151653,
+          "status": "preserved-unknown",
+          "role": "resource"
+        }
+      ],
+      "evidence": [],
+      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Data RI",
+      "authorFacingName": "Party restrictions",
+      "coverageStatus": "decoded-writable",
+      "role": "pass-through",
+      "observedScenarioCount": 28,
+      "observedByteSizes": [
+        320
+      ],
+      "recordBytes": 320,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 320,
+          "endExclusive": 320,
+          "status": "decoded-writable",
+          "field": "Party restrictions",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Icon_.rsrc",
+      "authorFacingName": "Resource fork",
+      "coverageStatus": "preserved-known",
+      "role": "resource-fork",
+      "observedScenarioCount": 26,
+      "observedByteSizes": [
+        368,
+        1784,
+        2688,
+        2752,
+        2888,
+        4098,
+        4280,
+        5072,
+        26209
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "preserved-known",
+          "field": "Resource fork",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Layout",
+      "authorFacingName": "Land layout grid",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 24,
+      "observedByteSizes": [
+        256,
+        512
+      ],
+      "recordBytes": 256,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 256,
+          "endExclusive": 256,
+          "status": "decoded-writable",
+          "field": "Land layout grid",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data MENU",
+      "authorFacingName": "Generated monster menu cache",
+      "coverageStatus": "runtime-cache",
+      "role": "pass-through",
+      "observedScenarioCount": 23,
+      "observedByteSizes": [
+        502
+      ],
+      "recordBytes": 502,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 502,
+          "endExclusive": 502,
+          "status": "runtime-cache",
+          "field": "Generated monster menu cache",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [
+        "docs/generated/runtime-cache-classification.json"
+      ],
+      "editorPolicy": "Runtime/generated state. Providence inspects it only when useful and writes the authored source file instead."
+    },
+    {
+      "container": "Data Spell",
+      "authorFacingName": "Custom spell override records",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 19,
+      "observedByteSizes": [
+        9016
+      ],
+      "recordBytes": 30,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 30,
+          "endExclusive": 30,
+          "status": "decoded-writable",
+          "field": "Custom spell override records",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Format",
+      "authorFacingName": "Scenario compatibility marker",
+      "coverageStatus": "preserved-known",
+      "role": "pass-through",
+      "observedScenarioCount": 19,
+      "observedByteSizes": [
+        0
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "preserved-known",
+          "field": "Preserved scenario file",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Data Spell.rsrc",
+      "authorFacingName": "Resource fork",
+      "coverageStatus": "preserved-known",
+      "role": "resource-fork",
+      "observedScenarioCount": 16,
+      "observedByteSizes": [
+        995,
+        1202,
+        2219,
+        2301
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "preserved-known",
+          "field": "Resource fork",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [
+        {
+          "type": "STR#",
+          "count": 98,
+          "bytes": 22868,
+          "status": "preserved-known",
+          "role": "string-list resource"
+        }
+      ],
+      "evidence": [],
+      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Data Custom 1 BD",
+      "authorFacingName": "Custom landlook mapstats",
+      "coverageStatus": "preserved-known",
+      "role": "pass-through",
+      "observedScenarioCount": 13,
+      "observedByteSizes": [
+        8104
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "preserved-known",
+          "field": "Preserved scenario file",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Data OD",
+      "authorFacingName": "Option labels",
+      "coverageStatus": "decoded-writable",
+      "role": "pass-through",
+      "observedScenarioCount": 12,
+      "observedByteSizes": [
+        575,
+        1275,
+        1325,
+        1525
+      ],
+      "recordBytes": 25,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 25,
+          "endExclusive": 25,
+          "status": "decoded-writable",
+          "field": "Option labels",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [
+        "docs/format-evidence-cards/strings-data-od-string-sound.md"
+      ],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data Race",
+      "authorFacingName": "Race override records",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 8,
+      "observedByteSizes": [
+        12240
+      ],
+      "recordBytes": 408,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 408,
+          "endExclusive": 408,
+          "status": "decoded-writable",
+          "field": "Race override records",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Custom 1 Music",
+      "authorFacingName": "Custom music",
+      "coverageStatus": "preserved-known",
+      "role": "pass-through",
+      "observedScenarioCount": 5,
+      "observedByteSizes": [
+        60224,
+        143039,
+        170360,
+        241158
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "preserved-known",
+          "field": "Preserved scenario file",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Data Caste",
+      "authorFacingName": "Caste override records",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 5,
+      "observedByteSizes": [
+        17280
+      ],
+      "recordBytes": 576,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 576,
+          "endExclusive": 576,
+          "status": "decoded-writable",
+          "field": "Caste override records",
+          "internal": "fixed record"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data Custom 2 BD",
+      "authorFacingName": "Custom landlook mapstats",
+      "coverageStatus": "preserved-known",
+      "role": "pass-through",
+      "observedScenarioCount": 5,
+      "observedByteSizes": [
+        8104
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "preserved-known",
+          "field": "Preserved scenario file",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Custom 2 Music",
+      "authorFacingName": "Custom music",
+      "coverageStatus": "preserved-known",
+      "role": "pass-through",
+      "observedScenarioCount": 3,
+      "observedByteSizes": [
+        60224,
+        137064,
+        184221
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "preserved-known",
+          "field": "Preserved scenario file",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Data Custom 3 BD",
+      "authorFacingName": "Custom landlook mapstats",
+      "coverageStatus": "preserved-known",
+      "role": "pass-through",
+      "observedScenarioCount": 3,
+      "observedByteSizes": [
+        8104
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "preserved-known",
+          "field": "Preserved scenario file",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Data Spell.rsf",
+      "authorFacingName": "Resource fork",
+      "coverageStatus": "preserved-known",
+      "role": "resource-fork",
+      "observedScenarioCount": 3,
+      "observedByteSizes": [
+        2177,
+        2219,
+        2221
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "preserved-known",
+          "field": "Resource fork",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [
+        {
+          "type": "STR#",
+          "count": 63,
+          "bytes": 15420,
+          "status": "preserved-known",
+          "role": "string-list resource"
+        }
+      ],
+      "evidence": [],
+      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Scenario.rsf",
+      "authorFacingName": "Resource fork",
+      "coverageStatus": "preserved-known",
+      "role": "resource-fork",
+      "observedScenarioCount": 3,
+      "observedByteSizes": [
+        109039,
+        950639,
+        1312488
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "preserved-known",
+          "field": "Resource fork",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [
+        {
+          "type": "\u0000\u0000\u0000\u0000",
+          "count": 6,
+          "bytes": 1908,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "cicn",
+          "count": 1500,
+          "bytes": 2838768,
+          "status": "preserved-known",
+          "role": "icon resource"
+        },
+        {
+          "type": "PICT",
+          "count": 24,
+          "bytes": 3782364,
+          "status": "preserved-known",
+          "role": "picture resource"
+        },
+        {
+          "type": "snd ",
+          "count": 18,
+          "bytes": 349485,
+          "status": "preserved-known",
+          "role": "sound resource"
+        },
+        {
+          "type": "STR#",
+          "count": 45,
+          "bytes": 65577,
+          "status": "preserved-known",
+          "role": "string-list resource"
+        },
+        {
+          "type": "styl",
+          "count": 30,
+          "bytes": 4680,
+          "status": "preserved-known",
+          "role": "text style resource"
+        },
+        {
+          "type": "TEXT",
+          "count": 48,
+          "bytes": 40203,
+          "status": "preserved-known",
+          "role": "text resource"
+        },
+        {
+          "type": "vers",
+          "count": 3,
+          "bytes": 189,
+          "status": "preserved-known",
+          "role": "version resource"
+        }
+      ],
+      "evidence": [],
+      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Assault on Giant Mountain",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 2,
+      "observedByteSizes": [
+        320
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "City of Bywater",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 2,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Custom 3 Music",
+      "authorFacingName": "Custom music",
+      "coverageStatus": "preserved-known",
+      "role": "pass-through",
+      "observedScenarioCount": 2,
+      "observedByteSizes": [
+        73480,
+        184108
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "preserved-known",
+          "field": "Preserved scenario file",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Data SD2.rsrc",
+      "authorFacingName": "Resource fork",
+      "coverageStatus": "preserved-known",
+      "role": "resource-fork",
+      "observedScenarioCount": 2,
+      "observedByteSizes": [
+        378,
+        460
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "preserved-known",
+          "field": "Resource fork",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [
+        {
+          "type": "styl",
+          "count": 2,
+          "bytes": 44,
+          "status": "preserved-known",
+          "role": "text style resource"
+        },
+        {
+          "type": "wrct",
+          "count": 2,
+          "bytes": 16,
+          "status": "preserved-unknown",
+          "role": "resource"
+        }
+      ],
+      "evidence": [],
+      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Destroy the Necronomicon",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 2,
+      "observedByteSizes": [
+        320
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Araman's Ring",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Begining of the End",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Castle in the Clouds",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "City of Port Hyrtin",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Custom 1",
+      "authorFacingName": "Custom scenario media or landlook data",
+      "coverageStatus": "preserved-known",
+      "role": "pass-through",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        85324
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "preserved-known",
+          "field": "Preserved scenario file",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Custom 1.rsf",
+      "authorFacingName": "Resource fork",
+      "coverageStatus": "preserved-known",
+      "role": "resource-fork",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        7377
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "preserved-known",
+          "field": "Resource fork",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [
+        {
+          "type": "icl8",
+          "count": 3,
+          "bytes": 3072,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "ICN#",
+          "count": 3,
+          "bytes": 768,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "icns",
+          "count": 3,
+          "bytes": 16113,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "ics#",
+          "count": 3,
+          "bytes": 192,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "ics8",
+          "count": 3,
+          "bytes": 768,
+          "status": "preserved-unknown",
+          "role": "resource"
+        }
+      ],
+      "evidence": [],
+      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Custom 3 Music.rsrc",
+      "authorFacingName": "Resource fork",
+      "coverageStatus": "preserved-known",
+      "role": "resource-fork",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        7377,
+        7459
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "preserved-known",
+          "field": "Resource fork",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [
+        {
+          "type": "icl8",
+          "count": 2,
+          "bytes": 2048,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "ICN#",
+          "count": 2,
+          "bytes": 512,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "icns",
+          "count": 2,
+          "bytes": 10742,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "ics#",
+          "count": 2,
+          "bytes": 128,
+          "status": "preserved-unknown",
+          "role": "resource"
+        },
+        {
+          "type": "ics8",
+          "count": 2,
+          "bytes": 512,
+          "status": "preserved-unknown",
+          "role": "resource"
+        }
+      ],
+      "evidence": [],
+      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Dagger of Shine",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data NI.rsrc",
+      "authorFacingName": "Resource fork",
+      "coverageStatus": "preserved-known",
+      "role": "resource-fork",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        286,
+        368
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "preserved-known",
+          "field": "Resource fork",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Elemental Strife",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Grilochs Revenge",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        320
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Half Truth",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Hax",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Icon_",
+      "authorFacingName": "Classic Mac resource companion",
+      "coverageStatus": "preserved-known",
+      "role": "pass-through",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        0
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "preserved-known",
+          "field": "Preserved scenario file",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Journey into the Mire",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Kalypso's Island",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Lachis",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Lord of the Abyss",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Mithril Vault",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        320
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "New Scenario",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Prelude to Pestilence",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Prelude To Pestilence",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Price of Power",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Read Me (nice to know)",
+      "authorFacingName": "Distribution documentation",
+      "coverageStatus": "ignored-non-scenario",
+      "role": "pass-through",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        1711
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "ignored-non-scenario",
+          "field": "Preserved scenario file",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Ignored as non-scenario metadata or packaging documentation."
+    },
+    {
+      "container": "Read Me (nice to know).rsf",
+      "authorFacingName": "Resource fork",
+      "coverageStatus": "preserved-known",
+      "role": "resource-fork",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        332
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "preserved-known",
+          "field": "Resource fork",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [
+        {
+          "type": "styl",
+          "count": 3,
+          "bytes": 66,
+          "status": "preserved-known",
+          "role": "text style resource"
+        }
+      ],
+      "evidence": [],
+      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Search for the Lost City",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Spires of Steel",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Spires of Steel.rsrc",
+      "authorFacingName": "Resource fork",
+      "coverageStatus": "preserved-known",
+      "role": "resource-fork",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        368
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "preserved-known",
+          "field": "Resource fork",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Test",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "The End Worlds",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Trial by Fire",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Trouble in the Sword Lands",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Trouble in the Sword Lands.rsrc",
+      "authorFacingName": "Resource fork",
+      "coverageStatus": "preserved-known",
+      "role": "resource-fork",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        286,
+        368
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "preserved-known",
+          "field": "Resource fork",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+    },
+    {
+      "container": "Tutorial",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Twin Sands of Time",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "War in the Sword Lands",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "White Dragon",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Wrath of the Mind Lords",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "role": "supported-binary",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "recordBytes": null,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": null,
+          "endExclusive": null,
+          "status": "decoded-writable",
+          "field": "Scenario startup shell",
+          "internal": null
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [],
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+    }
+  ]
+}

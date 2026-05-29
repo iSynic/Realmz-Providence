@@ -1,9 +1,11 @@
 import { CheckCircle2, XCircle } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Issue, Project, SelectedEntity } from "../types";
 import { SemanticInspector } from "../components/SemanticInspector";
 import { selectEntityFromId } from "../utils";
 import { assetFallbacks, blockedSemanticObjects, generatedRuntimeCaches, resourceGaps, sourcePassThroughList, unresolvedLinks } from "../semanticGraph";
+import { loadScenarioCoverageManifest } from "../scenarioCoverage";
+import type { ScenarioCoverageManifest } from "../scenarioCoverage";
 import { ScrollArea } from "../ui";
 
 export function LinterPanel({
@@ -29,6 +31,21 @@ export function LinterPanel({
     return [...map.entries()];
   }, [issues]);
   const semanticGroups = useMemo(() => semanticLintGroups(project), [project]);
+  const [coverage, setCoverage] = useState<ScenarioCoverageManifest | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadScenarioCoverageManifest()
+      .then((manifest) => {
+        if (!cancelled) setCoverage(manifest);
+      })
+      .catch(() => {
+        if (!cancelled) setCoverage(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="editor-full-panel lint-workbench">
@@ -44,6 +61,7 @@ export function LinterPanel({
           <span>{project ? (project.validation.ok ? "No blocking export errors" : "Blocking export issues found") : "No project loaded"}</span>
         </div>
         <ScrollArea className="lint-results" aria-label="Project Linter">
+          <ScenarioCoverageSummary coverage={coverage} />
           {semanticGroups.map((group) => (
             <section key={group.title}>
               <header>{group.title}</header>
@@ -72,6 +90,68 @@ export function LinterPanel({
           <SemanticInspector project={project} selectedEntity={selectedEntity} onSelect={onSelectEntity} />
         </ScrollArea>
       </aside>
+    </div>
+  );
+}
+
+function ScenarioCoverageSummary({ coverage }: { coverage: ScenarioCoverageManifest | null }) {
+  if (!coverage) {
+    return (
+      <section className="scenario-coverage-card">
+        <header>Scenario Coverage</header>
+        <div className="entity-empty">Coverage details are loading.</div>
+      </section>
+    );
+  }
+  const summary = coverage.summary;
+  return (
+    <section className="scenario-coverage-card">
+      <header>
+        <span>Scenario Coverage</span>
+        <small>{summary.scenarioRoots.toLocaleString()} checked scenario roots</small>
+      </header>
+      <div className="scenario-coverage-metrics">
+        <Metric label="Editable" value={summary.editableContainers} />
+        <Metric label="Preserved" value={summary.preservedContainers} />
+        <Metric label="Runtime State" value={summary.runtimeStateContainers} />
+        <Metric label="Needs Format Work" value={summary.needsFormatWork} />
+        <Metric label="Ignored" value={summary.ignoredNonScenarioFiles} />
+      </div>
+      <div className="scenario-coverage-note">
+        Action Points: {summary.ed3.recordBytes}-byte Extra Action rows, {summary.ed3.runtimeCallsites ?? "known"} runtime callsite(s).
+        Parameters: {summary.edcd.edcdBackedOpcodes ?? "known"} opcode-backed shapes, {summary.edcd.fieldComparisonGaps ?? 0} label gap(s) left.
+      </div>
+      {coverage.topRisks.length > 0 && (
+        <div className="scenario-coverage-risks">
+          {coverage.topRisks.slice(0, 5).map((risk) => (
+            <article key={risk.id}>
+              <strong>{risk.family}</strong>
+              <span>{risk.status}</span>
+            </article>
+          ))}
+        </div>
+      )}
+      <details className="scenario-coverage-details">
+        <summary>Advanced Details</summary>
+        <div className="scenario-coverage-container-list">
+          {coverage.containers.slice(0, 12).map((container) => (
+            <div key={container.container}>
+              <strong>{container.container}</strong>
+              <span>{container.status}</span>
+              <small>{container.count.toLocaleString()} scenario(s), {container.sizes.slice(0, 4).join(", ")} byte size(s)</small>
+            </div>
+          ))}
+        </div>
+      </details>
+    </section>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="scenario-coverage-metric">
+      <strong>{value.toLocaleString()}</strong>
+      <span>{label}</span>
     </div>
   );
 }
