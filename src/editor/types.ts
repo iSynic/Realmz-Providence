@@ -247,6 +247,51 @@ export type TileAttributeProfile = {
   rawByte: number | null;
 };
 
+export type MapstatsRecord = {
+  tile: number;
+  sound: number;
+  time: number;
+  solid: number;
+  shore: number;
+  needBoat: number;
+  isPath: number;
+  los: number;
+  flyFloat: number;
+  forest: number;
+  spare: number;
+  combatBuild: number[][];
+  clearLandId: number;
+};
+
+export type LandlookRangeSlot = {
+  slot: number;
+  label: string;
+  firstTile: number;
+  lastTile: number;
+  reserved: number;
+};
+
+export type LandlookWriterGate = {
+  metadataWriterStatus: string;
+  atlasWriterStatus: string;
+  writableFields: string[];
+  preserveOnlyFields: string[];
+  evidence: string[];
+};
+
+export type CustomLandlookMetadata = {
+  landlook: number;
+  sourceFile: string;
+  records: MapstatsRecord[];
+  baseTile: number;
+  baseScale: number;
+  rangeSlots: LandlookRangeSlot[];
+  trailingBytes: number[];
+  rawBytes: number[];
+  writerGate: LandlookWriterGate;
+  authored: boolean;
+};
+
 export type TilePaletteCategory =
   | "landlook"
   | "special"
@@ -805,6 +850,16 @@ export type ProjectCommand =
   | { kind: "updateLandLayoutCell"; label: string; row: number; col: number; value: number }
   | { kind: "clearLandLayout"; label: string }
   | {
+      kind: "updateCustomLandTileAttributes";
+      label: string;
+      landlook: number;
+      tile: number;
+      changes: Partial<Pick<MapstatsRecord, "sound" | "time" | "solid" | "shore" | "needBoat" | "isPath" | "los" | "flyFloat" | "forest" | "clearLandId">>;
+    }
+  | { kind: "updateCustomLandTileCombatBuild"; label: string; landlook: number; tile: number; row: number; col: number; value: number }
+  | { kind: "updateCustomLandlookBase"; label: string; landlook: number; baseTile?: number; baseScale?: number }
+  | { kind: "updateCustomLandlookRangeSlot"; label: string; landlook: number; slot: number; firstTile?: number; lastTile?: number }
+  | {
       kind: "createRandomRect";
       label: string;
       levelType: LevelType;
@@ -954,6 +1009,7 @@ export type Project = {
   randomLevels: RandomLevel[];
   mapRecords: MapRecord[];
   tileAttributes: TileAttributeProfile[];
+  customLandlooks?: CustomLandlookMetadata[];
   extracodes: ExtraCodeRow[];
   messages: MessageRecord[];
   optionLabels: OptionLabelRecord[];

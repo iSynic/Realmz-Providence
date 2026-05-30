@@ -6,7 +6,7 @@ use crate::project::{
 };
 use crate::realmz::{
     write_battles, write_caste_overrides, write_complex_encounters, write_door_file,
-    write_extracodes, write_fields, write_global_macro_hooks, write_land_layout, write_macro_file,
+    write_custom_landlook_metadata, write_extracodes, write_fields, write_global_macro_hooks, write_land_layout, write_macro_file,
     write_map_records, write_messages, write_monster_descriptions, write_monster_set,
     write_monsters, write_option_labels, write_race_overrides, write_random_levels,
     write_scenario_contact_info, write_scenario_items, write_scenario_restrictions,
@@ -134,6 +134,16 @@ pub fn export_project(
         write_tile_solids(&project.tile_attributes)?,
         &mut written_files,
     )?;
+    for landlook in &project.custom_landlooks {
+        if landlook.authored {
+            write_if_nonempty(
+                output_dir,
+                &landlook.source_file,
+                write_custom_landlook_metadata(landlook)?,
+                &mut written_files,
+            )?;
+        }
+    }
     write_if_nonempty(
         output_dir,
         "Data DD",

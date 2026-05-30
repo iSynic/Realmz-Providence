@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-30T04:27:45.689Z",
+  "generatedAt": "2026-05-30T05:44:20.189Z",
   "summary": {
     "scenarioRoots": 87,
     "fileFamilies": 88,
     "ignoredNonScenarioFiles": 1,
     "editableContainers": 62,
-    "preservedContainers": 11,
+    "preservedContainers": 8,
     "understoodResourceContainers": 12,
     "resourceCoverage": {
       "resourceForkFiles": 207,
@@ -191,39 +191,6 @@
       "count": 19,
       "sizes": [
         0
-      ],
-      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
-    },
-    {
-      "container": "Data Custom 1 BD",
-      "label": "Custom landlook mapstats",
-      "status": "Preserved",
-      "coverageStatus": "preserved-known",
-      "count": 13,
-      "sizes": [
-        8104
-      ],
-      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
-    },
-    {
-      "container": "Data Custom 2 BD",
-      "label": "Custom landlook mapstats",
-      "status": "Preserved",
-      "coverageStatus": "preserved-known",
-      "count": 5,
-      "sizes": [
-        8104
-      ],
-      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
-    },
-    {
-      "container": "Data Custom 3 BD",
-      "label": "Custom landlook mapstats",
-      "status": "Preserved",
-      "coverageStatus": "preserved-known",
-      "count": 3,
-      "sizes": [
-        8104
       ],
       "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
     },
@@ -598,6 +565,122 @@
         48600,
         64800,
         81000
+      ],
+      "policy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data ED",
+      "label": "Simple encounter records",
+      "status": "Editable",
+      "coverageStatus": "decoded-writable",
+      "count": 35,
+      "sizes": [
+        1704,
+        2982,
+        3120,
+        3408,
+        3640,
+        4160,
+        4680,
+        5112,
+        5720,
+        5964,
+        7280,
+        7668,
+        7800,
+        8094,
+        8520,
+        8840,
+        9120,
+        9360,
+        9880,
+        10650,
+        14040,
+        14058,
+        23520,
+        24000,
+        57720,
+        61440,
+        64320
+      ],
+      "policy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data ED2",
+      "label": "Complex encounter records",
+      "status": "Editable",
+      "coverageStatus": "decoded-writable",
+      "count": 35,
+      "sizes": [
+        1560,
+        2080,
+        3120,
+        4160,
+        5200,
+        5720,
+        6760,
+        7280,
+        8840,
+        9360,
+        10400,
+        11440,
+        13520,
+        16640,
+        17160,
+        18200,
+        18720,
+        19760,
+        22360,
+        24960,
+        43680,
+        44200,
+        47320,
+        47840,
+        48360
+      ],
+      "policy": "Editable fields may be written when the record-specific writer owns the byte range."
+    },
+    {
+      "container": "Data ED3",
+      "label": "Extra Action Point records",
+      "status": "Editable",
+      "coverageStatus": "decoded-writable",
+      "count": 35,
+      "sizes": [
+        320,
+        440,
+        1360,
+        1520,
+        1560,
+        2040,
+        2120,
+        2840,
+        3000,
+        4320,
+        6760,
+        9120,
+        9160,
+        9640,
+        9960,
+        10120,
+        11480,
+        11520,
+        11640,
+        11680,
+        13240,
+        17520,
+        19200,
+        21240,
+        21680,
+        23000,
+        27560,
+        85120,
+        85240,
+        86040,
+        92760,
+        93360,
+        144000,
+        147840
       ],
       "policy": "Editable fields may be written when the record-specific writer owns the byte range."
     }

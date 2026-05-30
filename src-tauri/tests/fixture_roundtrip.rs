@@ -4,7 +4,11 @@ use realmz_providence_lib::project::{
     ProvidenceProject, ScenarioTarget, SourceFileRole, PROJECT_SCHEMA_VERSION,
     SEMANTIC_SCHEMA_VERSION,
 };
-use realmz_providence_lib::realmz::{SUPPORTED_WRITE_FILES, TRACKED_FILES};
+use realmz_providence_lib::realmz::{
+    update_custom_land_tile_attributes, update_custom_land_tile_combat_build,
+    update_custom_landlook_base, update_custom_landlook_range_slot, CustomLandTileAttributePatch,
+    SUPPORTED_WRITE_FILES, TRACKED_FILES,
+};
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -130,6 +134,69 @@ fn custom_landlook_files_export_preserved_until_writer_gate_opens() {
             fs::read(&exported_file).unwrap(),
             "custom landlook file {} should remain byte-identical until writer gate opens",
             file.relative_path
+        );
+    }
+}
+
+#[test]
+fn custom_landlook_metadata_writer_mutates_only_owned_fields() {
+    let Some(source) = out_fixture_path("Kalypso's Island") else {
+        eprintln!("Skipping custom landlook writer fixture; Kalypso's Island is absent.");
+        return;
+    };
+    let temp = tempdir().unwrap();
+    let project_dir = temp.path().join("project");
+    let export_dir = temp.path().join("exported");
+    import_scenario(&source, &project_dir).unwrap();
+    let mut project = open_project(&project_dir).unwrap();
+    let original = fs::read(source.join("Data Custom 1 BD")).unwrap();
+    let index = project
+        .custom_landlooks
+        .iter()
+        .position(|landlook| landlook.source_file == "Data Custom 1 BD")
+        .expect("Kalypso should import Data Custom 1 BD as structured custom landlook metadata");
+    let updated = update_custom_land_tile_attributes(
+        &project.custom_landlooks[index],
+        5,
+        CustomLandTileAttributePatch {
+            sound: Some(321),
+            ..CustomLandTileAttributePatch::default()
+        },
+    );
+    let updated = update_custom_land_tile_combat_build(&updated, 5, 1, 2, 188);
+    let updated = update_custom_landlook_base(&updated, Some(156), Some(2));
+    let updated = update_custom_landlook_range_slot(&updated, 0, Some(70), Some(80));
+    project.custom_landlooks[index] = updated;
+
+    let report = export_project(
+        &project_dir,
+        &project,
+        &export_dir,
+        ScenarioTarget::ProvidencePortableFolder,
+    )
+    .unwrap();
+    assert!(
+        report
+            .written_files
+            .iter()
+            .any(|file| file == "Data Custom 1 BD"),
+        "authored custom landlook metadata should be emitted as an owned write"
+    );
+    let exported = fs::read(export_dir.join("Data Custom 1 BD")).unwrap();
+    assert_eq!(original.len(), exported.len());
+    let changed: Vec<_> = original
+        .iter()
+        .zip(exported.iter())
+        .enumerate()
+        .filter_map(|(offset, (before, after))| (before != after).then_some(offset))
+        .collect();
+    for offset in changed {
+        assert!(
+            matches!(
+                offset,
+                200..=201 | 230..=231 | 8042..=8043 | 8044..=8047
+            ),
+            "unexpected custom landlook byte mutation at {offset}"
         );
     }
 }

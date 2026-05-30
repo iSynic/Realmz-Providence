@@ -44,7 +44,11 @@ Providence can show the current landlook's tiles, movement metadata, and combat-
   - slot 2: Rubble range.
   - slot 3: House range.
 - Common observed tail: `62..85`, `155..158`, `159..167`, and `190..200`, with zero reserved values and unused slots zeroed.
-- Custom landlook picture/resource writes still need a dedicated binary/source/fixture pass before full writer support.
+- `docs/generated/custom-landlook-coverage.json` now inventories every observed custom landlook metadata file, linked `PICT 306..308`, and `Custom 1/2/3` companion file.
+- Metadata writing is fixture-proven for owned two-byte fields only. Writer-safe metadata fields are tile sound, time/move, solid type, shore, boat requirement, path flag, LOS flag, fly/float flag, forest/special type, clear/base tile, combat build grid, `basetile`, `basescale`, and the first/last values of range slots.
+- Preserve-only metadata fields are `spare` and every range-slot `reserved` word.
+- Custom landlook picture/resource replacement remains limited to preserve-or-replace-through-known-good `PICT` import. Providence does not edit arbitrary PICT opcodes.
+- `Custom 1/2/3` companion files are preserved-known compatibility/custom-landlook payloads until Realmz source or Divinity binary evidence proves exact runtime semantics.
 
 ## Corpus Evidence
 
@@ -56,9 +60,10 @@ Providence can show the current landlook's tiles, movement metadata, and combat-
 
 - Follow-up: `parser-only`, `editor-ui`, `validation`, then `parser-writer` only after fixtures.
 - Keep Land Tiles mode as a first-class workbench for atlas browsing and combat-preview inspection.
-- Add a custom landlook writer gate card before enabling Save Tiles, Load Tile Map, Import Picture Bounds, or combat-grid edits.
-- Add corpus detection for custom landlook files and linked resource IDs.
+- Keep Save Tiles/Load Tile Map/Import Picture Bounds hidden until atlas replacement fixtures prove `PICT 306..308` packaging for edited custom art.
+- Use the metadata writer gate for custom landlook attribute and combat-grid edits only on scenario custom landlooks.
+- Keep built-in Realmz landlooks read-only.
 
 ## Writer Gate
 
-Do not add writable landlook metadata controls until these are proven: custom file names, record counts, `mapstats` record size/order, graphic/resource IDs, endianness, range-tail write behavior, and Divinity save/load behavior. The 60-byte tail is now partially decoded as Divinity tile-range metadata, but Providence should still preserve all ten slots byte-for-byte until writer fixtures prove which slots Divinity owns.
+Metadata writer gate is partially open for scenario custom landlooks. Providence can re-encode `Data Custom 1/2/3 BD` byte-identically and fixture tests prove owned two-byte mutations touch only their intended fields. Built-in landlooks remain read-only. Atlas/art replacement and `Custom 1/2/3` companion writes remain preserve-only until resource packaging fixtures prove exact behavior.

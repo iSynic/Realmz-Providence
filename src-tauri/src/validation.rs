@@ -1043,6 +1043,23 @@ fn validate_tile_attributes(project: &ProvidenceProject, warnings: &mut Vec<Stri
                 "Landlook {landlook} has no decoded mapstats; tile attributes will be shown as unknown metadata."
             ));
         }
+        if (6..=8).contains(&landlook) {
+            if !project.custom_landlooks.iter().any(|custom| custom.landlook == landlook) {
+                warnings.push(format!(
+                    "Custom land tiles for landlook {landlook} are missing metadata; this scenario can be preserved, but tile definitions cannot be edited safely."
+                ));
+            }
+            let atlas_available = project
+                .asset_catalog
+                .tilesets
+                .iter()
+                .any(|tileset| tileset.landlook == landlook && tileset.available);
+            if !atlas_available {
+                warnings.push(format!(
+                    "Custom landlook art for landlook {landlook} is missing; Realmz may not be able to draw this custom landlook after export."
+                ));
+            }
+        }
     }
     let mut known_icons: BTreeSet<i16> = BTreeSet::new();
     for asset in &project.assets {
@@ -2169,6 +2186,7 @@ mod tests {
             land_layout: None,
             map_records: Vec::new(),
             tile_attributes: Vec::new(),
+            custom_landlooks: Vec::new(),
             triggers: Vec::new(),
             random_levels: Vec::new(),
             extracodes: Vec::new(),

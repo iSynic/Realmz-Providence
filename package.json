@@ -15,6 +15,7 @@
     "archaeology:roundtrip-audit": "cargo run --manifest-path src-tauri/Cargo.toml --example no_edit_roundtrip_audit -- --output docs/generated/scenario-byte-roundtrip-ledger.json",
     "archaeology:byte-coverage": "node scripts/generate_scenario_byte_coverage.mjs",
     "archaeology:dungeon-coverage": "node scripts/generate_dungeon_coverage.mjs",
+    "archaeology:custom-landlook-coverage": "node scripts/generate_custom_landlook_coverage.mjs",
     "archaeology:resource-coverage": "node scripts/generate_resource_coverage.mjs",
     "archaeology:target-compatibility": "node scripts/generate_target_compatibility.mjs",
     "archaeology:divinity-opcodes": "node scripts/extract_divinity_opcode_help.mjs",

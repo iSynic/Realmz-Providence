@@ -10,6 +10,7 @@ const unknownBacklogPath = path.join(repoRoot, "docs/generated/unknown-data-back
 const runtimeCachePath = path.join(repoRoot, "docs/generated/runtime-cache-classification.json");
 const resourceByteOwnershipPath = path.join(repoRoot, "docs/generated/resource-byte-ownership.json");
 const dungeonByteOwnershipPath = path.join(repoRoot, "docs/generated/dungeon-byte-ownership.json");
+const customLandlookCoveragePath = path.join(repoRoot, "docs/generated/custom-landlook-coverage.json");
 const targetCompatibilityPath = path.join(repoRoot, "docs/generated/scenario-target-compatibility.json");
 const realmzRsPath = path.join(repoRoot, "src-tauri/src/realmz.rs");
 
@@ -106,6 +107,7 @@ const unknownBacklog = readJson(unknownBacklogPath);
 const runtimeCaches = readJson(runtimeCachePath);
 const resourceByteOwnership = readOptionalJson(resourceByteOwnershipPath);
 const dungeonByteOwnership = readOptionalJson(dungeonByteOwnershipPath);
+const customLandlookCoverage = readOptionalJson(customLandlookCoveragePath);
 const targetCompatibility = readOptionalJson(targetCompatibilityPath);
 const rustRegistry = parseRustRegistry(fs.readFileSync(realmzRsPath, "utf8"));
 const parsedResourceForkNames = new Set(
@@ -153,6 +155,7 @@ function buildInventory(scanned, aggregate) {
       rustRegistry: "src-tauri/src/realmz.rs",
         runtimeCaches: "docs/generated/runtime-cache-classification.json",
         resourceCoverage: "docs/generated/resource-byte-ownership.json",
+        customLandlookCoverage: "docs/generated/custom-landlook-coverage.json",
         dungeonCoverage: "docs/generated/dungeon-byte-ownership.json",
         dungeonHighBitAudit: "docs/generated/dungeon-high-bit-audit.json"
     },
@@ -213,13 +216,15 @@ function buildOwnership(aggregate) {
       "decoded-resource-payload",
       "preserved-standard-media-payload",
       "custom-media-payload",
-      "needs-codec-work"
+      "needs-codec-work",
+      "understood-runtime-writer-gated"
     ],
     sources: {
       fileInventory: "docs/generated/scenario-file-inventory.json",
       unknownBacklog: "docs/generated/unknown-data-backlog.json",
         runtimeCaches: "docs/generated/runtime-cache-classification.json",
         resourceCoverage: "docs/generated/resource-byte-ownership.json",
+        customLandlookCoverage: "docs/generated/custom-landlook-coverage.json",
         dungeonCoverage: "docs/generated/dungeon-byte-ownership.json",
         dungeonHighBitAudit: "docs/generated/dungeon-high-bit-audit.json",
         ed3Reachability: "docs/generated/extra-ap-reachability-source-map.json",
@@ -527,6 +532,7 @@ function coverageStatusForFile(file) {
   if (NON_SCENARIO_IGNORES.has(name)) return "ignored-non-scenario";
   if (runtimeCaches.entries?.some((entry) => entry.cache === name)) return "runtime-cache";
   if (RECORD_LAYOUTS[name]) return RECORD_LAYOUTS[name].status;
+  if (customLandlookCoverage && /^Data Custom [123] BD$/.test(name)) return "understood-runtime-writer-gated";
   if (PASS_THROUGH_POLICIES[name]) return PASS_THROUGH_POLICIES[name].status;
   if (roles.has("supported-binary") && file.byteSizes.size > 0 && [...file.byteSizes].every((size) => size === 316 || size === 320)) return "decoded-writable";
   if (rustRegistry.supportedWriteFiles.has(name)) return "decoded-writable";
@@ -538,6 +544,43 @@ function coverageStatusForFile(file) {
 }
 
 function byteRangesForFile(file, layout) {
+  if (/^Data Custom [123] BD$/.test(file.name) && customLandlookCoverage?.layout) {
+    const layout = customLandlookCoverage.layout;
+    return [
+      {
+        start: 0,
+        length: layout.baseTileOffset,
+        endExclusive: layout.baseTileOffset,
+        status: "decoded-writable",
+        field: "Custom land tile records",
+        internal: "mapstats[201]"
+      },
+      {
+        start: layout.baseTileOffset,
+        length: 2,
+        endExclusive: layout.baseTileOffset + 2,
+        status: "decoded-writable",
+        field: "Base tile",
+        internal: "basetile"
+      },
+      {
+        start: layout.baseScaleOffset,
+        length: 2,
+        endExclusive: layout.baseScaleOffset + 2,
+        status: "decoded-writable",
+        field: "Base scale",
+        internal: "basescale"
+      },
+      {
+        start: layout.rangeTailOffset,
+        length: layout.expectedBytes - layout.rangeTailOffset,
+        endExclusive: layout.expectedBytes,
+        status: "understood-runtime-writer-gated",
+        field: "Divinity tile range slots",
+        internal: "range slots with reserved words preserved"
+      }
+    ];
+  }
   if (file.name === "Data DL" && dungeonByteOwnership?.recordByteRanges?.length) {
     return [
       {
@@ -628,6 +671,9 @@ function evidenceForFile(name, status) {
     evidence.push("docs/format-evidence-cards/edcd-opcode-source-map.md");
   } else if (name === "Data OD" || name === "Data SD2") {
     evidence.push("docs/format-evidence-cards/strings-data-od-string-sound.md");
+  } else if (/^Data Custom [123] BD$/.test(name)) {
+    evidence.push("docs/generated/custom-landlook-coverage.json");
+    evidence.push("docs/format-evidence-cards/custom-landlook-writers.md");
   } else if (status === "runtime-cache") {
     evidence.push("docs/generated/runtime-cache-classification.json");
   } else if (status === "unknown-active-risk") {
@@ -660,6 +706,8 @@ function editorPolicyFor(status) {
       return "Scenario-owned custom media payload preserved byte-for-byte until a dedicated codec writer owns the format.";
     case "needs-codec-work":
       return "Resource payload or container needs further codec archaeology before semantic ownership can be claimed.";
+    case "understood-runtime-writer-gated":
+      return "Runtime behavior and byte ownership are understood; normal editing remains gated to fixture-proven writer paths.";
     default:
       return "Needs format work before Providence can claim safe authoring behavior.";
   }

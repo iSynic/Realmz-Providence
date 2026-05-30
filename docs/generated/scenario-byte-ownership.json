@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-30T04:27:45.689Z",
+  "generatedAt": "2026-05-30T05:44:20.188Z",
   "classifications": [
     "decoded-writable",
     "decoded-readonly",
@@ -13,13 +13,15 @@
     "decoded-resource-payload",
     "preserved-standard-media-payload",
     "custom-media-payload",
-    "needs-codec-work"
+    "needs-codec-work",
+    "understood-runtime-writer-gated"
   ],
   "sources": {
     "fileInventory": "docs/generated/scenario-file-inventory.json",
     "unknownBacklog": "docs/generated/unknown-data-backlog.json",
     "runtimeCaches": "docs/generated/runtime-cache-classification.json",
     "resourceCoverage": "docs/generated/resource-byte-ownership.json",
+    "customLandlookCoverage": "docs/generated/custom-landlook-coverage.json",
     "dungeonCoverage": "docs/generated/dungeon-byte-ownership.json",
     "dungeonHighBitAudit": "docs/generated/dungeon-high-bit-audit.json",
     "ed3Reachability": "docs/generated/extra-ap-reachability-source-map.json",
@@ -30,18 +32,20 @@
     "statusCounts": {
       "decoded-writable": 62,
       "decoded-readonly": 1,
-      "preserved-known": 8,
+      "preserved-known": 5,
       "understood-resource-container": 12,
       "runtime-cache": 1,
+      "understood-runtime-writer-gated": 3,
       "custom-media-payload": 3,
       "ignored-non-scenario": 1
     },
     "statusObservedBytes": {
       "decoded-writable": 944704931,
       "decoded-readonly": 35840,
-      "preserved-known": 286936,
+      "preserved-known": 116752,
       "understood-resource-container": 1369599572,
       "runtime-cache": 11546,
+      "understood-runtime-writer-gated": 170184,
       "custom-media-payload": 4733608,
       "ignored-non-scenario": 1711
     }
@@ -1771,7 +1775,7 @@
     {
       "container": "Data Custom 1 BD",
       "authorFacingName": "Custom landlook mapstats",
-      "coverageStatus": "preserved-known",
+      "coverageStatus": "understood-runtime-writer-gated",
       "role": "pass-through",
       "observedScenarioCount": 13,
       "observedByteSizes": [
@@ -1781,16 +1785,43 @@
       "byteRanges": [
         {
           "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "preserved-known",
-          "field": "Preserved scenario file",
-          "internal": null
+          "length": 8040,
+          "endExclusive": 8040,
+          "status": "decoded-writable",
+          "field": "Custom land tile records",
+          "internal": "mapstats[201]"
+        },
+        {
+          "start": 8040,
+          "length": 2,
+          "endExclusive": 8042,
+          "status": "decoded-writable",
+          "field": "Base tile",
+          "internal": "basetile"
+        },
+        {
+          "start": 8042,
+          "length": 2,
+          "endExclusive": 8044,
+          "status": "decoded-writable",
+          "field": "Base scale",
+          "internal": "basescale"
+        },
+        {
+          "start": 8044,
+          "length": 60,
+          "endExclusive": 8104,
+          "status": "understood-runtime-writer-gated",
+          "field": "Divinity tile range slots",
+          "internal": "range slots with reserved words preserved"
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
-      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+      "evidence": [
+        "docs/generated/custom-landlook-coverage.json",
+        "docs/format-evidence-cards/custom-landlook-writers.md"
+      ],
+      "editorPolicy": "Runtime behavior and byte ownership are understood; normal editing remains gated to fixture-proven writer paths."
     },
     {
       "container": "Data OD",
@@ -1899,7 +1930,7 @@
     {
       "container": "Data Custom 2 BD",
       "authorFacingName": "Custom landlook mapstats",
-      "coverageStatus": "preserved-known",
+      "coverageStatus": "understood-runtime-writer-gated",
       "role": "pass-through",
       "observedScenarioCount": 5,
       "observedByteSizes": [
@@ -1909,16 +1940,43 @@
       "byteRanges": [
         {
           "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "preserved-known",
-          "field": "Preserved scenario file",
-          "internal": null
+          "length": 8040,
+          "endExclusive": 8040,
+          "status": "decoded-writable",
+          "field": "Custom land tile records",
+          "internal": "mapstats[201]"
+        },
+        {
+          "start": 8040,
+          "length": 2,
+          "endExclusive": 8042,
+          "status": "decoded-writable",
+          "field": "Base tile",
+          "internal": "basetile"
+        },
+        {
+          "start": 8042,
+          "length": 2,
+          "endExclusive": 8044,
+          "status": "decoded-writable",
+          "field": "Base scale",
+          "internal": "basescale"
+        },
+        {
+          "start": 8044,
+          "length": 60,
+          "endExclusive": 8104,
+          "status": "understood-runtime-writer-gated",
+          "field": "Divinity tile range slots",
+          "internal": "range slots with reserved words preserved"
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
-      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+      "evidence": [
+        "docs/generated/custom-landlook-coverage.json",
+        "docs/format-evidence-cards/custom-landlook-writers.md"
+      ],
+      "editorPolicy": "Runtime behavior and byte ownership are understood; normal editing remains gated to fixture-proven writer paths."
     },
     {
       "container": "Custom 2 Music",
@@ -1949,7 +2007,7 @@
     {
       "container": "Data Custom 3 BD",
       "authorFacingName": "Custom landlook mapstats",
-      "coverageStatus": "preserved-known",
+      "coverageStatus": "understood-runtime-writer-gated",
       "role": "pass-through",
       "observedScenarioCount": 3,
       "observedByteSizes": [
@@ -1959,16 +2017,43 @@
       "byteRanges": [
         {
           "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "preserved-known",
-          "field": "Preserved scenario file",
-          "internal": null
+          "length": 8040,
+          "endExclusive": 8040,
+          "status": "decoded-writable",
+          "field": "Custom land tile records",
+          "internal": "mapstats[201]"
+        },
+        {
+          "start": 8040,
+          "length": 2,
+          "endExclusive": 8042,
+          "status": "decoded-writable",
+          "field": "Base tile",
+          "internal": "basetile"
+        },
+        {
+          "start": 8042,
+          "length": 2,
+          "endExclusive": 8044,
+          "status": "decoded-writable",
+          "field": "Base scale",
+          "internal": "basescale"
+        },
+        {
+          "start": 8044,
+          "length": 60,
+          "endExclusive": 8104,
+          "status": "understood-runtime-writer-gated",
+          "field": "Divinity tile range slots",
+          "internal": "range slots with reserved words preserved"
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
-      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+      "evidence": [
+        "docs/generated/custom-landlook-coverage.json",
+        "docs/format-evidence-cards/custom-landlook-writers.md"
+      ],
+      "editorPolicy": "Runtime behavior and byte ownership are understood; normal editing remains gated to fixture-proven writer paths."
     },
     {
       "container": "Data Spell.rsf",

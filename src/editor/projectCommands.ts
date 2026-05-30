@@ -5,6 +5,10 @@ import {
   createRandomRect,
   ensureLandLayout,
   paintTiles,
+  updateCustomLandTileAttributes,
+  updateCustomLandTileCombatBuild,
+  updateCustomLandlookBase,
+  updateCustomLandlookRangeSlot,
   updateLandLayoutCell,
   updateMapRecord,
   updateRandomLevelSettings,
@@ -69,6 +73,10 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "createLandLayout") return ensureLandLayout(project);
   if (command.kind === "updateLandLayoutCell") return updateLandLayoutCell(project, command.row, command.col, command.value);
   if (command.kind === "clearLandLayout") return clearLandLayout(project);
+  if (command.kind === "updateCustomLandTileAttributes") return updateCustomLandTileAttributes(project, command);
+  if (command.kind === "updateCustomLandTileCombatBuild") return updateCustomLandTileCombatBuild(project, command);
+  if (command.kind === "updateCustomLandlookBase") return updateCustomLandlookBase(project, command);
+  if (command.kind === "updateCustomLandlookRangeSlot") return updateCustomLandlookRangeSlot(project, command);
   if (command.kind === "createRandomRect") return createRandomRect(project, command);
   if (command.kind === "updateRandomRect") return updateRandomRect(project, command);
   if (command.kind === "clearRandomRect") return clearRandomRect(project, command);

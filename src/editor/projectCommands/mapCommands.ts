@@ -108,6 +108,84 @@ export function clearLandLayout(project: Project) {
   };
 }
 
+export function updateCustomLandTileAttributes(
+  project: Project,
+  command: Extract<ProjectCommand, { kind: "updateCustomLandTileAttributes" }>
+) {
+  return updateCustomLandlook(project, command.landlook, (landlook) => {
+    const records = [...landlook.records];
+    const record = records[command.tile];
+    if (!record) return landlook;
+    const changes = Object.fromEntries(
+      Object.entries(command.changes)
+        .filter(([, value]) => value != null)
+        .map(([key, value]) => [key, clampSignedShort(Number(value))])
+    );
+    records[command.tile] = {
+      ...record,
+      ...changes
+    };
+    return { ...landlook, records, authored: true };
+  });
+}
+
+export function updateCustomLandTileCombatBuild(
+  project: Project,
+  command: Extract<ProjectCommand, { kind: "updateCustomLandTileCombatBuild" }>
+) {
+  if (command.row < 0 || command.row > 2 || command.col < 0 || command.col > 2) return project;
+  return updateCustomLandlook(project, command.landlook, (landlook) => {
+    const records = [...landlook.records];
+    const record = records[command.tile];
+    if (!record) return landlook;
+    const combatBuild = [0, 1, 2].map((row) => [0, 1, 2].map((col) => record.combatBuild?.[row]?.[col] ?? 0));
+    combatBuild[command.row][command.col] = clampSignedShort(command.value);
+    records[command.tile] = { ...record, combatBuild };
+    return { ...landlook, records, authored: true };
+  });
+}
+
+export function updateCustomLandlookBase(
+  project: Project,
+  command: Extract<ProjectCommand, { kind: "updateCustomLandlookBase" }>
+) {
+  return updateCustomLandlook(project, command.landlook, (landlook) => ({
+    ...landlook,
+    baseTile: command.baseTile == null ? landlook.baseTile : clampSignedShort(command.baseTile),
+    baseScale: command.baseScale == null ? landlook.baseScale : clampSignedShort(command.baseScale),
+    authored: true
+  }));
+}
+
+export function updateCustomLandlookRangeSlot(
+  project: Project,
+  command: Extract<ProjectCommand, { kind: "updateCustomLandlookRangeSlot" }>
+) {
+  return updateCustomLandlook(project, command.landlook, (landlook) => {
+    const rangeSlots = landlook.rangeSlots.map((slot) => {
+      if (slot.slot !== command.slot) return slot;
+      return {
+        ...slot,
+        firstTile: command.firstTile == null ? slot.firstTile : clampSignedShort(command.firstTile),
+        lastTile: command.lastTile == null ? slot.lastTile : clampSignedShort(command.lastTile)
+      };
+    });
+    return { ...landlook, rangeSlots, authored: true };
+  });
+}
+
+function updateCustomLandlook(project: Project, landlook: number, update: (landlook: NonNullable<Project["customLandlooks"]>[number]) => NonNullable<Project["customLandlooks"]>[number]) {
+  const customLandlooks = project.customLandlooks ?? [];
+  let changed = false;
+  const next = customLandlooks.map((candidate) => {
+    if (candidate.landlook !== landlook) return candidate;
+    const updated = update(candidate);
+    if (updated !== candidate) changed = true;
+    return updated;
+  });
+  return changed ? { ...project, customLandlooks: next } : project;
+}
+
 export function createRandomRect(project: Project, command: Extract<ProjectCommand, { kind: "createRandomRect" }>) {
   const level = ensureRandomLevel(project, command.levelType, command.levelIndex);
   const rectIndex = command.rect.rectIndex ?? nextRandomRectIndex(level);
