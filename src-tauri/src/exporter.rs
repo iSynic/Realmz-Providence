@@ -1,6 +1,6 @@
 use crate::error::{IoPath, ProvidenceError, Result};
 use crate::importer::RAW_SOURCES_DIR;
-use crate::project::{LevelType, ProvidenceProject, ScenarioTarget};
+use crate::project::{LevelType, ProvidenceProject, ScenarioTarget, TargetCompatibilityIssue};
 use crate::realmz::{
     write_battles, write_caste_overrides, write_complex_encounters, write_door_file,
     write_extracodes, write_fields, write_global_macro_hooks, write_land_layout, write_macro_file,
@@ -324,6 +324,7 @@ pub fn export_project(
     } else {
         project.validation.warnings.clone()
     };
+    let target_compatibility_issues = target_compatibility_issues_for_export(project, target);
     Ok(ExportReport {
         output_path: output_dir.to_string_lossy().to_string(),
         target,
@@ -334,8 +335,25 @@ pub fn export_project(
         resource_warnings: resource_result.resource_warnings,
         blocked_assets: resource_result.blocked_assets,
         warnings,
-        target_compatibility_issues: project.validation.target_compatibility_issues.clone(),
+        target_compatibility_issues,
     })
+}
+
+fn target_compatibility_issues_for_export(
+    project: &ProvidenceProject,
+    target: ScenarioTarget,
+) -> Vec<TargetCompatibilityIssue> {
+    let issues = crate::validation::validate_target_compatibility(project);
+    issues
+        .into_iter()
+        .filter(|issue| {
+            if target == ScenarioTarget::ProvidencePortableFolder {
+                true
+            } else {
+                issue.target == target || issue.target == ScenarioTarget::ProvidencePortableFolder
+            }
+        })
+        .collect()
 }
 
 fn write_if_nonempty(

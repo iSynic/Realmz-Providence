@@ -831,13 +831,30 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
     }
 }
 
-fn validate_target_compatibility(project: &ProvidenceProject) -> Vec<TargetCompatibilityIssue> {
+pub fn validate_target_compatibility(project: &ProvidenceProject) -> Vec<TargetCompatibilityIssue> {
     let mut issues = Vec::new();
     let has_resource_fork = project
         .source
         .files
         .iter()
         .any(|file| matches!(file.role, SourceFileRole::ResourceFork));
+    let sidecar_resource_forks = project
+        .source
+        .files
+        .iter()
+        .filter(|file| {
+            matches!(file.role, SourceFileRole::ResourceFork)
+                && (file.name.ends_with(".rsrc")
+                    || file.name.ends_with(".rsf")
+                    || file.name.starts_with("._"))
+        })
+        .count();
+    let unknown_source_files = project
+        .source
+        .files
+        .iter()
+        .filter(|file| matches!(file.role, SourceFileRole::Unknown))
+        .count();
     let resource_references = project
         .semantic_schema
         .entities
@@ -859,6 +876,15 @@ fn validate_target_compatibility(project: &ProvidenceProject) -> Vec<TargetCompa
             ),
             source: Some("Scenario resources".to_string()),
         });
+        issues.push(TargetCompatibilityIssue {
+            target: ScenarioTarget::WindowsRealmzFolder,
+            severity: DiagnosticSeverity::Warning,
+            code: "missing-scenario-resource-fork".to_string(),
+            message: format!(
+                "{resource_references} resource reference(s) were found, but the imported package did not include a scenario resource fork or sidecar."
+            ),
+            source: Some("Scenario resources".to_string()),
+        });
     }
     let apple_double_sidecars = project
         .source
@@ -873,6 +899,26 @@ fn validate_target_compatibility(project: &ProvidenceProject) -> Vec<TargetCompa
             code: "appledouble-sidecars-preserved".to_string(),
             message: format!(
                 "{apple_double_sidecars} AppleDouble sidecar file(s) are preserved as Classic Mac resource-fork packaging."
+            ),
+            source: Some("Source package".to_string()),
+        });
+        issues.push(TargetCompatibilityIssue {
+            target: ScenarioTarget::WindowsRealmzFolder,
+            severity: DiagnosticSeverity::Warning,
+            code: "appledouble-sidecars-in-windows-target".to_string(),
+            message: format!(
+                "{apple_double_sidecars} AppleDouble sidecar file(s) will be preserved, but Windows Realmz compatibility is not proven for this packaging."
+            ),
+            source: Some("Source package".to_string()),
+        });
+    }
+    if sidecar_resource_forks > 0 {
+        issues.push(TargetCompatibilityIssue {
+            target: ScenarioTarget::MacClassicFolder,
+            severity: DiagnosticSeverity::Info,
+            code: "resource-sidecars-preserved".to_string(),
+            message: format!(
+                "{sidecar_resource_forks} resource sidecar file(s) are preserved as imported packaging."
             ),
             source: Some("Source package".to_string()),
         });
@@ -900,15 +946,38 @@ fn validate_target_compatibility(project: &ProvidenceProject) -> Vec<TargetCompa
         .filter(|asset| !matches!(asset.resource_type.as_str(), "PICT" | "cicn" | "snd "))
         .count();
     if unsupported_managed_assets > 0 {
-        issues.push(TargetCompatibilityIssue {
-            target: ScenarioTarget::ProvidencePortableFolder,
-            severity: DiagnosticSeverity::Warning,
-            code: "unsupported-managed-media-type".to_string(),
-            message: format!(
-                "{unsupported_managed_assets} managed asset(s) target unsupported resource types; only PICT, cicn, and snd are known-good replacement writers."
-            ),
-            source: Some("Assets".to_string()),
-        });
+        for target in [
+            ScenarioTarget::MacClassicFolder,
+            ScenarioTarget::WindowsRealmzFolder,
+            ScenarioTarget::ProvidencePortableFolder,
+        ] {
+            issues.push(TargetCompatibilityIssue {
+                target,
+                severity: DiagnosticSeverity::Warning,
+                code: "unsupported-managed-media-type".to_string(),
+                message: format!(
+                    "{unsupported_managed_assets} managed asset(s) target unsupported resource types; only PICT, cicn, and snd are known-good replacement writers."
+                ),
+                source: Some("Assets".to_string()),
+            });
+        }
+    }
+    if unknown_source_files > 0 {
+        for target in [
+            ScenarioTarget::MacClassicFolder,
+            ScenarioTarget::WindowsRealmzFolder,
+            ScenarioTarget::ProvidencePortableFolder,
+        ] {
+            issues.push(TargetCompatibilityIssue {
+                target,
+                severity: DiagnosticSeverity::Warning,
+                code: "unknown-source-files-preserved".to_string(),
+                message: format!(
+                    "{unknown_source_files} imported source file(s) are preserved but not yet classified as authored scenario data, resource packaging, runtime cache, or compatibility baggage."
+                ),
+                source: Some("Source package".to_string()),
+            });
+        }
     }
     issues
 }

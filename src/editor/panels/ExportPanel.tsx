@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { Download, Gauge } from "lucide-react";
-import { BenchmarkReport, ExportReport, Project } from "../types";
+import { BenchmarkReport, ExportReport, Project, ScenarioTarget } from "../types";
 import { InfoGrid } from "../components/InfoGrid";
 import { ScrollArea } from "../ui";
 import {
@@ -23,9 +24,10 @@ export function ExportPanel({
   project: Project | null;
   exportReport: ExportReport | null;
   benchmark: BenchmarkReport | null;
-  onExport: () => void;
+  onExport: (target?: ScenarioTarget) => void;
   onBenchmark: () => void;
 }) {
+  const [target, setTarget] = useState<ScenarioTarget>("providence-portable-folder");
   const plan = exportPlan(project);
   return (
     <div className="editor-full-panel export-workbench">
@@ -34,7 +36,15 @@ export function ExportPanel({
           <span>Realmz Folder Export</span>
         </div>
         <div className="export-actions">
-          <button className="btn btn-primary" disabled={!project} onClick={onExport}>
+          <label className="field compact">
+            <span>Target</span>
+            <select value={target} onChange={(event) => setTarget(event.target.value as ScenarioTarget)}>
+              <option value="providence-portable-folder">Portable Providence Folder</option>
+              <option value="mac-classic-folder">Mac Classic Folder</option>
+              <option value="windows-realmz-folder">Windows Realmz Folder</option>
+            </select>
+          </label>
+          <button className="btn btn-primary" disabled={!project} onClick={() => onExport(target)}>
             <Download size={14} /> Export Scenario Folder
           </button>
           <button className="btn btn-secondary" disabled={!project} onClick={onBenchmark}>

@@ -1,6 +1,6 @@
 import { ReactNode, Suspense } from "react";
 import { EditorState } from "../store";
-import { BenchmarkReport, ExportReport, ManagedAssetKind, MapEntity, MapViewFlag, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
+import { BenchmarkReport, ExportReport, ManagedAssetKind, MapEntity, MapViewFlag, ProjectCommand, RandomLevel, ScenarioTarget, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
 import { MediaAssetImportOptions } from "../mediaAssets";
 import { LibraryDraftSpec } from "../libraryDrafts";
 import { Issue } from "../types";
@@ -314,7 +314,7 @@ type WorkbenchRouterProps = {
   onUpdateAsset: (assetId: string, changes: { label?: string; resourceId?: number }) => void;
   onDeleteAsset: (assetId: string) => void;
   onValidate: () => void;
-  onExport: () => void;
+  onExport: (target?: ScenarioTarget) => void;
   onBenchmark: () => void;
 };
 

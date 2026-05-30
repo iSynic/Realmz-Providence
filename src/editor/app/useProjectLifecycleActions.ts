@@ -6,7 +6,7 @@ import { createBrowserWorkspace, importBrowserLibrary } from "../browser/library
 import { benchmarkBrowserProject, createBrowserProject, importBrowserScenario, openBrowserProject, validateBrowserProject } from "../browser/project";
 import { LibraryDraftSpec, createLibraryDraft, updateLibraryDraft } from "../libraryDrafts";
 import { BROWSER_PREVIEW_STATUS, EditorAction, EditorState } from "../store";
-import { BenchmarkReport, ExportReport, LibraryCatalog, Project, ValidationReport } from "../types";
+import { BenchmarkReport, ExportReport, LibraryCatalog, Project, ScenarioTarget, ValidationReport } from "../types";
 import { commandError } from "../utils";
 import {
   defaultExportPath,
@@ -317,7 +317,7 @@ export function useProjectLifecycleActions({
     }
   }
 
-  async function exportProject() {
+  async function exportProject(scenarioTarget: ScenarioTarget = "providence-portable-folder") {
     if (!state.project) return;
     if (!desktopRuntime) {
       dispatch({ type: "setStatus", status: BROWSER_PREVIEW_STATUS });
@@ -338,7 +338,8 @@ export function useProjectLifecycleActions({
       const report = await invoke<ExportReport>("export_project", {
         projectDir,
         project: state.project,
-        outputDir: targetExportDir
+        outputDir: targetExportDir,
+        scenarioTarget
       });
       dispatch({ type: "setExportReport", report });
       dispatch({ type: "setStatus", status: `Exported ${report.writtenFiles.length} supported files` });
