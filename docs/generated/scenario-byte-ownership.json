@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-30T05:44:20.188Z",
+  "generatedAt": "2026-05-30T21:10:08.198Z",
   "classifications": [
     "decoded-writable",
     "decoded-readonly",
@@ -2407,7 +2407,7 @@
     },
     {
       "container": "Custom 1",
-      "authorFacingName": "Custom scenario media or landlook data",
+      "authorFacingName": "Custom compatibility/media companion; not a landlook runtime metadata file",
       "coverageStatus": "preserved-known",
       "role": "pass-through",
       "observedScenarioCount": 1,

@@ -541,6 +541,23 @@ fn write_managed_resources(
 }
 
 fn resource_file_name(project: &ProvidenceProject) -> String {
+    let shell_name = scenario_shell_file_name(project);
+    let mut preferred = vec![
+        "Scenario.rsrc".to_string(),
+        "Scenario.rsf".to_string(),
+        format!("{shell_name}.rsrc"),
+        format!("{shell_name}.rsf"),
+        "Scenario".to_string(),
+    ];
+    preferred.dedup();
+    for candidate in preferred {
+        if let Some(file) = project.source.files.iter().find(|file| {
+            matches!(file.role, crate::project::SourceFileRole::ResourceFork)
+                && file.name.eq_ignore_ascii_case(&candidate)
+        }) {
+            return file.name.clone();
+        }
+    }
     project
         .source
         .files

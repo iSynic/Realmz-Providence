@@ -32,7 +32,7 @@ const RESOURCE_TYPE_POLICIES = {
     role: "Picture resource",
     payloadStatus: "preserved-standard-media-payload",
     codecStatus: "standard-media-preserved",
-    codecBacklog: "PICT container entries are located and preserved; opcode-level PICT decode/write remains a stage-two media codec task."
+    codecBacklog: "PICT container entries are located and preserved; opcode-level PICT decode/write remains a stage-two media codec task. Scenario pictures and custom landlook atlases are writable only through known-good normalized PICT replacement."
   },
   cicn: {
     role: "Color icon resource",

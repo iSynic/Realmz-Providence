@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-30T04:25:07.000Z",
+  "generatedAt": "2026-05-30T21:13:28.600Z",
   "sources": {
     "roundtripLedger": "docs/generated/scenario-byte-roundtrip-ledger.json",
     "scenarioByteOwnership": "docs/generated/scenario-byte-ownership.json",

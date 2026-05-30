@@ -18,6 +18,7 @@ import {
   attachProjectAsset,
   deleteProjectAsset,
   replaceProjectAsset,
+  replaceCustomLandlookAtlas,
   updateProjectAsset
 } from "./projectCommands/assetCommands";
 import {
@@ -128,6 +129,7 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "updateScenarioStartup") return updateScenarioStartup(project, command.fields);
   if (command.kind === "attachProjectAsset") return attachProjectAsset(project, command);
   if (command.kind === "replaceProjectAsset") return replaceProjectAsset(project, command);
+  if (command.kind === "replaceCustomLandlookAtlas") return replaceCustomLandlookAtlas(project, command);
   if (command.kind === "updateProjectAsset") return updateProjectAsset(project, command);
   if (command.kind === "deleteProjectAsset") return deleteProjectAsset(project, command);
   return project;

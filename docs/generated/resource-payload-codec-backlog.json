@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-30T04:25:07.222Z",
+  "generatedAt": "2026-05-30T21:09:48.626Z",
   "summary": {
     "payloadFamilies": 18,
     "needsCodecWork": 0,
@@ -75,7 +75,7 @@
           "bytes": 88172
         }
       ],
-      "nextCodecWork": "PICT container entries are located and preserved; opcode-level PICT decode/write remains a stage-two media codec task."
+      "nextCodecWork": "PICT container entries are located and preserved; opcode-level PICT decode/write remains a stage-two media codec task. Scenario pictures and custom landlook atlases are writable only through known-good normalized PICT replacement."
     },
     {
       "type": "cicn",

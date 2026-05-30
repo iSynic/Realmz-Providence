@@ -755,6 +755,7 @@ export function managedConversionRows(asset: ManagedAsset): Array<[string, strin
 
 export function importTargetLabel(target: NonNullable<ManagedAsset["conversion"]>["target"]) {
   if (target === "scenario-picture") return "Scenario Picture";
+  if (target === "custom-landlook-atlas") return "Custom Landlook Atlas";
   if (target === "special-land-tile") return "Special Land Tile";
   if (target === "icon") return "Icon";
   if (target === "sound") return "Sound";

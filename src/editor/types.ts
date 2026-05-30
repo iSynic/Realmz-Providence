@@ -45,7 +45,7 @@ export type MapViewOptions = Record<MapViewFlag, boolean>;
 export type PaintCellChange = { x: number; y: number; index: number; from: number; to: number };
 export type ManagedAssetKind = "picture" | "icon" | "special-land-tile" | "sound" | "text" | "other";
 export type ManagedAssetExportState = "ready" | "blocked" | "preview-only";
-export type AssetImportTarget = "scenario-picture" | "icon" | "special-land-tile" | "sound";
+export type AssetImportTarget = "scenario-picture" | "custom-landlook-atlas" | "icon" | "special-land-tile" | "sound";
 export type ImageFitMode = "fit" | "crop" | "stretch";
 export type ImageScaleMode = "smooth" | "crisp";
 export type ImageMatte = "transparent" | "white" | "black";
@@ -290,6 +290,35 @@ export type CustomLandlookMetadata = {
   rawBytes: number[];
   writerGate: LandlookWriterGate;
   authored: boolean;
+};
+
+export type CustomLandlookAtlasArtifact = {
+  landlook: number;
+  pictId: number;
+  resourceFile: string | null;
+  available: boolean;
+  previewable: boolean;
+  writerStatus: string;
+  role: string;
+};
+
+export type CustomLandlookAtlasWriterGate = {
+  writerStatus: string;
+  requiredWidth: number;
+  requiredHeight: number;
+  tileWidth: number;
+  tileHeight: number;
+  resourceType: string;
+  supportedRoute: string;
+  evidence: string[];
+};
+
+export type CustomLandlookUsage = {
+  landlook: number;
+  pictId: number;
+  metadataFile: string;
+  mapIds: string[];
+  mapCount: number;
 };
 
 export type TilePaletteCategory =
@@ -859,6 +888,7 @@ export type ProjectCommand =
   | { kind: "updateCustomLandTileCombatBuild"; label: string; landlook: number; tile: number; row: number; col: number; value: number }
   | { kind: "updateCustomLandlookBase"; label: string; landlook: number; baseTile?: number; baseScale?: number }
   | { kind: "updateCustomLandlookRangeSlot"; label: string; landlook: number; slot: number; firstTile?: number; lastTile?: number }
+  | { kind: "replaceCustomLandlookAtlas"; label: string; landlook: number; asset: ManagedAsset }
   | {
       kind: "createRandomRect";
       label: string;

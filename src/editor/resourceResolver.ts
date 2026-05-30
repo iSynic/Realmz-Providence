@@ -84,6 +84,7 @@ export function resourceExportScopeLabel(scope: ResourceExportScope) {
 
 export function resourceRole(asset: ManagedAsset | LibraryAsset): ResourceRole {
   if ("exportState" in asset) {
+    if (asset.linkedEntity?.startsWith("landlook:") && asset.resourceType === "PICT") return "tile-atlas";
     if (asset.kind === "picture" && asset.resourceType === "PICT" && asset.resourceId >= 30000 && asset.resourceId <= 30128) return "scenario-picture";
     if (asset.kind === "picture") return "picture";
     if (asset.kind === "sound") return "sound";

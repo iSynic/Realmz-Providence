@@ -26,6 +26,7 @@ export type MediaAssetImportOptions = {
   matte?: ImageMatte;
   paletteMode?: PaletteMode;
   ditherMode?: DitherMode;
+  linkedEntity?: string | null;
 };
 
 export type MediaAssetSourceInfo = {
@@ -122,7 +123,7 @@ export async function fileToMediaAssetRequest(
         durationMs: decoded.durationMs,
         pcm8Base64: bytesToBase64(decoded.pcm8)
       },
-      linkedEntity: null,
+      linkedEntity: options.linkedEntity ?? null,
       target,
       fitMode: null,
       scaleMode: null,
@@ -147,7 +148,9 @@ export async function fileToMediaAssetRequest(
   const imageProfile = normalizeImageOptions(kind, decoded, options);
   const prepared = prepareDecodedImage(decoded, kind, imageProfile);
   if (resourceId === 0) warnings.push("Resource ID 0 is unusual; choose a nonzero ID before export.");
-  if (kind === "picture" && (resourceId < SCENARIO_PICTURE_MIN_ID || resourceId > SCENARIO_PICTURE_MAX_ID)) {
+  if (target === "custom-landlook-atlas") {
+    if (resourceId < 306 || resourceId > 308) warnings.push("Custom landlook atlases use PICT IDs 306-308.");
+  } else if (kind === "picture" && (resourceId < SCENARIO_PICTURE_MIN_ID || resourceId > SCENARIO_PICTURE_MAX_ID)) {
     warnings.push(`Scenario pictures normally use IDs ${SCENARIO_PICTURE_MIN_ID}-${SCENARIO_PICTURE_MAX_ID}.`);
   }
   if (kind === "special-land-tile" && resourceId >= 0) {
@@ -167,7 +170,7 @@ export async function fileToMediaAssetRequest(
     previewBase64: bytesToBase64(preview),
     image: { width: prepared.width, height: prepared.height, rgbaBase64: bytesToBase64(prepared.rgba) },
     audio: null,
-    linkedEntity: kind === "special-land-tile" ? `special-land-tile:${resourceId}` : null,
+    linkedEntity: options.linkedEntity ?? (kind === "special-land-tile" ? `special-land-tile:${resourceId}` : null),
     target,
     fitMode: imageProfile.fitMode,
     scaleMode: imageProfile.scaleMode,
@@ -292,10 +295,11 @@ function normalizeImageOptions(
   decoded: Awaited<ReturnType<typeof decodeImageFile>>,
   options: MediaAssetImportOptions
 ) {
-  const fixedSize = kind === "icon" || kind === "special-land-tile";
+  const fixedSize = kind === "icon" || kind === "special-land-tile" || options.target === "custom-landlook-atlas";
   const alreadySmall = decoded.width <= 64 && decoded.height <= 64;
   const scaleMode = options.scaleMode ?? (fixedSize && alreadySmall ? "crisp" : "smooth");
   return {
+    target: options.target ?? assetTargetForKind(kind),
     fitMode: fixedSize ? options.fitMode ?? "fit" : null,
     scaleMode,
     matte: options.matte ?? (kind === "picture" ? "white" : "transparent"),
@@ -309,9 +313,10 @@ function prepareDecodedImage(
   kind: ManagedAssetKind,
   profile: ReturnType<typeof normalizeImageOptions>
 ) {
-  const fixedSize = kind === "icon" || kind === "special-land-tile";
-  const width = fixedSize ? 32 : decoded.width;
-  const height = fixedSize ? 32 : decoded.height;
+  const atlasSize = profile.target === "custom-landlook-atlas";
+  const fixedSize = kind === "icon" || kind === "special-land-tile" || atlasSize;
+  const width = atlasSize ? 640 : fixedSize ? 32 : decoded.width;
+  const height = atlasSize ? 320 : fixedSize ? 32 : decoded.height;
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;

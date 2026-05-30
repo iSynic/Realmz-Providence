@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-30T04:25:07.008Z",
+  "generatedAt": "2026-05-30T21:13:28.608Z",
   "sources": {
     "targetCompatibility": "docs/generated/scenario-target-compatibility.json",
     "mediaBoundary": "docs/generated/media-codec-boundary.json"

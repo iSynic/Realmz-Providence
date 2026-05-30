@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-30T05:44:19.398Z",
+  "generatedAt": "2026-05-30T21:09:32.169Z",
   "sources": {
     "roundtripLedger": "docs/generated/scenario-byte-roundtrip-ledger.json",
     "resourceForkInventory": "docs/generated/resource-fork-inventory.json",
@@ -24,8 +24,36 @@
     "rangeTailOffset": 8044,
     "rangeSlots": 10,
     "rangeSlotBytes": 6,
-    "expectedBytes": 8104
+    "expectedBytes": 8104,
+    "randomLevelBytes": 644,
+    "randomLevelLandlookOffset": 520
   },
+  "runtimeLookup": [
+    {
+      "landlook": 6,
+      "metadataFile": "Data Custom 1 BD",
+      "pictId": 306,
+      "pictResource": "PICT 306",
+      "sourceAnchor": "F:/Realmz/src/realmz_orig/loadland-loadpixmap.c:36-132",
+      "companionFileRole": "Custom 1 is not opened by Realmz loadpixmap for landlook 6; preserve unless separate evidence proves another role."
+    },
+    {
+      "landlook": 7,
+      "metadataFile": "Data Custom 2 BD",
+      "pictId": 307,
+      "pictResource": "PICT 307",
+      "sourceAnchor": "F:/Realmz/src/realmz_orig/loadland-loadpixmap.c:36-132",
+      "companionFileRole": "Custom 2 is not opened by Realmz loadpixmap for landlook 7; preserve unless separate evidence proves another role."
+    },
+    {
+      "landlook": 8,
+      "metadataFile": "Data Custom 3 BD",
+      "pictId": 308,
+      "pictResource": "PICT 308",
+      "sourceAnchor": "F:/Realmz/src/realmz_orig/loadland-loadpixmap.c:36-132",
+      "companionFileRole": "Custom 3 is not opened by Realmz loadpixmap for landlook 8; preserve unless separate evidence proves another role."
+    }
+  ],
   "ownership": {
     "recordBytes": {
       "start": 0,
@@ -76,6 +104,13 @@
       "PICT 307": 15,
       "PICT 308": 9
     },
+    "usedLandlookReferences": {
+      "6": 49,
+      "7": 66,
+      "8": 24
+    },
+    "missingReferencedMetadata": 0,
+    "missingReferencedAtlas": 0,
     "observedMetadataByteLengths": {
       "8104": 56
     },
@@ -267,6 +302,7 @@
       "name": "City of Bywater",
       "sourceRoot": "F:/Realmz/out_win_clang/Scenarios",
       "sourcePath": "F:/Realmz/out_win_clang/Scenarios/City of Bywater",
+      "usedCustomLandlooks": {},
       "landlooks": [
         {
           "landlook": 6,
@@ -427,6 +463,7 @@
           },
           "customFile": null,
           "linkedPict": null,
+          "referencedByMaps": [],
           "artifactStatus": "metadata-present-atlas-missing"
         }
       ]
@@ -435,6 +472,62 @@
       "name": "Half Truth",
       "sourceRoot": "F:/Realmz/out_win_clang/Scenarios",
       "sourcePath": "F:/Realmz/out_win_clang/Scenarios/Half Truth",
+      "usedCustomLandlooks": {
+        "6": [
+          {
+            "mapId": "land:4",
+            "levelIndex": 4,
+            "sourceFile": "Data RD",
+            "byteOffset": 3096
+          },
+          {
+            "mapId": "land:6",
+            "levelIndex": 6,
+            "sourceFile": "Data RD",
+            "byteOffset": 4384
+          },
+          {
+            "mapId": "land:7",
+            "levelIndex": 7,
+            "sourceFile": "Data RD",
+            "byteOffset": 5028
+          },
+          {
+            "mapId": "land:8",
+            "levelIndex": 8,
+            "sourceFile": "Data RD",
+            "byteOffset": 5672
+          },
+          {
+            "mapId": "land:10",
+            "levelIndex": 10,
+            "sourceFile": "Data RD",
+            "byteOffset": 6960
+          }
+        ],
+        "7": [
+          {
+            "mapId": "land:0",
+            "levelIndex": 0,
+            "sourceFile": "Data RD",
+            "byteOffset": 520
+          },
+          {
+            "mapId": "land:9",
+            "levelIndex": 9,
+            "sourceFile": "Data RD",
+            "byteOffset": 6316
+          }
+        ],
+        "8": [
+          {
+            "mapId": "land:11",
+            "levelIndex": 11,
+            "sourceFile": "Data RD",
+            "byteOffset": 7604
+          }
+        ]
+      },
       "landlooks": [
         {
           "landlook": 6,
@@ -558,8 +651,45 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 202988,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:4",
+              "levelIndex": 4,
+              "sourceFile": "Data RD",
+              "byteOffset": 3096
+            },
+            {
+              "mapId": "land:6",
+              "levelIndex": 6,
+              "sourceFile": "Data RD",
+              "byteOffset": 4384
+            },
+            {
+              "mapId": "land:7",
+              "levelIndex": 7,
+              "sourceFile": "Data RD",
+              "byteOffset": 5028
+            },
+            {
+              "mapId": "land:8",
+              "levelIndex": 8,
+              "sourceFile": "Data RD",
+              "byteOffset": 5672
+            },
+            {
+              "mapId": "land:10",
+              "levelIndex": 10,
+              "sourceFile": "Data RD",
+              "byteOffset": 6960
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         },
         {
@@ -725,8 +855,27 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 203024,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:7"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:0",
+              "levelIndex": 0,
+              "sourceFile": "Data RD",
+              "byteOffset": 520
+            },
+            {
+              "mapId": "land:9",
+              "levelIndex": 9,
+              "sourceFile": "Data RD",
+              "byteOffset": 6316
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         },
         {
@@ -892,8 +1041,21 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 200184,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:8"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:11",
+              "levelIndex": 11,
+              "sourceFile": "Data RD",
+              "byteOffset": 7604
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]
@@ -902,6 +1064,16 @@
       "name": "Hax",
       "sourceRoot": "F:/Realmz/out_win_clang/Scenarios",
       "sourcePath": "F:/Realmz/out_win_clang/Scenarios/Hax",
+      "usedCustomLandlooks": {
+        "6": [
+          {
+            "mapId": "land:0",
+            "levelIndex": 0,
+            "sourceFile": "Data RD",
+            "byteOffset": 520
+          }
+        ]
+      },
       "landlooks": [
         {
           "landlook": 6,
@@ -1066,8 +1238,21 @@
             "resourceFile": "Scenario.rsf",
             "bytes": 195254,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:0",
+              "levelIndex": 0,
+              "sourceFile": "Data RD",
+              "byteOffset": 520
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]
@@ -1076,6 +1261,16 @@
       "name": "Kalypso's Island",
       "sourceRoot": "F:/Realmz/out_win_clang/Scenarios",
       "sourcePath": "F:/Realmz/out_win_clang/Scenarios/Kalypso's Island",
+      "usedCustomLandlooks": {
+        "6": [
+          {
+            "mapId": "land:0",
+            "levelIndex": 0,
+            "sourceFile": "Data RD",
+            "byteOffset": 520
+          }
+        ]
+      },
       "landlooks": [
         {
           "landlook": 6,
@@ -1240,8 +1435,21 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 189166,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:0",
+              "levelIndex": 0,
+              "sourceFile": "Data RD",
+              "byteOffset": 520
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]
@@ -1250,6 +1458,16 @@
       "name": "Lord of the Abyss",
       "sourceRoot": "F:/Realmz/out_win_clang/Scenarios",
       "sourcePath": "F:/Realmz/out_win_clang/Scenarios/Lord of the Abyss",
+      "usedCustomLandlooks": {
+        "6": [
+          {
+            "mapId": "land:3",
+            "levelIndex": 3,
+            "sourceFile": "Data RD",
+            "byteOffset": 2452
+          }
+        ]
+      },
       "landlooks": [
         {
           "landlook": 6,
@@ -1411,16 +1629,29 @@
           "customFile": {
             "fileName": "Custom 1",
             "bytes": 85324,
-            "role": "preserved-known-custom-landlook-companion",
-            "writerStatus": "preserve-only-until-runtime-role-proven"
+            "role": "preserved-known-non-runtime-landlook-companion",
+            "writerStatus": "preserve-only-not-read-by-realmz-loadpixmap"
           },
           "linkedPict": {
             "id": 306,
             "resourceFile": "Scenario.rsf",
             "bytes": 198448,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:3",
+              "levelIndex": 3,
+              "sourceFile": "Data RD",
+              "byteOffset": 2452
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]
@@ -1429,6 +1660,16 @@
       "name": "Price of Power",
       "sourceRoot": "F:/Realmz/out_win_clang/Scenarios",
       "sourcePath": "F:/Realmz/out_win_clang/Scenarios/Price of Power",
+      "usedCustomLandlooks": {
+        "6": [
+          {
+            "mapId": "land:5",
+            "levelIndex": 5,
+            "sourceFile": "Data RD",
+            "byteOffset": 3740
+          }
+        ]
+      },
       "landlooks": [
         {
           "landlook": 6,
@@ -1593,8 +1834,21 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 205384,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:5",
+              "levelIndex": 5,
+              "sourceFile": "Data RD",
+              "byteOffset": 3740
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]
@@ -1603,6 +1857,7 @@
       "name": "Search for the Lost City",
       "sourceRoot": "F:/Realmz/out_win_clang/Scenarios",
       "sourcePath": "F:/Realmz/out_win_clang/Scenarios/Search for the Lost City",
+      "usedCustomLandlooks": {},
       "landlooks": [
         {
           "landlook": 6,
@@ -1767,8 +2022,14 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 182612,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]
@@ -1777,6 +2038,66 @@
       "name": "Spires of Steel",
       "sourceRoot": "F:/Realmz/out_win_clang/Scenarios",
       "sourcePath": "F:/Realmz/out_win_clang/Scenarios/Spires of Steel",
+      "usedCustomLandlooks": {
+        "6": [
+          {
+            "mapId": "land:0",
+            "levelIndex": 0,
+            "sourceFile": "Data RD",
+            "byteOffset": 520
+          }
+        ],
+        "7": [
+          {
+            "mapId": "land:1",
+            "levelIndex": 1,
+            "sourceFile": "Data RD",
+            "byteOffset": 1164
+          },
+          {
+            "mapId": "land:2",
+            "levelIndex": 2,
+            "sourceFile": "Data RD",
+            "byteOffset": 1808
+          },
+          {
+            "mapId": "land:3",
+            "levelIndex": 3,
+            "sourceFile": "Data RD",
+            "byteOffset": 2452
+          },
+          {
+            "mapId": "land:4",
+            "levelIndex": 4,
+            "sourceFile": "Data RD",
+            "byteOffset": 3096
+          },
+          {
+            "mapId": "land:5",
+            "levelIndex": 5,
+            "sourceFile": "Data RD",
+            "byteOffset": 3740
+          },
+          {
+            "mapId": "land:6",
+            "levelIndex": 6,
+            "sourceFile": "Data RD",
+            "byteOffset": 4384
+          },
+          {
+            "mapId": "land:7",
+            "levelIndex": 7,
+            "sourceFile": "Data RD",
+            "byteOffset": 5028
+          },
+          {
+            "mapId": "land:8",
+            "levelIndex": 8,
+            "sourceFile": "Data RD",
+            "byteOffset": 5672
+          }
+        ]
+      },
       "landlooks": [
         {
           "landlook": 6,
@@ -1941,8 +2262,21 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 197532,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:0",
+              "levelIndex": 0,
+              "sourceFile": "Data RD",
+              "byteOffset": 520
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         },
         {
@@ -2078,8 +2412,63 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 126518,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:7"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:1",
+              "levelIndex": 1,
+              "sourceFile": "Data RD",
+              "byteOffset": 1164
+            },
+            {
+              "mapId": "land:2",
+              "levelIndex": 2,
+              "sourceFile": "Data RD",
+              "byteOffset": 1808
+            },
+            {
+              "mapId": "land:3",
+              "levelIndex": 3,
+              "sourceFile": "Data RD",
+              "byteOffset": 2452
+            },
+            {
+              "mapId": "land:4",
+              "levelIndex": 4,
+              "sourceFile": "Data RD",
+              "byteOffset": 3096
+            },
+            {
+              "mapId": "land:5",
+              "levelIndex": 5,
+              "sourceFile": "Data RD",
+              "byteOffset": 3740
+            },
+            {
+              "mapId": "land:6",
+              "levelIndex": 6,
+              "sourceFile": "Data RD",
+              "byteOffset": 4384
+            },
+            {
+              "mapId": "land:7",
+              "levelIndex": 7,
+              "sourceFile": "Data RD",
+              "byteOffset": 5028
+            },
+            {
+              "mapId": "land:8",
+              "levelIndex": 8,
+              "sourceFile": "Data RD",
+              "byteOffset": 5672
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]
@@ -2088,6 +2477,60 @@
       "name": "Trouble in the Sword Lands",
       "sourceRoot": "F:/Realmz/out_win_clang/Scenarios",
       "sourcePath": "F:/Realmz/out_win_clang/Scenarios/Trouble in the Sword Lands",
+      "usedCustomLandlooks": {
+        "6": [
+          {
+            "mapId": "land:14",
+            "levelIndex": 14,
+            "sourceFile": "Data RD",
+            "byteOffset": 9536
+          }
+        ],
+        "7": [
+          {
+            "mapId": "land:0",
+            "levelIndex": 0,
+            "sourceFile": "Data RD",
+            "byteOffset": 520
+          },
+          {
+            "mapId": "land:3",
+            "levelIndex": 3,
+            "sourceFile": "Data RD",
+            "byteOffset": 2452
+          },
+          {
+            "mapId": "land:4",
+            "levelIndex": 4,
+            "sourceFile": "Data RD",
+            "byteOffset": 3096
+          },
+          {
+            "mapId": "land:5",
+            "levelIndex": 5,
+            "sourceFile": "Data RD",
+            "byteOffset": 3740
+          },
+          {
+            "mapId": "land:9",
+            "levelIndex": 9,
+            "sourceFile": "Data RD",
+            "byteOffset": 6316
+          },
+          {
+            "mapId": "land:10",
+            "levelIndex": 10,
+            "sourceFile": "Data RD",
+            "byteOffset": 6960
+          },
+          {
+            "mapId": "land:11",
+            "levelIndex": 11,
+            "sourceFile": "Data RD",
+            "byteOffset": 7604
+          }
+        ]
+      },
       "landlooks": [
         {
           "landlook": 6,
@@ -2252,8 +2695,21 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 205294,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:14",
+              "levelIndex": 14,
+              "sourceFile": "Data RD",
+              "byteOffset": 9536
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         },
         {
@@ -2419,8 +2875,57 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 205744,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:7"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:0",
+              "levelIndex": 0,
+              "sourceFile": "Data RD",
+              "byteOffset": 520
+            },
+            {
+              "mapId": "land:3",
+              "levelIndex": 3,
+              "sourceFile": "Data RD",
+              "byteOffset": 2452
+            },
+            {
+              "mapId": "land:4",
+              "levelIndex": 4,
+              "sourceFile": "Data RD",
+              "byteOffset": 3096
+            },
+            {
+              "mapId": "land:5",
+              "levelIndex": 5,
+              "sourceFile": "Data RD",
+              "byteOffset": 3740
+            },
+            {
+              "mapId": "land:9",
+              "levelIndex": 9,
+              "sourceFile": "Data RD",
+              "byteOffset": 6316
+            },
+            {
+              "mapId": "land:10",
+              "levelIndex": 10,
+              "sourceFile": "Data RD",
+              "byteOffset": 6960
+            },
+            {
+              "mapId": "land:11",
+              "levelIndex": 11,
+              "sourceFile": "Data RD",
+              "byteOffset": 7604
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]
@@ -2429,6 +2934,62 @@
       "name": "War in the Sword Lands",
       "sourceRoot": "F:/Realmz/out_win_clang/Scenarios",
       "sourcePath": "F:/Realmz/out_win_clang/Scenarios/War in the Sword Lands",
+      "usedCustomLandlooks": {
+        "6": [
+          {
+            "mapId": "land:6",
+            "levelIndex": 6,
+            "sourceFile": "Data RD",
+            "byteOffset": 4384
+          }
+        ],
+        "7": [
+          {
+            "mapId": "land:0",
+            "levelIndex": 0,
+            "sourceFile": "Data RD",
+            "byteOffset": 520
+          },
+          {
+            "mapId": "land:1",
+            "levelIndex": 1,
+            "sourceFile": "Data RD",
+            "byteOffset": 1164
+          },
+          {
+            "mapId": "land:2",
+            "levelIndex": 2,
+            "sourceFile": "Data RD",
+            "byteOffset": 1808
+          },
+          {
+            "mapId": "land:3",
+            "levelIndex": 3,
+            "sourceFile": "Data RD",
+            "byteOffset": 2452
+          }
+        ],
+        "8": [
+          {
+            "mapId": "land:8",
+            "levelIndex": 8,
+            "sourceFile": "Data RD",
+            "byteOffset": 5672
+          },
+          {
+            "mapId": "land:19",
+            "levelIndex": 19,
+            "sourceFile": "Data RD",
+            "byteOffset": 12756
+          },
+          {
+            "mapId": "land:20",
+            "levelIndex": 20,
+            "sourceFile": "Data RD",
+            "byteOffset": 13400
+          }
+        ]
+      },
       "landlooks": [
         {
           "landlook": 6,
@@ -2593,8 +3154,21 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 208228,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:6",
+              "levelIndex": 6,
+              "sourceFile": "Data RD",
+              "byteOffset": 4384
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         },
         {
@@ -2760,8 +3334,39 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 205594,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:7"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:0",
+              "levelIndex": 0,
+              "sourceFile": "Data RD",
+              "byteOffset": 520
+            },
+            {
+              "mapId": "land:1",
+              "levelIndex": 1,
+              "sourceFile": "Data RD",
+              "byteOffset": 1164
+            },
+            {
+              "mapId": "land:2",
+              "levelIndex": 2,
+              "sourceFile": "Data RD",
+              "byteOffset": 1808
+            },
+            {
+              "mapId": "land:3",
+              "levelIndex": 3,
+              "sourceFile": "Data RD",
+              "byteOffset": 2452
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         },
         {
@@ -2927,8 +3532,33 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 204872,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:8"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:8",
+              "levelIndex": 8,
+              "sourceFile": "Data RD",
+              "byteOffset": 5672
+            },
+            {
+              "mapId": "land:19",
+              "levelIndex": 19,
+              "sourceFile": "Data RD",
+              "byteOffset": 12756
+            },
+            {
+              "mapId": "land:20",
+              "levelIndex": 20,
+              "sourceFile": "Data RD",
+              "byteOffset": 13400
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]
@@ -2937,6 +3567,74 @@
       "name": "Wrath of the Mind Lords",
       "sourceRoot": "F:/Realmz/out_win_clang/Scenarios",
       "sourcePath": "F:/Realmz/out_win_clang/Scenarios/Wrath of the Mind Lords",
+      "usedCustomLandlooks": {
+        "6": [
+          {
+            "mapId": "land:1",
+            "levelIndex": 1,
+            "sourceFile": "Data RD",
+            "byteOffset": 1164
+          },
+          {
+            "mapId": "land:2",
+            "levelIndex": 2,
+            "sourceFile": "Data RD",
+            "byteOffset": 1808
+          },
+          {
+            "mapId": "land:3",
+            "levelIndex": 3,
+            "sourceFile": "Data RD",
+            "byteOffset": 2452
+          },
+          {
+            "mapId": "land:6",
+            "levelIndex": 6,
+            "sourceFile": "Data RD",
+            "byteOffset": 4384
+          },
+          {
+            "mapId": "land:7",
+            "levelIndex": 7,
+            "sourceFile": "Data RD",
+            "byteOffset": 5028
+          }
+        ],
+        "7": [
+          {
+            "mapId": "land:8",
+            "levelIndex": 8,
+            "sourceFile": "Data RD",
+            "byteOffset": 5672
+          }
+        ],
+        "8": [
+          {
+            "mapId": "land:13",
+            "levelIndex": 13,
+            "sourceFile": "Data RD",
+            "byteOffset": 8892
+          },
+          {
+            "mapId": "land:14",
+            "levelIndex": 14,
+            "sourceFile": "Data RD",
+            "byteOffset": 9536
+          },
+          {
+            "mapId": "land:17",
+            "levelIndex": 17,
+            "sourceFile": "Data RD",
+            "byteOffset": 11468
+          },
+          {
+            "mapId": "land:18",
+            "levelIndex": 18,
+            "sourceFile": "Data RD",
+            "byteOffset": 12112
+          }
+        ]
+      },
       "landlooks": [
         {
           "landlook": 6,
@@ -3101,8 +3799,45 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 206970,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:1",
+              "levelIndex": 1,
+              "sourceFile": "Data RD",
+              "byteOffset": 1164
+            },
+            {
+              "mapId": "land:2",
+              "levelIndex": 2,
+              "sourceFile": "Data RD",
+              "byteOffset": 1808
+            },
+            {
+              "mapId": "land:3",
+              "levelIndex": 3,
+              "sourceFile": "Data RD",
+              "byteOffset": 2452
+            },
+            {
+              "mapId": "land:6",
+              "levelIndex": 6,
+              "sourceFile": "Data RD",
+              "byteOffset": 4384
+            },
+            {
+              "mapId": "land:7",
+              "levelIndex": 7,
+              "sourceFile": "Data RD",
+              "byteOffset": 5028
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         },
         {
@@ -3268,8 +4003,21 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 158628,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:7"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:8",
+              "levelIndex": 8,
+              "sourceFile": "Data RD",
+              "byteOffset": 5672
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         },
         {
@@ -3435,8 +4183,39 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 204872,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:8"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:13",
+              "levelIndex": 13,
+              "sourceFile": "Data RD",
+              "byteOffset": 8892
+            },
+            {
+              "mapId": "land:14",
+              "levelIndex": 14,
+              "sourceFile": "Data RD",
+              "byteOffset": 9536
+            },
+            {
+              "mapId": "land:17",
+              "levelIndex": 17,
+              "sourceFile": "Data RD",
+              "byteOffset": 11468
+            },
+            {
+              "mapId": "land:18",
+              "levelIndex": 18,
+              "sourceFile": "Data RD",
+              "byteOffset": 12112
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]
@@ -3445,6 +4224,7 @@
       "name": "City of Bywater",
       "sourceRoot": "F:/Realmz/base/Realmz/Scenarios",
       "sourcePath": "F:/Realmz/base/Realmz/Scenarios/City of Bywater",
+      "usedCustomLandlooks": {},
       "landlooks": [
         {
           "landlook": 6,
@@ -3605,6 +4385,7 @@
           },
           "customFile": null,
           "linkedPict": null,
+          "referencedByMaps": [],
           "artifactStatus": "metadata-present-atlas-missing"
         }
       ]
@@ -3613,6 +4394,62 @@
       "name": "Half Truth",
       "sourceRoot": "F:/Realmz/base/Realmz/Scenarios",
       "sourcePath": "F:/Realmz/base/Realmz/Scenarios/Half Truth",
+      "usedCustomLandlooks": {
+        "6": [
+          {
+            "mapId": "land:4",
+            "levelIndex": 4,
+            "sourceFile": "Data RD",
+            "byteOffset": 3096
+          },
+          {
+            "mapId": "land:6",
+            "levelIndex": 6,
+            "sourceFile": "Data RD",
+            "byteOffset": 4384
+          },
+          {
+            "mapId": "land:7",
+            "levelIndex": 7,
+            "sourceFile": "Data RD",
+            "byteOffset": 5028
+          },
+          {
+            "mapId": "land:8",
+            "levelIndex": 8,
+            "sourceFile": "Data RD",
+            "byteOffset": 5672
+          },
+          {
+            "mapId": "land:10",
+            "levelIndex": 10,
+            "sourceFile": "Data RD",
+            "byteOffset": 6960
+          }
+        ],
+        "7": [
+          {
+            "mapId": "land:0",
+            "levelIndex": 0,
+            "sourceFile": "Data RD",
+            "byteOffset": 520
+          },
+          {
+            "mapId": "land:9",
+            "levelIndex": 9,
+            "sourceFile": "Data RD",
+            "byteOffset": 6316
+          }
+        ],
+        "8": [
+          {
+            "mapId": "land:11",
+            "levelIndex": 11,
+            "sourceFile": "Data RD",
+            "byteOffset": 7604
+          }
+        ]
+      },
       "landlooks": [
         {
           "landlook": 6,
@@ -3736,8 +4573,45 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 202988,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:4",
+              "levelIndex": 4,
+              "sourceFile": "Data RD",
+              "byteOffset": 3096
+            },
+            {
+              "mapId": "land:6",
+              "levelIndex": 6,
+              "sourceFile": "Data RD",
+              "byteOffset": 4384
+            },
+            {
+              "mapId": "land:7",
+              "levelIndex": 7,
+              "sourceFile": "Data RD",
+              "byteOffset": 5028
+            },
+            {
+              "mapId": "land:8",
+              "levelIndex": 8,
+              "sourceFile": "Data RD",
+              "byteOffset": 5672
+            },
+            {
+              "mapId": "land:10",
+              "levelIndex": 10,
+              "sourceFile": "Data RD",
+              "byteOffset": 6960
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         },
         {
@@ -3903,8 +4777,27 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 203024,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:7"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:0",
+              "levelIndex": 0,
+              "sourceFile": "Data RD",
+              "byteOffset": 520
+            },
+            {
+              "mapId": "land:9",
+              "levelIndex": 9,
+              "sourceFile": "Data RD",
+              "byteOffset": 6316
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         },
         {
@@ -4070,8 +4963,21 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 200184,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:8"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:11",
+              "levelIndex": 11,
+              "sourceFile": "Data RD",
+              "byteOffset": 7604
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]
@@ -4080,6 +4986,7 @@
       "name": "Test",
       "sourceRoot": "F:/Realmz/base/Realmz/Scenarios",
       "sourcePath": "F:/Realmz/base/Realmz/Scenarios/Test",
+      "usedCustomLandlooks": {},
       "landlooks": [
         {
           "landlook": 6,
@@ -4240,6 +5147,7 @@
           },
           "customFile": null,
           "linkedPict": null,
+          "referencedByMaps": [],
           "artifactStatus": "metadata-present-atlas-missing"
         }
       ]
@@ -4248,6 +5156,60 @@
       "name": "Trouble in the Sword Lands",
       "sourceRoot": "F:/Realmz/base/Realmz/Scenarios",
       "sourcePath": "F:/Realmz/base/Realmz/Scenarios/Trouble in the Sword Lands",
+      "usedCustomLandlooks": {
+        "6": [
+          {
+            "mapId": "land:14",
+            "levelIndex": 14,
+            "sourceFile": "Data RD",
+            "byteOffset": 9536
+          }
+        ],
+        "7": [
+          {
+            "mapId": "land:0",
+            "levelIndex": 0,
+            "sourceFile": "Data RD",
+            "byteOffset": 520
+          },
+          {
+            "mapId": "land:3",
+            "levelIndex": 3,
+            "sourceFile": "Data RD",
+            "byteOffset": 2452
+          },
+          {
+            "mapId": "land:4",
+            "levelIndex": 4,
+            "sourceFile": "Data RD",
+            "byteOffset": 3096
+          },
+          {
+            "mapId": "land:5",
+            "levelIndex": 5,
+            "sourceFile": "Data RD",
+            "byteOffset": 3740
+          },
+          {
+            "mapId": "land:9",
+            "levelIndex": 9,
+            "sourceFile": "Data RD",
+            "byteOffset": 6316
+          },
+          {
+            "mapId": "land:10",
+            "levelIndex": 10,
+            "sourceFile": "Data RD",
+            "byteOffset": 6960
+          },
+          {
+            "mapId": "land:11",
+            "levelIndex": 11,
+            "sourceFile": "Data RD",
+            "byteOffset": 7604
+          }
+        ]
+      },
       "landlooks": [
         {
           "landlook": 6,
@@ -4412,8 +5374,21 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 205294,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:14",
+              "levelIndex": 14,
+              "sourceFile": "Data RD",
+              "byteOffset": 9536
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         },
         {
@@ -4579,8 +5554,57 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 205744,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:7"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:0",
+              "levelIndex": 0,
+              "sourceFile": "Data RD",
+              "byteOffset": 520
+            },
+            {
+              "mapId": "land:3",
+              "levelIndex": 3,
+              "sourceFile": "Data RD",
+              "byteOffset": 2452
+            },
+            {
+              "mapId": "land:4",
+              "levelIndex": 4,
+              "sourceFile": "Data RD",
+              "byteOffset": 3096
+            },
+            {
+              "mapId": "land:5",
+              "levelIndex": 5,
+              "sourceFile": "Data RD",
+              "byteOffset": 3740
+            },
+            {
+              "mapId": "land:9",
+              "levelIndex": 9,
+              "sourceFile": "Data RD",
+              "byteOffset": 6316
+            },
+            {
+              "mapId": "land:10",
+              "levelIndex": 10,
+              "sourceFile": "Data RD",
+              "byteOffset": 6960
+            },
+            {
+              "mapId": "land:11",
+              "levelIndex": 11,
+              "sourceFile": "Data RD",
+              "byteOffset": 7604
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]
@@ -4589,6 +5613,62 @@
       "name": "War in the Sword Lands",
       "sourceRoot": "F:/Realmz/base/Realmz/Scenarios",
       "sourcePath": "F:/Realmz/base/Realmz/Scenarios/War in the Sword Lands",
+      "usedCustomLandlooks": {
+        "6": [
+          {
+            "mapId": "land:6",
+            "levelIndex": 6,
+            "sourceFile": "Data RD",
+            "byteOffset": 4384
+          }
+        ],
+        "7": [
+          {
+            "mapId": "land:0",
+            "levelIndex": 0,
+            "sourceFile": "Data RD",
+            "byteOffset": 520
+          },
+          {
+            "mapId": "land:1",
+            "levelIndex": 1,
+            "sourceFile": "Data RD",
+            "byteOffset": 1164
+          },
+          {
+            "mapId": "land:2",
+            "levelIndex": 2,
+            "sourceFile": "Data RD",
+            "byteOffset": 1808
+          },
+          {
+            "mapId": "land:3",
+            "levelIndex": 3,
+            "sourceFile": "Data RD",
+            "byteOffset": 2452
+          }
+        ],
+        "8": [
+          {
+            "mapId": "land:8",
+            "levelIndex": 8,
+            "sourceFile": "Data RD",
+            "byteOffset": 5672
+          },
+          {
+            "mapId": "land:19",
+            "levelIndex": 19,
+            "sourceFile": "Data RD",
+            "byteOffset": 12756
+          },
+          {
+            "mapId": "land:20",
+            "levelIndex": 20,
+            "sourceFile": "Data RD",
+            "byteOffset": 13400
+          }
+        ]
+      },
       "landlooks": [
         {
           "landlook": 6,
@@ -4753,8 +5833,21 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 208228,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:6",
+              "levelIndex": 6,
+              "sourceFile": "Data RD",
+              "byteOffset": 4384
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         },
         {
@@ -4920,8 +6013,39 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 205594,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:7"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:0",
+              "levelIndex": 0,
+              "sourceFile": "Data RD",
+              "byteOffset": 520
+            },
+            {
+              "mapId": "land:1",
+              "levelIndex": 1,
+              "sourceFile": "Data RD",
+              "byteOffset": 1164
+            },
+            {
+              "mapId": "land:2",
+              "levelIndex": 2,
+              "sourceFile": "Data RD",
+              "byteOffset": 1808
+            },
+            {
+              "mapId": "land:3",
+              "levelIndex": 3,
+              "sourceFile": "Data RD",
+              "byteOffset": 2452
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         },
         {
@@ -5087,8 +6211,33 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 204872,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:8"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:8",
+              "levelIndex": 8,
+              "sourceFile": "Data RD",
+              "byteOffset": 5672
+            },
+            {
+              "mapId": "land:19",
+              "levelIndex": 19,
+              "sourceFile": "Data RD",
+              "byteOffset": 12756
+            },
+            {
+              "mapId": "land:20",
+              "levelIndex": 20,
+              "sourceFile": "Data RD",
+              "byteOffset": 13400
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]
@@ -5097,6 +6246,74 @@
       "name": "Wrath of the Mind Lords",
       "sourceRoot": "F:/Realmz/base/Realmz/Scenarios",
       "sourcePath": "F:/Realmz/base/Realmz/Scenarios/Wrath of the Mind Lords",
+      "usedCustomLandlooks": {
+        "6": [
+          {
+            "mapId": "land:1",
+            "levelIndex": 1,
+            "sourceFile": "Data RD",
+            "byteOffset": 1164
+          },
+          {
+            "mapId": "land:2",
+            "levelIndex": 2,
+            "sourceFile": "Data RD",
+            "byteOffset": 1808
+          },
+          {
+            "mapId": "land:3",
+            "levelIndex": 3,
+            "sourceFile": "Data RD",
+            "byteOffset": 2452
+          },
+          {
+            "mapId": "land:6",
+            "levelIndex": 6,
+            "sourceFile": "Data RD",
+            "byteOffset": 4384
+          },
+          {
+            "mapId": "land:7",
+            "levelIndex": 7,
+            "sourceFile": "Data RD",
+            "byteOffset": 5028
+          }
+        ],
+        "7": [
+          {
+            "mapId": "land:8",
+            "levelIndex": 8,
+            "sourceFile": "Data RD",
+            "byteOffset": 5672
+          }
+        ],
+        "8": [
+          {
+            "mapId": "land:13",
+            "levelIndex": 13,
+            "sourceFile": "Data RD",
+            "byteOffset": 8892
+          },
+          {
+            "mapId": "land:14",
+            "levelIndex": 14,
+            "sourceFile": "Data RD",
+            "byteOffset": 9536
+          },
+          {
+            "mapId": "land:17",
+            "levelIndex": 17,
+            "sourceFile": "Data RD",
+            "byteOffset": 11468
+          },
+          {
+            "mapId": "land:18",
+            "levelIndex": 18,
+            "sourceFile": "Data RD",
+            "byteOffset": 12112
+          }
+        ]
+      },
       "landlooks": [
         {
           "landlook": 6,
@@ -5261,8 +6478,45 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 206970,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:1",
+              "levelIndex": 1,
+              "sourceFile": "Data RD",
+              "byteOffset": 1164
+            },
+            {
+              "mapId": "land:2",
+              "levelIndex": 2,
+              "sourceFile": "Data RD",
+              "byteOffset": 1808
+            },
+            {
+              "mapId": "land:3",
+              "levelIndex": 3,
+              "sourceFile": "Data RD",
+              "byteOffset": 2452
+            },
+            {
+              "mapId": "land:6",
+              "levelIndex": 6,
+              "sourceFile": "Data RD",
+              "byteOffset": 4384
+            },
+            {
+              "mapId": "land:7",
+              "levelIndex": 7,
+              "sourceFile": "Data RD",
+              "byteOffset": 5028
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         },
         {
@@ -5428,8 +6682,21 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 158628,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:7"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:8",
+              "levelIndex": 8,
+              "sourceFile": "Data RD",
+              "byteOffset": 5672
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         },
         {
@@ -5595,8 +6862,39 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 204872,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:8"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:13",
+              "levelIndex": 13,
+              "sourceFile": "Data RD",
+              "byteOffset": 8892
+            },
+            {
+              "mapId": "land:14",
+              "levelIndex": 14,
+              "sourceFile": "Data RD",
+              "byteOffset": 9536
+            },
+            {
+              "mapId": "land:17",
+              "levelIndex": 17,
+              "sourceFile": "Data RD",
+              "byteOffset": 11468
+            },
+            {
+              "mapId": "land:18",
+              "levelIndex": 18,
+              "sourceFile": "Data RD",
+              "byteOffset": 12112
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]
@@ -5605,6 +6903,16 @@
       "name": "Hax",
       "sourceRoot": "F:/Divinity CD/Divinity CD/Install Options/Scenarios",
       "sourcePath": "F:/Divinity CD/Divinity CD/Install Options/Scenarios/Hax",
+      "usedCustomLandlooks": {
+        "6": [
+          {
+            "mapId": "land:0",
+            "levelIndex": 0,
+            "sourceFile": "Data RD",
+            "byteOffset": 520
+          }
+        ]
+      },
       "landlooks": [
         {
           "landlook": 6,
@@ -5769,8 +7077,21 @@
             "resourceFile": "Scenario.rsf",
             "bytes": 195254,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:0",
+              "levelIndex": 0,
+              "sourceFile": "Data RD",
+              "byteOffset": 520
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]
@@ -5779,6 +7100,16 @@
       "name": "Kalypso's Island",
       "sourceRoot": "F:/Divinity CD/Divinity CD/Install Options/Scenarios",
       "sourcePath": "F:/Divinity CD/Divinity CD/Install Options/Scenarios/Kalypso's Island",
+      "usedCustomLandlooks": {
+        "6": [
+          {
+            "mapId": "land:0",
+            "levelIndex": 0,
+            "sourceFile": "Data RD",
+            "byteOffset": 520
+          }
+        ]
+      },
       "landlooks": [
         {
           "landlook": 6,
@@ -5943,8 +7274,21 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 189166,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:0",
+              "levelIndex": 0,
+              "sourceFile": "Data RD",
+              "byteOffset": 520
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]
@@ -5953,6 +7297,16 @@
       "name": "Lord of the Abyss",
       "sourceRoot": "F:/Divinity CD/Divinity CD/Install Options/Scenarios",
       "sourcePath": "F:/Divinity CD/Divinity CD/Install Options/Scenarios/Lord of the Abyss",
+      "usedCustomLandlooks": {
+        "6": [
+          {
+            "mapId": "land:3",
+            "levelIndex": 3,
+            "sourceFile": "Data RD",
+            "byteOffset": 2452
+          }
+        ]
+      },
       "landlooks": [
         {
           "landlook": 6,
@@ -6114,16 +7468,29 @@
           "customFile": {
             "fileName": "Custom 1",
             "bytes": 85324,
-            "role": "preserved-known-custom-landlook-companion",
-            "writerStatus": "preserve-only-until-runtime-role-proven"
+            "role": "preserved-known-non-runtime-landlook-companion",
+            "writerStatus": "preserve-only-not-read-by-realmz-loadpixmap"
           },
           "linkedPict": {
             "id": 306,
             "resourceFile": "Scenario.rsf",
             "bytes": 198448,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:3",
+              "levelIndex": 3,
+              "sourceFile": "Data RD",
+              "byteOffset": 2452
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]
@@ -6132,6 +7499,7 @@
       "name": "Search for the Lost City",
       "sourceRoot": "F:/Divinity CD/Divinity CD/Install Options/Scenarios",
       "sourcePath": "F:/Divinity CD/Divinity CD/Install Options/Scenarios/Search for the Lost City",
+      "usedCustomLandlooks": {},
       "landlooks": [
         {
           "landlook": 6,
@@ -6296,8 +7664,14 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 182612,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]
@@ -6306,6 +7680,66 @@
       "name": "Spires of Steel",
       "sourceRoot": "F:/Divinity CD/Divinity CD/Install Options/Scenarios",
       "sourcePath": "F:/Divinity CD/Divinity CD/Install Options/Scenarios/Spires of Steel",
+      "usedCustomLandlooks": {
+        "6": [
+          {
+            "mapId": "land:0",
+            "levelIndex": 0,
+            "sourceFile": "Data RD",
+            "byteOffset": 520
+          }
+        ],
+        "7": [
+          {
+            "mapId": "land:1",
+            "levelIndex": 1,
+            "sourceFile": "Data RD",
+            "byteOffset": 1164
+          },
+          {
+            "mapId": "land:2",
+            "levelIndex": 2,
+            "sourceFile": "Data RD",
+            "byteOffset": 1808
+          },
+          {
+            "mapId": "land:3",
+            "levelIndex": 3,
+            "sourceFile": "Data RD",
+            "byteOffset": 2452
+          },
+          {
+            "mapId": "land:4",
+            "levelIndex": 4,
+            "sourceFile": "Data RD",
+            "byteOffset": 3096
+          },
+          {
+            "mapId": "land:5",
+            "levelIndex": 5,
+            "sourceFile": "Data RD",
+            "byteOffset": 3740
+          },
+          {
+            "mapId": "land:6",
+            "levelIndex": 6,
+            "sourceFile": "Data RD",
+            "byteOffset": 4384
+          },
+          {
+            "mapId": "land:7",
+            "levelIndex": 7,
+            "sourceFile": "Data RD",
+            "byteOffset": 5028
+          },
+          {
+            "mapId": "land:8",
+            "levelIndex": 8,
+            "sourceFile": "Data RD",
+            "byteOffset": 5672
+          }
+        ]
+      },
       "landlooks": [
         {
           "landlook": 6,
@@ -6470,8 +7904,21 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 197532,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:0",
+              "levelIndex": 0,
+              "sourceFile": "Data RD",
+              "byteOffset": 520
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         },
         {
@@ -6607,8 +8054,63 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 126518,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:7"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:1",
+              "levelIndex": 1,
+              "sourceFile": "Data RD",
+              "byteOffset": 1164
+            },
+            {
+              "mapId": "land:2",
+              "levelIndex": 2,
+              "sourceFile": "Data RD",
+              "byteOffset": 1808
+            },
+            {
+              "mapId": "land:3",
+              "levelIndex": 3,
+              "sourceFile": "Data RD",
+              "byteOffset": 2452
+            },
+            {
+              "mapId": "land:4",
+              "levelIndex": 4,
+              "sourceFile": "Data RD",
+              "byteOffset": 3096
+            },
+            {
+              "mapId": "land:5",
+              "levelIndex": 5,
+              "sourceFile": "Data RD",
+              "byteOffset": 3740
+            },
+            {
+              "mapId": "land:6",
+              "levelIndex": 6,
+              "sourceFile": "Data RD",
+              "byteOffset": 4384
+            },
+            {
+              "mapId": "land:7",
+              "levelIndex": 7,
+              "sourceFile": "Data RD",
+              "byteOffset": 5028
+            },
+            {
+              "mapId": "land:8",
+              "levelIndex": 8,
+              "sourceFile": "Data RD",
+              "byteOffset": 5672
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]
@@ -6617,6 +8119,16 @@
       "name": "Hax",
       "sourceRoot": "F:/Divinity CD/Divinity CD/Install Options/3rd Party Scenarios",
       "sourcePath": "F:/Divinity CD/Divinity CD/Install Options/3rd Party Scenarios/Hax",
+      "usedCustomLandlooks": {
+        "6": [
+          {
+            "mapId": "land:0",
+            "levelIndex": 0,
+            "sourceFile": "Data RD",
+            "byteOffset": 520
+          }
+        ]
+      },
       "landlooks": [
         {
           "landlook": 6,
@@ -6781,8 +8293,21 @@
             "resourceFile": "Scenario.rsf",
             "bytes": 195254,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:0",
+              "levelIndex": 0,
+              "sourceFile": "Data RD",
+              "byteOffset": 520
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]
@@ -6791,6 +8316,16 @@
       "name": "Kalypso's Island",
       "sourceRoot": "F:/Divinity CD/Divinity CD/Install Options/3rd Party Scenarios",
       "sourcePath": "F:/Divinity CD/Divinity CD/Install Options/3rd Party Scenarios/Kalypso's Island",
+      "usedCustomLandlooks": {
+        "6": [
+          {
+            "mapId": "land:0",
+            "levelIndex": 0,
+            "sourceFile": "Data RD",
+            "byteOffset": 520
+          }
+        ]
+      },
       "landlooks": [
         {
           "landlook": 6,
@@ -6955,8 +8490,21 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 189166,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:0",
+              "levelIndex": 0,
+              "sourceFile": "Data RD",
+              "byteOffset": 520
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]
@@ -6965,6 +8513,16 @@
       "name": "Lord of the Abyss",
       "sourceRoot": "F:/Divinity CD/Divinity CD/Install Options/3rd Party Scenarios",
       "sourcePath": "F:/Divinity CD/Divinity CD/Install Options/3rd Party Scenarios/Lord of the Abyss",
+      "usedCustomLandlooks": {
+        "6": [
+          {
+            "mapId": "land:3",
+            "levelIndex": 3,
+            "sourceFile": "Data RD",
+            "byteOffset": 2452
+          }
+        ]
+      },
       "landlooks": [
         {
           "landlook": 6,
@@ -7126,16 +8684,29 @@
           "customFile": {
             "fileName": "Custom 1",
             "bytes": 85324,
-            "role": "preserved-known-custom-landlook-companion",
-            "writerStatus": "preserve-only-until-runtime-role-proven"
+            "role": "preserved-known-non-runtime-landlook-companion",
+            "writerStatus": "preserve-only-not-read-by-realmz-loadpixmap"
           },
           "linkedPict": {
             "id": 306,
             "resourceFile": "Scenario.rsf",
             "bytes": 198448,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:3",
+              "levelIndex": 3,
+              "sourceFile": "Data RD",
+              "byteOffset": 2452
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]
@@ -7144,6 +8715,7 @@
       "name": "Search for the Lost City",
       "sourceRoot": "F:/Divinity CD/Divinity CD/Install Options/3rd Party Scenarios",
       "sourcePath": "F:/Divinity CD/Divinity CD/Install Options/3rd Party Scenarios/Search for the Lost City",
+      "usedCustomLandlooks": {},
       "landlooks": [
         {
           "landlook": 6,
@@ -7308,8 +8880,14 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 182612,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]
@@ -7318,6 +8896,66 @@
       "name": "Spires of Steel",
       "sourceRoot": "F:/Divinity CD/Divinity CD/Install Options/3rd Party Scenarios",
       "sourcePath": "F:/Divinity CD/Divinity CD/Install Options/3rd Party Scenarios/Spires of Steel",
+      "usedCustomLandlooks": {
+        "6": [
+          {
+            "mapId": "land:0",
+            "levelIndex": 0,
+            "sourceFile": "Data RD",
+            "byteOffset": 520
+          }
+        ],
+        "7": [
+          {
+            "mapId": "land:1",
+            "levelIndex": 1,
+            "sourceFile": "Data RD",
+            "byteOffset": 1164
+          },
+          {
+            "mapId": "land:2",
+            "levelIndex": 2,
+            "sourceFile": "Data RD",
+            "byteOffset": 1808
+          },
+          {
+            "mapId": "land:3",
+            "levelIndex": 3,
+            "sourceFile": "Data RD",
+            "byteOffset": 2452
+          },
+          {
+            "mapId": "land:4",
+            "levelIndex": 4,
+            "sourceFile": "Data RD",
+            "byteOffset": 3096
+          },
+          {
+            "mapId": "land:5",
+            "levelIndex": 5,
+            "sourceFile": "Data RD",
+            "byteOffset": 3740
+          },
+          {
+            "mapId": "land:6",
+            "levelIndex": 6,
+            "sourceFile": "Data RD",
+            "byteOffset": 4384
+          },
+          {
+            "mapId": "land:7",
+            "levelIndex": 7,
+            "sourceFile": "Data RD",
+            "byteOffset": 5028
+          },
+          {
+            "mapId": "land:8",
+            "levelIndex": 8,
+            "sourceFile": "Data RD",
+            "byteOffset": 5672
+          }
+        ]
+      },
       "landlooks": [
         {
           "landlook": 6,
@@ -7482,8 +9120,21 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 197532,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:0",
+              "levelIndex": 0,
+              "sourceFile": "Data RD",
+              "byteOffset": 520
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         },
         {
@@ -7619,8 +9270,63 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 126518,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:7"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:1",
+              "levelIndex": 1,
+              "sourceFile": "Data RD",
+              "byteOffset": 1164
+            },
+            {
+              "mapId": "land:2",
+              "levelIndex": 2,
+              "sourceFile": "Data RD",
+              "byteOffset": 1808
+            },
+            {
+              "mapId": "land:3",
+              "levelIndex": 3,
+              "sourceFile": "Data RD",
+              "byteOffset": 2452
+            },
+            {
+              "mapId": "land:4",
+              "levelIndex": 4,
+              "sourceFile": "Data RD",
+              "byteOffset": 3096
+            },
+            {
+              "mapId": "land:5",
+              "levelIndex": 5,
+              "sourceFile": "Data RD",
+              "byteOffset": 3740
+            },
+            {
+              "mapId": "land:6",
+              "levelIndex": 6,
+              "sourceFile": "Data RD",
+              "byteOffset": 4384
+            },
+            {
+              "mapId": "land:7",
+              "levelIndex": 7,
+              "sourceFile": "Data RD",
+              "byteOffset": 5028
+            },
+            {
+              "mapId": "land:8",
+              "levelIndex": 8,
+              "sourceFile": "Data RD",
+              "byteOffset": 5672
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]
@@ -7629,6 +9335,7 @@
       "name": "City Of Bywater",
       "sourceRoot": "F:/Divinity CD/Divinity CD/Realmz 8.0.7 Beta/Scenarios",
       "sourcePath": "F:/Divinity CD/Divinity CD/Realmz 8.0.7 Beta/Scenarios/City Of Bywater",
+      "usedCustomLandlooks": {},
       "landlooks": [
         {
           "landlook": 6,
@@ -7789,6 +9496,7 @@
           },
           "customFile": null,
           "linkedPict": null,
+          "referencedByMaps": [],
           "artifactStatus": "metadata-present-atlas-missing"
         }
       ]
@@ -7797,6 +9505,62 @@
       "name": "Half Truth",
       "sourceRoot": "F:/Divinity CD/Divinity CD/Realmz 8.0.7 Beta/Scenarios",
       "sourcePath": "F:/Divinity CD/Divinity CD/Realmz 8.0.7 Beta/Scenarios/Half Truth",
+      "usedCustomLandlooks": {
+        "6": [
+          {
+            "mapId": "land:4",
+            "levelIndex": 4,
+            "sourceFile": "Data RD",
+            "byteOffset": 3096
+          },
+          {
+            "mapId": "land:6",
+            "levelIndex": 6,
+            "sourceFile": "Data RD",
+            "byteOffset": 4384
+          },
+          {
+            "mapId": "land:7",
+            "levelIndex": 7,
+            "sourceFile": "Data RD",
+            "byteOffset": 5028
+          },
+          {
+            "mapId": "land:8",
+            "levelIndex": 8,
+            "sourceFile": "Data RD",
+            "byteOffset": 5672
+          },
+          {
+            "mapId": "land:10",
+            "levelIndex": 10,
+            "sourceFile": "Data RD",
+            "byteOffset": 6960
+          }
+        ],
+        "7": [
+          {
+            "mapId": "land:0",
+            "levelIndex": 0,
+            "sourceFile": "Data RD",
+            "byteOffset": 520
+          },
+          {
+            "mapId": "land:9",
+            "levelIndex": 9,
+            "sourceFile": "Data RD",
+            "byteOffset": 6316
+          }
+        ],
+        "8": [
+          {
+            "mapId": "land:11",
+            "levelIndex": 11,
+            "sourceFile": "Data RD",
+            "byteOffset": 7604
+          }
+        ]
+      },
       "landlooks": [
         {
           "landlook": 6,
@@ -7920,8 +9684,45 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 202988,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:4",
+              "levelIndex": 4,
+              "sourceFile": "Data RD",
+              "byteOffset": 3096
+            },
+            {
+              "mapId": "land:6",
+              "levelIndex": 6,
+              "sourceFile": "Data RD",
+              "byteOffset": 4384
+            },
+            {
+              "mapId": "land:7",
+              "levelIndex": 7,
+              "sourceFile": "Data RD",
+              "byteOffset": 5028
+            },
+            {
+              "mapId": "land:8",
+              "levelIndex": 8,
+              "sourceFile": "Data RD",
+              "byteOffset": 5672
+            },
+            {
+              "mapId": "land:10",
+              "levelIndex": 10,
+              "sourceFile": "Data RD",
+              "byteOffset": 6960
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         },
         {
@@ -8087,8 +9888,27 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 203024,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:7"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:0",
+              "levelIndex": 0,
+              "sourceFile": "Data RD",
+              "byteOffset": 520
+            },
+            {
+              "mapId": "land:9",
+              "levelIndex": 9,
+              "sourceFile": "Data RD",
+              "byteOffset": 6316
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         },
         {
@@ -8254,8 +10074,21 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 200184,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:8"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:11",
+              "levelIndex": 11,
+              "sourceFile": "Data RD",
+              "byteOffset": 7604
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]
@@ -8264,6 +10097,60 @@
       "name": "Trouble in the Sword Lands",
       "sourceRoot": "F:/Divinity CD/Divinity CD/Realmz 8.0.7 Beta/Scenarios",
       "sourcePath": "F:/Divinity CD/Divinity CD/Realmz 8.0.7 Beta/Scenarios/Trouble in the Sword Lands",
+      "usedCustomLandlooks": {
+        "6": [
+          {
+            "mapId": "land:14",
+            "levelIndex": 14,
+            "sourceFile": "Data RD",
+            "byteOffset": 9536
+          }
+        ],
+        "7": [
+          {
+            "mapId": "land:0",
+            "levelIndex": 0,
+            "sourceFile": "Data RD",
+            "byteOffset": 520
+          },
+          {
+            "mapId": "land:3",
+            "levelIndex": 3,
+            "sourceFile": "Data RD",
+            "byteOffset": 2452
+          },
+          {
+            "mapId": "land:4",
+            "levelIndex": 4,
+            "sourceFile": "Data RD",
+            "byteOffset": 3096
+          },
+          {
+            "mapId": "land:5",
+            "levelIndex": 5,
+            "sourceFile": "Data RD",
+            "byteOffset": 3740
+          },
+          {
+            "mapId": "land:9",
+            "levelIndex": 9,
+            "sourceFile": "Data RD",
+            "byteOffset": 6316
+          },
+          {
+            "mapId": "land:10",
+            "levelIndex": 10,
+            "sourceFile": "Data RD",
+            "byteOffset": 6960
+          },
+          {
+            "mapId": "land:11",
+            "levelIndex": 11,
+            "sourceFile": "Data RD",
+            "byteOffset": 7604
+          }
+        ]
+      },
       "landlooks": [
         {
           "landlook": 6,
@@ -8428,8 +10315,21 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 205294,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:14",
+              "levelIndex": 14,
+              "sourceFile": "Data RD",
+              "byteOffset": 9536
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         },
         {
@@ -8595,8 +10495,57 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 205744,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:7"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:0",
+              "levelIndex": 0,
+              "sourceFile": "Data RD",
+              "byteOffset": 520
+            },
+            {
+              "mapId": "land:3",
+              "levelIndex": 3,
+              "sourceFile": "Data RD",
+              "byteOffset": 2452
+            },
+            {
+              "mapId": "land:4",
+              "levelIndex": 4,
+              "sourceFile": "Data RD",
+              "byteOffset": 3096
+            },
+            {
+              "mapId": "land:5",
+              "levelIndex": 5,
+              "sourceFile": "Data RD",
+              "byteOffset": 3740
+            },
+            {
+              "mapId": "land:9",
+              "levelIndex": 9,
+              "sourceFile": "Data RD",
+              "byteOffset": 6316
+            },
+            {
+              "mapId": "land:10",
+              "levelIndex": 10,
+              "sourceFile": "Data RD",
+              "byteOffset": 6960
+            },
+            {
+              "mapId": "land:11",
+              "levelIndex": 11,
+              "sourceFile": "Data RD",
+              "byteOffset": 7604
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]
@@ -8605,6 +10554,62 @@
       "name": "War in the Sword Lands",
       "sourceRoot": "F:/Divinity CD/Divinity CD/Realmz 8.0.7 Beta/Scenarios",
       "sourcePath": "F:/Divinity CD/Divinity CD/Realmz 8.0.7 Beta/Scenarios/War in the Sword Lands",
+      "usedCustomLandlooks": {
+        "6": [
+          {
+            "mapId": "land:6",
+            "levelIndex": 6,
+            "sourceFile": "Data RD",
+            "byteOffset": 4384
+          }
+        ],
+        "7": [
+          {
+            "mapId": "land:0",
+            "levelIndex": 0,
+            "sourceFile": "Data RD",
+            "byteOffset": 520
+          },
+          {
+            "mapId": "land:1",
+            "levelIndex": 1,
+            "sourceFile": "Data RD",
+            "byteOffset": 1164
+          },
+          {
+            "mapId": "land:2",
+            "levelIndex": 2,
+            "sourceFile": "Data RD",
+            "byteOffset": 1808
+          },
+          {
+            "mapId": "land:3",
+            "levelIndex": 3,
+            "sourceFile": "Data RD",
+            "byteOffset": 2452
+          }
+        ],
+        "8": [
+          {
+            "mapId": "land:8",
+            "levelIndex": 8,
+            "sourceFile": "Data RD",
+            "byteOffset": 5672
+          },
+          {
+            "mapId": "land:19",
+            "levelIndex": 19,
+            "sourceFile": "Data RD",
+            "byteOffset": 12756
+          },
+          {
+            "mapId": "land:20",
+            "levelIndex": 20,
+            "sourceFile": "Data RD",
+            "byteOffset": 13400
+          }
+        ]
+      },
       "landlooks": [
         {
           "landlook": 6,
@@ -8769,8 +10774,21 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 208228,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:6",
+              "levelIndex": 6,
+              "sourceFile": "Data RD",
+              "byteOffset": 4384
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         },
         {
@@ -8936,8 +10954,39 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 205594,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:7"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:0",
+              "levelIndex": 0,
+              "sourceFile": "Data RD",
+              "byteOffset": 520
+            },
+            {
+              "mapId": "land:1",
+              "levelIndex": 1,
+              "sourceFile": "Data RD",
+              "byteOffset": 1164
+            },
+            {
+              "mapId": "land:2",
+              "levelIndex": 2,
+              "sourceFile": "Data RD",
+              "byteOffset": 1808
+            },
+            {
+              "mapId": "land:3",
+              "levelIndex": 3,
+              "sourceFile": "Data RD",
+              "byteOffset": 2452
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         },
         {
@@ -9103,8 +11152,33 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 204872,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:8"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:8",
+              "levelIndex": 8,
+              "sourceFile": "Data RD",
+              "byteOffset": 5672
+            },
+            {
+              "mapId": "land:19",
+              "levelIndex": 19,
+              "sourceFile": "Data RD",
+              "byteOffset": 12756
+            },
+            {
+              "mapId": "land:20",
+              "levelIndex": 20,
+              "sourceFile": "Data RD",
+              "byteOffset": 13400
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]
@@ -9113,6 +11187,74 @@
       "name": "Wrath of the Mind Lords",
       "sourceRoot": "F:/Divinity CD/Divinity CD/Realmz 8.0.7 Beta/Scenarios",
       "sourcePath": "F:/Divinity CD/Divinity CD/Realmz 8.0.7 Beta/Scenarios/Wrath of the Mind Lords",
+      "usedCustomLandlooks": {
+        "6": [
+          {
+            "mapId": "land:1",
+            "levelIndex": 1,
+            "sourceFile": "Data RD",
+            "byteOffset": 1164
+          },
+          {
+            "mapId": "land:2",
+            "levelIndex": 2,
+            "sourceFile": "Data RD",
+            "byteOffset": 1808
+          },
+          {
+            "mapId": "land:3",
+            "levelIndex": 3,
+            "sourceFile": "Data RD",
+            "byteOffset": 2452
+          },
+          {
+            "mapId": "land:6",
+            "levelIndex": 6,
+            "sourceFile": "Data RD",
+            "byteOffset": 4384
+          },
+          {
+            "mapId": "land:7",
+            "levelIndex": 7,
+            "sourceFile": "Data RD",
+            "byteOffset": 5028
+          }
+        ],
+        "7": [
+          {
+            "mapId": "land:8",
+            "levelIndex": 8,
+            "sourceFile": "Data RD",
+            "byteOffset": 5672
+          }
+        ],
+        "8": [
+          {
+            "mapId": "land:13",
+            "levelIndex": 13,
+            "sourceFile": "Data RD",
+            "byteOffset": 8892
+          },
+          {
+            "mapId": "land:14",
+            "levelIndex": 14,
+            "sourceFile": "Data RD",
+            "byteOffset": 9536
+          },
+          {
+            "mapId": "land:17",
+            "levelIndex": 17,
+            "sourceFile": "Data RD",
+            "byteOffset": 11468
+          },
+          {
+            "mapId": "land:18",
+            "levelIndex": 18,
+            "sourceFile": "Data RD",
+            "byteOffset": 12112
+          }
+        ]
+      },
       "landlooks": [
         {
           "landlook": 6,
@@ -9277,8 +11419,45 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 206970,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:6"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:1",
+              "levelIndex": 1,
+              "sourceFile": "Data RD",
+              "byteOffset": 1164
+            },
+            {
+              "mapId": "land:2",
+              "levelIndex": 2,
+              "sourceFile": "Data RD",
+              "byteOffset": 1808
+            },
+            {
+              "mapId": "land:3",
+              "levelIndex": 3,
+              "sourceFile": "Data RD",
+              "byteOffset": 2452
+            },
+            {
+              "mapId": "land:6",
+              "levelIndex": 6,
+              "sourceFile": "Data RD",
+              "byteOffset": 4384
+            },
+            {
+              "mapId": "land:7",
+              "levelIndex": 7,
+              "sourceFile": "Data RD",
+              "byteOffset": 5028
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         },
         {
@@ -9444,8 +11623,21 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 158628,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:7"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:8",
+              "levelIndex": 8,
+              "sourceFile": "Data RD",
+              "byteOffset": 5672
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         },
         {
@@ -9611,8 +11803,39 @@
             "resourceFile": "Scenario.rsrc",
             "bytes": 204872,
             "role": "scenario-custom-landlook-atlas",
-            "writerStatus": "preserved-or-replace-through-known-good-pict-import"
+            "writerStatus": "preserved-previewable-writable-by-replacement",
+            "expectedDimensions": {
+              "width": 640,
+              "height": 320
+            },
+            "linkedEntity": "landlook:8"
           },
+          "referencedByMaps": [
+            {
+              "mapId": "land:13",
+              "levelIndex": 13,
+              "sourceFile": "Data RD",
+              "byteOffset": 8892
+            },
+            {
+              "mapId": "land:14",
+              "levelIndex": 14,
+              "sourceFile": "Data RD",
+              "byteOffset": 9536
+            },
+            {
+              "mapId": "land:17",
+              "levelIndex": 17,
+              "sourceFile": "Data RD",
+              "byteOffset": 11468
+            },
+            {
+              "mapId": "land:18",
+              "levelIndex": 18,
+              "sourceFile": "Data RD",
+              "byteOffset": 12112
+            }
+          ],
           "artifactStatus": "metadata-and-atlas-present"
         }
       ]

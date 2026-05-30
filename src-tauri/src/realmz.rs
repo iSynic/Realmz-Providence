@@ -642,7 +642,7 @@ fn empty_mapstats_record(tile: usize) -> MapstatsRecord {
 fn custom_landlook_writer_gate() -> LandlookWriterGate {
     LandlookWriterGate {
         metadata_writer_status: "writer-safe-fixture-gated".to_string(),
-        atlas_writer_status: "preserve-or-import-replacement-only".to_string(),
+        atlas_writer_status: "writable-by-generated-pict-replacement".to_string(),
         writable_fields: vec![
             "sound",
             "time",

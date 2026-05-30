@@ -253,6 +253,7 @@ pub struct ManagedAssetConversion {
 #[serde(rename_all = "kebab-case")]
 pub enum AssetImportTarget {
     ScenarioPicture,
+    CustomLandlookAtlas,
     Icon,
     SpecialLandTile,
     Sound,
@@ -1322,6 +1323,41 @@ pub struct CustomLandlookMetadata {
     pub writer_gate: LandlookWriterGate,
     #[serde(default)]
     pub authored: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CustomLandlookAtlasArtifact {
+    pub landlook: i8,
+    pub pict_id: i16,
+    pub resource_file: Option<String>,
+    pub available: bool,
+    pub previewable: bool,
+    pub writer_status: String,
+    pub role: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CustomLandlookAtlasWriterGate {
+    pub writer_status: String,
+    pub required_width: u32,
+    pub required_height: u32,
+    pub tile_width: u32,
+    pub tile_height: u32,
+    pub resource_type: String,
+    pub supported_route: String,
+    pub evidence: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CustomLandlookUsage {
+    pub landlook: i8,
+    pub pict_id: i16,
+    pub metadata_file: String,
+    pub map_ids: Vec<String>,
+    pub map_count: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

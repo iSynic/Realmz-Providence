@@ -1,14 +1,19 @@
 use realmz_providence_lib::exporter::export_project;
 use realmz_providence_lib::importer::{import_scenario, open_project, RAW_SOURCES_DIR};
 use realmz_providence_lib::project::{
-    ProvidenceProject, ScenarioTarget, SourceFileRole, PROJECT_SCHEMA_VERSION,
-    SEMANTIC_SCHEMA_VERSION,
+    AssetImportTarget, DitherMode, ImageFitMode, ImageMatte, ImageScaleMode, ManagedAsset,
+    ManagedAssetConversion, ManagedAssetExportState, ManagedAssetKind, PaletteMode,
+    ProvidenceProject, ScenarioTarget, SourceFileRole, PROJECT_SCHEMA_VERSION, SEMANTIC_SCHEMA_VERSION,
 };
 use realmz_providence_lib::realmz::{
     update_custom_land_tile_attributes, update_custom_land_tile_combat_build,
     update_custom_landlook_base, update_custom_landlook_range_slot, CustomLandTileAttributePatch,
     SUPPORTED_WRITE_FILES, TRACKED_FILES,
 };
+use realmz_providence_lib::resource_fork::{
+    encode_pict_resource, parse_resource_fork_entries, ResourceForkEntry, RgbaImagePayload,
+};
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -199,6 +204,131 @@ fn custom_landlook_metadata_writer_mutates_only_owned_fields() {
             "unexpected custom landlook byte mutation at {offset}"
         );
     }
+}
+
+#[test]
+fn custom_landlook_atlas_export_preserves_resource_payloads_without_edits() {
+    let Some(source) = out_fixture_path("Kalypso's Island") else {
+        eprintln!("Skipping custom landlook atlas preservation fixture; Kalypso's Island is absent.");
+        return;
+    };
+    let (_temp, project, export_dir, _report) =
+        export_fixture_with_target(&source, ScenarioTarget::ProvidencePortableFolder);
+    let source_resource = resource_path_with_entry(&project, &source, "PICT", 306)
+        .expect("Kalypso should import a scenario resource fork with PICT 306");
+    let exported_resource = resource_path_with_entry(&project, &export_dir, "PICT", 306)
+        .expect("Kalypso export should preserve a scenario resource fork with PICT 306");
+    let source_entry = resource_entry(&source_resource, "PICT", 306)
+        .expect("Kalypso source should contain PICT 306 for custom landlook 6");
+    let exported_entry = resource_entry(&exported_resource, "PICT", 306)
+        .expect("Kalypso export should contain PICT 306 for custom landlook 6");
+    assert_eq!(source_entry.data, exported_entry.data, "no-edit export should preserve PICT 306 payload");
+    assert_eq!(source_entry.name, exported_entry.name, "no-edit export should preserve PICT 306 name");
+    assert_eq!(source_entry.attributes, exported_entry.attributes, "no-edit export should preserve PICT 306 attributes");
+}
+
+#[test]
+fn custom_landlook_atlas_replacement_changes_only_target_pict_resource() {
+    let Some(source) = out_fixture_path("Kalypso's Island") else {
+        eprintln!("Skipping custom landlook atlas replacement fixture; Kalypso's Island is absent.");
+        return;
+    };
+    let temp = tempdir().unwrap();
+    let project_dir = temp.path().join("project");
+    let export_dir = temp.path().join("exported");
+    import_scenario(&source, &project_dir).unwrap();
+    let mut project = open_project(&project_dir).unwrap();
+    let source_resource = resource_path_with_entry(&project, &source, "PICT", 306)
+        .expect("Kalypso should import a scenario resource fork with PICT 306");
+    let original_entries = parse_resource_fork_entries(&fs::read(&source_resource).unwrap());
+    assert!(
+        original_entries.iter().any(|entry| entry.resource_type == "PICT" && entry.id == 306),
+        "Kalypso should provide the original PICT 306 atlas"
+    );
+
+    let asset_dir = project_dir.join("assets").join("media").join("custom_landlook_6_atlas");
+    fs::create_dir_all(&asset_dir).unwrap();
+    let replacement_resource = replacement_landlook_pict_resource();
+    fs::write(asset_dir.join("resource_PICT_306.bin"), &replacement_resource).unwrap();
+    fs::write(asset_dir.join("original.png"), [0x89, b'P', b'N', b'G']).unwrap();
+    fs::write(asset_dir.join("preview.png"), [0x89, b'P', b'N', b'G']).unwrap();
+    project.assets.push(ManagedAsset {
+        id: "asset:custom-landlook-6-atlas".to_string(),
+        label: "Custom Landlook 6 Atlas".to_string(),
+        kind: ManagedAssetKind::Picture,
+        resource_type: "PICT".to_string(),
+        resource_id: 306,
+        file_name: "original.png".to_string(),
+        original_path: "assets/media/custom_landlook_6_atlas/original.png".to_string(),
+        preview_path: "assets/media/custom_landlook_6_atlas/preview.png".to_string(),
+        resource_path: "assets/media/custom_landlook_6_atlas/resource_PICT_306.bin".to_string(),
+        mime_type: "image/png".to_string(),
+        bytes: 4,
+        sha256: "fixture".to_string(),
+        width: Some(640),
+        height: Some(320),
+        duration_ms: None,
+        sample_rate: None,
+        channels: None,
+        export_state: ManagedAssetExportState::Ready,
+        provenance: "fixture custom landlook atlas replacement".to_string(),
+        linked_entity: Some("landlook:6".to_string()),
+        conversion: Some(ManagedAssetConversion {
+            target: AssetImportTarget::CustomLandlookAtlas,
+            fit_mode: Some(ImageFitMode::Stretch),
+            scale_mode: Some(ImageScaleMode::Crisp),
+            matte: Some(ImageMatte::White),
+            palette_mode: Some(PaletteMode::Adaptive256),
+            dither_mode: Some(DitherMode::None),
+            source_width: Some(640),
+            source_height: Some(320),
+            source_duration_ms: None,
+            source_sample_rate: None,
+            source_channels: None,
+            final_width: Some(640),
+            final_height: Some(320),
+            warnings: Vec::new(),
+        }),
+    });
+
+    let report = export_project(
+        &project_dir,
+        &project,
+        &export_dir,
+        ScenarioTarget::ProvidencePortableFolder,
+    )
+    .unwrap();
+    assert!(
+        report.written_resources.iter().any(|entry| entry.contains("PICT 306")),
+        "custom landlook atlas replacement should be reported as a written resource"
+    );
+    let exported_resource = resource_path_with_entry(&project, &export_dir, "PICT", 306)
+        .expect("export should write a scenario resource fork with PICT 306");
+    let exported_entries = parse_resource_fork_entries(&fs::read(&exported_resource).unwrap());
+    for original in &original_entries {
+        let exported = exported_entries
+            .iter()
+            .find(|entry| entry.resource_type == original.resource_type && entry.id == original.id)
+            .unwrap_or_else(|| panic!("export should preserve resource {} {}", original.resource_type, original.id));
+        if original.resource_type == "PICT" && original.id == 306 {
+            assert_eq!(exported.data, replacement_resource, "PICT 306 should be replaced by managed atlas bytes");
+        } else {
+            assert_eq!(exported.data, original.data, "resource {} {} payload should be unchanged", original.resource_type, original.id);
+            assert_eq!(exported.name, original.name, "resource {} {} name should be unchanged", original.resource_type, original.id);
+            assert_eq!(exported.attributes, original.attributes, "resource {} {} attributes should be unchanged", original.resource_type, original.id);
+        }
+    }
+
+    let reimport_dir = temp.path().join("reimported");
+    let reimported = import_scenario(&export_dir, &reimport_dir).unwrap();
+    let tileset = reimported
+        .asset_catalog
+        .tilesets
+        .iter()
+        .find(|tileset| tileset.id == "landlook-6")
+        .expect("reimported custom landlook 6 tileset should exist");
+    assert!(tileset.available, "replaced custom landlook atlas should be previewable after reimport");
+    assert_eq!(tileset.pict_id, Some(306));
 }
 
 #[test]
@@ -1708,6 +1838,50 @@ fn assert_package_contract(label: &str, project: &ProvidenceProject, export_dir:
             "{label} should exclude ignored metadata {name}"
         );
     }
+}
+
+fn resource_path_with_entry(
+    project: &ProvidenceProject,
+    root: &Path,
+    resource_type: &str,
+    id: i16,
+) -> Option<std::path::PathBuf> {
+    project
+        .source
+        .files
+        .iter()
+        .filter(|file| matches!(file.role, SourceFileRole::ResourceFork))
+        .map(|file| root.join(&file.relative_path))
+        .find(|path| resource_entry(path, resource_type, id).is_some())
+}
+
+fn resource_entry(path: &Path, resource_type: &str, id: i16) -> Option<ResourceForkEntry> {
+    parse_resource_fork_entries(&fs::read(path).ok()?)
+        .into_iter()
+        .find(|entry| entry.resource_type == resource_type && entry.id == id)
+}
+
+fn replacement_landlook_pict_resource() -> Vec<u8> {
+    let width = 640usize;
+    let height = 320usize;
+    let mut rgba = vec![0u8; width * height * 4];
+    for y in 0..height {
+        for x in 0..width {
+            let offset = (y * width + x) * 4;
+            let tile_x = x / 32;
+            let tile_y = y / 32;
+            rgba[offset] = ((tile_x * 11) % 255) as u8;
+            rgba[offset + 1] = ((tile_y * 23) % 255) as u8;
+            rgba[offset + 2] = (((tile_x + tile_y) * 17) % 255) as u8;
+            rgba[offset + 3] = 255;
+        }
+    }
+    encode_pict_resource(&RgbaImagePayload {
+        width: width as u32,
+        height: height as u32,
+        rgba_base64: STANDARD.encode(rgba),
+    })
+    .unwrap()
 }
 
 fn is_custom_music_name(name: &str) -> bool {

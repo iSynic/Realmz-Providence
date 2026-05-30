@@ -24,7 +24,7 @@ const MEDIA_POLICIES = {
   PICT: {
     boundaryStatus: "preserved-previewable-writable-subset",
     role: "Picture resource",
-    preservation: "Preserve untouched payload bytes. Writable only through Providence's normalized scenario-picture/tile-atlas import path.",
+    preservation: "Preserve untouched payload bytes. Writable only through Providence's normalized scenario-picture/custom-landlook-atlas import path.",
     preview: "Previewable when the current resource preview decoder supports the PICT variant.",
     writer: "Known-good replacement writer for project-owned PICT media only; no arbitrary PICT opcode editor."
   },

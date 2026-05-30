@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-30T04:25:07.008Z",
+  "generatedAt": "2026-05-30T21:13:28.608Z",
   "sources": {
     "resourceCoverage": "docs/generated/resource-byte-ownership.json",
     "codecBacklog": "docs/generated/resource-payload-codec-backlog.json",
@@ -150,7 +150,7 @@
       "preserved": true,
       "previewOrPlayback": "Previewable when the current resource preview decoder supports the PICT variant.",
       "writablePolicy": "Known-good replacement writer for project-owned PICT media only; no arbitrary PICT opcode editor.",
-      "preservationPolicy": "Preserve untouched payload bytes. Writable only through Providence's normalized scenario-picture/tile-atlas import path."
+      "preservationPolicy": "Preserve untouched payload bytes. Writable only through Providence's normalized scenario-picture/custom-landlook-atlas import path."
     },
     {
       "type": "RLMZ",

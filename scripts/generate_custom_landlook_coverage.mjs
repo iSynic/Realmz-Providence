@@ -17,6 +17,8 @@ const RANGE_TAIL_OFFSET = BASE_TILE_OFFSET + 4;
 const RANGE_SLOT_BYTES = 6;
 const RANGE_SLOTS = 10;
 const EXPECTED_BYTES = RANGE_TAIL_OFFSET + RANGE_SLOT_BYTES * RANGE_SLOTS;
+const RANDLEVEL_BYTES = 644;
+const RANDLEVEL_LANDLOOK_OFFSET = 520;
 
 const CUSTOM_METADATA = [
   { landlook: 6, metadataFile: "Data Custom 1 BD", customFile: "Custom 1", pictId: 306 },
@@ -32,6 +34,9 @@ const aggregate = {
   metadataFiles: {},
   customFiles: {},
   pictResources: {},
+  usedLandlooks: {},
+  missingReferencedMetadata: 0,
+  missingReferencedAtlas: 0,
   byteLengths: {},
   rangeTailPatterns: new Map(),
   malformedMetadataFiles: 0,
@@ -49,6 +54,7 @@ for (const scenario of roundtripLedger.scenarios ?? []) {
     name: scenario.name,
     sourceRoot: scenario.sourceRoot,
     sourcePath: normalizePath(sourcePath),
+    usedCustomLandlooks: readUsedCustomLandlooks(sourcePath),
     landlooks: []
   };
   for (const config of CUSTOM_METADATA) {
@@ -61,12 +67,13 @@ for (const scenario of roundtripLedger.scenarios ?? []) {
       ? {
           fileName: config.customFile,
           bytes: fs.statSync(customPath).size,
-          role: "preserved-known-custom-landlook-companion",
-          writerStatus: "preserve-only-until-runtime-role-proven"
+          role: "preserved-known-non-runtime-landlook-companion",
+          writerStatus: "preserve-only-not-read-by-realmz-loadpixmap"
         }
       : null;
     const pict = resourceIndex.get(`${scenario.sourceRoot}\u0000${scenario.name}\u0000${config.pictId}`) ?? null;
-    if (metadata || customFile || pict) {
+    const references = entry.usedCustomLandlooks[config.landlook] ?? [];
+    if (metadata || customFile || pict || references.length > 0) {
       entry.landlooks.push({
         landlook: config.landlook,
         metadata,
@@ -77,13 +84,21 @@ for (const scenario of roundtripLedger.scenarios ?? []) {
               resourceFile: pict.fileName,
               bytes: pict.dataLength,
               role: "scenario-custom-landlook-atlas",
-              writerStatus: "preserved-or-replace-through-known-good-pict-import"
+              writerStatus: "preserved-previewable-writable-by-replacement",
+              expectedDimensions: { width: 640, height: 320 },
+              linkedEntity: `landlook:${config.landlook}`
             }
           : null,
+        referencedByMaps: references,
         artifactStatus: artifactStatus(metadata, customFile, pict)
       });
     }
     aggregateSeen(config, metadata, customFile, pict);
+    if (references.length > 0) {
+      aggregate.usedLandlooks[config.landlook] = (aggregate.usedLandlooks[config.landlook] ?? 0) + references.length;
+      if (!metadata) aggregate.missingReferencedMetadata += 1;
+      if (!pict) aggregate.missingReferencedAtlas += 1;
+    }
   }
   if (entry.landlooks.length > 0) scenarios.push(entry);
 }
@@ -106,8 +121,18 @@ const output = {
     rangeTailOffset: RANGE_TAIL_OFFSET,
     rangeSlots: RANGE_SLOTS,
     rangeSlotBytes: RANGE_SLOT_BYTES,
-    expectedBytes: EXPECTED_BYTES
+    expectedBytes: EXPECTED_BYTES,
+    randomLevelBytes: RANDLEVEL_BYTES,
+    randomLevelLandlookOffset: RANDLEVEL_LANDLOOK_OFFSET
   },
+  runtimeLookup: CUSTOM_METADATA.map((config) => ({
+    landlook: config.landlook,
+    metadataFile: config.metadataFile,
+    pictId: config.pictId,
+    pictResource: `PICT ${config.pictId}`,
+    sourceAnchor: "F:/Realmz/src/realmz_orig/loadland-loadpixmap.c:36-132",
+    companionFileRole: `${config.customFile} is not opened by Realmz loadpixmap for landlook ${config.landlook}; preserve unless separate evidence proves another role.`
+  })),
   ownership: {
     recordBytes: { start: 0, endExclusive: BASE_TILE_OFFSET, status: "decoded-writable", field: "mapstats records" },
     baseTile: { start: BASE_TILE_OFFSET, endExclusive: BASE_TILE_OFFSET + 2, status: "decoded-writable" },
@@ -121,6 +146,9 @@ const output = {
     metadataFileCounts: aggregate.metadataFiles,
     customFileCounts: aggregate.customFiles,
     pictResourceCounts: aggregate.pictResources,
+    usedLandlookReferences: aggregate.usedLandlooks,
+    missingReferencedMetadata: aggregate.missingReferencedMetadata,
+    missingReferencedAtlas: aggregate.missingReferencedAtlas,
     observedMetadataByteLengths: aggregate.byteLengths,
     malformedMetadataFiles: aggregate.malformedMetadataFiles,
     rangeTailPatterns: [...aggregate.rangeTailPatterns.values()].sort((a, b) => b.count - a.count)
@@ -199,6 +227,24 @@ function artifactStatus(metadata, customFile, pict) {
   if (metadata && !pict) return "metadata-present-atlas-missing";
   if (!metadata && pict) return "atlas-present-metadata-missing";
   return "compatibility-companion-only";
+}
+
+function readUsedCustomLandlooks(sourcePath) {
+  const dataRd = path.join(sourcePath, "Data RD");
+  const used = {};
+  if (!fs.existsSync(dataRd)) return used;
+  const buffer = fs.readFileSync(dataRd);
+  const count = Math.floor(buffer.length / RANDLEVEL_BYTES);
+  for (let index = 0; index < count; index += 1) {
+    const offset = index * RANDLEVEL_BYTES + RANDLEVEL_LANDLOOK_OFFSET;
+    const raw = buffer[offset];
+    const landlook = raw >= 0x80 ? raw - 0x100 : raw;
+    if (landlook >= 6 && landlook <= 8) {
+      used[landlook] ??= [];
+      used[landlook].push({ mapId: `land:${index}`, levelIndex: index, sourceFile: "Data RD", byteOffset: offset });
+    }
+  }
+  return used;
 }
 
 function indexResources(resourceInventory) {

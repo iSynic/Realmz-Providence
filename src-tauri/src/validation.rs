@@ -652,9 +652,14 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                     asset.label, asset.resource_type
                 ));
             }
-            if asset.resource_id < SCENARIO_PICTURE_MIN_ID
+            let custom_landlook_atlas = asset
+                .conversion
+                .as_ref()
+                .is_some_and(|conversion| matches!(conversion.target, AssetImportTarget::CustomLandlookAtlas));
+            if !custom_landlook_atlas
+                && (asset.resource_id < SCENARIO_PICTURE_MIN_ID
                 || asset.resource_id > SCENARIO_PICTURE_MAX_ID
-            {
+            ) {
                 warnings.push(format!(
                     "{} uses PICT id {}; scenario pictures normally use {}-{}.",
                     asset.label,
@@ -731,6 +736,27 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                         _ => "unknown size".to_string(),
                     }
                 ));
+            }
+            if matches!(conversion.target, AssetImportTarget::CustomLandlookAtlas) {
+                if asset.resource_type != "PICT" || !(306..=308).contains(&asset.resource_id) {
+                    errors.push(format!(
+                        "{} must export as custom landlook PICT 306, 307, or 308.",
+                        asset.label
+                    ));
+                }
+                if conversion.final_width != Some(640) || conversion.final_height != Some(320) {
+                    errors.push(format!(
+                        "{} must be converted to a 640 x 320 custom landlook atlas before export.",
+                        asset.label
+                    ));
+                }
+                let expected = format!("landlook:{}", asset.resource_id - 300);
+                if asset.linked_entity.as_deref() != Some(expected.as_str()) {
+                    errors.push(format!(
+                        "{} must be linked to {} for custom landlook export.",
+                        asset.label, expected
+                    ));
+                }
             }
             for warning in &conversion.warnings {
                 warnings.push(format!("{} import note: {}", asset.label, warning));
@@ -978,6 +1004,57 @@ pub fn validate_target_compatibility(project: &ProvidenceProject) -> Vec<TargetC
             });
         }
     }
+    for landlook in used_custom_landlooks(project) {
+        if !has_custom_landlook_metadata(project, landlook) {
+            for target in [
+                ScenarioTarget::MacClassicFolder,
+                ScenarioTarget::WindowsRealmzFolder,
+                ScenarioTarget::ProvidencePortableFolder,
+            ] {
+                issues.push(TargetCompatibilityIssue {
+                    target,
+                    severity: DiagnosticSeverity::Error,
+                    code: "custom-landlook-metadata-missing".to_string(),
+                    message: format!(
+                        "Landlook {landlook} is used by a land map, but {} is missing.",
+                        custom_landlook_metadata_file(landlook).unwrap_or("custom landlook metadata")
+                    ),
+                    source: Some(format!("landlook-{landlook}")),
+                });
+            }
+        }
+        if !custom_landlook_art_available(project, landlook) {
+            for target in [
+                ScenarioTarget::MacClassicFolder,
+                ScenarioTarget::WindowsRealmzFolder,
+                ScenarioTarget::ProvidencePortableFolder,
+            ] {
+                issues.push(TargetCompatibilityIssue {
+                    target,
+                    severity: DiagnosticSeverity::Error,
+                    code: "custom-landlook-art-missing".to_string(),
+                    message: format!(
+                        "Landlook {landlook} is used by a land map, but PICT {} is missing from scenario resources or managed assets.",
+                        custom_landlook_pict_id(landlook).unwrap_or_default()
+                    ),
+                    source: Some(format!("landlook-{landlook}")),
+                });
+            }
+        }
+    }
+    for landlook in project.custom_landlooks.iter().map(|metadata| metadata.landlook) {
+        if !used_custom_landlooks(project).contains(&landlook) {
+            issues.push(TargetCompatibilityIssue {
+                target: ScenarioTarget::ProvidencePortableFolder,
+                severity: DiagnosticSeverity::Info,
+                code: "unused-custom-landlook-preserved".to_string(),
+                message: format!(
+                    "Custom landlook {landlook} metadata is preserved even though no imported land map currently uses it."
+                ),
+                source: custom_landlook_metadata_file(landlook).map(str::to_string),
+            });
+        }
+    }
     if unknown_source_files > 0 {
         for target in [
             ScenarioTarget::MacClassicFolder,
@@ -996,6 +1073,53 @@ pub fn validate_target_compatibility(project: &ProvidenceProject) -> Vec<TargetC
         }
     }
     issues
+}
+
+fn used_custom_landlooks(project: &ProvidenceProject) -> BTreeSet<i8> {
+    project
+        .maps
+        .iter()
+        .filter_map(|map| map.render.landlook)
+        .filter(|landlook| (6..=8).contains(landlook))
+        .collect()
+}
+
+fn has_custom_landlook_metadata(project: &ProvidenceProject, landlook: i8) -> bool {
+    project
+        .custom_landlooks
+        .iter()
+        .any(|metadata| metadata.landlook == landlook)
+}
+
+fn custom_landlook_art_available(project: &ProvidenceProject, landlook: i8) -> bool {
+    let Some(pict_id) = custom_landlook_pict_id(landlook) else {
+        return false;
+    };
+    project.asset_catalog.tilesets.iter().any(|tileset| {
+        tileset.landlook == landlook && tileset.pict_id == Some(i32::from(pict_id)) && tileset.available
+    }) || project.assets.iter().any(|asset| {
+        asset.resource_type == "PICT"
+            && asset.resource_id == pict_id
+            && matches!(asset.export_state, ManagedAssetExportState::Ready)
+    })
+}
+
+fn custom_landlook_pict_id(landlook: i8) -> Option<i16> {
+    match landlook {
+        6 => Some(306),
+        7 => Some(307),
+        8 => Some(308),
+        _ => None,
+    }
+}
+
+fn custom_landlook_metadata_file(landlook: i8) -> Option<&'static str> {
+    match landlook {
+        6 => Some("Data Custom 1 BD"),
+        7 => Some("Data Custom 2 BD"),
+        8 => Some("Data Custom 3 BD"),
+        _ => None,
+    }
 }
 
 fn is_custom_music_file(name: &str) -> bool {
@@ -1049,11 +1173,7 @@ fn validate_tile_attributes(project: &ProvidenceProject, warnings: &mut Vec<Stri
                     "Custom land tiles for landlook {landlook} are missing metadata; this scenario can be preserved, but tile definitions cannot be edited safely."
                 ));
             }
-            let atlas_available = project
-                .asset_catalog
-                .tilesets
-                .iter()
-                .any(|tileset| tileset.landlook == landlook && tileset.available);
+            let atlas_available = custom_landlook_art_available(project, landlook);
             if !atlas_available {
                 warnings.push(format!(
                     "Custom landlook art for landlook {landlook} is missing; Realmz may not be able to draw this custom landlook after export."

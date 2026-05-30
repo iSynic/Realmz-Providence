@@ -196,6 +196,7 @@ fn write_managed_media_asset(
     provenance: &str,
     clear_existing: bool,
 ) -> Result<ManagedAsset> {
+    validate_media_asset_request(request)?;
     let original = STANDARD
         .decode(&request.original_base64)
         .map_err(|error| ProvidenceError::message(error.to_string()))?;
@@ -293,6 +294,33 @@ fn write_managed_media_asset(
             warnings: request.warnings.clone(),
         }),
     })
+}
+
+fn validate_media_asset_request(request: &MediaAssetImportRequest) -> Result<()> {
+    if matches!(request.target, AssetImportTarget::CustomLandlookAtlas) {
+        if request.kind != ManagedAssetKind::Picture || request.resource_type != "PICT" {
+            return Err(ProvidenceError::message(
+                "Custom landlook atlas replacement must be a PICT picture asset",
+            ));
+        }
+        if !(306..=308).contains(&request.resource_id) {
+            return Err(ProvidenceError::message(
+                "Custom landlook atlas replacement must use PICT 306, 307, or 308",
+            ));
+        }
+        if request.final_width != Some(640) || request.final_height != Some(320) {
+            return Err(ProvidenceError::message(
+                "Custom landlook atlas replacement must be converted to 640 x 320 pixels",
+            ));
+        }
+        let expected_link = format!("landlook:{}", request.resource_id - 300);
+        if request.linked_entity.as_deref() != Some(expected_link.as_str()) {
+            return Err(ProvidenceError::message(format!(
+                "Custom landlook atlas replacement must be linked to {expected_link}"
+            )));
+        }
+    }
+    Ok(())
 }
 
 fn read_project_relative_file(project_dir: &str, relative_path: &str) -> Result<Vec<u8>> {
