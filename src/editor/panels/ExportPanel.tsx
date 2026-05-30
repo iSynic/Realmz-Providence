@@ -45,6 +45,7 @@ export function ExportPanel({
           <InfoGrid
             rows={[
               ["Output", exportReport.outputPath],
+              ["Target", exportTargetLabel(exportReport.target)],
               ["Written", exportReport.writtenFiles.join(", ") || "none"],
               ["Pass-through", exportReport.passThroughFiles.length.toLocaleString()],
               ["Resources", exportReport.writtenResources.join(", ") || "none"],
@@ -79,6 +80,18 @@ export function ExportPanel({
               <header>Resource Export Notes</header>
               {exportReport.resourceWarnings.map((warning) => (
                 <div key={warning} className="lint-issue warning">! {warning}</div>
+              ))}
+            </section>
+          </ScrollArea>
+        ) : null}
+        {exportReport?.targetCompatibilityIssues.length ? (
+          <ScrollArea className="lint-results compact" aria-label="Target compatibility notes">
+            <section>
+              <header>Target Compatibility Notes</header>
+              {exportReport.targetCompatibilityIssues.map((issue) => (
+                <div key={`${issue.target}-${issue.code}-${issue.message}`} className={`lint-issue ${issue.severity}`}>
+                  {issue.severity === "error" ? "x" : issue.severity === "warning" ? "!" : "i"} {issue.message}
+                </div>
               ))}
             </section>
           </ScrollArea>
@@ -124,6 +137,19 @@ export function ExportPanel({
       </section>
     </div>
   );
+}
+
+function exportTargetLabel(target: ExportReport["target"]) {
+  switch (target) {
+    case "mac-classic-folder":
+      return "Mac Classic Folder";
+    case "windows-realmz-folder":
+      return "Windows Realmz Folder";
+    case "providence-portable-folder":
+      return "Portable Providence Folder";
+    default:
+      return target;
+  }
 }
 
 function exportPlan(project: Project | null) {

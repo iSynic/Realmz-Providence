@@ -1,6 +1,6 @@
 use crate::error::{IoPath, ProvidenceError, Result};
 use crate::importer::RAW_SOURCES_DIR;
-use crate::project::{LevelType, ProvidenceProject};
+use crate::project::{LevelType, ProvidenceProject, ScenarioTarget};
 use crate::realmz::{
     write_battles, write_caste_overrides, write_complex_encounters, write_door_file,
     write_extracodes, write_fields, write_global_macro_hooks, write_land_layout, write_macro_file,
@@ -23,6 +23,7 @@ use walkdir::WalkDir;
 #[serde(rename_all = "camelCase")]
 pub struct ExportReport {
     pub output_path: String,
+    pub target: ScenarioTarget,
     pub written_files: Vec<String>,
     pub pass_through_files: Vec<String>,
     pub written_resources: Vec<String>,
@@ -30,12 +31,14 @@ pub struct ExportReport {
     pub resource_warnings: Vec<String>,
     pub blocked_assets: Vec<String>,
     pub warnings: Vec<String>,
+    pub target_compatibility_issues: Vec<crate::project::TargetCompatibilityIssue>,
 }
 
 pub fn export_project(
     project_dir: impl AsRef<Path>,
     project: &ProvidenceProject,
     output_dir: impl AsRef<Path>,
+    target: ScenarioTarget,
 ) -> Result<ExportReport> {
     let project_dir = project_dir.as_ref();
     let output_dir = output_dir.as_ref();
@@ -323,6 +326,7 @@ pub fn export_project(
     };
     Ok(ExportReport {
         output_path: output_dir.to_string_lossy().to_string(),
+        target,
         written_files,
         pass_through_files,
         written_resources: resource_result.written_resources,
@@ -330,6 +334,7 @@ pub fn export_project(
         resource_warnings: resource_result.resource_warnings,
         blocked_assets: resource_result.blocked_assets,
         warnings,
+        target_compatibility_issues: project.validation.target_compatibility_issues.clone(),
     })
 }
 

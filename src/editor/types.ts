@@ -1215,10 +1215,12 @@ export type ValidationReport = {
   warnings: string[];
   exportableFiles: string[];
   passThroughFiles: string[];
+  targetCompatibilityIssues: TargetCompatibilityIssue[];
 };
 
 export type ExportReport = {
   outputPath: string;
+  target: ScenarioTarget;
   writtenFiles: string[];
   passThroughFiles: string[];
   writtenResources: string[];
@@ -1226,6 +1228,16 @@ export type ExportReport = {
   resourceWarnings: string[];
   blockedAssets: string[];
   warnings: string[];
+  targetCompatibilityIssues: TargetCompatibilityIssue[];
+};
+
+export type ScenarioTarget = "mac-classic-folder" | "windows-realmz-folder" | "providence-portable-folder";
+export type TargetCompatibilityIssue = {
+  target: ScenarioTarget;
+  severity: string;
+  code: string;
+  message: string;
+  source: string | null;
 };
 
 export type BenchmarkReport = {

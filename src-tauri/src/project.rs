@@ -1372,6 +1372,26 @@ pub struct ValidationReport {
     pub warnings: Vec<String>,
     pub exportable_files: Vec<String>,
     pub pass_through_files: Vec<String>,
+    #[serde(default)]
+    pub target_compatibility_issues: Vec<TargetCompatibilityIssue>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TargetCompatibilityIssue {
+    pub target: ScenarioTarget,
+    pub severity: DiagnosticSeverity,
+    pub code: String,
+    pub message: String,
+    pub source: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum ScenarioTarget {
+    MacClassicFolder,
+    WindowsRealmzFolder,
+    ProvidencePortableFolder,
 }
 
 impl ProvidenceProject {

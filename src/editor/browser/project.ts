@@ -58,7 +58,7 @@ export function createBrowserProject(projectName: string): Project {
     records: { counts: {}, alignments: [] },
     diagnostics: [],
     semanticSchema: emptySemanticSchema(),
-    validation: { ok: true, errors: [], warnings: [], exportableFiles: [], passThroughFiles: [] }
+    validation: { ok: true, errors: [], warnings: [], exportableFiles: [], passThroughFiles: [], targetCompatibilityIssues: [] }
   };
   project.validation = validateBrowserProject(project);
   return project;
@@ -119,7 +119,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
     records: parsed.records,
     diagnostics: parsed.diagnostics,
     semanticSchema: emptySemanticSchema(),
-    validation: { ok: true, errors: [], warnings: [], exportableFiles: [], passThroughFiles: [] }
+    validation: { ok: true, errors: [], warnings: [], exportableFiles: [], passThroughFiles: [], targetCompatibilityIssues: [] }
   };
   project.semanticSchema = buildBrowserSemanticSchema({ scenario: project.scenario, buffers: files, sourceFiles, ...parsed });
   project.validation = validateBrowserProject(project);
@@ -505,7 +505,7 @@ export function validateBrowserProject(project: Project): ValidationReport {
       warnings.push(`${source.name} looks like a generated runtime cache and is treated as evidence/pass-through, not authored data.`);
     }
   }
-  return { ok: errors.length === 0, errors, warnings, exportableFiles, passThroughFiles };
+  return { ok: errors.length === 0, errors, warnings, exportableFiles, passThroughFiles, targetCompatibilityIssues: [] };
 }
 
 function validateTileAttributes(project: Project, sourceNames: Set<string>, warnings: string[]) {

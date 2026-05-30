@@ -47,6 +47,34 @@ export type ScenarioCoverageManifest = {
       resourceEntries: number;
       payloadBytesByStatus: Record<string, number>;
     } | null;
+    targetCompatibility?: {
+      macClassicScenarios: number;
+      windowsRealmzScenarios: number;
+      targetCompatibilityIssues: number;
+      warnings: number;
+      errors: number;
+    } | null;
+    completeness?: {
+      scenarioSemanticOwnership: {
+        status: string;
+        observedBytes: number;
+        totalObservedBytes: number;
+        activeRiskBytes: number;
+        note: string;
+      };
+      resourceContainerOwnership: {
+        status: string;
+        parsedResourceForks: number;
+        resourceForkFiles: number;
+        resourceEntries: number;
+      };
+      mediaCodecInternals: {
+        status: string;
+        preservedOrCustomPayloadBytes: number;
+        decodedResourcePayloadBytes: number;
+        note: string;
+      };
+    };
     dungeon?: {
       status: string;
       bits: number | null;

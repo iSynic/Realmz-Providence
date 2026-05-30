@@ -1336,7 +1336,13 @@ fn exports_supported_files_and_preserves_passthrough_snapshot() {
     let export_dir = temp.path().join("exported");
     import_scenario(&source, &project_dir).unwrap();
     let project = open_project(&project_dir).unwrap();
-    let report = export_project(&project_dir, &project, &export_dir).unwrap();
+    let report = export_project(
+        &project_dir,
+        &project,
+        &export_dir,
+        realmz_providence_lib::project::ScenarioTarget::ProvidencePortableFolder,
+    )
+    .unwrap();
 
     for name in SUPPORTED_WRITE_FILES {
         if source.join(name).is_file() {
@@ -1375,7 +1381,13 @@ fn exports_hardened_fixtures_byte_identically_without_edits() {
         let export_dir = temp.path().join("exported");
         import_scenario(&source, &project_dir).unwrap();
         let project = open_project(&project_dir).unwrap();
-        let report = export_project(&project_dir, &project, &export_dir).unwrap();
+        let report = export_project(
+            &project_dir,
+            &project,
+            &export_dir,
+            realmz_providence_lib::project::ScenarioTarget::ProvidencePortableFolder,
+        )
+        .unwrap();
 
         for file_name in supported.iter().chain(tracked.difference(&supported)) {
             let source_file = source.join(file_name);

@@ -118,6 +118,20 @@ function ScenarioCoverageSummary({ coverage }: { coverage: ScenarioCoverageManif
         <Metric label="Ignored" value={summary.ignoredNonScenarioFiles} />
       </div>
       <div className="scenario-coverage-note">
+        {summary.completeness && (
+          <>
+            Scenario boundary: {formatCoveragePhrase(summary.completeness.scenarioSemanticOwnership.status)}.
+            Resource forks: {summary.completeness.resourceContainerOwnership.parsedResourceForks.toLocaleString()} / {summary.completeness.resourceContainerOwnership.resourceForkFiles.toLocaleString()} parsed.
+            Media codecs: {formatCoveragePhrase(summary.completeness.mediaCodecInternals.status)}.
+            {" "}
+          </>
+        )}
+        {summary.targetCompatibility && (
+          <>
+            Targets: {summary.targetCompatibility.macClassicScenarios.toLocaleString()} Mac-style and {summary.targetCompatibility.windowsRealmzScenarios.toLocaleString()} Windows-style scenario(s), {summary.targetCompatibility.targetCompatibilityIssues.toLocaleString()} packaging note(s).
+            {" "}
+          </>
+        )}
         Action Points: {summary.ed3.recordBytes}-byte Extra Action rows, {summary.ed3.runtimeCallsites ?? "known"} runtime callsite(s).
         Parameters: {summary.edcd.edcdBackedOpcodes ?? "known"} opcode-backed shapes, {summary.edcd.fieldComparisonGaps ?? 0} label gap(s) left.
         {summary.dungeon && (
@@ -150,6 +164,10 @@ function ScenarioCoverageSummary({ coverage }: { coverage: ScenarioCoverageManif
       </details>
     </section>
   );
+}
+
+function formatCoveragePhrase(value: string) {
+  return value.split("-").join(" ");
 }
 
 function Metric({ label, value }: { label: string; value: number }) {

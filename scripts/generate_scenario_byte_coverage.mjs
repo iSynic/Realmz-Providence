@@ -10,6 +10,7 @@ const unknownBacklogPath = path.join(repoRoot, "docs/generated/unknown-data-back
 const runtimeCachePath = path.join(repoRoot, "docs/generated/runtime-cache-classification.json");
 const resourceByteOwnershipPath = path.join(repoRoot, "docs/generated/resource-byte-ownership.json");
 const dungeonByteOwnershipPath = path.join(repoRoot, "docs/generated/dungeon-byte-ownership.json");
+const targetCompatibilityPath = path.join(repoRoot, "docs/generated/scenario-target-compatibility.json");
 const realmzRsPath = path.join(repoRoot, "src-tauri/src/realmz.rs");
 
 const fileInventoryPath = path.join(repoRoot, "docs/generated/scenario-file-inventory.json");
@@ -105,6 +106,7 @@ const unknownBacklog = readJson(unknownBacklogPath);
 const runtimeCaches = readJson(runtimeCachePath);
 const resourceByteOwnership = readOptionalJson(resourceByteOwnershipPath);
 const dungeonByteOwnership = readOptionalJson(dungeonByteOwnershipPath);
+const targetCompatibility = readOptionalJson(targetCompatibilityPath);
 const rustRegistry = parseRustRegistry(fs.readFileSync(realmzRsPath, "utf8"));
 const parsedResourceForkNames = new Set(
   (resourceByteOwnership?.forks ?? [])
@@ -318,6 +320,16 @@ function buildUiManifest(inventory, ownership, unknownReport) {
             payloadBytesByStatus: resourceByteOwnership.summary?.statusObservedBytes ?? {}
           }
         : null,
+      targetCompatibility: targetCompatibility
+        ? {
+            macClassicScenarios: targetCompatibility.summary?.targets?.["mac-classic-folder"]?.scenarios ?? 0,
+            windowsRealmzScenarios: targetCompatibility.summary?.targets?.["windows-realmz-folder"]?.scenarios ?? 0,
+            targetCompatibilityIssues: targetCompatibility.summary?.targetCompatibilityIssues ?? 0,
+            warnings: targetCompatibility.summary?.warnings ?? 0,
+            errors: targetCompatibility.summary?.errors ?? 0
+          }
+        : null,
+      completeness: targetCompatibility?.summary?.completeness ?? splitCompletenessSummary(ownership),
       dungeon: dungeonSummary(),
       runtimeStateContainers: ownership.summary.statusCounts["runtime-cache"] ?? 0,
       needsFormatWork: ownership.summary.statusCounts["unknown-active-risk"] ?? 0,
@@ -362,6 +374,42 @@ function validateInventoryAndOwnership(inventory, ownership) {
       }
     }
   }
+}
+
+function splitCompletenessSummary(ownership) {
+  const statusBytes = ownership.summary?.statusObservedBytes ?? {};
+  const totalObservedBytes = Object.values(statusBytes).reduce((total, value) => total + Number(value || 0), 0);
+  const activeRiskBytes =
+    (statusBytes["unknown-active-risk"] ?? 0) +
+    (statusBytes["needs-codec-work"] ?? 0) +
+    (statusBytes["preserved-unknown"] ?? 0);
+  const payloadBytes = resourceByteOwnership?.summary?.statusObservedBytes ?? {};
+  return {
+    scenarioSemanticOwnership: {
+      status: activeRiskBytes === 0 ? "complete-at-scenario-boundary" : "has-active-risk",
+      observedBytes: totalObservedBytes - activeRiskBytes,
+      totalObservedBytes,
+      activeRiskBytes,
+      note: "Preserved standard media payloads count as scenario-owned media boundaries, not missing scenario semantics."
+    },
+    resourceContainerOwnership: {
+      status:
+        (resourceByteOwnership?.summary?.unparsedResourceForks ?? 0) === 0
+          ? "complete-for-observed-resource-forks"
+          : "has-unparsed-resource-forks",
+      parsedResourceForks: resourceByteOwnership?.summary?.parsedResourceForks ?? 0,
+      resourceForkFiles: resourceByteOwnership?.summary?.resourceForkFiles ?? 0,
+      resourceEntries: resourceByteOwnership?.summary?.resourceEntries ?? 0
+    },
+    mediaCodecInternals: {
+      status: "stage-two-optional",
+      preservedOrCustomPayloadBytes:
+        (payloadBytes["preserved-standard-media-payload"] ?? 0) +
+        (statusBytes["custom-media-payload"] ?? 0),
+      decodedResourcePayloadBytes: payloadBytes["decoded-resource-payload"] ?? 0,
+      note: "Full PICT/cicn/snd/custom-music internals are not required for scenario semantic completion."
+    }
+  };
 }
 
 function scanScenarioRoots(scenarios) {

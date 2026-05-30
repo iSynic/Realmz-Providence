@@ -16,6 +16,7 @@
     "archaeology:byte-coverage": "node scripts/generate_scenario_byte_coverage.mjs",
     "archaeology:dungeon-coverage": "node scripts/generate_dungeon_coverage.mjs",
     "archaeology:resource-coverage": "node scripts/generate_resource_coverage.mjs",
+    "archaeology:target-compatibility": "node scripts/generate_target_compatibility.mjs",
     "archaeology:divinity-opcodes": "node scripts/extract_divinity_opcode_help.mjs",
     "archaeology:opcode-crosswalk": "node scripts/generate_opcode_edcd_crosswalk.mjs",
     "smoke:oracle": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_smoke.ps1",

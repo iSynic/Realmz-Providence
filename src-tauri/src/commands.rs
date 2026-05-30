@@ -6,7 +6,7 @@ use crate::importer::{
     open_project as open_project_impl, save_project as save_project_impl,
 };
 use crate::media_assets::mime_for_path;
-use crate::project::{ProvidenceProject, ValidationReport};
+use crate::project::{ProvidenceProject, ScenarioTarget, ValidationReport};
 use crate::resource_fork::parse_resource_fork_entries;
 use crate::resource_preview::{
     inspect_resource_preview, preview_data_url_for_resource, DecodedResourcePreview,
@@ -198,8 +198,14 @@ pub fn export_project(
     project_dir: String,
     project: ProvidenceProject,
     output_dir: String,
+    scenario_target: Option<ScenarioTarget>,
 ) -> Result<ExportReport> {
-    export_project_impl(project_dir, &project, output_dir)
+    export_project_impl(
+        project_dir,
+        &project,
+        output_dir,
+        scenario_target.unwrap_or(ScenarioTarget::ProvidencePortableFolder),
+    )
 }
 
 #[tauri::command]

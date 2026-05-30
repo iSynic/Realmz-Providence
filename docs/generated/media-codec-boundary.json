@@ -1,0 +1,247 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-05-30T00:57:57.871Z",
+  "sources": {
+    "resourceCoverage": "docs/generated/resource-byte-ownership.json",
+    "codecBacklog": "docs/generated/resource-payload-codec-backlog.json",
+    "scenarioByteOwnership": "docs/generated/scenario-byte-ownership.json"
+  },
+  "policy": {
+    "stageOne": "Resource payloads are owned at the scenario boundary: identified, preserved, referenced, previewed/played where supported, and replaced only through known-good encoders.",
+    "stageTwo": "Full PICT opcode, arbitrary cicn/icon-suite, snd command-variant, and custom music codec internals remain optional media-codec work."
+  },
+  "summary": {
+    "resourceTypes": 18,
+    "resourceEntries": 16847,
+    "preservedStandardMediaPayloadBytes": 78110189,
+    "decodedResourcePayloadBytes": 841240,
+    "customMediaPayloadBytes": 4733608,
+    "needsCodecWork": 0,
+    "scenarioCompletenessRequiresCodecInternals": false
+  },
+  "resourceTypes": [
+    {
+      "type": "\u0000\u0000\u0000\u0000",
+      "role": "Malformed compatibility baggage resource",
+      "entries": 6,
+      "bytes": 1908,
+      "resourceCoverageStatus": "preserved-standard-media-payload",
+      "mediaPayloadStatus": "preserved-known",
+      "preserved": true,
+      "previewOrPlayback": "No normal preview.",
+      "writablePolicy": "Not writable.",
+      "preservationPolicy": "Preserved byte-for-byte as malformed/compatibility baggage."
+    },
+    {
+      "type": "cicn",
+      "role": "Color icon resource",
+      "entries": 14111,
+      "bytes": 31233238,
+      "resourceCoverageStatus": "preserved-standard-media-payload",
+      "mediaPayloadStatus": "preserved-previewable-writable-subset",
+      "preserved": true,
+      "previewOrPlayback": "Previewable when the current resource preview decoder supports the cicn variant.",
+      "writablePolicy": "Known-good replacement writer for project-owned cicn media only; no arbitrary classic icon editor.",
+      "preservationPolicy": "Preserve untouched payload bytes. Writable only through 32x32 icon and Special Land Tile conversion."
+    },
+    {
+      "type": "colm",
+      "role": "Classic color companion metadata",
+      "entries": 3,
+      "bytes": 528,
+      "resourceCoverageStatus": "preserved-standard-media-payload",
+      "mediaPayloadStatus": "preserved-known",
+      "preserved": true,
+      "previewOrPlayback": "Metadata-only.",
+      "writablePolicy": "Not writable.",
+      "preservationPolicy": "Preserved as compatibility metadata; no Realmz gameplay consumer is proven."
+    },
+    {
+      "type": "icl4",
+      "role": "Large 4-bit color icon",
+      "entries": 12,
+      "bytes": 6144,
+      "resourceCoverageStatus": "preserved-standard-media-payload",
+      "mediaPayloadStatus": "preserved-known",
+      "preserved": true,
+      "previewOrPlayback": "Advanced metadata/preview only.",
+      "writablePolicy": "Not writable as normal scenario media.",
+      "preservationPolicy": "Preserved as classic Mac file/icon compatibility media."
+    },
+    {
+      "type": "icl8",
+      "role": "Large 8-bit color icon",
+      "entries": 19,
+      "bytes": 19456,
+      "resourceCoverageStatus": "preserved-standard-media-payload",
+      "mediaPayloadStatus": "preserved-known",
+      "preserved": true,
+      "previewOrPlayback": "Advanced metadata/preview only.",
+      "writablePolicy": "Not writable as normal scenario media.",
+      "preservationPolicy": "Preserved as classic Mac file/icon compatibility media."
+    },
+    {
+      "type": "ICN#",
+      "role": "Large black-and-white icon",
+      "entries": 19,
+      "bytes": 4864,
+      "resourceCoverageStatus": "preserved-standard-media-payload",
+      "mediaPayloadStatus": "preserved-known",
+      "preserved": true,
+      "previewOrPlayback": "Advanced metadata/preview only.",
+      "writablePolicy": "Not writable as normal scenario media.",
+      "preservationPolicy": "Preserved as classic Mac file/icon compatibility media."
+    },
+    {
+      "type": "icns",
+      "role": "Icon suite resource",
+      "entries": 17,
+      "bytes": 78837,
+      "resourceCoverageStatus": "preserved-standard-media-payload",
+      "mediaPayloadStatus": "preserved-known",
+      "preserved": true,
+      "previewOrPlayback": "Advanced metadata/preview only.",
+      "writablePolicy": "Not writable as normal scenario media.",
+      "preservationPolicy": "Preserved as classic Mac file/icon compatibility media."
+    },
+    {
+      "type": "ics#",
+      "role": "Small black-and-white icon",
+      "entries": 19,
+      "bytes": 1216,
+      "resourceCoverageStatus": "preserved-standard-media-payload",
+      "mediaPayloadStatus": "preserved-known",
+      "preserved": true,
+      "previewOrPlayback": "Advanced metadata/preview only.",
+      "writablePolicy": "Not writable as normal scenario media.",
+      "preservationPolicy": "Preserved as classic Mac file/icon compatibility media."
+    },
+    {
+      "type": "ics4",
+      "role": "Small 4-bit color icon",
+      "entries": 12,
+      "bytes": 1536,
+      "resourceCoverageStatus": "preserved-standard-media-payload",
+      "mediaPayloadStatus": "preserved-known",
+      "preserved": true,
+      "previewOrPlayback": "Advanced metadata/preview only.",
+      "writablePolicy": "Not writable as normal scenario media.",
+      "preservationPolicy": "Preserved as classic Mac file/icon compatibility media."
+    },
+    {
+      "type": "ics8",
+      "role": "Small 8-bit color icon",
+      "entries": 18,
+      "bytes": 4608,
+      "resourceCoverageStatus": "preserved-standard-media-payload",
+      "mediaPayloadStatus": "preserved-known",
+      "preserved": true,
+      "previewOrPlayback": "Advanced metadata/preview only.",
+      "writablePolicy": "Not writable as normal scenario media.",
+      "preservationPolicy": "Preserved as classic Mac file/icon compatibility media."
+    },
+    {
+      "type": "PICT",
+      "role": "Picture resource",
+      "entries": 280,
+      "bytes": 31570654,
+      "resourceCoverageStatus": "preserved-standard-media-payload",
+      "mediaPayloadStatus": "preserved-previewable-writable-subset",
+      "preserved": true,
+      "previewOrPlayback": "Previewable when the current resource preview decoder supports the PICT variant.",
+      "writablePolicy": "Known-good replacement writer for project-owned PICT media only; no arbitrary PICT opcode editor.",
+      "preservationPolicy": "Preserve untouched payload bytes. Writable only through Providence's normalized scenario-picture/tile-atlas import path."
+    },
+    {
+      "type": "RLMZ",
+      "role": "Realmz metadata resource",
+      "entries": 402,
+      "bytes": 3216,
+      "resourceCoverageStatus": "preserved-standard-media-payload",
+      "mediaPayloadStatus": "preserved-known",
+      "preserved": true,
+      "previewOrPlayback": "Metadata-only.",
+      "writablePolicy": "Not writable outside fixture-proven scenario shell/resource work.",
+      "preservationPolicy": "Preserved as Realmz metadata until field ownership is proven."
+    },
+    {
+      "type": "snd ",
+      "role": "Sound resource",
+      "entries": 594,
+      "bytes": 15183984,
+      "resourceCoverageStatus": "preserved-standard-media-payload",
+      "mediaPayloadStatus": "preserved-playable-writable-subset",
+      "preserved": true,
+      "previewOrPlayback": "Playable when the current resource preview decoder supports the snd variant.",
+      "writablePolicy": "Known-good replacement writer for project-owned snd effects only; no full Sound Manager command editor.",
+      "preservationPolicy": "Preserve untouched payload bytes. Writable only through normalized sound-effect import."
+    },
+    {
+      "type": "STR#",
+      "role": "String list resource",
+      "entries": 809,
+      "bytes": 515284,
+      "resourceCoverageStatus": "decoded-resource-payload",
+      "mediaPayloadStatus": "decoded-reference",
+      "preserved": true,
+      "previewOrPlayback": "Readable classic string-list records.",
+      "writablePolicy": "Broad STR# authoring remains outside normal scenario editing.",
+      "preservationPolicy": "Decoded for reference preview and preserved unless deliberately replaced as a managed resource."
+    },
+    {
+      "type": "styl",
+      "role": "Text style companion resource",
+      "entries": 164,
+      "bytes": 25668,
+      "resourceCoverageStatus": "decoded-resource-payload",
+      "mediaPayloadStatus": "decoded-reference",
+      "preserved": true,
+      "previewOrPlayback": "Metadata/readable companion where supported.",
+      "writablePolicy": "Style-resource editing remains outside normal scenario editing.",
+      "preservationPolicy": "Decoded as text style companion metadata and preserved."
+    },
+    {
+      "type": "TEXT",
+      "role": "Text resource",
+      "entries": 311,
+      "bytes": 297148,
+      "resourceCoverageStatus": "decoded-resource-payload",
+      "mediaPayloadStatus": "decoded-reference",
+      "preserved": true,
+      "previewOrPlayback": "Readable classic text.",
+      "writablePolicy": "Normal scenario string authoring uses Data SD2, not broad TEXT resource editing.",
+      "preservationPolicy": "Decoded for reference preview and preserved unless deliberately replaced as a managed resource."
+    },
+    {
+      "type": "vers",
+      "role": "Version resource",
+      "entries": 48,
+      "bytes": 3116,
+      "resourceCoverageStatus": "decoded-resource-payload",
+      "mediaPayloadStatus": "decoded-reference",
+      "preserved": true,
+      "previewOrPlayback": "Metadata.",
+      "writablePolicy": "Version-resource authoring is not a normal scenario workflow.",
+      "preservationPolicy": "Decoded as metadata and preserved."
+    },
+    {
+      "type": "wrct",
+      "role": "Classic window rectangle metadata",
+      "entries": 3,
+      "bytes": 24,
+      "resourceCoverageStatus": "decoded-resource-payload",
+      "mediaPayloadStatus": "decoded-reference",
+      "preserved": true,
+      "previewOrPlayback": "Metadata.",
+      "writablePolicy": "Not a normal authoring target.",
+      "preservationPolicy": "Decoded as four 16-bit rectangle coordinates and preserved."
+    }
+  ],
+  "customMedia": {
+    "filePattern": "Custom 1-9 Music and legacy Custom 1-9 pass-through media",
+    "mediaPayloadStatus": "custom-media-preserved",
+    "bytes": 4733608,
+    "preservationPolicy": "Custom music/module payloads are scenario-owned media and preserved byte-for-byte until a dedicated music codec writer exists.",
+    "writablePolicy": "Not writable in this stage."
+  }
+}

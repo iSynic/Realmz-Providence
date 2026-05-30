@@ -819,13 +819,109 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         ));
     }
 
+    let target_compatibility_issues = validate_target_compatibility(project);
+
     ValidationReport {
         ok: errors.is_empty(),
         errors,
         warnings,
         exportable_files,
         pass_through_files,
+        target_compatibility_issues,
     }
+}
+
+fn validate_target_compatibility(project: &ProvidenceProject) -> Vec<TargetCompatibilityIssue> {
+    let mut issues = Vec::new();
+    let has_resource_fork = project
+        .source
+        .files
+        .iter()
+        .any(|file| matches!(file.role, SourceFileRole::ResourceFork));
+    let resource_references = project
+        .semantic_schema
+        .entities
+        .iter()
+        .filter(|entity| {
+            matches!(
+                entity.entity_type.as_str(),
+                "resource" | "icon-resource" | "special-land-tile" | "picture" | "sound"
+            )
+        })
+        .count();
+    if resource_references > 0 && !has_resource_fork && project.assets.is_empty() {
+        issues.push(TargetCompatibilityIssue {
+            target: ScenarioTarget::MacClassicFolder,
+            severity: DiagnosticSeverity::Warning,
+            code: "missing-scenario-resource-fork".to_string(),
+            message: format!(
+                "{resource_references} resource reference(s) were found, but the imported package did not include a scenario resource fork."
+            ),
+            source: Some("Scenario resources".to_string()),
+        });
+    }
+    let apple_double_sidecars = project
+        .source
+        .files
+        .iter()
+        .filter(|file| file.name.starts_with("._"))
+        .count();
+    if apple_double_sidecars > 0 {
+        issues.push(TargetCompatibilityIssue {
+            target: ScenarioTarget::MacClassicFolder,
+            severity: DiagnosticSeverity::Info,
+            code: "appledouble-sidecars-preserved".to_string(),
+            message: format!(
+                "{apple_double_sidecars} AppleDouble sidecar file(s) are preserved as Classic Mac resource-fork packaging."
+            ),
+            source: Some("Source package".to_string()),
+        });
+    }
+    let custom_music = project
+        .source
+        .files
+        .iter()
+        .filter(|file| is_custom_music_file(&file.name))
+        .count();
+    if custom_music > 0 {
+        issues.push(TargetCompatibilityIssue {
+            target: ScenarioTarget::ProvidencePortableFolder,
+            severity: DiagnosticSeverity::Info,
+            code: "custom-music-preserved".to_string(),
+            message: format!(
+                "{custom_music} custom music file(s) are scenario-owned media and will be preserved byte-for-byte."
+            ),
+            source: Some("Custom music".to_string()),
+        });
+    }
+    let unsupported_managed_assets = project
+        .assets
+        .iter()
+        .filter(|asset| !matches!(asset.resource_type.as_str(), "PICT" | "cicn" | "snd "))
+        .count();
+    if unsupported_managed_assets > 0 {
+        issues.push(TargetCompatibilityIssue {
+            target: ScenarioTarget::ProvidencePortableFolder,
+            severity: DiagnosticSeverity::Warning,
+            code: "unsupported-managed-media-type".to_string(),
+            message: format!(
+                "{unsupported_managed_assets} managed asset(s) target unsupported resource types; only PICT, cicn, and snd are known-good replacement writers."
+            ),
+            source: Some("Assets".to_string()),
+        });
+    }
+    issues
+}
+
+fn is_custom_music_file(name: &str) -> bool {
+    if !name.starts_with("Custom ") {
+        return false;
+    }
+    let suffix = name.trim_start_matches("Custom ");
+    let Some(first) = suffix.chars().next() else {
+        return false;
+    };
+    first.is_ascii_digit() && (suffix.len() == 1 || suffix.ends_with(" Music"))
 }
 
 fn random_rects_overlap(a: &RandomRect, b: &RandomRect) -> bool {

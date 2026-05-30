@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-29T23:44:38.838Z",
+  "generatedAt": "2026-05-30T00:58:11.293Z",
   "summary": {
     "scenarioRoots": 87,
     "fileFamilies": 88,
@@ -17,6 +17,34 @@
         "resource-container-padding": 52143,
         "preserved-standard-media-payload": 78110189,
         "decoded-resource-payload": 841240
+      }
+    },
+    "targetCompatibility": {
+      "macClassicScenarios": 59,
+      "windowsRealmzScenarios": 28,
+      "targetCompatibilityIssues": 67,
+      "warnings": 12,
+      "errors": 0
+    },
+    "completeness": {
+      "scenarioSemanticOwnership": {
+        "status": "complete-at-scenario-boundary",
+        "observedBytes": 2319374144,
+        "totalObservedBytes": 2319374144,
+        "activeRiskBytes": 0,
+        "note": "Preserved standard media payloads count as scenario-owned media boundaries, not missing scenario semantics."
+      },
+      "resourceContainerOwnership": {
+        "status": "complete-for-observed-resource-forks",
+        "parsedResourceForks": 207,
+        "resourceForkFiles": 207,
+        "resourceEntries": 16847
+      },
+      "mediaCodecInternals": {
+        "status": "stage-two-optional",
+        "preservedOrCustomPayloadBytes": 82843797,
+        "decodedResourcePayloadBytes": 841240,
+        "note": "Full PICT/cicn/snd/custom-music internals are not required for scenario semantic completion."
       }
     },
     "dungeon": {

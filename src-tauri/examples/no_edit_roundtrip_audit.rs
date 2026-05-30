@@ -273,7 +273,12 @@ fn audit_scenario(root: &Path, source: &Path) -> ScenarioAudit {
         audit.import_error = Some(import_result.err().unwrap().to_string());
         return audit;
     };
-    let export_result = export_project(&project_dir, &project, &export_dir);
+    let export_result = export_project(
+        &project_dir,
+        &project,
+        &export_dir,
+        realmz_providence_lib::project::ScenarioTarget::ProvidencePortableFolder,
+    );
     if let Err(error) = export_result {
         audit.status = ScenarioStatus::ExportError;
         audit.export_error = Some(error.to_string());

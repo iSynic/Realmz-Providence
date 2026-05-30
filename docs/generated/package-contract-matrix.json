@@ -1,0 +1,243 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-05-30T00:57:57.871Z",
+  "sources": {
+    "targetCompatibility": "docs/generated/scenario-target-compatibility.json",
+    "mediaBoundary": "docs/generated/media-codec-boundary.json"
+  },
+  "targets": [
+    {
+      "target": "mac-classic-folder",
+      "label": "Mac Classic Folder",
+      "exportStatus": "supported-conservative",
+      "requiredComponents": [
+        "scenario shell/marker file",
+        "authored data files",
+        "Scenario resource fork when scenario resources are referenced"
+      ],
+      "optionalComponents": [
+        "Data Spell resource fork",
+        "custom music files",
+        "Icon_ resource companion",
+        "README/distribution files"
+      ],
+      "ignoredComponents": [
+        ".DS_Store",
+        "Thumbs.db",
+        "desktop.ini"
+      ],
+      "supportedResourcePayloads": [
+        {
+          "type": "cicn",
+          "mediaPayloadStatus": "preserved-previewable-writable-subset",
+          "writablePolicy": "Known-good replacement writer for project-owned cicn media only; no arbitrary classic icon editor."
+        },
+        {
+          "type": "PICT",
+          "mediaPayloadStatus": "preserved-previewable-writable-subset",
+          "writablePolicy": "Known-good replacement writer for project-owned PICT media only; no arbitrary PICT opcode editor."
+        },
+        {
+          "type": "snd ",
+          "mediaPayloadStatus": "preserved-playable-writable-subset",
+          "writablePolicy": "Known-good replacement writer for project-owned snd effects only; no full Sound Manager command editor."
+        },
+        {
+          "type": "STR#",
+          "mediaPayloadStatus": "decoded-reference",
+          "writablePolicy": "Broad STR# authoring remains outside normal scenario editing."
+        },
+        {
+          "type": "styl",
+          "mediaPayloadStatus": "decoded-reference",
+          "writablePolicy": "Style-resource editing remains outside normal scenario editing."
+        },
+        {
+          "type": "TEXT",
+          "mediaPayloadStatus": "decoded-reference",
+          "writablePolicy": "Normal scenario string authoring uses Data SD2, not broad TEXT resource editing."
+        },
+        {
+          "type": "vers",
+          "mediaPayloadStatus": "decoded-reference",
+          "writablePolicy": "Version-resource authoring is not a normal scenario workflow."
+        },
+        {
+          "type": "wrct",
+          "mediaPayloadStatus": "decoded-reference",
+          "writablePolicy": "Not a normal authoring target."
+        }
+      ],
+      "validationPolicy": "Missing scenario resource forks or unsupported sidecar wrappers are target-compatibility warnings before export."
+    },
+    {
+      "target": "windows-realmz-folder",
+      "label": "Windows Realmz Folder",
+      "exportStatus": "observed-preserve-first",
+      "requiredComponents": [
+        "scenario shell/marker file",
+        "authored data files",
+        "resource sidecars when the scenario ships custom media"
+      ],
+      "optionalComponents": [
+        "custom music files",
+        "compatibility/readme files"
+      ],
+      "ignoredComponents": [
+        ".DS_Store",
+        "Thumbs.db",
+        "desktop.ini"
+      ],
+      "supportedResourcePayloads": [
+        {
+          "type": "cicn",
+          "mediaPayloadStatus": "preserved-previewable-writable-subset",
+          "writablePolicy": "Known-good replacement writer for project-owned cicn media only; no arbitrary classic icon editor."
+        },
+        {
+          "type": "PICT",
+          "mediaPayloadStatus": "preserved-previewable-writable-subset",
+          "writablePolicy": "Known-good replacement writer for project-owned PICT media only; no arbitrary PICT opcode editor."
+        },
+        {
+          "type": "snd ",
+          "mediaPayloadStatus": "preserved-playable-writable-subset",
+          "writablePolicy": "Known-good replacement writer for project-owned snd effects only; no full Sound Manager command editor."
+        },
+        {
+          "type": "STR#",
+          "mediaPayloadStatus": "decoded-reference",
+          "writablePolicy": "Broad STR# authoring remains outside normal scenario editing."
+        },
+        {
+          "type": "styl",
+          "mediaPayloadStatus": "decoded-reference",
+          "writablePolicy": "Style-resource editing remains outside normal scenario editing."
+        },
+        {
+          "type": "TEXT",
+          "mediaPayloadStatus": "decoded-reference",
+          "writablePolicy": "Normal scenario string authoring uses Data SD2, not broad TEXT resource editing."
+        },
+        {
+          "type": "vers",
+          "mediaPayloadStatus": "decoded-reference",
+          "writablePolicy": "Version-resource authoring is not a normal scenario workflow."
+        },
+        {
+          "type": "wrct",
+          "mediaPayloadStatus": "decoded-reference",
+          "writablePolicy": "Not a normal authoring target."
+        }
+      ],
+      "validationPolicy": "Windows-specific runtime packaging is preserved from observed fixtures; new packaging promises require a Windows runtime fixture."
+    },
+    {
+      "target": "providence-portable-folder",
+      "label": "Portable Providence Folder",
+      "exportStatus": "current-default",
+      "requiredComponents": [
+        "raw source snapshot",
+        "supported authored files"
+      ],
+      "optionalComponents": [
+        "all classified pass-through/resource files"
+      ],
+      "ignoredComponents": [
+        ".DS_Store",
+        "Thumbs.db",
+        "desktop.ini"
+      ],
+      "supportedResourcePayloads": [
+        {
+          "type": "cicn",
+          "mediaPayloadStatus": "preserved-previewable-writable-subset",
+          "writablePolicy": "Known-good replacement writer for project-owned cicn media only; no arbitrary classic icon editor."
+        },
+        {
+          "type": "PICT",
+          "mediaPayloadStatus": "preserved-previewable-writable-subset",
+          "writablePolicy": "Known-good replacement writer for project-owned PICT media only; no arbitrary PICT opcode editor."
+        },
+        {
+          "type": "snd ",
+          "mediaPayloadStatus": "preserved-playable-writable-subset",
+          "writablePolicy": "Known-good replacement writer for project-owned snd effects only; no full Sound Manager command editor."
+        },
+        {
+          "type": "STR#",
+          "mediaPayloadStatus": "decoded-reference",
+          "writablePolicy": "Broad STR# authoring remains outside normal scenario editing."
+        },
+        {
+          "type": "styl",
+          "mediaPayloadStatus": "decoded-reference",
+          "writablePolicy": "Style-resource editing remains outside normal scenario editing."
+        },
+        {
+          "type": "TEXT",
+          "mediaPayloadStatus": "decoded-reference",
+          "writablePolicy": "Normal scenario string authoring uses Data SD2, not broad TEXT resource editing."
+        },
+        {
+          "type": "vers",
+          "mediaPayloadStatus": "decoded-reference",
+          "writablePolicy": "Version-resource authoring is not a normal scenario workflow."
+        },
+        {
+          "type": "wrct",
+          "mediaPayloadStatus": "decoded-reference",
+          "writablePolicy": "Not a normal authoring target."
+        }
+      ],
+      "validationPolicy": "Preserve everything classified as scenario-owned or compatibility baggage; exclude ignored OS metadata."
+    }
+  ],
+  "componentRoles": [
+    {
+      "role": "authored-scenario-data",
+      "policy": "Decoded/write-owned or preserved by record/file family."
+    },
+    {
+      "role": "resource-container",
+      "policy": "Resource fork container bytes, type/reference/name metadata, and payload boundaries are parsed and preserved."
+    },
+    {
+      "role": "standard-media-payload",
+      "policy": "Preserved and previewable/playable where supported; writable only through known-good import conversion."
+    },
+    {
+      "role": "custom-media-payload",
+      "policy": "Scenario-owned module/media bytes preserved until a codec writer exists."
+    },
+    {
+      "role": "runtime-cache",
+      "policy": "Inspect-only; not exported as authored data unless target evidence requires it."
+    },
+    {
+      "role": "ignored-non-scenario",
+      "policy": "OS metadata such as .DS_Store is ignored."
+    }
+  ],
+  "completenessSummary": {
+    "scenarioSemanticOwnership": {
+      "status": "complete-at-scenario-boundary",
+      "observedBytes": 2319374144,
+      "totalObservedBytes": 2319374144,
+      "activeRiskBytes": 0,
+      "note": "Preserved standard media payloads count as scenario-owned media boundaries, not missing scenario semantics."
+    },
+    "resourceContainerOwnership": {
+      "status": "complete-for-observed-resource-forks",
+      "parsedResourceForks": 207,
+      "resourceForkFiles": 207,
+      "resourceEntries": 16847
+    },
+    "mediaCodecInternals": {
+      "status": "stage-two-optional",
+      "preservedOrCustomPayloadBytes": 82843797,
+      "decodedResourcePayloadBytes": 841240,
+      "note": "Full PICT/cicn/snd/custom-music internals are not required for scenario semantic completion."
+    }
+  }
+}
