@@ -820,6 +820,7 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
     }
 
     let target_compatibility_issues = validate_target_compatibility(project);
+    let target_compatibility = bucket_target_compatibility_issues(&target_compatibility_issues);
 
     ValidationReport {
         ok: errors.is_empty(),
@@ -828,7 +829,22 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         exportable_files,
         pass_through_files,
         target_compatibility_issues,
+        target_compatibility,
     }
+}
+
+pub fn bucket_target_compatibility_issues(
+    issues: &[TargetCompatibilityIssue],
+) -> TargetCompatibilityBuckets {
+    let mut buckets = TargetCompatibilityBuckets::default();
+    for issue in issues {
+        match issue.severity {
+            DiagnosticSeverity::Error => buckets.blockers.push(issue.clone()),
+            DiagnosticSeverity::Warning => buckets.warnings.push(issue.clone()),
+            DiagnosticSeverity::Info => buckets.notes.push(issue.clone()),
+        }
+    }
+    buckets
 }
 
 pub fn validate_target_compatibility(project: &ProvidenceProject) -> Vec<TargetCompatibilityIssue> {

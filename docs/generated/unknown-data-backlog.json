@@ -293,9 +293,9 @@
     {
       "id": "custom-scenario-music",
       "family": "Custom N / Custom N Music",
-      "classification": "resource-packaging-needed",
+      "classification": "preserved-known",
       "priority": 11,
-      "why": "Realmz source supports scenario-local custom music playlists as module files. Providence preserves modern Custom N Music files and observed legacy unsuffixed Custom N files today, but Assets needs a distinct music-module path separate from snd sound effects.",
+      "why": "Realmz source supports scenario-local custom music playlists as module files. Providence preserves modern Custom N Music files and observed legacy unsuffixed Custom N files as scenario-owned media payloads; full music codec editing is not required for scenario semantic completeness.",
       "realmzAnchors": [
         "F:\\Realmz\\src\\MusicManager.cpp:45",
         "F:\\Realmz\\src\\MusicManager.cpp:46",
@@ -314,9 +314,9 @@
     {
       "id": "format-marker-file",
       "family": "Format",
-      "classification": "unknown-active-risk",
+      "classification": "preserved-known",
       "priority": 12,
-      "why": "Format appears as a zero-byte file in many Divinity-era scenario folders. No Realmz source consumer is known yet, so Providence should preserve it exactly and keep it out of normal UI.",
+      "why": "Format appears as a zero-byte compatibility marker in many Divinity-era scenario folders. Providence preserves it exactly and keeps it out of normal UI; no gameplay semantics are currently proven.",
       "realmzAnchors": [],
       "divinityManualLines": [],
       "corpusFrequency": "47/87 visible byte-roundtrip scenario roots, all observed at 0 bytes",

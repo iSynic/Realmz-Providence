@@ -1374,6 +1374,8 @@ pub struct ValidationReport {
     pub pass_through_files: Vec<String>,
     #[serde(default)]
     pub target_compatibility_issues: Vec<TargetCompatibilityIssue>,
+    #[serde(default)]
+    pub target_compatibility: TargetCompatibilityBuckets,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1384,6 +1386,14 @@ pub struct TargetCompatibilityIssue {
     pub code: String,
     pub message: String,
     pub source: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct TargetCompatibilityBuckets {
+    pub blockers: Vec<TargetCompatibilityIssue>,
+    pub warnings: Vec<TargetCompatibilityIssue>,
+    pub notes: Vec<TargetCompatibilityIssue>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]

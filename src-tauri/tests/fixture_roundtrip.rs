@@ -1,7 +1,8 @@
 use realmz_providence_lib::exporter::export_project;
 use realmz_providence_lib::importer::{import_scenario, open_project, RAW_SOURCES_DIR};
 use realmz_providence_lib::project::{
-    ProvidenceProject, PROJECT_SCHEMA_VERSION, SEMANTIC_SCHEMA_VERSION,
+    ProvidenceProject, ScenarioTarget, SourceFileRole, PROJECT_SCHEMA_VERSION,
+    SEMANTIC_SCHEMA_VERSION,
 };
 use realmz_providence_lib::realmz::{SUPPORTED_WRITE_FILES, TRACKED_FILES};
 use serde_json::Value;
@@ -92,6 +93,45 @@ fn imports_kalypso_custom_landlook_atlas() {
         project_dir.join(image_path).is_file(),
         "{image_path} should exist in the project package"
     );
+}
+
+#[test]
+fn custom_landlook_files_export_preserved_until_writer_gate_opens() {
+    let Some(source) = out_fixture_path("Kalypso's Island") else {
+        eprintln!("Skipping custom landlook preservation fixture; Kalypso's Island is absent.");
+        return;
+    };
+    let (_temp, project, export_dir, report) =
+        export_fixture_with_target(&source, ScenarioTarget::ProvidencePortableFolder);
+    assert_eq!(report.target, ScenarioTarget::ProvidencePortableFolder);
+    let custom_landlook_files: Vec<_> = project
+        .source
+        .files
+        .iter()
+        .filter(|file| {
+            file.name.starts_with("Data Custom ")
+                || (file.name.starts_with("Custom ") && !is_custom_music_name(&file.name))
+        })
+        .collect();
+    assert!(
+        !custom_landlook_files.is_empty(),
+        "Kalypso should provide custom landlook/mapstats fixture files"
+    );
+    for file in custom_landlook_files {
+        let source_file = source.join(&file.relative_path);
+        let exported_file = export_dir.join(&file.relative_path);
+        assert!(
+            exported_file.is_file(),
+            "custom landlook file {} should export as preserve-only payload",
+            file.relative_path
+        );
+        assert_eq!(
+            fs::read(&source_file).unwrap(),
+            fs::read(&exported_file).unwrap(),
+            "custom landlook file {} should remain byte-identical until writer gate opens",
+            file.relative_path
+        );
+    }
 }
 
 #[test]
@@ -1368,6 +1408,88 @@ fn exports_supported_files_and_preserves_passthrough_snapshot() {
 }
 
 #[test]
+fn target_exports_match_package_contracts() {
+    let Some(mac_source) = fixture_path("Tutorial") else {
+        eprintln!("Skipping target export contract test; Tutorial fixture is absent.");
+        return;
+    };
+    assert_target_export_contract(
+        "Tutorial Mac target",
+        &mac_source,
+        ScenarioTarget::MacClassicFolder,
+    );
+
+    if let Some(windows_source) = out_fixture_path("Araman's Ring") {
+        assert_target_export_contract(
+            "Araman's Ring Windows target",
+            &windows_source,
+            ScenarioTarget::WindowsRealmzFolder,
+        );
+    } else {
+        eprintln!("Skipping Windows target export contract; Araman's Ring fixture is absent.");
+    }
+
+    if let Some(portable_source) = fixture_path("War in the Sword Lands") {
+        let (_temp, project, export_dir, report) = export_fixture_with_target(
+            &portable_source,
+            ScenarioTarget::ProvidencePortableFolder,
+        );
+        assert_eq!(report.target, ScenarioTarget::ProvidencePortableFolder);
+        assert_package_contract("War in the Sword Lands portable target", &project, &export_dir);
+        assert!(
+            project.source.files.iter().any(|file| is_custom_music_name(&file.name)),
+            "War in the Sword Lands should include custom music fixture files"
+        );
+        for file in project.source.files.iter().filter(|file| is_custom_music_name(&file.name)) {
+            assert!(
+                export_dir.join(&file.relative_path).is_file(),
+                "portable export should preserve custom music file {}",
+                file.relative_path
+            );
+        }
+        assert!(
+            !report.target_compatibility.notes.is_empty(),
+            "portable export should report preservation notes for custom media/package baggage"
+        );
+    } else {
+        eprintln!("Skipping portable custom music contract; War in the Sword Lands fixture is absent.");
+    }
+}
+
+#[test]
+fn target_export_excludes_ignored_os_metadata() {
+    let Some(source) = fixture_path("Tutorial") else {
+        eprintln!("Skipping ignored metadata export test; Tutorial fixture is absent.");
+        return;
+    };
+    let temp = tempdir().unwrap();
+    let copied_source = temp.path().join("Tutorial");
+    fs::create_dir_all(&copied_source).unwrap();
+    for entry in fs::read_dir(&source).unwrap() {
+        let entry = entry.unwrap();
+        if entry.file_type().unwrap().is_file() {
+            fs::copy(entry.path(), copied_source.join(entry.file_name())).unwrap();
+        }
+    }
+    fs::write(copied_source.join(".DS_Store"), b"finder metadata").unwrap();
+
+    let (_export_temp, project, export_dir, report) =
+        export_fixture_with_target(&copied_source, ScenarioTarget::ProvidencePortableFolder);
+    assert!(
+        !project.source.files.iter().any(|file| file.name == ".DS_Store"),
+        "importer should ignore .DS_Store as non-scenario metadata"
+    );
+    assert!(
+        !export_dir.join(".DS_Store").exists(),
+        "export should not write ignored OS metadata"
+    );
+    assert!(
+        !report.pass_through_files.iter().any(|file| file == ".DS_Store"),
+        "ignored OS metadata should not appear as pass-through"
+    );
+}
+
+#[test]
 fn exports_hardened_fixtures_byte_identically_without_edits() {
     let supported: BTreeSet<&str> = SUPPORTED_WRITE_FILES.iter().copied().collect();
     let tracked: BTreeSet<&str> = TRACKED_FILES.iter().copied().collect();
@@ -1434,4 +1556,101 @@ fn exports_hardened_fixtures_byte_identically_without_edits() {
             "{name} should report written or pass-through files"
         );
     }
+}
+
+fn export_fixture_with_target(
+    source: &Path,
+    target: ScenarioTarget,
+) -> (
+    tempfile::TempDir,
+    ProvidenceProject,
+    std::path::PathBuf,
+    realmz_providence_lib::exporter::ExportReport,
+) {
+    let temp = tempdir().unwrap();
+    let project_dir = temp.path().join("project");
+    let export_dir = temp.path().join("exported");
+    import_scenario(source, &project_dir).unwrap();
+    let project = open_project(&project_dir).unwrap();
+    let report = export_project(&project_dir, &project, &export_dir, target).unwrap();
+    (temp, project, export_dir, report)
+}
+
+fn assert_target_export_contract(label: &str, source: &Path, target: ScenarioTarget) {
+    let (_temp, project, export_dir, report) = export_fixture_with_target(source, target);
+    assert_eq!(report.target, target, "{label} should report selected target");
+    assert_package_contract(label, &project, &export_dir);
+    assert!(
+        report.target_compatibility_issues.iter().all(|issue| {
+            target == ScenarioTarget::ProvidencePortableFolder
+                || issue.target == target
+                || issue.target == ScenarioTarget::ProvidencePortableFolder
+        }),
+        "{label} should report only target-specific or portable compatibility issues"
+    );
+    assert_eq!(
+        report.target_compatibility_issues.len(),
+        report.target_compatibility.blockers.len()
+            + report.target_compatibility.warnings.len()
+            + report.target_compatibility.notes.len(),
+        "{label} should bucket every target compatibility issue"
+    );
+    if project.source.files.iter().any(|file| file.name.starts_with("._")) {
+        match target {
+            ScenarioTarget::MacClassicFolder => assert!(
+                report
+                    .target_compatibility
+                    .notes
+                    .iter()
+                    .any(|issue| issue.code == "appledouble-sidecars-preserved"),
+                "{label} should note preserved AppleDouble sidecars for Mac target"
+            ),
+            ScenarioTarget::WindowsRealmzFolder => assert!(
+                report
+                    .target_compatibility
+                    .warnings
+                    .iter()
+                    .any(|issue| issue.code == "appledouble-sidecars-in-windows-target"),
+                "{label} should warn about AppleDouble sidecars for Windows target"
+            ),
+            ScenarioTarget::ProvidencePortableFolder => {}
+        }
+    }
+}
+
+fn assert_package_contract(label: &str, project: &ProvidenceProject, export_dir: &Path) {
+    assert!(
+        project.scenario.shell.is_some(),
+        "{label} should have parsed scenario shell data"
+    );
+    for file in project
+        .source
+        .files
+        .iter()
+        .filter(|file| matches!(file.role, SourceFileRole::SupportedBinary | SourceFileRole::ResourceFork | SourceFileRole::PassThrough | SourceFileRole::Unknown))
+    {
+        assert!(
+            export_dir.join(&file.relative_path).is_file(),
+            "{label} should export or preserve {}",
+            file.relative_path
+        );
+    }
+    for name in [".DS_Store", "Thumbs.db", "desktop.ini"] {
+        assert!(
+            !export_dir.join(name).exists(),
+            "{label} should exclude ignored metadata {name}"
+        );
+    }
+}
+
+fn is_custom_music_name(name: &str) -> bool {
+    if !name.starts_with("Custom ") {
+        return false;
+    }
+    let suffix = name.trim_start_matches("Custom ");
+    suffix
+        .chars()
+        .next()
+        .is_some_and(|first| first.is_ascii_digit())
+        && (suffix.len() == 1 || suffix.ends_with(" Music"))
 }

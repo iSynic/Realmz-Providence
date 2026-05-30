@@ -1,6 +1,9 @@
 use crate::error::{IoPath, ProvidenceError, Result};
 use crate::importer::RAW_SOURCES_DIR;
-use crate::project::{LevelType, ProvidenceProject, ScenarioTarget, TargetCompatibilityIssue};
+use crate::project::{
+    LevelType, ProvidenceProject, ScenarioTarget, TargetCompatibilityBuckets,
+    TargetCompatibilityIssue,
+};
 use crate::realmz::{
     write_battles, write_caste_overrides, write_complex_encounters, write_door_file,
     write_extracodes, write_fields, write_global_macro_hooks, write_land_layout, write_macro_file,
@@ -32,6 +35,7 @@ pub struct ExportReport {
     pub blocked_assets: Vec<String>,
     pub warnings: Vec<String>,
     pub target_compatibility_issues: Vec<crate::project::TargetCompatibilityIssue>,
+    pub target_compatibility: TargetCompatibilityBuckets,
 }
 
 pub fn export_project(
@@ -325,6 +329,8 @@ pub fn export_project(
         project.validation.warnings.clone()
     };
     let target_compatibility_issues = target_compatibility_issues_for_export(project, target);
+    let target_compatibility =
+        crate::validation::bucket_target_compatibility_issues(&target_compatibility_issues);
     Ok(ExportReport {
         output_path: output_dir.to_string_lossy().to_string(),
         target,
@@ -336,6 +342,7 @@ pub fn export_project(
         blocked_assets: resource_result.blocked_assets,
         warnings,
         target_compatibility_issues,
+        target_compatibility,
     })
 }
 

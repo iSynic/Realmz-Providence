@@ -94,13 +94,23 @@ export function ExportPanel({
             </section>
           </ScrollArea>
         ) : null}
-        {exportReport?.targetCompatibilityIssues.length ? (
+        {exportReport && targetCompatibilityCount(exportReport) > 0 ? (
           <ScrollArea className="lint-results compact" aria-label="Target compatibility notes">
             <section>
-              <header>Target Compatibility Notes</header>
-              {exportReport.targetCompatibilityIssues.map((issue) => (
-                <div key={`${issue.target}-${issue.code}-${issue.message}`} className={`lint-issue ${issue.severity}`}>
-                  {issue.severity === "error" ? "x" : issue.severity === "warning" ? "!" : "i"} {issue.message}
+              <header>Target Compatibility</header>
+              {exportReport.targetCompatibility.blockers.map((issue) => (
+                <div key={`blocker-${issue.target}-${issue.code}-${issue.message}`} className="lint-issue error">
+                  x {issue.message}
+                </div>
+              ))}
+              {exportReport.targetCompatibility.warnings.map((issue) => (
+                <div key={`warning-${issue.target}-${issue.code}-${issue.message}`} className="lint-issue warning">
+                  ! {issue.message}
+                </div>
+              ))}
+              {exportReport.targetCompatibility.notes.map((issue) => (
+                <div key={`note-${issue.target}-${issue.code}-${issue.message}`} className="lint-issue info">
+                  i {issue.message}
                 </div>
               ))}
             </section>
@@ -146,6 +156,14 @@ export function ExportPanel({
         )}
       </section>
     </div>
+  );
+}
+
+function targetCompatibilityCount(report: ExportReport) {
+  return (
+    report.targetCompatibility.blockers.length +
+    report.targetCompatibility.warnings.length +
+    report.targetCompatibility.notes.length
   );
 }
 

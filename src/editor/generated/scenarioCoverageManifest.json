@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-30T00:58:11.293Z",
+  "generatedAt": "2026-05-30T04:27:45.689Z",
   "summary": {
     "scenarioRoots": 87,
     "fileFamilies": 88,
@@ -136,22 +136,6 @@
       "status": "Needs packaging work",
       "summary": "Scenario-owned assets, Realmz built-ins, Divinity references, and UI-only artwork must not be mixed in pickers or export scope.",
       "evidenceCard": "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
-    },
-    {
-      "id": "custom-scenario-music",
-      "family": "Custom N / Custom N Music",
-      "priority": 11,
-      "status": "Needs packaging work",
-      "summary": "Realmz source supports scenario-local custom music playlists as module files. Providence preserves modern Custom N Music files and observed legacy unsuffixed Custom N files today, but Assets needs a distinct music-module path separate from snd sound effects.",
-      "evidenceCard": "docs/format-evidence-cards/scenario-music-and-format-files.md"
-    },
-    {
-      "id": "format-marker-file",
-      "family": "Format",
-      "priority": 12,
-      "status": "Needs format work",
-      "summary": "Format appears as a zero-byte file in many Divinity-era scenario folders. No Realmz source consumer is known yet, so Providence should preserve it exactly and keep it out of normal UI.",
-      "evidenceCard": "docs/format-evidence-cards/scenario-music-and-format-files.md"
     }
   ],
   "containers": [

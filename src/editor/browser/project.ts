@@ -7,6 +7,8 @@ import { assetFallbacks, blockedSemanticObjects, generatedRuntimeCaches, resourc
 import { validateRealmzTargetRecord } from "../targetValidation";
 import { tileIconCandidates } from "../map/renderValues";
 
+const EMPTY_TARGET_COMPATIBILITY = { blockers: [], warnings: [], notes: [] };
+
 export function createBrowserProject(projectName: string): Project {
   const safeName = projectName.trim() || "Untitled Scenario";
   const project: Project = {
@@ -58,7 +60,7 @@ export function createBrowserProject(projectName: string): Project {
     records: { counts: {}, alignments: [] },
     diagnostics: [],
     semanticSchema: emptySemanticSchema(),
-    validation: { ok: true, errors: [], warnings: [], exportableFiles: [], passThroughFiles: [], targetCompatibilityIssues: [] }
+    validation: { ok: true, errors: [], warnings: [], exportableFiles: [], passThroughFiles: [], targetCompatibilityIssues: [], targetCompatibility: EMPTY_TARGET_COMPATIBILITY }
   };
   project.validation = validateBrowserProject(project);
   return project;
@@ -119,7 +121,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
     records: parsed.records,
     diagnostics: parsed.diagnostics,
     semanticSchema: emptySemanticSchema(),
-    validation: { ok: true, errors: [], warnings: [], exportableFiles: [], passThroughFiles: [], targetCompatibilityIssues: [] }
+    validation: { ok: true, errors: [], warnings: [], exportableFiles: [], passThroughFiles: [], targetCompatibilityIssues: [], targetCompatibility: EMPTY_TARGET_COMPATIBILITY }
   };
   project.semanticSchema = buildBrowserSemanticSchema({ scenario: project.scenario, buffers: files, sourceFiles, ...parsed });
   project.validation = validateBrowserProject(project);
@@ -505,7 +507,7 @@ export function validateBrowserProject(project: Project): ValidationReport {
       warnings.push(`${source.name} looks like a generated runtime cache and is treated as evidence/pass-through, not authored data.`);
     }
   }
-  return { ok: errors.length === 0, errors, warnings, exportableFiles, passThroughFiles, targetCompatibilityIssues: [] };
+  return { ok: errors.length === 0, errors, warnings, exportableFiles, passThroughFiles, targetCompatibilityIssues: [], targetCompatibility: EMPTY_TARGET_COMPATIBILITY };
 }
 
 function validateTileAttributes(project: Project, sourceNames: Set<string>, warnings: string[]) {

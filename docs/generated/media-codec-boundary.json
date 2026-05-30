@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-30T00:57:57.871Z",
+  "generatedAt": "2026-05-30T04:25:07.008Z",
   "sources": {
     "resourceCoverage": "docs/generated/resource-byte-ownership.json",
     "codecBacklog": "docs/generated/resource-payload-codec-backlog.json",
