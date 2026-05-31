@@ -1,0 +1,573 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-05-31T04:40:07.713Z",
+  "generatedBy": "scripts/generate_scenario_byte_coverage.mjs",
+  "target": "encounter-shop-writer-gates",
+  "sources": {
+    "byteCoverage": "docs/generated/scenario-byte-ownership.json",
+    "encounterEvidence": "docs/generated/encounter-record-evidence.json",
+    "itemShopEvidence": "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
+    "thiefEvidence": "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md",
+    "encounterShopWriters": "src-tauri/src/realmz.rs"
+  },
+  "policy": {
+    "note": "This registry gates simple/complex encounter, shop, and thief encounter storage only. Timed encounters remain governed by fixed-record-writer-gates.",
+    "fixtureProvenRequires": [
+      "observed container coverage",
+      "all encounter/shop fixture paths available",
+      "all local evidence references present"
+    ],
+    "excludedFamilies": [
+      "Data TD3"
+    ]
+  },
+  "summary": {
+    "containers": 4,
+    "fixtureProvenContainers": 4,
+    "evidencePendingContainers": 0,
+    "writerReadiness": "fixture-proven-encounter-shop-storage",
+    "fixturePathsAvailable": true,
+    "missingFixturePaths": [],
+    "missingEvidenceReferences": 0
+  },
+  "gates": [
+    {
+      "container": "Data ED",
+      "authorFacingName": "Simple encounter records",
+      "gate": "simple-encounter-record-writer",
+      "recordBytes": 426,
+      "rowKind": "426-byte simple encounter record",
+      "semanticExposure": "simple-encounter-storage",
+      "writerStatus": "fixture-proven-encounter-shop-storage",
+      "available": true,
+      "evidencePresent": true,
+      "fixturePathsAvailable": true,
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        1704,
+        2982,
+        3120,
+        3408,
+        3640,
+        4160,
+        4680,
+        5112,
+        5720,
+        5964,
+        7280,
+        7668,
+        7800,
+        8094,
+        8520,
+        8840,
+        9120,
+        9360,
+        9880,
+        10650,
+        14040,
+        14058,
+        23520,
+        24000,
+        57720,
+        61440,
+        64320
+      ],
+      "fixturePaths": [
+        "F:/Realmz/base/Realmz/Scenarios/Tutorial",
+        "F:/Realmz/out_win_clang/Scenarios/Araman's Ring"
+      ],
+      "missingEvidence": [],
+      "evidence": [
+        "src-tauri/src/realmz.rs:encounter_storage_simple_mutates_only_owned_fields_and_preserves_gap",
+        "src-tauri/src/realmz.rs:write_simple_encounters",
+        "src-tauri/src/realmz.rs:parse_simple_encounter_records",
+        "docs/generated/encounter-record-evidence.json",
+        "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
+      ],
+      "evidenceChecks": [
+        {
+          "reference": "src-tauri/src/realmz.rs:encounter_storage_simple_mutates_only_owned_fields_and_preserves_gap",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "encounter_storage_simple_mutates_only_owned_fields_and_preserves_gap",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:write_simple_encounters",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "write_simple_encounters",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:parse_simple_encounter_records",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "parse_simple_encounter_records",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "docs/generated/encounter-record-evidence.json",
+          "file": "docs/generated/encounter-record-evidence.json",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        },
+        {
+          "reference": "docs/format-evidence-cards/encounter-record-runtime-anchors.md",
+          "file": "docs/format-evidence-cards/encounter-record-runtime-anchors.md",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        }
+      ],
+      "ownedFields": [
+        {
+          "field": "Encounter action codes",
+          "internal": "code[32]",
+          "offset": 0,
+          "bytes": 32,
+          "type": "i8[32]"
+        },
+        {
+          "field": "Encounter action IDs",
+          "internal": "id[32]",
+          "offset": 32,
+          "bytes": 64,
+          "type": "i16be[32]"
+        },
+        {
+          "field": "Choice results",
+          "internal": "choiceResults[4]",
+          "offset": 96,
+          "bytes": 4,
+          "type": "u8[4]"
+        },
+        {
+          "field": "Back-out and result flags",
+          "internal": "canBackOut/maxTimes/casteSuccess",
+          "offset": 100,
+          "bytes": 3,
+          "type": "u8/i8"
+        },
+        {
+          "field": "Prompt string",
+          "internal": "prompt",
+          "offset": 104,
+          "bytes": 2,
+          "type": "i16be"
+        },
+        {
+          "field": "Inline encounter text",
+          "internal": "texts[4]",
+          "offset": 106,
+          "bytes": 320,
+          "type": "Pascal[4]"
+        }
+      ],
+      "preservedRanges": [
+        {
+          "field": "Compatibility byte",
+          "internal": "raw[103]",
+          "offset": 103,
+          "bytes": 1,
+          "type": "raw-preserved"
+        }
+      ],
+      "partialOnly": true,
+      "preservationPolicy": "Simple encounter records rewrite modeled action, result, prompt, and text fields when authored. Byte 103 remains preserve-only."
+    },
+    {
+      "container": "Data ED2",
+      "authorFacingName": "Complex encounter records",
+      "gate": "complex-encounter-record-writer",
+      "recordBytes": 520,
+      "rowKind": "520-byte complex encounter record",
+      "semanticExposure": "complex-encounter-storage",
+      "writerStatus": "fixture-proven-encounter-shop-storage",
+      "available": true,
+      "evidencePresent": true,
+      "fixturePathsAvailable": true,
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        1560,
+        2080,
+        3120,
+        4160,
+        5200,
+        5720,
+        6760,
+        7280,
+        8840,
+        9360,
+        10400,
+        11440,
+        13520,
+        16640,
+        17160,
+        18200,
+        18720,
+        19760,
+        22360,
+        24960,
+        43680,
+        44200,
+        47320,
+        47840,
+        48360
+      ],
+      "fixturePaths": [
+        "F:/Realmz/base/Realmz/Scenarios/Tutorial",
+        "F:/Realmz/out_win_clang/Scenarios/Araman's Ring"
+      ],
+      "missingEvidence": [],
+      "evidence": [
+        "src-tauri/src/realmz.rs:encounter_storage_complex_mutates_only_owned_fields_and_preserves_gaps",
+        "src-tauri/src/realmz.rs:write_complex_encounters",
+        "src-tauri/src/realmz.rs:parse_complex_encounter_records",
+        "docs/generated/encounter-record-evidence.json",
+        "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
+      ],
+      "evidenceChecks": [
+        {
+          "reference": "src-tauri/src/realmz.rs:encounter_storage_complex_mutates_only_owned_fields_and_preserves_gaps",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "encounter_storage_complex_mutates_only_owned_fields_and_preserves_gaps",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:write_complex_encounters",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "write_complex_encounters",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:parse_complex_encounter_records",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "parse_complex_encounter_records",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "docs/generated/encounter-record-evidence.json",
+          "file": "docs/generated/encounter-record-evidence.json",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        },
+        {
+          "reference": "docs/format-evidence-cards/encounter-record-runtime-anchors.md",
+          "file": "docs/format-evidence-cards/encounter-record-runtime-anchors.md",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        }
+      ],
+      "ownedFields": [
+        {
+          "field": "Encounter action codes",
+          "internal": "code[32]",
+          "offset": 0,
+          "bytes": 32,
+          "type": "i8[32]"
+        },
+        {
+          "field": "Encounter action IDs",
+          "internal": "id[32]",
+          "offset": 32,
+          "bytes": 64,
+          "type": "i16be[32]"
+        },
+        {
+          "field": "Choice and word results",
+          "internal": "choiceResults[4]/wordResults[4]",
+          "offset": 96,
+          "bytes": 8,
+          "type": "u8[8]"
+        },
+        {
+          "field": "Back-out, thief, and outcome fields",
+          "internal": "canBackOut/thief/maxTimes/casteSuccess/thiefSuccess/thiefFail",
+          "offset": 151,
+          "bytes": 6,
+          "type": "u8/i8"
+        },
+        {
+          "field": "Prompt string",
+          "internal": "prompt",
+          "offset": 158,
+          "bytes": 2,
+          "type": "i16be"
+        },
+        {
+          "field": "Inline encounter text",
+          "internal": "texts[9]",
+          "offset": 160,
+          "bytes": 360,
+          "type": "Pascal[9]"
+        }
+      ],
+      "preservedRanges": [
+        {
+          "field": "Compatibility bytes",
+          "internal": "raw[104..151]",
+          "offset": 104,
+          "bytes": 47,
+          "type": "raw-preserved"
+        },
+        {
+          "field": "Compatibility byte",
+          "internal": "raw[157]",
+          "offset": 157,
+          "bytes": 1,
+          "type": "raw-preserved"
+        }
+      ],
+      "partialOnly": true,
+      "preservationPolicy": "Complex encounter records rewrite modeled action, result, prompt, and text fields when authored. Bytes 104..151 and 157 remain preserve-only."
+    },
+    {
+      "container": "Data SD",
+      "authorFacingName": "Shop records",
+      "gate": "shop-record-writer",
+      "recordBytes": 3002,
+      "rowKind": "3002-byte shop record",
+      "semanticExposure": "shop-storage",
+      "writerStatus": "fixture-proven-encounter-shop-storage",
+      "available": true,
+      "evidencePresent": true,
+      "fixturePathsAvailable": true,
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        15010,
+        18012,
+        27018,
+        30020,
+        33022,
+        36024,
+        45030,
+        54036,
+        63042,
+        66044,
+        81054,
+        90060,
+        111074,
+        114076,
+        117078
+      ],
+      "fixturePaths": [
+        "F:/Realmz/base/Realmz/Scenarios/Tutorial",
+        "F:/Realmz/out_win_clang/Scenarios/Araman's Ring"
+      ],
+      "missingEvidence": [],
+      "evidence": [
+        "src-tauri/src/realmz.rs:shop_storage_mutates_only_owned_fields",
+        "src-tauri/src/realmz.rs:write_shops",
+        "src-tauri/src/realmz.rs:parse_shops",
+        "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md"
+      ],
+      "evidenceChecks": [
+        {
+          "reference": "src-tauri/src/realmz.rs:shop_storage_mutates_only_owned_fields",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "shop_storage_mutates_only_owned_fields",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:write_shops",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "write_shops",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:parse_shops",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "parse_shops",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
+          "file": "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        }
+      ],
+      "ownedFields": [
+        {
+          "field": "Shop item IDs",
+          "internal": "itemIds[1000]",
+          "offset": 0,
+          "bytes": 2000,
+          "type": "i16be[1000]"
+        },
+        {
+          "field": "Shop quantities",
+          "internal": "quantities[1000]",
+          "offset": 2000,
+          "bytes": 1000,
+          "type": "u8[1000]"
+        },
+        {
+          "field": "Inflation",
+          "internal": "inflation",
+          "offset": 3000,
+          "bytes": 2,
+          "type": "i16be"
+        }
+      ],
+      "preservedRanges": [],
+      "partialOnly": false,
+      "preservationPolicy": "Shop records are fully modeled as item IDs, quantities, and inflation."
+    },
+    {
+      "container": "Data TD2",
+      "authorFacingName": "Thief encounter records",
+      "gate": "thief-encounter-record-writer",
+      "recordBytes": 118,
+      "rowKind": "118-byte thief encounter record",
+      "semanticExposure": "thief-encounter-storage",
+      "writerStatus": "fixture-proven-encounter-shop-storage",
+      "available": true,
+      "evidencePresent": true,
+      "fixturePathsAvailable": true,
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        118,
+        236,
+        354,
+        472,
+        590,
+        708,
+        944,
+        1062,
+        1298,
+        1534,
+        1652,
+        2360,
+        2714,
+        3186,
+        3540,
+        3776,
+        4366,
+        4484,
+        7198,
+        10266,
+        117410
+      ],
+      "fixturePaths": [
+        "F:/Realmz/base/Realmz/Scenarios/Tutorial",
+        "F:/Realmz/out_win_clang/Scenarios/Araman's Ring"
+      ],
+      "missingEvidence": [],
+      "evidence": [
+        "src-tauri/src/realmz.rs:thief_encounter_storage_mutates_only_owned_fields",
+        "src-tauri/src/realmz.rs:write_thief_encounters",
+        "src-tauri/src/realmz.rs:parse_thief_encounters",
+        "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
+        "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md"
+      ],
+      "evidenceChecks": [
+        {
+          "reference": "src-tauri/src/realmz.rs:thief_encounter_storage_mutates_only_owned_fields",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "thief_encounter_storage_mutates_only_owned_fields",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:write_thief_encounters",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "write_thief_encounters",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:parse_thief_encounters",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "parse_thief_encounters",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
+          "file": "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        },
+        {
+          "reference": "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md",
+          "file": "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        }
+      ],
+      "ownedFields": [
+        {
+          "field": "Thief encounter flags and modifiers",
+          "internal": "typeFlags/modifiers/resultCodes",
+          "offset": 0,
+          "bytes": 34,
+          "type": "u8/i8"
+        },
+        {
+          "field": "Success and failure text links",
+          "internal": "successText/failureText",
+          "offset": 34,
+          "bytes": 32,
+          "type": "i16be[16]"
+        },
+        {
+          "field": "Success and failure sound links",
+          "internal": "successSounds/failureSounds",
+          "offset": 66,
+          "bytes": 32,
+          "type": "i16be[16]"
+        },
+        {
+          "field": "Spell, damage, and tumblers",
+          "internal": "spell/lowDamage/highDamage/tumblers",
+          "offset": 98,
+          "bytes": 8,
+          "type": "i16be[4]"
+        },
+        {
+          "field": "Prompt strings and sounds",
+          "internal": "prompts/promptSounds",
+          "offset": 106,
+          "bytes": 12,
+          "type": "i16be[6]"
+        }
+      ],
+      "preservedRanges": [],
+      "partialOnly": false,
+      "preservationPolicy": "Thief encounter records are fully modeled by the current parser and writer."
+    }
+  ]
+}

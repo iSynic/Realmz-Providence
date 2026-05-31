@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T04:16:59.117Z",
+  "generatedAt": "2026-05-31T04:40:07.708Z",
   "generatedBy": "scripts/generate_scenario_byte_coverage.mjs",
   "target": "maps-storage-writer-gates",
   "sources": {

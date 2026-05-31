@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T04:16:59.121Z",
+  "generatedAt": "2026-05-31T04:40:07.717Z",
   "summary": {
     "scenarioRoots": 87,
     "fileFamilies": 57,
     "ignoredNonScenarioFiles": 1,
-    "editableContainers": 25,
+    "editableContainers": 23,
     "preservedContainers": 8,
     "understoodResourceContainers": 12,
     "resourceCoverage": {
@@ -29,44 +29,44 @@
     "strictCompleteness": {
       "containerCount": 57,
       "semanticOwnershipCounts": {
-        "mixed": 9,
-        "complete": 46,
+        "mixed": 11,
+        "complete": 44,
         "runtime-only": 1,
         "ignored": 1
       },
       "writerReadinessCounts": {
-        "partially-proven": 9,
-        "fixture-proven": 16,
-        "writer-gated": 9,
+        "partially-proven": 11,
+        "fixture-proven": 18,
+        "writer-gated": 5,
         "read-only": 1,
         "preserve-only": 8,
         "not-applicable": 14
       },
       "evidenceQualityCounts": {
-        "fixture-backed": 25,
-        "cited": 19,
+        "fixture-backed": 29,
+        "cited": 15,
         "target-warning": 13
       },
       "riskFlagCounts": {
-        "structural-writer-claim": 9,
+        "structural-writer-claim": 5,
         "target-package-warning": 13,
         "writer-gated": 3
       },
       "scenarioSemantics": {
         "label": "Scenario Semantics",
         "status": "complete",
-        "completeContainers": 46,
-        "mixedContainers": 9,
+        "completeContainers": 44,
+        "mixedContainers": 11,
         "needsFormatWorkContainers": 0,
-        "percentContainers": 80.7
+        "percentContainers": 77.19
       },
       "writerProvenData": {
         "label": "Writer-Proven Data",
         "status": "incomplete",
-        "fixtureProvenContainers": 16,
-        "partiallyProvenContainers": 9,
-        "writerGatedContainers": 9,
-        "percentContainers": 43.86
+        "fixtureProvenContainers": 18,
+        "partiallyProvenContainers": 11,
+        "writerGatedContainers": 5,
+        "percentContainers": 50.88
       },
       "packageCompatibility": {
         "label": "Package Compatibility",
@@ -82,7 +82,7 @@
         "decodedResourcePayloadBytes": 841240
       },
       "strictOutstanding": {
-        "writerGatedContainers": 9,
+        "writerGatedContainers": 5,
         "missingEvidenceContainers": 0,
         "skippedFixtureContainers": 0,
         "preservedUnknownContainers": 0,
@@ -267,6 +267,90 @@
         48600,
         64800,
         81000
+      ],
+      "policy": "Some byte ranges are writer-proven or structurally decoded, while preserved/runtime ranges remain read-only."
+    },
+    {
+      "container": "Data ED",
+      "label": "Simple encounter records",
+      "status": "Partially Editable",
+      "coverageStatus": "mixed-writable-preserved",
+      "truth": {
+        "semanticOwnership": "mixed",
+        "writerReadiness": "partially-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
+      },
+      "count": 35,
+      "sizes": [
+        1704,
+        2982,
+        3120,
+        3408,
+        3640,
+        4160,
+        4680,
+        5112,
+        5720,
+        5964,
+        7280,
+        7668,
+        7800,
+        8094,
+        8520,
+        8840,
+        9120,
+        9360,
+        9880,
+        10650,
+        14040,
+        14058,
+        23520,
+        24000,
+        57720,
+        61440,
+        64320
+      ],
+      "policy": "Some byte ranges are writer-proven or structurally decoded, while preserved/runtime ranges remain read-only."
+    },
+    {
+      "container": "Data ED2",
+      "label": "Complex encounter records",
+      "status": "Partially Editable",
+      "coverageStatus": "mixed-writable-preserved",
+      "truth": {
+        "semanticOwnership": "mixed",
+        "writerReadiness": "partially-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
+      },
+      "count": 35,
+      "sizes": [
+        1560,
+        2080,
+        3120,
+        4160,
+        5200,
+        5720,
+        6760,
+        7280,
+        8840,
+        9360,
+        10400,
+        11440,
+        13520,
+        16640,
+        17160,
+        18200,
+        18720,
+        19760,
+        22360,
+        24960,
+        43680,
+        44200,
+        47320,
+        47840,
+        48360
       ],
       "policy": "Some byte ranges are writer-proven or structurally decoded, while preserved/runtime ranges remain read-only."
     },
@@ -784,44 +868,6 @@
       "count": 1,
       "sizes": [
         286,
-        368
-      ],
-      "policy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
-    },
-    {
-      "container": "Read Me (nice to know).rsf",
-      "label": "Resource fork",
-      "status": "Understood resource container",
-      "coverageStatus": "understood-resource-container",
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "not-applicable",
-        "evidenceQuality": "target-warning",
-        "riskFlags": [
-          "target-package-warning"
-        ]
-      },
-      "count": 1,
-      "sizes": [
-        332
-      ],
-      "policy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
-    },
-    {
-      "container": "Spires of Steel.rsrc",
-      "label": "Resource fork",
-      "status": "Understood resource container",
-      "coverageStatus": "understood-resource-container",
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "not-applicable",
-        "evidenceQuality": "target-warning",
-        "riskFlags": [
-          "target-package-warning"
-        ]
-      },
-      "count": 1,
-      "sizes": [
         368
       ],
       "policy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."

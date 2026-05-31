@@ -4014,6 +4014,185 @@ mod tests {
     }
 
     #[test]
+    fn shop_storage_mutates_only_owned_fields() {
+        let input = vec![0u8; SHOP_BYTES * 2];
+        let shop_start = SHOP_BYTES;
+
+        let mut shops = parse_shops(&input);
+        shops[1].authored = true;
+        shops[1].item_ids[10] = 0x0304;
+        shops[1].quantities[11] = 9;
+        shops[1].inflation = 0x0506;
+
+        let output = write_shops(&shops).unwrap();
+        assert_eq!(output.len(), input.len());
+        assert_eq!(
+            changed_offsets(&input, &output),
+            vec![
+                shop_start + 20,
+                shop_start + 21,
+                shop_start + 2000 + 11,
+                shop_start + 3000,
+                shop_start + 3001,
+            ]
+        );
+    }
+
+    #[test]
+    fn encounter_storage_simple_mutates_only_owned_fields_and_preserves_gap() {
+        let mut input = vec![0u8; SIMPLE_ENCOUNTER_BYTES * 2];
+        let encounter_start = SIMPLE_ENCOUNTER_BYTES;
+        input[encounter_start + 103] = 0xA5;
+
+        let mut encounters = parse_simple_encounter_records(&input);
+        encounters[1].authored = true;
+        encounters[1].actions.push(EncounterActionRow {
+            slot: 3,
+            raw_code: -2,
+            id: 0x0304,
+        });
+        encounters[1].choice_results[2] = 7;
+        encounters[1].can_back_out = true;
+        encounters[1].max_times = -3;
+        encounters[1].caste_success = 4;
+        encounters[1].prompt = 0x0506;
+        encounters[1].texts[0] = "Go".to_string();
+
+        let output = write_simple_encounters(&encounters).unwrap();
+        assert_eq!(output.len(), input.len());
+        assert_eq!(output[encounter_start + 103], 0xA5);
+        assert_eq!(
+            changed_offsets(&input, &output),
+            vec![
+                encounter_start + 3,
+                encounter_start + 38,
+                encounter_start + 39,
+                encounter_start + 98,
+                encounter_start + 100,
+                encounter_start + 101,
+                encounter_start + 102,
+                encounter_start + 104,
+                encounter_start + 105,
+                encounter_start + 106,
+                encounter_start + 107,
+                encounter_start + 108,
+            ]
+        );
+    }
+
+    #[test]
+    fn encounter_storage_complex_mutates_only_owned_fields_and_preserves_gaps() {
+        let mut input = vec![0u8; COMPLEX_ENCOUNTER_BYTES * 2];
+        let encounter_start = COMPLEX_ENCOUNTER_BYTES;
+        for offset in 104..151 {
+            input[encounter_start + offset] = 0xA5;
+        }
+        input[encounter_start + 157] = 0x5A;
+
+        let mut encounters = parse_complex_encounter_records(&input);
+        encounters[1].authored = true;
+        encounters[1].actions.push(EncounterActionRow {
+            slot: 4,
+            raw_code: -2,
+            id: 0x0304,
+        });
+        encounters[1].choice_results[1] = 6;
+        encounters[1].word_results[2] = 7;
+        encounters[1].can_back_out = true;
+        encounters[1].thief = true;
+        encounters[1].max_times = -3;
+        encounters[1].caste_success = 4;
+        encounters[1].thief_success = -5;
+        encounters[1].thief_fail = 8;
+        encounters[1].prompt = 0x0506;
+        encounters[1].texts[0] = "Hi".to_string();
+
+        let output = write_complex_encounters(&encounters).unwrap();
+        assert_eq!(output.len(), input.len());
+        assert_eq!(
+            &output[encounter_start + 104..encounter_start + 151],
+            &input[encounter_start + 104..encounter_start + 151]
+        );
+        assert_eq!(output[encounter_start + 157], 0x5A);
+        assert_eq!(
+            changed_offsets(&input, &output),
+            vec![
+                encounter_start + 4,
+                encounter_start + 40,
+                encounter_start + 41,
+                encounter_start + 97,
+                encounter_start + 102,
+                encounter_start + 151,
+                encounter_start + 152,
+                encounter_start + 153,
+                encounter_start + 154,
+                encounter_start + 155,
+                encounter_start + 156,
+                encounter_start + 158,
+                encounter_start + 159,
+                encounter_start + 160,
+                encounter_start + 161,
+                encounter_start + 162,
+            ]
+        );
+    }
+
+    #[test]
+    fn thief_encounter_storage_mutates_only_owned_fields() {
+        let input = vec![0u8; THIEF_ENCOUNTER_BYTES * 2];
+        let encounter_start = THIEF_ENCOUNTER_BYTES;
+
+        let mut encounters = parse_thief_encounters(&input);
+        encounters[1].authored = true;
+        encounters[1].type_flags[3] = true;
+        encounters[1].modifiers[4] = -8;
+        encounters[1].success_codes[5] = 9;
+        encounters[1].failure_codes[6] = -7;
+        encounters[1].success_text[2] = 0x0102;
+        encounters[1].failure_text[3] = 0x0304;
+        encounters[1].success_sounds[4] = 0x0506;
+        encounters[1].failure_sounds[5] = 0x0708;
+        encounters[1].spell = 0x090A;
+        encounters[1].low_damage = 0x0B0C;
+        encounters[1].high_damage = 0x0D0E;
+        encounters[1].tumblers = 0x0F10;
+        encounters[1].prompts[1] = 0x1112;
+        encounters[1].prompt_sounds[2] = 0x1314;
+
+        let output = write_thief_encounters(&encounters).unwrap();
+        assert_eq!(output.len(), input.len());
+        assert_eq!(
+            changed_offsets(&input, &output),
+            vec![
+                encounter_start + 3,
+                encounter_start + 14,
+                encounter_start + 23,
+                encounter_start + 32,
+                encounter_start + 38,
+                encounter_start + 39,
+                encounter_start + 56,
+                encounter_start + 57,
+                encounter_start + 74,
+                encounter_start + 75,
+                encounter_start + 92,
+                encounter_start + 93,
+                encounter_start + 98,
+                encounter_start + 99,
+                encounter_start + 100,
+                encounter_start + 101,
+                encounter_start + 102,
+                encounter_start + 103,
+                encounter_start + 104,
+                encounter_start + 105,
+                encounter_start + 108,
+                encounter_start + 109,
+                encounter_start + 116,
+                encounter_start + 117,
+            ]
+        );
+    }
+
+    #[test]
     fn fixed_record_scenario_shell_writers_mutate_only_owned_fields() {
         let contact_input = vec![0u8; 4608];
         let mut contact = parse_scenario_contact_info(&contact_input).unwrap();

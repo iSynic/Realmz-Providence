@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-31T04:16:59.123Z",
+  "generatedAt": "2026-05-31T04:40:07.720Z",
   "source": "Seeded from Realmz setupnewgame/menuinit/fileprep/loadsavedgame source anchors.",
   "policy": "Runtime caches are inspectable imported state, not default Providence authoring targets, when a separate source file exists.",
   "entries": [

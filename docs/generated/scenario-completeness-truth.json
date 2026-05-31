@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T04:16:59.120Z",
+  "generatedAt": "2026-05-31T04:40:07.716Z",
   "sources": {
     "byteOwnership": "docs/generated/scenario-byte-ownership.json",
     "unknownReport": "docs/generated/scenario-unknown-byte-report.json",
@@ -12,7 +12,8 @@
     "actionPointWriterGate": "docs/generated/action-point-writer-gate.json",
     "fixedRecordWriterGates": "docs/generated/fixed-record-writer-gates.json",
     "scenarioStartupShellGate": "docs/generated/scenario-startup-shell-gate.json",
-    "mapsStorageWriterGates": "docs/generated/maps-storage-writer-gates.json"
+    "mapsStorageWriterGates": "docs/generated/maps-storage-writer-gates.json",
+    "encounterShopWriterGates": "docs/generated/encounter-shop-writer-gates.json"
   },
   "policy": {
     "note": "Truth statuses are stricter than legacy coverageStatus. Semantic ownership, writer readiness, evidence quality, and package compatibility are intentionally separate.",
@@ -20,49 +21,50 @@
     "writerReadinessRequiresFixtureOrExplicitGate": true,
     "actionPointWriterGateStatus": "fixture-proven-fixed-row-storage",
     "fixedRecordWriterGateStatus": "fixture-proven-fixed-record-storage",
-    "mapsStorageWriterGateStatus": "fixture-proven-map-storage"
+    "mapsStorageWriterGateStatus": "fixture-proven-map-storage",
+    "encounterShopWriterGateStatus": "fixture-proven-encounter-shop-storage"
   },
   "summary": {
     "containerCount": 57,
     "semanticOwnershipCounts": {
-      "mixed": 9,
-      "complete": 46,
+      "mixed": 11,
+      "complete": 44,
       "runtime-only": 1,
       "ignored": 1
     },
     "writerReadinessCounts": {
-      "partially-proven": 9,
-      "fixture-proven": 16,
-      "writer-gated": 9,
+      "partially-proven": 11,
+      "fixture-proven": 18,
+      "writer-gated": 5,
       "read-only": 1,
       "preserve-only": 8,
       "not-applicable": 14
     },
     "evidenceQualityCounts": {
-      "fixture-backed": 25,
-      "cited": 19,
+      "fixture-backed": 29,
+      "cited": 15,
       "target-warning": 13
     },
     "riskFlagCounts": {
-      "structural-writer-claim": 9,
+      "structural-writer-claim": 5,
       "target-package-warning": 13,
       "writer-gated": 3
     },
     "scenarioSemantics": {
       "label": "Scenario Semantics",
       "status": "complete",
-      "completeContainers": 46,
-      "mixedContainers": 9,
+      "completeContainers": 44,
+      "mixedContainers": 11,
       "needsFormatWorkContainers": 0,
-      "percentContainers": 80.7
+      "percentContainers": 77.19
     },
     "writerProvenData": {
       "label": "Writer-Proven Data",
       "status": "incomplete",
-      "fixtureProvenContainers": 16,
-      "partiallyProvenContainers": 9,
-      "writerGatedContainers": 9,
-      "percentContainers": 43.86
+      "fixtureProvenContainers": 18,
+      "partiallyProvenContainers": 11,
+      "writerGatedContainers": 5,
+      "percentContainers": 50.88
     },
     "packageCompatibility": {
       "label": "Package Compatibility",
@@ -78,7 +80,7 @@
       "decodedResourcePayloadBytes": 841240
     },
     "strictOutstanding": {
-      "writerGatedContainers": 9,
+      "writerGatedContainers": 5,
       "missingEvidenceContainers": 0,
       "skippedFixtureContainers": 0,
       "preservedUnknownContainers": 0,
@@ -329,7 +331,7 @@
     {
       "container": "Data ED",
       "authorFacingName": "Simple encounter records",
-      "coverageStatus": "decoded-writable",
+      "coverageStatus": "mixed-writable-preserved",
       "observedScenarioCount": 35,
       "observedByteSizes": [
         1704,
@@ -361,26 +363,36 @@
         64320
       ],
       "effectiveStatuses": [
-        "decoded-writable"
+        "decoded-writable",
+        "preserved-known"
       ],
       "evidence": [
+        "docs/generated/encounter-shop-writer-gates.json",
         "docs/generated/encounter-record-evidence.json",
-        "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
+        "docs/format-evidence-cards/encounter-record-runtime-anchors.md",
+        "src-tauri/src/realmz.rs:encounter_storage_simple_mutates_only_owned_fields_and_preserves_gap",
+        "src-tauri/src/realmz.rs:write_simple_encounters",
+        "src-tauri/src/realmz.rs:parse_simple_encounter_records"
       ],
-      "fixtureGate": null,
+      "fixtureGate": {
+        "name": "simple-encounter-record-writer",
+        "available": true,
+        "partialOnly": true,
+        "evidencePresent": true,
+        "missingEvidence": [],
+        "source": "encounter-shop-writer-gates"
+      },
       "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
+        "semanticOwnership": "mixed",
+        "writerReadiness": "partially-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
       }
     },
     {
       "container": "Data ED2",
       "authorFacingName": "Complex encounter records",
-      "coverageStatus": "decoded-writable",
+      "coverageStatus": "mixed-writable-preserved",
       "observedScenarioCount": 35,
       "observedByteSizes": [
         1560,
@@ -410,20 +422,30 @@
         48360
       ],
       "effectiveStatuses": [
-        "decoded-writable"
+        "decoded-writable",
+        "preserved-known"
       ],
       "evidence": [
+        "docs/generated/encounter-shop-writer-gates.json",
         "docs/generated/encounter-record-evidence.json",
-        "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
+        "docs/format-evidence-cards/encounter-record-runtime-anchors.md",
+        "src-tauri/src/realmz.rs:encounter_storage_complex_mutates_only_owned_fields_and_preserves_gaps",
+        "src-tauri/src/realmz.rs:write_complex_encounters",
+        "src-tauri/src/realmz.rs:parse_complex_encounter_records"
       ],
-      "fixtureGate": null,
+      "fixtureGate": {
+        "name": "complex-encounter-record-writer",
+        "available": true,
+        "partialOnly": true,
+        "evidencePresent": true,
+        "missingEvidence": [],
+        "source": "encounter-shop-writer-gates"
+      },
       "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
+        "semanticOwnership": "mixed",
+        "writerReadiness": "partially-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
       }
     },
     {
@@ -931,16 +953,25 @@
         "decoded-writable"
       ],
       "evidence": [
-        "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md"
+        "docs/generated/encounter-shop-writer-gates.json",
+        "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
+        "src-tauri/src/realmz.rs:shop_storage_mutates_only_owned_fields",
+        "src-tauri/src/realmz.rs:write_shops",
+        "src-tauri/src/realmz.rs:parse_shops"
       ],
-      "fixtureGate": null,
+      "fixtureGate": {
+        "name": "shop-record-writer",
+        "available": true,
+        "partialOnly": false,
+        "evidencePresent": true,
+        "missingEvidence": [],
+        "source": "encounter-shop-writer-gates"
+      },
       "truth": {
         "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
+        "writerReadiness": "fixture-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
       }
     },
     {
@@ -1132,17 +1163,26 @@
         "decoded-writable"
       ],
       "evidence": [
+        "docs/generated/encounter-shop-writer-gates.json",
         "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
-        "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md"
+        "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md",
+        "src-tauri/src/realmz.rs:thief_encounter_storage_mutates_only_owned_fields",
+        "src-tauri/src/realmz.rs:write_thief_encounters",
+        "src-tauri/src/realmz.rs:parse_thief_encounters"
       ],
-      "fixtureGate": null,
+      "fixtureGate": {
+        "name": "thief-encounter-record-writer",
+        "available": true,
+        "partialOnly": false,
+        "evidencePresent": true,
+        "missingEvidence": [],
+        "source": "encounter-shop-writer-gates"
+      },
       "truth": {
         "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
+        "writerReadiness": "fixture-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
       }
     },
     {

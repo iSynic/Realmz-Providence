@@ -17,6 +17,7 @@ const actionPointWriterGatePath = path.join(repoRoot, "docs/generated/action-poi
 const fixedRecordWriterGatesPath = path.join(repoRoot, "docs/generated/fixed-record-writer-gates.json");
 const scenarioStartupShellGatePath = path.join(repoRoot, "docs/generated/scenario-startup-shell-gate.json");
 const mapsStorageWriterGatesPath = path.join(repoRoot, "docs/generated/maps-storage-writer-gates.json");
+const encounterShopWriterGatesPath = path.join(repoRoot, "docs/generated/encounter-shop-writer-gates.json");
 const realmzRsPath = path.join(repoRoot, "src-tauri/src/realmz.rs");
 
 const fileInventoryPath = path.join(repoRoot, "docs/generated/scenario-file-inventory.json");
@@ -245,6 +246,20 @@ const MAPS_STORAGE_FIXTURE_PATHS = [
   "F:/Realmz/out_win_clang/Scenarios/Araman's Ring"
 ];
 
+const ENCOUNTER_SHOP_GATE_CONTAINERS = [
+  "Data ED",
+  "Data ED2",
+  "Data SD",
+  "Data TD2"
+];
+
+const ENCOUNTER_SHOP_GATE_CONTAINER_SET = new Set(ENCOUNTER_SHOP_GATE_CONTAINERS);
+
+const ENCOUNTER_SHOP_FIXTURE_PATHS = [
+  "F:/Realmz/base/Realmz/Scenarios/Tutorial",
+  "F:/Realmz/out_win_clang/Scenarios/Araman's Ring"
+];
+
 const CORE_FIXED_RECORD_GATE_EXCLUDED_FAMILIES = [
   "Scenario",
   SCENARIO_STARTUP_SHELL_CONTAINER,
@@ -404,6 +419,101 @@ const MAPS_STORAGE_WRITER_GATE_SPECS = [
       "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
     ],
     preservationPolicy: "Current dungeon random-level export authority is the raw signed-short stream. Decoded rect fields are not independently writer-proven in this pass."
+  }
+];
+
+const ENCOUNTER_SHOP_WRITER_GATE_SPECS = [
+  {
+    container: "Data ED",
+    gate: "simple-encounter-record-writer",
+    rowKind: "426-byte simple encounter record",
+    semanticExposure: "simple-encounter-storage",
+    partialOnly: true,
+    ownedFields: [
+      { field: "Encounter action codes", internal: "code[32]", offset: 0, bytes: 32, type: "i8[32]" },
+      { field: "Encounter action IDs", internal: "id[32]", offset: 32, bytes: 64, type: "i16be[32]" },
+      { field: "Choice results", internal: "choiceResults[4]", offset: 96, bytes: 4, type: "u8[4]" },
+      { field: "Back-out and result flags", internal: "canBackOut/maxTimes/casteSuccess", offset: 100, bytes: 3, type: "u8/i8" },
+      { field: "Prompt string", internal: "prompt", offset: 104, bytes: 2, type: "i16be" },
+      { field: "Inline encounter text", internal: "texts[4]", offset: 106, bytes: 320, type: "Pascal[4]" }
+    ],
+    preservedRanges: [
+      { field: "Compatibility byte", internal: "raw[103]", offset: 103, bytes: 1, type: "raw-preserved" }
+    ],
+    evidence: [
+      "src-tauri/src/realmz.rs:encounter_storage_simple_mutates_only_owned_fields_and_preserves_gap",
+      "src-tauri/src/realmz.rs:write_simple_encounters",
+      "src-tauri/src/realmz.rs:parse_simple_encounter_records",
+      "docs/generated/encounter-record-evidence.json",
+      "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
+    ],
+    preservationPolicy: "Simple encounter records rewrite modeled action, result, prompt, and text fields when authored. Byte 103 remains preserve-only."
+  },
+  {
+    container: "Data ED2",
+    gate: "complex-encounter-record-writer",
+    rowKind: "520-byte complex encounter record",
+    semanticExposure: "complex-encounter-storage",
+    partialOnly: true,
+    ownedFields: [
+      { field: "Encounter action codes", internal: "code[32]", offset: 0, bytes: 32, type: "i8[32]" },
+      { field: "Encounter action IDs", internal: "id[32]", offset: 32, bytes: 64, type: "i16be[32]" },
+      { field: "Choice and word results", internal: "choiceResults[4]/wordResults[4]", offset: 96, bytes: 8, type: "u8[8]" },
+      { field: "Back-out, thief, and outcome fields", internal: "canBackOut/thief/maxTimes/casteSuccess/thiefSuccess/thiefFail", offset: 151, bytes: 6, type: "u8/i8" },
+      { field: "Prompt string", internal: "prompt", offset: 158, bytes: 2, type: "i16be" },
+      { field: "Inline encounter text", internal: "texts[9]", offset: 160, bytes: 360, type: "Pascal[9]" }
+    ],
+    preservedRanges: [
+      { field: "Compatibility bytes", internal: "raw[104..151]", offset: 104, bytes: 47, type: "raw-preserved" },
+      { field: "Compatibility byte", internal: "raw[157]", offset: 157, bytes: 1, type: "raw-preserved" }
+    ],
+    evidence: [
+      "src-tauri/src/realmz.rs:encounter_storage_complex_mutates_only_owned_fields_and_preserves_gaps",
+      "src-tauri/src/realmz.rs:write_complex_encounters",
+      "src-tauri/src/realmz.rs:parse_complex_encounter_records",
+      "docs/generated/encounter-record-evidence.json",
+      "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
+    ],
+    preservationPolicy: "Complex encounter records rewrite modeled action, result, prompt, and text fields when authored. Bytes 104..151 and 157 remain preserve-only."
+  },
+  {
+    container: "Data SD",
+    gate: "shop-record-writer",
+    rowKind: "3002-byte shop record",
+    semanticExposure: "shop-storage",
+    ownedFields: [
+      { field: "Shop item IDs", internal: "itemIds[1000]", offset: 0, bytes: 2000, type: "i16be[1000]" },
+      { field: "Shop quantities", internal: "quantities[1000]", offset: 2000, bytes: 1000, type: "u8[1000]" },
+      { field: "Inflation", internal: "inflation", offset: 3000, bytes: 2, type: "i16be" }
+    ],
+    evidence: [
+      "src-tauri/src/realmz.rs:shop_storage_mutates_only_owned_fields",
+      "src-tauri/src/realmz.rs:write_shops",
+      "src-tauri/src/realmz.rs:parse_shops",
+      "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md"
+    ],
+    preservationPolicy: "Shop records are fully modeled as item IDs, quantities, and inflation."
+  },
+  {
+    container: "Data TD2",
+    gate: "thief-encounter-record-writer",
+    rowKind: "118-byte thief encounter record",
+    semanticExposure: "thief-encounter-storage",
+    ownedFields: [
+      { field: "Thief encounter flags and modifiers", internal: "typeFlags/modifiers/resultCodes", offset: 0, bytes: 34, type: "u8/i8" },
+      { field: "Success and failure text links", internal: "successText/failureText", offset: 34, bytes: 32, type: "i16be[16]" },
+      { field: "Success and failure sound links", internal: "successSounds/failureSounds", offset: 66, bytes: 32, type: "i16be[16]" },
+      { field: "Spell, damage, and tumblers", internal: "spell/lowDamage/highDamage/tumblers", offset: 98, bytes: 8, type: "i16be[4]" },
+      { field: "Prompt strings and sounds", internal: "prompts/promptSounds", offset: 106, bytes: 12, type: "i16be[6]" }
+    ],
+    evidence: [
+      "src-tauri/src/realmz.rs:thief_encounter_storage_mutates_only_owned_fields",
+      "src-tauri/src/realmz.rs:write_thief_encounters",
+      "src-tauri/src/realmz.rs:parse_thief_encounters",
+      "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
+      "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md"
+    ],
+    preservationPolicy: "Thief encounter records are fully modeled by the current parser and writer."
   }
 ];
 
@@ -621,6 +731,7 @@ const aggregate = aggregateFiles(roundtripLedger.scenarios ?? [], scanned);
 const fixedRecordWriterGates = buildFixedRecordWriterGates(aggregate);
 const scenarioStartupShellGate = buildScenarioStartupShellGate(aggregate);
 const mapsStorageWriterGates = buildMapsStorageWriterGates(aggregate);
+const encounterShopWriterGates = buildEncounterShopWriterGates(aggregate);
 const inventory = buildInventory(scanned, aggregate);
 const ownership = buildOwnership(aggregate);
 const unknownReport = buildUnknownReport(inventory, ownership, unknownBacklog);
@@ -644,6 +755,7 @@ writeJson(completenessTruthPath, completenessTruth);
 writeJson(fixedRecordWriterGatesPath, fixedRecordWriterGates);
 writeJson(scenarioStartupShellGatePath, scenarioStartupShellGate);
 writeJson(mapsStorageWriterGatesPath, mapsStorageWriterGates);
+writeJson(encounterShopWriterGatesPath, encounterShopWriterGates);
 writeJson(runtimeCachePath, updatedRuntimeCaches);
 writeJson(uiManifestPath, uiManifest);
 
@@ -654,6 +766,7 @@ console.log(`Wrote ${path.relative(repoRoot, completenessTruthPath)}`);
 console.log(`Wrote ${path.relative(repoRoot, fixedRecordWriterGatesPath)}`);
 console.log(`Wrote ${path.relative(repoRoot, scenarioStartupShellGatePath)}`);
 console.log(`Wrote ${path.relative(repoRoot, mapsStorageWriterGatesPath)}`);
+console.log(`Wrote ${path.relative(repoRoot, encounterShopWriterGatesPath)}`);
 console.log(`Wrote ${path.relative(repoRoot, runtimeCachePath)}`);
 console.log(`Wrote ${path.relative(repoRoot, uiManifestPath)}`);
 console.log(JSON.stringify(uiManifest.summary, null, 2));
@@ -907,6 +1020,86 @@ function buildMapsStorageWriterGates(aggregate) {
   };
 }
 
+function buildEncounterShopWriterGates(aggregate) {
+  validateEncounterShopWriterGateSpecs();
+  const aggregateByName = new Map((aggregate.files ?? []).map((file) => [file.name, file]));
+  const fixtureChecks = ENCOUNTER_SHOP_FIXTURE_PATHS.map((fixturePath) => ({
+    path: fixturePath,
+    available: fs.existsSync(fixturePath)
+  }));
+  const fixturePathsAvailable = fixtureChecks.every((fixture) => fixture.available);
+  const gates = ENCOUNTER_SHOP_WRITER_GATE_SPECS.map((spec) => {
+    const layout = RECORD_LAYOUTS[spec.container];
+    const file = aggregateByName.get(spec.container);
+    const evidence = [...new Set(spec.evidence ?? [])];
+    const evidenceChecks = evidence.map(evidenceStatusFor);
+    const missingEvidence = evidenceChecks
+      .filter((check) => !check.present)
+      .map((check) => check.reference);
+    const evidencePresent = missingEvidence.length === 0;
+    const observedScenarioCount = file?.scenarioCount ?? 0;
+    const available = evidencePresent && fixturePathsAvailable && observedScenarioCount > 0;
+    return {
+      container: spec.container,
+      authorFacingName: layout.label,
+      gate: spec.gate,
+      recordBytes: layout.recordBytes,
+      rowKind: spec.rowKind,
+      semanticExposure: spec.semanticExposure,
+      writerStatus: available ? "fixture-proven-encounter-shop-storage" : "evidence-pending-encounter-shop-storage",
+      available,
+      evidencePresent,
+      fixturePathsAvailable,
+      observedScenarioCount,
+      observedByteSizes: file?.observedByteSizes ?? [],
+      fixturePaths: ENCOUNTER_SHOP_FIXTURE_PATHS,
+      missingEvidence,
+      evidence,
+      evidenceChecks,
+      ownedFields: spec.ownedFields,
+      preservedRanges: spec.preservedRanges ?? [],
+      partialOnly: Boolean(spec.partialOnly || (spec.preservedRanges ?? []).length > 0),
+      preservationPolicy: spec.preservationPolicy
+    };
+  });
+  const fixtureProvenContainers = gates.filter((gate) => gate.available).length;
+  return {
+    schemaVersion: 1,
+    generatedAt: new Date().toISOString(),
+    generatedBy: "scripts/generate_scenario_byte_coverage.mjs",
+    target: "encounter-shop-writer-gates",
+    sources: {
+      byteCoverage: "docs/generated/scenario-byte-ownership.json",
+      encounterEvidence: "docs/generated/encounter-record-evidence.json",
+      itemShopEvidence: "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
+      thiefEvidence: "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md",
+      encounterShopWriters: "src-tauri/src/realmz.rs"
+    },
+    policy: {
+      note: "This registry gates simple/complex encounter, shop, and thief encounter storage only. Timed encounters remain governed by fixed-record-writer-gates.",
+      fixtureProvenRequires: [
+        "observed container coverage",
+        "all encounter/shop fixture paths available",
+        "all local evidence references present"
+      ],
+      excludedFamilies: ["Data TD3"]
+    },
+    summary: {
+      containers: gates.length,
+      fixtureProvenContainers,
+      evidencePendingContainers: gates.length - fixtureProvenContainers,
+      writerReadiness:
+        fixtureProvenContainers === gates.length
+          ? "fixture-proven-encounter-shop-storage"
+          : "evidence-pending-encounter-shop-storage",
+      fixturePathsAvailable,
+      missingFixturePaths: fixtureChecks.filter((fixture) => !fixture.available).map((fixture) => fixture.path),
+      missingEvidenceReferences: gates.reduce((total, gate) => total + gate.missingEvidence.length, 0)
+    },
+    gates
+  };
+}
+
 function validateFixedRecordWriterGateSpecs() {
   const containers = FIXED_RECORD_WRITER_GATE_SPECS.map((spec) => spec.container);
   const uniqueContainers = new Set(containers);
@@ -951,6 +1144,28 @@ function validateMapsStorageWriterGateSpecs() {
   for (const container of containers) {
     if (!RECORD_LAYOUTS[container]?.recordBytes) {
       throw new Error(`${container} has no maps storage RECORD_LAYOUTS entry`);
+    }
+  }
+}
+
+function validateEncounterShopWriterGateSpecs() {
+  const containers = ENCOUNTER_SHOP_WRITER_GATE_SPECS.map((spec) => spec.container);
+  const uniqueContainers = new Set(containers);
+  if (uniqueContainers.size !== containers.length) {
+    const duplicates = containers.filter((container, index) => containers.indexOf(container) !== index);
+    throw new Error(`Duplicate encounter/shop writer gates: ${[...new Set(duplicates)].join(", ")}`);
+  }
+  const missing = ENCOUNTER_SHOP_GATE_CONTAINERS.filter((container) => !uniqueContainers.has(container));
+  if (missing.length > 0) {
+    throw new Error(`Missing encounter/shop writer gates: ${missing.join(", ")}`);
+  }
+  const unexpected = containers.filter((container) => !ENCOUNTER_SHOP_GATE_CONTAINER_SET.has(container));
+  if (unexpected.length > 0) {
+    throw new Error(`Unexpected encounter/shop writer gates: ${unexpected.join(", ")}`);
+  }
+  for (const container of containers) {
+    if (!RECORD_LAYOUTS[container]?.recordBytes) {
+      throw new Error(`${container} has no encounter/shop RECORD_LAYOUTS entry`);
     }
   }
 }
@@ -1008,6 +1223,7 @@ function buildInventory(scanned, aggregate) {
         fixedRecordWriterGates: "docs/generated/fixed-record-writer-gates.json",
         scenarioStartupShellGate: "docs/generated/scenario-startup-shell-gate.json",
         mapsStorageWriterGates: "docs/generated/maps-storage-writer-gates.json",
+        encounterShopWriterGates: "docs/generated/encounter-shop-writer-gates.json",
         completenessTruth: "docs/generated/scenario-completeness-truth.json"
     },
     policy: {
@@ -1087,6 +1303,7 @@ function buildOwnership(aggregate) {
         fixedRecordWriterGates: "docs/generated/fixed-record-writer-gates.json",
         scenarioStartupShellGate: "docs/generated/scenario-startup-shell-gate.json",
         mapsStorageWriterGates: "docs/generated/maps-storage-writer-gates.json",
+        encounterShopWriterGates: "docs/generated/encounter-shop-writer-gates.json",
         completenessTruth: "docs/generated/scenario-completeness-truth.json",
         ed3Reachability: "docs/generated/extra-ap-reachability-source-map.json",
         edcdCrosswalk: "docs/generated/opcode-edcd-crosswalk.json"
@@ -1252,7 +1469,8 @@ function buildCompletenessTruth(inventory, ownership, unknownReport) {
       actionPointWriterGate: "docs/generated/action-point-writer-gate.json",
       fixedRecordWriterGates: "docs/generated/fixed-record-writer-gates.json",
       scenarioStartupShellGate: "docs/generated/scenario-startup-shell-gate.json",
-      mapsStorageWriterGates: "docs/generated/maps-storage-writer-gates.json"
+      mapsStorageWriterGates: "docs/generated/maps-storage-writer-gates.json",
+      encounterShopWriterGates: "docs/generated/encounter-shop-writer-gates.json"
     },
     policy: {
       note: "Truth statuses are stricter than legacy coverageStatus. Semantic ownership, writer readiness, evidence quality, and package compatibility are intentionally separate.",
@@ -1260,7 +1478,8 @@ function buildCompletenessTruth(inventory, ownership, unknownReport) {
       writerReadinessRequiresFixtureOrExplicitGate: true,
       actionPointWriterGateStatus: actionPointWriterGate?.summary?.writerReadiness ?? null,
       fixedRecordWriterGateStatus: fixedRecordWriterGates?.summary?.writerReadiness ?? null,
-      mapsStorageWriterGateStatus: mapsStorageWriterGates?.summary?.writerReadiness ?? null
+      mapsStorageWriterGateStatus: mapsStorageWriterGates?.summary?.writerReadiness ?? null,
+      encounterShopWriterGateStatus: encounterShopWriterGates?.summary?.writerReadiness ?? null
     },
     summary,
     containers
@@ -1376,6 +1595,22 @@ function fixtureGateForContainer(containerName) {
       missingEvidence: mapsGate.missingEvidence ?? [],
       partialOnly: Boolean(mapsGate.partialOnly),
       source: "maps-storage-writer-gates"
+    };
+  }
+  const encounterShopGate = encounterShopWriterGates.gates.find((entry) => entry.container === containerName);
+  if (encounterShopGate) {
+    return {
+      gate: encounterShopGate.gate,
+      fixturePaths: encounterShopGate.fixturePaths ?? [],
+      evidence: [
+        "docs/generated/encounter-shop-writer-gates.json",
+        ...(encounterShopGate.evidence ?? [])
+      ],
+      available: Boolean(encounterShopGate.available),
+      evidencePresent: Boolean(encounterShopGate.evidencePresent),
+      missingEvidence: encounterShopGate.missingEvidence ?? [],
+      partialOnly: Boolean(encounterShopGate.partialOnly),
+      source: "encounter-shop-writer-gates"
     };
   }
   const generatedGate = fixedRecordWriterGates.gates.find((entry) => entry.container === containerName);
@@ -1703,6 +1938,7 @@ function coverageStatusForFile(file) {
   if (name === SCENARIO_STARTUP_SHELL_CONTAINER) return "mixed-writable-preserved";
   if (runtimeCaches.entries?.some((entry) => entry.cache === name)) return "runtime-cache";
   if (name === "Data DL" && dungeonByteOwnership) return "mixed-writable-preserved";
+  if (name === "Data ED" || name === "Data ED2") return "mixed-writable-preserved";
   if (name === "Layout" && file.byteSizes?.size > 0 && [...file.byteSizes].some((size) => size > (RECORD_LAYOUTS.Layout?.recordBytes ?? 256))) return "mixed-writable-preserved";
   if (customLandlookCoverage && /^Data Custom [123] BD$/.test(name)) return "mixed-writable-preserved";
   if (rulesCoverage && (name === "Data Spell" || name === "Data Race" || name === "Data Caste")) return "mixed-writable-preserved";
@@ -1849,6 +2085,25 @@ function byteRangesForFile(file, layout) {
       writerGate: "docs/generated/action-point-writer-gate.json"
     }));
   }
+  if (file.name === "Data ED") {
+    return [
+      { start: 0, length: 96, endExclusive: 96, status: "decoded-writable", field: "Encounter actions", internal: "code[32]/id[32]", writerGate: "docs/generated/encounter-shop-writer-gates.json" },
+      { start: 96, length: 7, endExclusive: 103, status: "decoded-writable", field: "Choice and encounter outcome fields", internal: "choiceResults/canBackOut/maxTimes/casteSuccess", writerGate: "docs/generated/encounter-shop-writer-gates.json" },
+      { start: 103, length: 1, endExclusive: 104, status: "preserved-known", field: "Compatibility byte", internal: "raw[103]", writerGate: "docs/generated/encounter-shop-writer-gates.json" },
+      { start: 104, length: 2, endExclusive: 106, status: "decoded-writable", field: "Prompt string", internal: "prompt", writerGate: "docs/generated/encounter-shop-writer-gates.json" },
+      { start: 106, length: 320, endExclusive: 426, status: "decoded-writable", field: "Inline encounter text", internal: "texts[4]", writerGate: "docs/generated/encounter-shop-writer-gates.json" }
+    ];
+  }
+  if (file.name === "Data ED2") {
+    return [
+      { start: 0, length: 96, endExclusive: 96, status: "decoded-writable", field: "Encounter actions", internal: "code[32]/id[32]", writerGate: "docs/generated/encounter-shop-writer-gates.json" },
+      { start: 96, length: 8, endExclusive: 104, status: "decoded-writable", field: "Choice and word results", internal: "choiceResults/wordResults", writerGate: "docs/generated/encounter-shop-writer-gates.json" },
+      { start: 104, length: 47, endExclusive: 151, status: "preserved-known", field: "Compatibility bytes", internal: "raw[104..151]", writerGate: "docs/generated/encounter-shop-writer-gates.json" },
+      { start: 151, length: 6, endExclusive: 157, status: "decoded-writable", field: "Encounter outcome fields", internal: "canBackOut/thief/maxTimes/casteSuccess/thiefSuccess/thiefFail", writerGate: "docs/generated/encounter-shop-writer-gates.json" },
+      { start: 157, length: 1, endExclusive: 158, status: "preserved-known", field: "Compatibility byte", internal: "raw[157]", writerGate: "docs/generated/encounter-shop-writer-gates.json" },
+      { start: 158, length: 362, endExclusive: 520, status: "decoded-writable", field: "Prompt and inline encounter text", internal: "prompt/texts[9]", writerGate: "docs/generated/encounter-shop-writer-gates.json" }
+    ];
+  }
   if (file.name === "Global") {
     return [
       {
@@ -1958,9 +2213,11 @@ function byteRangesForFile(file, layout) {
         internal: "fixed record",
         writerGate: MAPS_STORAGE_GATE_CONTAINER_SET.has(file.name)
           ? "docs/generated/maps-storage-writer-gates.json"
-          : CORE_FIXED_RECORD_GATE_CONTAINER_SET.has(file.name)
-            ? "docs/generated/fixed-record-writer-gates.json"
-            : undefined
+          : ENCOUNTER_SHOP_GATE_CONTAINER_SET.has(file.name)
+            ? "docs/generated/encounter-shop-writer-gates.json"
+            : CORE_FIXED_RECORD_GATE_CONTAINER_SET.has(file.name)
+              ? "docs/generated/fixed-record-writer-gates.json"
+              : undefined
       }
     ];
   }
@@ -1996,6 +2253,9 @@ function evidenceForFile(name, status) {
   const evidence = [];
   if (MAPS_STORAGE_GATE_CONTAINER_SET.has(name)) {
     evidence.push("docs/generated/maps-storage-writer-gates.json");
+  }
+  if (ENCOUNTER_SHOP_GATE_CONTAINER_SET.has(name)) {
+    evidence.push("docs/generated/encounter-shop-writer-gates.json");
   }
   if (CORE_FIXED_RECORD_GATE_CONTAINER_SET.has(name)) {
     evidence.push("docs/generated/fixed-record-writer-gates.json");

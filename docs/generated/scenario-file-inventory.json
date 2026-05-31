@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T04:16:59.117Z",
+  "generatedAt": "2026-05-31T04:40:07.713Z",
   "sources": {
     "roundtripLedger": "docs/generated/scenario-byte-roundtrip-ledger.json",
     "rustRegistry": "src-tauri/src/realmz.rs",
@@ -13,6 +13,7 @@
     "fixedRecordWriterGates": "docs/generated/fixed-record-writer-gates.json",
     "scenarioStartupShellGate": "docs/generated/scenario-startup-shell-gate.json",
     "mapsStorageWriterGates": "docs/generated/maps-storage-writer-gates.json",
+    "encounterShopWriterGates": "docs/generated/encounter-shop-writer-gates.json",
     "completenessTruth": "docs/generated/scenario-completeness-truth.json"
   },
   "policy": {
@@ -223,8 +224,8 @@
         64320
       ],
       "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
+      "coverageStatus": "mixed-writable-preserved",
+      "editable": false
     },
     {
       "name": "Data ED2",
@@ -264,8 +265,8 @@
         48360
       ],
       "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
+      "coverageStatus": "mixed-writable-preserved",
+      "editable": false
     },
     {
       "name": "Data ED3",
