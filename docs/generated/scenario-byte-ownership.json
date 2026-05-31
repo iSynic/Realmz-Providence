@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-30T21:10:08.198Z",
+  "generatedAt": "2026-05-30T23:11:41.171Z",
   "classifications": [
     "decoded-writable",
     "decoded-readonly",
@@ -22,6 +22,7 @@
     "runtimeCaches": "docs/generated/runtime-cache-classification.json",
     "resourceCoverage": "docs/generated/resource-byte-ownership.json",
     "customLandlookCoverage": "docs/generated/custom-landlook-coverage.json",
+    "rulesCoverage": "docs/generated/rules-resource-coverage.json",
     "dungeonCoverage": "docs/generated/dungeon-byte-ownership.json",
     "dungeonHighBitAudit": "docs/generated/dungeon-high-bit-audit.json",
     "ed3Reachability": "docs/generated/extra-ap-reachability-source-map.json",
@@ -1702,15 +1703,24 @@
       "byteRanges": [
         {
           "start": 0,
-          "length": 30,
-          "endExclusive": 30,
+          "endExclusive": 3150,
           "status": "decoded-writable",
-          "field": "Custom spell override records",
-          "internal": "fixed record"
+          "field": "105 custom spell records",
+          "packedIds": "5101..5715"
+        },
+        {
+          "start": 3150,
+          "endExclusive": null,
+          "status": "preserved-known",
+          "field": "Data Spell packaging tail",
+          "reason": "Runtime reads only 105 records before opening resource evidence."
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/rules-resource-coverage.json",
+        "docs/format-evidence-cards/rules-spell-race-caste-runtime-anchors.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -1865,15 +1875,16 @@
       "byteRanges": [
         {
           "start": 0,
-          "length": 408,
-          "endExclusive": 408,
+          "endExclusive": 12240,
           "status": "decoded-writable",
-          "field": "Race override records",
-          "internal": "fixed record"
+          "field": "30 race override records"
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/rules-resource-coverage.json",
+        "docs/format-evidence-cards/rules-spell-race-caste-runtime-anchors.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -1916,15 +1927,16 @@
       "byteRanges": [
         {
           "start": 0,
-          "length": 576,
-          "endExclusive": 576,
+          "endExclusive": 17280,
           "status": "decoded-writable",
-          "field": "Caste override records",
-          "internal": "fixed record"
+          "field": "30 caste override records"
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/rules-resource-coverage.json",
+        "docs/format-evidence-cards/rules-spell-race-caste-runtime-anchors.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {

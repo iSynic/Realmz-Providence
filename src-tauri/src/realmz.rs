@@ -3218,6 +3218,15 @@ fn write_i32_be(buffer: &mut [u8], offset: usize, value: i32) {
 mod tests {
     use super::*;
 
+    fn changed_offsets(before: &[u8], after: &[u8]) -> Vec<usize> {
+        before
+            .iter()
+            .zip(after.iter())
+            .enumerate()
+            .filter_map(|(offset, (left, right))| (left != right).then_some(offset))
+            .collect()
+    }
+
     #[test]
     fn fields_round_trip() {
         let mut input = vec![0u8; FIELD_BYTES * 2];
@@ -3633,6 +3642,7 @@ mod tests {
         let spell_output = write_spell_overrides(&spells).unwrap();
         assert_eq!(spell_output.len(), SPELL_BYTES * 2);
         assert_eq!(spell_output[10], 11);
+        assert_eq!(changed_offsets(&spell_input[..SPELL_BYTES * 2], &spell_output), vec![10]);
 
         let mut race_input = vec![0u8; RACE_BYTES];
         write_i16_be(&mut race_input, 192, 88);
@@ -3648,6 +3658,7 @@ mod tests {
         let race_output = write_race_overrides(&races).unwrap();
         assert_eq!(i16_be(&race_output, 196), 16);
         assert_eq!(race_output[209], 1);
+        assert_eq!(changed_offsets(&race_input, &race_output), vec![197, 209]);
 
         let mut caste_input = vec![0u8; CASTE_BYTES];
         write_i16_be(&mut caste_input, 252, 2);
@@ -3667,6 +3678,10 @@ mod tests {
         assert_eq!(i32_be(&caste_output, 272), 125000);
         assert_eq!(i16_be(&caste_output, 384), 750);
         assert_eq!(i16_be(&caste_output, 386), 42);
+        assert_eq!(
+            changed_offsets(&caste_input, &caste_output),
+            vec![273, 274, 275, 384, 385, 387]
+        );
     }
 
     #[test]

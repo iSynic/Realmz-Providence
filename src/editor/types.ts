@@ -321,6 +321,48 @@ export type CustomLandlookUsage = {
   mapCount: number;
 };
 
+export type RulesCoverageEntry = {
+  fileName: "Data Spell" | "Data Race" | "Data Caste";
+  family: "spell" | "race" | "caste";
+  bytes: number;
+  expectedBytes: number;
+  recordBytes: number;
+  expectedRecords: number;
+  records: number;
+  trailingBytes: number;
+  status: string;
+  writerStatus: string;
+};
+
+export type RuleResourceLink = {
+  resourceFile: string;
+  type: string;
+  id: number;
+  name: string | null;
+  dataLength: number;
+  ownership: string;
+  writerStatus: string;
+  previewStatus: string;
+  likelyLinkage: string | null;
+};
+
+export type RuleWriterGate = {
+  spellRecords: string;
+  spellTail: string;
+  spellResources: string;
+  raceRecords: string;
+  casteRecords: string;
+  raceCasteNames: string;
+};
+
+export type RulePackageTail = {
+  start: number;
+  endExclusive: number | null;
+  status: string;
+  field: string;
+  reason?: string;
+};
+
 export type TilePaletteCategory =
   | "landlook"
   | "special"

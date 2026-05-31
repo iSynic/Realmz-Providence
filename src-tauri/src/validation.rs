@@ -1603,12 +1603,17 @@ fn validate_rules_overrides(
     warnings: &mut Vec<String>,
 ) {
     let mut spell_ids = BTreeSet::new();
+    let known_sounds = known_resource_ids(project, "snd ");
+    let known_icons = known_resource_ids(project, "cicn");
+    let mut missing_spell_sounds = BTreeSet::new();
+    let mut missing_spell_icons = BTreeSet::new();
+    let mut missing_race_icons = BTreeSet::new();
+    let mut missing_caste_icons = BTreeSet::new();
     for spell in &project.spell_overrides {
         if spell.id >= crate::realmz::SPELL_OVERRIDE_RECORDS {
             errors.push(format!(
-                "Spell override {} is outside the 0..{} custom spell range.",
-                spell.id,
-                crate::realmz::SPELL_OVERRIDE_RECORDS - 1
+                "Custom spell slot {} is outside the scenario custom spell range 5101..5715.",
+                spell.id
             ));
         }
         if !spell_ids.insert(spell.id) {
@@ -1620,6 +1625,33 @@ fn validate_rules_overrides(
                 spell.id, spell.target_type
             ));
         }
+        for sound in [spell.sound1, spell.sound2] {
+            if let Some(resource_id) = spell_sound_resource_id(sound) {
+                if !known_sounds.contains(&resource_id) {
+                    missing_spell_sounds.insert(resource_id);
+                }
+            }
+        }
+        for icon_id in spell_animation_frame_ids(spell.spell_look1, true)
+            .into_iter()
+            .chain(spell_animation_frame_ids(spell.spell_look2, false))
+        {
+            if !known_icons.contains(&icon_id) {
+                missing_spell_icons.insert(icon_id);
+            }
+        }
+    }
+    if !missing_spell_sounds.is_empty() {
+        warnings.push(format!(
+            "{} spell sound resource(s) referenced by custom spells do not currently resolve.",
+            missing_spell_sounds.len()
+        ));
+    }
+    if !missing_spell_icons.is_empty() {
+        warnings.push(format!(
+            "{} spell animation frame resource(s) referenced by custom spells do not currently resolve.",
+            missing_spell_icons.len()
+        ));
     }
 
     let mut race_ids = BTreeSet::new();
@@ -1644,6 +1676,17 @@ fn validate_rules_overrides(
                 ));
             }
         }
+        for icon_id in race_portrait_set_icon_ids(race.default_icon_set) {
+            if !known_icons.contains(&icon_id) {
+                missing_race_icons.insert(icon_id);
+            }
+        }
+    }
+    if !missing_race_icons.is_empty() {
+        warnings.push(format!(
+            "{} race portrait icon resource(s) referenced by race overrides do not currently resolve.",
+            missing_race_icons.len()
+        ));
     }
 
     let mut caste_ids = BTreeSet::new();
@@ -1663,7 +1706,85 @@ fn validate_rules_overrides(
                 caste.id, item_id
             ));
         }
+        if caste.default_icon > 0 && !known_icons.contains(&caste.default_icon) {
+            missing_caste_icons.insert(caste.default_icon);
+        }
     }
+    if !missing_caste_icons.is_empty() {
+        warnings.push(format!(
+            "{} caste icon resource(s) referenced by caste overrides do not currently resolve.",
+            missing_caste_icons.len()
+        ));
+    }
+}
+
+fn spell_sound_resource_id(value: u8) -> Option<i16> {
+    (value > 0).then_some(600 + i16::from(value))
+}
+
+fn spell_animation_frame_ids(value: u8, blank_cast: bool) -> Vec<i16> {
+    if value == 0 && blank_cast {
+        return Vec::new();
+    }
+    let base = if value == 0 {
+        12032
+    } else {
+        11992 + i16::from(value) * 8
+    };
+    (0..8).map(|index| base + index).collect()
+}
+
+fn race_portrait_set_icon_ids(default_icon_set: i16) -> Vec<i16> {
+    let first = 251 + default_icon_set * 6;
+    (0..6).map(|index| first + index).collect()
+}
+
+fn known_resource_ids(project: &ProvidenceProject, resource_type: &str) -> BTreeSet<i16> {
+    let mut ids = BTreeSet::new();
+    for asset in &project.assets {
+        if asset.resource_type == resource_type {
+            ids.insert(asset.resource_id);
+        }
+    }
+    if resource_type == "cicn" {
+        for asset in &project.asset_catalog.icons {
+            if asset.resource_type == "cicn" {
+                if let Ok(id) = i16::try_from(asset.resource_id) {
+                    ids.insert(id);
+                }
+            }
+        }
+    }
+    for entity in &project.semantic_schema.entities {
+        if entity.entity_type != "resource"
+            && entity.entity_type != "icon-resource"
+            && entity.entity_type != "special-land-tile"
+        {
+            continue;
+        }
+        let entity_type = entity
+            .summary
+            .get("type")
+            .and_then(Value::as_str)
+            .or_else(|| entity.summary.get("resourceType").and_then(Value::as_str));
+        if entity_type.is_some_and(|value| value == resource_type)
+            || entity.id.starts_with(&format!("resource:{resource_type}:"))
+        {
+            if let Some(id) = entity
+                .summary
+                .get("resourceId")
+                .and_then(Value::as_i64)
+                .and_then(|value| i16::try_from(value).ok())
+            {
+                ids.insert(id);
+            } else if let Some((_, raw_id)) = entity.id.rsplit_once(':') {
+                if let Ok(id) = raw_id.parse::<i16>() {
+                    ids.insert(id);
+                }
+            }
+        }
+    }
+    ids
 }
 
 fn validate_semantic_schema(

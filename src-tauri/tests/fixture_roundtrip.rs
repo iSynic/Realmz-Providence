@@ -332,6 +332,121 @@ fn custom_landlook_atlas_replacement_changes_only_target_pict_resource() {
 }
 
 #[test]
+fn rules_spell_export_mutates_only_owned_record_byte_and_preserves_tail() {
+    let Some(source) = out_fixture_path("Begining of the End") else {
+        eprintln!("Skipping rules spell fixture; Begining of the End is absent.");
+        return;
+    };
+    let temp = tempdir().unwrap();
+    let project_dir = temp.path().join("project");
+    let export_dir = temp.path().join("exported");
+    import_scenario(&source, &project_dir).unwrap();
+    let mut project = open_project(&project_dir).unwrap();
+    assert!(
+        !project.spell_overrides.is_empty(),
+        "fixture should import custom spell records"
+    );
+    let original = fs::read(source.join("Data Spell")).unwrap();
+    let old_cost = project.spell_overrides[0].cost;
+    project.spell_overrides[0].cost = old_cost.wrapping_add(1);
+    export_project(
+        &project_dir,
+        &project,
+        &export_dir,
+        ScenarioTarget::ProvidencePortableFolder,
+    )
+    .unwrap();
+    let exported = fs::read(export_dir.join("Data Spell")).unwrap();
+    assert_eq!(exported.len(), original.len(), "Data Spell tail should remain present");
+    assert_eq!(
+        changed_offsets(&original, &exported),
+        vec![10],
+        "only the first custom spell cost byte should change"
+    );
+}
+
+#[test]
+fn rules_race_export_mutates_only_owned_record_fields() {
+    let Some(source) = out_fixture_path("Araman's Ring") else {
+        eprintln!("Skipping rules race fixture; Araman's Ring is absent.");
+        return;
+    };
+    let temp = tempdir().unwrap();
+    let project_dir = temp.path().join("project");
+    let export_dir = temp.path().join("exported");
+    import_scenario(&source, &project_dir).unwrap();
+    let mut project = open_project(&project_dir).unwrap();
+    assert!(
+        !project.race_overrides.is_empty(),
+        "fixture should import race override records"
+    );
+    let original = fs::read(source.join("Data Race")).unwrap();
+    project.race_overrides[0].base_move = project.race_overrides[0].base_move.wrapping_add(1);
+    if project.race_overrides[0].can_caste.len() > 1 {
+        project.race_overrides[0].can_caste[1] ^= 1;
+    }
+    if let Some(mask) = project.race_overrides[0].item_types.first_mut() {
+        *mask ^= 1;
+    }
+    export_project(
+        &project_dir,
+        &project,
+        &export_dir,
+        ScenarioTarget::ProvidencePortableFolder,
+    )
+    .unwrap();
+    let exported = fs::read(export_dir.join("Data Race")).unwrap();
+    assert_eq!(exported.len(), original.len());
+    let changed = changed_offsets(&original, &exported);
+    assert!(!changed.is_empty(), "fixture mutation should change race bytes");
+    assert!(
+        changed.iter().all(|offset| matches!(*offset, 196..=197 | 209 | 336..=339)),
+        "unexpected race byte mutation(s): {changed:?}"
+    );
+}
+
+#[test]
+fn rules_caste_export_mutates_only_owned_record_fields() {
+    let Some(source) = out_fixture_path("Araman's Ring") else {
+        eprintln!("Skipping rules caste fixture; Araman's Ring is absent.");
+        return;
+    };
+    let temp = tempdir().unwrap();
+    let project_dir = temp.path().join("project");
+    let export_dir = temp.path().join("exported");
+    import_scenario(&source, &project_dir).unwrap();
+    let mut project = open_project(&project_dir).unwrap();
+    assert!(
+        !project.caste_overrides.is_empty(),
+        "fixture should import caste override records"
+    );
+    let original = fs::read(source.join("Data Caste")).unwrap();
+    project.caste_overrides[0].victory[0] = project.caste_overrides[0].victory[0].wrapping_add(1);
+    project.caste_overrides[0].start_items[0] = project.caste_overrides[0].start_items[0].wrapping_add(1);
+    project.caste_overrides[0].attacks[0] ^= 1;
+    if let Some(mask) = project.caste_overrides[0].item_types.first_mut() {
+        *mask ^= 1;
+    }
+    export_project(
+        &project_dir,
+        &project,
+        &export_dir,
+        ScenarioTarget::ProvidencePortableFolder,
+    )
+    .unwrap();
+    let exported = fs::read(export_dir.join("Data Caste")).unwrap();
+    assert_eq!(exported.len(), original.len());
+    let changed = changed_offsets(&original, &exported);
+    assert!(!changed.is_empty(), "fixture mutation should change caste bytes");
+    assert!(
+        changed
+            .iter()
+            .all(|offset| matches!(*offset, 264..=267 | 386..=387 | 426 | 436..=439)),
+        "unexpected caste byte mutation(s): {changed:?}"
+    );
+}
+
+#[test]
 fn imports_destroy_scenario_local_map_icons() {
     let Some(source) = fixture_path("Destroy the Necronomicon") else {
         eprintln!("Skipping Destroy the Necronomicon fixture; base scenario is absent.");
@@ -1859,6 +1974,15 @@ fn resource_entry(path: &Path, resource_type: &str, id: i16) -> Option<ResourceF
     parse_resource_fork_entries(&fs::read(path).ok()?)
         .into_iter()
         .find(|entry| entry.resource_type == resource_type && entry.id == id)
+}
+
+fn changed_offsets(before: &[u8], after: &[u8]) -> Vec<usize> {
+    before
+        .iter()
+        .zip(after.iter())
+        .enumerate()
+        .filter_map(|(offset, (left, right))| (left != right).then_some(offset))
+        .collect()
 }
 
 fn replacement_landlook_pict_resource() -> Vec<u8> {

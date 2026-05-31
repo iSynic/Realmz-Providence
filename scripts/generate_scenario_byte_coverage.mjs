@@ -11,6 +11,7 @@ const runtimeCachePath = path.join(repoRoot, "docs/generated/runtime-cache-class
 const resourceByteOwnershipPath = path.join(repoRoot, "docs/generated/resource-byte-ownership.json");
 const dungeonByteOwnershipPath = path.join(repoRoot, "docs/generated/dungeon-byte-ownership.json");
 const customLandlookCoveragePath = path.join(repoRoot, "docs/generated/custom-landlook-coverage.json");
+const rulesCoveragePath = path.join(repoRoot, "docs/generated/rules-resource-coverage.json");
 const targetCompatibilityPath = path.join(repoRoot, "docs/generated/scenario-target-compatibility.json");
 const realmzRsPath = path.join(repoRoot, "src-tauri/src/realmz.rs");
 
@@ -108,6 +109,7 @@ const runtimeCaches = readJson(runtimeCachePath);
 const resourceByteOwnership = readOptionalJson(resourceByteOwnershipPath);
 const dungeonByteOwnership = readOptionalJson(dungeonByteOwnershipPath);
 const customLandlookCoverage = readOptionalJson(customLandlookCoveragePath);
+const rulesCoverage = readOptionalJson(rulesCoveragePath);
 const targetCompatibility = readOptionalJson(targetCompatibilityPath);
 const rustRegistry = parseRustRegistry(fs.readFileSync(realmzRsPath, "utf8"));
 const parsedResourceForkNames = new Set(
@@ -156,6 +158,7 @@ function buildInventory(scanned, aggregate) {
         runtimeCaches: "docs/generated/runtime-cache-classification.json",
         resourceCoverage: "docs/generated/resource-byte-ownership.json",
         customLandlookCoverage: "docs/generated/custom-landlook-coverage.json",
+        rulesCoverage: "docs/generated/rules-resource-coverage.json",
         dungeonCoverage: "docs/generated/dungeon-byte-ownership.json",
         dungeonHighBitAudit: "docs/generated/dungeon-high-bit-audit.json"
     },
@@ -225,6 +228,7 @@ function buildOwnership(aggregate) {
         runtimeCaches: "docs/generated/runtime-cache-classification.json",
         resourceCoverage: "docs/generated/resource-byte-ownership.json",
         customLandlookCoverage: "docs/generated/custom-landlook-coverage.json",
+        rulesCoverage: "docs/generated/rules-resource-coverage.json",
         dungeonCoverage: "docs/generated/dungeon-byte-ownership.json",
         dungeonHighBitAudit: "docs/generated/dungeon-high-bit-audit.json",
         ed3Reachability: "docs/generated/extra-ap-reachability-source-map.json",
@@ -372,9 +376,10 @@ function validateInventoryAndOwnership(inventory, ownership) {
       }
     }
     if (container.recordBytes !== null) {
+      const maxObservedBytes = Math.max(container.recordBytes, ...(container.observedByteSizes ?? []));
       for (const range of finiteRanges) {
-        if (range.start < 0 || range.endExclusive > container.recordBytes) {
-          throw new Error(`${container.container} byte range ${range.start}-${range.endExclusive} exceeds record size ${container.recordBytes}`);
+        if (range.start < 0 || range.endExclusive > maxObservedBytes) {
+          throw new Error(`${container.container} byte range ${range.start}-${range.endExclusive} exceeds observed size ${maxObservedBytes}`);
         }
       }
     }
@@ -544,6 +549,15 @@ function coverageStatusForFile(file) {
 }
 
 function byteRangesForFile(file, layout) {
+  if (file.name === "Data Spell" && rulesCoverage?.byteOwnership?.["Data Spell"]) {
+    return rulesCoverage.byteOwnership["Data Spell"];
+  }
+  if (file.name === "Data Race" && rulesCoverage?.byteOwnership?.["Data Race"]) {
+    return rulesCoverage.byteOwnership["Data Race"];
+  }
+  if (file.name === "Data Caste" && rulesCoverage?.byteOwnership?.["Data Caste"]) {
+    return rulesCoverage.byteOwnership["Data Caste"];
+  }
   if (/^Data Custom [123] BD$/.test(file.name) && customLandlookCoverage?.layout) {
     const layout = customLandlookCoverage.layout;
     return [
@@ -674,6 +688,9 @@ function evidenceForFile(name, status) {
   } else if (/^Data Custom [123] BD$/.test(name)) {
     evidence.push("docs/generated/custom-landlook-coverage.json");
     evidence.push("docs/format-evidence-cards/custom-landlook-writers.md");
+  } else if (name === "Data Spell" || name === "Data Race" || name === "Data Caste") {
+    evidence.push("docs/generated/rules-resource-coverage.json");
+    evidence.push("docs/format-evidence-cards/rules-spell-race-caste-runtime-anchors.md");
   } else if (status === "runtime-cache") {
     evidence.push("docs/generated/runtime-cache-classification.json");
   } else if (status === "unknown-active-risk") {

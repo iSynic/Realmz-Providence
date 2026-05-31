@@ -186,6 +186,17 @@ Scenario `Data Spell` is 9,016 bytes in all 17 local scenarios that include it. 
 - Caste starting item IDs should resolve through the item picker.
 - Race `cancaste` and caste/race restrictions should warn when a scenario setup requires an impossible race/caste pair.
 
+## Resource Packaging Coverage
+
+`docs/generated/rules-resource-coverage.json` now separates source-backed records from packaging evidence:
+
+- `Data Spell` owns the first `105 x 30` bytes as custom spell records for packed IDs `5101..5715`; the remaining bytes are preserved as packaging/tail evidence.
+- `Data Spell.rsrc` / `Data Spell.rsf` contains seven `STR#` resources, IDs `5000..5006`, named for the Custom 1st through Custom 7th spell levels. These string lists are readable reference/name evidence but remain preserve-only until Divinity write behavior is fixture-proven.
+- Scenario `Data Race` and `Data Caste` override files are complete fixed-row tables: `30 x 408` and `30 x 576` respectively. No scenario `Data Race.rsrc` or `Data Caste.rsrc` packaging has been observed in the corpus.
+- Race names and caste names are not decoded from the scenario override records yet. Normal UI should keep those generated/fallback-only until Divinity evidence proves a writable storage path.
+
+Fixture tests now prove that current record writers mutate only owned spell, race, and caste byte ranges and preserve the `Data Spell` tail during export.
+
 ## Divinity Evidence Still Needed
 
 - Spell editor field labels, grouping, class labels, default values, and resource/name save behavior.
