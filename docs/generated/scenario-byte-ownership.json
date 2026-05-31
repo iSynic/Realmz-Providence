@@ -1,9 +1,10 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T00:51:29.063Z",
+  "generatedAt": "2026-05-31T02:23:32.691Z",
   "classifications": [
     "decoded-writable",
     "decoded-readonly",
+    "mixed-writable-preserved",
     "preserved-known",
     "preserved-unknown",
     "runtime-cache",
@@ -25,28 +26,29 @@
     "rulesCoverage": "docs/generated/rules-resource-coverage.json",
     "dungeonCoverage": "docs/generated/dungeon-byte-ownership.json",
     "dungeonHighBitAudit": "docs/generated/dungeon-high-bit-audit.json",
+    "completenessTruth": "docs/generated/scenario-completeness-truth.json",
     "ed3Reachability": "docs/generated/extra-ap-reachability-source-map.json",
     "edcdCrosswalk": "docs/generated/opcode-edcd-crosswalk.json"
   },
   "summary": {
     "containerCount": 88,
     "statusCounts": {
-      "decoded-writable": 62,
+      "decoded-writable": 58,
+      "mixed-writable-preserved": 7,
       "decoded-readonly": 1,
       "preserved-known": 5,
       "understood-resource-container": 12,
       "runtime-cache": 1,
-      "understood-runtime-writer-gated": 3,
       "custom-media-payload": 3,
       "ignored-non-scenario": 1
     },
     "statusObservedBytes": {
-      "decoded-writable": 944704931,
+      "decoded-writable": 935844307,
+      "mixed-writable-preserved": 9030808,
       "decoded-readonly": 35840,
       "preserved-known": 116752,
       "understood-resource-container": 1369599572,
       "runtime-cache": 11546,
-      "understood-runtime-writer-gated": 170184,
       "custom-media-payload": 4733608,
       "ignored-non-scenario": 1711
     }
@@ -103,7 +105,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/battle-record-evidence.json",
+        "docs/format-evidence-cards/battle-record-runtime-anchors.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -143,7 +148,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/extra-ap-reachability-source-map.json",
+        "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -171,7 +179,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/extra-ap-reachability-source-map.json",
+        "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -207,13 +218,15 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/format-evidence-cards/monster-descriptions-and-sets-runtime-anchors.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
       "container": "Data DL",
       "authorFacingName": "Dungeon tile fields",
-      "coverageStatus": "decoded-writable",
+      "coverageStatus": "mixed-writable-preserved",
       "role": "supported-binary",
       "observedScenarioCount": 35,
       "observedByteSizes": [
@@ -243,14 +256,14 @@
         "docs/generated/dungeon-high-bit-audit.json",
         "docs/format-evidence-cards/dungeon-runtime-anchors.md"
       ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range.",
+      "editorPolicy": "Some byte ranges are writer-proven or structurally decoded, while preserved/runtime ranges remain read-only.",
       "bitOwnership": [
         {
           "realmzBit": 0,
-          "key": "unresolvedHighSignBit",
+          "key": "preservedHighSignBit",
           "mask": "0x8000",
-          "label": "Unresolved high/sign bit",
-          "ownershipStatus": "preserved-unknown",
+          "label": "Preserved high/sign bit",
+          "ownershipStatus": "preserved-known",
           "writerStatus": "preserve-only",
           "observedCells": 27429,
           "observedPercent": 1.7366
@@ -414,14 +427,15 @@
         "cells": 1579500,
         "nonzeroCells": 1561493,
         "highBitCells": 66113,
-        "unresolvedHighSignBitCells": 27429,
+        "preservedHighSignBitCells": 27429,
+        "unresolvedHighSignBitCells": 0,
         "noWallInBattleCells": 51356,
         "bothHighBitCells": 12672,
         "asciiLikeHighBitCells": 14817,
         "bytesPerLevel": 16200,
         "cellsPerLevel": 8100,
         "bitStatuses": {
-          "preserved-unknown": 1,
+          "preserved-known": 1,
           "decoded-writable": 13,
           "runtime-state": 2
         },
@@ -483,7 +497,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/encounter-record-evidence.json",
+        "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -531,7 +548,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/encounter-record-evidence.json",
+        "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -770,7 +790,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/map-field-value-evidence.json",
+        "docs/format-evidence-cards/map-tile-runtime-anchors.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -821,7 +844,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/monster-record-evidence.json",
+        "docs/format-evidence-cards/monster-record-runtime-anchors.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -872,7 +898,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/monster-record-evidence.json",
+        "docs/format-evidence-cards/monster-record-runtime-anchors.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -923,7 +952,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/monster-record-evidence.json",
+        "docs/format-evidence-cards/monster-record-runtime-anchors.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -958,7 +990,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/map-record-evidence.json",
+        "docs/format-evidence-cards/map-record-runtime-anchors.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -982,7 +1017,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/core-rules-record-evidence.json",
+        "docs/format-evidence-cards/core-rules-record-runtime-anchors.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -1022,7 +1060,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -1050,7 +1091,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -1088,7 +1132,9 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -1172,7 +1218,9 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/format-evidence-cards/map-tile-intelligence.md"
+      ],
       "editorPolicy": "Decoded for inspection and validation; editing is hidden until writer coverage exists."
     },
     {
@@ -1225,7 +1273,9 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -1269,7 +1319,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
+        "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -1305,7 +1358,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
+        "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -1329,7 +1385,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/extra-ap-reachability-source-map.json",
+        "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -1353,7 +1412,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+      ],
       "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
     },
     {
@@ -1377,7 +1439,9 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
     },
     {
@@ -1401,7 +1465,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/scenario-party-restrictions-evidence.json",
+        "docs/format-evidence-cards/scenario-party-restrictions-runtime-anchors.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -1523,7 +1590,10 @@
           "role": "version resource"
         }
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+      ],
       "editorPolicy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
@@ -1547,7 +1617,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/scenario-party-restrictions-evidence.json",
+        "docs/format-evidence-cards/scenario-party-restrictions-runtime-anchors.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -1636,7 +1709,10 @@
           "role": "resource"
         }
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+      ],
       "editorPolicy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
@@ -1661,7 +1737,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/map-field-value-evidence.json",
+        "docs/format-evidence-cards/map-tile-runtime-anchors.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -1693,7 +1772,7 @@
     {
       "container": "Data Spell",
       "authorFacingName": "Custom spell override records",
-      "coverageStatus": "decoded-writable",
+      "coverageStatus": "mixed-writable-preserved",
       "role": "supported-binary",
       "observedScenarioCount": 19,
       "observedByteSizes": [
@@ -1719,9 +1798,10 @@
       "resourceTypes": [],
       "evidence": [
         "docs/generated/rules-resource-coverage.json",
+        "docs/generated/rules-name-resource-packaging.json",
         "docs/format-evidence-cards/rules-spell-race-caste-runtime-anchors.md"
       ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+      "editorPolicy": "Some byte ranges are writer-proven or structurally decoded, while preserved/runtime ranges remain read-only."
     },
     {
       "container": "Format",
@@ -1744,7 +1824,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/scenario-target-compatibility.json",
+        "docs/format-evidence-cards/scenario-music-and-format-files.md"
+      ],
       "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
     },
     {
@@ -1779,13 +1862,16 @@
           "role": "string-list resource"
         }
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+      ],
       "editorPolicy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
       "container": "Data Custom 1 BD",
       "authorFacingName": "Custom landlook mapstats",
-      "coverageStatus": "understood-runtime-writer-gated",
+      "coverageStatus": "mixed-writable-preserved",
       "role": "pass-through",
       "observedScenarioCount": 13,
       "observedByteSizes": [
@@ -1831,7 +1917,7 @@
         "docs/generated/custom-landlook-coverage.json",
         "docs/format-evidence-cards/custom-landlook-writers.md"
       ],
-      "editorPolicy": "Runtime behavior and byte ownership are understood; normal editing remains gated to fixture-proven writer paths."
+      "editorPolicy": "Some byte ranges are writer-proven or structurally decoded, while preserved/runtime ranges remain read-only."
     },
     {
       "container": "Data OD",
@@ -1865,7 +1951,7 @@
     {
       "container": "Data Race",
       "authorFacingName": "Race override records",
-      "coverageStatus": "decoded-writable",
+      "coverageStatus": "mixed-writable-preserved",
       "role": "supported-binary",
       "observedScenarioCount": 8,
       "observedByteSizes": [
@@ -1883,9 +1969,10 @@
       "resourceTypes": [],
       "evidence": [
         "docs/generated/rules-resource-coverage.json",
+        "docs/generated/rules-name-resource-packaging.json",
         "docs/format-evidence-cards/rules-spell-race-caste-runtime-anchors.md"
       ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+      "editorPolicy": "Some byte ranges are writer-proven or structurally decoded, while preserved/runtime ranges remain read-only."
     },
     {
       "container": "Custom 1 Music",
@@ -1911,13 +1998,16 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/scenario-target-compatibility.json",
+        "docs/format-evidence-cards/scenario-music-and-format-files.md"
+      ],
       "editorPolicy": "Scenario-owned custom media payload preserved byte-for-byte until a dedicated codec writer owns the format."
     },
     {
       "container": "Data Caste",
       "authorFacingName": "Caste override records",
-      "coverageStatus": "decoded-writable",
+      "coverageStatus": "mixed-writable-preserved",
       "role": "supported-binary",
       "observedScenarioCount": 5,
       "observedByteSizes": [
@@ -1935,14 +2025,15 @@
       "resourceTypes": [],
       "evidence": [
         "docs/generated/rules-resource-coverage.json",
+        "docs/generated/rules-name-resource-packaging.json",
         "docs/format-evidence-cards/rules-spell-race-caste-runtime-anchors.md"
       ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+      "editorPolicy": "Some byte ranges are writer-proven or structurally decoded, while preserved/runtime ranges remain read-only."
     },
     {
       "container": "Data Custom 2 BD",
       "authorFacingName": "Custom landlook mapstats",
-      "coverageStatus": "understood-runtime-writer-gated",
+      "coverageStatus": "mixed-writable-preserved",
       "role": "pass-through",
       "observedScenarioCount": 5,
       "observedByteSizes": [
@@ -1988,7 +2079,7 @@
         "docs/generated/custom-landlook-coverage.json",
         "docs/format-evidence-cards/custom-landlook-writers.md"
       ],
-      "editorPolicy": "Runtime behavior and byte ownership are understood; normal editing remains gated to fixture-proven writer paths."
+      "editorPolicy": "Some byte ranges are writer-proven or structurally decoded, while preserved/runtime ranges remain read-only."
     },
     {
       "container": "Custom 2 Music",
@@ -2013,13 +2104,16 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/scenario-target-compatibility.json",
+        "docs/format-evidence-cards/scenario-music-and-format-files.md"
+      ],
       "editorPolicy": "Scenario-owned custom media payload preserved byte-for-byte until a dedicated codec writer owns the format."
     },
     {
       "container": "Data Custom 3 BD",
       "authorFacingName": "Custom landlook mapstats",
-      "coverageStatus": "understood-runtime-writer-gated",
+      "coverageStatus": "mixed-writable-preserved",
       "role": "pass-through",
       "observedScenarioCount": 3,
       "observedByteSizes": [
@@ -2065,7 +2159,7 @@
         "docs/generated/custom-landlook-coverage.json",
         "docs/format-evidence-cards/custom-landlook-writers.md"
       ],
-      "editorPolicy": "Runtime behavior and byte ownership are understood; normal editing remains gated to fixture-proven writer paths."
+      "editorPolicy": "Some byte ranges are writer-proven or structurally decoded, while preserved/runtime ranges remain read-only."
     },
     {
       "container": "Data Spell.rsf",
@@ -2098,7 +2192,10 @@
           "role": "string-list resource"
         }
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+      ],
       "editorPolicy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
@@ -2181,7 +2278,10 @@
           "role": "version resource"
         }
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+      ],
       "editorPolicy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
@@ -2205,7 +2305,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -2229,7 +2332,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -2254,7 +2360,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/scenario-target-compatibility.json",
+        "docs/format-evidence-cards/scenario-music-and-format-files.md"
+      ],
       "editorPolicy": "Scenario-owned custom media payload preserved byte-for-byte until a dedicated codec writer owns the format."
     },
     {
@@ -2294,7 +2403,10 @@
           "role": "resource"
         }
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+      ],
       "editorPolicy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
@@ -2318,7 +2430,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -2342,7 +2457,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -2366,7 +2484,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -2390,7 +2511,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -2414,7 +2538,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -2438,7 +2565,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/scenario-target-compatibility.json",
+        "docs/format-evidence-cards/scenario-music-and-format-files.md"
+      ],
       "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
     },
     {
@@ -2498,7 +2628,10 @@
           "role": "resource"
         }
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+      ],
       "editorPolicy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
@@ -2559,7 +2692,10 @@
           "role": "resource"
         }
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+      ],
       "editorPolicy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
@@ -2583,7 +2719,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -2608,7 +2747,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+      ],
       "editorPolicy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
@@ -2632,7 +2774,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -2656,7 +2801,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -2680,7 +2828,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -2704,7 +2855,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -2728,7 +2882,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/scenario-target-compatibility.json",
+        "docs/format-evidence-cards/scenario-music-and-format-files.md"
+      ],
       "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
     },
     {
@@ -2752,7 +2909,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -2776,7 +2936,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -2800,7 +2963,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -2824,7 +2990,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -2848,7 +3017,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -2872,7 +3044,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -2896,7 +3071,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -2920,7 +3098,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -2944,7 +3125,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -3000,7 +3184,10 @@
           "role": "text style resource"
         }
       ],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+      ],
       "editorPolicy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
@@ -3024,7 +3211,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -3048,7 +3238,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -3072,7 +3265,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+      ],
       "editorPolicy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
@@ -3096,7 +3292,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -3120,7 +3319,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -3144,7 +3346,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -3168,7 +3373,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -3193,7 +3401,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+      ],
       "editorPolicy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
@@ -3217,7 +3428,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -3241,7 +3455,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -3265,7 +3482,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -3289,7 +3509,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
@@ -3313,7 +3536,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     }
   ]

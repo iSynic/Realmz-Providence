@@ -104,6 +104,7 @@ function ScenarioCoverageSummary({ coverage }: { coverage: ScenarioCoverageManif
     );
   }
   const summary = coverage.summary;
+  const strict = summary.strictCompleteness;
   return (
     <section className="scenario-coverage-card">
       <header>
@@ -111,13 +112,33 @@ function ScenarioCoverageSummary({ coverage }: { coverage: ScenarioCoverageManif
         <small>{summary.scenarioRoots.toLocaleString()} checked scenario roots</small>
       </header>
       <div className="scenario-coverage-metrics">
-        <Metric label="Editable" value={summary.editableContainers} />
-        <Metric label="Preserved" value={summary.preservedContainers} />
-        <Metric label="Runtime State" value={summary.runtimeStateContainers} />
-        <Metric label="Needs Format Work" value={summary.needsFormatWork} />
+        {strict ? (
+          <>
+            <Metric label="Scenario Semantics" value={`${strict.scenarioSemantics.percentContainers}%`} />
+            <Metric label="Writer-Proven Data" value={`${strict.writerProvenData.percentContainers}%`} />
+            <Metric label="Package Warnings" value={strict.packageCompatibility.warnings} />
+            <Metric label="Codec Internals" value={formatCoveragePhrase(strict.codecInternals.status)} />
+          </>
+        ) : (
+          <>
+            <Metric label="Editable" value={summary.editableContainers} />
+            <Metric label="Preserved" value={summary.preservedContainers} />
+            <Metric label="Runtime State" value={summary.runtimeStateContainers} />
+            <Metric label="Needs Format Work" value={summary.needsFormatWork} />
+          </>
+        )}
         <Metric label="Ignored" value={summary.ignoredNonScenarioFiles} />
       </div>
       <div className="scenario-coverage-note">
+        {strict && (
+          <>
+            Strict score: {strict.scenarioSemantics.completeContainers.toLocaleString()} complete, {strict.scenarioSemantics.mixedContainers.toLocaleString()} mixed semantic container(s);
+            {strict.writerProvenData.writerGatedContainers.toLocaleString()} writer-gated container(s);
+            {strict.strictOutstanding.preservedUnknownContainers.toLocaleString()} preserved unknown container(s);
+            {strict.strictOutstanding.targetWarnings.toLocaleString()} package warning(s).
+            {" "}
+          </>
+        )}
         {summary.completeness && (
           <>
             Scenario boundary: {formatCoveragePhrase(summary.completeness.scenarioSemanticOwnership.status)}.
@@ -156,8 +177,11 @@ function ScenarioCoverageSummary({ coverage }: { coverage: ScenarioCoverageManif
           {coverage.containers.slice(0, 12).map((container) => (
             <div key={container.container}>
               <strong>{container.container}</strong>
-              <span>{container.status}</span>
+              <span>{container.truth ? formatTruthLabel(container.truth.writerReadiness) : container.status}</span>
               <small>{container.count.toLocaleString()} scenario(s), {container.sizes.slice(0, 4).join(", ")} byte size(s)</small>
+              {container.truth && container.truth.riskFlags.length > 0 && (
+                <small>{container.truth.riskFlags.slice(0, 4).join(", ")}</small>
+              )}
             </div>
           ))}
         </div>
@@ -170,10 +194,17 @@ function formatCoveragePhrase(value: string) {
   return value.split("-").join(" ");
 }
 
-function Metric({ label, value }: { label: string; value: number }) {
+function formatTruthLabel(value: string) {
+  return value
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function Metric({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="scenario-coverage-metric">
-      <strong>{value.toLocaleString()}</strong>
+      <strong>{typeof value === "number" ? value.toLocaleString() : value}</strong>
       <span>{label}</span>
     </div>
   );

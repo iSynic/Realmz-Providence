@@ -1,6 +1,7 @@
 export type CoverageStatus =
   | "decoded-writable"
   | "decoded-readonly"
+  | "mixed-writable-preserved"
   | "preserved-known"
   | "preserved-unknown"
   | "runtime-cache"
@@ -10,13 +11,22 @@ export type CoverageStatus =
   | "decoded-resource-payload"
   | "preserved-standard-media-payload"
   | "custom-media-payload"
-  | "needs-codec-work";
+  | "needs-codec-work"
+  | "understood-runtime-writer-gated";
+
+export type ContainerTruthStatus = {
+  semanticOwnership: "complete" | "mixed" | "runtime-only" | "ignored" | "needs-format-work";
+  writerReadiness: "fixture-proven" | "partially-proven" | "writer-gated" | "read-only" | "preserve-only" | "not-applicable";
+  evidenceQuality: "cited" | "fixture-backed" | "missing-evidence" | "skipped-fixture" | "target-warning";
+  riskFlags: string[];
+};
 
 export type ScenarioCoverageContainer = {
   container: string;
   label: string;
   status: string;
   coverageStatus: CoverageStatus;
+  truth?: ContainerTruthStatus | null;
   count: number;
   sizes: number[];
   policy: string;
@@ -54,6 +64,45 @@ export type ScenarioCoverageManifest = {
       warnings: number;
       errors: number;
     } | null;
+    strictCompleteness?: {
+      scenarioSemantics: {
+        label: string;
+        status: string;
+        completeContainers: number;
+        mixedContainers: number;
+        needsFormatWorkContainers: number;
+        percentContainers: number;
+      };
+      writerProvenData: {
+        label: string;
+        status: string;
+        fixtureProvenContainers: number;
+        partiallyProvenContainers: number;
+        writerGatedContainers: number;
+        percentContainers: number;
+      };
+      packageCompatibility: {
+        label: string;
+        status: string;
+        targetCompatibilityIssues: number;
+        warnings: number;
+        errors: number;
+      };
+      codecInternals: {
+        label: string;
+        status: string;
+        preservedOrCustomPayloadBytes: number;
+        decodedResourcePayloadBytes: number;
+      };
+      strictOutstanding: {
+        writerGatedContainers: number;
+        missingEvidenceContainers: number;
+        skippedFixtureContainers: number;
+        preservedUnknownContainers: number;
+        targetWarnings: number;
+        backlogRisks: number;
+      };
+    };
     completeness?: {
       scenarioSemanticOwnership: {
         status: string;

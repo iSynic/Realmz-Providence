@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-29T23:44:24.871Z",
+  "generatedAt": "2026-05-31T02:23:21.871Z",
   "container": "Data DL",
   "policy": {
     "normalEditor": "Expose named primitives only. Do not expose a normal raw dungeon bit editor; raw masks stay under Advanced Details.",
@@ -310,19 +310,19 @@
       "testStatus": "covered-by-dungeon-cell-helper-tests"
     },
     {
-      "id": "unresolvedHighSignBit",
-      "label": "Unresolved high/sign bit",
+      "id": "preservedHighSignBit",
+      "label": "Preserved high/sign bit",
       "bitKeys": [
-        "unresolvedHighSignBit"
+        "preservedHighSignBit"
       ],
       "writerStatus": "preserve-only",
       "normalEditorPolicy": "Preserve and display only until runtime/editor ownership is proven.",
       "bits": [
         {
-          "key": "unresolvedHighSignBit",
+          "key": "preservedHighSignBit",
           "mask": "0x8000",
           "realmzBit": 0,
-          "ownershipStatus": "preserved-unknown",
+          "ownershipStatus": "preserved-known",
           "observedCells": 27429
         }
       ],
@@ -603,7 +603,7 @@
         "count": 1488,
         "percent": 0.0942,
         "labels": [
-          "Unresolved high/sign bit",
+          "Preserved high/sign bit",
           "Allow Move Left",
           "Allow Move Down",
           "Allow Move Right",
@@ -630,7 +630,7 @@
         "count": 927,
         "percent": 0.0587,
         "labels": [
-          "Unresolved high/sign bit",
+          "Preserved high/sign bit",
           "Action Point marker"
         ]
       },
@@ -895,7 +895,7 @@
         "count": 1488,
         "percent": 0.0942,
         "labels": [
-          "Unresolved high/sign bit",
+          "Preserved high/sign bit",
           "Allow Move Left",
           "Allow Move Down",
           "Allow Move Right",
@@ -909,7 +909,7 @@
         "count": 927,
         "percent": 0.0587,
         "labels": [
-          "Unresolved high/sign bit",
+          "Preserved high/sign bit",
           "Action Point marker"
         ]
       },
@@ -920,7 +920,7 @@
         "count": 57,
         "percent": 0.0036,
         "labels": [
-          "Unresolved high/sign bit",
+          "Preserved high/sign bit",
           "Allow Move Left"
         ]
       },
@@ -931,7 +931,7 @@
         "count": 57,
         "percent": 0.0036,
         "labels": [
-          "Unresolved high/sign bit",
+          "Preserved high/sign bit",
           "Allow Move Left",
           "Allow Move Right"
         ]
@@ -943,7 +943,7 @@
         "count": 57,
         "percent": 0.0036,
         "labels": [
-          "Unresolved high/sign bit",
+          "Preserved high/sign bit",
           "Action Point marker",
           "Allow Move Right"
         ]
@@ -955,7 +955,7 @@
         "count": 57,
         "percent": 0.0036,
         "labels": [
-          "Unresolved high/sign bit",
+          "Preserved high/sign bit",
           "Revealed passage / arch",
           "Allow Move Right"
         ]
@@ -967,7 +967,7 @@
         "count": 57,
         "percent": 0.0036,
         "labels": [
-          "Unresolved high/sign bit",
+          "Preserved high/sign bit",
           "Revealed passage / arch",
           "Action Point marker",
           "Allow Move Right"
@@ -980,7 +980,7 @@
         "count": 57,
         "percent": 0.0036,
         "labels": [
-          "Unresolved high/sign bit",
+          "Preserved high/sign bit",
           "No Wall in Battle",
           "Allow Move Right"
         ]
@@ -992,7 +992,7 @@
         "count": 54,
         "percent": 0.0034,
         "labels": [
-          "Unresolved high/sign bit",
+          "Preserved high/sign bit",
           "Revealed passage / arch",
           "Allow Move Left",
           "Allow Move Right"
@@ -1005,7 +1005,7 @@
         "count": 54,
         "percent": 0.0034,
         "labels": [
-          "Unresolved high/sign bit",
+          "Preserved high/sign bit",
           "No Wall in Battle",
           "Allow Move Left",
           "Allow Move Right"
@@ -1018,7 +1018,7 @@
         "count": 54,
         "percent": 0.0034,
         "labels": [
-          "Unresolved high/sign bit",
+          "Preserved high/sign bit",
           "No Wall in Battle",
           "Revealed passage / arch",
           "Allow Move Right"
@@ -1031,7 +1031,7 @@
         "count": 51,
         "percent": 0.0032,
         "labels": [
-          "Unresolved high/sign bit",
+          "Preserved high/sign bit",
           "Action Point marker",
           "Allow Move Left",
           "Allow Move Right"
@@ -1044,7 +1044,7 @@
         "count": 51,
         "percent": 0.0032,
         "labels": [
-          "Unresolved high/sign bit",
+          "Preserved high/sign bit",
           "No Wall in Battle",
           "Revealed passage / arch",
           "Allow Move Left",
@@ -1058,7 +1058,7 @@
         "count": 48,
         "percent": 0.003,
         "labels": [
-          "Unresolved high/sign bit",
+          "Preserved high/sign bit",
           "No Wall in Battle",
           "Action Point marker",
           "Allow Move Right"
@@ -1071,7 +1071,7 @@
         "count": 45,
         "percent": 0.0028,
         "labels": [
-          "Unresolved high/sign bit",
+          "Preserved high/sign bit",
           "Allow Move Right"
         ]
       },
@@ -1082,7 +1082,7 @@
         "count": 45,
         "percent": 0.0028,
         "labels": [
-          "Unresolved high/sign bit",
+          "Preserved high/sign bit",
           "Revealed passage / arch",
           "Action Point marker",
           "Allow Move Left",
@@ -1096,7 +1096,7 @@
         "count": 45,
         "percent": 0.0028,
         "labels": [
-          "Unresolved high/sign bit",
+          "Preserved high/sign bit",
           "No Wall in Battle",
           "Action Point marker",
           "Allow Move Left",
@@ -1110,7 +1110,7 @@
         "count": 45,
         "percent": 0.0028,
         "labels": [
-          "Unresolved high/sign bit",
+          "Preserved high/sign bit",
           "No Wall in Battle",
           "Revealed passage / arch",
           "Action Point marker",
@@ -1125,7 +1125,7 @@
         "count": 42,
         "percent": 0.0027,
         "labels": [
-          "Unresolved high/sign bit",
+          "Preserved high/sign bit",
           "No Wall in Battle",
           "Revealed passage / arch",
           "Action Point marker",
@@ -1139,7 +1139,7 @@
         "count": 27,
         "percent": 0.0017,
         "labels": [
-          "Unresolved high/sign bit",
+          "Preserved high/sign bit",
           "Revealed passage / arch",
           "Allow Move Down"
         ]

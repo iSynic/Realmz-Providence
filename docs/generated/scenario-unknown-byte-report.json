@@ -1,11 +1,12 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T00:51:29.063Z",
+  "generatedAt": "2026-05-31T02:23:32.691Z",
   "summary": {
     "unknownActiveRiskContainers": 0,
     "preservedContainers": 5,
     "backlogRisks": 6,
-    "ignoredNonScenarioFiles": 1
+    "ignoredNonScenarioFiles": 1,
+    "note": "This report separates active unknown containers from stricter writer/package risks. See docs/generated/scenario-completeness-truth.json for the strict score."
   },
   "activeRisks": [],
   "preserved": [
@@ -30,7 +31,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+      ],
       "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
     },
     {
@@ -54,7 +58,9 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
       "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
     },
     {
@@ -78,7 +84,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/scenario-target-compatibility.json",
+        "docs/format-evidence-cards/scenario-music-and-format-files.md"
+      ],
       "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
     },
     {
@@ -102,7 +111,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/scenario-target-compatibility.json",
+        "docs/format-evidence-cards/scenario-music-and-format-files.md"
+      ],
       "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
     },
     {
@@ -126,7 +138,10 @@
         }
       ],
       "resourceTypes": [],
-      "evidence": [],
+      "evidence": [
+        "docs/generated/scenario-target-compatibility.json",
+        "docs/format-evidence-cards/scenario-music-and-format-files.md"
+      ],
       "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
     }
   ],

@@ -18,6 +18,7 @@ const realmzRsPath = path.join(repoRoot, "src-tauri/src/realmz.rs");
 const fileInventoryPath = path.join(repoRoot, "docs/generated/scenario-file-inventory.json");
 const byteOwnershipPath = path.join(repoRoot, "docs/generated/scenario-byte-ownership.json");
 const unknownReportPath = path.join(repoRoot, "docs/generated/scenario-unknown-byte-report.json");
+const completenessTruthPath = path.join(repoRoot, "docs/generated/scenario-completeness-truth.json");
 const uiManifestPath = path.join(repoRoot, "src/editor/generated/scenarioCoverageManifest.json");
 
 const NON_SCENARIO_IGNORES = new Set([".DS_Store", "Thumbs.db", "desktop.ini"]);
@@ -96,6 +97,94 @@ const RESOURCE_TYPE_POLICIES = {
   vers: { status: "preserved-known", role: "version resource" }
 };
 
+const STATUS_LABELS = {
+  "decoded-writable": "Editable",
+  "decoded-readonly": "Read-only",
+  "mixed-writable-preserved": "Partially Editable",
+  "preserved-known": "Preserved",
+  "preserved-unknown": "Preserved",
+  "runtime-cache": "Runtime state",
+  "ignored-non-scenario": "Ignored",
+  "unknown-active-risk": "Needs format work",
+  "understood-resource-container": "Understood resource container",
+  "decoded-resource-payload": "Decoded resource payload",
+  "preserved-standard-media-payload": "Preserved standard media payload",
+  "custom-media-payload": "Custom media payload",
+  "needs-codec-work": "Needs codec work",
+  "understood-runtime-writer-gated": "Needs writer proof",
+  "resource-packaging-needed": "Needs packaging work",
+  "divinity-labels-needed": "Needs editor labels"
+};
+
+const FIXTURE_GATES = {
+  "Data Custom 1 BD": {
+    gate: "custom-landlook-metadata-and-atlas",
+    fixturePaths: [
+      "F:/Realmz/out_win_clang/Scenarios/Kalypso's Island"
+    ],
+    evidence: [
+      "src-tauri/tests/fixture_roundtrip.rs:custom_landlook_metadata_writer_mutates_only_owned_fields",
+      "src-tauri/tests/fixture_roundtrip.rs:custom_landlook_atlas_replacement_changes_only_target_pict_resource"
+    ]
+  },
+  "Data Custom 2 BD": {
+    gate: "custom-landlook-metadata",
+    fixturePaths: [
+      "F:/Realmz/out_win_clang/Scenarios/Kalypso's Island"
+    ],
+    evidence: [
+      "src-tauri/tests/fixture_roundtrip.rs:custom_landlook_metadata_writer_mutates_only_owned_fields"
+    ]
+  },
+  "Data Custom 3 BD": {
+    gate: "custom-landlook-metadata",
+    fixturePaths: [
+      "F:/Realmz/out_win_clang/Scenarios/Kalypso's Island"
+    ],
+    evidence: [
+      "src-tauri/tests/fixture_roundtrip.rs:custom_landlook_metadata_writer_mutates_only_owned_fields"
+    ]
+  },
+  "Data Spell": {
+    gate: "custom-spell-records-and-names",
+    fixturePaths: [
+      "F:/Realmz/out_win_clang/Scenarios/Begining of the End",
+      "F:/Realmz/base/Realmz/Scenarios/Tutorial"
+    ],
+    evidence: [
+      "src-tauri/tests/fixture_roundtrip.rs:rules_spell_export_mutates_only_owned_record_byte_and_preserves_tail",
+      "src-tauri/tests/fixture_roundtrip.rs:rules_custom_spell_name_export_updates_only_spell_str_resource"
+    ]
+  },
+  "Data Race": {
+    gate: "race-override-records",
+    fixturePaths: [
+      "F:/Realmz/out_win_clang/Scenarios/Araman's Ring"
+    ],
+    evidence: [
+      "src-tauri/tests/fixture_roundtrip.rs:rules_race_export_mutates_only_owned_record_fields"
+    ]
+  },
+  "Data Caste": {
+    gate: "caste-override-records",
+    fixturePaths: [
+      "F:/Realmz/out_win_clang/Scenarios/Araman's Ring"
+    ],
+    evidence: [
+      "src-tauri/tests/fixture_roundtrip.rs:rules_caste_export_mutates_only_owned_record_fields"
+    ]
+  },
+  "Data DL": {
+    gate: "dungeon-primitive-bitfields",
+    fixturePaths: [],
+    evidence: [
+      "docs/generated/dungeon-primitive-writer-gate.json",
+      "src-tauri/src/dungeon.rs"
+    ],
+    partialOnly: true
+  }
+};
+
 const MAX_RESOURCE_TYPES = 512;
 const MAX_RESOURCES_PER_TYPE = 20000;
 const MAX_RESOURCE_FORK_BYTES_TO_SCAN = 50 * 1024 * 1024;
@@ -123,8 +212,9 @@ const aggregate = aggregateFiles(roundtripLedger.scenarios ?? [], scanned);
 const inventory = buildInventory(scanned, aggregate);
 const ownership = buildOwnership(aggregate);
 const unknownReport = buildUnknownReport(inventory, ownership, unknownBacklog);
-const uiManifest = buildUiManifest(inventory, ownership, unknownReport);
-validateInventoryAndOwnership(inventory, ownership);
+const completenessTruth = buildCompletenessTruth(inventory, ownership, unknownReport);
+const uiManifest = buildUiManifest(inventory, ownership, unknownReport, completenessTruth);
+validateInventoryAndOwnership(inventory, ownership, completenessTruth);
 
 const updatedRuntimeCaches = {
   ...runtimeCaches,
@@ -138,12 +228,14 @@ const updatedRuntimeCaches = {
 writeJson(fileInventoryPath, inventory);
 writeJson(byteOwnershipPath, ownership);
 writeJson(unknownReportPath, unknownReport);
+writeJson(completenessTruthPath, completenessTruth);
 writeJson(runtimeCachePath, updatedRuntimeCaches);
 writeJson(uiManifestPath, uiManifest);
 
 console.log(`Wrote ${path.relative(repoRoot, fileInventoryPath)}`);
 console.log(`Wrote ${path.relative(repoRoot, byteOwnershipPath)}`);
 console.log(`Wrote ${path.relative(repoRoot, unknownReportPath)}`);
+console.log(`Wrote ${path.relative(repoRoot, completenessTruthPath)}`);
 console.log(`Wrote ${path.relative(repoRoot, runtimeCachePath)}`);
 console.log(`Wrote ${path.relative(repoRoot, uiManifestPath)}`);
 console.log(JSON.stringify(uiManifest.summary, null, 2));
@@ -160,7 +252,8 @@ function buildInventory(scanned, aggregate) {
         customLandlookCoverage: "docs/generated/custom-landlook-coverage.json",
         rulesCoverage: "docs/generated/rules-resource-coverage.json",
         dungeonCoverage: "docs/generated/dungeon-byte-ownership.json",
-        dungeonHighBitAudit: "docs/generated/dungeon-high-bit-audit.json"
+        dungeonHighBitAudit: "docs/generated/dungeon-high-bit-audit.json",
+        completenessTruth: "docs/generated/scenario-completeness-truth.json"
     },
     policy: {
       ignoredNonScenarioFiles: [...NON_SCENARIO_IGNORES].sort(),
@@ -210,6 +303,7 @@ function buildOwnership(aggregate) {
     classifications: [
       "decoded-writable",
       "decoded-readonly",
+      "mixed-writable-preserved",
       "preserved-known",
       "preserved-unknown",
       "runtime-cache",
@@ -231,6 +325,7 @@ function buildOwnership(aggregate) {
         rulesCoverage: "docs/generated/rules-resource-coverage.json",
         dungeonCoverage: "docs/generated/dungeon-byte-ownership.json",
         dungeonHighBitAudit: "docs/generated/dungeon-high-bit-audit.json",
+        completenessTruth: "docs/generated/scenario-completeness-truth.json",
         ed3Reachability: "docs/generated/extra-ap-reachability-source-map.json",
         edcdCrosswalk: "docs/generated/opcode-edcd-crosswalk.json"
     },
@@ -262,7 +357,8 @@ function buildUnknownReport(inventory, ownership, backlog) {
       unknownActiveRiskContainers: activeRisks.length,
       preservedContainers: preserved.length,
       backlogRisks: backlogRisks.length,
-      ignoredNonScenarioFiles: inventory.summary.ignoredNonScenarioFiles
+      ignoredNonScenarioFiles: inventory.summary.ignoredNonScenarioFiles,
+      note: "This report separates active unknown containers from stricter writer/package risks. See docs/generated/scenario-completeness-truth.json for the strict score."
     },
     activeRisks: activeRisks.map((container) => ({
       container: container.container,
@@ -276,24 +372,7 @@ function buildUnknownReport(inventory, ownership, backlog) {
   };
 }
 
-function buildUiManifest(inventory, ownership, unknownReport) {
-  const statusLabels = {
-    "decoded-writable": "Editable",
-    "decoded-readonly": "Read-only",
-    "preserved-known": "Preserved",
-    "preserved-unknown": "Preserved",
-    "runtime-cache": "Runtime state",
-    "ignored-non-scenario": "Ignored",
-    "unknown-active-risk": "Needs format work",
-    "understood-resource-container": "Understood resource container",
-    "decoded-resource-payload": "Decoded resource payload",
-    "preserved-standard-media-payload": "Preserved standard media payload",
-    "custom-media-payload": "Custom media payload",
-    "needs-codec-work": "Needs codec work",
-    "understood-runtime-writer-gated": "Needs writer proof",
-    "resource-packaging-needed": "Needs packaging work",
-    "divinity-labels-needed": "Needs editor labels"
-  };
+function buildUiManifest(inventory, ownership, unknownReport, truth) {
   const topContainers = ownership.containers
     .filter((container) => container.observedScenarioCount > 0)
     .sort((a, b) => statusSort(a.coverageStatus) - statusSort(b.coverageStatus) || b.observedScenarioCount - a.observedScenarioCount || a.container.localeCompare(b.container))
@@ -301,8 +380,9 @@ function buildUiManifest(inventory, ownership, unknownReport) {
     .map((container) => ({
       container: container.container,
       label: container.authorFacingName,
-      status: statusLabels[container.coverageStatus] ?? container.coverageStatus,
+      status: STATUS_LABELS[container.coverageStatus] ?? container.coverageStatus,
       coverageStatus: container.coverageStatus,
+      truth: truth.containers.find((entry) => entry.container === container.container)?.truth ?? null,
       count: container.observedScenarioCount,
       sizes: container.observedByteSizes,
       policy: container.editorPolicy
@@ -338,6 +418,7 @@ function buildUiManifest(inventory, ownership, unknownReport) {
             errors: targetCompatibility.summary?.errors ?? 0
           }
         : null,
+      strictCompleteness: truth.summary,
       completeness: targetCompatibility?.summary?.completeness ?? splitCompletenessSummary(ownership),
       dungeon: dungeonSummary(),
       runtimeStateContainers: ownership.summary.statusCounts["runtime-cache"] ?? 0,
@@ -345,12 +426,12 @@ function buildUiManifest(inventory, ownership, unknownReport) {
       ed3: ed3Summary(),
       edcd: edcdSummary()
     },
-    statusLabels,
+    statusLabels: STATUS_LABELS,
     topRisks: unknownReport.backlogRisks.slice(0, 8).map((risk) => ({
       id: risk.id,
       family: risk.family,
       priority: risk.priority,
-      status: statusLabels[risk.classification] ?? risk.classification,
+      status: STATUS_LABELS[risk.classification] ?? risk.classification,
       summary: risk.summary,
       evidenceCard: risk.evidenceCard
     })),
@@ -358,7 +439,59 @@ function buildUiManifest(inventory, ownership, unknownReport) {
   };
 }
 
-function validateInventoryAndOwnership(inventory, ownership) {
+function buildCompletenessTruth(inventory, ownership, unknownReport) {
+  const containers = ownership.containers.map((container) => {
+    const effectiveStatuses = effectiveStatusesForContainer(container);
+    const fixtureGate = fixtureGateForContainer(container.container);
+    const evidence = [...new Set([...(container.evidence ?? []), ...(fixtureGate?.evidence ?? [])])];
+    const truth = {
+      semanticOwnership: semanticOwnershipFor(container, effectiveStatuses),
+      writerReadiness: writerReadinessFor(container, effectiveStatuses, fixtureGate),
+      evidenceQuality: evidenceQualityFor(container, evidence, fixtureGate),
+      riskFlags: riskFlagsFor(container, effectiveStatuses, evidence, fixtureGate)
+    };
+    return {
+      container: container.container,
+      authorFacingName: container.authorFacingName,
+      coverageStatus: container.coverageStatus,
+      observedScenarioCount: container.observedScenarioCount,
+      observedByteSizes: container.observedByteSizes,
+      effectiveStatuses: [...effectiveStatuses].sort(),
+      evidence,
+      fixtureGate: fixtureGate
+        ? {
+            name: fixtureGate.gate,
+            available: fixtureGate.available,
+            partialOnly: Boolean(fixtureGate.partialOnly)
+          }
+        : null,
+      truth
+    };
+  });
+  const summary = summarizeCompletenessTruth(containers, unknownReport);
+  return {
+    schemaVersion: 1,
+    generatedAt: new Date().toISOString(),
+    sources: {
+      byteOwnership: "docs/generated/scenario-byte-ownership.json",
+      unknownReport: "docs/generated/scenario-unknown-byte-report.json",
+      targetCompatibility: "docs/generated/scenario-target-compatibility.json",
+      resourceCoverage: "docs/generated/resource-byte-ownership.json",
+      dungeonCoverage: "docs/generated/dungeon-byte-ownership.json",
+      customLandlookCoverage: "docs/generated/custom-landlook-coverage.json",
+      rulesCoverage: "docs/generated/rules-resource-coverage.json"
+    },
+    policy: {
+      note: "Truth statuses are stricter than legacy coverageStatus. Semantic ownership, writer readiness, evidence quality, and package compatibility are intentionally separate.",
+      scenarioSemanticsExcludeOptionalCodecs: true,
+      writerReadinessRequiresFixtureOrExplicitGate: true
+    },
+    summary,
+    containers
+  };
+}
+
+function validateInventoryAndOwnership(inventory, ownership, truth) {
   const leakedIgnored = inventory.fileFamilies.filter((file) => NON_SCENARIO_IGNORES.has(file.name));
   if (leakedIgnored.length > 0) {
     throw new Error(`Ignored non-scenario files leaked into inventory: ${leakedIgnored.map((file) => file.name).join(", ")}`);
@@ -384,6 +517,187 @@ function validateInventoryAndOwnership(inventory, ownership) {
       }
     }
   }
+  const truthByContainer = new Map((truth?.containers ?? []).map((container) => [container.container, container]));
+  for (const container of ownership.containers) {
+    const truthEntry = truthByContainer.get(container.container);
+    if (!truthEntry) throw new Error(`${container.container} is missing from scenario completeness truth`);
+    const hasDecodedWritable = effectiveStatusesForContainer(container).has("decoded-writable");
+    if (container.coverageStatus === "decoded-writable" && !(container.evidence ?? []).length) {
+      throw new Error(`${container.container} is decoded-writable but has no evidence source`);
+    }
+    if (
+      hasDecodedWritable &&
+      truthEntry.truth.writerReadiness === "fixture-proven" &&
+      truthEntry.truth.evidenceQuality === "missing-evidence"
+    ) {
+      throw new Error(`${container.container} is fixture-proven without evidence`);
+    }
+    if (
+      container.coverageStatus === "preserved-known" &&
+      !(container.evidence ?? []).length &&
+      container.container !== "Read Me (nice to know)"
+    ) {
+      throw new Error(`${container.container} is preserved-known but has no evidence source`);
+    }
+    if (
+      effectiveStatusesForContainer(container).has("preserved-unknown") &&
+      container.coverageStatus === "decoded-writable"
+    ) {
+      throw new Error(`${container.container} has preserved-unknown ranges but is still reported decoded-writable`);
+    }
+  }
+  if ((truth.summary.packageCompatibility?.warnings ?? 0) > 0 && truth.summary.strictOutstanding?.targetWarnings === 0) {
+    throw new Error("Target compatibility warnings are missing from the strict completion summary");
+  }
+}
+
+function effectiveStatusesForContainer(container) {
+  const statuses = new Set((container.byteRanges ?? []).map((range) => range.status).filter(Boolean));
+  if (container.coverageStatus) statuses.add(container.coverageStatus);
+  if (container.container === "Data DL") {
+    for (const bit of container.bitOwnership ?? []) {
+      if (bit.ownershipStatus) statuses.add(bit.ownershipStatus);
+    }
+  }
+  statuses.delete("mixed-writable-preserved");
+  if (!statuses.size && container.coverageStatus) statuses.add(container.coverageStatus);
+  return statuses;
+}
+
+function fixtureGateForContainer(containerName) {
+  const gate = FIXTURE_GATES[containerName];
+  if (!gate) return null;
+  const available = (gate.fixturePaths ?? []).every((fixturePath) => fs.existsSync(fixturePath));
+  return { ...gate, available };
+}
+
+function semanticOwnershipFor(container, statuses) {
+  if (statuses.has("ignored-non-scenario")) return "ignored";
+  if (statuses.size === 1 && statuses.has("runtime-cache")) return "runtime-only";
+  if (statuses.has("unknown-active-risk") || statuses.has("needs-codec-work")) return "needs-format-work";
+  if (statuses.size === 1 && statuses.has("preserved-unknown")) return "needs-format-work";
+  if (statuses.size > 1 || statuses.has("preserved-unknown")) return "mixed";
+  return "complete";
+}
+
+function writerReadinessFor(container, statuses, fixtureGate) {
+  if (statuses.has("ignored-non-scenario") || statuses.has("runtime-cache")) return "not-applicable";
+  if (statuses.has("understood-resource-container")) return "not-applicable";
+  if (statuses.has("decoded-readonly") && statuses.size === 1) return "read-only";
+  if (statuses.has("custom-media-payload") || statuses.has("preserved-standard-media-payload")) return "preserve-only";
+  if (statuses.has("unknown-active-risk") || statuses.has("needs-codec-work") || statuses.has("preserved-unknown")) {
+    return statuses.has("decoded-writable") ? "partially-proven" : "writer-gated";
+  }
+  if (statuses.has("decoded-writable") && (statuses.has("preserved-known") || statuses.has("understood-runtime-writer-gated") || statuses.has("runtime-state"))) {
+    return fixtureGate?.available || fixtureGate?.partialOnly ? "partially-proven" : "writer-gated";
+  }
+  if (statuses.has("decoded-writable")) {
+    if (fixtureGate?.partialOnly) return "partially-proven";
+    if (fixtureGate?.available) return "fixture-proven";
+    return "writer-gated";
+  }
+  if (statuses.has("understood-runtime-writer-gated")) return "writer-gated";
+  if (statuses.has("preserved-known") || statuses.has("preserved-unknown")) return "preserve-only";
+  return "writer-gated";
+}
+
+function evidenceQualityFor(container, evidence, fixtureGate) {
+  if (container.coverageStatus === "ignored-non-scenario") return "cited";
+  if (fixtureGate && !fixtureGate.available && (fixtureGate.fixturePaths ?? []).length > 0) return "skipped-fixture";
+  if (fixtureGate?.available) return "fixture-backed";
+  if ((targetCompatibility?.summary?.warnings ?? 0) > 0 && container.role === "resource-fork") return "target-warning";
+  if (!evidence.length) return "missing-evidence";
+  return "cited";
+}
+
+function riskFlagsFor(container, statuses, evidence, fixtureGate) {
+  const flags = [];
+  if (!evidence.length && container.coverageStatus !== "ignored-non-scenario") flags.push("missing-evidence");
+  if (fixtureGate && !fixtureGate.available && (fixtureGate.fixturePaths ?? []).length > 0) flags.push("skipped-fixture");
+  if (statuses.has("preserved-unknown")) flags.push("preserved-unknown");
+  if (statuses.has("understood-runtime-writer-gated")) flags.push("writer-gated");
+  if (container.coverageStatus === "decoded-writable" && !fixtureGate?.available) flags.push("structural-writer-claim");
+  if (container.container === "Data DL" && statuses.has("preserved-unknown")) flags.push("dungeon-high-bit-unresolved");
+  if (container.role === "resource-fork" && (targetCompatibility?.summary?.warnings ?? 0) > 0) flags.push("target-package-warning");
+  return [...new Set(flags)].sort();
+}
+
+function summarizeCompletenessTruth(containers, unknownReport) {
+  const semanticOwnershipCounts = countBy(containers, (container) => container.truth.semanticOwnership);
+  const writerReadinessCounts = countBy(containers, (container) => container.truth.writerReadiness);
+  const evidenceQualityCounts = countBy(containers, (container) => container.truth.evidenceQuality);
+  const riskFlagCounts = {};
+  for (const container of containers) {
+    for (const flag of container.truth.riskFlags) {
+      riskFlagCounts[flag] = (riskFlagCounts[flag] ?? 0) + 1;
+    }
+  }
+  const totalContainers = containers.length;
+  const semanticComplete = semanticOwnershipCounts.complete ?? 0;
+  const writerProven = (writerReadinessCounts["fixture-proven"] ?? 0) + (writerReadinessCounts["partially-proven"] ?? 0);
+  const packageWarnings = targetCompatibility?.summary?.warnings ?? 0;
+  const packageErrors = targetCompatibility?.summary?.errors ?? 0;
+  const targetIssues = targetCompatibility?.summary?.targetCompatibilityIssues ?? 0;
+  const codecSummary = targetCompatibility?.summary?.completeness?.mediaCodecInternals ?? splitCompletenessSummary({ summary: { statusObservedBytes: {} } }).mediaCodecInternals;
+  const strictOutstanding = {
+    writerGatedContainers: writerReadinessCounts["writer-gated"] ?? 0,
+    missingEvidenceContainers: evidenceQualityCounts["missing-evidence"] ?? 0,
+    skippedFixtureContainers: evidenceQualityCounts["skipped-fixture"] ?? 0,
+    preservedUnknownContainers: riskFlagCounts["preserved-unknown"] ?? 0,
+    targetWarnings: packageWarnings,
+    backlogRisks: unknownReport.summary?.backlogRisks ?? 0
+  };
+  return {
+    containerCount: totalContainers,
+    semanticOwnershipCounts,
+    writerReadinessCounts,
+    evidenceQualityCounts,
+    riskFlagCounts,
+    scenarioSemantics: {
+      label: "Scenario Semantics",
+      status: strictOutstanding.preservedUnknownContainers > 0 || (semanticOwnershipCounts["needs-format-work"] ?? 0) > 0 ? "mixed" : "complete",
+      completeContainers: semanticComplete,
+      mixedContainers: semanticOwnershipCounts.mixed ?? 0,
+      needsFormatWorkContainers: semanticOwnershipCounts["needs-format-work"] ?? 0,
+      percentContainers: percentage(semanticComplete, totalContainers)
+    },
+    writerProvenData: {
+      label: "Writer-Proven Data",
+      status: strictOutstanding.writerGatedContainers > 0 || strictOutstanding.skippedFixtureContainers > 0 ? "incomplete" : "complete",
+      fixtureProvenContainers: writerReadinessCounts["fixture-proven"] ?? 0,
+      partiallyProvenContainers: writerReadinessCounts["partially-proven"] ?? 0,
+      writerGatedContainers: writerReadinessCounts["writer-gated"] ?? 0,
+      percentContainers: percentage(writerProven, totalContainers)
+    },
+    packageCompatibility: {
+      label: "Package Compatibility",
+      status: packageErrors > 0 ? "has-errors" : packageWarnings > 0 ? "has-warnings" : "clean",
+      targetCompatibilityIssues: targetIssues,
+      warnings: packageWarnings,
+      errors: packageErrors
+    },
+    codecInternals: {
+      label: "Codec Internals",
+      status: "stage-two-optional",
+      preservedOrCustomPayloadBytes: codecSummary.preservedOrCustomPayloadBytes ?? 0,
+      decodedResourcePayloadBytes: codecSummary.decodedResourcePayloadBytes ?? 0
+    },
+    strictOutstanding
+  };
+}
+
+function countBy(items, selector) {
+  const counts = {};
+  for (const item of items) {
+    const key = selector(item);
+    counts[key] = (counts[key] ?? 0) + 1;
+  }
+  return counts;
+}
+
+function percentage(value, total) {
+  if (!total) return 0;
+  return Number(((value / total) * 100).toFixed(2));
 }
 
 function splitCompletenessSummary(ownership) {
@@ -536,8 +850,10 @@ function coverageStatusForFile(file) {
   const { name, roles } = file;
   if (NON_SCENARIO_IGNORES.has(name)) return "ignored-non-scenario";
   if (runtimeCaches.entries?.some((entry) => entry.cache === name)) return "runtime-cache";
+  if (name === "Data DL" && dungeonByteOwnership) return "mixed-writable-preserved";
+  if (customLandlookCoverage && /^Data Custom [123] BD$/.test(name)) return "mixed-writable-preserved";
+  if (rulesCoverage && (name === "Data Spell" || name === "Data Race" || name === "Data Caste")) return "mixed-writable-preserved";
   if (RECORD_LAYOUTS[name]) return RECORD_LAYOUTS[name].status;
-  if (customLandlookCoverage && /^Data Custom [123] BD$/.test(name)) return "understood-runtime-writer-gated";
   if (PASS_THROUGH_POLICIES[name]) return PASS_THROUGH_POLICIES[name].status;
   if (roles.has("supported-binary") && file.byteSizes.size > 0 && [...file.byteSizes].every((size) => size === 316 || size === 320)) return "decoded-writable";
   if (rustRegistry.supportedWriteFiles.has(name)) return "decoded-writable";
@@ -690,7 +1006,53 @@ function evidenceForFile(name, status) {
     evidence.push("docs/format-evidence-cards/custom-landlook-writers.md");
   } else if (name === "Data Spell" || name === "Data Race" || name === "Data Caste") {
     evidence.push("docs/generated/rules-resource-coverage.json");
+    evidence.push("docs/generated/rules-name-resource-packaging.json");
     evidence.push("docs/format-evidence-cards/rules-spell-race-caste-runtime-anchors.md");
+  } else if (name === "Data LD" || name === "Layout") {
+    evidence.push("docs/generated/map-field-value-evidence.json");
+    evidence.push("docs/format-evidence-cards/map-tile-runtime-anchors.md");
+  } else if (name === "Data DD" || name === "Data DDD" || name === "Global") {
+    evidence.push("docs/generated/extra-ap-reachability-source-map.json");
+    evidence.push("docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md");
+  } else if (name === "Data RD" || name === "Data RDD") {
+    evidence.push("docs/generated/corpus-field-usage.json");
+    evidence.push("docs/format-evidence-cards/encounter-record-runtime-anchors.md");
+  } else if (name === "Data ED" || name === "Data ED2") {
+    evidence.push("docs/generated/encounter-record-evidence.json");
+    evidence.push("docs/format-evidence-cards/encounter-record-runtime-anchors.md");
+  } else if (name === "Data MD" || name === "Data MD1" || name === "Data MD-1") {
+    evidence.push("docs/generated/monster-record-evidence.json");
+    evidence.push("docs/format-evidence-cards/monster-record-runtime-anchors.md");
+  } else if (name === "Data DES") {
+    evidence.push("docs/format-evidence-cards/monster-descriptions-and-sets-runtime-anchors.md");
+  } else if (name === "Data BD") {
+    evidence.push("docs/generated/battle-record-evidence.json");
+    evidence.push("docs/format-evidence-cards/battle-record-runtime-anchors.md");
+  } else if (name === "Data SD" || name === "Data TD" || name === "Data TD2" || name === "Data TD3") {
+    evidence.push("docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md");
+    if (name === "Data TD2" || name === "Data TD3") evidence.push("docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md");
+  } else if (name === "Data MD2") {
+    evidence.push("docs/generated/map-record-evidence.json");
+    evidence.push("docs/format-evidence-cards/map-record-runtime-anchors.md");
+  } else if (name === "Data CI" || name === "Data RI") {
+    evidence.push("docs/generated/scenario-party-restrictions-evidence.json");
+    evidence.push("docs/format-evidence-cards/scenario-party-restrictions-runtime-anchors.md");
+  } else if (name === "Data NI") {
+    evidence.push("docs/generated/core-rules-record-evidence.json");
+    evidence.push("docs/format-evidence-cards/core-rules-record-runtime-anchors.md");
+  } else if (name === "Data Solids") {
+    evidence.push("docs/format-evidence-cards/map-tile-intelligence.md");
+  } else if (name === "Data CS") {
+    evidence.push("docs/format-evidence-cards/scenario-shell-startup-release.md");
+  } else if (name === "Scenario" || name.endsWith(".rsrc") || name.endsWith(".rsf") || name.startsWith("._")) {
+    evidence.push("docs/generated/resource-byte-ownership.json");
+    evidence.push("docs/format-evidence-cards/resource-fork-taxonomy-authoring.md");
+  } else if (name === "Format" || name === "Icon_" || /^Custom [1-9]( Music)?$/.test(name)) {
+    evidence.push("docs/generated/scenario-target-compatibility.json");
+    evidence.push("docs/format-evidence-cards/scenario-music-and-format-files.md");
+  } else if (status === "decoded-writable") {
+    evidence.push("docs/generated/corpus-field-usage.json");
+    evidence.push("docs/format-evidence-cards/scenario-shell-startup-release.md");
   } else if (status === "runtime-cache") {
     evidence.push("docs/generated/runtime-cache-classification.json");
   } else if (status === "unknown-active-risk") {
@@ -705,6 +1067,8 @@ function editorPolicyFor(status) {
       return "Editable fields may be written when the record-specific writer owns the byte range.";
     case "decoded-readonly":
       return "Decoded for inspection and validation; editing is hidden until writer coverage exists.";
+    case "mixed-writable-preserved":
+      return "Some byte ranges are writer-proven or structurally decoded, while preserved/runtime ranges remain read-only.";
     case "preserved-known":
       return "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow.";
     case "preserved-unknown":
@@ -859,6 +1223,7 @@ function dungeonSummary() {
       writerSafeBits: null,
       runtimeStateBits: null,
       preservedUnknownBits: null,
+      preservedKnownBits: null,
       evidence: "docs/generated/dungeon-byte-ownership.json"
     };
   }
@@ -873,6 +1238,7 @@ function dungeonSummary() {
       (writerStatuses["route-through-action-point-workflow"] ?? 0),
     runtimeStateBits: bitStatuses["runtime-state"] ?? 0,
     preservedUnknownBits: bitStatuses["preserved-unknown"] ?? 0,
+    preservedKnownBits: bitStatuses["preserved-known"] ?? 0,
     evidence: "docs/generated/dungeon-byte-ownership.json"
   };
 }
@@ -892,13 +1258,14 @@ function statusSort(status) {
     "needs-codec-work": 2,
     "decoded-readonly": 3,
     "runtime-cache": 4,
-    "preserved-known": 5,
-    "custom-media-payload": 6,
-    "preserved-standard-media-payload": 7,
-    "understood-resource-container": 8,
-    "decoded-resource-payload": 9,
-    "decoded-writable": 10,
-    "ignored-non-scenario": 11
+    "mixed-writable-preserved": 5,
+    "preserved-known": 6,
+    "custom-media-payload": 7,
+    "preserved-standard-media-payload": 8,
+    "understood-resource-container": 9,
+    "decoded-resource-payload": 10,
+    "decoded-writable": 11,
+    "ignored-non-scenario": 12
   }[status] ?? 99;
 }
 

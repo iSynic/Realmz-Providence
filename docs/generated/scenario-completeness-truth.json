@@ -1,0 +1,2782 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-05-31T02:23:32.693Z",
+  "sources": {
+    "byteOwnership": "docs/generated/scenario-byte-ownership.json",
+    "unknownReport": "docs/generated/scenario-unknown-byte-report.json",
+    "targetCompatibility": "docs/generated/scenario-target-compatibility.json",
+    "resourceCoverage": "docs/generated/resource-byte-ownership.json",
+    "dungeonCoverage": "docs/generated/dungeon-byte-ownership.json",
+    "customLandlookCoverage": "docs/generated/custom-landlook-coverage.json",
+    "rulesCoverage": "docs/generated/rules-resource-coverage.json"
+  },
+  "policy": {
+    "note": "Truth statuses are stricter than legacy coverageStatus. Semantic ownership, writer readiness, evidence quality, and package compatibility are intentionally separate.",
+    "scenarioSemanticsExcludeOptionalCodecs": true,
+    "writerReadinessRequiresFixtureOrExplicitGate": true
+  },
+  "summary": {
+    "containerCount": 88,
+    "semanticOwnershipCounts": {
+      "complete": 81,
+      "mixed": 5,
+      "runtime-only": 1,
+      "ignored": 1
+    },
+    "writerReadinessCounts": {
+      "writer-gated": 58,
+      "partially-proven": 5,
+      "read-only": 1,
+      "preserve-only": 8,
+      "not-applicable": 14,
+      "fixture-proven": 2
+    },
+    "evidenceQualityCounts": {
+      "cited": 68,
+      "fixture-backed": 7,
+      "target-warning": 13
+    },
+    "riskFlagCounts": {
+      "structural-writer-claim": 58,
+      "target-package-warning": 13,
+      "writer-gated": 3
+    },
+    "scenarioSemantics": {
+      "label": "Scenario Semantics",
+      "status": "complete",
+      "completeContainers": 81,
+      "mixedContainers": 5,
+      "needsFormatWorkContainers": 0,
+      "percentContainers": 92.05
+    },
+    "writerProvenData": {
+      "label": "Writer-Proven Data",
+      "status": "incomplete",
+      "fixtureProvenContainers": 2,
+      "partiallyProvenContainers": 5,
+      "writerGatedContainers": 58,
+      "percentContainers": 7.95
+    },
+    "packageCompatibility": {
+      "label": "Package Compatibility",
+      "status": "has-warnings",
+      "targetCompatibilityIssues": 67,
+      "warnings": 12,
+      "errors": 0
+    },
+    "codecInternals": {
+      "label": "Codec Internals",
+      "status": "stage-two-optional",
+      "preservedOrCustomPayloadBytes": 82843797,
+      "decodedResourcePayloadBytes": 841240
+    },
+    "strictOutstanding": {
+      "writerGatedContainers": 58,
+      "missingEvidenceContainers": 0,
+      "skippedFixtureContainers": 0,
+      "preservedUnknownContainers": 0,
+      "targetWarnings": 12,
+      "backlogRisks": 6
+    }
+  },
+  "containers": [
+    {
+      "container": "Data BD",
+      "authorFacingName": "Battle records",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        1730,
+        3460,
+        7612,
+        8304,
+        12110,
+        18338,
+        19030,
+        26988,
+        32178,
+        45326,
+        47748,
+        55706,
+        59858,
+        67124,
+        73352,
+        75774,
+        79926,
+        81310,
+        84424,
+        86154,
+        88576,
+        88922,
+        99648,
+        103454,
+        123868,
+        124906,
+        128366,
+        172308,
+        173346,
+        186148,
+        257770
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/battle-record-evidence.json",
+        "docs/format-evidence-cards/battle-record-runtime-anchors.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Data DD",
+      "authorFacingName": "Land Action Point records",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        4000,
+        8000,
+        12000,
+        16000,
+        20000,
+        24000,
+        28000,
+        32000,
+        36000,
+        40000,
+        44000,
+        48000,
+        52000,
+        56000,
+        60000,
+        80000,
+        84000
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/extra-ap-reachability-source-map.json",
+        "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Data DDD",
+      "authorFacingName": "Dungeon Action Point records",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        4000,
+        8000,
+        12000,
+        16000,
+        20000
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/extra-ap-reachability-source-map.json",
+        "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Data DES",
+      "authorFacingName": "Monster description records",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        50688,
+        55296,
+        56320,
+        57856,
+        58880,
+        61952,
+        74496,
+        75520,
+        76800,
+        77056,
+        84992,
+        86016,
+        121856
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/format-evidence-cards/monster-descriptions-and-sets-runtime-anchors.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Data DL",
+      "authorFacingName": "Dungeon tile fields",
+      "coverageStatus": "mixed-writable-preserved",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        16200,
+        32400,
+        48600,
+        64800,
+        81000
+      ],
+      "effectiveStatuses": [
+        "decoded-writable",
+        "preserved-known",
+        "runtime-state"
+      ],
+      "evidence": [
+        "docs/generated/dungeon-byte-ownership.json",
+        "docs/generated/dungeon-cell-bit-taxonomy.json",
+        "docs/generated/dungeon-high-bit-audit.json",
+        "docs/format-evidence-cards/dungeon-runtime-anchors.md",
+        "docs/generated/dungeon-primitive-writer-gate.json",
+        "src-tauri/src/dungeon.rs"
+      ],
+      "fixtureGate": {
+        "name": "dungeon-primitive-bitfields",
+        "available": true,
+        "partialOnly": true
+      },
+      "truth": {
+        "semanticOwnership": "mixed",
+        "writerReadiness": "partially-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
+      }
+    },
+    {
+      "container": "Data ED",
+      "authorFacingName": "Simple encounter records",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        1704,
+        2982,
+        3120,
+        3408,
+        3640,
+        4160,
+        4680,
+        5112,
+        5720,
+        5964,
+        7280,
+        7668,
+        7800,
+        8094,
+        8520,
+        8840,
+        9120,
+        9360,
+        9880,
+        10650,
+        14040,
+        14058,
+        23520,
+        24000,
+        57720,
+        61440,
+        64320
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/encounter-record-evidence.json",
+        "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Data ED2",
+      "authorFacingName": "Complex encounter records",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        1560,
+        2080,
+        3120,
+        4160,
+        5200,
+        5720,
+        6760,
+        7280,
+        8840,
+        9360,
+        10400,
+        11440,
+        13520,
+        16640,
+        17160,
+        18200,
+        18720,
+        19760,
+        22360,
+        24960,
+        43680,
+        44200,
+        47320,
+        47840,
+        48360
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/encounter-record-evidence.json",
+        "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Data ED3",
+      "authorFacingName": "Extra Action Point records",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        320,
+        440,
+        1360,
+        1520,
+        1560,
+        2040,
+        2120,
+        2840,
+        3000,
+        4320,
+        6760,
+        9120,
+        9160,
+        9640,
+        9960,
+        10120,
+        11480,
+        11520,
+        11640,
+        11680,
+        13240,
+        17520,
+        19200,
+        21240,
+        21680,
+        23000,
+        27560,
+        85120,
+        85240,
+        86040,
+        92760,
+        93360,
+        144000,
+        147840
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/extra-ap-reachability-source-map.json",
+        "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Data EDCD",
+      "authorFacingName": "Action parameter rows",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        40,
+        350,
+        890,
+        1010,
+        1020,
+        1530,
+        2050,
+        3560,
+        3630,
+        5820,
+        6160,
+        6370,
+        6480,
+        8100,
+        10170,
+        12830,
+        14980,
+        15850,
+        16720,
+        23650,
+        23920,
+        37910,
+        37970,
+        49030,
+        52820,
+        145930,
+        160090,
+        160200,
+        215410,
+        259710,
+        644660,
+        644730,
+        648630
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/opcode-edcd-crosswalk.json",
+        "docs/format-evidence-cards/edcd-opcode-source-map.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Data LD",
+      "authorFacingName": "Outdoor land tile fields",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        16200,
+        32400,
+        48600,
+        64800,
+        81000,
+        97200,
+        113400,
+        129600,
+        145800,
+        162000,
+        178200,
+        194400,
+        210600,
+        226800,
+        243000,
+        324000,
+        340200
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/map-field-value-evidence.json",
+        "docs/format-evidence-cards/map-tile-runtime-anchors.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Data MD",
+      "authorFacingName": "Monster records",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        19950,
+        21630,
+        23940,
+        27930,
+        28560,
+        32550,
+        34230,
+        34650,
+        34860,
+        36120,
+        36540,
+        36960,
+        37170,
+        37380,
+        38010,
+        39060,
+        40740,
+        42420,
+        42840,
+        44100,
+        46200,
+        48300,
+        50820,
+        52710,
+        56910,
+        63210,
+        69720,
+        70560
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/monster-record-evidence.json",
+        "docs/format-evidence-cards/monster-record-runtime-anchors.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Data MD-1",
+      "authorFacingName": "Monster set records",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        20160,
+        21630,
+        23940,
+        27930,
+        28560,
+        28980,
+        34230,
+        34650,
+        34860,
+        35910,
+        36120,
+        36750,
+        36960,
+        37380,
+        37590,
+        38010,
+        39060,
+        39270,
+        40740,
+        42420,
+        42840,
+        44100,
+        46410,
+        50820,
+        56910,
+        63210,
+        69930,
+        70560
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/monster-record-evidence.json",
+        "docs/format-evidence-cards/monster-record-runtime-anchors.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Data MD1",
+      "authorFacingName": "Monster set records",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        20160,
+        21630,
+        23940,
+        27930,
+        28560,
+        28770,
+        34230,
+        34650,
+        34860,
+        35910,
+        36120,
+        36750,
+        36960,
+        37380,
+        37590,
+        38010,
+        39060,
+        39270,
+        40740,
+        42420,
+        42840,
+        44100,
+        46410,
+        50820,
+        56910,
+        63210,
+        69930,
+        70560
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/monster-record-evidence.json",
+        "docs/format-evidence-cards/monster-record-runtime-anchors.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Data MD2",
+      "authorFacingName": "Map records",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        680,
+        1020,
+        1360,
+        2040,
+        2380,
+        3740,
+        4080,
+        5440,
+        6120,
+        6800,
+        7140,
+        8160
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/map-record-evidence.json",
+        "docs/format-evidence-cards/map-record-runtime-anchors.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Data NI",
+      "authorFacingName": "Scenario item records",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        20000
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/core-rules-record-evidence.json",
+        "docs/format-evidence-cards/core-rules-record-runtime-anchors.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Data RD",
+      "authorFacingName": "Land random encounter settings",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        644,
+        1288,
+        1932,
+        2576,
+        3220,
+        3864,
+        4508,
+        5152,
+        5796,
+        6440,
+        7084,
+        7728,
+        8372,
+        9016,
+        9660,
+        12880,
+        13524
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Data RDD",
+      "authorFacingName": "Dungeon random encounter settings",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        644,
+        1288,
+        1932,
+        2576,
+        3220
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Data SD",
+      "authorFacingName": "Shop records",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        15010,
+        18012,
+        27018,
+        30020,
+        33022,
+        36024,
+        45030,
+        54036,
+        63042,
+        66044,
+        81054,
+        90060,
+        111074,
+        114076,
+        117078
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Data SD2",
+      "authorFacingName": "Strings/messages",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        12800,
+        13053,
+        13056,
+        41216,
+        51456,
+        54016,
+        63488,
+        64256,
+        84992,
+        120576,
+        130560,
+        138752,
+        187904,
+        189184,
+        202472,
+        223232,
+        225280,
+        225536,
+        241664,
+        250112,
+        251648,
+        276736,
+        285952,
+        288000,
+        295936,
+        299776,
+        347392,
+        348416,
+        386304,
+        545536,
+        720128,
+        720640,
+        812544,
+        1044224,
+        1063680
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/format-evidence-cards/strings-data-od-string-sound.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Data Solids",
+      "authorFacingName": "Special tile solidity table",
+      "coverageStatus": "decoded-readonly",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        1024
+      ],
+      "effectiveStatuses": [
+        "decoded-readonly"
+      ],
+      "evidence": [
+        "docs/format-evidence-cards/map-tile-intelligence.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "read-only",
+        "evidenceQuality": "cited",
+        "riskFlags": []
+      }
+    },
+    {
+      "container": "Data TD",
+      "authorFacingName": "Treasure records",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        528,
+        624,
+        816,
+        1248,
+        1296,
+        1776,
+        2160,
+        2208,
+        2256,
+        2304,
+        2544,
+        2688,
+        2784,
+        3312,
+        3504,
+        3648,
+        3696,
+        3744,
+        3888,
+        3936,
+        4320,
+        4464,
+        4848,
+        4896,
+        6384,
+        6432,
+        6528,
+        7296,
+        9312,
+        11424
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Data TD2",
+      "authorFacingName": "Thief encounter records",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        118,
+        236,
+        354,
+        472,
+        590,
+        708,
+        944,
+        1062,
+        1298,
+        1534,
+        1652,
+        2360,
+        2714,
+        3186,
+        3540,
+        3776,
+        4366,
+        4484,
+        7198,
+        10266,
+        117410
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
+        "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Data TD3",
+      "authorFacingName": "Timed encounter records",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        40,
+        120,
+        160,
+        240,
+        280,
+        320,
+        480,
+        520,
+        560,
+        800,
+        840,
+        960,
+        2080
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
+        "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Global",
+      "authorFacingName": "Global macro hooks",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        60
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/extra-ap-reachability-source-map.json",
+        "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Scenario",
+      "authorFacingName": "Resource fork",
+      "coverageStatus": "preserved-known",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        600
+      ],
+      "effectiveStatuses": [
+        "preserved-known"
+      ],
+      "evidence": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "preserve-only",
+        "evidenceQuality": "target-warning",
+        "riskFlags": [
+          "target-package-warning"
+        ]
+      }
+    },
+    {
+      "container": "Data CS",
+      "authorFacingName": "Scenario security backup",
+      "coverageStatus": "preserved-known",
+      "observedScenarioCount": 33,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "preserved-known"
+      ],
+      "evidence": [
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "preserve-only",
+        "evidenceQuality": "cited",
+        "riskFlags": []
+      }
+    },
+    {
+      "container": "Data CI",
+      "authorFacingName": "Contact information",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 32,
+      "observedByteSizes": [
+        4608
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/scenario-party-restrictions-evidence.json",
+        "docs/format-evidence-cards/scenario-party-restrictions-runtime-anchors.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Scenario.rsrc",
+      "authorFacingName": "Resource fork",
+      "coverageStatus": "understood-resource-container",
+      "observedScenarioCount": 32,
+      "observedByteSizes": [
+        100210,
+        100293,
+        102459,
+        102541,
+        104934,
+        113707,
+        113789,
+        113861,
+        198724,
+        198806,
+        232475,
+        232557,
+        235269,
+        235351,
+        268822,
+        326898,
+        326980,
+        422083,
+        436249,
+        457580,
+        457662,
+        481035,
+        481117,
+        516703,
+        516785,
+        539660,
+        605322,
+        778038,
+        809118,
+        881066,
+        908646,
+        1161708,
+        1448682,
+        1448764,
+        1835947,
+        1842294,
+        2857546,
+        2857628,
+        3641975,
+        3695646,
+        5168595,
+        5174545
+      ],
+      "effectiveStatuses": [
+        "understood-resource-container"
+      ],
+      "evidence": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "not-applicable",
+        "evidenceQuality": "target-warning",
+        "riskFlags": [
+          "target-package-warning"
+        ]
+      }
+    },
+    {
+      "container": "Data RI",
+      "authorFacingName": "Party restrictions",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 28,
+      "observedByteSizes": [
+        320
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/scenario-party-restrictions-evidence.json",
+        "docs/format-evidence-cards/scenario-party-restrictions-runtime-anchors.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Icon_.rsrc",
+      "authorFacingName": "Resource fork",
+      "coverageStatus": "understood-resource-container",
+      "observedScenarioCount": 26,
+      "observedByteSizes": [
+        368,
+        1784,
+        2688,
+        2752,
+        2888,
+        4098,
+        4280,
+        5072,
+        26209
+      ],
+      "effectiveStatuses": [
+        "understood-resource-container"
+      ],
+      "evidence": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "not-applicable",
+        "evidenceQuality": "target-warning",
+        "riskFlags": [
+          "target-package-warning"
+        ]
+      }
+    },
+    {
+      "container": "Layout",
+      "authorFacingName": "Land layout grid",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 24,
+      "observedByteSizes": [
+        256,
+        512
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/map-field-value-evidence.json",
+        "docs/format-evidence-cards/map-tile-runtime-anchors.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Data MENU",
+      "authorFacingName": "Generated monster menu cache",
+      "coverageStatus": "runtime-cache",
+      "observedScenarioCount": 23,
+      "observedByteSizes": [
+        502
+      ],
+      "effectiveStatuses": [
+        "runtime-cache"
+      ],
+      "evidence": [
+        "docs/generated/runtime-cache-classification.json"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "runtime-only",
+        "writerReadiness": "not-applicable",
+        "evidenceQuality": "cited",
+        "riskFlags": []
+      }
+    },
+    {
+      "container": "Data Spell",
+      "authorFacingName": "Custom spell override records",
+      "coverageStatus": "mixed-writable-preserved",
+      "observedScenarioCount": 19,
+      "observedByteSizes": [
+        9016
+      ],
+      "effectiveStatuses": [
+        "decoded-writable",
+        "preserved-known"
+      ],
+      "evidence": [
+        "docs/generated/rules-resource-coverage.json",
+        "docs/generated/rules-name-resource-packaging.json",
+        "docs/format-evidence-cards/rules-spell-race-caste-runtime-anchors.md",
+        "src-tauri/tests/fixture_roundtrip.rs:rules_spell_export_mutates_only_owned_record_byte_and_preserves_tail",
+        "src-tauri/tests/fixture_roundtrip.rs:rules_custom_spell_name_export_updates_only_spell_str_resource"
+      ],
+      "fixtureGate": {
+        "name": "custom-spell-records-and-names",
+        "available": true,
+        "partialOnly": false
+      },
+      "truth": {
+        "semanticOwnership": "mixed",
+        "writerReadiness": "partially-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
+      }
+    },
+    {
+      "container": "Format",
+      "authorFacingName": "Scenario compatibility marker",
+      "coverageStatus": "preserved-known",
+      "observedScenarioCount": 19,
+      "observedByteSizes": [
+        0
+      ],
+      "effectiveStatuses": [
+        "preserved-known"
+      ],
+      "evidence": [
+        "docs/generated/scenario-target-compatibility.json",
+        "docs/format-evidence-cards/scenario-music-and-format-files.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "preserve-only",
+        "evidenceQuality": "cited",
+        "riskFlags": []
+      }
+    },
+    {
+      "container": "Data Spell.rsrc",
+      "authorFacingName": "Resource fork",
+      "coverageStatus": "understood-resource-container",
+      "observedScenarioCount": 16,
+      "observedByteSizes": [
+        995,
+        1202,
+        2219,
+        2301
+      ],
+      "effectiveStatuses": [
+        "understood-resource-container"
+      ],
+      "evidence": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "not-applicable",
+        "evidenceQuality": "target-warning",
+        "riskFlags": [
+          "target-package-warning"
+        ]
+      }
+    },
+    {
+      "container": "Data Custom 1 BD",
+      "authorFacingName": "Custom landlook mapstats",
+      "coverageStatus": "mixed-writable-preserved",
+      "observedScenarioCount": 13,
+      "observedByteSizes": [
+        8104
+      ],
+      "effectiveStatuses": [
+        "decoded-writable",
+        "understood-runtime-writer-gated"
+      ],
+      "evidence": [
+        "docs/generated/custom-landlook-coverage.json",
+        "docs/format-evidence-cards/custom-landlook-writers.md",
+        "src-tauri/tests/fixture_roundtrip.rs:custom_landlook_metadata_writer_mutates_only_owned_fields",
+        "src-tauri/tests/fixture_roundtrip.rs:custom_landlook_atlas_replacement_changes_only_target_pict_resource"
+      ],
+      "fixtureGate": {
+        "name": "custom-landlook-metadata-and-atlas",
+        "available": true,
+        "partialOnly": false
+      },
+      "truth": {
+        "semanticOwnership": "mixed",
+        "writerReadiness": "partially-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": [
+          "writer-gated"
+        ]
+      }
+    },
+    {
+      "container": "Data OD",
+      "authorFacingName": "Option labels",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 12,
+      "observedByteSizes": [
+        575,
+        1275,
+        1325,
+        1525
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/format-evidence-cards/strings-data-od-string-sound.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Data Race",
+      "authorFacingName": "Race override records",
+      "coverageStatus": "mixed-writable-preserved",
+      "observedScenarioCount": 8,
+      "observedByteSizes": [
+        12240
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/rules-resource-coverage.json",
+        "docs/generated/rules-name-resource-packaging.json",
+        "docs/format-evidence-cards/rules-spell-race-caste-runtime-anchors.md",
+        "src-tauri/tests/fixture_roundtrip.rs:rules_race_export_mutates_only_owned_record_fields"
+      ],
+      "fixtureGate": {
+        "name": "race-override-records",
+        "available": true,
+        "partialOnly": false
+      },
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "fixture-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
+      }
+    },
+    {
+      "container": "Custom 1 Music",
+      "authorFacingName": "Custom music",
+      "coverageStatus": "custom-media-payload",
+      "observedScenarioCount": 5,
+      "observedByteSizes": [
+        60224,
+        143039,
+        170360,
+        241158
+      ],
+      "effectiveStatuses": [
+        "custom-media-payload"
+      ],
+      "evidence": [
+        "docs/generated/scenario-target-compatibility.json",
+        "docs/format-evidence-cards/scenario-music-and-format-files.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "preserve-only",
+        "evidenceQuality": "cited",
+        "riskFlags": []
+      }
+    },
+    {
+      "container": "Data Caste",
+      "authorFacingName": "Caste override records",
+      "coverageStatus": "mixed-writable-preserved",
+      "observedScenarioCount": 5,
+      "observedByteSizes": [
+        17280
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/rules-resource-coverage.json",
+        "docs/generated/rules-name-resource-packaging.json",
+        "docs/format-evidence-cards/rules-spell-race-caste-runtime-anchors.md",
+        "src-tauri/tests/fixture_roundtrip.rs:rules_caste_export_mutates_only_owned_record_fields"
+      ],
+      "fixtureGate": {
+        "name": "caste-override-records",
+        "available": true,
+        "partialOnly": false
+      },
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "fixture-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
+      }
+    },
+    {
+      "container": "Data Custom 2 BD",
+      "authorFacingName": "Custom landlook mapstats",
+      "coverageStatus": "mixed-writable-preserved",
+      "observedScenarioCount": 5,
+      "observedByteSizes": [
+        8104
+      ],
+      "effectiveStatuses": [
+        "decoded-writable",
+        "understood-runtime-writer-gated"
+      ],
+      "evidence": [
+        "docs/generated/custom-landlook-coverage.json",
+        "docs/format-evidence-cards/custom-landlook-writers.md",
+        "src-tauri/tests/fixture_roundtrip.rs:custom_landlook_metadata_writer_mutates_only_owned_fields"
+      ],
+      "fixtureGate": {
+        "name": "custom-landlook-metadata",
+        "available": true,
+        "partialOnly": false
+      },
+      "truth": {
+        "semanticOwnership": "mixed",
+        "writerReadiness": "partially-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": [
+          "writer-gated"
+        ]
+      }
+    },
+    {
+      "container": "Custom 2 Music",
+      "authorFacingName": "Custom music",
+      "coverageStatus": "custom-media-payload",
+      "observedScenarioCount": 3,
+      "observedByteSizes": [
+        60224,
+        137064,
+        184221
+      ],
+      "effectiveStatuses": [
+        "custom-media-payload"
+      ],
+      "evidence": [
+        "docs/generated/scenario-target-compatibility.json",
+        "docs/format-evidence-cards/scenario-music-and-format-files.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "preserve-only",
+        "evidenceQuality": "cited",
+        "riskFlags": []
+      }
+    },
+    {
+      "container": "Data Custom 3 BD",
+      "authorFacingName": "Custom landlook mapstats",
+      "coverageStatus": "mixed-writable-preserved",
+      "observedScenarioCount": 3,
+      "observedByteSizes": [
+        8104
+      ],
+      "effectiveStatuses": [
+        "decoded-writable",
+        "understood-runtime-writer-gated"
+      ],
+      "evidence": [
+        "docs/generated/custom-landlook-coverage.json",
+        "docs/format-evidence-cards/custom-landlook-writers.md",
+        "src-tauri/tests/fixture_roundtrip.rs:custom_landlook_metadata_writer_mutates_only_owned_fields"
+      ],
+      "fixtureGate": {
+        "name": "custom-landlook-metadata",
+        "available": true,
+        "partialOnly": false
+      },
+      "truth": {
+        "semanticOwnership": "mixed",
+        "writerReadiness": "partially-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": [
+          "writer-gated"
+        ]
+      }
+    },
+    {
+      "container": "Data Spell.rsf",
+      "authorFacingName": "Resource fork",
+      "coverageStatus": "understood-resource-container",
+      "observedScenarioCount": 3,
+      "observedByteSizes": [
+        2177,
+        2219,
+        2221
+      ],
+      "effectiveStatuses": [
+        "understood-resource-container"
+      ],
+      "evidence": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "not-applicable",
+        "evidenceQuality": "target-warning",
+        "riskFlags": [
+          "target-package-warning"
+        ]
+      }
+    },
+    {
+      "container": "Scenario.rsf",
+      "authorFacingName": "Resource fork",
+      "coverageStatus": "understood-resource-container",
+      "observedScenarioCount": 3,
+      "observedByteSizes": [
+        109039,
+        950639,
+        1312488
+      ],
+      "effectiveStatuses": [
+        "understood-resource-container"
+      ],
+      "evidence": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "not-applicable",
+        "evidenceQuality": "target-warning",
+        "riskFlags": [
+          "target-package-warning"
+        ]
+      }
+    },
+    {
+      "container": "Assault on Giant Mountain",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 2,
+      "observedByteSizes": [
+        320
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "City of Bywater",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 2,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Custom 3 Music",
+      "authorFacingName": "Custom music",
+      "coverageStatus": "custom-media-payload",
+      "observedScenarioCount": 2,
+      "observedByteSizes": [
+        73480,
+        184108
+      ],
+      "effectiveStatuses": [
+        "custom-media-payload"
+      ],
+      "evidence": [
+        "docs/generated/scenario-target-compatibility.json",
+        "docs/format-evidence-cards/scenario-music-and-format-files.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "preserve-only",
+        "evidenceQuality": "cited",
+        "riskFlags": []
+      }
+    },
+    {
+      "container": "Data SD2.rsrc",
+      "authorFacingName": "Resource fork",
+      "coverageStatus": "understood-resource-container",
+      "observedScenarioCount": 2,
+      "observedByteSizes": [
+        378,
+        460
+      ],
+      "effectiveStatuses": [
+        "understood-resource-container"
+      ],
+      "evidence": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "not-applicable",
+        "evidenceQuality": "target-warning",
+        "riskFlags": [
+          "target-package-warning"
+        ]
+      }
+    },
+    {
+      "container": "Destroy the Necronomicon",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 2,
+      "observedByteSizes": [
+        320
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Araman's Ring",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Begining of the End",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Castle in the Clouds",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "City of Port Hyrtin",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Custom 1",
+      "authorFacingName": "Custom compatibility/media companion; not a landlook runtime metadata file",
+      "coverageStatus": "preserved-known",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        85324
+      ],
+      "effectiveStatuses": [
+        "preserved-known"
+      ],
+      "evidence": [
+        "docs/generated/scenario-target-compatibility.json",
+        "docs/format-evidence-cards/scenario-music-and-format-files.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "preserve-only",
+        "evidenceQuality": "cited",
+        "riskFlags": []
+      }
+    },
+    {
+      "container": "Custom 1.rsf",
+      "authorFacingName": "Resource fork",
+      "coverageStatus": "understood-resource-container",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        7377
+      ],
+      "effectiveStatuses": [
+        "understood-resource-container"
+      ],
+      "evidence": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "not-applicable",
+        "evidenceQuality": "target-warning",
+        "riskFlags": [
+          "target-package-warning"
+        ]
+      }
+    },
+    {
+      "container": "Custom 3 Music.rsrc",
+      "authorFacingName": "Resource fork",
+      "coverageStatus": "understood-resource-container",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        7377,
+        7459
+      ],
+      "effectiveStatuses": [
+        "understood-resource-container"
+      ],
+      "evidence": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "not-applicable",
+        "evidenceQuality": "target-warning",
+        "riskFlags": [
+          "target-package-warning"
+        ]
+      }
+    },
+    {
+      "container": "Dagger of Shine",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Data NI.rsrc",
+      "authorFacingName": "Resource fork",
+      "coverageStatus": "understood-resource-container",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        286,
+        368
+      ],
+      "effectiveStatuses": [
+        "understood-resource-container"
+      ],
+      "evidence": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "not-applicable",
+        "evidenceQuality": "target-warning",
+        "riskFlags": [
+          "target-package-warning"
+        ]
+      }
+    },
+    {
+      "container": "Elemental Strife",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Grilochs Revenge",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        320
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Half Truth",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Hax",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Icon_",
+      "authorFacingName": "Classic Mac resource companion",
+      "coverageStatus": "preserved-known",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        0
+      ],
+      "effectiveStatuses": [
+        "preserved-known"
+      ],
+      "evidence": [
+        "docs/generated/scenario-target-compatibility.json",
+        "docs/format-evidence-cards/scenario-music-and-format-files.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "preserve-only",
+        "evidenceQuality": "cited",
+        "riskFlags": []
+      }
+    },
+    {
+      "container": "Journey into the Mire",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Kalypso's Island",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Lachis",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Lord of the Abyss",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Mithril Vault",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        320
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "New Scenario",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Prelude to Pestilence",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Prelude To Pestilence",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Price of Power",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Read Me (nice to know)",
+      "authorFacingName": "Distribution documentation",
+      "coverageStatus": "ignored-non-scenario",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        1711
+      ],
+      "effectiveStatuses": [
+        "ignored-non-scenario"
+      ],
+      "evidence": [],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "ignored",
+        "writerReadiness": "not-applicable",
+        "evidenceQuality": "cited",
+        "riskFlags": []
+      }
+    },
+    {
+      "container": "Read Me (nice to know).rsf",
+      "authorFacingName": "Resource fork",
+      "coverageStatus": "understood-resource-container",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        332
+      ],
+      "effectiveStatuses": [
+        "understood-resource-container"
+      ],
+      "evidence": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "not-applicable",
+        "evidenceQuality": "target-warning",
+        "riskFlags": [
+          "target-package-warning"
+        ]
+      }
+    },
+    {
+      "container": "Search for the Lost City",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Spires of Steel",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Spires of Steel.rsrc",
+      "authorFacingName": "Resource fork",
+      "coverageStatus": "understood-resource-container",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        368
+      ],
+      "effectiveStatuses": [
+        "understood-resource-container"
+      ],
+      "evidence": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "not-applicable",
+        "evidenceQuality": "target-warning",
+        "riskFlags": [
+          "target-package-warning"
+        ]
+      }
+    },
+    {
+      "container": "Test",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "The End Worlds",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Trial by Fire",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Trouble in the Sword Lands",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Trouble in the Sword Lands.rsrc",
+      "authorFacingName": "Resource fork",
+      "coverageStatus": "understood-resource-container",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        286,
+        368
+      ],
+      "effectiveStatuses": [
+        "understood-resource-container"
+      ],
+      "evidence": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "not-applicable",
+        "evidenceQuality": "target-warning",
+        "riskFlags": [
+          "target-package-warning"
+        ]
+      }
+    },
+    {
+      "container": "Tutorial",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Twin Sands of Time",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "War in the Sword Lands",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "White Dragon",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    },
+    {
+      "container": "Wrath of the Mind Lords",
+      "authorFacingName": "Scenario startup shell",
+      "coverageStatus": "decoded-writable",
+      "observedScenarioCount": 1,
+      "observedByteSizes": [
+        316
+      ],
+      "effectiveStatuses": [
+        "decoded-writable"
+      ],
+      "evidence": [
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "fixtureGate": null,
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "writer-gated",
+        "evidenceQuality": "cited",
+        "riskFlags": [
+          "structural-writer-claim"
+        ]
+      }
+    }
+  ]
+}

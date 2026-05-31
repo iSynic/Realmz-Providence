@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T00:51:29.062Z",
+  "generatedAt": "2026-05-31T02:23:32.689Z",
   "sources": {
     "roundtripLedger": "docs/generated/scenario-byte-roundtrip-ledger.json",
     "rustRegistry": "src-tauri/src/realmz.rs",
@@ -9,7 +9,8 @@
     "customLandlookCoverage": "docs/generated/custom-landlook-coverage.json",
     "rulesCoverage": "docs/generated/rules-resource-coverage.json",
     "dungeonCoverage": "docs/generated/dungeon-byte-ownership.json",
-    "dungeonHighBitAudit": "docs/generated/dungeon-high-bit-audit.json"
+    "dungeonHighBitAudit": "docs/generated/dungeon-high-bit-audit.json",
+    "completenessTruth": "docs/generated/scenario-completeness-truth.json"
   },
   "policy": {
     "ignoredNonScenarioFiles": [
@@ -176,8 +177,8 @@
         81000
       ],
       "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
+      "coverageStatus": "mixed-writable-preserved",
+      "editable": false
     },
     {
       "name": "Data ED",
@@ -1174,8 +1175,8 @@
         9016
       ],
       "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
+      "coverageStatus": "mixed-writable-preserved",
+      "editable": false
     },
     {
       "name": "Format",
@@ -1236,7 +1237,7 @@
         8104
       ],
       "resourceTypes": [],
-      "coverageStatus": "understood-runtime-writer-gated",
+      "coverageStatus": "mixed-writable-preserved",
       "editable": false
     },
     {
@@ -1274,8 +1275,8 @@
         12240
       ],
       "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
+      "coverageStatus": "mixed-writable-preserved",
+      "editable": false
     },
     {
       "name": "Custom 1 Music",
@@ -1311,8 +1312,8 @@
         17280
       ],
       "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
+      "coverageStatus": "mixed-writable-preserved",
+      "editable": false
     },
     {
       "name": "Data Custom 2 BD",
@@ -1328,7 +1329,7 @@
         8104
       ],
       "resourceTypes": [],
-      "coverageStatus": "understood-runtime-writer-gated",
+      "coverageStatus": "mixed-writable-preserved",
       "editable": false
     },
     {
@@ -1364,7 +1365,7 @@
         8104
       ],
       "resourceTypes": [],
-      "coverageStatus": "understood-runtime-writer-gated",
+      "coverageStatus": "mixed-writable-preserved",
       "editable": false
     },
     {

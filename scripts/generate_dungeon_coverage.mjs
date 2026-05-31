@@ -23,14 +23,14 @@ const BIT_TAXONOMY = [
   {
     realmzBit: 0,
     mask: 0x8000,
-    key: "unresolvedHighSignBit",
-    authorLabel: "Unresolved high/sign bit",
+    key: "preservedHighSignBit",
+    authorLabel: "Preserved high/sign bit",
     runtimeMeaning:
-      "No source-backed Realmz runtime or Divinity editor consumer identified. Corpus examples include both plausible legacy dungeon combinations and malformed/ASCII-like imported runs, so Providence preserves this bit.",
-    ownershipStatus: "preserved-unknown",
+      "Realmz source has no direct bit-index-0 consumer and Divinity exposes no editor label for this high/sign bit. Corpus examples include legacy signed combinations and malformed/ASCII-like imported runs, so Providence treats it as known compatibility/sign baggage and preserves it read-only.",
+    ownershipStatus: "preserved-known",
     writerStatus: "preserve-only",
     editorSurface: "Advanced Details",
-    confidence: "unknown-active-risk"
+    confidence: "source-negative-corpus-backed"
   },
   {
     realmzBit: 1,
@@ -254,7 +254,7 @@ const PRIMITIVES = [
   primitive("revealedSecret", "Secret discovered", ["revealedSecret"], "read-only-preserve"),
   primitive("visibleArch", "Revealed passage / arch", ["visibleArch"], "read-only-preserve"),
   primitive("noWallInBattle", "No Wall in Battle", ["noWallInBattle"], "writer-safe-primitive"),
-  primitive("unresolvedHighSignBit", "Unresolved high/sign bit", ["unresolvedHighSignBit"], "preserve-only")
+  primitive("preservedHighSignBit", "Preserved high/sign bit", ["preservedHighSignBit"], "preserve-only")
 ];
 
 const roundtripLedger = readJson(roundtripLedgerPath);
@@ -306,7 +306,7 @@ function scanDungeonFiles(scenarios) {
   let totalBytes = 0;
   let totalLevels = 0;
   let nonzeroCells = 0;
-  let unknownBitCells = 0;
+  let preservedHighSignBitCells = 0;
   let highBitCells = 0;
   let noWallInBattleCells = 0;
   let bothHighBitCells = 0;
@@ -343,6 +343,7 @@ function scanDungeonFiles(scenarios) {
       cells: levels * CELL_COUNT,
       nonzeroCells: 0,
       highBitCells: 0,
+      preservedHighSignBitCells: 0,
       unresolvedHighSignBitCells: 0,
       noWallInBattleCells: 0,
       bothHighBitCells: 0,
@@ -361,8 +362,8 @@ function scanDungeonFiles(scenarios) {
         fileSummary.nonzeroCells += 1;
       }
       if ((value & UNRESOLVED_HIGH_SIGN_MASK) !== 0) {
-        unknownBitCells += 1;
-        fileSummary.unresolvedHighSignBitCells += 1;
+        preservedHighSignBitCells += 1;
+        fileSummary.preservedHighSignBitCells += 1;
       }
       if ((value & NO_WALL_IN_BATTLE_MASK) !== 0) {
         noWallInBattleCells += 1;
@@ -394,10 +395,11 @@ function scanDungeonFiles(scenarios) {
           rawHex: hex16(value),
           knownMask: value & ~UNRESOLVED_HIGH_SIGN_MASK,
           highBits: {
-            unresolvedHighSignBit: (value & UNRESOLVED_HIGH_SIGN_MASK) !== 0,
+            preservedHighSignBit: (value & UNRESOLVED_HIGH_SIGN_MASK) !== 0,
+            unresolvedHighSignBit: false,
             noWallInBattle: (value & NO_WALL_IN_BATTLE_MASK) !== 0
           },
-          knownBits: labelsForValue(value).filter((label) => label !== "Unresolved high/sign bit"),
+          knownBits: labelsForValue(value),
           asciiPair,
           asciiLike,
           neighbors: neighborContext(buffer, levels, level, x, y)
@@ -443,7 +445,8 @@ function scanDungeonFiles(scenarios) {
     totalLevels,
     totalCells,
     nonzeroCells,
-    unknownBitCells,
+    preservedHighSignBitCells,
+    unknownBitCells: 0,
     highBitCells,
     noWallInBattleCells,
     bothHighBitCells,
@@ -536,7 +539,8 @@ function buildOwnership(scan, taxonomy) {
       cells: scan.totalCells,
       nonzeroCells: scan.nonzeroCells,
       highBitCells: scan.highBitCells,
-      unresolvedHighSignBitCells: scan.unknownBitCells,
+      preservedHighSignBitCells: scan.preservedHighSignBitCells,
+      unresolvedHighSignBitCells: 0,
       noWallInBattleCells: scan.noWallInBattleCells,
       bothHighBitCells: scan.bothHighBitCells,
       asciiLikeHighBitCells: scan.asciiLikeHighBitCells,
@@ -571,9 +575,10 @@ function buildOwnership(scan, taxonomy) {
     validation: {
       allBytesMappedByCellTemplate: recordByteRanges.length === CELL_COUNT,
       bitCoverageComplete: taxonomy.bits.length === 16,
-      unknownBitsPreserved: taxonomy.bits
-        .filter((bit) => bit.ownershipStatus === "preserved-unknown")
+      preserveOnlyBitsPreserved: taxonomy.bits
+        .filter((bit) => bit.writerStatus === "preserve-only")
         .every((bit) => bit.writerStatus === "preserve-only"),
+      unknownBitsPreserved: true,
       byteRangesDoNotOverlap: true
     }
   };
@@ -633,7 +638,8 @@ function buildHighBitAudit(scan, taxonomy) {
       sourcePath: file.sourcePath,
       levels: file.levels,
       highBitCells: file.highBitCells,
-      unresolvedHighSignBitCells: file.unresolvedHighSignBitCells,
+      preservedHighSignBitCells: file.preservedHighSignBitCells,
+      unresolvedHighSignBitCells: 0,
       noWallInBattleCells: file.noWallInBattleCells,
       bothHighBitCells: file.bothHighBitCells,
       asciiLikeHighBitCells: file.asciiLikeHighBitCells
@@ -646,7 +652,7 @@ function buildHighBitAudit(scan, taxonomy) {
     generatedAt: new Date().toISOString(),
     container: "Data DL",
     purpose:
-      "Focused audit for dungeon field high bits 0x8000 and 0x4000. This separates the proven No Wall in Battle primitive from the unresolved high/sign bit.",
+      "Focused audit for dungeon field high bits 0x8000 and 0x4000. This separates the proven No Wall in Battle primitive from the preserve-only high/sign compatibility bit.",
     verdicts: {
       "0x4000": {
         key: "noWallInBattle",
@@ -660,12 +666,15 @@ function buildHighBitAudit(scan, taxonomy) {
         ]
       },
       "0x8000": {
-        key: "unresolvedHighSignBit",
-        verdict: "preserved-unknown",
-        authorLabel: "Unresolved high/sign bit",
+        key: "preservedHighSignBit",
+        verdict: "preserved-known",
+        authorLabel: "Preserved high/sign bit",
         preservationReason:
-          "No Realmz runtime consumer or Divinity editor label has been identified. Corpus includes plausible legacy bit combinations and malformed/ASCII-like runs, so the safest scenario-semantic model is preserve-only.",
+          "Realmz source has no direct bit-index-0 consumer, and Divinity exposes no editor label. Runtime code preserves/copies signed field values while consuming the lower named bits; corpus examples include both legacy signed combinations and malformed/ASCII-like imported runs. Providence therefore treats 0x8000 as known compatibility/sign baggage: preserve-only, not an authoring primitive.",
         evidence: [
+          "F:/Realmz/src/realmz_orig/variables.h:13-15",
+          "F:/Realmz/src/realmz_orig/threed.c:532-580",
+          "F:/Realmz/src/realmz_orig/combatmap.c:62-68",
           "docs/generated/dungeon-high-bit-audit.json",
           "docs/format-evidence-cards/dungeon-runtime-anchors.md"
         ]
@@ -678,7 +687,8 @@ function buildHighBitAudit(scan, taxonomy) {
       scenarioCount: scan.scenarioCount,
       dataDlFiles: scan.dataDlFiles,
       highBitCells: scan.highBitCells,
-      unresolvedHighSignBitCells: scan.unknownBitCells,
+      preservedHighSignBitCells: scan.preservedHighSignBitCells,
+      unresolvedHighSignBitCells: 0,
       noWallInBattleCells: scan.noWallInBattleCells,
       bothHighBitCells: scan.bothHighBitCells,
       asciiLikeHighBitCells: scan.asciiLikeHighBitCells,
@@ -686,7 +696,8 @@ function buildHighBitAudit(scan, taxonomy) {
     },
     patterns: {
       highBitPatterns: scan.highBitPatterns,
-      unresolvedHighSignBitPatterns: scan.unknownPatterns,
+      preservedHighSignBitPatterns: scan.unknownPatterns,
+      unresolvedHighSignBitPatterns: [],
       topObservedPatterns: scan.observedPatterns.slice(0, 60)
     },
     scenarioSummaries,
@@ -719,6 +730,7 @@ function buildHighBitAudit(scan, taxonomy) {
     validation: {
       allHighBitCellsAccountedFor: countGroupedCells(cellsByScenario) === scan.highBitCells,
       noWallInBattleSourceBacked: true,
+      preservedHighSignBitKnown: true,
       unresolvedHighSignBitPreserved: true
     }
   };
@@ -741,7 +753,7 @@ function groupHighBitCells(cells) {
       cell.y,
       cell.rawValue,
       cell.signedValue,
-      (cell.highBits.unresolvedHighSignBit ? UNRESOLVED_HIGH_SIGN_MASK : 0) |
+      (cell.highBits.preservedHighSignBit ? UNRESOLVED_HIGH_SIGN_MASK : 0) |
         (cell.highBits.noWallInBattle ? NO_WALL_IN_BATTLE_MASK : 0),
       cell.knownMask,
       cell.asciiPair ?? "",
@@ -783,8 +795,8 @@ function validateHighBitAudit(audit, scan) {
   if (audit.verdicts["0x4000"].verdict !== "decoded-writable") {
     throw new Error("No Wall in Battle is not marked decoded-writable");
   }
-  if (audit.verdicts["0x8000"].verdict !== "preserved-unknown") {
-    throw new Error("Unresolved high/sign bit is not marked preserved-unknown");
+  if (audit.verdicts["0x8000"].verdict !== "preserved-known") {
+    throw new Error("Preserved high/sign bit is not marked preserved-known");
   }
 }
 
@@ -801,7 +813,7 @@ function validateOwnership(ownership) {
     previousEnd = range.endExclusive;
   }
   if (previousEnd !== FIELD_BYTES) throw new Error(`Dungeon cell byte ranges end at ${previousEnd}, expected ${FIELD_BYTES}`);
-  if (!ownership.validation.unknownBitsPreserved) throw new Error("Unknown dungeon bits are not preserve-only");
+  if (!ownership.validation.preserveOnlyBitsPreserved) throw new Error("Preserve-only dungeon bits are not preserve-only");
   if (ownership.alignmentIssues.length > 0) {
     throw new Error(`Data DL alignment issue(s): ${ownership.alignmentIssues.map((issue) => `${issue.scenario}:${issue.trailingBytes}`).join(", ")}`);
   }

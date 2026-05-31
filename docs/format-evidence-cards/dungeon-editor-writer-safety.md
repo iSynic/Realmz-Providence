@@ -41,7 +41,7 @@ Providence can turn dungeon authoring from raw bitfields into named primitives: 
 
 - `Data DL`, `Data DDD`, and `Data RDD` are present in 44/44 scenarios.
 - Existing dungeon evidence now distinguishes geometry bits, note markers, Action Point trigger markers, runtime reveal/hidden markers, and combat-map conversion masks.
-- The high-bit audit closes `0x4000` as Divinity's No Wall in Battle primitive and leaves `0x8000` as preserve-only unresolved high/sign data.
+- The high-bit audit closes `0x4000` as Divinity's No Wall in Battle primitive and classifies `0x8000` as preserve-only high/sign compatibility data, not a normal authored dungeon primitive.
 
 ## Providence Follow-Up
 
@@ -54,11 +54,11 @@ Providence can turn dungeon authoring from raw bitfields into named primitives: 
   - `docs/generated/dungeon-high-bit-audit.json`
 - Route note markers and Action Point trigger markers through Notes and Action Point workflows where possible.
 - Treat visible arch/revealed passage and hidden visual markers as runtime-sensitive until Divinity writer fixtures prove authored defaults.
-- Treat `0x4000` No Wall in Battle as a writer-safe primitive; preserve `0x8000` until ownership is proven.
+- Treat `0x4000` No Wall in Battle as a writer-safe primitive; preserve `0x8000` as known compatibility/sign baggage unless future Divinity evidence proves an authored control.
 - Keep dangerous raw bit toggles under Advanced Details.
 - Add fixtures for each primitive before exposing broad brush tools.
 - Link dungeon Action Points and Random Encounters through the same Action Point Hub concepts as land maps.
 
 ## Writer Gate
 
-No new broad Dungeon Editor workflow is ready until the exact bit masks, compatible combinations, runtime render effect, and save/reopen/export roundtrip are fixture-tested. The primitive helper coverage now includes source-backed No Wall in Battle while preserving unresolved high/sign bits.
+No new broad Dungeon Editor workflow is ready until the exact bit masks, compatible combinations, runtime render effect, and save/reopen/export roundtrip are fixture-tested. The primitive helper coverage now includes source-backed No Wall in Battle while preserving the high/sign compatibility bit.

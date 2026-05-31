@@ -1,4 +1,4 @@
-pub const DUNGEON_UNKNOWN_MASK: u16 = 0x8000;
+pub const DUNGEON_PRESERVED_HIGH_SIGN_MASK: u16 = 0x8000;
 
 pub const NO_WALL_IN_BATTLE_MASK: u16 = 0x4000;
 pub const WALL_MASK: u16 = 0x0001;
@@ -113,7 +113,7 @@ pub struct DungeonCellProfile {
     pub action_point_marker: bool,
     pub visible_arch: bool,
     pub no_wall_in_battle: bool,
-    pub unknown_bits: u16,
+    pub preserved_high_sign_bits: u16,
 }
 
 pub fn decode_dungeon_cell(value: i16) -> DungeonCellProfile {
@@ -136,7 +136,7 @@ pub fn decode_dungeon_cell(value: i16) -> DungeonCellProfile {
         action_point_marker: raw_mask & ACTION_POINT_MARKER_MASK != 0,
         visible_arch: raw_mask & VISIBLE_ARCH_MASK != 0,
         no_wall_in_battle: raw_mask & NO_WALL_IN_BATTLE_MASK != 0,
-        unknown_bits: raw_mask & DUNGEON_UNKNOWN_MASK,
+        preserved_high_sign_bits: raw_mask & DUNGEON_PRESERVED_HIGH_SIGN_MASK,
     }
 }
 
@@ -182,7 +182,7 @@ mod tests {
         assert!(profile.action_point_marker);
         assert!(profile.visible_arch);
         assert!(profile.no_wall_in_battle);
-        assert_eq!(profile.unknown_bits, 0);
+        assert_eq!(profile.preserved_high_sign_bits, 0);
     }
 
     #[test]
@@ -193,14 +193,14 @@ mod tests {
         assert!(profile.wall);
         assert!(profile.vertical_door);
         assert!(profile.note_marker);
-        assert_eq!(profile.unknown_bits, 0x8000);
+        assert_eq!(profile.preserved_high_sign_bits, 0x8000);
 
         let cleared = apply_dungeon_primitive(changed, DungeonPrimitive::Wall, false).unwrap();
         let profile = decode_dungeon_cell(cleared);
         assert!(!profile.wall);
         assert!(profile.vertical_door);
         assert!(profile.note_marker);
-        assert_eq!(profile.unknown_bits, 0x8000);
+        assert_eq!(profile.preserved_high_sign_bits, 0x8000);
     }
 
     #[test]

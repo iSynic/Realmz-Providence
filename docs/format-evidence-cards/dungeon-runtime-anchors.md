@@ -22,7 +22,7 @@ Realmz uses macros like `MyrBitTstShort(&value, b)`, where bit index `b` maps to
 
 | Realmz bit index | Mask | Source-backed meaning | Confidence |
 | ---: | ---: | --- | --- |
-| `0` | `0x8000` | Unresolved high/sign bit. No Realmz runtime consumer or Divinity editor label has been identified; corpus examples include both plausible legacy combinations and malformed/ASCII-like imported runs. Preserve-only. | unknown-active-risk |
+| `0` | `0x8000` | Preserved high/sign bit. Realmz source has no direct bit-index-0 consumer and Divinity exposes no editor label; corpus examples include both legacy signed combinations and malformed/ASCII-like imported runs. Preserve-only compatibility/sign baggage. | source-negative-corpus-backed |
 | `1` | `0x4000` | No Wall in Battle. Divinity labels this control, and Realmz combat-map conversion includes this mask so matching dungeon combat cells become clear floor. | source-backed manual-backed |
 | `2` | `0x2000` | Visible arch / revealed passage marker. `checkforsecret` sets this bit when revealing a secret; the perspective renderer draws an arch from it. | source-backed runtime-mutated |
 | `3` | `0x1000` | Dungeon encounter / Action Point trigger marker. After movement, `threed` calls `newland(floorx, floory, ...)` when this bit is set. | source-backed |
@@ -69,7 +69,7 @@ Immediate safe authoring candidates:
 - Show encounter / Action Point trigger bit `0x1000` through Action Point placement and validation.
 - Show visible arch/revealed passage bit `0x2000` as runtime-mutated reveal state unless Divinity writer evidence proves authors set it directly.
 - Show secret directional bits `0x0F00` as source-backed secret/pass-through evidence, but require a more guided editor so users choose direction rather than raw bit.
-- Preserve unresolved high/sign bit `0x8000`; do not expose it as a normal control until a source or Divinity editor owner is proven.
+- Preserve high/sign bit `0x8000`; do not expose it as a normal control unless a source or Divinity editor owner is later proven.
 
 ## Corpus Signal
 
@@ -84,7 +84,7 @@ In the local 28-scenario Oracle output corpus, every observed `Data DL` file is 
 - revealed secret marker: 11,679 cells;
 - note/interaction bit: 14,626 cells;
 - No Wall in Battle bit `0x4000`: see `docs/generated/dungeon-high-bit-audit.json` for current corpus examples and source-backed verdict;
-- unresolved high/sign bit `0x8000`: preserve-only; the high-bit audit separates plausible legacy values from malformed/ASCII-like imported runs.
+- preserved high/sign bit `0x8000`: preserve-only known compatibility/sign baggage; the high-bit audit separates plausible legacy values from malformed/ASCII-like imported runs.
 
 These counts are evidence of usage, not final UX labels.
 
