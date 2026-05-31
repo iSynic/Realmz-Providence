@@ -67,7 +67,7 @@ export function TargetPicker({
           }}
         >
           <option value="">Choose {config.label.toLowerCase()}</option>
-          {hasCurrentValue && <option value={`raw:${value}`}>Current raw ID {value}</option>}
+          {hasCurrentValue && <option value={`raw:${value}`}>Current value {value}</option>}
           {visibleTargets.map((target) => (
             <option key={target.key} value={target.value}>
               {target.label}
@@ -78,7 +78,7 @@ export function TargetPicker({
       <small>{detail}</small>
       {selected?.entity && (
         <button className="btn btn-secondary btn-xs" type="button" onClick={() => onInspect(selected.entity!)}>
-          Inspect Target
+          Open Target
         </button>
       )}
       {canCreateTarget && (
@@ -90,7 +90,7 @@ export function TargetPicker({
           {createTargetButtonLabel(config.recordType!, hasCurrentValue ? value : undefined)}
         </button>
       )}
-      {targets.length === 0 && <span className="target-picker-empty">No authorable targets are available yet.</span>}
+      {targets.length === 0 && <span className="target-picker-empty">No targets are available yet.</span>}
       {targets.length > 0 && filteredTargets.length === 0 && <span className="target-picker-empty">No targets match this search.</span>}
       {filteredTargets.length > visibleTargets.length && <span className="target-picker-empty">{filteredTargets.length - visibleTargets.length} more target(s); search to narrow.</span>}
     </div>
@@ -224,7 +224,7 @@ function addTypedProjectTargets(project: Project, code: number, options: ScriptT
   if ([2, 48, 56, 107].includes(code)) {
     const used = usageCounts(project, [2, 48, 56, 107]);
     for (const record of project.battles ?? []) {
-      options.push({ key: `battle:${record.id}`, value: record.id, label: `Battle ${record.id}`, detail: `${record.grid.filter(Boolean).length} monster slot(s)`, summary: `messages ${record.messageBefore}/${record.messageAfter}, macro ${record.battleMacro}, ${used.get(record.id) ?? 0} script use(s)`, compatibility: "Editable", sourceState: record.authored ? "Authored" : "Imported", entity: { type: "battle", id: `battle:${record.id}` } });
+      options.push({ key: `battle:${record.id}`, value: record.id, label: `Battle ${record.id}`, detail: `${record.grid.filter(Boolean).length} monster slot(s)`, summary: `messages ${record.messageBefore}/${record.messageAfter}, battle action ${record.battleMacro}, ${used.get(record.id) ?? 0} script use(s)`, compatibility: "Editable", sourceState: record.authored ? "Authored" : "Imported", entity: { type: "battle", id: `battle:${record.id}` } });
     }
   }
   if (code === 127) {
@@ -268,7 +268,7 @@ function addTypedProjectTargets(project: Project, code: number, options: ScriptT
   }
   if (code === 47) {
     for (const quest of project.questLabels ?? []) {
-      options.push({ key: `quest:${quest.id}`, value: quest.id, label: quest.label, detail: quest.note || "Providence metadata; Realmz value is opcode-driven", entity: { type: "questFlag", id: `quest:${quest.id}` } });
+      options.push({ key: `quest:${quest.id}`, value: quest.id, label: quest.label, detail: quest.note || "Quest metadata", entity: { type: "questFlag", id: `quest:${quest.id}` } });
     }
   }
 }

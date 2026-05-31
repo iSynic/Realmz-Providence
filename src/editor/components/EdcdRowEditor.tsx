@@ -113,7 +113,7 @@ export function EdcdRowEditor({
 
   return (
     <PanelSection
-      title={`Parameter Row ${rowId}`}
+      title={`Settings Row ${rowId}`}
       eyebrow="extra settings"
       density="compact"
       actions={
@@ -124,21 +124,21 @@ export function EdcdRowEditor({
             disabled={!onApplyCommand || !changed}
             onClick={() => onApplyCommand?.({
               kind: "updateEdcdRow",
-              label: `Update parameter row ${rowId}`,
+              label: `Update settings row ${rowId}`,
               rowId,
               values: numericDraft
             })}
           >
-            <Save size={12} /> Apply Parameters
+            <Save size={12} /> Apply Settings
           </button>
           {row && (
             <button
               type="button"
               className="btn btn-danger btn-xs"
               disabled={!onApplyCommand}
-              onClick={() => onApplyCommand?.({ kind: "deleteEdcdRow", label: `Delete parameter row ${rowId}`, rowId })}
+              onClick={() => onApplyCommand?.({ kind: "deleteEdcdRow", label: `Delete settings row ${rowId}`, rowId })}
             >
-              <Trash2 size={12} /> Delete Row
+              <Trash2 size={12} /> Clear Settings
             </button>
           )}
         </>
@@ -149,8 +149,8 @@ export function EdcdRowEditor({
         {!row && (
           <EmptyState
             compact
-            title="Missing parameter row"
-            body={`This ${selectedSlotLabel} references parameter row ${rowId}; applying values here will create the row for export-backed script data.`}
+            title="Settings not created yet"
+            body={`This ${selectedSlotLabel} uses settings row ${rowId}. Applying values here will create it.`}
           />
         )}
         {primaryFields.length > 0 ? (
@@ -158,10 +158,10 @@ export function EdcdRowEditor({
             {primaryFields.map((field) => renderParameterField(field))}
           </div>
         ) : (
-          <EmptyState compact title="No editable parameters" body="Realmz loads this row for compatibility; Providence preserves its values for export." />
+          <EmptyState compact title="No editable settings" body="This imported settings row does not have normal editable fields." />
         )}
         {preservedFields.length > 0 && (
-          <CollapsibleSection title="Preserved Values" eyebrow={`${preservedFields.length}`} density="compact" storageKey={`scripts.parameterRow.${rowId}.preserved.open`} defaultOpen={false}>
+          <CollapsibleSection title="Advanced Values" eyebrow={`${preservedFields.length}`} density="compact" storageKey={`scripts.parameterRow.${rowId}.preserved.open`} defaultOpen={false}>
             <div className="edcd-field-grid preserved">
               {preservedFields.map((field) => renderParameterField(field))}
             </div>
@@ -169,7 +169,7 @@ export function EdcdRowEditor({
         )}
         {edcdUsage?.secondaryRowId != null && (
           <div className="edcd-secondary-row">
-            <FieldRow label="Secondary Parameter Row" value={edcdUsage.secondaryRowId} />
+            <FieldRow label="Secondary Settings Row" value={edcdUsage.secondaryRowId} />
             {edcdUsage.secondaryFields?.map((field, index) => (
               <FieldRow key={`${edcdUsage.secondaryRowId}-${index}`} label={humanizeFieldName(field.name ?? `param${index}`)} value={field.value ?? 0} />
             ))}
@@ -362,9 +362,9 @@ function ChoiceDialogEditor({
               type="button"
               className="btn btn-danger btn-xs"
               disabled={!onApplyCommand}
-              onClick={() => onApplyCommand?.({ kind: "deleteEdcdRow", label: `Delete choice dialog ${rowId}`, rowId })}
+              onClick={() => onApplyCommand?.({ kind: "deleteEdcdRow", label: `Clear choice dialog ${rowId}`, rowId })}
             >
-              <Trash2 size={12} /> Delete Row
+              <Trash2 size={12} /> Clear Choice
             </button>
           )}
         </>
@@ -375,7 +375,7 @@ function ChoiceDialogEditor({
           <EmptyState
             compact
             title="Missing choice dialog settings"
-            body={`This ${selectedSlotLabel} references choice dialog ${rowId}; applying values here will create the parameter row Realmz uses for the Player Option action.`}
+            body={`This ${selectedSlotLabel} uses choice dialog ${rowId}. Applying values here will create it.`}
           />
         )}
         <div className="choice-dialog-grid">
@@ -426,7 +426,7 @@ function ChoiceDialogEditor({
             ) : (
               <input type="number" value={draft[2] ?? "0"} onChange={(event) => setField(2, Number(event.currentTarget.value))} />
             )}
-            <small>{branchKind ? selectedBranch?.detail ?? `${choiceBranchModeLabel(branchMode)} target.` : "Preserved unless the branch mode uses a target."}</small>
+            <small>{branchKind ? selectedBranch?.detail ?? `${choiceBranchModeLabel(branchMode)} target.` : "Only used when the branch mode needs a target."}</small>
           </label>
         </div>
         <div className="choice-prompt-grid">
@@ -565,7 +565,7 @@ function ChoicePromptField({
           <small>{selectedOptionLabel?.text || "Option labels are compact choice text."}</small>
         </label>
       )}
-      {prompt.kind === "default" && <p>Uses Realmz's standard Yes / No option text.</p>}
+      {prompt.kind === "default" && <p>Uses the standard Yes / No option text.</p>}
       <div className="choice-prompt-actions">
         {prompt.kind === "message" && prompt.id > 0 && (
           <button type="button" className="btn btn-secondary btn-xs" onClick={() => openMessage(prompt.id)}>

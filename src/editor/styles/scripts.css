@@ -686,6 +686,64 @@
   font-size: 10px;
 }
 
+.realmz-step-card .script-step-branch-hint {
+  color: #d5b8ff;
+}
+
+.script-flow-preview {
+  display: grid;
+  gap: 6px;
+  border: 1px solid #243140;
+  border-radius: 6px;
+  background: #0f151d;
+  padding: 8px;
+  margin-top: 8px;
+}
+
+.script-flow-preview > strong {
+  color: #8ec5ff;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.script-flow-preview > div {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 7px;
+  align-items: start;
+}
+
+.script-flow-preview span {
+  display: grid;
+  place-items: center;
+  height: 22px;
+  border: 1px solid #365371;
+  border-radius: 5px;
+  background: #132233;
+  color: #d7ecff;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.script-flow-preview p {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+}
+
+.script-flow-preview b {
+  color: #eef7ff;
+  font-size: 11px;
+}
+
+.script-flow-preview small {
+  color: #9fb2c6;
+  font-size: 10px;
+  line-height: 1.25;
+}
+
 
 
 .realmz-step-card b {

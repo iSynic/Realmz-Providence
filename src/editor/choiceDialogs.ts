@@ -9,6 +9,7 @@ export type ChoicePromptTarget = {
 };
 
 export const CHOICE_BRANCH_MODES = [
+  { value: -1, label: "Continue", help: "The other choice also continues to the next step without branching." },
   { value: 0, label: "Back Up", help: "The party backs up one step." },
   { value: 1, label: "Extra Action Point", help: "Branch to an Extra Action Point." },
   { value: 2, label: "Simple Encounter Result", help: "Branch inside the current simple encounter." },

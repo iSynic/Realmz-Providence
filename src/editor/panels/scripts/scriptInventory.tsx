@@ -29,7 +29,7 @@ export const ScriptListItem = memo(function ScriptListItem({
     >
       <strong>{scriptLabel(project, trigger)}</strong>
       <small>{scriptSubtitle(project, trigger)}</small>
-      {trigger.source === "Data ED3" && <small className="script-reachability-badge">{extraActionPointClassification(project, trigger)}</small>}
+      {trigger.source === "Data ED3" && <small className="script-reachability-badge">{authorFacingExtraActionKind(extraActionPointClassification(project, trigger))}</small>}
       <ScriptIssueBadge issues={issues} />
     </button>
   );
@@ -54,6 +54,11 @@ export function issueCountsBySlot(issues: ScriptDiagnostic[]) {
   return counts;
 }
 
+function authorFacingExtraActionKind(classification: string) {
+  return classification
+    .replace(/\bGlobal Macro\b/g, "Global Event")
+    .replace(/\bMacro\b/g, "Reusable Action");
+}
 
 export const SCRIPT_INVENTORY_FILTERS: Array<{ id: ScriptInventoryFilter; label: string }> = [
   { id: "current-map", label: "Current Map" },
@@ -61,7 +66,7 @@ export const SCRIPT_INVENTORY_FILTERS: Array<{ id: ScriptInventoryFilter; label:
   { id: "active", label: "Active" },
   { id: "reusable", label: "Reusable" },
   { id: "warnings", label: "Warnings" },
-  { id: "macros", label: "Macros" }
+  { id: "macros", label: "Reusable Actions" }
 ];
 
 export function filterScriptsByInventory(
@@ -103,12 +108,12 @@ export function triggerVisibleForEditor(project: Project | null, trigger: Trigge
 }
 
 export function scriptPanelTitle(activeEditor: string) {
-  if (activeEditor === "action-points") return "Action Points / GOSUBs";
-  if (activeEditor === "macros") return "Macro Editor";
+  if (activeEditor === "action-points") return "Action Points";
+  if (activeEditor === "macros") return "Reusable Actions";
   if (activeEditor === "ed3-evidence") return "Imported Extra Actions";
-  if (activeEditor === "global-macros") return "Global Macro Editor";
-  if (activeEditor === "quests") return "Quest Script Links";
-  return "Triggers And Macros";
+  if (activeEditor === "global-macros") return "Global Events";
+  if (activeEditor === "quests") return "Quest Actions";
+  return "Action Points";
 }
 
 export function scriptLabel(project: Project, trigger: TriggerRecord) {
@@ -124,12 +129,12 @@ export function scriptLabel(project: Project, trigger: TriggerRecord) {
 
 export function scriptSubtitle(project: Project, trigger: TriggerRecord) {
   if (trigger.source === "Data ED3") {
-    return `${extraActionPointClassification(project, trigger)} | record ${trigger.recordIndex}`;
+    return `${authorFacingExtraActionKind(extraActionPointClassification(project, trigger))} | ${trigger.actions.length} step${trigger.actions.length === 1 ? "" : "s"}`;
   }
   const map = project.maps.find((candidate) => candidate.levelType === trigger.levelType && candidate.index === trigger.levelIndex);
   const mapLabel = map?.name ?? `${trigger.levelType ?? "map"} ${trigger.levelIndex ?? 0}`;
   const coordinate = trigger.coordinate ? `${trigger.coordinate.x},${trigger.coordinate.y}` : isReusableDoorPlaceholder(trigger) ? "empty reusable slot" : "no coordinate";
-  return `${mapLabel} | record ${trigger.recordIndex} | ${coordinate}`;
+  return `${mapLabel} | ${coordinate}`;
 }
 
 export function scriptMatchesQuery(project: Project, trigger: TriggerRecord, query: string) {
@@ -147,10 +152,9 @@ export function actionSummary(action?: Action, slotEntity?: SemanticEntity) {
   if (!action) return "empty";
   const edcdUsage = slotEntity?.summary.edcdUsage as { summary?: string; rowId?: number; shape?: string } | undefined;
   if (edcdUsage?.summary) {
-    const prefix = edcdUsage.rowId != null ? `Parameter row ${edcdUsage.rowId}` : "Parameters";
-    return `${action.rawCode} / ${action.id} · ${prefix}: ${edcdUsage.summary}`;
+    return `Settings: ${edcdUsage.summary}`;
   }
-  return `${action.rawCode} / ${action.id} · ${action.label}${action.gosub ? " · GOSUB" : ""}`;
+  return `${action.label}${action.gosub ? " · reusable" : ""}`;
 }
 
 export function actionBelongsTo(trigger: TriggerRecord, entityId: string) {

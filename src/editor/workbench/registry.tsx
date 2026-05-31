@@ -77,13 +77,13 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     id: "scripts",
     label: "Action Point Hub",
     shortLabel: "AP",
-    description: "Action Points, GOSUBs, macros, global macros, quests, and links to the rest of the scenario.",
-    help: "Action Points are the scenario behavior hub. Visual steps present Realmz action slots with guided targets and parameters.",
+    description: "Action Points, reusable actions, global events, quests, and links to the rest of the scenario.",
+    help: "Action Points are the scenario behavior hub. Build them from clear steps, targets, settings, and reusable actions.",
     tools: [
-      t({ id: "action-points", label: "Action Points / GOSUBs", iconLabel: "AP", workbench: "project", description: "Create and edit map action slots.", entityTypes: ["trigger", "action-slot"], defaultInspector: "semantic" }),
-      t({ id: "macros", label: "Macros", iconLabel: "M", workbench: "project", description: "Extra Action Point macros and branch targets.", entityTypes: ["macro"], defaultInspector: "semantic" }),
-      t({ id: "ed3-evidence", label: "Imported Extra Actions", iconLabel: "EA", workbench: "project", description: "Imported Extra Action Point rows that are not callable macros yet.", entityTypes: ["ed3-action-record"], defaultInspector: "semantic" }),
-      t({ id: "global-macros", label: "Global Macros", iconLabel: "GM", workbench: "project", description: "Scenario-wide macro hooks and startup logic.", entityTypes: ["global-macro"], defaultInspector: "semantic" }),
+      t({ id: "action-points", label: "Action Points", iconLabel: "AP", workbench: "project", description: "Create and edit map Action Points.", entityTypes: ["trigger", "action-slot"], defaultInspector: "semantic" }),
+      t({ id: "macros", label: "Reusable Actions", iconLabel: "RA", workbench: "project", description: "Reusable actions and branch targets.", entityTypes: ["macro"], defaultInspector: "semantic" }),
+      t({ id: "global-macros", label: "Global Events", iconLabel: "GE", workbench: "project", description: "Scenario-wide event hooks and startup logic.", entityTypes: ["global-macro"], defaultInspector: "semantic" }),
+      t({ id: "ed3-evidence", label: "Advanced Imports", iconLabel: "AI", workbench: "project", description: "Imported advanced action data kept with the scenario.", entityTypes: ["ed3-action-record"], defaultInspector: "semantic" }),
       t({ id: "quests", label: "Quests", iconLabel: "Q", workbench: "project", description: "Quest flags and script references.", entityTypes: ["quest flag"], defaultInspector: "semantic" })
     ]
   },
@@ -120,7 +120,7 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     description: "Battles, monsters, Monster Scrapbook, and Monster Mash.",
     help: "Library material is usable reference data; project records remain editable where supported.",
     tools: [
-      t({ id: "battles", label: "Battle Editor", iconLabel: "B", workbench: "project", description: "Battle records, monster links, macros, and messages.", entityTypes: ["battle"], defaultInspector: "semantic" }),
+      t({ id: "battles", label: "Battle Editor", iconLabel: "B", workbench: "project", description: "Battle records, monster links, reusable actions, and messages.", entityTypes: ["battle"], defaultInspector: "semantic" }),
       t({ id: "monsters", label: "Monster Editor", iconLabel: "M", workbench: "both", description: "Monster records and cicn/icon links.", entityTypes: ["monster"], defaultInspector: "semantic" }),
       t({ id: "scrapbook", label: "Monster Scrapbook", iconLabel: "SB", workbench: "library", description: "Shared monster entries.", entityTypes: ["monster-scrapbook-entry"], defaultInspector: "resource" }),
       t({ id: "mash", label: "Monster Mash", iconLabel: "MM", workbench: "library", description: "Shared monster icon material.", entityTypes: ["monster-mash-icon"], defaultInspector: "resource" })

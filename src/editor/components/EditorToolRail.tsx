@@ -4,8 +4,8 @@ import { TutorialTip } from "./TutorialTip";
 
 const RAIL_HINTS: Record<EditorTab, { short: string; title: string; detail: string }> = {
   maps: { short: "Map", title: "Maps", detail: "Land levels, dungeon levels, tile painting, Action Points, Random Rectangles" },
-  scripts: { short: "AP", title: "Action Points", detail: "Action Point scripts, Extra Action Points, macros, CODE/ID links" },
-  scenario: { short: "Scn", title: "Scenario", detail: "Startup information, restrictions, contact data, global macros, registration" },
+  scripts: { short: "AP", title: "Action Points", detail: "Action Points, reusable actions, global events, and quest links" },
+  scenario: { short: "Scn", title: "Scenario", detail: "Startup information, restrictions, contact data, global events, registration" },
   encounters: { short: "Enc", title: "Encounters", detail: "Simple, complex, rogue, and timed encounters" },
   combat: { short: "Cmb", title: "Combat", detail: "Battles, monsters, Monster Scrapbook, Monster Mash" },
   economy: { short: "Eco", title: "Economy", detail: "Treasure, items, shops, Bag of Holding, Vault of Arcana" },
