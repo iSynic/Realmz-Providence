@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T02:23:32.693Z",
+  "generatedAt": "2026-05-31T02:51:14.682Z",
   "sources": {
     "byteOwnership": "docs/generated/scenario-byte-ownership.json",
     "unknownReport": "docs/generated/scenario-unknown-byte-report.json",
@@ -8,12 +8,14 @@
     "resourceCoverage": "docs/generated/resource-byte-ownership.json",
     "dungeonCoverage": "docs/generated/dungeon-byte-ownership.json",
     "customLandlookCoverage": "docs/generated/custom-landlook-coverage.json",
-    "rulesCoverage": "docs/generated/rules-resource-coverage.json"
+    "rulesCoverage": "docs/generated/rules-resource-coverage.json",
+    "actionPointWriterGate": "docs/generated/action-point-writer-gate.json"
   },
   "policy": {
     "note": "Truth statuses are stricter than legacy coverageStatus. Semantic ownership, writer readiness, evidence quality, and package compatibility are intentionally separate.",
     "scenarioSemanticsExcludeOptionalCodecs": true,
-    "writerReadinessRequiresFixtureOrExplicitGate": true
+    "writerReadinessRequiresFixtureOrExplicitGate": true,
+    "actionPointWriterGateStatus": "fixture-proven-fixed-row-storage"
   },
   "summary": {
     "containerCount": 88,
@@ -24,20 +26,20 @@
       "ignored": 1
     },
     "writerReadinessCounts": {
-      "writer-gated": 58,
+      "writer-gated": 56,
       "partially-proven": 5,
+      "fixture-proven": 4,
       "read-only": 1,
       "preserve-only": 8,
-      "not-applicable": 14,
-      "fixture-proven": 2
+      "not-applicable": 14
     },
     "evidenceQualityCounts": {
-      "cited": 68,
-      "fixture-backed": 7,
+      "cited": 66,
+      "fixture-backed": 9,
       "target-warning": 13
     },
     "riskFlagCounts": {
-      "structural-writer-claim": 58,
+      "structural-writer-claim": 56,
       "target-package-warning": 13,
       "writer-gated": 3
     },
@@ -52,10 +54,10 @@
     "writerProvenData": {
       "label": "Writer-Proven Data",
       "status": "incomplete",
-      "fixtureProvenContainers": 2,
+      "fixtureProvenContainers": 4,
       "partiallyProvenContainers": 5,
-      "writerGatedContainers": 58,
-      "percentContainers": 7.95
+      "writerGatedContainers": 56,
+      "percentContainers": 10.23
     },
     "packageCompatibility": {
       "label": "Package Compatibility",
@@ -71,7 +73,7 @@
       "decodedResourcePayloadBytes": 841240
     },
     "strictOutstanding": {
-      "writerGatedContainers": 58,
+      "writerGatedContainers": 56,
       "missingEvidenceContainers": 0,
       "skippedFixtureContainers": 0,
       "preservedUnknownContainers": 0,
@@ -423,17 +425,21 @@
         "decoded-writable"
       ],
       "evidence": [
+        "docs/generated/action-point-writer-gate.json",
         "docs/generated/extra-ap-reachability-source-map.json",
-        "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md"
+        "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md",
+        "src-tauri/src/realmz.rs:extra_action_point_writer_mutates_only_owned_slot_words"
       ],
-      "fixtureGate": null,
+      "fixtureGate": {
+        "name": "extra-action-point-fixed-row-storage",
+        "available": true,
+        "partialOnly": false
+      },
       "truth": {
         "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
+        "writerReadiness": "fixture-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
       }
     },
     {
@@ -480,17 +486,22 @@
         "decoded-writable"
       ],
       "evidence": [
+        "docs/generated/action-point-writer-gate.json",
         "docs/generated/opcode-edcd-crosswalk.json",
-        "docs/format-evidence-cards/edcd-opcode-source-map.md"
+        "docs/format-evidence-cards/edcd-opcode-source-map.md",
+        "src-tauri/src/realmz.rs:extracode_writer_mutates_only_owned_signed_short",
+        "src-tauri/src/realmz.rs:opcode_92_secondary_extracode_row_is_independently_owned"
       ],
-      "fixtureGate": null,
+      "fixtureGate": {
+        "name": "action-parameter-fixed-row-storage",
+        "available": true,
+        "partialOnly": false
+      },
       "truth": {
         "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
+        "writerReadiness": "fixture-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
       }
     },
     {

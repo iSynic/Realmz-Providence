@@ -11,6 +11,7 @@ const realmzActionsPath = path.join(repoRoot, "src/editor/realmzActions.ts");
 const realmzEdcdPath = path.join(repoRoot, "src/editor/realmzEdcd.ts");
 const newlandPath = "F:\\Realmz\\src\\realmz_orig\\newland.c";
 const outputJsonPath = path.join(repoRoot, "docs/generated/opcode-edcd-crosswalk.json");
+const outputWriterGatePath = path.join(repoRoot, "docs/generated/action-point-writer-gate.json");
 const outputMarkdownPath = path.join(repoRoot, "docs/format-evidence-cards/opcode-edcd-crosswalk.md");
 const uiOutputPath = path.join(repoRoot, "src/editor/generated/opcodeEdcdCrosswalk.json");
 
@@ -163,16 +164,165 @@ const artifact = {
 };
 
 const uiCrosswalk = buildUiCrosswalk(artifact);
+const actionPointWriterGate = buildActionPointWriterGate(artifact);
 assertCrosswalk(artifact, uiCrosswalk);
+assertActionPointWriterGate(actionPointWriterGate);
 writeJson(outputJsonPath, artifact);
+writeJson(outputWriterGatePath, actionPointWriterGate);
 writeJson(uiOutputPath, uiCrosswalk);
 fs.mkdirSync(path.dirname(outputMarkdownPath), { recursive: true });
 fs.writeFileSync(outputMarkdownPath, renderMarkdown(artifact));
 
 console.log(`Wrote ${path.relative(repoRoot, outputJsonPath)}`);
+console.log(`Wrote ${path.relative(repoRoot, outputWriterGatePath)}`);
 console.log(`Wrote ${path.relative(repoRoot, outputMarkdownPath)}`);
 console.log(`Wrote ${path.relative(repoRoot, uiOutputPath)}`);
 console.log(JSON.stringify(summary, null, 2));
+
+function buildActionPointWriterGate(artifact) {
+  const edcdRows = artifact.rows.filter((row) => row.providence.edcdBacked);
+  const directEd3Rows = artifact.rows.filter((row) => row.providence.directExtraActionPoint);
+  const opcode8 = artifact.rows.find((row) => row.opcode === 8);
+  const opcode39 = artifact.rows.find((row) => row.opcode === 39);
+  const opcode92 = artifact.rows.find((row) => row.opcode === 92);
+  const fieldComparisonGaps = artifact.summary.fieldComparisonGaps ?? [];
+  const generatedAt = artifact.generatedAt;
+  return {
+    schemaVersion: 1,
+    generatedAt,
+    sources: {
+      opcodeCrosswalk: "docs/generated/opcode-edcd-crosswalk.json",
+      extraActionReachability: "docs/generated/extra-ap-reachability-source-map.json",
+      edcdSourceMap: "docs/generated/edcd-opcode-source-map.json",
+      storageEvidence: "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md",
+      edcdEvidence: "docs/format-evidence-cards/edcd-opcode-source-map.md",
+      realmzRuntime: [
+        "F:/Realmz/src/realmz_orig/flashrange-loaddoor.c:43",
+        "F:/Realmz/src/realmz_orig/misc.c:560",
+        "F:/Realmz/src/realmz_orig/structs.h"
+      ],
+      fixtureTests: [
+        "src-tauri/src/realmz.rs:extra_action_point_writer_mutates_only_owned_slot_words",
+        "src-tauri/src/realmz.rs:extracode_writer_mutates_only_owned_signed_short",
+        "src-tauri/src/realmz.rs:opcode_92_secondary_extracode_row_is_independently_owned"
+      ]
+    },
+    policy: {
+      note: "Fixed-row writability is separate from normal author-facing reachability. Providence can safely rewrite ED3/EDCD rows, but unreferenced Extra Action Points remain imported/preserved until source-backed reachability promotes them.",
+      normalUiTerms: ["Extra Action Point", "Parameters", "Parameter Row"],
+      advancedOnlyTerms: ["Data ED3", "Data EDCD", "row ID", "opcode shape"]
+    },
+    summary: {
+      containers: 2,
+      edcdBackedOpcodes: edcdRows.length,
+      directExtraActionPointOpcodes: directEd3Rows.map((row) => row.opcode),
+      fieldComparisonGaps,
+      writerReadiness: "fixture-proven-fixed-row-storage",
+      semanticExposure: "reachability-and-opcode-gated"
+    },
+    gates: [
+      {
+        container: "Data ED3",
+        authorFacingName: "Extra Action Point records",
+        recordBytes: 40,
+        rowKind: "Realmz door script row",
+        runtimeLoader: "loaddoor2(id)",
+        writerStatus: "fixture-proven-fixed-row",
+        semanticExposure: "reachability-gated",
+        sourceAnchors: [
+          "F:/Realmz/src/realmz_orig/flashrange-loaddoor.c:43",
+          "F:/Realmz/src/realmz_orig/structs.h"
+        ],
+        ownedFields: [
+          { field: "Extra Action Point ID", internal: "doorid", offset: 0, bytes: 4, type: "i32be" },
+          { field: "Level", internal: "landid", offset: 4, bytes: 1, type: "u8" },
+          { field: "X", internal: "landx", offset: 5, bytes: 1, type: "u8" },
+          { field: "Y", internal: "landy", offset: 6, bytes: 1, type: "u8" },
+          { field: "Chance", internal: "percent", offset: 7, bytes: 1, type: "u8" },
+          { field: "Action codes", internal: "code[8]", offset: 8, bytes: 16, type: "i16be[8]" },
+          { field: "Action IDs", internal: "id[8]", offset: 24, bytes: 16, type: "i16be[8]" }
+        ],
+        fixtureEvidence: [
+          "extra_action_points_round_trip",
+          "extra_action_point_writer_mutates_only_owned_slot_words"
+        ],
+        preservationPolicy:
+          "Inactive or unreferenced rows remain byte-preserved through fixed-row parse/write. Normal UI promotion still depends on reachability."
+      },
+      {
+        container: "Data EDCD",
+        authorFacingName: "Action parameter rows",
+        recordBytes: 10,
+        rowKind: "five signed-short parameter row",
+        runtimeLoader: "loadextracode(id)",
+        writerStatus: "fixture-proven-fixed-row",
+        semanticExposure: "opcode-crosswalk-gated",
+        sourceAnchors: [
+          "F:/Realmz/src/realmz_orig/misc.c:560",
+          "F:/Realmz/src/realmz_orig/newland.c"
+        ],
+        ownedFields: [0, 1, 2, 3, 4].map((index) => ({
+          field: `Parameter ${index + 1}`,
+          internal: `extracode[${index}]`,
+          offset: index * 2,
+          bytes: 2,
+          type: "i16be"
+        })),
+        fixtureEvidence: [
+          "extracodes_round_trip",
+          "extracode_writer_mutates_only_owned_signed_short",
+          "opcode_92_secondary_extracode_row_is_independently_owned"
+        ],
+        opcodeOwnership: {
+          edcdBackedOpcodes: edcdRows.map((row) => row.opcode),
+          fieldComparisonGaps,
+          specialCases: [
+            {
+              opcode: 8,
+              title: opcode8?.divinity.title ?? "Same-map Action Point copy",
+              status: "same-map-action-point-copy",
+              note: "ID copies another Action Point on the current map; it is not an ED3 or EDCD target."
+            },
+            {
+              opcode: 39,
+              title: opcode39?.divinity.title ?? "Extra Action Point",
+              status: "direct-extra-action-point",
+              note: "ID directly selects a Data ED3 row; opcode 39 is not EDCD-backed."
+            },
+            {
+              opcode: 92,
+              title: opcode92?.divinity.title ?? "Two-row parameter action",
+              status: "primary-and-secondary-parameter-rows",
+              note: "Realmz consumes the primary parameter row and the following row (ID + 1); fixture tests prove each row remains independently owned."
+            }
+          ]
+        },
+        preservationPolicy:
+          "All rows remain fixed-row preserved. User-facing labels come from the opcode crosswalk; uncertain/unreachable rows remain imported values."
+      }
+    ],
+    validation: {
+      edcdBackedOpcodes: edcdRows.length,
+      fieldComparisonGaps: fieldComparisonGaps.length,
+      opcode39DirectEd3: Boolean(opcode39?.providence.directExtraActionPoint && !opcode39.providence.edcdBacked),
+      opcode8SameMapActionPointCopy: Boolean(opcode8?.providence.sameMapActionPointCopy && !opcode8.providence.edcdBacked),
+      opcode92SecondaryRow: Boolean(opcode92?.providence.edcdBacked),
+      fixedRowsPreserveInactiveRows: true
+    }
+  };
+}
+
+function assertActionPointWriterGate(gate) {
+  const errors = [];
+  if (gate.summary.edcdBackedOpcodes !== 70) errors.push(`expected 70 EDCD-backed opcodes, got ${gate.summary.edcdBackedOpcodes}`);
+  if (gate.validation.fieldComparisonGaps !== 0) errors.push(`expected no EDCD field-comparison gaps, got ${gate.validation.fieldComparisonGaps}`);
+  if (!gate.validation.opcode39DirectEd3) errors.push("opcode 39 must remain a direct Extra Action Point target");
+  if (!gate.validation.opcode8SameMapActionPointCopy) errors.push("opcode 8 must remain a same-map Action Point copy");
+  if (!gate.validation.opcode92SecondaryRow) errors.push("opcode 92 must remain EDCD-backed with secondary-row handling");
+  if (errors.length) {
+    throw new Error(`Action Point writer gate failed: ${errors.join("; ")}`);
+  }
+}
 
 function buildCrosswalkRow(code) {
   const action = actionDetails.get(code);

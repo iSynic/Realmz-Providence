@@ -135,8 +135,22 @@ export type ScenarioCoverageManifest = {
     };
     runtimeStateContainers: number;
     needsFormatWork: number;
-    ed3: { status: string; recordBytes: number; runtimeCallsites: number | null; evidence: string };
-    edcd: { status: string; edcdBackedOpcodes: number | null; fieldComparisonGaps: number | null; evidence: string };
+    ed3: {
+      status: string;
+      recordBytes: number;
+      writerStatus?: string | null;
+      semanticExposure?: string | null;
+      runtimeCallsites: number | null;
+      evidence: string | string[];
+    };
+    edcd: {
+      status: string;
+      edcdBackedOpcodes: number | null;
+      fieldComparisonGaps: number | null;
+      writerStatus?: string | null;
+      semanticExposure?: string | null;
+      evidence: string | string[];
+    };
   };
   statusLabels: Record<string, string>;
   topRisks: ScenarioCoverageRisk[];

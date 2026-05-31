@@ -13,6 +13,7 @@ const dungeonByteOwnershipPath = path.join(repoRoot, "docs/generated/dungeon-byt
 const customLandlookCoveragePath = path.join(repoRoot, "docs/generated/custom-landlook-coverage.json");
 const rulesCoveragePath = path.join(repoRoot, "docs/generated/rules-resource-coverage.json");
 const targetCompatibilityPath = path.join(repoRoot, "docs/generated/scenario-target-compatibility.json");
+const actionPointWriterGatePath = path.join(repoRoot, "docs/generated/action-point-writer-gate.json");
 const realmzRsPath = path.join(repoRoot, "src-tauri/src/realmz.rs");
 
 const fileInventoryPath = path.join(repoRoot, "docs/generated/scenario-file-inventory.json");
@@ -117,6 +118,29 @@ const STATUS_LABELS = {
 };
 
 const FIXTURE_GATES = {
+  "Data ED3": {
+    gate: "extra-action-point-fixed-row-storage",
+    fixturePaths: [
+      "F:/Realmz/base/Realmz/Scenarios/Tutorial",
+      "F:/Realmz/out_win_clang/Scenarios/Araman's Ring"
+    ],
+    evidence: [
+      "docs/generated/action-point-writer-gate.json",
+      "src-tauri/src/realmz.rs:extra_action_point_writer_mutates_only_owned_slot_words"
+    ]
+  },
+  "Data EDCD": {
+    gate: "action-parameter-fixed-row-storage",
+    fixturePaths: [
+      "F:/Realmz/base/Realmz/Scenarios/Tutorial",
+      "F:/Realmz/out_win_clang/Scenarios/Araman's Ring"
+    ],
+    evidence: [
+      "docs/generated/action-point-writer-gate.json",
+      "src-tauri/src/realmz.rs:extracode_writer_mutates_only_owned_signed_short",
+      "src-tauri/src/realmz.rs:opcode_92_secondary_extracode_row_is_independently_owned"
+    ]
+  },
   "Data Custom 1 BD": {
     gate: "custom-landlook-metadata-and-atlas",
     fixturePaths: [
@@ -200,6 +224,7 @@ const dungeonByteOwnership = readOptionalJson(dungeonByteOwnershipPath);
 const customLandlookCoverage = readOptionalJson(customLandlookCoveragePath);
 const rulesCoverage = readOptionalJson(rulesCoveragePath);
 const targetCompatibility = readOptionalJson(targetCompatibilityPath);
+const actionPointWriterGate = readOptionalJson(actionPointWriterGatePath);
 const rustRegistry = parseRustRegistry(fs.readFileSync(realmzRsPath, "utf8"));
 const parsedResourceForkNames = new Set(
   (resourceByteOwnership?.forks ?? [])
@@ -479,12 +504,14 @@ function buildCompletenessTruth(inventory, ownership, unknownReport) {
       resourceCoverage: "docs/generated/resource-byte-ownership.json",
       dungeonCoverage: "docs/generated/dungeon-byte-ownership.json",
       customLandlookCoverage: "docs/generated/custom-landlook-coverage.json",
-      rulesCoverage: "docs/generated/rules-resource-coverage.json"
+      rulesCoverage: "docs/generated/rules-resource-coverage.json",
+      actionPointWriterGate: "docs/generated/action-point-writer-gate.json"
     },
     policy: {
       note: "Truth statuses are stricter than legacy coverageStatus. Semantic ownership, writer readiness, evidence quality, and package compatibility are intentionally separate.",
       scenarioSemanticsExcludeOptionalCodecs: true,
-      writerReadinessRequiresFixtureOrExplicitGate: true
+      writerReadinessRequiresFixtureOrExplicitGate: true,
+      actionPointWriterGateStatus: actionPointWriterGate?.summary?.writerReadiness ?? null
     },
     summary,
     containers
@@ -927,13 +954,13 @@ function byteRangesForFile(file, layout) {
   }
   if (file.name === "Data ED3") {
     return [
-      { start: 0, length: 4, endExclusive: 4, status: "decoded-writable", field: "Extra Action Point ID", internal: "doorid" },
-      { start: 4, length: 1, endExclusive: 5, status: "decoded-writable", field: "Level", internal: "landid" },
-      { start: 5, length: 1, endExclusive: 6, status: "decoded-writable", field: "X", internal: "landx" },
-      { start: 6, length: 1, endExclusive: 7, status: "decoded-writable", field: "Y", internal: "landy" },
-      { start: 7, length: 1, endExclusive: 8, status: "decoded-writable", field: "Chance", internal: "percent" },
-      { start: 8, length: 16, endExclusive: 24, status: "decoded-writable", field: "Action codes", internal: "code[8]" },
-      { start: 24, length: 16, endExclusive: 40, status: "decoded-writable", field: "Action IDs", internal: "id[8]" }
+      { start: 0, length: 4, endExclusive: 4, status: "decoded-writable", field: "Extra Action Point ID", internal: "doorid", writerGate: "docs/generated/action-point-writer-gate.json" },
+      { start: 4, length: 1, endExclusive: 5, status: "decoded-writable", field: "Level", internal: "landid", writerGate: "docs/generated/action-point-writer-gate.json" },
+      { start: 5, length: 1, endExclusive: 6, status: "decoded-writable", field: "X", internal: "landx", writerGate: "docs/generated/action-point-writer-gate.json" },
+      { start: 6, length: 1, endExclusive: 7, status: "decoded-writable", field: "Y", internal: "landy", writerGate: "docs/generated/action-point-writer-gate.json" },
+      { start: 7, length: 1, endExclusive: 8, status: "decoded-writable", field: "Chance", internal: "percent", writerGate: "docs/generated/action-point-writer-gate.json" },
+      { start: 8, length: 16, endExclusive: 24, status: "decoded-writable", field: "Action codes", internal: "code[8]", writerGate: "docs/generated/action-point-writer-gate.json" },
+      { start: 24, length: 16, endExclusive: 40, status: "decoded-writable", field: "Action IDs", internal: "id[8]", writerGate: "docs/generated/action-point-writer-gate.json" }
     ];
   }
   if (file.name === "Data EDCD") {
@@ -943,7 +970,8 @@ function byteRangesForFile(file, layout) {
       endExclusive: index * 2 + 2,
       status: "decoded-writable",
       field: `Parameter ${index + 1}`,
-      internal: `extracode[${index}]`
+      internal: `extracode[${index}]`,
+      writerGate: "docs/generated/action-point-writer-gate.json"
     }));
   }
   if (layout?.recordBytes) {
@@ -994,9 +1022,11 @@ function evidenceForFile(name, status) {
     evidence.push("docs/generated/dungeon-high-bit-audit.json");
     evidence.push("docs/format-evidence-cards/dungeon-runtime-anchors.md");
   } else if (name === "Data ED3") {
+    evidence.push("docs/generated/action-point-writer-gate.json");
     evidence.push("docs/generated/extra-ap-reachability-source-map.json");
     evidence.push("docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md");
   } else if (name === "Data EDCD") {
+    evidence.push("docs/generated/action-point-writer-gate.json");
     evidence.push("docs/generated/opcode-edcd-crosswalk.json");
     evidence.push("docs/format-evidence-cards/edcd-opcode-source-map.md");
   } else if (name === "Data OD" || name === "Data SD2") {
@@ -1196,22 +1226,34 @@ function parseRustStringArray(source, name) {
 function ed3Summary() {
   const pathToFile = path.join(repoRoot, "docs/generated/extra-ap-reachability-source-map.json");
   const data = readJson(pathToFile);
+  const gate = actionPointWriterGate?.gates?.find((entry) => entry.container === "Data ED3");
   return {
-    status: "Extra Action Point bytes structurally decoded; reachability is source-audited.",
+    status: "Extra Action Point storage is fixed-row writer-proven; normal authoring remains reachability-gated.",
     recordBytes: data.storage?.recordBytes ?? 40,
+    writerStatus: gate?.writerStatus ?? null,
+    semanticExposure: gate?.semanticExposure ?? "reachability-gated",
     runtimeCallsites: data.loaddoor2CallsiteAudit?.totalRuntimeCallsites ?? null,
-    evidence: "docs/generated/extra-ap-reachability-source-map.json"
+    evidence: [
+      "docs/generated/action-point-writer-gate.json",
+      "docs/generated/extra-ap-reachability-source-map.json"
+    ]
   };
 }
 
 function edcdSummary() {
   const pathToFile = path.join(repoRoot, "docs/generated/opcode-edcd-crosswalk.json");
   const data = readJson(pathToFile);
+  const gate = actionPointWriterGate?.gates?.find((entry) => entry.container === "Data EDCD");
   return {
-    status: "Action parameter rows structurally decoded; opcode-specific labels come from the crosswalk.",
+    status: "Action parameter row storage is fixed-row writer-proven; field labels remain opcode-crosswalk-gated.",
     edcdBackedOpcodes: data.summary?.edcdBacked ?? null,
     fieldComparisonGaps: data.summary?.fieldComparisonGaps?.length ?? null,
-    evidence: "docs/generated/opcode-edcd-crosswalk.json"
+    writerStatus: gate?.writerStatus ?? null,
+    semanticExposure: gate?.semanticExposure ?? "opcode-crosswalk-gated",
+    evidence: [
+      "docs/generated/action-point-writer-gate.json",
+      "docs/generated/opcode-edcd-crosswalk.json"
+    ]
   };
 }
 

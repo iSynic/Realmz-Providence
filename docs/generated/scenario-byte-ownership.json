@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T02:23:32.691Z",
+  "generatedAt": "2026-05-31T02:51:14.680Z",
   "classifications": [
     "decoded-writable",
     "decoded-readonly",
@@ -604,7 +604,8 @@
           "endExclusive": 4,
           "status": "decoded-writable",
           "field": "Extra Action Point ID",
-          "internal": "doorid"
+          "internal": "doorid",
+          "writerGate": "docs/generated/action-point-writer-gate.json"
         },
         {
           "start": 4,
@@ -612,7 +613,8 @@
           "endExclusive": 5,
           "status": "decoded-writable",
           "field": "Level",
-          "internal": "landid"
+          "internal": "landid",
+          "writerGate": "docs/generated/action-point-writer-gate.json"
         },
         {
           "start": 5,
@@ -620,7 +622,8 @@
           "endExclusive": 6,
           "status": "decoded-writable",
           "field": "X",
-          "internal": "landx"
+          "internal": "landx",
+          "writerGate": "docs/generated/action-point-writer-gate.json"
         },
         {
           "start": 6,
@@ -628,7 +631,8 @@
           "endExclusive": 7,
           "status": "decoded-writable",
           "field": "Y",
-          "internal": "landy"
+          "internal": "landy",
+          "writerGate": "docs/generated/action-point-writer-gate.json"
         },
         {
           "start": 7,
@@ -636,7 +640,8 @@
           "endExclusive": 8,
           "status": "decoded-writable",
           "field": "Chance",
-          "internal": "percent"
+          "internal": "percent",
+          "writerGate": "docs/generated/action-point-writer-gate.json"
         },
         {
           "start": 8,
@@ -644,7 +649,8 @@
           "endExclusive": 24,
           "status": "decoded-writable",
           "field": "Action codes",
-          "internal": "code[8]"
+          "internal": "code[8]",
+          "writerGate": "docs/generated/action-point-writer-gate.json"
         },
         {
           "start": 24,
@@ -652,11 +658,13 @@
           "endExclusive": 40,
           "status": "decoded-writable",
           "field": "Action IDs",
-          "internal": "id[8]"
+          "internal": "id[8]",
+          "writerGate": "docs/generated/action-point-writer-gate.json"
         }
       ],
       "resourceTypes": [],
       "evidence": [
+        "docs/generated/action-point-writer-gate.json",
         "docs/generated/extra-ap-reachability-source-map.json",
         "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md"
       ],
@@ -711,7 +719,8 @@
           "endExclusive": 2,
           "status": "decoded-writable",
           "field": "Parameter 1",
-          "internal": "extracode[0]"
+          "internal": "extracode[0]",
+          "writerGate": "docs/generated/action-point-writer-gate.json"
         },
         {
           "start": 2,
@@ -719,7 +728,8 @@
           "endExclusive": 4,
           "status": "decoded-writable",
           "field": "Parameter 2",
-          "internal": "extracode[1]"
+          "internal": "extracode[1]",
+          "writerGate": "docs/generated/action-point-writer-gate.json"
         },
         {
           "start": 4,
@@ -727,7 +737,8 @@
           "endExclusive": 6,
           "status": "decoded-writable",
           "field": "Parameter 3",
-          "internal": "extracode[2]"
+          "internal": "extracode[2]",
+          "writerGate": "docs/generated/action-point-writer-gate.json"
         },
         {
           "start": 6,
@@ -735,7 +746,8 @@
           "endExclusive": 8,
           "status": "decoded-writable",
           "field": "Parameter 4",
-          "internal": "extracode[3]"
+          "internal": "extracode[3]",
+          "writerGate": "docs/generated/action-point-writer-gate.json"
         },
         {
           "start": 8,
@@ -743,11 +755,13 @@
           "endExclusive": 10,
           "status": "decoded-writable",
           "field": "Parameter 5",
-          "internal": "extracode[4]"
+          "internal": "extracode[4]",
+          "writerGate": "docs/generated/action-point-writer-gate.json"
         }
       ],
       "resourceTypes": [],
       "evidence": [
+        "docs/generated/action-point-writer-gate.json",
         "docs/generated/opcode-edcd-crosswalk.json",
         "docs/format-evidence-cards/edcd-opcode-source-map.md"
       ],

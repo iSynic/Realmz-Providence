@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T02:23:32.693Z",
+  "generatedAt": "2026-05-31T02:51:14.682Z",
   "summary": {
     "scenarioRoots": 87,
     "fileFamilies": 88,
@@ -35,20 +35,20 @@
         "ignored": 1
       },
       "writerReadinessCounts": {
-        "writer-gated": 58,
+        "writer-gated": 56,
         "partially-proven": 5,
+        "fixture-proven": 4,
         "read-only": 1,
         "preserve-only": 8,
-        "not-applicable": 14,
-        "fixture-proven": 2
+        "not-applicable": 14
       },
       "evidenceQualityCounts": {
-        "cited": 68,
-        "fixture-backed": 7,
+        "cited": 66,
+        "fixture-backed": 9,
         "target-warning": 13
       },
       "riskFlagCounts": {
-        "structural-writer-claim": 58,
+        "structural-writer-claim": 56,
         "target-package-warning": 13,
         "writer-gated": 3
       },
@@ -63,10 +63,10 @@
       "writerProvenData": {
         "label": "Writer-Proven Data",
         "status": "incomplete",
-        "fixtureProvenContainers": 2,
+        "fixtureProvenContainers": 4,
         "partiallyProvenContainers": 5,
-        "writerGatedContainers": 58,
-        "percentContainers": 7.95
+        "writerGatedContainers": 56,
+        "percentContainers": 10.23
       },
       "packageCompatibility": {
         "label": "Package Compatibility",
@@ -82,7 +82,7 @@
         "decodedResourcePayloadBytes": 841240
       },
       "strictOutstanding": {
-        "writerGatedContainers": 58,
+        "writerGatedContainers": 56,
         "missingEvidenceContainers": 0,
         "skippedFixtureContainers": 0,
         "preservedUnknownContainers": 0,
@@ -124,16 +124,26 @@
     "runtimeStateContainers": 1,
     "needsFormatWork": 0,
     "ed3": {
-      "status": "Extra Action Point bytes structurally decoded; reachability is source-audited.",
+      "status": "Extra Action Point storage is fixed-row writer-proven; normal authoring remains reachability-gated.",
       "recordBytes": 40,
+      "writerStatus": "fixture-proven-fixed-row",
+      "semanticExposure": "reachability-gated",
       "runtimeCallsites": 36,
-      "evidence": "docs/generated/extra-ap-reachability-source-map.json"
+      "evidence": [
+        "docs/generated/action-point-writer-gate.json",
+        "docs/generated/extra-ap-reachability-source-map.json"
+      ]
     },
     "edcd": {
-      "status": "Action parameter rows structurally decoded; opcode-specific labels come from the crosswalk.",
+      "status": "Action parameter row storage is fixed-row writer-proven; field labels remain opcode-crosswalk-gated.",
       "edcdBackedOpcodes": 70,
       "fieldComparisonGaps": 0,
-      "evidence": "docs/generated/opcode-edcd-crosswalk.json"
+      "writerStatus": "fixture-proven-fixed-row",
+      "semanticExposure": "opcode-crosswalk-gated",
+      "evidence": [
+        "docs/generated/action-point-writer-gate.json",
+        "docs/generated/opcode-edcd-crosswalk.json"
+      ]
     }
   },
   "statusLabels": {

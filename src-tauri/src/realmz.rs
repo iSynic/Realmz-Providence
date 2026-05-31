@@ -3296,6 +3296,39 @@ mod tests {
     }
 
     #[test]
+    fn extra_action_point_writer_mutates_only_owned_slot_words() {
+        let mut input = vec![0u8; DOOR_BYTES * 2];
+        write_i16_be(&mut input, 8, 24);
+        write_i16_be(&mut input, 24, 111);
+        let row_start = DOOR_BYTES;
+        let slot = 3;
+        write_i16_be(&mut input, row_start + 8 + slot * 2, 0x0102);
+        write_i16_be(&mut input, row_start + 24 + slot * 2, 0x0506);
+
+        let mut macros = parse_macro_file(&input);
+        let action = macros[1]
+            .actions
+            .iter_mut()
+            .find(|action| action.slot == slot)
+            .expect("fixture action slot should parse");
+        action.raw_code = 0x0304;
+        action.code = action.raw_code;
+        action.id = 0x0708;
+
+        let output = write_macro_file(&macros).unwrap();
+        assert_eq!(output.len(), input.len());
+        assert_eq!(
+            changed_offsets(&input, &output),
+            vec![
+                row_start + 8 + slot * 2,
+                row_start + 8 + slot * 2 + 1,
+                row_start + 24 + slot * 2,
+                row_start + 24 + slot * 2 + 1
+            ]
+        );
+    }
+
+    #[test]
     fn random_levels_round_trip() {
         let mut input = vec![0u8; RANDLEVEL_BYTES];
         write_i16_be(&mut input, 0, 1);
@@ -3692,6 +3725,56 @@ mod tests {
         let rows = parse_extracodes(&input);
         let output = write_extracodes(&rows).unwrap();
         assert_eq!(input, output);
+    }
+
+    #[test]
+    fn extracode_writer_mutates_only_owned_signed_short() {
+        let mut input = vec![0u8; EXTRACODE_BYTES * 3];
+        let row = 1;
+        let field = 3;
+        write_i16_be(&mut input, row * EXTRACODE_BYTES + field * 2, 0x0102);
+
+        let mut rows = parse_extracodes(&input);
+        rows[row].values[field] = 0x0304;
+        let output = write_extracodes(&rows).unwrap();
+
+        assert_eq!(output.len(), input.len());
+        assert_eq!(
+            changed_offsets(&input, &output),
+            vec![
+                row * EXTRACODE_BYTES + field * 2,
+                row * EXTRACODE_BYTES + field * 2 + 1
+            ]
+        );
+    }
+
+    #[test]
+    fn opcode_92_secondary_extracode_row_is_independently_owned() {
+        let primary_row = 7;
+        let secondary_row = primary_row + 1;
+        let mut input = vec![0u8; EXTRACODE_BYTES * (secondary_row + 1)];
+        write_i16_be(&mut input, primary_row * EXTRACODE_BYTES, 0x0102);
+        write_i16_be(
+            &mut input,
+            secondary_row * EXTRACODE_BYTES + 8,
+            0x0506,
+        );
+
+        let mut rows = parse_extracodes(&input);
+        rows[primary_row].values[0] = 0x0304;
+        rows[secondary_row].values[4] = 0x0708;
+        let output = write_extracodes(&rows).unwrap();
+
+        assert_eq!(output.len(), input.len());
+        assert_eq!(
+            changed_offsets(&input, &output),
+            vec![
+                primary_row * EXTRACODE_BYTES,
+                primary_row * EXTRACODE_BYTES + 1,
+                secondary_row * EXTRACODE_BYTES + 8,
+                secondary_row * EXTRACODE_BYTES + 9
+            ]
+        );
     }
 
     #[test]
