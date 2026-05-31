@@ -64,6 +64,13 @@ export type ScenarioCoverageManifest = {
       warnings: number;
       errors: number;
     } | null;
+    functionalAuthoringReadiness?: {
+      status: string;
+      readySystems: number;
+      totalSystems: number;
+      functionalBlockers: number;
+      blockerIds: string[];
+    } | null;
     strictCompleteness?: {
       scenarioSemantics: {
         label: string;

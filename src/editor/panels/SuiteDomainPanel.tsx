@@ -919,6 +919,7 @@ function emptyScenarioItemForUi(id: number): ScenarioItemRecord {
     specificCaste: 0,
     raceClassOnly: 0,
     casteClassOnly: 0,
+    spare2: new Array(7).fill(0),
     vSmall: 0,
     vLarge: 0,
     heat: 0,

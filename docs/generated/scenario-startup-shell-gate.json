@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T05:12:05.858Z",
+  "generatedAt": "2026-05-31T14:25:12.899Z",
   "generatedBy": "scripts/generate_scenario_byte_coverage.mjs",
   "target": "scenario-startup-shell-normalization",
   "sources": {

@@ -684,6 +684,7 @@ function parseScenarioItems(buffer: Uint8Array | undefined): ScenarioItemRecord[
       specificCaste: i16(record, 50),
       raceClassOnly: i16(record, 52),
       casteClassOnly: i16(record, 54),
+      spare2: Array.from({ length: 7 }, (_, index) => i16(record, 56 + index * 2)),
       vSmall: i16(record, 70),
       vLarge: i16(record, 72),
       heat: i16(record, 74),

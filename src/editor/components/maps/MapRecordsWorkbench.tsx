@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { MapEntity, MapRecord, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, SelectedEntity, SemanticEntity } from "../../types";
+import { MapEntity, MapMarker, MapRecord, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, SelectedEntity, SemanticEntity } from "../../types";
 import { compactValue, linksFor, selectEntityFromId, semanticLabel } from "../../utils";
 import { InfoGrid } from "../InfoGrid";
 import { MapDiagnostics, MapNumberField } from "./MapFormControls";
@@ -84,6 +84,7 @@ export function MapRecordsWorkbench({
                     ["Start", `${selectedRecord.startX}, ${selectedRecord.startY}`],
                     ["Picture", selectedRecord.pictId || "none"],
                     ["Show", selectedRecord.show],
+                    ["Markers", `${activeMarkerCount(selectedRecord)}/10`],
                     ["Rect", `${selectedRecord.rect.left},${selectedRecord.rect.top} to ${selectedRecord.rect.right},${selectedRecord.rect.bottom}`],
                     ["Note", selectedRecord.note || "none"]
                   ]}
@@ -229,6 +230,10 @@ function MapRecordEditor({
   const update = (changes: Extract<ProjectCommand, { kind: "updateMapRecord" }>["changes"]) => {
     onApplyCommand({ kind: "updateMapRecord", label: `Update map record ${record.id}`, id: record.id, changes });
   };
+  const markers = mapRecordMarkers(record);
+  const updateMarker = (slot: number, changes: Partial<MapMarker>) => {
+    update({ markers: markers.map((marker, index) => (index === slot ? { ...marker, ...changes } : marker)) });
+  };
   const targetMapId = `${record.isDungeon ? "dungeon" : "land"}:${record.level}`;
   return (
     <details className="context-section map-record-editor" open>
@@ -251,6 +256,18 @@ function MapRecordEditor({
         <textarea value={record.note} maxLength={255} onChange={(event) => update({ note: event.currentTarget.value })} />
       </label>
       <details className="context-section">
+        <summary><span>Markers</span><b>{activeMarkerCount(record)}/10</b></summary>
+        <div className="map-authoring-form">
+          {markers.map((marker, slot) => (
+            <div className="map-door-pair" key={slot}>
+              <MapNumberField label={`M${slot + 1} Icon`} value={marker.iconId} onCommit={(iconId) => updateMarker(slot, { iconId })} />
+              <MapNumberField label={`M${slot + 1} X`} value={marker.x} onCommit={(x) => updateMarker(slot, { x })} />
+              <MapNumberField label={`M${slot + 1} Y`} value={marker.y} onCommit={(y) => updateMarker(slot, { y })} />
+            </div>
+          ))}
+        </div>
+      </details>
+      <details className="context-section">
         <summary><span>Display Rect</span><b>{record.rect.left},{record.rect.top}</b></summary>
         <div className="map-authoring-form">
           <MapNumberField label="Top" value={record.rect.top} onCommit={(top) => update({ rect: { ...record.rect, top } })} />
@@ -268,10 +285,33 @@ function MapRecordEditor({
         </button>
       </div>
       <p className="empty-copy compact">
-        Names stay read-only because they are stored in the scenario resource data. Unknown icon-slot bytes are kept intact from {semanticRecord.recordRef ?? "Data MD2"}.
+        Names stay read-only because they are stored in the scenario resource data. Data MD2 bytes 74..76 stay preserved from {semanticRecord.recordRef ?? "Data MD2"}.
       </p>
     </details>
   );
+}
+
+function mapRecordMarkers(record: MapRecord): MapMarker[] {
+  return Array.from({ length: 10 }, (_, slot) => {
+    const marker = record.markers?.[slot];
+    if (marker) return marker;
+    const offset = slot * 6;
+    if (!record.rawBytes || record.rawBytes.length < offset + 6) return { iconId: 0, x: 0, y: 0 };
+    return {
+      iconId: readI16(record.rawBytes, offset),
+      x: readI16(record.rawBytes, offset + 2),
+      y: readI16(record.rawBytes, offset + 4)
+    };
+  });
+}
+
+function activeMarkerCount(record: MapRecord) {
+  return mapRecordMarkers(record).filter((marker) => marker.iconId !== 0 || marker.x !== 0 || marker.y !== 0).length;
+}
+
+function readI16(bytes: number[], offset: number) {
+  const unsigned = ((bytes[offset] & 0xff) << 8) | (bytes[offset + 1] & 0xff);
+  return unsigned >= 0x8000 ? unsigned - 0x10000 : unsigned;
 }
 
 function mapRecordForSemantic(project: Project | null, record: SemanticEntity) {

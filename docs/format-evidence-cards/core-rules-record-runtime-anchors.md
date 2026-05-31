@@ -26,6 +26,7 @@ Realmz uses two overlapping data families:
 | `F:\Realmz\src\realmz_orig\structs.h:330` | `struct itemattr` source-backed item attribute profile. |
 | `F:\Realmz\src\realmz_orig\structs.h:338` | `struct shop` source-backed shop stock record. |
 | `F:\Realmz\src\realmz_orig\convert.c:151` | `CvtItemAttrToPc` lists owned endian-converted item fields. |
+| `F:\Realmz\src\realmz_orig\structs.h:330` + `F:\Realmz\src\realmz_orig\convert.c:151` | `Data NI` bytes `56..70` map to `itemattr.spare2[7]`; conversion skips these seven words, and source searches find no gameplay consumer. Providence preserves imported values and defaults new authored records to zero. |
 | `F:\Realmz\src\realmz_orig\convert.c:236` | `CvtMonsterToPc` lists owned endian-converted monster fields. |
 | `F:\Realmz\src\realmz_orig\convert.c:275` | `CvtBattleToPc` lists owned endian-converted battle fields. |
 | `F:\Realmz\src\realmz_orig\convert.c:282` | `CvtShopToPc` lists owned endian-converted shop fields. |
@@ -75,7 +76,7 @@ These are the safest next authoring targets because Realmz directly opens them f
 | Complex Encounters | `Data ED2` | copied to `CE2`; action rows, spell/item/thief branches | Writable shell exists; needs richer field forms. |
 | Thief/Rogue Encounters | `Data TD2` | copied to `CT`; thief encounter flow | Parser/editor still mostly future work. |
 | Timed Encounters | `Data TD3` | copied to `CTD3`; time/day trigger checks | Parser/editor still mostly future work. |
-| Map Records | `Data MD2` | map UI/map notes/resource links | Writable shell exists for known fields; names still resource evidence. |
+| Map Records | `Data MD2` | map UI/map notes/resource links | Marker triples, display/start fields, clip rectangle, and note text are writer-proven; bytes `74..76` remain preserved. |
 
 ## Shared/Override Rules Records
 
@@ -83,7 +84,7 @@ These need UI badges that say whether the data is shared, scenario-local, or unr
 
 | Family | Source | Runtime Behavior | Providence Policy |
 | --- | --- | --- | --- |
-| Items | Shared `:Data Files:Data ID` plus active scenario `Data NI` | `loaditem` resolves IDs into five 200-item groups: weapons, armor, accessories/helms, magic, supplies/special | Built-in IDs 0-799 remain library/reference data. Scenario `Data NI` supplies IDs 800-999; Divinity custom item editing starts at 900. |
+| Items | Shared `:Data Files:Data ID` plus active scenario `Data NI` | `loaditem` resolves IDs into five 200-item groups: weapons, armor, accessories/helms, magic, supplies/special | Built-in IDs 0-799 remain library/reference data. Scenario `Data NI` supplies IDs 800-999; Divinity custom item editing starts at 900. Bytes `56..70` are source-backed spare compatibility words, not a functional blocker. |
 | Spells | Shared `:Data Files:Data S`; optional scenario `Data Spell` resource path is opened by `selectscenario` | `loadspell2` decodes packed IDs as caste/level/slot | Treat custom spell resources as high-priority archaeology before enabling scenario-local spell editing. |
 | Races | Shared `Data Race`; scenario `Data Race` override for third-party scenarios when present | `openrace` falls back to shared data | Editor can show shared fallback vs scenario override. Writer needs override fixture. |
 | Castes | Shared `Data Caste`; scenario `Data Caste` override for third-party scenarios when present | `opencaste` falls back to shared data | Editor can show shared fallback vs scenario override. Writer needs override fixture. |

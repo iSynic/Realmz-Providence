@@ -1,9 +1,11 @@
-import { MapRecord, PaintCellChange, Project, ProjectCommand, Provenance, RandomLevel, RandomRect } from "../types";
+import { MapMarker, MapRecord, PaintCellChange, Project, ProjectCommand, Provenance, RandomLevel, RandomRect } from "../types";
 
 const RANDOM_LEVEL_BYTES = 644;
 const RANDOM_LEVEL_WORDS = RANDOM_LEVEL_BYTES / 2;
 const RANDOM_RECTS_PER_LEVEL = 20;
 const MAP_RECORD_BYTES = 340;
+const MAP_RECORD_MARKERS = 10;
+const MAP_RECORD_MARKER_BYTES = 6;
 const LAND_LAYOUT_ROWS = 8;
 const LAND_LAYOUT_COLS = 16;
 
@@ -361,6 +363,12 @@ function mapRecordRawBytes(record: MapRecord) {
   if (record.rawBytes?.length === MAP_RECORD_BYTES) {
     bytes.set(record.rawBytes.map((value) => value & 0xff));
   }
+  mapRecordMarkers(record).forEach((marker, slot) => {
+    const offset = slot * MAP_RECORD_MARKER_BYTES;
+    writeI16(bytes, offset, marker.iconId);
+    writeI16(bytes, offset + 2, marker.x);
+    writeI16(bytes, offset + 4, marker.y);
+  });
   writeI16(bytes, 60, record.startX);
   writeI16(bytes, 62, record.startY);
   writeI16(bytes, 64, record.level);
@@ -374,6 +382,35 @@ function mapRecordRawBytes(record: MapRecord) {
   writeI16(bytes, 82, record.rect.right);
   writePascalText(bytes, 84, MAP_RECORD_BYTES - 84, record.note);
   return Array.from(bytes);
+}
+
+function mapRecordMarkers(record: MapRecord): MapMarker[] {
+  return Array.from({ length: MAP_RECORD_MARKERS }, (_, slot) => {
+    const marker = record.markers?.[slot];
+    if (marker) {
+      return {
+        iconId: clampSignedShort(Math.trunc(marker.iconId ?? 0)),
+        x: clampSignedShort(Math.trunc(marker.x ?? 0)),
+        y: clampSignedShort(Math.trunc(marker.y ?? 0))
+      };
+    }
+    return mapRecordMarkerFromRaw(record.rawBytes, slot);
+  });
+}
+
+function mapRecordMarkerFromRaw(rawBytes: number[] | undefined, slot: number): MapMarker {
+  const offset = slot * MAP_RECORD_MARKER_BYTES;
+  if (!rawBytes || rawBytes.length < offset + MAP_RECORD_MARKER_BYTES) return { iconId: 0, x: 0, y: 0 };
+  return {
+    iconId: readI16(rawBytes, offset),
+    x: readI16(rawBytes, offset + 2),
+    y: readI16(rawBytes, offset + 4)
+  };
+}
+
+function readI16(bytes: number[], offset: number) {
+  const unsigned = ((bytes[offset] & 0xff) << 8) | (bytes[offset + 1] & 0xff);
+  return unsigned >= 0x8000 ? unsigned - 0x10000 : unsigned;
 }
 
 function rawBytesToWords(bytes: Uint8Array) {

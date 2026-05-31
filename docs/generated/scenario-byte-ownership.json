@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T05:12:05.877Z",
+  "generatedAt": "2026-05-31T14:25:12.922Z",
   "classifications": [
     "decoded-writable",
     "decoded-readonly",
@@ -38,9 +38,8 @@
   "summary": {
     "containerCount": 57,
     "statusCounts": {
-      "decoded-writable": 21,
+      "decoded-writable": 22,
       "mixed-writable-preserved": 13,
-      "decoded-readonly": 1,
       "preserved-known": 5,
       "understood-resource-container": 12,
       "runtime-cache": 1,
@@ -48,9 +47,8 @@
       "ignored-non-scenario": 1
     },
     "statusObservedBytes": {
-      "decoded-writable": 903810791,
+      "decoded-writable": 903846631,
       "mixed-writable-preserved": 41075500,
-      "decoded-readonly": 35840,
       "preserved-known": 116752,
       "understood-resource-container": 1369599572,
       "runtime-cache": 11546,
@@ -1122,9 +1120,9 @@
           "start": 0,
           "length": 60,
           "endExclusive": 60,
-          "status": "preserved-known",
-          "field": "Map marker prefix",
-          "internal": "raw[0..60]",
+          "status": "decoded-writable",
+          "field": "Map marker triples",
+          "internal": "icon[10][3]",
           "writerGate": "docs/generated/core-record-writer-gates.json"
         },
         {
@@ -1197,8 +1195,8 @@
           "length": 14,
           "endExclusive": 70,
           "status": "preserved-known",
-          "field": "Compatibility bytes",
-          "internal": "raw[56..70]",
+          "field": "Item spare compatibility words",
+          "internal": "spare2[7]",
           "writerGate": "docs/generated/core-record-writer-gates.json"
         },
         {
@@ -1404,7 +1402,7 @@
     {
       "container": "Data Solids",
       "authorFacingName": "Special tile solidity table",
-      "coverageStatus": "decoded-readonly",
+      "coverageStatus": "decoded-writable",
       "role": "pass-through",
       "observedScenarioCount": 35,
       "observedByteSizes": [
@@ -1416,16 +1414,17 @@
           "start": 0,
           "length": 1024,
           "endExclusive": 1024,
-          "status": "decoded-readonly",
+          "status": "decoded-writable",
           "field": "Special tile solidity table",
           "internal": "fixed record"
         }
       ],
       "resourceTypes": [],
       "evidence": [
-        "docs/format-evidence-cards/map-tile-intelligence.md"
+        "docs/format-evidence-cards/map-tile-intelligence.md",
+        "docs/format-evidence-cards/map-tile-runtime-anchors.md"
       ],
-      "editorPolicy": "Decoded for inspection and validation; editing is hidden until writer coverage exists."
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
       "container": "Data TD",
@@ -2260,11 +2259,273 @@
         },
         {
           "start": 8044,
-          "length": 60,
+          "length": 2,
+          "endExclusive": 8046,
+          "status": "decoded-writable",
+          "field": "Tile group 1 first tile",
+          "internal": "rangeSlots[0].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8046,
+          "length": 2,
+          "endExclusive": 8048,
+          "status": "decoded-writable",
+          "field": "Tile group 1 last tile",
+          "internal": "rangeSlots[0].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8048,
+          "length": 2,
+          "endExclusive": 8050,
+          "status": "preserved-known",
+          "field": "Tile group 1 reserved word",
+          "internal": "rangeSlots[0].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8050,
+          "length": 2,
+          "endExclusive": 8052,
+          "status": "decoded-writable",
+          "field": "Tile group 2 first tile",
+          "internal": "rangeSlots[1].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8052,
+          "length": 2,
+          "endExclusive": 8054,
+          "status": "decoded-writable",
+          "field": "Tile group 2 last tile",
+          "internal": "rangeSlots[1].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8054,
+          "length": 2,
+          "endExclusive": 8056,
+          "status": "preserved-known",
+          "field": "Tile group 2 reserved word",
+          "internal": "rangeSlots[1].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8056,
+          "length": 2,
+          "endExclusive": 8058,
+          "status": "decoded-writable",
+          "field": "Tile group 3 first tile",
+          "internal": "rangeSlots[2].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8058,
+          "length": 2,
+          "endExclusive": 8060,
+          "status": "decoded-writable",
+          "field": "Tile group 3 last tile",
+          "internal": "rangeSlots[2].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8060,
+          "length": 2,
+          "endExclusive": 8062,
+          "status": "preserved-known",
+          "field": "Tile group 3 reserved word",
+          "internal": "rangeSlots[2].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8062,
+          "length": 2,
+          "endExclusive": 8064,
+          "status": "decoded-writable",
+          "field": "Tile group 4 first tile",
+          "internal": "rangeSlots[3].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8064,
+          "length": 2,
+          "endExclusive": 8066,
+          "status": "decoded-writable",
+          "field": "Tile group 4 last tile",
+          "internal": "rangeSlots[3].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8066,
+          "length": 2,
+          "endExclusive": 8068,
+          "status": "preserved-known",
+          "field": "Tile group 4 reserved word",
+          "internal": "rangeSlots[3].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8068,
+          "length": 2,
+          "endExclusive": 8070,
+          "status": "decoded-writable",
+          "field": "Tile group 5 first tile",
+          "internal": "rangeSlots[4].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8070,
+          "length": 2,
+          "endExclusive": 8072,
+          "status": "decoded-writable",
+          "field": "Tile group 5 last tile",
+          "internal": "rangeSlots[4].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8072,
+          "length": 2,
+          "endExclusive": 8074,
+          "status": "preserved-known",
+          "field": "Tile group 5 reserved word",
+          "internal": "rangeSlots[4].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8074,
+          "length": 2,
+          "endExclusive": 8076,
+          "status": "decoded-writable",
+          "field": "Tile group 6 first tile",
+          "internal": "rangeSlots[5].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8076,
+          "length": 2,
+          "endExclusive": 8078,
+          "status": "decoded-writable",
+          "field": "Tile group 6 last tile",
+          "internal": "rangeSlots[5].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8078,
+          "length": 2,
+          "endExclusive": 8080,
+          "status": "preserved-known",
+          "field": "Tile group 6 reserved word",
+          "internal": "rangeSlots[5].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8080,
+          "length": 2,
+          "endExclusive": 8082,
+          "status": "decoded-writable",
+          "field": "Tile group 7 first tile",
+          "internal": "rangeSlots[6].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8082,
+          "length": 2,
+          "endExclusive": 8084,
+          "status": "decoded-writable",
+          "field": "Tile group 7 last tile",
+          "internal": "rangeSlots[6].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8084,
+          "length": 2,
+          "endExclusive": 8086,
+          "status": "preserved-known",
+          "field": "Tile group 7 reserved word",
+          "internal": "rangeSlots[6].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8086,
+          "length": 2,
+          "endExclusive": 8088,
+          "status": "decoded-writable",
+          "field": "Tile group 8 first tile",
+          "internal": "rangeSlots[7].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8088,
+          "length": 2,
+          "endExclusive": 8090,
+          "status": "decoded-writable",
+          "field": "Tile group 8 last tile",
+          "internal": "rangeSlots[7].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8090,
+          "length": 2,
+          "endExclusive": 8092,
+          "status": "preserved-known",
+          "field": "Tile group 8 reserved word",
+          "internal": "rangeSlots[7].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8092,
+          "length": 2,
+          "endExclusive": 8094,
+          "status": "decoded-writable",
+          "field": "Tile group 9 first tile",
+          "internal": "rangeSlots[8].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8094,
+          "length": 2,
+          "endExclusive": 8096,
+          "status": "decoded-writable",
+          "field": "Tile group 9 last tile",
+          "internal": "rangeSlots[8].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8096,
+          "length": 2,
+          "endExclusive": 8098,
+          "status": "preserved-known",
+          "field": "Tile group 9 reserved word",
+          "internal": "rangeSlots[8].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8098,
+          "length": 2,
+          "endExclusive": 8100,
+          "status": "decoded-writable",
+          "field": "Tile group 10 first tile",
+          "internal": "rangeSlots[9].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8100,
+          "length": 2,
+          "endExclusive": 8102,
+          "status": "decoded-writable",
+          "field": "Tile group 10 last tile",
+          "internal": "rangeSlots[9].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8102,
+          "length": 2,
           "endExclusive": 8104,
-          "status": "understood-runtime-writer-gated",
-          "field": "Divinity tile range slots",
-          "internal": "range slots with reserved words preserved"
+          "status": "preserved-known",
+          "field": "Tile group 10 reserved word",
+          "internal": "rangeSlots[9].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
         }
       ],
       "resourceTypes": [],
@@ -2424,11 +2685,273 @@
         },
         {
           "start": 8044,
-          "length": 60,
+          "length": 2,
+          "endExclusive": 8046,
+          "status": "decoded-writable",
+          "field": "Tile group 1 first tile",
+          "internal": "rangeSlots[0].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8046,
+          "length": 2,
+          "endExclusive": 8048,
+          "status": "decoded-writable",
+          "field": "Tile group 1 last tile",
+          "internal": "rangeSlots[0].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8048,
+          "length": 2,
+          "endExclusive": 8050,
+          "status": "preserved-known",
+          "field": "Tile group 1 reserved word",
+          "internal": "rangeSlots[0].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8050,
+          "length": 2,
+          "endExclusive": 8052,
+          "status": "decoded-writable",
+          "field": "Tile group 2 first tile",
+          "internal": "rangeSlots[1].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8052,
+          "length": 2,
+          "endExclusive": 8054,
+          "status": "decoded-writable",
+          "field": "Tile group 2 last tile",
+          "internal": "rangeSlots[1].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8054,
+          "length": 2,
+          "endExclusive": 8056,
+          "status": "preserved-known",
+          "field": "Tile group 2 reserved word",
+          "internal": "rangeSlots[1].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8056,
+          "length": 2,
+          "endExclusive": 8058,
+          "status": "decoded-writable",
+          "field": "Tile group 3 first tile",
+          "internal": "rangeSlots[2].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8058,
+          "length": 2,
+          "endExclusive": 8060,
+          "status": "decoded-writable",
+          "field": "Tile group 3 last tile",
+          "internal": "rangeSlots[2].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8060,
+          "length": 2,
+          "endExclusive": 8062,
+          "status": "preserved-known",
+          "field": "Tile group 3 reserved word",
+          "internal": "rangeSlots[2].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8062,
+          "length": 2,
+          "endExclusive": 8064,
+          "status": "decoded-writable",
+          "field": "Tile group 4 first tile",
+          "internal": "rangeSlots[3].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8064,
+          "length": 2,
+          "endExclusive": 8066,
+          "status": "decoded-writable",
+          "field": "Tile group 4 last tile",
+          "internal": "rangeSlots[3].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8066,
+          "length": 2,
+          "endExclusive": 8068,
+          "status": "preserved-known",
+          "field": "Tile group 4 reserved word",
+          "internal": "rangeSlots[3].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8068,
+          "length": 2,
+          "endExclusive": 8070,
+          "status": "decoded-writable",
+          "field": "Tile group 5 first tile",
+          "internal": "rangeSlots[4].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8070,
+          "length": 2,
+          "endExclusive": 8072,
+          "status": "decoded-writable",
+          "field": "Tile group 5 last tile",
+          "internal": "rangeSlots[4].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8072,
+          "length": 2,
+          "endExclusive": 8074,
+          "status": "preserved-known",
+          "field": "Tile group 5 reserved word",
+          "internal": "rangeSlots[4].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8074,
+          "length": 2,
+          "endExclusive": 8076,
+          "status": "decoded-writable",
+          "field": "Tile group 6 first tile",
+          "internal": "rangeSlots[5].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8076,
+          "length": 2,
+          "endExclusive": 8078,
+          "status": "decoded-writable",
+          "field": "Tile group 6 last tile",
+          "internal": "rangeSlots[5].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8078,
+          "length": 2,
+          "endExclusive": 8080,
+          "status": "preserved-known",
+          "field": "Tile group 6 reserved word",
+          "internal": "rangeSlots[5].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8080,
+          "length": 2,
+          "endExclusive": 8082,
+          "status": "decoded-writable",
+          "field": "Tile group 7 first tile",
+          "internal": "rangeSlots[6].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8082,
+          "length": 2,
+          "endExclusive": 8084,
+          "status": "decoded-writable",
+          "field": "Tile group 7 last tile",
+          "internal": "rangeSlots[6].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8084,
+          "length": 2,
+          "endExclusive": 8086,
+          "status": "preserved-known",
+          "field": "Tile group 7 reserved word",
+          "internal": "rangeSlots[6].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8086,
+          "length": 2,
+          "endExclusive": 8088,
+          "status": "decoded-writable",
+          "field": "Tile group 8 first tile",
+          "internal": "rangeSlots[7].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8088,
+          "length": 2,
+          "endExclusive": 8090,
+          "status": "decoded-writable",
+          "field": "Tile group 8 last tile",
+          "internal": "rangeSlots[7].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8090,
+          "length": 2,
+          "endExclusive": 8092,
+          "status": "preserved-known",
+          "field": "Tile group 8 reserved word",
+          "internal": "rangeSlots[7].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8092,
+          "length": 2,
+          "endExclusive": 8094,
+          "status": "decoded-writable",
+          "field": "Tile group 9 first tile",
+          "internal": "rangeSlots[8].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8094,
+          "length": 2,
+          "endExclusive": 8096,
+          "status": "decoded-writable",
+          "field": "Tile group 9 last tile",
+          "internal": "rangeSlots[8].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8096,
+          "length": 2,
+          "endExclusive": 8098,
+          "status": "preserved-known",
+          "field": "Tile group 9 reserved word",
+          "internal": "rangeSlots[8].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8098,
+          "length": 2,
+          "endExclusive": 8100,
+          "status": "decoded-writable",
+          "field": "Tile group 10 first tile",
+          "internal": "rangeSlots[9].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8100,
+          "length": 2,
+          "endExclusive": 8102,
+          "status": "decoded-writable",
+          "field": "Tile group 10 last tile",
+          "internal": "rangeSlots[9].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8102,
+          "length": 2,
           "endExclusive": 8104,
-          "status": "understood-runtime-writer-gated",
-          "field": "Divinity tile range slots",
-          "internal": "range slots with reserved words preserved"
+          "status": "preserved-known",
+          "field": "Tile group 10 reserved word",
+          "internal": "rangeSlots[9].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
         }
       ],
       "resourceTypes": [],
@@ -2504,11 +3027,273 @@
         },
         {
           "start": 8044,
-          "length": 60,
+          "length": 2,
+          "endExclusive": 8046,
+          "status": "decoded-writable",
+          "field": "Tile group 1 first tile",
+          "internal": "rangeSlots[0].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8046,
+          "length": 2,
+          "endExclusive": 8048,
+          "status": "decoded-writable",
+          "field": "Tile group 1 last tile",
+          "internal": "rangeSlots[0].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8048,
+          "length": 2,
+          "endExclusive": 8050,
+          "status": "preserved-known",
+          "field": "Tile group 1 reserved word",
+          "internal": "rangeSlots[0].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8050,
+          "length": 2,
+          "endExclusive": 8052,
+          "status": "decoded-writable",
+          "field": "Tile group 2 first tile",
+          "internal": "rangeSlots[1].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8052,
+          "length": 2,
+          "endExclusive": 8054,
+          "status": "decoded-writable",
+          "field": "Tile group 2 last tile",
+          "internal": "rangeSlots[1].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8054,
+          "length": 2,
+          "endExclusive": 8056,
+          "status": "preserved-known",
+          "field": "Tile group 2 reserved word",
+          "internal": "rangeSlots[1].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8056,
+          "length": 2,
+          "endExclusive": 8058,
+          "status": "decoded-writable",
+          "field": "Tile group 3 first tile",
+          "internal": "rangeSlots[2].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8058,
+          "length": 2,
+          "endExclusive": 8060,
+          "status": "decoded-writable",
+          "field": "Tile group 3 last tile",
+          "internal": "rangeSlots[2].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8060,
+          "length": 2,
+          "endExclusive": 8062,
+          "status": "preserved-known",
+          "field": "Tile group 3 reserved word",
+          "internal": "rangeSlots[2].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8062,
+          "length": 2,
+          "endExclusive": 8064,
+          "status": "decoded-writable",
+          "field": "Tile group 4 first tile",
+          "internal": "rangeSlots[3].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8064,
+          "length": 2,
+          "endExclusive": 8066,
+          "status": "decoded-writable",
+          "field": "Tile group 4 last tile",
+          "internal": "rangeSlots[3].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8066,
+          "length": 2,
+          "endExclusive": 8068,
+          "status": "preserved-known",
+          "field": "Tile group 4 reserved word",
+          "internal": "rangeSlots[3].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8068,
+          "length": 2,
+          "endExclusive": 8070,
+          "status": "decoded-writable",
+          "field": "Tile group 5 first tile",
+          "internal": "rangeSlots[4].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8070,
+          "length": 2,
+          "endExclusive": 8072,
+          "status": "decoded-writable",
+          "field": "Tile group 5 last tile",
+          "internal": "rangeSlots[4].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8072,
+          "length": 2,
+          "endExclusive": 8074,
+          "status": "preserved-known",
+          "field": "Tile group 5 reserved word",
+          "internal": "rangeSlots[4].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8074,
+          "length": 2,
+          "endExclusive": 8076,
+          "status": "decoded-writable",
+          "field": "Tile group 6 first tile",
+          "internal": "rangeSlots[5].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8076,
+          "length": 2,
+          "endExclusive": 8078,
+          "status": "decoded-writable",
+          "field": "Tile group 6 last tile",
+          "internal": "rangeSlots[5].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8078,
+          "length": 2,
+          "endExclusive": 8080,
+          "status": "preserved-known",
+          "field": "Tile group 6 reserved word",
+          "internal": "rangeSlots[5].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8080,
+          "length": 2,
+          "endExclusive": 8082,
+          "status": "decoded-writable",
+          "field": "Tile group 7 first tile",
+          "internal": "rangeSlots[6].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8082,
+          "length": 2,
+          "endExclusive": 8084,
+          "status": "decoded-writable",
+          "field": "Tile group 7 last tile",
+          "internal": "rangeSlots[6].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8084,
+          "length": 2,
+          "endExclusive": 8086,
+          "status": "preserved-known",
+          "field": "Tile group 7 reserved word",
+          "internal": "rangeSlots[6].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8086,
+          "length": 2,
+          "endExclusive": 8088,
+          "status": "decoded-writable",
+          "field": "Tile group 8 first tile",
+          "internal": "rangeSlots[7].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8088,
+          "length": 2,
+          "endExclusive": 8090,
+          "status": "decoded-writable",
+          "field": "Tile group 8 last tile",
+          "internal": "rangeSlots[7].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8090,
+          "length": 2,
+          "endExclusive": 8092,
+          "status": "preserved-known",
+          "field": "Tile group 8 reserved word",
+          "internal": "rangeSlots[7].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8092,
+          "length": 2,
+          "endExclusive": 8094,
+          "status": "decoded-writable",
+          "field": "Tile group 9 first tile",
+          "internal": "rangeSlots[8].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8094,
+          "length": 2,
+          "endExclusive": 8096,
+          "status": "decoded-writable",
+          "field": "Tile group 9 last tile",
+          "internal": "rangeSlots[8].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8096,
+          "length": 2,
+          "endExclusive": 8098,
+          "status": "preserved-known",
+          "field": "Tile group 9 reserved word",
+          "internal": "rangeSlots[8].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8098,
+          "length": 2,
+          "endExclusive": 8100,
+          "status": "decoded-writable",
+          "field": "Tile group 10 first tile",
+          "internal": "rangeSlots[9].firstTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8100,
+          "length": 2,
+          "endExclusive": 8102,
+          "status": "decoded-writable",
+          "field": "Tile group 10 last tile",
+          "internal": "rangeSlots[9].lastTile",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
+        },
+        {
+          "start": 8102,
+          "length": 2,
           "endExclusive": 8104,
-          "status": "understood-runtime-writer-gated",
-          "field": "Divinity tile range slots",
-          "internal": "range slots with reserved words preserved"
+          "status": "preserved-known",
+          "field": "Tile group 10 reserved word",
+          "internal": "rangeSlots[9].reserved",
+          "writerGate": "docs/generated/custom-landlook-coverage.json"
         }
       ],
       "resourceTypes": [],

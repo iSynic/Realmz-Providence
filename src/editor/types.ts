@@ -671,6 +671,7 @@ export type ScenarioItemRecord = {
   specificCaste: number;
   raceClassOnly: number;
   casteClassOnly: number;
+  spare2?: number[];
   vSmall: number;
   vLarge: number;
   heat: number;
@@ -882,8 +883,15 @@ export type ScenarioCasteOverride = {
   provenance?: Provenance;
 };
 
+export type MapMarker = {
+  iconId: number;
+  x: number;
+  y: number;
+};
+
 export type MapRecord = {
   id: number;
+  markers?: MapMarker[];
   startX: number;
   startY: number;
   level: number;
@@ -943,7 +951,7 @@ export type ProjectCommand =
       kind: "updateMapRecord";
       label: string;
       id: number;
-      changes: Partial<Pick<MapRecord, "startX" | "startY" | "level" | "pictId" | "iconSize" | "show" | "isDungeon" | "rect" | "note">>;
+      changes: Partial<Pick<MapRecord, "markers" | "startX" | "startY" | "level" | "pictId" | "iconSize" | "show" | "isDungeon" | "rect" | "note">>;
     }
   | { kind: "createLandLayout"; label: string }
   | { kind: "updateLandLayoutCell"; label: string; row: number; col: number; value: number }

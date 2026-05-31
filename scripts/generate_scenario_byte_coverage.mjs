@@ -25,6 +25,7 @@ const fileInventoryPath = path.join(repoRoot, "docs/generated/scenario-file-inve
 const byteOwnershipPath = path.join(repoRoot, "docs/generated/scenario-byte-ownership.json");
 const unknownReportPath = path.join(repoRoot, "docs/generated/scenario-unknown-byte-report.json");
 const completenessTruthPath = path.join(repoRoot, "docs/generated/scenario-completeness-truth.json");
+const functionalAuthoringReadinessPath = path.join(repoRoot, "docs/generated/functional-authoring-readiness.json");
 const uiManifestPath = path.join(repoRoot, "src/editor/generated/scenarioCoverageManifest.json");
 
 const NON_SCENARIO_IGNORES = new Set([".DS_Store", "Thumbs.db", "desktop.ini"]);
@@ -60,7 +61,7 @@ const RECORD_LAYOUTS = {
   "Data CS": { recordBytes: 316, label: "Scenario security backup", status: "preserved-known" },
   Global: { recordBytes: 60, label: "Global macro hooks", status: "decoded-writable" },
   "Data MENU": { recordBytes: 502, label: "Generated monster menu cache", status: "runtime-cache" },
-  "Data Solids": { recordBytes: 1024, label: "Special tile solidity table", status: "decoded-readonly" },
+  "Data Solids": { recordBytes: 1024, label: "Special tile solidity table", status: "decoded-writable" },
   "Data NI": { recordBytes: 100, label: "Scenario item records", status: "decoded-writable" },
   "Data Spell": { recordBytes: 30, label: "Custom spell override records", status: "decoded-writable" },
   "Data Race": { recordBytes: 408, label: "Race override records", status: "decoded-writable" },
@@ -175,6 +176,21 @@ const FIXTURE_GATES = {
     ],
     evidence: [
       "src-tauri/tests/fixture_roundtrip.rs:custom_landlook_metadata_writer_mutates_only_owned_fields"
+    ]
+  },
+  "Data Solids": {
+    gate: "special-negative-solidity-table",
+    fixturePaths: [
+      "F:/Realmz/base/Realmz/Scenarios/Tutorial",
+      "F:/Realmz/out_win_clang/Scenarios/Araman's Ring"
+    ],
+    evidence: [
+      "src-tauri/src/realmz.rs:data_solids_round_trip_from_tile_attributes",
+      "src-tauri/src/realmz.rs:data_solids_mutates_only_selected_special_tile_solidity",
+      "src-tauri/src/realmz.rs:write_tile_solids",
+      "src-tauri/src/realmz.rs:parse_tile_attributes",
+      "docs/format-evidence-cards/map-tile-runtime-anchors.md",
+      "docs/format-evidence-cards/map-tile-intelligence.md"
     ]
   },
   "Data Spell": {
@@ -592,22 +608,23 @@ const CORE_RECORD_WRITER_GATE_SPECS = [
     semanticExposure: "map-record-storage",
     partialOnly: true,
     ownedFields: [
+      { field: "Map marker triples", internal: "icon[10][3]", offset: 0, bytes: 60, type: "i16be[30]" },
       { field: "Map start and display fields", internal: "startX/startY/level/pictId/iconSize/show/isDungeon", offset: 60, bytes: 14, type: "i16be[7]" },
       { field: "Map clip rectangle", internal: "rect", offset: 76, bytes: 8, type: "i16be[4]" },
       { field: "Map note text", internal: "note", offset: 84, bytes: 256, type: "Pascal" }
     ],
     preservedRanges: [
-      { field: "Map marker prefix", internal: "raw[0..60]", offset: 0, bytes: 60, type: "raw-preserved" },
       { field: "Compatibility bytes", internal: "raw[74..76]", offset: 74, bytes: 2, type: "raw-preserved" }
     ],
     evidence: [
       "src-tauri/src/realmz.rs:map_record_storage_mutates_only_modeled_fields_and_preserves_prefix",
+      "src-tauri/src/realmz.rs:map_record_marker_storage_mutates_only_selected_marker_words",
       "src-tauri/src/realmz.rs:write_map_records",
       "src-tauri/src/realmz.rs:parse_map_records",
       "docs/generated/map-record-evidence.json",
       "docs/format-evidence-cards/map-record-runtime-anchors.md"
     ],
-    preservationPolicy: "Map records rewrite modeled display/start/rectangle/note fields only. Prefix marker bytes and bytes 74..76 remain preserve-only until writer semantics are proven."
+    preservationPolicy: "Map records rewrite marker triples, display/start/rectangle fields, and note text. Bytes 74..76 remain preserve-only until source or Divinity evidence proves a real field."
   },
   {
     container: "Data NI",
@@ -620,7 +637,7 @@ const CORE_RECORD_WRITER_GATE_SPECS = [
       { field: "Scenario item effects and specials", internal: "damage/elements/specials/weightPerCharge/dropOnEmpty", offset: 70, bytes: 30, type: "i16be[15]" }
     ],
     preservedRanges: [
-      { field: "Compatibility bytes", internal: "raw[56..70]", offset: 56, bytes: 14, type: "raw-preserved" }
+      { field: "Item spare compatibility words", internal: "spare2[7]", offset: 56, bytes: 14, type: "i16be[7]-preserved" }
     ],
     evidence: [
       "src-tauri/src/realmz.rs:scenario_item_storage_mutates_only_modeled_fields_and_preserves_gap",
@@ -629,7 +646,7 @@ const CORE_RECORD_WRITER_GATE_SPECS = [
       "docs/generated/core-rules-record-evidence.json",
       "docs/format-evidence-cards/core-rules-record-runtime-anchors.md"
     ],
-    preservationPolicy: "Scenario item records rewrite modeled fields only. Bytes 56..70 remain preserve-only until source or Divinity evidence proves their semantics."
+    preservationPolicy: "Scenario item records rewrite modeled functional fields and preserve itemattr.spare2[7]. Realmz source defines these seven words as spare compatibility storage, so new authored records default them to zero and normal UI hides them."
   }
 ];
 
@@ -853,7 +870,8 @@ const inventory = buildInventory(scanned, aggregate);
 const ownership = buildOwnership(aggregate);
 const unknownReport = buildUnknownReport(inventory, ownership, unknownBacklog);
 const completenessTruth = buildCompletenessTruth(inventory, ownership, unknownReport);
-const uiManifest = buildUiManifest(inventory, ownership, unknownReport, completenessTruth);
+const functionalAuthoringReadiness = buildFunctionalAuthoringReadiness(ownership, completenessTruth);
+const uiManifest = buildUiManifest(inventory, ownership, unknownReport, completenessTruth, functionalAuthoringReadiness);
 validateInventoryAndOwnership(inventory, ownership, completenessTruth);
 
 const updatedRuntimeCaches = {
@@ -874,6 +892,7 @@ writeJson(scenarioStartupShellGatePath, scenarioStartupShellGate);
 writeJson(mapsStorageWriterGatesPath, mapsStorageWriterGates);
 writeJson(encounterShopWriterGatesPath, encounterShopWriterGates);
 writeJson(coreRecordWriterGatesPath, coreRecordWriterGates);
+writeJson(functionalAuthoringReadinessPath, functionalAuthoringReadiness);
 writeJson(runtimeCachePath, updatedRuntimeCaches);
 writeJson(uiManifestPath, uiManifest);
 
@@ -886,6 +905,7 @@ console.log(`Wrote ${path.relative(repoRoot, scenarioStartupShellGatePath)}`);
 console.log(`Wrote ${path.relative(repoRoot, mapsStorageWriterGatesPath)}`);
 console.log(`Wrote ${path.relative(repoRoot, encounterShopWriterGatesPath)}`);
 console.log(`Wrote ${path.relative(repoRoot, coreRecordWriterGatesPath)}`);
+console.log(`Wrote ${path.relative(repoRoot, functionalAuthoringReadinessPath)}`);
 console.log(`Wrote ${path.relative(repoRoot, runtimeCachePath)}`);
 console.log(`Wrote ${path.relative(repoRoot, uiManifestPath)}`);
 console.log(JSON.stringify(uiManifest.summary, null, 2));
@@ -1578,7 +1598,129 @@ function buildUnknownReport(inventory, ownership, backlog) {
   };
 }
 
-function buildUiManifest(inventory, ownership, unknownReport, truth) {
+function buildFunctionalAuthoringReadiness(ownership, truth) {
+  const containerByName = new Map((ownership.containers ?? []).map((container) => [container.container, container]));
+  const truthByName = new Map((truth.containers ?? []).map((container) => [container.container, container]));
+  const systems = [
+    functionalSystem({
+      id: "map-records",
+      label: "Map Records",
+      containers: ["Data MD2"],
+      authoringStatus: "ready-with-preserved-compatibility",
+      rationale: "Map marker triples, start/display fields, clip rectangle, and note text are writer-proven; bytes 74..76 remain preserved compatibility storage.",
+      evidence: [
+        "docs/generated/map-record-evidence.json",
+        "docs/generated/core-record-writer-gates.json",
+        "docs/format-evidence-cards/map-record-runtime-anchors.md"
+      ],
+      containerByName,
+      truthByName
+    }),
+    functionalSystem({
+      id: "scenario-items",
+      label: "Scenario Items",
+      containers: ["Data NI"],
+      authoringStatus: "ready-with-preserved-compatibility",
+      rationale: "Functional item fields for IDs 800..999 are writer-proven. Bytes 56..70 are source-backed itemattr.spare2[7] compatibility words, preserved on import and zero by default for new records.",
+      evidence: [
+        "docs/generated/core-rules-record-evidence.json",
+        "docs/generated/core-record-writer-gates.json",
+        "docs/format-evidence-cards/core-rules-record-runtime-anchors.md"
+      ],
+      containerByName,
+      truthByName
+    }),
+    functionalSystem({
+      id: "custom-landlook-metadata",
+      label: "Custom Land Tiles",
+      containers: ["Data Custom 1 BD", "Data Custom 2 BD", "Data Custom 3 BD"],
+      authoringStatus: "ready-with-preserved-compatibility",
+      rationale: "Custom mapstats metadata, base tile/scale, combat builds, and range-slot first/last values are writer-proven. Each range slot reserved word remains preserved.",
+      evidence: [
+        "docs/generated/custom-landlook-coverage.json",
+        "docs/format-evidence-cards/custom-landlook-writers.md"
+      ],
+      containerByName,
+      truthByName
+    }),
+    functionalSystem({
+      id: "special-tile-solidity",
+      label: "Special Tile Solidity",
+      containers: ["Data Solids"],
+      authoringStatus: "ready",
+      rationale: "Realmz source checks Data Solids only for special negative tile values; Providence parses and regenerates the 1024-byte solidity table from decoded special-tile profiles.",
+      evidence: [
+        "docs/format-evidence-cards/map-tile-runtime-anchors.md",
+        "docs/format-evidence-cards/map-tile-intelligence.md"
+      ],
+      containerByName,
+      truthByName
+    }),
+    functionalSystem({
+      id: "custom-spells",
+      label: "Custom Spells",
+      containers: ["Data Spell"],
+      authoringStatus: "ready-with-preserved-packaging",
+      rationale: "Custom spell records and name STR# resources are the supported authoring surface. The Data Spell tail is preserved packaging; current runtime evidence reads the 105 custom records and resource fork data, not the tail as functional spell behavior.",
+      evidence: [
+        "docs/generated/rules-resource-coverage.json",
+        "docs/generated/rules-name-resource-packaging.json",
+        "docs/format-evidence-cards/rules-spell-race-caste-runtime-anchors.md"
+      ],
+      containerByName,
+      truthByName
+    })
+  ];
+  const blockerSystems = systems.filter((system) => system.functionalBlocker);
+  return {
+    schemaVersion: 1,
+    generatedAt: new Date().toISOString(),
+    generatedBy: "scripts/generate_scenario_byte_coverage.mjs",
+    policy: {
+      note: "Functional authoring readiness asks whether a user can create valid gameplay data from scratch. It is separate from byte ownership and media codec internals.",
+      preservedCompatibilityBytesAreNotBlockers: true,
+      rawFileNamesStayAdvancedOnly: true
+    },
+    summary: {
+      status: blockerSystems.length === 0 ? "ready" : "has-functional-blockers",
+      readySystems: systems.length - blockerSystems.length,
+      totalSystems: systems.length,
+      functionalBlockers: blockerSystems.length,
+      blockerIds: blockerSystems.map((system) => system.id)
+    },
+    systems
+  };
+}
+
+function functionalSystem({ id, label, containers, authoringStatus, rationale, evidence, containerByName, truthByName }) {
+  const containerStatuses = containers.map((containerName) => {
+    const container = containerByName.get(containerName) ?? null;
+    const truth = truthByName.get(containerName)?.truth ?? null;
+    const statuses = container ? [...effectiveStatusesForContainer(container)].sort() : [];
+    return {
+      container: containerName,
+      observed: Boolean(container && container.observedScenarioCount > 0),
+      coverageStatus: container?.coverageStatus ?? "missing",
+      effectiveStatuses: statuses,
+      writerReadiness: truth?.writerReadiness ?? "missing",
+      semanticOwnership: truth?.semanticOwnership ?? "missing"
+    };
+  });
+  const hasMissing = containerStatuses.some((status) => status.coverageStatus === "missing");
+  const hasWriterGated = containerStatuses.some((status) => status.writerReadiness === "writer-gated");
+  const hasFormatRisk = containerStatuses.some((status) => status.semanticOwnership === "needs-format-work" || status.effectiveStatuses.includes("unknown-active-risk"));
+  return {
+    id,
+    label,
+    status: hasMissing || hasWriterGated || hasFormatRisk ? "needs-work" : authoringStatus,
+    functionalBlocker: hasMissing || hasWriterGated || hasFormatRisk,
+    rationale,
+    containers: containerStatuses,
+    evidence
+  };
+}
+
+function buildUiManifest(inventory, ownership, unknownReport, truth, functionalReadiness) {
   const topContainers = ownership.containers
     .filter((container) => container.observedScenarioCount > 0)
     .sort((a, b) => statusSort(a.coverageStatus) - statusSort(b.coverageStatus) || b.observedScenarioCount - a.observedScenarioCount || a.container.localeCompare(b.container))
@@ -1624,6 +1766,7 @@ function buildUiManifest(inventory, ownership, unknownReport, truth) {
             errors: targetCompatibility.summary?.errors ?? 0
           }
         : null,
+      functionalAuthoringReadiness: functionalReadiness?.summary ?? null,
       strictCompleteness: truth.summary,
       completeness: targetCompatibility?.summary?.completeness ?? splitCompletenessSummary(ownership),
       dungeon: dungeonSummary(),
@@ -2285,14 +2428,7 @@ function byteRangesForFile(file, layout) {
         field: "Base scale",
         internal: "basescale"
       },
-      {
-        start: layout.rangeTailOffset,
-        length: layout.expectedBytes - layout.rangeTailOffset,
-        endExclusive: layout.expectedBytes,
-        status: "understood-runtime-writer-gated",
-        field: "Divinity tile range slots",
-        internal: "range slots with reserved words preserved"
-      }
+      ...customLandlookRangeByteRanges(layout)
     ];
   }
   if (file.name === "Data DL" && dungeonByteOwnership?.recordByteRanges?.length) {
@@ -2352,7 +2488,7 @@ function byteRangesForFile(file, layout) {
   }
   if (file.name === "Data MD2") {
     return [
-      { start: 0, length: 60, endExclusive: 60, status: "preserved-known", field: "Map marker prefix", internal: "raw[0..60]", writerGate: "docs/generated/core-record-writer-gates.json" },
+      { start: 0, length: 60, endExclusive: 60, status: "decoded-writable", field: "Map marker triples", internal: "icon[10][3]", writerGate: "docs/generated/core-record-writer-gates.json" },
       { start: 60, length: 14, endExclusive: 74, status: "decoded-writable", field: "Map start and display fields", internal: "startX/startY/level/pictId/iconSize/show/isDungeon", writerGate: "docs/generated/core-record-writer-gates.json" },
       { start: 74, length: 2, endExclusive: 76, status: "preserved-known", field: "Compatibility bytes", internal: "raw[74..76]", writerGate: "docs/generated/core-record-writer-gates.json" },
       { start: 76, length: 8, endExclusive: 84, status: "decoded-writable", field: "Map clip rectangle", internal: "rect", writerGate: "docs/generated/core-record-writer-gates.json" },
@@ -2362,7 +2498,7 @@ function byteRangesForFile(file, layout) {
   if (file.name === "Data NI") {
     return [
       { start: 0, length: 56, endExclusive: 56, status: "decoded-writable", field: "Scenario item core fields", internal: "stats/itemId/icon/type/restrictions/categories", writerGate: "docs/generated/core-record-writer-gates.json" },
-      { start: 56, length: 14, endExclusive: 70, status: "preserved-known", field: "Compatibility bytes", internal: "raw[56..70]", writerGate: "docs/generated/core-record-writer-gates.json" },
+      { start: 56, length: 14, endExclusive: 70, status: "preserved-known", field: "Item spare compatibility words", internal: "spare2[7]", writerGate: "docs/generated/core-record-writer-gates.json" },
       { start: 70, length: 30, endExclusive: 100, status: "decoded-writable", field: "Scenario item effects and specials", internal: "damage/elements/specials/weightPerCharge/dropOnEmpty", writerGate: "docs/generated/core-record-writer-gates.json" }
     ];
   }
@@ -2497,6 +2633,43 @@ function byteRangesForFile(file, layout) {
   ];
 }
 
+function customLandlookRangeByteRanges(layout) {
+  const ranges = [];
+  for (let slot = 0; slot < 10; slot += 1) {
+    const start = layout.rangeTailOffset + slot * 6;
+    ranges.push(
+      {
+        start,
+        length: 2,
+        endExclusive: start + 2,
+        status: "decoded-writable",
+        field: `Tile group ${slot + 1} first tile`,
+        internal: `rangeSlots[${slot}].firstTile`,
+        writerGate: "docs/generated/custom-landlook-coverage.json"
+      },
+      {
+        start: start + 2,
+        length: 2,
+        endExclusive: start + 4,
+        status: "decoded-writable",
+        field: `Tile group ${slot + 1} last tile`,
+        internal: `rangeSlots[${slot}].lastTile`,
+        writerGate: "docs/generated/custom-landlook-coverage.json"
+      },
+      {
+        start: start + 4,
+        length: 2,
+        endExclusive: start + 6,
+        status: "preserved-known",
+        field: `Tile group ${slot + 1} reserved word`,
+        internal: `rangeSlots[${slot}].reserved`,
+        writerGate: "docs/generated/custom-landlook-coverage.json"
+      }
+    );
+  }
+  return ranges;
+}
+
 function summarizeOwnership(containers) {
   const statusCounts = {};
   const statusObservedBytes = {};
@@ -2588,6 +2761,7 @@ function evidenceForFile(name, status) {
     evidence.push("docs/format-evidence-cards/core-rules-record-runtime-anchors.md");
   } else if (name === "Data Solids") {
     evidence.push("docs/format-evidence-cards/map-tile-intelligence.md");
+    evidence.push("docs/format-evidence-cards/map-tile-runtime-anchors.md");
   } else if (name === "Data CS") {
     evidence.push("docs/format-evidence-cards/scenario-shell-startup-release.md");
   } else if (name === "Scenario" || name.endsWith(".rsrc") || name.endsWith(".rsf") || name.startsWith("._")) {

@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T05:12:05.881Z",
+  "generatedAt": "2026-05-31T14:25:12.925Z",
   "summary": {
     "scenarioRoots": 87,
     "fileFamilies": 57,
     "ignoredNonScenarioFiles": 1,
-    "editableContainers": 21,
+    "editableContainers": 22,
     "preservedContainers": 8,
     "understoodResourceContainers": 12,
     "resourceCoverage": {
@@ -26,6 +26,13 @@
       "warnings": 12,
       "errors": 0
     },
+    "functionalAuthoringReadiness": {
+      "status": "ready",
+      "readySystems": 5,
+      "totalSystems": 5,
+      "functionalBlockers": 0,
+      "blockerIds": []
+    },
     "strictCompleteness": {
       "containerCount": 57,
       "semanticOwnershipCounts": {
@@ -36,19 +43,17 @@
       },
       "writerReadinessCounts": {
         "partially-proven": 13,
-        "fixture-proven": 21,
-        "read-only": 1,
+        "fixture-proven": 22,
         "preserve-only": 8,
         "not-applicable": 14
       },
       "evidenceQualityCounts": {
-        "fixture-backed": 34,
-        "cited": 10,
-        "target-warning": 13
+        "fixture-backed": 35,
+        "target-warning": 13,
+        "cited": 9
       },
       "riskFlagCounts": {
-        "target-package-warning": 13,
-        "writer-gated": 3
+        "target-package-warning": 13
       },
       "scenarioSemantics": {
         "label": "Scenario Semantics",
@@ -61,10 +66,10 @@
       "writerProvenData": {
         "label": "Writer-Proven Data",
         "status": "complete",
-        "fixtureProvenContainers": 21,
+        "fixtureProvenContainers": 22,
         "partiallyProvenContainers": 13,
         "writerGatedContainers": 0,
-        "percentContainers": 59.65
+        "percentContainers": 61.4
       },
       "packageCompatibility": {
         "label": "Package Compatibility",
@@ -213,23 +218,6 @@
     }
   ],
   "containers": [
-    {
-      "container": "Data Solids",
-      "label": "Special tile solidity table",
-      "status": "Read-only",
-      "coverageStatus": "decoded-readonly",
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "read-only",
-        "evidenceQuality": "cited",
-        "riskFlags": []
-      },
-      "count": 35,
-      "sizes": [
-        1024
-      ],
-      "policy": "Decoded for inspection and validation; editing is hidden until writer coverage exists."
-    },
     {
       "container": "Data MENU",
       "label": "Generated monster menu cache",
@@ -459,9 +447,7 @@
         "semanticOwnership": "mixed",
         "writerReadiness": "partially-proven",
         "evidenceQuality": "fixture-backed",
-        "riskFlags": [
-          "writer-gated"
-        ]
+        "riskFlags": []
       },
       "count": 13,
       "sizes": [
@@ -512,9 +498,7 @@
         "semanticOwnership": "mixed",
         "writerReadiness": "partially-proven",
         "evidenceQuality": "fixture-backed",
-        "riskFlags": [
-          "writer-gated"
-        ]
+        "riskFlags": []
       },
       "count": 5,
       "sizes": [
@@ -531,9 +515,7 @@
         "semanticOwnership": "mixed",
         "writerReadiness": "partially-proven",
         "evidenceQuality": "fixture-backed",
-        "riskFlags": [
-          "writer-gated"
-        ]
+        "riskFlags": []
       },
       "count": 3,
       "sizes": [
@@ -872,6 +854,26 @@
       "count": 1,
       "sizes": [
         7377
+      ],
+      "policy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
+    },
+    {
+      "container": "Custom 3 Music.rsrc",
+      "label": "Resource fork",
+      "status": "Understood resource container",
+      "coverageStatus": "understood-resource-container",
+      "truth": {
+        "semanticOwnership": "complete",
+        "writerReadiness": "not-applicable",
+        "evidenceQuality": "target-warning",
+        "riskFlags": [
+          "target-package-warning"
+        ]
+      },
+      "count": 1,
+      "sizes": [
+        7377,
+        7459
       ],
       "policy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     }

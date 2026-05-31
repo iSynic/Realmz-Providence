@@ -118,6 +118,7 @@ function ScenarioCoverageSummary({ coverage }: { coverage: ScenarioCoverageManif
             <Metric label="Writer-Proven Data" value={`${strict.writerProvenData.percentContainers}%`} />
             <Metric label="Package Warnings" value={strict.packageCompatibility.warnings} />
             <Metric label="Codec Internals" value={formatCoveragePhrase(strict.codecInternals.status)} />
+            <Metric label="Functional Authoring" value={summary.functionalAuthoringReadiness ? `${summary.functionalAuthoringReadiness.readySystems}/${summary.functionalAuthoringReadiness.totalSystems}` : "Unknown"} />
           </>
         ) : (
           <>
@@ -150,6 +151,12 @@ function ScenarioCoverageSummary({ coverage }: { coverage: ScenarioCoverageManif
         {summary.targetCompatibility && (
           <>
             Targets: {summary.targetCompatibility.macClassicScenarios.toLocaleString()} Mac-style and {summary.targetCompatibility.windowsRealmzScenarios.toLocaleString()} Windows-style scenario(s), {summary.targetCompatibility.targetCompatibilityIssues.toLocaleString()} packaging note(s).
+            {" "}
+          </>
+        )}
+        {summary.functionalAuthoringReadiness && (
+          <>
+            Functional authoring: {formatCoveragePhrase(summary.functionalAuthoringReadiness.status)} across {summary.functionalAuthoringReadiness.readySystems.toLocaleString()} / {summary.functionalAuthoringReadiness.totalSystems.toLocaleString()} blocker-focused system(s).
             {" "}
           </>
         )}

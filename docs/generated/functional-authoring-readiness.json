@@ -1,0 +1,163 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-05-31T14:25:12.925Z",
+  "generatedBy": "scripts/generate_scenario_byte_coverage.mjs",
+  "policy": {
+    "note": "Functional authoring readiness asks whether a user can create valid gameplay data from scratch. It is separate from byte ownership and media codec internals.",
+    "preservedCompatibilityBytesAreNotBlockers": true,
+    "rawFileNamesStayAdvancedOnly": true
+  },
+  "summary": {
+    "status": "ready",
+    "readySystems": 5,
+    "totalSystems": 5,
+    "functionalBlockers": 0,
+    "blockerIds": []
+  },
+  "systems": [
+    {
+      "id": "map-records",
+      "label": "Map Records",
+      "status": "ready-with-preserved-compatibility",
+      "functionalBlocker": false,
+      "rationale": "Map marker triples, start/display fields, clip rectangle, and note text are writer-proven; bytes 74..76 remain preserved compatibility storage.",
+      "containers": [
+        {
+          "container": "Data MD2",
+          "observed": true,
+          "coverageStatus": "mixed-writable-preserved",
+          "effectiveStatuses": [
+            "decoded-writable",
+            "preserved-known"
+          ],
+          "writerReadiness": "partially-proven",
+          "semanticOwnership": "mixed"
+        }
+      ],
+      "evidence": [
+        "docs/generated/map-record-evidence.json",
+        "docs/generated/core-record-writer-gates.json",
+        "docs/format-evidence-cards/map-record-runtime-anchors.md"
+      ]
+    },
+    {
+      "id": "scenario-items",
+      "label": "Scenario Items",
+      "status": "ready-with-preserved-compatibility",
+      "functionalBlocker": false,
+      "rationale": "Functional item fields for IDs 800..999 are writer-proven. Bytes 56..70 are source-backed itemattr.spare2[7] compatibility words, preserved on import and zero by default for new records.",
+      "containers": [
+        {
+          "container": "Data NI",
+          "observed": true,
+          "coverageStatus": "mixed-writable-preserved",
+          "effectiveStatuses": [
+            "decoded-writable",
+            "preserved-known"
+          ],
+          "writerReadiness": "partially-proven",
+          "semanticOwnership": "mixed"
+        }
+      ],
+      "evidence": [
+        "docs/generated/core-rules-record-evidence.json",
+        "docs/generated/core-record-writer-gates.json",
+        "docs/format-evidence-cards/core-rules-record-runtime-anchors.md"
+      ]
+    },
+    {
+      "id": "custom-landlook-metadata",
+      "label": "Custom Land Tiles",
+      "status": "ready-with-preserved-compatibility",
+      "functionalBlocker": false,
+      "rationale": "Custom mapstats metadata, base tile/scale, combat builds, and range-slot first/last values are writer-proven. Each range slot reserved word remains preserved.",
+      "containers": [
+        {
+          "container": "Data Custom 1 BD",
+          "observed": true,
+          "coverageStatus": "mixed-writable-preserved",
+          "effectiveStatuses": [
+            "decoded-writable",
+            "preserved-known"
+          ],
+          "writerReadiness": "partially-proven",
+          "semanticOwnership": "mixed"
+        },
+        {
+          "container": "Data Custom 2 BD",
+          "observed": true,
+          "coverageStatus": "mixed-writable-preserved",
+          "effectiveStatuses": [
+            "decoded-writable",
+            "preserved-known"
+          ],
+          "writerReadiness": "partially-proven",
+          "semanticOwnership": "mixed"
+        },
+        {
+          "container": "Data Custom 3 BD",
+          "observed": true,
+          "coverageStatus": "mixed-writable-preserved",
+          "effectiveStatuses": [
+            "decoded-writable",
+            "preserved-known"
+          ],
+          "writerReadiness": "partially-proven",
+          "semanticOwnership": "mixed"
+        }
+      ],
+      "evidence": [
+        "docs/generated/custom-landlook-coverage.json",
+        "docs/format-evidence-cards/custom-landlook-writers.md"
+      ]
+    },
+    {
+      "id": "special-tile-solidity",
+      "label": "Special Tile Solidity",
+      "status": "ready",
+      "functionalBlocker": false,
+      "rationale": "Realmz source checks Data Solids only for special negative tile values; Providence parses and regenerates the 1024-byte solidity table from decoded special-tile profiles.",
+      "containers": [
+        {
+          "container": "Data Solids",
+          "observed": true,
+          "coverageStatus": "decoded-writable",
+          "effectiveStatuses": [
+            "decoded-writable"
+          ],
+          "writerReadiness": "fixture-proven",
+          "semanticOwnership": "complete"
+        }
+      ],
+      "evidence": [
+        "docs/format-evidence-cards/map-tile-runtime-anchors.md",
+        "docs/format-evidence-cards/map-tile-intelligence.md"
+      ]
+    },
+    {
+      "id": "custom-spells",
+      "label": "Custom Spells",
+      "status": "ready-with-preserved-packaging",
+      "functionalBlocker": false,
+      "rationale": "Custom spell records and name STR# resources are the supported authoring surface. The Data Spell tail is preserved packaging; current runtime evidence reads the 105 custom records and resource fork data, not the tail as functional spell behavior.",
+      "containers": [
+        {
+          "container": "Data Spell",
+          "observed": true,
+          "coverageStatus": "mixed-writable-preserved",
+          "effectiveStatuses": [
+            "decoded-writable",
+            "preserved-known"
+          ],
+          "writerReadiness": "partially-proven",
+          "semanticOwnership": "mixed"
+        }
+      ],
+      "evidence": [
+        "docs/generated/rules-resource-coverage.json",
+        "docs/generated/rules-name-resource-packaging.json",
+        "docs/format-evidence-cards/rules-spell-race-caste-runtime-anchors.md"
+      ]
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T05:12:05.880Z",
+  "generatedAt": "2026-05-31T14:25:12.925Z",
   "sources": {
     "byteOwnership": "docs/generated/scenario-byte-ownership.json",
     "unknownReport": "docs/generated/scenario-unknown-byte-report.json",
@@ -36,19 +36,17 @@
     },
     "writerReadinessCounts": {
       "partially-proven": 13,
-      "fixture-proven": 21,
-      "read-only": 1,
+      "fixture-proven": 22,
       "preserve-only": 8,
       "not-applicable": 14
     },
     "evidenceQualityCounts": {
-      "fixture-backed": 34,
-      "cited": 10,
-      "target-warning": 13
+      "fixture-backed": 35,
+      "target-warning": 13,
+      "cited": 9
     },
     "riskFlagCounts": {
-      "target-package-warning": 13,
-      "writer-gated": 3
+      "target-package-warning": 13
     },
     "scenarioSemantics": {
       "label": "Scenario Semantics",
@@ -61,10 +59,10 @@
     "writerProvenData": {
       "label": "Writer-Proven Data",
       "status": "complete",
-      "fixtureProvenContainers": 21,
+      "fixtureProvenContainers": 22,
       "partiallyProvenContainers": 13,
       "writerGatedContainers": 0,
-      "percentContainers": 59.65
+      "percentContainers": 61.4
     },
     "packageCompatibility": {
       "label": "Package Compatibility",
@@ -833,6 +831,7 @@
         "docs/generated/map-record-evidence.json",
         "docs/format-evidence-cards/map-record-runtime-anchors.md",
         "src-tauri/src/realmz.rs:map_record_storage_mutates_only_modeled_fields_and_preserves_prefix",
+        "src-tauri/src/realmz.rs:map_record_marker_storage_mutates_only_selected_marker_words",
         "src-tauri/src/realmz.rs:write_map_records",
         "src-tauri/src/realmz.rs:parse_map_records"
       ],
@@ -1094,22 +1093,31 @@
     {
       "container": "Data Solids",
       "authorFacingName": "Special tile solidity table",
-      "coverageStatus": "decoded-readonly",
+      "coverageStatus": "decoded-writable",
       "observedScenarioCount": 35,
       "observedByteSizes": [
         1024
       ],
       "effectiveStatuses": [
-        "decoded-readonly"
+        "decoded-writable"
       ],
       "evidence": [
-        "docs/format-evidence-cards/map-tile-intelligence.md"
+        "docs/format-evidence-cards/map-tile-intelligence.md",
+        "docs/format-evidence-cards/map-tile-runtime-anchors.md",
+        "src-tauri/src/realmz.rs:data_solids_round_trip_from_tile_attributes",
+        "src-tauri/src/realmz.rs:data_solids_mutates_only_selected_special_tile_solidity",
+        "src-tauri/src/realmz.rs:write_tile_solids",
+        "src-tauri/src/realmz.rs:parse_tile_attributes"
       ],
-      "fixtureGate": null,
+      "fixtureGate": {
+        "name": "special-negative-solidity-table",
+        "available": true,
+        "partialOnly": false
+      },
       "truth": {
         "semanticOwnership": "complete",
-        "writerReadiness": "read-only",
-        "evidenceQuality": "cited",
+        "writerReadiness": "fixture-proven",
+        "evidenceQuality": "fixture-backed",
         "riskFlags": []
       }
     },
@@ -1726,7 +1734,7 @@
       ],
       "effectiveStatuses": [
         "decoded-writable",
-        "understood-runtime-writer-gated"
+        "preserved-known"
       ],
       "evidence": [
         "docs/generated/custom-landlook-coverage.json",
@@ -1743,9 +1751,7 @@
         "semanticOwnership": "mixed",
         "writerReadiness": "partially-proven",
         "evidenceQuality": "fixture-backed",
-        "riskFlags": [
-          "writer-gated"
-        ]
+        "riskFlags": []
       }
     },
     {
@@ -1881,7 +1887,7 @@
       ],
       "effectiveStatuses": [
         "decoded-writable",
-        "understood-runtime-writer-gated"
+        "preserved-known"
       ],
       "evidence": [
         "docs/generated/custom-landlook-coverage.json",
@@ -1897,9 +1903,7 @@
         "semanticOwnership": "mixed",
         "writerReadiness": "partially-proven",
         "evidenceQuality": "fixture-backed",
-        "riskFlags": [
-          "writer-gated"
-        ]
+        "riskFlags": []
       }
     },
     {
@@ -1937,7 +1941,7 @@
       ],
       "effectiveStatuses": [
         "decoded-writable",
-        "understood-runtime-writer-gated"
+        "preserved-known"
       ],
       "evidence": [
         "docs/generated/custom-landlook-coverage.json",
@@ -1953,9 +1957,7 @@
         "semanticOwnership": "mixed",
         "writerReadiness": "partially-proven",
         "evidenceQuality": "fixture-backed",
-        "riskFlags": [
-          "writer-gated"
-        ]
+        "riskFlags": []
       }
     },
     {

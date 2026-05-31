@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T05:12:05.876Z",
+  "generatedAt": "2026-05-31T14:25:12.921Z",
   "sources": {
     "roundtripLedger": "docs/generated/scenario-byte-roundtrip-ledger.json",
     "rustRegistry": "src-tauri/src/realmz.rs",
@@ -731,8 +731,8 @@
         1024
       ],
       "resourceTypes": [],
-      "coverageStatus": "decoded-readonly",
-      "editable": false
+      "coverageStatus": "decoded-writable",
+      "editable": true
     },
     {
       "name": "Data TD",

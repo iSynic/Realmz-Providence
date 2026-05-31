@@ -576,6 +576,8 @@ pub struct LandLayout {
 #[serde(rename_all = "camelCase")]
 pub struct MapRecord {
     pub id: usize,
+    #[serde(default)]
+    pub markers: Vec<MapMarker>,
     pub start_x: i16,
     pub start_y: i16,
     pub level: i16,
@@ -598,6 +600,14 @@ pub struct MapRecord {
     #[serde(default)]
     pub authored: bool,
     pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MapMarker {
+    pub icon_id: i16,
+    pub x: i16,
+    pub y: i16,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -954,6 +964,8 @@ pub struct ScenarioItemRecord {
     pub specific_caste: i16,
     pub race_class_only: i16,
     pub caste_class_only: i16,
+    #[serde(default)]
+    pub spare2: Vec<i16>,
     pub v_small: i16,
     pub v_large: i16,
     pub heat: i16,

@@ -23,6 +23,8 @@ pub const MESSAGE_BYTES: usize = 256;
 pub const OPTION_LABEL_BYTES: usize = 25;
 pub const TREASURE_BYTES: usize = 48;
 pub const MAP_RECORD_BYTES: usize = 340;
+pub const MAP_RECORD_MARKERS: usize = 10;
+pub const MAP_RECORD_MARKER_BYTES: usize = 6;
 pub const MAPSTATS_RECORD_BYTES: usize = 40;
 pub const MAPSTATS_RECORDS: usize = 201;
 pub const LANDLOOK_RANGE_TAIL_BYTES: usize = 60;
@@ -1010,6 +1012,7 @@ pub fn parse_map_records(buffer: &[u8]) -> Vec<MapRecord> {
             let record = &buffer[start..start + MAP_RECORD_BYTES];
             MapRecord {
                 id,
+                markers: parse_map_record_markers(record),
                 start_x: i16_be(record, 60),
                 start_y: i16_be(record, 62),
                 level: i16_be(record, 64),
@@ -1050,6 +1053,12 @@ pub fn write_map_records(records: &[MapRecord]) -> Result<Vec<u8>> {
         if !record.authored && record.raw_bytes.len() == MAP_RECORD_BYTES {
             continue;
         }
+        for (slot, marker) in normalized_map_record_markers(record).iter().enumerate() {
+            let offset = start + slot * MAP_RECORD_MARKER_BYTES;
+            write_i16_be(&mut output, offset, marker.icon_id);
+            write_i16_be(&mut output, offset + 2, marker.x);
+            write_i16_be(&mut output, offset + 4, marker.y);
+        }
         write_i16_be(&mut output, start + 60, record.start_x);
         write_i16_be(&mut output, start + 62, record.start_y);
         write_i16_be(&mut output, start + 64, record.level);
@@ -1071,6 +1080,45 @@ pub fn write_map_records(records: &[MapRecord]) -> Result<Vec<u8>> {
         )?;
     }
     Ok(output)
+}
+
+fn parse_map_record_markers(record: &[u8]) -> Vec<MapMarker> {
+    (0..MAP_RECORD_MARKERS)
+        .map(|slot| {
+            let offset = slot * MAP_RECORD_MARKER_BYTES;
+            MapMarker {
+                icon_id: i16_be(record, offset),
+                x: i16_be(record, offset + 2),
+                y: i16_be(record, offset + 4),
+            }
+        })
+        .collect()
+}
+
+fn normalized_map_record_markers(record: &MapRecord) -> Vec<MapMarker> {
+    (0..MAP_RECORD_MARKERS)
+        .map(|slot| {
+            record
+                .markers
+                .get(slot)
+                .cloned()
+                .or_else(|| {
+                    let offset = slot * MAP_RECORD_MARKER_BYTES;
+                    (record.raw_bytes.len() >= offset + MAP_RECORD_MARKER_BYTES).then(|| {
+                        MapMarker {
+                            icon_id: i16_be(&record.raw_bytes, offset),
+                            x: i16_be(&record.raw_bytes, offset + 2),
+                            y: i16_be(&record.raw_bytes, offset + 4),
+                        }
+                    })
+                })
+                .unwrap_or(MapMarker {
+                    icon_id: 0,
+                    x: 0,
+                    y: 0,
+                })
+        })
+        .collect()
 }
 
 pub fn parse_scenario_shell(source_file: &str, buffer: &[u8]) -> Result<ScenarioShell> {
@@ -2284,6 +2332,7 @@ pub fn parse_scenario_items(buffer: &[u8]) -> Vec<ScenarioItemRecord> {
                 specific_caste: i16_be(record, 50),
                 race_class_only: i16_be(record, 52),
                 caste_class_only: i16_be(record, 54),
+                spare2: (0..7).map(|index| i16_be(record, 56 + index * 2)).collect(),
                 v_small: i16_be(record, 70),
                 v_large: i16_be(record, 72),
                 heat: i16_be(record, 74),
@@ -2339,6 +2388,7 @@ pub fn write_scenario_items(records: &[ScenarioItemRecord]) -> Result<Vec<u8>> {
         write_i16_be(buffer, 50, record.specific_caste);
         write_i16_be(buffer, 52, record.race_class_only);
         write_i16_be(buffer, 54, record.caste_class_only);
+        write_i16_array(buffer, 56, &record.spare2, 7);
         write_i16_be(buffer, 70, record.v_small);
         write_i16_be(buffer, 72, record.v_large);
         write_i16_be(buffer, 74, record.heat);
@@ -3694,6 +3744,20 @@ mod tests {
     }
 
     #[test]
+    fn data_solids_mutates_only_selected_special_tile_solidity() {
+        let input = vec![0u8; 1024];
+        let mut profiles = parse_tile_attributes(&input);
+        profiles[190].raw_byte = Some(1);
+        profiles[190].solid_type = Some(1);
+        profiles[190].flags = vec![TileAttributeFlag::Solid];
+
+        let output = write_tile_solids(&profiles).unwrap();
+
+        assert_eq!(changed_offsets(&input, &output), vec![190]);
+        assert_eq!(output[190], 1);
+    }
+
+    #[test]
     fn scenario_shell_contact_and_restrictions_round_trip() {
         let shell = ScenarioShell {
             source_file: "Tutorial".to_string(),
@@ -4449,6 +4513,44 @@ mod tests {
     }
 
     #[test]
+    fn map_record_marker_storage_mutates_only_selected_marker_words() {
+        let mut input = vec![0u8; MAP_RECORD_BYTES * 2];
+        let record_start = MAP_RECORD_BYTES;
+        input[record_start + 74] = 0xCA;
+        input[record_start + 75] = 0xFE;
+
+        let marker_slot = 4;
+        let marker_start = record_start + marker_slot * MAP_RECORD_MARKER_BYTES;
+        let mut records = parse_map_records(&input);
+        records[1].authored = true;
+        records[1].markers[marker_slot].icon_id = 0x1234;
+        records[1].markers[marker_slot].x = 0x5678;
+        records[1].markers[marker_slot].y = -0x1234;
+
+        let output = write_map_records(&records).unwrap();
+
+        assert_eq!(output.len(), input.len());
+        assert_eq!(
+            &output[record_start + 74..record_start + 76],
+            &input[record_start + 74..record_start + 76]
+        );
+        assert_eq!(i16_be(&output, marker_start), 0x1234);
+        assert_eq!(i16_be(&output, marker_start + 2), 0x5678);
+        assert_eq!(i16_be(&output, marker_start + 4), -0x1234);
+        assert_eq!(
+            changed_offsets(&input, &output),
+            vec![
+                marker_start,
+                marker_start + 1,
+                marker_start + 2,
+                marker_start + 3,
+                marker_start + 4,
+                marker_start + 5,
+            ]
+        );
+    }
+
+    #[test]
     fn scenario_item_storage_mutates_only_modeled_fields_and_preserves_gap() {
         let mut input = vec![0u8; ITEM_BYTES * 2];
         let item_start = ITEM_BYTES;
@@ -4458,6 +4560,7 @@ mod tests {
         }
 
         let mut items = parse_scenario_items(&input);
+        assert_eq!(items[1].spare2, vec![-23131; 7]);
         items[1].authored = true;
         items[1].item_id = 0x0304;
         items[1].damage = 0x0506;
@@ -4639,6 +4742,7 @@ mod tests {
             specific_caste: 11,
             race_class_only: 12,
             caste_class_only: 13,
+            spare2: vec![0; 7],
             v_small: 14,
             v_large: 15,
             heat: 16,

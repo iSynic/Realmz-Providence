@@ -89,7 +89,7 @@ Providence should label these records as library/override rules data. Scenario r
 
 Packed spell IDs use `1101 + class * 1000 + level * 100 + slot`, where class, level, and slot are zero-based in runtime arrays but one-based in the visible ID encoding. `loadspell2` ignores IDs below `1101`.
 
-Scenario `Data Spell` is 9,016 bytes in all 17 local scenarios that include it. Runtime reads only 105 spell records into `spelldata[4]` and then opens the same file as a resource file. Treat the extra bytes/resource evidence as preserve-first until Divinity write evidence explains the exact data/resource packaging.
+Scenario `Data Spell` is 9,016 bytes in all 17 local scenarios that include it. Runtime reads only 105 spell records into `spelldata[4]` and then opens the same file as a resource file. The extra file tail is preserved packaging evidence, not a current functional spell-authoring blocker; Providence's writable surface is the 105 custom spell records plus the fixture-proven custom spell name `STR# 5000..5006` resources.
 
 ## Race Layout
 
