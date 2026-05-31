@@ -989,6 +989,11 @@ function SelectedStepDetail({
     }))
     : parameterLabelsForOpcode(selectedDraft.rawCode);
   const visibleParameters = selectedDefinition.parameters.filter((parameter) => !parameter.preserved);
+  const selectedTargetPreview = useMemo(() => {
+    if (!selectedDefinition.target || selectedDefinition.target.targetFamily === "parameter-row") return null;
+    const lookupId = selectedDefinition.target.targetFamily === "message" ? Math.abs(selectedDraft.id) : selectedDraft.id;
+    return targetOptionsForOpcode(project, selectedDraft.rawCode, catalog).find((option) => option.value === lookupId) ?? null;
+  }, [catalog, project, selectedDefinition.target, selectedDraft.id, selectedDraft.rawCode]);
   const actionHelp = selectedDivinityHelp ? (
     <div className="realmz-action-help-card">
       <header>
@@ -1033,6 +1038,14 @@ function SelectedStepDetail({
           <span>{selectedDefinition.categoryLabel}</span>
         </div>
         <p>{selectedDefinition.summary}</p>
+        {selectedTargetPreview && (
+          <div className="realmz-selected-target-preview">
+            <span>{selectedDefinition.target?.label ?? "Target"}</span>
+            <strong>{selectedTargetPreview.label}</strong>
+            <p>{selectedTargetPreview.detail}</p>
+            {selectedTargetPreview.summary && <small>{selectedTargetPreview.summary}</small>}
+          </div>
+        )}
       </div>
       <div className="realmz-step-form-grid">
         <label className="script-required-field realmz-step-action-field">

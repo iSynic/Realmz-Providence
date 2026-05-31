@@ -2667,6 +2667,40 @@
   line-height: 1.4;
 }
 
+.realmz-selected-target-preview {
+  display: grid;
+  gap: 3px;
+  border: 1px solid #263746;
+  border-radius: 5px;
+  background: #0b141c;
+  padding: 7px 8px;
+}
+
+.realmz-selected-target-preview > span {
+  color: #7eaedf;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.realmz-selected-target-preview > strong {
+  color: #eef4fb;
+  font-size: 11px;
+}
+
+.realmz-selected-target-preview > p,
+.realmz-selected-target-preview > small {
+  margin: 0;
+  color: #b8c7d5;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.realmz-selected-target-preview > small {
+  color: #8798a8;
+  font-size: 10px;
+}
+
 .realmz-action-help-card {
   display: grid;
   gap: 7px;
