@@ -1,0 +1,620 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-05-31T04:16:59.117Z",
+  "generatedBy": "scripts/generate_scenario_byte_coverage.mjs",
+  "target": "maps-storage-writer-gates",
+  "sources": {
+    "byteCoverage": "docs/generated/scenario-byte-ownership.json",
+    "mapEvidence": "docs/generated/map-field-value-evidence.json",
+    "actionPointEvidence": "docs/generated/extra-ap-reachability-source-map.json",
+    "corpusUsage": "docs/generated/corpus-field-usage.json",
+    "mapStorageWriters": "src-tauri/src/realmz.rs"
+  },
+  "policy": {
+    "note": "This registry gates map storage containers only. Data DL dungeon tile bitfields remain governed by dungeon-byte-ownership and dungeon-primitive-writer-gate.",
+    "fixtureProvenRequires": [
+      "observed container coverage",
+      "all map fixture paths available",
+      "all local evidence references present"
+    ],
+    "excludedFamilies": [
+      "Data DL"
+    ]
+  },
+  "summary": {
+    "containers": 6,
+    "fixtureProvenContainers": 6,
+    "evidencePendingContainers": 0,
+    "writerReadiness": "fixture-proven-map-storage",
+    "fixturePathsAvailable": true,
+    "missingFixturePaths": [],
+    "missingEvidenceReferences": 0
+  },
+  "gates": [
+    {
+      "container": "Data LD",
+      "authorFacingName": "Outdoor land tile fields",
+      "gate": "land-field-grid-writer",
+      "recordBytes": 16200,
+      "rowKind": "90x90 outdoor land tile map",
+      "semanticExposure": "map-canvas-land-tiles",
+      "writerStatus": "fixture-proven-map-storage",
+      "available": true,
+      "evidencePresent": true,
+      "fixturePathsAvailable": true,
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        16200,
+        32400,
+        48600,
+        64800,
+        81000,
+        97200,
+        113400,
+        129600,
+        145800,
+        162000,
+        178200,
+        194400,
+        210600,
+        226800,
+        243000,
+        324000,
+        340200
+      ],
+      "fixturePaths": [
+        "F:/Realmz/base/Realmz/Scenarios/Tutorial",
+        "F:/Realmz/out_win_clang/Scenarios/Araman's Ring"
+      ],
+      "missingEvidence": [],
+      "evidence": [
+        "src-tauri/src/realmz.rs:map_storage_land_tiles_mutate_only_owned_cell",
+        "src-tauri/src/realmz.rs:write_fields",
+        "src-tauri/src/realmz.rs:parse_fields",
+        "docs/generated/map-field-value-evidence.json",
+        "docs/format-evidence-cards/map-tile-runtime-anchors.md"
+      ],
+      "evidenceChecks": [
+        {
+          "reference": "src-tauri/src/realmz.rs:map_storage_land_tiles_mutate_only_owned_cell",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "map_storage_land_tiles_mutate_only_owned_cell",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:write_fields",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "write_fields",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:parse_fields",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "parse_fields",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "docs/generated/map-field-value-evidence.json",
+          "file": "docs/generated/map-field-value-evidence.json",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        },
+        {
+          "reference": "docs/format-evidence-cards/map-tile-runtime-anchors.md",
+          "file": "docs/format-evidence-cards/map-tile-runtime-anchors.md",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        }
+      ],
+      "ownedFields": [
+        {
+          "field": "Land tile cells",
+          "internal": "tiles[90][90]",
+          "offset": 0,
+          "bytes": 16200,
+          "type": "i16be[8100]"
+        }
+      ],
+      "preservedRanges": [],
+      "partialOnly": false,
+      "preservationPolicy": "Outdoor map storage is a dense 90x90 signed-short tile grid. Writers may mutate individual tile cells and must preserve unrelated cells."
+    },
+    {
+      "container": "Layout",
+      "authorFacingName": "Land layout grid",
+      "gate": "land-layout-grid-writer",
+      "recordBytes": 256,
+      "rowKind": "8x16 outdoor adjacency grid plus optional preserved tail",
+      "semanticExposure": "land-layout-workbench",
+      "writerStatus": "fixture-proven-map-storage",
+      "available": true,
+      "evidencePresent": true,
+      "fixturePathsAvailable": true,
+      "observedScenarioCount": 24,
+      "observedByteSizes": [
+        256,
+        512
+      ],
+      "fixturePaths": [
+        "F:/Realmz/base/Realmz/Scenarios/Tutorial",
+        "F:/Realmz/out_win_clang/Scenarios/Araman's Ring"
+      ],
+      "missingEvidence": [],
+      "evidence": [
+        "src-tauri/src/realmz.rs:map_storage_layout_mutates_only_owned_cell_and_preserves_tail",
+        "src-tauri/src/realmz.rs:write_land_layout",
+        "src-tauri/src/realmz.rs:parse_land_layout",
+        "docs/generated/map-field-value-evidence.json",
+        "docs/format-evidence-cards/map-tile-runtime-anchors.md"
+      ],
+      "evidenceChecks": [
+        {
+          "reference": "src-tauri/src/realmz.rs:map_storage_layout_mutates_only_owned_cell_and_preserves_tail",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "map_storage_layout_mutates_only_owned_cell_and_preserves_tail",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:write_land_layout",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "write_land_layout",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:parse_land_layout",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "parse_land_layout",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "docs/generated/map-field-value-evidence.json",
+          "file": "docs/generated/map-field-value-evidence.json",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        },
+        {
+          "reference": "docs/format-evidence-cards/map-tile-runtime-anchors.md",
+          "file": "docs/format-evidence-cards/map-tile-runtime-anchors.md",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        }
+      ],
+      "ownedFields": [
+        {
+          "field": "Land adjacency cells",
+          "internal": "layout[8][16]",
+          "offset": 0,
+          "bytes": 256,
+          "type": "i16be[128]"
+        }
+      ],
+      "preservedRanges": [
+        {
+          "field": "Optional compatibility tail",
+          "internal": "trailingBytes",
+          "offset": 256,
+          "bytes": 256,
+          "type": "raw-preserved-when-present"
+        }
+      ],
+      "partialOnly": true,
+      "preservationPolicy": "The first 256 bytes are the Realmz 8x16 layout grid. Any bytes after 256 are compatibility tail bytes and remain preserve-only."
+    },
+    {
+      "container": "Data DD",
+      "authorFacingName": "Land Action Point records",
+      "gate": "land-trigger-table-writer",
+      "recordBytes": 4000,
+      "rowKind": "100 land Action Point trigger rows per level",
+      "semanticExposure": "land-action-point-triggers",
+      "writerStatus": "fixture-proven-map-storage",
+      "available": true,
+      "evidencePresent": true,
+      "fixturePathsAvailable": true,
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        4000,
+        8000,
+        12000,
+        16000,
+        20000,
+        24000,
+        28000,
+        32000,
+        36000,
+        40000,
+        44000,
+        48000,
+        52000,
+        56000,
+        60000,
+        80000,
+        84000
+      ],
+      "fixturePaths": [
+        "F:/Realmz/base/Realmz/Scenarios/Tutorial",
+        "F:/Realmz/out_win_clang/Scenarios/Araman's Ring"
+      ],
+      "missingEvidence": [],
+      "evidence": [
+        "src-tauri/src/realmz.rs:map_storage_trigger_tables_mutate_only_owned_action_slot",
+        "src-tauri/src/realmz.rs:write_door_file",
+        "src-tauri/src/realmz.rs:parse_door_file",
+        "docs/generated/extra-ap-reachability-source-map.json",
+        "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md"
+      ],
+      "evidenceChecks": [
+        {
+          "reference": "src-tauri/src/realmz.rs:map_storage_trigger_tables_mutate_only_owned_action_slot",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "map_storage_trigger_tables_mutate_only_owned_action_slot",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:write_door_file",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "write_door_file",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:parse_door_file",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "parse_door_file",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "docs/generated/extra-ap-reachability-source-map.json",
+          "file": "docs/generated/extra-ap-reachability-source-map.json",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        },
+        {
+          "reference": "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md",
+          "file": "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        }
+      ],
+      "ownedFields": [
+        {
+          "field": "Trigger coordinate/metadata",
+          "internal": "doorid/landid/x/y/percent",
+          "offset": 0,
+          "bytes": 8,
+          "type": "mixed"
+        },
+        {
+          "field": "Action codes",
+          "internal": "code[8]",
+          "offset": 8,
+          "bytes": 16,
+          "type": "i16be[8]"
+        },
+        {
+          "field": "Action IDs",
+          "internal": "id[8]",
+          "offset": 24,
+          "bytes": 16,
+          "type": "i16be[8]"
+        }
+      ],
+      "preservedRanges": [],
+      "partialOnly": false,
+      "preservationPolicy": "Land trigger rows use the same 40-byte action-row writer as Action Points; fixture proof mutates one action slot and preserves unrelated row bytes."
+    },
+    {
+      "container": "Data DDD",
+      "authorFacingName": "Dungeon Action Point records",
+      "gate": "dungeon-trigger-table-writer",
+      "recordBytes": 4000,
+      "rowKind": "100 dungeon Action Point trigger rows per level",
+      "semanticExposure": "dungeon-action-point-triggers",
+      "writerStatus": "fixture-proven-map-storage",
+      "available": true,
+      "evidencePresent": true,
+      "fixturePathsAvailable": true,
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        4000,
+        8000,
+        12000,
+        16000,
+        20000
+      ],
+      "fixturePaths": [
+        "F:/Realmz/base/Realmz/Scenarios/Tutorial",
+        "F:/Realmz/out_win_clang/Scenarios/Araman's Ring"
+      ],
+      "missingEvidence": [],
+      "evidence": [
+        "src-tauri/src/realmz.rs:map_storage_trigger_tables_mutate_only_owned_action_slot",
+        "src-tauri/src/realmz.rs:write_door_file",
+        "src-tauri/src/realmz.rs:parse_door_file",
+        "docs/generated/extra-ap-reachability-source-map.json",
+        "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md"
+      ],
+      "evidenceChecks": [
+        {
+          "reference": "src-tauri/src/realmz.rs:map_storage_trigger_tables_mutate_only_owned_action_slot",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "map_storage_trigger_tables_mutate_only_owned_action_slot",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:write_door_file",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "write_door_file",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:parse_door_file",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "parse_door_file",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "docs/generated/extra-ap-reachability-source-map.json",
+          "file": "docs/generated/extra-ap-reachability-source-map.json",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        },
+        {
+          "reference": "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md",
+          "file": "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        }
+      ],
+      "ownedFields": [
+        {
+          "field": "Trigger coordinate/metadata",
+          "internal": "doorid/landid/x/y/percent",
+          "offset": 0,
+          "bytes": 8,
+          "type": "mixed"
+        },
+        {
+          "field": "Action codes",
+          "internal": "code[8]",
+          "offset": 8,
+          "bytes": 16,
+          "type": "i16be[8]"
+        },
+        {
+          "field": "Action IDs",
+          "internal": "id[8]",
+          "offset": 24,
+          "bytes": 16,
+          "type": "i16be[8]"
+        }
+      ],
+      "preservedRanges": [],
+      "partialOnly": false,
+      "preservationPolicy": "Dungeon trigger rows use the same 40-byte action-row writer as land triggers; fixture proof mutates one action slot and preserves unrelated row bytes."
+    },
+    {
+      "container": "Data RD",
+      "authorFacingName": "Land random encounter settings",
+      "gate": "land-random-level-raw-stream-writer",
+      "recordBytes": 644,
+      "rowKind": "644-byte land random encounter level",
+      "semanticExposure": "land-random-encounter-storage",
+      "writerStatus": "fixture-proven-map-storage",
+      "available": true,
+      "evidencePresent": true,
+      "fixturePathsAvailable": true,
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        644,
+        1288,
+        1932,
+        2576,
+        3220,
+        3864,
+        4508,
+        5152,
+        5796,
+        6440,
+        7084,
+        7728,
+        8372,
+        9016,
+        9660,
+        12880,
+        13524
+      ],
+      "fixturePaths": [
+        "F:/Realmz/base/Realmz/Scenarios/Tutorial",
+        "F:/Realmz/out_win_clang/Scenarios/Araman's Ring"
+      ],
+      "missingEvidence": [],
+      "evidence": [
+        "src-tauri/src/realmz.rs:map_storage_random_levels_mutate_only_owned_raw_words",
+        "src-tauri/src/realmz.rs:write_random_levels",
+        "src-tauri/src/realmz.rs:parse_random_levels",
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
+      ],
+      "evidenceChecks": [
+        {
+          "reference": "src-tauri/src/realmz.rs:map_storage_random_levels_mutate_only_owned_raw_words",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "map_storage_random_levels_mutate_only_owned_raw_words",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:write_random_levels",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "write_random_levels",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:parse_random_levels",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "parse_random_levels",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "docs/generated/corpus-field-usage.json",
+          "file": "docs/generated/corpus-field-usage.json",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        },
+        {
+          "reference": "docs/format-evidence-cards/encounter-record-runtime-anchors.md",
+          "file": "docs/format-evidence-cards/encounter-record-runtime-anchors.md",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        }
+      ],
+      "ownedFields": [
+        {
+          "field": "Random encounter raw signed-short stream",
+          "internal": "raw_values[322]",
+          "offset": 0,
+          "bytes": 644,
+          "type": "i16be[322]"
+        }
+      ],
+      "preservedRanges": [],
+      "partialOnly": false,
+      "preservationPolicy": "Current random-level export authority is the raw signed-short stream. Decoded rect fields are not independently writer-proven in this pass."
+    },
+    {
+      "container": "Data RDD",
+      "authorFacingName": "Dungeon random encounter settings",
+      "gate": "dungeon-random-level-raw-stream-writer",
+      "recordBytes": 644,
+      "rowKind": "644-byte dungeon random encounter level",
+      "semanticExposure": "dungeon-random-encounter-storage",
+      "writerStatus": "fixture-proven-map-storage",
+      "available": true,
+      "evidencePresent": true,
+      "fixturePathsAvailable": true,
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        644,
+        1288,
+        1932,
+        2576,
+        3220
+      ],
+      "fixturePaths": [
+        "F:/Realmz/base/Realmz/Scenarios/Tutorial",
+        "F:/Realmz/out_win_clang/Scenarios/Araman's Ring"
+      ],
+      "missingEvidence": [],
+      "evidence": [
+        "src-tauri/src/realmz.rs:map_storage_random_levels_mutate_only_owned_raw_words",
+        "src-tauri/src/realmz.rs:write_random_levels",
+        "src-tauri/src/realmz.rs:parse_random_levels",
+        "docs/generated/corpus-field-usage.json",
+        "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
+      ],
+      "evidenceChecks": [
+        {
+          "reference": "src-tauri/src/realmz.rs:map_storage_random_levels_mutate_only_owned_raw_words",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "map_storage_random_levels_mutate_only_owned_raw_words",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:write_random_levels",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "write_random_levels",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:parse_random_levels",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "parse_random_levels",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "docs/generated/corpus-field-usage.json",
+          "file": "docs/generated/corpus-field-usage.json",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        },
+        {
+          "reference": "docs/format-evidence-cards/encounter-record-runtime-anchors.md",
+          "file": "docs/format-evidence-cards/encounter-record-runtime-anchors.md",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        }
+      ],
+      "ownedFields": [
+        {
+          "field": "Random encounter raw signed-short stream",
+          "internal": "raw_values[322]",
+          "offset": 0,
+          "bytes": 644,
+          "type": "i16be[322]"
+        }
+      ],
+      "preservedRanges": [],
+      "partialOnly": false,
+      "preservationPolicy": "Current dungeon random-level export authority is the raw signed-short stream. Decoded rect fields are not independently writer-proven in this pass."
+    }
+  ]
+}

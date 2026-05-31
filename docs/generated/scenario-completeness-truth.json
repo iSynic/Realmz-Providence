@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T03:54:00.264Z",
+  "generatedAt": "2026-05-31T04:16:59.120Z",
   "sources": {
     "byteOwnership": "docs/generated/scenario-byte-ownership.json",
     "unknownReport": "docs/generated/scenario-unknown-byte-report.json",
@@ -11,56 +11,58 @@
     "rulesCoverage": "docs/generated/rules-resource-coverage.json",
     "actionPointWriterGate": "docs/generated/action-point-writer-gate.json",
     "fixedRecordWriterGates": "docs/generated/fixed-record-writer-gates.json",
-    "scenarioStartupShellGate": "docs/generated/scenario-startup-shell-gate.json"
+    "scenarioStartupShellGate": "docs/generated/scenario-startup-shell-gate.json",
+    "mapsStorageWriterGates": "docs/generated/maps-storage-writer-gates.json"
   },
   "policy": {
     "note": "Truth statuses are stricter than legacy coverageStatus. Semantic ownership, writer readiness, evidence quality, and package compatibility are intentionally separate.",
     "scenarioSemanticsExcludeOptionalCodecs": true,
     "writerReadinessRequiresFixtureOrExplicitGate": true,
     "actionPointWriterGateStatus": "fixture-proven-fixed-row-storage",
-    "fixedRecordWriterGateStatus": "fixture-proven-fixed-record-storage"
+    "fixedRecordWriterGateStatus": "fixture-proven-fixed-record-storage",
+    "mapsStorageWriterGateStatus": "fixture-proven-map-storage"
   },
   "summary": {
     "containerCount": 57,
     "semanticOwnershipCounts": {
-      "mixed": 8,
-      "complete": 47,
+      "mixed": 9,
+      "complete": 46,
       "runtime-only": 1,
       "ignored": 1
     },
     "writerReadinessCounts": {
-      "partially-proven": 8,
-      "writer-gated": 15,
-      "fixture-proven": 11,
+      "partially-proven": 9,
+      "fixture-proven": 16,
+      "writer-gated": 9,
       "read-only": 1,
       "preserve-only": 8,
       "not-applicable": 14
     },
     "evidenceQualityCounts": {
-      "fixture-backed": 19,
-      "cited": 25,
+      "fixture-backed": 25,
+      "cited": 19,
       "target-warning": 13
     },
     "riskFlagCounts": {
-      "structural-writer-claim": 15,
+      "structural-writer-claim": 9,
       "target-package-warning": 13,
       "writer-gated": 3
     },
     "scenarioSemantics": {
       "label": "Scenario Semantics",
       "status": "complete",
-      "completeContainers": 47,
-      "mixedContainers": 8,
+      "completeContainers": 46,
+      "mixedContainers": 9,
       "needsFormatWorkContainers": 0,
-      "percentContainers": 82.46
+      "percentContainers": 80.7
     },
     "writerProvenData": {
       "label": "Writer-Proven Data",
       "status": "incomplete",
-      "fixtureProvenContainers": 11,
-      "partiallyProvenContainers": 8,
-      "writerGatedContainers": 15,
-      "percentContainers": 33.33
+      "fixtureProvenContainers": 16,
+      "partiallyProvenContainers": 9,
+      "writerGatedContainers": 9,
+      "percentContainers": 43.86
     },
     "packageCompatibility": {
       "label": "Package Compatibility",
@@ -76,7 +78,7 @@
       "decodedResourcePayloadBytes": 841240
     },
     "strictOutstanding": {
-      "writerGatedContainers": 15,
+      "writerGatedContainers": 9,
       "missingEvidenceContainers": 0,
       "skippedFixtureContainers": 0,
       "preservedUnknownContainers": 0,
@@ -180,17 +182,26 @@
         "decoded-writable"
       ],
       "evidence": [
+        "docs/generated/maps-storage-writer-gates.json",
         "docs/generated/extra-ap-reachability-source-map.json",
-        "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md"
+        "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md",
+        "src-tauri/src/realmz.rs:map_storage_trigger_tables_mutate_only_owned_action_slot",
+        "src-tauri/src/realmz.rs:write_door_file",
+        "src-tauri/src/realmz.rs:parse_door_file"
       ],
-      "fixtureGate": null,
+      "fixtureGate": {
+        "name": "land-trigger-table-writer",
+        "available": true,
+        "partialOnly": false,
+        "evidencePresent": true,
+        "missingEvidence": [],
+        "source": "maps-storage-writer-gates"
+      },
       "truth": {
         "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
+        "writerReadiness": "fixture-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
       }
     },
     {
@@ -209,17 +220,26 @@
         "decoded-writable"
       ],
       "evidence": [
+        "docs/generated/maps-storage-writer-gates.json",
         "docs/generated/extra-ap-reachability-source-map.json",
-        "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md"
+        "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md",
+        "src-tauri/src/realmz.rs:map_storage_trigger_tables_mutate_only_owned_action_slot",
+        "src-tauri/src/realmz.rs:write_door_file",
+        "src-tauri/src/realmz.rs:parse_door_file"
       ],
-      "fixtureGate": null,
+      "fixtureGate": {
+        "name": "dungeon-trigger-table-writer",
+        "available": true,
+        "partialOnly": false,
+        "evidencePresent": true,
+        "missingEvidence": [],
+        "source": "maps-storage-writer-gates"
+      },
       "truth": {
         "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
+        "writerReadiness": "fixture-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
       }
     },
     {
@@ -558,17 +578,26 @@
         "decoded-writable"
       ],
       "evidence": [
+        "docs/generated/maps-storage-writer-gates.json",
         "docs/generated/map-field-value-evidence.json",
-        "docs/format-evidence-cards/map-tile-runtime-anchors.md"
+        "docs/format-evidence-cards/map-tile-runtime-anchors.md",
+        "src-tauri/src/realmz.rs:map_storage_land_tiles_mutate_only_owned_cell",
+        "src-tauri/src/realmz.rs:write_fields",
+        "src-tauri/src/realmz.rs:parse_fields"
       ],
-      "fixtureGate": null,
+      "fixtureGate": {
+        "name": "land-field-grid-writer",
+        "available": true,
+        "partialOnly": false,
+        "evidencePresent": true,
+        "missingEvidence": [],
+        "source": "maps-storage-writer-gates"
+      },
       "truth": {
         "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
+        "writerReadiness": "fixture-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
       }
     },
     {
@@ -816,17 +845,26 @@
         "decoded-writable"
       ],
       "evidence": [
+        "docs/generated/maps-storage-writer-gates.json",
         "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
+        "docs/format-evidence-cards/encounter-record-runtime-anchors.md",
+        "src-tauri/src/realmz.rs:map_storage_random_levels_mutate_only_owned_raw_words",
+        "src-tauri/src/realmz.rs:write_random_levels",
+        "src-tauri/src/realmz.rs:parse_random_levels"
       ],
-      "fixtureGate": null,
+      "fixtureGate": {
+        "name": "land-random-level-raw-stream-writer",
+        "available": true,
+        "partialOnly": false,
+        "evidencePresent": true,
+        "missingEvidence": [],
+        "source": "maps-storage-writer-gates"
+      },
       "truth": {
         "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
+        "writerReadiness": "fixture-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
       }
     },
     {
@@ -845,17 +883,26 @@
         "decoded-writable"
       ],
       "evidence": [
+        "docs/generated/maps-storage-writer-gates.json",
         "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
+        "docs/format-evidence-cards/encounter-record-runtime-anchors.md",
+        "src-tauri/src/realmz.rs:map_storage_random_levels_mutate_only_owned_raw_words",
+        "src-tauri/src/realmz.rs:write_random_levels",
+        "src-tauri/src/realmz.rs:parse_random_levels"
       ],
-      "fixtureGate": null,
+      "fixtureGate": {
+        "name": "dungeon-random-level-raw-stream-writer",
+        "available": true,
+        "partialOnly": false,
+        "evidencePresent": true,
+        "missingEvidence": [],
+        "source": "maps-storage-writer-gates"
+      },
       "truth": {
         "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
+        "writerReadiness": "fixture-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
       }
     },
     {
@@ -1445,27 +1492,37 @@
     {
       "container": "Layout",
       "authorFacingName": "Land layout grid",
-      "coverageStatus": "decoded-writable",
+      "coverageStatus": "mixed-writable-preserved",
       "observedScenarioCount": 24,
       "observedByteSizes": [
         256,
         512
       ],
       "effectiveStatuses": [
-        "decoded-writable"
+        "decoded-writable",
+        "preserved-known"
       ],
       "evidence": [
+        "docs/generated/maps-storage-writer-gates.json",
         "docs/generated/map-field-value-evidence.json",
-        "docs/format-evidence-cards/map-tile-runtime-anchors.md"
+        "docs/format-evidence-cards/map-tile-runtime-anchors.md",
+        "src-tauri/src/realmz.rs:map_storage_layout_mutates_only_owned_cell_and_preserves_tail",
+        "src-tauri/src/realmz.rs:write_land_layout",
+        "src-tauri/src/realmz.rs:parse_land_layout"
       ],
-      "fixtureGate": null,
+      "fixtureGate": {
+        "name": "land-layout-grid-writer",
+        "available": true,
+        "partialOnly": true,
+        "evidencePresent": true,
+        "missingEvidence": [],
+        "source": "maps-storage-writer-gates"
+      },
       "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
+        "semanticOwnership": "mixed",
+        "writerReadiness": "partially-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
       }
     },
     {

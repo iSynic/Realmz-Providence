@@ -3238,6 +3238,27 @@ mod tests {
     }
 
     #[test]
+    fn map_storage_land_tiles_mutate_only_owned_cell() {
+        let mut input = vec![0xA5; FIELD_BYTES * 2];
+        let level_index = 1;
+        let tile_index = MAP_SIZE + 7;
+        let tile_offset = level_index * FIELD_BYTES + tile_index * 2;
+        write_i16_be(&mut input, tile_offset, 0x0102);
+
+        let mut maps = parse_fields(&input, LevelType::Land, "Data LD");
+        maps[level_index].tiles[tile_index] = 0x0304;
+
+        let output = write_fields(&maps, LevelType::Land).unwrap();
+
+        assert_eq!(output.len(), input.len());
+        assert_eq!(i16_be(&output, tile_offset), 0x0304);
+        assert_eq!(
+            changed_offsets(&input, &output),
+            vec![tile_offset, tile_offset + 1]
+        );
+    }
+
+    #[test]
     fn land_layout_round_trip() {
         let mut input = vec![0u8; LAND_LAYOUT_BYTES + 4];
         write_i16_be(&mut input, 0, -1);
@@ -3260,6 +3281,28 @@ mod tests {
     }
 
     #[test]
+    fn map_storage_layout_mutates_only_owned_cell_and_preserves_tail() {
+        let mut input = vec![0xA5; LAND_LAYOUT_BYTES + 6];
+        input[LAND_LAYOUT_BYTES..].copy_from_slice(&[0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE]);
+        let cell_index = LAND_LAYOUT_COLS + 4;
+        let cell_offset = cell_index * 2;
+        write_i16_be(&mut input, cell_offset, 0x0102);
+
+        let mut layout = parse_land_layout(&input).unwrap();
+        layout.cells[cell_index] = 0x0304;
+
+        let output = write_land_layout(&layout).unwrap();
+
+        assert_eq!(output.len(), input.len());
+        assert_eq!(&output[LAND_LAYOUT_BYTES..], &input[LAND_LAYOUT_BYTES..]);
+        assert_eq!(i16_be(&output, cell_offset), 0x0304);
+        assert_eq!(
+            changed_offsets(&input, &output),
+            vec![cell_offset, cell_offset + 1]
+        );
+    }
+
+    #[test]
     fn doors_round_trip() {
         let mut input = vec![0u8; DOOR_LEVEL_BYTES];
         write_i32_be(&mut input, 0, 10000 + 42);
@@ -3272,6 +3315,52 @@ mod tests {
         let doors = parse_door_file(&input, LevelType::Land, "Data DD");
         let output = write_door_file(&doors, LevelType::Land).unwrap();
         assert_eq!(input, output);
+    }
+
+    #[test]
+    fn map_storage_trigger_tables_mutate_only_owned_action_slot() {
+        for (level_type, source) in [
+            (LevelType::Land, "Data DD"),
+            (LevelType::Dungeon, "Data DDD"),
+        ] {
+            let mut input = vec![0xA5; DOOR_LEVEL_BYTES * 2];
+            let level_index = 1;
+            let record_index = 7;
+            let slot = 5;
+            let record_start = level_index * DOOR_LEVEL_BYTES + record_index * DOOR_BYTES;
+            let code_offset = record_start + 8 + slot * 2;
+            let id_offset = record_start + 24 + slot * 2;
+            write_i16_be(&mut input, code_offset, 0x0102);
+            write_i16_be(&mut input, id_offset, 0x0506);
+
+            let mut triggers = parse_door_file(&input, level_type, source);
+            let action = triggers
+                .iter_mut()
+                .find(|trigger| {
+                    trigger.level_index == Some(level_index)
+                        && trigger.record_index == record_index
+                })
+                .and_then(|trigger| {
+                    trigger
+                        .actions
+                        .iter_mut()
+                        .find(|action| action.slot == slot)
+                })
+                .expect("fixture action slot should parse");
+            action.raw_code = 0x0304;
+            action.code = action.raw_code;
+            action.id = 0x0708;
+
+            let output = write_door_file(&triggers, level_type).unwrap();
+
+            assert_eq!(output.len(), input.len());
+            assert_eq!(i16_be(&output, code_offset), 0x0304);
+            assert_eq!(i16_be(&output, id_offset), 0x0708);
+            assert_eq!(
+                changed_offsets(&input, &output),
+                vec![code_offset, code_offset + 1, id_offset, id_offset + 1]
+            );
+        }
     }
 
     #[test]
@@ -3340,6 +3429,32 @@ mod tests {
         let levels = parse_random_levels(&input, LevelType::Land, "Data RD");
         let output = write_random_levels(&levels, LevelType::Land).unwrap();
         assert_eq!(input, output);
+    }
+
+    #[test]
+    fn map_storage_random_levels_mutate_only_owned_raw_words() {
+        for (level_type, source) in [
+            (LevelType::Land, "Data RD"),
+            (LevelType::Dungeon, "Data RDD"),
+        ] {
+            let mut input = vec![0xA5; RANDLEVEL_BYTES * 2];
+            let level_index = 1;
+            let raw_word_index = 281;
+            let raw_offset = level_index * RANDLEVEL_BYTES + raw_word_index * 2;
+            write_i16_be(&mut input, raw_offset, 0x0102);
+
+            let mut levels = parse_random_levels(&input, level_type, source);
+            levels[level_index].raw_values[raw_word_index] = 0x0304;
+
+            let output = write_random_levels(&levels, level_type).unwrap();
+
+            assert_eq!(output.len(), input.len());
+            assert_eq!(i16_be(&output, raw_offset), 0x0304);
+            assert_eq!(
+                changed_offsets(&input, &output),
+                vec![raw_offset, raw_offset + 1]
+            );
+        }
     }
 
     #[test]

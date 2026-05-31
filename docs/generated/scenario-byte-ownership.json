@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T03:54:00.262Z",
+  "generatedAt": "2026-05-31T04:16:59.118Z",
   "classifications": [
     "decoded-writable",
     "decoded-readonly",
@@ -28,6 +28,7 @@
     "dungeonHighBitAudit": "docs/generated/dungeon-high-bit-audit.json",
     "fixedRecordWriterGates": "docs/generated/fixed-record-writer-gates.json",
     "scenarioStartupShellGate": "docs/generated/scenario-startup-shell-gate.json",
+    "mapsStorageWriterGates": "docs/generated/maps-storage-writer-gates.json",
     "completenessTruth": "docs/generated/scenario-completeness-truth.json",
     "ed3Reachability": "docs/generated/extra-ap-reachability-source-map.json",
     "edcdCrosswalk": "docs/generated/opcode-edcd-crosswalk.json"
@@ -35,8 +36,8 @@
   "summary": {
     "containerCount": 57,
     "statusCounts": {
-      "decoded-writable": 26,
-      "mixed-writable-preserved": 8,
+      "decoded-writable": 25,
+      "mixed-writable-preserved": 9,
       "decoded-readonly": 1,
       "preserved-known": 5,
       "understood-resource-container": 12,
@@ -45,8 +46,8 @@
       "ignored-non-scenario": 1
     },
     "statusObservedBytes": {
-      "decoded-writable": 935833223,
-      "mixed-writable-preserved": 9053068,
+      "decoded-writable": 935814791,
+      "mixed-writable-preserved": 9071500,
       "decoded-readonly": 35840,
       "preserved-known": 116752,
       "understood-resource-container": 1369599572,
@@ -166,11 +167,13 @@
           "endExclusive": 4000,
           "status": "decoded-writable",
           "field": "Land Action Point records",
-          "internal": "fixed record"
+          "internal": "fixed record",
+          "writerGate": "docs/generated/maps-storage-writer-gates.json"
         }
       ],
       "resourceTypes": [],
       "evidence": [
+        "docs/generated/maps-storage-writer-gates.json",
         "docs/generated/extra-ap-reachability-source-map.json",
         "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md"
       ],
@@ -197,11 +200,13 @@
           "endExclusive": 4000,
           "status": "decoded-writable",
           "field": "Dungeon Action Point records",
-          "internal": "fixed record"
+          "internal": "fixed record",
+          "writerGate": "docs/generated/maps-storage-writer-gates.json"
         }
       ],
       "resourceTypes": [],
       "evidence": [
+        "docs/generated/maps-storage-writer-gates.json",
         "docs/generated/extra-ap-reachability-source-map.json",
         "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md"
       ],
@@ -824,11 +829,13 @@
           "endExclusive": 16200,
           "status": "decoded-writable",
           "field": "Outdoor land tile fields",
-          "internal": "fixed record"
+          "internal": "fixed record",
+          "writerGate": "docs/generated/maps-storage-writer-gates.json"
         }
       ],
       "resourceTypes": [],
       "evidence": [
+        "docs/generated/maps-storage-writer-gates.json",
         "docs/generated/map-field-value-evidence.json",
         "docs/format-evidence-cards/map-tile-runtime-anchors.md"
       ],
@@ -1094,11 +1101,13 @@
           "endExclusive": 644,
           "status": "decoded-writable",
           "field": "Land random encounter settings",
-          "internal": "fixed record"
+          "internal": "fixed record",
+          "writerGate": "docs/generated/maps-storage-writer-gates.json"
         }
       ],
       "resourceTypes": [],
       "evidence": [
+        "docs/generated/maps-storage-writer-gates.json",
         "docs/generated/corpus-field-usage.json",
         "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
       ],
@@ -1125,11 +1134,13 @@
           "endExclusive": 644,
           "status": "decoded-writable",
           "field": "Dungeon random encounter settings",
-          "internal": "fixed record"
+          "internal": "fixed record",
+          "writerGate": "docs/generated/maps-storage-writer-gates.json"
         }
       ],
       "resourceTypes": [],
       "evidence": [
+        "docs/generated/maps-storage-writer-gates.json",
         "docs/generated/corpus-field-usage.json",
         "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
       ],
@@ -1896,7 +1907,7 @@
     {
       "container": "Layout",
       "authorFacingName": "Land layout grid",
-      "coverageStatus": "decoded-writable",
+      "coverageStatus": "mixed-writable-preserved",
       "role": "supported-binary",
       "observedScenarioCount": 24,
       "observedByteSizes": [
@@ -1911,15 +1922,26 @@
           "endExclusive": 256,
           "status": "decoded-writable",
           "field": "Land layout grid",
-          "internal": "fixed record"
+          "internal": "layout[8][16]",
+          "writerGate": "docs/generated/maps-storage-writer-gates.json"
+        },
+        {
+          "start": 256,
+          "length": 256,
+          "endExclusive": 512,
+          "status": "preserved-known",
+          "field": "Optional layout compatibility tail",
+          "internal": "trailingBytes",
+          "writerGate": "docs/generated/maps-storage-writer-gates.json"
         }
       ],
       "resourceTypes": [],
       "evidence": [
+        "docs/generated/maps-storage-writer-gates.json",
         "docs/generated/map-field-value-evidence.json",
         "docs/format-evidence-cards/map-tile-runtime-anchors.md"
       ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+      "editorPolicy": "Some byte ranges are writer-proven or structurally decoded, while preserved/runtime ranges remain read-only."
     },
     {
       "container": "Data MENU",

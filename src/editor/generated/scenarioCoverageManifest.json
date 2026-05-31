@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T03:54:00.264Z",
+  "generatedAt": "2026-05-31T04:16:59.121Z",
   "summary": {
     "scenarioRoots": 87,
     "fileFamilies": 57,
     "ignoredNonScenarioFiles": 1,
-    "editableContainers": 26,
+    "editableContainers": 25,
     "preservedContainers": 8,
     "understoodResourceContainers": 12,
     "resourceCoverage": {
@@ -29,44 +29,44 @@
     "strictCompleteness": {
       "containerCount": 57,
       "semanticOwnershipCounts": {
-        "mixed": 8,
-        "complete": 47,
+        "mixed": 9,
+        "complete": 46,
         "runtime-only": 1,
         "ignored": 1
       },
       "writerReadinessCounts": {
-        "partially-proven": 8,
-        "writer-gated": 15,
-        "fixture-proven": 11,
+        "partially-proven": 9,
+        "fixture-proven": 16,
+        "writer-gated": 9,
         "read-only": 1,
         "preserve-only": 8,
         "not-applicable": 14
       },
       "evidenceQualityCounts": {
-        "fixture-backed": 19,
-        "cited": 25,
+        "fixture-backed": 25,
+        "cited": 19,
         "target-warning": 13
       },
       "riskFlagCounts": {
-        "structural-writer-claim": 15,
+        "structural-writer-claim": 9,
         "target-package-warning": 13,
         "writer-gated": 3
       },
       "scenarioSemantics": {
         "label": "Scenario Semantics",
         "status": "complete",
-        "completeContainers": 47,
-        "mixedContainers": 8,
+        "completeContainers": 46,
+        "mixedContainers": 9,
         "needsFormatWorkContainers": 0,
-        "percentContainers": 82.46
+        "percentContainers": 80.7
       },
       "writerProvenData": {
         "label": "Writer-Proven Data",
         "status": "incomplete",
-        "fixtureProvenContainers": 11,
-        "partiallyProvenContainers": 8,
-        "writerGatedContainers": 15,
-        "percentContainers": 33.33
+        "fixtureProvenContainers": 16,
+        "partiallyProvenContainers": 9,
+        "writerGatedContainers": 9,
+        "percentContainers": 43.86
       },
       "packageCompatibility": {
         "label": "Package Compatibility",
@@ -82,7 +82,7 @@
         "decodedResourcePayloadBytes": 841240
       },
       "strictOutstanding": {
-        "writerGatedContainers": 15,
+        "writerGatedContainers": 9,
         "missingEvidenceContainers": 0,
         "skippedFixtureContainers": 0,
         "preservedUnknownContainers": 0,
@@ -285,6 +285,24 @@
       "sizes": [
         316,
         320
+      ],
+      "policy": "Some byte ranges are writer-proven or structurally decoded, while preserved/runtime ranges remain read-only."
+    },
+    {
+      "container": "Layout",
+      "label": "Land layout grid",
+      "status": "Partially Editable",
+      "coverageStatus": "mixed-writable-preserved",
+      "truth": {
+        "semanticOwnership": "mixed",
+        "writerReadiness": "partially-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
+      },
+      "count": 24,
+      "sizes": [
+        256,
+        512
       ],
       "policy": "Some byte ranges are writer-proven or structurally decoded, while preserved/runtime ranges remain read-only."
     },
@@ -804,26 +822,6 @@
       },
       "count": 1,
       "sizes": [
-        368
-      ],
-      "policy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
-    },
-    {
-      "container": "Trouble in the Sword Lands.rsrc",
-      "label": "Resource fork",
-      "status": "Understood resource container",
-      "coverageStatus": "understood-resource-container",
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "not-applicable",
-        "evidenceQuality": "target-warning",
-        "riskFlags": [
-          "target-package-warning"
-        ]
-      },
-      "count": 1,
-      "sizes": [
-        286,
         368
       ],
       "policy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
