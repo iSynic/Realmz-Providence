@@ -475,7 +475,7 @@ pub fn inspect_resource_preview(
             Ok(text_preview(summary, text))
         }
         "STR#" => {
-            let strings = decode_string_list(data);
+            let strings = decode_string_list_resource(data);
             summary.insert("strings".to_string(), strings.len().to_string());
             Ok(text_preview(summary, strings.join("\n")))
         }
@@ -1202,7 +1202,7 @@ fn decode_classic_text(bytes: &[u8]) -> String {
         .to_string()
 }
 
-fn decode_string_list(bytes: &[u8]) -> Vec<String> {
+pub fn decode_string_list_resource(bytes: &[u8]) -> Vec<String> {
     let Some(count) = u16_safe(bytes, 0) else {
         return Vec::new();
     };
@@ -1221,10 +1221,22 @@ fn decode_string_list(bytes: &[u8]) -> Vec<String> {
     strings
 }
 
+pub fn encode_string_list_resource(strings: &[String]) -> Vec<u8> {
+    let mut output = Vec::new();
+    push_u16(&mut output, strings.len());
+    for string in strings {
+        let encoded = encode_classic_text(string);
+        let len = encoded.len().min(255);
+        output.push(len as u8);
+        output.extend_from_slice(&encoded[..len]);
+    }
+    output
+}
+
 fn encode_classic_text(value: &str) -> Vec<u8> {
     value
-        .bytes()
-        .map(|byte| if byte.is_ascii() { byte } else { b'?' })
+        .chars()
+        .map(|ch| if ch.is_ascii() { ch as u8 } else { b'?' })
         .collect()
 }
 
@@ -1347,6 +1359,25 @@ mod tests {
         assert!(entries
             .iter()
             .any(|entry| entry.resource_type == "snd " && entry.id == 201));
+    }
+
+    #[test]
+    fn string_list_resource_roundtrips_classic_pascal_strings() {
+        let strings = vec![
+            "Discover Magic".to_string(),
+            "Caf\u{e9} spell".to_string(),
+            "".to_string(),
+        ];
+        let encoded = encode_string_list_resource(&strings);
+        assert_eq!(u16_safe(&encoded, 0), Some(3));
+        assert_eq!(
+            decode_string_list_resource(&encoded),
+            vec![
+                "Discover Magic".to_string(),
+                "Caf? spell".to_string(),
+                "".to_string(),
+            ]
+        );
     }
 
     #[test]

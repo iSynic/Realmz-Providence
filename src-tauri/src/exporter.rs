@@ -5,17 +5,18 @@ use crate::project::{
     TargetCompatibilityIssue,
 };
 use crate::realmz::{
-    write_battles, write_caste_overrides, write_complex_encounters, write_door_file,
-    write_custom_landlook_metadata, write_extracodes, write_fields, write_global_macro_hooks, write_land_layout, write_macro_file,
-    write_map_records, write_messages, write_monster_descriptions, write_monster_set,
-    write_monsters, write_option_labels, write_race_overrides, write_random_levels,
-    write_scenario_contact_info, write_scenario_items, write_scenario_restrictions,
-    write_scenario_shell, write_shops, write_simple_encounters, write_spell_overrides,
-    write_thief_encounters, write_tile_solids, write_timed_encounters, write_treasures,
-    DOOR_BYTES, EXTRACODE_BYTES,
+    write_battles, write_caste_overrides, write_complex_encounters, write_custom_landlook_metadata,
+    write_door_file, write_extracodes, write_fields, write_global_macro_hooks, write_land_layout,
+    write_macro_file, write_map_records, write_messages, write_monster_descriptions,
+    write_monster_set, write_monsters, write_option_labels, write_race_overrides,
+    write_random_levels, write_scenario_contact_info, write_scenario_items,
+    write_scenario_restrictions, write_scenario_shell, write_shops, write_simple_encounters,
+    write_spell_overrides, write_thief_encounters, write_tile_solids, write_timed_encounters,
+    write_treasures, DOOR_BYTES, EXTRACODE_BYTES,
 };
 use crate::resource_fork::{
-    merge_resource_entries, parse_resource_fork_entries, ResourceForkEntry,
+    decode_string_list_resource, encode_string_list_resource, merge_resource_entries,
+    parse_resource_fork_entries, ResourceForkEntry,
 };
 use std::collections::BTreeSet;
 use std::fs;
@@ -310,6 +311,12 @@ pub fn export_project(
         &project.spell_overrides,
         &mut written_files,
     )?;
+    write_custom_spell_name_resources(
+        output_dir,
+        &raw_dir,
+        &project.spell_overrides,
+        &mut written_files,
+    )?;
     write_fixed_if_nonempty(
         output_dir,
         "Data Race",
@@ -454,6 +461,85 @@ fn write_spell_overrides_preserving_tail(
     write_if_nonempty(output_dir, "Data Spell", bytes, written_files)
 }
 
+fn write_custom_spell_name_resources(
+    output_dir: &Path,
+    raw_dir: &Path,
+    records: &[crate::project::ScenarioSpellOverride],
+    written_files: &mut Vec<String>,
+) -> Result<()> {
+    if records.is_empty() {
+        return Ok(());
+    }
+    let Some((resource_file_name, original)) = data_spell_resource_fork(raw_dir)? else {
+        return Ok(());
+    };
+    let entries = parse_resource_fork_entries(&original);
+    let mut updates = Vec::new();
+    for level_index in 0..7usize {
+        let resource_id = 5000 + level_index as i16;
+        let Some(mut entry) = entries
+            .iter()
+            .find(|entry| entry.resource_type == "STR#" && entry.id == resource_id)
+            .cloned()
+        else {
+            continue;
+        };
+        let mut names = decode_string_list_resource(&entry.data);
+        names.resize(15, String::new());
+        let mut changed = false;
+        for slot_index in 0..15usize {
+            let custom_id = level_index * 15 + slot_index;
+            let Some(record) = records.iter().find(|record| record.id == custom_id) else {
+                continue;
+            };
+            let display_name = record.display_name.trim();
+            if display_name.is_empty()
+                || display_name == names[slot_index]
+                || display_name == default_custom_spell_name(custom_id)
+            {
+                continue;
+            }
+            names[slot_index] = record.display_name.clone();
+            changed = true;
+        }
+        if changed {
+            entry.data = encode_string_list_resource(&names);
+            updates.push(entry);
+        }
+    }
+    if updates.is_empty() {
+        return Ok(());
+    }
+    let (resource_bytes, _) = merge_resource_entries(&original, updates)?;
+    let dest = output_dir.join(&resource_file_name);
+    fs::write(&dest, resource_bytes).with_path(&dest)?;
+    if !written_files.iter().any(|name| name == &resource_file_name) {
+        written_files.push(resource_file_name);
+    }
+    Ok(())
+}
+
+fn data_spell_resource_fork(raw_dir: &Path) -> Result<Option<(String, Vec<u8>)>> {
+    for name in ["Data Spell.rsrc", "Data Spell.rsf", "._Data Spell"] {
+        let path = raw_dir.join(name);
+        if !path.is_file() {
+            continue;
+        }
+        let bytes = fs::read(&path).with_path(&path)?;
+        if parse_resource_fork_entries(&bytes)
+            .iter()
+            .any(|entry| entry.resource_type == "STR#" && (5000..=5006).contains(&entry.id))
+        {
+            return Ok(Some((name.to_string(), bytes)));
+        }
+    }
+    Ok(None)
+}
+
+fn default_custom_spell_name(custom_id: usize) -> String {
+    format!("Custom Spell {custom_id}")
+}
+
 #[derive(Debug, Default)]
 struct ResourceExportResult {
     resource_file_written: bool,
@@ -588,7 +674,8 @@ mod tests {
         let raw_dir = temp.path();
         fs::write(raw_dir.join("Data EDCD"), vec![0x7Au8; 30]).unwrap();
 
-        let bytes = preserve_imported_fixed_length("Data EDCD", vec![1u8; 10], 10, raw_dir).unwrap();
+        let bytes =
+            preserve_imported_fixed_length("Data EDCD", vec![1u8; 10], 10, raw_dir).unwrap();
 
         assert_eq!(bytes.len(), 30);
         assert_eq!(&bytes[..10], &[1u8; 10]);

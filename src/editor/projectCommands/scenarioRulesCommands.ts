@@ -124,6 +124,10 @@ export function updateRuleOverride<T extends { id: number; authored?: boolean }>
   };
 }
 
+export function updateCustomSpellName(project: Project, id: number, displayName: string) {
+  return updateRuleOverride<ScenarioSpellOverride>(project, "spellOverrides", id, { displayName });
+}
+
 export function clearRuleOverride(
   project: Project,
   key: "spellOverrides" | "raceOverrides" | "casteOverrides",

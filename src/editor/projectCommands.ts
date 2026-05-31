@@ -28,6 +28,7 @@ import {
   createSpellOverride,
   renameEditorEntity,
   updateGlobalMacroHook,
+  updateCustomSpellName,
   updateRuleOverride,
   updateScenarioContactInfo,
   updateScenarioRestrictions,
@@ -119,6 +120,7 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "updateGlobalMacroHook") return updateGlobalMacroHook(project, command.slot, command.door);
   if (command.kind === "createSpellOverride") return createSpellOverride(project, command.id, command.template);
   if (command.kind === "updateSpellOverride") return updateRuleOverride(project, "spellOverrides", command.id, command.changes);
+  if (command.kind === "updateCustomSpellName") return updateCustomSpellName(project, command.id, command.displayName);
   if (command.kind === "clearSpellOverride") return clearRuleOverride(project, "spellOverrides", command.id);
   if (command.kind === "createRaceOverride") return createRaceOverride(project, command.id, command.template);
   if (command.kind === "updateRaceOverride") return updateRuleOverride(project, "raceOverrides", command.id, command.changes);

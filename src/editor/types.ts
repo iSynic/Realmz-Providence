@@ -363,6 +363,34 @@ export type RulePackageTail = {
   reason?: string;
 };
 
+export type RuleNameSlotMapping = {
+  resourceId: number;
+  levelIndex: number;
+  slotIndex: number;
+  customId: number;
+  packedSpellId: number;
+  name: string;
+  byteLength: number;
+};
+
+export type RuleNameWriterGate = {
+  family: "spell" | "race" | "caste";
+  verdict: string;
+  writerStatus: string;
+  evidence: string[];
+};
+
+export type RuleNameResourceAudit = {
+  resourceFile: string;
+  type: "STR#";
+  id: number;
+  name: string | null;
+  byteLength: number;
+  stringCount: number;
+  slots: RuleNameSlotMapping[];
+  writerStatus: string;
+};
+
 export type TilePaletteCategory =
   | "landlook"
   | "special"
@@ -1020,6 +1048,7 @@ export type ProjectCommand =
   | { kind: "updateGlobalMacroHook"; label: string; slot: number; door: number }
   | { kind: "createSpellOverride"; label: string; id?: number; template?: Partial<ScenarioSpellOverride> }
   | { kind: "updateSpellOverride"; label: string; id: number; changes: Partial<ScenarioSpellOverride> }
+  | { kind: "updateCustomSpellName"; label: string; id: number; displayName: string }
   | { kind: "clearSpellOverride"; label: string; id: number }
   | { kind: "createRaceOverride"; label: string; id?: number; template?: Partial<ScenarioRaceOverride> }
   | { kind: "updateRaceOverride"; label: string; id: number; changes: Partial<ScenarioRaceOverride> }

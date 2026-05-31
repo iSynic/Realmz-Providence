@@ -11,7 +11,7 @@ use realmz_providence_lib::realmz::{
     SUPPORTED_WRITE_FILES, TRACKED_FILES,
 };
 use realmz_providence_lib::resource_fork::{
-    encode_pict_resource, parse_resource_fork_entries, ResourceForkEntry, RgbaImagePayload,
+    decode_string_list_resource, encode_pict_resource, parse_resource_fork_entries, ResourceForkEntry, RgbaImagePayload,
 };
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use serde_json::Value;
@@ -362,6 +362,71 @@ fn rules_spell_export_mutates_only_owned_record_byte_and_preserves_tail() {
         changed_offsets(&original, &exported),
         vec![10],
         "only the first custom spell cost byte should change"
+    );
+}
+
+#[test]
+fn rules_custom_spell_name_export_updates_only_spell_str_resource() {
+    let Some(source) = fixture_path("Tutorial") else {
+        eprintln!("Skipping custom spell name fixture; Tutorial is absent.");
+        return;
+    };
+    let source_resource = source.join("Data Spell.rsrc");
+    if !source_resource.is_file() {
+        eprintln!("Skipping custom spell name fixture; Tutorial has no Data Spell.rsrc.");
+        return;
+    }
+    let temp = tempdir().unwrap();
+    let project_dir = temp.path().join("project");
+    let export_dir = temp.path().join("exported");
+    import_scenario(&source, &project_dir).unwrap();
+    let mut project = open_project(&project_dir).unwrap();
+    assert!(
+        !project.spell_overrides.is_empty(),
+        "fixture should import custom spell records"
+    );
+    let original_data_spell = fs::read(source.join("Data Spell")).unwrap();
+    let original_resource_bytes = fs::read(&source_resource).unwrap();
+    let original_resources = resource_entries_by_key(&original_resource_bytes);
+
+    project.spell_overrides[0].display_name = "Providence Probe".to_string();
+    export_project(
+        &project_dir,
+        &project,
+        &export_dir,
+        ScenarioTarget::ProvidencePortableFolder,
+    )
+    .unwrap();
+    assert_eq!(
+        fs::read(export_dir.join("Data Spell")).unwrap(),
+        original_data_spell,
+        "renaming a custom spell should not mutate Data Spell record bytes"
+    );
+
+    let exported_resource_bytes = fs::read(export_dir.join("Data Spell.rsrc")).unwrap();
+    let exported_resources = resource_entries_by_key(&exported_resource_bytes);
+    assert_eq!(original_resources.keys().collect::<Vec<_>>(), exported_resources.keys().collect::<Vec<_>>());
+    for (key, original) in &original_resources {
+        if key == &("STR#".to_string(), 5000) {
+            continue;
+        }
+        assert_eq!(
+            Some(original),
+            exported_resources.get(key),
+            "resource {key:?} should be preserved when one custom spell name changes"
+        );
+    }
+    let updated = exported_resources
+        .get(&("STR#".to_string(), 5000))
+        .expect("exported Data Spell.rsrc should keep STR# 5000");
+    let names = decode_string_list_resource(&updated.data);
+    assert_eq!(names.first().map(String::as_str), Some("Providence Probe"));
+
+    let reimport_dir = temp.path().join("reimported");
+    let reimported = import_scenario(&export_dir, &reimport_dir).unwrap();
+    assert_eq!(
+        reimported.spell_overrides.first().map(|record| record.display_name.as_str()),
+        Some("Providence Probe")
     );
 }
 
@@ -1974,6 +2039,13 @@ fn resource_entry(path: &Path, resource_type: &str, id: i16) -> Option<ResourceF
     parse_resource_fork_entries(&fs::read(path).ok()?)
         .into_iter()
         .find(|entry| entry.resource_type == resource_type && entry.id == id)
+}
+
+fn resource_entries_by_key(bytes: &[u8]) -> BTreeMap<(String, i16), ResourceForkEntry> {
+    parse_resource_fork_entries(bytes)
+        .into_iter()
+        .map(|entry| ((entry.resource_type.clone(), entry.id), entry))
+        .collect()
 }
 
 fn changed_offsets(before: &[u8], after: &[u8]) -> Vec<usize> {

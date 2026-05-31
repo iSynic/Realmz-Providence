@@ -42,6 +42,10 @@ Providence should label these records as library/override rules data. Scenario r
 | `F:\Realmz\src\realmz_orig\misc.c:2760` | Scenario `Data Spell` is also opened as a resource file, so names/resource evidence must be preserved. |
 | `F:\Realmz\src\realmz_orig\loadspell.c:5` | `loadspell2` decodes packed spell IDs. |
 | `F:\Realmz\src\realmz_orig\spellselect.c:24` | Spell selection derives max spell level from caste spellcaster table. |
+| `F:\Realmz\src\realmz_orig\spellselect.c` | Spell list labels use `GetIndString(myString, 1000 * spellcastertype + spelllevel, slot + 1)`, so custom spell class `5` and level `0..6` resolve to `STR# 5000..5006`. |
+| `F:\Realmz\src\realmz_orig\combat.c` | Combat spell display uses the same `GetIndString(1000 * (castcaste + 1) + castlevel, castnum + 1)` pattern for spell names. |
+| `F:\Realmz\src\realmz_orig\age.c` | Race labels are looked up from shared `STR# 129`, not from scenario `Data Race`. |
+| `F:\Realmz\src\realmz_orig\class.c` | Caste labels are looked up from shared `STR# 131`, not from scenario `Data Caste`. |
 | `F:\Realmz\src\realmz_orig\race.c:14` | Race selection loads race profiles through `openrace`. |
 | `F:\Realmz\src\realmz_orig\class.c:41` | Caste selection loads caste profiles through `opencaste`. |
 | `F:\Realmz\src\realmz_orig\showitems-showspecial.c:262` | Item usability checks race/caste item types, exact race/caste requirements, and descriptor/class restrictions. |
@@ -191,19 +195,19 @@ Scenario `Data Spell` is 9,016 bytes in all 17 local scenarios that include it. 
 `docs/generated/rules-resource-coverage.json` now separates source-backed records from packaging evidence:
 
 - `Data Spell` owns the first `105 x 30` bytes as custom spell records for packed IDs `5101..5715`; the remaining bytes are preserved as packaging/tail evidence.
-- `Data Spell.rsrc` / `Data Spell.rsf` contains seven `STR#` resources, IDs `5000..5006`, named for the Custom 1st through Custom 7th spell levels. These string lists are readable reference/name evidence but remain preserve-only until Divinity write behavior is fixture-proven.
+- `Data Spell.rsrc` / `Data Spell.rsf` contains seven `STR#` resources, IDs `5000..5006`, named for the Custom 1st through Custom 7th spell levels. Realmz source proves these are custom spell name lists, and fixture tests prove Providence can update one custom spell name by replacing only the intended `STR#` resource payload while preserving `Data Spell` record/tail bytes.
 - Scenario `Data Race` and `Data Caste` override files are complete fixed-row tables: `30 x 408` and `30 x 576` respectively. No scenario `Data Race.rsrc` or `Data Caste.rsrc` packaging has been observed in the corpus.
 - Race names and caste names are not decoded from the scenario override records yet. Normal UI should keep those generated/fallback-only until Divinity evidence proves a writable storage path.
 
-Fixture tests now prove that current record writers mutate only owned spell, race, and caste byte ranges and preserve the `Data Spell` tail during export.
+Fixture tests now prove that current record writers mutate only owned spell, race, and caste byte ranges, preserve the `Data Spell` tail during export, and roundtrip custom spell names through `STR# 5000..5006`.
 
 ## Divinity Evidence Still Needed
 
-- Spell editor field labels, grouping, class labels, default values, and resource/name save behavior.
+- Spell editor field labels, grouping, class labels, and default values.
 - Race editor field labels for descriptors, `cancaste`, age changes, item type permissions, and special ability rows.
 - Caste editor field labels for spellcaster table, victory table, starting items, attack thresholds, and item type permissions.
 - Whether Divinity writes complete 30-record race/caste override files every time or supports partial variants.
-- Exact scenario `Data Spell` data/resource packaging and name mapping.
+- Spell description storage remains unproven; no scenario-local custom spell description resources are observed in the corpus.
 
 ## Divinity Scenario Screen Evidence
 

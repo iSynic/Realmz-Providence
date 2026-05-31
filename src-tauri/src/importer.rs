@@ -240,6 +240,7 @@ fn import_scenario_with_name(
         semantic_schema: SemanticSchema::default(),
         validation: ValidationReport::default(),
     };
+    hydrate_custom_spell_names(&source_path, &mut project)?;
     import_tile_atlases(&source_path, &assets_dir, &mut project)?;
     import_icon_overlays(&source_path, &assets_dir, &mut project)?;
     let semantic_parsed = ParsedScenario {
@@ -292,12 +293,13 @@ pub fn open_project(project_dir: impl AsRef<Path>) -> Result<ProvidenceProject> 
     refresh_semantic_schema(project_dir, &mut project)?;
     ensure_reference_tile_attributes(&mut project)?;
     hydrate_scenario_metadata(project_dir, &mut project)?;
-    refresh_custom_tile_atlases(project_dir, &mut project)?;
     let raw_dir = project_dir.join(if project.source.raw_sources_dir.is_empty() {
         RAW_SOURCES_DIR
     } else {
         project.source.raw_sources_dir.as_str()
     });
+    hydrate_custom_spell_names(&raw_dir, &mut project)?;
+    refresh_custom_tile_atlases(project_dir, &mut project)?;
     import_icon_overlays(&raw_dir, &project_dir.join(ASSETS_DIR), &mut project)?;
     project.validation = crate::validation::validate_project(&project);
     save_project(project_dir, &project)?;
@@ -926,6 +928,44 @@ fn import_scenario_icon_overlays(
     Ok(())
 }
 
+fn hydrate_custom_spell_names(source_path: &Path, project: &mut ProvidenceProject) -> Result<()> {
+    if project.spell_overrides.is_empty() {
+        return Ok(());
+    }
+    for resource_path in data_spell_resource_candidates(source_path) {
+        if !resource_path.is_file() {
+            continue;
+        }
+        let bytes = fs::read(&resource_path).with_path(&resource_path)?;
+        let mut applied = 0usize;
+        for entry in crate::resource_fork::parse_resource_fork_entries(&bytes) {
+            if entry.resource_type != "STR#" || !(5000..=5006).contains(&entry.id) {
+                continue;
+            }
+            let level_index = (entry.id - 5000) as usize;
+            let names = crate::resource_fork::decode_string_list_resource(&entry.data);
+            for (slot_index, name) in names.into_iter().take(15).enumerate() {
+                if name.trim().is_empty() {
+                    continue;
+                }
+                let custom_id = level_index * 15 + slot_index;
+                if let Some(record) = project
+                    .spell_overrides
+                    .iter_mut()
+                    .find(|record| record.id == custom_id)
+                {
+                    record.display_name = name;
+                    applied += 1;
+                }
+            }
+        }
+        if applied > 0 {
+            return Ok(());
+        }
+    }
+    Ok(())
+}
+
 fn upsert_scenario_icon_asset(
     project: &mut ProvidenceProject,
     icon_id: i16,
@@ -1092,6 +1132,15 @@ fn scenario_resource_candidates(source_path: &Path) -> Vec<PathBuf> {
         source_path.join(format!("{scenario_name}.rsrc")),
         source_path.join(format!("{scenario_name}.rsf")),
         source_path.join("Scenario"),
+    ]
+}
+
+fn data_spell_resource_candidates(source_path: &Path) -> Vec<PathBuf> {
+    vec![
+        source_path.join("Data Spell.rsrc"),
+        source_path.join("Data Spell.rsf"),
+        source_path.join("._Data Spell"),
+        source_path.join("Data Spell"),
     ]
 }
 

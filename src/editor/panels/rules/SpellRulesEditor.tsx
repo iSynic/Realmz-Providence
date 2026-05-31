@@ -116,7 +116,17 @@ function SpellForm({
         </div>
       )}
       <RuleSection title="Identity" badge="metadata" help="Spell name, catalog location, and description text. Built-in spells can be copied into custom slots before editing.">
-        <TextField label="Name" value={record.displayName ?? ""} onCommit={(displayName) => update({ displayName })} span disabled={!editable} help="The spell name shown in Realmz spell lists." />
+        <TextField
+          label="Name"
+          value={record.displayName ?? ""}
+          onCommit={(displayName) => {
+            if (!editable) return;
+            onApplyCommand({ kind: "updateCustomSpellName", label: "Update custom spell name", id: entry.customId, displayName });
+          }}
+          span
+          disabled={!editable}
+          help="The scenario-local spell name stored in the custom spell name resource."
+        />
         <NumberField label="Spell ID" value={entry.packedId} disabled compact help="Packed Realmz spell ID, such as 1101 for Sorcerer level 1 slot 1." />
         <SelectField label="Spell Catalog" value={entry.spellcasterClass} options={SPELL_CASTER_CLASSES} onCommit={() => {}} disabled help="The Realmz spell catalog this entry belongs to." />
         <NumberField label="Level" value={entry.levelIndex + 1} disabled compact help="Spell level within the selected catalog." />

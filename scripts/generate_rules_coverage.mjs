@@ -8,6 +8,7 @@ const repoRoot = path.resolve(__dirname, "..");
 const roundtripLedgerPath = path.join(repoRoot, "docs/generated/scenario-byte-roundtrip-ledger.json");
 const resourceForkInventoryPath = path.join(repoRoot, "docs/generated/resource-fork-inventory.json");
 const outputPath = path.join(repoRoot, "docs/generated/rules-resource-coverage.json");
+const namePackagingOutputPath = path.join(repoRoot, "docs/generated/rules-name-resource-packaging.json");
 
 const SPELL_BYTES = 30;
 const SPELL_RECORDS = 105;
@@ -171,9 +172,9 @@ const output = {
     spellNames: {
       resourceType: "STR#",
       ids: SPELL_RESOURCE_IDS,
-      status: "decoded-readonly",
-      writerStatus: "preserve-only",
-      likelyLinkage: "STR# 5000..5006 store custom spell name lists for levels 1..7. Resource payloads remain preserve-only until Divinity write behavior is fixture-proven."
+      status: "decoded-writable",
+      writerStatus: "writer-safe-existing-resource",
+      likelyLinkage: "STR# 5000..5006 store custom spell name lists for custom spell levels 1..7. Runtime lookup is GetIndString(1000 * class + level), so class 5/custom maps to these resource IDs."
     },
     spellDescriptions: {
       status: "preserved-unknown",
@@ -209,7 +210,7 @@ const output = {
   writerGates: {
     spellRecords: "writer-safe-fields-fixture-proven",
     spellTail: "preserve-only",
-    spellResources: "preserve-only",
+    spellResources: "spell-name-str-writer-safe-existing-resource",
     raceRecords: "writer-safe-fields-fixture-proven",
     casteRecords: "writer-safe-fields-fixture-proven",
     raceCasteNames: "unresolved-hidden"
@@ -229,8 +230,10 @@ const output = {
 
 validate(output);
 writeJson(outputPath, output);
+writeJson(namePackagingOutputPath, buildNamePackagingOutput(output, resourcesByScenario));
 
 console.log(`Wrote ${path.relative(repoRoot, outputPath)}`);
+console.log(`Wrote ${path.relative(repoRoot, namePackagingOutputPath)}`);
 console.log(JSON.stringify(output.summary, null, 2));
 
 function classifyRuleFile(fileName, config, bytes) {
@@ -258,7 +261,8 @@ function classifyRuleResource(resource) {
   let writerStatus = "preserve-only";
   if (resource.type === "STR#" && SPELL_RESOURCE_IDS.includes(resource.id)) {
     semanticRole = "custom-spell-name-list";
-    ownership = "decoded-readonly";
+    ownership = "decoded-writable";
+    writerStatus = "writer-safe-existing-resource";
     likelyLinkage = `Custom spell level ${resource.id - 4999} names`;
   }
   return {
@@ -292,7 +296,7 @@ function indexRulesResources(resourceInventory) {
         name: resource.name,
         dataLength: resource.dataLength,
         payloadStatus: resource.payloadStatus,
-        decodedStringCount: decodeStringListCount(fork.fullPath, resource.type, resource.id)
+        ...decodeStringListDetails(fork.fullPath, resource.type, resource.id)
       });
     }
     index.set(key, resources);
@@ -300,20 +304,116 @@ function indexRulesResources(resourceInventory) {
   return index;
 }
 
-function decodeStringListCount(resourcePath, resourceType, id) {
-  if (resourceType !== "STR#" || !resourcePath || !fs.existsSync(resourcePath)) return null;
+function decodeStringListDetails(resourcePath, resourceType, id) {
+  if (resourceType !== "STR#" || !resourcePath || !fs.existsSync(resourcePath)) {
+    return { decodedStringCount: null, decodedStrings: null };
+  }
   const data = resourceData(fs.readFileSync(resourcePath), resourceType, id);
-  if (!data || data.length < 2) return null;
+  if (!data || data.length < 2) return { decodedStringCount: null, decodedStrings: null };
+  const strings = decodeStringList(data);
+  if (!strings) return { decodedStringCount: null, decodedStrings: null };
+  return { decodedStringCount: strings.length, decodedStrings: strings };
+}
+
+function decodeStringList(data) {
   const count = u16be(data, 0);
   if (count === null || count > 200) return null;
   let offset = 2;
+  const strings = [];
   for (let index = 0; index < count; index += 1) {
     if (offset >= data.length) return null;
     const length = data[offset];
-    offset += 1 + length;
+    offset += 1;
+    if (offset + length > data.length) return null;
+    strings.push(decodeClassicText(data.subarray(offset, offset + length)));
+    offset += length;
     if (offset > data.length) return null;
   }
-  return count;
+  return strings;
+}
+
+function buildNamePackagingOutput(rulesCoverage, rulesResourcesByScenario) {
+  const resources = [];
+  for (const scenario of rulesCoverage.scenarios) {
+    const key = `${scenario.sourceRoot}\u0000${scenario.name}`;
+    for (const resource of rulesResourcesByScenario.get(key) ?? []) {
+      if (resource.type !== "STR#" || !SPELL_RESOURCE_IDS.includes(resource.id)) continue;
+      const levelIndex = resource.id - 5000;
+      const strings = resource.decodedStrings ?? [];
+      resources.push({
+        scenario: scenario.name,
+        sourceRoot: scenario.sourceRoot,
+        sourcePath: scenario.sourcePath,
+        resourceFile: resource.resourceFile,
+        type: resource.type,
+        id: resource.id,
+        name: resource.name || null,
+        byteLength: resource.dataLength,
+        stringCount: strings.length,
+        writerStatus: resource.writerStatus,
+        slots: strings.map((name, slotIndex) => ({
+          resourceId: resource.id,
+          levelIndex,
+          slotIndex,
+          customId: levelIndex * 15 + slotIndex,
+          packedSpellId: 5101 + levelIndex * 100 + slotIndex,
+          name,
+          byteLength: classicTextByteLength(name)
+        }))
+      });
+    }
+  }
+  return {
+    schemaVersion: 1,
+    generatedAt: rulesCoverage.generatedAt,
+    sources: {
+      rulesCoverage: "docs/generated/rules-resource-coverage.json",
+      realmzSource: [
+        "F:/Realmz/src/realmz_orig/spellselect.c GetIndString(1000 * spellcastertype + spelllevel, slot + 1)",
+        "F:/Realmz/src/realmz_orig/combat.c GetIndString(1000 * (castcaste + 1) + castlevel, castnum + 1)",
+        "F:/Realmz/src/realmz_orig/age.c STR# 129 race labels",
+        "F:/Realmz/src/realmz_orig/class.c STR# 131 caste labels"
+      ],
+      divinityManual: [
+        "F:/DocMaker/out/divinity-manual.txt:5052 Spell Editor",
+        "F:/DocMaker/out/divinity-manual.txt:5062 copy Data Spell into scenario folder",
+        "F:/DocMaker/out/divinity-manual.txt:5100 custom spell IDs 5101..5715",
+        "F:/DocMaker/out/divinity-manual.txt:5102 custom spell data is kept in the scenario folder"
+      ]
+    },
+    verdicts: {
+      customSpellNames: {
+        status: "decoded-writable",
+        writerStatus: "writer-safe-existing-resource",
+        storage: "Data Spell resource fork STR# 5000..5006",
+        mapping: "STR# 5000 + levelIndex, string slot 0..14 => custom spell record id levelIndex * 15 + slotIndex; packed ID 5101 + levelIndex * 100 + slotIndex"
+      },
+      spellDescriptions: {
+        status: "not-scenario-data",
+        writerStatus: "hidden",
+        reason: "No distinct scenario-local custom spell description resources are observed; Providence preserves existing record/resource bytes and keeps description text as editor metadata only."
+      },
+      raceNames: {
+        status: "not-scenario-data",
+        writerStatus: "hidden",
+        reason: "Realmz runtime race labels are read from shared STR# 129; no scenario-local Data Race name resource path is proven."
+      },
+      casteNames: {
+        status: "not-scenario-data",
+        writerStatus: "hidden",
+        reason: "Realmz runtime caste labels are read from shared STR# 131; no scenario-local Data Caste name resource path is proven."
+      }
+    },
+    summary: {
+      resourceCount: resources.length,
+      scenariosWithCustomSpellNameResources: new Set(resources.map((resource) => `${resource.sourceRoot}\u0000${resource.scenario}`)).size,
+      resourceIds: Object.fromEntries(SPELL_RESOURCE_IDS.map((id) => [
+        id,
+        resources.filter((resource) => resource.id === id).length
+      ]))
+    },
+    resources
+  };
 }
 
 function validate(output) {
@@ -334,6 +434,9 @@ function validate(output) {
   for (const scenario of output.scenarios) {
     for (const resource of scenario.resources) {
       if (!resource.ownership) throw new Error(`${scenario.name} ${resource.type} ${resource.id} lacks ownership`);
+      if (resource.type === "STR#" && SPELL_RESOURCE_IDS.includes(resource.id) && resource.decodedStringCount !== 15) {
+        throw new Error(`${scenario.name} ${resource.resourceFile} STR# ${resource.id} decoded ${resource.decodedStringCount} strings instead of 15 custom spell slots`);
+      }
     }
   }
 }
@@ -413,6 +516,23 @@ function normalizePath(value) {
 
 function textAt(buffer, offset, length) {
   return Buffer.from(buffer.subarray(offset, offset + length)).toString("latin1");
+}
+
+function decodeClassicText(buffer) {
+  return Array.from(buffer)
+    .map((byte) => {
+      if (byte === 0) return " ";
+      if (byte === 9) return "\t";
+      if (byte === 10 || byte === 13) return "\n";
+      if (byte >= 32 && byte <= 126) return String.fromCharCode(byte);
+      return "?";
+    })
+    .join("")
+    .trim();
+}
+
+function classicTextByteLength(value) {
+  return Buffer.from(value, "ascii").length;
 }
 
 function u16be(buffer, offset) {
