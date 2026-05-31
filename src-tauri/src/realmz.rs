@@ -3778,6 +3778,155 @@ mod tests {
     }
 
     #[test]
+    fn fixed_record_text_writers_mutate_only_owned_pascal_bytes() {
+        let mut message_input = vec![0u8; MESSAGE_BYTES * 2];
+        message_input[0] = 1;
+        message_input[1] = b'Z';
+        let message_start = MESSAGE_BYTES;
+        let mut messages = parse_messages(&message_input);
+        messages[1].authored = true;
+        messages[1].text = "Go".to_string();
+        let message_output = write_messages(&messages).unwrap();
+        assert_eq!(message_output.len(), message_input.len());
+        assert_eq!(
+            changed_offsets(&message_input, &message_output),
+            vec![message_start, message_start + 1, message_start + 2]
+        );
+
+        let mut option_input = vec![0u8; OPTION_LABEL_BYTES * 3];
+        option_input[1] = 1;
+        option_input[2] = b'Q';
+        let option_start = OPTION_LABEL_BYTES * 2;
+        let mut option_labels = parse_option_labels(&option_input);
+        option_labels[2].authored = true;
+        option_labels[2].text = "On".to_string();
+        let option_output = write_option_labels(&option_labels).unwrap();
+        assert_eq!(option_output.len(), option_input.len());
+        assert_eq!(
+            changed_offsets(&option_input, &option_output),
+            vec![option_start, option_start + 1, option_start + 2]
+        );
+
+        let mut description_input = vec![0u8; MONSTER_DESCRIPTION_BYTES * 2];
+        description_input[0] = 1;
+        description_input[1] = b'X';
+        let description_start = MONSTER_DESCRIPTION_BYTES;
+        let mut descriptions = parse_monster_descriptions(&description_input);
+        descriptions[1].authored = true;
+        descriptions[1].text = "No".to_string();
+        let description_output = write_monster_descriptions(&descriptions).unwrap();
+        assert_eq!(description_output.len(), description_input.len());
+        assert_eq!(
+            changed_offsets(&description_input, &description_output),
+            vec![
+                description_start,
+                description_start + 1,
+                description_start + 2
+            ]
+        );
+    }
+
+    #[test]
+    fn fixed_record_target_writers_mutate_only_owned_fields() {
+        let mut treasure_input = vec![0u8; TREASURE_BYTES * 2];
+        let treasure_start = TREASURE_BYTES;
+        write_i16_be(&mut treasure_input, treasure_start + 40, 0x0102);
+        let mut treasures = parse_treasures(&treasure_input);
+        treasures[1].authored = true;
+        treasures[1].exp = 0x0304;
+        let treasure_output = write_treasures(&treasures).unwrap();
+        assert_eq!(treasure_output.len(), treasure_input.len());
+        assert_eq!(
+            changed_offsets(&treasure_input, &treasure_output),
+            vec![treasure_start + 40, treasure_start + 41]
+        );
+
+        let mut battle_input = vec![0u8; BATTLE_BYTES * 2];
+        let battle_start = BATTLE_BYTES;
+        let battle_grid_slot = 12;
+        write_i16_be(
+            &mut battle_input,
+            battle_start + battle_grid_slot * 2,
+            0x0102,
+        );
+        let mut battles = parse_battles(&battle_input);
+        battles[1].authored = true;
+        battles[1].grid[battle_grid_slot] = 0x0304;
+        let battle_output = write_battles(&battles).unwrap();
+        assert_eq!(battle_output.len(), battle_input.len());
+        assert_eq!(
+            changed_offsets(&battle_input, &battle_output),
+            vec![
+                battle_start + battle_grid_slot * 2,
+                battle_start + battle_grid_slot * 2 + 1
+            ]
+        );
+
+        let mut timed_input = vec![0u8; TIMED_ENCOUNTER_BYTES * 2];
+        let timed_start = TIMED_ENCOUNTER_BYTES;
+        write_i16_be(&mut timed_input, timed_start + 16, 0x0102);
+        let mut timed_encounters = parse_timed_encounters(&timed_input);
+        timed_encounters[1].authored = true;
+        timed_encounters[1].required_item = 0x0304;
+        let timed_output = write_timed_encounters(&timed_encounters).unwrap();
+        assert_eq!(timed_output.len(), timed_input.len());
+        assert_eq!(
+            changed_offsets(&timed_input, &timed_output),
+            vec![timed_start + 16, timed_start + 17]
+        );
+    }
+
+    #[test]
+    fn fixed_record_scenario_shell_writers_mutate_only_owned_fields() {
+        let contact_input = vec![0u8; 4608];
+        let mut contact = parse_scenario_contact_info(&contact_input).unwrap();
+        contact.authored = true;
+        contact.scenario_name = "Go".to_string();
+        let contact_output = write_scenario_contact_info(&contact).unwrap();
+        assert_eq!(contact_output.len(), contact_input.len());
+        assert_eq!(
+            changed_offsets(&contact_input, &contact_output),
+            vec![0, 1, 2]
+        );
+
+        let restrictions_input = vec![0u8; 320];
+        let mut restrictions = parse_scenario_restrictions(&restrictions_input).unwrap();
+        restrictions.authored = true;
+        restrictions.description = "No".to_string();
+        restrictions.max_party_characters = 0x0102;
+        restrictions.max_party_level = 0x0304;
+        restrictions.banned_races = vec![1, 30];
+        restrictions.banned_castes = vec![2];
+        let restrictions_output = write_scenario_restrictions(&restrictions).unwrap();
+        assert_eq!(restrictions_output.len(), restrictions_input.len());
+        assert_eq!(
+            changed_offsets(&restrictions_input, &restrictions_output),
+            vec![0, 1, 2, 256, 257, 258, 259, 260, 289, 291]
+        );
+    }
+
+    #[test]
+    fn global_macro_hooks_mutate_only_source_backed_slots() {
+        let mut input = vec![0u8; 60];
+        write_i16_be(&mut input, 6, 0x1111);
+
+        let mut hooks = parse_global_macro_hooks(&input);
+        assert!(!hooks.slots[3].source_backed);
+        assert!(hooks.slots[4].source_backed);
+        hooks.authored = true;
+        hooks.slots[0].door = 0x0102;
+        hooks.slots[4].door = 0x0304;
+
+        let output = write_global_macro_hooks(&hooks).unwrap();
+        assert_eq!(output.len(), input.len());
+        assert_eq!(i16_be(&output, 6), 0x1111);
+        assert_eq!(
+            changed_offsets(&input, &output),
+            vec![0, 1, 8, 9]
+        );
+    }
+
+    #[test]
     fn target_records_round_trip_full_records() {
         let cases: [(usize, fn(&[u8]) -> Vec<u8>); 12] = [
             (MESSAGE_BYTES, |bytes| {

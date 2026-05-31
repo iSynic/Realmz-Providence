@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T02:51:14.682Z",
+  "generatedAt": "2026-05-31T03:27:47.934Z",
   "summary": {
     "scenarioRoots": 87,
     "fileFamilies": 88,
@@ -29,44 +29,44 @@
     "strictCompleteness": {
       "containerCount": 88,
       "semanticOwnershipCounts": {
-        "complete": 81,
-        "mixed": 5,
+        "mixed": 7,
+        "complete": 79,
         "runtime-only": 1,
         "ignored": 1
       },
       "writerReadinessCounts": {
-        "writer-gated": 56,
-        "partially-proven": 5,
-        "fixture-proven": 4,
+        "partially-proven": 7,
+        "writer-gated": 47,
+        "fixture-proven": 11,
         "read-only": 1,
         "preserve-only": 8,
         "not-applicable": 14
       },
       "evidenceQualityCounts": {
-        "cited": 66,
-        "fixture-backed": 9,
+        "fixture-backed": 18,
+        "cited": 57,
         "target-warning": 13
       },
       "riskFlagCounts": {
-        "structural-writer-claim": 56,
+        "structural-writer-claim": 47,
         "target-package-warning": 13,
         "writer-gated": 3
       },
       "scenarioSemantics": {
         "label": "Scenario Semantics",
         "status": "complete",
-        "completeContainers": 81,
-        "mixedContainers": 5,
+        "completeContainers": 79,
+        "mixedContainers": 7,
         "needsFormatWorkContainers": 0,
-        "percentContainers": 92.05
+        "percentContainers": 89.77
       },
       "writerProvenData": {
         "label": "Writer-Proven Data",
         "status": "incomplete",
-        "fixtureProvenContainers": 4,
-        "partiallyProvenContainers": 5,
-        "writerGatedContainers": 56,
-        "percentContainers": 10.23
+        "fixtureProvenContainers": 11,
+        "partiallyProvenContainers": 7,
+        "writerGatedContainers": 47,
+        "percentContainers": 20.45
       },
       "packageCompatibility": {
         "label": "Package Compatibility",
@@ -82,7 +82,7 @@
         "decodedResourcePayloadBytes": 841240
       },
       "strictOutstanding": {
-        "writerGatedContainers": 56,
+        "writerGatedContainers": 47,
         "missingEvidenceContainers": 0,
         "skippedFixtureContainers": 0,
         "preservedUnknownContainers": 0,
@@ -816,12 +816,10 @@
       "status": "Editable",
       "coverageStatus": "decoded-writable",
       "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
+        "semanticOwnership": "mixed",
+        "writerReadiness": "partially-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
       },
       "count": 35,
       "sizes": [

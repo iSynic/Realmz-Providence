@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T02:51:14.680Z",
+  "generatedAt": "2026-05-31T03:27:47.932Z",
   "classifications": [
     "decoded-writable",
     "decoded-readonly",
@@ -26,6 +26,7 @@
     "rulesCoverage": "docs/generated/rules-resource-coverage.json",
     "dungeonCoverage": "docs/generated/dungeon-byte-ownership.json",
     "dungeonHighBitAudit": "docs/generated/dungeon-high-bit-audit.json",
+    "fixedRecordWriterGates": "docs/generated/fixed-record-writer-gates.json",
     "completenessTruth": "docs/generated/scenario-completeness-truth.json",
     "ed3Reachability": "docs/generated/extra-ap-reachability-source-map.json",
     "edcdCrosswalk": "docs/generated/opcode-edcd-crosswalk.json"
@@ -97,15 +98,35 @@
       "byteRanges": [
         {
           "start": 0,
-          "length": 346,
+          "length": 339,
+          "endExclusive": 339,
+          "status": "decoded-writable",
+          "field": "Battle setup fields",
+          "internal": "battle record fields",
+          "writerGate": "docs/generated/fixed-record-writer-gates.json"
+        },
+        {
+          "start": 339,
+          "length": 1,
+          "endExclusive": 340,
+          "status": "preserved-known",
+          "field": "Alignment padding",
+          "internal": "padding",
+          "writerGate": "docs/generated/fixed-record-writer-gates.json"
+        },
+        {
+          "start": 340,
+          "length": 6,
           "endExclusive": 346,
           "status": "decoded-writable",
-          "field": "Battle records",
-          "internal": "fixed record"
+          "field": "Battle text and macro links",
+          "internal": "message/macro fields",
+          "writerGate": "docs/generated/fixed-record-writer-gates.json"
         }
       ],
       "resourceTypes": [],
       "evidence": [
+        "docs/generated/fixed-record-writer-gates.json",
         "docs/generated/battle-record-evidence.json",
         "docs/format-evidence-cards/battle-record-runtime-anchors.md"
       ],
@@ -214,11 +235,13 @@
           "endExclusive": 256,
           "status": "decoded-writable",
           "field": "Monster description records",
-          "internal": "fixed record"
+          "internal": "fixed record",
+          "writerGate": "docs/generated/fixed-record-writer-gates.json"
         }
       ],
       "resourceTypes": [],
       "evidence": [
+        "docs/generated/fixed-record-writer-gates.json",
         "docs/format-evidence-cards/monster-descriptions-and-sets-runtime-anchors.md"
       ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
@@ -1202,11 +1225,13 @@
           "endExclusive": 256,
           "status": "decoded-writable",
           "field": "Strings/messages",
-          "internal": "fixed record"
+          "internal": "fixed record",
+          "writerGate": "docs/generated/fixed-record-writer-gates.json"
         }
       ],
       "resourceTypes": [],
       "evidence": [
+        "docs/generated/fixed-record-writer-gates.json",
         "docs/format-evidence-cards/strings-data-od-string-sound.md"
       ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
@@ -1283,11 +1308,13 @@
           "endExclusive": 48,
           "status": "decoded-writable",
           "field": "Treasure records",
-          "internal": "fixed record"
+          "internal": "fixed record",
+          "writerGate": "docs/generated/fixed-record-writer-gates.json"
         }
       ],
       "resourceTypes": [],
       "evidence": [
+        "docs/generated/fixed-record-writer-gates.json",
         "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md"
       ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
@@ -1368,11 +1395,13 @@
           "endExclusive": 40,
           "status": "decoded-writable",
           "field": "Timed encounter records",
-          "internal": "fixed record"
+          "internal": "fixed record",
+          "writerGate": "docs/generated/fixed-record-writer-gates.json"
         }
       ],
       "resourceTypes": [],
       "evidence": [
+        "docs/generated/fixed-record-writer-gates.json",
         "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
         "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md"
       ],
@@ -1391,15 +1420,71 @@
       "byteRanges": [
         {
           "start": 0,
-          "length": 60,
-          "endExclusive": 60,
+          "length": 2,
+          "endExclusive": 2,
           "status": "decoded-writable",
-          "field": "Global macro hooks",
-          "internal": "fixed record"
+          "field": "Start-up macro",
+          "internal": "globalmacro[0]",
+          "writerGate": "docs/generated/fixed-record-writer-gates.json"
+        },
+        {
+          "start": 2,
+          "length": 2,
+          "endExclusive": 4,
+          "status": "decoded-writable",
+          "field": "New game macro",
+          "internal": "globalmacro[1]",
+          "writerGate": "docs/generated/fixed-record-writer-gates.json"
+        },
+        {
+          "start": 4,
+          "length": 2,
+          "endExclusive": 6,
+          "status": "decoded-writable",
+          "field": "Resume game macro",
+          "internal": "globalmacro[2]",
+          "writerGate": "docs/generated/fixed-record-writer-gates.json"
+        },
+        {
+          "start": 6,
+          "length": 2,
+          "endExclusive": 8,
+          "status": "preserved-known",
+          "field": "Reserved global hook slot",
+          "internal": "globalmacro[3]",
+          "writerGate": "docs/generated/fixed-record-writer-gates.json"
+        },
+        {
+          "start": 8,
+          "length": 2,
+          "endExclusive": 10,
+          "status": "decoded-writable",
+          "field": "Day-start macro",
+          "internal": "globalmacro[4]",
+          "writerGate": "docs/generated/fixed-record-writer-gates.json"
+        },
+        {
+          "start": 10,
+          "length": 2,
+          "endExclusive": 12,
+          "status": "decoded-writable",
+          "field": "Day-end macro",
+          "internal": "globalmacro[5]",
+          "writerGate": "docs/generated/fixed-record-writer-gates.json"
+        },
+        {
+          "start": 12,
+          "length": 48,
+          "endExclusive": 60,
+          "status": "preserved-known",
+          "field": "Reserved global hook slots",
+          "internal": "globalmacro[6..29]",
+          "writerGate": "docs/generated/fixed-record-writer-gates.json"
         }
       ],
       "resourceTypes": [],
       "evidence": [
+        "docs/generated/fixed-record-writer-gates.json",
         "docs/generated/extra-ap-reachability-source-map.json",
         "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md"
       ],
@@ -1475,11 +1560,13 @@
           "endExclusive": 4608,
           "status": "decoded-writable",
           "field": "Contact information",
-          "internal": "fixed record"
+          "internal": "fixed record",
+          "writerGate": "docs/generated/fixed-record-writer-gates.json"
         }
       ],
       "resourceTypes": [],
       "evidence": [
+        "docs/generated/fixed-record-writer-gates.json",
         "docs/generated/scenario-party-restrictions-evidence.json",
         "docs/format-evidence-cards/scenario-party-restrictions-runtime-anchors.md"
       ],
@@ -1627,11 +1714,13 @@
           "endExclusive": 320,
           "status": "decoded-writable",
           "field": "Party restrictions",
-          "internal": "fixed record"
+          "internal": "fixed record",
+          "writerGate": "docs/generated/fixed-record-writer-gates.json"
         }
       ],
       "resourceTypes": [],
       "evidence": [
+        "docs/generated/fixed-record-writer-gates.json",
         "docs/generated/scenario-party-restrictions-evidence.json",
         "docs/format-evidence-cards/scenario-party-restrictions-runtime-anchors.md"
       ],
@@ -1953,11 +2042,13 @@
           "endExclusive": 25,
           "status": "decoded-writable",
           "field": "Option labels",
-          "internal": "fixed record"
+          "internal": "fixed record",
+          "writerGate": "docs/generated/fixed-record-writer-gates.json"
         }
       ],
       "resourceTypes": [],
       "evidence": [
+        "docs/generated/fixed-record-writer-gates.json",
         "docs/format-evidence-cards/strings-data-od-string-sound.md"
       ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."

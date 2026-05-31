@@ -1,0 +1,1300 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-05-31T03:27:47.930Z",
+  "generatedBy": "scripts/generate_scenario_byte_coverage.mjs",
+  "target": "core-fixed-record-writer-gate-batch",
+  "sources": {
+    "byteCoverage": "docs/generated/scenario-byte-ownership.json",
+    "fixtureRoundtrip": "src-tauri/tests/fixture_roundtrip.rs",
+    "fixedRecordWriters": "src-tauri/src/realmz.rs"
+  },
+  "policy": {
+    "note": "This registry gates only the Core Fixed-Record Writer-Gate Batch. Startup shell files and map, encounter, monster-template, and shop families are intentionally excluded.",
+    "fixtureProvenRequires": [
+      "observed container coverage",
+      "all hardened fixture paths available",
+      "all local evidence references present"
+    ],
+    "excludedFamilies": [
+      "Scenario",
+      "Data CS",
+      "Data LD",
+      "Data DL",
+      "Layout",
+      "Data MD2",
+      "Data RD",
+      "Data RDD",
+      "Data ED",
+      "Data ED2",
+      "Data TD2",
+      "Data MD",
+      "Data MD1",
+      "Data MD-1",
+      "Data SD",
+      "Data MENU"
+    ]
+  },
+  "summary": {
+    "containers": 9,
+    "fixtureProvenContainers": 9,
+    "evidencePendingContainers": 0,
+    "writerReadiness": "fixture-proven-fixed-record-storage",
+    "fixturePathsAvailable": true,
+    "missingFixturePaths": [],
+    "missingEvidenceReferences": 0
+  },
+  "gates": [
+    {
+      "container": "Data SD2",
+      "authorFacingName": "Strings/messages",
+      "gate": "message-fixed-record-writer",
+      "recordBytes": 256,
+      "rowKind": "Str255 message record",
+      "semanticExposure": "strings-workbench",
+      "writerStatus": "fixture-proven-fixed-record",
+      "available": true,
+      "evidencePresent": true,
+      "fixturePathsAvailable": true,
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        12800,
+        13053,
+        13056,
+        41216,
+        51456,
+        54016,
+        63488,
+        64256,
+        84992,
+        120576,
+        130560,
+        138752,
+        187904,
+        189184,
+        202472,
+        223232,
+        225280,
+        225536,
+        241664,
+        250112,
+        251648,
+        276736,
+        285952,
+        288000,
+        295936,
+        299776,
+        347392,
+        348416,
+        386304,
+        545536,
+        720128,
+        720640,
+        812544,
+        1044224,
+        1063680
+      ],
+      "fixturePaths": [
+        "F:/Realmz/base/Realmz/Scenarios/City of Bywater",
+        "F:/Realmz/base/Realmz/Scenarios/Prelude to Pestilence",
+        "F:/Realmz/base/Realmz/Scenarios/War in the Sword Lands",
+        "F:/Realmz/base/Realmz/Scenarios/Mithril Vault",
+        "F:/Realmz/base/Realmz/Scenarios/Wrath of the Mind Lords",
+        "F:/Realmz/base/Realmz/Scenarios/Tutorial"
+      ],
+      "missingEvidence": [],
+      "evidence": [
+        "src-tauri/src/realmz.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
+        "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
+        "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
+        "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
+        "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
+        "docs/format-evidence-cards/text-message-runtime-anchors.md",
+        "docs/format-evidence-cards/strings-data-od-string-sound.md"
+      ],
+      "evidenceChecks": [
+        {
+          "reference": "src-tauri/src/realmz.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "fixed_record_text_writers_mutate_only_owned_pascal_bytes",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "target_records_round_trip_full_records",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "authored_target_records_write_realmz_offsets",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
+          "file": "src-tauri/tests/fixture_roundtrip.rs",
+          "anchor": "imports_core_fixture_scenarios",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
+          "file": "src-tauri/tests/fixture_roundtrip.rs",
+          "anchor": "exports_hardened_fixtures_byte_identically_without_edits",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "docs/format-evidence-cards/text-message-runtime-anchors.md",
+          "file": "docs/format-evidence-cards/text-message-runtime-anchors.md",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        },
+        {
+          "reference": "docs/format-evidence-cards/strings-data-od-string-sound.md",
+          "file": "docs/format-evidence-cards/strings-data-od-string-sound.md",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        }
+      ],
+      "ownedFields": [
+        {
+          "field": "Message text",
+          "internal": "text",
+          "offset": 0,
+          "bytes": 256,
+          "type": "Str255/raw tail"
+        }
+      ],
+      "preservedRanges": [],
+      "partialOnly": false,
+      "preservationPolicy": "Imported message bytes remain raw-preserved until the record is authored; authored strings rewrite only the fixed Str255 record."
+    },
+    {
+      "container": "Data OD",
+      "authorFacingName": "Option labels",
+      "gate": "option-label-fixed-record-writer",
+      "recordBytes": 25,
+      "rowKind": "25-byte Pascal option label record",
+      "semanticExposure": "strings-workbench-option-labels",
+      "writerStatus": "fixture-proven-fixed-record",
+      "available": true,
+      "evidencePresent": true,
+      "fixturePathsAvailable": true,
+      "observedScenarioCount": 12,
+      "observedByteSizes": [
+        575,
+        1275,
+        1325,
+        1525
+      ],
+      "fixturePaths": [
+        "F:/Realmz/base/Realmz/Scenarios/City of Bywater",
+        "F:/Realmz/base/Realmz/Scenarios/Prelude to Pestilence",
+        "F:/Realmz/base/Realmz/Scenarios/War in the Sword Lands",
+        "F:/Realmz/base/Realmz/Scenarios/Mithril Vault",
+        "F:/Realmz/base/Realmz/Scenarios/Wrath of the Mind Lords",
+        "F:/Realmz/base/Realmz/Scenarios/Tutorial"
+      ],
+      "missingEvidence": [],
+      "evidence": [
+        "src-tauri/src/realmz.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
+        "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
+        "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
+        "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
+        "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
+        "docs/generated/string-sound-audit.json",
+        "docs/format-evidence-cards/strings-data-od-string-sound.md"
+      ],
+      "evidenceChecks": [
+        {
+          "reference": "src-tauri/src/realmz.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "fixed_record_text_writers_mutate_only_owned_pascal_bytes",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "target_records_round_trip_full_records",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "authored_target_records_write_realmz_offsets",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
+          "file": "src-tauri/tests/fixture_roundtrip.rs",
+          "anchor": "imports_core_fixture_scenarios",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
+          "file": "src-tauri/tests/fixture_roundtrip.rs",
+          "anchor": "exports_hardened_fixtures_byte_identically_without_edits",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "docs/generated/string-sound-audit.json",
+          "file": "docs/generated/string-sound-audit.json",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        },
+        {
+          "reference": "docs/format-evidence-cards/strings-data-od-string-sound.md",
+          "file": "docs/format-evidence-cards/strings-data-od-string-sound.md",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        }
+      ],
+      "ownedFields": [
+        {
+          "field": "Option label",
+          "internal": "text",
+          "offset": 0,
+          "bytes": 25,
+          "type": "Str24/raw tail"
+        }
+      ],
+      "preservedRanges": [],
+      "partialOnly": false,
+      "preservationPolicy": "Imported option-label bytes remain raw-preserved until the label is authored; the blocked Strings Sound affordance is not part of this writer gate."
+    },
+    {
+      "container": "Data DES",
+      "authorFacingName": "Monster description records",
+      "gate": "monster-description-fixed-record-writer",
+      "recordBytes": 256,
+      "rowKind": "Str255 monster description record",
+      "semanticExposure": "description-text-records",
+      "writerStatus": "fixture-proven-fixed-record",
+      "available": true,
+      "evidencePresent": true,
+      "fixturePathsAvailable": true,
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        50688,
+        55296,
+        56320,
+        57856,
+        58880,
+        61952,
+        74496,
+        75520,
+        76800,
+        77056,
+        84992,
+        86016,
+        121856
+      ],
+      "fixturePaths": [
+        "F:/Realmz/base/Realmz/Scenarios/City of Bywater",
+        "F:/Realmz/base/Realmz/Scenarios/Prelude to Pestilence",
+        "F:/Realmz/base/Realmz/Scenarios/War in the Sword Lands",
+        "F:/Realmz/base/Realmz/Scenarios/Mithril Vault",
+        "F:/Realmz/base/Realmz/Scenarios/Wrath of the Mind Lords",
+        "F:/Realmz/base/Realmz/Scenarios/Tutorial"
+      ],
+      "missingEvidence": [],
+      "evidence": [
+        "src-tauri/src/realmz.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
+        "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
+        "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
+        "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
+        "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
+        "docs/format-evidence-cards/monster-descriptions-and-sets-runtime-anchors.md"
+      ],
+      "evidenceChecks": [
+        {
+          "reference": "src-tauri/src/realmz.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "fixed_record_text_writers_mutate_only_owned_pascal_bytes",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "target_records_round_trip_full_records",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "authored_target_records_write_realmz_offsets",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
+          "file": "src-tauri/tests/fixture_roundtrip.rs",
+          "anchor": "imports_core_fixture_scenarios",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
+          "file": "src-tauri/tests/fixture_roundtrip.rs",
+          "anchor": "exports_hardened_fixtures_byte_identically_without_edits",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "docs/format-evidence-cards/monster-descriptions-and-sets-runtime-anchors.md",
+          "file": "docs/format-evidence-cards/monster-descriptions-and-sets-runtime-anchors.md",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        }
+      ],
+      "ownedFields": [
+        {
+          "field": "Monster description text",
+          "internal": "text",
+          "offset": 0,
+          "bytes": 256,
+          "type": "Str255/raw tail"
+        }
+      ],
+      "preservedRanges": [],
+      "partialOnly": false,
+      "preservationPolicy": "This gate covers Data DES description text only; monster templates and alternate monster sets stay outside this fixed-record batch."
+    },
+    {
+      "container": "Data TD",
+      "authorFacingName": "Treasure records",
+      "gate": "treasure-fixed-record-writer",
+      "recordBytes": 48,
+      "rowKind": "48-byte treasure reward record",
+      "semanticExposure": "treasure-records",
+      "writerStatus": "fixture-proven-fixed-record",
+      "available": true,
+      "evidencePresent": true,
+      "fixturePathsAvailable": true,
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        528,
+        624,
+        816,
+        1248,
+        1296,
+        1776,
+        2160,
+        2208,
+        2256,
+        2304,
+        2544,
+        2688,
+        2784,
+        3312,
+        3504,
+        3648,
+        3696,
+        3744,
+        3888,
+        3936,
+        4320,
+        4464,
+        4848,
+        4896,
+        6384,
+        6432,
+        6528,
+        7296,
+        9312,
+        11424
+      ],
+      "fixturePaths": [
+        "F:/Realmz/base/Realmz/Scenarios/City of Bywater",
+        "F:/Realmz/base/Realmz/Scenarios/Prelude to Pestilence",
+        "F:/Realmz/base/Realmz/Scenarios/War in the Sword Lands",
+        "F:/Realmz/base/Realmz/Scenarios/Mithril Vault",
+        "F:/Realmz/base/Realmz/Scenarios/Wrath of the Mind Lords",
+        "F:/Realmz/base/Realmz/Scenarios/Tutorial"
+      ],
+      "missingEvidence": [],
+      "evidence": [
+        "src-tauri/src/realmz.rs:fixed_record_target_writers_mutate_only_owned_fields",
+        "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
+        "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
+        "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
+        "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
+        "docs/generated/item-treasure-shop-evidence.json",
+        "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md"
+      ],
+      "evidenceChecks": [
+        {
+          "reference": "src-tauri/src/realmz.rs:fixed_record_target_writers_mutate_only_owned_fields",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "fixed_record_target_writers_mutate_only_owned_fields",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "target_records_round_trip_full_records",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "authored_target_records_write_realmz_offsets",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
+          "file": "src-tauri/tests/fixture_roundtrip.rs",
+          "anchor": "imports_core_fixture_scenarios",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
+          "file": "src-tauri/tests/fixture_roundtrip.rs",
+          "anchor": "exports_hardened_fixtures_byte_identically_without_edits",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "docs/generated/item-treasure-shop-evidence.json",
+          "file": "docs/generated/item-treasure-shop-evidence.json",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        },
+        {
+          "reference": "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
+          "file": "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        }
+      ],
+      "ownedFields": [
+        {
+          "field": "Reward item references",
+          "internal": "itemid[20]",
+          "offset": 0,
+          "bytes": 40,
+          "type": "i16be[20]"
+        },
+        {
+          "field": "Experience reward",
+          "internal": "exp",
+          "offset": 40,
+          "bytes": 2,
+          "type": "i16be"
+        },
+        {
+          "field": "Gold reward",
+          "internal": "gold",
+          "offset": 42,
+          "bytes": 2,
+          "type": "i16be"
+        },
+        {
+          "field": "Gem reward",
+          "internal": "gems",
+          "offset": 44,
+          "bytes": 2,
+          "type": "i16be"
+        },
+        {
+          "field": "Jewelry reward",
+          "internal": "jewelry",
+          "offset": 46,
+          "bytes": 2,
+          "type": "i16be"
+        }
+      ],
+      "preservedRanges": [],
+      "partialOnly": false,
+      "preservationPolicy": "This gate covers source treasure rewards only; shop stock/runtime shop cache writing stays outside this batch."
+    },
+    {
+      "container": "Data BD",
+      "authorFacingName": "Battle records",
+      "gate": "battle-fixed-record-writer",
+      "recordBytes": 346,
+      "rowKind": "346-byte battle setup record",
+      "semanticExposure": "battle-records",
+      "writerStatus": "fixture-proven-fixed-record",
+      "available": true,
+      "evidencePresent": true,
+      "fixturePathsAvailable": true,
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        1730,
+        3460,
+        7612,
+        8304,
+        12110,
+        18338,
+        19030,
+        26988,
+        32178,
+        45326,
+        47748,
+        55706,
+        59858,
+        67124,
+        73352,
+        75774,
+        79926,
+        81310,
+        84424,
+        86154,
+        88576,
+        88922,
+        99648,
+        103454,
+        123868,
+        124906,
+        128366,
+        172308,
+        173346,
+        186148,
+        257770
+      ],
+      "fixturePaths": [
+        "F:/Realmz/base/Realmz/Scenarios/City of Bywater",
+        "F:/Realmz/base/Realmz/Scenarios/Prelude to Pestilence",
+        "F:/Realmz/base/Realmz/Scenarios/War in the Sword Lands",
+        "F:/Realmz/base/Realmz/Scenarios/Mithril Vault",
+        "F:/Realmz/base/Realmz/Scenarios/Wrath of the Mind Lords",
+        "F:/Realmz/base/Realmz/Scenarios/Tutorial"
+      ],
+      "missingEvidence": [],
+      "evidence": [
+        "src-tauri/src/realmz.rs:fixed_record_target_writers_mutate_only_owned_fields",
+        "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
+        "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
+        "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
+        "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
+        "docs/generated/battle-record-evidence.json",
+        "docs/format-evidence-cards/battle-record-runtime-anchors.md"
+      ],
+      "evidenceChecks": [
+        {
+          "reference": "src-tauri/src/realmz.rs:fixed_record_target_writers_mutate_only_owned_fields",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "fixed_record_target_writers_mutate_only_owned_fields",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "target_records_round_trip_full_records",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "authored_target_records_write_realmz_offsets",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
+          "file": "src-tauri/tests/fixture_roundtrip.rs",
+          "anchor": "imports_core_fixture_scenarios",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
+          "file": "src-tauri/tests/fixture_roundtrip.rs",
+          "anchor": "exports_hardened_fixtures_byte_identically_without_edits",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "docs/generated/battle-record-evidence.json",
+          "file": "docs/generated/battle-record-evidence.json",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        },
+        {
+          "reference": "docs/format-evidence-cards/battle-record-runtime-anchors.md",
+          "file": "docs/format-evidence-cards/battle-record-runtime-anchors.md",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        }
+      ],
+      "ownedFields": [
+        {
+          "field": "Monster placement grid",
+          "internal": "battle[13][13]",
+          "offset": 0,
+          "bytes": 338,
+          "type": "i16be[169]"
+        },
+        {
+          "field": "Initial distance",
+          "internal": "dist",
+          "offset": 338,
+          "bytes": 1,
+          "type": "i8"
+        },
+        {
+          "field": "Before-combat message",
+          "internal": "messagebefore",
+          "offset": 340,
+          "bytes": 2,
+          "type": "i16be"
+        },
+        {
+          "field": "After-combat message",
+          "internal": "messageafter",
+          "offset": 342,
+          "bytes": 2,
+          "type": "i16be"
+        },
+        {
+          "field": "Battle macro",
+          "internal": "battlemacro",
+          "offset": 344,
+          "bytes": 2,
+          "type": "i16be"
+        }
+      ],
+      "preservedRanges": [
+        {
+          "field": "Alignment padding",
+          "internal": "padding",
+          "offset": 339,
+          "bytes": 1,
+          "type": "raw-preserved"
+        }
+      ],
+      "partialOnly": true,
+      "preservationPolicy": "This gate covers battle records only; monster template writers and encounter routing stay outside this batch."
+    },
+    {
+      "container": "Data TD3",
+      "authorFacingName": "Timed encounter records",
+      "gate": "timed-encounter-fixed-record-writer",
+      "recordBytes": 40,
+      "rowKind": "40-byte timed encounter schedule record",
+      "semanticExposure": "timed-encounter-records",
+      "writerStatus": "fixture-proven-fixed-record",
+      "available": true,
+      "evidencePresent": true,
+      "fixturePathsAvailable": true,
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        40,
+        120,
+        160,
+        240,
+        280,
+        320,
+        480,
+        520,
+        560,
+        800,
+        840,
+        960,
+        2080
+      ],
+      "fixturePaths": [
+        "F:/Realmz/base/Realmz/Scenarios/City of Bywater",
+        "F:/Realmz/base/Realmz/Scenarios/Prelude to Pestilence",
+        "F:/Realmz/base/Realmz/Scenarios/War in the Sword Lands",
+        "F:/Realmz/base/Realmz/Scenarios/Mithril Vault",
+        "F:/Realmz/base/Realmz/Scenarios/Wrath of the Mind Lords",
+        "F:/Realmz/base/Realmz/Scenarios/Tutorial"
+      ],
+      "missingEvidence": [],
+      "evidence": [
+        "src-tauri/src/realmz.rs:fixed_record_target_writers_mutate_only_owned_fields",
+        "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
+        "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
+        "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
+        "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
+        "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md"
+      ],
+      "evidenceChecks": [
+        {
+          "reference": "src-tauri/src/realmz.rs:fixed_record_target_writers_mutate_only_owned_fields",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "fixed_record_target_writers_mutate_only_owned_fields",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "target_records_round_trip_full_records",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "authored_target_records_write_realmz_offsets",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
+          "file": "src-tauri/tests/fixture_roundtrip.rs",
+          "anchor": "imports_core_fixture_scenarios",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
+          "file": "src-tauri/tests/fixture_roundtrip.rs",
+          "anchor": "exports_hardened_fixtures_byte_identically_without_edits",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md",
+          "file": "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        }
+      ],
+      "ownedFields": [
+        {
+          "field": "Day",
+          "internal": "day",
+          "offset": 0,
+          "bytes": 2,
+          "type": "i16be"
+        },
+        {
+          "field": "Increment",
+          "internal": "increment",
+          "offset": 2,
+          "bytes": 2,
+          "type": "i16be"
+        },
+        {
+          "field": "Chance percent",
+          "internal": "percent",
+          "offset": 4,
+          "bytes": 2,
+          "type": "i16be"
+        },
+        {
+          "field": "Macro target",
+          "internal": "door",
+          "offset": 6,
+          "bytes": 2,
+          "type": "i16be"
+        },
+        {
+          "field": "Required level",
+          "internal": "required_level",
+          "offset": 8,
+          "bytes": 2,
+          "type": "i16be"
+        },
+        {
+          "field": "Required random rectangle",
+          "internal": "required_random_rect",
+          "offset": 10,
+          "bytes": 2,
+          "type": "i16be"
+        },
+        {
+          "field": "Required X",
+          "internal": "required_x",
+          "offset": 12,
+          "bytes": 2,
+          "type": "i16be"
+        },
+        {
+          "field": "Required Y",
+          "internal": "required_y",
+          "offset": 14,
+          "bytes": 2,
+          "type": "i16be"
+        },
+        {
+          "field": "Required item",
+          "internal": "required_item",
+          "offset": 16,
+          "bytes": 2,
+          "type": "i16be"
+        },
+        {
+          "field": "Required quest",
+          "internal": "required_quest",
+          "offset": 18,
+          "bytes": 2,
+          "type": "i16be"
+        },
+        {
+          "field": "Timed encounter qualifiers",
+          "internal": "stuff[10]",
+          "offset": 20,
+          "bytes": 20,
+          "type": "i16be[10]"
+        }
+      ],
+      "preservedRanges": [],
+      "partialOnly": false,
+      "preservationPolicy": "This gate covers timed encounters only; thief encounter records remain outside this batch."
+    },
+    {
+      "container": "Data CI",
+      "authorFacingName": "Contact information",
+      "gate": "contact-info-fixed-record-writer",
+      "recordBytes": 4608,
+      "rowKind": "eighteen Str255 contact/release fields",
+      "semanticExposure": "scenario-contact-info",
+      "writerStatus": "fixture-proven-fixed-record",
+      "available": true,
+      "evidencePresent": true,
+      "fixturePathsAvailable": true,
+      "observedScenarioCount": 32,
+      "observedByteSizes": [
+        4608
+      ],
+      "fixturePaths": [
+        "F:/Realmz/base/Realmz/Scenarios/City of Bywater",
+        "F:/Realmz/base/Realmz/Scenarios/Prelude to Pestilence",
+        "F:/Realmz/base/Realmz/Scenarios/War in the Sword Lands",
+        "F:/Realmz/base/Realmz/Scenarios/Mithril Vault",
+        "F:/Realmz/base/Realmz/Scenarios/Wrath of the Mind Lords",
+        "F:/Realmz/base/Realmz/Scenarios/Tutorial"
+      ],
+      "missingEvidence": [],
+      "evidence": [
+        "src-tauri/src/realmz.rs:fixed_record_scenario_shell_writers_mutate_only_owned_fields",
+        "src-tauri/src/realmz.rs:scenario_shell_contact_and_restrictions_round_trip",
+        "src-tauri/src/realmz.rs:write_scenario_contact_info",
+        "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
+        "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
+        "docs/generated/scenario-shell-evidence.json",
+        "docs/format-evidence-cards/scenario-startup-runtime-anchors.md",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "evidenceChecks": [
+        {
+          "reference": "src-tauri/src/realmz.rs:fixed_record_scenario_shell_writers_mutate_only_owned_fields",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "fixed_record_scenario_shell_writers_mutate_only_owned_fields",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:scenario_shell_contact_and_restrictions_round_trip",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "scenario_shell_contact_and_restrictions_round_trip",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:write_scenario_contact_info",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "write_scenario_contact_info",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
+          "file": "src-tauri/tests/fixture_roundtrip.rs",
+          "anchor": "imports_core_fixture_scenarios",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
+          "file": "src-tauri/tests/fixture_roundtrip.rs",
+          "anchor": "exports_hardened_fixtures_byte_identically_without_edits",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "docs/generated/scenario-shell-evidence.json",
+          "file": "docs/generated/scenario-shell-evidence.json",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        },
+        {
+          "reference": "docs/format-evidence-cards/scenario-startup-runtime-anchors.md",
+          "file": "docs/format-evidence-cards/scenario-startup-runtime-anchors.md",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        },
+        {
+          "reference": "docs/format-evidence-cards/scenario-shell-startup-release.md",
+          "file": "docs/format-evidence-cards/scenario-shell-startup-release.md",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        }
+      ],
+      "ownedFields": [
+        {
+          "field": "Scenario/contact/release strings",
+          "internal": "contactdata Str255 fields",
+          "offset": 0,
+          "bytes": 4608,
+          "type": "Str255[18]"
+        }
+      ],
+      "preservedRanges": [],
+      "partialOnly": false,
+      "preservationPolicy": "This gate covers Data CI contact/release text only; marker/main startup shell files stay outside this batch."
+    },
+    {
+      "container": "Data RI",
+      "authorFacingName": "Party restrictions",
+      "gate": "party-restrictions-fixed-record-writer",
+      "recordBytes": 320,
+      "rowKind": "320-byte party restriction record",
+      "semanticExposure": "scenario-party-restrictions",
+      "writerStatus": "fixture-proven-fixed-record",
+      "available": true,
+      "evidencePresent": true,
+      "fixturePathsAvailable": true,
+      "observedScenarioCount": 28,
+      "observedByteSizes": [
+        320
+      ],
+      "fixturePaths": [
+        "F:/Realmz/base/Realmz/Scenarios/City of Bywater",
+        "F:/Realmz/base/Realmz/Scenarios/Prelude to Pestilence",
+        "F:/Realmz/base/Realmz/Scenarios/War in the Sword Lands",
+        "F:/Realmz/base/Realmz/Scenarios/Mithril Vault",
+        "F:/Realmz/base/Realmz/Scenarios/Wrath of the Mind Lords",
+        "F:/Realmz/base/Realmz/Scenarios/Tutorial"
+      ],
+      "missingEvidence": [],
+      "evidence": [
+        "src-tauri/src/realmz.rs:fixed_record_scenario_shell_writers_mutate_only_owned_fields",
+        "src-tauri/src/realmz.rs:scenario_shell_contact_and_restrictions_round_trip",
+        "src-tauri/src/realmz.rs:write_scenario_restrictions",
+        "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
+        "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
+        "docs/generated/scenario-party-restrictions-evidence.json",
+        "docs/format-evidence-cards/scenario-party-restrictions-runtime-anchors.md"
+      ],
+      "evidenceChecks": [
+        {
+          "reference": "src-tauri/src/realmz.rs:fixed_record_scenario_shell_writers_mutate_only_owned_fields",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "fixed_record_scenario_shell_writers_mutate_only_owned_fields",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:scenario_shell_contact_and_restrictions_round_trip",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "scenario_shell_contact_and_restrictions_round_trip",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:write_scenario_restrictions",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "write_scenario_restrictions",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
+          "file": "src-tauri/tests/fixture_roundtrip.rs",
+          "anchor": "imports_core_fixture_scenarios",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
+          "file": "src-tauri/tests/fixture_roundtrip.rs",
+          "anchor": "exports_hardened_fixtures_byte_identically_without_edits",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "docs/generated/scenario-party-restrictions-evidence.json",
+          "file": "docs/generated/scenario-party-restrictions-evidence.json",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        },
+        {
+          "reference": "docs/format-evidence-cards/scenario-party-restrictions-runtime-anchors.md",
+          "file": "docs/format-evidence-cards/scenario-party-restrictions-runtime-anchors.md",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        }
+      ],
+      "ownedFields": [
+        {
+          "field": "Restriction description",
+          "internal": "description",
+          "offset": 0,
+          "bytes": 256,
+          "type": "Str255"
+        },
+        {
+          "field": "Maximum party characters",
+          "internal": "maxpc",
+          "offset": 256,
+          "bytes": 2,
+          "type": "i16be"
+        },
+        {
+          "field": "Maximum party level",
+          "internal": "maxlevel",
+          "offset": 258,
+          "bytes": 2,
+          "type": "i16be"
+        },
+        {
+          "field": "Banned race flags",
+          "internal": "canrace[30]",
+          "offset": 260,
+          "bytes": 30,
+          "type": "u8[30]"
+        },
+        {
+          "field": "Banned caste flags",
+          "internal": "cancaste[30]",
+          "offset": 290,
+          "bytes": 30,
+          "type": "u8[30]"
+        }
+      ],
+      "preservedRanges": [],
+      "partialOnly": false,
+      "preservationPolicy": "This gate covers the optional Data RI restriction record only; marker/main party level fields stay outside this batch."
+    },
+    {
+      "container": "Global",
+      "authorFacingName": "Global macro hooks",
+      "gate": "global-macro-fixed-record-writer",
+      "recordBytes": 60,
+      "rowKind": "30 signed-short global macro hook slots",
+      "semanticExposure": "scenario-global-macro-hooks",
+      "writerStatus": "fixture-proven-fixed-record",
+      "available": true,
+      "evidencePresent": true,
+      "fixturePathsAvailable": true,
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        60
+      ],
+      "fixturePaths": [
+        "F:/Realmz/base/Realmz/Scenarios/City of Bywater",
+        "F:/Realmz/base/Realmz/Scenarios/Prelude to Pestilence",
+        "F:/Realmz/base/Realmz/Scenarios/War in the Sword Lands",
+        "F:/Realmz/base/Realmz/Scenarios/Mithril Vault",
+        "F:/Realmz/base/Realmz/Scenarios/Wrath of the Mind Lords",
+        "F:/Realmz/base/Realmz/Scenarios/Tutorial"
+      ],
+      "missingEvidence": [],
+      "evidence": [
+        "src-tauri/src/realmz.rs:global_macro_hooks_mutate_only_source_backed_slots",
+        "src-tauri/src/realmz.rs:write_global_macro_hooks",
+        "src-tauri/src/realmz.rs:parse_global_macro_hooks",
+        "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
+        "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
+        "docs/generated/global-macro-evidence.json",
+        "docs/format-evidence-cards/global-macro-runtime-anchors.md"
+      ],
+      "evidenceChecks": [
+        {
+          "reference": "src-tauri/src/realmz.rs:global_macro_hooks_mutate_only_source_backed_slots",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "global_macro_hooks_mutate_only_source_backed_slots",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:write_global_macro_hooks",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "write_global_macro_hooks",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:parse_global_macro_hooks",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "parse_global_macro_hooks",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
+          "file": "src-tauri/tests/fixture_roundtrip.rs",
+          "anchor": "imports_core_fixture_scenarios",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
+          "file": "src-tauri/tests/fixture_roundtrip.rs",
+          "anchor": "exports_hardened_fixtures_byte_identically_without_edits",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "docs/generated/global-macro-evidence.json",
+          "file": "docs/generated/global-macro-evidence.json",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        },
+        {
+          "reference": "docs/format-evidence-cards/global-macro-runtime-anchors.md",
+          "file": "docs/format-evidence-cards/global-macro-runtime-anchors.md",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        }
+      ],
+      "ownedFields": [
+        {
+          "field": "Start-up macro",
+          "internal": "globalmacro[0]",
+          "offset": 0,
+          "bytes": 2,
+          "type": "i16be"
+        },
+        {
+          "field": "New game macro",
+          "internal": "globalmacro[1]",
+          "offset": 2,
+          "bytes": 2,
+          "type": "i16be"
+        },
+        {
+          "field": "Resume game macro",
+          "internal": "globalmacro[2]",
+          "offset": 4,
+          "bytes": 2,
+          "type": "i16be"
+        },
+        {
+          "field": "Day-start macro",
+          "internal": "globalmacro[4]",
+          "offset": 8,
+          "bytes": 2,
+          "type": "i16be"
+        },
+        {
+          "field": "Day-end macro",
+          "internal": "globalmacro[5]",
+          "offset": 10,
+          "bytes": 2,
+          "type": "i16be"
+        }
+      ],
+      "preservedRanges": [
+        {
+          "field": "Reserved global hook slot",
+          "internal": "globalmacro[3]",
+          "offset": 6,
+          "bytes": 2,
+          "type": "raw-preserved"
+        },
+        {
+          "field": "Reserved global hook slots",
+          "internal": "globalmacro[6..29]",
+          "offset": 12,
+          "bytes": 48,
+          "type": "raw-preserved"
+        }
+      ],
+      "partialOnly": true,
+      "preservationPolicy": "This gate proves fixed-row Global storage and source-backed hook slots. Reserved slots stay preserve-only until broader Divinity labels are proven."
+    }
+  ]
+}

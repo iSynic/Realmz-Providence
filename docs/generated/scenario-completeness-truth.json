@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T02:51:14.682Z",
+  "generatedAt": "2026-05-31T03:27:47.934Z",
   "sources": {
     "byteOwnership": "docs/generated/scenario-byte-ownership.json",
     "unknownReport": "docs/generated/scenario-unknown-byte-report.json",
@@ -9,55 +9,57 @@
     "dungeonCoverage": "docs/generated/dungeon-byte-ownership.json",
     "customLandlookCoverage": "docs/generated/custom-landlook-coverage.json",
     "rulesCoverage": "docs/generated/rules-resource-coverage.json",
-    "actionPointWriterGate": "docs/generated/action-point-writer-gate.json"
+    "actionPointWriterGate": "docs/generated/action-point-writer-gate.json",
+    "fixedRecordWriterGates": "docs/generated/fixed-record-writer-gates.json"
   },
   "policy": {
     "note": "Truth statuses are stricter than legacy coverageStatus. Semantic ownership, writer readiness, evidence quality, and package compatibility are intentionally separate.",
     "scenarioSemanticsExcludeOptionalCodecs": true,
     "writerReadinessRequiresFixtureOrExplicitGate": true,
-    "actionPointWriterGateStatus": "fixture-proven-fixed-row-storage"
+    "actionPointWriterGateStatus": "fixture-proven-fixed-row-storage",
+    "fixedRecordWriterGateStatus": "fixture-proven-fixed-record-storage"
   },
   "summary": {
     "containerCount": 88,
     "semanticOwnershipCounts": {
-      "complete": 81,
-      "mixed": 5,
+      "mixed": 7,
+      "complete": 79,
       "runtime-only": 1,
       "ignored": 1
     },
     "writerReadinessCounts": {
-      "writer-gated": 56,
-      "partially-proven": 5,
-      "fixture-proven": 4,
+      "partially-proven": 7,
+      "writer-gated": 47,
+      "fixture-proven": 11,
       "read-only": 1,
       "preserve-only": 8,
       "not-applicable": 14
     },
     "evidenceQualityCounts": {
-      "cited": 66,
-      "fixture-backed": 9,
+      "fixture-backed": 18,
+      "cited": 57,
       "target-warning": 13
     },
     "riskFlagCounts": {
-      "structural-writer-claim": 56,
+      "structural-writer-claim": 47,
       "target-package-warning": 13,
       "writer-gated": 3
     },
     "scenarioSemantics": {
       "label": "Scenario Semantics",
       "status": "complete",
-      "completeContainers": 81,
-      "mixedContainers": 5,
+      "completeContainers": 79,
+      "mixedContainers": 7,
       "needsFormatWorkContainers": 0,
-      "percentContainers": 92.05
+      "percentContainers": 89.77
     },
     "writerProvenData": {
       "label": "Writer-Proven Data",
       "status": "incomplete",
-      "fixtureProvenContainers": 4,
-      "partiallyProvenContainers": 5,
-      "writerGatedContainers": 56,
-      "percentContainers": 10.23
+      "fixtureProvenContainers": 11,
+      "partiallyProvenContainers": 7,
+      "writerGatedContainers": 47,
+      "percentContainers": 20.45
     },
     "packageCompatibility": {
       "label": "Package Compatibility",
@@ -73,7 +75,7 @@
       "decodedResourcePayloadBytes": 841240
     },
     "strictOutstanding": {
-      "writerGatedContainers": 56,
+      "writerGatedContainers": 47,
       "missingEvidenceContainers": 0,
       "skippedFixtureContainers": 0,
       "preservedUnknownContainers": 0,
@@ -121,20 +123,32 @@
         257770
       ],
       "effectiveStatuses": [
-        "decoded-writable"
+        "decoded-writable",
+        "preserved-known"
       ],
       "evidence": [
+        "docs/generated/fixed-record-writer-gates.json",
         "docs/generated/battle-record-evidence.json",
-        "docs/format-evidence-cards/battle-record-runtime-anchors.md"
+        "docs/format-evidence-cards/battle-record-runtime-anchors.md",
+        "src-tauri/src/realmz.rs:fixed_record_target_writers_mutate_only_owned_fields",
+        "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
+        "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
+        "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
+        "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits"
       ],
-      "fixtureGate": null,
+      "fixtureGate": {
+        "name": "battle-fixed-record-writer",
+        "available": true,
+        "partialOnly": true,
+        "evidencePresent": true,
+        "missingEvidence": [],
+        "source": "fixed-record-writer-gates"
+      },
       "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
+        "semanticOwnership": "mixed",
+        "writerReadiness": "partially-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
       }
     },
     {
@@ -231,16 +245,27 @@
         "decoded-writable"
       ],
       "evidence": [
-        "docs/format-evidence-cards/monster-descriptions-and-sets-runtime-anchors.md"
+        "docs/generated/fixed-record-writer-gates.json",
+        "docs/format-evidence-cards/monster-descriptions-and-sets-runtime-anchors.md",
+        "src-tauri/src/realmz.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
+        "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
+        "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
+        "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
+        "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits"
       ],
-      "fixtureGate": null,
+      "fixtureGate": {
+        "name": "monster-description-fixed-record-writer",
+        "available": true,
+        "partialOnly": false,
+        "evidencePresent": true,
+        "missingEvidence": [],
+        "source": "fixed-record-writer-gates"
+      },
       "truth": {
         "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
+        "writerReadiness": "fixture-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
       }
     },
     {
@@ -916,16 +941,28 @@
         "decoded-writable"
       ],
       "evidence": [
-        "docs/format-evidence-cards/strings-data-od-string-sound.md"
+        "docs/generated/fixed-record-writer-gates.json",
+        "docs/format-evidence-cards/strings-data-od-string-sound.md",
+        "src-tauri/src/realmz.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
+        "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
+        "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
+        "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
+        "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
+        "docs/format-evidence-cards/text-message-runtime-anchors.md"
       ],
-      "fixtureGate": null,
+      "fixtureGate": {
+        "name": "message-fixed-record-writer",
+        "available": true,
+        "partialOnly": false,
+        "evidencePresent": true,
+        "missingEvidence": [],
+        "source": "fixed-record-writer-gates"
+      },
       "truth": {
         "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
+        "writerReadiness": "fixture-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
       }
     },
     {
@@ -991,16 +1028,28 @@
         "decoded-writable"
       ],
       "evidence": [
-        "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md"
+        "docs/generated/fixed-record-writer-gates.json",
+        "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
+        "src-tauri/src/realmz.rs:fixed_record_target_writers_mutate_only_owned_fields",
+        "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
+        "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
+        "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
+        "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
+        "docs/generated/item-treasure-shop-evidence.json"
       ],
-      "fixtureGate": null,
+      "fixtureGate": {
+        "name": "treasure-fixed-record-writer",
+        "available": true,
+        "partialOnly": false,
+        "evidencePresent": true,
+        "missingEvidence": [],
+        "source": "fixed-record-writer-gates"
+      },
       "truth": {
         "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
+        "writerReadiness": "fixture-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
       }
     },
     {
@@ -1072,17 +1121,28 @@
         "decoded-writable"
       ],
       "evidence": [
+        "docs/generated/fixed-record-writer-gates.json",
         "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
-        "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md"
+        "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md",
+        "src-tauri/src/realmz.rs:fixed_record_target_writers_mutate_only_owned_fields",
+        "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
+        "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
+        "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
+        "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits"
       ],
-      "fixtureGate": null,
+      "fixtureGate": {
+        "name": "timed-encounter-fixed-record-writer",
+        "available": true,
+        "partialOnly": false,
+        "evidencePresent": true,
+        "missingEvidence": [],
+        "source": "fixed-record-writer-gates"
+      },
       "truth": {
         "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
+        "writerReadiness": "fixture-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
       }
     },
     {
@@ -1094,20 +1154,34 @@
         60
       ],
       "effectiveStatuses": [
-        "decoded-writable"
+        "decoded-writable",
+        "preserved-known"
       ],
       "evidence": [
+        "docs/generated/fixed-record-writer-gates.json",
         "docs/generated/extra-ap-reachability-source-map.json",
-        "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md"
+        "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md",
+        "src-tauri/src/realmz.rs:global_macro_hooks_mutate_only_source_backed_slots",
+        "src-tauri/src/realmz.rs:write_global_macro_hooks",
+        "src-tauri/src/realmz.rs:parse_global_macro_hooks",
+        "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
+        "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
+        "docs/generated/global-macro-evidence.json",
+        "docs/format-evidence-cards/global-macro-runtime-anchors.md"
       ],
-      "fixtureGate": null,
+      "fixtureGate": {
+        "name": "global-macro-fixed-record-writer",
+        "available": true,
+        "partialOnly": true,
+        "evidencePresent": true,
+        "missingEvidence": [],
+        "source": "fixed-record-writer-gates"
+      },
       "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
+        "semanticOwnership": "mixed",
+        "writerReadiness": "partially-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
       }
     },
     {
@@ -1169,17 +1243,31 @@
         "decoded-writable"
       ],
       "evidence": [
+        "docs/generated/fixed-record-writer-gates.json",
         "docs/generated/scenario-party-restrictions-evidence.json",
-        "docs/format-evidence-cards/scenario-party-restrictions-runtime-anchors.md"
+        "docs/format-evidence-cards/scenario-party-restrictions-runtime-anchors.md",
+        "src-tauri/src/realmz.rs:fixed_record_scenario_shell_writers_mutate_only_owned_fields",
+        "src-tauri/src/realmz.rs:scenario_shell_contact_and_restrictions_round_trip",
+        "src-tauri/src/realmz.rs:write_scenario_contact_info",
+        "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
+        "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
+        "docs/generated/scenario-shell-evidence.json",
+        "docs/format-evidence-cards/scenario-startup-runtime-anchors.md",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
       ],
-      "fixtureGate": null,
+      "fixtureGate": {
+        "name": "contact-info-fixed-record-writer",
+        "available": true,
+        "partialOnly": false,
+        "evidencePresent": true,
+        "missingEvidence": [],
+        "source": "fixed-record-writer-gates"
+      },
       "truth": {
         "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
+        "writerReadiness": "fixture-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
       }
     },
     {
@@ -1260,17 +1348,28 @@
         "decoded-writable"
       ],
       "evidence": [
+        "docs/generated/fixed-record-writer-gates.json",
         "docs/generated/scenario-party-restrictions-evidence.json",
-        "docs/format-evidence-cards/scenario-party-restrictions-runtime-anchors.md"
+        "docs/format-evidence-cards/scenario-party-restrictions-runtime-anchors.md",
+        "src-tauri/src/realmz.rs:fixed_record_scenario_shell_writers_mutate_only_owned_fields",
+        "src-tauri/src/realmz.rs:scenario_shell_contact_and_restrictions_round_trip",
+        "src-tauri/src/realmz.rs:write_scenario_restrictions",
+        "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
+        "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits"
       ],
-      "fixtureGate": null,
+      "fixtureGate": {
+        "name": "party-restrictions-fixed-record-writer",
+        "available": true,
+        "partialOnly": false,
+        "evidencePresent": true,
+        "missingEvidence": [],
+        "source": "fixed-record-writer-gates"
+      },
       "truth": {
         "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
+        "writerReadiness": "fixture-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
       }
     },
     {
@@ -1483,16 +1582,28 @@
         "decoded-writable"
       ],
       "evidence": [
-        "docs/format-evidence-cards/strings-data-od-string-sound.md"
+        "docs/generated/fixed-record-writer-gates.json",
+        "docs/format-evidence-cards/strings-data-od-string-sound.md",
+        "src-tauri/src/realmz.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
+        "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
+        "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
+        "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
+        "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
+        "docs/generated/string-sound-audit.json"
       ],
-      "fixtureGate": null,
+      "fixtureGate": {
+        "name": "option-label-fixed-record-writer",
+        "available": true,
+        "partialOnly": false,
+        "evidencePresent": true,
+        "missingEvidence": [],
+        "source": "fixed-record-writer-gates"
+      },
       "truth": {
         "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
+        "writerReadiness": "fixture-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
       }
     },
     {
