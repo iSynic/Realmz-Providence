@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T03:27:47.934Z",
+  "generatedAt": "2026-05-31T03:54:00.264Z",
   "summary": {
     "scenarioRoots": 87,
-    "fileFamilies": 88,
+    "fileFamilies": 57,
     "ignoredNonScenarioFiles": 1,
-    "editableContainers": 58,
+    "editableContainers": 26,
     "preservedContainers": 8,
     "understoodResourceContainers": 12,
     "resourceCoverage": {
@@ -27,46 +27,46 @@
       "errors": 0
     },
     "strictCompleteness": {
-      "containerCount": 88,
+      "containerCount": 57,
       "semanticOwnershipCounts": {
-        "mixed": 7,
-        "complete": 79,
+        "mixed": 8,
+        "complete": 47,
         "runtime-only": 1,
         "ignored": 1
       },
       "writerReadinessCounts": {
-        "partially-proven": 7,
-        "writer-gated": 47,
+        "partially-proven": 8,
+        "writer-gated": 15,
         "fixture-proven": 11,
         "read-only": 1,
         "preserve-only": 8,
         "not-applicable": 14
       },
       "evidenceQualityCounts": {
-        "fixture-backed": 18,
-        "cited": 57,
+        "fixture-backed": 19,
+        "cited": 25,
         "target-warning": 13
       },
       "riskFlagCounts": {
-        "structural-writer-claim": 47,
+        "structural-writer-claim": 15,
         "target-package-warning": 13,
         "writer-gated": 3
       },
       "scenarioSemantics": {
         "label": "Scenario Semantics",
         "status": "complete",
-        "completeContainers": 79,
-        "mixedContainers": 7,
+        "completeContainers": 47,
+        "mixedContainers": 8,
         "needsFormatWorkContainers": 0,
-        "percentContainers": 89.77
+        "percentContainers": 82.46
       },
       "writerProvenData": {
         "label": "Writer-Proven Data",
         "status": "incomplete",
         "fixtureProvenContainers": 11,
-        "partiallyProvenContainers": 7,
-        "writerGatedContainers": 47,
-        "percentContainers": 20.45
+        "partiallyProvenContainers": 8,
+        "writerGatedContainers": 15,
+        "percentContainers": 33.33
       },
       "packageCompatibility": {
         "label": "Package Compatibility",
@@ -82,7 +82,7 @@
         "decodedResourcePayloadBytes": 841240
       },
       "strictOutstanding": {
-        "writerGatedContainers": 47,
+        "writerGatedContainers": 15,
         "missingEvidenceContainers": 0,
         "skippedFixtureContainers": 0,
         "preservedUnknownContainers": 0,
@@ -267,6 +267,24 @@
         48600,
         64800,
         81000
+      ],
+      "policy": "Some byte ranges are writer-proven or structurally decoded, while preserved/runtime ranges remain read-only."
+    },
+    {
+      "container": "Scenario Startup Shell",
+      "label": "Scenario Startup Shell",
+      "status": "Partially Editable",
+      "coverageStatus": "mixed-writable-preserved",
+      "truth": {
+        "semanticOwnership": "mixed",
+        "writerReadiness": "partially-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
+      },
+      "count": 35,
+      "sizes": [
+        316,
+        320
       ],
       "policy": "Some byte ranges are writer-proven or structurally decoded, while preserved/runtime ranges remain read-only."
     },
@@ -809,53 +827,6 @@
         368
       ],
       "policy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
-    },
-    {
-      "container": "Data BD",
-      "label": "Battle records",
-      "status": "Editable",
-      "coverageStatus": "decoded-writable",
-      "truth": {
-        "semanticOwnership": "mixed",
-        "writerReadiness": "partially-proven",
-        "evidenceQuality": "fixture-backed",
-        "riskFlags": []
-      },
-      "count": 35,
-      "sizes": [
-        1730,
-        3460,
-        7612,
-        8304,
-        12110,
-        18338,
-        19030,
-        26988,
-        32178,
-        45326,
-        47748,
-        55706,
-        59858,
-        67124,
-        73352,
-        75774,
-        79926,
-        81310,
-        84424,
-        86154,
-        88576,
-        88922,
-        99648,
-        103454,
-        123868,
-        124906,
-        128366,
-        172308,
-        173346,
-        186148,
-        257770
-      ],
-      "policy": "Editable fields may be written when the record-specific writer owns the byte range."
     }
   ]
 }

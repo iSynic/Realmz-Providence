@@ -1,0 +1,205 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-05-31T03:54:00.261Z",
+  "generatedBy": "scripts/generate_scenario_byte_coverage.mjs",
+  "target": "scenario-startup-shell-normalization",
+  "sources": {
+    "byteCoverage": "docs/generated/scenario-byte-ownership.json",
+    "scenarioShellEvidence": "docs/generated/scenario-shell-evidence.json",
+    "shellCodec": "src-tauri/src/realmz.rs"
+  },
+  "policy": {
+    "note": "Scenario-named 316/320 byte supported-binary files are reported as one logical startup shell container. Data CS remains its own preserved security-backup container.",
+    "fixtureProvenRequires": [
+      "observed normalized startup shell coverage",
+      "local writer-tail test anchor present",
+      "local shell roundtrip test anchor present"
+    ],
+    "coreRange": "0..316",
+    "preservedTailRange": "316..320",
+    "dataCsSeparated": true
+  },
+  "summary": {
+    "container": "Scenario Startup Shell",
+    "observedScenarioCount": 35,
+    "observedByteSizes": [
+      316,
+      320
+    ],
+    "sourceFileNameCount": 32,
+    "writerReadiness": "fixture-proven-startup-shell-core-preserve-tail",
+    "evidencePresent": true,
+    "missingEvidenceReferences": 0
+  },
+  "gate": {
+    "container": "Scenario Startup Shell",
+    "authorFacingName": "Scenario Startup Shell",
+    "gate": "scenario-startup-shell-core-preserve-tail",
+    "recordBytes": 320,
+    "rowKind": "316-byte startup shell core plus optional 4-byte preserved tail",
+    "semanticExposure": "scenario-startup-shell",
+    "writerStatus": "fixture-proven-startup-shell-core-preserve-tail",
+    "available": true,
+    "evidencePresent": true,
+    "fixturePathsAvailable": true,
+    "observedScenarioCount": 35,
+    "observedByteSizes": [
+      316,
+      320
+    ],
+    "sourceFileNames": [
+      "Araman's Ring",
+      "Assault on Giant Mountain",
+      "Begining of the End",
+      "Castle in the Clouds",
+      "City of Bywater",
+      "City of Port Hyrtin",
+      "Dagger of Shine",
+      "Destroy the Necronomicon",
+      "Elemental Strife",
+      "Grilochs Revenge",
+      "Half Truth",
+      "Hax",
+      "Journey into the Mire",
+      "Kalypso's Island",
+      "Lachis",
+      "Lord of the Abyss",
+      "Mithril Vault",
+      "New Scenario",
+      "Prelude to Pestilence",
+      "Prelude To Pestilence",
+      "Price of Power",
+      "Search for the Lost City",
+      "Spires of Steel",
+      "Test",
+      "The End Worlds",
+      "Trial by Fire",
+      "Trouble in the Sword Lands",
+      "Tutorial",
+      "Twin Sands of Time",
+      "War in the Sword Lands",
+      "White Dragon",
+      "Wrath of the Mind Lords"
+    ],
+    "fixturePaths": [],
+    "missingEvidence": [],
+    "evidence": [
+      "src-tauri/src/realmz.rs:scenario_startup_shell_writer_mutates_only_core_and_preserves_tail",
+      "src-tauri/src/realmz.rs:scenario_shell_contact_and_restrictions_round_trip",
+      "docs/generated/scenario-shell-evidence.json",
+      "docs/format-evidence-cards/scenario-startup-runtime-anchors.md",
+      "docs/format-evidence-cards/scenario-shell-startup-release.md"
+    ],
+    "evidenceChecks": [
+      {
+        "reference": "src-tauri/src/realmz.rs:scenario_startup_shell_writer_mutates_only_core_and_preserves_tail",
+        "file": "src-tauri/src/realmz.rs",
+        "anchor": "scenario_startup_shell_writer_mutates_only_core_and_preserves_tail",
+        "fileExists": true,
+        "anchorPresent": true,
+        "present": true
+      },
+      {
+        "reference": "src-tauri/src/realmz.rs:scenario_shell_contact_and_restrictions_round_trip",
+        "file": "src-tauri/src/realmz.rs",
+        "anchor": "scenario_shell_contact_and_restrictions_round_trip",
+        "fileExists": true,
+        "anchorPresent": true,
+        "present": true
+      },
+      {
+        "reference": "docs/generated/scenario-shell-evidence.json",
+        "file": "docs/generated/scenario-shell-evidence.json",
+        "anchor": null,
+        "fileExists": true,
+        "anchorPresent": null,
+        "present": true
+      },
+      {
+        "reference": "docs/format-evidence-cards/scenario-startup-runtime-anchors.md",
+        "file": "docs/format-evidence-cards/scenario-startup-runtime-anchors.md",
+        "anchor": null,
+        "fileExists": true,
+        "anchorPresent": null,
+        "present": true
+      },
+      {
+        "reference": "docs/format-evidence-cards/scenario-shell-startup-release.md",
+        "file": "docs/format-evidence-cards/scenario-shell-startup-release.md",
+        "anchor": null,
+        "fileExists": true,
+        "anchorPresent": null,
+        "present": true
+      }
+    ],
+    "ownedFields": [
+      {
+        "field": "Party level target",
+        "internal": "reclevel",
+        "offset": 0,
+        "bytes": 4,
+        "type": "i32be"
+      },
+      {
+        "field": "Maximum party level",
+        "internal": "maxlevel",
+        "offset": 4,
+        "bytes": 4,
+        "type": "i32be"
+      },
+      {
+        "field": "Startup land level",
+        "internal": "landlevel",
+        "offset": 8,
+        "bytes": 4,
+        "type": "i32be"
+      },
+      {
+        "field": "Startup X/view coordinate",
+        "internal": "lookx",
+        "offset": 12,
+        "bytes": 4,
+        "type": "i32be"
+      },
+      {
+        "field": "Startup Y/view coordinate",
+        "internal": "looky",
+        "offset": 16,
+        "bytes": 4,
+        "type": "i32be"
+      },
+      {
+        "field": "Security code segment 1",
+        "internal": "codeseg1",
+        "offset": 20,
+        "bytes": 20,
+        "type": "raw-preserved-on-write"
+      },
+      {
+        "field": "Security code segment 2",
+        "internal": "codeseg2",
+        "offset": 40,
+        "bytes": 20,
+        "type": "raw-preserved-on-write"
+      },
+      {
+        "field": "Creator/user string",
+        "internal": "creatorUser",
+        "offset": 60,
+        "bytes": 256,
+        "type": "Str255/raw tail"
+      }
+    ],
+    "preservedRanges": [
+      {
+        "field": "Optional 320-byte tail",
+        "internal": "trailingBytes",
+        "offset": 316,
+        "bytes": 4,
+        "type": "raw-preserved"
+      }
+    ],
+    "partialOnly": true,
+    "preservationPolicy": "Writers may mutate only the decoded 0..316 startup core. Imported bytes 316..320 are preserved when present and omitted for 316-byte shells."
+  }
+}

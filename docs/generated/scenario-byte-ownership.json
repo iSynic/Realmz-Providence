@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T03:27:47.932Z",
+  "generatedAt": "2026-05-31T03:54:00.262Z",
   "classifications": [
     "decoded-writable",
     "decoded-readonly",
@@ -27,15 +27,16 @@
     "dungeonCoverage": "docs/generated/dungeon-byte-ownership.json",
     "dungeonHighBitAudit": "docs/generated/dungeon-high-bit-audit.json",
     "fixedRecordWriterGates": "docs/generated/fixed-record-writer-gates.json",
+    "scenarioStartupShellGate": "docs/generated/scenario-startup-shell-gate.json",
     "completenessTruth": "docs/generated/scenario-completeness-truth.json",
     "ed3Reachability": "docs/generated/extra-ap-reachability-source-map.json",
     "edcdCrosswalk": "docs/generated/opcode-edcd-crosswalk.json"
   },
   "summary": {
-    "containerCount": 88,
+    "containerCount": 57,
     "statusCounts": {
-      "decoded-writable": 58,
-      "mixed-writable-preserved": 7,
+      "decoded-writable": 26,
+      "mixed-writable-preserved": 8,
       "decoded-readonly": 1,
       "preserved-known": 5,
       "understood-resource-container": 12,
@@ -44,8 +45,8 @@
       "ignored-non-scenario": 1
     },
     "statusObservedBytes": {
-      "decoded-writable": 935844307,
-      "mixed-writable-preserved": 9030808,
+      "decoded-writable": 935833223,
+      "mixed-writable-preserved": 9053068,
       "decoded-readonly": 35840,
       "preserved-known": 116752,
       "understood-resource-container": 1369599572,
@@ -1518,6 +1519,80 @@
       "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
     },
     {
+      "container": "Scenario Startup Shell",
+      "authorFacingName": "Scenario Startup Shell",
+      "coverageStatus": "mixed-writable-preserved",
+      "role": "supported-binary",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        316,
+        320
+      ],
+      "sourceFileNames": [
+        "Araman's Ring",
+        "Assault on Giant Mountain",
+        "Begining of the End",
+        "Castle in the Clouds",
+        "City of Bywater",
+        "City of Port Hyrtin",
+        "Dagger of Shine",
+        "Destroy the Necronomicon",
+        "Elemental Strife",
+        "Grilochs Revenge",
+        "Half Truth",
+        "Hax",
+        "Journey into the Mire",
+        "Kalypso's Island",
+        "Lachis",
+        "Lord of the Abyss",
+        "Mithril Vault",
+        "New Scenario",
+        "Prelude to Pestilence",
+        "Prelude To Pestilence",
+        "Price of Power",
+        "Search for the Lost City",
+        "Spires of Steel",
+        "Test",
+        "The End Worlds",
+        "Trial by Fire",
+        "Trouble in the Sword Lands",
+        "Tutorial",
+        "Twin Sands of Time",
+        "War in the Sword Lands",
+        "White Dragon",
+        "Wrath of the Mind Lords"
+      ],
+      "recordBytes": 320,
+      "byteRanges": [
+        {
+          "start": 0,
+          "length": 316,
+          "endExclusive": 316,
+          "status": "decoded-writable",
+          "field": "Startup shell core fields",
+          "internal": "reclevel/maxlevel/landlevel/lookx/looky/codeseg1/codeseg2/creatorUser",
+          "writerGate": "docs/generated/scenario-startup-shell-gate.json"
+        },
+        {
+          "start": 316,
+          "length": 4,
+          "endExclusive": 320,
+          "status": "preserved-known",
+          "field": "Optional 320-byte tail",
+          "internal": "trailingBytes",
+          "writerGate": "docs/generated/scenario-startup-shell-gate.json"
+        }
+      ],
+      "resourceTypes": [],
+      "evidence": [
+        "docs/generated/scenario-startup-shell-gate.json",
+        "docs/generated/scenario-shell-evidence.json",
+        "docs/format-evidence-cards/scenario-startup-runtime-anchors.md",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+      ],
+      "editorPolicy": "Some byte ranges are writer-proven or structurally decoded, while preserved/runtime ranges remain read-only."
+    },
+    {
       "container": "Data CS",
       "authorFacingName": "Scenario security backup",
       "coverageStatus": "preserved-known",
@@ -2390,60 +2465,6 @@
       "editorPolicy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
-      "container": "Assault on Giant Mountain",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 2,
-      "observedByteSizes": [
-        320
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
-      "container": "City of Bywater",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 2,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
       "container": "Custom 3 Music",
       "authorFacingName": "Custom music",
       "coverageStatus": "custom-media-payload",
@@ -2513,141 +2534,6 @@
         "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
       ],
       "editorPolicy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
-    },
-    {
-      "container": "Destroy the Necronomicon",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 2,
-      "observedByteSizes": [
-        320
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
-      "container": "Araman's Ring",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
-      "container": "Begining of the End",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
-      "container": "Castle in the Clouds",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
-      "container": "City of Port Hyrtin",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
       "container": "Custom 1",
@@ -2804,33 +2690,6 @@
       "editorPolicy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
-      "container": "Dagger of Shine",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
       "container": "Data NI.rsrc",
       "authorFacingName": "Resource fork",
       "coverageStatus": "understood-resource-container",
@@ -2859,114 +2718,6 @@
       "editorPolicy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
-      "container": "Elemental Strife",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
-      "container": "Grilochs Revenge",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        320
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
-      "container": "Half Truth",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
-      "container": "Hax",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
       "container": "Icon_",
       "authorFacingName": "Classic Mac resource companion",
       "coverageStatus": "preserved-known",
@@ -2992,249 +2743,6 @@
         "docs/format-evidence-cards/scenario-music-and-format-files.md"
       ],
       "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
-    },
-    {
-      "container": "Journey into the Mire",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
-      "container": "Kalypso's Island",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
-      "container": "Lachis",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
-      "container": "Lord of the Abyss",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
-      "container": "Mithril Vault",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        320
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
-      "container": "New Scenario",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
-      "container": "Prelude to Pestilence",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
-      "container": "Prelude To Pestilence",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
-      "container": "Price of Power",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
       "container": "Read Me (nice to know)",
@@ -3296,60 +2804,6 @@
       "editorPolicy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
     },
     {
-      "container": "Search for the Lost City",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
-      "container": "Spires of Steel",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
       "container": "Spires of Steel.rsrc",
       "authorFacingName": "Resource fork",
       "coverageStatus": "understood-resource-container",
@@ -3375,114 +2829,6 @@
         "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
       ],
       "editorPolicy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
-    },
-    {
-      "container": "Test",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
-      "container": "The End Worlds",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
-      "container": "Trial by Fire",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
-      "container": "Trouble in the Sword Lands",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
       "container": "Trouble in the Sword Lands.rsrc",
@@ -3511,141 +2857,6 @@
         "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
       ],
       "editorPolicy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
-    },
-    {
-      "container": "Tutorial",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
-      "container": "Twin Sands of Time",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
-      "container": "War in the Sword Lands",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
-      "container": "White Dragon",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
-    },
-    {
-      "container": "Wrath of the Mind Lords",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "role": "supported-binary",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "recordBytes": null,
-      "byteRanges": [
-        {
-          "start": 0,
-          "length": null,
-          "endExclusive": null,
-          "status": "decoded-writable",
-          "field": "Scenario startup shell",
-          "internal": null
-        }
-      ],
-      "resourceTypes": [],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     }
   ]
 }

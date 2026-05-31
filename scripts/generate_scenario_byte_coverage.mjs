@@ -15,6 +15,7 @@ const rulesCoveragePath = path.join(repoRoot, "docs/generated/rules-resource-cov
 const targetCompatibilityPath = path.join(repoRoot, "docs/generated/scenario-target-compatibility.json");
 const actionPointWriterGatePath = path.join(repoRoot, "docs/generated/action-point-writer-gate.json");
 const fixedRecordWriterGatesPath = path.join(repoRoot, "docs/generated/fixed-record-writer-gates.json");
+const scenarioStartupShellGatePath = path.join(repoRoot, "docs/generated/scenario-startup-shell-gate.json");
 const realmzRsPath = path.join(repoRoot, "src-tauri/src/realmz.rs");
 
 const fileInventoryPath = path.join(repoRoot, "docs/generated/scenario-file-inventory.json");
@@ -24,6 +25,9 @@ const completenessTruthPath = path.join(repoRoot, "docs/generated/scenario-compl
 const uiManifestPath = path.join(repoRoot, "src/editor/generated/scenarioCoverageManifest.json");
 
 const NON_SCENARIO_IGNORES = new Set([".DS_Store", "Thumbs.db", "desktop.ini"]);
+const SCENARIO_STARTUP_SHELL_CONTAINER = "Scenario Startup Shell";
+const SCENARIO_STARTUP_SHELL_CORE_BYTES = 316;
+const SCENARIO_STARTUP_SHELL_MAX_BYTES = 320;
 
 const RECORD_LAYOUTS = {
   "Data LD": { recordBytes: 16200, label: "Outdoor land tile fields", status: "decoded-writable" },
@@ -226,6 +230,7 @@ const CORE_FIXED_RECORD_GATE_CONTAINER_SET = new Set(CORE_FIXED_RECORD_GATE_CONT
 
 const CORE_FIXED_RECORD_GATE_EXCLUDED_FAMILIES = [
   "Scenario",
+  SCENARIO_STARTUP_SHELL_CONTAINER,
   "Data CS",
   "Data LD",
   "Data DL",
@@ -484,6 +489,7 @@ const parsedResourceForkNames = new Set(
 const scanned = scanScenarioRoots(roundtripLedger.scenarios ?? []);
 const aggregate = aggregateFiles(roundtripLedger.scenarios ?? [], scanned);
 const fixedRecordWriterGates = buildFixedRecordWriterGates(aggregate);
+const scenarioStartupShellGate = buildScenarioStartupShellGate(aggregate);
 const inventory = buildInventory(scanned, aggregate);
 const ownership = buildOwnership(aggregate);
 const unknownReport = buildUnknownReport(inventory, ownership, unknownBacklog);
@@ -505,6 +511,7 @@ writeJson(byteOwnershipPath, ownership);
 writeJson(unknownReportPath, unknownReport);
 writeJson(completenessTruthPath, completenessTruth);
 writeJson(fixedRecordWriterGatesPath, fixedRecordWriterGates);
+writeJson(scenarioStartupShellGatePath, scenarioStartupShellGate);
 writeJson(runtimeCachePath, updatedRuntimeCaches);
 writeJson(uiManifestPath, uiManifest);
 
@@ -513,6 +520,7 @@ console.log(`Wrote ${path.relative(repoRoot, byteOwnershipPath)}`);
 console.log(`Wrote ${path.relative(repoRoot, unknownReportPath)}`);
 console.log(`Wrote ${path.relative(repoRoot, completenessTruthPath)}`);
 console.log(`Wrote ${path.relative(repoRoot, fixedRecordWriterGatesPath)}`);
+console.log(`Wrote ${path.relative(repoRoot, scenarioStartupShellGatePath)}`);
 console.log(`Wrote ${path.relative(repoRoot, runtimeCachePath)}`);
 console.log(`Wrote ${path.relative(repoRoot, uiManifestPath)}`);
 console.log(JSON.stringify(uiManifest.summary, null, 2));
@@ -595,6 +603,94 @@ function buildFixedRecordWriterGates(aggregate) {
   };
 }
 
+function buildScenarioStartupShellGate(aggregate) {
+  const aggregateByName = new Map((aggregate.files ?? []).map((file) => [file.name, file]));
+  const file = aggregateByName.get(SCENARIO_STARTUP_SHELL_CONTAINER);
+  const evidence = [
+    "src-tauri/src/realmz.rs:scenario_startup_shell_writer_mutates_only_core_and_preserves_tail",
+    "src-tauri/src/realmz.rs:scenario_shell_contact_and_restrictions_round_trip",
+    "docs/generated/scenario-shell-evidence.json",
+    "docs/format-evidence-cards/scenario-startup-runtime-anchors.md",
+    "docs/format-evidence-cards/scenario-shell-startup-release.md"
+  ];
+  const evidenceChecks = evidence.map(evidenceStatusFor);
+  const missingEvidence = evidenceChecks
+    .filter((check) => !check.present)
+    .map((check) => check.reference);
+  const evidencePresent = missingEvidence.length === 0;
+  const observedScenarioCount = file?.scenarioCount ?? 0;
+  const available = evidencePresent && observedScenarioCount > 0;
+  const writerStatus = available
+    ? "fixture-proven-startup-shell-core-preserve-tail"
+    : "evidence-pending-startup-shell-core-preserve-tail";
+  const sourceFileNames = file?.sourceFileNames ?? [];
+  return {
+    schemaVersion: 1,
+    generatedAt: new Date().toISOString(),
+    generatedBy: "scripts/generate_scenario_byte_coverage.mjs",
+    target: "scenario-startup-shell-normalization",
+    sources: {
+      byteCoverage: "docs/generated/scenario-byte-ownership.json",
+      scenarioShellEvidence: "docs/generated/scenario-shell-evidence.json",
+      shellCodec: "src-tauri/src/realmz.rs"
+    },
+    policy: {
+      note: "Scenario-named 316/320 byte supported-binary files are reported as one logical startup shell container. Data CS remains its own preserved security-backup container.",
+      fixtureProvenRequires: [
+        "observed normalized startup shell coverage",
+        "local writer-tail test anchor present",
+        "local shell roundtrip test anchor present"
+      ],
+      coreRange: `0..${SCENARIO_STARTUP_SHELL_CORE_BYTES}`,
+      preservedTailRange: `${SCENARIO_STARTUP_SHELL_CORE_BYTES}..${SCENARIO_STARTUP_SHELL_MAX_BYTES}`,
+      dataCsSeparated: true
+    },
+    summary: {
+      container: SCENARIO_STARTUP_SHELL_CONTAINER,
+      observedScenarioCount,
+      observedByteSizes: file?.observedByteSizes ?? [],
+      sourceFileNameCount: sourceFileNames.length,
+      writerReadiness: writerStatus,
+      evidencePresent,
+      missingEvidenceReferences: missingEvidence.length
+    },
+    gate: {
+      container: SCENARIO_STARTUP_SHELL_CONTAINER,
+      authorFacingName: SCENARIO_STARTUP_SHELL_CONTAINER,
+      gate: "scenario-startup-shell-core-preserve-tail",
+      recordBytes: SCENARIO_STARTUP_SHELL_MAX_BYTES,
+      rowKind: "316-byte startup shell core plus optional 4-byte preserved tail",
+      semanticExposure: "scenario-startup-shell",
+      writerStatus,
+      available,
+      evidencePresent,
+      fixturePathsAvailable: true,
+      observedScenarioCount,
+      observedByteSizes: file?.observedByteSizes ?? [],
+      sourceFileNames,
+      fixturePaths: [],
+      missingEvidence,
+      evidence,
+      evidenceChecks,
+      ownedFields: [
+        { field: "Party level target", internal: "reclevel", offset: 0, bytes: 4, type: "i32be" },
+        { field: "Maximum party level", internal: "maxlevel", offset: 4, bytes: 4, type: "i32be" },
+        { field: "Startup land level", internal: "landlevel", offset: 8, bytes: 4, type: "i32be" },
+        { field: "Startup X/view coordinate", internal: "lookx", offset: 12, bytes: 4, type: "i32be" },
+        { field: "Startup Y/view coordinate", internal: "looky", offset: 16, bytes: 4, type: "i32be" },
+        { field: "Security code segment 1", internal: "codeseg1", offset: 20, bytes: 20, type: "raw-preserved-on-write" },
+        { field: "Security code segment 2", internal: "codeseg2", offset: 40, bytes: 20, type: "raw-preserved-on-write" },
+        { field: "Creator/user string", internal: "creatorUser", offset: 60, bytes: 256, type: "Str255/raw tail" }
+      ],
+      preservedRanges: [
+        { field: "Optional 320-byte tail", internal: "trailingBytes", offset: 316, bytes: 4, type: "raw-preserved" }
+      ],
+      partialOnly: true,
+      preservationPolicy: "Writers may mutate only the decoded 0..316 startup core. Imported bytes 316..320 are preserved when present and omitted for 316-byte shells."
+    }
+  };
+}
+
 function validateFixedRecordWriterGateSpecs() {
   const containers = FIXED_RECORD_WRITER_GATE_SPECS.map((spec) => spec.container);
   const uniqueContainers = new Set(containers);
@@ -672,6 +768,7 @@ function buildInventory(scanned, aggregate) {
         dungeonCoverage: "docs/generated/dungeon-byte-ownership.json",
         dungeonHighBitAudit: "docs/generated/dungeon-high-bit-audit.json",
         fixedRecordWriterGates: "docs/generated/fixed-record-writer-gates.json",
+        scenarioStartupShellGate: "docs/generated/scenario-startup-shell-gate.json",
         completenessTruth: "docs/generated/scenario-completeness-truth.json"
     },
     policy: {
@@ -694,6 +791,9 @@ function buildOwnership(aggregate) {
   const containers = aggregate.files.map((file) => {
     const layout = RECORD_LAYOUTS[file.name];
     const byteRanges = byteRangesForFile(file, layout);
+    const recordBytes = file.name === SCENARIO_STARTUP_SHELL_CONTAINER
+      ? SCENARIO_STARTUP_SHELL_MAX_BYTES
+      : layout?.recordBytes ?? null;
     const dungeonDetails = file.name === "Data DL" && dungeonByteOwnership
       ? {
           bitOwnership: dungeonByteOwnership.bitOwnership,
@@ -708,7 +808,8 @@ function buildOwnership(aggregate) {
       role: file.roles[0] ?? "unknown",
       observedScenarioCount: file.scenarioCount,
       observedByteSizes: file.observedByteSizes,
-      recordBytes: layout?.recordBytes ?? null,
+      ...(file.sourceFileNames ? { sourceFileNames: file.sourceFileNames } : {}),
+      recordBytes,
       byteRanges,
       resourceTypes: file.resourceTypes,
       evidence: evidenceForFile(file.name, file.coverageStatus),
@@ -745,6 +846,7 @@ function buildOwnership(aggregate) {
         dungeonCoverage: "docs/generated/dungeon-byte-ownership.json",
         dungeonHighBitAudit: "docs/generated/dungeon-high-bit-audit.json",
         fixedRecordWriterGates: "docs/generated/fixed-record-writer-gates.json",
+        scenarioStartupShellGate: "docs/generated/scenario-startup-shell-gate.json",
         completenessTruth: "docs/generated/scenario-completeness-truth.json",
         ed3Reachability: "docs/generated/extra-ap-reachability-source-map.json",
         edcdCrosswalk: "docs/generated/opcode-edcd-crosswalk.json"
@@ -908,7 +1010,8 @@ function buildCompletenessTruth(inventory, ownership, unknownReport) {
       customLandlookCoverage: "docs/generated/custom-landlook-coverage.json",
       rulesCoverage: "docs/generated/rules-resource-coverage.json",
       actionPointWriterGate: "docs/generated/action-point-writer-gate.json",
-      fixedRecordWriterGates: "docs/generated/fixed-record-writer-gates.json"
+      fixedRecordWriterGates: "docs/generated/fixed-record-writer-gates.json",
+      scenarioStartupShellGate: "docs/generated/scenario-startup-shell-gate.json"
     },
     policy: {
       note: "Truth statuses are stricter than legacy coverageStatus. Semantic ownership, writer readiness, evidence quality, and package compatibility are intentionally separate.",
@@ -1000,6 +1103,22 @@ function fixtureGateForContainer(containerName) {
   if (gate) {
     const available = (gate.fixturePaths ?? []).every((fixturePath) => fs.existsSync(fixturePath));
     return { ...gate, available, source: "static" };
+  }
+  if (containerName === SCENARIO_STARTUP_SHELL_CONTAINER) {
+    const generatedGate = scenarioStartupShellGate.gate;
+    return {
+      gate: generatedGate.gate,
+      fixturePaths: generatedGate.fixturePaths ?? [],
+      evidence: [
+        "docs/generated/scenario-startup-shell-gate.json",
+        ...(generatedGate.evidence ?? [])
+      ],
+      available: Boolean(generatedGate.available),
+      evidencePresent: Boolean(generatedGate.evidencePresent),
+      missingEvidence: generatedGate.missingEvidence ?? [],
+      partialOnly: Boolean(generatedGate.partialOnly),
+      source: "scenario-startup-shell-gate"
+    };
   }
   const generatedGate = fixedRecordWriterGates.gates.find((entry) => entry.container === containerName);
   if (!generatedGate) return null;
@@ -1256,12 +1375,14 @@ function aggregateFiles(scenarios, scanned) {
   }
   const files = [...byName.values()].map((file) => {
     const coverageStatus = coverageStatusForFile(file);
+    const sourceFileNames = [...file.sourceFileNames].sort((a, b) => a.localeCompare(b));
     return {
       name: file.name,
       scenarioCount: file.scenarios.size,
       roles: [...file.roles].sort(),
       classifications: [...file.classifications].sort(),
       observedByteSizes: [...file.byteSizes].sort((a, b) => a - b),
+      ...(file.logicalContainer ? { sourceFileNames } : {}),
       resourceTypes: [...file.resourceTypes.values()].sort((a, b) => a.type.localeCompare(b.type)),
       coverageStatus,
       editable: coverageStatus === "decoded-writable"
@@ -1271,6 +1392,9 @@ function aggregateFiles(scenarios, scanned) {
 }
 
 function addFileAggregate(byName, name, entry) {
+  const sourceName = name;
+  name = logicalContainerNameForFile(name, entry);
+  const role = name === SCENARIO_STARTUP_SHELL_CONTAINER ? "supported-binary" : entry.role;
   if (!byName.has(name)) {
     byName.set(name, {
       name,
@@ -1278,14 +1402,18 @@ function addFileAggregate(byName, name, entry) {
       roles: new Set(),
       classifications: new Set(),
       byteSizes: new Set(),
+      sourceFileNames: new Set(),
+      logicalContainer: false,
       resourceTypes: new Map()
     });
   }
   const aggregate = byName.get(name);
   aggregate.scenarios.add(entry.scenario);
-  aggregate.roles.add(entry.role);
+  aggregate.roles.add(role);
   aggregate.classifications.add(entry.classification);
   aggregate.byteSizes.add(Number(entry.bytes ?? 0));
+  aggregate.sourceFileNames.add(sourceName);
+  if (sourceName !== name) aggregate.logicalContainer = true;
   for (const resource of entry.resourceTypes ?? []) {
     const key = resource.type;
     const existing = aggregate.resourceTypes.get(key) ?? { type: resource.type, count: 0, bytes: 0, status: resource.status, role: resource.role };
@@ -1295,9 +1423,26 @@ function addFileAggregate(byName, name, entry) {
   }
 }
 
+function logicalContainerNameForFile(name, entry) {
+  return isScenarioStartupShellFile(name, entry) ? SCENARIO_STARTUP_SHELL_CONTAINER : name;
+}
+
+function isScenarioStartupShellFile(name, entry) {
+  const bytes = Number(entry.bytes ?? 0);
+  if (bytes !== SCENARIO_STARTUP_SHELL_CORE_BYTES && bytes !== SCENARIO_STARTUP_SHELL_MAX_BYTES) return false;
+  if (name === "Data CS" || RECORD_LAYOUTS[name] || PASS_THROUGH_POLICIES[name]) return false;
+  if (!entry.scenario) return false;
+  return normalizeScenarioShellName(name) === normalizeScenarioShellName(entry.scenario);
+}
+
+function normalizeScenarioShellName(name) {
+  return String(name ?? "").trim().toLocaleLowerCase("en-US");
+}
+
 function coverageStatusForFile(file) {
   const { name, roles } = file;
   if (NON_SCENARIO_IGNORES.has(name)) return "ignored-non-scenario";
+  if (name === SCENARIO_STARTUP_SHELL_CONTAINER) return "mixed-writable-preserved";
   if (runtimeCaches.entries?.some((entry) => entry.cache === name)) return "runtime-cache";
   if (name === "Data DL" && dungeonByteOwnership) return "mixed-writable-preserved";
   if (customLandlookCoverage && /^Data Custom [123] BD$/.test(name)) return "mixed-writable-preserved";
@@ -1314,6 +1459,28 @@ function coverageStatusForFile(file) {
 }
 
 function byteRangesForFile(file, layout) {
+  if (file.name === SCENARIO_STARTUP_SHELL_CONTAINER) {
+    return [
+      {
+        start: 0,
+        length: SCENARIO_STARTUP_SHELL_CORE_BYTES,
+        endExclusive: SCENARIO_STARTUP_SHELL_CORE_BYTES,
+        status: "decoded-writable",
+        field: "Startup shell core fields",
+        internal: "reclevel/maxlevel/landlevel/lookx/looky/codeseg1/codeseg2/creatorUser",
+        writerGate: "docs/generated/scenario-startup-shell-gate.json"
+      },
+      {
+        start: SCENARIO_STARTUP_SHELL_CORE_BYTES,
+        length: SCENARIO_STARTUP_SHELL_MAX_BYTES - SCENARIO_STARTUP_SHELL_CORE_BYTES,
+        endExclusive: SCENARIO_STARTUP_SHELL_MAX_BYTES,
+        status: "preserved-known",
+        field: "Optional 320-byte tail",
+        internal: "trailingBytes",
+        writerGate: "docs/generated/scenario-startup-shell-gate.json"
+      }
+    ];
+  }
   if (file.name === "Data Spell" && rulesCoverage?.byteOwnership?.["Data Spell"]) {
     return rulesCoverage.byteOwnership["Data Spell"];
   }
@@ -1547,6 +1714,11 @@ function evidenceForFile(name, status) {
     evidence.push("docs/generated/dungeon-cell-bit-taxonomy.json");
     evidence.push("docs/generated/dungeon-high-bit-audit.json");
     evidence.push("docs/format-evidence-cards/dungeon-runtime-anchors.md");
+  } else if (name === SCENARIO_STARTUP_SHELL_CONTAINER) {
+    evidence.push("docs/generated/scenario-startup-shell-gate.json");
+    evidence.push("docs/generated/scenario-shell-evidence.json");
+    evidence.push("docs/format-evidence-cards/scenario-startup-runtime-anchors.md");
+    evidence.push("docs/format-evidence-cards/scenario-shell-startup-release.md");
   } else if (name === "Data ED3") {
     evidence.push("docs/generated/action-point-writer-gate.json");
     evidence.push("docs/generated/extra-ap-reachability-source-map.json");
@@ -1812,6 +1984,7 @@ function dungeonSummary() {
 }
 
 function labelForFile(file) {
+  if (file.name === SCENARIO_STARTUP_SHELL_CONTAINER) return SCENARIO_STARTUP_SHELL_CONTAINER;
   if (file.roles.includes("supported-binary") && file.observedByteSizes?.every((size) => size === 316 || size === 320)) return "Scenario startup shell";
   if (file.resourceTypes?.length) return "Resource fork";
   if (file.roles.includes("resource-fork")) return "Resource fork";

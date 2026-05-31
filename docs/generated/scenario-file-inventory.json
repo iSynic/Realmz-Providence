@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T03:27:47.931Z",
+  "generatedAt": "2026-05-31T03:54:00.261Z",
   "sources": {
     "roundtripLedger": "docs/generated/scenario-byte-roundtrip-ledger.json",
     "rustRegistry": "src-tauri/src/realmz.rs",
@@ -11,6 +11,7 @@
     "dungeonCoverage": "docs/generated/dungeon-byte-ownership.json",
     "dungeonHighBitAudit": "docs/generated/dungeon-high-bit-audit.json",
     "fixedRecordWriterGates": "docs/generated/fixed-record-writer-gates.json",
+    "scenarioStartupShellGate": "docs/generated/scenario-startup-shell-gate.json",
     "completenessTruth": "docs/generated/scenario-completeness-truth.json"
   },
   "policy": {
@@ -23,7 +24,7 @@
   },
   "summary": {
     "scenarioRoots": 87,
-    "fileFamilies": 88,
+    "fileFamilies": 57,
     "ignoredNonScenarioFiles": 1,
     "resourceForkFiles": 13,
     "unknownFileFamilies": 0
@@ -877,6 +878,58 @@
       "editable": false
     },
     {
+      "name": "Scenario Startup Shell",
+      "scenarioCount": 35,
+      "roles": [
+        "supported-binary"
+      ],
+      "classifications": [
+        "byte-identical",
+        "scanned"
+      ],
+      "observedByteSizes": [
+        316,
+        320
+      ],
+      "sourceFileNames": [
+        "Araman's Ring",
+        "Assault on Giant Mountain",
+        "Begining of the End",
+        "Castle in the Clouds",
+        "City of Bywater",
+        "City of Port Hyrtin",
+        "Dagger of Shine",
+        "Destroy the Necronomicon",
+        "Elemental Strife",
+        "Grilochs Revenge",
+        "Half Truth",
+        "Hax",
+        "Journey into the Mire",
+        "Kalypso's Island",
+        "Lachis",
+        "Lord of the Abyss",
+        "Mithril Vault",
+        "New Scenario",
+        "Prelude to Pestilence",
+        "Prelude To Pestilence",
+        "Price of Power",
+        "Search for the Lost City",
+        "Spires of Steel",
+        "Test",
+        "The End Worlds",
+        "Trial by Fire",
+        "Trouble in the Sword Lands",
+        "Tutorial",
+        "Twin Sands of Time",
+        "War in the Sword Lands",
+        "White Dragon",
+        "Wrath of the Mind Lords"
+      ],
+      "resourceTypes": [],
+      "coverageStatus": "mixed-writable-preserved",
+      "editable": false
+    },
+    {
       "name": "Data CS",
       "scenarioCount": 33,
       "roles": [
@@ -1473,42 +1526,6 @@
       "editable": false
     },
     {
-      "name": "Assault on Giant Mountain",
-      "scenarioCount": 2,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        320
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
-      "name": "City of Bywater",
-      "scenarioCount": 2,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
       "name": "Custom 3 Music",
       "scenarioCount": 2,
       "roles": [
@@ -1558,96 +1575,6 @@
       ],
       "coverageStatus": "understood-resource-container",
       "editable": false
-    },
-    {
-      "name": "Destroy the Necronomicon",
-      "scenarioCount": 2,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        320
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
-      "name": "Araman's Ring",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
-      "name": "Begining of the End",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
-      "name": "Castle in the Clouds",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
-      "name": "City of Port Hyrtin",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
     },
     {
       "name": "Custom 1",
@@ -1774,24 +1701,6 @@
       "editable": false
     },
     {
-      "name": "Dagger of Shine",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
       "name": "Data NI.rsrc",
       "scenarioCount": 1,
       "roles": [
@@ -1810,78 +1719,6 @@
       "editable": false
     },
     {
-      "name": "Elemental Strife",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
-      "name": "Grilochs Revenge",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        320
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
-      "name": "Half Truth",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
-      "name": "Hax",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
       "name": "Icon_",
       "scenarioCount": 1,
       "roles": [
@@ -1897,168 +1734,6 @@
       "resourceTypes": [],
       "coverageStatus": "preserved-known",
       "editable": false
-    },
-    {
-      "name": "Journey into the Mire",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
-      "name": "Kalypso's Island",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
-      "name": "Lachis",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
-      "name": "Lord of the Abyss",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
-      "name": "Mithril Vault",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        320
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
-      "name": "New Scenario",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
-      "name": "Prelude to Pestilence",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
-      "name": "Prelude To Pestilence",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
-      "name": "Price of Power",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
     },
     {
       "name": "Read Me (nice to know)",
@@ -2103,42 +1778,6 @@
       "editable": false
     },
     {
-      "name": "Search for the Lost City",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
-      "name": "Spires of Steel",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
       "name": "Spires of Steel.rsrc",
       "scenarioCount": 1,
       "roles": [
@@ -2154,78 +1793,6 @@
       "resourceTypes": [],
       "coverageStatus": "understood-resource-container",
       "editable": false
-    },
-    {
-      "name": "Test",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
-      "name": "The End Worlds",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
-      "name": "Trial by Fire",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
-      "name": "Trouble in the Sword Lands",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
     },
     {
       "name": "Trouble in the Sword Lands.rsrc",
@@ -2244,96 +1811,6 @@
       "resourceTypes": [],
       "coverageStatus": "understood-resource-container",
       "editable": false
-    },
-    {
-      "name": "Tutorial",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
-      "name": "Twin Sands of Time",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
-      "name": "War in the Sword Lands",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
-      "name": "White Dragon",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
-    },
-    {
-      "name": "Wrath of the Mind Lords",
-      "scenarioCount": 1,
-      "roles": [
-        "supported-binary",
-        "unknown"
-      ],
-      "classifications": [
-        "byte-identical",
-        "scanned"
-      ],
-      "observedByteSizes": [
-        316
-      ],
-      "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
     }
   ],
   "scenarios": [

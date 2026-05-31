@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T03:27:47.934Z",
+  "generatedAt": "2026-05-31T03:54:00.264Z",
   "sources": {
     "byteOwnership": "docs/generated/scenario-byte-ownership.json",
     "unknownReport": "docs/generated/scenario-unknown-byte-report.json",
@@ -10,7 +10,8 @@
     "customLandlookCoverage": "docs/generated/custom-landlook-coverage.json",
     "rulesCoverage": "docs/generated/rules-resource-coverage.json",
     "actionPointWriterGate": "docs/generated/action-point-writer-gate.json",
-    "fixedRecordWriterGates": "docs/generated/fixed-record-writer-gates.json"
+    "fixedRecordWriterGates": "docs/generated/fixed-record-writer-gates.json",
+    "scenarioStartupShellGate": "docs/generated/scenario-startup-shell-gate.json"
   },
   "policy": {
     "note": "Truth statuses are stricter than legacy coverageStatus. Semantic ownership, writer readiness, evidence quality, and package compatibility are intentionally separate.",
@@ -20,46 +21,46 @@
     "fixedRecordWriterGateStatus": "fixture-proven-fixed-record-storage"
   },
   "summary": {
-    "containerCount": 88,
+    "containerCount": 57,
     "semanticOwnershipCounts": {
-      "mixed": 7,
-      "complete": 79,
+      "mixed": 8,
+      "complete": 47,
       "runtime-only": 1,
       "ignored": 1
     },
     "writerReadinessCounts": {
-      "partially-proven": 7,
-      "writer-gated": 47,
+      "partially-proven": 8,
+      "writer-gated": 15,
       "fixture-proven": 11,
       "read-only": 1,
       "preserve-only": 8,
       "not-applicable": 14
     },
     "evidenceQualityCounts": {
-      "fixture-backed": 18,
-      "cited": 57,
+      "fixture-backed": 19,
+      "cited": 25,
       "target-warning": 13
     },
     "riskFlagCounts": {
-      "structural-writer-claim": 47,
+      "structural-writer-claim": 15,
       "target-package-warning": 13,
       "writer-gated": 3
     },
     "scenarioSemantics": {
       "label": "Scenario Semantics",
       "status": "complete",
-      "completeContainers": 79,
-      "mixedContainers": 7,
+      "completeContainers": 47,
+      "mixedContainers": 8,
       "needsFormatWorkContainers": 0,
-      "percentContainers": 89.77
+      "percentContainers": 82.46
     },
     "writerProvenData": {
       "label": "Writer-Proven Data",
       "status": "incomplete",
       "fixtureProvenContainers": 11,
-      "partiallyProvenContainers": 7,
-      "writerGatedContainers": 47,
-      "percentContainers": 20.45
+      "partiallyProvenContainers": 8,
+      "writerGatedContainers": 15,
+      "percentContainers": 33.33
     },
     "packageCompatibility": {
       "label": "Package Compatibility",
@@ -75,7 +76,7 @@
       "decodedResourcePayloadBytes": 841240
     },
     "strictOutstanding": {
-      "writerGatedContainers": 47,
+      "writerGatedContainers": 15,
       "missingEvidenceContainers": 0,
       "skippedFixtureContainers": 0,
       "preservedUnknownContainers": 0,
@@ -1210,6 +1211,42 @@
       }
     },
     {
+      "container": "Scenario Startup Shell",
+      "authorFacingName": "Scenario Startup Shell",
+      "coverageStatus": "mixed-writable-preserved",
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        316,
+        320
+      ],
+      "effectiveStatuses": [
+        "decoded-writable",
+        "preserved-known"
+      ],
+      "evidence": [
+        "docs/generated/scenario-startup-shell-gate.json",
+        "docs/generated/scenario-shell-evidence.json",
+        "docs/format-evidence-cards/scenario-startup-runtime-anchors.md",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md",
+        "src-tauri/src/realmz.rs:scenario_startup_shell_writer_mutates_only_core_and_preserves_tail",
+        "src-tauri/src/realmz.rs:scenario_shell_contact_and_restrictions_round_trip"
+      ],
+      "fixtureGate": {
+        "name": "scenario-startup-shell-core-preserve-tail",
+        "available": true,
+        "partialOnly": true,
+        "evidencePresent": true,
+        "missingEvidence": [],
+        "source": "scenario-startup-shell-gate"
+      },
+      "truth": {
+        "semanticOwnership": "mixed",
+        "writerReadiness": "partially-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
+      }
+    },
+    {
       "container": "Data CS",
       "authorFacingName": "Scenario security backup",
       "coverageStatus": "preserved-known",
@@ -1832,56 +1869,6 @@
       }
     },
     {
-      "container": "Assault on Giant Mountain",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 2,
-      "observedByteSizes": [
-        320
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
-      "container": "City of Bywater",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 2,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
       "container": "Custom 3 Music",
       "authorFacingName": "Custom music",
       "coverageStatus": "custom-media-payload",
@@ -1928,131 +1915,6 @@
         "evidenceQuality": "target-warning",
         "riskFlags": [
           "target-package-warning"
-        ]
-      }
-    },
-    {
-      "container": "Destroy the Necronomicon",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 2,
-      "observedByteSizes": [
-        320
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
-      "container": "Araman's Ring",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
-      "container": "Begining of the End",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
-      "container": "Castle in the Clouds",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
-      "container": "City of Port Hyrtin",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
         ]
       }
     },
@@ -2131,31 +1993,6 @@
       }
     },
     {
-      "container": "Dagger of Shine",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
       "container": "Data NI.rsrc",
       "authorFacingName": "Resource fork",
       "coverageStatus": "understood-resource-container",
@@ -2182,106 +2019,6 @@
       }
     },
     {
-      "container": "Elemental Strife",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
-      "container": "Grilochs Revenge",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        320
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
-      "container": "Half Truth",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
-      "container": "Hax",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
       "container": "Icon_",
       "authorFacingName": "Classic Mac resource companion",
       "coverageStatus": "preserved-known",
@@ -2302,231 +2039,6 @@
         "writerReadiness": "preserve-only",
         "evidenceQuality": "cited",
         "riskFlags": []
-      }
-    },
-    {
-      "container": "Journey into the Mire",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
-      "container": "Kalypso's Island",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
-      "container": "Lachis",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
-      "container": "Lord of the Abyss",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
-      "container": "Mithril Vault",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        320
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
-      "container": "New Scenario",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
-      "container": "Prelude to Pestilence",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
-      "container": "Prelude To Pestilence",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
-      "container": "Price of Power",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
       }
     },
     {
@@ -2575,56 +2087,6 @@
       }
     },
     {
-      "container": "Search for the Lost City",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
-      "container": "Spires of Steel",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
       "container": "Spires of Steel.rsrc",
       "authorFacingName": "Resource fork",
       "coverageStatus": "understood-resource-container",
@@ -2646,106 +2108,6 @@
         "evidenceQuality": "target-warning",
         "riskFlags": [
           "target-package-warning"
-        ]
-      }
-    },
-    {
-      "container": "Test",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
-      "container": "The End Worlds",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
-      "container": "Trial by Fire",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
-      "container": "Trouble in the Sword Lands",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
         ]
       }
     },
@@ -2772,131 +2134,6 @@
         "evidenceQuality": "target-warning",
         "riskFlags": [
           "target-package-warning"
-        ]
-      }
-    },
-    {
-      "container": "Tutorial",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
-      "container": "Twin Sands of Time",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
-      "container": "War in the Sword Lands",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
-      "container": "White Dragon",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
-        ]
-      }
-    },
-    {
-      "container": "Wrath of the Mind Lords",
-      "authorFacingName": "Scenario startup shell",
-      "coverageStatus": "decoded-writable",
-      "observedScenarioCount": 1,
-      "observedByteSizes": [
-        316
-      ],
-      "effectiveStatuses": [
-        "decoded-writable"
-      ],
-      "evidence": [
-        "docs/generated/corpus-field-usage.json",
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
-      ],
-      "fixtureGate": null,
-      "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "writer-gated",
-        "evidenceQuality": "cited",
-        "riskFlags": [
-          "structural-writer-claim"
         ]
       }
     }

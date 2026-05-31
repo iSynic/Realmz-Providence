@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T03:27:47.930Z",
+  "generatedAt": "2026-05-31T03:54:00.259Z",
   "generatedBy": "scripts/generate_scenario_byte_coverage.mjs",
   "target": "core-fixed-record-writer-gate-batch",
   "sources": {
@@ -17,6 +17,7 @@
     ],
     "excludedFamilies": [
       "Scenario",
+      "Scenario Startup Shell",
       "Data CS",
       "Data LD",
       "Data DL",

@@ -3661,6 +3661,28 @@ mod tests {
     }
 
     #[test]
+    fn scenario_startup_shell_writer_mutates_only_core_and_preserves_tail() {
+        let mut input = vec![0u8; 320];
+        input[60] = 1;
+        input[61] = b'A';
+        input[316..320].copy_from_slice(&[0x11, 0x22, 0x33, 0x44]);
+
+        let mut shell = parse_scenario_shell("Startup", &input).unwrap();
+        shell.authored = true;
+        shell.rec_level = 0x01020304;
+        shell.creator_user = "Go".to_string();
+
+        let output = write_scenario_shell(&shell).unwrap();
+
+        assert_eq!(output.len(), input.len());
+        assert_eq!(&output[316..320], &input[316..320]);
+        assert_eq!(
+            changed_offsets(&input, &output),
+            vec![0, 1, 2, 3, 60, 61, 62]
+        );
+    }
+
+    #[test]
     fn rules_overrides_round_trip_source_backed_fields() {
         let mut spell_input = vec![0u8; SPELL_BYTES * 2 + 16];
         spell_input[0] = 3;
