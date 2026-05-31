@@ -4309,6 +4309,190 @@ mod tests {
     }
 
     #[test]
+    fn monster_storage_mutates_only_owned_fields() {
+        let mut input = vec![0u8; MONSTER_BYTES * 2];
+        input[5] = 0xA5;
+        input[170..175].copy_from_slice(b"Other");
+        let monster_start = MONSTER_BYTES;
+        input[monster_start + 170..monster_start + 176].copy_from_slice(b"Stable");
+
+        let mut monsters = parse_monsters(&input);
+        monsters[1].authored = true;
+        monsters[1].hit_dice = 7;
+        monsters[1].armor = -4;
+        monsters[1].type_flags[3] = -1;
+        monsters[1].attacks[2][1] = 6;
+        monsters[1].money[2] = 0x0304;
+        monsters[1].spells[1] = 0x0506;
+        monsters[1].not_on_menu = true;
+        monsters[1].conditions[4] = -7;
+        monsters[1].death_macro = 0x0708;
+
+        let output = write_monsters(&monsters).unwrap();
+
+        assert_eq!(output.len(), input.len());
+        assert_eq!(&output[..MONSTER_BYTES], &input[..MONSTER_BYTES]);
+        assert_eq!(output[monster_start], 7);
+        assert_eq!(output[monster_start + 5] as i8, -4);
+        assert_eq!(i16_be(&output, monster_start + 62), 0x0304);
+        assert_eq!(i16_be(&output, monster_start + 166), 0x0708);
+        assert_eq!(
+            changed_offsets(&input, &output),
+            vec![
+                monster_start,
+                monster_start + 5,
+                monster_start + 13,
+                monster_start + 29,
+                monster_start + 62,
+                monster_start + 63,
+                monster_start + 66,
+                monster_start + 67,
+                monster_start + 118,
+                monster_start + 126,
+                monster_start + 166,
+                monster_start + 167,
+            ]
+        );
+    }
+
+    #[test]
+    fn alternate_monster_sets_mutate_only_owned_fields_and_preserve_source() {
+        for (source_file, set_id) in [("Data MD1", 1), ("Data MD-1", -1)] {
+            let mut input = vec![0u8; MONSTER_BYTES * 2];
+            input[8] = 0xA5;
+            input[170..173].copy_from_slice(b"One");
+            let monster_start = MONSTER_BYTES;
+            input[monster_start + 170..monster_start + 173].copy_from_slice(b"Two");
+
+            let mut monster_set = parse_monster_set(&input, source_file, set_id);
+            monster_set.monsters[1].authored = true;
+            monster_set.monsters[1].icon_id = 0x1234;
+            monster_set.monsters[1].max_spell_points = 0x0506;
+
+            let output = write_monster_set(&monster_set).unwrap();
+
+            assert_eq!(monster_set.source_file, source_file);
+            assert_eq!(monster_set.set_id, set_id);
+            assert_eq!(monster_set.monsters[1].provenance.source_file, source_file);
+            assert_eq!(
+                monster_set.monsters[1].provenance.byte_offset,
+                monster_start
+            );
+            assert_eq!(output.len(), input.len());
+            assert_eq!(&output[..MONSTER_BYTES], &input[..MONSTER_BYTES]);
+            assert_eq!(i16_be(&output, monster_start + 98), 0x1234);
+            assert_eq!(i16_be(&output, monster_start + 168), 0x0506);
+            assert_eq!(
+                changed_offsets(&input, &output),
+                vec![
+                    monster_start + 98,
+                    monster_start + 99,
+                    monster_start + 168,
+                    monster_start + 169,
+                ]
+            );
+        }
+    }
+
+    #[test]
+    fn map_record_storage_mutates_only_modeled_fields_and_preserves_prefix() {
+        let mut input = vec![0u8; MAP_RECORD_BYTES * 2];
+        let record_start = MAP_RECORD_BYTES;
+        for offset in 0..60 {
+            input[record_start + offset] = 0xA5;
+        }
+        input[record_start + 74] = 0xCA;
+        input[record_start + 75] = 0xFE;
+
+        let mut records = parse_map_records(&input);
+        records[1].authored = true;
+        records[1].start_x = 0x0304;
+        records[1].level = -2;
+        records[1].is_dungeon = true;
+        records[1].rect.bottom = 0x0506;
+        records[1].note = "Go".to_string();
+
+        let output = write_map_records(&records).unwrap();
+
+        assert_eq!(output.len(), input.len());
+        assert_eq!(
+            &output[record_start..record_start + 60],
+            &input[record_start..record_start + 60]
+        );
+        assert_eq!(
+            &output[record_start + 74..record_start + 76],
+            &input[record_start + 74..record_start + 76]
+        );
+        assert_eq!(i16_be(&output, record_start + 60), 0x0304);
+        assert_eq!(i16_be(&output, record_start + 64), -2);
+        assert_eq!(i16_be(&output, record_start + 72), 1);
+        assert_eq!(i16_be(&output, record_start + 80), 0x0506);
+        assert_eq!(
+            &output[record_start + 84..record_start + 87],
+            &[2, b'G', b'o']
+        );
+        assert_eq!(
+            changed_offsets(&input, &output),
+            vec![
+                record_start + 60,
+                record_start + 61,
+                record_start + 64,
+                record_start + 65,
+                record_start + 73,
+                record_start + 80,
+                record_start + 81,
+                record_start + 84,
+                record_start + 85,
+                record_start + 86,
+            ]
+        );
+    }
+
+    #[test]
+    fn scenario_item_storage_mutates_only_modeled_fields_and_preserves_gap() {
+        let mut input = vec![0u8; ITEM_BYTES * 2];
+        let item_start = ITEM_BYTES;
+        write_i16_be(&mut input, item_start + 2, 0x0102);
+        for offset in 56..70 {
+            input[item_start + offset] = 0xA5;
+        }
+
+        let mut items = parse_scenario_items(&input);
+        items[1].authored = true;
+        items[1].item_id = 0x0304;
+        items[1].damage = 0x0506;
+        items[1].item_cat0 = 0x01020304;
+        items[1].v_small = 0x0708;
+
+        let output = write_scenario_items(&items).unwrap();
+
+        assert_eq!(output.len(), input.len());
+        assert_eq!(
+            &output[item_start + 56..item_start + 70],
+            &input[item_start + 56..item_start + 70]
+        );
+        assert_eq!(i16_be(&output, item_start + 2), 0x0304);
+        assert_eq!(i16_be(&output, item_start + 20), 0x0506);
+        assert_eq!(i32_be(&output, item_start + 36), 0x01020304);
+        assert_eq!(i16_be(&output, item_start + 70), 0x0708);
+        assert_eq!(
+            changed_offsets(&input, &output),
+            vec![
+                item_start + 2,
+                item_start + 3,
+                item_start + 20,
+                item_start + 21,
+                item_start + 36,
+                item_start + 37,
+                item_start + 38,
+                item_start + 39,
+                item_start + 70,
+                item_start + 71,
+            ]
+        );
+    }
+
+    #[test]
     fn authored_target_records_write_realmz_offsets() {
         let message = MessageRecord {
             id: 0,

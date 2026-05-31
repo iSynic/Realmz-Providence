@@ -1,0 +1,583 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-05-31T05:12:05.875Z",
+  "generatedBy": "scripts/generate_scenario_byte_coverage.mjs",
+  "target": "core-record-writer-gates",
+  "sources": {
+    "byteCoverage": "docs/generated/scenario-byte-ownership.json",
+    "monsterEvidence": "docs/generated/monster-record-evidence.json",
+    "mapRecordEvidence": "docs/generated/map-record-evidence.json",
+    "itemEvidence": "docs/generated/core-rules-record-evidence.json",
+    "coreRecordWriters": "src-tauri/src/realmz.rs"
+  },
+  "policy": {
+    "note": "This registry gates the final core gameplay record storage families. It proves fixed-record storage writability only and does not expose new normal editor controls.",
+    "fixtureProvenRequires": [
+      "observed container coverage",
+      "all core record fixture paths available",
+      "all local evidence references present"
+    ],
+    "semanticCaution": [
+      "alternate monster-set editing remains UI-gated",
+      "map record prefix bytes remain preserve-only",
+      "scenario item compatibility bytes remain preserve-only"
+    ]
+  },
+  "summary": {
+    "containers": 5,
+    "fixtureProvenContainers": 5,
+    "evidencePendingContainers": 0,
+    "writerReadiness": "fixture-proven-core-record-storage",
+    "fixturePathsAvailable": true,
+    "missingFixturePaths": [],
+    "missingEvidenceReferences": 0
+  },
+  "gates": [
+    {
+      "container": "Data MD",
+      "authorFacingName": "Monster records",
+      "gate": "monster-template-record-writer",
+      "recordBytes": 210,
+      "rowKind": "210-byte monster template record",
+      "semanticExposure": "monster-template-storage",
+      "writerStatus": "fixture-proven-core-record-storage",
+      "available": true,
+      "evidencePresent": true,
+      "fixturePathsAvailable": true,
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        19950,
+        21630,
+        23940,
+        27930,
+        28560,
+        32550,
+        34230,
+        34650,
+        34860,
+        36120,
+        36540,
+        36960,
+        37170,
+        37380,
+        38010,
+        39060,
+        40740,
+        42420,
+        42840,
+        44100,
+        46200,
+        48300,
+        50820,
+        52710,
+        56910,
+        63210,
+        69720,
+        70560
+      ],
+      "fixturePaths": [
+        "F:/Realmz/base/Realmz/Scenarios/Tutorial",
+        "F:/Realmz/out_win_clang/Scenarios/Araman's Ring"
+      ],
+      "missingEvidence": [],
+      "evidence": [
+        "src-tauri/src/realmz.rs:monster_storage_mutates_only_owned_fields",
+        "src-tauri/src/realmz.rs:write_monsters",
+        "src-tauri/src/realmz.rs:parse_monsters",
+        "docs/generated/monster-record-evidence.json",
+        "docs/format-evidence-cards/monster-record-runtime-anchors.md"
+      ],
+      "evidenceChecks": [
+        {
+          "reference": "src-tauri/src/realmz.rs:monster_storage_mutates_only_owned_fields",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "monster_storage_mutates_only_owned_fields",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:write_monsters",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "write_monsters",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:parse_monsters",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "parse_monsters",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "docs/generated/monster-record-evidence.json",
+          "file": "docs/generated/monster-record-evidence.json",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        },
+        {
+          "reference": "docs/format-evidence-cards/monster-record-runtime-anchors.md",
+          "file": "docs/format-evidence-cards/monster-record-runtime-anchors.md",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        }
+      ],
+      "ownedFields": [
+        {
+          "field": "Monster template fields",
+          "internal": "struct monster",
+          "offset": 0,
+          "bytes": 210,
+          "type": "mixed fixed record"
+        }
+      ],
+      "preservedRanges": [],
+      "partialOnly": false,
+      "preservationPolicy": "Main monster templates are fully modeled as 210-byte records. Imported rows remain raw-preserved until authored."
+    },
+    {
+      "container": "Data MD1",
+      "authorFacingName": "Monster set records",
+      "gate": "alternate-monster-template-record-writer",
+      "recordBytes": 210,
+      "rowKind": "210-byte alternate monster template record",
+      "semanticExposure": "alternate-monster-template-storage",
+      "writerStatus": "fixture-proven-core-record-storage",
+      "available": true,
+      "evidencePresent": true,
+      "fixturePathsAvailable": true,
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        20160,
+        21630,
+        23940,
+        27930,
+        28560,
+        28770,
+        34230,
+        34650,
+        34860,
+        35910,
+        36120,
+        36750,
+        36960,
+        37380,
+        37590,
+        38010,
+        39060,
+        39270,
+        40740,
+        42420,
+        42840,
+        44100,
+        46410,
+        50820,
+        56910,
+        63210,
+        69930,
+        70560
+      ],
+      "fixturePaths": [
+        "F:/Realmz/base/Realmz/Scenarios/Tutorial",
+        "F:/Realmz/out_win_clang/Scenarios/Araman's Ring"
+      ],
+      "missingEvidence": [],
+      "evidence": [
+        "src-tauri/src/realmz.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
+        "src-tauri/src/realmz.rs:write_monster_set",
+        "src-tauri/src/realmz.rs:parse_monster_set",
+        "docs/generated/monster-record-evidence.json",
+        "docs/format-evidence-cards/monster-record-runtime-anchors.md"
+      ],
+      "evidenceChecks": [
+        {
+          "reference": "src-tauri/src/realmz.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:write_monster_set",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "write_monster_set",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:parse_monster_set",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "parse_monster_set",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "docs/generated/monster-record-evidence.json",
+          "file": "docs/generated/monster-record-evidence.json",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        },
+        {
+          "reference": "docs/format-evidence-cards/monster-record-runtime-anchors.md",
+          "file": "docs/format-evidence-cards/monster-record-runtime-anchors.md",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        }
+      ],
+      "ownedFields": [
+        {
+          "field": "Alternate monster template fields",
+          "internal": "struct monster",
+          "offset": 0,
+          "bytes": 210,
+          "type": "mixed fixed record"
+        }
+      ],
+      "preservedRanges": [],
+      "partialOnly": false,
+      "preservationPolicy": "Alternate monster templates reuse the monster record writer while preserving source filename and set identity."
+    },
+    {
+      "container": "Data MD-1",
+      "authorFacingName": "Monster set records",
+      "gate": "alternate-monster-template-record-writer",
+      "recordBytes": 210,
+      "rowKind": "210-byte alternate monster template record",
+      "semanticExposure": "alternate-monster-template-storage",
+      "writerStatus": "fixture-proven-core-record-storage",
+      "available": true,
+      "evidencePresent": true,
+      "fixturePathsAvailable": true,
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        20160,
+        21630,
+        23940,
+        27930,
+        28560,
+        28980,
+        34230,
+        34650,
+        34860,
+        35910,
+        36120,
+        36750,
+        36960,
+        37380,
+        37590,
+        38010,
+        39060,
+        39270,
+        40740,
+        42420,
+        42840,
+        44100,
+        46410,
+        50820,
+        56910,
+        63210,
+        69930,
+        70560
+      ],
+      "fixturePaths": [
+        "F:/Realmz/base/Realmz/Scenarios/Tutorial",
+        "F:/Realmz/out_win_clang/Scenarios/Araman's Ring"
+      ],
+      "missingEvidence": [],
+      "evidence": [
+        "src-tauri/src/realmz.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
+        "src-tauri/src/realmz.rs:write_monster_set",
+        "src-tauri/src/realmz.rs:parse_monster_set",
+        "docs/generated/monster-record-evidence.json",
+        "docs/format-evidence-cards/monster-record-runtime-anchors.md"
+      ],
+      "evidenceChecks": [
+        {
+          "reference": "src-tauri/src/realmz.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:write_monster_set",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "write_monster_set",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:parse_monster_set",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "parse_monster_set",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "docs/generated/monster-record-evidence.json",
+          "file": "docs/generated/monster-record-evidence.json",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        },
+        {
+          "reference": "docs/format-evidence-cards/monster-record-runtime-anchors.md",
+          "file": "docs/format-evidence-cards/monster-record-runtime-anchors.md",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        }
+      ],
+      "ownedFields": [
+        {
+          "field": "Alternate monster template fields",
+          "internal": "struct monster",
+          "offset": 0,
+          "bytes": 210,
+          "type": "mixed fixed record"
+        }
+      ],
+      "preservedRanges": [],
+      "partialOnly": false,
+      "preservationPolicy": "Alternate monster templates reuse the monster record writer while preserving source filename and set identity."
+    },
+    {
+      "container": "Data MD2",
+      "authorFacingName": "Map records",
+      "gate": "map-record-writer",
+      "recordBytes": 340,
+      "rowKind": "340-byte map record",
+      "semanticExposure": "map-record-storage",
+      "writerStatus": "fixture-proven-core-record-storage",
+      "available": true,
+      "evidencePresent": true,
+      "fixturePathsAvailable": true,
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        680,
+        1020,
+        1360,
+        2040,
+        2380,
+        3740,
+        4080,
+        5440,
+        6120,
+        6800,
+        7140,
+        8160
+      ],
+      "fixturePaths": [
+        "F:/Realmz/base/Realmz/Scenarios/Tutorial",
+        "F:/Realmz/out_win_clang/Scenarios/Araman's Ring"
+      ],
+      "missingEvidence": [],
+      "evidence": [
+        "src-tauri/src/realmz.rs:map_record_storage_mutates_only_modeled_fields_and_preserves_prefix",
+        "src-tauri/src/realmz.rs:write_map_records",
+        "src-tauri/src/realmz.rs:parse_map_records",
+        "docs/generated/map-record-evidence.json",
+        "docs/format-evidence-cards/map-record-runtime-anchors.md"
+      ],
+      "evidenceChecks": [
+        {
+          "reference": "src-tauri/src/realmz.rs:map_record_storage_mutates_only_modeled_fields_and_preserves_prefix",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "map_record_storage_mutates_only_modeled_fields_and_preserves_prefix",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:write_map_records",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "write_map_records",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:parse_map_records",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "parse_map_records",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "docs/generated/map-record-evidence.json",
+          "file": "docs/generated/map-record-evidence.json",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        },
+        {
+          "reference": "docs/format-evidence-cards/map-record-runtime-anchors.md",
+          "file": "docs/format-evidence-cards/map-record-runtime-anchors.md",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        }
+      ],
+      "ownedFields": [
+        {
+          "field": "Map start and display fields",
+          "internal": "startX/startY/level/pictId/iconSize/show/isDungeon",
+          "offset": 60,
+          "bytes": 14,
+          "type": "i16be[7]"
+        },
+        {
+          "field": "Map clip rectangle",
+          "internal": "rect",
+          "offset": 76,
+          "bytes": 8,
+          "type": "i16be[4]"
+        },
+        {
+          "field": "Map note text",
+          "internal": "note",
+          "offset": 84,
+          "bytes": 256,
+          "type": "Pascal"
+        }
+      ],
+      "preservedRanges": [
+        {
+          "field": "Map marker prefix",
+          "internal": "raw[0..60]",
+          "offset": 0,
+          "bytes": 60,
+          "type": "raw-preserved"
+        },
+        {
+          "field": "Compatibility bytes",
+          "internal": "raw[74..76]",
+          "offset": 74,
+          "bytes": 2,
+          "type": "raw-preserved"
+        }
+      ],
+      "partialOnly": true,
+      "preservationPolicy": "Map records rewrite modeled display/start/rectangle/note fields only. Prefix marker bytes and bytes 74..76 remain preserve-only until writer semantics are proven."
+    },
+    {
+      "container": "Data NI",
+      "authorFacingName": "Scenario item records",
+      "gate": "scenario-item-record-writer",
+      "recordBytes": 100,
+      "rowKind": "100-byte scenario item record",
+      "semanticExposure": "scenario-item-storage",
+      "writerStatus": "fixture-proven-core-record-storage",
+      "available": true,
+      "evidencePresent": true,
+      "fixturePathsAvailable": true,
+      "observedScenarioCount": 35,
+      "observedByteSizes": [
+        20000
+      ],
+      "fixturePaths": [
+        "F:/Realmz/base/Realmz/Scenarios/Tutorial",
+        "F:/Realmz/out_win_clang/Scenarios/Araman's Ring"
+      ],
+      "missingEvidence": [],
+      "evidence": [
+        "src-tauri/src/realmz.rs:scenario_item_storage_mutates_only_modeled_fields_and_preserves_gap",
+        "src-tauri/src/realmz.rs:write_scenario_items",
+        "src-tauri/src/realmz.rs:parse_scenario_items",
+        "docs/generated/core-rules-record-evidence.json",
+        "docs/format-evidence-cards/core-rules-record-runtime-anchors.md"
+      ],
+      "evidenceChecks": [
+        {
+          "reference": "src-tauri/src/realmz.rs:scenario_item_storage_mutates_only_modeled_fields_and_preserves_gap",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "scenario_item_storage_mutates_only_modeled_fields_and_preserves_gap",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:write_scenario_items",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "write_scenario_items",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz.rs:parse_scenario_items",
+          "file": "src-tauri/src/realmz.rs",
+          "anchor": "parse_scenario_items",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "docs/generated/core-rules-record-evidence.json",
+          "file": "docs/generated/core-rules-record-evidence.json",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        },
+        {
+          "reference": "docs/format-evidence-cards/core-rules-record-runtime-anchors.md",
+          "file": "docs/format-evidence-cards/core-rules-record-runtime-anchors.md",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
+          "present": true
+        }
+      ],
+      "ownedFields": [
+        {
+          "field": "Scenario item core fields",
+          "internal": "stats/itemId/icon/type/restrictions/categories",
+          "offset": 0,
+          "bytes": 56,
+          "type": "i16be/i32be"
+        },
+        {
+          "field": "Scenario item effects and specials",
+          "internal": "damage/elements/specials/weightPerCharge/dropOnEmpty",
+          "offset": 70,
+          "bytes": 30,
+          "type": "i16be[15]"
+        }
+      ],
+      "preservedRanges": [
+        {
+          "field": "Compatibility bytes",
+          "internal": "raw[56..70]",
+          "offset": 56,
+          "bytes": 14,
+          "type": "raw-preserved"
+        }
+      ],
+      "partialOnly": true,
+      "preservationPolicy": "Scenario item records rewrite modeled fields only. Bytes 56..70 remain preserve-only until source or Divinity evidence proves their semantics."
+    }
+  ]
+}

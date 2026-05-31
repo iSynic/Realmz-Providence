@@ -18,6 +18,7 @@ const fixedRecordWriterGatesPath = path.join(repoRoot, "docs/generated/fixed-rec
 const scenarioStartupShellGatePath = path.join(repoRoot, "docs/generated/scenario-startup-shell-gate.json");
 const mapsStorageWriterGatesPath = path.join(repoRoot, "docs/generated/maps-storage-writer-gates.json");
 const encounterShopWriterGatesPath = path.join(repoRoot, "docs/generated/encounter-shop-writer-gates.json");
+const coreRecordWriterGatesPath = path.join(repoRoot, "docs/generated/core-record-writer-gates.json");
 const realmzRsPath = path.join(repoRoot, "src-tauri/src/realmz.rs");
 
 const fileInventoryPath = path.join(repoRoot, "docs/generated/scenario-file-inventory.json");
@@ -256,6 +257,21 @@ const ENCOUNTER_SHOP_GATE_CONTAINERS = [
 const ENCOUNTER_SHOP_GATE_CONTAINER_SET = new Set(ENCOUNTER_SHOP_GATE_CONTAINERS);
 
 const ENCOUNTER_SHOP_FIXTURE_PATHS = [
+  "F:/Realmz/base/Realmz/Scenarios/Tutorial",
+  "F:/Realmz/out_win_clang/Scenarios/Araman's Ring"
+];
+
+const CORE_RECORD_GATE_CONTAINERS = [
+  "Data MD",
+  "Data MD1",
+  "Data MD-1",
+  "Data MD2",
+  "Data NI"
+];
+
+const CORE_RECORD_GATE_CONTAINER_SET = new Set(CORE_RECORD_GATE_CONTAINERS);
+
+const CORE_RECORD_FIXTURE_PATHS = [
   "F:/Realmz/base/Realmz/Scenarios/Tutorial",
   "F:/Realmz/out_win_clang/Scenarios/Araman's Ring"
 ];
@@ -517,6 +533,106 @@ const ENCOUNTER_SHOP_WRITER_GATE_SPECS = [
   }
 ];
 
+const CORE_RECORD_WRITER_GATE_SPECS = [
+  {
+    container: "Data MD",
+    gate: "monster-template-record-writer",
+    rowKind: "210-byte monster template record",
+    semanticExposure: "monster-template-storage",
+    ownedFields: [
+      { field: "Monster template fields", internal: "struct monster", offset: 0, bytes: 210, type: "mixed fixed record" }
+    ],
+    evidence: [
+      "src-tauri/src/realmz.rs:monster_storage_mutates_only_owned_fields",
+      "src-tauri/src/realmz.rs:write_monsters",
+      "src-tauri/src/realmz.rs:parse_monsters",
+      "docs/generated/monster-record-evidence.json",
+      "docs/format-evidence-cards/monster-record-runtime-anchors.md"
+    ],
+    preservationPolicy: "Main monster templates are fully modeled as 210-byte records. Imported rows remain raw-preserved until authored."
+  },
+  {
+    container: "Data MD1",
+    gate: "alternate-monster-template-record-writer",
+    rowKind: "210-byte alternate monster template record",
+    semanticExposure: "alternate-monster-template-storage",
+    ownedFields: [
+      { field: "Alternate monster template fields", internal: "struct monster", offset: 0, bytes: 210, type: "mixed fixed record" }
+    ],
+    evidence: [
+      "src-tauri/src/realmz.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
+      "src-tauri/src/realmz.rs:write_monster_set",
+      "src-tauri/src/realmz.rs:parse_monster_set",
+      "docs/generated/monster-record-evidence.json",
+      "docs/format-evidence-cards/monster-record-runtime-anchors.md"
+    ],
+    preservationPolicy: "Alternate monster templates reuse the monster record writer while preserving source filename and set identity."
+  },
+  {
+    container: "Data MD-1",
+    gate: "alternate-monster-template-record-writer",
+    rowKind: "210-byte alternate monster template record",
+    semanticExposure: "alternate-monster-template-storage",
+    ownedFields: [
+      { field: "Alternate monster template fields", internal: "struct monster", offset: 0, bytes: 210, type: "mixed fixed record" }
+    ],
+    evidence: [
+      "src-tauri/src/realmz.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
+      "src-tauri/src/realmz.rs:write_monster_set",
+      "src-tauri/src/realmz.rs:parse_monster_set",
+      "docs/generated/monster-record-evidence.json",
+      "docs/format-evidence-cards/monster-record-runtime-anchors.md"
+    ],
+    preservationPolicy: "Alternate monster templates reuse the monster record writer while preserving source filename and set identity."
+  },
+  {
+    container: "Data MD2",
+    gate: "map-record-writer",
+    rowKind: "340-byte map record",
+    semanticExposure: "map-record-storage",
+    partialOnly: true,
+    ownedFields: [
+      { field: "Map start and display fields", internal: "startX/startY/level/pictId/iconSize/show/isDungeon", offset: 60, bytes: 14, type: "i16be[7]" },
+      { field: "Map clip rectangle", internal: "rect", offset: 76, bytes: 8, type: "i16be[4]" },
+      { field: "Map note text", internal: "note", offset: 84, bytes: 256, type: "Pascal" }
+    ],
+    preservedRanges: [
+      { field: "Map marker prefix", internal: "raw[0..60]", offset: 0, bytes: 60, type: "raw-preserved" },
+      { field: "Compatibility bytes", internal: "raw[74..76]", offset: 74, bytes: 2, type: "raw-preserved" }
+    ],
+    evidence: [
+      "src-tauri/src/realmz.rs:map_record_storage_mutates_only_modeled_fields_and_preserves_prefix",
+      "src-tauri/src/realmz.rs:write_map_records",
+      "src-tauri/src/realmz.rs:parse_map_records",
+      "docs/generated/map-record-evidence.json",
+      "docs/format-evidence-cards/map-record-runtime-anchors.md"
+    ],
+    preservationPolicy: "Map records rewrite modeled display/start/rectangle/note fields only. Prefix marker bytes and bytes 74..76 remain preserve-only until writer semantics are proven."
+  },
+  {
+    container: "Data NI",
+    gate: "scenario-item-record-writer",
+    rowKind: "100-byte scenario item record",
+    semanticExposure: "scenario-item-storage",
+    partialOnly: true,
+    ownedFields: [
+      { field: "Scenario item core fields", internal: "stats/itemId/icon/type/restrictions/categories", offset: 0, bytes: 56, type: "i16be/i32be" },
+      { field: "Scenario item effects and specials", internal: "damage/elements/specials/weightPerCharge/dropOnEmpty", offset: 70, bytes: 30, type: "i16be[15]" }
+    ],
+    preservedRanges: [
+      { field: "Compatibility bytes", internal: "raw[56..70]", offset: 56, bytes: 14, type: "raw-preserved" }
+    ],
+    evidence: [
+      "src-tauri/src/realmz.rs:scenario_item_storage_mutates_only_modeled_fields_and_preserves_gap",
+      "src-tauri/src/realmz.rs:write_scenario_items",
+      "src-tauri/src/realmz.rs:parse_scenario_items",
+      "docs/generated/core-rules-record-evidence.json",
+      "docs/format-evidence-cards/core-rules-record-runtime-anchors.md"
+    ],
+    preservationPolicy: "Scenario item records rewrite modeled fields only. Bytes 56..70 remain preserve-only until source or Divinity evidence proves their semantics."
+  }
+];
+
 const FIXED_RECORD_WRITER_GATE_SPECS = [
   {
     container: "Data SD2",
@@ -732,6 +848,7 @@ const fixedRecordWriterGates = buildFixedRecordWriterGates(aggregate);
 const scenarioStartupShellGate = buildScenarioStartupShellGate(aggregate);
 const mapsStorageWriterGates = buildMapsStorageWriterGates(aggregate);
 const encounterShopWriterGates = buildEncounterShopWriterGates(aggregate);
+const coreRecordWriterGates = buildCoreRecordWriterGates(aggregate);
 const inventory = buildInventory(scanned, aggregate);
 const ownership = buildOwnership(aggregate);
 const unknownReport = buildUnknownReport(inventory, ownership, unknownBacklog);
@@ -756,6 +873,7 @@ writeJson(fixedRecordWriterGatesPath, fixedRecordWriterGates);
 writeJson(scenarioStartupShellGatePath, scenarioStartupShellGate);
 writeJson(mapsStorageWriterGatesPath, mapsStorageWriterGates);
 writeJson(encounterShopWriterGatesPath, encounterShopWriterGates);
+writeJson(coreRecordWriterGatesPath, coreRecordWriterGates);
 writeJson(runtimeCachePath, updatedRuntimeCaches);
 writeJson(uiManifestPath, uiManifest);
 
@@ -767,6 +885,7 @@ console.log(`Wrote ${path.relative(repoRoot, fixedRecordWriterGatesPath)}`);
 console.log(`Wrote ${path.relative(repoRoot, scenarioStartupShellGatePath)}`);
 console.log(`Wrote ${path.relative(repoRoot, mapsStorageWriterGatesPath)}`);
 console.log(`Wrote ${path.relative(repoRoot, encounterShopWriterGatesPath)}`);
+console.log(`Wrote ${path.relative(repoRoot, coreRecordWriterGatesPath)}`);
 console.log(`Wrote ${path.relative(repoRoot, runtimeCachePath)}`);
 console.log(`Wrote ${path.relative(repoRoot, uiManifestPath)}`);
 console.log(JSON.stringify(uiManifest.summary, null, 2));
@@ -1100,6 +1219,90 @@ function buildEncounterShopWriterGates(aggregate) {
   };
 }
 
+function buildCoreRecordWriterGates(aggregate) {
+  validateCoreRecordWriterGateSpecs();
+  const aggregateByName = new Map((aggregate.files ?? []).map((file) => [file.name, file]));
+  const fixtureChecks = CORE_RECORD_FIXTURE_PATHS.map((fixturePath) => ({
+    path: fixturePath,
+    available: fs.existsSync(fixturePath)
+  }));
+  const fixturePathsAvailable = fixtureChecks.every((fixture) => fixture.available);
+  const gates = CORE_RECORD_WRITER_GATE_SPECS.map((spec) => {
+    const layout = RECORD_LAYOUTS[spec.container];
+    const file = aggregateByName.get(spec.container);
+    const evidence = [...new Set(spec.evidence ?? [])];
+    const evidenceChecks = evidence.map(evidenceStatusFor);
+    const missingEvidence = evidenceChecks
+      .filter((check) => !check.present)
+      .map((check) => check.reference);
+    const evidencePresent = missingEvidence.length === 0;
+    const observedScenarioCount = file?.scenarioCount ?? 0;
+    const available = evidencePresent && fixturePathsAvailable && observedScenarioCount > 0;
+    return {
+      container: spec.container,
+      authorFacingName: layout.label,
+      gate: spec.gate,
+      recordBytes: layout.recordBytes,
+      rowKind: spec.rowKind,
+      semanticExposure: spec.semanticExposure,
+      writerStatus: available ? "fixture-proven-core-record-storage" : "evidence-pending-core-record-storage",
+      available,
+      evidencePresent,
+      fixturePathsAvailable,
+      observedScenarioCount,
+      observedByteSizes: file?.observedByteSizes ?? [],
+      fixturePaths: CORE_RECORD_FIXTURE_PATHS,
+      missingEvidence,
+      evidence,
+      evidenceChecks,
+      ownedFields: spec.ownedFields,
+      preservedRanges: spec.preservedRanges ?? [],
+      partialOnly: Boolean(spec.partialOnly || (spec.preservedRanges ?? []).length > 0),
+      preservationPolicy: spec.preservationPolicy
+    };
+  });
+  const fixtureProvenContainers = gates.filter((gate) => gate.available).length;
+  return {
+    schemaVersion: 1,
+    generatedAt: new Date().toISOString(),
+    generatedBy: "scripts/generate_scenario_byte_coverage.mjs",
+    target: "core-record-writer-gates",
+    sources: {
+      byteCoverage: "docs/generated/scenario-byte-ownership.json",
+      monsterEvidence: "docs/generated/monster-record-evidence.json",
+      mapRecordEvidence: "docs/generated/map-record-evidence.json",
+      itemEvidence: "docs/generated/core-rules-record-evidence.json",
+      coreRecordWriters: "src-tauri/src/realmz.rs"
+    },
+    policy: {
+      note: "This registry gates the final core gameplay record storage families. It proves fixed-record storage writability only and does not expose new normal editor controls.",
+      fixtureProvenRequires: [
+        "observed container coverage",
+        "all core record fixture paths available",
+        "all local evidence references present"
+      ],
+      semanticCaution: [
+        "alternate monster-set editing remains UI-gated",
+        "map record prefix bytes remain preserve-only",
+        "scenario item compatibility bytes remain preserve-only"
+      ]
+    },
+    summary: {
+      containers: gates.length,
+      fixtureProvenContainers,
+      evidencePendingContainers: gates.length - fixtureProvenContainers,
+      writerReadiness:
+        fixtureProvenContainers === gates.length
+          ? "fixture-proven-core-record-storage"
+          : "evidence-pending-core-record-storage",
+      fixturePathsAvailable,
+      missingFixturePaths: fixtureChecks.filter((fixture) => !fixture.available).map((fixture) => fixture.path),
+      missingEvidenceReferences: gates.reduce((total, gate) => total + gate.missingEvidence.length, 0)
+    },
+    gates
+  };
+}
+
 function validateFixedRecordWriterGateSpecs() {
   const containers = FIXED_RECORD_WRITER_GATE_SPECS.map((spec) => spec.container);
   const uniqueContainers = new Set(containers);
@@ -1170,6 +1373,28 @@ function validateEncounterShopWriterGateSpecs() {
   }
 }
 
+function validateCoreRecordWriterGateSpecs() {
+  const containers = CORE_RECORD_WRITER_GATE_SPECS.map((spec) => spec.container);
+  const uniqueContainers = new Set(containers);
+  if (uniqueContainers.size !== containers.length) {
+    const duplicates = containers.filter((container, index) => containers.indexOf(container) !== index);
+    throw new Error(`Duplicate core-record writer gates: ${[...new Set(duplicates)].join(", ")}`);
+  }
+  const missing = CORE_RECORD_GATE_CONTAINERS.filter((container) => !uniqueContainers.has(container));
+  if (missing.length > 0) {
+    throw new Error(`Missing core-record writer gates: ${missing.join(", ")}`);
+  }
+  const unexpected = containers.filter((container) => !CORE_RECORD_GATE_CONTAINER_SET.has(container));
+  if (unexpected.length > 0) {
+    throw new Error(`Unexpected core-record writer gates: ${unexpected.join(", ")}`);
+  }
+  for (const container of containers) {
+    if (!RECORD_LAYOUTS[container]?.recordBytes) {
+      throw new Error(`${container} has no core-record RECORD_LAYOUTS entry`);
+    }
+  }
+}
+
 function evidenceStatusFor(reference) {
   const parsed = parseLocalEvidenceReference(reference);
   if (!parsed) {
@@ -1224,6 +1449,7 @@ function buildInventory(scanned, aggregate) {
         scenarioStartupShellGate: "docs/generated/scenario-startup-shell-gate.json",
         mapsStorageWriterGates: "docs/generated/maps-storage-writer-gates.json",
         encounterShopWriterGates: "docs/generated/encounter-shop-writer-gates.json",
+        coreRecordWriterGates: "docs/generated/core-record-writer-gates.json",
         completenessTruth: "docs/generated/scenario-completeness-truth.json"
     },
     policy: {
@@ -1304,6 +1530,7 @@ function buildOwnership(aggregate) {
         scenarioStartupShellGate: "docs/generated/scenario-startup-shell-gate.json",
         mapsStorageWriterGates: "docs/generated/maps-storage-writer-gates.json",
         encounterShopWriterGates: "docs/generated/encounter-shop-writer-gates.json",
+        coreRecordWriterGates: "docs/generated/core-record-writer-gates.json",
         completenessTruth: "docs/generated/scenario-completeness-truth.json",
         ed3Reachability: "docs/generated/extra-ap-reachability-source-map.json",
         edcdCrosswalk: "docs/generated/opcode-edcd-crosswalk.json"
@@ -1470,7 +1697,8 @@ function buildCompletenessTruth(inventory, ownership, unknownReport) {
       fixedRecordWriterGates: "docs/generated/fixed-record-writer-gates.json",
       scenarioStartupShellGate: "docs/generated/scenario-startup-shell-gate.json",
       mapsStorageWriterGates: "docs/generated/maps-storage-writer-gates.json",
-      encounterShopWriterGates: "docs/generated/encounter-shop-writer-gates.json"
+      encounterShopWriterGates: "docs/generated/encounter-shop-writer-gates.json",
+      coreRecordWriterGates: "docs/generated/core-record-writer-gates.json"
     },
     policy: {
       note: "Truth statuses are stricter than legacy coverageStatus. Semantic ownership, writer readiness, evidence quality, and package compatibility are intentionally separate.",
@@ -1479,7 +1707,8 @@ function buildCompletenessTruth(inventory, ownership, unknownReport) {
       actionPointWriterGateStatus: actionPointWriterGate?.summary?.writerReadiness ?? null,
       fixedRecordWriterGateStatus: fixedRecordWriterGates?.summary?.writerReadiness ?? null,
       mapsStorageWriterGateStatus: mapsStorageWriterGates?.summary?.writerReadiness ?? null,
-      encounterShopWriterGateStatus: encounterShopWriterGates?.summary?.writerReadiness ?? null
+      encounterShopWriterGateStatus: encounterShopWriterGates?.summary?.writerReadiness ?? null,
+      coreRecordWriterGateStatus: coreRecordWriterGates?.summary?.writerReadiness ?? null
     },
     summary,
     containers
@@ -1611,6 +1840,22 @@ function fixtureGateForContainer(containerName) {
       missingEvidence: encounterShopGate.missingEvidence ?? [],
       partialOnly: Boolean(encounterShopGate.partialOnly),
       source: "encounter-shop-writer-gates"
+    };
+  }
+  const coreRecordGate = coreRecordWriterGates.gates.find((entry) => entry.container === containerName);
+  if (coreRecordGate) {
+    return {
+      gate: coreRecordGate.gate,
+      fixturePaths: coreRecordGate.fixturePaths ?? [],
+      evidence: [
+        "docs/generated/core-record-writer-gates.json",
+        ...(coreRecordGate.evidence ?? [])
+      ],
+      available: Boolean(coreRecordGate.available),
+      evidencePresent: Boolean(coreRecordGate.evidencePresent),
+      missingEvidence: coreRecordGate.missingEvidence ?? [],
+      partialOnly: Boolean(coreRecordGate.partialOnly),
+      source: "core-record-writer-gates"
     };
   }
   const generatedGate = fixedRecordWriterGates.gates.find((entry) => entry.container === containerName);
@@ -1939,6 +2184,7 @@ function coverageStatusForFile(file) {
   if (runtimeCaches.entries?.some((entry) => entry.cache === name)) return "runtime-cache";
   if (name === "Data DL" && dungeonByteOwnership) return "mixed-writable-preserved";
   if (name === "Data ED" || name === "Data ED2") return "mixed-writable-preserved";
+  if (name === "Data MD2" || name === "Data NI") return "mixed-writable-preserved";
   if (name === "Layout" && file.byteSizes?.size > 0 && [...file.byteSizes].some((size) => size > (RECORD_LAYOUTS.Layout?.recordBytes ?? 256))) return "mixed-writable-preserved";
   if (customLandlookCoverage && /^Data Custom [123] BD$/.test(name)) return "mixed-writable-preserved";
   if (rulesCoverage && (name === "Data Spell" || name === "Data Race" || name === "Data Caste")) return "mixed-writable-preserved";
@@ -2104,6 +2350,22 @@ function byteRangesForFile(file, layout) {
       { start: 158, length: 362, endExclusive: 520, status: "decoded-writable", field: "Prompt and inline encounter text", internal: "prompt/texts[9]", writerGate: "docs/generated/encounter-shop-writer-gates.json" }
     ];
   }
+  if (file.name === "Data MD2") {
+    return [
+      { start: 0, length: 60, endExclusive: 60, status: "preserved-known", field: "Map marker prefix", internal: "raw[0..60]", writerGate: "docs/generated/core-record-writer-gates.json" },
+      { start: 60, length: 14, endExclusive: 74, status: "decoded-writable", field: "Map start and display fields", internal: "startX/startY/level/pictId/iconSize/show/isDungeon", writerGate: "docs/generated/core-record-writer-gates.json" },
+      { start: 74, length: 2, endExclusive: 76, status: "preserved-known", field: "Compatibility bytes", internal: "raw[74..76]", writerGate: "docs/generated/core-record-writer-gates.json" },
+      { start: 76, length: 8, endExclusive: 84, status: "decoded-writable", field: "Map clip rectangle", internal: "rect", writerGate: "docs/generated/core-record-writer-gates.json" },
+      { start: 84, length: 256, endExclusive: 340, status: "decoded-writable", field: "Map note text", internal: "note", writerGate: "docs/generated/core-record-writer-gates.json" }
+    ];
+  }
+  if (file.name === "Data NI") {
+    return [
+      { start: 0, length: 56, endExclusive: 56, status: "decoded-writable", field: "Scenario item core fields", internal: "stats/itemId/icon/type/restrictions/categories", writerGate: "docs/generated/core-record-writer-gates.json" },
+      { start: 56, length: 14, endExclusive: 70, status: "preserved-known", field: "Compatibility bytes", internal: "raw[56..70]", writerGate: "docs/generated/core-record-writer-gates.json" },
+      { start: 70, length: 30, endExclusive: 100, status: "decoded-writable", field: "Scenario item effects and specials", internal: "damage/elements/specials/weightPerCharge/dropOnEmpty", writerGate: "docs/generated/core-record-writer-gates.json" }
+    ];
+  }
   if (file.name === "Global") {
     return [
       {
@@ -2215,9 +2477,11 @@ function byteRangesForFile(file, layout) {
           ? "docs/generated/maps-storage-writer-gates.json"
           : ENCOUNTER_SHOP_GATE_CONTAINER_SET.has(file.name)
             ? "docs/generated/encounter-shop-writer-gates.json"
-            : CORE_FIXED_RECORD_GATE_CONTAINER_SET.has(file.name)
-              ? "docs/generated/fixed-record-writer-gates.json"
-              : undefined
+            : CORE_RECORD_GATE_CONTAINER_SET.has(file.name)
+              ? "docs/generated/core-record-writer-gates.json"
+              : CORE_FIXED_RECORD_GATE_CONTAINER_SET.has(file.name)
+                ? "docs/generated/fixed-record-writer-gates.json"
+                : undefined
       }
     ];
   }
@@ -2256,6 +2520,9 @@ function evidenceForFile(name, status) {
   }
   if (ENCOUNTER_SHOP_GATE_CONTAINER_SET.has(name)) {
     evidence.push("docs/generated/encounter-shop-writer-gates.json");
+  }
+  if (CORE_RECORD_GATE_CONTAINER_SET.has(name)) {
+    evidence.push("docs/generated/core-record-writer-gates.json");
   }
   if (CORE_FIXED_RECORD_GATE_CONTAINER_SET.has(name)) {
     evidence.push("docs/generated/fixed-record-writer-gates.json");

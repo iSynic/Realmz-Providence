@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T04:40:07.714Z",
+  "generatedAt": "2026-05-31T05:12:05.877Z",
   "classifications": [
     "decoded-writable",
     "decoded-readonly",
@@ -30,6 +30,7 @@
     "scenarioStartupShellGate": "docs/generated/scenario-startup-shell-gate.json",
     "mapsStorageWriterGates": "docs/generated/maps-storage-writer-gates.json",
     "encounterShopWriterGates": "docs/generated/encounter-shop-writer-gates.json",
+    "coreRecordWriterGates": "docs/generated/core-record-writer-gates.json",
     "completenessTruth": "docs/generated/scenario-completeness-truth.json",
     "ed3Reachability": "docs/generated/extra-ap-reachability-source-map.json",
     "edcdCrosswalk": "docs/generated/opcode-edcd-crosswalk.json"
@@ -37,8 +38,8 @@
   "summary": {
     "containerCount": 57,
     "statusCounts": {
-      "decoded-writable": 23,
-      "mixed-writable-preserved": 11,
+      "decoded-writable": 21,
+      "mixed-writable-preserved": 13,
       "decoded-readonly": 1,
       "preserved-known": 5,
       "understood-resource-container": 12,
@@ -47,8 +48,8 @@
       "ignored-non-scenario": 1
     },
     "statusObservedBytes": {
-      "decoded-writable": 906224391,
-      "mixed-writable-preserved": 38661900,
+      "decoded-writable": 903810791,
+      "mixed-writable-preserved": 41075500,
       "decoded-readonly": 35840,
       "preserved-known": 116752,
       "understood-resource-container": 1369599572,
@@ -971,11 +972,13 @@
           "endExclusive": 210,
           "status": "decoded-writable",
           "field": "Monster records",
-          "internal": "fixed record"
+          "internal": "fixed record",
+          "writerGate": "docs/generated/core-record-writer-gates.json"
         }
       ],
       "resourceTypes": [],
       "evidence": [
+        "docs/generated/core-record-writer-gates.json",
         "docs/generated/monster-record-evidence.json",
         "docs/format-evidence-cards/monster-record-runtime-anchors.md"
       ],
@@ -1025,11 +1028,13 @@
           "endExclusive": 210,
           "status": "decoded-writable",
           "field": "Monster set records",
-          "internal": "fixed record"
+          "internal": "fixed record",
+          "writerGate": "docs/generated/core-record-writer-gates.json"
         }
       ],
       "resourceTypes": [],
       "evidence": [
+        "docs/generated/core-record-writer-gates.json",
         "docs/generated/monster-record-evidence.json",
         "docs/format-evidence-cards/monster-record-runtime-anchors.md"
       ],
@@ -1079,11 +1084,13 @@
           "endExclusive": 210,
           "status": "decoded-writable",
           "field": "Monster set records",
-          "internal": "fixed record"
+          "internal": "fixed record",
+          "writerGate": "docs/generated/core-record-writer-gates.json"
         }
       ],
       "resourceTypes": [],
       "evidence": [
+        "docs/generated/core-record-writer-gates.json",
         "docs/generated/monster-record-evidence.json",
         "docs/format-evidence-cards/monster-record-runtime-anchors.md"
       ],
@@ -1092,7 +1099,7 @@
     {
       "container": "Data MD2",
       "authorFacingName": "Map records",
-      "coverageStatus": "decoded-writable",
+      "coverageStatus": "mixed-writable-preserved",
       "role": "supported-binary",
       "observedScenarioCount": 35,
       "observedByteSizes": [
@@ -1113,24 +1120,62 @@
       "byteRanges": [
         {
           "start": 0,
-          "length": 340,
+          "length": 60,
+          "endExclusive": 60,
+          "status": "preserved-known",
+          "field": "Map marker prefix",
+          "internal": "raw[0..60]",
+          "writerGate": "docs/generated/core-record-writer-gates.json"
+        },
+        {
+          "start": 60,
+          "length": 14,
+          "endExclusive": 74,
+          "status": "decoded-writable",
+          "field": "Map start and display fields",
+          "internal": "startX/startY/level/pictId/iconSize/show/isDungeon",
+          "writerGate": "docs/generated/core-record-writer-gates.json"
+        },
+        {
+          "start": 74,
+          "length": 2,
+          "endExclusive": 76,
+          "status": "preserved-known",
+          "field": "Compatibility bytes",
+          "internal": "raw[74..76]",
+          "writerGate": "docs/generated/core-record-writer-gates.json"
+        },
+        {
+          "start": 76,
+          "length": 8,
+          "endExclusive": 84,
+          "status": "decoded-writable",
+          "field": "Map clip rectangle",
+          "internal": "rect",
+          "writerGate": "docs/generated/core-record-writer-gates.json"
+        },
+        {
+          "start": 84,
+          "length": 256,
           "endExclusive": 340,
           "status": "decoded-writable",
-          "field": "Map records",
-          "internal": "fixed record"
+          "field": "Map note text",
+          "internal": "note",
+          "writerGate": "docs/generated/core-record-writer-gates.json"
         }
       ],
       "resourceTypes": [],
       "evidence": [
+        "docs/generated/core-record-writer-gates.json",
         "docs/generated/map-record-evidence.json",
         "docs/format-evidence-cards/map-record-runtime-anchors.md"
       ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+      "editorPolicy": "Some byte ranges are writer-proven or structurally decoded, while preserved/runtime ranges remain read-only."
     },
     {
       "container": "Data NI",
       "authorFacingName": "Scenario item records",
-      "coverageStatus": "decoded-writable",
+      "coverageStatus": "mixed-writable-preserved",
       "role": "supported-binary",
       "observedScenarioCount": 35,
       "observedByteSizes": [
@@ -1140,19 +1185,39 @@
       "byteRanges": [
         {
           "start": 0,
-          "length": 100,
+          "length": 56,
+          "endExclusive": 56,
+          "status": "decoded-writable",
+          "field": "Scenario item core fields",
+          "internal": "stats/itemId/icon/type/restrictions/categories",
+          "writerGate": "docs/generated/core-record-writer-gates.json"
+        },
+        {
+          "start": 56,
+          "length": 14,
+          "endExclusive": 70,
+          "status": "preserved-known",
+          "field": "Compatibility bytes",
+          "internal": "raw[56..70]",
+          "writerGate": "docs/generated/core-record-writer-gates.json"
+        },
+        {
+          "start": 70,
+          "length": 30,
           "endExclusive": 100,
           "status": "decoded-writable",
-          "field": "Scenario item records",
-          "internal": "fixed record"
+          "field": "Scenario item effects and specials",
+          "internal": "damage/elements/specials/weightPerCharge/dropOnEmpty",
+          "writerGate": "docs/generated/core-record-writer-gates.json"
         }
       ],
       "resourceTypes": [],
       "evidence": [
+        "docs/generated/core-record-writer-gates.json",
         "docs/generated/core-rules-record-evidence.json",
         "docs/format-evidence-cards/core-rules-record-runtime-anchors.md"
       ],
-      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
+      "editorPolicy": "Some byte ranges are writer-proven or structurally decoded, while preserved/runtime ranges remain read-only."
     },
     {
       "container": "Data RD",

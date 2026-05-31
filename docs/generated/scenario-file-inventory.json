@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-31T04:40:07.713Z",
+  "generatedAt": "2026-05-31T05:12:05.876Z",
   "sources": {
     "roundtripLedger": "docs/generated/scenario-byte-roundtrip-ledger.json",
     "rustRegistry": "src-tauri/src/realmz.rs",
@@ -14,6 +14,7 @@
     "scenarioStartupShellGate": "docs/generated/scenario-startup-shell-gate.json",
     "mapsStorageWriterGates": "docs/generated/maps-storage-writer-gates.json",
     "encounterShopWriterGates": "docs/generated/encounter-shop-writer-gates.json",
+    "coreRecordWriterGates": "docs/generated/core-record-writer-gates.json",
     "completenessTruth": "docs/generated/scenario-completeness-truth.json"
   },
   "policy": {
@@ -559,8 +560,8 @@
         8160
       ],
       "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
+      "coverageStatus": "mixed-writable-preserved",
+      "editable": false
     },
     {
       "name": "Data NI",
@@ -576,8 +577,8 @@
         20000
       ],
       "resourceTypes": [],
-      "coverageStatus": "decoded-writable",
-      "editable": true
+      "coverageStatus": "mixed-writable-preserved",
+      "editable": false
     },
     {
       "name": "Data RD",
