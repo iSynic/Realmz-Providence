@@ -122,8 +122,7 @@
 
 
 .realmz-script-editor > header,
-.realmz-script-layout,
-.script-header-grid {
+.realmz-script-layout {
   display: flex;
   gap: 10px;
 }
@@ -226,8 +225,8 @@
 
 
 .script-list-column {
-  width: clamp(280px, 22vw, 380px);
-  flex: 0 0 clamp(280px, 22vw, 380px);
+  width: clamp(240px, 18vw, 330px);
+  flex: 0 0 clamp(240px, 18vw, 330px);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -465,17 +464,30 @@
 
 
 .script-header-grid {
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(72px, 88px) minmax(150px, 190px) repeat(5, minmax(72px, 88px));
+  align-items: end;
+  gap: 10px;
+  justify-content: start;
   margin-bottom: 10px;
 }
 
 
 
 .script-header-grid label {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 3px;
-  min-width: 110px;
+  min-width: 0;
+}
+
+.script-header-grid label span {
+  white-space: nowrap;
+}
+
+.script-header-grid input,
+.script-header-grid select {
+  width: 100%;
+  min-width: 0;
 }
 
 
@@ -861,8 +873,10 @@
 
 .realmz-step-form-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(90px, 0.45fr);
+  grid-template-columns: minmax(260px, 520px) minmax(130px, 220px);
   gap: 8px;
+  align-items: start;
+  justify-content: start;
 }
 
 
@@ -870,6 +884,7 @@
 .realmz-step-form-grid label {
   display: grid;
   gap: 4px;
+  min-width: 0;
 }
 
 
@@ -879,6 +894,42 @@
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
+}
+
+.realmz-step-form-grid input,
+.realmz-step-form-grid select {
+  width: 100%;
+  min-width: 0;
+}
+
+.realmz-step-id-field small {
+  color: #8ba1b3;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.script-required-field {
+  position: relative;
+}
+
+.script-required-field > span::after,
+.script-required-field > label > span::after {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 5px;
+  border-radius: 50%;
+  background: #d6b95b;
+  box-shadow: 0 0 0 2px rgba(214, 185, 91, 0.12);
+  vertical-align: 1px;
+}
+
+.realmz-step-form-grid .script-required-field {
+  border-left: 2px solid rgba(214, 185, 91, 0.8);
+  border-radius: 5px;
+  background: linear-gradient(90deg, rgba(214, 185, 91, 0.08), transparent 52%);
+  padding-left: 8px;
 }
 
 
@@ -1917,8 +1968,8 @@
 
 .edcd-field-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(74px, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
 }
 
 
@@ -1926,12 +1977,14 @@
 .edcd-field-grid label {
   display: grid;
   gap: 4px;
+  align-content: start;
+  min-width: 0;
 }
 
 
 
 .edcd-field-grid label.edcd-item-field {
-  grid-column: span 2;
+  grid-column: span 1;
 }
 
 
@@ -1951,6 +2004,18 @@
   font-weight: 900;
   line-height: 1.15;
   text-transform: uppercase;
+}
+
+.edcd-field-grid input,
+.edcd-field-grid select {
+  width: 100%;
+  min-width: 0;
+}
+
+.edcd-field-grid button {
+  justify-self: start;
+  max-width: 100%;
+  white-space: normal;
 }
 
 
@@ -1988,6 +2053,15 @@
   border-radius: 6px;
   background: #0b141c;
   padding: 8px;
+}
+
+.choice-dialog-grid label.script-required-field,
+.choice-prompt-field.script-required-field {
+  border-left-width: 3px;
+  border-left-color: rgba(214, 185, 91, 0.85);
+  background:
+    linear-gradient(90deg, rgba(214, 185, 91, 0.09), transparent 42%),
+    #0b141c;
 }
 
 
@@ -2171,6 +2245,14 @@
     grid-template-columns: 1fr;
   }
 
+  .script-header-grid {
+    grid-template-columns: repeat(auto-fit, minmax(68px, 1fr));
+  }
+
+  .realmz-step-form-grid {
+    grid-template-columns: 1fr;
+  }
+
   .realmz-visual-script,
   .realmz-visual-script.no-target-drawer,
   .realmz-visual-script.has-wide-target,
@@ -2206,7 +2288,7 @@
 
 @media (max-width: 1700px) {
   .realmz-visual-script {
-    grid-template-columns: minmax(230px, 300px) minmax(520px, 1fr);
+    grid-template-columns: minmax(210px, 260px) minmax(620px, 1fr);
   }
 
   .script-target-drawer {
@@ -2486,7 +2568,7 @@
 .realmz-visual-script {
   flex: 1 1 auto;
   display: grid;
-  grid-template-columns: minmax(230px, 300px) minmax(520px, 1.2fr) minmax(460px, 1fr);
+  grid-template-columns: minmax(210px, 260px) minmax(680px, 1.45fr) minmax(420px, 0.9fr);
   gap: 10px;
   align-items: stretch;
   margin-top: 10px;
@@ -2498,7 +2580,7 @@
 
 
 .realmz-visual-script.has-floating-detail {
-  grid-template-columns: minmax(220px, 360px);
+  grid-template-columns: minmax(210px, 260px);
 }
 
 
@@ -2506,7 +2588,7 @@
 
 
 .realmz-visual-script.has-wide-target {
-  grid-template-columns: minmax(230px, 300px) minmax(620px, 1fr);
+  grid-template-columns: minmax(210px, 260px) minmax(700px, 1fr);
 }
 
 
@@ -2514,7 +2596,7 @@
 
 
 .realmz-visual-script.no-target-drawer {
-  grid-template-columns: minmax(230px, 300px) minmax(560px, 1fr);
+  grid-template-columns: minmax(210px, 260px) minmax(680px, 1fr);
 }
 
 
@@ -2583,6 +2665,59 @@
   color: #a5b5c5;
   font-size: 10px;
   line-height: 1.4;
+}
+
+.realmz-action-help-card {
+  display: grid;
+  gap: 7px;
+  border: 1px solid #2d3a47;
+  border-radius: 6px;
+  background: #0d151d;
+  padding: 8px 10px;
+}
+
+.realmz-action-help-card header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.realmz-action-help-card strong {
+  color: #f2c94c;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.realmz-action-help-card header span {
+  color: #7eaedf;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.realmz-action-help-card p {
+  margin: 0;
+  color: #b8c7d5;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.realmz-action-help-facts {
+  display: grid;
+  gap: 0;
+  border-top: 1px solid #26313c;
+}
+
+.realmz-action-help-facts .field-row {
+  align-items: start;
+}
+
+.realmz-action-help-facts .field-row span:last-child {
+  white-space: normal;
+  line-height: 1.35;
 }
 
 .realmz-divinity-opcode-help {
@@ -2994,9 +3129,4 @@
 .slot-index {
   color: #ffd36d;
   font-weight: 700;
-}
-
-.selected-step-detail-links {
-  display: grid;
-  gap: 6px;
 }

@@ -9,7 +9,7 @@ import { categoryColor } from "../components/TileSprite";
 import { CollapsibleSection, EmptyState, FieldRow, FloatingWorkbenchPanel, PanelSection, ScrollArea } from "../ui";
 import { ACTION_OPTIONS, actionOptionFor, isDispatcherNoopOpcode } from "../realmzActions";
 import { edcdFieldNamesForShape } from "../realmzEdcd";
-import { crosswalkForOpcode, opcodeIdMeaning, opcodeWriterNote, parameterLabelsForOpcode } from "../opcodeCrosswalk";
+import { crosswalkForOpcode, opcodeIdMeaning, parameterLabelsForOpcode } from "../opcodeCrosswalk";
 import { divinityHelpForOpcode } from "../divinityOpcodeHelp";
 import { ScriptDiagnostic, validateActionDraft, validateScriptTrigger } from "../scriptValidation";
 import { actionPointCapacity, isReusableDoorPlaceholder, nextActionPointRecordIndex } from "../actionPointCapacity";
@@ -708,17 +708,6 @@ function ScriptAuthoringPanel({
                   onCommit={(targetY) => onApplyCommand?.({ kind: "updateTriggerHeader", label: "Update action target Y", triggerId: selectedTrigger.id, fields: { targetY } })}
                 />
               </div>
-              <SourceEvidence
-                project={project}
-                trigger={selectedTrigger}
-                selectedSlot={selectedSlot}
-                selectedAction={selectedAction}
-                selectedDraft={selectedDraft}
-                selectedOption={selectedOption}
-                selectedSlotEntity={selectedSlotEntity}
-                selectedEdcdRowId={selectedEdcdRowId}
-                onSelectEntity={onSelectEntity}
-              />
               <div className={`realmz-visual-script${floatingDetail ? " has-floating-detail" : ""}${targetEditorPanel ? "" : " no-target-drawer"}${wideTargetRecord && targetEditorPanel && !floatingDetail ? " has-wide-target" : ""}`}>
                 <PanelSection
                   title="Steps"
@@ -789,6 +778,17 @@ function ScriptAuthoringPanel({
                   {targetEditorPanel}
                 </FloatingWorkbenchPanel>
               )}
+              <SourceEvidence
+                project={project}
+                trigger={selectedTrigger}
+                selectedSlot={selectedSlot}
+                selectedAction={selectedAction}
+                selectedDraft={selectedDraft}
+                selectedOption={selectedOption}
+                selectedSlotEntity={selectedSlotEntity}
+                selectedEdcdRowId={selectedEdcdRowId}
+                onSelectEntity={onSelectEntity}
+              />
             </>
           ) : (
             <p className="empty-copy compact">Create or select an Action Point to build its script steps.</p>
@@ -851,11 +851,6 @@ function SourceEvidence({
           <FieldRow label="Edit State" value={selectedSlotEntity?.editState ?? "authored/draft"} />
         </div>
         {edcdUsage?.summary && <p className="field-help">{edcdUsage.summary}</p>}
-        {selectedEdcdRowId != null && (
-          <button className="btn btn-secondary btn-xs" type="button" onClick={() => onSelectEntity(selectEntityFromId(`record:Data EDCD:${selectedEdcdRowId}`))}>
-            Open settings details
-          </button>
-        )}
         <EvidenceLinkGroup title="Script Links" project={project} links={[...triggerLinks.outgoing, ...triggerLinks.incoming]} onSelectEntity={onSelectEntity} />
         <EvidenceLinkGroup title="Slot Links" project={project} links={[...slotLinks.outgoing, ...slotLinks.incoming]} onSelectEntity={onSelectEntity} />
       </div>
@@ -983,7 +978,46 @@ function SelectedStepDetail({
   const selectedCrosswalk = crosswalkForOpcode(selectedDraft.rawCode);
   const selectedDivinityHelp = divinityHelpForOpcode(selectedDraft.rawCode);
   const selectedIdLabel = opcodeIdMeaning(selectedDraft.rawCode);
-  const selectedParameterLabels = parameterLabelsForOpcode(selectedDraft.rawCode);
+  const selectedParameterLabels = selectedDefinition.parameters.length > 0
+    ? selectedDefinition.parameters.map((parameter) => ({
+      index: parameter.index,
+      label: parameter.label,
+      help: parameter.help,
+      internalName: parameter.internalName,
+      preserved: parameter.preserved,
+      targetFamily: parameter.targetFamily
+    }))
+    : parameterLabelsForOpcode(selectedDraft.rawCode);
+  const visibleParameters = selectedDefinition.parameters.filter((parameter) => !parameter.preserved);
+  const actionHelp = selectedDivinityHelp ? (
+    <div className="realmz-action-help-card">
+      <header>
+        <strong>Action Help</strong>
+        <span>{selectedDefinition.categoryLabel}</span>
+      </header>
+      <p>{selectedDivinityHelp.use || selectedDefinition.description}</p>
+      <div className="realmz-action-help-facts">
+        <FieldRow label={selectedDefinition.target?.label ?? "Target"} value={(selectedDefinition.target?.help || selectedCrosswalk?.idHelp || selectedCrosswalk?.idMeaning || selectedDivinityHelp.idField || "No target required")} />
+        {visibleParameters.length > 0 && (
+          <FieldRow
+            label="Settings"
+            value={visibleParameters.map((parameter) => `${parameter.index + 1}. ${parameter.label}`).join("; ")}
+          />
+        )}
+      </div>
+      {(selectedDivinityHelp.options || selectedDivinityHelp.extraCodes) && (
+        <details className="realmz-original-help">
+          <summary>Original Divinity Text</summary>
+          {selectedDivinityHelp.options && selectedDivinityHelp.options.toLowerCase() !== "none" && (
+            <FieldRow label="Options" value={selectedDivinityHelp.options} />
+          )}
+          {selectedDivinityHelp.extraCodes && selectedDivinityHelp.extraCodes.toLowerCase() !== "none" && (
+            <FieldRow label="E-Codes" value={selectedDivinityHelp.extraCodes} />
+          )}
+        </details>
+      )}
+    </div>
+  ) : null;
   return (
     <div className="realmz-step-detail selected-step-detail">
       {selectedDraftDirty && (
@@ -999,53 +1033,9 @@ function SelectedStepDetail({
           <span>{selectedDefinition.categoryLabel}</span>
         </div>
         <p>{selectedDefinition.summary}</p>
-        <div className="realmz-raw-preview script-action-definition-summary">
-          {selectedDefinition.target && <FieldRow label="Target" value={selectedDefinition.target.label} hint={selectedDefinition.target.help} />}
-          {selectedDefinition.parameters.some((parameter) => !parameter.preserved) && (
-            <FieldRow
-              label="Settings"
-              value={selectedDefinition.parameters
-                .filter((parameter) => !parameter.preserved)
-                .map((parameter) => `${parameter.index + 1}. ${parameter.label}`)
-                .join("; ")}
-            />
-          )}
-        </div>
-        {selectedDivinityHelp && (
-          <details className="realmz-divinity-opcode-help">
-            <summary>Action Help</summary>
-            <div className="realmz-divinity-opcode-help-body">
-              <FieldRow label="Action" value={selectedCrosswalk?.title ?? selectedDivinityHelp.title} />
-              <FieldRow label="ID Means" value={(selectedCrosswalk?.idMeaning ?? selectedDivinityHelp.idField) || "Not used"} />
-              {selectedCrosswalk?.idHelp && <p>{selectedCrosswalk.idHelp}</p>}
-              {selectedCrosswalk?.parameters?.some((parameter) => !parameter.preserved) && (
-                <FieldRow
-                  label="Settings"
-                  value={selectedCrosswalk.parameters
-                    .filter((parameter) => !parameter.preserved)
-                    .map((parameter) => `${parameter.index + 1}. ${parameter.label}`)
-                    .join("; ")}
-                />
-              )}
-              {(selectedDivinityHelp.use || selectedDivinityHelp.options || selectedDivinityHelp.extraCodes) && (
-                <details className="realmz-original-help">
-                  <summary>Original Divinity Text</summary>
-                  {selectedDivinityHelp.use && <p>{selectedDivinityHelp.use}</p>}
-                  {selectedDivinityHelp.options && selectedDivinityHelp.options.toLowerCase() !== "none" && (
-                    <FieldRow label="Options" value={selectedDivinityHelp.options} />
-                  )}
-                  {selectedDivinityHelp.extraCodes && selectedDivinityHelp.extraCodes.toLowerCase() !== "none" && (
-                    <FieldRow label="E-Codes" value={selectedDivinityHelp.extraCodes} />
-                  )}
-                </details>
-              )}
-            </div>
-          </details>
-        )}
-        {selectedOption.edcdShape && <em>This action has extra settings below.</em>}
       </div>
       <div className="realmz-step-form-grid">
-        <label>
+        <label className="script-required-field realmz-step-action-field">
           <span>Action</span>
           <select
             value={selectedDraft.rawCode}
@@ -1056,7 +1046,7 @@ function SelectedStepDetail({
             ))}
           </select>
         </label>
-        <label>
+        <label className="script-required-field realmz-step-id-field">
           <span>{selectedDefinition.target?.label ?? selectedIdLabel}</span>
           <input
             type="number"
@@ -1066,11 +1056,12 @@ function SelectedStepDetail({
           />
           {selectedOption.edcdShape && (
             <small>
-              Choose the settings row for this action, then edit its fields below.
+              {selectedDefinition.target?.help || "Stores this step's settings."}
             </small>
           )}
         </label>
       </div>
+      {actionHelp}
       <TargetPicker
         project={project}
         catalog={catalog}
@@ -1137,62 +1128,11 @@ function SelectedStepDetail({
           onApplyCommand={onApplyCommand}
         />
       </CollapsibleSection>
-      <CollapsibleSection title="Advanced Classic Fields" eyebrow="raw storage" density="compact" storageKey="scripts.advancedFields.open" defaultOpen={false}>
-        <div className="realmz-raw-preview">
-          <FieldRow label="Classic Action" value={selectedDefinition.realmzOptionLabel} />
-          <FieldRow label="Storage" value={scriptActionStorageLabel(selectedDefinition)} />
-          <FieldRow label="Default Draft" value={scriptActionDefaultDraftLabel(selectedDefinition)} />
-          <FieldRow label="Raw CODE" value={selectedDraft.rawCode} />
-          <FieldRow label="Raw ID" value={selectedDraft.id} />
-          <FieldRow label="Internal Shape" value={selectedOption.edcdShape ?? "none"} />
-          {opcodeWriterNote(selectedDraft.rawCode) && <FieldRow label="Writer Note" value={opcodeWriterNote(selectedDraft.rawCode)} />}
-          <FieldRow label="Source Summary" value={selectedSlotEntity?.summary.edcdUsage ? String((selectedSlotEntity.summary.edcdUsage as { summary?: string }).summary ?? selectedOption.description) : selectedOption.description} />
-          {selectedDefinition.parameters.some((parameter) => parameter.preserved) && (
-            <FieldRow
-              label="Preserved Settings"
-              value={selectedDefinition.parameters
-                .filter((parameter) => parameter.preserved)
-                .map((parameter) => `${parameter.index + 1}. ${parameter.label}`)
-                .join("; ")}
-            />
-          )}
-        </div>
-      </CollapsibleSection>
-      <div className="selected-step-detail-links">
-        {selectedEdcdRowId != null && (
-          <button className="btn btn-secondary btn-xs" type="button" onClick={() => onSelectEntity(selectEntityFromId(`record:Data EDCD:${selectedEdcdRowId}`))}>
-            Open settings details
-          </button>
-        )}
-        {selectedSlotEntity ? (
-          <button className="btn btn-secondary btn-xs" type="button" onClick={() => onSelectEntity(selectEntityFromId(selectedSlotEntity.id))}>
-            Open step details
-          </button>
-        ) : selectedSlotApplied ? (
-          <EmptyState compact title="Step applied" body="This step is written to the project. Related links update when the project is refreshed." />
-        ) : (
-          <EmptyState compact title="Step not applied yet" body="Apply this step to update the script." />
-        )}
-      </div>
+      {selectedSlotApplied ? null : (
+        <EmptyState compact title="Step not applied yet" body="Apply this step to update the script." />
+      )}
     </div>
   );
-}
-
-function scriptActionStorageLabel(definition: ScriptActionDefinition) {
-  const labels: Record<ScriptActionDefinition["storage"], string> = {
-    "direct-code-id": "Direct CODE/ID target",
-    "data-edcd-parameter-row": "CODE/ID plus Data EDCD parameter row",
-    "data-ed3-direct": "Direct Data ED3 reusable action",
-    "same-map-action-point-copy": "Same-map Action Point copy"
-  };
-  return definition.edcdShape ? `${labels[definition.storage]} (${definition.edcdShape})` : labels[definition.storage];
-}
-
-function scriptActionDefaultDraftLabel(definition: ScriptActionDefinition) {
-  const parameters = definition.defaultDraft.parameters;
-  return parameters
-    ? `CODE ${definition.defaultDraft.rawCode} / ID ${definition.defaultDraft.id} / params ${parameters.join(", ")}`
-    : `CODE ${definition.defaultDraft.rawCode} / ID ${definition.defaultDraft.id}`;
 }
 
 export function TargetRecordEditor({
@@ -2879,7 +2819,7 @@ function ScriptDiagnostics({ issues }: { issues: ScriptDiagnostic[] }) {
   if (issues.length === 0) {
     return (
       <div className="script-diagnostics ok">
-        <span>Compatibility</span>
+        <span>Ready</span>
         <strong>No script blockers detected for this selection.</strong>
       </div>
     );

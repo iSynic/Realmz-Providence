@@ -113,8 +113,8 @@ export function EdcdRowEditor({
 
   return (
     <PanelSection
-      title={`Settings Row ${rowId}`}
-      eyebrow="extra settings"
+      title={settingsTitleForShape(shapeId)}
+      eyebrow={`settings ${rowId}`}
       density="compact"
       actions={
         <>
@@ -145,7 +145,6 @@ export function EdcdRowEditor({
       }
     >
       <div className="edcd-row-editor">
-        {edcdUsage?.summary && <p className="field-help">{edcdUsage.summary}</p>}
         {!row && (
           <EmptyState
             compact
@@ -160,13 +159,6 @@ export function EdcdRowEditor({
         ) : (
           <EmptyState compact title="No editable settings" body="This imported settings row does not have normal editable fields." />
         )}
-        {preservedFields.length > 0 && (
-          <CollapsibleSection title="Advanced Values" eyebrow={`${preservedFields.length}`} density="compact" storageKey={`scripts.parameterRow.${rowId}.preserved.open`} defaultOpen={false}>
-            <div className="edcd-field-grid preserved">
-              {preservedFields.map((field) => renderParameterField(field))}
-            </div>
-          </CollapsibleSection>
-        )}
         {edcdUsage?.secondaryRowId != null && (
           <div className="edcd-secondary-row">
             <FieldRow label="Secondary Settings Row" value={edcdUsage.secondaryRowId} />
@@ -178,11 +170,18 @@ export function EdcdRowEditor({
         {edcdUsage?.diagnostics?.map((diagnostic) => (
           <p key={diagnostic} className="field-warning">{diagnostic}</p>
         ))}
-        <CollapsibleSection title="Advanced Details" eyebrow="raw row" density="compact" storageKey={`scripts.parameterRow.${rowId}.advanced.open`} defaultOpen={false}>
+        <CollapsibleSection title="Technical Details" eyebrow="advanced" density="compact" storageKey={`scripts.parameterRow.${rowId}.advanced.open`} defaultOpen={false}>
           <div className="realmz-raw-preview">
+            {edcdUsage?.summary && <FieldRow label="Summary" value={edcdUsage.summary} />}
             <FieldRow label="Data EDCD Row" value={rowId} />
             <FieldRow label="Internal Shape" value={shapeId} />
             <FieldRow label="Internal Fields" value={fieldNames.join(", ")} />
+            {preservedFields.length > 0 && (
+              <FieldRow
+                label="Compatibility Values"
+                value={preservedFields.map((field) => `${field.label}: ${numericDraft[field.index] ?? 0}`).join("; ")}
+              />
+            )}
           </div>
         </CollapsibleSection>
       </div>
@@ -215,7 +214,11 @@ export function EdcdRowEditor({
             }}
           >
             <option value="0">No {targetLabel}</option>
-            {value !== 0 && !selectedTarget && <option value={`raw:${value}`}>Current {targetLabel} ID {value}</option>}
+            {value !== 0 && !selectedTarget && (
+              <option value={`raw:${value}`}>
+                {value > 0 ? `Missing ${targetLabel} ${value}` : `No ${targetLabel} selected (${value})`}
+              </option>
+            )}
             {targetOptions.map((option) => (
               <option key={option.key} value={option.value}>{option.label}</option>
             ))}
@@ -251,13 +254,13 @@ export function EdcdRowEditor({
         {help && <small>{help}</small>}
         {isItemField && <small>{selectedItem ? [selectedItem.detail, selectedItem.sourceState].filter(Boolean).join(" | ") : itemReferenceDetail(project, value, catalog)}</small>}
         {targetKind && (
-          <small>
-            {selectedTarget
-              ? selectedTarget.detail
-              : value > 0
-                ? `No ${targetLabel} ${value} exists yet.`
-                : `No ${targetLabel} target selected.`}
-          </small>
+            <small>
+              {selectedTarget
+                ? selectedTarget.detail
+                : value > 0
+                  ? `No ${targetLabel} ${value} exists yet.`
+                  : `No ${targetLabel} selected. ${value < 0 ? `${value} is kept as an imported blank value.` : ""}`}
+            </small>
         )}
         {targetIssue && (
           <p className="field-warning">
@@ -270,7 +273,7 @@ export function EdcdRowEditor({
             className="btn btn-secondary btn-xs"
             onClick={() => onSelectEntity(selectedTarget.entity!)}
           >
-            Inspect {targetLabel}
+            Open {targetLabel}
           </button>
         )}
         {createRecordType && value > 0 && !selectedTarget && onApplyCommand && (
@@ -379,7 +382,7 @@ function ChoiceDialogEditor({
           />
         )}
         <div className="choice-dialog-grid">
-          <label>
+          <label className="script-required-field">
             <span>Continue When</span>
             <select value={continueValue === 0 || continueValue === 1 ? String(continueValue) : `raw:${continueValue}`} onChange={(event) => {
               const raw = event.currentTarget.value;
@@ -392,7 +395,7 @@ function ChoiceDialogEditor({
             </select>
             <small>The other choice branches using the behavior below.</small>
           </label>
-          <label>
+          <label className="script-required-field">
             <span>Otherwise</span>
             <select value={CHOICE_BRANCH_MODES.some((mode) => mode.value === branchMode) ? String(branchMode) : `raw:${branchMode}`} onChange={(event) => {
               const raw = event.currentTarget.value;
@@ -406,7 +409,7 @@ function ChoiceDialogEditor({
             </select>
             <small>{CHOICE_BRANCH_MODES.find((mode) => mode.value === branchMode)?.help ?? "Imported branch behavior; edit with care."}</small>
           </label>
-          <label className={targetIssues.some((issue) => issue.index === 2) ? "has-warning" : ""}>
+          <label className={`${branchKind ? "script-required-field" : ""}${targetIssues.some((issue) => issue.index === 2) ? " has-warning" : ""}`}>
             <span>Branch Target</span>
             {branchKind ? (
               <select
@@ -456,7 +459,7 @@ function ChoiceDialogEditor({
             Missing {issue.targetLabel} {issue.value} for {issue.index === 2 ? "branch target" : issue.index === 3 ? "left option" : "right option"}.
           </p>
         ))}
-        <CollapsibleSection title="Advanced Details" eyebrow="raw row" density="compact" storageKey={`scripts.choiceDialog.${rowId}.advanced.open`} defaultOpen={false}>
+        <CollapsibleSection title="Technical Details" eyebrow="advanced" density="compact" storageKey={`scripts.choiceDialog.${rowId}.advanced.open`} defaultOpen={false}>
           <div className="realmz-raw-preview">
             <FieldRow label="Data EDCD Row" value={rowId} />
             <FieldRow label="Internal Shape" value="choice" />
@@ -524,7 +527,7 @@ function ChoicePromptField({
   };
 
   return (
-    <div className={`choice-prompt-field${warning ? " has-warning" : ""}`}>
+    <div className={`choice-prompt-field script-required-field${warning ? " has-warning" : ""}`}>
       <label>
         <span>{label}</span>
         <select value={prompt.kind} onChange={(event) => selectKind(event.currentTarget.value as ChoicePromptKind)}>
@@ -596,6 +599,23 @@ function edcdFieldLooksLikeItem(shape: string, name: string) {
 
 function fieldNameIsPreserved(name: string) {
   return name.toLowerCase().includes("unused");
+}
+
+function settingsTitleForShape(shape: string) {
+  const normalized = shape.toLowerCase();
+  const labels: Record<string, string> = {
+    battle: "Battle Setup",
+    choice: "Choice Dialog",
+    "random-message": "Message Range",
+    teleport: "Movement",
+    "party-condition-branch": "Condition Branch",
+    "force-branch": "Branch Target",
+    "percent-branch": "Percent Branch",
+    "condition-branch": "Condition Branch",
+    "random-region-shape-mutation": "Random Area Shape",
+    fumble: "Fumble Result"
+  };
+  return labels[normalized] ?? humanizeFieldName(shape);
 }
 
 function humanizeFieldName(name: string) {

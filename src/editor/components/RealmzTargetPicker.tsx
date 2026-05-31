@@ -114,8 +114,6 @@ export function targetPickerConfig(opcode: number) {
     44: { label: "Complex Encounter", hint: "Select the complex encounter this action mutates.", recordType: "complexEncounter" },
     47: { label: "Quest Flag", hint: "Select a quest flag to write.", recordType: "questLabel" },
     49: { label: "Shop Target", hint: "Select a shop record.", recordType: "shop" },
-    62: { label: "Message Target", hint: "Select the scenario message this action displays.", recordType: "message" },
-    71: { label: "Message Target", hint: "Select the scenario message this action displays.", recordType: "message" },
     97: { label: "Map Record", hint: "Select a map record." },
     104: { label: "Simple Encounter", hint: "Select the simple encounter this action mutates.", recordType: "simpleEncounter" },
     127: { label: "Monster Target", hint: "Select a monster record.", recordType: "monster" }
@@ -215,8 +213,8 @@ function catalogCacheKey(catalog?: LibraryCatalog | null) {
 }
 
 function addTypedProjectTargets(project: Project, code: number, options: ScriptTargetOption[], catalog?: LibraryCatalog | null) {
-  if ([1, 19, 62, 71].includes(code)) {
-    const used = usageCounts(project, [1, 19, 62, 71]);
+  if (code === 1) {
+    const used = usageCounts(project, [1]);
     for (const record of project.messages ?? []) {
       options.push({ key: `message:${record.id}`, value: record.id, label: `Message ${record.id}`, detail: record.text.slice(0, 80) || "empty", summary: `${used.get(record.id) ?? 0} script use(s)`, compatibility: "Editable", sourceState: record.authored ? "Authored" : "Imported", entity: { type: "message", id: `message:${record.id}` } });
     }
@@ -341,8 +339,6 @@ export function targetSemanticTypes(code: number) {
     48: ["battle"],
     49: ["shop"],
     56: ["battle"],
-    62: ["message"],
-    71: ["message"],
     97: ["map", "map record"],
     104: ["simple encounter"],
     107: ["battle"],

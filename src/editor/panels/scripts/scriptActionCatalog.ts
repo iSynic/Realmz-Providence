@@ -91,7 +91,7 @@ const ACTION_OVERRIDES: Record<number, Partial<Pick<ScriptActionDefinition, "lab
   [-23]: { label: "Change Random Encounter Area", shortLabel: "Random Area", category: "Encounters", description: "Adjust a dungeon random encounter area." },
   [-14]: { label: "Pick Opposite Characters", shortLabel: "Pick Opposite", category: "Party", description: "Switch the selected character set to its opposite." },
   0: { label: "Empty Step", shortLabel: "Empty", category: "Advanced", description: "Leave this step unused." },
-  1: { label: "Show Message", shortLabel: "Message", category: "Dialogue", description: "Show a scenario message." },
+  1: { label: "Show Message", shortLabel: "Show Message", category: "Dialogue", description: "Show a scenario message." },
   2: { label: "Start Battle", shortLabel: "Battle", category: "Encounters", description: "Start a battle or battle range." },
   3: { label: "Ask Choice", shortLabel: "Choice", category: "Choices", description: "Ask the player a two-option question and route the result." },
   4: { label: "Start Simple Encounter", shortLabel: "Simple Encounter", category: "Encounters", description: "Run a simple encounter." },
@@ -101,8 +101,10 @@ const ACTION_OVERRIDES: Record<number, Partial<Pick<ScriptActionDefinition, "lab
   8: { label: "Run Same-Map Action Point", shortLabel: "Same-Map Action", category: "Reusable Actions", description: "Run another Action Point from the current map." },
   9: { label: "Play Sound", shortLabel: "Sound", category: "Media", description: "Play a sound effect." },
   10: { label: "Give Treasure", shortLabel: "Treasure", category: "Rewards", description: "Give a treasure reward." },
+  11: { label: "Give Victory Points", shortLabel: "Victory Points", category: "Rewards", description: "Give victory points to the party." },
   12: { label: "Change Map Tile", shortLabel: "Tile Change", category: "Travel", description: "Change a land or dungeon tile." },
   13: { label: "Change Action Point State", shortLabel: "Action State", category: "Logic", description: "Enable, disable, or change an Action Point." },
+  14: { label: "Pick Characters", shortLabel: "Pick Characters", category: "Party", description: "Ask the player to pick party members for following steps." },
   15: { label: "Damage Party", shortLabel: "Damage", category: "Party", description: "Damage selected characters or the party." },
   16: { label: "Heal Party", shortLabel: "Heal", category: "Party", description: "Heal selected characters or the party." },
   17: { label: "Cast Spell", shortLabel: "Cast Spell", category: "Rules", description: "Cast a spell from this action." },
@@ -143,7 +145,7 @@ const ACTION_OVERRIDES: Record<number, Partial<Pick<ScriptActionDefinition, "lab
   59: { label: "Force Branch", shortLabel: "Force Branch", category: "Logic", description: "Route execution to another result or action." },
   60: { label: "Change Money State", shortLabel: "Money State", category: "Rewards", description: "Change party money state." },
   61: { label: "Shift Position", shortLabel: "Position Shift", category: "Travel", description: "Shift the current party position." },
-  62: { label: "Show Message", shortLabel: "Message", category: "Dialogue", description: "Show a scenario message variant." },
+  62: { label: "Show Scrolling Text", shortLabel: "Scrolling Text", category: "Dialogue", description: "Show a scrolling text scene." },
   63: { label: "Change Time", shortLabel: "Time", category: "Logic", description: "Set or offset game time." },
   64: { label: "Branch On Time", shortLabel: "Time Branch", category: "Logic", description: "Branch based on the current game day and hour." },
   65: { label: "Give Random Items", shortLabel: "Random Items", category: "Items", description: "Give a random item from a range." },
@@ -151,7 +153,7 @@ const ACTION_OVERRIDES: Record<number, Partial<Pick<ScriptActionDefinition, "lab
   68: { label: "Change Fatigue", shortLabel: "Fatigue", category: "Party", description: "Alter party or character fatigue." },
   69: { label: "Set Spell Flags", shortLabel: "Spell Flags", category: "Rules", description: "Set combat spellcasting flags." },
   70: { label: "Save Or Restore Position", shortLabel: "Save Position", category: "Travel", description: "Save or restore party position." },
-  71: { label: "Show Message", shortLabel: "Message", category: "Dialogue", description: "Show a scenario message variant." },
+  71: { label: "Toggle Coordinate Display", shortLabel: "Coordinate Display", category: "Travel", description: "Show or hide the coordinate display." },
   72: { label: "Branch On Range", shortLabel: "Range Branch", category: "Logic", description: "Branch to a target based on a range or test." },
   73: { label: "Open Restricted Shop", shortLabel: "Restricted Shop", category: "Rewards", description: "Open a restricted shop." },
   74: { label: "Change Spell Points", shortLabel: "Spell Points", category: "Rules", description: "Alter spell points." },
@@ -243,6 +245,28 @@ const ACTION_METADATA_OVERRIDES: Record<number, ScriptActionMetadataOverride> = 
     },
     defaultDraft: { rawCode: 8, id: 0 }
   },
+  11: {
+    storage: "direct-code-id",
+    target: {
+      label: "Victory Points",
+      realmzField: "ID",
+      targetFamily: "victory-points",
+      defaultValue: 1,
+      help: "Amount of victory points to award."
+    },
+    defaultDraft: { rawCode: 11, id: 1 }
+  },
+  14: {
+    storage: "direct-code-id",
+    target: {
+      label: "Characters To Pick",
+      realmzField: "ID",
+      targetFamily: "party-selection-count",
+      defaultValue: 1,
+      help: "Number of party members the player should pick for following steps."
+    },
+    defaultDraft: { rawCode: 14, id: 1 }
+  },
   19: {
     storage: "data-edcd-parameter-row",
     edcdShape: "random-message",
@@ -264,6 +288,17 @@ const ACTION_METADATA_OVERRIDES: Record<number, ScriptActionMetadataOverride> = 
       help: "Reusable action to run from here."
     },
     defaultDraft: { rawCode: 39, id: 0 }
+  },
+  62: {
+    storage: "direct-code-id",
+    target: {
+      label: "Scrolling Text ID",
+      realmzField: "ID",
+      targetFamily: "scrolling-text",
+      defaultValue: 0,
+      help: "Scrolling text scene to display."
+    },
+    defaultDraft: { rawCode: 62, id: 0 }
   },
   45: {
     storage: "data-edcd-parameter-row",
@@ -303,6 +338,17 @@ const ACTION_METADATA_OVERRIDES: Record<number, ScriptActionMetadataOverride> = 
       0: { label: "Light/Dark State", targetFamily: "dark-level-state", help: "1 makes the current land level light; 2 makes it dark." },
       1: { label: "Stop If Already Set", help: "1 skips the rest of the Action Point when the requested light/dark state is already active." }
     }
+  },
+  71: {
+    storage: "direct-code-id",
+    target: {
+      label: "Coordinate Display",
+      realmzField: "ID",
+      targetFamily: "coordinate-display-state",
+      defaultValue: 1,
+      help: "0 hides the coordinate display; nonzero values show it."
+    },
+    defaultDraft: { rawCode: 71, id: 1 }
   },
   122: {
     storage: "data-edcd-parameter-row",
@@ -388,7 +434,10 @@ export function scriptActionSummary(
 ) {
   const definition = scriptActionDefinitionFor(draft.rawCode);
   if (normalizeStepOpcode(draft.rawCode) === 0) return emptyLabel;
-  const target = targetOptionsForOpcode(project, draft.rawCode, catalog).find((option) => option.value === draft.id);
+  const shouldResolveDirectTarget = Boolean(definition.target && definition.target.targetFamily !== "parameter-row");
+  const target = shouldResolveDirectTarget
+    ? targetOptionsForOpcode(project, draft.rawCode, catalog).find((option) => option.value === draft.id)
+    : null;
   if (target) return `${definition.shortLabel}: ${target.label}`;
   if (definition.target) {
     if (draft.id === 0) return `${definition.shortLabel}: choose ${definition.target.label.toLowerCase()}`;
