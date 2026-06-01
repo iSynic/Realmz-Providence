@@ -1900,6 +1900,9 @@
 .script-reference-id-field input,
 .script-reference-id-field select {
   min-height: 26px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 
@@ -2985,14 +2988,22 @@
 .realmz-target-picker label {
   display: grid;
   gap: 4px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 
 
 
 
-.realmz-target-picker label input {
+.realmz-target-picker label input,
+.realmz-target-picker label select {
   min-height: 26px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 
