@@ -37,13 +37,14 @@ export function choiceBranchTargetKind(branchMode: number): ChoiceBranchTargetKi
 }
 
 export function choiceBranchModeLabel(branchMode: number) {
-  return CHOICE_BRANCH_MODES.find((mode) => mode.value === branchMode)?.label ?? `Raw mode ${branchMode}`;
+  return CHOICE_BRANCH_MODES.find((mode) => mode.value === branchMode)?.label ?? `Imported mode ${branchMode}`;
 }
 
 export function choiceContinueLabel(value: number) {
   if (value === 1) return "Left / Yes continues";
   if (value === 0) return "Right / No continues";
-  return `Raw continue value ${value}`;
+  if (value === -1) return "Either answer continues";
+  return `Imported continue value ${value}`;
 }
 
 export function nextOptionLabelId(records: OptionLabelRecord[]) {

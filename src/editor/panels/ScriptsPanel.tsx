@@ -2,14 +2,14 @@ import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState, useT
 import { AlertTriangle, ArrowDown, ArrowUp, Copy, CopyPlus, Plus, Save, Trash2, X } from "lucide-react";
 import { Action, EncounterActionRow, LevelType, LibraryCatalog, Project, ProjectCommand, RealmzTargetRecordKind, ScriptDetailSurface, ScriptInventoryFilter, SelectedEntity, SemanticEntity, TriggerRecord } from "../types";
 import { linksFor, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
-import { actionSlotEntitiesForTriggerRecord, ed3EvidenceRecords, ed3ReachabilityFor, extraActionPointClassification, isCallableMacro } from "../semanticGraph";
+import { actionSlotEntitiesForTriggerRecord, extraActionPointClassification } from "../semanticGraph";
 import { EdcdRowEditor } from "../components/EdcdRowEditor";
-import { TargetPicker, targetOptionsForOpcode } from "../components/RealmzTargetPicker";
+import { TargetPicker, resolveSignedMessageTarget, signedTargetBehaviorLabel, signedTargetValueForSelection, targetOptionsForOpcode } from "../components/RealmzTargetPicker";
 import { categoryColor } from "../components/TileSprite";
 import { CollapsibleSection, EmptyState, FieldRow, FloatingWorkbenchPanel, PanelSection, ScrollArea } from "../ui";
-import { ACTION_OPTIONS, actionOptionFor, isDispatcherNoopOpcode } from "../realmzActions";
+import { ACTION_OPTIONS, actionOptionFor, isDispatcherNoopOpcode, normalizeStepOpcode } from "../realmzActions";
 import { edcdFieldNamesForShape } from "../realmzEdcd";
-import { crosswalkForOpcode, opcodeIdMeaning, parameterLabelsForOpcode } from "../opcodeCrosswalk";
+import { opcodeIdMeaning, parameterLabelsForOpcode } from "../opcodeCrosswalk";
 import { divinityHelpForOpcode } from "../divinityOpcodeHelp";
 import { ScriptDiagnostic, validateActionDraft, validateScriptTrigger } from "../scriptValidation";
 import { actionPointCapacity, isReusableDoorPlaceholder, nextActionPointRecordIndex } from "../actionPointCapacity";
@@ -28,6 +28,7 @@ import {
   scriptLabel,
   scriptMatchesQuery,
   scriptPanelTitle,
+  scriptTabKind,
   scriptSubtitle,
   triggerMatchesSelection,
   triggerSelectionId,
@@ -43,6 +44,7 @@ import {
   scriptActionDefinitionFor,
   scriptActionSummary,
   scriptStepBranchHint,
+  scriptStepFlowRoutes,
   type ScriptActionCategory,
   type ScriptActionDefinition
 } from "./scripts/scriptActionCatalog";
@@ -202,11 +204,11 @@ function ScriptAuthoringPanel({
   onOpenTool?: (tab: "text", editor: string) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
+  const activeTabKind = scriptTabKind(activeEditor);
   const scripts = useMemo(
     () => project?.triggers.filter((trigger) => triggerVisibleForEditor(project, trigger, activeEditor)) ?? [],
     [project, activeEditor]
   );
-  const ed3Evidence = useMemo(() => activeEditor === "ed3-evidence" ? ed3EvidenceRecords(project) : [], [project, activeEditor]);
   const projectMaps = project?.maps ?? [];
   const [draft, setDraft] = useState<Record<string, { rawCode: number; id: number }>>({});
   const [selectedSlot, setSelectedSlot] = useState(0);
@@ -226,15 +228,17 @@ function ScriptAuthoringPanel({
     }
   }, [newActionPoint.mapId, projectMaps]);
   useEffect(() => {
-    if (activeEditor === "macros" || activeEditor === "global-macros") {
+    if (activeTabKind === "reusable-actions" || activeTabKind === "global-events" || activeTabKind === "advanced-imports") {
       setInventoryFilter("macros");
+    } else if (activeTabKind === "quests") {
+      setInventoryFilter("all");
     }
-  }, [activeEditor]);
+  }, [activeTabKind, setInventoryFilter]);
   useEffect(() => {
     selectedScriptButtonRef.current?.scrollIntoView({ block: "nearest" });
   }, [selectedEntity?.id, inventoryFilter, scriptQuery, scripts.length]);
   const selectedMap = projectMaps.find((map) => map.id === newActionPoint.mapId) ?? projectMaps[0] ?? null;
-  const canScopeToMap = Boolean(selectedMap && activeEditor !== "macros" && activeEditor !== "global-macros");
+  const canScopeToMap = Boolean(selectedMap && activeTabKind === "action-points");
   const diagnosticDependencyKey = useMemo(() => project ? scriptDiagnosticDependencyKey(project, catalog) : "", [project, catalog]);
   const fullWarningDiagnosticsById = useMemo(() => {
     const map = new Map<string, ScriptDiagnostic[]>();
@@ -390,7 +394,24 @@ function ScriptAuthoringPanel({
     ? `${selectedTrigger.levelType}:${selectedTrigger.levelIndex}`
     : "";
   const issueCounts = issueCountsBySlot(triggerDiagnostics);
-  const setSelectedDraft = (values: { rawCode: number; id: number }) => setDraft({ ...draft, [selectedKey]: values });
+  const setSelectedDraft = (values: { rawCode: number; id: number }) => setDraft((current) => ({ ...current, [selectedKey]: values }));
+  const moveSelectedStep = (toSlot: number) => {
+    if (!selectedTrigger || toSlot < 0 || toSlot > 7 || toSlot === selectedSlot) return;
+    const fromKey = `${selectedTrigger.id}:${selectedSlot}`;
+    const toKey = `${selectedTrigger.id}:${toSlot}`;
+    setDraft((current) => {
+      const next = { ...current };
+      const fromDraft = next[fromKey];
+      const toDraft = next[toKey];
+      if (fromDraft) next[toKey] = fromDraft;
+      else delete next[toKey];
+      if (toDraft) next[fromKey] = toDraft;
+      else delete next[fromKey];
+      return next;
+    });
+    setSelectedSlot(toSlot);
+    onApplyCommand?.({ kind: "swapActionSlots", label: "Move step", triggerId: selectedTrigger.id, fromSlot: selectedSlot, toSlot });
+  };
   const applySelectedSlot = () => {
     if (!selectedTrigger) return;
     onApplyCommand?.({
@@ -428,10 +449,10 @@ function ScriptAuthoringPanel({
   const stepDetailActions = selectedTrigger ? (
     <>
       {detailSurfaceButton}
-      <button type="button" className="btn btn-secondary btn-xs icon-only" title="Move step up" disabled={selectedSlot === 0} onClick={() => onApplyCommand?.({ kind: "swapActionSlots", label: "Move step", triggerId: selectedTrigger.id, fromSlot: selectedSlot, toSlot: selectedSlot - 1 })}>
+      <button type="button" className="btn btn-secondary btn-xs icon-only" title="Move step up" disabled={selectedSlot === 0} onClick={() => moveSelectedStep(selectedSlot - 1)}>
         <ArrowUp size={12} />
       </button>
-      <button type="button" className="btn btn-secondary btn-xs icon-only" title="Move step down" disabled={selectedSlot === 7} onClick={() => onApplyCommand?.({ kind: "swapActionSlots", label: "Move step", triggerId: selectedTrigger.id, fromSlot: selectedSlot, toSlot: selectedSlot + 1 })}>
+      <button type="button" className="btn btn-secondary btn-xs icon-only" title="Move step down" disabled={selectedSlot === 7} onClick={() => moveSelectedStep(selectedSlot + 1)}>
         <ArrowDown size={12} />
       </button>
       <button type="button" className="btn btn-secondary btn-xs icon-only" title="Duplicate step to next position" disabled={!selectedAction || selectedSlot === 7} onClick={() => onApplyCommand?.({ kind: "duplicateActionSlot", label: "Duplicate step", triggerId: selectedTrigger.id, fromSlot: selectedSlot, toSlot: selectedSlot + 1 })}>
@@ -491,7 +512,7 @@ function ScriptAuthoringPanel({
         project={project}
         catalog={catalog}
         opcode={selectedDraft.rawCode}
-        targetId={selectedDraft.id}
+        targetId={resolveSignedMessageTarget(selectedDraft.rawCode, selectedDraft.id)}
         onApplyCommand={onApplyCommand}
       />
     </PanelSection>
@@ -510,9 +531,11 @@ function ScriptAuthoringPanel({
           <small>Build scenario behavior from clear steps, targets, choices, and reusable actions.</small>
         </div>
         <div className="script-toolbar">
-          <button type="button" className="btn btn-secondary btn-xs" onClick={() => onApplyCommand?.({ kind: "createMacro", label: "Create Reusable Action" })}>
-            <Plus size={12} /> Reusable Action
-          </button>
+          {(activeTabKind === "action-points" || activeTabKind === "reusable-actions") && (
+            <button type="button" className="btn btn-secondary btn-xs" onClick={() => onApplyCommand?.({ kind: "createMacro", label: "Create Reusable Action" })}>
+              <Plus size={12} /> Reusable Action
+            </button>
+          )}
           {selectedTrigger && (
             <button type="button" className="btn btn-secondary btn-xs" onClick={() => onApplyCommand?.({ kind: "duplicateTrigger", label: "Duplicate script", triggerId: selectedTrigger.id })}>
               <Copy size={12} /> Duplicate
@@ -520,7 +543,7 @@ function ScriptAuthoringPanel({
           )}
         </div>
       </header>
-      {selectedMap && (
+      {selectedMap && activeTabKind === "action-points" && (
         <div className="script-create-strip">
           <label>
             <span>New Action Point</span>
@@ -588,6 +611,15 @@ function ScriptAuthoringPanel({
                 </button>
               ))}
             </div>
+            {activeTabKind === "advanced-imports" && (
+              <div className="script-tab-note">
+                <strong>{scripts.length.toLocaleString()} imported action row(s)</strong>
+                <small>Advanced imported actions stay with the scenario and can be inspected here.</small>
+              </div>
+            )}
+            {activeTabKind === "quests" && (
+              <QuestUsageSummary project={project} scripts={scripts} onSelectEntity={onSelectEntity} onApplyCommand={onApplyCommand} />
+            )}
           </div>
           <ScrollArea className="realmz-script-list" aria-label="Action Points and reusable actions">
             {visibleScripts.map((trigger) => (
@@ -612,22 +644,6 @@ function ScriptAuthoringPanel({
               </div>
             )}
           </ScrollArea>
-          {ed3Evidence.length > 0 && (
-            <CollapsibleSection className="ed3-evidence-strip" title="Imported Extra Action Points" eyebrow="advanced" count={ed3Evidence.length.toLocaleString()} density="compact" storageKey="scripts.ed3Evidence.open" defaultOpen={false}>
-              <small>{ed3Evidence.length.toLocaleString()} imported advanced action row(s) are available for inspection.</small>
-              <ScrollArea className="ed3-evidence-list" aria-label="Imported Extra Action Point rows">
-                {ed3Evidence.slice(0, 80).map((trigger) => {
-                  const classification = authorFacingExtraActionKind(extraActionPointClassification(project, trigger));
-                  return (
-                    <button key={trigger.id} type="button" onClick={() => onSelectEntity(selectEntityFromId(`macro:${trigger.recordIndex}`))}>
-                      <strong>Extra Action Point {trigger.recordIndex}</strong>
-                      <small>{classification} | {trigger.actions.length} slot(s)</small>
-                    </button>
-                  );
-                })}
-              </ScrollArea>
-            </CollapsibleSection>
-          )}
         </div>
         <div className="realmz-script-form">
           {selectedTrigger ? (
@@ -799,6 +815,79 @@ function ScriptAuthoringPanel({
   );
 }
 
+function QuestUsageSummary({
+  project,
+  scripts,
+  onSelectEntity,
+  onApplyCommand
+}: {
+  project: Project;
+  scripts: TriggerRecord[];
+  onSelectEntity: (entity: SelectedEntity) => void;
+  onApplyCommand?: (command: ProjectCommand) => void;
+}) {
+  const quests = useMemo(() => questUsageSummary(project, scripts), [project, scripts]);
+  if (quests.length === 0) {
+    return (
+      <div className="script-tab-note">
+        <strong>No quest actions yet</strong>
+        <small>Quest steps appear here after scripts read, change, or branch on quest values.</small>
+      </div>
+    );
+  }
+  return (
+    <div className="script-quest-summary" aria-label="Quest usage summary">
+      <strong>Quest Flags</strong>
+      {quests.slice(0, 8).map((quest) => (
+        <div key={quest.id} className="script-quest-summary-row">
+          <span>
+            <b>{quest.label}</b>
+            <small>{quest.uses.length} script use{quest.uses.length === 1 ? "" : "s"}</small>
+          </span>
+          <div>
+            {quest.uses[0] && (
+              <button type="button" className="btn btn-secondary btn-xs" onClick={() => onSelectEntity(selectEntityFromId(triggerSelectionId(quest.uses[0].trigger)))}>
+                Open
+              </button>
+            )}
+            {!quest.authored && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-xs"
+                onClick={() => onApplyCommand?.({ kind: "upsertQuestLabel", label: "Create quest label", quest: { id: quest.id, label: `Quest ${quest.id}` } })}
+              >
+                Label
+              </button>
+            )}
+          </div>
+        </div>
+      ))}
+      {quests.length > 8 && <small>{quests.length - 8} more quest flag(s); filter the list to narrow.</small>}
+    </div>
+  );
+}
+
+function questUsageSummary(project: Project, scripts: TriggerRecord[]) {
+  const questCodes = new Set([46, 47, 76, 77]);
+  const byId = new Map<number, { id: number; label: string; authored: boolean; uses: Array<{ trigger: TriggerRecord; slot: number }> }>();
+  for (const quest of project.questLabels ?? []) {
+    byId.set(quest.id, { id: quest.id, label: quest.label || `Quest ${quest.id}`, authored: true, uses: [] });
+  }
+  for (const trigger of scripts) {
+    for (const action of trigger.actions) {
+      if (!questCodes.has(normalizeStepOpcode(action.rawCode))) continue;
+      const id = Math.abs(action.id);
+      if (id === 0) continue;
+      const existing = byId.get(id) ?? { id, label: `Quest ${id}`, authored: false, uses: [] };
+      existing.uses.push({ trigger, slot: action.slot });
+      byId.set(id, existing);
+    }
+  }
+  return [...byId.values()]
+    .filter((quest) => quest.uses.length > 0 || quest.authored)
+    .sort((a, b) => b.uses.length - a.uses.length || a.id - b.id);
+}
+
 function SourceEvidence({
   project,
   trigger,
@@ -899,26 +988,31 @@ function ScriptFlowPreview({
     .map((action) => ({
       action,
       definition: scriptActionDefinitionFor(action.rawCode),
-      hint: scriptStepBranchHint(action.rawCode, action.id),
+      routes: scriptStepFlowRoutes(project, catalog, { rawCode: action.rawCode, id: action.id }),
       summary: scriptActionSummary(project, catalog, { rawCode: action.rawCode, id: action.id })
     }))
-    .filter((step) => step.hint || step.definition.category === "Reusable Actions" || step.definition.category === "Choices" || step.definition.category === "Logic");
+    .filter((step) => step.routes.length > 0 || step.definition.category === "Reusable Actions" || step.definition.category === "Choices" || step.definition.category === "Logic");
   if (flowSteps.length === 0) return null;
   return (
     <div className="script-flow-preview" aria-label="Branch and reusable action preview">
       <strong>Flow Preview</strong>
-      {flowSteps.slice(0, 5).map(({ action, definition, hint, summary }) => (
+      {flowSteps.slice(0, 5).map(({ action, definition, routes, summary }) => (
         <div key={`${action.slot}-${action.rawCode}-${action.id}`}>
           <span>{action.slot + 1}</span>
           <p>
             <b>{definition.shortLabel}</b>
-            <small>{hint || summary}</small>
+            <small>{routes[0]?.target ? `${routes[0].label}: ${routes[0].target.label}` : routes[0]?.detail || summary}</small>
           </p>
         </div>
       ))}
       {flowSteps.length > 5 && <small>{flowSteps.length - 5} more routed step(s)</small>}
     </div>
   );
+}
+
+function humanActionValueLabel(label: string) {
+  const clean = label.replace(/\bID\b/g, "Value").replace(/\bNumber\b/g, "Value").replace(/\s+/g, " ").trim();
+  return clean && clean !== "Value" ? clean : "Value";
 }
 
 function SelectedStepDetail({
@@ -975,9 +1069,9 @@ function SelectedStepDetail({
   onOpenTool?: (tab: "text", editor: string) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
-  const selectedCrosswalk = crosswalkForOpcode(selectedDraft.rawCode);
+  const [previewExpanded, setPreviewExpanded] = useState(false);
   const selectedDivinityHelp = divinityHelpForOpcode(selectedDraft.rawCode);
-  const selectedIdLabel = opcodeIdMeaning(selectedDraft.rawCode);
+  const selectedIdLabel = selectedDefinition.target?.label ?? humanActionValueLabel(opcodeIdMeaning(selectedDraft.rawCode));
   const selectedParameterLabels = selectedDefinition.parameters.length > 0
     ? selectedDefinition.parameters.map((parameter) => ({
       index: parameter.index,
@@ -991,9 +1085,31 @@ function SelectedStepDetail({
   const visibleParameters = selectedDefinition.parameters.filter((parameter) => !parameter.preserved);
   const selectedTargetPreview = useMemo(() => {
     if (!selectedDefinition.target || selectedDefinition.target.targetFamily === "parameter-row") return null;
-    const lookupId = selectedDefinition.target.targetFamily === "message" ? Math.abs(selectedDraft.id) : selectedDraft.id;
+    const lookupId = resolveSignedMessageTarget(selectedDraft.rawCode, selectedDraft.id);
     return targetOptionsForOpcode(project, selectedDraft.rawCode, catalog).find((option) => option.value === lookupId) ?? null;
   }, [catalog, project, selectedDefinition.target, selectedDraft.id, selectedDraft.rawCode]);
+  useEffect(() => {
+    setPreviewExpanded(false);
+  }, [selectedSlot, selectedDraft.rawCode, selectedDraft.id]);
+  const selectedFlowRoutes = useMemo(() => scriptStepFlowRoutes(project, catalog, selectedDraft), [catalog, project, selectedDraft]);
+  const actionSelectDefinitions = useMemo(() => {
+    return SCRIPT_ACTION_DEFINITIONS.filter((definition) => (
+      definition.opcode === selectedDefinition.opcode
+      || categoryFilter === "Advanced"
+      || (definition.authoringLevel !== "advanced" && definition.authoringLevel !== "ignored")
+    ));
+  }, [categoryFilter, selectedDefinition.opcode]);
+  const settingLabels = visibleParameters.map((parameter) => `${parameter.index + 1}. ${parameter.label}`);
+  const previewBehavior = signedTargetBehaviorLabel(selectedDraft.rawCode, selectedDraft.id);
+  const previewCanExpand = Boolean(
+    selectedTargetPreview && [
+      selectedTargetPreview.detail,
+      selectedTargetPreview.summary,
+      selectedTargetPreview.compatibility,
+      selectedTargetPreview.sourceState,
+      previewBehavior
+    ].filter(Boolean).join(" ").length > 96
+  ) || selectedFlowRoutes.length > 1;
   const actionHelp = selectedDivinityHelp ? (
     <div className="realmz-action-help-card">
       <header>
@@ -1002,14 +1118,24 @@ function SelectedStepDetail({
       </header>
       <p>{selectedDivinityHelp.use || selectedDefinition.description}</p>
       <div className="realmz-action-help-facts">
-        <FieldRow label={selectedDefinition.target?.label ?? "Target"} value={(selectedDefinition.target?.help || selectedCrosswalk?.idHelp || selectedCrosswalk?.idMeaning || selectedDivinityHelp.idField || "No target required")} />
+        <FieldRow label={selectedDefinition.target?.label ?? "Target"} value={(selectedDefinition.target?.help || selectedDefinition.description || "No target required")} />
         {visibleParameters.length > 0 && (
           <FieldRow
             label="Settings"
-            value={visibleParameters.map((parameter) => `${parameter.index + 1}. ${parameter.label}`).join("; ")}
+            value={settingLabels.slice(0, 4).join("; ") + (settingLabels.length > 4 ? `; ${settingLabels.length - 4} more` : "")}
           />
         )}
       </div>
+      {settingLabels.length > 4 && (
+        <details className="realmz-action-settings-details">
+          <summary>All Settings</summary>
+          <div>
+            {visibleParameters.map((parameter) => (
+              <FieldRow key={parameter.index} label={`${parameter.index + 1}. ${parameter.label}`} value={parameter.help || "Script setting"} />
+            ))}
+          </div>
+        </details>
+      )}
       {(selectedDivinityHelp.options || selectedDivinityHelp.extraCodes) && (
         <details className="realmz-original-help">
           <summary>Original Divinity Text</summary>
@@ -1032,7 +1158,7 @@ function SelectedStepDetail({
         </div>
       )}
       <ScriptDiagnostics issues={selectedSlotDiagnostics} />
-      <div className="realmz-current-opcode" style={{ borderColor: categoryColor(selectedOption.category) }}>
+      <div className={`realmz-current-opcode${previewExpanded ? " expanded" : ""}`} style={{ borderColor: categoryColor(selectedOption.category) }}>
         <div>
           <strong>{selectedDefinition.label}</strong>
           <span>{selectedDefinition.categoryLabel}</span>
@@ -1044,7 +1170,24 @@ function SelectedStepDetail({
             <strong>{selectedTargetPreview.label}</strong>
             <p>{selectedTargetPreview.detail}</p>
             {selectedTargetPreview.summary && <small>{selectedTargetPreview.summary}</small>}
+            {previewBehavior && <small>{previewBehavior}</small>}
           </div>
+        )}
+        {selectedFlowRoutes.length > 0 && (
+          <div className="script-step-route-preview">
+            <span>Flow</span>
+            {selectedFlowRoutes.map((route, index) => (
+              <p key={`${route.kind}-${index}`}>
+                <b>{route.label}</b>
+                <small>{route.target ? `${route.target.label}: ${route.target.detail}` : route.detail}</small>
+              </p>
+            ))}
+          </div>
+        )}
+        {previewCanExpand && (
+          <button type="button" className="btn btn-secondary btn-xs realmz-preview-toggle" onClick={() => setPreviewExpanded((current) => !current)}>
+            {previewExpanded ? "Collapse Preview" : "Show Full Preview"}
+          </button>
         )}
       </div>
       <div className="realmz-step-form-grid">
@@ -1052,9 +1195,12 @@ function SelectedStepDetail({
           <span>Action</span>
           <select
             value={selectedDraft.rawCode}
-            onChange={(event) => onSetSelectedDraft({ ...selectedDraft, rawCode: Number(event.currentTarget.value) })}
+            onChange={(event) => {
+              const nextDefinition = scriptActionDefinitionFor(Number(event.currentTarget.value));
+              onSetSelectedDraft({ rawCode: nextDefinition.defaultDraft.rawCode, id: nextDefinition.defaultDraft.id });
+            }}
           >
-            {SCRIPT_ACTION_DEFINITIONS.map((definition) => (
+            {actionSelectDefinitions.map((definition) => (
               <option key={definition.opcode} value={definition.opcode}>{definition.label}</option>
             ))}
           </select>
@@ -1069,7 +1215,7 @@ function SelectedStepDetail({
           />
           {selectedOption.edcdShape && (
             <small>
-              {selectedDefinition.target?.help || "Stores this step's settings."}
+              {selectedDefinition.target?.help || "Uses the settings below."}
             </small>
           )}
         </label>
@@ -1085,7 +1231,7 @@ function SelectedStepDetail({
         onCreate={(recordType, id) => {
           const targetId = id ?? nextAuthorableTargetId(project, recordType);
           onApplyCommand?.({ kind: "createTargetRecord", label: `Create ${recordType}`, recordType, id: targetId });
-          onSetSelectedDraft({ ...selectedDraft, id: targetId });
+          onSetSelectedDraft({ ...selectedDraft, id: signedTargetValueForSelection(selectedDraft.rawCode, selectedDraft.id, targetId) });
         }}
       />
       <CollapsibleSection title="Add Or Change Step" eyebrow="action palette" count={filteredDefinitions.length} density="compact" storageKey="scripts.actionPalette.open" defaultOpen={selectedDraft.rawCode === 0}>
@@ -2209,7 +2355,8 @@ function ReferenceIdField({
 }) {
   const [query, setQuery] = useState("");
   const options = useMemo(() => targetOptionsForOpcode(project, opcode, catalog), [project, opcode, catalog]);
-  const selected = options.find((option) => option.value === value) ?? null;
+  const resolvedValue = resolveSignedMessageTarget(opcode, value);
+  const selected = options.find((option) => option.value === resolvedValue) ?? null;
   const filteredOptions = useMemo(() => filterScriptTargetOptions(options, query), [options, query]);
   const visibleOptions = useMemo(() => {
     const visible = filteredOptions.slice(0, 260);
@@ -2221,11 +2368,11 @@ function ReferenceIdField({
     if (selected && !query.trim() && !visible.some((option) => option.value === selected.value)) return [selected, ...visible.slice(0, 7)];
     return visible;
   }, [filteredOptions, query, selected]);
-  const hasRawValue = value !== 0 && !selected;
+  const hasRawValue = resolvedValue !== 0 && !selected;
   const canCreate = Boolean(createRecordType && onCreateTarget && (!selected || hasRawValue || value === 0));
-  const createId = value > 0 && !selected ? value : createRecordType ? nextAuthorableTargetId(project, createRecordType) : value;
+  const createId = resolvedValue > 0 && !selected ? resolvedValue : createRecordType ? nextAuthorableTargetId(project, createRecordType) : resolvedValue;
   const selectTarget = (next: number) => {
-    onCommit(next);
+    onCommit(signedTargetValueForSelection(opcode, value, next));
     setQuery("");
   };
   return (
@@ -2243,7 +2390,7 @@ function ReferenceIdField({
           <button
             key={option.key}
             type="button"
-            className={option.value === value ? "selected" : ""}
+            className={option.value === resolvedValue ? "selected" : ""}
             onClick={() => selectTarget(option.value)}
           >
             <strong>{option.label}</strong>
@@ -2252,23 +2399,23 @@ function ReferenceIdField({
         ))}
         {query.trim() && filteredOptions.length > resultOptions.length && <small>{filteredOptions.length - resultOptions.length} more match(es); keep typing to narrow.</small>}
       </div>
-      <select value={hasRawValue ? `raw:${value}` : selected ? String(selected.value) : ""} onChange={(event) => {
+      <select value={hasRawValue ? `raw:${resolvedValue}` : selected ? String(selected.value) : ""} onChange={(event) => {
         const raw = event.currentTarget.value;
         if (!raw || raw.startsWith("raw:")) return;
         selectTarget(Number(raw));
       }}>
         <option value="">{emptyLabel}</option>
-        {hasRawValue && <option value={`raw:${value}`}>Current value {value}</option>}
+        {hasRawValue && <option value={`raw:${resolvedValue}`}>Current value {resolvedValue}</option>}
         {visibleOptions.map((option) => (
           <option key={option.key} value={option.value}>{option.label}</option>
         ))}
       </select>
       <input type="number" value={value} onChange={(event) => onCommit(Number(event.currentTarget.value))} aria-label={`${label} value`} />
-      <small>{selected ? [selected.detail, selected.summary, selected.compatibility, selected.sourceState].filter(Boolean).join(" | ") : hasRawValue ? "Current value has no matching target yet." : filteredOptions.length === 0 && query.trim() ? "No targets match this search." : emptyLabel}</small>
+      <small>{selected ? [selected.detail, selected.summary, signedTargetBehaviorLabel(opcode, value), selected.compatibility, selected.sourceState].filter(Boolean).join(" | ") : hasRawValue ? "Current value has no matching target yet." : filteredOptions.length === 0 && query.trim() ? "No targets match this search." : emptyLabel}</small>
       {canCreate && (
         <button type="button" className="btn btn-secondary btn-xs" onClick={() => {
           onCreateTarget?.(createId);
-          onCommit(createId);
+          onCommit(signedTargetValueForSelection(opcode, value, createId));
         }}>
           Create {label} {createId}
         </button>

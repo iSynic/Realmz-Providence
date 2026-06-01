@@ -1,6 +1,8 @@
 import { ACTION_OPTIONS, actionOptionFor, normalizeStepOpcode, type RealmzActionOption } from "../../realmzActions";
 import { crosswalkForOpcode, parameterLabelsForOpcode } from "../../opcodeCrosswalk";
-import { targetPickerConfig, targetOptionsForOpcode } from "../../components/RealmzTargetPicker";
+import { resolveSignedMessageTarget, signedTargetBehaviorLabel, targetPickerConfig, targetOptionsForOpcode } from "../../components/RealmzTargetPicker";
+import { choiceBranchModeLabel, choiceBranchTargetKind, parseChoicePromptValue } from "../../choiceDialogs";
+import { edcdFieldTargetKind, edcdTargetOptions, type EdcdTargetKind } from "../../edcdTargets";
 import { LibraryCatalog, Project } from "../../types";
 
 export type ScriptActionCategory =
@@ -22,6 +24,29 @@ export type ScriptActionStorage =
   | "data-edcd-parameter-row"
   | "data-ed3-direct"
   | "same-map-action-point-copy";
+
+export type ScriptActionAuthoringLevel = "first-class" | "guided" | "advanced" | "ignored";
+
+export type ScriptActionValidationPosture =
+  | "validated-targets"
+  | "validated-settings"
+  | "advanced-import"
+  | "no-effect";
+
+export type ScriptStepFormKind =
+  | "message"
+  | "choice"
+  | "movement"
+  | "battle"
+  | "encounter"
+  | "reward"
+  | "party"
+  | "rules"
+  | "logic"
+  | "media"
+  | "reusable-action"
+  | "guided-settings"
+  | "advanced";
 
 export type ScriptTargetFieldDefinition = {
   label: string;
@@ -54,6 +79,39 @@ export type ScriptReadinessIssue = {
   message: string;
 };
 
+export type ScriptActionCoverageEntry = {
+  opcode: number;
+  label: string;
+  category: ScriptActionCategory;
+  authoringLevel: ScriptActionAuthoringLevel;
+  formKind: ScriptStepFormKind;
+  targetMeaning: string;
+  validationPosture: ScriptActionValidationPosture;
+};
+
+export type ScriptStepFormDefinition = {
+  opcode: number;
+  kind: ScriptStepFormKind;
+  title: string;
+  authoringLevel: ScriptActionAuthoringLevel;
+  targetLabel: string;
+  parameterLabels: string[];
+};
+
+export type ScriptTargetRoute = {
+  label: string;
+  targetKind: string;
+  value: number;
+  detail: string;
+};
+
+export type ScriptFlowPreviewRoute = {
+  kind: "continues" | "stops" | "branch" | "call" | "target" | "outcome";
+  label: string;
+  detail: string;
+  target?: ScriptTargetRoute;
+};
+
 export type ScriptActionDefinition = {
   opcode: number;
   label: string;
@@ -70,6 +128,9 @@ export type ScriptActionDefinition = {
   parameters: ScriptParameterFieldDefinition[];
   defaultDraft: ScriptStepDraft;
   advanced: boolean;
+  authoringLevel: ScriptActionAuthoringLevel;
+  validationPosture: ScriptActionValidationPosture;
+  formKind: ScriptStepFormKind;
 };
 
 const CATEGORY_ORDER: ScriptActionCategory[] = [
@@ -86,6 +147,17 @@ const CATEGORY_ORDER: ScriptActionCategory[] = [
   "Reusable Actions",
   "Advanced"
 ];
+
+const FIRST_CLASS_ACTIONS = new Set([
+  1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 14, 19, 20, 21, 22, 23, 27, 30, 31, 33, 35, 37, 38, 39, 40,
+  41, 42, 43, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 60, 61, 62, 63, 64, 65, 67, 68,
+  69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 81, 85, 86, 87, 90, 92, 97, 103, 104, 106, 107, 108,
+  120, 122, 123, 124, 125, 126, 127, -14, -23
+]);
+
+const ADVANCED_ACTIONS = new Set([7, 84, 98, 99, 112, 121]);
+
+const IGNORED_ACTIONS = new Set([0]);
 
 const ACTION_OVERRIDES: Record<number, Partial<Pick<ScriptActionDefinition, "label" | "shortLabel" | "category" | "description" | "searchTerms">>> = {
   [-23]: { label: "Change Random Encounter Area", shortLabel: "Random Area", category: "Encounters", description: "Adjust a dungeon random encounter area." },
@@ -211,7 +283,7 @@ const ACTION_METADATA_OVERRIDES: Record<number, ScriptActionMetadataOverride> = 
   2: {
     storage: "data-edcd-parameter-row",
     edcdShape: "battle",
-    target: parameterRowTarget("Battle Settings Row"),
+    target: parameterRowTarget("Battle Settings"),
     defaultDraft: { rawCode: 2, id: 0, parameters: [0, 0, 0, 0, 0] },
     parameterDefaults: [0, 0, 0, 0, 0],
     parameters: {
@@ -223,7 +295,7 @@ const ACTION_METADATA_OVERRIDES: Record<number, ScriptActionMetadataOverride> = 
   3: {
     storage: "data-edcd-parameter-row",
     edcdShape: "choice",
-    target: parameterRowTarget("Choice Settings Row"),
+    target: parameterRowTarget("Choice Settings"),
     defaultDraft: { rawCode: 3, id: 0, parameters: [1, 0, 0, 0, 0] },
     parameterDefaults: [1, 0, 0, 0, 0],
     parameters: {
@@ -270,12 +342,40 @@ const ACTION_METADATA_OVERRIDES: Record<number, ScriptActionMetadataOverride> = 
   19: {
     storage: "data-edcd-parameter-row",
     edcdShape: "random-message",
-    target: parameterRowTarget("Message Range Row"),
+    target: parameterRowTarget("Message Range"),
     defaultDraft: { rawCode: 19, id: 0, parameters: [0, 0, 0, 0, 0] },
     parameterDefaults: [0, 0, 0, 0, 0],
     parameters: {
       0: { label: "First Message" },
       1: { label: "Last Message" }
+    }
+  },
+  20: {
+    storage: "data-edcd-parameter-row",
+    edcdShape: "teleport",
+    target: parameterRowTarget("Movement Settings"),
+    defaultDraft: { rawCode: 20, id: 0, parameters: [-1, -1, -1, 0, 0] },
+    parameterDefaults: [-1, -1, -1, 0, 0],
+    parameters: {
+      0: { label: "Land Level", targetFamily: "map-level", help: "-1 keeps the current land level; otherwise use the destination land level." },
+      1: { label: "X Coordinate", help: "-1 keeps the current X coordinate." },
+      2: { label: "Y Coordinate", help: "-1 keeps the current Y coordinate." },
+      3: { label: "Sound" },
+      4: { label: "Message" }
+    }
+  },
+  23: {
+    storage: "data-edcd-parameter-row",
+    edcdShape: "random-region-mutation",
+    target: parameterRowTarget("Random Encounter Area"),
+    defaultDraft: { rawCode: 23, id: 0, parameters: [0, 0, 0, 0, 0] },
+    parameterDefaults: [0, 0, 0, 0, 0],
+    parameters: {
+      0: { label: "Land Level", targetFamily: "map-level" },
+      1: { label: "Rectangle" },
+      2: { label: "Chance Scale", help: "Encounter chance value in Realmz's 10,000-point scale." },
+      3: { label: "Battle Low", targetFamily: "battle" },
+      4: { label: "Battle High", targetFamily: "battle" }
     }
   },
   39: {
@@ -292,7 +392,7 @@ const ACTION_METADATA_OVERRIDES: Record<number, ScriptActionMetadataOverride> = 
   62: {
     storage: "direct-code-id",
     target: {
-      label: "Scrolling Text ID",
+      label: "Scrolling Text",
       realmzField: "ID",
       targetFamily: "scrolling-text",
       defaultValue: 0,
@@ -303,13 +403,41 @@ const ACTION_METADATA_OVERRIDES: Record<number, ScriptActionMetadataOverride> = 
   45: {
     storage: "data-edcd-parameter-row",
     edcdShape: "teleport",
-    target: parameterRowTarget("Teleport Settings Row"),
+    target: parameterRowTarget("Movement Settings"),
     defaultDraft: { rawCode: 45, id: 0, parameters: [-1, -1, -1, 0, 0] },
     parameterDefaults: [-1, -1, -1, 0, 0],
     parameters: {
-      0: { label: "Land Level", targetFamily: "map-level", help: "-1 keeps the current land level; otherwise use the destination land level ID." },
+      0: { label: "Land Level", targetFamily: "map-level", help: "-1 keeps the current land level; otherwise use the destination land level." },
       1: { label: "X Coordinate", help: "-1 keeps the current X coordinate." },
       2: { label: "Y Coordinate", help: "-1 keeps the current Y coordinate." },
+      3: { label: "Sound" },
+      4: { label: "Message" }
+    }
+  },
+  48: {
+    storage: "data-edcd-parameter-row",
+    edcdShape: "selective-battle",
+    target: parameterRowTarget("Battle Settings"),
+    defaultDraft: { rawCode: 48, id: 0, parameters: [0, 0, 0, 0, 0] },
+    parameterDefaults: [0, 0, 0, 0, 0],
+    parameters: {
+      0: { label: "Battle Low", targetFamily: "battle" },
+      1: { label: "Battle High", targetFamily: "battle" },
+      2: { label: "Sound" },
+      3: { label: "Message" },
+      4: { label: "Treasure On Victory" }
+    }
+  },
+  56: {
+    storage: "data-edcd-parameter-row",
+    edcdShape: "battle-outcome-branch",
+    target: parameterRowTarget("Battle Outcome"),
+    defaultDraft: { rawCode: 56, id: 0, parameters: [0, 0, 0, 0, 0] },
+    parameterDefaults: [0, 0, 0, 0, 0],
+    parameters: {
+      0: { label: "Battle Low", targetFamily: "battle" },
+      1: { label: "Battle High", targetFamily: "battle" },
+      2: { label: "Flee Branch", targetFamily: "extra-action-point-or-encounter" },
       3: { label: "Sound" },
       4: { label: "Message" }
     }
@@ -317,7 +445,7 @@ const ACTION_METADATA_OVERRIDES: Record<number, ScriptActionMetadataOverride> = 
   92: {
     storage: "data-edcd-parameter-row",
     edcdShape: "random-region-shape-mutation",
-    target: parameterRowTarget("Rectangle Mutation Row"),
+    target: parameterRowTarget("Area Shape Settings"),
     defaultDraft: { rawCode: 92, id: 0, parameters: [0, 0, 0, 0, -1] },
     parameterDefaults: [0, 0, 0, 0, -1],
     parameters: {
@@ -331,12 +459,26 @@ const ACTION_METADATA_OVERRIDES: Record<number, ScriptActionMetadataOverride> = 
   106: {
     storage: "data-edcd-parameter-row",
     edcdShape: "dark-level-state",
-    target: parameterRowTarget("Darkness Settings Row"),
+    target: parameterRowTarget("Darkness Settings"),
     defaultDraft: { rawCode: 106, id: 0, parameters: [2, 0, 0, 0, 0] },
     parameterDefaults: [2, 0, 0, 0, 0],
     parameters: {
       0: { label: "Light/Dark State", targetFamily: "dark-level-state", help: "1 makes the current land level light; 2 makes it dark." },
       1: { label: "Stop If Already Set", help: "1 skips the rest of the Action Point when the requested light/dark state is already active." }
+    }
+  },
+  107: {
+    storage: "data-edcd-parameter-row",
+    edcdShape: "improved-selective-battle",
+    target: parameterRowTarget("Battle Settings"),
+    defaultDraft: { rawCode: 107, id: 0, parameters: [0, 0, 0, 0, 0] },
+    parameterDefaults: [0, 0, 0, 0, 0],
+    parameters: {
+      0: { label: "Battle Low", targetFamily: "battle" },
+      1: { label: "Battle High", targetFamily: "battle" },
+      2: { label: "Sound" },
+      3: { label: "Message" },
+      4: { label: "Flee Branch", targetFamily: "extra-action-point-or-encounter" }
     }
   },
   71: {
@@ -353,7 +495,7 @@ const ACTION_METADATA_OVERRIDES: Record<number, ScriptActionMetadataOverride> = 
   122: {
     storage: "data-edcd-parameter-row",
     edcdShape: "fumble",
-    target: parameterRowTarget("Fumble Settings Row"),
+    target: parameterRowTarget("Fumble Settings"),
     defaultDraft: { rawCode: 122, id: 0, parameters: [0, 0, 0, 0, 0] },
     parameterDefaults: [0, 0, 0, 0, 0],
     parameters: {
@@ -383,6 +525,25 @@ const LEGACY_CATEGORY_MAP: Record<string, ScriptActionCategory> = {
 export const SCRIPT_ACTION_CATEGORIES = CATEGORY_ORDER;
 
 export const SCRIPT_ACTION_DEFINITIONS: ScriptActionDefinition[] = ACTION_OPTIONS.map((option) => buildActionDefinition(option));
+
+export const SCRIPT_ACTION_COVERAGE: ScriptActionCoverageEntry[] = SCRIPT_ACTION_DEFINITIONS.map((definition) => ({
+  opcode: definition.opcode,
+  label: definition.label,
+  category: definition.category,
+  authoringLevel: definition.authoringLevel,
+  formKind: definition.formKind,
+  targetMeaning: definition.target?.label ?? "No target",
+  validationPosture: definition.validationPosture
+}));
+
+export const SCRIPT_STEP_FORM_DEFINITIONS: ScriptStepFormDefinition[] = SCRIPT_ACTION_DEFINITIONS.map((definition) => ({
+  opcode: definition.opcode,
+  kind: definition.formKind,
+  title: definition.label,
+  authoringLevel: definition.authoringLevel,
+  targetLabel: definition.target?.label ?? "None",
+  parameterLabels: definition.parameters.filter((parameter) => !parameter.preserved).map((parameter) => parameter.label)
+}));
 
 export function scriptActionDefinitionFor(rawCode: number): ScriptActionDefinition {
   const normalized = normalizeStepOpcode(rawCode);
@@ -433,17 +594,23 @@ export function scriptActionSummary(
   emptyLabel = "Empty step"
 ) {
   const definition = scriptActionDefinitionFor(draft.rawCode);
-  if (normalizeStepOpcode(draft.rawCode) === 0) return emptyLabel;
+  const code = normalizeStepOpcode(draft.rawCode);
+  if (code === 0) return emptyLabel;
   const shouldResolveDirectTarget = Boolean(definition.target && definition.target.targetFamily !== "parameter-row");
   const target = shouldResolveDirectTarget
-    ? targetOptionsForOpcode(project, draft.rawCode, catalog).find((option) => option.value === draft.id)
+    ? targetOptionsForOpcode(project, draft.rawCode, catalog).find((option) => option.value === resolveSignedMessageTarget(draft.rawCode, draft.id))
     : null;
-  if (target) return `${definition.shortLabel}: ${target.label}`;
+  if (target) {
+    const behavior = signedTargetBehaviorLabel(draft.rawCode, draft.id);
+    return `${definition.shortLabel}: ${targetSummary(definition.target?.targetFamily, target.label, target.detail)}${behavior ? ` · ${behavior}` : ""}`;
+  }
+  const settingsSummary = summarizeSettingsBackedAction(project, catalog, definition, draft);
+  if (settingsSummary) return settingsSummary;
   if (definition.target) {
     if (draft.id === 0) return `${definition.shortLabel}: choose ${definition.target.label.toLowerCase()}`;
     return `${definition.shortLabel}: ${definition.target.label} ${draft.id}`;
   }
-  if (definition.parameters.length > 0) return `${definition.shortLabel}: settings row ${draft.id}`;
+  if (definition.parameters.length > 0) return `${definition.shortLabel}: settings ${draft.id}`;
   return definition.shortLabel;
 }
 
@@ -458,15 +625,213 @@ export function scriptStepBranchHint(rawCode: number, id: number) {
   return "";
 }
 
+export function scriptStepFlowRoutes(
+  project: Project | null,
+  catalog: LibraryCatalog | null | undefined,
+  draft: ScriptStepDraft
+): ScriptFlowPreviewRoute[] {
+  const code = normalizeStepOpcode(draft.rawCode);
+  const definition = scriptActionDefinitionFor(code);
+  const values = settingsValues(project, draft);
+  const routes: ScriptFlowPreviewRoute[] = [];
+  if (code === 0) return routes;
+  if (code === 3 && values) {
+    const continueSide = values[0] === 0 ? "Right / No" : "Left / Yes";
+    const branchMode = values[1] ?? 0;
+    routes.push({ kind: "continues", label: `${continueSide} continues`, detail: "The other answer follows the branch behavior." });
+    const branchKind = choiceBranchKindLabel(branchMode);
+    if (branchKind) {
+      const targetKind = choiceBranchTargetKind(branchMode);
+      routes.push({
+        kind: "branch",
+        label: choiceBranchModeLabel(branchMode),
+        detail: branchKind,
+        target: targetKind ? targetRoute(project, targetKind, values[2] ?? 0) ?? undefined : undefined
+      });
+    } else {
+      routes.push({ kind: branchMode === 4 ? "stops" : "branch", label: choiceBranchModeLabel(branchMode), detail: choiceBranchModeDetail(branchMode) });
+    }
+    return routes;
+  }
+  if (code === 8) {
+    routes.push({ kind: "call", label: "Same-map Action Point", detail: `Runs Action Point ${draft.id} from this map.` });
+    return routes;
+  }
+  if (code === 39) {
+      routes.push({ kind: "call", label: "Reusable Action", detail: targetRoute(project, "macro", draft.id, catalog)?.detail ?? `Runs reusable action ${draft.id}.`, target: targetRoute(project, "macro", draft.id, catalog) ?? undefined });
+    return routes;
+  }
+  if ([38, 46, 58, 59, 42, 72, 75, 77, 78, 81, 85, 86, 87].includes(code)) {
+    routes.push({ kind: "branch", label: definition.shortLabel, detail: summarizeSettingsBackedAction(project, catalog, definition, draft) || "Routes to another result when its condition matches." });
+  }
+  if ([2, 48, 56, 107].includes(code)) {
+    routes.push({ kind: "outcome", label: definition.shortLabel, detail: summarizeSettingsBackedAction(project, catalog, definition, draft) || "May start a battle or route from a battle outcome." });
+  }
+  if ([111, 112].includes(code)) {
+    routes.push({ kind: "stops", label: definition.shortLabel, detail: "Returns from reusable action flow." });
+  }
+  return routes;
+}
+
+function summarizeSettingsBackedAction(
+  project: Project | null,
+  catalog: LibraryCatalog | null | undefined,
+  definition: ScriptActionDefinition,
+  draft: ScriptStepDraft
+) {
+  const code = normalizeStepOpcode(draft.rawCode);
+  const values = settingsValues(project, draft);
+  if (!values && definition.target?.targetFamily === "parameter-row") {
+    return draft.id === 0 ? `${definition.shortLabel}: choose settings` : `${definition.shortLabel}: settings ${draft.id}`;
+  }
+  if (!values) return "";
+  if (code === 3) {
+    const left = promptSummary(project, values[3] ?? 0);
+    const right = promptSummary(project, values[4] ?? 0);
+    return `Ask Choice: ${left} / ${right}`;
+  }
+  if (code === 19) {
+    const low = values[0] ?? 0;
+    const high = values[1] ?? low;
+    return low === high ? `Random Message: ${messageLabel(project, low)}` : `Random Message: ${messageLabel(project, low)}-${messageLabel(project, high)}`;
+  }
+  if (code === 20 || code === 45) {
+    return `${definition.shortLabel}: ${mapLevelLabel(project, values[0] ?? -1)}, ${coordinateLabel(values[1])}, ${coordinateLabel(values[2])}`;
+  }
+  if ([2, 48, 56, 107].includes(code)) {
+    return `${definition.shortLabel}: ${rangeTargetSummary(project, "battle", values[0] ?? 0, values[1] ?? 0)}`;
+  }
+  if (code === 92 || code === 23 || code === -23) {
+    return `${definition.shortLabel}: ${mapLevelLabel(project, values[0] ?? 0)}, rectangle ${values[1] ?? 0}`;
+  }
+  if (code === 106) {
+    const state = values[0] === 1 ? "light" : values[0] === 2 ? "dark" : `state ${values[0] ?? 0}`;
+    return `Darkness: set ${state}`;
+  }
+  if (code === 122) {
+    return `Fumble: ${messageLabel(project, values[0] ?? 0)}${values[1] ? `, sound ${values[1]}` : ""}`;
+  }
+  const fieldSummaries = definition.parameters
+    .filter((parameter) => !parameter.preserved)
+    .slice(0, 3)
+    .map((parameter) => {
+      const value = values[parameter.index] ?? 0;
+      return `${parameter.label} ${targetValueSummary(project, catalog, definition, parameter, value)}`;
+    });
+  return fieldSummaries.length > 0 ? `${definition.shortLabel}: ${fieldSummaries.join(", ")}` : "";
+}
+
+function settingsValues(project: Project | null, draft: ScriptStepDraft): number[] | null {
+  if (draft.parameters) return [...draft.parameters];
+  if (!project) return null;
+  const row = project.extracodes.find((candidate) => candidate.id === Math.max(0, draft.id));
+  return row?.values ?? null;
+}
+
+function targetValueSummary(
+  project: Project | null,
+  catalog: LibraryCatalog | null | undefined,
+  definition: ScriptActionDefinition,
+  parameter: ScriptParameterFieldDefinition,
+  value: number
+) {
+  if (parameter.targetFamily === "map-level") return mapLevelLabel(project, value);
+  if (parameter.targetFamily === "message") return messageLabel(project, value);
+  if (parameter.targetFamily === "battle") return targetRoute(project, "battle", Math.abs(value), catalog)?.label ?? String(value);
+  const targetKind = edcdFieldTargetKind(definition.edcdShape ?? "", parameter.internalName, definition.parameters.map((field) => field.internalName), [value], definition.opcode);
+  if (targetKind) return targetRoute(project, targetKind, value, catalog)?.label ?? String(value);
+  if (definition.target?.targetFamily && definition.target.targetFamily !== "parameter-row") {
+    const target = targetOptionsForOpcode(project, definition.opcode, catalog).find((option) => option.value === resolveSignedMessageTarget(definition.opcode, value));
+    if (target) {
+      const behavior = signedTargetBehaviorLabel(definition.opcode, value);
+      return `${targetSummary(definition.target.targetFamily, target.label, target.detail)}${behavior ? ` · ${behavior}` : ""}`;
+    }
+  }
+  return String(value);
+}
+
+function targetSummary(targetFamily: string | undefined, label: string, detail: string) {
+  if (targetFamily === "message" && detail && detail !== "empty") return `"${clip(detail, 68)}"`;
+  return label;
+}
+
+function rangeTargetSummary(project: Project | null, targetKind: EdcdTargetKind, low: number, high: number) {
+  const absoluteLow = Math.abs(low);
+  const absoluteHigh = Math.abs(high || low);
+  const lowLabel = targetRoute(project, targetKind, absoluteLow)?.label ?? String(absoluteLow);
+  const highLabel = targetRoute(project, targetKind, absoluteHigh)?.label ?? String(absoluteHigh);
+  return absoluteLow === absoluteHigh ? lowLabel : `${lowLabel} through ${highLabel}`;
+}
+
+function targetRoute(project: Project | null, targetKind: EdcdTargetKind, value: number, catalog?: LibraryCatalog | null): ScriptTargetRoute | null {
+  if (!project || !Number.isFinite(value)) return null;
+  const option = edcdTargetOptions(project, targetKind, catalog).find((candidate) => candidate.value === Math.abs(value));
+  if (!option) return null;
+  return {
+    label: option.label,
+    targetKind,
+    value: option.value,
+    detail: option.detail
+  };
+}
+
+function promptSummary(project: Project | null, value: number) {
+  const prompt = parseChoicePromptValue(value);
+  if (prompt.kind === "default") return "Yes/No";
+  if (prompt.kind === "message") return messageLabel(project, prompt.id);
+  const label = project?.optionLabels?.find((record) => record.id === prompt.id);
+  return label?.text ? `"${clip(label.text, 48)}"` : `Option Label ${prompt.id}`;
+}
+
+function messageLabel(project: Project | null, value: number) {
+  const id = Math.abs(value);
+  if (id === 0) return "No message";
+  const message = project?.messages?.find((record) => record.id === id);
+  return message?.text ? `"${clip(message.text, 48)}"` : `Message ${id}`;
+}
+
+function mapLevelLabel(project: Project | null, value: number) {
+  if (value < 0) return "current level";
+  const map = project?.maps.find((candidate) => candidate.index === value);
+  return map?.name ?? `Land ${value}`;
+}
+
+function coordinateLabel(value: number | undefined) {
+  if (value == null || value < 0) return "current cell";
+  return String(value);
+}
+
+function choiceBranchKindLabel(branchMode: number) {
+  if (branchMode === 1) return "Branch to a reusable action.";
+  if (branchMode === 2) return "Branch to a simple encounter result.";
+  if (branchMode === 3) return "Branch to a complex encounter result.";
+  return "";
+}
+
+function choiceBranchModeDetail(branchMode: number) {
+  if (branchMode === -1) return "Both answers continue.";
+  if (branchMode === 0) return "The party backs up one step.";
+  if (branchMode === 4) return "The Action Point is eliminated and the script stops.";
+  return "Imported branch behavior kept available in Technical Details.";
+}
+
+function clip(value: string, max: number) {
+  const clean = value.replace(/\s+/g, " ").trim();
+  return clean.length > max ? `${clean.slice(0, Math.max(0, max - 1))}...` : clean;
+}
+
 function buildActionDefinition(option: RealmzActionOption, forceAdvanced = false): ScriptActionDefinition {
   const code = normalizeStepOpcode(option.code);
   const override = ACTION_OVERRIDES[code];
   const metadata = ACTION_METADATA_OVERRIDES[code];
   const targetConfig = targetPickerConfig(code);
   const crosswalk = crosswalkForOpcode(code);
-  const category = forceAdvanced
+  const baseCategory = forceAdvanced
     ? "Advanced"
     : override?.category ?? LEGACY_CATEGORY_MAP[option.category] ?? "Advanced";
+  const hasGenericOpcodeLabel = !override?.label && /^Opcode\b/i.test(option.shortLabel);
+  const authoringLevel = authoringLevelFor(code, baseCategory, option, forceAdvanced || hasGenericOpcodeLabel);
+  const category: ScriptActionCategory = authoringLevel === "advanced" ? "Advanced" : baseCategory;
   const parameterDefaults = metadata?.parameterDefaults;
   const parameters = parameterLabelsForOpcode(code).map((parameter) => ({
     index: parameter.index,
@@ -489,11 +854,16 @@ function buildActionDefinition(option: RealmzActionOption, forceAdvanced = false
         ? parameterRowTarget()
         : undefined;
   const storage = metadata?.storage ?? inferredStorage(code, option);
-  const description = override?.description ?? option.description;
+  const description = hasGenericOpcodeLabel
+    ? "Imported action kept available for advanced scripts."
+    : override?.description ?? option.description;
+  const label = hasGenericOpcodeLabel ? `Imported Action ${code}` : override?.label ?? option.shortLabel;
+  const shortLabel = hasGenericOpcodeLabel ? "Imported Action" : override?.shortLabel ?? option.shortLabel;
+  const formKind = formKindFor(code, category, storage, metadata?.edcdShape ?? option.edcdShape, target?.targetFamily);
   return {
     opcode: code,
-    label: override?.label ?? option.shortLabel,
-    shortLabel: override?.shortLabel ?? option.shortLabel,
+    label,
+    shortLabel,
     category,
     categoryLabel: category,
     summary: description,
@@ -517,14 +887,59 @@ function buildActionDefinition(option: RealmzActionOption, forceAdvanced = false
       id: 0,
       parameters: parameterDefaults ?? (option.edcdShape ? [0, 0, 0, 0, 0] : undefined)
     },
-    advanced: category === "Advanced" || forceAdvanced
+    advanced: category === "Advanced" || forceAdvanced,
+    authoringLevel,
+    validationPosture: validationPostureFor(authoringLevel, storage, option.edcdShape, target),
+    formKind
   };
 }
 
-function parameterRowTarget(label = "Settings Row"): ScriptTargetFieldDefinition {
+function authoringLevelFor(code: number, category: ScriptActionCategory, option: RealmzActionOption, forceAdvanced: boolean): ScriptActionAuthoringLevel {
+  if (IGNORED_ACTIONS.has(code)) return "ignored";
+  if (forceAdvanced || ADVANCED_ACTIONS.has(code) || category === "Advanced" || option.category === "Unknown") return "advanced";
+  if (FIRST_CLASS_ACTIONS.has(code)) return "first-class";
+  return "guided";
+}
+
+function validationPostureFor(
+  authoringLevel: ScriptActionAuthoringLevel,
+  storage: ScriptActionStorage,
+  edcdShape: string | undefined,
+  target: ScriptTargetFieldDefinition | undefined
+): ScriptActionValidationPosture {
+  if (authoringLevel === "ignored") return "no-effect";
+  if (authoringLevel === "advanced") return "advanced-import";
+  if (edcdShape || storage === "data-edcd-parameter-row" || target?.targetFamily === "parameter-row") return "validated-settings";
+  return "validated-targets";
+}
+
+function formKindFor(
+  code: number,
+  category: ScriptActionCategory,
+  storage: ScriptActionStorage,
+  edcdShape: string | undefined,
+  targetFamily: string | undefined
+): ScriptStepFormKind {
+  if (IGNORED_ACTIONS.has(code)) return "advanced";
+  if (category === "Advanced") return "advanced";
+  if (code === 3 || edcdShape === "choice") return "choice";
+  if (targetFamily === "message" || edcdShape === "random-message") return "message";
+  if (targetFamily === "extra-action-point" || storage === "data-ed3-direct" || storage === "same-map-action-point-copy") return "reusable-action";
+  if (["battle", "selective-battle", "battle-outcome-branch", "improved-selective-battle"].includes(edcdShape ?? "") || [2, 48, 56, 107].includes(code)) return "battle";
+  if (category === "Encounters") return "encounter";
+  if (category === "Travel") return "movement";
+  if (category === "Rewards" || category === "Items") return "reward";
+  if (category === "Party") return "party";
+  if (category === "Rules") return "rules";
+  if (category === "Media" || targetFamily === "picture" || targetFamily === "sound") return "media";
+  if (category === "Logic") return "logic";
+  return edcdShape ? "guided-settings" : "advanced";
+}
+
+function parameterRowTarget(label = "Settings"): ScriptTargetFieldDefinition {
   return {
     label,
-    help: "The selected settings row stores this action's editable fields.",
+    help: "Pick or create the settings used by this action.",
     realmzField: "ID",
     targetFamily: "parameter-row",
     defaultValue: 0

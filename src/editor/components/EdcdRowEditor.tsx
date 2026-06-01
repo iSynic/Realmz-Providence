@@ -93,7 +93,7 @@ export function EdcdRowEditor({
   const primaryFields = fieldMetadata.filter((field) => !field.preserved);
   const preservedFields = fieldMetadata.filter((field) => field.preserved);
   const preservedIndexes = preservedFields.map((field) => field.index);
-  const targetIssues = missingEdcdTargetReferences(project, shapeId, fieldNames, numericDraft, opcode, preservedIndexes);
+  const targetIssues = missingEdcdTargetReferences(project, shapeId, fieldNames, numericDraft, opcode, preservedIndexes, catalog);
 
   if (shapeId.toLowerCase() === "choice" && Math.abs(opcode ?? 0) === 3) {
     return (
@@ -124,7 +124,7 @@ export function EdcdRowEditor({
             disabled={!onApplyCommand || !changed}
             onClick={() => onApplyCommand?.({
               kind: "updateEdcdRow",
-              label: `Update settings row ${rowId}`,
+              label: `Update settings ${rowId}`,
               rowId,
               values: numericDraft
             })}
@@ -136,7 +136,7 @@ export function EdcdRowEditor({
               type="button"
               className="btn btn-danger btn-xs"
               disabled={!onApplyCommand}
-              onClick={() => onApplyCommand?.({ kind: "deleteEdcdRow", label: `Delete settings row ${rowId}`, rowId })}
+              onClick={() => onApplyCommand?.({ kind: "deleteEdcdRow", label: `Delete settings ${rowId}`, rowId })}
             >
               <Trash2 size={12} /> Clear Settings
             </button>
@@ -149,7 +149,7 @@ export function EdcdRowEditor({
           <EmptyState
             compact
             title="Settings not created yet"
-            body={`This ${selectedSlotLabel} uses settings row ${rowId}. Applying values here will create it.`}
+            body={`This ${selectedSlotLabel} uses settings ${rowId}. Applying values here will create them.`}
           />
         )}
         {primaryFields.length > 0 ? (
@@ -161,7 +161,7 @@ export function EdcdRowEditor({
         )}
         {edcdUsage?.secondaryRowId != null && (
           <div className="edcd-secondary-row">
-            <FieldRow label="Secondary Settings Row" value={edcdUsage.secondaryRowId} />
+            <FieldRow label="Secondary Settings" value={edcdUsage.secondaryRowId} />
             {edcdUsage.secondaryFields?.map((field, index) => (
               <FieldRow key={`${edcdUsage.secondaryRowId}-${index}`} label={humanizeFieldName(field.name ?? `param${index}`)} value={field.value ?? 0} />
             ))}
@@ -194,7 +194,7 @@ export function EdcdRowEditor({
     const isItemField = !preserved && edcdFieldLooksLikeItem(shapeId, internalName);
     const targetKind = !preserved ? edcdFieldTargetKind(shapeId, internalName, fieldNames, numericDraft, opcode) : null;
     const selectedItem = itemOptions.find((option) => option.value === value);
-    const targetOptions = targetKind ? edcdTargetOptions(project, targetKind) : [];
+    const targetOptions = targetKind ? edcdTargetOptions(project, targetKind, catalog) : [];
     const selectedTarget = targetOptions.find((option) => option.value === value);
     const createRecordType = createRecordTypeForEdcdTarget(targetKind);
     const targetLabel = targetKind ? edcdTargetLabel(targetKind) : "";
@@ -236,7 +236,7 @@ export function EdcdRowEditor({
             }}
           >
             <option value="0">No item</option>
-            {value !== 0 && !selectedItem && <option value={`raw:${value}`}>Current item ID {value}</option>}
+            {value !== 0 && !selectedItem && <option value={`raw:${value}`}>Current item {value}</option>}
             {itemOptions.slice(0, 260).map((option) => (
               <option key={option.key} value={option.value}>{option.label}</option>
             ))}

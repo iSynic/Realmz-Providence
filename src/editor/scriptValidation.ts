@@ -1,10 +1,11 @@
 import { LibraryCatalog, Project, TriggerRecord } from "./types";
 import { actionOptionFor, isDispatcherNoopOpcode, normalizeStepOpcode } from "./realmzActions";
-import { isDirectMacroOpcode, targetOptionsForOpcode, targetPickerConfig } from "./components/RealmzTargetPicker";
+import { isDirectMacroOpcode, resolveSignedMessageTarget, targetOptionsForOpcode, targetPickerConfig } from "./components/RealmzTargetPicker";
 import { isCallableMacro } from "./semanticGraph";
 import { missingEdcdTargetReferences } from "./edcdTargets";
 import { edcdFieldNamesForShape } from "./realmzEdcd";
 import { parameterLabelsForOpcode } from "./opcodeCrosswalk";
+import { scriptParameterLabelForOpcode } from "./scriptActionLabels";
 
 export type ScriptDiagnosticSeverity = "error" | "warning" | "info";
 
@@ -65,14 +66,14 @@ function validateAction(project: Project, trigger: TriggerRecord, slot: number, 
     const rowId = Math.max(0, id);
     const row = project.extracodes.find((candidate) => candidate.id === rowId);
     if (!row) {
-      diagnostics.push(slotIssue("warning", trigger.id, slot, "missing-edcd-row", "Missing settings row.", `${option.shortLabel} needs settings row ${rowId}; create it before relying on this behavior.`));
+      diagnostics.push(slotIssue("warning", trigger.id, slot, "missing-settings", "Missing settings.", `${option.shortLabel} needs settings ${rowId}; create them before relying on this behavior.`));
     } else if (row.values.length !== 5 || row.values.some((value) => !Number.isFinite(value))) {
-      diagnostics.push(slotIssue("error", trigger.id, slot, "malformed-edcd-row", "Settings row is malformed.", `Settings row ${rowId} must contain five finite numeric values.`));
+      diagnostics.push(slotIssue("error", trigger.id, slot, "malformed-settings", "Settings are malformed.", `Settings ${rowId} must contain five finite numeric values.`));
     } else {
       const fieldNames = edcdFieldNamesForShape(option.edcdShape);
       if (fieldNames) {
         const preservedIndexes = parameterLabelsForOpcode(rawCode).filter((label) => label.preserved).map((label) => label.index);
-        for (const issue of missingEdcdTargetReferences(project, option.edcdShape, fieldNames, row.values, rawCode, preservedIndexes)) {
+        for (const issue of missingEdcdTargetReferences(project, option.edcdShape, fieldNames, row.values, rawCode, preservedIndexes, catalog)) {
           const fieldLabel = parameterLabelForIssue(rawCode, issue.index, issue.field);
           diagnostics.push(slotIssue(
             "warning",
@@ -80,7 +81,7 @@ function validateAction(project: Project, trigger: TriggerRecord, slot: number, 
             slot,
             `missing-edcd-${issue.field}`,
             `Missing ${fieldLabel.toLowerCase()} target.`,
-            `Settings row ${rowId} field ${issue.index + 1} (${fieldLabel}) points at ${issue.targetLabel} ${issue.value}, but that target does not exist.`
+            `Settings ${rowId} field ${issue.index + 1} (${fieldLabel}) points at ${issue.targetLabel} ${issue.value}, but that target does not exist.`
           ));
         }
       }
@@ -90,9 +91,10 @@ function validateAction(project: Project, trigger: TriggerRecord, slot: number, 
   const config = targetPickerConfig(code);
   if (config && !option.edcdShape && id !== 0) {
     const targets = targetOptionsForOpcode(project, code, catalog);
-    const selected = targets.find((target) => target.value === id);
+    const resolvedId = resolveSignedMessageTarget(code, id);
+    const selected = targets.find((target) => target.value === resolvedId);
     if (!selected) {
-      diagnostics.push(slotIssue("warning", trigger.id, slot, "unresolved-target", `${config.label} does not resolve to a known target.`, `Choose or create ${config.label.toLowerCase()} ${id}.`));
+      diagnostics.push(slotIssue("warning", trigger.id, slot, "unresolved-target", `${config.label} does not resolve to a known target.`, `Choose or create ${config.label.toLowerCase()} ${resolvedId}.`));
     }
   }
   diagnostics.push(...validateTargetRecord(project, trigger.id, slot, code, id));
@@ -110,12 +112,13 @@ function validateAction(project: Project, trigger: TriggerRecord, slot: number, 
 }
 
 function validateTargetRecord(project: Project, triggerId: string, slot: number, code: number, id: number): ScriptDiagnostic[] {
-  if (id < 0) return [];
+  const resolvedId = resolveSignedMessageTarget(code, id);
+  if (resolvedId < 0) return [];
   if (actionOptionFor(code).edcdShape) return [];
-  if ([1, 19, 62, 71].includes(code)) {
-    const message = project.messages?.find((record) => record.id === id);
+  if (code === 1) {
+    const message = project.messages?.find((record) => record.id === resolvedId);
     if (message && message.text.length > 255) {
-      return [slotIssue("error", triggerId, slot, "message-too-long", "Message text is too long.", `Message ${id} is ${message.text.length} characters; keep it at 255 classic-text bytes or fewer.`)];
+      return [slotIssue("error", triggerId, slot, "message-too-long", "Message text is too long.", `Message ${resolvedId} is ${message.text.length} characters; keep it at 255 classic-text bytes or fewer.`)];
     }
   }
   if (code === 2 || [48, 56, 107].includes(code)) {
@@ -152,16 +155,5 @@ function slotIssue(severity: ScriptDiagnosticSeverity, triggerId: string, slot: 
 }
 
 function parameterLabelForIssue(opcode: number, index: number, fallback: string) {
-  return parameterLabelsForOpcode(opcode).find((label) => label.index === index)?.label ?? humanizeParameterName(fallback);
-}
-
-function humanizeParameterName(name: string) {
-  return String(name || "parameter")
-    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-    .replace(/[-_]+/g, " ")
-    .replace(/\bmessage\b/i, "String")
-    .replace(/\bmacro\b/i, "Extra Action Point")
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/\b\w/g, (match) => match.toUpperCase());
+  return scriptParameterLabelForOpcode(opcode, index, fallback);
 }

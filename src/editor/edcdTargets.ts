@@ -1,9 +1,19 @@
-import { Project, RealmzTargetRecordKind, SelectedEntity } from "./types";
+import { LibraryCatalog, Project, RealmzTargetRecordKind, SelectedEntity } from "./types";
 import { isCallableMacro } from "./semanticGraph";
 import { selectEntityFromId } from "./utils";
 import { choiceBranchTargetKind, parseChoicePromptValue } from "./choiceDialogs";
 
-export type EdcdTargetKind = "message" | "optionLabel" | "battle" | "shop" | "simpleEncounter" | "complexEncounter" | "questLabel" | "macro";
+export type EdcdTargetKind =
+  | "message"
+  | "optionLabel"
+  | "battle"
+  | "shop"
+  | "simpleEncounter"
+  | "complexEncounter"
+  | "questLabel"
+  | "macro"
+  | "sound"
+  | "monster";
 
 export type EdcdTargetOption = {
   key: string;
@@ -54,19 +64,21 @@ export function edcdFieldTargetKind(shape: string, name: string, fieldNames: str
     return null;
   }
   if (normalizedShape === "battle" && opcode === 2 && normalizedName === "soundorrevivelossmacro") {
-    return (values[4] ?? 0) === 10 ? "macro" : null;
+    return (values[4] ?? 0) === 10 ? "macro" : "sound";
   }
   if (normalizedName === "shop") return "shop";
   if (normalizedName === "simpleencounter") return "simpleEncounter";
   if (normalizedName === "quest") return "questLabel";
   if (normalizedName.includes("macro")) return "macro";
+  if (normalizedName.includes("sound")) return "sound";
+  if (normalizedName.includes("monster")) return "monster";
   if (normalizedName.includes("message") || normalizedName.startsWith("prompt")) return "message";
   if (normalizedShape.includes("battle") && (normalizedName === "battlelow" || normalizedName === "battlehigh")) return "battle";
   if (isBranchTargetField(normalizedName)) return branchTargetKind(normalizedShape, fieldNames, values, opcode);
   return null;
 }
 
-export function edcdTargetOptions(project: Project, targetKind: EdcdTargetKind): EdcdTargetOption[] {
+export function edcdTargetOptions(project: Project, targetKind: EdcdTargetKind, catalog?: LibraryCatalog | null): EdcdTargetOption[] {
   if (targetKind === "optionLabel") {
     return (project.optionLabels ?? []).map((record) => ({
       key: `option-label:${record.id}`,
@@ -132,6 +144,40 @@ export function edcdTargetOptions(project: Project, targetKind: EdcdTargetKind):
       entity: selectEntityFromId(`message:${record.id}`)
     }));
   }
+  if (targetKind === "sound") {
+    const options: EdcdTargetOption[] = [];
+    for (const asset of project.assets ?? []) {
+      if (asset.kind !== "sound") continue;
+      options.push({
+        key: `asset:${asset.id}`,
+        value: asset.resourceId,
+        label: `${asset.label} (${asset.resourceType.trim()} ${asset.resourceId})`,
+        detail: `${asset.exportState} sound asset`,
+        entity: { type: "resource", id: asset.id }
+      });
+    }
+    for (const asset of catalog?.assets ?? []) {
+      if (asset.resourceId == null || asset.type !== "sound") continue;
+      const resourceType = asset.resourceType?.trim() || "snd";
+      options.push({
+        key: `library:${asset.id}`,
+        value: asset.resourceId,
+        label: `${asset.label} (${resourceType} ${asset.resourceId})`,
+        detail: "library sound reference",
+        entity: { type: "resource", id: asset.id }
+      });
+    }
+    return options;
+  }
+  if (targetKind === "monster") {
+    return (project.monsters ?? []).map((record) => ({
+      key: `monster:${record.id}`,
+      value: record.id,
+      label: record.displayName || `Monster ${record.id}`,
+      detail: `HD ${record.hitDice}, armor ${record.armor}, move ${record.movementMax}`,
+      entity: { type: "monster", id: `monster:${record.id}` }
+    }));
+  }
   return (project.battles ?? []).map((record) => ({
     key: `battle:${record.id}`,
     value: record.id,
@@ -141,7 +187,7 @@ export function edcdTargetOptions(project: Project, targetKind: EdcdTargetKind):
   }));
 }
 
-export function missingEdcdTargetReferences(project: Project, shape: string, fieldNames: string[], values: number[], opcode?: number, preservedIndexes?: Iterable<number>): EdcdTargetReferenceIssue[] {
+export function missingEdcdTargetReferences(project: Project, shape: string, fieldNames: string[], values: number[], opcode?: number, preservedIndexes?: Iterable<number>, catalog?: LibraryCatalog | null): EdcdTargetReferenceIssue[] {
   if (shape.toLowerCase() === "choice" && Math.abs(opcode ?? 0) === 3) {
     return missingChoiceDialogReferences(project, fieldNames, values, preservedIndexes);
   }
@@ -155,7 +201,7 @@ export function missingEdcdTargetReferences(project: Project, shape: string, fie
     const value = normalizedEdcdTargetValueForValidation(targetKind, rawValue, field, opcode);
     if (!Number.isFinite(value) || value < 0) continue;
     if (value === 0 && !["macro", "simpleEncounter", "complexEncounter"].includes(targetKind)) continue;
-    if (edcdTargetOptions(project, targetKind).some((option) => option.value === value)) continue;
+    if (edcdTargetOptions(project, targetKind, catalog).some((option) => option.value === value)) continue;
     issues.push({
       index,
       field,
@@ -174,7 +220,7 @@ function normalizedEdcdTargetValueForValidation(targetKind: EdcdTargetKind, rawV
 }
 
 export function createRecordTypeForEdcdTarget(targetKind: EdcdTargetKind | null): RealmzTargetRecordKind | null {
-  if (!targetKind || targetKind === "macro" || targetKind === "optionLabel") return null;
+  if (!targetKind || targetKind === "macro" || targetKind === "optionLabel" || targetKind === "sound") return null;
   return targetKind;
 }
 
@@ -187,7 +233,9 @@ export function edcdTargetLabel(targetKind: EdcdTargetKind) {
     simpleEncounter: "simple encounter",
     complexEncounter: "complex encounter",
     questLabel: "quest label",
-    macro: "Extra Action Point"
+    macro: "Extra Action Point",
+    sound: "sound",
+    monster: "monster"
   };
   return labels[targetKind];
 }

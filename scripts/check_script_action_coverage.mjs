@@ -1,0 +1,96 @@
+import fs from "node:fs";
+import path from "node:path";
+
+const root = process.cwd();
+const catalogPath = path.join(root, "src/editor/panels/scripts/scriptActionCatalog.ts");
+const panelPath = path.join(root, "src/editor/panels/ScriptsPanel.tsx");
+const edcdPath = path.join(root, "src/editor/components/EdcdRowEditor.tsx");
+
+const catalog = fs.readFileSync(catalogPath, "utf8");
+const panel = fs.readFileSync(panelPath, "utf8");
+const edcd = fs.readFileSync(edcdPath, "utf8");
+const targetPickerPath = path.join(root, "src/editor/components/RealmzTargetPicker.tsx");
+const inventoryPath = path.join(root, "src/editor/panels/scripts/scriptInventory.tsx");
+const validationPath = path.join(root, "src/editor/scriptValidation.ts");
+const targetPicker = fs.readFileSync(targetPickerPath, "utf8");
+const inventory = fs.readFileSync(inventoryPath, "utf8");
+const validation = fs.readFileSync(validationPath, "utf8");
+
+const requiredCatalogExports = [
+  "ScriptActionAuthoringLevel",
+  "ScriptActionCoverageEntry",
+  "ScriptStepFormDefinition",
+  "ScriptTargetRoute",
+  "ScriptFlowPreviewRoute",
+  "SCRIPT_ACTION_COVERAGE",
+  "SCRIPT_STEP_FORM_DEFINITIONS",
+  "scriptStepFlowRoutes"
+];
+
+const failures = [];
+for (const name of requiredCatalogExports) {
+  if (!catalog.includes(name)) failures.push(`Missing AP catalog coverage export/type: ${name}`);
+}
+
+const firstClassMatch = catalog.match(/const FIRST_CLASS_ACTIONS = new Set\(\[([\s\S]*?)\]\);/);
+if (!firstClassMatch) {
+  failures.push("Missing FIRST_CLASS_ACTIONS set.");
+} else {
+  const firstClass = new Set((firstClassMatch[1].match(/-?\d+/g) ?? []).map(Number));
+  for (const opcode of [1, 2, 3, 8, 11, 14, 19, 20, 39, 45, 48, 56, 92, 106, 122]) {
+    if (!firstClass.has(opcode)) failures.push(`Common action ${opcode} is not marked first-class.`);
+  }
+}
+
+for (const snippet of [
+  "authoringLevel:",
+  "validationPosture:",
+  "formKind:"
+]) {
+  if (!catalog.includes(snippet)) failures.push(`ScriptActionDefinition is not populated with ${snippet}`);
+}
+
+for (const snippet of [
+  "resolveSignedMessageTarget",
+  "signedTargetValueForSelection",
+  "signedTargetBehaviorLabel"
+]) {
+  if (!targetPicker.includes(snippet)) failures.push(`Target picker is missing signed message helper: ${snippet}`);
+}
+
+if (!validation.includes("resolveSignedMessageTarget(code, id)")) {
+  failures.push("Script validation does not normalize signed message targets.");
+}
+
+for (const snippet of [
+  "extraActionTabClassification",
+  "scriptTabKind",
+  "global-events",
+  "advanced-imports"
+]) {
+  if (!inventory.includes(snippet)) failures.push(`Script inventory is missing tab classification support: ${snippet}`);
+}
+
+if (!panel.includes("QuestUsageSummary")) failures.push("Scripts panel is missing the quest usage summary.");
+if (!panel.includes("moveSelectedStep")) failures.push("Scripts panel does not preserve selected step during move.");
+
+const normalUiSources = [
+  ["ScriptsPanel.tsx", panel],
+  ["EdcdRowEditor.tsx", edcd]
+];
+for (const [label, source] of normalUiSources) {
+  for (const forbidden of ["Provenance", "writer-gated", "preserved bytes"]) {
+    if (source.includes(forbidden)) failures.push(`${label} exposes forbidden normal AP wording: ${forbidden}`);
+  }
+}
+
+if (/label:\s*["']Opcode\s+\d+/i.test(catalog)) {
+  failures.push("Action catalog contains a visible Opcode label.");
+}
+
+if (failures.length > 0) {
+  console.error(failures.map((failure) => `- ${failure}`).join("\n"));
+  process.exit(1);
+}
+
+console.log("AP action coverage checks passed.");

@@ -19,6 +19,22 @@ const targetOptionsCache = new WeakMap<Project, Map<string, ScriptTargetOption[]
 const catalogIds = new WeakMap<LibraryCatalog, number>();
 let nextCatalogId = 1;
 
+export function resolveSignedMessageTarget(opcode: number, value: number) {
+  const code = normalizeStepOpcode(opcode);
+  return code === 1 ? Math.abs(value) : value;
+}
+
+export function signedTargetValueForSelection(opcode: number, currentValue: number, selectedValue: number) {
+  const code = normalizeStepOpcode(opcode);
+  if (code === 1 && currentValue < 0 && selectedValue > 0) return -Math.abs(selectedValue);
+  return selectedValue;
+}
+
+export function signedTargetBehaviorLabel(opcode: number, value: number) {
+  const code = normalizeStepOpcode(opcode);
+  return code === 1 && value < 0 ? "no wait" : "";
+}
+
 export function TargetPicker({
   project,
   catalog,
@@ -41,13 +57,17 @@ export function TargetPicker({
   const [query, setQuery] = useState("");
   if (!config) return null;
   const filteredTargets = filterTargetOptions(targets, query);
-  const selected = targets.find((target) => target.value === value) ?? null;
+  const resolvedValue = resolveSignedMessageTarget(opcode, value);
+  const selected = targets.find((target) => target.value === resolvedValue) ?? null;
   const visibleTargets = selected && !filteredTargets.some((target) => target.key === selected.key)
     ? [selected, ...filteredTargets.slice(0, 159)]
     : filteredTargets.slice(0, 160);
-  const hasCurrentValue = Number.isFinite(value) && value !== 0 && !selected;
+  const hasCurrentValue = Number.isFinite(resolvedValue) && resolvedValue !== 0 && !selected;
   const canCreateTarget = Boolean(config.recordType && onCreate && (!selected || hasCurrentValue || value === 0));
-  const detail = selected ? [selected.detail, selected.summary, selected.compatibility, selected.sourceState].filter(Boolean).join(" | ") : config.hint;
+  const behavior = signedTargetBehaviorLabel(opcode, value);
+  const detail = selected
+    ? [selected.detail, selected.summary, behavior, selected.compatibility, selected.sourceState].filter(Boolean).join(" | ")
+    : config.hint;
   return (
     <div className="realmz-target-picker">
       <label>
@@ -59,15 +79,15 @@ export function TargetPicker({
           aria-label={`Search ${config.label}`}
         />
         <select
-          value={hasCurrentValue ? `raw:${value}` : selected ? String(selected.value) : ""}
+          value={hasCurrentValue ? `raw:${resolvedValue}` : selected ? String(selected.value) : ""}
           onChange={(event) => {
             const raw = event.currentTarget.value;
             if (!raw || raw.startsWith("raw:")) return;
-            onChange(Number(raw));
+            onChange(signedTargetValueForSelection(opcode, value, Number(raw)));
           }}
         >
           <option value="">Choose {config.label.toLowerCase()}</option>
-          {hasCurrentValue && <option value={`raw:${value}`}>Current value {value}</option>}
+          {hasCurrentValue && <option value={`raw:${resolvedValue}`}>Current value {resolvedValue}</option>}
           {visibleTargets.map((target) => (
             <option key={target.key} value={target.value}>
               {target.label}
@@ -85,9 +105,9 @@ export function TargetPicker({
         <button
           className="btn btn-secondary btn-xs"
           type="button"
-          onClick={() => onCreate?.(config.recordType!, hasCurrentValue ? value : undefined)}
+          onClick={() => onCreate?.(config.recordType!, hasCurrentValue ? resolvedValue : undefined)}
         >
-          {createTargetButtonLabel(config.recordType!, hasCurrentValue ? value : undefined)}
+          {createTargetButtonLabel(config.recordType!, hasCurrentValue ? resolvedValue : undefined)}
         </button>
       )}
       {targets.length === 0 && <span className="target-picker-empty">No targets are available yet.</span>}
@@ -276,8 +296,10 @@ function usageCounts(project: Project, opcodes: number[]) {
   const counts = new Map<number, number>();
   for (const trigger of project.triggers) {
     for (const action of trigger.actions) {
-      if (!codes.has(normalizeStepOpcode(action.rawCode))) continue;
-      counts.set(action.id, (counts.get(action.id) ?? 0) + 1);
+      const code = normalizeStepOpcode(action.rawCode);
+      if (!codes.has(code)) continue;
+      const id = resolveSignedMessageTarget(code, action.id);
+      counts.set(id, (counts.get(id) ?? 0) + 1);
     }
   }
   return counts;

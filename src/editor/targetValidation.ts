@@ -1,10 +1,11 @@
 import { LibraryCatalog, Project, RealmzTargetRecordKind } from "./types";
 import { actionOptionFor, isDispatcherNoopOpcode, normalizeStepOpcode } from "./realmzActions";
-import { isDirectMacroOpcode, targetOptionsForOpcode, targetPickerConfig } from "./components/RealmzTargetPicker";
+import { isDirectMacroOpcode, resolveSignedMessageTarget, targetOptionsForOpcode, targetPickerConfig } from "./components/RealmzTargetPicker";
 import { isCallableMacro } from "./semanticGraph";
 import { missingEdcdTargetReferences } from "./edcdTargets";
 import { edcdFieldNamesForShape } from "./realmzEdcd";
 import { parameterLabelsForOpcode } from "./opcodeCrosswalk";
+import { scriptParameterLabelForOpcode } from "./scriptActionLabels";
 
 export type TargetRecordDiagnostic = {
   id: string;
@@ -230,22 +231,22 @@ function validateEncounterActions(project: Project, recordType: RealmzTargetReco
     const code = normalizeStepOpcode(action.rawCode);
     const option = actionOptionFor(action.rawCode);
     if (option.category === "Unknown") {
-      issues.push(slotIssue("warning", recordType, recordId, action.slot, "unknown-opcode", "Providence does not fully support this opcode yet.", `CODE ${action.rawCode} will stay visible as raw Realmz data until this action is editable.`));
+      issues.push(slotIssue("warning", recordType, recordId, action.slot, "unknown-action", "This imported action needs Technical Details.", `Imported action ${action.rawCode} is kept with this scenario but is not part of the normal action list.`));
     } else if (isDispatcherNoopOpcode(action.rawCode)) {
-      issues.push(slotIssue("info", recordType, recordId, action.slot, "dispatcher-noop", "Realmz ignores this CODE value.", `CODE ${action.rawCode} has no newland.c dispatcher case, so it is preserved as no-op data.`));
+      issues.push(slotIssue("info", recordType, recordId, action.slot, "dispatcher-noop", "This step has no in-game effect.", `Imported action ${action.rawCode} is ignored by Realmz.`));
     }
     if (option.edcdShape) {
       const rowId = Math.max(0, action.id);
       const row = project.extracodes.find((candidate) => candidate.id === rowId);
       if (!row) {
-        issues.push(slotIssue("warning", recordType, recordId, action.slot, "missing-edcd-row", "Missing parameter row.", `CODE ${action.rawCode} stores extra settings in parameter row ${rowId}; create that row before relying on this behavior.`));
+        issues.push(slotIssue("warning", recordType, recordId, action.slot, "missing-settings", "Missing settings.", `${actionOptionFor(action.rawCode).shortLabel} needs settings ${rowId}; create them before relying on this behavior.`));
       } else if (row.values.length !== 5 || row.values.some((value) => !Number.isFinite(value))) {
-        issues.push(slotIssue("error", recordType, recordId, action.slot, "malformed-edcd-row", "Parameter row is malformed.", `Parameter row ${rowId} must contain five finite numeric values.`));
+        issues.push(slotIssue("error", recordType, recordId, action.slot, "malformed-settings", "Settings are malformed.", `Settings ${rowId} must contain five finite numeric values.`));
       } else {
         const fieldNames = edcdFieldNamesForShape(option.edcdShape);
         if (fieldNames) {
           const preservedIndexes = parameterLabelsForOpcode(action.rawCode).filter((label) => label.preserved).map((label) => label.index);
-          for (const issue of missingEdcdTargetReferences(project, option.edcdShape, fieldNames, row.values, action.rawCode, preservedIndexes)) {
+          for (const issue of missingEdcdTargetReferences(project, option.edcdShape, fieldNames, row.values, action.rawCode, preservedIndexes, catalog)) {
             const fieldLabel = parameterLabelForIssue(action.rawCode, issue.index, issue.field);
             issues.push(slotIssue(
               "warning",
@@ -254,7 +255,7 @@ function validateEncounterActions(project: Project, recordType: RealmzTargetReco
               action.slot,
               `missing-edcd-${issue.field}`,
               `Missing ${fieldLabel.toLowerCase()} target.`,
-              `Parameter row ${rowId} field ${issue.index + 1} (${fieldLabel}) points at ${issue.targetLabel} ${issue.value}, but Providence cannot prove that target exists.`
+              `Settings ${rowId} field ${issue.index + 1} (${fieldLabel}) points at ${issue.targetLabel} ${issue.value}, but that target does not exist.`
             ));
           }
         }
@@ -264,7 +265,7 @@ function validateEncounterActions(project: Project, recordType: RealmzTargetReco
     if (isDirectMacroOpcode(code) && action.id !== 0) {
       const macro = project.triggers.find((candidate) => candidate.source === "Data ED3" && candidate.recordIndex === action.id);
       if (!macro) issues.push(slotIssue("error", recordType, recordId, action.slot, "dangling-macro", "Extra Action Point target is missing.", `No callable Extra Action Point ${action.id} exists.`));
-      else if (!isCallableMacro(project, macro)) issues.push(slotIssue("warning", recordType, recordId, action.slot, "ed3-evidence-target", "Target is an imported Extra Action Point row.", `Extra Action Point ${action.id} is preserved from the imported scenario but is not currently callable from normal macro paths.`));
+      else if (!isCallableMacro(project, macro)) issues.push(slotIssue("warning", recordType, recordId, action.slot, "imported-extra-action-target", "Target is an imported Extra Action Point.", `Extra Action Point ${action.id} is available in Advanced Imports.`));
     }
   }
   return issues;
@@ -274,9 +275,10 @@ function validateReference(project: Project, recordType: RealmzTargetRecordKind,
   if (id === 0) return [];
   const config = targetPickerConfig(opcode);
   if (!config) return [];
-  const exists = targetOptionsForOpcode(project, opcode, catalog).some((target) => target.value === id);
+  const resolvedId = resolveSignedMessageTarget(opcode, id);
+  const exists = targetOptionsForOpcode(project, opcode, catalog).some((target) => target.value === resolvedId);
   if (exists) return [];
-  const detail = `ID ${id} is kept as-is, but Providence cannot find the referenced ${config.label.toLowerCase()}.`;
+  const detail = `${resolvedId} is kept as-is, but Providence cannot find the referenced ${config.label.toLowerCase()}.`;
   return [slot == null
     ? recordIssue("warning", recordType, recordId, `${label}:unresolved-target`, `${label} does not resolve to a known target.`, detail)
     : slotIssue("warning", recordType, recordId, slot, "unresolved-target", `${label} does not resolve to a known target.`, detail)];
@@ -304,18 +306,7 @@ function hasNonAscii(value: string) {
 }
 
 function parameterLabelForIssue(opcode: number, index: number, fallback: string) {
-  return parameterLabelsForOpcode(opcode).find((label) => label.index === index)?.label ?? humanizeParameterName(fallback);
-}
-
-function humanizeParameterName(name: string) {
-  return String(name || "parameter")
-    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-    .replace(/[-_]+/g, " ")
-    .replace(/\bmessage\b/i, "String")
-    .replace(/\bmacro\b/i, "Extra Action Point")
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/\b\w/g, (match) => match.toUpperCase());
+  return scriptParameterLabelForOpcode(opcode, index, fallback);
 }
 
 function recordIssue(severity: TargetRecordDiagnostic["severity"], recordType: RealmzTargetRecordKind, recordId: number, code: string, message: string, detail: string): TargetRecordDiagnostic {

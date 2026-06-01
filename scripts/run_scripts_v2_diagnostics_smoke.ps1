@@ -58,11 +58,11 @@ $script = @{
     )
     scriptDiagnosticsContain = @(
       @{ triggerId = "Data DD:0:6"; text = "Missing battle number target" },
-      @{ triggerId = "Data DD:0:6"; text = "Missing string to display before battle target" }
+      @{ triggerId = "Data DD:0:6"; text = "Missing before message target" }
     )
     targetDiagnosticsContain = @(
       @{ recordType = "simpleEncounter"; id = 77; text = "Missing battle number target" },
-      @{ recordType = "simpleEncounter"; id = 77; text = "Missing string to display before battle target" }
+      @{ recordType = "simpleEncounter"; id = 77; text = "Missing before message target" }
     )
     exportContains = @("Data DD", "Data EDCD", "Data ED")
   }

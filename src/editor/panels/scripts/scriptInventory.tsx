@@ -69,6 +69,22 @@ export const SCRIPT_INVENTORY_FILTERS: Array<{ id: ScriptInventoryFilter; label:
   { id: "macros", label: "Reusable Actions" }
 ];
 
+export function scriptTabKind(activeEditor: string) {
+  if (activeEditor === "macros") return "reusable-actions";
+  if (activeEditor === "global-macros") return "global-events";
+  if (activeEditor === "quests") return "quests";
+  if (activeEditor === "ed3-evidence") return "advanced-imports";
+  return "action-points";
+}
+
+export function extraActionTabClassification(project: Project | null, trigger: TriggerRecord) {
+  if (trigger.source !== "Data ED3") return "map-action-point";
+  const classification = extraActionPointClassification(project, trigger);
+  if (classification === "Callable Extra Action Point") return "reusable-actions";
+  if (classification === "Global Macro") return "global-events";
+  return "advanced-imports";
+}
+
 export function filterScriptsByInventory(
   project: Project | null,
   scripts: TriggerRecord[],
@@ -101,7 +117,10 @@ export function isReusableActionPoint(trigger: TriggerRecord) {
 }
 
 export function triggerVisibleForEditor(project: Project | null, trigger: TriggerRecord, activeEditor: string) {
-  if (activeEditor === "macros" || activeEditor === "global-macros") return isCallableMacro(project, trigger);
+  const tabKind = scriptTabKind(activeEditor);
+  if (tabKind === "reusable-actions") return extraActionTabClassification(project, trigger) === "reusable-actions" && isCallableMacro(project, trigger);
+  if (tabKind === "global-events") return extraActionTabClassification(project, trigger) === "global-events";
+  if (tabKind === "advanced-imports") return extraActionTabClassification(project, trigger) === "advanced-imports";
   if (activeEditor === "action-points") return trigger.source !== "Data ED3" && trigger.levelType != null && trigger.levelIndex != null;
   if (activeEditor === "quests") return trigger.actions.some((action) => [46, 47, 76, 77].includes(action.code));
   return (trigger.source !== "Data ED3" && trigger.levelType != null && trigger.levelIndex != null) || isCallableMacro(project, trigger);
@@ -112,7 +131,7 @@ export function scriptPanelTitle(activeEditor: string) {
   if (activeEditor === "macros") return "Reusable Actions";
   if (activeEditor === "ed3-evidence") return "Imported Extra Actions";
   if (activeEditor === "global-macros") return "Global Events";
-  if (activeEditor === "quests") return "Quest Actions";
+  if (activeEditor === "quests") return "Quests";
   return "Action Points";
 }
 

@@ -420,6 +420,61 @@
   line-height: 1.35;
 }
 
+.script-tab-note,
+.script-quest-summary {
+  display: grid;
+  gap: 6px;
+  border: 1px solid #263746;
+  border-radius: 6px;
+  background: #0d151d;
+  color: #aebfd0;
+  padding: 8px;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.script-tab-note strong,
+.script-quest-summary > strong {
+  color: #dcecff;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.script-tab-note small,
+.script-quest-summary small {
+  color: #8fa3b7;
+}
+
+.script-quest-summary-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+  border: 1px solid #22313e;
+  border-radius: 5px;
+  background: #0b1219;
+  padding: 6px;
+}
+
+.script-quest-summary-row span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.script-quest-summary-row b {
+  color: #eef4fb;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.script-quest-summary-row div {
+  display: inline-flex;
+  gap: 4px;
+}
+
 
 
 .script-issue-badge {
@@ -2667,6 +2722,10 @@
   line-height: 1.4;
 }
 
+.realmz-preview-toggle {
+  justify-self: start;
+}
+
 .realmz-selected-target-preview {
   display: grid;
   gap: 3px;
@@ -2696,9 +2755,54 @@
   line-height: 1.35;
 }
 
+.realmz-current-opcode:not(.expanded) .realmz-selected-target-preview > p,
+.realmz-current-opcode:not(.expanded) .realmz-selected-target-preview > small,
+.realmz-current-opcode:not(.expanded) .script-step-route-preview small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .realmz-selected-target-preview > small {
   color: #8798a8;
   font-size: 10px;
+}
+
+.script-step-route-preview {
+  display: grid;
+  gap: 5px;
+  border: 1px solid #263746;
+  border-radius: 5px;
+  background: #0b141c;
+  padding: 7px 8px;
+}
+
+.script-step-route-preview > span {
+  color: #7ee7b1;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.script-step-route-preview p {
+  display: grid;
+  grid-template-columns: minmax(120px, max-content) minmax(0, 1fr);
+  gap: 8px;
+  margin: 0;
+  color: #b8c7d5;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.script-step-route-preview b {
+  color: #eef4fb;
+  font-size: 11px;
+}
+
+.script-step-route-preview small {
+  color: #8fa5b7;
+  font-size: 10px;
+  line-height: 1.35;
 }
 
 .realmz-action-help-card {
@@ -2750,6 +2854,39 @@
 }
 
 .realmz-action-help-facts .field-row span:last-child {
+  white-space: normal;
+  line-height: 1.35;
+}
+
+.realmz-action-settings-details,
+.realmz-original-help {
+  border-top: 1px solid #27313c;
+  padding-top: 7px;
+}
+
+.realmz-action-settings-details summary,
+.realmz-original-help summary {
+  cursor: pointer;
+  color: #f2c94c;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.realmz-action-settings-details > div,
+.realmz-original-help > div {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.realmz-action-settings-details .field-row,
+.realmz-original-help .field-row {
+  align-items: start;
+}
+
+.realmz-action-settings-details .field-row span:last-child,
+.realmz-original-help .field-row span:last-child {
   white-space: normal;
   line-height: 1.35;
 }
