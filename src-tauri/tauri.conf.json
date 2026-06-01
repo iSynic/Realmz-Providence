@@ -30,6 +30,12 @@
     "resources": {
       "../public/bundled-libraries/": "bundled-libraries"
     },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "offlineInstaller",
+        "silent": true
+      }
+    },
     "icon": [
       "icons/icon.ico"
     ]
