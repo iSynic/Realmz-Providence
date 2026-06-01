@@ -3579,11 +3579,11 @@ a.documents-source-chip:hover {
 .project-start-panel {
   position: relative;
   z-index: 2;
-  width: min(520px, 100%);
+  width: min(460px, 100%);
   display: grid;
   justify-items: start;
-  gap: 14px;
-  padding: 22px 24px;
+  gap: 13px;
+  padding: 20px 22px;
   border: 1px solid rgba(126, 174, 223, 0.32);
   border-radius: 8px;
   background: rgba(8, 13, 14, 0.72);
@@ -3625,16 +3625,6 @@ a.documents-source-chip:hover {
   color: #d0e3f0;
   font-size: 12px;
   line-height: 1.55;
-}
-
-
-
-
-
-.project-start-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
 }
 
 
