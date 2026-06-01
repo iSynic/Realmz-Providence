@@ -551,7 +551,9 @@ export function ResourcePreviewWindow({
     ? resourceExportScope(item.asset)
     : item.type === "library"
       ? resourceExportScope(item.asset)
-      : "unknown-advanced";
+      : item.entity.summary.scenarioSupplied === true
+        ? "ships-with-scenario"
+        : "unknown-advanced";
   return (
     <FloatingWorkbenchPanel
       title={title}
@@ -596,14 +598,27 @@ export function ResourcePreviewWindow({
         )}
         {item.type === "resource" && (
           <>
-            {resourceSummaryText(item.entity.summary) && <pre className="resource-detail-text">{resourceSummaryText(item.entity.summary)}</pre>}
+            {resourcePreviewDataUrl(item.entity.summary) ? (
+              <ResourcePreviewMedia
+                kind={resourceKindFromSummary(item.entity.summary)}
+                preview={resourcePreviewDataUrl(item.entity.summary)}
+                label={item.entity.label}
+              />
+            ) : resourceSummaryText(item.entity.summary) ? (
+              <pre className="resource-detail-text">{resourceSummaryText(item.entity.summary)}</pre>
+            ) : (
+              <ResourcePreviewMedia kind={resourceKindFromSummary(item.entity.summary)} preview={null} label={item.entity.label} />
+            )}
             <ResourceFactGrid rows={[
               ["ID", item.entity.id],
               ["Type", item.entity.type],
               ["State", resourceStatus(item.entity)],
-              ["Source", item.entity.source]
+              ["Source", item.entity.source],
+              ["Preview", previewStatusLabel(item.entity.summary)]
             ]} />
-            <ResourceFactGrid title="Decoded Fields" rows={Object.entries(item.entity.summary).map(([key, value]) => [key, compactValue(value)])} />
+            {resourcePreviewSummaryRows(item.entity.summary).length > 0 && <ResourceFactGrid title="Preview Details" rows={resourcePreviewSummaryRows(item.entity.summary)} />}
+            <ResourcePreviewDiagnostics diagnostics={resourcePreviewDiagnostics(item.entity.summary)} />
+            <ResourceFactGrid title="Decoded Fields" rows={resourceDecodedRows(item.entity.summary)} />
             {item.consumers.length > 0 && (
               <div className="resource-usage-list">
                 <strong>Used By</strong>
@@ -709,10 +724,58 @@ function libraryPreviewText(preview: AssetPreviewState) {
 }
 
 function resourceSummaryText(summary: Record<string, unknown>) {
+  const preview = resourcePreviewDataUrl(summary);
+  if (preview?.startsWith("data:text/")) {
+    const decoded = decodeTextDataUrl(preview);
+    if (decoded?.trim()) return decoded;
+  }
   if (typeof summary.text === "string" && summary.text.trim()) return summary.text;
   if (typeof summary.textPreview === "string" && summary.textPreview.trim()) return summary.textPreview;
-  if (typeof summary.preview === "string" && summary.preview.trim()) return summary.preview;
   return "";
+}
+
+function resourceKindFromSummary(summary: Record<string, unknown>): ManagedAssetKind {
+  const resourceType = typeof summary.resourceType === "string" ? summary.resourceType : typeof summary.type === "string" ? summary.type : "";
+  const normalized = resourceType.trim();
+  if (normalized === "PICT") return "picture";
+  if (normalized === "cicn") return "icon";
+  if (normalized === "snd") return "sound";
+  if (normalized === "TEXT" || normalized === "STR#") return "text";
+  return "other";
+}
+
+function resourcePreviewDataUrl(summary: Record<string, unknown>) {
+  return typeof summary.previewDataUrl === "string" && summary.previewDataUrl ? summary.previewDataUrl : null;
+}
+
+function previewStatusLabel(summary: Record<string, unknown>) {
+  const status = typeof summary.previewStatus === "string" ? summary.previewStatus as ResourcePreviewStatus : null;
+  return status ? previewFilterLabel(status) : "Info Only";
+}
+
+function resourcePreviewSummaryRows(summary: Record<string, unknown>) {
+  const value = summary.previewSummary;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return [];
+  return Object.entries(value as Record<string, unknown>).map(([key, entry]) => [key, compactValue(entry)] as [string, string]);
+}
+
+function resourcePreviewDiagnostics(summary: Record<string, unknown>): ResourcePreviewDiagnostic[] {
+  const diagnostics = Array.isArray(summary.previewDiagnostics) ? summary.previewDiagnostics : [];
+  return diagnostics
+    .filter((entry): entry is string | ResourcePreviewDiagnostic =>
+      (typeof entry === "string" && entry.trim().length > 0) ||
+      (typeof entry === "object" && entry !== null && "message" in entry && typeof entry.message === "string" && entry.message.trim().length > 0)
+    )
+    .map((entry) => typeof entry === "string"
+      ? { severity: "warning", code: "resource.preview", message: entry, decoder: "resource-preview" }
+      : entry);
+}
+
+function resourceDecodedRows(summary: Record<string, unknown>) {
+  const hidden = new Set(["preview", "previewDataUrl", "previewDiagnostics", "previewSummary"]);
+  return Object.entries(summary)
+    .filter(([key]) => !hidden.has(key))
+    .map(([key, value]) => [key, compactValue(value)] as [string, string]);
 }
 
 export function managedOutputSummary(asset: ManagedAsset) {

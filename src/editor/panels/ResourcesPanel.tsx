@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { LibraryCatalog, ManagedAssetKind, Project, ResourcePreviewStatus, SelectedEntity } from "../types";
+import { LibraryCatalog, ManagedAssetKind, Project, ResourcePreviewDiagnostic, ResourcePreviewStatus, SelectedEntity, SemanticEntity } from "../types";
 import { compactValue, selectEntityFromId, semanticLabel } from "../utils";
 import { resourceConsumers, resourceGaps, resourceMembersForType, schemaEntities } from "../semanticGraph";
 import { resourceUsageLinks } from "../contentLinks";
@@ -12,10 +12,12 @@ import {
   AssetImportBar,
   AssetPagination,
   AssetSection,
+  AssetPreview,
   LIBRARY_PAGE_SIZE,
   LibraryAssetCard,
   ManagedAssetCard,
   PreviewStatusFilters,
+  ResourceScopeBadge,
   ResourcePreviewItem,
   ResourcePreviewWindow,
   SpecialLandAssetCard,
@@ -25,11 +27,13 @@ import {
   assetMatchesSection,
   assetSectionFromEditor,
   assetSectionTitle,
+  formatBytes,
   libraryAssetMatchesKind,
   libraryAssetMatchesSection,
   numberSummary,
   resourceStatus,
-  estimatedPreviewStatus
+  estimatedPreviewStatus,
+  useProjectPreview
 } from "./resources/ResourceWidgets";
 
 export function ResourcesPanel({
@@ -85,6 +89,11 @@ export function ResourcesPanel({
     assetMatchesSection(asset, section) &&
     assetMatchesKind(asset.kind, kindFilter) &&
     (!normalizedQuery || `${asset.label} ${asset.resourceType} ${asset.resourceId} ${asset.fileName}`.toLowerCase().includes(normalizedQuery))
+  );
+  const scenarioResources = scenarioResourceAssets(project).filter((asset) =>
+    section === "project" &&
+    assetMatchesKind(asset.kind, kindFilter) &&
+    (!normalizedQuery || `${asset.entity.label} ${asset.resourceType} ${asset.resourceId} ${asset.source}`.toLowerCase().includes(normalizedQuery))
   );
   useEffect(() => {
     setLibraryPage(0);
@@ -150,7 +159,7 @@ export function ResourcesPanel({
         <section className="tab-panel asset-authoring-panel">
           <div className="panel-header">
             <span>{assetSectionTitle(section)}</span>
-            <b>{section === "project" ? `${projectAssets.length.toLocaleString()} scenario asset${projectAssets.length === 1 ? "" : "s"}` : `${matchingLibraryAssets.length.toLocaleString()} reference asset${matchingLibraryAssets.length === 1 ? "" : "s"}`}</b>
+            <b>{section === "project" ? `${(projectAssets.length + scenarioResources.length).toLocaleString()} scenario asset${projectAssets.length + scenarioResources.length === 1 ? "" : "s"}` : `${matchingLibraryAssets.length.toLocaleString()} reference asset${matchingLibraryAssets.length === 1 ? "" : "s"}`}</b>
           </div>
           {kindFilter === "special-land-tile" && (
             <div className="special-land-explainer">
@@ -168,6 +177,17 @@ export function ResourcesPanel({
           {section === "project" && <div className="asset-subsection-heading">Ships With This Scenario</div>}
           {section === "project" && (
           <div className="managed-asset-grid" aria-label="Scenario assets">
+            {scenarioResources.map((asset, index) => (
+              <ScenarioResourceAssetCard
+                key={renderListKey("scenario-resource-asset", asset.entity, index)}
+                asset={asset}
+                project={project}
+                desktopRuntime={desktopRuntime}
+                projectDir={projectDir}
+                onSelectEntity={onSelectEntity}
+                onOpenPreview={() => setPreviewItem({ type: "resource", entity: asset.entity, consumers: project ? resourceConsumers(project, asset.entity.id) : [] })}
+              />
+            ))}
             {projectAssets.map((asset, index) => asset.kind === "special-land-tile" ? (
               <SpecialLandAssetCard
                 key={renderListKey("project-special-land", asset, index)}
@@ -193,7 +213,7 @@ export function ResourcesPanel({
                 onOpenPreview={(preview) => setPreviewItem({ type: "managed", asset, preview, usages: project ? resourceUsageLinks(project, asset.resourceType, asset.resourceId) : [] })}
               />
             ))}
-            {project && projectAssets.length === 0 && (
+            {project && projectAssets.length === 0 && scenarioResources.length === 0 && (
               <p className="empty-copy compact">No scenario assets in this section yet. Imported assets here are the media Providence will package with this scenario.</p>
             )}
             {!project && <p className="empty-copy compact">Open a project to manage scenario assets.</p>}
@@ -329,4 +349,168 @@ export function ResourcesPanel({
       )}
     </section>
   );
+}
+
+type ScenarioResourceAsset = {
+  entity: SemanticEntity;
+  kind: ManagedAssetKind;
+  resourceType: string;
+  resourceId: number;
+  source: string;
+  bytes: number;
+  previewPath: string;
+};
+
+function ScenarioResourceAssetCard({
+  asset,
+  project,
+  desktopRuntime,
+  projectDir,
+  onSelectEntity,
+  onOpenPreview
+}: {
+  asset: ScenarioResourceAsset;
+  project: Project | null;
+  desktopRuntime: boolean;
+  projectDir: string;
+  onSelectEntity: (entity: SelectedEntity) => void;
+  onOpenPreview: () => void;
+}) {
+  const preview = useProjectPreview(asset.previewPath, desktopRuntime, projectDir);
+  const consumers = project ? resourceConsumers(project, asset.entity.id) : [];
+  return (
+    <article className="managed-asset-card scenario-resource">
+      <AssetPreview
+        kind={asset.kind}
+        label={asset.entity.label}
+        preview={preview}
+        status={scenarioResourcePreviewStatus(asset.entity)}
+        diagnostics={scenarioResourcePreviewDiagnostics(asset.entity)}
+        onOpen={onOpenPreview}
+      />
+      <ResourceScopeBadge scope="ships-with-scenario" />
+      <strong>{asset.entity.label}</strong>
+      <small>{asset.resourceType} {asset.resourceId}</small>
+      <div className="asset-facts">
+        <span>{scenarioResourceRoleLabel(asset)}</span>
+        <span>{formatBytes(asset.bytes)}</span>
+        <span>{consumers.length} use{consumers.length === 1 ? "" : "s"}</span>
+        <span>{asset.source}</span>
+      </div>
+      {consumers.length > 0 && (
+        <div className="asset-usage-list">
+          {consumers.slice(0, 4).map((usage) => (
+            <button key={usage.id} type="button" onClick={() => onSelectEntity(selectEntityFromId(usage.from))}>
+              {usage.from}
+              <small>{usage.kind}</small>
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="asset-card-actions">
+        <button className="btn btn-secondary btn-xs" type="button" onClick={onOpenPreview}>
+          Open Detail
+        </button>
+      </div>
+    </article>
+  );
+}
+
+function scenarioResourceAssets(project: Project | null): ScenarioResourceAsset[] {
+  if (!project) return [];
+  const assets: ScenarioResourceAsset[] = [];
+  const seen = new Set<string>();
+  for (const entity of project.semanticSchema.entities) {
+    if (entity.type !== "resource") continue;
+    if (entity.summary.referenceOnly === true || entity.summary.scenarioSupplied === false || entity.confidence === "inferred") continue;
+    const resourceType = resourceTypeFromSummary(entity.summary);
+    const resourceId = resourceIdFromSummary(entity.summary);
+    if (!resourceType || resourceId == null) continue;
+    const key = `${resourceType}:${resourceId}:${entity.source}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    assets.push({
+      entity,
+      kind: managedKindForResource(resourceType),
+      resourceType,
+      resourceId,
+      source: entity.source,
+      bytes: typeof entity.summary.bytes === "number" ? entity.summary.bytes : 0,
+      previewPath: scenarioResourcePreviewPath(project, entity, resourceType, resourceId)
+    });
+  }
+  return assets.sort((a, b) => a.resourceType.localeCompare(b.resourceType) || a.resourceId - b.resourceId || a.source.localeCompare(b.source));
+}
+
+function resourceTypeFromSummary(summary: Record<string, unknown>) {
+  const value = typeof summary.resourceType === "string" ? summary.resourceType : typeof summary.type === "string" ? summary.type : "";
+  return value.trim() ? value : null;
+}
+
+function resourceIdFromSummary(summary: Record<string, unknown>) {
+  const value = typeof summary.resourceId === "number" ? summary.resourceId : typeof summary.resourceId === "string" ? Number(summary.resourceId) : NaN;
+  return Number.isFinite(value) ? value : null;
+}
+
+function managedKindForResource(resourceType: string): ManagedAssetKind {
+  const normalized = resourceType.trim();
+  if (normalized === "PICT") return "picture";
+  if (normalized === "cicn") return "icon";
+  if (normalized === "snd") return "sound";
+  if (normalized === "TEXT" || normalized === "STR#") return "text";
+  return "other";
+}
+
+function scenarioResourceRoleLabel(asset: ScenarioResourceAsset) {
+  if (asset.resourceType === "PICT" && asset.resourceId >= 30000 && asset.resourceId <= 30128) return "Scenario picture";
+  if (asset.resourceType === "PICT" && asset.resourceId >= 306 && asset.resourceId <= 308) return "Custom landlook atlas";
+  if (asset.resourceType === "cicn" && asset.resourceId < 0) return "Special land tile";
+  if (asset.resourceType === "cicn") return "Icon";
+  if (asset.resourceType.trim() === "snd") return "Sound";
+  if (asset.resourceType === "TEXT") return "Text resource";
+  if (asset.resourceType === "STR#") return "String list";
+  if (asset.resourceType === "styl") return "Style data";
+  if (asset.resourceType === "vers") return "Version data";
+  return "Raw resource";
+}
+
+function scenarioResourcePreviewStatus(entity: SemanticEntity): ResourcePreviewStatus | "unknown" {
+  return typeof entity.summary.previewStatus === "string" ? entity.summary.previewStatus as ResourcePreviewStatus : "unknown";
+}
+
+function scenarioResourcePreviewDiagnostics(entity: SemanticEntity) {
+  const diagnostics = Array.isArray(entity.summary.previewDiagnostics) ? entity.summary.previewDiagnostics : [];
+  return diagnostics
+    .filter((entry): entry is string | ResourcePreviewDiagnostic =>
+      (typeof entry === "string" && entry.trim().length > 0) ||
+      isResourcePreviewDiagnostic(entry)
+    )
+    .map((entry) => typeof entry === "string"
+      ? { severity: "warning", code: "resource.preview", message: entry, decoder: "resource-preview" }
+      : entry);
+}
+
+function isResourcePreviewDiagnostic(entry: unknown): entry is ResourcePreviewDiagnostic {
+  return typeof entry === "object" &&
+    entry !== null &&
+    "message" in entry &&
+    "code" in entry &&
+    "decoder" in entry &&
+    typeof entry.message === "string" &&
+    entry.message.trim().length > 0 &&
+    typeof entry.code === "string" &&
+    typeof entry.decoder === "string";
+}
+
+function scenarioResourcePreviewPath(project: Project, entity: SemanticEntity, resourceType: string, resourceId: number) {
+  if (typeof entity.summary.previewDataUrl === "string" && entity.summary.previewDataUrl) return entity.summary.previewDataUrl;
+  if (resourceType === "PICT") {
+    return project.assetCatalog.pictures?.find((asset) => asset.resourceId === resourceId)?.previewPath ??
+      project.assetCatalog.tilesets.find((asset) => asset.pictId === resourceId)?.imagePath ??
+      "";
+  }
+  if (resourceType === "cicn") {
+    return project.assetCatalog.icons?.find((asset) => asset.resourceId === resourceId)?.previewPath ?? "";
+  }
+  return "";
 }

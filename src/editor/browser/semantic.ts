@@ -13,6 +13,8 @@ import {
   TriggerRecord
 } from "../types";
 import { FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RANDLEVEL_BYTES } from "./realmzParser";
+import { parseResourceFork, type ResourceEntry } from "./library";
+import { inspectResourcePreview } from "./resourcePreview";
 
 export function buildBrowserSemanticSchema(projectParts: {
   scenario: Project["scenario"];
@@ -57,7 +59,7 @@ export function buildBrowserSemanticSchema(projectParts: {
   addTriggers(schema, projectParts.triggers, projectParts.extracodes);
   addTileAssets(schema, projectParts.assetCatalog);
   addRenderProfiles(schema, projectParts.maps, projectParts.assetCatalog);
-  addResourceEntities(schema, projectParts.sourceFiles);
+  addResourceEntities(schema, projectParts.buffers, projectParts.sourceFiles);
   addInferredTargets(schema);
   classifyEd3Reachability(schema, projectParts.triggers);
   finalize(schema);
@@ -1217,30 +1219,162 @@ function addRenderProfiles(schema: SemanticSchema, maps: MapEntity[], assetCatal
   }
 }
 
-function addResourceEntities(schema: SemanticSchema, files: SourceFile[]) {
-  for (const file of files.filter((source) => source.role === "resource-fork")) {
+function addResourceEntities(schema: SemanticSchema, buffers: Map<string, Uint8Array>, files: SourceFile[]) {
+  const resourceFiles = files.filter((source) => source.role === "resource-fork");
+  for (const file of resourceFiles) {
+    const resources = parseResourceFork(buffers.get(file.name) ?? new Uint8Array());
+    if (resources.length === 0) {
+      schema.entities.push({
+        id: `resource:${file.name}`,
+        type: "resource",
+        label: file.name,
+        editState: "inspect-only",
+        confidence: "source-backed",
+        source: file.name,
+        recordRef: null,
+        byteRange: null,
+        editable: false,
+        summary: { bytes: file.bytes, browserInventory: "resource fork present, no readable resource members were found" }
+      });
+      schema.diagnostics.push({
+        id: `diagnostic:browser-resource-empty:${file.name}`,
+        type: "resource-fork-empty",
+        severity: "warning",
+        confidence: "source-backed",
+        source: file.name,
+        message: `${file.name} was loaded in browser mode, but no readable resource members were found.`,
+        data: { target: `resource:${file.name}` }
+      });
+      continue;
+    }
+    addResourceTypeEntities(schema, file.name, resources);
+    addResourceMemberEntities(schema, file.name, resources);
+  }
+}
+
+function addResourceTypeEntities(schema: SemanticSchema, sourceName: string, resources: ResourceEntry[]) {
+  const byType = new Map<string, { count: number; totalBytes: number; minId: number; maxId: number; named: number; ids: number[]; names: Array<{ id: number; name: string }> }>();
+  for (const resource of resources) {
+    const current = byType.get(resource.resourceType) ?? {
+      count: 0,
+      totalBytes: 0,
+      minId: resource.id,
+      maxId: resource.id,
+      named: 0,
+      ids: [],
+      names: []
+    };
+    current.count += 1;
+    current.totalBytes += resource.length;
+    current.minId = Math.min(current.minId, resource.id);
+    current.maxId = Math.max(current.maxId, resource.id);
+    if (resource.name) {
+      current.named += 1;
+      if (current.names.length < 8) current.names.push({ id: resource.id, name: resource.name });
+    }
+    if (current.ids.length < 24) current.ids.push(resource.id);
+    byType.set(resource.resourceType, current);
+  }
+  for (const [resourceType, summary] of byType) {
+    const existing = schema.entities.find((entity) => entity.id === resourceTypeId(resourceType) && entity.type === "resource type");
+    if (existing) {
+      existing.summary = {
+        ...existing.summary,
+        count: Number(existing.summary.count ?? 0) + summary.count,
+        totalBytes: Number(existing.summary.totalBytes ?? 0) + summary.totalBytes,
+        minId: Math.min(Number(existing.summary.minId ?? summary.minId), summary.minId),
+        maxId: Math.max(Number(existing.summary.maxId ?? summary.maxId), summary.maxId),
+        named: Number(existing.summary.named ?? 0) + summary.named,
+        ids: [...((existing.summary.ids as number[] | undefined) ?? []), ...summary.ids].slice(0, 24),
+        names: [...((existing.summary.names as Array<{ id: number; name: string }> | undefined) ?? []), ...summary.names].slice(0, 8)
+      };
+      continue;
+    }
     schema.entities.push({
-      id: `resource:${file.name}`,
-      type: "resource",
-      label: file.name,
+      id: resourceTypeId(resourceType),
+      type: "resource type",
+      label: `Resource type ${resourceType}`,
       editState: "inspect-only",
       confidence: "source-backed",
-      source: file.name,
+      source: sourceName,
       recordRef: null,
       byteRange: null,
       editable: false,
-      summary: { bytes: file.bytes, browserInventory: "resource fork present, detailed resource inventory requires Rust importer" }
-    });
-    schema.diagnostics.push({
-      id: `diagnostic:browser-resource-fallback:${file.name}`,
-      type: "browser-fallback",
-      severity: "warning",
-      confidence: "source-backed",
-      source: file.name,
-      message: `${file.name} was loaded in browser mode; detailed resource fork inventory requires the desktop Rust importer.`,
-      data: { target: `resource:${file.name}` }
+      summary: { type: resourceType, ...summary }
     });
   }
+}
+
+function addResourceMemberEntities(schema: SemanticSchema, sourceName: string, resources: ResourceEntry[]) {
+  const seen = new Map<string, number>();
+  for (const resource of resources) {
+    const baseId = resourceEntityId(resource.resourceType, resource.id);
+    const duplicate = seen.get(baseId) ?? 0;
+    seen.set(baseId, duplicate + 1);
+    const entityId = duplicate === 0 ? baseId : `${baseId}:${duplicate + 1}`;
+    const summary = {
+      type: resource.resourceType,
+      resourceType: resource.resourceType,
+      resourceId: resource.id,
+      name: resource.name,
+      attributes: resource.attributes,
+      bytes: resource.length,
+      refOffset: resource.refOffset,
+      nameOffset: resource.nameOffset,
+      dataRelativeOffset: resource.dataRelativeOffset,
+      offset: resource.offset,
+      preview: hexPreview(resource.data, 20),
+      scenarioSupplied: true
+    };
+    const preview = inspectResourcePreview(resource.resourceType, resource.data);
+    Object.assign(summary, {
+      previewStatus: preview.status,
+      previewMimeType: preview.mimeType,
+      previewDataUrl: preview.dataUrl,
+      previewSummary: preview.summary,
+      previewDiagnostics: preview.diagnostics
+    });
+    const recordId = `record:${entityId}`;
+    schema.records.push({
+      id: recordId,
+      source: sourceId(sourceName),
+      type: "resource",
+      label: resourceLabel(resource),
+      editState: "inspect-only",
+      byteRange: byteRange(resource.offset, resource.length),
+      confidence: "source-backed",
+      summary
+    });
+    schema.entities.push({
+      id: entityId,
+      type: "resource",
+      label: resourceLabel(resource),
+      editState: "inspect-only",
+      confidence: "source-backed",
+      source: sourceName,
+      recordRef: recordId,
+      byteRange: byteRange(resource.offset, resource.length),
+      editable: false,
+      summary
+    });
+    pushLink(schema, entityId, resourceTypeId(resource.resourceType), "member_of_resource_type", "source-backed");
+  }
+}
+
+function resourceTypeId(resourceType: string) {
+  return `resource-type:${resourceType}`;
+}
+
+function resourceEntityId(resourceType: string, resourceId: number) {
+  return `resource:${resourceType}:${resourceId}`;
+}
+
+function resourceLabel(resource: ResourceEntry) {
+  return resource.name ? `${resource.resourceType} ${resource.id}: ${resource.name}` : `${resource.resourceType} ${resource.id}`;
+}
+
+function hexPreview(bytes: Uint8Array, limit: number) {
+  return Array.from(bytes.slice(0, limit)).map((byte) => byte.toString(16).padStart(2, "0")).join(" ");
 }
 
 function addInferredTargets(schema: SemanticSchema) {
