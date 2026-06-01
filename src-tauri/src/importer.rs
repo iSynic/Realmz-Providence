@@ -582,9 +582,7 @@ fn refresh_custom_tile_atlases(project_dir: &Path, project: &mut ProvidenceProje
         if !tileset.custom {
             continue;
         }
-        if tileset.base_tile.is_none() {
-            tileset.base_tile = custom_landlook_base_tile(&raw_dir, tileset.landlook)?;
-        }
+        tileset.base_tile = custom_landlook_base_tile(&raw_dir, tileset.landlook)?;
         let image_missing = tileset
             .image_path
             .as_ref()
@@ -660,6 +658,7 @@ fn landlook_base_tile(landlook: i8) -> Option<i16> {
         3 => Some(155),
         4 => Some(111),
         5 => Some(191),
+        6..=8 => Some(156),
         9 | 10 => Some(155),
         _ => None,
     }
@@ -758,7 +757,9 @@ fn import_tile_atlases(
     let atlas_dir = assets_dir.join(TILE_ATLASES_DIR);
     fs::create_dir_all(&atlas_dir).with_path(&atlas_dir)?;
     for tileset in &mut project.asset_catalog.tilesets {
-        if tileset.base_tile.is_none() {
+        if tileset.custom {
+            tileset.base_tile = custom_landlook_base_tile(source_path, tileset.landlook)?;
+        } else if tileset.base_tile.is_none() {
             tileset.base_tile = custom_landlook_base_tile(source_path, tileset.landlook)?;
         }
         if let Some(source) = atlas_source_path(source_path, tileset) {
@@ -842,7 +843,7 @@ fn import_icon_overlays(
             severity: DiagnosticSeverity::Warning,
             code: "missing-map-icon-overlay".to_string(),
             message: format!(
-                "{} map icon overlay(s) referenced by negative field values were not found in the Scenario Utility reference assets",
+                "{} map icon overlay(s) referenced by Realmz special field values were not found in the Scenario Utility reference assets or scenario resources",
                 missing.len()
             ),
             source: Some("Data LD".to_string()),
@@ -1009,13 +1010,30 @@ fn map_icon_ids(maps: &[MapEntity]) -> BTreeSet<i16> {
 
 fn normalize_icon_id(value: i16) -> Option<i16> {
     if value >= 0 {
-        return None;
+        let icon_id = normalize_realmz_field_state(value);
+        return (icon_id > 200).then_some(icon_id);
     }
     let mut icon_id = value;
     while icon_id < -999 {
         icon_id += 1000;
     }
     Some(icon_id)
+}
+
+fn normalize_realmz_field_state(value: i16) -> i16 {
+    let mut tile = clear_realmz_short_bit(value, 1);
+    tile = clear_realmz_short_bit(tile, 2);
+    for _ in 0..3 {
+        if tile > 999 {
+            tile -= 1000;
+        }
+    }
+    tile
+}
+
+fn clear_realmz_short_bit(value: i16, bit: u8) -> i16 {
+    let cleared = (value as u16) & !(1u16 << (15 - bit));
+    cleared as i16
 }
 
 fn atlas_source_path(source_path: &Path, tileset: &TilesetAsset) -> Option<PathBuf> {
@@ -1102,14 +1120,20 @@ fn custom_landlook_base_tile(source_path: &Path, landlook: i8) -> Result<Option<
     };
     let path = source_path.join(file_name);
     if !path.is_file() {
-        return Ok(None);
+        return Ok(custom_landlook_fallback_base_tile(landlook));
     }
     let bytes = fs::read(&path).with_path(&path)?;
     if bytes.len() < 8042 {
-        return Ok(None);
+        return Ok(custom_landlook_fallback_base_tile(landlook));
     }
     let value = i16::from_be_bytes([bytes[8040], bytes[8041]]);
-    Ok((value > 0 && value <= 999).then_some(value))
+    Ok((value > 0 && value <= 999)
+        .then_some(value)
+        .or_else(|| custom_landlook_fallback_base_tile(landlook)))
+}
+
+fn custom_landlook_fallback_base_tile(landlook: i8) -> Option<i16> {
+    (6..=8).contains(&landlook).then_some(156)
 }
 
 fn custom_landlook_metadata_file(landlook: i8) -> Option<&'static str> {
@@ -1189,4 +1213,19 @@ fn timestamp() -> String {
 
 pub fn project_file_path(project_dir: impl AsRef<Path>) -> PathBuf {
     project_dir.as_ref().join(PROJECT_FILE_NAME)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn map_icon_normalization_matches_realmz_positive_and_negative_specials() {
+        assert_eq!(normalize_icon_id(200), None);
+        assert_eq!(normalize_icon_id(462), Some(462));
+        assert_eq!(normalize_icon_id(1462), Some(462));
+        assert_eq!(normalize_icon_id(1224), Some(224));
+        assert_eq!(normalize_icon_id(-462), Some(-462));
+        assert_eq!(normalize_icon_id(-1462), Some(-462));
+    }
 }

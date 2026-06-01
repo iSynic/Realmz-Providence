@@ -613,14 +613,22 @@ fn decode_pict_packbits8(pict: &[u8]) -> Result<DecodedImage> {
     let Some(rect) = find_packbits_rect(pict) else {
         return Err(ProvidenceError::message("No 8-bit PackBitsRect found"));
     };
-    let mut palette = Vec::new();
+    let mut palette = vec![[0u8, 0u8, 0u8]; rect.color_count.max(1)];
     for index in 0..rect.color_count {
         let offset = rect.color_table_offset + 8 + index * 8;
-        palette.push([
-            (u16_safe(pict, offset + 2).unwrap_or(0) >> 8) as u8,
-            (u16_safe(pict, offset + 4).unwrap_or(0) >> 8) as u8,
-            (u16_safe(pict, offset + 6).unwrap_or(0) >> 8) as u8,
-        ]);
+        let color_index = color_table_palette_index(
+            rect.color_table_flags,
+            index,
+            u16_safe(pict, offset).unwrap_or(index),
+            palette.len(),
+        );
+        if color_index < palette.len() {
+            palette[color_index] = [
+                (u16_safe(pict, offset + 2).unwrap_or(0) >> 8) as u8,
+                (u16_safe(pict, offset + 4).unwrap_or(0) >> 8) as u8,
+                (u16_safe(pict, offset + 6).unwrap_or(0) >> 8) as u8,
+            ];
+        }
     }
     let width = rect.width.min(2048);
     let height = rect.height.min(2048);
@@ -664,6 +672,7 @@ fn decode_pict_packbits8(pict: &[u8]) -> Result<DecodedImage> {
 struct PackBitsRect {
     row_bytes: usize,
     color_table_offset: usize,
+    color_table_flags: usize,
     color_count: usize,
     width: usize,
     height: usize,
@@ -691,6 +700,7 @@ fn find_packbits_rect(pict: &[u8]) -> Option<PackBitsRect> {
                 && component_size == 8
             {
                 let color_table_offset = pixmap + 46;
+                let color_table_flags = u16_safe(pict, color_table_offset + 4)?;
                 let color_count = u16_safe(pict, color_table_offset + 6)? + 1;
                 let after_color_table = color_table_offset + 8 + color_count * 8;
                 if after_color_table + 18 < pict.len() {
@@ -713,6 +723,7 @@ fn find_packbits_rect(pict: &[u8]) -> Option<PackBitsRect> {
                         return Some(PackBitsRect {
                             row_bytes,
                             color_table_offset,
+                            color_table_flags,
                             color_count,
                             width,
                             height,
@@ -765,18 +776,20 @@ fn decode_cicn(cicn: &[u8]) -> Result<DecodedImage> {
     if pixel_data_offset + row_bytes * height > cicn.len() {
         return Err(ProvidenceError::message("cicn pixel data is truncated"));
     }
-    let mut palette = vec![[0u8, 0u8, 0u8]; color_count.max(1)];
+    let mut color_entries = Vec::with_capacity(color_count);
+    let color_table_flags = u16_safe(cicn, color_table_offset + 4).unwrap_or(0);
     for index in 0..color_count {
         let offset = color_table_offset + 8 + index * 8;
-        let color_index = u16_safe(cicn, offset).unwrap_or(index);
-        if color_index < palette.len() {
-            palette[color_index] = [
-                (u16_safe(cicn, offset + 2).unwrap_or(0) >> 8) as u8,
-                (u16_safe(cicn, offset + 4).unwrap_or(0) >> 8) as u8,
-                (u16_safe(cicn, offset + 6).unwrap_or(0) >> 8) as u8,
-            ];
-        }
+        color_entries.push(ColorTableEntry {
+            color_num: u16_safe(cicn, offset).unwrap_or(index),
+            rgb: [
+                color_component_8(u16_safe(cicn, offset + 2).unwrap_or(0)),
+                color_component_8(u16_safe(cicn, offset + 4).unwrap_or(0)),
+                color_component_8(u16_safe(cicn, offset + 6).unwrap_or(0)),
+            ],
+        });
     }
+    let max_pixel_value = (1usize << pixel_size) - 1;
     let mut rgba = vec![0u8; width * height * 4];
     for y in 0..height {
         for x in 0..width {
@@ -808,7 +821,14 @@ fn decode_cicn(cicn: &[u8]) -> Result<DecodedImage> {
             } else {
                 0
             };
-            let color = palette.get(color_index).copied().unwrap_or([0, 0, 0]);
+            let color = lookup_color_table_entry(&color_entries, color_table_flags, color_index)
+                .unwrap_or_else(|| {
+                    if color_index == max_pixel_value {
+                        [0, 0, 0]
+                    } else {
+                        [0, 0, 0]
+                    }
+                });
             let out = (y * width + x) * 4;
             rgba[out] = color[0];
             rgba[out + 1] = color[1];
@@ -821,6 +841,43 @@ fn decode_cicn(cicn: &[u8]) -> Result<DecodedImage> {
         height: height as u32,
         rgba,
     })
+}
+
+#[derive(Clone, Copy)]
+struct ColorTableEntry {
+    color_num: usize,
+    rgb: [u8; 3],
+}
+
+fn lookup_color_table_entry(
+    entries: &[ColorTableEntry],
+    flags: usize,
+    color_id: usize,
+) -> Option<[u8; 3]> {
+    if flags & 0x8000 != 0 {
+        return entries.get(color_id).map(|entry| entry.rgb);
+    }
+    entries
+        .iter()
+        .find(|entry| entry.color_num == color_id)
+        .map(|entry| entry.rgb)
+}
+
+fn color_component_8(component: usize) -> u8 {
+    (component / 0x0101) as u8
+}
+
+fn color_table_palette_index(
+    flags: usize,
+    entry_index: usize,
+    color_index: usize,
+    palette_len: usize,
+) -> usize {
+    if flags & 0x8000 != 0 || color_index >= palette_len {
+        entry_index
+    } else {
+        color_index
+    }
 }
 
 fn encode_wav_u8(sample_rate: u32, samples: &[u8]) -> Vec<u8> {
@@ -1398,6 +1455,97 @@ mod tests {
             .expect("cicn preview")
             .expect("cicn data url")
             .starts_with("data:image/png;base64,"));
+    }
+
+    #[test]
+    fn resource_fork_preview_decodes_ordered_custom_landlook_palette_fixture() {
+        let path = std::path::Path::new(
+            "F:/Realmz/base/Realmz/Scenarios/War in the Sword Lands/Scenario.rsrc",
+        );
+        if !path.is_file() {
+            eprintln!("Skipping War in the Sword Lands PICT fixture; local fixture is absent.");
+            return;
+        }
+        let fork = std::fs::read(path).expect("read War scenario resource fork");
+        let Some(pict) = parse_resource_fork_entries(&fork)
+            .into_iter()
+            .find(|entry| entry.resource_type == "PICT" && entry.id == 307)
+            .map(|entry| entry.data)
+        else {
+            eprintln!("Skipping War in the Sword Lands PICT fixture; PICT 307 is absent.");
+            return;
+        };
+        let rect = find_packbits_rect(&pict).expect("War PICT 307 should contain PackBitsRect");
+        assert_eq!(rect.color_table_flags & 0x8000, 0x8000);
+        let image = decode_pict_packbits8(&pict).expect("War PICT 307 should decode");
+        let nonblack_pixels = image
+            .rgba
+            .chunks_exact(4)
+            .filter(|pixel| pixel[0] != 0 || pixel[1] != 0 || pixel[2] != 0)
+            .count();
+        assert!(
+            nonblack_pixels > ((image.width as usize * image.height as usize) / 2),
+            "ordered ColorTable PICT should not decode as an all-black atlas"
+        );
+    }
+
+    #[test]
+    fn cicn_fixtures_do_not_decode_dark_art_as_opaque_white() {
+        let fixtures = [
+            (
+                "F:/Realmz/base/Realmz/Scenarios/War in the Sword Lands/Scenario.rsrc",
+                [-186, -163, -162, -161].as_slice(),
+            ),
+            (
+                "F:/Realmz - Providence/public/bundled-libraries/realmz-reference/The Family Jewels.rsrc",
+                [146, 147, 148, 155].as_slice(),
+            ),
+        ];
+        for (path, ids) in fixtures {
+            let path = std::path::Path::new(path);
+            if !path.is_file() {
+                eprintln!("Skipping cicn fixture {}; local fixture is absent.", path.display());
+                continue;
+            }
+            let fork = std::fs::read(path).expect("read cicn fixture resource fork");
+            let entries = parse_resource_fork_entries(&fork);
+            for id in ids {
+                let Some(cicn) = entries
+                    .iter()
+                    .find(|entry| entry.resource_type == "cicn" && entry.id == *id)
+                    .map(|entry| entry.data.as_slice())
+                else {
+                    eprintln!(
+                        "Skipping cicn {} from {}; resource is absent.",
+                        id,
+                        path.display()
+                    );
+                    continue;
+                };
+                let image = decode_cicn(cicn).expect("cicn should decode");
+                let mut opaque_pixels = 0usize;
+                let mut opaque_white_pixels = 0usize;
+                for pixel in image.rgba.chunks_exact(4) {
+                    if pixel[3] == 0 {
+                        continue;
+                    }
+                    opaque_pixels += 1;
+                    if pixel[0] > 245 && pixel[1] > 245 && pixel[2] > 245 {
+                        opaque_white_pixels += 1;
+                    }
+                }
+                assert!(
+                    opaque_pixels > 0,
+                    "cicn {id} from {} should have visible pixels",
+                    path.display()
+                );
+                assert!(
+                    opaque_white_pixels * 4 <= opaque_pixels,
+                    "cicn {id} from {} decoded as too much opaque white ({opaque_white_pixels}/{opaque_pixels})",
+                    path.display()
+                );
+            }
+        }
     }
 
     #[test]

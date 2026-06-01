@@ -10,6 +10,7 @@ import { InfoGrid } from "./InfoGrid";
 import { ActionPointCodeTable, CellTileEvidence, MapCapabilityPanel } from "./MapAffordances";
 import { PaintPalettePanel } from "./TileSelectionBar";
 import { classifyTileValue, standardTileValues, tileAttributeGroup } from "../map/tileMetadata";
+import { atlasBaseTile } from "../map/renderValues";
 import { tileColor } from "./TileSprite";
 import { TileSwatch } from "./TileSwatch";
 import { TutorialTip } from "./TutorialTip";
@@ -1324,7 +1325,7 @@ function SelectionInspector({
                   className="btn btn-ghost btn-xs context-action-button"
                   type="button"
                   onClick={() => {
-                    const fallback = selectedTileset?.baseTile ?? 1;
+                    const fallback = atlasBaseTile(selectedTileset?.baseTile, selectedTileset?.custom);
                     onApplyCommand({
                       kind: "paintTiles",
                       label: "Remove stamp",
@@ -1333,7 +1334,7 @@ function SelectionInspector({
                     });
                   }}
                 >
-                  Remove Stamp to Tile {selectedTileset?.baseTile ?? 1}
+                  Remove Stamp to Tile {atlasBaseTile(selectedTileset?.baseTile, selectedTileset?.custom)}
                 </button>
               )}
             </div>

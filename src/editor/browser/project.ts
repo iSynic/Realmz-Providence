@@ -527,15 +527,14 @@ function validateTileAttributes(project: Project, sourceNames: Set<string>, warn
   for (const map of project.maps) {
     for (const tile of map.tiles) {
       if (tile > 999) positiveStateValues += 1;
-      if (tile >= 0) continue;
       const candidates = tileIconCandidates(tile);
-      if (!candidates.some((candidate) => knownIcons.has(candidate))) {
+      if (candidates.length > 0 && !candidates.some((candidate) => knownIcons.has(candidate))) {
         missingIcons.add(candidates[0] ?? tile);
       }
     }
   }
   if (missingIcons.size > 0) {
-    warnings.push(`${missingIcons.size.toLocaleString()} negative/special tile value(s) do not currently resolve to decoded cicn icon art.`);
+    warnings.push(`${missingIcons.size.toLocaleString()} Realmz special tile value(s) do not currently resolve to decoded cicn icon art.`);
   }
   if (positiveStateValues > 0) {
     warnings.push(`${positiveStateValues.toLocaleString()} positive high map field value(s) carry Realmz state bands; edit them through AP/secret/path workflows or Raw/Advanced tile tools.`);

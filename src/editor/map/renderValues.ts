@@ -1,6 +1,6 @@
-export function normalizeAtlasTile(value: number, baseTile = 1) {
+export function normalizeAtlasTile(value: number, baseTile?: number | null) {
   let tile = value;
-  const fallbackTile = Number.isInteger(baseTile) && baseTile > 0 ? baseTile : 1;
+  const fallbackTile = atlasBaseTile(baseTile);
   if (tile < 0) {
     while (tile < -999) tile += 1000;
     tile = fallbackTile;
@@ -16,6 +16,10 @@ export function normalizeAtlasTile(value: number, baseTile = 1) {
   return Math.max(1, normalizeTile(tile));
 }
 
+export function atlasBaseTile(baseTile: number | null | undefined, custom = false): number {
+  return typeof baseTile === "number" && Number.isInteger(baseTile) && baseTile > 0 ? baseTile : custom ? 156 : 1;
+}
+
 export function normalizeTile(value: number) {
   let out = value;
   while (out > 999) out -= 1000;
@@ -24,7 +28,10 @@ export function normalizeTile(value: number) {
 }
 
 export function normalizeIconId(value: number) {
-  if (value >= 0) return null;
+  if (value >= 0) {
+    const normalized = normalizeRealmzFieldState(value);
+    return normalized > 200 ? normalized : null;
+  }
   let iconId = value;
   while (iconId < -999) iconId += 1000;
   return iconId;
@@ -52,9 +59,8 @@ export const PAINTABLE_REFERENCE_ACTOR_ICON_VALUES = [
 ];
 
 export function tileIconCandidates(value: number) {
-  if (value >= 0) return [];
   const normalized = normalizeIconId(value);
-  return normalized !== null && normalized < 0 ? [normalized] : [];
+  return normalized !== null ? [normalized] : [];
 }
 
 export function referencedMapIconIds(tiles: number[]) {
@@ -69,6 +75,15 @@ function clearRealmzShortBit(value: number, bit: number) {
   const unsigned = value & 0xffff;
   const cleared = unsigned & ~(1 << (15 - bit));
   return cleared >= 0x8000 ? cleared - 0x10000 : cleared;
+}
+
+function normalizeRealmzFieldState(value: number) {
+  let tile = clearRealmzShortBit(value, 1);
+  tile = clearRealmzShortBit(tile, 2);
+  for (let attempt = 0; attempt < 3 && tile > 999; attempt += 1) {
+    tile -= 1000;
+  }
+  return tile;
 }
 
 function range(start: number, end: number) {

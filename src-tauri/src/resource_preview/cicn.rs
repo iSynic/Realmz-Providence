@@ -106,6 +106,7 @@ fn decode_cicn(data: &[u8]) -> std::result::Result<DecodedImage, CicnFailure> {
         });
     }
     let color_count = u16_be(data, color_table_offset + 6).unwrap_or(0) + 1;
+    let color_table_flags = u16_be(data, color_table_offset + 4).unwrap_or(0);
     let pixel_data_offset = color_table_offset + 8 + color_count * 8;
     if pixel_data_offset + row_bytes * height > data.len() {
         return Err(CicnFailure {
@@ -119,18 +120,19 @@ fn decode_cicn(data: &[u8]) -> std::result::Result<DecodedImage, CicnFailure> {
             .with_offset(pixel_data_offset),
         });
     }
-    let mut palette = vec![[0u8, 0u8, 0u8]; color_count.max(1)];
+    let mut color_entries = Vec::with_capacity(color_count);
     for index in 0..color_count {
         let offset = color_table_offset + 8 + index * 8;
-        let color_index = u16_be(data, offset).unwrap_or(index);
-        if color_index < palette.len() {
-            palette[color_index] = [
-                (u16_be(data, offset + 2).unwrap_or(0) >> 8) as u8,
-                (u16_be(data, offset + 4).unwrap_or(0) >> 8) as u8,
-                (u16_be(data, offset + 6).unwrap_or(0) >> 8) as u8,
-            ];
-        }
+        color_entries.push(ColorTableEntry {
+            color_num: u16_be(data, offset).unwrap_or(index),
+            rgb: [
+                color_component_8(u16_be(data, offset + 2).unwrap_or(0)),
+                color_component_8(u16_be(data, offset + 4).unwrap_or(0)),
+                color_component_8(u16_be(data, offset + 6).unwrap_or(0)),
+            ],
+        });
     }
+    let max_pixel_value = (1usize << pixel_size) - 1;
     let mut rgba = vec![0u8; width * height * 4];
     for y in 0..height {
         for x in 0..width {
@@ -162,7 +164,14 @@ fn decode_cicn(data: &[u8]) -> std::result::Result<DecodedImage, CicnFailure> {
             } else {
                 0
             };
-            let color = palette.get(color_index).copied().unwrap_or([0, 0, 0]);
+            let color = lookup_color_table_entry(&color_entries, color_table_flags, color_index)
+                .unwrap_or_else(|| {
+                    if color_index == max_pixel_value {
+                        [0, 0, 0]
+                    } else {
+                        [0, 0, 0]
+                    }
+                });
             let out = (y * width + x) * 4;
             rgba[out] = color[0];
             rgba[out + 1] = color[1];
@@ -175,4 +184,28 @@ fn decode_cicn(data: &[u8]) -> std::result::Result<DecodedImage, CicnFailure> {
         height: height as u32,
         rgba,
     })
+}
+
+#[derive(Clone, Copy)]
+struct ColorTableEntry {
+    color_num: usize,
+    rgb: [u8; 3],
+}
+
+fn lookup_color_table_entry(
+    entries: &[ColorTableEntry],
+    flags: usize,
+    color_id: usize,
+) -> Option<[u8; 3]> {
+    if flags & 0x8000 != 0 {
+        return entries.get(color_id).map(|entry| entry.rgb);
+    }
+    entries
+        .iter()
+        .find(|entry| entry.color_num == color_id)
+        .map(|entry| entry.rgb)
+}
+
+fn color_component_8(component: usize) -> u8 {
+    (component / 0x0101) as u8
 }

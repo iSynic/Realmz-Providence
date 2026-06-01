@@ -78,6 +78,7 @@ struct PackBitsRect {
     opcode_offset: usize,
     row_bytes: usize,
     color_table_offset: usize,
+    color_table_flags: usize,
     color_count: usize,
     width: usize,
     height: usize,
@@ -224,6 +225,7 @@ fn find_indexed_packbits_rect(data: &[u8]) -> std::result::Result<PackBitsRect, 
                 .with_opcode(opcode),
             });
         }
+        let color_table_flags = u16_be(data, color_table_offset + 4).unwrap_or(0);
         let color_count = u16_be(data, color_table_offset + 6).unwrap_or(0) + 1;
         let after_color_table = color_table_offset + 8 + color_count * 8;
         if after_color_table + 18 >= data.len() {
@@ -265,6 +267,7 @@ fn find_indexed_packbits_rect(data: &[u8]) -> std::result::Result<PackBitsRect, 
                 opcode_offset: offset,
                 row_bytes,
                 color_table_offset,
+                color_table_flags,
                 color_count,
                 width,
                 height,
@@ -437,7 +440,12 @@ fn decode_packbits_rect(
         if offset + 8 > data.len() {
             break;
         }
-        let color_index = u16_be(data, offset).unwrap_or(index);
+        let color_index = color_table_palette_index(
+            rect.color_table_flags,
+            index,
+            u16_be(data, offset).unwrap_or(index),
+            palette.len(),
+        );
         if color_index < palette.len() {
             palette[color_index] = [
                 (u16_be(data, offset + 2).unwrap_or(0) >> 8) as u8,
@@ -504,6 +512,19 @@ fn decode_packbits_rect(
         height: height as u32,
         rgba,
     })
+}
+
+fn color_table_palette_index(
+    flags: usize,
+    entry_index: usize,
+    color_index: usize,
+    palette_len: usize,
+) -> usize {
+    if flags & 0x8000 != 0 || color_index >= palette_len {
+        entry_index
+    } else {
+        color_index
+    }
 }
 
 fn decode_direct_bits_rect(
@@ -627,4 +648,78 @@ fn decode_one_bit_packbits_rect(
         height: height as u32,
         rgba,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::Path;
+
+    #[test]
+    fn decodes_ordered_custom_landlook_palette_fixture() {
+        let path =
+            Path::new("F:/Realmz/base/Realmz/Scenarios/War in the Sword Lands/Scenario.rsrc");
+        if !path.exists() {
+            eprintln!("Skipping War in the Sword Lands PICT fixture; local fixture is absent.");
+            return;
+        }
+        let data = std::fs::read(path).expect("fixture should be readable");
+        let Some(pict) = resource_data(&data, b"PICT", 307) else {
+            eprintln!("Skipping War in the Sword Lands PICT fixture; PICT 307 is absent.");
+            return;
+        };
+        let rect = find_indexed_packbits_rect(&pict)
+            .unwrap_or_else(|_| panic!("War PICT 307 should contain an indexed PackBits rect"));
+        assert_ne!(
+            rect.color_table_flags & 0x8000,
+            0,
+            "fixture should exercise an ordered ColorTable"
+        );
+        let image = decode_packbits_rect(&pict, &rect)
+            .unwrap_or_else(|_| panic!("War PICT 307 should decode"));
+        let nonblack_pixels = image
+            .rgba
+            .chunks_exact(4)
+            .filter(|pixel| u16::from(pixel[0]) + u16::from(pixel[1]) + u16::from(pixel[2]) > 8)
+            .count();
+        assert!(
+            nonblack_pixels
+                > (usize::try_from(image.width).unwrap() * usize::try_from(image.height).unwrap())
+                    / 2,
+            "ordered ColorTable entries should not decode as an all-black atlas"
+        );
+    }
+
+    fn resource_data(fork: &[u8], resource_type: &[u8; 4], resource_id: i16) -> Option<Vec<u8>> {
+        let data_offset = u32_be_test(fork, 0)?;
+        let map_offset = u32_be_test(fork, 4)?;
+        let type_list_offset = map_offset + u16_be(fork, map_offset + 24)?;
+        let type_count = u16_be(fork, type_list_offset)? + 1;
+        for type_index in 0..type_count {
+            let type_offset = type_list_offset + 2 + type_index * 8;
+            if fork.get(type_offset..type_offset + 4)? != resource_type {
+                continue;
+            }
+            let resource_count = u16_be(fork, type_offset + 4)? + 1;
+            let reference_list_offset = type_list_offset + u16_be(fork, type_offset + 6)?;
+            for resource_index in 0..resource_count {
+                let reference_offset = reference_list_offset + resource_index * 12;
+                if i16_be(fork, reference_offset) != resource_id {
+                    continue;
+                }
+                let resource_offset =
+                    data_offset + (u32_be_test(fork, reference_offset + 4)? & 0x00ff_ffff);
+                let length = u32_be_test(fork, resource_offset)?;
+                return Some(
+                    fork.get(resource_offset + 4..resource_offset + 4 + length)?
+                        .to_vec(),
+                );
+            }
+        }
+        None
+    }
+
+    fn u32_be_test(buffer: &[u8], offset: usize) -> Option<usize> {
+        Some(u32::from_be_bytes(buffer.get(offset..offset + 4)?.try_into().ok()?) as usize)
+    }
 }

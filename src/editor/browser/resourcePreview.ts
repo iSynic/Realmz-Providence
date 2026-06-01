@@ -73,7 +73,7 @@ function decodeIndexedPictPackBits(pict: Uint8Array, summary: Record<string, str
   for (let index = 0; index < rect.colorCount; index += 1) {
     const offset = rect.colorTableOffset + 8 + index * 8;
     const colorIndex = u16At(pict, offset) ?? index;
-    palette[colorIndex] = [
+    palette[colorTablePaletteIndex(rect.colorTableFlags, index, colorIndex, palette.length)] = [
       (u16At(pict, offset + 2) ?? 0) >> 8,
       (u16At(pict, offset + 4) ?? 0) >> 8,
       (u16At(pict, offset + 6) ?? 0) >> 8
@@ -131,6 +131,7 @@ function findPackBitsRect(pict: Uint8Array) {
       continue;
     }
     const colorTableOffset = pixMapOffset + 46;
+    const colorTableFlags = u16At(pict, colorTableOffset + 4) ?? 0;
     const colorCount = (u16At(pict, colorTableOffset + 6) ?? -1) + 1;
     const afterColorTable = colorTableOffset + 8 + colorCount * 8;
     if (colorCount < 2 || afterColorTable + 18 >= pict.byteLength) continue;
@@ -143,7 +144,7 @@ function findPackBitsRect(pict: Uint8Array) {
       dataOffset += regionSize;
     }
     if (width > 0 && width <= 2048 && height > 0 && height <= 2048) {
-      return { opcode, rowBytes, colorTableOffset, colorCount, width, height, dataOffset, pixelSize };
+      return { opcode, rowBytes, colorTableOffset, colorTableFlags, colorCount, width, height, dataOffset, pixelSize };
     }
   }
   if (firstUnsupported) throw firstUnsupported;
@@ -311,16 +312,20 @@ function decodeCicn(cicn: Uint8Array): DecodedImage {
   const colorCount = (u16At(cicn, colorTableOffset + 6) ?? -1) + 1;
   const pixelDataOffset = colorTableOffset + 8 + colorCount * 8;
   if (colorCount < 1 || pixelDataOffset + rowBytes * height > cicn.byteLength) throw new Error("cicn truncated");
-  const palette: Array<[number, number, number]> = new Array(colorCount).fill([0, 0, 0]);
+  const colorTableFlags = u16At(cicn, colorTableOffset + 4) ?? 0;
+  const colorEntries: Array<{ colorNum: number; rgb: [number, number, number] }> = [];
   for (let index = 0; index < colorCount; index += 1) {
     const offset = colorTableOffset + 8 + index * 8;
-    const colorIndex = u16At(cicn, offset) ?? index;
-    palette[colorIndex] = [
-      (u16At(cicn, offset + 2) ?? 0) >> 8,
-      (u16At(cicn, offset + 4) ?? 0) >> 8,
-      (u16At(cicn, offset + 6) ?? 0) >> 8
-    ];
+    colorEntries.push({
+      colorNum: u16At(cicn, offset) ?? index,
+      rgb: [
+        colorComponent8(u16At(cicn, offset + 2) ?? 0),
+        colorComponent8(u16At(cicn, offset + 4) ?? 0),
+        colorComponent8(u16At(cicn, offset + 6) ?? 0)
+      ]
+    });
   }
+  const maxPixelValue = (1 << pixelSize) - 1;
   const rgba = new Uint8ClampedArray(width * height * 4);
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
@@ -337,7 +342,8 @@ function decodeCicn(cicn: Uint8Array): DecodedImage {
         colorIndex = (byte >> (7 - (x % 8))) & 0x01;
       }
       const maskByte = cicn[maskOffset + y * maskRowBytes + Math.floor(x / 8)] ?? 0;
-      const color = palette[colorIndex] ?? palette[0] ?? [0, 0, 0];
+      const color = lookupColorTableEntry(colorEntries, colorTableFlags, colorIndex)
+        ?? (colorIndex === maxPixelValue ? [0, 0, 0] : [0, 0, 0]);
       const out = (y * width + x) * 4;
       rgba[out] = color[0];
       rgba[out + 1] = color[1];
@@ -346,6 +352,24 @@ function decodeCicn(cicn: Uint8Array): DecodedImage {
     }
   }
   return { width, height, rgba };
+}
+
+function lookupColorTableEntry(
+  entries: Array<{ colorNum: number; rgb: [number, number, number] }>,
+  flags: number,
+  colorId: number
+) {
+  if ((flags & 0x8000) !== 0) return entries[colorId]?.rgb ?? null;
+  return entries.find((entry) => entry.colorNum === colorId)?.rgb ?? null;
+}
+
+function colorComponent8(component: number) {
+  return Math.floor(component / 0x0101);
+}
+
+function colorTablePaletteIndex(flags: number, entryIndex: number, colorIndex: number, paletteLength: number) {
+  if ((flags & 0x8000) !== 0) return entryIndex;
+  return colorIndex >= 0 && colorIndex < paletteLength ? colorIndex : entryIndex;
 }
 
 function decodeSndToWav(data: Uint8Array, summary: Record<string, string>) {

@@ -1,4 +1,4 @@
-import { normalizeAtlasTile, normalizeTile, tileIconCandidates } from "../map/renderValues";
+import { atlasBaseTile, normalizeAtlasTile, normalizeTile, tileIconCandidates } from "../map/renderValues";
 import { AtlasEntry, IconEntry, TilesetAsset } from "../types";
 
 const DUNGEON_ATLAS_ID = "dungeon-top-down-302";
@@ -81,7 +81,7 @@ export function tileAtlasRect(asset: TilesetAsset, tile: number) {
   if (isDungeonAtlas(asset)) return null;
   const columns = Math.max(1, asset.columns);
   const rows = Math.max(1, asset.rows);
-  const normalized = normalizeAtlasTile(tile, asset.baseTile ?? 1);
+  const normalized = normalizeAtlasTile(tile, atlasBaseTile(asset.baseTile, asset.custom));
   const capacity = columns * rows;
   if (capacity <= 0) return null;
   const index = normalized - 1;

@@ -205,9 +205,9 @@ export function useAppBootstrapEffects({
           ...state.project.maps.flatMap((map) => referencedMapIconIds(map.tiles)),
           ...(state.project.assetCatalog.icons ?? [])
             .filter((asset) => asset.resourceType === "cicn")
-            .flatMap((asset) => tileIconCandidates(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId)),
+            .flatMap((asset) => iconCandidateIdsForResource(asset.resourceId)),
           ...projectStampAssets.flatMap((asset) => tileIconCandidates(asset.resourceId)),
-          ...libraryIconAssets.flatMap((asset) => asset.resourceId == null ? [] : tileIconCandidates(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId)),
+          ...libraryIconAssets.flatMap((asset) => asset.resourceId == null ? [] : iconCandidateIdsForResource(asset.resourceId)),
           ...(!desktopRuntime ? PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES.flatMap(tileIconCandidates) : [])
         ])
       ].sort((a, b) => a - b);
@@ -225,12 +225,11 @@ export function useAppBootstrapEffects({
           try {
             const projectStamp = projectStampAssets.find((asset) => asset.resourceId === id || tileIconCandidates(asset.resourceId).includes(id));
             const projectCatalogIcon = projectCatalogIconAssets.find((asset) => {
-              const resourceId = asset.resourceId < 0 ? asset.resourceId : -asset.resourceId;
-              return tileIconCandidates(resourceId).includes(id);
+              return iconCandidateIdsForResource(asset.resourceId).includes(id);
             });
             const libraryAsset = libraryIconAssets.find((asset) => {
               if (asset.resourceId == null) return false;
-              return tileIconCandidates(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId).includes(id);
+              return iconCandidateIdsForResource(asset.resourceId).includes(id);
             });
             const urls: string[] = [];
             if (projectStamp) {
@@ -255,14 +254,6 @@ export function useAppBootstrapEffects({
               } else {
                 urls.push(relativePath);
               }
-            } else if (libraryAsset) {
-              try {
-                urls.push(desktopRuntime
-                  ? await invoke<string>("load_library_asset_preview", { workspaceDir, source: libraryAsset.source, relativePath: libraryAsset.relativePath })
-                  : (await loadBrowserBundledLibraryAssetPreview(libraryAsset)) ?? browserReferenceIconUrl(id));
-              } catch {
-                // Fall through to project/reference icon paths.
-              }
             }
             if (desktopRuntime) {
               try {
@@ -271,7 +262,18 @@ export function useAppBootstrapEffects({
                 // Older projects may not have a local overlay for every reference icon.
               }
             }
-            urls.push(browserReferenceIconUrl(id));
+            if (id < 0) {
+              urls.push(browserReferenceIconUrl(id));
+            }
+            if (libraryAsset) {
+              try {
+                urls.push(desktopRuntime
+                  ? await invoke<string>("load_library_asset_preview", { workspaceDir, source: libraryAsset.source, relativePath: libraryAsset.relativePath })
+                  : (await loadBrowserBundledLibraryAssetPreview(libraryAsset)) ?? browserReferenceIconUrl(id));
+              } catch {
+                // Fall through to any remaining project/reference icon paths.
+              }
+            }
             for (const url of [...new Set(urls)]) {
               try {
                 const image = await loadImage(url);
@@ -307,4 +309,12 @@ export function useAppBootstrapEffects({
 
 function isInlineAssetUrl(value: string) {
   return value.startsWith("data:") || value.startsWith("blob:") || value.startsWith("http:") || value.startsWith("https:") || value.startsWith("/");
+}
+
+function iconCandidateIdsForResource(resourceId: number) {
+  return [...new Set([
+    ...tileIconCandidates(resourceId),
+    ...tileIconCandidates(-resourceId),
+    resourceId > 200 ? resourceId : null
+  ].filter((id): id is number => typeof id === "number"))];
 }

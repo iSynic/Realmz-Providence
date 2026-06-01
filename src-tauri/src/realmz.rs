@@ -3230,6 +3230,7 @@ fn landlook_base_tile(landlook: i8) -> Option<i16> {
         3 => Some(155),
         4 => Some(111),
         5 => Some(191),
+        6..=8 => Some(156),
         9 | 10 => Some(155),
         _ => None,
     }
@@ -3387,8 +3388,7 @@ mod tests {
             let action = triggers
                 .iter_mut()
                 .find(|trigger| {
-                    trigger.level_index == Some(level_index)
-                        && trigger.record_index == record_index
+                    trigger.level_index == Some(level_index) && trigger.record_index == record_index
                 })
                 .and_then(|trigger| {
                     trigger
@@ -3690,7 +3690,10 @@ mod tests {
             .enumerate()
             .filter_map(|(index, (before, after))| (before != after).then_some(index))
             .collect();
-        assert_eq!(changed, vec![5 * MAPSTATS_RECORD_BYTES, 5 * MAPSTATS_RECORD_BYTES + 1]);
+        assert_eq!(
+            changed,
+            vec![5 * MAPSTATS_RECORD_BYTES, 5 * MAPSTATS_RECORD_BYTES + 1]
+        );
         assert_eq!(i16_be(&output, 5 * MAPSTATS_RECORD_BYTES), 321);
     }
 
@@ -3876,7 +3879,10 @@ mod tests {
         let spell_output = write_spell_overrides(&spells).unwrap();
         assert_eq!(spell_output.len(), SPELL_BYTES * 2);
         assert_eq!(spell_output[10], 11);
-        assert_eq!(changed_offsets(&spell_input[..SPELL_BYTES * 2], &spell_output), vec![10]);
+        assert_eq!(
+            changed_offsets(&spell_input[..SPELL_BYTES * 2], &spell_output),
+            vec![10]
+        );
 
         let mut race_input = vec![0u8; RACE_BYTES];
         write_i16_be(&mut race_input, 192, 88);
@@ -3955,11 +3961,7 @@ mod tests {
         let secondary_row = primary_row + 1;
         let mut input = vec![0u8; EXTRACODE_BYTES * (secondary_row + 1)];
         write_i16_be(&mut input, primary_row * EXTRACODE_BYTES, 0x0102);
-        write_i16_be(
-            &mut input,
-            secondary_row * EXTRACODE_BYTES + 8,
-            0x0506,
-        );
+        write_i16_be(&mut input, secondary_row * EXTRACODE_BYTES + 8, 0x0506);
 
         let mut rows = parse_extracodes(&input);
         rows[primary_row].values[0] = 0x0304;
@@ -4300,10 +4302,7 @@ mod tests {
         let output = write_global_macro_hooks(&hooks).unwrap();
         assert_eq!(output.len(), input.len());
         assert_eq!(i16_be(&output, 6), 0x1111);
-        assert_eq!(
-            changed_offsets(&input, &output),
-            vec![0, 1, 8, 9]
-        );
+        assert_eq!(changed_offsets(&input, &output), vec![0, 1, 8, 9]);
     }
 
     #[test]

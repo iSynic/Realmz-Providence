@@ -1162,7 +1162,7 @@ export function landlookPictId(landlook: number) {
 export function landlookBaseTile(landlook: number, buffers?: Map<string, Uint8Array>) {
   const standard = ({ 0: 156, 3: 155, 4: 111, 5: 191, 9: 155, 10: 155 } as Record<number, number>)[landlook];
   if (standard != null) return standard;
-  return customLandlookBaseTile(landlook, buffers);
+  return customLandlookBaseTile(landlook, buffers) ?? customLandlookFallbackBaseTile(landlook);
 }
 
 function customLandlookBaseTile(landlook: number, buffers?: Map<string, Uint8Array>) {
@@ -1171,6 +1171,10 @@ function customLandlookBaseTile(landlook: number, buffers?: Map<string, Uint8Arr
   if (!bytes || bytes.byteLength < 8042) return null;
   const baseTile = i16(bytes, 8040);
   return baseTile > 0 && baseTile <= 999 ? baseTile : null;
+}
+
+function customLandlookFallbackBaseTile(landlook: number) {
+  return landlook >= 6 && landlook <= 8 ? 156 : null;
 }
 
 function provenance(sourceFile: string, recordIndex: number, byteOffset: number, byteLength: number, confidence: string) {

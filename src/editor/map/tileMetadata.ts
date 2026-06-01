@@ -1,10 +1,11 @@
-import { normalizeAtlasTile, normalizeIconId, normalizeTile, tileIconCandidates } from "./renderValues";
+import { atlasBaseTile, normalizeAtlasTile, normalizeIconId, normalizeTile, tileIconCandidates } from "./renderValues";
 import { IconEntry, TileAttributeFlag, TileAttributeProfile, TileRenderResolution, TilesetAsset } from "../types";
 
 export type TileValueKind =
   | "standard-atlas"
   | "dungeon-bitfield"
   | "special-negative"
+  | "special-positive"
   | "marker-bit"
   | "path-bit"
   | "raw-preserved"
@@ -39,7 +40,7 @@ export function classifyTileValue(
   icons?: Record<number, IconEntry>
 ): TileValueMetadata {
   const normalized = normalizeTile(tile);
-  const baseTile = tileset?.baseTile ?? 1;
+  const baseTile = atlasBaseTile(tileset?.baseTile, tileset?.custom);
   const renderTile = normalizeAtlasTile(tile, baseTile);
   const capacity = tileset ? Math.max(0, tileset.columns * tileset.rows) : 0;
   const isDungeon = Boolean(tileset && (tileset.id === "dungeon-top-down-302" || tileset.pictId === 302));
@@ -67,6 +68,10 @@ export function classifyTileValue(
     compatibility = iconId != null
       ? "Negative values may reference icon-backed or special land tile overlays."
       : "Special negative tile value is preserved.";
+  } else if (iconCandidates.length > 0) {
+    kind = "special-positive";
+    label = `Icon tile ${tile}`;
+    compatibility = "Realmz renders positive values above 200 as landlook base terrain with a cicn/icon overlay.";
   } else if (markerBit) {
     kind = "marker-bit";
     label = `Marked tile ${tile}`;
@@ -114,7 +119,7 @@ export function resolveTileRender(
   attributes: TileAttributeProfile[] = [],
   icons?: Record<number, IconEntry>
 ): TileRenderResolution {
-  const baseTile = tileset?.baseTile ?? 1;
+  const baseTile = atlasBaseTile(tileset?.baseTile, tileset?.custom);
   const terrainTile = normalizeAtlasTile(tile, baseTile);
   const iconCandidates = tileIconCandidates(tile);
   const iconId = iconCandidates.find((candidate) => Boolean(icons?.[candidate]?.image)) ?? iconCandidates[0] ?? null;
@@ -126,7 +131,11 @@ export function resolveTileRender(
     iconCandidates,
     iconId,
     iconAvailable,
-    fallbackReason: iconCandidates.length > 0 && !iconAvailable ? "Missing cicn/icon preview for this special tile value." : null,
+    fallbackReason: iconCandidates.length > 0 && !iconAvailable
+      ? tile > 200
+        ? "Positive Realmz map overlay value has no loaded scenario/project cicn; rendering base terrain only."
+        : "Missing cicn/icon preview for this special tile value."
+      : null,
     confidence: attribute?.confidence ?? (iconCandidates.length > 0 ? "preserved" : "unknown")
   };
 }
@@ -139,7 +148,7 @@ export function attributeProfileForTile(tile: number, tileset: TilesetAsset | nu
       profile.tile === specialIndex
     ) ?? null;
   }
-  const normalized = normalizeAtlasTile(tile, tileset?.baseTile ?? 1);
+  const normalized = normalizeAtlasTile(tile, atlasBaseTile(tileset?.baseTile, tileset?.custom));
   const landlook = tileset?.landlook ?? null;
   return attributes.find((profile) =>
     profile.tile === normalized &&
@@ -163,6 +172,9 @@ export function tileAttributeGroup(profile: TileAttributeProfile | null, tile: n
     return flags;
   }
   const flags = profile?.flags.length ? [...profile.flags] : ["unknown-metadata" as TileAttributeFlag];
+  if (tileIconCandidates(tile).length > 0 && !flags.includes("special-icon")) {
+    flags.push("special-icon");
+  }
   if (isDivinityVisualPathTile(tile, tileset) && !flags.includes("path")) {
     flags.push("visual-path");
   }
@@ -171,6 +183,6 @@ export function tileAttributeGroup(profile: TileAttributeProfile | null, tile: n
 
 export function isDivinityVisualPathTile(tile: number, tileset: TilesetAsset | null = null) {
   if (tile < 0) return false;
-  const normalized = normalizeAtlasTile(tile, tileset?.baseTile ?? 1);
+  const normalized = normalizeAtlasTile(tile, atlasBaseTile(tileset?.baseTile, tileset?.custom));
   return normalized >= 132 && normalized <= 146;
 }
