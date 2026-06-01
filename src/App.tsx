@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { Suspense, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { DEFAULT_DIVINITY_ROOT, DEFAULT_EXPORT, DEFAULT_REALMZ_DATA_ROOT, DEFAULT_WORKSPACE } from "./editor/constants";
 import { ProjectNameDialog, ProjectStart } from "./editor/app/AppStart";
@@ -38,6 +39,13 @@ const DEFAULT_SCENARIO_ROOT = "F:\\Realmz\\base\\Realmz\\Scenarios";
 const DEFAULT_PROJECT_ROOT = "F:\\Realmz - Providence\\projects";
 const DEFAULT_EXPORT_ROOT = "F:\\Realmz - Providence\\exports";
 
+type DefaultStoragePaths = {
+  appDataDir: string;
+  projectRoot: string;
+  workspaceDir: string;
+  exportRoot: string;
+};
+
 type WorkbenchHistoryLocation = {
   key: string;
   workbench: ActiveWorkbench;
@@ -56,7 +64,13 @@ function importedMapIconCacheKey(project: { source: { sourcePath: string }; maps
 export function App() {
   const desktopRuntime = hasDesktopRuntime();
   const browserFileSystem = !desktopRuntime && canUseBrowserFileSystem();
-  const [workspaceDir] = useState(DEFAULT_WORKSPACE);
+  const [storagePaths, setStoragePaths] = useState<DefaultStoragePaths>({
+    appDataDir: "",
+    projectRoot: DEFAULT_PROJECT_ROOT,
+    workspaceDir: DEFAULT_WORKSPACE,
+    exportRoot: DEFAULT_EXPORT_ROOT
+  });
+  const [workspaceDir, setWorkspaceDir] = useState(DEFAULT_WORKSPACE);
   const [projectDir, setProjectDir] = useState("");
   const [exportDir, setExportDir] = useState(DEFAULT_EXPORT);
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
@@ -76,6 +90,24 @@ export function App() {
     entries: [],
     index: -1
   });
+
+  useEffect(() => {
+    if (!desktopRuntime) return;
+    let disposed = false;
+    invoke<DefaultStoragePaths>("default_storage_paths")
+      .then((paths) => {
+        if (disposed) return;
+        setStoragePaths(paths);
+        setWorkspaceDir(paths.workspaceDir);
+        setExportDir((current) => current === DEFAULT_EXPORT ? `${paths.exportRoot}\\Tutorial` : current);
+      })
+      .catch((error) => {
+        console.warn("Unable to resolve desktop storage paths.", error);
+      });
+    return () => {
+      disposed = true;
+    };
+  }, [desktopRuntime]);
 
   useEffect(() => {
     if (!state.project && state.activeWorkbench !== "library") return;
@@ -225,8 +257,8 @@ export function App() {
     selectedMapId: state.selectedMapId,
     roots: {
       scenario: DEFAULT_SCENARIO_ROOT,
-      project: DEFAULT_PROJECT_ROOT,
-      export: DEFAULT_EXPORT_ROOT,
+      project: storagePaths.projectRoot,
+      export: storagePaths.exportRoot,
       divinity: DEFAULT_DIVINITY_ROOT,
       realmzData: DEFAULT_REALMZ_DATA_ROOT
     }
@@ -385,6 +417,7 @@ export function App() {
             desktopRuntime={desktopRuntime}
             browserFileSystem={browserFileSystem}
             browserPreviewStatus={BROWSER_PREVIEW_STATUS}
+            projectRoot={storagePaths.projectRoot}
             onNewProject={showNewProjectDialog}
             onOpenProject={chooseExistingProject}
             onImportScenario={importScenario}

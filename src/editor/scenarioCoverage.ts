@@ -72,6 +72,7 @@ export type ScenarioCoverageManifest = {
       blockerIds: string[];
     } | null;
     strictCompleteness?: {
+      containerCount: number;
       scenarioSemantics: {
         label: string;
         status: string;

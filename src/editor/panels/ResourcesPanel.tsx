@@ -35,6 +35,7 @@ import {
   estimatedPreviewStatus,
   useProjectPreview
 } from "./resources/ResourceWidgets";
+import { RecordsPanel } from "./RecordsPanel";
 
 export function ResourcesPanel({
   project,
@@ -135,27 +136,32 @@ export function ResourcesPanel({
           </button>
         ))}
       </div>
-      <div className="asset-filter-row">
-        <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search assets..." />
-        <select value={kindFilter} onChange={(event) => setKindFilter(event.currentTarget.value as ManagedAssetKind | "all")} aria-label="Asset kind filter">
-          <option value="all">All Types</option>
-          <option value="picture">Pictures</option>
-          <option value="sound">Sounds</option>
-          <option value="icon">Icons</option>
-          <option value="special-land-tile">Special Land Tiles</option>
-          <option value="text">Text Resources</option>
-          <option value="other">Other</option>
-        </select>
-        <PreviewStatusFilters value={libraryPreviewFilter} onChange={setLibraryPreviewFilter} />
-        {section === "divinity" && (
-          <label className="asset-inline-toggle" title="Show Divinity/Realmz application interface artwork. These resources are not scenario media.">
-            <input type="checkbox" checked={showUiReference} onChange={(event) => setShowUiReference(event.currentTarget.checked)} />
-            Show UI Reference
-          </label>
-        )}
-      </div>
+      {section !== "records" && (
+        <div className="asset-filter-row">
+          <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search assets..." />
+          <select value={kindFilter} onChange={(event) => setKindFilter(event.currentTarget.value as ManagedAssetKind | "all")} aria-label="Asset kind filter">
+            <option value="all">All Types</option>
+            <option value="picture">Pictures</option>
+            <option value="sound">Sounds</option>
+            <option value="icon">Icons</option>
+            <option value="special-land-tile">Special Land Tiles</option>
+            <option value="text">Text Resources</option>
+            <option value="other">Other</option>
+          </select>
+          <PreviewStatusFilters value={libraryPreviewFilter} onChange={setLibraryPreviewFilter} />
+          {section === "divinity" && (
+            <label className="asset-inline-toggle" title="Show Divinity/Realmz application interface artwork. These resources are not scenario media.">
+              <input type="checkbox" checked={showUiReference} onChange={(event) => setShowUiReference(event.currentTarget.checked)} />
+              Show UI Reference
+            </label>
+          )}
+        </div>
+      )}
       <div className="asset-workbench-main" aria-label="Assets workbench">
-      {section !== "advanced" && (
+      {section === "records" && (
+        <RecordsPanel project={project} selectedEntity={selectedEntity} onSelectEntity={onSelectEntity} />
+      )}
+      {section !== "advanced" && section !== "records" && (
         <section className="tab-panel asset-authoring-panel">
           <div className="panel-header">
             <span>{assetSectionTitle(section)}</span>

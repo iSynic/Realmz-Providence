@@ -43,10 +43,12 @@ export function ProjectNameDialog({
 
 export function ProjectStart({
   desktopRuntime,
+  projectRoot,
   browserPreviewStatus
 }: {
   desktopRuntime: boolean;
   browserFileSystem: boolean;
+  projectRoot: string;
   browserPreviewStatus: string;
   onNewProject: () => void;
   onOpenProject: () => void;
@@ -61,7 +63,7 @@ export function ProjectStart({
         <img className="project-start-mark" src="/divinity-icon.png" alt="" draggable={false} />
         <h1>Realmz Providence</h1>
         <p>Create a scenario project, open an existing project, or work in the bundled Realmz/Divinity library before a scenario exists.</p>
-        <small>{desktopRuntime ? "Projects are created under F:\\Realmz - Providence\\projects. Bundled libraries are seeded automatically." : "Browser preview loads bundled library fixtures into memory."}</small>
+        <small>{desktopRuntime ? `Projects are created under ${projectRoot}. Bundled libraries are seeded automatically.` : "Browser preview loads bundled library fixtures into memory."}</small>
         {!desktopRuntime && <small>{browserPreviewStatus}</small>}
       </div>
     </section>

@@ -2,7 +2,6 @@ import {
   AlertTriangle,
   Binary,
   BookOpen,
-  Boxes,
   Brush,
   Coins,
   Download,
@@ -44,7 +43,6 @@ export const TABS: { id: EditorTab; label: string; icon: JSX.Element }[] = [
   { id: "rules", label: "Rules", icon: <UserCog size={15} /> },
   { id: "assets", label: "Assets", icon: <FileArchive size={15} /> },
   { id: "text", label: "Text", icon: <MessageSquareText size={15} /> },
-  { id: "records", label: "Records", icon: <Boxes size={15} /> },
   { id: "linter", label: "Linter", icon: <AlertTriangle size={15} /> },
   { id: "export", label: "Export", icon: <Download size={15} /> }
 ];

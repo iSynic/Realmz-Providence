@@ -114,10 +114,10 @@ function ScenarioCoverageSummary({ coverage }: { coverage: ScenarioCoverageManif
       <div className="scenario-coverage-metrics">
         {strict ? (
           <>
-            <Metric label="Scenario Semantics" value={`${strict.scenarioSemantics.percentContainers}%`} />
-            <Metric label="Writer-Proven Data" value={`${strict.writerProvenData.percentContainers}%`} />
+            <Metric label="Known Semantic Containers" value={`${strict.scenarioSemantics.completeContainers + strict.scenarioSemantics.mixedContainers}/${strict.containerCount}`} />
+            <Metric label="Mixed, Not Unknown" value={strict.scenarioSemantics.mixedContainers} />
+            <Metric label="Writer Gates Remaining" value={strict.writerProvenData.writerGatedContainers} />
             <Metric label="Package Warnings" value={strict.packageCompatibility.warnings} />
-            <Metric label="Codec Internals" value={formatCoveragePhrase(strict.codecInternals.status)} />
             <Metric label="Functional Authoring" value={summary.functionalAuthoringReadiness ? `${summary.functionalAuthoringReadiness.readySystems}/${summary.functionalAuthoringReadiness.totalSystems}` : "Unknown"} />
           </>
         ) : (
@@ -133,8 +133,9 @@ function ScenarioCoverageSummary({ coverage }: { coverage: ScenarioCoverageManif
       <div className="scenario-coverage-note">
         {strict && (
           <>
-            Strict score: {strict.scenarioSemantics.completeContainers.toLocaleString()} complete, {strict.scenarioSemantics.mixedContainers.toLocaleString()} mixed semantic container(s);
-            {strict.writerProvenData.writerGatedContainers.toLocaleString()} writer-gated container(s);
+            Semantic audit: {(strict.scenarioSemantics.completeContainers + strict.scenarioSemantics.mixedContainers).toLocaleString()} / {strict.containerCount.toLocaleString()} tracked container(s) are understood at the scenario boundary; {strict.scenarioSemantics.mixedContainers.toLocaleString()} include known compatibility/runtime ranges that Providence preserves instead of claiming as author-owned fields.
+            Writer proof: {strict.writerProvenData.fixtureProvenContainers.toLocaleString()} fixture-proven and {strict.writerProvenData.partiallyProvenContainers.toLocaleString()} partially proven container(s);
+            {strict.writerProvenData.writerGatedContainers.toLocaleString()} writer-gated container(s) remain.
             {strict.strictOutstanding.preservedUnknownContainers.toLocaleString()} preserved unknown container(s);
             {strict.strictOutstanding.targetWarnings.toLocaleString()} package warning(s).
             {" "}
@@ -173,7 +174,7 @@ function ScenarioCoverageSummary({ coverage }: { coverage: ScenarioCoverageManif
           {coverage.topRisks.slice(0, 5).map((risk) => (
             <article key={risk.id}>
               <strong>{risk.family}</strong>
-              <span>{risk.status}</span>
+              <span>{coverageRiskLabel(risk)}</span>
             </article>
           ))}
         </div>
@@ -199,6 +200,18 @@ function ScenarioCoverageSummary({ coverage }: { coverage: ScenarioCoverageManif
 
 function formatCoveragePhrase(value: string) {
   return value.split("-").join(" ");
+}
+
+function coverageRiskLabel(risk: ScenarioCoverageManifest["topRisks"][number]) {
+  if (risk.id === "data-ed3-reachability") return "Fixture-proven storage";
+  if (risk.id === "data-edcd-rare-shapes") return "Fixture-proven rows";
+  if (risk.id === "data-od-and-string-sound") return "Text fixture-proven";
+  if (risk.id === "custom-landlook-writers") return "Partially writer-proven";
+  if (risk.id === "dungeon-writer-safety") return "Partially writer-proven";
+  if (risk.status === "Needs packaging work") return "Packaging follow-up";
+  if (risk.status === "Needs editor labels") return "Label follow-up";
+  if (risk.status === "Needs writer proof") return "Follow-up";
+  return risk.status;
 }
 
 function formatTruthLabel(value: string) {

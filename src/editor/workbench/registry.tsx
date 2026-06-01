@@ -52,7 +52,6 @@ export const DOMAIN_ORDER: EditorTab[] = [
   "rules",
   "assets",
   "text",
-  "records",
   "linter",
   "export"
 ];
@@ -165,6 +164,7 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
       t({ id: "icons", label: "Scenario Icons", iconLabel: "IC", workbench: "both", description: "Project-owned cicn resources.", entityTypes: ["icon-resource"], defaultInspector: "resource" }),
       t({ id: "special-land", label: "Special Land Tiles", iconLabel: "SL", workbench: "both", description: "Project-owned 32 x 32 placeable cicn land tiles.", entityTypes: ["special-land-tile"], defaultInspector: "resource" }),
       t({ id: "library-assets", label: "Reference Libraries", iconLabel: "RL", workbench: "library", description: "Bundled read-only Realmz resources for previews and selectors.", entityTypes: ["picture", "sound", "icon-resource", "special-land-tile"], defaultInspector: "resource" }),
+      t({ id: "decoded-records", label: "Decoded Records", iconLabel: "DR", workbench: "project", description: "Record catalog grouped by source.", defaultInspector: "semantic" }),
       t({ id: "resource-forks", label: "Advanced Resources", iconLabel: "RF", workbench: "both", description: "Raw PICT, cicn, snd, TEXT, STR#, styl, RLMZ inventory.", entityTypes: ["resource", "resource type"], defaultInspector: "resource" })
     ]
   },

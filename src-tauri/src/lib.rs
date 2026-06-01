@@ -18,6 +18,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
+            commands::default_storage_paths,
             commands::create_project,
             commands::open_workspace,
             commands::save_workspace,

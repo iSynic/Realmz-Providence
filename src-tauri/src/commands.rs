@@ -38,6 +38,28 @@ pub struct BenchmarkReport {
     pub ok: bool,
 }
 
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DefaultStoragePaths {
+    pub app_data_dir: String,
+    pub project_root: String,
+    pub workspace_dir: String,
+    pub export_root: String,
+}
+
+#[tauri::command]
+pub fn default_storage_paths(app: tauri::AppHandle) -> Result<DefaultStoragePaths> {
+    let app_data_dir = app.path().app_data_dir().map_err(|error| {
+        ProvidenceError::message(format!("Unable to resolve app data directory: {error}"))
+    })?;
+    Ok(DefaultStoragePaths {
+        project_root: app_data_dir.join("projects").to_string_lossy().to_string(),
+        workspace_dir: app_data_dir.join("workspace").to_string_lossy().to_string(),
+        export_root: app_data_dir.join("exports").to_string_lossy().to_string(),
+        app_data_dir: app_data_dir.to_string_lossy().to_string(),
+    })
+}
+
 #[tauri::command]
 pub fn create_project(project_name: String, project_dir: String) -> Result<ProvidenceProject> {
     create_project_impl(project_name, project_dir)

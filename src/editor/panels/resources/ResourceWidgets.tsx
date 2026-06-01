@@ -20,17 +20,19 @@ import {
 } from "../../mediaAssets";
 import { AssetImportBar } from "./AssetImportDialog";
 
-export type AssetSection = "project" | "realmz" | "divinity" | "advanced";
+export type AssetSection = "project" | "realmz" | "divinity" | "records" | "advanced";
 export const LIBRARY_PAGE_SIZE = 20;
 
 export const ASSET_SECTIONS: Array<{ id: AssetSection; editor: string; label: string }> = [
   { id: "project", editor: "project-assets", label: "Scenario Assets" },
   { id: "realmz", editor: "library-assets", label: "Reference Libraries" },
   { id: "divinity", editor: "divinity-reference", label: "Divinity Reference" },
+  { id: "records", editor: "decoded-records", label: "Decoded Records" },
   { id: "advanced", editor: "resource-forks", label: "Advanced Inventory" }
 ];
 
 export function assetSectionFromEditor(activeEditor: string): AssetSection {
+  if (activeEditor === "decoded-records") return "records";
   if (activeEditor === "library-assets") return "realmz";
   if (activeEditor === "divinity-reference") return "divinity";
   if (activeEditor === "resource-forks" || activeEditor === "render-assets") return "advanced";
