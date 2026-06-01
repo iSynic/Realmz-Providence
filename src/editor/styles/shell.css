@@ -1150,6 +1150,12 @@ body.is-resizing-pane .pane-resize-handle::before {
 
 
 
+.domain-main-layout.no-detail {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+
+
 .domain-main-column {
   display: grid;
   gap: 12px;
@@ -1267,6 +1273,12 @@ body.is-resizing-pane .pane-resize-handle::before {
   grid-template-columns: minmax(190px, 260px) minmax(0, 1fr);
   gap: 10px;
   min-height: 360px;
+}
+
+
+
+.domain-workbench-no-detail .domain-target-layout {
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
 }
 
 

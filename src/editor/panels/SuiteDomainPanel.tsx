@@ -150,6 +150,7 @@ export function SuiteDomainPanel({
 }) {
   const config = DOMAIN_CONFIG[tab];
   const focusedEditor = config.editors.find((editor) => editor.id === activeEditor) ?? null;
+  const headerEditor = tab === "encounters" ? null : focusedEditor;
   const visibleEditors = focusedEditor ? [focusedEditor] : config.editors;
   const projectEntities = project?.semanticSchema.entities ?? [];
   const libraryEntities = catalog?.entities ?? [];
@@ -166,7 +167,7 @@ export function SuiteDomainPanel({
     ...(catalog?.records.map((record) => ({ id: record.id, label: record.label, type: record.type, editState: record.editState })) ?? [])
   ] : [];
   const targetRecordTypes = project ? targetRecordTypesForEditor(tab, activeEditor) : [];
-  const focusedTargetEditor = targetRecordTypes.length > 0 && activeEditor !== "domain";
+  const focusedTargetEditor = targetRecordTypes.length > 0 && activeEditor !== "domain" && tab !== "encounters";
   const selectedTargetRecordType = selectedTargetRecordTypeFromEntity(selectedEntity?.id ?? "", targetRecordTypes);
   const [overviewTargetRecordType, setOverviewTargetRecordType] = useState<RealmzTargetRecordKind | null>(() => readStoredOverviewTargetRecordType(tab));
   useEffect(() => {
@@ -175,6 +176,7 @@ export function SuiteDomainPanel({
       const stored = readStoredOverviewTargetRecordType(tab);
       const next =
         selectedTargetRecordType ??
+        targetRecordTypeFromEditor(tab, activeEditor) ??
         (current && targetRecordTypes.includes(current) ? current : null) ??
         (stored && targetRecordTypes.includes(stored) ? stored : null) ??
         targetRecordTypes[0];
@@ -190,17 +192,19 @@ export function SuiteDomainPanel({
     overviewTargetRecordType && targetRecordTypes.includes(overviewTargetRecordType) ? [overviewTargetRecordType] :
     targetRecordTypes.slice(0, 1);
   const itemWorkbenchActive = tab === "economy" && activeEditor === "items";
+  const suppressDetailPanel = tab === "encounters";
+  const showTargetSwitcher = targetRecordTypes.length > 1 && (tab === "encounters" || !focusedTargetEditor);
   const showOverviewCards = tab !== "records" && tab !== "linter" && !focusedTargetEditor && !itemWorkbenchActive && targetRecordTypes.length === 0;
   return (
-    <section className="domain-workbench">
+    <section className={`domain-workbench${suppressDetailPanel ? " domain-workbench-no-detail" : ""}`}>
       <header className="domain-header">
         <div>
-          <h1>{focusedEditor ? focusedEditor.label : config.title}</h1>
-          <p>{focusedEditor ? editorSubtitle(focusedEditor) : config.subtitle}</p>
+          <h1>{headerEditor ? headerEditor.label : config.title}</h1>
+          <p>{headerEditor ? editorSubtitle(headerEditor) : config.subtitle}</p>
         </div>
         <small>{project ? project.scenario.name : "Library workbench"}</small>
       </header>
-      <div className="domain-main-layout">
+      <div className={`domain-main-layout${suppressDetailPanel ? " no-detail" : ""}`}>
         <div className="domain-main-column">
       {itemWorkbenchActive && project && (
         <ItemCatalogWorkbench
@@ -213,7 +217,7 @@ export function SuiteDomainPanel({
       )}
       {project && targetRecordTypes.length > 0 && (
         <div className="domain-target-stack">
-          {!focusedTargetEditor && targetRecordTypes.length > 1 && (
+          {showTargetSwitcher && (
             <DomainTargetSwitcher
               project={project}
               recordTypes={targetRecordTypes}
@@ -297,7 +301,7 @@ export function SuiteDomainPanel({
         })}
       </div>
         </div>
-        <DomainDetailPanel detail={selectedDetail} catalog={catalog} onUpdateDraft={onUpdateDraft} />
+        {!suppressDetailPanel && <DomainDetailPanel detail={selectedDetail} catalog={catalog} onUpdateDraft={onUpdateDraft} />}
       </div>
     </section>
   );
@@ -1108,12 +1112,17 @@ function targetRecordTypesForEditor(tab: EditorTab, activeEditor: string): Realm
   if (tab === "economy" && activeEditor === "domain") return ["treasure", "shop"];
   if (tab === "economy" && activeEditor === "treasure") return ["treasure"];
   if (tab === "economy" && activeEditor === "shops") return ["shop"];
-  if (tab === "encounters" && activeEditor === "domain") return ["simpleEncounter", "complexEncounter", "thiefEncounter", "timedEncounter"];
-  if (tab === "encounters" && activeEditor === "simple") return ["simpleEncounter"];
-  if (tab === "encounters" && activeEditor === "complex") return ["complexEncounter"];
-  if (tab === "encounters" && activeEditor === "rogue") return ["thiefEncounter"];
-  if (tab === "encounters" && activeEditor === "timed") return ["timedEncounter"];
+  if (tab === "encounters") return ["simpleEncounter", "complexEncounter", "thiefEncounter", "timedEncounter"];
   return [];
+}
+
+function targetRecordTypeFromEditor(tab: EditorTab, activeEditor: string): RealmzTargetRecordKind | null {
+  if (tab !== "encounters") return null;
+  if (activeEditor === "simple") return "simpleEncounter";
+  if (activeEditor === "complex") return "complexEncounter";
+  if (activeEditor === "rogue") return "thiefEncounter";
+  if (activeEditor === "timed") return "timedEncounter";
+  return null;
 }
 
 function targetRecords(project: Project, recordType: RealmzTargetRecordKind): Array<{ id: number }> {

@@ -2141,7 +2141,7 @@ function EncounterShell({
     }
   };
   return (
-    <div className="script-target-grid">
+    <div className="script-target-grid encounter-record-grid">
       <ReferenceIdField
         project={project}
         catalog={catalog}

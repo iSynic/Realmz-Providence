@@ -6,7 +6,6 @@ import { LibraryDraftSpec } from "../libraryDrafts";
 import { Issue } from "../types";
 import {
   LazyCombatPanel as CombatPanel,
-  LazyEncountersPanel as EncountersPanel,
   LazyExportPanel as ExportPanel,
   LazyLibraryHubPanel as LibraryHubPanel,
   LazyLinterPanel as LinterPanel,
@@ -176,22 +175,19 @@ function WorkbenchRouterContent({
   }
 
   if (state.activeTab === "encounters") {
-    if (state.activeEditor === "domain" || state.activeEditor === "simple" || state.activeEditor === "complex" || state.activeEditor === "timed") {
-      return (
-        <SuiteDomainPanel
-          tab="encounters"
-          activeEditor={state.activeEditor}
-          project={state.project}
-          catalog={state.libraryCatalog}
-          selectedEntity={state.selectedEntity}
-          onSelectEntity={onSelectEntity}
-          onApplyCommand={onApplyCommand}
-          onCreateDraft={onCreateDraft}
-          onUpdateDraft={onUpdateDraft}
-        />
-      );
-    }
-    return <EncountersPanel project={state.project} selectedEntity={state.selectedEntity} onSelectEntity={onSelectEntity} activeEditor={state.activeEditor} />;
+    return (
+      <SuiteDomainPanel
+        tab="encounters"
+        activeEditor={state.activeEditor}
+        project={state.project}
+        catalog={state.libraryCatalog}
+        selectedEntity={state.selectedEntity}
+        onSelectEntity={onSelectEntity}
+        onApplyCommand={onApplyCommand}
+        onCreateDraft={onCreateDraft}
+        onUpdateDraft={onUpdateDraft}
+      />
+    );
   }
 
   if (state.activeTab === "rules") {
