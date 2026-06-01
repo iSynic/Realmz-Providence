@@ -3,18 +3,18 @@ import { ActiveWorkbench, EditorTab, LibraryCatalog, Project } from "../types";
 import { TutorialTip } from "./TutorialTip";
 
 const RAIL_HINTS: Record<EditorTab, { short: string; title: string; detail: string }> = {
-  maps: { short: "Map", title: "Maps", detail: "Land levels, dungeon levels, tile painting, Action Points, Random Rectangles" },
-  scripts: { short: "AP", title: "Action Points", detail: "Action Points, reusable actions, global events, and quest links" },
-  scenario: { short: "Scn", title: "Scenario", detail: "Startup information, restrictions, contact data, global events, registration" },
-  encounters: { short: "Enc", title: "Encounters", detail: "Simple, complex, rogue, and timed encounters" },
-  combat: { short: "Cmb", title: "Combat", detail: "Battles, monsters, Monster Scrapbook, Monster Mash" },
-  economy: { short: "Eco", title: "Economy", detail: "Treasure, items, shops, Bag of Holding, Vault of Arcana" },
-  rules: { short: "Rule", title: "Rules", detail: "Spells, races, castes, and selector data" },
-  assets: { short: "Ast", title: "Assets", detail: "Pictures, sounds, resource forks, special land tiles" },
-  text: { short: "Txt", title: "Text", detail: "Scenario strings, TEXT/styl resources, import/export spell checking" },
-  records: { short: "Rec", title: "Records", detail: "Realmz Data files, decoded records, byte ranges, provenance" },
-  linter: { short: "Lint", title: "Linter", detail: "Compatibility diagnostics and export blockers" },
-  export: { short: "Out", title: "Export", detail: "Realmz Revisited export readiness and pass-through report" }
+  maps: { short: "Maps", title: "Maps", detail: "Land levels, dungeon levels, tile painting, Action Points, Random Rectangles" },
+  scripts: { short: "Action Points", title: "Action Points", detail: "Action Points, reusable actions, global events, and quest links" },
+  scenario: { short: "Scenario", title: "Scenario", detail: "Startup information, restrictions, contact data, global events, registration" },
+  encounters: { short: "Encounters", title: "Encounters", detail: "Simple, complex, rogue, and timed encounters" },
+  combat: { short: "Combat", title: "Combat", detail: "Battles, monsters, Monster Scrapbook, Monster Mash" },
+  economy: { short: "Economy", title: "Economy", detail: "Treasure, items, shops, Bag of Holding, Vault of Arcana" },
+  rules: { short: "Rules", title: "Rules", detail: "Spells, races, castes, and selector data" },
+  assets: { short: "Assets", title: "Assets", detail: "Pictures, sounds, resource forks, special land tiles" },
+  text: { short: "Strings", title: "Strings", detail: "Scenario strings, TEXT/styl resources, import/export spell checking" },
+  records: { short: "Records", title: "Records", detail: "Realmz Data files, decoded records, byte ranges, provenance" },
+  linter: { short: "Linter", title: "Linter", detail: "Compatibility diagnostics and export blockers" },
+  export: { short: "Export", title: "Export", detail: "Realmz Revisited export readiness and pass-through report" }
 };
 
 export function EditorToolRail({

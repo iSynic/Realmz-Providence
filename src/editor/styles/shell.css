@@ -370,7 +370,7 @@
 
 .editor-tool-rail,
 .domain-rail {
-  width: 64px;
+  width: 76px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -3460,12 +3460,17 @@ a.documents-source-chip:hover {
 
 
 .rail-label {
+  display: block;
+  width: 100%;
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: clamp(8px, 1.05vh, 10px);
+  overflow: visible;
+  overflow-wrap: break-word;
+  text-align: center;
+  text-overflow: clip;
+  white-space: normal;
+  font-size: 10px;
   font-weight: 800;
+  line-height: 1.05;
   color: color-mix(in srgb, var(--rail-accent, #9dcfff) 76%, #dce8f3);
 }
 
@@ -3493,7 +3498,7 @@ a.documents-source-chip:hover {
 @media (max-height: 720px) {
   .editor-tool-rail,
   .domain-rail {
-    width: 58px;
+    width: 70px;
     gap: 2px;
     padding: 4px;
   }
