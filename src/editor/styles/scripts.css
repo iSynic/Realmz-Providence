@@ -1420,17 +1420,6 @@
 
 
 
-.script-shop-catalog-editor {
-  display: grid;
-  gap: 7px;
-  padding: 7px;
-  border: 1px solid #223240;
-  border-radius: 6px;
-  background: #0b141c;
-}
-
-
-
 .script-shop-source-note {
   grid-column: 1 / -1;
   display: grid;
@@ -1469,6 +1458,28 @@
 
 
 
+.script-shop-workbench {
+  display: grid;
+  grid-template-columns: minmax(280px, 420px) minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+
+
+.script-shop-catalog-editor,
+.script-shop-inventory-panel {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid #223240;
+  border-radius: 6px;
+  background: #0b141c;
+}
+
+
+
 .script-shop-catalog-editor > header {
   display: flex;
   flex-wrap: wrap;
@@ -1479,14 +1490,16 @@
 
 
 
-.script-shop-catalog-editor > header strong {
+.script-shop-catalog-editor > header strong,
+.script-shop-inventory-panel > header strong {
   color: #e4f1ff;
   font-size: 11px;
 }
 
 
 
-.script-shop-catalog-editor > header small {
+.script-shop-catalog-editor > header small,
+.script-shop-inventory-panel > header small {
   display: block;
   color: #8fa5b8;
   font-size: 10px;
@@ -1494,9 +1507,28 @@
 
 
 
+.script-shop-inventory-panel > header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+
+
+.script-shop-inventory-panel > header > span {
+  color: #ffd65e;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+
+
 .script-shop-catalog-editor > header label {
   display: grid;
-  grid-template-columns: auto 72px auto;
+  grid-template-columns: auto 78px auto;
   gap: 5px;
   align-items: end;
   color: #80b8ec;
@@ -1515,9 +1547,18 @@
 
 .script-shop-catalog-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 5px;
-  max-height: min(44vh, 420px);
+  max-height: min(56vh, 560px);
+  overflow: auto;
+  padding-right: 2px;
+}
+
+
+
+.script-shop-inventory-list {
+  display: grid;
+  gap: 5px;
+  max-height: min(62vh, 640px);
   overflow: auto;
   padding-right: 2px;
 }
@@ -1526,7 +1567,7 @@
 
 .script-shop-catalog-list button {
   display: grid;
-  grid-template-columns: 38px minmax(0, 1fr) 48px;
+  grid-template-columns: 36px minmax(0, 1fr) 36px;
   gap: 7px;
   align-items: center;
   min-width: 0;
@@ -1548,12 +1589,17 @@
 
 
 
-.script-shop-catalog-list b,
-.script-shop-catalog-list i {
+.script-shop-catalog-list b {
+  display: inline-grid;
+  place-items: center;
+  min-width: 28px;
+  min-height: 22px;
+  border: 1px solid #4b3b14;
+  border-radius: 5px;
+  background: #181306;
   justify-self: center;
   color: #f1ca6f;
   font-size: 11px;
-  font-style: normal;
   font-weight: 900;
 }
 
@@ -1584,59 +1630,11 @@
 
 
 
-.script-shop-stock-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 7px;
-  padding: 7px;
-  border: 1px solid #223240;
-  border-radius: 6px;
-  background: #0b141c;
-}
-
-
-
-.script-shop-stock-toolbar > span {
-  color: #d7e7f4;
-  font-size: 10px;
-  font-weight: 900;
-}
-
-
-
-.script-shop-stock-toolbar label {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: #8da8ba;
-  font-size: 10px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-
-
-.script-shop-stock-toolbar input[type="number"] {
-  width: 72px;
-  min-height: 24px;
-}
-
-
-
-.script-shop-stock-grid {
-  display: grid;
-  gap: 5px;
-  margin-top: 8px;
-}
-
-
-
 .script-shop-stock-row {
   display: grid;
-  grid-template-columns: 38px minmax(160px, 1fr) 76px auto;
-  gap: 6px;
-  align-items: end;
+  grid-template-columns: 38px minmax(150px, 1fr) 82px 68px 58px auto;
+  gap: 8px;
+  align-items: center;
   padding: 6px;
   border: 1px solid #223240;
   border-radius: 5px;
@@ -1645,10 +1643,97 @@
 
 
 
-.script-shop-stock-row > strong {
-  align-self: center;
+.script-shop-stock-item {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+
+
+.script-shop-stock-item strong,
+.script-shop-stock-item small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+
+.script-shop-stock-item strong {
   color: #e4f1ff;
   font-size: 11px;
+}
+
+
+
+.script-shop-stock-item small {
+  color: #8ea4b7;
+  font-size: 10px;
+}
+
+
+
+.script-shop-stock-id,
+.script-shop-stock-qty {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  color: #80b8ec;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+
+
+.script-shop-stock-id input,
+.script-shop-stock-qty input {
+  width: 100%;
+  min-height: 27px;
+}
+
+
+
+.script-shop-stock-slot {
+  justify-self: center;
+  color: #8ea4b7;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+
+
+.script-shop-item-icon {
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #30475e;
+  border-radius: 5px;
+  background: #070c11;
+  color: #7890a5;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+
+
+.script-shop-item-icon img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+
+
+.script-shop-item-icon i {
+  font-style: normal;
 }
 
 
@@ -1656,6 +1741,11 @@
 .script-shop-stock-empty {
   color: #8399ab;
   font-size: 10px;
+  margin: 0;
+  padding: 10px;
+  border: 1px dashed #2a3b4b;
+  border-radius: 6px;
+  background: #091018;
 }
 
 
@@ -1887,12 +1977,11 @@
   }
 
   .script-shop-stock-row {
-    grid-template-columns: 34px minmax(0, 1fr);
+    grid-template-columns: 34px minmax(0, 1fr) 82px 68px auto;
   }
 
-  .script-shop-stock-row .script-number-field,
-  .script-shop-stock-row .btn {
-    grid-column: 2;
+  .script-shop-stock-slot {
+    display: none;
   }
 }
 
@@ -1903,6 +1992,21 @@
 
   .encounter-record-grid > .script-reference-id-field:first-child {
     grid-column: 1;
+  }
+
+  .script-shop-workbench {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .script-shop-stock-row {
+    grid-template-columns: 34px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .script-shop-stock-id,
+  .script-shop-stock-qty,
+  .script-shop-stock-row .btn {
+    grid-column: 2;
   }
 }
 

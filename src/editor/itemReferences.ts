@@ -9,6 +9,7 @@ export type ItemReferenceOption = {
   detail: string;
   summary: string;
   sourceState: string;
+  iconId: number | null;
 };
 
 export type ItemReferenceCategory = "weapon" | "armor" | "accessory" | "magic" | "supply" | "unknown";
@@ -30,7 +31,11 @@ type ItemUsage = {
 
 type ItemEntity = SemanticEntity | LibraryEntity;
 
+const itemReferenceOptionCache = new WeakMap<Project, { noCatalog: ItemReferenceOption[] | null; catalogs: WeakMap<LibraryCatalog, ItemReferenceOption[]> }>();
+
 export function itemReferenceOptions(project: Project, catalog?: LibraryCatalog | null): ItemReferenceOption[] {
+  const cached = readCachedItemReferenceOptions(project, catalog);
+  if (cached) return cached;
   const entities = [
     ...schemaEntities(project, "item"),
     ...schemaEntities(project, "item-reference"),
@@ -40,40 +45,51 @@ export function itemReferenceOptions(project: Project, catalog?: LibraryCatalog 
   const ids = new Set<number>();
   const entityById = new Map<number, ItemEntity>();
   const scenarioItemById = new Map<number, ScenarioItemRecord>();
+  const iconByItemId = new Map<number, number>();
   for (const entity of entities) {
     const id = itemIdFromEntity(entity);
-    if (id == null) continue;
+    if (id == null || !isCatalogItemId(id)) continue;
     ids.add(id);
     if (!entityById.has(id) || entity.type === "item") entityById.set(id, entity);
+    const iconId = itemIconId(entity, undefined);
+    if (iconId != null) iconByItemId.set(id, iconId);
   }
   for (const record of project.scenarioItems ?? []) {
     const itemId = scenarioItemId(record);
+    if (!isCatalogItemId(itemId)) continue;
     ids.add(itemId);
     scenarioItemById.set(itemId, record);
+    if (record.iconId) iconByItemId.set(itemId, record.iconId);
   }
   for (let itemId = 900; itemId < 1000; itemId += 1) ids.add(itemId);
   for (const treasure of project.treasures ?? []) {
-    for (const id of treasure.itemIds) if (id !== 0) ids.add(id);
+    for (const id of treasure.itemIds) if (isCatalogItemId(id)) ids.add(id);
   }
   for (const shop of project.shops ?? []) {
-    for (const id of shop.itemIds) if (id !== 0) ids.add(id);
+    for (const id of shop.itemIds) if (isCatalogItemId(id)) ids.add(id);
   }
   for (const link of project.semanticSchema.links ?? []) {
     if (!link.to.startsWith("item:")) continue;
     const id = trailingNumber(link.to);
-    if (id != null) ids.add(id);
+    if (id != null && isCatalogItemId(id)) ids.add(id);
   }
+  const usageById = itemUsageMap(project);
+  const iconByName = itemIconMapByName(entities, scenarioItemById, names);
 
-  return [...ids]
+  const options = [...ids]
     .map((id) => {
       const entity = entityById.get(id);
       const scenarioItem = scenarioItemById.get(id);
-      const usage = itemUsage(project, id);
+      const usage = usageById.get(id) ?? emptyItemUsage();
       const usageSummary = formatItemUsage(usage);
       const named = names.get(Math.abs(id));
       const label = named ?? (entity ? itemLabel(entity, id) : itemCategoryLabel(id));
       const category = itemReferenceCategory(id);
       const sourceState = scenarioItem ? itemScenarioSourceLabel(id, scenarioItem) : itemSourceLabel(entity, named != null);
+      const iconId =
+        itemIconId(entity, scenarioItem) ??
+        iconByName.get(normalizeItemName(label)) ??
+        nearestCategoryIcon(id, iconByItemId);
       return {
         key: entity?.id ?? `item:${id}`,
         value: id,
@@ -81,10 +97,13 @@ export function itemReferenceOptions(project: Project, catalog?: LibraryCatalog 
         label: `${label} (${id})`,
         detail: usageSummary || scenarioItemDetail(scenarioItem) || entityDetail(entity) || customItemDetail(id),
         summary: scenarioItemDetail(scenarioItem) || entityDetail(entity) || customItemDetail(id),
-        sourceState
+        sourceState,
+        iconId
       };
     })
     .sort((a, b) => a.value - b.value || a.label.localeCompare(b.label));
+  writeCachedItemReferenceOptions(project, catalog, options);
+  return options;
 }
 
 export function itemReferenceDetail(project: Project, itemId: number, catalog?: LibraryCatalog | null) {
@@ -114,7 +133,7 @@ function customItemDetail(itemId: number) {
 }
 
 function itemScenarioSourceLabel(itemId: number, record: ScenarioItemRecord) {
-  if (itemId >= 900 && itemId < 1000) return record.authored ? "Custom scenario item" : "Custom item slot";
+  if (itemId >= 900 && itemId < 1000) return scenarioItemHasData(record) ? "Custom scenario item" : "Custom item slot";
   return "Scenario item";
 }
 
@@ -127,6 +146,59 @@ function itemLabel(entity: ItemEntity, id: number) {
   if (name) return name;
   if (entity.label && entity.label !== `Item ${id}`) return entity.label;
   return itemCategoryLabel(id);
+}
+
+function itemIconId(entity: ItemEntity | undefined, record: ScenarioItemRecord | undefined) {
+  if (record?.iconId) return record.iconId;
+  return entity ? numericSummaryValue(entity, ["iconId"]) : null;
+}
+
+function itemIconMapByName(entities: ItemEntity[], scenarioItems: Map<number, ScenarioItemRecord>, names: Map<number, string>) {
+  const iconByName = new Map<string, number>();
+  for (const entity of entities) {
+    const itemId = itemIdFromEntity(entity);
+    if (itemId == null) continue;
+    const iconId = itemIconId(entity, undefined);
+    if (iconId == null) continue;
+    addItemIconName(iconByName, itemLabel(entity, itemId), iconId);
+    const named = names.get(Math.abs(itemId));
+    if (named) addItemIconName(iconByName, named, iconId);
+  }
+  for (const [itemId, record] of scenarioItems.entries()) {
+    if (!record.iconId) continue;
+    const named = names.get(Math.abs(itemId));
+    if (named) addItemIconName(iconByName, named, record.iconId);
+  }
+  return iconByName;
+}
+
+function addItemIconName(iconByName: Map<string, number>, label: string, iconId: number) {
+  const normalized = normalizeItemName(label);
+  if (!normalized || isGenericItemName(normalized)) return;
+  if (!iconByName.has(normalized)) iconByName.set(normalized, iconId);
+}
+
+function normalizeItemName(value: string) {
+  return value
+    .replace(/\s+\(-?\d+\)$/, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function isGenericItemName(value: string) {
+  return /^(weapon|armor|accessory|magic|supply \/ special|item) -?\d+$/.test(value);
+}
+
+function nearestCategoryIcon(itemId: number, iconByItemId: Map<number, number>) {
+  const category = itemReferenceCategory(itemId);
+  let best: { distance: number; iconId: number } | null = null;
+  for (const [candidateId, iconId] of iconByItemId.entries()) {
+    if (itemReferenceCategory(candidateId) !== category) continue;
+    const distance = Math.abs(Math.abs(candidateId) - Math.abs(itemId));
+    if (!best || distance < best.distance) best = { distance, iconId };
+  }
+  return best?.iconId ?? null;
 }
 
 function entityDetail(entity: ItemEntity | undefined) {
@@ -150,17 +222,55 @@ function itemSourceLabel(entity: ItemEntity | undefined, named: boolean) {
   return "Used by records";
 }
 
-function itemUsage(project: Project, itemId: number): ItemUsage {
-  let treasureSlots = 0;
-  let shopSlots = 0;
+function itemUsageMap(project: Project) {
+  const usageById = new Map<number, ItemUsage>();
+  const usageFor = (itemId: number) => {
+    const existing = usageById.get(itemId);
+    if (existing) return existing;
+    const usage = emptyItemUsage();
+    usageById.set(itemId, usage);
+    return usage;
+  };
   for (const treasure of project.treasures ?? []) {
-    treasureSlots += treasure.itemIds.filter((id) => id === itemId).length;
+    for (const itemId of treasure.itemIds) {
+      if (itemId !== 0) usageFor(itemId).treasureSlots += 1;
+    }
   }
   for (const shop of project.shops ?? []) {
-    shopSlots += shop.itemIds.filter((id) => id === itemId).length;
+    for (const itemId of shop.itemIds) {
+      if (itemId !== 0) usageFor(itemId).shopSlots += 1;
+    }
   }
-  const semanticRefs = (project.semanticSchema.links ?? []).filter((link) => link.to === `item:${itemId}`).length;
-  return { treasureSlots, shopSlots, semanticRefs };
+  for (const link of project.semanticSchema.links ?? []) {
+    if (!link.to.startsWith("item:")) continue;
+    const itemId = trailingNumber(link.to);
+    if (itemId != null) usageFor(itemId).semanticRefs += 1;
+  }
+  return usageById;
+}
+
+function emptyItemUsage(): ItemUsage {
+  return { treasureSlots: 0, shopSlots: 0, semanticRefs: 0 };
+}
+
+function readCachedItemReferenceOptions(project: Project, catalog?: LibraryCatalog | null) {
+  const entry = itemReferenceOptionCache.get(project);
+  if (!entry) return null;
+  if (!catalog) return entry.noCatalog;
+  return entry.catalogs.get(catalog) ?? null;
+}
+
+function writeCachedItemReferenceOptions(project: Project, catalog: LibraryCatalog | null | undefined, options: ItemReferenceOption[]) {
+  let entry = itemReferenceOptionCache.get(project);
+  if (!entry) {
+    entry = { noCatalog: null, catalogs: new WeakMap<LibraryCatalog, ItemReferenceOption[]>() };
+    itemReferenceOptionCache.set(project, entry);
+  }
+  if (catalog) {
+    entry.catalogs.set(catalog, options);
+  } else {
+    entry.noCatalog = options;
+  }
 }
 
 function formatItemUsage(usage: ItemUsage) {
@@ -214,6 +324,10 @@ export function itemReferenceCategory(itemId: number): ItemReferenceCategory {
   return "unknown";
 }
 
+function isCatalogItemId(itemId: number) {
+  return Number.isInteger(itemId) && itemId > 0 && itemId < 1000;
+}
+
 function itemCategory(itemId: number) {
   if (itemId > 0 && itemId < 200) return "Weapon";
   if (itemId >= 200 && itemId < 400) return "Armor";
@@ -238,6 +352,53 @@ function itemEntityFacts(entity: ItemEntity) {
   if (weight) parts.push(`weight ${weight}`);
   if (iconId) parts.push(`icon ${iconId}`);
   return parts.join(", ");
+}
+
+function scenarioItemHasData(record: ScenarioItemRecord) {
+  const canonicalItemId = 800 + record.id;
+  const fields = [
+    record.iconId,
+    record.type,
+    record.st,
+    record.blunt,
+    record.hands,
+    record.lu,
+    record.movement,
+    record.ac,
+    record.magicResistance,
+    record.damage,
+    record.spellPoints,
+    record.sound,
+    record.weight,
+    record.cost,
+    record.charge,
+    record.cursedItemId,
+    record.magical,
+    record.itemCat0,
+    record.itemCat1,
+    record.raceRestrictions,
+    record.casteRestrictions,
+    record.specificRace,
+    record.specificCaste,
+    record.raceClassOnly,
+    record.casteClassOnly,
+    record.vSmall,
+    record.vLarge,
+    record.heat,
+    record.cold,
+    record.electric,
+    record.vsUndead,
+    record.vsDemonDevil,
+    record.vsEvil,
+    record.special1,
+    record.special2,
+    record.special3,
+    record.special4,
+    record.special5,
+    record.weightPerCharge,
+    record.dropOnEmpty
+  ];
+  return record.itemId !== canonicalItemId || fields.some((value) => value !== 0);
 }
 
 function numericSummaryValue(entity: ItemEntity, keys: string[]) {

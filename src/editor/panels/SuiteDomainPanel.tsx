@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ENTITY_TYPE_LABELS } from "../constants";
 import { loadBrowserBundledLibraryAssetPreview } from "../browser/library";
+import { browserReferenceIconUrl } from "../browser/atlasPaths";
 import { isDraftEntity, LibraryDraftSpec } from "../libraryDrafts";
 import { EditorTab, LibraryAsset, LibraryCatalog, LibraryEntity, ManagedAssetKind, Project, ProjectCommand, RealmzTargetRecordKind, ScenarioItemRecord, SemanticEntity, SelectedEntity } from "../types";
 import { selectEntityFromId } from "../utils";
@@ -127,6 +128,8 @@ type DomainEditor = {
   createType?: string;
 };
 
+type EconomySection = "treasure" | "items" | "shops";
+
 export function SuiteDomainPanel({
   tab,
   activeEditor = "domain",
@@ -149,8 +152,20 @@ export function SuiteDomainPanel({
   onUpdateDraft?: (entityId: string, changes: { label?: string; notes?: string }) => void;
 }) {
   const config = DOMAIN_CONFIG[tab];
+  const economyActive = tab === "economy";
+  const [economySection, setEconomySection] = useState<EconomySection>(() =>
+    economySectionFromEditor(activeEditor) ?? readStoredEconomySection()
+  );
+  useEffect(() => {
+    if (!economyActive) return;
+    const next = economySectionFromEditor(activeEditor);
+    if (next) setEconomySection(next);
+  }, [activeEditor, economyActive]);
+  useEffect(() => {
+    if (economyActive) writeStoredEconomySection(economySection);
+  }, [economyActive, economySection]);
   const focusedEditor = config.editors.find((editor) => editor.id === activeEditor) ?? null;
-  const headerEditor = tab === "encounters" ? null : focusedEditor;
+  const headerEditor = tab === "encounters" || economyActive ? null : focusedEditor;
   const visibleEditors = focusedEditor ? [focusedEditor] : config.editors;
   const projectEntities = project?.semanticSchema.entities ?? [];
   const libraryEntities = catalog?.entities ?? [];
@@ -166,8 +181,9 @@ export function SuiteDomainPanel({
     ...(project?.semanticSchema.records.map((record) => ({ id: record.id, label: record.label, type: record.type, editState: record.editState })) ?? []),
     ...(catalog?.records.map((record) => ({ id: record.id, label: record.label, type: record.type, editState: record.editState })) ?? [])
   ] : [];
-  const targetRecordTypes = project ? targetRecordTypesForEditor(tab, activeEditor) : [];
-  const focusedTargetEditor = targetRecordTypes.length > 0 && activeEditor !== "domain" && tab !== "encounters";
+  const economyTargetRecordTypes = economyActive ? economyTargetRecordTypesForSection(economySection) : null;
+  const targetRecordTypes = project ? economyTargetRecordTypes ?? targetRecordTypesForEditor(tab, activeEditor) : [];
+  const focusedTargetEditor = targetRecordTypes.length > 0 && activeEditor !== "domain" && tab !== "encounters" && !economyActive;
   const selectedTargetRecordType = selectedTargetRecordTypeFromEntity(selectedEntity?.id ?? "", targetRecordTypes);
   const [overviewTargetRecordType, setOverviewTargetRecordType] = useState<RealmzTargetRecordKind | null>(() => readStoredOverviewTargetRecordType(tab));
   useEffect(() => {
@@ -191,9 +207,9 @@ export function SuiteDomainPanel({
     focusedTargetEditor ? targetRecordTypes :
     overviewTargetRecordType && targetRecordTypes.includes(overviewTargetRecordType) ? [overviewTargetRecordType] :
     targetRecordTypes.slice(0, 1);
-  const itemWorkbenchActive = tab === "economy" && activeEditor === "items";
-  const suppressDetailPanel = tab === "encounters";
-  const showTargetSwitcher = targetRecordTypes.length > 1 && (tab === "encounters" || !focusedTargetEditor);
+  const itemWorkbenchActive = economyActive && economySection === "items";
+  const suppressDetailPanel = tab === "encounters" || economyActive;
+  const showTargetSwitcher = targetRecordTypes.length > 1 && (tab === "encounters" || (!economyActive && !focusedTargetEditor));
   const showOverviewCards = tab !== "records" && tab !== "linter" && !focusedTargetEditor && !itemWorkbenchActive && targetRecordTypes.length === 0;
   return (
     <section className={`domain-workbench${suppressDetailPanel ? " domain-workbench-no-detail" : ""}`}>
@@ -206,6 +222,9 @@ export function SuiteDomainPanel({
       </header>
       <div className={`domain-main-layout${suppressDetailPanel ? " no-detail" : ""}`}>
         <div className="domain-main-column">
+      {economyActive && project && (
+        <EconomySectionSwitcher project={project} selectedSection={economySection} onSelectSection={setEconomySection} />
+      )}
       {itemWorkbenchActive && project && (
         <ItemCatalogWorkbench
           project={project}
@@ -353,6 +372,43 @@ function DomainTargetSwitcher({
   );
 }
 
+function EconomySectionSwitcher({
+  project,
+  selectedSection,
+  onSelectSection
+}: {
+  project: Project;
+  selectedSection: EconomySection;
+  onSelectSection: (section: EconomySection) => void;
+}) {
+  const itemCount = useMemo(() => economyItemReferenceCount(project), [project]);
+  const sections: Array<{ id: EconomySection; label: string; count: number }> = [
+    { id: "treasure", label: "Treasure", count: project.treasures.length },
+    { id: "items", label: "Items", count: itemCount },
+    { id: "shops", label: "Shops", count: project.shops.length }
+  ];
+  return (
+    <div className="domain-target-switcher economy-section-switcher" role="tablist" aria-label="Economy sections">
+      {sections.map((section) => {
+        const selected = section.id === selectedSection;
+        return (
+          <button
+            key={section.id}
+            type="button"
+            role="tab"
+            aria-selected={selected}
+            className={selected ? "active" : ""}
+            onClick={() => onSelectSection(section.id)}
+          >
+            <span>{section.label}</span>
+            <b>{section.count.toLocaleString()}</b>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function ItemCatalogWorkbench({
   project,
   catalog,
@@ -378,6 +434,7 @@ function ItemCatalogWorkbench({
       return [option.label, option.detail, option.summary, String(option.value)].some((part) => part.toLowerCase().includes(text));
     });
   }, [category, options, query]);
+  const visibleOptions = useMemo(() => filteredOptions.slice(0, 240), [filteredOptions]);
   const [localSelectedId, setLocalSelectedId] = useState<number | null>(null);
   const selectedId =
     selectedFromEntity ??
@@ -427,20 +484,26 @@ function ItemCatalogWorkbench({
             aria-label="Search items"
           />
           <ScrollArea className="item-browser-list" aria-label="Item catalog">
-            {filteredOptions.map((option) => (
+            {visibleOptions.map((option) => (
               <button
                 key={`${option.value}:${option.key}`}
                 type="button"
                 className={option.value === selectedOption?.value ? "selected" : ""}
                 onClick={() => selectItem(option)}
               >
-                <b>{option.value}</b>
+                <ItemOptionIcon option={option} project={project} catalog={catalog} />
                 <span>
                   <strong>{option.label.replace(/\s+\(-?\d+\)$/, "")}</strong>
                   <small>{option.detail}</small>
                 </span>
+                <b>{option.value}</b>
               </button>
             ))}
+            {filteredOptions.length > visibleOptions.length && (
+              <p className="domain-list-limit">
+                {filteredOptions.length - visibleOptions.length} more item reference{filteredOptions.length - visibleOptions.length === 1 ? "" : "s"}; search or choose a narrower category.
+              </p>
+            )}
             {filteredOptions.length === 0 && <p>No items match this category/search.</p>}
           </ScrollArea>
         </aside>
@@ -454,6 +517,47 @@ function ItemCatalogWorkbench({
       </div>
     </article>
   );
+}
+
+function ItemOptionIcon({
+  option,
+  project,
+  catalog
+}: {
+  option: ItemReferenceOption;
+  project: Project;
+  catalog?: LibraryCatalog | null;
+}) {
+  const iconUrl = itemOptionIconUrl(option.iconId, project, catalog);
+  return (
+    <span className="item-option-icon" title={option.iconId ? `cicn ${option.iconId}` : `${itemCategoryBadge(option.category)} item`}>
+      {iconUrl ? <img src={iconUrl} alt="" /> : <i>{itemCategoryBadge(option.category)}</i>}
+    </span>
+  );
+}
+
+function itemOptionIconUrl(iconId: number | null, project: Project, catalog?: LibraryCatalog | null) {
+  if (!iconId) return null;
+  const absId = Math.abs(iconId);
+  const projectAsset = project.assetCatalog.icons?.find((asset) => Math.abs(asset.resourceId) === absId && asset.previewPath);
+  if (projectAsset?.previewPath) return projectAsset.previewPath;
+  const libraryAsset = catalog?.assets.find((asset) =>
+    (asset.type === "icon" || asset.type.includes("icon") || asset.resourceType === "cicn") &&
+    asset.resourceId != null &&
+    Math.abs(asset.resourceId) === absId &&
+    asset.previewPath
+  );
+  if (libraryAsset?.previewPath) return libraryAsset.previewPath;
+  return browserReferenceIconUrl(absId);
+}
+
+function itemCategoryBadge(category: ItemReferenceCategory) {
+  if (category === "weapon") return "W";
+  if (category === "armor") return "AR";
+  if (category === "accessory") return "AC";
+  if (category === "magic") return "M";
+  if (category === "supply") return "SP";
+  return "IT";
 }
 
 function ItemDetailPanel({
@@ -482,6 +586,7 @@ function ItemDetailPanel({
   const usages = itemUsageLinks(project, option.value);
   const unique = numberField(summary, "cost") != null && numberField(summary, "cost")! < 0;
   const customEditable = customRecordId != null;
+  const customSlotOccupied = Boolean(scenarioItem && scenarioItemSlotInUse(scenarioItem));
   const nextCustomId = nextCustomItemId(project);
   return (
     <section className="item-detail-panel">
@@ -496,7 +601,7 @@ function ItemDetailPanel({
       <div className="item-action-strip">
         {customEditable ? (
           <>
-            <span>Custom items are stored in this scenario and exported with it.</span>
+            <span>{customSlotOccupied ? "Custom items are stored in this scenario and exported with it." : "This custom item slot is empty and available for a scenario-specific item."}</span>
             <button
               type="button"
               className="btn btn-primary btn-xs"
@@ -830,11 +935,63 @@ function customItemRecordId(itemId: number) {
 }
 
 function nextCustomItemId(project: Project) {
-  const used = new Set((project.scenarioItems ?? []).map((record) => scenarioItemId(record)));
+  const used = new Set(
+    (project.scenarioItems ?? [])
+      .filter((record) => customItemRecordId(scenarioItemId(record)) !== null && scenarioItemSlotInUse(record))
+      .map((record) => scenarioItemId(record))
+  );
   for (let itemId = 900; itemId < 1000; itemId += 1) {
     if (!used.has(itemId)) return itemId;
   }
   return null;
+}
+
+function scenarioItemSlotInUse(record: ScenarioItemRecord) {
+  const canonicalItemId = 800 + record.id;
+  const numericFields: Array<keyof ScenarioItemRecord> = [
+    "iconId",
+    "type",
+    "st",
+    "blunt",
+    "hands",
+    "lu",
+    "movement",
+    "ac",
+    "magicResistance",
+    "damage",
+    "spellPoints",
+    "sound",
+    "weight",
+    "cost",
+    "charge",
+    "cursedItemId",
+    "magical",
+    "itemCat0",
+    "itemCat1",
+    "raceRestrictions",
+    "casteRestrictions",
+    "specificRace",
+    "specificCaste",
+    "raceClassOnly",
+    "casteClassOnly",
+    "vSmall",
+    "vLarge",
+    "heat",
+    "cold",
+    "electric",
+    "vsUndead",
+    "vsDemonDevil",
+    "vsEvil",
+    "special1",
+    "special2",
+    "special3",
+    "special4",
+    "special5",
+    "weightPerCharge",
+    "dropOnEmpty"
+  ];
+  const hasItemFields = numericFields.some((field) => Number(record[field] ?? 0) !== 0);
+  return record.itemId !== canonicalItemId || hasItemFields;
 }
 
 function scenarioItemSummary(record: ScenarioItemRecord): Record<string, unknown> {
@@ -1116,6 +1273,19 @@ function targetRecordTypesForEditor(tab: EditorTab, activeEditor: string): Realm
   return [];
 }
 
+function economySectionFromEditor(activeEditor: string): EconomySection | null {
+  if (activeEditor === "treasure") return "treasure";
+  if (activeEditor === "items") return "items";
+  if (activeEditor === "shops") return "shops";
+  return null;
+}
+
+function economyTargetRecordTypesForSection(section: EconomySection): RealmzTargetRecordKind[] {
+  if (section === "treasure") return ["treasure"];
+  if (section === "shops") return ["shop"];
+  return [];
+}
+
 function targetRecordTypeFromEditor(tab: EditorTab, activeEditor: string): RealmzTargetRecordKind | null {
   if (tab !== "encounters") return null;
   if (activeEditor === "simple") return "simpleEncounter";
@@ -1266,6 +1436,63 @@ function writeStoredOverviewTargetRecordType(tab: EditorTab, recordType: RealmzT
   } catch {
     // Local storage can be unavailable in hardened browser contexts.
   }
+}
+
+function readStoredEconomySection(): EconomySection {
+  try {
+    const value = window.localStorage.getItem("domain.economy.section");
+    if (value === "treasure" || value === "items" || value === "shops") return value;
+  } catch {
+    // Local storage can be unavailable in hardened browser contexts.
+  }
+  return "treasure";
+}
+
+function writeStoredEconomySection(section: EconomySection) {
+  try {
+    window.localStorage.setItem("domain.economy.section", section);
+  } catch {
+    // Local storage can be unavailable in hardened browser contexts.
+  }
+}
+
+function numericSummaryValue(summary: Record<string, unknown>, keys: string[]) {
+  for (const key of keys) {
+    const value = summary[key];
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string" && /^-?\d+$/.test(value.trim())) return Number(value);
+  }
+  return null;
+}
+
+function economyItemReferenceCount(project: Project) {
+  const ids = new Set<number>();
+  for (const entity of project.semanticSchema.entities) {
+    if (entity.type !== "item" && entity.type !== "item-reference") continue;
+    const id = itemIdFromEntityId(entity.id) ?? numericSummaryValue(entity.summary, ["itemId", "id", "recordIndex"]);
+    if (id != null && isCatalogItemId(id)) ids.add(id);
+  }
+  for (const record of project.scenarioItems ?? []) {
+    const id = record.itemId || 800 + record.id;
+    if (isCatalogItemId(id)) ids.add(id);
+  }
+  for (let id = 900; id < 1000; id += 1) ids.add(id);
+  for (const treasure of project.treasures ?? []) {
+    for (const id of treasure.itemIds) if (isCatalogItemId(id)) ids.add(id);
+  }
+  for (const shop of project.shops ?? []) {
+    for (const id of shop.itemIds) if (isCatalogItemId(id)) ids.add(id);
+  }
+  for (const link of project.semanticSchema.links ?? []) {
+    if (!link.to.startsWith("item:")) continue;
+    const id = trailingNumber(link.to);
+    if (id != null && isCatalogItemId(id)) ids.add(id);
+  }
+  return ids.size;
+}
+
+function isCatalogItemId(itemId: number) {
+  return Number.isInteger(itemId) && itemId > 0 && itemId < 1000;
 }
 
 function DomainDetailPanel({

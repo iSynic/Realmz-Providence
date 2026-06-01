@@ -7,6 +7,7 @@ import { actionSlotEntitiesForTriggerRecord, extraActionPointClassification } fr
 import { EdcdRowEditor } from "../components/EdcdRowEditor";
 import { TargetPicker, resolveSignedMessageTarget, signedTargetBehaviorLabel, signedTargetValueForSelection, targetOptionForOpcodeValue, targetOptionsForOpcode, type ScriptTargetOption } from "../components/RealmzTargetPicker";
 import { inspectBrowserBundledLibraryAssetPreview } from "../browser/library";
+import { browserReferenceIconUrl } from "../browser/atlasPaths";
 import { categoryColor } from "../components/TileSprite";
 import { CollapsibleSection, EmptyState, FieldRow, FloatingWorkbenchPanel, PanelSection, ScrollArea } from "../ui";
 import { ACTION_OPTIONS, actionOptionFor, isDispatcherNoopOpcode, normalizeStepOpcode } from "../realmzActions";
@@ -17,7 +18,7 @@ import { ScriptDiagnostic, validateActionDraft, validateScriptTrigger } from "..
 import { actionPointCapacity, isReusableDoorPlaceholder, nextActionPointRecordIndex } from "../actionPointCapacity";
 import { realmzScriptStepDescriptorFor } from "../realmzScriptDescriptors";
 import { validateRealmzTargetRecord } from "../targetValidation";
-import { ITEM_REFERENCE_CATEGORIES, itemReferenceDetail, itemReferenceOptions, type ItemReferenceCategory } from "../itemReferences";
+import { ITEM_REFERENCE_CATEGORIES, itemReferenceDetail, itemReferenceOptions, type ItemReferenceCategory, type ItemReferenceOption } from "../itemReferences";
 import { monsterReferenceDetail, monsterReferenceOptions } from "../monsterReferences";
 import { CONDITION_LABELS, RESISTANCE_TYPES } from "../rulesCatalog";
 import {
@@ -2917,113 +2918,162 @@ function ShopStockEditor({
   onReplaceStock: (itemIds: number[], quantities: number[]) => void;
   onClearSlot: (index: number) => void;
 }) {
-  const [page, setPage] = useState(0);
-  const [filledOnly, setFilledOnly] = useState(false);
-  const [jumpSlot, setJumpSlot] = useState("");
   const [catalogCategory, setCatalogCategory] = useState<ItemReferenceCategory | "all">("weapon");
   const [catalogQuery, setCatalogQuery] = useState("");
   const [changeAmount, setChangeAmount] = useState(1);
   const itemOptions = useMemo(() => itemReferenceOptions(project, catalog), [project, catalog]);
+  const itemOptionsByValue = useMemo(() => new Map(itemOptions.map((option) => [option.value, option])), [itemOptions]);
   const catalogItems = useMemo(() => filterItemTargetOptionsByCategory(itemOptions, catalogQuery, catalogCategory).slice(0, 72), [itemOptions, catalogQuery, catalogCategory]);
   const filledSlots = useMemo(() => {
-    const slots: number[] = [];
+    const slots: Array<{ slot: number; itemId: number; quantity: number; option: ItemReferenceOption | null }> = [];
     for (let index = 0; index < 1000; index += 1) {
-      if ((itemIds[index] ?? 0) !== 0 || (quantities[index] ?? 0) !== 0) slots.push(index);
+      const itemId = itemIds[index] ?? 0;
+      const quantity = quantities[index] ?? 0;
+      if (itemId !== 0 || quantity !== 0) slots.push({ slot: index, itemId, quantity, option: itemOptionsByValue.get(itemId) ?? null });
     }
     return slots;
-  }, [itemIds, quantities]);
-  const allSlots = useMemo(() => Array.from({ length: 1000 }, (_, index) => index), []);
-  const sourceSlots = filledOnly ? filledSlots : allSlots;
-  const pageSize = 20;
-  const pageCount = Math.max(1, Math.ceil(sourceSlots.length / pageSize));
-  const safePage = Math.min(page, pageCount - 1);
-  const visibleSlots = sourceSlots.slice(safePage * pageSize, safePage * pageSize + pageSize);
-  useEffect(() => {
-    if (page !== safePage) setPage(safePage);
-  }, [page, safePage]);
-  const jumpToSlot = () => {
-    const slot = Number(jumpSlot);
-    if (!Number.isInteger(slot) || slot < 0 || slot > 999) return;
-    setFilledOnly(false);
-    setPage(Math.floor(slot / pageSize));
-  };
+  }, [itemIds, itemOptionsByValue, quantities]);
   const adjustItem = (itemId: number) => {
     const next = adjustShopStock(itemIds, quantities, itemId, changeAmount);
     onReplaceStock(next.itemIds, next.quantities);
   };
+  const filledCount = filledSlots.length;
   return (
-    <CollapsibleSection title="Shop Stock" eyebrow="1000 slots" count={`${filledSlots.length} filled`} density="compact" className="script-shop-stock-section" defaultOpen>
-      <div className="script-shop-catalog-editor">
-        <header>
-          <div>
-            <strong>Item Catalog</strong>
-            <small>Click an item to change this shop's quantity by the current amount.</small>
-          </div>
-          <label>
-            <span>Change</span>
-            <input type="number" value={changeAmount} onChange={(event) => setChangeAmount(Number(event.currentTarget.value) || 0)} />
-            <button type="button" className="btn btn-secondary btn-xs" onClick={() => setChangeAmount((value) => (value === 0 ? -1 : -value))}>
-              +/-
-            </button>
-          </label>
-        </header>
-        <div className="script-item-category-tabs">
-          {ITEM_REFERENCE_CATEGORIES.map((entry) => (
-            <button key={entry.id} type="button" className={catalogCategory === entry.id ? "active" : ""} onClick={() => setCatalogCategory(entry.id)}>
-              <strong>{entry.label}</strong>
-              {entry.range && <span>{entry.range}</span>}
-            </button>
-          ))}
-        </div>
-        <input className="script-item-catalog-search" value={catalogQuery} onChange={(event) => setCatalogQuery(event.currentTarget.value)} placeholder="Search shop items..." />
-        <div className="script-shop-catalog-list">
-          {catalogItems.map((option) => {
-            const quantity = shopQuantityForItem(itemIds, quantities, option.value);
-            return (
-              <button key={option.key} type="button" onClick={() => adjustItem(option.value)}>
-                <b>{quantity}</b>
-                <span>
-                  <strong>{option.label}</strong>
-                  <small>{[option.detail, option.sourceState].filter(Boolean).join(" | ")}</small>
-                </span>
-                <i>{option.value}</i>
+    <CollapsibleSection title="Shop Inventory" eyebrow="Data SD stock" count={`${filledCount} filled`} density="compact" className="script-shop-stock-section" defaultOpen>
+      <div className="script-shop-workbench">
+        <section className="script-shop-catalog-editor" aria-label="Add shop stock">
+          <header>
+            <div>
+              <strong>Add Stock</strong>
+              <small>Pick a category like Divinity, then click an item to add or subtract the current quantity.</small>
+            </div>
+            <label>
+              <span>Qty Change</span>
+              <input type="number" value={changeAmount} onChange={(event) => setChangeAmount(clampShopQuantityDelta(Number(event.currentTarget.value) || 0))} />
+              <button type="button" className="btn btn-secondary btn-xs" onClick={() => setChangeAmount((value) => (value === 0 ? -1 : -value))}>
+                +/-
               </button>
-            );
-          })}
-          {catalogItems.length === 0 && <small>No items match this category/search.</small>}
-        </div>
-      </div>
-      <div className="script-shop-stock-toolbar">
-        <button type="button" className="btn btn-secondary btn-xs" disabled={safePage <= 0} onClick={() => setPage(Math.max(0, safePage - 1))}>Prev</button>
-        <span>Page {safePage + 1} / {pageCount}</span>
-        <button type="button" className="btn btn-secondary btn-xs" disabled={safePage >= pageCount - 1} onClick={() => setPage(Math.min(pageCount - 1, safePage + 1))}>Next</button>
-        <label>
-          <input type="checkbox" checked={filledOnly} onChange={(event) => {
-            setFilledOnly(event.currentTarget.checked);
-            setPage(0);
-          }} />
-          Filled
-        </label>
-        <label>
-          <span>Go to</span>
-          <input type="number" min={0} max={999} value={jumpSlot} onChange={(event) => setJumpSlot(event.currentTarget.value)} onBlur={jumpToSlot} onKeyDown={(event) => {
-            if (event.key === "Enter") jumpToSlot();
-          }} />
-        </label>
-      </div>
-      <div className="script-shop-stock-grid">
-        {visibleSlots.map((index) => (
-          <div key={index} className="script-shop-stock-row">
-            <strong>{index}</strong>
-            <ItemIdField project={project} catalog={catalog} label="Item" value={itemIds[index] ?? 0} onCommit={(value) => onCommitItem(index, value)} compact />
-            <NumberField label="Qty" value={quantities[index] ?? 0} onCommit={(value) => onCommitQuantity(index, value)} compact />
-            <button type="button" className="btn btn-secondary btn-xs" onClick={() => onClearSlot(index)}>Clear</button>
+            </label>
+          </header>
+          <div className="script-item-category-tabs">
+            {ITEM_REFERENCE_CATEGORIES.map((entry) => (
+              <button key={entry.id} type="button" className={catalogCategory === entry.id ? "active" : ""} onClick={() => setCatalogCategory(entry.id)}>
+                <strong>{entry.label}</strong>
+                {entry.range && <span>{entry.range}</span>}
+              </button>
+            ))}
           </div>
-        ))}
-        {visibleSlots.length === 0 && <p className="script-shop-stock-empty">No filled shop slots.</p>}
+          <input className="script-item-catalog-search" value={catalogQuery} onChange={(event) => setCatalogQuery(event.currentTarget.value)} placeholder="Search item name, ID, source, or use..." />
+          <div className="script-shop-catalog-list">
+            {catalogItems.map((option) => {
+              const quantity = shopQuantityForItem(itemIds, quantities, option.value);
+              return (
+                <button key={option.key} type="button" onClick={() => adjustItem(option.value)}>
+                  <ShopItemIcon option={option} project={project} catalog={catalog} />
+                  <span>
+                    <strong>{itemOptionDisplayName(option)}</strong>
+                    <small>{[option.detail, option.sourceState].filter(Boolean).join(" | ")}</small>
+                  </span>
+                  <b>{quantity}</b>
+                </button>
+              );
+            })}
+            {catalogItems.length === 0 && <small>No items match this category/search.</small>}
+          </div>
+        </section>
+        <section className="script-shop-inventory-panel" aria-label="Stocked shop items">
+          <header>
+            <div>
+              <strong>Stocked Items</strong>
+              <small>{filledCount ? "The rows Realmz copies into a new game shop inventory." : "No stock yet. Add items from the catalog."}</small>
+            </div>
+            <span>{filledCount} / 1000 slots</span>
+          </header>
+          <div className="script-shop-inventory-list">
+            {filledSlots.map((row) => (
+              <div key={row.slot} className="script-shop-stock-row">
+                <ShopItemIcon option={row.option} project={project} catalog={catalog} itemId={row.itemId} />
+                <div className="script-shop-stock-item">
+                  <strong>{row.option ? itemOptionDisplayName(row.option) : `Raw item ${row.itemId}`}</strong>
+                  <small>{row.option ? [row.option.detail, row.option.sourceState].filter(Boolean).join(" | ") : itemReferenceDetail(project, row.itemId, catalog)}</small>
+                </div>
+                <label className="script-shop-stock-id">
+                  <span>Item ID</span>
+                  <input type="number" value={row.itemId} onChange={(event) => onCommitItem(row.slot, Number(event.currentTarget.value) || 0)} />
+                </label>
+                <label className="script-shop-stock-qty">
+                  <span>Qty</span>
+                  <input type="number" min={0} max={255} value={row.quantity} onChange={(event) => onCommitQuantity(row.slot, clampShopQuantity(Number(event.currentTarget.value) || 0))} />
+                </label>
+                <span className="script-shop-stock-slot">Slot {row.slot}</span>
+                <button type="button" className="btn btn-secondary btn-xs" onClick={() => onClearSlot(row.slot)}>Clear</button>
+              </div>
+            ))}
+            {filledSlots.length === 0 && <p className="script-shop-stock-empty">No stocked items yet. Search the catalog and add a quantity to start this shop.</p>}
+          </div>
+        </section>
       </div>
     </CollapsibleSection>
   );
+}
+
+function ShopItemIcon({
+  option,
+  project,
+  catalog,
+  itemId
+}: {
+  option: ItemReferenceOption | null;
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  itemId?: number;
+}) {
+  const iconId = option?.iconId ?? null;
+  const iconUrl = shopItemIconUrl(iconId, project, catalog);
+  const fallback = option ? itemCategoryBadge(option.category) : itemId ? String(Math.abs(itemId) % 100) : "?";
+  return (
+    <span className="script-shop-item-icon" title={iconId ? `cicn ${iconId}` : itemId ? `Item ${itemId}` : "No item icon"}>
+      {iconUrl ? <img src={iconUrl} alt="" /> : <i>{fallback}</i>}
+    </span>
+  );
+}
+
+function itemOptionDisplayName(option: ItemReferenceOption) {
+  return option.label.replace(/\s+\(-?\d+\)$/, "");
+}
+
+function itemCategoryBadge(category: ItemReferenceCategory) {
+  if (category === "weapon") return "W";
+  if (category === "armor") return "AR";
+  if (category === "accessory") return "AC";
+  if (category === "magic") return "M";
+  if (category === "supply") return "SP";
+  return "IT";
+}
+
+function shopItemIconUrl(iconId: number | null, project: Project, catalog?: LibraryCatalog | null) {
+  if (!iconId) return null;
+  const absId = Math.abs(iconId);
+  const projectAsset = project.assetCatalog.icons?.find((asset) => Math.abs(asset.resourceId) === absId && asset.previewPath);
+  if (projectAsset?.previewPath) return projectAsset.previewPath;
+  const libraryAsset = catalog?.assets.find((asset) =>
+    (asset.type === "icon" || asset.type.includes("icon") || asset.resourceType === "cicn") &&
+    asset.resourceId != null &&
+    Math.abs(asset.resourceId) === absId &&
+    asset.previewPath
+  );
+  if (libraryAsset?.previewPath) return libraryAsset.previewPath;
+  return browserReferenceIconUrl(absId);
+}
+
+function clampShopQuantity(value: number) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(255, Math.trunc(value)));
+}
+
+function clampShopQuantityDelta(value: number) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(-255, Math.min(255, Math.trunc(value)));
 }
 
 function ItemIdField({ project, catalog, label, value, onCommit, compact = false }: { project: Project; catalog?: LibraryCatalog | null; label: string; value: number; onCommit: (value: number) => void; compact?: boolean }) {
