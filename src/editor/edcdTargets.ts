@@ -189,7 +189,7 @@ export function edcdTargetOptions(project: Project, targetKind: EdcdTargetKind, 
 
 export function missingEdcdTargetReferences(project: Project, shape: string, fieldNames: string[], values: number[], opcode?: number, preservedIndexes?: Iterable<number>, catalog?: LibraryCatalog | null): EdcdTargetReferenceIssue[] {
   if (shape.toLowerCase() === "choice" && Math.abs(opcode ?? 0) === 3) {
-    return missingChoiceDialogReferences(project, fieldNames, values, preservedIndexes);
+    return missingChoiceDialogReferences(project, fieldNames, values, preservedIndexes, catalog);
   }
   const issues: EdcdTargetReferenceIssue[] = [];
   const preserved = new Set(preservedIndexes ?? []);
@@ -201,7 +201,7 @@ export function missingEdcdTargetReferences(project: Project, shape: string, fie
     const value = normalizedEdcdTargetValueForValidation(targetKind, rawValue, field, opcode);
     if (!Number.isFinite(value) || value < 0) continue;
     if (value === 0 && !["macro", "simpleEncounter", "complexEncounter"].includes(targetKind)) continue;
-    if (edcdTargetOptions(project, targetKind, catalog).some((option) => option.value === value)) continue;
+    if (edcdTargetExists(project, targetKind, value, catalog)) continue;
     issues.push({
       index,
       field,
@@ -211,6 +211,22 @@ export function missingEdcdTargetReferences(project: Project, shape: string, fie
     });
   }
   return issues;
+}
+
+function edcdTargetExists(project: Project, targetKind: EdcdTargetKind, value: number, catalog?: LibraryCatalog | null) {
+  if (targetKind === "optionLabel") return (project.optionLabels ?? []).some((record) => record.id === value);
+  if (targetKind === "macro") return project.triggers.some((trigger) => trigger.source === "Data ED3" && trigger.recordIndex === value && isCallableMacro(project, trigger));
+  if (targetKind === "questLabel") return (project.questLabels ?? []).some((record) => record.id === value);
+  if (targetKind === "simpleEncounter") return (project.simpleEncounters ?? []).some((record) => record.id === value);
+  if (targetKind === "complexEncounter") return (project.complexEncounters ?? []).some((record) => record.id === value);
+  if (targetKind === "shop") return (project.shops ?? []).some((record) => record.id === value);
+  if (targetKind === "message") return (project.messages ?? []).some((record) => record.id === value);
+  if (targetKind === "sound") {
+    return (project.assets ?? []).some((asset) => asset.kind === "sound" && asset.resourceId === value) ||
+      (catalog?.assets ?? []).some((asset) => asset.type === "sound" && asset.resourceId === value);
+  }
+  if (targetKind === "monster") return (project.monsters ?? []).some((record) => record.id === value);
+  return (project.battles ?? []).some((record) => record.id === value);
 }
 
 function normalizedEdcdTargetValueForValidation(targetKind: EdcdTargetKind, rawValue: number, field: string, opcode?: number) {
@@ -241,7 +257,7 @@ export function edcdTargetLabel(targetKind: EdcdTargetKind) {
   return labels[targetKind];
 }
 
-function missingChoiceDialogReferences(project: Project, fieldNames: string[], values: number[], preservedIndexes?: Iterable<number>): EdcdTargetReferenceIssue[] {
+function missingChoiceDialogReferences(project: Project, fieldNames: string[], values: number[], preservedIndexes?: Iterable<number>, catalog?: LibraryCatalog | null): EdcdTargetReferenceIssue[] {
   const issues: EdcdTargetReferenceIssue[] = [];
   const preserved = new Set(preservedIndexes ?? []);
   const addIssue = (index: number, field: string, targetKind: EdcdTargetKind, value: number) => {
@@ -256,7 +272,7 @@ function missingChoiceDialogReferences(project: Project, fieldNames: string[], v
 
   const branchKind = choiceBranchTargetKind(values[1] ?? 0);
   const branchTarget = values[2] ?? 0;
-  if (!preserved.has(2) && branchKind && branchTarget > 0 && !edcdTargetOptions(project, branchKind).some((option) => option.value === branchTarget)) {
+  if (!preserved.has(2) && branchKind && branchTarget > 0 && !edcdTargetExists(project, branchKind, branchTarget, catalog)) {
     addIssue(2, fieldNames[2] ?? "branchTarget", branchKind, branchTarget);
   }
 

@@ -64,6 +64,18 @@ const MONSTER_TRAIT_LABELS = [
 
 const MONSTER_MONEY_LABELS = ["Gold", "Gems", "Jewelry"];
 
+type SelectedEdcdUsage = {
+  rowId?: number;
+  shape?: string;
+  opcode?: number;
+  fields?: { name?: string; value?: number }[];
+  secondaryRowId?: number;
+  secondaryShape?: string;
+  secondaryFields?: { name?: string; value?: number }[];
+  diagnostics?: string[];
+  summary?: string;
+};
+
 const SCRIPT_EDITOR_TABS = [
   { id: "action-points", label: "Action Points", title: "Create and edit map Action Points." },
   { id: "macros", label: "Reusable Actions", title: "Reusable actions and branch targets." },
@@ -238,7 +250,7 @@ function ScriptAuthoringPanel({
   const [scriptQuery, setScriptQuery] = useState("");
   const [inventoryFilter, setInventoryFilter] = usePersistentValue<ScriptInventoryFilter>("scripts.inventory.filter", "current-map");
   const [detailSurface, setDetailSurface] = usePersistentValue<ScriptDetailSurface>("scripts.detailSurface", "docked");
-  const [targetDrawerOpen, setTargetDrawerOpen] = usePersistentBoolean("scripts.targetDrawer.open", true);
+  const [targetDrawerOpen, setTargetDrawerOpen] = usePersistentBoolean("scripts.targetDrawer.v2.open", false);
   const [newActionPoint, setNewActionPoint] = useState({ mapId: projectMaps[0]?.id ?? "", x: 1, y: 1 });
   const [warningScanReady, setWarningScanReady] = useState(false);
   const selectedScriptButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -278,20 +290,34 @@ function ScriptAuthoringPanel({
     return map;
   }, [project, scripts, catalog, diagnosticDependencyKey, inventoryFilter, warningScanReady]);
   const inventoryCounts = useMemo(() => {
-    const counts = new Map<ScriptInventoryFilter, number | null>();
-    for (const filter of SCRIPT_INVENTORY_FILTERS) {
-      if (filter.id === "warnings" && (inventoryFilter !== "warnings" || !warningScanReady)) {
-        counts.set(filter.id, null);
-        continue;
+    const counts = new Map<ScriptInventoryFilter, number | null>([
+      ["current-map", 0],
+      ["all", 0],
+      ["active", 0],
+      ["reusable", 0],
+      ["warnings", inventoryFilter === "warnings" && warningScanReady ? 0 : null],
+      ["macros", 0]
+    ]);
+    for (const trigger of scripts) {
+      counts.set("all", (counts.get("all") ?? 0) + 1);
+      if (selectedMap && canScopeToMap && trigger.source !== "Data ED3" && trigger.levelType === selectedMap.levelType && trigger.levelIndex === selectedMap.index) {
+        counts.set("current-map", (counts.get("current-map") ?? 0) + 1);
       }
-      if (filter.id !== inventoryFilter && filter.id === "warnings") {
-        counts.set(filter.id, null);
-        continue;
+      if (trigger.source !== "Data ED3" && !isReusableDoorPlaceholder(trigger)) {
+        counts.set("active", (counts.get("active") ?? 0) + 1);
       }
-      counts.set(filter.id, filterScriptsByInventory(project, scripts, filter.id, selectedMap, canScopeToMap, fullWarningDiagnosticsById).length);
+      if (isReusableDoorPlaceholder(trigger)) {
+        counts.set("reusable", (counts.get("reusable") ?? 0) + 1);
+      }
+      if (trigger.source === "Data ED3") {
+        counts.set("macros", (counts.get("macros") ?? 0) + 1);
+      }
+      if (inventoryFilter === "warnings" && warningScanReady && (fullWarningDiagnosticsById.get(trigger.id) ?? []).length > 0) {
+        counts.set("warnings", (counts.get("warnings") ?? 0) + 1);
+      }
     }
     return counts;
-  }, [project, scripts, selectedMap, canScopeToMap, fullWarningDiagnosticsById, inventoryFilter, warningScanReady]);
+  }, [scripts, selectedMap, canScopeToMap, fullWarningDiagnosticsById, inventoryFilter, warningScanReady]);
   const scopedScripts = useMemo(
     () => filterScriptsByInventory(project, scripts, inventoryFilter, selectedMap, canScopeToMap, fullWarningDiagnosticsById),
     [project, scripts, inventoryFilter, selectedMap, canScopeToMap, fullWarningDiagnosticsById]
@@ -300,10 +326,10 @@ function ScriptAuthoringPanel({
     () => project ? scopedScripts.filter((trigger) => scriptMatchesQuery(project, trigger, scriptQuery)) : [],
     [project, scopedScripts, scriptQuery]
   );
-  const [visibleScriptLimit, setVisibleScriptLimit] = useState(80);
+  const [visibleScriptLimit, setVisibleScriptLimit] = useState(40);
   useEffect(() => {
-    setVisibleScriptLimit(80);
-    const handle = window.setTimeout(() => setVisibleScriptLimit(240), 90);
+    setVisibleScriptLimit(40);
+    const handle = window.setTimeout(() => setVisibleScriptLimit(180), 120);
     return () => window.clearTimeout(handle);
   }, [activeEditor, filteredScripts.length, inventoryFilter, scriptQuery]);
   useEffect(() => {
@@ -405,26 +431,16 @@ function ScriptAuthoringPanel({
   const selectedOption = actionOptionFor(selectedDraft.rawCode);
   const selectedDefinition = scriptActionDefinitionFor(selectedDraft.rawCode);
   const filteredDefinitions = actionDefinitionsForCategory(categoryFilter, opcodeQuery);
-  const actionSlots = selectedTrigger ? actionSlotEntitiesForTriggerRecord(project, selectedTrigger) : [];
-  const selectedSlotEntity = actionSlots.find((entity) => Number(entity.summary.slot) === selectedSlot);
-  const selectedEdcdUsage = selectedSlotEntity?.summary.edcdUsage as
-    | {
-        rowId?: number;
-        shape?: string;
-        opcode?: number;
-        fields?: { name?: string; value?: number }[];
-        secondaryRowId?: number;
-        secondaryShape?: string;
-        secondaryFields?: { name?: string; value?: number }[];
-        diagnostics?: string[];
-        summary?: string;
-      }
-    | undefined;
+  const selectedSlotEntity: SemanticEntity | undefined = undefined;
+  const selectedEdcdUsage: SelectedEdcdUsage | undefined = undefined;
   const triggerDiagnostics = selectedTrigger ? visibleDiagnosticsById.get(selectedTrigger.id) ?? [] : [];
-  const selectedSlotDiagnostics = selectedTrigger
-    ? validateActionDraft(project, selectedTrigger, selectedSlot, selectedDraft.rawCode, selectedDraft.id, catalog)
-    : [];
-  const selectedEdcdRowId = selectedEdcdUsage?.rowId ?? (selectedOption.edcdShape ? Math.max(0, selectedDraft.id) : null);
+  const selectedSlotDiagnostics = useMemo(
+    () => selectedTrigger
+      ? validateActionDraft(project, selectedTrigger, selectedSlot, selectedDraft.rawCode, selectedDraft.id, catalog)
+      : [],
+    [project, selectedTrigger, selectedSlot, selectedDraft.rawCode, selectedDraft.id, catalog]
+  );
+  const selectedEdcdRowId = selectedOption.edcdShape ? Math.max(0, selectedDraft.id) : null;
   const isMacro = selectedTrigger?.source === "Data ED3";
   const selectedExtraActionClassification = selectedTrigger && isMacro ? authorFacingExtraActionKind(extraActionPointClassification(project, selectedTrigger)) : "Action Point";
   const deleteMacroLabel = selectedExtraActionClassification === "Global Event" ? "Delete Global Event" : "Delete Reusable Action";
@@ -783,7 +799,6 @@ function ScriptAuthoringPanel({
                       const current = slotDraft(slot, action);
                       const option = actionOptionFor(current.rawCode);
                       const definition = scriptActionDefinitionFor(current.rawCode);
-                      const slotEntity = actionSlots.find((entity) => Number(entity.summary.slot) === slot);
                       const changed = action ? current.rawCode !== action.rawCode || current.id !== action.id : current.rawCode !== 0 || current.id !== 0;
                       const slotIssues = issueCounts.get(slot) ?? { errors: 0, warnings: 0 };
                       const branchHint = scriptStepBranchHint(current.rawCode, current.id);
@@ -798,7 +813,7 @@ function ScriptAuthoringPanel({
                           <span className="slot-index">{slot + 1}</span>
                           <span>
                             <strong>{definition.shortLabel}</strong>
-                            <small>{scriptActionSummary(project, catalog, current, actionSummary(action, slotEntity))}</small>
+                            <small>{scriptActionSummary(project, catalog, current, actionSummary(action))}</small>
                             {branchHint && <small className="script-step-branch-hint">{branchHint}</small>}
                           </span>
                           <b>
@@ -1001,8 +1016,14 @@ function SourceEvidenceDetails({
   edcdUsage?: { summary?: string; rowId?: number; shape?: string };
   onSelectEntity: (entity: SelectedEntity) => void;
 }) {
+  const semanticSlotEntity = useMemo(
+    () => actionSlotEntitiesForTriggerRecord(project, trigger).find((entity) => Number(entity.summary.slot) === selectedSlot),
+    [project, trigger, selectedSlot]
+  );
+  const resolvedSlotEntity = selectedSlotEntity ?? semanticSlotEntity;
+  const resolvedEdcdUsage = (edcdUsage ?? resolvedSlotEntity?.summary.edcdUsage) as { summary?: string; rowId?: number; shape?: string } | undefined;
   const triggerLinks = linksFor(project, triggerEntityIdValue);
-  const slotLinks = linksFor(project, selectedSlotEntity?.id ?? null);
+  const slotLinks = linksFor(project, resolvedSlotEntity?.id ?? null);
   return (
     <div className="script-source-evidence">
       <div className="realmz-raw-preview">
@@ -1013,15 +1034,15 @@ function SourceEvidenceDetails({
         <FieldRow label="Map" value={trigger.levelType != null ? `${trigger.levelType} ${trigger.levelIndex ?? 0}` : "Reusable Action"} />
         <FieldRow label="Coordinate" value={trigger.coordinate ? `${trigger.coordinate.x}, ${trigger.coordinate.y}` : "none"} />
         <FieldRow label="Selected Slot" value={selectedSlot} />
-        <FieldRow label="Slot Entity" value={selectedSlotEntity?.id ?? "draft-only"} />
+        <FieldRow label="Slot Entity" value={resolvedSlotEntity?.id ?? "draft-only"} />
         <FieldRow label="Applied CODE/ID" value={selectedAction ? `${selectedAction.rawCode} / ${selectedAction.id}` : "empty"} />
         <FieldRow label="Draft CODE/ID" value={`${selectedDraft.rawCode} / ${selectedDraft.id}`} />
         <FieldRow label="Opcode" value={selectedOption.label} />
         <FieldRow label="Dispatcher" value={isDispatcherNoopOpcode(selectedDraft.rawCode) ? "dispatcher no-op; Realmz ignores this CODE" : "has documented dispatcher behavior"} />
-        <FieldRow label="Data EDCD Row" value={selectedEdcdRowId != null ? `row ${selectedEdcdRowId}${edcdUsage?.shape ? ` (${edcdUsage.shape})` : ""}` : "none"} />
-        <FieldRow label="Edit State" value={selectedSlotEntity?.editState ?? "authored/draft"} />
+        <FieldRow label="Data EDCD Row" value={selectedEdcdRowId != null ? `row ${selectedEdcdRowId}${resolvedEdcdUsage?.shape ? ` (${resolvedEdcdUsage.shape})` : ""}` : "none"} />
+        <FieldRow label="Edit State" value={resolvedSlotEntity?.editState ?? "authored/draft"} />
       </div>
-      {edcdUsage?.summary && <p className="field-help">{edcdUsage.summary}</p>}
+      {resolvedEdcdUsage?.summary && <p className="field-help">{resolvedEdcdUsage.summary}</p>}
       <EvidenceLinkGroup title="Script Links" project={project} links={[...triggerLinks.outgoing, ...triggerLinks.incoming]} onSelectEntity={onSelectEntity} />
       <EvidenceLinkGroup title="Slot Links" project={project} links={[...slotLinks.outgoing, ...slotLinks.incoming]} onSelectEntity={onSelectEntity} />
     </div>
@@ -2523,9 +2544,17 @@ function ReferenceIdField({
   onCreateTarget?: (id: number) => void;
 }) {
   const [query, setQuery] = useState("");
-  const options = useMemo(() => targetOptionsForOpcode(project, opcode, catalog), [project, opcode, catalog]);
+  const [optionsLoaded, setOptionsLoaded] = useState(false);
+  useEffect(() => {
+    setQuery("");
+    setOptionsLoaded(false);
+  }, [opcode, project]);
   const resolvedValue = resolveSignedMessageTarget(opcode, value);
-  const selected = options.find((option) => option.value === resolvedValue) ?? null;
+  const selected = useMemo(() => targetOptionForOpcodeValue(project, opcode, value, catalog), [catalog, opcode, project, value]);
+  const options = useMemo(() => {
+    if (!optionsLoaded && !query.trim()) return selected ? [selected] : [];
+    return targetOptionsForOpcode(project, opcode, catalog);
+  }, [catalog, opcode, optionsLoaded, project, query, selected]);
   const filteredOptions = useMemo(() => filterScriptTargetOptions(options, query), [options, query]);
   const visibleOptions = useMemo(() => {
     const visible = filteredOptions.slice(0, 260);
@@ -2549,7 +2578,11 @@ function ReferenceIdField({
       <span>{label}</span>
       <input
         value={query}
-        onChange={(event) => setQuery(event.currentTarget.value)}
+        onFocus={() => setOptionsLoaded(true)}
+        onChange={(event) => {
+          setOptionsLoaded(true);
+          setQuery(event.currentTarget.value);
+        }}
         placeholder={`Search ${label.toLowerCase()}...`}
         aria-label={`Search ${label}`}
       />
@@ -2568,11 +2601,16 @@ function ReferenceIdField({
         ))}
         {query.trim() && filteredOptions.length > resultOptions.length && <small>{filteredOptions.length - resultOptions.length} more match(es); keep typing to narrow.</small>}
       </div>
-      <select value={hasRawValue ? `raw:${resolvedValue}` : selected ? String(selected.value) : ""} onChange={(event) => {
-        const raw = event.currentTarget.value;
-        if (!raw || raw.startsWith("raw:")) return;
-        selectTarget(Number(raw));
-      }}>
+      <select
+        value={hasRawValue ? `raw:${resolvedValue}` : selected ? String(selected.value) : ""}
+        onFocus={() => setOptionsLoaded(true)}
+        onMouseDown={() => setOptionsLoaded(true)}
+        onChange={(event) => {
+          const raw = event.currentTarget.value;
+          if (!raw || raw.startsWith("raw:")) return;
+          selectTarget(Number(raw));
+        }}
+      >
         <option value="">{emptyLabel}</option>
         {hasRawValue && <option value={`raw:${resolvedValue}`}>Current value {resolvedValue}</option>}
         {visibleOptions.map((option) => (

@@ -1,6 +1,6 @@
 import { LibraryCatalog, Project, TriggerRecord } from "./types";
 import { actionOptionFor, isDispatcherNoopOpcode, normalizeStepOpcode } from "./realmzActions";
-import { isDirectMacroOpcode, resolveSignedMessageTarget, targetOptionsForOpcode, targetPickerConfig } from "./components/RealmzTargetPicker";
+import { isDirectMacroOpcode, resolveSignedMessageTarget, targetOptionForOpcodeValue, targetPickerConfig } from "./components/RealmzTargetPicker";
 import { isCallableMacro } from "./semanticGraph";
 import { missingEdcdTargetReferences } from "./edcdTargets";
 import { edcdFieldNamesForShape } from "./realmzEdcd";
@@ -90,9 +90,8 @@ function validateAction(project: Project, trigger: TriggerRecord, slot: number, 
 
   const config = targetPickerConfig(code);
   if (config && !option.edcdShape && id !== 0) {
-    const targets = targetOptionsForOpcode(project, code, catalog);
     const resolvedId = resolveSignedMessageTarget(code, id);
-    const selected = targets.find((target) => target.value === resolvedId);
+    const selected = targetOptionForOpcodeValue(project, code, id, catalog);
     if (!selected) {
       diagnostics.push(slotIssue("warning", trigger.id, slot, "unresolved-target", `${config.label} does not resolve to a known target.`, `Choose or create ${config.label.toLowerCase()} ${resolvedId}.`));
     }
