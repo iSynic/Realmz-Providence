@@ -3539,9 +3539,10 @@ a.documents-source-chip:hover {
   flex: 1;
   min-height: 0;
   display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  padding: clamp(28px, 7vw, 96px);
+  align-items: flex-end;
+  justify-content: center;
+  padding: clamp(24px, 4vw, 72px);
+  padding-bottom: clamp(42px, 12vh, 144px);
   overflow: hidden;
   background: #050909;
 }
