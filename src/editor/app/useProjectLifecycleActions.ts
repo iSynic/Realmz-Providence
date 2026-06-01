@@ -81,7 +81,7 @@ export function useProjectLifecycleActions({
     try {
       dispatch({ type: "setStatus", status: "Creating project..." });
       const project = await invoke<Project>("create_project", { projectName, projectDir: targetProjectDir });
-      setProjectDir(targetProjectDir);
+      setProjectDir(project.scenario.projectPath || targetProjectDir);
       setExportDir(defaultExportPath(roots.export, project.scenario.name));
       dispatch({ type: "setProject", project, selectedMapId: null });
       dispatch({ type: "setTab", tab: "maps" });

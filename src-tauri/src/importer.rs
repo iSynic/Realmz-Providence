@@ -23,15 +23,8 @@ pub fn create_project(
     project_name: String,
     project_dir: impl AsRef<Path>,
 ) -> Result<ProvidenceProject> {
-    let project_dir = project_dir.as_ref();
-    let project_path = project_file_path(project_dir);
-    if project_path.exists() {
-        return Err(ProvidenceError::message(format!(
-            "{} already exists; open it instead or choose a new project name",
-            project_path.display()
-        )));
-    }
-    fs::create_dir_all(project_dir).with_path(project_dir)?;
+    let (project_name, project_dir) = unique_project_target(&project_name, project_dir.as_ref());
+    fs::create_dir_all(&project_dir).with_path(&project_dir)?;
     fs::create_dir_all(project_dir.join(RAW_SOURCES_DIR))
         .with_path(project_dir.join(RAW_SOURCES_DIR))?;
     fs::create_dir_all(project_dir.join(ASSETS_DIR)).with_path(project_dir.join(ASSETS_DIR))?;
@@ -96,6 +89,36 @@ pub fn create_project(
     project.validation = crate::validation::validate_project(&project);
     save_project(project_dir, &project)?;
     Ok(project)
+}
+
+fn unique_project_target(project_name: &str, requested_dir: &Path) -> (String, PathBuf) {
+    if !project_file_path(requested_dir).exists() {
+        return (project_name.to_string(), requested_dir.to_path_buf());
+    }
+    let parent = requested_dir.parent().unwrap_or_else(|| Path::new(""));
+    let stem = requested_dir
+        .file_stem()
+        .and_then(|value| value.to_str())
+        .filter(|value| !value.is_empty())
+        .unwrap_or(project_name);
+    let extension = requested_dir
+        .extension()
+        .and_then(|value| value.to_str())
+        .filter(|value| !value.is_empty())
+        .map(|value| format!(".{value}"))
+        .unwrap_or_default();
+    for suffix in 2..10_000 {
+        let candidate_name = format!("{project_name} {suffix}");
+        let candidate_dir = parent.join(format!("{stem} {suffix}{extension}"));
+        if !project_file_path(&candidate_dir).exists() {
+            return (candidate_name, candidate_dir);
+        }
+    }
+    let fallback_suffix = timestamp();
+    (
+        format!("{project_name} {fallback_suffix}"),
+        parent.join(format!("{stem} {fallback_suffix}{extension}")),
+    )
 }
 
 pub fn import_scenario(
@@ -1227,5 +1250,27 @@ mod tests {
         assert_eq!(normalize_icon_id(1224), Some(224));
         assert_eq!(normalize_icon_id(-462), Some(-462));
         assert_eq!(normalize_icon_id(-1462), Some(-462));
+    }
+
+    #[test]
+    fn create_project_iterates_colliding_default_package_names() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let requested = temp
+            .path()
+            .join("Untitled Scenario 2026-06-01.providence");
+        let first = create_project("Untitled Scenario 2026-06-01".to_string(), &requested)
+            .expect("first project");
+        let second = create_project("Untitled Scenario 2026-06-01".to_string(), &requested)
+            .expect("second project");
+
+        assert_eq!(first.scenario.name, "Untitled Scenario 2026-06-01");
+        assert_eq!(second.scenario.name, "Untitled Scenario 2026-06-01 2");
+        assert!(requested.join(PROJECT_FILE_NAME).is_file());
+        assert!(temp
+            .path()
+            .join("Untitled Scenario 2026-06-01 2.providence")
+            .join(PROJECT_FILE_NAME)
+            .is_file());
+        assert_ne!(first.scenario.project_path, second.scenario.project_path);
     }
 }
