@@ -65,8 +65,9 @@ export function ProjectStart({
   const canImport = desktopRuntime || browserFileSystem;
   return (
     <section className="project-start">
+      <img className="project-start-splash" src="/providence-splash.png" alt="" draggable={false} />
       <div className="project-start-panel">
-        <div className="project-start-mark">RP</div>
+        <img className="project-start-mark" src="/divinity-icon.png" alt="" draggable={false} />
         <h1>Realmz Providence</h1>
         <p>Create a scenario project, open an existing project, or work in the bundled Realmz/Divinity library before a scenario exists.</p>
         <div className="project-start-actions">

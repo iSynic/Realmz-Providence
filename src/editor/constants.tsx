@@ -24,6 +24,8 @@ export const DEFAULT_PROJECT = "F:\\Realmz - Providence\\projects\\Tutorial.prov
 export const DEFAULT_EXPORT = "F:\\Realmz - Providence\\exports\\Tutorial";
 export const DEFAULT_WORKSPACE = "F:\\Realmz - Providence\\workspace";
 export const DEFAULT_DIVINITY_ROOT = "F:\\Divinity CD\\Divinity CD\\Install Options\\World of Realmz\\Divinity";
+export const DEFAULT_DIVINITY_MANUAL_ROOT = "C:\\Users\\Eric\\Desktop\\Divinity Manual";
+export const DEFAULT_DIVINITY_MANUAL_URL = "/divinity-manual/index.html";
 export const DEFAULT_REALMZ_DATA_ROOT = "F:\\Realmz\\base\\Realmz\\Data Files";
 export const DEFAULT_NEW_SCENARIO_ROOT = "F:\\Realmz\\base\\Realmz\\Scenarios\\New Scenario";
 

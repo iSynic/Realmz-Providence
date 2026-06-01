@@ -1,0 +1,550 @@
+.combat-workbench {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 14px;
+  background: #101113;
+}
+
+.combat-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid #252f39;
+  border-radius: 7px;
+  background: #141a20;
+}
+
+.combat-hero h1 {
+  color: #f0f7ff;
+  font-size: 18px;
+}
+
+.combat-hero p,
+.combat-hero small {
+  color: #9db6ca;
+  font-size: 11px;
+}
+
+.combat-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 10px 0;
+  padding: 8px;
+  border: 1px solid #25313d;
+  border-radius: 7px;
+  background: #0b1118;
+}
+
+.combat-tabs button {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #2b3a49;
+  border-radius: 6px;
+  background: #101821;
+  color: #c6d7e7;
+  padding: 0 10px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.combat-tabs button.active {
+  border-color: #2b8fd8;
+  background: #10283d;
+  color: #ffffff;
+}
+
+.combat-tabs b {
+  min-width: 24px;
+  min-height: 18px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid #2b4e6d;
+  border-radius: 999px;
+  background: #0a121a;
+  color: #b8dfff;
+  font-size: 9px;
+}
+
+.combat-record-layout {
+  display: grid;
+  grid-template-columns: minmax(210px, 280px) minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.combat-record-list,
+.combat-editor,
+.combat-reference-tab {
+  border: 1px solid #26333f;
+  border-radius: 7px;
+  background: #10161d;
+}
+
+.combat-record-list {
+  position: sticky;
+  top: 0;
+  display: grid;
+  grid-template-rows: auto auto minmax(360px, calc(100vh - 250px));
+  gap: 8px;
+  padding: 10px;
+}
+
+.combat-record-list > header,
+.combat-editor-header,
+.battle-board-card > header,
+.monster-palette > header,
+.monster-section > header,
+.combat-reference-tab > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.combat-record-list strong,
+.combat-editor-header span,
+.battle-board-card strong,
+.monster-palette strong,
+.monster-section strong,
+.combat-reference-tab span {
+  color: #eef7ff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.combat-record-list small,
+.combat-editor-header small,
+.battle-board-card small,
+.monster-palette small,
+.monster-section small,
+.combat-reference-tab small {
+  color: #8ea5b7;
+  font-size: 10px;
+}
+
+.combat-record-list input,
+.combat-field input,
+.combat-field select,
+.monster-palette input {
+  width: 100%;
+  min-height: 30px;
+  border: 1px solid #2a3a48;
+  border-radius: 5px;
+  background: #0b1219;
+  color: #f3f8ff;
+  padding: 5px 8px;
+  font: inherit;
+}
+
+.combat-record-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  border: 1px solid #22313f;
+  border-radius: 6px;
+  background: #0a1016;
+}
+
+.combat-record-scroll button {
+  width: 100%;
+  display: grid;
+  gap: 3px;
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid #1d2a35;
+  background: transparent;
+  color: #dceeff;
+  padding: 8px 9px;
+}
+
+.combat-record-scroll button.selected {
+  background: #10283d;
+  box-shadow: inset 3px 0 0 #2b8fd8;
+}
+
+.combat-editor {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+}
+
+.combat-editor-actions,
+.placement-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.battle-summary-strip {
+  display: grid;
+  grid-template-columns: minmax(76px, 100px) repeat(3, minmax(190px, 1fr));
+  gap: 8px;
+  align-items: start;
+  padding: 8px;
+  border: 1px solid #24323e;
+  border-radius: 6px;
+  background: #0d141b;
+}
+
+.combat-target-field,
+.combat-field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.combat-target-field > span,
+.combat-field > span {
+  color: #86c7ff;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.combat-target-field .realmz-target-picker {
+  display: grid;
+  gap: 5px;
+}
+
+.combat-target-field .realmz-target-picker > label {
+  display: grid;
+  gap: 5px;
+}
+
+.combat-target-field .realmz-target-picker > label > span {
+  display: none;
+}
+
+.combat-target-field .realmz-target-picker input,
+.combat-target-field .realmz-target-picker select {
+  min-height: 28px;
+}
+
+.combat-target-field .realmz-target-picker button {
+  min-height: 26px;
+}
+
+.battle-board-workbench {
+  display: grid;
+  grid-template-columns: minmax(420px, 720px) minmax(240px, 320px);
+  gap: 10px;
+  align-items: start;
+}
+
+.battle-board-card,
+.monster-placement-card,
+.monster-section {
+  display: grid;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid #26333f;
+  border-radius: 7px;
+  background: #0d141b;
+}
+
+.battle-board {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(13, minmax(0, 1fr));
+  width: min(100%, 690px);
+  border: 2px solid #0b0f12;
+  background: #ffffff;
+}
+
+.battle-board button {
+  position: relative;
+  min-width: 0;
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-right: 1px solid #b8b8b8;
+  border-bottom: 1px solid #b8b8b8;
+  background: #ffffff;
+  color: #0b1620;
+  font-size: 10px;
+  font-weight: 900;
+  overflow: hidden;
+}
+
+.battle-board button:nth-child(13n) {
+  border-right: 0;
+}
+
+.battle-board button:nth-last-child(-n + 13) {
+  border-bottom: 0;
+}
+
+.battle-board button.filled {
+  background: #f7f7f7;
+}
+
+.battle-board button.alternate-side::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border: 2px solid #8b2fd8;
+  pointer-events: none;
+}
+
+.battle-board button.selected {
+  outline: 3px solid #f2cb70;
+  outline-offset: -3px;
+  z-index: 1;
+}
+
+.battle-monster-overlay {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  color: #0b1620;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.battle-monster-overlay.alternate-side {
+  filter: drop-shadow(0 0 0 #8b2fd8) drop-shadow(0 0 3px #8b2fd8);
+}
+
+.battle-monster-overlay .monster-icon-preview {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+}
+
+.monster-icon-preview {
+  width: 48px;
+  height: 48px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid #33526a;
+  border-radius: 4px;
+  background: #061018;
+  color: #f1f7ff;
+  overflow: hidden;
+  flex: none;
+}
+
+.monster-icon-preview.compact {
+  width: 32px;
+  height: 32px;
+}
+
+.monster-icon-preview.large {
+  width: 88px;
+  height: 88px;
+}
+
+.monster-icon-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.battle-board .monster-icon-preview {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+}
+
+.monster-placement-card {
+  align-content: start;
+}
+
+.monster-palette {
+  display: grid;
+  gap: 7px;
+}
+
+.monster-to-place-preview {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  padding: 8px;
+  border: 1px solid #28465c;
+  border-radius: 6px;
+  background: #07131c;
+}
+
+.monster-to-place-preview span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.monster-palette-list {
+  max-height: 360px;
+  overflow-y: auto;
+  display: grid;
+  gap: 4px;
+}
+
+.monster-palette-list button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+  text-align: left;
+  border: 1px solid #263846;
+  border-radius: 5px;
+  background: #0a1218;
+  color: #dff1ff;
+  padding: 5px;
+}
+
+.monster-palette-list button.selected {
+  border-color: #2b8fd8;
+  background: #10283d;
+}
+
+.monster-palette-list span,
+.selected-monster-preview {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.selected-battle-cell {
+  display: grid;
+  gap: 7px;
+  padding-top: 8px;
+  border-top: 1px solid #24323e;
+}
+
+.selected-monster-preview {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  color: #b5cede;
+  font-size: 10px;
+}
+
+.combat-toggle {
+  min-height: 28px;
+  border: 1px solid #314351;
+  border-radius: 5px;
+  background: #111922;
+  color: #cde2f3;
+  padding: 0 9px;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.combat-toggle.active {
+  border-color: #e0a632;
+  background: #31230d;
+  color: #ffe8a7;
+}
+
+.monster-identity-section {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+}
+
+.monster-field-grid,
+.monster-attacks-grid,
+.combat-compact-array {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: 8px;
+}
+
+.combat-check-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 30px;
+  color: #e5f2ff;
+  font-size: 11px;
+}
+
+.combat-traits {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 7px 14px;
+}
+
+.monster-attack-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(86px, 1fr));
+  gap: 6px;
+  padding: 7px;
+  border: 1px solid #22313f;
+  border-radius: 6px;
+  background: #0a1118;
+}
+
+.monster-attack-row > strong {
+  grid-column: 1 / -1;
+  color: #fff1c2;
+  font-size: 11px;
+}
+
+.combat-reference-tab {
+  padding: 14px;
+  color: #adc3d4;
+}
+
+.combat-editor.empty {
+  min-height: 260px;
+  place-content: center;
+  text-align: center;
+  color: #9fb4c7;
+}
+
+@media (max-width: 1360px) {
+  .battle-board-workbench {
+    grid-template-columns: minmax(390px, 1fr);
+  }
+
+  .monster-placement-card {
+    grid-template-columns: minmax(260px, 1fr) minmax(220px, 280px);
+  }
+
+  .selected-battle-cell {
+    border-top: 0;
+    border-left: 1px solid #24323e;
+    padding-top: 0;
+    padding-left: 10px;
+  }
+}
+
+@media (max-width: 1120px) {
+  .combat-record-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .combat-record-list {
+    position: static;
+    grid-template-rows: auto auto minmax(180px, 260px);
+  }
+
+  .battle-summary-strip,
+  .monster-placement-card,
+  .monster-identity-section {
+    grid-template-columns: 1fr;
+  }
+
+  .selected-battle-cell {
+    border-left: 0;
+    border-top: 1px solid #24323e;
+    padding-left: 0;
+    padding-top: 8px;
+  }
+}

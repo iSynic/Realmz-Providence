@@ -21,9 +21,14 @@ export function ProvidenceEditorShell({
   canSave,
   canExport,
   tutorialEnabled,
+  canNavigateBack,
+  canNavigateForward,
   onLibrary,
   onProject,
   onDocuments,
+  onDivinityManual,
+  onNavigateBack,
+  onNavigateForward,
   onToggleTutorial,
   onNewProject,
   onOpenProject,
@@ -49,9 +54,14 @@ export function ProvidenceEditorShell({
   canSave: boolean;
   canExport: boolean;
   tutorialEnabled: boolean;
+  canNavigateBack: boolean;
+  canNavigateForward: boolean;
   onLibrary: () => void;
   onProject: () => void;
   onDocuments: () => void;
+  onDivinityManual: () => void;
+  onNavigateBack: () => void;
+  onNavigateForward: () => void;
   onToggleTutorial: () => void;
   onNewProject: () => void;
   onOpenProject: () => void;
@@ -85,9 +95,14 @@ export function ProvidenceEditorShell({
         canSave={canSave}
         canExport={canExport}
         tutorialEnabled={tutorialEnabled}
+        canNavigateBack={canNavigateBack}
+        canNavigateForward={canNavigateForward}
         onLibrary={onLibrary}
         onProject={onProject}
         onDocuments={onDocuments}
+        onDivinityManual={onDivinityManual}
+        onNavigateBack={onNavigateBack}
+        onNavigateForward={onNavigateForward}
         onToggleTutorial={onToggleTutorial}
         onNewProject={onNewProject}
         onOpenProject={onOpenProject}

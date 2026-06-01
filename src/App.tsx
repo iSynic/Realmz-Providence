@@ -1,4 +1,4 @@
-import { Suspense, useMemo, useReducer, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { DEFAULT_DIVINITY_ROOT, DEFAULT_EXPORT, DEFAULT_REALMZ_DATA_ROOT, DEFAULT_WORKSPACE } from "./editor/constants";
 import { ProjectNameDialog, ProjectStart } from "./editor/app/AppStart";
 import {
@@ -12,13 +12,12 @@ import { useAppBootstrapEffects } from "./editor/app/useAppBootstrapEffects";
 import { useProjectLifecycleActions } from "./editor/app/useProjectLifecycleActions";
 import { canUseBrowserFileSystem } from "./editor/browser/fsAccess";
 import {
-  PAINTABLE_REFERENCE_ACTOR_ICON_VALUES,
   PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES,
   referencedMapIconIds,
   tileIconCandidates
 } from "./editor/map/renderValues";
 import { editorReducer, initialEditorState, BROWSER_PREVIEW_STATUS } from "./editor/store";
-import { MapEntity, MapViewFlag, ProjectCommand, SelectedEntity } from "./editor/types";
+import { ActiveWorkbench, EditorTab, MapEntity, MapViewFlag, ProjectCommand, SelectedEntity } from "./editor/types";
 import { hasDesktopRuntime, issuesFor } from "./editor/utils";
 import {
   semanticMapRecordsForMap,
@@ -28,6 +27,7 @@ import {
 } from "./editor/semanticGraph";
 import { ProvidenceEditorShell } from "./editor/workbench/ProvidenceEditorShell";
 import { WorkbenchRouter } from "./editor/workbench/WorkbenchRouter";
+import { DivinityManualWindow } from "./editor/views/DivinityManualWindow";
 import {
   LazyDocumentsView as DocumentsView,
   WorkbenchChunkErrorBoundary,
@@ -37,6 +37,13 @@ import {
 const DEFAULT_SCENARIO_ROOT = "F:\\Realmz\\base\\Realmz\\Scenarios";
 const DEFAULT_PROJECT_ROOT = "F:\\Realmz - Providence\\projects";
 const DEFAULT_EXPORT_ROOT = "F:\\Realmz - Providence\\exports";
+
+type WorkbenchHistoryLocation = {
+  key: string;
+  workbench: ActiveWorkbench;
+  domain: EditorTab;
+  editor: string;
+};
 
 function importedMapIconCacheKey(project: { source: { sourcePath: string }; maps: MapEntity[] }) {
   return [
@@ -54,9 +61,35 @@ export function App() {
   const [exportDir, setExportDir] = useState(DEFAULT_EXPORT);
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [documentsOpen, setDocumentsOpen] = useState(false);
+  const [divinityManualOpen, setDivinityManualOpen] = useState(false);
   const [projectNameDraft, setProjectNameDraft] = useState("Untitled Scenario");
   const [state, dispatch] = useReducer(editorReducer, desktopRuntime, initialEditorState);
   const importedMapIconCacheRef = useRef<{ key: string; ids: number[] }>({ key: "", ids: [] });
+  const historyNavigationRef = useRef(false);
+  const activeWorkbenchLocation = useMemo<WorkbenchHistoryLocation>(() => ({
+    key: `${state.activeWorkbench}:${state.activeDomain}:${state.activeEditor}`,
+    workbench: state.activeWorkbench,
+    domain: state.activeDomain,
+    editor: state.activeEditor
+  }), [state.activeWorkbench, state.activeDomain, state.activeEditor]);
+  const [workbenchHistory, setWorkbenchHistory] = useState<{ entries: WorkbenchHistoryLocation[]; index: number }>({
+    entries: [],
+    index: -1
+  });
+
+  useEffect(() => {
+    if (!state.project && state.activeWorkbench !== "library") return;
+    if (historyNavigationRef.current) {
+      historyNavigationRef.current = false;
+      return;
+    }
+    setWorkbenchHistory((current) => {
+      if (current.entries[current.index]?.key === activeWorkbenchLocation.key) return current;
+      const base = current.index >= 0 ? current.entries.slice(0, current.index + 1) : [];
+      const entries = [...base, activeWorkbenchLocation].slice(-40);
+      return { entries, index: entries.length - 1 };
+    });
+  }, [activeWorkbenchLocation, state.activeWorkbench, state.project]);
 
   const selectedMap = useMemo(
     () => state.project?.maps.find((map) => map.id === state.selectedMapId) ?? state.project?.maps[0] ?? null,
@@ -128,7 +161,9 @@ export function App() {
               ...(state.libraryCatalog?.assets ?? [])
                 .filter(isPaintableSpecialLandLibraryAsset)
                 .flatMap((asset) => asset.resourceId == null ? [] : tileIconCandidates(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId)),
-              ...(!desktopRuntime ? [...PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES, ...PAINTABLE_REFERENCE_ACTOR_ICON_VALUES].flatMap(tileIconCandidates) : [])
+              ...(!desktopRuntime
+                ? PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES.flatMap(tileIconCandidates)
+                : [])
             ])
           ].map(String).sort().join(",")
         : "",
@@ -290,6 +325,22 @@ export function App() {
     dispatch({ type: "setStatus", status: `Opened ${editor.replace(/-/g, " ")}.` });
   }
 
+  function applyWorkbenchLocation(location: WorkbenchHistoryLocation) {
+    dispatch({ type: "setWorkbench", workbench: location.workbench, tab: location.domain });
+    dispatch({ type: "setActiveDomain", domain: location.domain });
+    dispatch({ type: "setActiveEditor", editor: location.editor });
+    dispatch({ type: "setStatus", status: `Returned to ${location.domain.replace(/-/g, " ")}.` });
+  }
+
+  function navigateWorkbenchHistory(delta: -1 | 1) {
+    const nextIndex = workbenchHistory.index + delta;
+    const next = workbenchHistory.entries[nextIndex];
+    if (!next) return;
+    historyNavigationRef.current = true;
+    setWorkbenchHistory((current) => ({ ...current, index: nextIndex }));
+    applyWorkbenchLocation(next);
+  }
+
   return (
     <ProvidenceEditorShell
       state={state}
@@ -305,9 +356,14 @@ export function App() {
       canSave={Boolean(state.project && desktopRuntime)}
       canExport={Boolean(state.project && desktopRuntime)}
       tutorialEnabled={state.tutorialEnabled}
+      canNavigateBack={workbenchHistory.index > 0}
+      canNavigateForward={workbenchHistory.index >= 0 && workbenchHistory.index < workbenchHistory.entries.length - 1}
       onLibrary={openLibraryHub}
       onProject={openProjectWorkbench}
       onDocuments={() => setDocumentsOpen(true)}
+      onDivinityManual={() => setDivinityManualOpen(true)}
+      onNavigateBack={() => navigateWorkbenchHistory(-1)}
+      onNavigateForward={() => navigateWorkbenchHistory(1)}
       onToggleTutorial={() => dispatch({ type: "setTutorialEnabled", enabled: !state.tutorialEnabled })}
       onNewProject={showNewProjectDialog}
       onOpenProject={chooseExistingProject}
@@ -402,6 +458,7 @@ export function App() {
           </Suspense>
         </WorkbenchChunkErrorBoundary>
       )}
+      {divinityManualOpen && <DivinityManualWindow onClose={() => setDivinityManualOpen(false)} />}
     </ProvidenceEditorShell>
   );
 }

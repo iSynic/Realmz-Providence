@@ -8,6 +8,7 @@ function lazyNamed<T extends ComponentType<any>>(loader: () => Promise<unknown>,
 }
 
 export const LazyEncountersPanel = lazyNamed(() => import("../panels/EncountersPanel"), "EncountersPanel");
+export const LazyCombatPanel = lazyNamed(() => import("../panels/CombatPanel"), "CombatPanel");
 export const LazyExportPanel = lazyNamed(() => import("../panels/ExportPanel"), "ExportPanel");
 export const LazyLibraryHubPanel = lazyNamed(() => import("../panels/LibraryHubPanel"), "LibraryHubPanel");
 export const LazyLinterPanel = lazyNamed(() => import("../panels/LinterPanel"), "LinterPanel");

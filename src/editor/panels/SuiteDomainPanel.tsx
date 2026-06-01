@@ -153,19 +153,18 @@ export function SuiteDomainPanel({
   const visibleEditors = focusedEditor ? [focusedEditor] : config.editors;
   const projectEntities = project?.semanticSchema.entities ?? [];
   const libraryEntities = catalog?.entities ?? [];
-  const allRecords = [
-    ...(project?.semanticSchema.records ?? []),
-    ...(catalog?.records ?? [])
-  ];
-  const records = [
-    ...(project?.semanticSchema.records.map((record) => ({ id: record.id, label: record.label, type: record.type, editState: record.editState })) ?? []),
-    ...(catalog?.records.map((record) => ({ id: record.id, label: record.label, type: record.type, editState: record.editState })) ?? [])
-  ];
   const selectedDetail =
     projectEntities.find((entity) => entity.id === selectedEntity?.id) ??
     libraryEntities.find((entity) => entity.id === selectedEntity?.id) ??
-    allRecords.find((record) => record.id === selectedEntity?.id) ??
+    (tab === "records" ? [
+      ...(project?.semanticSchema.records ?? []),
+      ...(catalog?.records ?? [])
+    ].find((record) => record.id === selectedEntity?.id) : null) ??
     null;
+  const records = tab === "records" ? [
+    ...(project?.semanticSchema.records.map((record) => ({ id: record.id, label: record.label, type: record.type, editState: record.editState })) ?? []),
+    ...(catalog?.records.map((record) => ({ id: record.id, label: record.label, type: record.type, editState: record.editState })) ?? [])
+  ] : [];
   const targetRecordTypes = project ? targetRecordTypesForEditor(tab, activeEditor) : [];
   const focusedTargetEditor = targetRecordTypes.length > 0 && activeEditor !== "domain";
   const selectedTargetRecordType = selectedTargetRecordTypeFromEntity(selectedEntity?.id ?? "", targetRecordTypes);
@@ -191,6 +190,7 @@ export function SuiteDomainPanel({
     overviewTargetRecordType && targetRecordTypes.includes(overviewTargetRecordType) ? [overviewTargetRecordType] :
     targetRecordTypes.slice(0, 1);
   const itemWorkbenchActive = tab === "economy" && activeEditor === "items";
+  const showOverviewCards = tab !== "records" && tab !== "linter" && !focusedTargetEditor && !itemWorkbenchActive && targetRecordTypes.length === 0;
   return (
     <section className="domain-workbench">
       <header className="domain-header">
@@ -272,7 +272,7 @@ export function SuiteDomainPanel({
         </div>
       )}
       <div className="domain-editor-grid">
-        {tab !== "records" && tab !== "linter" && !focusedTargetEditor && !itemWorkbenchActive && visibleEditors.map((editor) => {
+        {showOverviewCards && visibleEditors.map((editor) => {
           const matches = matchingEntities(editor, projectEntities, libraryEntities);
           return (
             <article key={editor.id} className="domain-editor-card">
@@ -1042,9 +1042,16 @@ function TargetRecordWorkbench({
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const records = targetRecords(project, recordType);
+  const visibleRecords = records.slice(0, 80);
   const selectedId = targetIdFromSelection(selectedEntity?.id ?? "", recordType) ?? records[0]?.id ?? 1;
   const opcode = opcodeForTargetRecord(recordType);
   const nextId = nextTargetRecordId(project, recordType);
+  const [editorReady, setEditorReady] = useState(false);
+  useEffect(() => {
+    setEditorReady(false);
+    const handle = window.setTimeout(() => setEditorReady(true), 120);
+    return () => window.clearTimeout(handle);
+  }, [recordType, selectedId]);
   return (
     <article className="domain-target-workbench">
       <header>
@@ -1065,7 +1072,7 @@ function TargetRecordWorkbench({
       </header>
       <div className="domain-target-layout">
         <ScrollArea className="domain-target-list" aria-label={`${targetRecordLabel(recordType)} records`}>
-          {records.map((record) => (
+          {visibleRecords.map((record) => (
             <button
               key={`${recordType}:${record.id}`}
               type="button"
@@ -1076,10 +1083,17 @@ function TargetRecordWorkbench({
               <small>{targetRecordSummary(project, recordType, record.id)}</small>
             </button>
           ))}
+          {records.length > visibleRecords.length && (
+            <p className="domain-list-limit">{records.length - visibleRecords.length} more {targetRecordLabel(recordType).toLowerCase()} record(s); use the focused editor or search to narrow.</p>
+          )}
           {records.length === 0 && <p>No {targetRecordLabel(recordType).toLowerCase()} records yet.</p>}
         </ScrollArea>
         <div className="domain-target-editor">
-          <TargetRecordEditor project={project} catalog={catalog} opcode={opcode} targetId={selectedId} recordType={recordType} onApplyCommand={onApplyCommand} />
+          {editorReady ? (
+            <TargetRecordEditor project={project} catalog={catalog} opcode={opcode} targetId={selectedId} recordType={recordType} onApplyCommand={onApplyCommand} />
+          ) : (
+            <div className="domain-target-editor-placeholder">Loading selected {targetRecordLabel(recordType).toLowerCase()}...</div>
+          )}
         </div>
       </div>
     </article>
@@ -1442,9 +1456,10 @@ function EntityRows({
   selectedEntity: SelectedEntity | null;
   onSelectEntity: (entity: SelectedEntity) => void;
 }) {
+  const visible = entities.slice(0, 80);
   return (
     <ScrollArea className="domain-entity-list" aria-label="Domain entities">
-      {entities.map((entity, index) => {
+      {visible.map((entity, index) => {
         const selected = selectedEntity?.id === entity.id;
         return (
           <button
@@ -1458,6 +1473,9 @@ function EntityRows({
           </button>
         );
       })}
+      {entities.length > visible.length && (
+        <p className="domain-list-limit">{entities.length - visible.length} more entr{entities.length - visible.length === 1 ? "y" : "ies"}; open the focused editor or search to narrow.</p>
+      )}
     </ScrollArea>
   );
 }

@@ -4,6 +4,7 @@
 @import "./editor/styles/assets.css";
 @import "./editor/styles/scripts.css";
 @import "./editor/styles/rules.css";
+@import "./editor/styles/combat.css";
 
 * {
   box-sizing: border-box;

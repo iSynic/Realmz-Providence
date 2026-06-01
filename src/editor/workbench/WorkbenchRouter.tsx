@@ -5,6 +5,7 @@ import { MediaAssetImportOptions } from "../mediaAssets";
 import { LibraryDraftSpec } from "../libraryDrafts";
 import { Issue } from "../types";
 import {
+  LazyCombatPanel as CombatPanel,
   LazyEncountersPanel as EncountersPanel,
   LazyExportPanel as ExportPanel,
   LazyLibraryHubPanel as LibraryHubPanel,
@@ -220,7 +221,22 @@ function WorkbenchRouterContent({
     );
   }
 
-  if (["combat", "economy"].includes(state.activeTab)) {
+  if (state.activeTab === "combat") {
+    return (
+      <CombatPanel
+        activeEditor={state.activeEditor}
+        project={state.project}
+        catalog={state.libraryCatalog}
+        selectedEntity={state.selectedEntity}
+        iconEntries={state.iconEntries}
+        onSelectEntity={onSelectEntity}
+        onSelectEditor={onSelectEditor}
+        onApplyCommand={onApplyCommand}
+      />
+    );
+  }
+
+  if (state.activeTab === "economy") {
     return (
       <SuiteDomainPanel
         tab={state.activeTab}

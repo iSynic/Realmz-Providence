@@ -1,0 +1,347 @@
+import { spawn } from "node:child_process";
+import fs from "node:fs";
+import http from "node:http";
+import path from "node:path";
+
+export const root = process.cwd();
+
+export function parseArgs(argv = process.argv.slice(2)) {
+  const args = new Map();
+  for (let index = 0; index < argv.length; index += 1) {
+    const value = argv[index];
+    if (!value.startsWith("--")) continue;
+    const [key, inline] = value.slice(2).split("=", 2);
+    args.set(key, inline ?? argv[index + 1] ?? "");
+    if (inline == null && argv[index + 1] && !argv[index + 1].startsWith("--")) index += 1;
+  }
+  return args;
+}
+
+export function npmCommand() {
+  return process.platform === "win32" ? "npm.cmd" : "npm";
+}
+
+export async function resolveBaseUrl(candidates, processes) {
+  for (const candidate of candidates.filter(Boolean)) {
+    const url = candidate.replace(/\/$/, "");
+    if (await isHttpReady(url)) return url;
+  }
+
+  const devServer = spawn(npmCommand(), ["run", "dev"], {
+    cwd: root,
+    env: { ...process.env, BROWSER: "none" },
+    stdio: ["ignore", "pipe", "pipe"],
+    windowsHide: true
+  });
+  processes.push(devServer);
+  devServer.stdout.on("data", (data) => process.stdout.write(`[dev] ${data}`));
+  devServer.stderr.on("data", (data) => process.stderr.write(`[dev] ${data}`));
+
+  const devUrl = "http://127.0.0.1:5178";
+  await waitFor(async () => isHttpReady(devUrl), 30_000, "Timed out waiting for Vite dev server.");
+  return devUrl;
+}
+
+export async function isHttpReady(url) {
+  return new Promise((resolve) => {
+    const request = http.get(url, (response) => {
+      response.resume();
+      resolve(response.statusCode >= 200 && response.statusCode < 500);
+    });
+    request.on("error", () => resolve(false));
+    request.setTimeout(1000, () => {
+      request.destroy();
+      resolve(false);
+    });
+  });
+}
+
+export function createRunRoot(prefix = "performance") {
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\..+$/, "").replace("T", "-");
+  const dir = path.join(root, "tmp", "performance-smoke", `${prefix}-${stamp}`);
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+export function loadBudgets(file = path.join(root, "docs", "performance-budgets.json")) {
+  return JSON.parse(fs.readFileSync(file, "utf8")).budgets;
+}
+
+export function projectUrl(baseUrl, projectFile) {
+  if (projectFile.startsWith("http://") || projectFile.startsWith("https://")) return projectFile;
+  const full = path.resolve(projectFile);
+  const relative = path.relative(root, full).replace(/\\/g, "/");
+  if (relative.startsWith("..")) throw new Error(`Project must be inside workspace for browser serving: ${full}`);
+  return `${baseUrl}/${relative}`;
+}
+
+export function defaultProjectSpecs(explicitProjects = []) {
+  const explicit = explicitProjects.filter(Boolean).map((file, index) => ({
+    name: path.basename(path.dirname(file)) || `project-${index + 1}`,
+    file,
+    required: true
+  }));
+  if (explicit.length > 0) return explicit;
+  return [
+    {
+      name: "Tutorial",
+      file: findLatestProject(["Tutorial"], ["MapsAuthoring.providence", "ScriptsV2.providence", "TextAssets.providence"]),
+      required: false
+    },
+    {
+      name: "Destroy the Necronomicon",
+      file: findLatestProject(["Destroy", "Necronomicon"], []),
+      required: false
+    }
+  ];
+}
+
+export function findLatestProject(nameNeedles, pathNeedles) {
+  const roots = [path.join(root, "tmp", "editor-smoke-runs"), path.join(root, "tmp", "oracle-runs"), path.join(root, "projects")];
+  const matches = [];
+  for (const searchRoot of roots) visit(searchRoot);
+  matches.sort((a, b) => b.mtimeMs - a.mtimeMs);
+  return matches[0]?.file ?? null;
+
+  function visit(dir) {
+    if (!fs.existsSync(dir)) return;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) visit(full);
+      else if (entry.name === "project.json" && projectMatches(full)) matches.push({ file: full, mtimeMs: fs.statSync(full).mtimeMs });
+    }
+  }
+
+  function projectMatches(file) {
+    const normalized = file.toLowerCase();
+    const nameOk = nameNeedles.length === 0 || nameNeedles.some((needle) => normalized.includes(needle.toLowerCase()));
+    const pathOk = pathNeedles.length === 0 || pathNeedles.some((needle) => normalized.includes(needle.toLowerCase()));
+    return nameOk && pathOk;
+  }
+}
+
+export function findEdge() {
+  const candidates = [
+    process.env.EDGE_PATH,
+    "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+    "C:/Program Files/Microsoft/Edge/Application/msedge.exe"
+  ].filter(Boolean);
+  const found = candidates.find((candidate) => fs.existsSync(candidate));
+  if (!found) throw new Error("Microsoft Edge was not found. Set EDGE_PATH to a Chromium-compatible browser.");
+  return found;
+}
+
+export async function launchBrowser(processes, windowSize = "1500,1050") {
+  const userDataDir = path.join(root, "tmp", "ui-performance-edge-profile");
+  fs.mkdirSync(userDataDir, { recursive: true });
+  const port = 9451 + Math.floor(Math.random() * 300);
+  const browserProcess = spawn(findEdge(), [
+    `--remote-debugging-port=${port}`,
+    `--user-data-dir=${userDataDir}`,
+    "--headless=new",
+    "--disable-gpu",
+    "--no-first-run",
+    "--no-default-browser-check",
+    `--window-size=${windowSize}`,
+    "about:blank"
+  ], { stdio: "ignore", windowsHide: true });
+  processes.push(browserProcess);
+  const targets = await waitFor(async () => {
+    try {
+      return await getJson(`http://127.0.0.1:${port}/json/list`);
+    } catch {
+      return null;
+    }
+  }, 20_000, "Timed out waiting for Edge debugging port.");
+  const pageTarget = targets.find((target) => target.type === "page");
+  if (!pageTarget) throw new Error("No Edge page target found.");
+  return connectCdp(pageTarget.webSocketDebuggerUrl);
+}
+
+export async function preparePage(client, url) {
+  await client.send("Page.enable");
+  await client.send("Runtime.enable");
+  await client.send("Performance.enable").catch(() => {});
+  await client.send("Page.navigate", { url });
+  await waitFor(async () => await evalValue(client, "document.body.innerText.includes('Realmz Providence')"), 45_000, "Timed out waiting for Providence shell.");
+  await evalValue(client, LONG_TASK_OBSERVER_SOURCE);
+}
+
+export async function measureInteraction(client, label, budgetKey, budgets, actionExpression, settleExpression = "true") {
+  await evalValue(client, "__providencePerf.clearLongTasks()");
+  const started = await evalValue(client, "performance.now()");
+  const actionResult = await evalValue(client, actionExpression);
+  if (actionResult === false) {
+    const ended = await evalValue(client, "performance.now()");
+    return {
+      label,
+      budgetKey,
+      durationMs: Math.round(ended - started),
+      status: "pass",
+      actionResult,
+      longTasks: [],
+      maxLongTaskMs: 0,
+      longTaskStatus: "pass"
+    };
+  }
+  await waitFor(async () => await evalValue(client, `Boolean(${settleExpression})`), 20_000, `Timed out settling ${label}.`);
+  await settleFrames(client);
+  const ended = await evalValue(client, "performance.now()");
+  const longTasks = await evalValue(client, "__providencePerf.longTasks()");
+  const durationMs = Math.round(ended - started);
+  return {
+    label,
+    budgetKey,
+    durationMs,
+    status: budgetStatus(durationMs, budgets[budgetKey]),
+    actionResult,
+    longTasks,
+    maxLongTaskMs: Math.round(Math.max(0, ...longTasks.map((task) => task.duration))),
+    longTaskStatus: budgetStatus(Math.max(0, ...longTasks.map((task) => task.duration)), budgets.longTask)
+  };
+}
+
+export async function clickSelector(client, selector) {
+  const point = await evalValue(client, `
+    (() => {
+      const element = document.querySelector(${JSON.stringify(selector)});
+      if (!element) return null;
+      element.scrollIntoView({ block: "center", inline: "center" });
+      const rect = element.getBoundingClientRect();
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    })()
+  `);
+  if (!point) return false;
+  await client.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: point.x, y: point.y, button: "none" });
+  await client.send("Input.dispatchMouseEvent", { type: "mousePressed", x: point.x, y: point.y, button: "left", clickCount: 1 });
+  await client.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: point.x, y: point.y, button: "left", clickCount: 1 });
+  return true;
+}
+
+export async function settleFrames(client) {
+  await evalValue(client, "new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))");
+  await evalValue(client, "new Promise((resolve) => setTimeout(resolve, 0))");
+}
+
+export function budgetStatus(durationMs, budget) {
+  if (!budget) return "pass";
+  if (durationMs >= budget.failMs) return "fail";
+  if (durationMs >= budget.warnMs) return "warn";
+  return "pass";
+}
+
+export function summarizeReport(report) {
+  const probes = report.scenarios.flatMap((scenario) => scenario.probes ?? []);
+  const measured = probes.filter((probe) => !probe.skipped);
+  const failed = measured.filter((probe) => probe.status === "fail" || probe.longTaskStatus === "fail");
+  const warned = measured.filter((probe) => probe.status === "warn" || probe.longTaskStatus === "warn");
+  return {
+    ok: failed.length === 0,
+    failed: failed.length,
+    warned: warned.length,
+    measured: measured.length,
+    skipped: probes.length - measured.length + report.scenarios.filter((scenario) => scenario.skipped).length
+  };
+}
+
+export function writeJson(file, value) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+}
+
+function getJson(url) {
+  return new Promise((resolve, reject) => {
+    http.get(url, (response) => {
+      let body = "";
+      response.on("data", (chunk) => { body += chunk; });
+      response.on("end", () => {
+        try {
+          resolve(JSON.parse(body));
+        } catch (error) {
+          reject(error);
+        }
+      });
+    }).on("error", reject);
+  });
+}
+
+export function connectCdp(wsUrl) {
+  return new Promise((resolve, reject) => {
+    const ws = new WebSocket(wsUrl);
+    let id = 0;
+    const pending = new Map();
+    ws.onopen = () => resolve({
+      send(method, params = {}) {
+        return new Promise((res, rej) => {
+          const message = { id: ++id, method, params };
+          pending.set(id, { res, rej });
+          ws.send(JSON.stringify(message));
+        });
+      },
+      close() {
+        ws.close();
+      }
+    });
+    ws.onerror = reject;
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      if (!message.id || !pending.has(message.id)) return;
+      const { res, rej } = pending.get(message.id);
+      pending.delete(message.id);
+      if (message.error) rej(new Error(message.error.message));
+      else res(message.result);
+    };
+  });
+}
+
+export async function evalValue(client, expression) {
+  const result = await client.send("Runtime.evaluate", {
+    expression,
+    awaitPromise: true,
+    returnByValue: true
+  });
+  if (result.exceptionDetails) {
+    const details = result.exceptionDetails.exception?.description
+      ?? result.exceptionDetails.exception?.value
+      ?? result.exceptionDetails.text
+      ?? "Runtime evaluation failed.";
+    throw new Error(details);
+  }
+  return result.result.value;
+}
+
+export async function waitFor(check, timeoutMs, message) {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    const value = await check();
+    if (value) return value;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error(typeof message === "function" ? await message() : message);
+}
+
+const LONG_TASK_OBSERVER_SOURCE = `
+  (() => {
+    if (window.__providencePerf) return true;
+    const longTasks = [];
+    window.__providencePerf = {
+      clearLongTasks() { longTasks.length = 0; },
+      longTasks() { return longTasks.slice(); }
+    };
+    try {
+      const observer = new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          longTasks.push({
+            name: entry.name,
+            startTime: Math.round(entry.startTime),
+            duration: Math.round(entry.duration)
+          });
+        }
+      });
+      observer.observe({ type: "longtask", buffered: true });
+    } catch {
+      // Long Task API is unavailable in some modes; duration probes still run.
+    }
+    return true;
+  })()
+`;

@@ -9,7 +9,6 @@ import {
 import { ensureBrowserReferenceTileAttributes } from "../browser/project";
 import { loadImage } from "../components/TileSprite";
 import {
-  PAINTABLE_REFERENCE_ACTOR_ICON_VALUES,
   PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES,
   referencedMapIconIds,
   tileIconCandidates
@@ -209,7 +208,7 @@ export function useAppBootstrapEffects({
             .flatMap((asset) => tileIconCandidates(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId)),
           ...projectStampAssets.flatMap((asset) => tileIconCandidates(asset.resourceId)),
           ...libraryIconAssets.flatMap((asset) => asset.resourceId == null ? [] : tileIconCandidates(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId)),
-          ...(!desktopRuntime ? [...PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES, ...PAINTABLE_REFERENCE_ACTOR_ICON_VALUES].flatMap(tileIconCandidates) : [])
+          ...(!desktopRuntime ? PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES.flatMap(tileIconCandidates) : [])
         ])
       ].sort((a, b) => a - b);
       if (ids.length === 0) {

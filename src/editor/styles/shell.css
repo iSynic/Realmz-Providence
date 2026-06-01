@@ -21,11 +21,59 @@
 
 
 
+.topbar-title-cluster {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+
+
 .app-mark {
   display: flex;
   align-items: center;
   gap: 10px;
   min-width: 0;
+}
+
+
+
+.topbar-history-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 30px;
+  padding-left: 10px;
+  border-left: 1px solid #2c333d;
+}
+
+
+
+.topbar-history-nav button {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #303844;
+  border-radius: 5px;
+  background: #12161b;
+  color: #9fb7cf;
+}
+
+
+
+.topbar-history-nav button:hover:not(:disabled) {
+  border-color: #4a77ad;
+  background: #1b2734;
+  color: #e8f4ff;
+}
+
+
+
+.topbar-history-nav button:disabled {
+  opacity: 0.34;
+  cursor: not-allowed;
 }
 
 
@@ -42,6 +90,28 @@
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.4px;
+}
+
+
+.app-mark-button {
+  padding: 0;
+  cursor: pointer;
+}
+
+
+
+.app-mark-button:hover {
+  border-color: #74a9df;
+  background: #1d2d43;
+}
+
+
+
+.app-mark-button img {
+  width: 24px;
+  height: 24px;
+  display: block;
+  image-rendering: pixelated;
 }
 
 
@@ -300,19 +370,17 @@
 
 .editor-tool-rail,
 .domain-rail {
-  width: 78px;
+  width: 64px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 7px;
-  padding: 9px 8px;
+  gap: clamp(3px, 0.7vh, 7px);
+  padding: clamp(4px, 0.9vh, 9px) 5px;
   background: #101214;
   border-right: 1px solid #252a31;
-  overflow-y: scroll;
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: #536171 #111418;
+  overflow: hidden;
+  scrollbar-width: none;
 }
 
 
@@ -1716,6 +1784,87 @@ body.is-resizing-pane .pane-resize-handle::before {
   background: #101214;
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.72);
   overflow: hidden;
+}
+
+
+
+.divinity-manual-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1180;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  background: rgba(3, 6, 10, 0.62);
+  backdrop-filter: blur(2px);
+}
+
+
+
+.divinity-manual-window {
+  position: fixed;
+  display: block;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.72);
+  overflow: hidden;
+}
+
+
+.divinity-manual-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
+}
+
+
+.divinity-manual-window.is-dragging {
+  user-select: none;
+}
+
+
+.divinity-manual-window.is-dragging .divinity-manual-frame {
+  pointer-events: none;
+}
+
+
+
+.divinity-manual-drag-strip {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: 20px;
+  right: 20px;
+  height: 18px;
+  cursor: move;
+}
+
+
+
+.divinity-manual-resize-grip {
+  position: absolute;
+  z-index: 3;
+  right: 0;
+  bottom: 0;
+  width: 18px;
+  height: 18px;
+  cursor: nwse-resize;
+}
+
+
+
+.divinity-manual-resize-grip::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 10px;
+  height: 10px;
+  background:
+    linear-gradient(135deg, transparent 0 43%, rgba(0, 0, 0, 0.55) 43% 50%, transparent 50%),
+    linear-gradient(135deg, transparent 0 63%, rgba(0, 0, 0, 0.55) 63% 70%, transparent 70%);
 }
 
 
@@ -3258,9 +3407,9 @@ a.documents-source-chip:hover {
   width: 100%;
   display: grid;
   justify-items: center;
-  gap: 3px;
-  min-height: 56px;
-  padding: 7px 4px;
+  gap: clamp(1px, 0.3vh, 3px);
+  min-height: clamp(42px, calc((100vh - 116px) / 12), 56px);
+  padding: clamp(4px, 0.7vh, 7px) 3px;
   border: 1px solid color-mix(in srgb, var(--rail-accent, #3c78b2) 25%, #272e37);
   border-radius: 8px;
   background:
@@ -3315,7 +3464,7 @@ a.documents-source-chip:hover {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 10px;
+  font-size: clamp(8px, 1.05vh, 10px);
   font-weight: 800;
   color: color-mix(in srgb, var(--rail-accent, #9dcfff) 76%, #dce8f3);
 }
@@ -3341,6 +3490,36 @@ a.documents-source-chip:hover {
   line-height: 1;
 }
 
+@media (max-height: 720px) {
+  .editor-tool-rail,
+  .domain-rail {
+    width: 58px;
+    gap: 2px;
+    padding: 4px;
+  }
+
+  .rail-tool {
+    min-height: 39px;
+    border-radius: 7px;
+  }
+
+  .rail-icon svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .rail-label {
+    font-size: 8px;
+  }
+
+  .rail-tool b {
+    min-width: 15px;
+    height: 15px;
+    right: -4px;
+    font-size: 8px;
+  }
+}
+
 
 
 
@@ -3356,15 +3535,41 @@ a.documents-source-chip:hover {
 
 
 .project-start {
+  position: relative;
   flex: 1;
-  display: grid;
-  place-items: center;
-  padding: 36px;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: clamp(28px, 7vw, 96px);
+  overflow: hidden;
+  background: #050909;
+}
+
+
+
+.project-start::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
   background:
-    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(255,255,255,0.025) 1px, transparent 1px),
-    #0d0e10;
-  background-size: 28px 28px;
+    linear-gradient(90deg, rgba(4, 8, 8, 0.76) 0%, rgba(4, 8, 8, 0.44) 34%, rgba(4, 8, 8, 0.08) 68%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.22) 0%, transparent 30%, rgba(0, 0, 0, 0.18) 100%);
+}
+
+
+
+.project-start-splash {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center center;
+  image-rendering: auto;
+  user-select: none;
 }
 
 
@@ -3372,15 +3577,18 @@ a.documents-source-chip:hover {
 
 
 .project-start-panel {
+  position: relative;
+  z-index: 2;
   width: min(520px, 100%);
   display: grid;
   justify-items: start;
   gap: 14px;
-  padding: 24px;
-  border: 1px solid #28313c;
+  padding: 22px 24px;
+  border: 1px solid rgba(126, 174, 223, 0.32);
   border-radius: 8px;
-  background: #15191e;
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.36);
+  background: rgba(8, 13, 14, 0.72);
+  box-shadow: 0 18px 64px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
 }
 
 
@@ -3389,14 +3597,13 @@ a.documents-source-chip:hover {
 
 .project-start-mark {
   width: 44px;
-  height: 38px;
-  display: grid;
-  place-items: center;
+  height: 44px;
+  display: block;
+  padding: 6px;
   border: 1px solid #3d5f89;
   border-radius: 6px;
   background: #172236;
-  color: #9dcfff;
-  font-weight: 900;
+  image-rendering: pixelated;
 }
 
 
@@ -3405,7 +3612,8 @@ a.documents-source-chip:hover {
 
 .project-start h1 {
   color: #f2f6fb;
-  font-size: 20px;
+  font-size: 21px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
 }
 
 
@@ -3414,7 +3622,7 @@ a.documents-source-chip:hover {
 
 .project-start p {
   max-width: 58ch;
-  color: #a9b4c0;
+  color: #d0e3f0;
   font-size: 12px;
   line-height: 1.55;
 }
@@ -3434,7 +3642,7 @@ a.documents-source-chip:hover {
 
 
 .project-start small {
-  color: #687481;
+  color: #99aebc;
   font-size: 11px;
 }
 

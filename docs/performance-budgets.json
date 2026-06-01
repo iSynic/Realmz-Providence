@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "budgets": {
+    "coldProjectOpen": { "warnMs": 1500, "failMs": 3500 },
+    "toolSwitch": { "warnMs": 250, "failMs": 750 },
+    "largeApOpen": { "warnMs": 750, "failMs": 1500 },
+    "recordSelection": { "warnMs": 150, "failMs": 500 },
+    "targetPickerOpen": { "warnMs": 150, "failMs": 500 },
+    "mapPaintRelease": { "warnMs": 75, "failMs": 150 },
+    "combatGridEdit": { "warnMs": 150, "failMs": 500 },
+    "search": { "warnMs": 150, "failMs": 500 },
+    "longTask": { "warnMs": 75, "failMs": 150 }
+  }
+}

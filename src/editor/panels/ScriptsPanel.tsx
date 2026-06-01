@@ -284,6 +284,10 @@ function ScriptAuthoringPanel({
         counts.set(filter.id, null);
         continue;
       }
+      if (filter.id !== inventoryFilter && filter.id === "warnings") {
+        counts.set(filter.id, null);
+        continue;
+      }
       counts.set(filter.id, filterScriptsByInventory(project, scripts, filter.id, selectedMap, canScopeToMap, fullWarningDiagnosticsById).length);
     }
     return counts;

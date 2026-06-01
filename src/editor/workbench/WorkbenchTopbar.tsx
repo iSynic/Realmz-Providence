@@ -1,4 +1,5 @@
-import { BookOpen, Download, FilePlus2, FolderOpen, LibraryBig, RefreshCcw, Save, Upload } from "lucide-react";
+import { useRef } from "react";
+import { BookOpen, ChevronLeft, ChevronRight, Download, FilePlus2, FolderOpen, LibraryBig, RefreshCcw, Save, Upload } from "lucide-react";
 import { ActiveWorkbench } from "../types";
 import { IconButton } from "../components/IconButton";
 
@@ -20,9 +21,14 @@ export function WorkbenchTopbar({
   canSave,
   canExport,
   tutorialEnabled,
+  canNavigateBack,
+  canNavigateForward,
   onLibrary,
   onProject,
   onDocuments,
+  onDivinityManual,
+  onNavigateBack,
+  onNavigateForward,
   onToggleTutorial,
   onNewProject,
   onOpenProject,
@@ -49,9 +55,14 @@ export function WorkbenchTopbar({
   canSave: boolean;
   canExport: boolean;
   tutorialEnabled: boolean;
+  canNavigateBack: boolean;
+  canNavigateForward: boolean;
   onLibrary: () => void;
   onProject: () => void;
   onDocuments: () => void;
+  onDivinityManual: () => void;
+  onNavigateBack: () => void;
+  onNavigateForward: () => void;
   onToggleTutorial: () => void;
   onNewProject: () => void;
   onOpenProject: () => void;
@@ -61,13 +72,45 @@ export function WorkbenchTopbar({
   onSave: () => void;
   onExport: () => void;
 }) {
+  const manualClickRef = useRef({ count: 0, lastClickMs: 0 });
+
+  function handleManualIconClick() {
+    const now = window.performance.now();
+    const nextCount = now - manualClickRef.current.lastClickMs < 1500 ? manualClickRef.current.count + 1 : 1;
+    manualClickRef.current = { count: nextCount, lastClickMs: now };
+    if (nextCount >= 3) {
+      manualClickRef.current = { count: 0, lastClickMs: 0 };
+      onDivinityManual();
+    }
+  }
+
   return (
     <header className="editor-topbar workbench-topbar">
-      <div className="app-mark">
-        <span className="mark-glyph">RP</span>
+      <div className="topbar-title-cluster">
+        <div className="app-mark">
+          <button
+            className="mark-glyph app-mark-button"
+            type="button"
+            onClick={handleManualIconClick}
+            title="Triple-click to open the Divinity Manual"
+            aria-label="Realmz Providence. Triple-click to open the Divinity Manual."
+          >
+            <img src="/divinity-icon.png" alt="" draggable={false} />
+          </button>
+          <div>
+            <strong>{title}</strong>
+            <small>{subtitle}</small>
+          </div>
+        </div>
         <div>
-          <strong>{title}</strong>
-          <small>{subtitle}</small>
+          <div className="topbar-history-nav" aria-label="Workbench navigation history">
+            <button type="button" aria-label="Go back to previous tool" title="Back to previous tool" disabled={!canNavigateBack} onClick={onNavigateBack}>
+              <ChevronLeft size={15} />
+            </button>
+            <button type="button" aria-label="Go forward to next tool" title="Forward to next tool" disabled={!canNavigateForward} onClick={onNavigateForward}>
+              <ChevronRight size={15} />
+            </button>
+          </div>
         </div>
       </div>
 

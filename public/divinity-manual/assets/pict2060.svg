@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="325" height="74" viewBox="0 0 325 74">
+  <rect width="100%" height="100%" fill="#f4f1e8" stroke="#68635a" stroke-width="1"/>
+  <path d="M0 0 L325 74 M325 0 L0 74" stroke="#b8b0a2" stroke-width="1"/>
+  <text x="50%" y="45%" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#252525">PICT 2060</text>
+  <text x="50%" y="62%" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#555">325x74</text>
+</svg>
