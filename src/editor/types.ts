@@ -1051,6 +1051,7 @@ export type ProjectCommand =
   | { kind: "deleteQuestLabel"; label: string; id: number }
   | { kind: "applyRealmzScriptStep"; label: string; triggerId: string; slot: number; opcode: number; id: number; edcdValues?: number[] }
   | { kind: "updateScenarioShell"; label: string; changes: Partial<ScenarioShell> }
+  | { kind: "updateScenarioSecurityCodes"; label: string; shellChanges: Partial<ScenarioShell>; backupChanges?: Partial<ScenarioShell> }
   | { kind: "updateScenarioContactInfo"; label: string; changes: Partial<ScenarioContactInfo> }
   | { kind: "updateScenarioRestrictions"; label: string; changes: Partial<ScenarioRestrictions> }
   | { kind: "updateGlobalMacroHook"; label: string; slot: number; door: number }

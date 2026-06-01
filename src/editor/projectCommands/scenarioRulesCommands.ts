@@ -36,6 +36,25 @@ export function updateScenarioShell(project: Project, changes: Extract<ProjectCo
   return { ...project, scenario: { ...project.scenario, shell } };
 }
 
+export function updateScenarioSecurityCodes(project: Project, command: Extract<ProjectCommand, { kind: "updateScenarioSecurityCodes" }>) {
+  const shell = {
+    ...defaultScenarioShell(project),
+    ...(project.scenario.shell ?? {}),
+    ...command.shellChanges,
+    authored: true
+  };
+  const securityBackup = command.backupChanges
+    ? {
+        ...defaultScenarioShell(project),
+        sourceFile: "Data CS",
+        ...(project.scenario.securityBackup ?? {}),
+        ...command.backupChanges,
+        authored: true
+      }
+    : project.scenario.securityBackup;
+  return { ...project, scenario: { ...project.scenario, shell, securityBackup } };
+}
+
 export function updateScenarioContactInfo(project: Project, changes: Extract<ProjectCommand, { kind: "updateScenarioContactInfo" }>["changes"]) {
   const contactInfo = {
     ...defaultScenarioContactInfo(project),

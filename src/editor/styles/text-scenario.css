@@ -1103,6 +1103,7 @@
 
 .scenario-action-row,
 .scenario-empty-state,
+.scenario-security-toolbar,
 .scenario-restriction-toolbar {
   display: flex;
   align-items: center;
@@ -1115,6 +1116,7 @@
 
 .scenario-action-row button,
 .scenario-empty-state button,
+.scenario-security-toolbar button,
 .scenario-restriction-toolbar button {
   border: 1px solid #3a5470;
   border-radius: 6px;
@@ -1125,6 +1127,76 @@
   font-size: 10px;
   font-weight: 900;
   cursor: pointer;
+}
+
+.scenario-security-toolbar button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.scenario-security-field input[readonly] {
+  border-color: #263542;
+  background: #0a1118;
+  color: #c8d8e8;
+}
+
+.scenario-security-warning {
+  margin: 0;
+  border: 1px solid #775b1e;
+  border-radius: 7px;
+  background: #1d1609;
+  color: #ffd770;
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.scenario-registration-generator {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #263847;
+  border-radius: 7px;
+  background: #0a1118;
+  padding: 10px;
+}
+
+.scenario-registration-generator > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.scenario-registration-generator > header div {
+  display: grid;
+  gap: 3px;
+}
+
+.scenario-registration-generator > header span {
+  color: #eff6ff;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.scenario-registration-generator > header small {
+  color: #9bb2c8;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.scenario-registration-generator > header b {
+  color: #ffd770;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.scenario-registration-code input[readonly] {
+  border-color: #5c4716;
+  background: #171207;
+  color: #ffe28a;
+  font-weight: 900;
 }
 
 

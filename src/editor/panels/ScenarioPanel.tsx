@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import { Project, ProjectCommand } from "../types";
 import { REALMZ_CASTES, REALMZ_RACES } from "../rulesCatalog";
 
@@ -12,6 +13,7 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool
   const shell = project.scenario.shell ?? defaultShell(project);
   const contact = project.scenario.contactInfo ?? defaultContact(project);
   const restrictions = project.scenario.restrictions;
+  const securityBackup = project.scenario.securityBackup ?? null;
   const startupMap = project.maps.find((map) => map.levelType === "land" && map.index === shell.landLevel) ?? null;
   const issues = scenarioIssues(project, shell);
   return (
@@ -99,12 +101,19 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool
             title="Technical Details"
             rows={[
               ["Startup fields", "Recommended level, maximum level, starting land, and starting position are editable Realmz fields."],
-              ["Security fields", "Legacy registration/security code segments are kept intact."],
+              ["Security fields", "Two encoded 20-byte registration segments are stored in the startup shell."],
               ["Offset 60", "Creator/user check is a Str255. Empty means no check."],
               ["Additional data", `${shell.trailingBytes?.length ?? 0} imported byte(s) kept intact.`]
             ]}
           />
         </article>
+
+        <SecurityRegistrationCard
+          scenarioName={project.scenario.name}
+          shell={shell}
+          securityBackup={securityBackup}
+          onApplyCommand={onApplyCommand}
+        />
 
         <article id="scenario-contact" className="scenario-card">
           <header>
@@ -168,7 +177,13 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool
               action="Open Castes"
               onClick={() => onOpenTool("rules", "castes")}
             />
-            <HubCard title="Security / Registration" detail="Legacy code segments are shown here, but editing them is not ready yet." status={shell.codeseg1.some(Boolean) || shell.codeseg2.some(Boolean) ? "already set" : "empty"} />
+            <HubCard
+              title="Security / Registration"
+              detail="Review or unlock the two Divinity registration code segments."
+              status={shell.codeseg1.some(Boolean) || shell.codeseg2.some(Boolean) ? "already set" : "empty"}
+              action="Review Security"
+              onClick={() => document.getElementById("scenario-security")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            />
             <HubCard
               title="Global Macro Hooks"
               detail="Start, death, quit, shop, and temple macro hook slots."
@@ -321,6 +336,158 @@ function HubCard({ title, detail, status, action, onClick }: { title: string; de
         )}
       </footer>
     </div>
+  );
+}
+
+function SecurityRegistrationCard({
+  scenarioName,
+  shell,
+  securityBackup,
+  onApplyCommand
+}: {
+  scenarioName: string;
+  shell: NonNullable<Project["scenario"]["shell"]>;
+  securityBackup: Project["scenario"]["securityBackup"];
+  onApplyCommand: (command: ProjectCommand) => void;
+}) {
+  const decoded = useMemo(() => decodeSecuritySegments(shell, securityBackup ?? null), [shell, securityBackup]);
+  const [unlocked, setUnlocked] = useState(false);
+  const [segment1, setSegment1] = useState(decoded.segment1);
+  const [segment2, setSegment2] = useState(decoded.segment2);
+  const [registrationName, setRegistrationName] = useState("");
+  const [serialNumber, setSerialNumber] = useState("");
+
+  useEffect(() => {
+    if (!unlocked) {
+      setSegment1(decoded.segment1);
+      setSegment2(decoded.segment2);
+    }
+  }, [decoded.segment1, decoded.segment2, unlocked]);
+
+  const hasSegments = normalizedSecurityBytes(shell.codeseg1).some(Boolean)
+    || normalizedSecurityBytes(shell.codeseg2).some(Boolean)
+    || decoded.segment1.length > 0
+    || decoded.segment2.length > 0;
+  const status = hasSegments ? "set" : "empty";
+  const changed = segment1 !== decoded.segment1 || segment2 !== decoded.segment2;
+  const readableNote = securityBackup
+    ? "Decoded with this scenario's security backup. Realmz uses these segments when checking registration codes."
+    : hasSegments
+      ? "No Data CS backup was imported, so these fields show the stored segment text as best as possible."
+      : "No security segments are set.";
+  const registrationCode = registrationCodeFor(scenarioName, segment1, segment2, registrationName, serialNumber);
+
+  const applySegments = () => {
+    const encoded = encodeSecuritySegments(segment1, segment2, securityBackup ?? null);
+    onApplyCommand({
+      kind: "updateScenarioSecurityCodes",
+      label: "Update registration security codes",
+      shellChanges: {
+        codeseg1: encoded.codeseg1,
+        codeseg2: encoded.codeseg2
+      },
+      backupChanges: securityBackup ? undefined : {
+        sourceFile: "Data CS",
+        codeseg1: encoded.backupCodeseg1,
+        codeseg2: encoded.backupCodeseg2,
+        trailingBytes: []
+      }
+    });
+    setUnlocked(false);
+  };
+
+  return (
+    <article id="scenario-security" className="scenario-card scenario-security-card">
+      <header>
+        <div>
+          <span>Security / Registration</span>
+          <small>Two Divinity code segments, up to 20 characters each</small>
+        </div>
+        <b>{status}</b>
+      </header>
+      <p className="scenario-note">{readableNote}</p>
+      <div className="scenario-security-toolbar">
+        <button type="button" onClick={() => setUnlocked((value) => !value)}>
+          {unlocked ? "Lock Fields" : "Unlock Editing"}
+        </button>
+        <button type="button" disabled={!unlocked || !changed} onClick={applySegments}>
+          Apply Security Codes
+        </button>
+      </div>
+      <div className="scenario-form-grid">
+        <label className="scenario-field scenario-security-field">
+          <span>Code Segment 1</span>
+          <input
+            readOnly={!unlocked}
+            maxLength={SECURITY_SEGMENT_LENGTH}
+            value={segment1}
+            onChange={(event) => setSegment1(cleanSecuritySegment(event.currentTarget.value))}
+          />
+          <small>{segment1.length}/{SECURITY_SEGMENT_LENGTH} characters</small>
+        </label>
+        <label className="scenario-field scenario-security-field">
+          <span>Code Segment 2</span>
+          <input
+            readOnly={!unlocked}
+            maxLength={SECURITY_SEGMENT_LENGTH}
+            value={segment2}
+            onChange={(event) => setSegment2(cleanSecuritySegment(event.currentTarget.value))}
+          />
+          <small>{segment2.length}/{SECURITY_SEGMENT_LENGTH} characters</small>
+        </label>
+      </div>
+      <section className="scenario-registration-generator">
+        <header>
+          <div>
+            <span>Registration Code Generator</span>
+            <small>Enter the player's name and Realmz serial number.</small>
+          </div>
+          <b>{registrationCode ?? "ready"}</b>
+        </header>
+        <div className="scenario-form-grid">
+          <label className="scenario-field">
+            <span>Registration Name</span>
+            <input
+              value={registrationName}
+              maxLength={26}
+              onChange={(event) => setRegistrationName(cleanRegistrationName(event.currentTarget.value))}
+              placeholder="Name supplied by player"
+            />
+          </label>
+          <label className="scenario-field">
+            <span>Realmz Serial Number</span>
+            <input
+              value={serialNumber}
+              inputMode="numeric"
+              onChange={(event) => setSerialNumber(event.currentTarget.value.replace(/[^0-9-]/g, "").slice(0, 12))}
+              placeholder="Serial number"
+            />
+          </label>
+        </div>
+        <label className="scenario-field scenario-field-wide scenario-registration-code">
+          <span>Registration Code</span>
+          <input
+            readOnly
+            value={registrationCode ?? ""}
+            placeholder="Enter name and serial number"
+          />
+          <small>Send this code back with the exact registration name used here.</small>
+        </label>
+      </section>
+      {unlocked && (
+        <p className="scenario-security-warning">
+          Changing these values changes the registration code players need for the scenario. Keep a copy of the exact text you enter.
+        </p>
+      )}
+      <EvidenceBox
+        title="Technical Details"
+        rows={[
+          ["Startup bytes", `${bytePreview(shell.codeseg1)} / ${bytePreview(shell.codeseg2)}`],
+          ["Security backup", securityBackup ? `Data CS present (${bytePreview(securityBackup.codeseg1)})` : "No Data CS backup imported; Providence will create a zero-mask backup when applying edits."],
+          ["Realmz decode", "segment2 = stored segment2 - backup segment1; segment1 = stored segment1 - segment2"]
+        ]}
+      />
+    </article>
   );
 }
 
@@ -505,6 +672,138 @@ function activeGlobalHookCount(project: Project) {
 function clampInt(value: number, min: number, max: number) {
   if (!Number.isFinite(value)) return min;
   return Math.max(min, Math.min(max, Math.trunc(value)));
+}
+
+const SECURITY_SEGMENT_LENGTH = 20;
+
+function normalizedSecurityBytes(bytes: number[] | undefined | null) {
+  return Array.from({ length: SECURITY_SEGMENT_LENGTH }, (_, index) => ((bytes?.[index] ?? 0) & 0xff));
+}
+
+function decodeSecuritySegments(shell: NonNullable<Project["scenario"]["shell"]>, securityBackup: Project["scenario"]["securityBackup"]) {
+  const stored1 = normalizedSecurityBytes(shell.codeseg1);
+  const stored2 = normalizedSecurityBytes(shell.codeseg2);
+  const mask1 = normalizedSecurityBytes(securityBackup?.codeseg1);
+  const decoded2 = stored2.map((byte, index) => subtractByte(byte, mask1[index]));
+  const decoded1 = stored1.map((byte, index) => subtractByte(byte, decoded2[index]));
+  if (!securityBackup) {
+    return {
+      segment1: bytesToSecurityText(stored1),
+      segment2: bytesToSecurityText(stored2)
+    };
+  }
+  return {
+    segment1: bytesToSecurityText(decoded1),
+    segment2: bytesToSecurityText(decoded2)
+  };
+}
+
+function encodeSecuritySegments(segment1: string, segment2: string, securityBackup: Project["scenario"]["securityBackup"]) {
+  const plain1 = securityTextToBytes(segment1);
+  const plain2 = securityTextToBytes(segment2);
+  const backupCodeseg1 = normalizedSecurityBytes(securityBackup?.codeseg1);
+  const backupCodeseg2 = normalizedSecurityBytes(securityBackup?.codeseg2);
+  return {
+    codeseg1: plain1.map((byte, index) => addByte(byte, plain2[index])),
+    codeseg2: plain2.map((byte, index) => addByte(byte, backupCodeseg1[index])),
+    backupCodeseg1,
+    backupCodeseg2
+  };
+}
+
+function securityTextToBytes(value: string) {
+  const clean = cleanSecuritySegment(value);
+  return Array.from({ length: SECURITY_SEGMENT_LENGTH }, (_, index) => {
+    const code = clean.charCodeAt(index);
+    return Number.isFinite(code) ? code & 0xff : 0;
+  });
+}
+
+function bytesToSecurityText(bytes: number[]) {
+  const normalized = normalizedSecurityBytes(bytes);
+  const end = normalized.findIndex((byte) => byte === 0);
+  return normalized
+    .slice(0, end === -1 ? SECURITY_SEGMENT_LENGTH : end)
+    .map((byte) => (byte >= 32 && byte <= 126 ? String.fromCharCode(byte) : ""))
+    .join("");
+}
+
+function cleanSecuritySegment(value: string) {
+  return Array.from(value)
+    .filter((char) => {
+      const code = char.charCodeAt(0);
+      return code >= 32 && code <= 126;
+    })
+    .slice(0, SECURITY_SEGMENT_LENGTH)
+    .join("");
+}
+
+function addByte(left: number, right: number) {
+  return (left + right) & 0xff;
+}
+
+function subtractByte(left: number, right: number) {
+  return (left - right + 256) & 0xff;
+}
+
+function bytePreview(bytes: number[] | undefined | null) {
+  return normalizedSecurityBytes(bytes)
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join(" ");
+}
+
+function registrationCodeFor(scenarioName: string, segment1: string, segment2: string, registrationName: string, serialNumber: string) {
+  const serial = Number(serialNumber);
+  if (!Number.isFinite(serial) || !Number.isInteger(serial) || serial === 0 || !registrationName.trim()) return null;
+  const name = cleanRegistrationName(registrationName).toLowerCase();
+  let nameValue = toInt32(serial);
+  for (let index = 1; index < name.length; index += 1) {
+    const current = name.charCodeAt(index);
+    const previous = name.charCodeAt(index - 1);
+    if (current) {
+      nameValue = toInt32(nameValue + index * current);
+      nameValue = toInt32(nameValue - current * previous);
+    }
+  }
+
+  const serialValue = cDiv(serial, 333);
+  if (serialValue === 0 || nameValue === 0) return null;
+  const part1 = toInt32(512 * cMod(450 + serialValue, 96 * nameValue));
+  const part2 = toInt32(999 + cMod(999 + nameValue, 456 * serialValue));
+  let code = toInt32(part1 + part2);
+
+  for (const char of segment1.toLowerCase()) {
+    code = toInt32(code + Math.imul(1689, char.charCodeAt(0)));
+  }
+  for (const char of segment2.toLowerCase()) {
+    code = toInt32(code - Math.imul(423, char.charCodeAt(0)));
+  }
+  for (const char of scenarioName.toLowerCase()) {
+    code = toInt32(code + Math.imul(112233, char.charCodeAt(0)));
+  }
+  return String(code);
+}
+
+function cleanRegistrationName(value: string) {
+  return Array.from(value)
+    .filter((char) => {
+      const code = char.charCodeAt(0);
+      return code >= 32 && code <= 126;
+    })
+    .slice(0, 26)
+    .join("");
+}
+
+function cDiv(left: number, right: number) {
+  return Math.trunc(left / right);
+}
+
+function cMod(left: number, right: number) {
+  return left - cDiv(left, right) * right;
+}
+
+function toInt32(value: number) {
+  return value | 0;
 }
 
 function scenarioIssues(project: Project, shell: NonNullable<Project["scenario"]["shell"]>) {

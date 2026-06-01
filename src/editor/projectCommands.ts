@@ -32,6 +32,7 @@ import {
   updateRuleOverride,
   updateScenarioContactInfo,
   updateScenarioRestrictions,
+  updateScenarioSecurityCodes,
   updateScenarioShell,
   updateScenarioStartup
 } from "./projectCommands/scenarioRulesCommands";
@@ -115,6 +116,7 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   }
   if (command.kind === "renameEditorEntity") return renameEditorEntity(project, command.entityId, command.displayName);
   if (command.kind === "updateScenarioShell") return updateScenarioShell(project, command.changes);
+  if (command.kind === "updateScenarioSecurityCodes") return updateScenarioSecurityCodes(project, command);
   if (command.kind === "updateScenarioContactInfo") return updateScenarioContactInfo(project, command.changes);
   if (command.kind === "updateScenarioRestrictions") return updateScenarioRestrictions(project, command.changes);
   if (command.kind === "updateGlobalMacroHook") return updateGlobalMacroHook(project, command.slot, command.door);
