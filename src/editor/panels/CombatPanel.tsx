@@ -1,6 +1,7 @@
 import { memo, ReactNode, useEffect, useMemo, useState } from "react";
+import { browserReferenceIconUrl } from "../browser/atlasPaths";
 import { TargetPicker } from "../components/RealmzTargetPicker";
-import { monsterReferenceDetail } from "../monsterReferences";
+import { isActorOrCreatureIconId } from "../resourceResolver";
 import { LibraryCatalog, BattleRecord, IconEntry, MonsterRecord, Project, ProjectCommand, SelectedEntity } from "../types";
 import { selectEntityFromId } from "../utils";
 
@@ -31,6 +32,19 @@ type MonsterIconResolution = {
   label: string;
   width: number | null;
   height: number | null;
+};
+
+type CombatIconAsset = {
+  previewPath?: string | null;
+  label?: string | null;
+  resourceId?: number | null;
+};
+
+type CombatLookups = {
+  monsters: MonsterRecord[];
+  monsterById: Map<number, MonsterRecord>;
+  iconAssetsByAbsId: Map<number, CombatIconAsset>;
+  tabCounts: Record<CombatWorkbenchTab, number>;
 };
 
 type CombatPanelProps = {
@@ -67,6 +81,7 @@ export function CombatPanel({
     setTab(next);
     onSelectEditor(next === "battles" ? "battles" : next === "monsters" ? "monsters" : next);
   };
+  const lookups = useCombatLookups(project, catalog);
 
   if (!project) {
     return (
@@ -101,7 +116,7 @@ export function CombatPanel({
             onClick={() => selectTab(candidate)}
           >
             <span>{TAB_LABELS[candidate]}</span>
-            <b>{tabCount(project, catalog, candidate).toLocaleString()}</b>
+            <b>{lookups.tabCounts[candidate].toLocaleString()}</b>
           </button>
         ))}
       </div>
@@ -112,6 +127,7 @@ export function CombatPanel({
           catalog={catalog}
           selectedEntity={selectedEntity}
           iconEntries={iconEntries}
+          lookups={lookups}
           onSelectEntity={onSelectEntity}
           onApplyCommand={onApplyCommand}
         />
@@ -122,6 +138,7 @@ export function CombatPanel({
           catalog={catalog}
           selectedEntity={selectedEntity}
           iconEntries={iconEntries}
+          lookups={lookups}
           onSelectEntity={onSelectEntity}
           onApplyCommand={onApplyCommand}
         />
@@ -130,14 +147,14 @@ export function CombatPanel({
         <ReferenceOnlyCombatTab
           title="Monster Scrapbook"
           body="Shared monster reference entries are preserved as library material. Editing custom monster records happens in the Monsters tab."
-          count={catalog?.entities.filter((entity) => entity.type === "monster-scrapbook-entry").length ?? 0}
+          count={lookups.tabCounts.scrapbook}
         />
       )}
       {tab === "mash" && (
         <ReferenceOnlyCombatTab
           title="Monster Mash"
           body="Shared Monster Mash icons are available as reference art for monster records. Scenario-specific icon replacement belongs in Assets."
-          count={catalog?.entities.filter((entity) => entity.type === "monster-mash-icon").length ?? 0}
+          count={lookups.tabCounts.mash}
         />
       )}
     </section>
@@ -149,6 +166,7 @@ function BattleWorkbench({
   catalog,
   selectedEntity,
   iconEntries,
+  lookups,
   onSelectEntity,
   onApplyCommand
 }: {
@@ -156,6 +174,7 @@ function BattleWorkbench({
   catalog: LibraryCatalog | null;
   selectedEntity: SelectedEntity | null;
   iconEntries: Record<number, IconEntry>;
+  lookups: CombatLookups;
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
@@ -201,6 +220,7 @@ function BattleWorkbench({
           project={project}
           catalog={catalog}
           iconEntries={iconEntries}
+          lookups={lookups}
           battle={selected}
           onUpdate={(changes) => update(selected.id, changes)}
           onDuplicate={() => {
@@ -230,6 +250,7 @@ function BattleEditor({
   catalog,
   battle,
   iconEntries,
+  lookups,
   onUpdate,
   onDuplicate,
   onClear,
@@ -240,6 +261,7 @@ function BattleEditor({
   catalog: LibraryCatalog | null;
   battle: BattleRecord;
   iconEntries: Record<number, IconEntry>;
+  lookups: CombatLookups;
   onUpdate: (changes: Partial<Pick<BattleRecord, "grid" | "dist" | "messageBefore" | "messageAfter" | "battleMacro">>) => void;
   onDuplicate: () => void;
   onClear: () => void;
@@ -292,8 +314,8 @@ function BattleEditor({
       </section>
       <BattleBoard
         project={project}
-        catalog={catalog}
         iconEntries={iconEntries}
+        lookups={lookups}
         battle={battle}
         onUpdateGrid={(grid) => onUpdate({ grid })}
       />
@@ -303,14 +325,14 @@ function BattleEditor({
 
 function BattleBoard({
   project,
-  catalog,
   iconEntries,
+  lookups,
   battle,
   onUpdateGrid
 }: {
   project: Project;
-  catalog: LibraryCatalog | null;
   iconEntries: Record<number, IconEntry>;
+  lookups: CombatLookups;
   battle: BattleRecord;
   onUpdateGrid: (grid: number[]) => void;
 }) {
@@ -328,14 +350,14 @@ function BattleBoard({
     [battle.grid]
   );
   const selectedCell = cells[selectedIndex] ?? cells[0];
-  const selectedMonster = selectedCell?.monsterId ? project.monsters.find((monster) => monster.id === selectedCell.monsterId) ?? null : null;
-  const placementMonster = brush.monsterId ? project.monsters.find((monster) => monster.id === brush.monsterId) ?? null : null;
+  const selectedMonster = selectedCell?.monsterId ? lookups.monsterById.get(selectedCell.monsterId) ?? null : null;
+  const placementMonster = brush.monsterId ? lookups.monsterById.get(brush.monsterId) ?? null : null;
   const placements = useMemo<BattleGridPlacementView[]>(
     () =>
       cells
         .filter((cell) => cell.monsterId)
         .map((cell) => {
-          const monster = project.monsters.find((candidate) => candidate.id === cell.monsterId) ?? null;
+          const monster = lookups.monsterById.get(cell.monsterId) ?? null;
           const col = cell.index % 13;
           const row = Math.floor(cell.index / 13);
           return {
@@ -343,10 +365,10 @@ function BattleBoard({
             monster,
             col,
             row,
-            footprint: monster ? monsterBattleFootprint(monster, iconEntries, project) : { width: 1, height: 1 }
+            footprint: monster ? monsterBattleFootprint(monster, iconEntries, project, lookups) : { width: 1, height: 1 }
           };
         }),
-    [cells, iconEntries, project]
+    [cells, iconEntries, lookups, project]
   );
   const place = (index: number) => {
     setSelectedIndex(index);
@@ -374,26 +396,24 @@ function BattleBoard({
           <b>{battle.grid.filter(Boolean).length} placed</b>
         </header>
         <div className="battle-board" role="grid" aria-label="Battle monster grid">
-          {cells.map((cell) => {
-            const monster = cell.monsterId ? project.monsters.find((candidate) => candidate.id === cell.monsterId) ?? null : null;
-            return (
-              <button
-                key={cell.index}
-                type="button"
-                role="gridcell"
-                className={`${cell.index === selectedIndex ? "selected" : ""}${cell.value ? " filled" : ""}${cell.alternateSide ? " alternate-side" : ""}`}
-                title={cell.value ? monsterReferenceDetail(project, cell.value, catalog) : `Empty cell ${cell.index % 13},${Math.floor(cell.index / 13)}`}
-                onClick={() => place(cell.index)}
-                aria-label={cell.value ? monsterReferenceDetail(project, cell.value, catalog) : `Empty cell ${cell.index % 13},${Math.floor(cell.index / 13)}`}
-              />
-            );
-          })}
+          {cells.map((cell) => (
+            <button
+              key={cell.index}
+              type="button"
+              role="gridcell"
+              className={`${cell.index === selectedIndex ? "selected" : ""}${cell.value ? " filled" : ""}${cell.alternateSide ? " alternate-side" : ""}`}
+              title={cell.value ? monsterPlacementLabel(lookups.monsterById.get(cell.monsterId), cell.value) : `Empty cell ${cell.index % 13},${Math.floor(cell.index / 13)}`}
+              onClick={() => place(cell.index)}
+              aria-label={cell.value ? monsterPlacementLabel(lookups.monsterById.get(cell.monsterId), cell.value) : `Empty cell ${cell.index % 13},${Math.floor(cell.index / 13)}`}
+            />
+          ))}
           {placements.map((placement) => (
             <BattleMonsterOverlay
               key={`${placement.index}:${placement.value}`}
               placement={placement}
               iconEntries={iconEntries}
               project={project}
+              lookups={lookups}
             />
           ))}
         </div>
@@ -402,6 +422,7 @@ function BattleBoard({
         <MonsterPalette
           project={project}
           iconEntries={iconEntries}
+          lookups={lookups}
           selectedId={brush.monsterId}
           onSelect={(monsterId) => setBrush((current) => ({ ...current, monsterId, erase: false }))}
         />
@@ -411,21 +432,21 @@ function BattleBoard({
         </div>
         <div className="selected-battle-cell">
           <strong>Selected Cell {selectedIndex % 13}, {Math.floor(selectedIndex / 13)}</strong>
-          <small>{selectedCell?.value ? monsterReferenceDetail(project, selectedCell.value, catalog) : "Empty cell"}</small>
-          <MonsterSelect project={project} value={selectedCell?.monsterId ?? 0} onCommit={(monsterId) => updateSelected(monsterId)} />
+          <small>{selectedCell?.value ? monsterPlacementLabel(selectedMonster, selectedCell.value) : "Empty cell"}</small>
+          <MonsterSelect lookups={lookups} value={selectedCell?.monsterId ?? 0} onCommit={(monsterId) => updateSelected(monsterId)} />
           <div className="placement-controls">
             <ToggleButton active={(selectedCell?.value ?? 0) < 0} label="Force Friend" disabled={!selectedCell?.monsterId} onClick={() => selectedCell && updateSelected(selectedCell.value < 0 ? selectedCell.monsterId : -selectedCell.monsterId)} />
             <button type="button" className="btn btn-secondary btn-xs" onClick={() => updateSelected(0)}>Clear Cell</button>
           </div>
           {selectedMonster && (
             <div className="selected-monster-preview">
-              <MonsterIcon monster={selectedMonster} iconEntries={iconEntries} project={project} />
+              <MonsterIcon monster={selectedMonster} iconEntries={iconEntries} project={project} lookups={lookups} />
               <span>{monsterFacts(selectedMonster)}</span>
             </div>
           )}
           {!selectedMonster && placementMonster && (
             <div className="selected-monster-preview">
-              <MonsterIcon monster={placementMonster} iconEntries={iconEntries} project={project} />
+              <MonsterIcon monster={placementMonster} iconEntries={iconEntries} project={project} lookups={lookups} />
               <span>Brush: {placementMonster.displayName || `Monster ${placementMonster.id}`}</span>
             </div>
           )}
@@ -438,18 +459,22 @@ function BattleBoard({
 function MonsterPalette({
   project,
   iconEntries,
+  lookups,
   selectedId,
   onSelect
 }: {
   project: Project;
   iconEntries: Record<number, IconEntry>;
+  lookups: CombatLookups;
   selectedId: number;
   onSelect: (monsterId: number) => void;
 }) {
   const [query, setQuery] = useState("");
-  const monsters = useMemo(() => [...(project.monsters ?? [])].sort((a, b) => a.id - b.id), [project.monsters]);
-  const filtered = filterRecords(monsters, query, (monster) => `${monster.id} ${monster.displayName} icon ${monster.iconId}`);
-  const selectedMonster = selectedId ? project.monsters.find((monster) => monster.id === selectedId) ?? null : null;
+  const filtered = useMemo(
+    () => filterRecords(lookups.monsters, query, (monster) => `${monster.id} ${monster.displayName} icon ${monster.iconId}`),
+    [lookups.monsters, query]
+  );
+  const selectedMonster = selectedId ? lookups.monsterById.get(selectedId) ?? null : null;
   return (
     <div className="monster-palette">
       <header>
@@ -458,30 +483,31 @@ function MonsterPalette({
       </header>
       {selectedMonster && (
         <div className="monster-to-place-preview">
-          <MonsterIcon monster={selectedMonster} iconEntries={iconEntries} project={project} large />
+          <MonsterIcon monster={selectedMonster} iconEntries={iconEntries} project={project} lookups={lookups} large />
           <span>
             <strong>{selectedMonster.displayName || `Monster ${selectedMonster.id}`}</strong>
             <small>{monsterFacts(selectedMonster)}</small>
-            <small>{monsterBattleFootprintLabel(selectedMonster, iconEntries, project)}</small>
+            <small>{monsterBattleFootprintLabel(selectedMonster, iconEntries, project, lookups)}</small>
           </span>
         </div>
       )}
       <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search monsters..." />
       <div className="monster-palette-list">
-        {filtered.slice(0, 80).map((monster) => (
+        {filtered.slice(0, 32).map((monster) => (
           <button
             key={monster.id}
             type="button"
             className={selectedId === monster.id ? "selected" : ""}
             onClick={() => onSelect(monster.id)}
           >
-            <MonsterIcon monster={monster} iconEntries={iconEntries} project={project} compact />
+            <MonsterIcon monster={monster} iconEntries={iconEntries} project={project} lookups={lookups} compact />
             <span>
               <strong>{monster.displayName || `Monster ${monster.id}`}</strong>
               <small>{monsterFacts(monster)}</small>
             </span>
           </button>
         ))}
+        {filtered.length > 32 ? <small className="combat-list-overflow-note">{(filtered.length - 32).toLocaleString()} more monster(s); search to narrow.</small> : null}
       </div>
     </div>
   );
@@ -492,6 +518,7 @@ function MonsterWorkbench({
   catalog: _catalog,
   selectedEntity,
   iconEntries,
+  lookups,
   onSelectEntity,
   onApplyCommand
 }: {
@@ -499,16 +526,19 @@ function MonsterWorkbench({
   catalog: LibraryCatalog | null;
   selectedEntity: SelectedEntity | null;
   iconEntries: Record<number, IconEntry>;
+  lookups: CombatLookups;
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const [query, setQuery] = useState("");
-  const monsters = useMemo(() => [...(project.monsters ?? [])].sort((a, b) => a.id - b.id), [project.monsters]);
   const selectedFromEntity = idFromEntity(selectedEntity?.id ?? "", "monster:");
-  const selectedId = selectedFromEntity ?? monsters[0]?.id ?? 0;
-  const selected = monsters.find((monster) => monster.id === selectedId) ?? monsters[0] ?? null;
-  const filtered = filterRecords(monsters, query, (monster) => `${monster.id} ${monster.displayName} icon ${monster.iconId} hd ${monster.hitDice}`);
-  const nextMonsterId = nextAvailableId(monsters);
+  const selectedId = selectedFromEntity ?? lookups.monsters[0]?.id ?? 0;
+  const selected = lookups.monsterById.get(selectedId) ?? lookups.monsters[0] ?? null;
+  const filtered = useMemo(
+    () => filterRecords(lookups.monsters, query, (monster) => `${monster.id} ${monster.displayName} icon ${monster.iconId} hd ${monster.hitDice}`),
+    [lookups.monsters, query]
+  );
+  const nextMonsterId = nextAvailableId(lookups.monsters);
   const selectMonster = (id: number) => onSelectEntity(selectEntityFromId(`monster:${id}`));
   const update = (id: number, changes: Partial<MonsterRecord>) => onApplyCommand?.({ kind: "updateMonsterRecord", label: "Update monster", id, changes });
 
@@ -519,7 +549,7 @@ function MonsterWorkbench({
         query={query}
         onQuery={setQuery}
         count={filtered.length}
-        total={monsters.length}
+        total={lookups.monsters.length}
         newLabel={`New Monster ${nextMonsterId}`}
         onNew={() => {
           onApplyCommand?.({ kind: "createTargetRecord", label: "Create monster", recordType: "monster", id: nextMonsterId });
@@ -543,6 +573,7 @@ function MonsterWorkbench({
           project={project}
           monster={selected}
           iconEntries={iconEntries}
+          lookups={lookups}
           onUpdate={(changes) => update(selected.id, changes)}
           onDuplicate={() => {
             const id = nextMonsterId;
@@ -562,6 +593,7 @@ function MonsterEditor({
   project,
   monster,
   iconEntries,
+  lookups,
   onUpdate,
   onDuplicate,
   onClear
@@ -569,6 +601,7 @@ function MonsterEditor({
   project: Project;
   monster: MonsterRecord;
   iconEntries: Record<number, IconEntry>;
+  lookups: CombatLookups;
   onUpdate: (changes: Partial<MonsterRecord>) => void;
   onDuplicate: () => void;
   onClear: () => void;
@@ -586,7 +619,7 @@ function MonsterEditor({
         </div>
       </header>
       <section className="monster-section monster-identity-section">
-        <MonsterIcon monster={monster} iconEntries={iconEntries} project={project} large />
+        <MonsterIcon monster={monster} iconEntries={iconEntries} project={project} lookups={lookups} large />
         <div className="monster-field-grid">
           <TextField label="Monster Name" value={monster.displayName} onCommit={(displayName) => onUpdate({ displayName })} />
           <NumberField label="Name ID" value={monster.nameId} onCommit={(nameId) => onUpdate({ nameId })} />
@@ -710,18 +743,42 @@ function TargetField({
   onSelectEntity: (entity: SelectedEntity) => void;
   onCreate?: (id: number) => void;
 }) {
+  const [editing, setEditing] = useState(false);
+  const targetId = normalizedTargetValue(opcode, value);
   return (
     <div className="combat-target-field">
       <span>{label}</span>
-      <TargetPicker
-        project={project}
-        catalog={catalog}
-        opcode={opcode}
-        value={value}
-        onChange={onCommit}
-        onInspect={onSelectEntity}
-        onCreate={(_, id) => onCreate?.(id ?? Math.abs(value))}
-      />
+      {!editing ? (
+        <div className="combat-target-summary">
+          <strong>{combatTargetSummary(project, label, opcode, value)}</strong>
+          <div>
+            <button type="button" className="btn btn-primary btn-xs" onClick={() => setEditing(true)}>Choose</button>
+            {targetId ? (
+              <button type="button" className="btn btn-secondary btn-xs" onClick={() => onSelectEntity(selectEntityFromId(targetEntityId(opcode, targetId)))}>
+                Open
+              </button>
+            ) : null}
+            {onCreate && targetId ? (
+              <button type="button" className="btn btn-secondary btn-xs" onClick={() => onCreate(targetId)}>
+                Create
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ) : (
+        <TargetPicker
+          project={project}
+          catalog={catalog}
+          opcode={opcode}
+          value={value}
+          onChange={(next) => {
+            onCommit(next);
+            setEditing(false);
+          }}
+          onInspect={onSelectEntity}
+          onCreate={(_, id) => onCreate?.(id ?? targetId)}
+        />
+      )}
     </div>
   );
 }
@@ -764,16 +821,18 @@ const MonsterIcon = memo(function MonsterIcon({
   monster,
   iconEntries,
   project,
+  lookups,
   compact = false,
   large = false
 }: {
   monster: MonsterRecord;
   iconEntries: Record<number, IconEntry>;
   project: Project;
+  lookups: CombatLookups;
   compact?: boolean;
   large?: boolean;
 }) {
-  const resolution = resolveMonsterIcon(monster, iconEntries, project);
+  const resolution = resolveMonsterIcon(monster, iconEntries, project, lookups);
   return (
     <span className={`monster-icon-preview${compact ? " compact" : ""}${large ? " large" : ""}`} title={resolution.label}>
       {resolution.url ? <img src={resolution.url} alt="" loading="lazy" decoding="async" /> : <b>{monster.id}</b>}
@@ -784,16 +843,18 @@ const MonsterIcon = memo(function MonsterIcon({
 const BattleMonsterOverlay = memo(function BattleMonsterOverlay({
   placement,
   iconEntries,
-  project
+  project,
+  lookups
 }: {
   placement: BattleGridPlacementView;
   iconEntries: Record<number, IconEntry>;
   project: Project;
+  lookups: CombatLookups;
 }) {
   const colSpan = Math.max(0.5, Math.min(placement.footprint.width, 13));
   const rowSpan = Math.max(0.5, Math.min(placement.footprint.height, 13));
-  const leftCell = clamp(placement.col - (colSpan - 1) / 2, 0, 13 - colSpan);
-  const topCell = clamp(placement.row - (rowSpan - 1) / 2, 0, 13 - rowSpan);
+  const leftCell = clamp(placement.col + 1 - colSpan, 0, 13 - colSpan);
+  const topCell = clamp(placement.row + 1 - rowSpan, 0, 13 - rowSpan);
   return (
     <span
       className={`battle-monster-overlay${placement.alternateSide ? " alternate-side" : ""}`}
@@ -806,7 +867,7 @@ const BattleMonsterOverlay = memo(function BattleMonsterOverlay({
       aria-hidden="true"
     >
       {placement.monster ? (
-        <MonsterIcon monster={placement.monster} iconEntries={iconEntries} project={project} />
+        <MonsterIcon monster={placement.monster} iconEntries={iconEntries} project={project} lookups={lookups} />
       ) : (
         <b>{placement.monsterId}</b>
       )}
@@ -814,9 +875,16 @@ const BattleMonsterOverlay = memo(function BattleMonsterOverlay({
   );
 });
 
-function resolveMonsterIcon(monster: MonsterRecord, iconEntries: Record<number, IconEntry>, project: Project): MonsterIconResolution {
+function resolveMonsterIcon(monster: MonsterRecord, iconEntries: Record<number, IconEntry>, project: Project, lookups: CombatLookups): MonsterIconResolution {
   const iconId = Math.abs(monster.iconId);
-  const entry = iconEntries[monster.iconId] ?? iconEntries[-iconId];
+  const asset = lookups.iconAssetsByAbsId.get(iconId);
+  if (asset?.previewPath) return { url: asset.previewPath, label: asset.label ?? `cicn ${monster.iconId}`, width: null, height: null };
+  const projectAsset = project.assetCatalog.icons?.find((candidate) => Math.abs(candidate.resourceId) === iconId && candidate.previewPath) ?? null;
+  if (projectAsset?.previewPath) return { url: projectAsset.previewPath, label: `cicn ${monster.iconId}`, width: null, height: null };
+  if (isActorOrCreatureIconId(iconId)) {
+    return { url: browserReferenceIconUrl(iconId), label: `cicn ${monster.iconId}`, width: null, height: null };
+  }
+  const entry = iconEntries[monster.iconId] ?? iconEntries[iconId] ?? iconEntries[-iconId];
   if (entry?.url) {
     return {
       url: entry.url,
@@ -825,18 +893,16 @@ function resolveMonsterIcon(monster: MonsterRecord, iconEntries: Record<number, 
       height: entry.image.naturalHeight || entry.image.height || null
     };
   }
-  const asset = project.assetCatalog.icons?.find((candidate) => Math.abs(candidate.resourceId) === iconId && candidate.previewPath) ?? null;
-  if (asset?.previewPath) return { url: asset.previewPath, label: `cicn ${monster.iconId}`, width: null, height: null };
   return { url: null, label: `No icon preview for cicn ${monster.iconId}`, width: null, height: null };
 }
 
-function MonsterSelect({ project, value, onCommit }: { project: Project; value: number; onCommit: (value: number) => void }) {
+function MonsterSelect({ lookups, value, onCommit }: { lookups: CombatLookups; value: number; onCommit: (value: number) => void }) {
   return (
     <label className="combat-field">
       <span>Selected Cell Monster</span>
       <select value={value} onChange={(event) => onCommit(Number(event.currentTarget.value))}>
         <option value={0}>Empty</option>
-        {project.monsters.map((monster) => (
+        {lookups.monsters.map((monster) => (
           <option key={monster.id} value={monster.id}>{monster.displayName || `Monster ${monster.id}`} ({monster.id})</option>
         ))}
       </select>
@@ -983,27 +1049,52 @@ function messagePreview(project: Project, id: number) {
   return record?.text ? `"${record.text.slice(0, 34)}${record.text.length > 34 ? "..." : ""}"` : `Message ${Math.abs(id)}`;
 }
 
+function combatTargetSummary(project: Project, label: string, opcode: number, value: number) {
+  if (!value) return "None";
+  if (opcode === 1) return messagePreview(project, value);
+  if (opcode === 39) return `Reusable Action ${Math.abs(value)}`;
+  return `${label} ${Math.abs(value)}`;
+}
+
+function normalizedTargetValue(opcode: number, value: number) {
+  if (!value) return 0;
+  if (opcode === 1 || opcode === 9 || opcode === 39) return Math.abs(value);
+  return value;
+}
+
+function targetEntityId(opcode: number, value: number) {
+  if (opcode === 1) return `message:${value}`;
+  if (opcode === 39) return `extra-code:${value}`;
+  return `resource:${value}`;
+}
+
 function monsterFacts(monster: MonsterRecord) {
   return `ID ${monster.id}, HD ${monster.hitDice}, armor ${monster.armor}, agility ${monster.agility}, icon ${monster.iconId}`;
 }
 
-function monsterBattleFootprint(monster: MonsterRecord, iconEntries: Record<number, IconEntry>, project: Project) {
-  const resolution = resolveMonsterIcon(monster, iconEntries, project);
+function monsterPlacementLabel(monster: MonsterRecord | null | undefined, rawValue: number) {
+  const id = Math.abs(rawValue);
+  const side = rawValue < 0 ? " (force friend)" : "";
+  return monster ? `${monster.displayName || `Monster ${monster.id}`} | ${monsterFacts(monster)}${side}` : `Monster ${id}${side}`;
+}
+
+function monsterBattleFootprint(monster: MonsterRecord, iconEntries: Record<number, IconEntry>, project: Project, lookups: CombatLookups) {
+  const resolution = resolveMonsterIcon(monster, iconEntries, project, lookups);
   if (resolution.width && resolution.height) {
     return {
-      width: Math.max(0.5, Math.min(4, resolution.width / 32)),
-      height: Math.max(0.5, Math.min(4, resolution.height / 32))
+      width: Math.max(1, Math.min(4, Math.ceil(resolution.width / 32))),
+      height: Math.max(1, Math.min(4, Math.ceil(resolution.height / 32)))
     };
   }
   const size = Number.isFinite(monster.size) ? monster.size : 1;
-  const sizeFootprint = size <= 1 ? 0.95 : size === 2 ? 1.35 : 1.75;
-  const giantFootprint = monster.typeFlags?.[6] ? 1.9 : 0.95;
-  const fallback = Math.max(0.95, Math.min(2.15, Math.max(sizeFootprint, giantFootprint)));
-  return { width: fallback, height: fallback };
+  if (size === 1) return { width: 1, height: 2 };
+  if (size === 2) return { width: 2, height: 1 };
+  if (size >= 3 || monster.typeFlags?.[6]) return { width: 2, height: 2 };
+  return { width: 1, height: 1 };
 }
 
-function monsterBattleFootprintLabel(monster: MonsterRecord, iconEntries: Record<number, IconEntry>, project: Project) {
-  const footprint = monsterBattleFootprint(monster, iconEntries, project);
+function monsterBattleFootprintLabel(monster: MonsterRecord, iconEntries: Record<number, IconEntry>, project: Project, lookups: CombatLookups) {
+  const footprint = monsterBattleFootprint(monster, iconEntries, project, lookups);
   return `${formatGridSpan(footprint.width)} x ${formatGridSpan(footprint.height)} grid tile art`;
 }
 
@@ -1022,16 +1113,49 @@ function tabFromEditor(editor: string): CombatWorkbenchTab {
   return "battles";
 }
 
-function tabCount(project: Project, catalog: LibraryCatalog | null, tab: CombatWorkbenchTab) {
-  if (tab === "battles") return project.battles.length;
-  if (tab === "monsters") return project.monsters.length;
-  if (tab === "scrapbook") return catalog?.entities.filter((entity) => entity.type === "monster-scrapbook-entry").length ?? 0;
-  return catalog?.entities.filter((entity) => entity.type === "monster-mash-icon").length ?? 0;
-}
-
 function updateArraySlot(values: number[] = [], index: number, value: number, length: number) {
   const next = [...values];
   while (next.length < length) next.push(0);
   next[index] = value;
   return next.slice(0, length);
+}
+
+function useCombatLookups(project: Project | null, catalog: LibraryCatalog | null): CombatLookups {
+  return useMemo(() => {
+    if (!project) {
+      return {
+        monsters: [],
+        monsterById: new Map(),
+        iconAssetsByAbsId: new Map(),
+        tabCounts: { battles: 0, monsters: 0, scrapbook: 0, mash: 0 }
+      };
+    }
+    const monsters = [...(project.monsters ?? [])].sort((a, b) => a.id - b.id);
+    const monsterById = new Map(monsters.map((monster) => [monster.id, monster]));
+    const iconAssetsByAbsId = new Map<number, CombatIconAsset>();
+    const addIconAsset = (asset: CombatIconAsset | null | undefined) => {
+      if (!asset?.previewPath || asset.resourceId == null) return;
+      const key = Math.abs(asset.resourceId);
+      if (!iconAssetsByAbsId.has(key)) iconAssetsByAbsId.set(key, asset);
+    };
+    for (const asset of project.assets ?? []) {
+      if (asset.resourceType === "cicn") addIconAsset(asset);
+    }
+    for (const asset of project.assetCatalog.icons ?? []) {
+      if (asset.resourceType === "cicn") addIconAsset(asset);
+    }
+    const scrapbook = catalog?.entities.filter((entity) => entity.type === "monster-scrapbook-entry").length ?? 0;
+    const mash = catalog?.entities.filter((entity) => entity.type === "monster-mash-icon").length ?? 0;
+    return {
+      monsters,
+      monsterById,
+      iconAssetsByAbsId,
+      tabCounts: {
+        battles: project.battles.length,
+        monsters: project.monsters.length,
+        scrapbook,
+        mash
+      }
+    };
+  }, [catalog?.assets, catalog?.entities, project]);
 }

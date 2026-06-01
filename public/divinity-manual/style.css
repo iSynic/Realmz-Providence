@@ -286,7 +286,7 @@ button {
 .docmaker-stage {
   width: 100vw;
   height: 100vh;
-  padding: 3px 2px 0;
+  padding: 3px 0 0;
 }
 .docmaker-window {
   --chapter-scale: 1;

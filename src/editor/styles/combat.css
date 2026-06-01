@@ -233,6 +233,28 @@
   min-height: 26px;
 }
 
+.combat-target-summary {
+  min-height: 30px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.combat-target-summary strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.combat-target-summary > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
 .battle-board-workbench {
   display: grid;
   grid-template-columns: minmax(420px, 720px) minmax(240px, 320px);
@@ -410,6 +432,11 @@
 .monster-palette-list button.selected {
   border-color: #2b8fd8;
   background: #10283d;
+}
+
+.combat-list-overflow-note {
+  padding: 5px 7px;
+  color: #88b5d8;
 }
 
 .monster-palette-list span,

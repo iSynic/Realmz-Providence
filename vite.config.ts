@@ -8,11 +8,21 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          const normalizedId = id.replace(/\\/g, "/");
           if (id.includes("node_modules/react") || id.includes("node_modules/react-dom")) {
             return "react-vendor";
           }
           if (id.includes("node_modules/lucide-react")) {
             return "icons";
+          }
+          if (normalizedId.includes("/src/editor/browser/")) {
+            return "browser-runtime";
+          }
+          if (normalizedId.includes("/src/editor/projectCommands")) {
+            return "project-commands";
+          }
+          if (normalizedId.includes("/src/editor/generated/")) {
+            return "editor-generated";
           }
           return undefined;
         }
