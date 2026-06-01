@@ -134,8 +134,9 @@ function ScenarioCoverageSummary({ coverage }: { coverage: ScenarioCoverageManif
         {strict && (
           <>
             Semantic audit: {(strict.scenarioSemantics.completeContainers + strict.scenarioSemantics.mixedContainers).toLocaleString()} / {strict.containerCount.toLocaleString()} tracked container(s) are understood at the scenario boundary; {strict.scenarioSemantics.mixedContainers.toLocaleString()} include known compatibility/runtime ranges that Providence preserves instead of claiming as author-owned fields.
-            Writer proof: {strict.writerProvenData.fixtureProvenContainers.toLocaleString()} fixture-proven and {strict.writerProvenData.partiallyProvenContainers.toLocaleString()} partially proven container(s);
-            {strict.writerProvenData.writerGatedContainers.toLocaleString()} writer-gated container(s) remain.
+            Writer readiness: {(strict.writerProvenData.fixtureProvenContainers + strict.writerProvenData.partiallyProvenContainers).toLocaleString()} authoring-ready container(s);
+            {strict.writerProvenData.partiallyProvenContainers.toLocaleString()} include preserved compatibility/runtime ranges;
+            {strict.writerProvenData.writerGatedContainers.toLocaleString()} writer gate(s) remain.
             {strict.strictOutstanding.preservedUnknownContainers.toLocaleString()} preserved unknown container(s);
             {strict.strictOutstanding.targetWarnings.toLocaleString()} package warning(s).
             {" "}
@@ -185,7 +186,7 @@ function ScenarioCoverageSummary({ coverage }: { coverage: ScenarioCoverageManif
           {coverage.containers.slice(0, 12).map((container) => (
             <div key={container.container}>
               <strong>{container.container}</strong>
-              <span>{container.truth ? formatTruthLabel(container.truth.writerReadiness) : container.status}</span>
+              <span>{formatCoverageContainerLabel(container)}</span>
               <small>{container.count.toLocaleString()} scenario(s), {container.sizes.slice(0, 4).join(", ")} byte size(s)</small>
               {container.truth && container.truth.riskFlags.length > 0 && (
                 <small>{container.truth.riskFlags.slice(0, 4).join(", ")}</small>
@@ -206,8 +207,8 @@ function coverageRiskLabel(risk: ScenarioCoverageManifest["topRisks"][number]) {
   if (risk.id === "data-ed3-reachability") return "Fixture-proven storage";
   if (risk.id === "data-edcd-rare-shapes") return "Fixture-proven rows";
   if (risk.id === "data-od-and-string-sound") return "Text fixture-proven";
-  if (risk.id === "custom-landlook-writers") return "Partially writer-proven";
-  if (risk.id === "dungeon-writer-safety") return "Partially writer-proven";
+  if (risk.id === "custom-landlook-writers") return "Editable with preserved ranges";
+  if (risk.id === "dungeon-writer-safety") return "Editable with runtime state";
   if (risk.status === "Needs packaging work") return "Packaging follow-up";
   if (risk.status === "Needs editor labels") return "Label follow-up";
   if (risk.status === "Needs writer proof") return "Follow-up";
@@ -219,6 +220,26 @@ function formatTruthLabel(value: string) {
     .split("-")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+function formatCoverageContainerLabel(container: ScenarioCoverageManifest["containers"][number]) {
+  const readiness = container.truth?.writerReadiness;
+  if (!readiness) return container.status;
+  if (readiness === "fixture-proven") return "Authoring Ready";
+  if (readiness === "partially-proven") {
+    if (container.container === "Data DL") return "Editable + Runtime State";
+    return "Editable + Preserved Compatibility";
+  }
+  if (readiness === "writer-gated") return "Needs Writer Proof";
+  if (readiness === "read-only") return "Read-only";
+  if (readiness === "preserve-only") return "Preserved";
+  if (readiness === "not-applicable") {
+    if (container.coverageStatus === "runtime-cache") return "Runtime State";
+    if (container.coverageStatus === "ignored-non-scenario") return "Ignored";
+    if (container.coverageStatus === "understood-resource-container") return "Resource Container";
+    return "Not Authoring Data";
+  }
+  return formatTruthLabel(readiness);
 }
 
 function Metric({ label, value }: { label: string; value: number | string }) {
