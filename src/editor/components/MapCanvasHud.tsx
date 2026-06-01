@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { EditorTool, MapEntity, RandomLevel, SemanticEntity, TriggerRecord } from "../types";
+import { EditorTool, MapEntity, MapHudAnchor, RandomLevel, SemanticEntity, TriggerRecord } from "../types";
 import { clampCell, numberSummary, tileValueAt } from "../map/geometry";
 import { hasSecretMarkerTile, hasSecretPathTile, isSecretWalkableTile } from "../map/secrets";
 import { triggerOverlayKind } from "../map/drawMapCanvas";
@@ -7,6 +7,8 @@ import { triggerOverlayKind } from "../map/drawMapCanvas";
 export function MapKeyHud({
   setHudRef,
   style,
+  anchor,
+  onRequestMove,
   map,
   hover,
   triggers,
@@ -18,6 +20,8 @@ export function MapKeyHud({
 }: {
   setHudRef: (node: HTMLDivElement | null) => void;
   style: CSSProperties;
+  anchor: MapHudAnchor;
+  onRequestMove: () => void;
   map: MapEntity;
   hover: { x: number; y: number } | null;
   triggers: TriggerRecord[];
@@ -32,7 +36,14 @@ export function MapKeyHud({
   const secretTags = hover && raw != null ? secretHoverTags(raw, map) : [];
   const overlayCount = triggers.length + (randomLevel?.rects.length ?? 0) + mapRecords.length;
   return (
-    <div className="map-key-hud" ref={setHudRef} style={style} aria-live="polite">
+    <div
+      className={`map-key-hud anchor-${anchor}`}
+      ref={setHudRef}
+      style={style}
+      aria-live="polite"
+      onMouseEnter={onRequestMove}
+      onPointerEnter={onRequestMove}
+    >
       <div className="map-key-title">
         {map.name} ({map.levelType} {map.index}) | {map.width} x {map.height} | {overlayCount} boxes
       </div>

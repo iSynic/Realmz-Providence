@@ -5,6 +5,7 @@ import { triggerOverlayKinds } from "../semanticGraph";
 import { RealmzMapCanvas } from "../components/MapCanvas";
 import { LandLayoutEditor, LandTileAtlasEditor, MapContextSidebar, MapRecordsWorkbench, MapSelectionSidebar, RandomAreasWorkbench, type LandLayoutCellSelection } from "../components/MapContextSidebar";
 import { MapViewFilters } from "../components/MapViewFilters";
+import { landlookGroupTiles } from "../map/paintGroups";
 
 const MAP_WORKBENCH_MODE_STORAGE_KEY = "providence.mapWorkbenchMode.v1";
 
@@ -48,7 +49,7 @@ export function MapsPanel({
   atlas: EditorState["atlasEntries"][string] | null;
   onSelectMap: (id: string) => void;
   onSelectTile: (tile: number) => void;
-  onSelectCell: (cell: { x: number; y: number; tile: number }) => void;
+  onSelectCell: (cell: { x: number; y: number; tile: number } | null) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
   onSetTool: EditorStateSetter<"activeTool">;
   onSetZoom: (zoom: number) => void;
@@ -95,8 +96,19 @@ export function MapsPanel({
   useEffect(() => {
     localStorage.setItem(MAP_WORKBENCH_MODE_STORAGE_KEY, workbenchMode);
   }, [workbenchMode]);
+  useEffect(() => {
+    const groupTiles = landlookGroupTiles(selectedTileset, activePaintGroupId);
+    if (groupTiles.length > 0 && !groupTiles.includes(state.selectedTile)) {
+      onSelectTile(groupTiles[0]);
+    }
+  }, [activePaintGroupId, onSelectTile, selectedTileset, state.selectedTile]);
   const switchWorkbenchMode = (mode: MapWorkbenchMode) => {
     setWorkbenchMode(mode);
+  };
+  const setPaintGroup = (groupId: string) => {
+    setActivePaintGroupId(groupId);
+    const groupTiles = landlookGroupTiles(selectedTileset, groupId);
+    if (groupTiles.length > 0 && !groupTiles.includes(state.selectedTile)) onSelectTile(groupTiles[0]);
   };
   const openCanvasTool = (tool: EditorState["activeTool"]) => {
     setWorkbenchMode("canvas");
@@ -120,7 +132,7 @@ export function MapsPanel({
         paintVariation={paintVariation}
         onSetPaintVariation={setPaintVariation}
         activePaintGroupId={activePaintGroupId}
-        onSetActivePaintGroup={setActivePaintGroupId}
+        onSetActivePaintGroup={setPaintGroup}
         selectedRegion={selectedRegion}
         onSetSelectedRegion={setSelectedRegion}
         replaceSourceTile={replaceSourceTile}
@@ -165,7 +177,6 @@ export function MapsPanel({
                 selectedEntity={state.selectedEntity}
                 selectedCell={state.selectedCell}
                 selectedRegion={selectedRegion}
-                focusTarget={state.focusTarget}
                 onSelectCell={onSelectCell}
                 onSetSelectedRegion={setSelectedRegion}
                 onSampleTile={onSelectTile}
@@ -278,7 +289,7 @@ export function MapsPanel({
         paintVariation={paintVariation}
         onSetPaintVariation={setPaintVariation}
         activePaintGroupId={activePaintGroupId}
-        onSetActivePaintGroup={setActivePaintGroupId}
+        onSetActivePaintGroup={setPaintGroup}
         selectedRegion={selectedRegion}
         onSetSelectedRegion={setSelectedRegion}
         replaceSourceTile={replaceSourceTile}

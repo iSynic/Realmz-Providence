@@ -323,7 +323,7 @@ type WorkbenchRouterProps = {
   issues: Issue[];
   onSelectMap: (id: string) => void;
   onSelectTile: (tile: number) => void;
-  onSelectCell: (cell: { x: number; y: number; tile: number }) => void;
+  onSelectCell: (cell: { x: number; y: number; tile: number } | null) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
   onSelectEditor: (editor: string) => void;
   onSetTool: EditorStateSetter<"activeTool">;

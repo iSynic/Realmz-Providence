@@ -15,9 +15,23 @@ export type EditorTab =
 export type ActiveWorkbench = "project" | "library";
 export type EditorTool = "select" | "paint" | "stamp" | "trigger" | "random" | "sample" | "pan";
 export type MapWorkbenchMode = "canvas" | "land-layout" | "land-tiles" | "random-areas" | "map-records";
-export type MapPaintMode = "brush" | "rectangle" | "region" | "replace" | "clear";
+export type MapPaintMode = "brush" | "region" | "replace" | "clear";
 export type MapPaintVariation = "single" | "cycle-group" | "random-group";
 export type MapRegionSelection = { left: number; top: number; right: number; bottom: number };
+export type PaintTileResolver = (cell: { x: number; y: number; index: number; tile: number }, sequence: number) => number;
+export type MapPaintIntent = {
+  selectedTile: number;
+  selectedTileset: TilesetAsset | null;
+  variation: MapPaintVariation;
+  activeGroupId: string;
+  seed: number;
+};
+export type RegionPaintPlan = {
+  changes: PaintCellChange[];
+  effectiveVariation: MapPaintVariation;
+  groupTileCount: number;
+};
+export type MapHudAnchor = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 export type MapPreviewMode = "off" | "los" | "darkness" | "both";
 export type MapPreviewFocalPoint = { x: number; y: number };
 export type FocusedPanel = "main" | "tool-sidebar" | "outliner" | "inspector" | "canvas" | "docs";

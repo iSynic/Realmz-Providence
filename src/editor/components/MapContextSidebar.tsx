@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { TOOLS } from "../constants";
 import { EditorState } from "../store";
 import { EditorTool, IconEntry, MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRecord, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TileAttributeFlag, TilesetAsset, TriggerRecord } from "../types";
-import { randomRectEntityId, tileValueAt } from "../map/geometry";
+import { mapTileIndex, randomRectEntityId, tileValueAt } from "../map/geometry";
 import { allMapCells, buildReplaceChanges, dominantTiles, rectCells, regionCellCount, regionDimensions } from "../map/regionPaint";
 import { actionSlotEntitiesForTriggerRecord } from "../semanticGraph";
 import { compactValue, linksFor, mapEntityId, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
@@ -240,6 +240,8 @@ export function MapSelectionSidebar({
             selectedTileset={selectedTileset}
             icons={state.iconEntries}
             paintMode={paintMode}
+            paintVariation={paintVariation}
+            activePaintGroupId={activePaintGroupId}
             onSetPaintMode={onSetPaintMode}
             selectedRegion={selectedRegion}
             onSetSelectedRegion={onSetSelectedRegion}
@@ -676,6 +678,8 @@ function MapToolset({
             map={selectedMap}
             selectedTileset={selectedTileset}
             selectedTile={state.selectedTile}
+            paintVariation={paintVariation}
+            activePaintGroupId={activePaintGroupId}
             paintMode={paintMode}
             onSetPaintMode={setPaintSubmode}
             selectedRegion={selectedRegion}
@@ -981,16 +985,16 @@ function TileMeaningInspector({
 
 const PAINT_MODES: Array<{ id: MapPaintMode; label: string; body: string }> = [
   { id: "brush", label: "Brush", body: "Paint cells by dragging." },
-  { id: "rectangle", label: "Rectangle Fill", body: "Drag a rectangle and fill it on release." },
-  { id: "region", label: "Region Select", body: "Drag a rectangle without changing tiles." },
-  { id: "replace", label: "Replace Tile", body: "Replace one tile value in a region or map." },
-  { id: "clear", label: "Clear Region", body: "Reset a selected region to the base tile." }
+  { id: "region", label: "Region Select", body: "Drag a rectangle, then fill or clear it with explicit actions." },
+  { id: "replace", label: "Replace Tile", body: "Replace one tile value in a region or map." }
 ];
 
 function PaintModePanel({
   map,
   selectedTileset,
   selectedTile,
+  paintVariation,
+  activePaintGroupId,
   paintMode,
   onSetPaintMode,
   selectedRegion,
@@ -1002,6 +1006,8 @@ function PaintModePanel({
   map: MapEntity | null;
   selectedTileset: TilesetAsset | null;
   selectedTile: number;
+  paintVariation: MapPaintVariation;
+  activePaintGroupId: string;
   paintMode: MapPaintMode;
   onSetPaintMode: (mode: MapPaintMode) => void;
   selectedRegion: MapRegionSelection | null;
@@ -1026,15 +1032,14 @@ function PaintModePanel({
       </div>
       <p className="paint-mode-hint">
         {paintMode === "brush" && "Drag to paint."}
-        {paintMode === "rectangle" && "Drag a rectangle to fill."}
-        {paintMode === "region" && "Drag to select a region."}
+        {paintMode === "region" && "Drag to select a region, then choose Fill or Clear."}
         {paintMode === "replace" && "Replace one tile in the selected region."}
         {paintMode === "clear" && `Clear region to tile ${clearTile}.`}
       </p>
       {selectedRegion && (
         <div className="paint-region-quick-actions">
           <span>{regionLabel(selectedRegion)}</span>
-          <button type="button" onClick={() => fillRegion(map, selectedRegion, selectedTile, onApplyCommand)}>Fill</button>
+          <button type="button" onClick={() => fillRegion(map, selectedRegion, selectedTile, selectedTileset, paintVariation, activePaintGroupId, onApplyCommand)}>Fill</button>
           <button type="button" onClick={() => clearRegion(map, selectedRegion, selectedTileset, onApplyCommand)}>Clear</button>
           <button type="button" onClick={() => onSetSelectedRegion(null)}>Clear Selection</button>
         </div>
@@ -1057,6 +1062,8 @@ function RegionSelectionDetails({
   tileAttributes,
   icons,
   paintMode,
+  paintVariation,
+  activePaintGroupId,
   onSetPaintMode,
   selectedRegion,
   onSetSelectedRegion,
@@ -1071,6 +1078,8 @@ function RegionSelectionDetails({
   tileAttributes: Project["tileAttributes"];
   icons: EditorState["iconEntries"];
   paintMode: MapPaintMode;
+  paintVariation: MapPaintVariation;
+  activePaintGroupId: string;
   onSetPaintMode: (mode: MapPaintMode) => void;
   selectedRegion: MapRegionSelection | null;
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
@@ -1110,7 +1119,7 @@ function RegionSelectionDetails({
         </div>
       </details>
       <div className="context-action-stack">
-        <button className="btn btn-primary btn-xs context-action-button" type="button" onClick={() => fillRegion(map, region, selectedPaintTile, onApplyCommand)}>
+        <button className="btn btn-primary btn-xs context-action-button" type="button" onClick={() => fillRegion(map, region, selectedPaintTile, selectedTileset, paintVariation, activePaintGroupId, onApplyCommand)}>
           Fill Region
         </button>
         <button className="btn btn-ghost btn-xs context-action-button" type="button" onClick={() => clearRegion(map, region, selectedTileset, onApplyCommand)}>
@@ -1169,6 +1178,8 @@ function SelectionInspector({
   selectedTileset,
   icons,
   paintMode,
+  paintVariation,
+  activePaintGroupId,
   onSetPaintMode,
   selectedRegion,
   onSetSelectedRegion,
@@ -1186,6 +1197,8 @@ function SelectionInspector({
   selectedTileset: TilesetAsset | null;
   icons: EditorState["iconEntries"];
   paintMode: MapPaintMode;
+  paintVariation: MapPaintVariation;
+  activePaintGroupId: string;
   onSetPaintMode: (mode: MapPaintMode) => void;
   selectedRegion: MapRegionSelection | null;
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
@@ -1217,9 +1230,15 @@ function SelectionInspector({
               ["Cell", `${selection.cell.x}, ${selection.cell.y}`],
               ["Raw Tile", selection.cell.tile],
               ["Render Tile", selectedCellMeaning?.renderTile ?? "unknown"],
+              ["Tile Group", selectedCellMeaning ? tileAttributeGroup(selectedCellMeaning.attributes ?? null, selection.cell.tile, selectedTileset).join(", ") || "uncategorized" : "unknown"],
               ["Special/Icon", selectedCellMeaning?.iconId ?? "none"],
               ["Icon Art", selectedCellMeaning?.iconCandidates.length ? (selectedCellMeaning.iconAvailable ? "loaded" : "missing") : "none"],
               ["Solid Type", selectedCellMeaning?.attributes?.solidType ?? "unknown"],
+              ["Move Cost", selectedCellMeaning?.attributes?.movementCost ?? "unknown"],
+              ["Sound", selectedCellMeaning?.attributes?.movementSoundId ?? "none"],
+              ["Shore / Water", yesNo(selectedCellMeaning?.attributes?.shore)],
+              ["Blocks LOS", yesNo(selectedCellMeaning?.attributes?.blocksLos)],
+              ["Combat Expansion", normalizedCombatBuild(selectedCellMeaning?.attributes ?? null) ? "3 x 3" : "none"],
               ["Action Points", selection.triggers.length],
               ["Random Rects", selection.rects.length],
               ["Starts", selection.records.length],
@@ -1228,6 +1247,12 @@ function SelectionInspector({
           />
           <CellTileEvidence cell={selection.cell} records={selection.records} />
           {selectedCellMeaning && <TileMeaningInspector title="Selected Cell Meaning" meaning={selectedCellMeaning} compact />}
+          <CellActionPointDetails
+            project={project}
+            triggers={selection.triggers}
+            onSelectEntity={onSelectEntity}
+            onOpenScripts={onOpenScripts}
+          />
           <ScriptedChangeSection project={project} map={map} cell={selection.cell} onSelectEntity={onSelectEntity} onOpenScripts={onOpenScripts} />
           <MapDiagnostics diagnostics={cellDiagnostics(selection)} />
           <SelectionLinks
@@ -1304,7 +1329,7 @@ function SelectionInspector({
                       kind: "paintTiles",
                       label: "Remove stamp",
                       mapId: map.id,
-                      cells: [{ ...selection.cell, index: selection.cell.y * map.width + selection.cell.x, from: selection.cell.tile, to: fallback }]
+                      cells: [{ ...selection.cell, index: mapTileIndex(map, selection.cell.x, selection.cell.y), from: selection.cell.tile, to: fallback }]
                     });
                   }}
                 >
@@ -1323,6 +1348,8 @@ function SelectionInspector({
           tileAttributes={project?.tileAttributes ?? []}
           icons={icons}
           paintMode={paintMode}
+          paintVariation={paintVariation}
+          activePaintGroupId={activePaintGroupId}
           onSetPaintMode={onSetPaintMode}
           selectedRegion={selectedRegion}
           onSetSelectedRegion={onSetSelectedRegion}
@@ -1390,13 +1417,122 @@ function ScriptedChangeSection({
   );
 }
 
+function CellActionPointDetails({
+  project,
+  triggers,
+  onSelectEntity,
+  onOpenScripts
+}: {
+  project: Project | null;
+  triggers: TriggerRecord[];
+  onSelectEntity: (entity: SelectedEntity) => void;
+  onOpenScripts: (entity: SelectedEntity) => void;
+}) {
+  if (triggers.length === 0) return null;
+  return (
+    <details className="context-section cell-action-point-details" open>
+      <summary><span>Action Points On This Cell</span><b>{triggers.length}</b></summary>
+      <div className="selection-link-list">
+        {triggers.map((trigger) => {
+          const selected = selectEntityFromId(triggerEntityId(trigger.levelType, trigger.levelIndex, trigger.recordIndex, trigger.source));
+          const steps = trigger.actions
+            .filter((action) => action.code !== 0)
+            .slice(0, 4)
+            .map((action) => ({ slot: action.slot, summary: mapInspectorActionSummary(project, action) }));
+          return (
+            <article className="cell-action-card" key={trigger.id}>
+              <div>
+                <strong>Action Point {trigger.recordIndex}</strong>
+                <small>{trigger.percent}% chance{trigger.targetX != null && trigger.targetY != null ? ` | sends to ${trigger.landid ?? 0}, ${trigger.targetX},${trigger.targetY}` : ""}</small>
+              </div>
+              {steps.length > 0 ? (
+                <ol>
+                  {steps.map((step) => <li key={`${trigger.id}:${step.slot}`}>{step.slot}. {step.summary}</li>)}
+                </ol>
+              ) : (
+                <p className="empty-copy compact">No active steps.</p>
+              )}
+              <div className="link-chip-group">
+                <button className="link-chip" type="button" onClick={() => onSelectEntity(selected)}>Select</button>
+                <button className="link-chip action" type="button" onClick={() => onOpenScripts(selected)}>Open in AP</button>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </details>
+  );
+}
+
+function ActionPointMessageSummary({ project, trigger }: { project: Project | null; trigger: TriggerRecord }) {
+  const messageSteps = trigger.actions
+    .map((action) => messageTargetPreview(project, action))
+    .filter((preview): preview is NonNullable<typeof preview> => Boolean(preview));
+  if (messageSteps.length === 0) return null;
+  return (
+    <details className="context-section action-point-message-summary" open>
+      <summary><span>Messages Used Here</span><b>{messageSteps.length}</b></summary>
+      <div className="selection-link-list">
+        {messageSteps.map((preview) => (
+          <article className="cell-action-card compact" key={`${trigger.id}:message:${preview.slot}`}>
+            <strong>Step {preview.slot}: Message {preview.id}{preview.noWait ? " (no wait)" : ""}</strong>
+            <small>{preview.text ? truncateMapInspectorText(preview.text, 180) : "Message target is empty or missing."}</small>
+          </article>
+        ))}
+      </div>
+    </details>
+  );
+}
+
+function mapInspectorActionSummary(project: Project | null, action: TriggerRecord["actions"][number]) {
+  const message = messageTargetPreview(project, action);
+  if (message) {
+    const text = message.text ? `: "${truncateMapInspectorText(message.text, 80)}"` : "";
+    return `Show Message ${message.id}${message.noWait ? " · no wait" : ""}${text}`;
+  }
+  if (action.code === 0) return "Empty step";
+  return `${action.label}${action.id ? ` ${action.id}` : ""}`;
+}
+
+function messageTargetPreview(project: Project | null, action: TriggerRecord["actions"][number]) {
+  if (action.code !== 1 || action.id === 0) return null;
+  const id = Math.abs(action.id);
+  const text = messageTextForId(project, id);
+  return {
+    slot: action.slot,
+    id,
+    noWait: action.id < 0,
+    text
+  };
+}
+
+function messageTextForId(project: Project | null, id: number) {
+  const record = project?.messages?.find((candidate) => candidate.id === id);
+  if (record?.text?.trim()) return record.text.trim();
+  const entity = project?.semanticSchema?.entities?.find((candidate) => candidate.id === `message:${id}`);
+  const text = typeof entity?.summary?.text === "string"
+    ? entity.summary.text
+    : typeof entity?.summary?.preview === "string"
+      ? entity.summary.preview
+      : typeof entity?.label === "string"
+        ? entity.label
+        : "";
+  return text.trim();
+}
+
+function truncateMapInspectorText(text: string, max: number) {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (normalized.length <= max) return normalized;
+  return `${normalized.slice(0, Math.max(0, max - 1)).trimEnd()}...`;
+}
+
 function scriptedTileChangesForCell(project: Project | null, map: MapEntity | null, cell: { x: number; y: number }) {
   if (!project || !map) return [];
   const out: { entityId: string; slot: number; label: string }[] = [];
-  for (const trigger of project.triggers) {
+  for (const trigger of project.triggers ?? []) {
     for (const action of trigger.actions) {
       if (![12, 13, 25].includes(action.code)) continue;
-      const edcd = project.extracodes.find((row) => row.id === action.id);
+      const edcd = project.extracodes?.find((row) => row.id === action.id);
       const values = edcd?.values ?? [];
       const targetLevel = values[0];
       const targetX = values[1];
@@ -1493,17 +1629,22 @@ function TriggerSelectionDetails({
           </button>
         </div>
       )}
+      <ActionPointMessageSummary project={project} trigger={trigger} />
       <ActionPointCodeTable trigger={trigger} />
       <div className="action-slot-list padded">
         {slots.length > 0
-          ? slots.map((slot) => (
-              <button key={slot.id} className="link-chip" onClick={() => onSelectEntity(selectEntityFromId(slot.id))}>
-                {String(slot.summary.slot ?? "?")}: {actionSlotLabel(slot)}
-              </button>
-            ))
+          ? slots.map((slot) => {
+              const slotNumber = typeof slot.summary.slot === "number" ? slot.summary.slot : Number(slot.summary.slot);
+              const action = trigger.actions.find((candidate) => candidate.slot === slotNumber);
+              return (
+                <button key={slot.id} className="link-chip" onClick={() => onSelectEntity(selectEntityFromId(slot.id))}>
+                  {String(slot.summary.slot ?? "?")}: {action ? mapInspectorActionSummary(project, action) : actionSlotLabel(slot)}
+                </button>
+              );
+            })
           : trigger.actions.map((action) => (
               <button key={`${trigger.id}:${action.slot}`} className="link-chip">
-                {action.slot}: {action.label} {action.id ? `#${action.id}` : ""}
+                {action.slot}: {mapInspectorActionSummary(project, action)}
               </button>
             ))}
       </div>
@@ -1577,6 +1718,7 @@ function selectionSummary(
   randomLevel: RandomLevel | null,
   mapRecords: SemanticEntity[]
 ): Selection | null {
+  if (selectedRegion) return { kind: "region", region: selectedRegion };
   if (map && selectedEntity?.id) {
     const trigger = triggers.find((candidate) => triggerEntityId(candidate.levelType, candidate.levelIndex, candidate.recordIndex, candidate.source) === selectedEntity.id);
     if (trigger) return { kind: "trigger", trigger };
@@ -1585,7 +1727,6 @@ function selectionSummary(
     const record = mapRecords.find((candidate) => candidate.id === selectedEntity.id);
     if (record) return { kind: "record", record };
   }
-  if (selectedRegion) return { kind: "region", region: selectedRegion };
   if (!selectedCell) return null;
   return {
     kind: "cell",
@@ -1622,7 +1763,7 @@ function userFacingConfidence(confidence: string | null | undefined) {
 }
 
 function nextAvailableRandomRectIndex(project: Project | null, levelType: MapEntity["levelType"], levelIndex: number) {
-  const level = project?.randomLevels.find((candidate) => candidate.levelType === levelType && candidate.levelIndex === levelIndex);
+  const level = project?.randomLevels?.find((candidate) => candidate.levelType === levelType && candidate.levelIndex === levelIndex);
   const used = new Set((level?.rects ?? []).map((rect) => rect.rectIndex));
   for (let index = 0; index < 20; index += 1) {
     if (!used.has(index)) return index;

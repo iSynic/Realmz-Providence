@@ -3,11 +3,11 @@ import {
   AtlasEntry,
   EditorTool,
   IconEntry,
-  MapFocusTarget,
   MapPreviewFocalPoint,
   MapPreviewMode,
   MapHitTarget,
   MapEntity,
+  MapHudAnchor,
   MapPaintMode,
   MapPaintVariation,
   MapRegionSelection,
@@ -20,17 +20,9 @@ import {
   TilesetAsset,
   TriggerRecord
 } from "../types";
-import {
-  cellScrollTarget,
-  clampScroll,
-  MAP_CELLS,
-  numberSummary,
-  randomRectEntityId,
-  rectCenter
-} from "../map/geometry";
+import { clampScroll, mapCellFromTileIndex, MAP_CELLS } from "../map/geometry";
 import { useMapInteractions } from "../map/useMapInteractions";
 import { hasSecretMarkerTile, isSecretWalkableTile } from "../map/secrets";
-import { triggerEntityId } from "../utils";
 import { ScrollArea } from "../ui";
 import {
   drawBaseMap,
@@ -76,7 +68,6 @@ export function RealmzMapCanvas({
   selectedEntity,
   selectedCell,
   selectedRegion,
-  focusTarget,
   onSelectCell,
   onSetSelectedRegion,
   onSampleTile,
@@ -110,8 +101,7 @@ export function RealmzMapCanvas({
   selectedEntity: SelectedEntity | null;
   selectedCell: { x: number; y: number; tile: number } | null;
   selectedRegion: MapRegionSelection | null;
-  focusTarget: MapFocusTarget | null;
-  onSelectCell: (cell: { x: number; y: number; tile: number }) => void;
+  onSelectCell: (cell: { x: number; y: number; tile: number } | null) => void;
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
   onSampleTile: (tile: number) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
@@ -124,11 +114,28 @@ export function RealmzMapCanvas({
   const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const hudRef = useRef<HTMLDivElement | null>(null);
-  const focusKeyRef = useRef<string | null>(null);
   const baseRenderRef = useRef<BaseRenderSnapshot | null>(null);
+  const hudMoveCooldownRef = useRef(0);
   const [hudPosition, setHudPosition] = useState({ left: 10, top: 10 });
+  const [hudAnchor, setHudAnchor] = useState<MapHudAnchor>("bottom-left");
   const setHudNode = useCallback((node: HTMLDivElement | null) => {
     hudRef.current = node;
+  }, []);
+  useEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+    const handlePointerMove = (event: PointerEvent) => {
+      const hud = hudRef.current;
+      if (!hud) return;
+      const rect = hud.getBoundingClientRect();
+      if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) return;
+      const now = performance.now();
+      if (now < hudMoveCooldownRef.current) return;
+      hudMoveCooldownRef.current = now + 350;
+      setHudAnchor(nextHudAnchor);
+    };
+    wrap.addEventListener("pointermove", handlePointerMove, { passive: true });
+    return () => wrap.removeEventListener("pointermove", handlePointerMove);
   }, []);
   const canvasCssSize = Math.round(BASE_CANVAS_SIZE * zoom);
   const previewPaintChange = useCallback((change: { x: number; y: number; to: number }) => {
@@ -193,7 +200,7 @@ export function RealmzMapCanvas({
     const nextSnapshot = baseRenderSnapshot({ map, atlas, icons, smoothTiles, viewOptions, size });
     const previous = baseRenderRef.current;
     const changedCells = previous && canPatchBaseMap(previous, nextSnapshot)
-      ? changedTileCells(previous.tiles, map.tiles, map.width)
+      ? changedTileCells(previous.tiles, map.tiles, map)
       : null;
 
     ctx.imageSmoothingEnabled = smoothTiles;
@@ -236,7 +243,7 @@ export function RealmzMapCanvas({
     drawTriggers(ctx, triggers, selectedEntity, cell);
     if (showMapRecords) drawMapRecords(ctx, mapRecords, selectedEntity, cell);
     if (selectedRegion) drawRegionSelection(ctx, selectedRegion, cell, "selected");
-    if (selectedCell && !paintCursor) drawSelectedCell(ctx, selectedCell, cell);
+    if (selectedCell && !selectedRegion && !paintCursor) drawSelectedCell(ctx, selectedCell, cell);
     if (regionPreview) drawRegionSelection(ctx, regionPreview, cell, "preview");
     if (paintCursor) drawPaintCursor(ctx, { cursor: paintCursor, atlas, icons, viewOptions, cell });
     else if (hover) drawHover(ctx, hover, cell);
@@ -265,23 +272,6 @@ export function RealmzMapCanvas({
   ]);
 
   useEffect(() => {
-    const focus = focusCellForTarget(map, focusTarget, selectedEntity, allTriggers, randomLevel, mapRecords);
-    if (!focus) return;
-    const key = `${focusTarget?.nonce ?? selectedEntity?.id}:${focus.x}:${focus.y}:${canvasCssSize}`;
-    if (focusKeyRef.current === key) return;
-    focusKeyRef.current = key;
-    window.requestAnimationFrame(() => {
-      const wrap = wrapRef.current;
-      if (!wrap) return;
-      const target = cellScrollTarget(focus, canvasCssSize);
-      const targetX = target.x;
-      const targetY = target.y;
-      wrap.scrollLeft = clampScroll(targetX - wrap.clientWidth / 2, wrap.scrollWidth - wrap.clientWidth);
-      wrap.scrollTop = clampScroll(targetY - wrap.clientHeight / 2, wrap.scrollHeight - wrap.clientHeight);
-    });
-  }, [selectedEntity, focusTarget, allTriggers, randomLevel, mapRecords, map, canvasCssSize]);
-
-  useEffect(() => {
     const wrap = wrapRef.current;
     const hud = hudRef.current;
     if (!wrap || !hud) return;
@@ -292,8 +282,18 @@ export function RealmzMapCanvas({
       const padding = 10;
       const hudWidth = hud.offsetWidth;
       const hudHeight = hud.offsetHeight;
-      const left = clampScroll(wrap.scrollLeft + padding, canvasCssSize - hudWidth - padding);
-      const top = clampScroll(wrap.scrollTop + wrap.clientHeight - hudHeight - padding, canvasCssSize - hudHeight - padding);
+      const hasHorizontalScrollbar = wrap.scrollWidth > wrap.clientWidth + 1;
+      const hasVerticalScrollbar = wrap.scrollHeight > wrap.clientHeight + 1;
+      const rightGutter = hasVerticalScrollbar ? 24 : padding;
+      const bottomGutter = hasHorizontalScrollbar ? 84 : padding;
+      const leftTarget = hudAnchor.endsWith("right")
+        ? wrap.scrollLeft + wrap.clientWidth - hudWidth - rightGutter
+        : wrap.scrollLeft + padding;
+      const topTarget = hudAnchor.startsWith("bottom")
+        ? wrap.scrollTop + wrap.clientHeight - hudHeight - bottomGutter
+        : wrap.scrollTop + padding;
+      const left = clampScroll(leftTarget, canvasCssSize - hudWidth - padding);
+      const top = clampScroll(topTarget, canvasCssSize - hudHeight - padding);
       setHudPosition((current) => (current.left === left && current.top === top ? current : { left, top }));
     };
     const schedule = () => {
@@ -319,7 +319,8 @@ export function RealmzMapCanvas({
     selectedTile,
     viewOptions.showRealTiles,
     atlas,
-    tileset
+    tileset,
+    hudAnchor
   ]);
 
   return (
@@ -341,6 +342,8 @@ export function RealmzMapCanvas({
         <MapKeyHud
           setHudRef={setHudNode}
           style={{ left: `${hudPosition.left}px`, top: `${hudPosition.top}px` }}
+          anchor={hudAnchor}
+          onRequestMove={() => setHudAnchor(nextHudAnchor)}
           map={map}
           hover={hover}
           triggers={triggers}
@@ -406,12 +409,12 @@ function canPatchBaseMap(previous: BaseRenderSnapshot, next: BaseRenderSnapshot)
     previous.showRealmzCoordinates === next.showRealmzCoordinates;
 }
 
-function changedTileCells(previous: number[], next: number[], width: number) {
-  if (previous.length !== next.length || width <= 0) return null;
+function changedTileCells(previous: number[], next: number[], map: MapEntity) {
+  if (previous.length !== next.length || map.width <= 0 || map.height <= 0) return null;
   const cells: Array<{ x: number; y: number }> = [];
   for (let index = 0; index < next.length; index += 1) {
     if (previous[index] === next[index]) continue;
-    cells.push({ x: index % width, y: Math.floor(index / width) });
+    cells.push(mapCellFromTileIndex(map, index));
   }
   return cells;
 }
@@ -437,37 +440,9 @@ function cursorForTool(tool: EditorTool, target: MapHitTarget | null) {
   return "default";
 }
 
-function focusCellForTarget(
-  map: MapEntity,
-  focusTarget: MapFocusTarget | null,
-  selectedEntity: SelectedEntity | null,
-  triggers: TriggerRecord[],
-  randomLevel: RandomLevel | null,
-  mapRecords: SemanticEntity[]
-) {
-  if (focusTarget?.mapId === map.id) {
-    if (focusTarget.kind === "cell" || focusTarget.kind === "rect") return { x: focusTarget.x, y: focusTarget.y };
-    return focusCellForEntity(map, focusTarget.entity, triggers, randomLevel, mapRecords);
-  }
-  return focusCellForEntity(map, selectedEntity, triggers, randomLevel, mapRecords);
-}
-
-function focusCellForEntity(
-  map: MapEntity,
-  selectedEntity: SelectedEntity | null,
-  triggers: TriggerRecord[],
-  randomLevel: RandomLevel | null,
-  mapRecords: SemanticEntity[]
-) {
-  if (!selectedEntity) return null;
-  const trigger = triggers.find(
-    (candidate) => triggerEntityId(candidate.levelType, candidate.levelIndex, candidate.recordIndex, candidate.source) === selectedEntity.id
-  );
-  if (trigger?.coordinate) return trigger.coordinate;
-  const rect = randomLevel?.rects.find((candidate) => selectedEntity.id === randomRectEntityId(map, candidate.rectIndex));
-  if (rect) return rectCenter(rect);
-  const record = mapRecords.find((candidate) => candidate.id === selectedEntity.id);
-  const x = record ? numberSummary(record, "startX") : null;
-  const y = record ? numberSummary(record, "startY") : null;
-  return x == null || y == null ? null : { x, y };
+function nextHudAnchor(anchor: MapHudAnchor): MapHudAnchor {
+  if (anchor === "bottom-left") return "bottom-right";
+  if (anchor === "bottom-right") return "top-right";
+  if (anchor === "top-right") return "top-left";
+  return "bottom-left";
 }

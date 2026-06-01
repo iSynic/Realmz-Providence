@@ -1,9 +1,9 @@
 import { allMapCells, buildPaintChanges, buildReplaceChanges, rectCells, regionDimensions } from "../../map/regionPaint";
-import { MapEntity, MapPaintMode, MapRegionSelection, ProjectCommand, TilesetAsset } from "../../types";
+import { buildRegionPaintPlan, paintSeed } from "../../map/paintResolver";
+import { MapEntity, MapPaintMode, MapPaintVariation, MapRegionSelection, ProjectCommand, TilesetAsset } from "../../types";
 
 const PAINT_MODE_LABELS: Record<MapPaintMode, string> = {
   brush: "Brush",
-  rectangle: "Rectangle Fill",
   region: "Region Select",
   replace: "Replace Tile",
   clear: "Clear Region"
@@ -13,16 +13,25 @@ export function fillRegion(
   map: MapEntity | null,
   region: MapRegionSelection | null,
   selectedTile: number,
+  selectedTileset: TilesetAsset | null,
+  paintVariation: MapPaintVariation,
+  activePaintGroupId: string,
   onApplyCommand: (command: ProjectCommand) => void
 ) {
   if (!map || !region) return;
-  const changes = buildPaintChanges(map, rectCells(map, region), selectedTile);
-  if (changes.length === 0) return;
+  const plan = buildRegionPaintPlan(map, region, {
+    selectedTile,
+    selectedTileset,
+    variation: paintVariation,
+    activeGroupId: activePaintGroupId,
+    seed: paintSeed(map.id, region.left, region.top, region.right, region.bottom, selectedTile, activePaintGroupId)
+  });
+  if (plan.changes.length === 0) return;
   onApplyCommand({
     kind: "paintTiles",
     label: `Fill region ${region.left},${region.top}-${region.right},${region.bottom}`,
     mapId: map.id,
-    cells: changes
+    cells: plan.changes
   });
 }
 
@@ -33,7 +42,15 @@ export function clearRegion(
   onApplyCommand: (command: ProjectCommand) => void
 ) {
   if (!map || !region) return;
-  fillRegion(map, region, clearTileForMap(map, selectedTileset), onApplyCommand);
+  const clearTile = clearTileForMap(map, selectedTileset);
+  const changes = buildPaintChanges(map, rectCells(map, region), clearTile);
+  if (changes.length === 0) return;
+  onApplyCommand({
+    kind: "paintTiles",
+    label: `Clear region ${region.left},${region.top}-${region.right},${region.bottom}`,
+    mapId: map.id,
+    cells: changes
+  });
 }
 
 export function replaceRegion(

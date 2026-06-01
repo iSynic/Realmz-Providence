@@ -10,6 +10,14 @@ export function mapTileIndex(map: MapEntity, x: number, y: number) {
   return map.levelType === "dungeon" ? y * width + x : x * height + y;
 }
 
+export function mapCellFromTileIndex(map: MapEntity, index: number) {
+  const width = map.width || MAP_CELLS;
+  const height = map.height || MAP_CELLS;
+  return map.levelType === "dungeon"
+    ? { x: index % width, y: Math.floor(index / width) }
+    : { x: Math.floor(index / height), y: index % height };
+}
+
 export function tileValueAt(map: MapEntity, x: number, y: number) {
   return map.tiles[mapTileIndex(map, x, y)] ?? 0;
 }

@@ -16,10 +16,10 @@ import {
 } from "../types";
 import { cellFromCanvasPoint, mapTileIndex, tileValueAt } from "./geometry";
 import { hitTestMapTarget } from "./hitTest";
-import { buildPaintChanges, normalizeRegionBounds, rectCells } from "./regionPaint";
+import { normalizeRegionBounds } from "./regionPaint";
+import { makePaintTileResolver, paintSeed } from "./paintResolver";
 import { nextActionPointRecordIndex } from "../actionPointCapacity";
 import { selectEntityFromId, triggerEntityId } from "../utils";
-import { landlookGroupTiles } from "./paintGroups";
 
 export function useMapInteractions({
   map,
@@ -63,7 +63,7 @@ export function useMapInteractions({
   selectedEntity: SelectedEntity | null;
   overlayCanvasRef: RefObject<HTMLCanvasElement | null>;
   wrapRef: RefObject<HTMLDivElement | null>;
-  onSelectCell: (cell: { x: number; y: number; tile: number }) => void;
+  onSelectCell: (cell: { x: number; y: number; tile: number } | null) => void;
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
   onSampleTile: (tile: number) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
@@ -136,6 +136,7 @@ export function useMapInteractions({
 
   function inspectAt(cell: { x: number; y: number }) {
     const hit = targetAt(cell);
+    onSetSelectedRegion(null);
     setHoverTarget(hit);
     selectTargetCell(hit.cell);
     if (hit.kind !== "cell") onSelectEntity(hit.entity);
@@ -162,12 +163,14 @@ export function useMapInteractions({
   }
 
   function brushTileForCell(cell: { x: number; y: number }) {
-    if (paintVariation === "single") return selectedTile;
-    const groupTiles = landlookGroupTiles(selectedTileset, activePaintGroupId);
-    if (groupTiles.length === 0) return selectedTile;
-    const sequence = paintSequenceRef.current;
-    if (paintVariation === "cycle-group") return groupTiles[sequence % groupTiles.length];
-    return groupTiles[stableRandomIndex(paintStrokeSeedRef.current, cell.x, cell.y, sequence, groupTiles.length)];
+    const { resolver } = makePaintTileResolver({
+      selectedTile,
+      selectedTileset,
+      variation: paintVariation,
+      activeGroupId: activePaintGroupId,
+      seed: paintStrokeSeedRef.current
+    });
+    return resolver({ ...cell, index: mapTileIndex(map, cell.x, cell.y), tile: tileValueAt(map, cell.x, cell.y) }, paintSequenceRef.current);
   }
 
   function updatePaintCursor(cell: { x: number; y: number }) {
@@ -308,7 +311,7 @@ export function useMapInteractions({
           paintActiveRef.current = true;
           strokeCellsRef.current.clear();
           const startCell = cellFromEvent(event);
-          paintStrokeSeedRef.current = strokeSeed(map.id, startCell.x, startCell.y, selectedTile, activePaintGroupId);
+          paintStrokeSeedRef.current = paintSeed(map.id, startCell.x, startCell.y, selectedTile, activePaintGroupId);
           paintSequenceRef.current = 0;
           onBeginPaintStroke(activeTool === "stamp" ? "Place stamp" : "Paint tiles");
         }
@@ -434,20 +437,8 @@ export function useMapInteractions({
           const region = normalizeRegionBounds(drag.start, end);
           setRegionPreview(null);
           onSetSelectedRegion(region);
-          const tile = tileValueAt(map, end.x, end.y);
-          selectTargetCell({ ...end, tile });
-          setHoverTarget({ kind: "cell", cell: { ...end, tile } });
-          if (drag.mode === "rectangle") {
-            const changes = buildPaintChanges(map, rectCells(map, region), selectedTile);
-            if (changes.length > 0) {
-              onApplyCommand({
-                kind: "paintTiles",
-                mapId: map.id,
-                label: `Fill region ${region.left},${region.top}-${region.right},${region.bottom}`,
-                cells: changes
-              });
-            }
-          }
+          onSelectCell(null);
+          setHoverTarget(null);
           if (event.currentTarget.hasPointerCapture(event.pointerId)) {
             event.currentTarget.releasePointerCapture(event.pointerId);
           }
@@ -510,24 +501,4 @@ function nextRandomRectIndex(randomLevel: RandomLevel | null) {
     if (!used.has(index)) return index;
   }
   return null;
-}
-
-function strokeSeed(mapId: string, x: number, y: number, selectedTile: number, groupId: string) {
-  let hash = 2166136261;
-  const input = `${mapId}:${x}:${y}:${selectedTile}:${groupId}`;
-  for (let index = 0; index < input.length; index += 1) {
-    hash ^= input.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
-}
-
-function stableRandomIndex(seed: number, x: number, y: number, sequence: number, length: number) {
-  let value = seed ^ Math.imul(x + 1, 73856093) ^ Math.imul(y + 1, 19349663) ^ Math.imul(sequence + 1, 83492791);
-  value ^= value >>> 16;
-  value = Math.imul(value, 2246822519);
-  value ^= value >>> 13;
-  value = Math.imul(value, 3266489917);
-  value ^= value >>> 16;
-  return (value >>> 0) % length;
 }

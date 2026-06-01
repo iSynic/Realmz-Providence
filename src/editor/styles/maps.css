@@ -2000,6 +2000,34 @@
   font-size: 10px;
 }
 
+.cell-action-card {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid rgba(79, 143, 199, 0.36);
+  border-radius: 6px;
+  background: rgba(7, 13, 20, 0.72);
+}
+
+.cell-action-card strong {
+  color: #f2f7fd;
+}
+
+.cell-action-card small {
+  display: block;
+  color: #9dcfff;
+}
+
+.cell-action-card ol {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding-left: 18px;
+  color: #dbeafe;
+  font-size: 11px;
+}
+
 
 
 .map-key-hud {
@@ -2008,6 +2036,8 @@
   z-index: 4;
   width: max-content;
   max-width: min(540px, calc(100% - 20px));
+  max-height: min(180px, calc(100% - 24px));
+  overflow: hidden;
   padding: 8px 10px;
   border: 1px solid rgba(157, 207, 255, 0.34);
   border-radius: 5px;
@@ -2022,6 +2052,10 @@
   pointer-events: none;
   text-shadow: 0 1px 1px #000;
   backdrop-filter: blur(6px);
+}
+
+.map-key-hud:hover {
+  border-color: rgba(250, 204, 21, 0.6);
 }
 
 

@@ -98,7 +98,7 @@ export function PaintPalettePanel({
   const activeGroup = landlookGroupById(activePaintGroupId);
   const activeGroupTiles = useMemo(() => landlookGroupTiles(tileset, activePaintGroupId), [activePaintGroupId, tileset]);
   const groupWarning = paintVariation !== "single" && activeGroupTiles.length === 0
-    ? "This group has no tiles in the current landlook; Brush will use the selected tile."
+    ? "This group has no tiles in the current landlook; painting will use the selected tile."
     : null;
 
   useEffect(() => {
@@ -150,7 +150,7 @@ export function PaintPalettePanel({
       {variant === "sidebar" && (
         <div className="paint-variation-panel" aria-label="Brush variation">
           <div className="paint-variation-header">
-            <span>Brush</span>
+            <span>Variation</span>
             <b>{paintVariationLabel(paintVariation, activeGroup.label)}</b>
           </div>
           <div className="paint-variation-buttons" role="toolbar" aria-label="Brush variation mode">
