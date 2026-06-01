@@ -140,7 +140,7 @@ export function edcdTargetOptions(project: Project, targetKind: EdcdTargetKind, 
       key: `message:${record.id}`,
       value: record.id,
       label: `Message ${record.id}`,
-      detail: record.text ? record.text.slice(0, 96) : "empty message",
+      detail: record.text || "empty message",
       entity: selectEntityFromId(`message:${record.id}`)
     }));
   }
@@ -215,6 +215,7 @@ export function missingEdcdTargetReferences(project: Project, shape: string, fie
 
 function normalizedEdcdTargetValueForValidation(targetKind: EdcdTargetKind, rawValue: number, field: string, opcode?: number) {
   if (targetKind === "battle") return Math.abs(rawValue);
+  if (targetKind === "sound") return Math.abs(rawValue);
   if (targetKind === "message" && (opcode === 15 || opcode === 16) && field.toLowerCase() === "message") return Math.abs(rawValue);
   return rawValue;
 }

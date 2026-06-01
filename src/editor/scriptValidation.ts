@@ -122,21 +122,21 @@ function validateTargetRecord(project: Project, triggerId: string, slot: number,
     }
   }
   if (code === 2 || [48, 56, 107].includes(code)) {
-    const battle = project.battles?.find((record) => record.id === id);
+    const battle = project.battles?.find((record) => record.id === resolvedId);
     if (battle && battle.grid.length !== 13 * 13) {
-      return [slotIssue("error", triggerId, slot, "battle-grid-shape", "Battle grid is malformed.", `Battle ${id} must have 169 monster cells.`)];
+      return [slotIssue("error", triggerId, slot, "battle-grid-shape", "Battle grid is malformed.", `Battle ${resolvedId} must have 169 monster cells.`)];
     }
   }
   if (code === 10) {
-    const treasure = project.treasures?.find((record) => record.id === id);
+    const treasure = project.treasures?.find((record) => record.id === resolvedId);
     if (treasure && treasure.itemIds.length > 20) {
-      return [slotIssue("error", triggerId, slot, "treasure-item-count", "Treasure has too many item slots.", `Treasure ${id} has ${treasure.itemIds.length}; keep it to 20 item slots or fewer.`)];
+      return [slotIssue("error", triggerId, slot, "treasure-item-count", "Treasure has too many item slots.", `Treasure ${resolvedId} has ${treasure.itemIds.length}; keep it to 20 item slots or fewer.`)];
     }
   }
   if ([6, 49, 51].includes(code)) {
-    const shop = project.shops?.find((record) => record.id === id);
+    const shop = project.shops?.find((record) => record.id === resolvedId);
     if (shop && (shop.itemIds.length > 1000 || shop.quantities.length > 1000)) {
-      return [slotIssue("error", triggerId, slot, "shop-slot-count", "Shop has too many stocked slots.", `Shop ${id} must stay within 1000 item and quantity slots.`)];
+      return [slotIssue("error", triggerId, slot, "shop-slot-count", "Shop has too many stocked slots.", `Shop ${resolvedId} must stay within 1000 item and quantity slots.`)];
     }
   }
   return [];

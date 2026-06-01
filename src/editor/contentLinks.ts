@@ -22,7 +22,8 @@ export function messageUsageLinks(project: Project, messageId: number): ContentU
   for (const trigger of project.triggers ?? []) {
     for (const action of trigger.actions ?? []) {
       const code = normalizeStepOpcode(action.rawCode);
-      if (![1, 62, 71].includes(code) || action.id !== messageId) continue;
+      const targetMessageId = code === 1 ? Math.abs(action.id) : action.id;
+      if (![1, 62, 71].includes(code) || targetMessageId !== messageId) continue;
       links.push({
         key: `script:${trigger.id}:${action.slot}`,
         label: triggerLabel(trigger),
@@ -44,7 +45,9 @@ export function messageUsageLinks(project: Project, messageId: number): ContentU
       links.push({ key: `simple:${encounter.id}:prompt`, label: `Simple Encounter ${encounter.id}`, detail: "Prompt message", entity: { type: "encounter", id: `encounter:simple:${encounter.id}` } });
     }
     for (const action of encounter.actions ?? []) {
-      if ([1, 62, 71].includes(normalizeStepOpcode(action.rawCode)) && action.id === messageId) {
+      const code = normalizeStepOpcode(action.rawCode);
+      const targetMessageId = code === 1 ? Math.abs(action.id) : action.id;
+      if ([1, 62, 71].includes(code) && targetMessageId === messageId) {
         links.push({ key: `simple:${encounter.id}:action:${action.slot}`, label: `Simple Encounter ${encounter.id}`, detail: `Action row ${action.slot} message`, entity: { type: "encounter", id: `encounter:simple:${encounter.id}` } });
       }
     }
@@ -54,7 +57,9 @@ export function messageUsageLinks(project: Project, messageId: number): ContentU
       links.push({ key: `complex:${encounter.id}:prompt`, label: `Complex Encounter ${encounter.id}`, detail: "Prompt message", entity: { type: "encounter", id: `encounter:complex:${encounter.id}` } });
     }
     for (const action of encounter.actions ?? []) {
-      if ([1, 62, 71].includes(normalizeStepOpcode(action.rawCode)) && action.id === messageId) {
+      const code = normalizeStepOpcode(action.rawCode);
+      const targetMessageId = code === 1 ? Math.abs(action.id) : action.id;
+      if ([1, 62, 71].includes(code) && targetMessageId === messageId) {
         links.push({ key: `complex:${encounter.id}:action:${action.slot}`, label: `Complex Encounter ${encounter.id}`, detail: `Action row ${action.slot} message`, entity: { type: "encounter", id: `encounter:complex:${encounter.id}` } });
       }
     }
@@ -201,7 +206,7 @@ function edcdMessageUsageLinks(project: Project, messageId: number) {
 function directSoundUsageLinks(project: Project, resourceId: number) {
   const links: ContentUsageLink[] = [];
   forEachScriptAction(project, (action, context) => {
-    if (normalizeStepOpcode(action.rawCode) !== 9 || action.id !== resourceId) return;
+    if (normalizeStepOpcode(action.rawCode) !== 9 || Math.abs(action.id) !== Math.abs(resourceId)) return;
     links.push({
       key: `${context.key}:sound`,
       label: context.label,
@@ -235,7 +240,7 @@ function edcdSoundUsageLinks(project: Project, resourceId: number) {
     const row = rows.get(edcdRowId(action));
     if (!row) return;
     for (const target of edcdSoundTargets(code, row.values)) {
-      if (target.value !== resourceId) continue;
+      if (Math.abs(target.value) !== Math.abs(resourceId)) continue;
       links.push({
         key: `${context.key}:edcd-sound:${target.fieldIndex}`,
         label: context.label,

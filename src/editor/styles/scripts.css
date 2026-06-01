@@ -2768,6 +2768,11 @@
   font-size: 10px;
 }
 
+.realmz-sound-preview-button {
+  justify-self: start;
+  margin-top: 3px;
+}
+
 .script-step-route-preview {
   display: grid;
   gap: 5px;

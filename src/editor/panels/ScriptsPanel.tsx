@@ -1,10 +1,12 @@
+import { invoke } from "@tauri-apps/api/core";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { AlertTriangle, ArrowDown, ArrowUp, Copy, CopyPlus, Plus, Save, Trash2, X } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowUp, Copy, CopyPlus, Plus, Save, Trash2, Volume2, X } from "lucide-react";
 import { Action, EncounterActionRow, LevelType, LibraryCatalog, Project, ProjectCommand, RealmzTargetRecordKind, ScriptDetailSurface, ScriptInventoryFilter, SelectedEntity, SemanticEntity, TriggerRecord } from "../types";
 import { linksFor, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
 import { actionSlotEntitiesForTriggerRecord, extraActionPointClassification } from "../semanticGraph";
 import { EdcdRowEditor } from "../components/EdcdRowEditor";
-import { TargetPicker, resolveSignedMessageTarget, signedTargetBehaviorLabel, signedTargetValueForSelection, targetOptionsForOpcode } from "../components/RealmzTargetPicker";
+import { TargetPicker, resolveSignedMessageTarget, signedTargetBehaviorLabel, signedTargetValueForSelection, targetOptionForOpcodeValue, targetOptionsForOpcode, type ScriptTargetOption } from "../components/RealmzTargetPicker";
+import { inspectBrowserBundledLibraryAssetPreview } from "../browser/library";
 import { categoryColor } from "../components/TileSprite";
 import { CollapsibleSection, EmptyState, FieldRow, FloatingWorkbenchPanel, PanelSection, ScrollArea } from "../ui";
 import { ACTION_OPTIONS, actionOptionFor, isDispatcherNoopOpcode, normalizeStepOpcode } from "../realmzActions";
@@ -84,12 +86,9 @@ function refKey(value: object | null | undefined) {
 }
 
 function scriptDiagnosticDependencyKey(project: Project, catalog?: LibraryCatalog | null) {
-  const macroKey = project.triggers
-    .filter((trigger) => trigger.source === "Data ED3")
-    .map((trigger) => `${trigger.recordIndex}:${trigger.actions.length}:${trigger.active ? 1 : 0}`)
-    .join(",");
   return [
     refKey(catalog ?? null),
+    refKey(project.triggers),
     refKey(project.extracodes),
     refKey(project.messages),
     refKey(project.battles),
@@ -104,8 +103,7 @@ function scriptDiagnosticDependencyKey(project: Project, catalog?: LibraryCatalo
     refKey(project.assets),
     refKey(project.maps),
     refKey(project.mapRecords),
-    refKey(project.semanticSchema),
-    macroKey
+    refKey(project.semanticSchema)
   ].join("|");
 }
 
@@ -127,6 +125,9 @@ export function ScriptsPanel({
   project,
   catalog,
   selectedEntity,
+  desktopRuntime = false,
+  projectDir = "",
+  workspaceDir = "",
   onSelectEntity,
   onSelectEditor,
   onOpenTool,
@@ -136,6 +137,9 @@ export function ScriptsPanel({
   project: Project | null;
   catalog?: LibraryCatalog | null;
   selectedEntity: SelectedEntity | null;
+  desktopRuntime?: boolean;
+  projectDir?: string;
+  workspaceDir?: string;
   onSelectEntity: (entity: SelectedEntity) => void;
   onSelectEditor?: (editor: string) => void;
   onOpenTool?: (tab: "text", editor: string) => void;
@@ -153,7 +157,18 @@ export function ScriptsPanel({
   return (
     <div className="editor-full-panel scripts-workbench">
       <ScriptEditorTabs activeEditor={effectiveEditor} onSelectEditor={onSelectEditor} />
-      <ScriptAuthoringPanel project={project} catalog={catalog} activeEditor={effectiveEditor} selectedEntity={selectedEntity} onSelectEntity={handleSelectEntity} onOpenTool={onOpenTool} onApplyCommand={handleApplyCommand} />
+      <ScriptAuthoringPanel
+        project={project}
+        catalog={catalog}
+        activeEditor={effectiveEditor}
+        selectedEntity={selectedEntity}
+        desktopRuntime={desktopRuntime}
+        projectDir={projectDir}
+        workspaceDir={workspaceDir}
+        onSelectEntity={handleSelectEntity}
+        onOpenTool={onOpenTool}
+        onApplyCommand={handleApplyCommand}
+      />
     </div>
   );
 }
@@ -192,6 +207,9 @@ function ScriptAuthoringPanel({
   catalog,
   activeEditor,
   selectedEntity,
+  desktopRuntime,
+  projectDir,
+  workspaceDir,
   onSelectEntity,
   onOpenTool,
   onApplyCommand
@@ -200,6 +218,9 @@ function ScriptAuthoringPanel({
   catalog?: LibraryCatalog | null;
   activeEditor: string;
   selectedEntity: SelectedEntity | null;
+  desktopRuntime: boolean;
+  projectDir: string;
+  workspaceDir: string;
   onSelectEntity: (entity: SelectedEntity) => void;
   onOpenTool?: (tab: "text", editor: string) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
@@ -219,6 +240,7 @@ function ScriptAuthoringPanel({
   const [detailSurface, setDetailSurface] = usePersistentValue<ScriptDetailSurface>("scripts.detailSurface", "docked");
   const [targetDrawerOpen, setTargetDrawerOpen] = usePersistentBoolean("scripts.targetDrawer.open", true);
   const [newActionPoint, setNewActionPoint] = useState({ mapId: projectMaps[0]?.id ?? "", x: 1, y: 1 });
+  const [warningScanReady, setWarningScanReady] = useState(false);
   const selectedScriptButtonRef = useRef<HTMLButtonElement | null>(null);
   const benchmarkStartedRef = useRef(false);
   useEffect(() => {
@@ -240,26 +262,32 @@ function ScriptAuthoringPanel({
   const selectedMap = projectMaps.find((map) => map.id === newActionPoint.mapId) ?? projectMaps[0] ?? null;
   const canScopeToMap = Boolean(selectedMap && activeTabKind === "action-points");
   const diagnosticDependencyKey = useMemo(() => project ? scriptDiagnosticDependencyKey(project, catalog) : "", [project, catalog]);
+  useEffect(() => {
+    setWarningScanReady(false);
+    if (inventoryFilter !== "warnings") return;
+    const handle = window.setTimeout(() => setWarningScanReady(true), 160);
+    return () => window.clearTimeout(handle);
+  }, [activeEditor, diagnosticDependencyKey, inventoryFilter, scripts.length]);
   const fullWarningDiagnosticsById = useMemo(() => {
     const map = new Map<string, ScriptDiagnostic[]>();
-    if (!project || inventoryFilter !== "warnings") return map;
+    if (!project || inventoryFilter !== "warnings" || !warningScanReady) return map;
     for (const trigger of scripts) {
       const diagnostics = cachedValidateScriptTrigger(project, trigger, catalog, diagnosticDependencyKey);
       if (diagnostics.length > 0) map.set(trigger.id, diagnostics);
     }
     return map;
-  }, [project, scripts, catalog, diagnosticDependencyKey, inventoryFilter]);
+  }, [project, scripts, catalog, diagnosticDependencyKey, inventoryFilter, warningScanReady]);
   const inventoryCounts = useMemo(() => {
     const counts = new Map<ScriptInventoryFilter, number | null>();
     for (const filter of SCRIPT_INVENTORY_FILTERS) {
-      if (filter.id === "warnings" && inventoryFilter !== "warnings") {
+      if (filter.id === "warnings" && (inventoryFilter !== "warnings" || !warningScanReady)) {
         counts.set(filter.id, null);
         continue;
       }
       counts.set(filter.id, filterScriptsByInventory(project, scripts, filter.id, selectedMap, canScopeToMap, fullWarningDiagnosticsById).length);
     }
     return counts;
-  }, [project, scripts, selectedMap, canScopeToMap, fullWarningDiagnosticsById, inventoryFilter]);
+  }, [project, scripts, selectedMap, canScopeToMap, fullWarningDiagnosticsById, inventoryFilter, warningScanReady]);
   const scopedScripts = useMemo(
     () => filterScriptsByInventory(project, scripts, inventoryFilter, selectedMap, canScopeToMap, fullWarningDiagnosticsById),
     [project, scripts, inventoryFilter, selectedMap, canScopeToMap, fullWarningDiagnosticsById]
@@ -268,6 +296,12 @@ function ScriptAuthoringPanel({
     () => project ? scopedScripts.filter((trigger) => scriptMatchesQuery(project, trigger, scriptQuery)) : [],
     [project, scopedScripts, scriptQuery]
   );
+  const [visibleScriptLimit, setVisibleScriptLimit] = useState(80);
+  useEffect(() => {
+    setVisibleScriptLimit(80);
+    const handle = window.setTimeout(() => setVisibleScriptLimit(240), 90);
+    return () => window.clearTimeout(handle);
+  }, [activeEditor, filteredScripts.length, inventoryFilter, scriptQuery]);
   useEffect(() => {
     if (!isScriptsBenchmarkMode() || benchmarkStartedRef.current || filteredScripts.length === 0) return;
     benchmarkStartedRef.current = true;
@@ -346,7 +380,7 @@ function ScriptAuthoringPanel({
     filteredScripts[0] ??
     scripts[0] ??
     null;
-  const visibleScripts = useMemo(() => filteredScripts.slice(0, 240), [filteredScripts]);
+  const visibleScripts = useMemo(() => filteredScripts.slice(0, visibleScriptLimit), [filteredScripts, visibleScriptLimit]);
   const visibleDiagnosticsById = useMemo(() => {
     const map = new Map(fullWarningDiagnosticsById);
     if (!project) return map;
@@ -498,6 +532,9 @@ function ScriptAuthoringPanel({
       categoryFilter={categoryFilter}
       opcodeQuery={opcodeQuery}
       filteredDefinitions={filteredDefinitions}
+      desktopRuntime={desktopRuntime}
+      projectDir={projectDir}
+      workspaceDir={workspaceDir}
       onSetCategoryFilter={setCategoryFilter}
       onSetOpcodeQuery={setOpcodeQuery}
       onSetSelectedDraft={setSelectedDraft}
@@ -635,12 +672,12 @@ function ScriptAuthoringPanel({
             ))}
             {filteredScripts.length === 0 && (
               <div className="script-list-empty">
-                No scripts match this view.
+                {inventoryFilter === "warnings" && !warningScanReady ? "Scanning warnings..." : "No scripts match this view."}
               </div>
             )}
-            {filteredScripts.length > 240 && (
+            {filteredScripts.length > visibleScripts.length && (
               <div className="script-list-empty">
-                Showing the first 240 matches. Narrow the filter to jump further.
+                Showing the first {visibleScripts.length} matches. Narrow the filter to jump further.
               </div>
             )}
           </ScrollArea>
@@ -910,40 +947,80 @@ function SourceEvidence({
   onSelectEntity: (entity: SelectedEntity) => void;
 }) {
   const triggerEntityIdValue = triggerSemanticSelectionId(trigger);
-  const triggerLinks = linksFor(project, triggerEntityIdValue);
-  const slotLinks = linksFor(project, selectedSlotEntity?.id ?? null);
-  const linkCount = triggerLinks.outgoing.length + triggerLinks.incoming.length + slotLinks.outgoing.length + slotLinks.incoming.length;
   const edcdUsage = selectedSlotEntity?.summary.edcdUsage as { summary?: string; rowId?: number; shape?: string } | undefined;
   const count = [
     trigger.source,
     selectedSlotEntity?.id,
-    selectedEdcdRowId != null ? `edcd:${selectedEdcdRowId}` : null,
-    linkCount ? `links:${linkCount}` : null
+    selectedEdcdRowId != null ? `edcd:${selectedEdcdRowId}` : null
   ].filter(Boolean).length;
   return (
     <CollapsibleSection title="Technical Details" eyebrow="advanced" count={String(count)} density="compact" storageKey="scripts.sourceEvidence.open" defaultOpen={false}>
-      <div className="script-source-evidence">
-        <div className="realmz-raw-preview">
-          <FieldRow label="Script Source" value={trigger.source} />
-          <FieldRow label="Script Entity" value={triggerEntityIdValue} />
-          <FieldRow label="Record Index" value={trigger.recordIndex} />
-          <FieldRow label="Door ID" value={trigger.doorid} />
-          <FieldRow label="Map" value={trigger.levelType != null ? `${trigger.levelType} ${trigger.levelIndex ?? 0}` : "Reusable Action"} />
-          <FieldRow label="Coordinate" value={trigger.coordinate ? `${trigger.coordinate.x}, ${trigger.coordinate.y}` : "none"} />
-          <FieldRow label="Selected Slot" value={selectedSlot} />
-          <FieldRow label="Slot Entity" value={selectedSlotEntity?.id ?? "draft-only"} />
-          <FieldRow label="Applied CODE/ID" value={selectedAction ? `${selectedAction.rawCode} / ${selectedAction.id}` : "empty"} />
-          <FieldRow label="Draft CODE/ID" value={`${selectedDraft.rawCode} / ${selectedDraft.id}`} />
-          <FieldRow label="Opcode" value={selectedOption.label} />
-          <FieldRow label="Dispatcher" value={isDispatcherNoopOpcode(selectedDraft.rawCode) ? "dispatcher no-op; Realmz ignores this CODE" : "has documented dispatcher behavior"} />
-          <FieldRow label="Data EDCD Row" value={selectedEdcdRowId != null ? `row ${selectedEdcdRowId}${edcdUsage?.shape ? ` (${edcdUsage.shape})` : ""}` : "none"} />
-          <FieldRow label="Edit State" value={selectedSlotEntity?.editState ?? "authored/draft"} />
-        </div>
-        {edcdUsage?.summary && <p className="field-help">{edcdUsage.summary}</p>}
-        <EvidenceLinkGroup title="Script Links" project={project} links={[...triggerLinks.outgoing, ...triggerLinks.incoming]} onSelectEntity={onSelectEntity} />
-        <EvidenceLinkGroup title="Slot Links" project={project} links={[...slotLinks.outgoing, ...slotLinks.incoming]} onSelectEntity={onSelectEntity} />
-      </div>
+      <SourceEvidenceDetails
+        project={project}
+        trigger={trigger}
+        triggerEntityIdValue={triggerEntityIdValue}
+        selectedSlot={selectedSlot}
+        selectedAction={selectedAction}
+        selectedDraft={selectedDraft}
+        selectedOption={selectedOption}
+        selectedSlotEntity={selectedSlotEntity}
+        selectedEdcdRowId={selectedEdcdRowId}
+        edcdUsage={edcdUsage}
+        onSelectEntity={onSelectEntity}
+      />
     </CollapsibleSection>
+  );
+}
+
+function SourceEvidenceDetails({
+  project,
+  trigger,
+  triggerEntityIdValue,
+  selectedSlot,
+  selectedAction,
+  selectedDraft,
+  selectedOption,
+  selectedSlotEntity,
+  selectedEdcdRowId,
+  edcdUsage,
+  onSelectEntity
+}: {
+  project: Project;
+  trigger: TriggerRecord;
+  triggerEntityIdValue: string;
+  selectedSlot: number;
+  selectedAction?: Action;
+  selectedDraft: { rawCode: number; id: number };
+  selectedOption: ReturnType<typeof actionOptionFor>;
+  selectedSlotEntity?: SemanticEntity;
+  selectedEdcdRowId: number | null;
+  edcdUsage?: { summary?: string; rowId?: number; shape?: string };
+  onSelectEntity: (entity: SelectedEntity) => void;
+}) {
+  const triggerLinks = linksFor(project, triggerEntityIdValue);
+  const slotLinks = linksFor(project, selectedSlotEntity?.id ?? null);
+  return (
+    <div className="script-source-evidence">
+      <div className="realmz-raw-preview">
+        <FieldRow label="Script Source" value={trigger.source} />
+        <FieldRow label="Script Entity" value={triggerEntityIdValue} />
+        <FieldRow label="Record Index" value={trigger.recordIndex} />
+        <FieldRow label="Door ID" value={trigger.doorid} />
+        <FieldRow label="Map" value={trigger.levelType != null ? `${trigger.levelType} ${trigger.levelIndex ?? 0}` : "Reusable Action"} />
+        <FieldRow label="Coordinate" value={trigger.coordinate ? `${trigger.coordinate.x}, ${trigger.coordinate.y}` : "none"} />
+        <FieldRow label="Selected Slot" value={selectedSlot} />
+        <FieldRow label="Slot Entity" value={selectedSlotEntity?.id ?? "draft-only"} />
+        <FieldRow label="Applied CODE/ID" value={selectedAction ? `${selectedAction.rawCode} / ${selectedAction.id}` : "empty"} />
+        <FieldRow label="Draft CODE/ID" value={`${selectedDraft.rawCode} / ${selectedDraft.id}`} />
+        <FieldRow label="Opcode" value={selectedOption.label} />
+        <FieldRow label="Dispatcher" value={isDispatcherNoopOpcode(selectedDraft.rawCode) ? "dispatcher no-op; Realmz ignores this CODE" : "has documented dispatcher behavior"} />
+        <FieldRow label="Data EDCD Row" value={selectedEdcdRowId != null ? `row ${selectedEdcdRowId}${edcdUsage?.shape ? ` (${edcdUsage.shape})` : ""}` : "none"} />
+        <FieldRow label="Edit State" value={selectedSlotEntity?.editState ?? "authored/draft"} />
+      </div>
+      {edcdUsage?.summary && <p className="field-help">{edcdUsage.summary}</p>}
+      <EvidenceLinkGroup title="Script Links" project={project} links={[...triggerLinks.outgoing, ...triggerLinks.incoming]} onSelectEntity={onSelectEntity} />
+      <EvidenceLinkGroup title="Slot Links" project={project} links={[...slotLinks.outgoing, ...slotLinks.incoming]} onSelectEntity={onSelectEntity} />
+    </div>
   );
 }
 
@@ -1015,6 +1092,72 @@ function humanActionValueLabel(label: string) {
   return clean && clean !== "Value" ? clean : "Value";
 }
 
+function useSoundPreviewUrl(option: ScriptTargetOption | null, desktopRuntime: boolean, projectDir: string, workspaceDir: string) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let disposed = false;
+    setUrl(null);
+    if (!option) return;
+    const directPath = option.previewPath ?? option.managedAsset?.previewPath ?? option.libraryAsset?.previewPath ?? null;
+    if (directPath && isDirectPreviewUrl(directPath)) {
+      setUrl(directPath);
+      return;
+    }
+    if (option.managedAsset?.previewPath && desktopRuntime && projectDir) {
+      invoke<string>("load_project_asset_preview", { projectDir, relativePath: option.managedAsset.previewPath })
+        .then((loadedUrl) => {
+          if (!disposed) setUrl(loadedUrl);
+        })
+        .catch(() => {
+          if (!disposed) setUrl(null);
+        });
+      return () => {
+        disposed = true;
+      };
+    }
+    if (option.libraryAsset) {
+      if (desktopRuntime && workspaceDir) {
+        invoke<string>("load_library_asset_preview", {
+          workspaceDir,
+          source: option.libraryAsset.source,
+          relativePath: option.libraryAsset.relativePath
+        })
+          .then((loadedUrl) => {
+            if (!disposed) setUrl(loadedUrl);
+          })
+          .catch(() => {
+            if (!disposed) setUrl(null);
+          });
+      } else {
+        inspectBrowserBundledLibraryAssetPreview(option.libraryAsset)
+          .then((preview) => {
+            if (!disposed) setUrl(preview.status === "playable" ? preview.dataUrl : null);
+          })
+          .catch(() => {
+            if (!disposed) setUrl(null);
+          });
+      }
+      return () => {
+        disposed = true;
+      };
+    }
+    return () => {
+      disposed = true;
+    };
+  }, [desktopRuntime, option, projectDir, workspaceDir]);
+  return url;
+}
+
+function isDirectPreviewUrl(path: string) {
+  return /^(data:|blob:|https?:\/\/|\/)/i.test(path);
+}
+
+function playSoundPreview(url: string) {
+  const audio = new Audio(url);
+  audio.preload = "auto";
+  void audio.play();
+}
+
 function SelectedStepDetail({
   project,
   catalog,
@@ -1031,6 +1174,9 @@ function SelectedStepDetail({
   categoryFilter,
   opcodeQuery,
   filteredDefinitions,
+  desktopRuntime,
+  projectDir,
+  workspaceDir,
   onSetCategoryFilter,
   onSetOpcodeQuery,
   onSetSelectedDraft,
@@ -1062,6 +1208,9 @@ function SelectedStepDetail({
   categoryFilter: ScriptActionCategory;
   opcodeQuery: string;
   filteredDefinitions: ScriptActionDefinition[];
+  desktopRuntime: boolean;
+  projectDir: string;
+  workspaceDir: string;
   onSetCategoryFilter: (category: ScriptActionCategory) => void;
   onSetOpcodeQuery: (query: string) => void;
   onSetSelectedDraft: (values: { rawCode: number; id: number }) => void;
@@ -1085,9 +1234,14 @@ function SelectedStepDetail({
   const visibleParameters = selectedDefinition.parameters.filter((parameter) => !parameter.preserved);
   const selectedTargetPreview = useMemo(() => {
     if (!selectedDefinition.target || selectedDefinition.target.targetFamily === "parameter-row") return null;
-    const lookupId = resolveSignedMessageTarget(selectedDraft.rawCode, selectedDraft.id);
-    return targetOptionsForOpcode(project, selectedDraft.rawCode, catalog).find((option) => option.value === lookupId) ?? null;
+    return targetOptionForOpcodeValue(project, selectedDraft.rawCode, selectedDraft.id, catalog);
   }, [catalog, project, selectedDefinition.target, selectedDraft.id, selectedDraft.rawCode]);
+  const selectedSoundPreviewUrl = useSoundPreviewUrl(
+    normalizeStepOpcode(selectedDraft.rawCode) === 9 ? selectedTargetPreview : null,
+    desktopRuntime,
+    projectDir,
+    workspaceDir
+  );
   useEffect(() => {
     setPreviewExpanded(false);
   }, [selectedSlot, selectedDraft.rawCode, selectedDraft.id]);
@@ -1171,6 +1325,17 @@ function SelectedStepDetail({
             <p>{selectedTargetPreview.detail}</p>
             {selectedTargetPreview.summary && <small>{selectedTargetPreview.summary}</small>}
             {previewBehavior && <small>{previewBehavior}</small>}
+            {normalizeStepOpcode(selectedDraft.rawCode) === 9 && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-xs realmz-sound-preview-button"
+                disabled={!selectedSoundPreviewUrl}
+                title={selectedSoundPreviewUrl ? "Play this sound preview." : "No playable preview is available for this sound."}
+                onClick={() => selectedSoundPreviewUrl && playSoundPreview(selectedSoundPreviewUrl)}
+              >
+                <Volume2 size={12} /> Play
+              </button>
+            )}
           </div>
         )}
         {selectedFlowRoutes.length > 0 && (

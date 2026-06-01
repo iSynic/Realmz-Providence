@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { LibraryCatalog, Project, RealmzTargetRecordKind, SelectedEntity, SemanticEntity } from "../types";
 import { isCallableMacro, schemaEntities } from "../semanticGraph";
 import { selectEntityFromId } from "../utils";
@@ -13,26 +13,42 @@ export type ScriptTargetOption = {
   compatibility?: string;
   sourceState?: string;
   entity?: SelectedEntity;
+  previewPath?: string | null;
+  previewMimeType?: string | null;
+  managedAsset?: Project["assets"][number];
+  libraryAsset?: LibraryCatalog["assets"][number];
 };
 
 const targetOptionsCache = new WeakMap<Project, Map<string, ScriptTargetOption[]>>();
 const catalogIds = new WeakMap<LibraryCatalog, number>();
 let nextCatalogId = 1;
 
-export function resolveSignedMessageTarget(opcode: number, value: number) {
+const SIGNED_DIRECT_TARGET_BEHAVIOR: Record<number, string> = {
+  1: "no wait",
+  6: "opens directly",
+  9: "waits for sound",
+  29: "displays immediately",
+  47: "clears quest"
+};
+
+export function resolveSignedTargetValue(opcode: number, value: number) {
   const code = normalizeStepOpcode(opcode);
-  return code === 1 ? Math.abs(value) : value;
+  return SIGNED_DIRECT_TARGET_BEHAVIOR[code] ? Math.abs(value) : value;
+}
+
+export function resolveSignedMessageTarget(opcode: number, value: number) {
+  return resolveSignedTargetValue(opcode, value);
 }
 
 export function signedTargetValueForSelection(opcode: number, currentValue: number, selectedValue: number) {
   const code = normalizeStepOpcode(opcode);
-  if (code === 1 && currentValue < 0 && selectedValue > 0) return -Math.abs(selectedValue);
+  if (SIGNED_DIRECT_TARGET_BEHAVIOR[code] && currentValue < 0 && selectedValue > 0) return -Math.abs(selectedValue);
   return selectedValue;
 }
 
 export function signedTargetBehaviorLabel(opcode: number, value: number) {
   const code = normalizeStepOpcode(opcode);
-  return code === 1 && value < 0 ? "no wait" : "";
+  return value < 0 ? SIGNED_DIRECT_TARGET_BEHAVIOR[code] ?? "" : "";
 }
 
 export function TargetPicker({
@@ -53,12 +69,21 @@ export function TargetPicker({
   onCreate?: (recordType: RealmzTargetRecordKind, id?: number) => void;
 }) {
   const config = targetPickerConfig(opcode);
-  const targets = useMemo(() => targetOptionsForOpcode(project, opcode, catalog), [project, opcode, catalog]);
   const [query, setQuery] = useState("");
+  const [targetsLoaded, setTargetsLoaded] = useState(false);
+  useEffect(() => {
+    setQuery("");
+    setTargetsLoaded(false);
+  }, [opcode, project]);
+  const resolvedValue = resolveSignedTargetValue(opcode, value);
+  const selectedStub = useMemo(() => targetOptionForOpcodeValue(project, opcode, value, catalog), [catalog, opcode, project, value]);
+  const targets = useMemo(() => {
+    if (!targetsLoaded && !query.trim()) return selectedStub ? [selectedStub] : [];
+    return targetOptionsForOpcode(project, opcode, catalog);
+  }, [catalog, opcode, project, query, selectedStub, targetsLoaded]);
+  const filteredTargets = targetsLoaded || query.trim() ? filterTargetOptions(targets, query) : selectedStub ? [selectedStub] : [];
+  const selected = targets.find((target) => target.value === resolvedValue) ?? selectedStub ?? null;
   if (!config) return null;
-  const filteredTargets = filterTargetOptions(targets, query);
-  const resolvedValue = resolveSignedMessageTarget(opcode, value);
-  const selected = targets.find((target) => target.value === resolvedValue) ?? null;
   const visibleTargets = selected && !filteredTargets.some((target) => target.key === selected.key)
     ? [selected, ...filteredTargets.slice(0, 159)]
     : filteredTargets.slice(0, 160);
@@ -74,11 +99,17 @@ export function TargetPicker({
         <span>{config.label}</span>
         <input
           value={query}
-          onChange={(event) => setQuery(event.currentTarget.value)}
+          onFocus={() => setTargetsLoaded(true)}
+          onChange={(event) => {
+            setTargetsLoaded(true);
+            setQuery(event.currentTarget.value);
+          }}
           placeholder={`Search ${config.label.toLowerCase()}...`}
           aria-label={`Search ${config.label}`}
         />
         <select
+          onFocus={() => setTargetsLoaded(true)}
+          onMouseDown={() => setTargetsLoaded(true)}
           value={hasCurrentValue ? `raw:${resolvedValue}` : selected ? String(selected.value) : ""}
           onChange={(event) => {
             const raw = event.currentTarget.value;
@@ -178,7 +209,10 @@ export function targetOptionsForOpcode(project: Project | null, opcode: number, 
         value: asset.resourceId,
         label: `${asset.label} (${asset.resourceType.trim()} ${asset.resourceId})`,
         detail: `${asset.kind} | ${asset.exportState}`,
-        entity: { type: "resource", id: asset.id }
+        entity: { type: "resource", id: asset.id },
+        previewPath: asset.previewPath,
+        previewMimeType: asset.mimeType,
+        managedAsset: asset
       });
     }
     for (const asset of catalog?.assets ?? []) {
@@ -192,7 +226,10 @@ export function targetOptionsForOpcode(project: Project | null, opcode: number, 
         summary: asset.relativePath,
         compatibility: "Realmz resource",
         sourceState: "Imported library asset",
-        entity: { type: "resource", id: asset.id }
+        entity: { type: "resource", id: asset.id },
+        previewPath: asset.previewPath,
+        previewMimeType: asset.mimeType,
+        libraryAsset: asset
       });
     }
   }
@@ -218,9 +255,19 @@ export function targetOptionsForOpcode(project: Project | null, opcode: number, 
       });
     }
   }
-  const result = dedupeTargetOptions(options).sort((a, b) => a.value - b.value || a.label.localeCompare(b.label)).slice(0, 320);
+  const result = dedupeTargetOptions(options).sort((a, b) => a.value - b.value || a.label.localeCompare(b.label));
   projectCache.set(cacheKey, result);
   return result;
+}
+
+export function targetOptionForOpcodeValue(project: Project | null, opcode: number, value: number, catalog?: LibraryCatalog | null): ScriptTargetOption | null {
+  if (!project || !Number.isFinite(value)) return null;
+  const code = normalizeStepOpcode(opcode);
+  const resolvedValue = resolveSignedTargetValue(code, value);
+  if (resolvedValue === 0) return null;
+  const id = Math.abs(resolvedValue);
+  const selected = optionFromTypedProjectTarget(project, code, id, catalog) ?? optionFromSemanticTarget(project, code, id);
+  return selected;
 }
 
 function catalogCacheKey(catalog?: LibraryCatalog | null) {
@@ -232,11 +279,199 @@ function catalogCacheKey(catalog?: LibraryCatalog | null) {
   return next;
 }
 
+function optionFromTypedProjectTarget(project: Project, code: number, id: number, catalog?: LibraryCatalog | null): ScriptTargetOption | null {
+  if (code === 1) {
+    const record = project.messages?.find((candidate) => candidate.id === id);
+    return record
+      ? {
+          key: `message:${record.id}`,
+          value: record.id,
+          label: `Message ${record.id}`,
+          detail: record.text || "empty",
+          compatibility: "Editable",
+          sourceState: record.authored ? "Authored" : "Imported",
+          entity: { type: "message", id: `message:${record.id}` }
+        }
+      : null;
+  }
+  if ([2, 48, 56, 107].includes(code)) {
+    const record = project.battles?.find((candidate) => candidate.id === id);
+    return record
+      ? {
+          key: `battle:${record.id}`,
+          value: record.id,
+          label: `Battle ${record.id}`,
+          detail: `${record.grid.filter(Boolean).length} monster slot(s)`,
+          summary: `messages ${record.messageBefore}/${record.messageAfter}, battle action ${record.battleMacro}`,
+          compatibility: "Editable",
+          sourceState: record.authored ? "Authored" : "Imported",
+          entity: { type: "battle", id: `battle:${record.id}` }
+        }
+      : null;
+  }
+  if (code === 127) {
+    const record = project.monsters?.find((candidate) => candidate.id === id);
+    return record
+      ? {
+          key: `monster:${record.id}`,
+          value: record.id,
+          label: `${record.displayName || `Monster ${record.id}`} (${record.id})`,
+          detail: `HD ${record.hitDice}, armor ${record.armor}, move ${record.movementMax}`,
+          summary: `${record.items.filter(Boolean).length} item(s), ${record.spells.filter(Boolean).length} spell(s)`,
+          compatibility: "Editable",
+          sourceState: record.authored ? "Authored" : "Imported",
+          entity: { type: "monster", id: `monster:${record.id}` }
+        }
+      : null;
+  }
+  if (code === 10) {
+    const record = project.treasures?.find((candidate) => candidate.id === id);
+    return record
+      ? {
+          key: `treasure:${record.id}`,
+          value: record.id,
+          label: `Treasure ${record.id}`,
+          detail: `${record.itemIds.filter(Boolean).length} item(s), ${record.gold} gold`,
+          summary: `${record.exp} exp`,
+          compatibility: "Editable",
+          sourceState: record.authored ? "Authored" : "Imported",
+          entity: { type: "record", id: `treasure:${record.id}` }
+        }
+      : null;
+  }
+  if ([6, 49, 51].includes(code)) {
+    const record = project.shops?.find((candidate) => candidate.id === id);
+    return record
+      ? {
+          key: `shop:${record.id}`,
+          value: record.id,
+          label: `Shop ${record.id}`,
+          detail: `${record.itemIds.filter(Boolean).length} stocked slot(s), ${record.inflation}% inflation`,
+          compatibility: "Editable",
+          sourceState: record.authored ? "Authored" : "Imported",
+          entity: { type: "shop", id: `shop:${record.id}` }
+        }
+      : null;
+  }
+  if ([4, 35, 104].includes(code)) {
+    const record = project.simpleEncounters?.find((candidate) => candidate.id === id);
+    return record
+      ? {
+          key: `simple:${record.id}`,
+          value: record.id,
+          label: `Simple Encounter ${record.id}`,
+          detail: `${record.actions.length} action(s), prompt ${record.prompt}`,
+          summary: record.texts.find(Boolean) ?? "no text",
+          compatibility: "Editable",
+          sourceState: record.authored ? "Authored" : "Imported",
+          entity: { type: "encounter", id: `encounter:simple:${record.id}` }
+        }
+      : null;
+  }
+  if ([5, 44].includes(code)) {
+    const record = project.complexEncounters?.find((candidate) => candidate.id === id);
+    return record
+      ? {
+          key: `complex:${record.id}`,
+          value: record.id,
+          label: `Complex Encounter ${record.id}`,
+          detail: `${record.actions.length} action(s), prompt ${record.prompt}`,
+          summary: record.texts.find(Boolean) ?? "no text",
+          compatibility: "Editable",
+          sourceState: record.authored ? "Authored" : "Imported",
+          entity: { type: "encounter", id: `encounter:complex:${record.id}` }
+        }
+      : null;
+  }
+  if (code === 47) {
+    const quest = project.questLabels?.find((candidate) => candidate.id === id);
+    return quest
+      ? { key: `quest:${quest.id}`, value: quest.id, label: quest.label, detail: quest.note || "Quest metadata", entity: { type: "questFlag", id: `quest:${quest.id}` } }
+      : null;
+  }
+  if (code === 29 || code === 97 || code === 106) {
+    const map = project.maps.find((candidate) => candidate.index === id);
+    return map
+      ? {
+          key: `map:${map.id}`,
+          value: map.index,
+          label: `${map.name} (${map.levelType} ${map.index})`,
+          detail: `${map.levelType} map | ${map.render.tilesetId}`,
+          entity: { type: "map", id: `map:${map.levelType}:${map.index}` }
+        }
+      : null;
+  }
+  if (isDirectMacroOpcode(code)) {
+    const trigger = project.triggers.find((candidate) => candidate.source === "Data ED3" && candidate.recordIndex === id);
+    return trigger
+      ? {
+          key: `macro:${trigger.recordIndex}`,
+          value: trigger.recordIndex,
+          label: `Extra Action Point ${trigger.recordIndex}`,
+          detail: `${trigger.actions.length} action slot(s)`,
+          entity: selectEntityFromId(`macro:${trigger.recordIndex}`)
+        }
+      : null;
+  }
+  if (code === 9 || code === 27) {
+    const wantedKinds = code === 9 ? new Set(["sound"]) : new Set(["picture", "icon"]);
+    const asset = (project.assets ?? []).find((candidate) => candidate.resourceId === id && wantedKinds.has(candidate.kind));
+    if (asset) {
+      return {
+        key: asset.id,
+        value: asset.resourceId,
+        label: `${asset.label} (${asset.resourceType.trim()} ${asset.resourceId})`,
+        detail: `${asset.kind} | ${asset.exportState}`,
+        entity: { type: "resource", id: asset.id },
+        previewPath: asset.previewPath,
+        previewMimeType: asset.mimeType,
+        managedAsset: asset
+      };
+    }
+    const libraryAsset = (catalog?.assets ?? []).find((candidate) => candidate.resourceId === id && wantedKinds.has(candidate.type));
+    if (libraryAsset) {
+      const resourceType = libraryAsset.resourceType?.trim() || libraryAsset.type;
+      return {
+        key: libraryAsset.id,
+        value: libraryAsset.resourceId!,
+        label: `${libraryAsset.label} (${resourceType} ${libraryAsset.resourceId})`,
+        detail: `${libraryAsset.type} | library catalog`,
+        summary: libraryAsset.relativePath,
+        compatibility: "Realmz resource",
+        sourceState: "Imported library asset",
+        entity: { type: "resource", id: libraryAsset.id },
+        previewPath: libraryAsset.previewPath,
+        previewMimeType: libraryAsset.mimeType,
+        libraryAsset
+      };
+    }
+  }
+  return null;
+}
+
+function optionFromSemanticTarget(project: Project, code: number, id: number): ScriptTargetOption | null {
+  for (const type of targetSemanticTypes(code)) {
+    for (const entity of schemaEntities(project, type)) {
+      if (!entityMatchesOpcodeTarget(entity, code)) continue;
+      const value = numericTargetValue(entity);
+      if (value == null || Math.abs(value) !== id) continue;
+      return {
+        key: entity.id,
+        value,
+        label: `${entity.label} (${value})`,
+        detail: `${entity.type} | ${entity.editState}`,
+        entity: selectEntityFromId(entity.id)
+      };
+    }
+  }
+  return null;
+}
+
 function addTypedProjectTargets(project: Project, code: number, options: ScriptTargetOption[], catalog?: LibraryCatalog | null) {
   if (code === 1) {
     const used = usageCounts(project, [1]);
     for (const record of project.messages ?? []) {
-      options.push({ key: `message:${record.id}`, value: record.id, label: `Message ${record.id}`, detail: record.text.slice(0, 80) || "empty", summary: `${used.get(record.id) ?? 0} script use(s)`, compatibility: "Editable", sourceState: record.authored ? "Authored" : "Imported", entity: { type: "message", id: `message:${record.id}` } });
+      options.push({ key: `message:${record.id}`, value: record.id, label: `Message ${record.id}`, detail: record.text || "empty", summary: `${used.get(record.id) ?? 0} script use(s)`, compatibility: "Editable", sourceState: record.authored ? "Authored" : "Imported", entity: { type: "message", id: `message:${record.id}` } });
     }
   }
   if ([2, 48, 56, 107].includes(code)) {
@@ -298,7 +533,7 @@ function usageCounts(project: Project, opcodes: number[]) {
     for (const action of trigger.actions) {
       const code = normalizeStepOpcode(action.rawCode);
       if (!codes.has(code)) continue;
-      const id = resolveSignedMessageTarget(code, action.id);
+      const id = resolveSignedTargetValue(code, action.id);
       counts.set(id, (counts.get(id) ?? 0) + 1);
     }
   }
@@ -388,12 +623,24 @@ function trailingNumber(value: string) {
 
 function dedupeTargetOptions(options: ScriptTargetOption[]) {
   const seenKeys = new Set<string>();
-  const seenValues = new Set<number>();
-  return options.filter((option) => {
-    if (seenKeys.has(option.key) || seenValues.has(option.value)) return false;
+  const byValue = new Map<number, ScriptTargetOption>();
+  for (const option of options) {
+    if (seenKeys.has(option.key)) continue;
     seenKeys.add(option.key);
-    seenValues.add(option.value);
-    return true;
-  });
+    const existing = byValue.get(option.value);
+    if (!existing || targetOptionScore(option) > targetOptionScore(existing)) {
+      byValue.set(option.value, option);
+    }
+  }
+  return [...byValue.values()];
+}
+
+function targetOptionScore(option: ScriptTargetOption) {
+  let score = 0;
+  if (option.previewPath || option.libraryAsset || option.managedAsset) score += 8;
+  if (option.compatibility) score += 3;
+  if (option.sourceState) score += 2;
+  if (option.entity && option.entity.type !== "resource") score += 1;
+  return score;
 }
 

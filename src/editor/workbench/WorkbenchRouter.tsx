@@ -146,7 +146,21 @@ function WorkbenchRouterContent({
   }
 
   if (state.activeTab === "scripts") {
-    return <ScriptsPanel project={state.project} catalog={state.libraryCatalog} activeEditor={state.activeEditor} selectedEntity={state.selectedEntity} onSelectEntity={onSelectEntity} onSelectEditor={onSelectEditor} onOpenTool={onOpenTool} onApplyCommand={onApplyCommand} />;
+    return (
+      <ScriptsPanel
+        project={state.project}
+        catalog={state.libraryCatalog}
+        activeEditor={state.activeEditor}
+        selectedEntity={state.selectedEntity}
+        desktopRuntime={desktopRuntime}
+        projectDir={projectDir}
+        workspaceDir={workspaceDir}
+        onSelectEntity={onSelectEntity}
+        onSelectEditor={onSelectEditor}
+        onOpenTool={onOpenTool}
+        onApplyCommand={onApplyCommand}
+      />
+    );
   }
 
   if (state.activeTab === "scenario") {

@@ -1,6 +1,6 @@
 import { ACTION_OPTIONS, actionOptionFor, normalizeStepOpcode, type RealmzActionOption } from "../../realmzActions";
 import { crosswalkForOpcode, parameterLabelsForOpcode } from "../../opcodeCrosswalk";
-import { resolveSignedMessageTarget, signedTargetBehaviorLabel, targetPickerConfig, targetOptionsForOpcode } from "../../components/RealmzTargetPicker";
+import { signedTargetBehaviorLabel, targetOptionForOpcodeValue, targetPickerConfig } from "../../components/RealmzTargetPicker";
 import { choiceBranchModeLabel, choiceBranchTargetKind, parseChoicePromptValue } from "../../choiceDialogs";
 import { edcdFieldTargetKind, edcdTargetOptions, type EdcdTargetKind } from "../../edcdTargets";
 import { LibraryCatalog, Project } from "../../types";
@@ -598,7 +598,7 @@ export function scriptActionSummary(
   if (code === 0) return emptyLabel;
   const shouldResolveDirectTarget = Boolean(definition.target && definition.target.targetFamily !== "parameter-row");
   const target = shouldResolveDirectTarget
-    ? targetOptionsForOpcode(project, draft.rawCode, catalog).find((option) => option.value === resolveSignedMessageTarget(draft.rawCode, draft.id))
+    ? targetOptionForOpcodeValue(project, draft.rawCode, draft.id, catalog)
     : null;
   if (target) {
     const behavior = signedTargetBehaviorLabel(draft.rawCode, draft.id);
@@ -741,7 +741,7 @@ function targetValueSummary(
   const targetKind = edcdFieldTargetKind(definition.edcdShape ?? "", parameter.internalName, definition.parameters.map((field) => field.internalName), [value], definition.opcode);
   if (targetKind) return targetRoute(project, targetKind, value, catalog)?.label ?? String(value);
   if (definition.target?.targetFamily && definition.target.targetFamily !== "parameter-row") {
-    const target = targetOptionsForOpcode(project, definition.opcode, catalog).find((option) => option.value === resolveSignedMessageTarget(definition.opcode, value));
+    const target = targetOptionForOpcodeValue(project, definition.opcode, value, catalog);
     if (target) {
       const behavior = signedTargetBehaviorLabel(definition.opcode, value);
       return `${targetSummary(definition.target.targetFamily, target.label, target.detail)}${behavior ? ` · ${behavior}` : ""}`;
