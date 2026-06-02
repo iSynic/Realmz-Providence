@@ -3,6 +3,8 @@ export const SECURITY_SEGMENT_LENGTH = 20;
 export type RegistrationConfidence = "verified" | "candidate" | "reported-unmatched";
 
 export type RegistrationAlgorithmId =
+  | "pcBundledV71"
+  | "macBundledClassic"
   | "pcCustomV71"
   | "macCustomLegacy"
   | "officialMacEvidence"
@@ -23,6 +25,9 @@ export type RegistrationInput = {
   segment2: string;
   registrationName: string;
   serialNumber: string;
+  scenarioSlot?: number;
+  recLevel?: number;
+  maxLevel?: number;
 };
 
 export type RegistrationEvidenceVector = {
@@ -337,7 +342,34 @@ export function registrationVariantsFor(input: RegistrationInput): RegistrationV
     segment1: cleanSecuritySegment(input.segment1),
     segment2: cleanSecuritySegment(input.segment2)
   };
-  const rawVariants: RegistrationVariant[] = [
+  const rawVariants: RegistrationVariant[] = [];
+  const scenarioSlot = input.scenarioSlot ?? officialScenarioSlotFor(input.scenarioName);
+  if (
+    scenarioSlot !== null
+    && input.recLevel !== undefined
+    && input.maxLevel !== undefined
+    && input.recLevel !== 0
+  ) {
+    rawVariants.push(
+      {
+        algorithmId: "pcBundledV71",
+        label: "Windows bundled scenario",
+        confidence: "candidate",
+        code: String(pcBundledV71(normalizedInput, serial, scenarioSlot, input.recLevel, input.maxLevel)),
+        detail: "Source path: regscen_pc in Realmz main.c for Fantasoft menu scenarios."
+      },
+      {
+        algorithmId: "macBundledClassic",
+        label: scenarioSlot <= 14 ? "Mac bundled scenario" : "Mac bundled scenario (unresolved later-slot branch)",
+        confidence: "candidate",
+        code: String(macBundledClassic(normalizedInput, serial, scenarioSlot, input.recLevel, input.maxLevel)),
+        detail: scenarioSlot <= 14
+          ? "Source path: legacy regscen bundled scenario branch before the later-slot bit switch."
+          : "Source path: legacy regscen bundled scenario branch; later-slot bit switch still needs compiled-runtime confirmation."
+      }
+    );
+  }
+  rawVariants.push(
     {
       algorithmId: "pcCustomV71",
       label: "PC v7.1 custom",
@@ -352,7 +384,7 @@ export function registrationVariantsFor(input: RegistrationInput): RegistrationV
       code: String(macCustomLegacy(normalizedInput, serial)),
       detail: "Source path: third-party scenario branch in legacy regscen."
     }
-  ];
+  );
 
   const evidences = matchingEvidenceVectors(normalizedInput);
   if (evidences.length === 0) return rawVariants;
@@ -390,17 +422,59 @@ export function registrationVariantsFor(input: RegistrationInput): RegistrationV
   ];
 }
 
-export function pcCustomV71(input: Omit<RegistrationInput, "serialNumber">, serial: number) {
-  const name = cleanRegistrationName(input.registrationName).toLowerCase();
-  let nameValue = toInt32(serial);
-  for (let index = 1; index < name.length; index += 1) {
-    const current = name.charCodeAt(index);
-    const previous = name.charCodeAt(index - 1);
-    if (current) {
-      nameValue = toInt32(nameValue + index * current);
-      nameValue = toInt32(nameValue - current * previous);
-    }
+export function officialScenarioSlotFor(scenarioName: string) {
+  return OFFICIAL_SCENARIO_SLOTS.get(normalizeGeneralText(scenarioName)) ?? null;
+}
+
+export function pcBundledV71(
+  input: Omit<RegistrationInput, "serialNumber">,
+  serial: number,
+  scenarioSlot: number,
+  recLevel: number,
+  maxLevel: number
+) {
+  const nameValue = pcNameValue(serial, input.registrationName);
+  const serialValue = cDiv(serial, (scenarioSlot - 5) * 666);
+  if (serialValue === 0 || nameValue === 0 || recLevel === 0) return 0;
+  const part1 = toInt32(256 * cMod(512 + serialValue, 128 * nameValue));
+  const part2 = toInt32(1024 + cMod(1024 + nameValue, 512 * serialValue));
+  const registrationValue = toInt32(part1 + part2);
+  let registrationCode = registrationValue;
+  registrationCode = toInt32(registrationCode * maxLevel);
+  registrationCode = toInt32(registrationCode - 512);
+  registrationCode = cDiv(registrationCode, recLevel);
+  registrationCode = toInt32(registrationCode + 18);
+  return registrationCode;
+}
+
+export function macBundledClassic(
+  input: Omit<RegistrationInput, "serialNumber">,
+  serial: number,
+  scenarioSlot: number,
+  recLevel: number,
+  maxLevel: number
+) {
+  if (recLevel === 0) return 0;
+  let serialNumber = 0;
+  if (scenarioSlot === 13 || scenarioSlot > 14) {
+    serialNumber = cDiv(serial, (scenarioSlot - 5) * 666);
   }
+  if (scenarioSlot > 14) {
+    serialNumber = toInt32(serialNumber + macLaterBundledBitSwitch(input.registrationName, serial, serialNumber, scenarioSlot));
+  }
+
+  let tempValue = stringToNumMasked(pascalStringBytes(cleanRegistrationName(input.registrationName)));
+  tempValue = cDiv(tempValue, recLevel);
+  tempValue = toInt32(tempValue + 24);
+  tempValue = toInt32(tempValue * maxLevel);
+  tempValue = toInt32(tempValue - 256);
+  let base = tempValue < 0 ? toInt32(-tempValue) : tempValue;
+  base = toInt32(base + 100);
+  return toInt32(base + serialNumber);
+}
+
+export function pcCustomV71(input: Omit<RegistrationInput, "serialNumber">, serial: number) {
+  const nameValue = pcNameValue(serial, input.registrationName);
 
   const serialValue = cDiv(serial, 333);
   if (serialValue === 0 || nameValue === 0) return 0;
@@ -409,10 +483,10 @@ export function pcCustomV71(input: Omit<RegistrationInput, "serialNumber">, seri
   let code = toInt32(part1 + part2);
 
   for (const char of cleanSecuritySegment(input.segment1).toLowerCase()) {
-    code = toInt32(code + Math.imul(1689, char.charCodeAt(0)));
+    code = toInt32(code + toInt16(1689 * toInt16(char.charCodeAt(0))));
   }
   for (const char of cleanSecuritySegment(input.segment2).toLowerCase()) {
-    code = toInt32(code - Math.imul(423, char.charCodeAt(0)));
+    code = toInt32(code - toInt16(423 * toInt16(char.charCodeAt(0))));
   }
   for (const char of cleanAsciiText(input.scenarioName).toLowerCase()) {
     code = toInt32(code + Math.imul(112233, char.charCodeAt(0)));
@@ -593,6 +667,53 @@ function parseSerialNumber(value: string) {
   return toInt32(serial);
 }
 
+function pcNameValue(serial: number, registrationName: string) {
+  const name = cleanRegistrationName(registrationName).toLowerCase();
+  let nameValue = toInt32(serial);
+  for (let index = 1; index < name.length; index += 1) {
+    const current = name.charCodeAt(index);
+    const previous = name.charCodeAt(index - 1);
+    if (current) {
+      nameValue = toInt32(nameValue + index * current);
+      nameValue = toInt32(nameValue - current * previous);
+    }
+  }
+  return nameValue;
+}
+
+function macLaterBundledBitSwitch(registrationName: string, serial: number, serialNumber: number, scenarioSlot: number) {
+  const tempword = cStringBytes(cleanRegistrationName(registrationName), 27);
+  let regcode = stringToNumMasked(pascalStringBytes(cleanRegistrationName(registrationName)));
+  let temp = 0;
+  for (let index = 0; index < 26; index += 1) {
+    tempword[index] = asciiLower(tempword[index]);
+    if (tempword[index] === 0) break;
+    if (tempword[index] === 32) tempword[index] = 0x80;
+    temp = tempword[index] - 97;
+    regcode = myrBitTestLong(regcode, temp)
+      ? myrBitClearLong(regcode, temp)
+      : myrBitSetLong(regcode, temp);
+  }
+
+  const serialPascal = pascalStringBytes(String(serial));
+  for (let index = 1; index <= serialPascal[0]; index += 1) {
+    const bit = serialPascal[index] + serialPascal[index] + index - 95;
+    regcode = bitTestByMacMemoryOrder(regcode, bit)
+      ? bitClearByMacMemoryOrder(regcode, bit)
+      : bitSetByMacMemoryOrder(regcode, bit);
+  }
+
+  if (scenarioSlot === 21) {
+    return serialNumber ? toInt32(cMod(regcode, serialNumber) * serialPascal[0]) : 0;
+  }
+  if (!serialNumber) return 0;
+  const serialLast = serialPascal[serialPascal[0]] ?? 0;
+  const first = cMod(256 + 1024 * serialPascal[0], 69 + serialLast);
+  const second = cMod(1024 + 256 * serialPascal[0], 96 + serialLast);
+  const inner = toInt32(cMod(regcode, serialNumber) * (tempword[0] * temp * Math.abs((tempword[2] ?? 0) - (tempword[1] ?? 0))));
+  return toInt32(first + second * Math.abs(inner));
+}
+
 function cStringBytes(value: string, width: number) {
   const bytes = asciiBytes(value).slice(0, Math.max(0, width - 1));
   return [...bytes, 0, ...new Array(Math.max(0, width - bytes.length - 1)).fill(0)];
@@ -657,6 +778,17 @@ function bitClearByMacMemoryOrder(value: number, bit: number) {
   return bigEndianBytesToInt32(bytes);
 }
 
+function bitTestByMacMemoryOrder(value: number, bit: number) {
+  const bytes = int32ToBigEndianBytes(value);
+  return (bytes[bit >> 3] & (0x80 >> (bit & 7))) !== 0;
+}
+
+function bitSetByMacMemoryOrder(value: number, bit: number) {
+  const bytes = int32ToBigEndianBytes(value);
+  bytes[bit >> 3] |= (0x80 >> (bit & 7)) & 0xff;
+  return bigEndianBytesToInt32(bytes);
+}
+
 function myrBitTestLong(value: number, bit: number) {
   return (value >>> 0 & (1 << (31 - bit))) !== 0;
 }
@@ -699,3 +831,24 @@ function cMod(left: number, right: number) {
 function toInt32(value: number) {
   return value | 0;
 }
+
+function toInt16(value: number) {
+  const normalized = value & 0xffff;
+  return normalized > 0x7fff ? normalized - 0x10000 : normalized;
+}
+
+const OFFICIAL_SCENARIO_SLOTS = new Map<string, number>([
+  ["cityofbywater", 10],
+  ["preludetopestilence", 11],
+  ["assaultongiantmountain", 12],
+  ["destroythenecronomicon", 13],
+  ["castleintheclouds", 14],
+  ["grilochsrevenge", 15],
+  ["whitedragon", 16],
+  ["mithrilvault", 17],
+  ["twinsandsoftime", 18],
+  ["troubleintheswordlands", 19],
+  ["warintheswordlands", 20],
+  ["halftruth", 21],
+  ["wrathofthemindlords", 21]
+]);

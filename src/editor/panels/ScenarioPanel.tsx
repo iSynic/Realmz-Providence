@@ -384,7 +384,15 @@ function SecurityRegistrationCard({
     : hasSegments
       ? "No security backup was imported, so these fields show the stored segment text as best as possible."
       : "No security segments are set.";
-  const registrationVariants = registrationVariantsFor({ scenarioName, segment1, segment2, registrationName, serialNumber });
+  const registrationVariants = registrationVariantsFor({
+    scenarioName,
+    segment1,
+    segment2,
+    registrationName,
+    serialNumber,
+    recLevel: shell.recLevel,
+    maxLevel: shell.maxLevel
+  });
   const primaryRegistrationVariant = registrationVariants.find((variant) => variant.confidence === "verified") ?? registrationVariants[0] ?? null;
 
   const applySegments = () => {
@@ -450,7 +458,7 @@ function SecurityRegistrationCard({
         <header>
           <div>
             <span>Registration Code Generator</span>
-            <small>Candidate and verified codes from source-backed Realmz paths.</small>
+            <small>Verified evidence and source-ported candidate formulas.</small>
           </div>
           <b>{primaryRegistrationVariant?.code ?? "ready"}</b>
         </header>
@@ -476,7 +484,7 @@ function SecurityRegistrationCard({
         </div>
         <div className="scenario-registration-variants">
           {registrationVariants.length === 0 ? (
-            <p>Enter a registration name and serial number to calculate candidate codes.</p>
+            <p>Enter a registration name and serial number to calculate evidence-backed and candidate codes.</p>
           ) : registrationVariants.map((variant) => (
             <article key={`${variant.algorithmId}:${variant.code}:${variant.label}`} className={`scenario-registration-variant is-${variant.confidence}`}>
               <header>
@@ -489,7 +497,7 @@ function SecurityRegistrationCard({
           ))}
         </div>
         <p className="scenario-note">
-          Use verified Fantasoft codes when present. Candidate codes are shown for archaeology and compatibility testing until more official vectors prove the exact legacy path.
+          Verified codes match known official evidence for the same scenario, name, and serial. Candidate codes are source-ported formulas still being tested against Realmz/Divinity behavior.
         </p>
       </section>
       {unlocked && (

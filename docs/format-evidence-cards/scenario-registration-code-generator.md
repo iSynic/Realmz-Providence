@@ -4,23 +4,45 @@
 
 Providence can help authors inspect and test legacy scenario registration codes without pretending one universal algorithm is proven for every Realmz/Mac/PC path.
 
-The Scenario tool now shows confidence-labeled registration code variants:
+The user-facing generator is currently hidden while the algorithms are being tightened. The underlying module now separates these paths:
 
-- source-ported PC v7.1 custom candidate;
-- source-ported Mac classic custom candidate;
-- official Fantasoft Mac codes when an imported scenario, registration name, and serial number match a known official vector.
-- official Fantasoft Windows codes when the same inputs match a known Windows vector.
+- source-ported Windows bundled-scenario formula from `regscen_pc`;
+- source-ported Mac bundled-scenario formula for the classic pre-later-slot branch in `regscen`;
+- source-ported PC v7.1 custom-scenario candidate from `regscen_pc_custom`;
+- source-ported Mac classic custom-scenario candidate from the third-party scenario branch in `regscen`;
+- official Fantasoft Mac/Windows evidence vectors when scenario/name/serial match a known form.
+
+Bundled official Fantasoft scenario codes and custom Divinity scenario codes are not the same algorithm family. Treating them as interchangeable was the main source of false confidence.
 
 ## Realmz Source Anchors
 
 | Source | Evidence |
 | --- | --- |
 | `F:\Realmz\src\realmz_orig\main.c:1503` | Legacy `regscen` includes a third-party scenario branch with segment demixing, `StringToNum`, and bit-flip logic. |
+| `F:\Realmz\src\realmz_orig\main.c:1833` | Windows `regscen_pc` handles bundled Fantasoft scenarios using registration name, serial, scenario menu slot, and the shell `reclevel`/`maxlevel` fields. |
 | `F:\Realmz\src\realmz_orig\main.c:1974` | PC v7.1 `regscen_pc_custom` computes a custom scenario registration value from registration name, serial, demixed code segments, and scenario title. |
+| `F:\Realmz\src\realmz_orig\main.c:1512` | Mac bundled scenarios compute a scenario serial component only for Destroy the Necronomicon and later slots. |
+| `F:\Realmz\src\realmz_orig\main.c:1686` | Mac bundled scenarios switch to an extra name/serial bit-flip branch for White Dragon-era and later slots. |
+| `F:\Realmz\src\realmz_orig\main.c:2058` | PC custom scenario code-segment contributions are cast through `short` before being added/subtracted from the 32-bit registration code. |
 | `F:\Realmz\src\realmz_orig\variables.h:16` | `MyrBit*Long` macros use high-bit-first 32-bit bit numbering. |
 | `F:\Realmz\src\MemoryManager.cpp:271` | Classic `Bit*` operations use high-bit-first byte memory order. |
 | `F:\Realmz\src\WindowManager.cpp:1990` | `StringToNum` masks each character with `0x0F`, so nonnumeric text is still numerically meaningful. |
 | `F:\Realmz\src\realmz_orig\MyrRealmz.c:303` | `MyrNumToString` converts to a number string and then calls `PtoCstr`, leaving historical C/Pascal string edge cases intact. |
+
+## Source-Matched Status
+
+`npm run check:registration-codes` now requires:
+
+- exact Windows bundled formula matches for 10 official Windows vectors using same-named scenario shell files from `F:\Realmz\base\Realmz\Scenarios`;
+- exact Mac bundled formula matches for 8 official Mac vectors in the pre-later-slot branch;
+- source-faithful custom PC behavior for the `short`-truncated code-segment products;
+- segment demix/remix and `StringToNum` helper coverage.
+
+Known unresolved items:
+
+- `War in the Sword Lands` Windows official vector is off by 9 from the source formula against the local shell file, likely due to a shell/version/menu fixture mismatch or transcription issue. It remains evidence, not discarded.
+- Mac official vectors for White Dragon-era and later slots enter the extra bit-switch branch. The source port is present as a candidate, but those vectors are not yet source-matched. The likely missing detail is a classic-runtime behavior around `abs`, bit operations, serial display/internal serial, or old compiler integer promotion.
+- Custom scenario PC/Mac algorithms are source-ported candidates. They still need an actual custom-scenario acceptance vector generated in Realmz/Divinity before the UI should call them verified.
 
 ## Official Evidence
 
@@ -74,7 +96,7 @@ Additional official MacOS vectors supplied by the user for Realmz v7.1.2:
   - White Dragon: `412608`
   - Grilochs Revenge: `481007`
 
-These official vectors are treated as verified UI outputs when the scenario/name/serial match. They do not yet prove that Providence has fully reconstructed the exact original Mac or Windows generator path.
+These official vectors are treated as verified evidence when the scenario/name/serial match. They do not by themselves prove that Providence has fully reconstructed every original Mac or Windows generator path.
 
 ## Providence Policy
 
