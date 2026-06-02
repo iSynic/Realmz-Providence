@@ -7,6 +7,10 @@ export const BROWSER_REFERENCE_ICONS_DEV_URL =
 
 const KNOWN_REFERENCE_PICTS = new Set([300, 302, 303, 304, 305, 309, 310]);
 
+function canUseBrowserReferenceAssets() {
+  return (import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV === true;
+}
+
 export function browserReferenceAtlasUrl(pictId: number | null) {
   if (pictId === null || !KNOWN_REFERENCE_PICTS.has(pictId)) return null;
   return encodeURI(`${BROWSER_REFERENCE_PICTURES_DEV_URL}/picture_${pictId}.png`);
@@ -17,6 +21,7 @@ export function browserTilesetAtlasUrl(asset: TilesetAsset) {
 }
 
 export function browserReferenceIconUrl(iconId: number) {
+  if (!canUseBrowserReferenceAssets()) return null;
   return encodeURI(`${BROWSER_REFERENCE_ICONS_DEV_URL}/icon_${iconId}.png`);
 }
 

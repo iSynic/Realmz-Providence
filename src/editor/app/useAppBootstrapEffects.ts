@@ -296,13 +296,15 @@ export function useAppBootstrapEffects({
               }
             }
             if (id < 0) {
-              urls.push(browserReferenceIconUrl(id));
+              const referenceUrl = browserReferenceIconUrl(id);
+              if (referenceUrl) urls.push(referenceUrl);
             }
             if (libraryAsset) {
               try {
-                urls.push(desktopRuntime
+                const libraryUrl = desktopRuntime
                   ? await invoke<string>("load_library_asset_preview", { workspaceDir, source: libraryAsset.source, relativePath: libraryAsset.relativePath })
-                  : (await loadBrowserBundledLibraryAssetPreview(libraryAsset)) ?? browserReferenceIconUrl(id));
+                  : (await loadBrowserBundledLibraryAssetPreview(libraryAsset)) ?? browserReferenceIconUrl(id);
+                if (libraryUrl) urls.push(libraryUrl);
               } catch {
                 // Fall through to any remaining project/reference icon paths.
               }

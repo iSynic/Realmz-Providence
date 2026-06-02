@@ -833,9 +833,22 @@ const MonsterIcon = memo(function MonsterIcon({
   large?: boolean;
 }) {
   const resolution = resolveMonsterIcon(monster, iconEntries, project, lookups);
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  useEffect(() => setFailedUrl(null), [resolution.url]);
+  const usableUrl = resolution.url && resolution.url !== failedUrl ? resolution.url : null;
   return (
     <span className={`monster-icon-preview${compact ? " compact" : ""}${large ? " large" : ""}`} title={resolution.label}>
-      {resolution.url ? <img src={resolution.url} alt="" loading="lazy" decoding="async" /> : <b>{monster.id}</b>}
+      {usableUrl ? (
+        <img
+          src={usableUrl}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          onError={() => setFailedUrl(usableUrl)}
+        />
+      ) : (
+        <b>{monster.id}</b>
+      )}
     </span>
   );
 });
@@ -877,13 +890,6 @@ const BattleMonsterOverlay = memo(function BattleMonsterOverlay({
 
 function resolveMonsterIcon(monster: MonsterRecord, iconEntries: Record<number, IconEntry>, project: Project, lookups: CombatLookups): MonsterIconResolution {
   const iconId = Math.abs(monster.iconId);
-  const asset = lookups.iconAssetsByAbsId.get(iconId);
-  if (asset?.previewPath) return { url: asset.previewPath, label: asset.label ?? `cicn ${monster.iconId}`, width: null, height: null };
-  const projectAsset = project.assetCatalog.icons?.find((candidate) => Math.abs(candidate.resourceId) === iconId && candidate.previewPath) ?? null;
-  if (projectAsset?.previewPath) return { url: projectAsset.previewPath, label: `cicn ${monster.iconId}`, width: null, height: null };
-  if (isActorOrCreatureIconId(iconId)) {
-    return { url: browserReferenceIconUrl(iconId), label: `cicn ${monster.iconId}`, width: null, height: null };
-  }
   const entry = iconEntries[monster.iconId] ?? iconEntries[iconId] ?? iconEntries[-iconId];
   if (entry?.url) {
     return {
@@ -892,6 +898,14 @@ function resolveMonsterIcon(monster: MonsterRecord, iconEntries: Record<number, 
       width: entry.image.naturalWidth || entry.image.width || null,
       height: entry.image.naturalHeight || entry.image.height || null
     };
+  }
+  const asset = lookups.iconAssetsByAbsId.get(iconId);
+  if (asset?.previewPath) return { url: asset.previewPath, label: asset.label ?? `cicn ${monster.iconId}`, width: null, height: null };
+  const projectAsset = project.assetCatalog.icons?.find((candidate) => Math.abs(candidate.resourceId) === iconId && candidate.previewPath) ?? null;
+  if (projectAsset?.previewPath) return { url: projectAsset.previewPath, label: `cicn ${monster.iconId}`, width: null, height: null };
+  if (isActorOrCreatureIconId(iconId)) {
+    const referenceUrl = browserReferenceIconUrl(iconId);
+    if (referenceUrl) return { url: referenceUrl, label: `cicn ${monster.iconId}`, width: null, height: null };
   }
   return { url: null, label: `No icon preview for cicn ${monster.iconId}`, width: null, height: null };
 }
