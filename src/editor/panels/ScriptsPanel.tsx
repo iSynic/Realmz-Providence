@@ -1,4 +1,3 @@
-import { invoke } from "@tauri-apps/api/core";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { AlertTriangle, ArrowDown, ArrowUp, Copy, CopyPlus, Plus, Save, Trash2, Volume2, X } from "lucide-react";
 import { Action, EncounterActionRow, LevelType, LibraryCatalog, Project, ProjectCommand, RealmzTargetRecordKind, ScriptDetailSurface, ScriptInventoryFilter, SelectedEntity, SemanticEntity, TriggerRecord } from "../types";
@@ -6,8 +5,7 @@ import { linksFor, selectEntityFromId, semanticLabel, triggerEntityId } from "..
 import { actionSlotEntitiesForTriggerRecord, extraActionPointClassification } from "../semanticGraph";
 import { EdcdRowEditor } from "../components/EdcdRowEditor";
 import { TargetPicker, resolveSignedMessageTarget, signedTargetBehaviorLabel, signedTargetValueForSelection, targetOptionForOpcodeValue, targetOptionsForOpcode, type ScriptTargetOption } from "../components/RealmzTargetPicker";
-import { inspectBrowserBundledLibraryAssetPreview } from "../browser/library";
-import { browserReferenceIconUrl } from "../browser/atlasPaths";
+import { playPreviewUrl, useIconPreviewUrl, useResolvedPreviewUrl } from "../previewUrls";
 import { categoryColor } from "../components/TileSprite";
 import { CollapsibleSection, EmptyState, FieldRow, FloatingWorkbenchPanel, PanelSection, ScrollArea } from "../ui";
 import { ACTION_OPTIONS, actionOptionFor, isDispatcherNoopOpcode, normalizeStepOpcode } from "../realmzActions";
@@ -570,6 +568,9 @@ function ScriptAuthoringPanel({
         catalog={catalog}
         opcode={selectedDraft.rawCode}
         targetId={resolveSignedMessageTarget(selectedDraft.rawCode, selectedDraft.id)}
+        desktopRuntime={desktopRuntime}
+        projectDir={projectDir}
+        workspaceDir={workspaceDir}
         onApplyCommand={onApplyCommand}
       />
     </PanelSection>
@@ -1118,69 +1119,12 @@ function humanActionValueLabel(label: string) {
 }
 
 function useSoundPreviewUrl(option: ScriptTargetOption | null, desktopRuntime: boolean, projectDir: string, workspaceDir: string) {
-  const [url, setUrl] = useState<string | null>(null);
-  useEffect(() => {
-    let disposed = false;
-    setUrl(null);
-    if (!option) return;
-    const directPath = option.previewPath ?? option.managedAsset?.previewPath ?? option.libraryAsset?.previewPath ?? null;
-    if (directPath && isDirectPreviewUrl(directPath)) {
-      setUrl(directPath);
-      return;
-    }
-    if (option.managedAsset?.previewPath && desktopRuntime && projectDir) {
-      invoke<string>("load_project_asset_preview", { projectDir, relativePath: option.managedAsset.previewPath })
-        .then((loadedUrl) => {
-          if (!disposed) setUrl(loadedUrl);
-        })
-        .catch(() => {
-          if (!disposed) setUrl(null);
-        });
-      return () => {
-        disposed = true;
-      };
-    }
-    if (option.libraryAsset) {
-      if (desktopRuntime && workspaceDir) {
-        invoke<string>("load_library_asset_preview", {
-          workspaceDir,
-          source: option.libraryAsset.source,
-          relativePath: option.libraryAsset.relativePath
-        })
-          .then((loadedUrl) => {
-            if (!disposed) setUrl(loadedUrl);
-          })
-          .catch(() => {
-            if (!disposed) setUrl(null);
-          });
-      } else {
-        inspectBrowserBundledLibraryAssetPreview(option.libraryAsset)
-          .then((preview) => {
-            if (!disposed) setUrl(preview.status === "playable" ? preview.dataUrl : null);
-          })
-          .catch(() => {
-            if (!disposed) setUrl(null);
-          });
-      }
-      return () => {
-        disposed = true;
-      };
-    }
-    return () => {
-      disposed = true;
-    };
-  }, [desktopRuntime, option, projectDir, workspaceDir]);
-  return url;
-}
-
-function isDirectPreviewUrl(path: string) {
-  return /^(data:|blob:|https?:\/\/|\/)/i.test(path);
-}
-
-function playSoundPreview(url: string) {
-  const audio = new Audio(url);
-  audio.preload = "auto";
-  void audio.play();
+  return useResolvedPreviewUrl(
+    option?.previewPath ?? option?.managedAsset?.previewPath ?? option?.libraryAsset?.previewPath ?? null,
+    option?.managedAsset ?? null,
+    option?.libraryAsset ?? null,
+    { desktopRuntime, projectDir, workspaceDir }
+  );
 }
 
 function SelectedStepDetail({
@@ -1356,7 +1300,7 @@ function SelectedStepDetail({
                 className="btn btn-secondary btn-xs realmz-sound-preview-button"
                 disabled={!selectedSoundPreviewUrl}
                 title={selectedSoundPreviewUrl ? "Play this sound preview." : "No playable preview is available for this sound."}
-                onClick={() => selectedSoundPreviewUrl && playSoundPreview(selectedSoundPreviewUrl)}
+                onClick={() => selectedSoundPreviewUrl && playPreviewUrl(selectedSoundPreviewUrl)}
               >
                 <Volume2 size={12} /> Play
               </button>
@@ -1416,6 +1360,7 @@ function SelectedStepDetail({
         catalog={catalog}
         opcode={selectedDraft.rawCode}
         value={selectedDraft.id}
+        previewContext={{ desktopRuntime, projectDir, workspaceDir }}
         onChange={(id) => onSetSelectedDraft({ ...selectedDraft, id })}
         onInspect={onSelectEntity}
         onCreate={(recordType, id) => {
@@ -1490,6 +1435,9 @@ export function TargetRecordEditor({
   opcode,
   targetId,
   recordType,
+  desktopRuntime = false,
+  projectDir = "",
+  workspaceDir = "",
   onApplyCommand
 }: {
   project: Project;
@@ -1497,6 +1445,9 @@ export function TargetRecordEditor({
   opcode: number;
   targetId: number;
   recordType?: RealmzTargetRecordKind;
+  desktopRuntime?: boolean;
+  projectDir?: string;
+  workspaceDir?: string;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const descriptor = realmzScriptStepDescriptorFor(opcode);
@@ -1904,6 +1855,9 @@ export function TargetRecordEditor({
               catalog={catalog}
               itemIds={record.itemIds}
               quantities={record.quantities}
+              desktopRuntime={desktopRuntime}
+              projectDir={projectDir}
+              workspaceDir={workspaceDir}
               onCommitItem={(index, value) => onApplyCommand?.({ kind: "updateShopRecord", label: "Update shop item", id: targetId, changes: { itemIds: updateArraySlot(record.itemIds, index, value, 1000) } })}
               onCommitQuantity={(index, value) => onApplyCommand?.({ kind: "updateShopRecord", label: "Update shop quantity", id: targetId, changes: { quantities: updateArraySlot(record.quantities, index, value, 1000) } })}
               onReplaceStock={(itemIds, quantities) => onApplyCommand?.({ kind: "updateShopRecord", label: "Update shop stock", id: targetId, changes: { itemIds, quantities } })}
@@ -2903,6 +2857,9 @@ function ShopStockEditor({
   catalog,
   itemIds,
   quantities,
+  desktopRuntime,
+  projectDir,
+  workspaceDir,
   onCommitItem,
   onCommitQuantity,
   onReplaceStock,
@@ -2912,6 +2869,9 @@ function ShopStockEditor({
   catalog?: LibraryCatalog | null;
   itemIds: number[];
   quantities: number[];
+  desktopRuntime: boolean;
+  projectDir: string;
+  workspaceDir: string;
   onCommitItem: (index: number, value: number) => void;
   onCommitQuantity: (index: number, value: number) => void;
   onReplaceStock: (itemIds: number[], quantities: number[]) => void;
@@ -2968,7 +2928,7 @@ function ShopStockEditor({
               const quantity = shopQuantityForItem(itemIds, quantities, option.value);
               return (
                 <button key={option.key} type="button" onClick={() => adjustItem(option.value)}>
-                  <ShopItemIcon option={option} project={project} catalog={catalog} />
+                  <ShopItemIcon option={option} project={project} catalog={catalog} desktopRuntime={desktopRuntime} projectDir={projectDir} workspaceDir={workspaceDir} />
                   <span>
                     <strong>{itemOptionDisplayName(option)}</strong>
                     <small>{[option.detail, option.sourceState].filter(Boolean).join(" | ")}</small>
@@ -2991,7 +2951,7 @@ function ShopStockEditor({
           <div className="script-shop-inventory-list">
             {filledSlots.map((row) => (
               <div key={row.slot} className="script-shop-stock-row">
-                <ShopItemIcon option={row.option} project={project} catalog={catalog} itemId={row.itemId} />
+                <ShopItemIcon option={row.option} project={project} catalog={catalog} itemId={row.itemId} desktopRuntime={desktopRuntime} projectDir={projectDir} workspaceDir={workspaceDir} />
                 <div className="script-shop-stock-item">
                   <strong>{row.option ? itemOptionDisplayName(row.option) : `Raw item ${row.itemId}`}</strong>
                   <small>{row.option ? [row.option.detail, row.option.sourceState].filter(Boolean).join(" | ") : itemReferenceDetail(project, row.itemId, catalog)}</small>
@@ -3020,19 +2980,28 @@ function ShopItemIcon({
   option,
   project,
   catalog,
-  itemId
+  itemId,
+  desktopRuntime,
+  projectDir,
+  workspaceDir
 }: {
   option: ItemReferenceOption | null;
   project: Project;
   catalog?: LibraryCatalog | null;
   itemId?: number;
+  desktopRuntime: boolean;
+  projectDir: string;
+  workspaceDir: string;
 }) {
   const iconId = option?.iconId ?? null;
-  const iconUrl = shopItemIconUrl(iconId, project, catalog);
+  const iconUrl = useIconPreviewUrl(iconId, project, catalog, { desktopRuntime, projectDir, workspaceDir });
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  useEffect(() => setFailedUrl(null), [iconUrl]);
+  const usableUrl = iconUrl && iconUrl !== failedUrl ? iconUrl : null;
   const fallback = option ? itemCategoryBadge(option.category) : itemId ? String(Math.abs(itemId) % 100) : "?";
   return (
     <span className="script-shop-item-icon" title={iconId ? `cicn ${iconId}` : itemId ? `Item ${itemId}` : "No item icon"}>
-      {iconUrl ? <img src={iconUrl} alt="" /> : <i>{fallback}</i>}
+      {usableUrl ? <img src={usableUrl} alt="" onError={() => setFailedUrl(usableUrl)} /> : <i>{fallback}</i>}
     </span>
   );
 }
@@ -3048,21 +3017,6 @@ function itemCategoryBadge(category: ItemReferenceCategory) {
   if (category === "magic") return "M";
   if (category === "supply") return "SP";
   return "IT";
-}
-
-function shopItemIconUrl(iconId: number | null, project: Project, catalog?: LibraryCatalog | null) {
-  if (!iconId) return null;
-  const absId = Math.abs(iconId);
-  const projectAsset = project.assetCatalog.icons?.find((asset) => Math.abs(asset.resourceId) === absId && asset.previewPath);
-  if (projectAsset?.previewPath) return projectAsset.previewPath;
-  const libraryAsset = catalog?.assets.find((asset) =>
-    (asset.type === "icon" || asset.type.includes("icon") || asset.resourceType === "cicn") &&
-    asset.resourceId != null &&
-    Math.abs(asset.resourceId) === absId &&
-    asset.previewPath
-  );
-  if (libraryAsset?.previewPath) return libraryAsset.previewPath;
-  return browserReferenceIconUrl(absId);
 }
 
 function clampShopQuantity(value: number) {

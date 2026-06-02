@@ -447,6 +447,9 @@ function scenarioResourceAssets(project: Project | null): ScenarioResourceAsset[
   for (const icon of project.assetCatalog.icons ?? []) {
     addResource(icon.resourceType, icon.resourceId, icon.name || `${icon.resourceType} ${icon.resourceId}`, icon.source, icon.previewPath);
   }
+  for (const sound of project.assetCatalog.sounds ?? []) {
+    addResource(sound.resourceType, sound.resourceId, sound.name || `${sound.resourceType} ${sound.resourceId}`, sound.source, sound.previewPath);
+  }
   for (const tileset of project.assetCatalog.tilesets ?? []) {
     if (tileset.pictId == null) continue;
     addResource("PICT", tileset.pictId, tileset.name, tileset.source, tileset.imagePath, {
@@ -574,6 +577,9 @@ function scenarioResourcePreviewPath(project: Project, entity: SemanticEntity, r
   }
   if (resourceType === "cicn") {
     return project.assetCatalog.icons?.find((asset) => asset.resourceId === resourceId)?.previewPath ?? "";
+  }
+  if (resourceType.trim() === "snd") {
+    return project.assetCatalog.sounds?.find((asset) => asset.resourceId === resourceId)?.previewPath ?? "";
   }
   return "";
 }

@@ -107,6 +107,9 @@ function WorkbenchRouterContent({
         project={state.project}
         catalog={state.libraryCatalog}
         selectedEntity={state.selectedEntity}
+        desktopRuntime={desktopRuntime}
+        projectDir={projectDir}
+        workspaceDir={workspaceDir}
         onSelectEntity={onSelectEntity}
         onApplyCommand={onApplyCommand}
         onCreateDraft={onCreateDraft}
@@ -182,6 +185,9 @@ function WorkbenchRouterContent({
         project={state.project}
         catalog={state.libraryCatalog}
         selectedEntity={state.selectedEntity}
+        desktopRuntime={desktopRuntime}
+        projectDir={projectDir}
+        workspaceDir={workspaceDir}
         onSelectEntity={onSelectEntity}
         onApplyCommand={onApplyCommand}
         onCreateDraft={onCreateDraft}
@@ -240,6 +246,9 @@ function WorkbenchRouterContent({
         project={state.project}
         catalog={state.libraryCatalog}
         selectedEntity={state.selectedEntity}
+        desktopRuntime={desktopRuntime}
+        projectDir={projectDir}
+        workspaceDir={workspaceDir}
         onSelectEntity={onSelectEntity}
         onApplyCommand={onApplyCommand}
         onCreateDraft={onCreateDraft}

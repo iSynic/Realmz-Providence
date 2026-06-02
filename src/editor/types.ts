@@ -1153,7 +1153,7 @@ export type Project = {
   raceOverrides: ScenarioRaceOverride[];
   casteOverrides: ScenarioCasteOverride[];
   assets: ManagedAsset[];
-  assetCatalog: { tilesets: TilesetAsset[]; pictures?: ResourceAsset[]; icons?: ResourceAsset[] };
+  assetCatalog: { tilesets: TilesetAsset[]; pictures?: ResourceAsset[]; icons?: ResourceAsset[]; sounds?: ResourceAsset[] };
   editorMetadata: EditorMetadata;
   records: { counts: Record<string, number>; alignments: Alignment[] };
   diagnostics: Diagnostic[];

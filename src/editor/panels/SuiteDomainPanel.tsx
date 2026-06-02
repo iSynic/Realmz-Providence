@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ENTITY_TYPE_LABELS } from "../constants";
 import { loadBrowserBundledLibraryAssetPreview } from "../browser/library";
-import { browserReferenceIconUrl } from "../browser/atlasPaths";
+import { useIconPreviewUrl, type PreviewRuntimeContext } from "../previewUrls";
 import { isDraftEntity, LibraryDraftSpec } from "../libraryDrafts";
 import { EditorTab, LibraryAsset, LibraryCatalog, LibraryEntity, ManagedAssetKind, Project, ProjectCommand, RealmzTargetRecordKind, ScenarioItemRecord, SemanticEntity, SelectedEntity } from "../types";
 import { selectEntityFromId } from "../utils";
@@ -140,7 +140,10 @@ export function SuiteDomainPanel({
   onSelectEntity,
   onApplyCommand,
   onCreateDraft,
-  onUpdateDraft
+  onUpdateDraft,
+  desktopRuntime = false,
+  projectDir = "",
+  workspaceDir = ""
 }: {
   tab: EditorTab;
   activeEditor?: string;
@@ -151,6 +154,9 @@ export function SuiteDomainPanel({
   onApplyCommand?: (command: ProjectCommand) => void;
   onCreateDraft?: (spec: LibraryDraftSpec) => void;
   onUpdateDraft?: (entityId: string, changes: { label?: string; notes?: string }) => void;
+  desktopRuntime?: boolean;
+  projectDir?: string;
+  workspaceDir?: string;
 }) {
   const config = DOMAIN_CONFIG[tab];
   const economyActive = tab === "economy";
@@ -230,6 +236,7 @@ export function SuiteDomainPanel({
           project={project}
           catalog={catalog}
           selectedEntity={selectedEntity}
+          previewContext={{ desktopRuntime, projectDir, workspaceDir }}
           onSelectEntity={onSelectEntity}
           onApplyCommand={onApplyCommand}
         />
@@ -251,6 +258,7 @@ export function SuiteDomainPanel({
               catalog={catalog}
               recordType={recordType}
               selectedEntity={selectedEntity}
+              previewContext={{ desktopRuntime, projectDir, workspaceDir }}
               onSelectEntity={onSelectEntity}
               onApplyCommand={onApplyCommand}
             />
@@ -389,13 +397,17 @@ function directRowsForEditor(project: Project, editor: DomainEditor): DirectReco
     ];
   }
   if (editor.id === "sounds") {
-    return project.assets.filter((asset) => asset.resourceType.trim() === "snd").map((asset) => ({ id: asset.id, label: asset.label, type: "sound", summary: `snd ${asset.resourceId}` }));
+    return [
+      ...project.assets.filter((asset) => asset.resourceType.trim() === "snd").map((asset) => ({ id: asset.id, label: asset.label, type: "sound", summary: `snd ${asset.resourceId}` })),
+      ...(project.assetCatalog.sounds ?? []).map((asset) => ({ id: `resource:${asset.resourceType}:${asset.resourceId}`, label: asset.name || `${asset.resourceType} ${asset.resourceId}`, type: "sound", summary: asset.source }))
+    ];
   }
   if (editor.id === "resource-inventory") {
     return [
       ...project.assets.map((asset) => ({ id: asset.id, label: asset.label, type: asset.kind, summary: `${asset.resourceType} ${asset.resourceId}` })),
       ...(project.assetCatalog.icons ?? []).map((asset) => ({ id: `resource:${asset.resourceType}:${asset.resourceId}`, label: asset.name || `${asset.resourceType} ${asset.resourceId}`, type: "icon-resource", summary: asset.source })),
-      ...(project.assetCatalog.pictures ?? []).map((asset) => ({ id: `resource:${asset.resourceType}:${asset.resourceId}`, label: asset.name || `${asset.resourceType} ${asset.resourceId}`, type: "picture", summary: asset.source }))
+      ...(project.assetCatalog.pictures ?? []).map((asset) => ({ id: `resource:${asset.resourceType}:${asset.resourceId}`, label: asset.name || `${asset.resourceType} ${asset.resourceId}`, type: "picture", summary: asset.source })),
+      ...(project.assetCatalog.sounds ?? []).map((asset) => ({ id: `resource:${asset.resourceType}:${asset.resourceId}`, label: asset.name || `${asset.resourceType} ${asset.resourceId}`, type: "sound", summary: asset.source }))
     ];
   }
   if (editor.id === "text-import") {
@@ -500,12 +512,14 @@ function ItemCatalogWorkbench({
   project,
   catalog,
   selectedEntity,
+  previewContext,
   onSelectEntity,
   onApplyCommand
 }: {
   project: Project;
   catalog?: LibraryCatalog | null;
   selectedEntity: SelectedEntity | null;
+  previewContext: PreviewRuntimeContext;
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
@@ -578,7 +592,7 @@ function ItemCatalogWorkbench({
                 className={option.value === selectedOption?.value ? "selected" : ""}
                 onClick={() => selectItem(option)}
               >
-                <ItemOptionIcon option={option} project={project} catalog={catalog} />
+                <ItemOptionIcon option={option} project={project} catalog={catalog} previewContext={previewContext} />
                 <span>
                   <strong>{option.label.replace(/\s+\(-?\d+\)$/, "")}</strong>
                   <small>{option.detail}</small>
@@ -609,33 +623,23 @@ function ItemCatalogWorkbench({
 function ItemOptionIcon({
   option,
   project,
-  catalog
+  catalog,
+  previewContext
 }: {
   option: ItemReferenceOption;
   project: Project;
   catalog?: LibraryCatalog | null;
+  previewContext: PreviewRuntimeContext;
 }) {
-  const iconUrl = itemOptionIconUrl(option.iconId, project, catalog);
+  const iconUrl = useIconPreviewUrl(option.iconId, project, catalog, previewContext);
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  useEffect(() => setFailedUrl(null), [iconUrl]);
+  const usableUrl = iconUrl && iconUrl !== failedUrl ? iconUrl : null;
   return (
     <span className="item-option-icon" title={option.iconId ? `cicn ${option.iconId}` : `${itemCategoryBadge(option.category)} item`}>
-      {iconUrl ? <img src={iconUrl} alt="" /> : <i>{itemCategoryBadge(option.category)}</i>}
+      {usableUrl ? <img src={usableUrl} alt="" onError={() => setFailedUrl(usableUrl)} /> : <i>{itemCategoryBadge(option.category)}</i>}
     </span>
   );
-}
-
-function itemOptionIconUrl(iconId: number | null, project: Project, catalog?: LibraryCatalog | null) {
-  if (!iconId) return null;
-  const absId = Math.abs(iconId);
-  const projectAsset = project.assetCatalog.icons?.find((asset) => Math.abs(asset.resourceId) === absId && asset.previewPath);
-  if (projectAsset?.previewPath) return projectAsset.previewPath;
-  const libraryAsset = catalog?.assets.find((asset) =>
-    (asset.type === "icon" || asset.type.includes("icon") || asset.resourceType === "cicn") &&
-    asset.resourceId != null &&
-    Math.abs(asset.resourceId) === absId &&
-    asset.previewPath
-  );
-  if (libraryAsset?.previewPath) return libraryAsset.previewPath;
-  return browserReferenceIconUrl(absId);
 }
 
 function itemCategoryBadge(category: ItemReferenceCategory) {
@@ -1268,6 +1272,7 @@ function TargetRecordWorkbench({
   catalog,
   recordType,
   selectedEntity,
+  previewContext,
   onSelectEntity,
   onApplyCommand
 }: {
@@ -1275,6 +1280,7 @@ function TargetRecordWorkbench({
   catalog?: LibraryCatalog | null;
   recordType: RealmzTargetRecordKind;
   selectedEntity: SelectedEntity | null;
+  previewContext: PreviewRuntimeContext;
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
@@ -1327,7 +1333,17 @@ function TargetRecordWorkbench({
         </ScrollArea>
         <div className="domain-target-editor">
           {editorReady ? (
-            <TargetRecordEditor project={project} catalog={catalog} opcode={opcode} targetId={selectedId} recordType={recordType} onApplyCommand={onApplyCommand} />
+            <TargetRecordEditor
+              project={project}
+              catalog={catalog}
+              opcode={opcode}
+              targetId={selectedId}
+              recordType={recordType}
+              desktopRuntime={previewContext.desktopRuntime}
+              projectDir={previewContext.projectDir}
+              workspaceDir={previewContext.workspaceDir}
+              onApplyCommand={onApplyCommand}
+            />
           ) : (
             <div className="domain-target-editor-placeholder">Loading selected {targetRecordLabel(recordType).toLowerCase()}...</div>
           )}

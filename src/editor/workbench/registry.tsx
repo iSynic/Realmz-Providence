@@ -237,7 +237,7 @@ export function domainCount(
   if (domain === "combat") return (project?.battles.length ?? 0) + (project?.monsters.length ?? 0) + (activeWorkbench === "library" ? catalog?.entities.filter((entity) => ["monster-scrapbook-entry", "monster-mash-icon"].includes(entity.type)).length ?? 0 : 0);
   if (domain === "economy") return (project?.treasures.length ?? 0) + (project?.shops.length ?? 0) + (project?.scenarioItems.length ?? 0) + (activeWorkbench === "library" ? catalog?.entities.filter((entity) => ["item", "bag-item", "vault-icon"].includes(entity.type)).length ?? 0 : 0);
   if (domain === "rules") return (project?.spellOverrides.length ?? 0) + (project?.raceOverrides.length ?? 0) + (project?.casteOverrides.length ?? 0) + (activeWorkbench === "library" ? catalog?.entities.filter((entity) => ["spell", "race", "caste"].includes(entity.type)).length ?? 0 : 0);
-  if (domain === "assets") return (project?.assets.length ?? 0) + (project?.assetCatalog.tilesets.length ?? 0) + (project?.assetCatalog.pictures?.length ?? 0) + (project?.assetCatalog.icons?.length ?? 0) + (activeWorkbench === "library" ? catalog?.assets.length ?? 0 : 0);
+  if (domain === "assets") return (project?.assets.length ?? 0) + (project?.assetCatalog.tilesets.length ?? 0) + (project?.assetCatalog.pictures?.length ?? 0) + (project?.assetCatalog.icons?.length ?? 0) + (project?.assetCatalog.sounds?.length ?? 0) + (activeWorkbench === "library" ? catalog?.assets.length ?? 0 : 0);
   if (domain === "records") return Object.values(project?.records.counts ?? {}).reduce((total, count) => total + count, 0) + (activeWorkbench === "library" ? catalog?.records.length ?? 0 : 0);
   if (domain === "export") return project ? project.validation.exportableFiles.length + project.validation.passThroughFiles.length : 0;
   return 0;
@@ -291,7 +291,7 @@ function directProjectToolCount(toolId: string, project: Project | null) {
   if (toolId === "text-resources") return project.assets.filter((asset) => asset.kind === "text" || ["TEXT", "STR#", "styl"].includes(asset.resourceType.trim())).length;
   if (toolId === "project-assets") return project.assets.length;
   if (toolId === "pictures") return project.assetCatalog.pictures?.length ?? 0;
-  if (toolId === "sounds") return project.assets.filter((asset) => asset.resourceType.trim() === "snd").length;
+  if (toolId === "sounds") return project.assets.filter((asset) => asset.resourceType.trim() === "snd").length + (project.assetCatalog.sounds?.length ?? 0);
   if (toolId === "icons" || toolId === "special-land") return project.assetCatalog.icons?.length ?? 0;
   if (toolId === "decoded-records") return Object.values(project.records.counts).reduce((total, value) => total + value, 0);
   return null;

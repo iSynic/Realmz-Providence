@@ -1217,9 +1217,14 @@ pub struct ScenarioCasteOverride {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct AssetCatalog {
+    #[serde(default)]
     pub tilesets: Vec<TilesetAsset>,
+    #[serde(default)]
     pub pictures: Vec<ResourceAsset>,
+    #[serde(default)]
     pub icons: Vec<ResourceAsset>,
+    #[serde(default)]
+    pub sounds: Vec<ResourceAsset>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

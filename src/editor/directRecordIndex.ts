@@ -44,6 +44,9 @@ export function buildProjectRecordIndex(project: Project): ProjectRecordIndex {
   for (const icon of project.assetCatalog.icons ?? []) {
     addResource(icon.resourceType, icon.resourceId, icon.name || `${icon.resourceType} ${icon.resourceId}`, icon.source, icon.previewPath);
   }
+  for (const sound of project.assetCatalog.sounds ?? []) {
+    addResource(sound.resourceType, sound.resourceId, sound.name || `${sound.resourceType} ${sound.resourceId}`, sound.source, sound.previewPath);
+  }
   for (const tileset of project.assetCatalog.tilesets ?? []) {
     if (tileset.pictId != null) addResource("PICT", tileset.pictId, tileset.name, tileset.source, tileset.imagePath);
   }

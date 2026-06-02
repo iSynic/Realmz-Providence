@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
+import { Volume2 } from "lucide-react";
 import { LibraryCatalog, Project, RealmzTargetRecordKind, SelectedEntity, SemanticEntity } from "../types";
 import { selectEntityFromId } from "../utils";
 import { actionOptionFor, normalizeStepOpcode } from "../realmzActions";
+import { playPreviewUrl, useResolvedPreviewUrl, type PreviewRuntimeContext } from "../previewUrls";
 
 export type ScriptTargetOption = {
   key: string;
@@ -57,7 +59,8 @@ export function TargetPicker({
   value,
   onChange,
   onInspect,
-  onCreate
+  onCreate,
+  previewContext = {}
 }: {
   project: Project | null;
   catalog?: LibraryCatalog | null;
@@ -66,6 +69,7 @@ export function TargetPicker({
   onChange: (id: number) => void;
   onInspect: (entity: SelectedEntity) => void;
   onCreate?: (recordType: RealmzTargetRecordKind, id?: number) => void;
+  previewContext?: PreviewRuntimeContext;
 }) {
   const config = targetPickerConfig(opcode);
   const [query, setQuery] = useState("");
@@ -82,6 +86,12 @@ export function TargetPicker({
   }, [catalog, opcode, project, query, selectedStub, targetsLoaded]);
   const filteredTargets = targetsLoaded || query.trim() ? filterTargetOptions(targets, query) : selectedStub ? [selectedStub] : [];
   const selected = targets.find((target) => target.value === resolvedValue) ?? selectedStub ?? null;
+  const selectedPreviewUrl = useResolvedPreviewUrl(
+    normalizeStepOpcode(opcode) === 9 ? selected?.previewPath ?? null : null,
+    normalizeStepOpcode(opcode) === 9 ? selected?.managedAsset ?? null : null,
+    normalizeStepOpcode(opcode) === 9 ? selected?.libraryAsset ?? null : null,
+    previewContext
+  );
   if (!config) return null;
   const visibleTargets = selected && !filteredTargets.some((target) => target.key === selected.key)
     ? [selected, ...filteredTargets.slice(0, 159)]
@@ -129,6 +139,17 @@ export function TargetPicker({
       {selected?.entity && (
         <button className="btn btn-secondary btn-xs" type="button" onClick={() => onInspect(selected.entity!)}>
           Open Target
+        </button>
+      )}
+      {normalizeStepOpcode(opcode) === 9 && selected && (
+        <button
+          className="btn btn-secondary btn-xs"
+          type="button"
+          disabled={!selectedPreviewUrl}
+          title={selectedPreviewUrl ? "Play this sound preview." : "No playable preview is available for this sound."}
+          onClick={() => selectedPreviewUrl && playPreviewUrl(selectedPreviewUrl)}
+        >
+          <Volume2 size={12} /> Play
         </button>
       )}
       {canCreateTarget && (
@@ -198,6 +219,21 @@ export function targetOptionsForOpcode(project: Project | null, opcode: number, 
         previewMimeType: asset.mimeType,
         managedAsset: asset
       });
+    }
+    if (code === 9) {
+      for (const asset of project.assetCatalog.sounds ?? []) {
+        options.push({
+          key: `resource:${asset.resourceType}:${asset.resourceId}`,
+          value: asset.resourceId,
+          label: `${asset.name || `${asset.resourceType.trim()} ${asset.resourceId}`} (${asset.resourceType.trim()} ${asset.resourceId})`,
+          detail: `sound | ${asset.source}`,
+          entity: { type: "resource", id: `resource:${asset.resourceType}:${asset.resourceId}` },
+          previewPath: asset.previewPath,
+          previewMimeType: "audio/wav",
+          compatibility: "Realmz resource",
+          sourceState: "Scenario resource"
+        });
+      }
     }
     if (code === 27) {
       for (const asset of project.assetCatalog.pictures ?? []) {
@@ -433,6 +469,22 @@ function optionFromTypedProjectTarget(project: Project, code: number, id: number
         previewMimeType: asset.mimeType,
         managedAsset: asset
       };
+    }
+    if (code === 9) {
+      const soundAsset = (project.assetCatalog.sounds ?? []).find((candidate) => candidate.resourceId === id);
+      if (soundAsset) {
+        return {
+          key: `resource:${soundAsset.resourceType}:${soundAsset.resourceId}`,
+          value: soundAsset.resourceId,
+          label: `${soundAsset.name || `${soundAsset.resourceType.trim()} ${soundAsset.resourceId}`} (${soundAsset.resourceType.trim()} ${soundAsset.resourceId})`,
+          detail: `sound | ${soundAsset.source}`,
+          compatibility: "Realmz resource",
+          sourceState: "Scenario resource",
+          entity: { type: "resource", id: `resource:${soundAsset.resourceType}:${soundAsset.resourceId}` },
+          previewPath: soundAsset.previewPath,
+          previewMimeType: "audio/wav"
+        };
+      }
     }
     const libraryAsset = (catalog?.assets ?? []).find((candidate) => candidate.resourceId === id && wantedKinds.has(candidate.type));
     if (libraryAsset) {

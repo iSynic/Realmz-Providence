@@ -158,7 +158,7 @@ export type ParsedBrowserScenario = {
   spellOverrides: ScenarioSpellOverride[];
   raceOverrides: ScenarioRaceOverride[];
   casteOverrides: ScenarioCasteOverride[];
-  assetCatalog: { tilesets: TilesetAsset[]; icons: ResourceAsset[] };
+  assetCatalog: { tilesets: TilesetAsset[]; icons: ResourceAsset[]; sounds: ResourceAsset[] };
   records: { counts: Record<string, number>; alignments: Alignment[] };
   diagnostics: Diagnostic[];
 };
@@ -1014,7 +1014,8 @@ function buildAssetCatalog(
   }
   return {
     tilesets,
-    icons: buildScenarioIconCatalog(maps, scenarioResources, diagnostics)
+    icons: buildScenarioIconCatalog(maps, scenarioResources, diagnostics),
+    sounds: buildScenarioSoundCatalog(scenarioResources, diagnostics)
   };
 }
 
@@ -1052,6 +1053,38 @@ function buildScenarioIconCatalog(
     seen.add(resource.id);
   }
   return icons.sort((a, b) => a.resourceId - b.resourceId);
+}
+
+function buildScenarioSoundCatalog(
+  resources: Array<{ source: string; resource: ResourceEntry }>,
+  diagnostics: Diagnostic[]
+): ResourceAsset[] {
+  const seen = new Set<number>();
+  const sounds: ResourceAsset[] = [];
+  for (const match of resources) {
+    const { source, resource } = match;
+    if (resource.resourceType !== "snd " || seen.has(resource.id)) continue;
+    const preview = inspectResourcePreview("snd ", resource.data);
+    if (preview.status !== "playable" || !preview.dataUrl) {
+      const detail = preview.diagnostics[0]?.message ?? `Preview status was ${preview.status}.`;
+      diagnostics.push({
+        severity: preview.status === "malformed" ? "error" : "warning",
+        code: "unsupported-scenario-sound-preview",
+        message: `Scenario snd ${resource.id} in ${source} could not be decoded for preview: ${detail}`,
+        source
+      });
+    }
+    sounds.push({
+      id: `scenario-snd-${resource.id}`,
+      resourceType: "snd ",
+      resourceId: resource.id,
+      name: resource.name || null,
+      source: `Browser import: ${source} snd ${resource.id}`,
+      previewPath: preview.status === "playable" ? preview.dataUrl : null
+    });
+    seen.add(resource.id);
+  }
+  return sounds.sort((a, b) => a.resourceId - b.resourceId);
 }
 
 function scenarioResourceEntries(buffers: Map<string, Uint8Array>) {

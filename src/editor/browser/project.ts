@@ -423,6 +423,9 @@ async function loadBundledLandlookMapstats() {
 function backfillTilesetMetadata(project: Project) {
   project.assetCatalog ??= { tilesets: [] };
   project.assetCatalog.tilesets ??= [];
+  project.assetCatalog.pictures ??= [];
+  project.assetCatalog.icons ??= [];
+  project.assetCatalog.sounds ??= [];
 
   const requiredLandlooks = new Set<number>();
   for (const map of project.maps ?? []) {

@@ -18,6 +18,7 @@ pub const RAW_SOURCES_DIR: &str = "raw-sources";
 pub const ASSETS_DIR: &str = "assets";
 pub const TILE_ATLASES_DIR: &str = "tile-atlases";
 pub const ICONS_DIR: &str = "icons";
+pub const SOUNDS_DIR: &str = "sounds";
 const REFERENCE_UTILITY_ROOT: &str = "F:/Realmz Scenario Utility";
 
 pub fn create_project(
@@ -267,6 +268,7 @@ fn import_scenario_with_name(
     hydrate_custom_spell_names(&source_path, &mut project)?;
     import_tile_atlases(&source_path, &assets_dir, &mut project)?;
     import_icon_overlays(&source_path, &assets_dir, &mut project)?;
+    import_sound_assets(&source_path, &assets_dir, &mut project)?;
     project.validation = crate::validation::validate_project(&project);
     save_project(project_dir, &project)?;
     Ok(project)
@@ -298,6 +300,7 @@ pub fn open_project(project_dir: impl AsRef<Path>) -> Result<ProvidenceProject> 
     hydrate_custom_spell_names(&raw_dir, &mut project)?;
     refresh_custom_tile_atlases(project_dir, &mut project)?;
     import_icon_overlays(&raw_dir, &project_dir.join(ASSETS_DIR), &mut project)?;
+    import_sound_assets(&raw_dir, &project_dir.join(ASSETS_DIR), &mut project)?;
     save_project(project_dir, &project)?;
     Ok(project)
 }
@@ -1075,6 +1078,103 @@ fn upsert_scenario_icon_asset(
     });
 }
 
+fn import_sound_assets(
+    source_path: &Path,
+    assets_dir: &Path,
+    project: &mut ProvidenceProject,
+) -> Result<()> {
+    let sound_dir = assets_dir.join(SOUNDS_DIR);
+    fs::create_dir_all(&sound_dir).with_path(&sound_dir)?;
+    let mut imported = BTreeSet::new();
+    for resource_path in scenario_resource_candidates(source_path) {
+        if !resource_path.is_file() {
+            continue;
+        }
+        let bytes = fs::read(&resource_path).with_path(&resource_path)?;
+        for entry in crate::resource_fork::parse_resource_fork_entries(&bytes) {
+            if entry.resource_type != "snd " || imported.contains(&entry.id) {
+                continue;
+            }
+            let preview = crate::resource_preview::inspect_resource_preview("snd ", &entry.data)?;
+            let preview_path = if let Some(data_url) = preview.data_url {
+                if let Some(wav_bytes) = bytes_from_data_url(&data_url) {
+                    let file_name = format!("sound_{}.wav", entry.id);
+                    let dest = sound_dir.join(&file_name);
+                    fs::write(&dest, wav_bytes).with_path(&dest)?;
+                    Some(format!("{ASSETS_DIR}/{SOUNDS_DIR}/{file_name}"))
+                } else {
+                    None
+                }
+            } else {
+                let detail = preview
+                    .diagnostics
+                    .first()
+                    .map(|diagnostic| diagnostic.message.clone())
+                    .unwrap_or_else(|| format!("preview status was {:?}", preview.status));
+                project.diagnostics.push(Diagnostic {
+                    severity: DiagnosticSeverity::Warning,
+                    code: "unsupported-scenario-sound-preview".to_string(),
+                    message: format!(
+                        "Scenario snd {} in {} could not be decoded for preview: {}",
+                        entry.id,
+                        resource_path.display(),
+                        detail
+                    ),
+                    source: Some(resource_path.display().to_string()),
+                });
+                None
+            };
+            upsert_scenario_sound_asset(
+                project,
+                entry.id,
+                entry.name,
+                resource_path
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    .unwrap_or("Scenario resource fork"),
+                preview_path,
+            );
+            imported.insert(entry.id);
+        }
+    }
+    project
+        .asset_catalog
+        .sounds
+        .sort_by_key(|asset| asset.resource_id);
+    Ok(())
+}
+
+fn upsert_scenario_sound_asset(
+    project: &mut ProvidenceProject,
+    sound_id: i16,
+    name: String,
+    source_file: &str,
+    preview_path: Option<String>,
+) {
+    if let Some(asset) = project
+        .asset_catalog
+        .sounds
+        .iter_mut()
+        .find(|asset| asset.resource_type == "snd " && asset.resource_id == i32::from(sound_id))
+    {
+        if asset.name.is_none() && !name.is_empty() {
+            asset.name = Some(name);
+        }
+        if preview_path.is_some() {
+            asset.preview_path = preview_path;
+        }
+        return;
+    }
+    project.asset_catalog.sounds.push(ResourceAsset {
+        id: format!("scenario-snd-{sound_id}"),
+        resource_type: "snd ".to_string(),
+        resource_id: i32::from(sound_id),
+        name: (!name.is_empty()).then_some(name),
+        source: format!("Scenario resource fork: {source_file}"),
+        preview_path,
+    });
+}
+
 fn map_icon_ids(maps: &[MapEntity]) -> BTreeSet<i16> {
     let mut ids = BTreeSet::new();
     for map in maps {
@@ -1249,6 +1349,11 @@ fn data_spell_resource_candidates(source_path: &Path) -> Vec<PathBuf> {
 
 fn png_bytes_from_data_url(data_url: &str) -> Option<Vec<u8>> {
     let base64 = data_url.strip_prefix("data:image/png;base64,")?;
+    STANDARD.decode(base64).ok()
+}
+
+fn bytes_from_data_url(data_url: &str) -> Option<Vec<u8>> {
+    let (_, base64) = data_url.split_once(";base64,")?;
     STANDARD.decode(base64).ok()
 }
 
