@@ -328,6 +328,14 @@ export const REGISTRATION_EVIDENCE_VECTORS: RegistrationEvidenceVector[] = [
     expectedCode: "481007",
     status: "official-mac",
     source: "Official Fantasoft MacOS registration form supplied by user."
+  },
+  {
+    scenarioName: "War in the Sword Lands",
+    registrationName: "AMBERK",
+    serialNumber: "13706024",
+    expectedCode: "933071",
+    status: "reported",
+    source: "User-supplied War in the Sword Lands code with Realmz registration code 7995820 and verification code 410."
   }
 ];
 
@@ -417,7 +425,9 @@ export function registrationVariantsFor(input: RegistrationInput): RegistrationV
           : "Reported external vector",
       confidence: evidence.status === "reported" ? "reported-unmatched" : "verified",
       code: evidence.expectedCode,
-      detail: evidence.source
+      detail: evidence.status === "reported"
+        ? evidence.source
+        : `${evidence.source} This is verified form evidence, but no source-ported candidate currently reproduces it for this scenario/name/serial.`
     }))
   ];
 }

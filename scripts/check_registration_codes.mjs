@@ -169,6 +169,19 @@ assert(
   }).some((variant) => variant.code === "481007" && variant.confidence === "verified"),
   "Scenario title punctuation should not block official vector matching"
 );
+assert(
+  registrationVariantsFor({
+    scenarioName: "War in the Sword Lands",
+    segment1: "",
+    segment2: "",
+    registrationName: "AMBERK",
+    serialNumber: "13706024",
+    scenarioSlot: 20,
+    recLevel: 72,
+    maxLevel: 84
+  }).some((variant) => variant.algorithmId === "pcBundledV71" && variant.code === "933071" && variant.confidence === "verified"),
+  "AMBERK War vector should verify the Windows bundled formula"
+);
 
 for (const vector of REGISTRATION_EVIDENCE_VECTORS) {
   const shell = readScenarioShellFields(vector.scenarioName);
@@ -238,3 +251,7 @@ console.log(
   + `${macClassicExactMatches.length} Mac classic bundled source match(es), `
   + `${unresolvedOfficialVectors.length} documented unresolved bundled vector(s)).`
 );
+if (unresolvedOfficialVectors.length > 0) {
+  console.log("Unresolved official vectors:");
+  for (const vector of unresolvedOfficialVectors) console.log(`- ${vector}`);
+}

@@ -379,13 +379,14 @@ function SecurityRegistrationCard({
     || decoded.segment2.length > 0;
   const status = hasSegments ? "set" : "empty";
   const changed = segment1 !== decoded.segment1 || segment2 !== decoded.segment2;
+  const registrationScenarioName = shell.sourceFile || scenarioName;
   const readableNote = securityBackup
     ? "Decoded with this scenario's security backup. Realmz uses these segments when checking registration codes."
     : hasSegments
       ? "No security backup was imported, so these fields show the stored segment text as best as possible."
       : "No security segments are set.";
   const registrationVariants = registrationVariantsFor({
-    scenarioName,
+    scenarioName: registrationScenarioName,
     segment1,
     segment2,
     registrationName,
@@ -458,7 +459,7 @@ function SecurityRegistrationCard({
         <header>
           <div>
             <span>Registration Code Generator</span>
-            <small>Verified evidence and source-ported candidate formulas.</small>
+            <small>Verified evidence and source-ported candidate formulas for {registrationScenarioName}.</small>
           </div>
           <b>{primaryRegistrationVariant?.code ?? "ready"}</b>
         </header>

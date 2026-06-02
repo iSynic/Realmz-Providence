@@ -4,7 +4,7 @@
 
 Providence can help authors inspect and test legacy scenario registration codes without pretending one universal algorithm is proven for every Realmz/Mac/PC path.
 
-The user-facing generator is currently hidden while the algorithms are being tightened. The underlying module now separates these paths:
+The user-facing generator is visible again, but it deliberately shows evidence-labeled variants instead of pretending one universal formula is proven. The underlying module now separates these paths:
 
 - source-ported Windows bundled-scenario formula from `regscen_pc`;
 - source-ported Mac bundled-scenario formula for the classic pre-later-slot branch in `regscen`;
@@ -43,6 +43,28 @@ Known unresolved items:
 - `War in the Sword Lands` Windows official vector is off by 9 from the source formula against the local shell file, likely due to a shell/version/menu fixture mismatch or transcription issue. It remains evidence, not discarded.
 - Mac official vectors for White Dragon-era and later slots enter the extra bit-switch branch. The source port is present as a candidate, but those vectors are not yet source-matched. The likely missing detail is a classic-runtime behavior around `abs`, bit operations, serial display/internal serial, or old compiler integer promotion.
 - Custom scenario PC/Mac algorithms are source-ported candidates. They still need an actual custom-scenario acceptance vector generated in Realmz/Divinity before the UI should call them verified.
+
+## War and Divinity Investigation Notes
+
+`War in the Sword Lands` is an official Fantasoft scenario, not a Divinity/custom scenario. The local shell fields are stable across the checked copies under `F:\Realmz\base`, `F:\Realmz\out_win_clang`, and packaged build outputs:
+
+- shell length: `316` bytes
+- `reclevel`: `72`
+- `maxlevel`: `84`
+- source formula result for `RABREAUS` / `9140886` / slot `20`: `621034`
+- official Windows form result: `621043`
+
+A second user-supplied vector for `AMBERK` / `13706024` produces `933071`, exactly matching the same Windows bundled formula for slot `20` and the local War shell fields. That makes the bundled formula look generally right for War, while the `RABREAUS` +9 mismatch should stay visible as unresolved source archaeology. The source also has a suspicious boundary split: `topfantasoftsceanrio` is `23`, but `regscen_pc` redirects `currentscenario > 19` into `regscen_pc_custom`. War is slot `20`, exactly on that boundary. Existing registration acceptance logs still identify it as Adventure menu position `20`, so the mismatch is not currently explained by a simple slot-number error.
+
+For Divinity/custom scenario work, the best local binary target is `F:\Realmz - Providence\public\bundled-libraries\divinity\Divinity.rsrc`. It is an AppleDouble-wrapped Classic Mac application resource fork with:
+
+- `CODE 1` (`Mac Libraries`, `194,318` bytes)
+- `CODE 2` (`ANSI Libraries`, `26,295` bytes)
+- `DATA 0` (`28,568` bytes)
+
+The app contains symbols/strings such as `getcode`, `getscenario`, `editscenariodata`, `editextracode`, `switchscenario`, and `Data CS`. Capstone can disassemble the 68k CODE resources, but a blind sweep lands in mixed code/string/jump-table territory. The next useful step is a resource-aware disassembly pass that follows the CODE segment jump table and cross-references the `Data CS` and security strings back to owning functions.
+
+No Classic Mac Realmz runtime application with CODE resources was found locally. That means Divinity can help explain how the editor writes security data, but it cannot by itself prove the Realmz runtime acceptance algorithm for later Mac bundled scenarios.
 
 ## Official Evidence
 
@@ -95,6 +117,14 @@ Additional official MacOS vectors supplied by the user for Realmz v7.1.2:
   - Destroy the Necronomicon: `276995`
   - White Dragon: `412608`
   - Grilochs Revenge: `481007`
+
+Additional user-supplied War in the Sword Lands vector:
+
+- Realmz serial: `13706024`
+- Realmz registration code: `7995820`
+- Verification code: `410`
+- Scenario registration name: `AMBERK`
+- War in the Sword Lands: `933071`
 
 These official vectors are treated as verified evidence when the scenario/name/serial match. They do not by themselves prove that Providence has fully reconstructed every original Mac or Windows generator path.
 
