@@ -2086,7 +2086,7 @@ function EncounterShell({
   actions: EncounterActionRow[];
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
-  const visibleRows = [0, 1, 2, 3];
+  const visibleRows = encounterVisibleActionSlots(actions);
   const update = (changes: Record<string, unknown>) => {
     if (recordKind === "simple") {
       onApplyCommand?.({ kind: "updateSimpleEncounterRecord", label: "Update simple encounter", id, changes });
@@ -2096,65 +2096,195 @@ function EncounterShell({
   };
   return (
     <div className="script-target-grid encounter-record-grid">
-      <ReferenceIdField
-        project={project}
-        catalog={catalog}
-        label="Prompt Msg"
-        emptyLabel="No prompt message"
-        opcode={1}
-        value={prompt}
-        createRecordType="message"
-        onCommit={(next) => update({ prompt: next })}
-        onCreateTarget={(targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create encounter prompt", recordType: "message", id: targetId })}
-      />
-      <label className="script-target-checkbox">
-        <span>Can Back Out</span>
-        <input type="checkbox" defaultChecked={canBackOut} onChange={(event) => update({ canBackOut: event.currentTarget.checked })} />
-      </label>
-      <NumberField label="Max Times" value={maxTimes} onCommit={(value) => update({ maxTimes: value })} />
-      <NumberField label="Caste Success" value={casteSuccess} onCommit={(value) => update({ casteSuccess: value })} />
+      <section className="encounter-setup-panel">
+        <div className="encounter-prompt-field">
+          <ReferenceIdField
+            project={project}
+            catalog={catalog}
+            label="Prompt Message"
+            emptyLabel="No prompt message"
+            opcode={1}
+            value={prompt}
+            createRecordType="message"
+            showSelectedResult={false}
+            onCommit={(next) => update({ prompt: next })}
+            onCreateTarget={(targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create encounter prompt", recordType: "message", id: targetId })}
+          />
+        </div>
+        <div className="encounter-rules-grid">
+          <label className="script-target-checkbox">
+            <span>Can Back Out</span>
+            <input type="checkbox" defaultChecked={canBackOut} onChange={(event) => update({ canBackOut: event.currentTarget.checked })} />
+          </label>
+          <NumberField label="Max Times" value={maxTimes} onCommit={(value) => update({ maxTimes: value })} compact />
+          <NumberField label="Caste Success" value={casteSuccess} onCommit={(value) => update({ casteSuccess: value })} compact />
+        </div>
+      </section>
       {recordKind === "complex" && (
-        <>
+        <section className="encounter-complex-rules">
           <label className="script-target-checkbox">
             <span>Thief</span>
             <input type="checkbox" defaultChecked={Boolean(thief)} onChange={(event) => update({ thief: event.currentTarget.checked })} />
           </label>
-          <NumberField label="Thief Success" value={thiefSuccess ?? 0} onCommit={(value) => update({ thiefSuccess: value })} />
-          <NumberField label="Thief Fail" value={thiefFail ?? 0} onCommit={(value) => update({ thiefFail: value })} />
-        </>
+          <NumberField label="Thief Success" value={thiefSuccess ?? 0} onCommit={(value) => update({ thiefSuccess: value })} compact />
+          <NumberField label="Thief Fail" value={thiefFail ?? 0} onCommit={(value) => update({ thiefFail: value })} compact />
+        </section>
       )}
-      <div className="script-encounter-outcome-grid">
-        <strong>Choice Results</strong>
-        {visibleRows.map((slot) => (
-          <NumberField key={slot} label={`Choice ${slot}`} value={choiceResults[slot] ?? 0} onCommit={(value) => update({ choiceResults: updateArraySlot(choiceResults, slot, value, 4) })} />
-        ))}
-      </div>
-      {recordKind === "complex" && wordResults && (
-        <div className="script-encounter-outcome-grid">
-          <strong>Word Results</strong>
-          {visibleRows.map((slot) => (
-            <NumberField key={slot} label={`Word ${slot}`} value={wordResults[slot] ?? 0} onCommit={(value) => update({ wordResults: updateArraySlot(wordResults, slot, value, 4) })} />
-          ))}
-        </div>
-      )}
-      <div className="script-encounter-action-grid">
-        {visibleRows.map((slot) => (
-          <EncounterActionRowEditor
-            key={slot}
-            project={project}
-            catalog={catalog}
-            slot={slot}
-            row={encounterActionAt(actions, slot)}
-            onUpdate={(changes) => update({ actions: updateEncounterActionRow(actions, slot, changes) })}
-            onCreateTarget={(recordType, targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create encounter action target", recordType, id: targetId })}
-          />
-        ))}
-      </div>
-      <EncounterTextGrid
+      <EncounterResultEditor
         recordKind={recordKind}
         texts={texts}
-        onCommit={(slot, text) => update({ texts: updateArraySlot(texts, slot, text, recordKind === "simple" ? 4 : 9) })}
+        choiceResults={choiceResults}
+        wordResults={wordResults}
+        onTextCommit={(slot, text) => update({ texts: updateArraySlot(texts, slot, text, recordKind === "simple" ? 4 : 9) })}
+        onChoiceCommit={(slot, value) => update({ choiceResults: updateArraySlot(choiceResults, slot, value, 4) })}
+        onWordCommit={(slot, value) => update({ wordResults: updateArraySlot(wordResults ?? [], slot, value, 4) })}
       />
+      {recordKind === "simple" ? (
+        <SimpleEncounterActionMatrix
+          project={project}
+          catalog={catalog}
+          actions={actions}
+          onUpdate={(slot, changes) => update({ actions: updateEncounterActionRow(actions, slot, changes) })}
+          onCreateTarget={(recordType, targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create encounter action target", recordType, id: targetId })}
+        />
+      ) : (
+        <>
+          <div className="script-encounter-action-grid">
+            {visibleRows.map((slot) => (
+              <EncounterActionRowEditor
+                key={slot}
+                project={project}
+                catalog={catalog}
+                slot={slot}
+                row={encounterActionAt(actions, slot)}
+                onUpdate={(changes) => update({ actions: updateEncounterActionRow(actions, slot, changes) })}
+                onCreateTarget={(recordType, targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create encounter action target", recordType, id: targetId })}
+              />
+            ))}
+          </div>
+          <CollapsibleSection title="All Encounter Action Rows" eyebrow="advanced" count={`${actions.length} populated, 32 available`} density="compact" className="script-encounter-text-section">
+            <p className="script-encounter-text-note">
+              The main editor shows the first four result rows plus any populated imported rows. Add data to an empty row below when matching a known Divinity setup.
+            </p>
+            <div className="script-encounter-action-grid">
+              {Array.from({ length: 32 }, (_, slot) => (
+                <EncounterActionRowEditor
+                  key={slot}
+                  project={project}
+                  catalog={catalog}
+                  slot={slot}
+                  row={encounterActionAt(actions, slot)}
+                  onUpdate={(changes) => update({ actions: updateEncounterActionRow(actions, slot, changes) })}
+                  onCreateTarget={(recordType, targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create encounter action target", recordType, id: targetId })}
+                />
+              ))}
+            </div>
+          </CollapsibleSection>
+        </>
+      )}
+    </div>
+  );
+}
+
+function SimpleEncounterActionMatrix({
+  project,
+  catalog,
+  actions,
+  onUpdate,
+  onCreateTarget
+}: {
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  actions: EncounterActionRow[];
+  onUpdate: (slot: number, changes: Partial<EncounterActionRow>) => void;
+  onCreateTarget: (recordType: RealmzTargetRecordKind, targetId: number) => void;
+}) {
+  return (
+    <section className="simple-encounter-action-matrix">
+      <header>
+        <div>
+          <strong>Result Action Columns</strong>
+          <small>Simple encounters store eight CODE/ID rows for each of the four result numbers, matching the Divinity editor columns.</small>
+        </div>
+      </header>
+      <div className="simple-encounter-result-columns">
+        {Array.from({ length: 4 }, (_, resultIndex) => (
+          <div key={resultIndex} className="simple-encounter-result-column">
+            <header>
+              <strong>Result #{resultIndex + 1}</strong>
+              <small>Code / ID</small>
+            </header>
+            {Array.from({ length: 8 }, (_, rowIndex) => {
+              const slot = resultIndex * 8 + rowIndex;
+              return (
+                <SimpleEncounterActionCell
+                  key={slot}
+                  project={project}
+                  catalog={catalog}
+                  slot={slot}
+                  row={encounterActionAt(actions, slot)}
+                  onUpdate={(changes) => onUpdate(slot, changes)}
+                  onCreateTarget={onCreateTarget}
+                />
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function SimpleEncounterActionCell({
+  project,
+  catalog,
+  slot,
+  row,
+  onUpdate,
+  onCreateTarget
+}: {
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  slot: number;
+  row: EncounterActionRow;
+  onUpdate: (changes: Partial<EncounterActionRow>) => void;
+  onCreateTarget: (recordType: RealmzTargetRecordKind, targetId: number) => void;
+}) {
+  const rowOption = actionOptionFor(row.rawCode);
+  const targetType = realmzScriptStepDescriptorFor(row.rawCode).targetType;
+  const populated = row.rawCode !== 0 || row.id !== 0;
+  return (
+    <div className={`simple-encounter-action-cell${populated ? " populated" : ""}`}>
+      <select
+        aria-label={`Result action ${slot} opcode`}
+        value={row.rawCode}
+        title={rowOption ? `${rowOption.category}: ${rowOption.description}` : "Empty action row"}
+        onChange={(event) => onUpdate({ rawCode: Number(event.currentTarget.value) })}
+      >
+        {ACTION_OPTIONS.map((option) => (
+          <option key={option.code} value={option.code}>{option.code} {option.label}</option>
+        ))}
+      </select>
+      <ReferenceIdField
+        project={project}
+        catalog={catalog}
+        label="ID"
+        emptyLabel="No target"
+        opcode={row.rawCode}
+        value={row.id}
+        createRecordType={targetType}
+        compact
+        showSelectedResult={false}
+        onCommit={(next) => onUpdate({ id: next })}
+        onCreateTarget={(targetId) => {
+          if (targetType) onCreateTarget(targetType, targetId);
+        }}
+      />
+      {populated && (
+        <button type="button" className="btn btn-secondary btn-xs" onClick={() => onUpdate({ rawCode: 0, id: 0 })}>
+          Clear
+        </button>
+      )}
     </div>
   );
 }
@@ -2383,43 +2513,90 @@ function locationKindValue(locationKind: Project["timedEncounters"][number]["loc
   return -1;
 }
 
-function EncounterTextGrid({
+function EncounterResultEditor({
   recordKind,
   texts,
-  onCommit
+  choiceResults,
+  wordResults,
+  onTextCommit,
+  onChoiceCommit,
+  onWordCommit
 }: {
   recordKind: "simple" | "complex";
   texts: string[];
-  onCommit: (slot: number, text: string) => void;
+  choiceResults: number[];
+  wordResults?: number[];
+  onTextCommit: (slot: number, text: string) => void;
+  onChoiceCommit: (slot: number, value: number) => void;
+  onWordCommit: (slot: number, value: number) => void;
 }) {
   const count = recordKind === "simple" ? 4 : 9;
   const maxLength = recordKind === "simple" ? 79 : 39;
   return (
-    <CollapsibleSection title="Choice / Response Text Buffers" eyebrow="Classic Pascal text" count={`${count} buffers, ${maxLength} display bytes each`} density="compact" className="script-encounter-text-section" defaultOpen>
-      <p className="script-encounter-text-note">
-        Realmz stores these as Pascal text buffers inside the encounter record. Providence shows the display text and writes the hidden length byte on export.
-      </p>
-      <div className="script-encounter-text-grid">
-        {Array.from({ length: count }, (_, slot) => {
+    <section className="encounter-result-editor">
+      <header>
+        <div>
+          <strong>{recordKind === "simple" ? "Player Options" : "Encounter Bar Options"}</strong>
+          <small>{count} classic Pascal text buffers, {maxLength} display bytes each</small>
+        </div>
+      </header>
+      <div className="encounter-result-table">
+        {Array.from({ length: 4 }, (_, slot) => {
           const text = texts[slot] ?? "";
           return (
-            <label key={slot} className="script-encounter-text-field">
-              <span>
-                {encounterTextBufferLabel(recordKind, slot)}
-              </span>
-              <textarea
-                defaultValue={text}
-                maxLength={maxLength}
-                onBlur={(event) => onCommit(slot, event.currentTarget.value)}
-              />
-              <small>
-                {text.length}/{maxLength}
-              </small>
-            </label>
+            <div key={slot} className="encounter-result-row">
+              <b>{recordKind === "simple" ? `Option ${slot}` : `Action ${slot}`}</b>
+              <label className="script-encounter-text-field">
+                <span>{encounterTextBufferLabel(recordKind, slot)}</span>
+                <textarea
+                  defaultValue={text}
+                  maxLength={maxLength}
+                  onBlur={(event) => onTextCommit(slot, event.currentTarget.value)}
+                />
+                <small>{text.length}/{maxLength}</small>
+              </label>
+              <NumberField label="Result #" value={choiceResults[slot] ?? 0} onCommit={(value) => onChoiceCommit(slot, value)} compact />
+            </div>
           );
         })}
       </div>
-    </CollapsibleSection>
+      {recordKind === "complex" && (
+        <div className="encounter-result-table secondary">
+          <header>
+            <strong>Word / Phrase Results</strong>
+            <small>Complex encounters can also branch from typed words or phrases.</small>
+          </header>
+          {Array.from({ length: 4 }, (_, wordSlot) => {
+            const textSlot = wordSlot + 4;
+            const text = texts[textSlot] ?? "";
+            return (
+              <div key={wordSlot} className="encounter-result-row">
+                <b>{`Word ${wordSlot}`}</b>
+                <label className="script-encounter-text-field">
+                  <span>{encounterTextBufferLabel(recordKind, textSlot)}</span>
+                  <textarea
+                    defaultValue={text}
+                    maxLength={maxLength}
+                    onBlur={(event) => onTextCommit(textSlot, event.currentTarget.value)}
+                  />
+                  <small>{text.length}/{maxLength}</small>
+                </label>
+                <NumberField label="Result #" value={wordResults?.[wordSlot] ?? 0} onCommit={(value) => onWordCommit(wordSlot, value)} compact />
+              </div>
+            );
+          })}
+          <label className="script-encounter-text-field encounter-word-answer">
+            <span>{encounterTextBufferLabel(recordKind, 8)}</span>
+              <textarea
+                defaultValue={texts[8] ?? ""}
+                maxLength={maxLength}
+                onBlur={(event) => onTextCommit(8, event.currentTarget.value)}
+              />
+            <small>{(texts[8] ?? "").length}/{maxLength}</small>
+            </label>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -2484,6 +2661,8 @@ function ReferenceIdField({
   opcode,
   value,
   createRecordType,
+  compact = false,
+  showSelectedResult = true,
   onCommit,
   onCreateTarget
 }: {
@@ -2494,6 +2673,8 @@ function ReferenceIdField({
   opcode: number;
   value: number;
   createRecordType?: RealmzTargetRecordKind;
+  compact?: boolean;
+  showSelectedResult?: boolean;
   onCommit: (value: number) => void;
   onCreateTarget?: (id: number) => void;
 }) {
@@ -2528,33 +2709,37 @@ function ReferenceIdField({
     setQuery("");
   };
   return (
-    <label className="script-reference-id-field">
+    <label className={compact ? "script-reference-id-field compact" : "script-reference-id-field"}>
       <span>{label}</span>
-      <input
-        value={query}
-        onFocus={() => setOptionsLoaded(true)}
-        onChange={(event) => {
-          setOptionsLoaded(true);
-          setQuery(event.currentTarget.value);
-        }}
-        placeholder={`Search ${label.toLowerCase()}...`}
-        aria-label={`Search ${label}`}
-      />
-      <div className="script-reference-results" aria-live="polite">
-        {query.trim() && resultOptions.length === 0 && <small>No matching {label.toLowerCase()} targets.</small>}
-        {(query.trim() ? resultOptions : selected ? [selected] : []).map((option) => (
-          <button
-            key={option.key}
-            type="button"
-            className={option.value === resolvedValue ? "selected" : ""}
-            onClick={() => selectTarget(option.value)}
-          >
-            <strong>{option.label}</strong>
-            <span>{[option.detail, option.summary, option.compatibility, option.sourceState].filter(Boolean).join(" | ")}</span>
-          </button>
-        ))}
-        {query.trim() && filteredOptions.length > resultOptions.length && <small>{filteredOptions.length - resultOptions.length} more match(es); keep typing to narrow.</small>}
-      </div>
+      {!compact && (
+        <>
+          <input
+            value={query}
+            onFocus={() => setOptionsLoaded(true)}
+            onChange={(event) => {
+              setOptionsLoaded(true);
+              setQuery(event.currentTarget.value);
+            }}
+            placeholder={`Search ${label.toLowerCase()}...`}
+            aria-label={`Search ${label}`}
+          />
+          <div className="script-reference-results" aria-live="polite">
+            {query.trim() && resultOptions.length === 0 && <small>No matching {label.toLowerCase()} targets.</small>}
+            {(query.trim() ? resultOptions : showSelectedResult && selected ? [selected] : []).map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                className={option.value === resolvedValue ? "selected" : ""}
+                onClick={() => selectTarget(option.value)}
+              >
+                <strong>{option.label}</strong>
+                <span>{[option.detail, option.summary, option.compatibility, option.sourceState].filter(Boolean).join(" | ")}</span>
+              </button>
+            ))}
+            {query.trim() && filteredOptions.length > resultOptions.length && <small>{filteredOptions.length - resultOptions.length} more match(es); keep typing to narrow.</small>}
+          </div>
+        </>
+      )}
       <select
         value={hasRawValue ? `raw:${resolvedValue}` : selected ? String(selected.value) : ""}
         onFocus={() => setOptionsLoaded(true)}
@@ -2605,6 +2790,12 @@ function updateEncounterActionRow(actions: EncounterActionRow[], slot: number, c
     next.set(slot, updated);
   }
   return [...next.values()].sort((a, b) => a.slot - b.slot);
+}
+
+function encounterVisibleActionSlots(actions: EncounterActionRow[]) {
+  const slots = new Set([0, 1, 2, 3]);
+  for (const action of actions) slots.add(action.slot);
+  return [...slots].filter((slot) => slot >= 0 && slot < 32).sort((a, b) => a - b);
 }
 
 function encounterTextBufferLabel(recordKind: "simple" | "complex", slot: number) {

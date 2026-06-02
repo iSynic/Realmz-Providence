@@ -599,43 +599,66 @@ export function ResourcePreviewWindow({
           </>
         )}
         {item.type === "resource" && (
-          <>
-            {resourcePreviewDataUrl(item.entity.summary) ? (
-              <ResourcePreviewMedia
-                kind={resourceKindFromSummary(item.entity.summary)}
-                preview={resourcePreviewDataUrl(item.entity.summary)}
-                label={item.entity.label}
-              />
-            ) : resourceSummaryText(item.entity.summary) ? (
-              <pre className="resource-detail-text">{resourceSummaryText(item.entity.summary)}</pre>
-            ) : (
-              <ResourcePreviewMedia kind={resourceKindFromSummary(item.entity.summary)} preview={null} label={item.entity.label} />
-            )}
-            <ResourceFactGrid rows={[
-              ["ID", item.entity.id],
-              ["Type", item.entity.type],
-              ["State", resourceStatus(item.entity)],
-              ["Source", item.entity.source],
-              ["Preview", previewStatusLabel(item.entity.summary)]
-            ]} />
-            {resourcePreviewSummaryRows(item.entity.summary).length > 0 && <ResourceFactGrid title="Preview Details" rows={resourcePreviewSummaryRows(item.entity.summary)} />}
-            <ResourcePreviewDiagnostics diagnostics={resourcePreviewDiagnostics(item.entity.summary)} />
-            <ResourceFactGrid title="Decoded Fields" rows={resourceDecodedRows(item.entity.summary)} />
-            {item.consumers.length > 0 && (
-              <div className="resource-usage-list">
-                <strong>Used By</strong>
-                {item.consumers.slice(0, 20).map((link) => (
-                  <button key={link.id} type="button" onClick={() => onSelectEntity(selectEntityFromId(link.from))}>
-                    {link.from}
-                    <small>{link.kind}</small>
-                  </button>
-                ))}
-              </div>
-            )}
-          </>
+          <ScenarioResourceDetail
+            item={item}
+            desktopRuntime={desktopRuntime}
+            projectDir={projectDir}
+            onSelectEntity={onSelectEntity}
+          />
         )}
       </div>
     </FloatingWorkbenchPanel>
+  );
+}
+
+function ScenarioResourceDetail({
+  item,
+  desktopRuntime,
+  projectDir,
+  onSelectEntity
+}: {
+  item: Extract<ResourcePreviewItem, { type: "resource" }>;
+  desktopRuntime: boolean;
+  projectDir: string;
+  onSelectEntity: (entity: SelectedEntity) => void;
+}) {
+  const rawPreview = resourcePreviewDataUrl(item.entity.summary);
+  const preview = useProjectPreview(rawPreview ?? "", desktopRuntime, projectDir);
+  return (
+    <>
+      {preview ? (
+        <ResourcePreviewMedia
+          kind={resourceKindFromSummary(item.entity.summary)}
+          preview={preview}
+          label={item.entity.label}
+        />
+      ) : resourceSummaryText(item.entity.summary) ? (
+        <pre className="resource-detail-text">{resourceSummaryText(item.entity.summary)}</pre>
+      ) : (
+        <ResourcePreviewMedia kind={resourceKindFromSummary(item.entity.summary)} preview={null} label={item.entity.label} />
+      )}
+      <ResourceFactGrid rows={[
+        ["ID", item.entity.id],
+        ["Type", item.entity.type],
+        ["State", resourceStatus(item.entity)],
+        ["Source", item.entity.source],
+        ["Preview", previewStatusLabel(item.entity.summary)]
+      ]} />
+      {resourcePreviewSummaryRows(item.entity.summary).length > 0 && <ResourceFactGrid title="Preview Details" rows={resourcePreviewSummaryRows(item.entity.summary)} />}
+      <ResourcePreviewDiagnostics diagnostics={resourcePreviewDiagnostics(item.entity.summary)} />
+      <ResourceFactGrid title="Decoded Fields" rows={resourceDecodedRows(item.entity.summary)} />
+      {item.consumers.length > 0 && (
+        <div className="resource-usage-list">
+          <strong>Used By</strong>
+          {item.consumers.slice(0, 20).map((link) => (
+            <button key={link.id} type="button" onClick={() => onSelectEntity(selectEntityFromId(link.from))}>
+              {link.from}
+              <small>{link.kind}</small>
+            </button>
+          ))}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -686,12 +709,15 @@ export function ManagedResourceDetail({
 }
 
 export function ResourcePreviewMedia({ kind, preview, label }: { kind: ManagedAssetKind; preview: string | null; label: string }) {
-  if (preview && kind === "sound") return <audio className="resource-detail-audio" src={preview} controls preload="metadata" />;
-  if (preview && kind === "text") {
-    const text = decodeTextDataUrl(preview);
+  const [failedPreview, setFailedPreview] = useState<string | null>(null);
+  useEffect(() => setFailedPreview(null), [preview]);
+  const usablePreview = preview && preview !== failedPreview ? preview : null;
+  if (usablePreview && kind === "sound") return <audio className="resource-detail-audio" src={usablePreview} controls preload="metadata" />;
+  if (usablePreview && kind === "text") {
+    const text = decodeTextDataUrl(usablePreview);
     if (text != null) return <pre className="resource-detail-text" aria-label={label}>{text}</pre>;
   }
-  if (preview) return <img className="resource-detail-image" src={preview} alt={label} />;
+  if (usablePreview) return <img className="resource-detail-image" src={usablePreview} alt={label} onError={() => setFailedPreview(usablePreview)} />;
   return (
     <div className="resource-detail-missing">
       {kind === "sound" ? <Music size={28} /> : kind === "text" ? <FileText size={28} /> : <ImageIcon size={28} />}
