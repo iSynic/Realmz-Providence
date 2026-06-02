@@ -1,7 +1,7 @@
 {
   "name": "realmz-providence",
   "productName": "Realmz Providence",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Modern Realmz scenario editor and creator.",
   "private": true,
   "type": "module",
@@ -11,6 +11,8 @@
     "typecheck": "tsc --noEmit",
     "build": "vite build",
     "dist": "tauri build",
+    "release:desktop-gate": "powershell -ExecutionPolicy Bypass -File scripts/run_desktop_release_gate.ps1",
+    "release:desktop-gate:windows": "powershell -ExecutionPolicy Bypass -File scripts/run_desktop_release_gate.ps1 -SkipLinux",
     "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml",
     "archaeology:roundtrip-audit": "cargo run --manifest-path src-tauri/Cargo.toml --example no_edit_roundtrip_audit -- --output docs/generated/scenario-byte-roundtrip-ledger.json",
     "archaeology:byte-coverage": "node scripts/generate_scenario_byte_coverage.mjs",

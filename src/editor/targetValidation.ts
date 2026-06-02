@@ -158,18 +158,20 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
       if (hasNonAscii(text)) issues.push(slotIssue("warning", recordType, recordId, slot, "encounter-text-non-ascii", "Encounter text contains non-ASCII characters.", "Classic encounter text is byte-oriented; non-ASCII characters may not round-trip as intended."));
     }
     if (recordType === "simpleEncounter") {
-      if (record.choiceResults.length > 4) issues.push(recordIssue("error", recordType, recordId, "choice-result-count", "Simple encounter has too many choice result rows.", "Data ED stores four choice result bytes."));
+      if ((record.choiceResults ?? []).length > 4) issues.push(recordIssue("error", recordType, recordId, "choice-result-count", "Simple encounter has too many choice result rows.", "Data ED stores four choice result bytes."));
     } else {
       const complex = record as Project["complexEncounters"][number];
-      for (const [label, value] of [["action result", complex.actionResult], ["word result", complex.wordResult]] as const) {
+      const actionResult = complex.actionResult ?? signedByteLike((complex.choiceResults ?? [])[0] ?? 0);
+      const wordResult = complex.wordResult ?? signedByteLike((complex.wordResults ?? [])[0] ?? 0);
+      for (const [label, value] of [["action result", actionResult], ["word result", wordResult]] as const) {
         if (!isSignedByte(value)) issues.push(recordIssue("error", recordType, recordId, `complex-${label.replace(/\W+/g, "-")}`, `Complex encounter ${label} is outside signed-byte range.`, `${label} has ${value}; Data ED2 stores this as one byte.`));
       }
       for (const [label, values, max] of [
-        ["group flags", complex.groups, 8],
-        ["spell IDs", complex.spellIds, 10],
-        ["spell results", complex.spellResults, 10],
-        ["item IDs", complex.itemIds, 5],
-        ["item results", complex.itemResults, 5]
+        ["group flags", complex.groups ?? [], 8],
+        ["spell IDs", complex.spellIds ?? [], 10],
+        ["spell results", complex.spellResults ?? [], 10],
+        ["item IDs", complex.itemIds ?? [], 5],
+        ["item results", complex.itemResults ?? [], 5]
       ] as const) {
         if (values.length > max) issues.push(recordIssue("error", recordType, recordId, `complex-${label.replace(/\W+/g, "-")}`, `Complex encounter has too many ${label}.`, `Data ED2 stores ${max} ${label}.`));
         for (const [slot, value] of values.entries()) {
@@ -319,6 +321,10 @@ function isI16(value: number) {
 
 function isSignedByte(value: number) {
   return Number.isInteger(value) && value >= -128 && value <= 127;
+}
+
+function signedByteLike(value: number) {
+  return value > 127 ? value - 256 : value;
 }
 
 function asciiByteLength(value: string) {

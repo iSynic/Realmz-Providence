@@ -2537,8 +2537,15 @@ pub fn parse_complex_encounter_records(buffer: &[u8]) -> Vec<ComplexEncounterRec
         .map(|(id, start, record)| ComplexEncounterRecord {
             id,
             actions: parse_encounter_actions(record),
-            choice_results: record[96..100].to_vec(),
-            word_results: record[100..104].to_vec(),
+            choice_results: vec![record[96], 0, 0, 0],
+            word_results: vec![record[97], 0, 0, 0],
+            action_result: record[96] as i8,
+            word_result: record[97] as i8,
+            groups: signed_bytes(&record[98..106]),
+            spell_ids: (0..10).map(|slot| i16_be(record, 106 + slot * 2)).collect(),
+            spell_results: signed_bytes(&record[126..136]),
+            item_ids: (0..5).map(|slot| i16_be(record, 136 + slot * 2)).collect(),
+            item_results: signed_bytes(&record[146..151]),
             can_back_out: record[151] != 0,
             thief: record[152] != 0,
             max_times: record[153] as i8,
@@ -2563,10 +2570,17 @@ pub fn write_complex_encounters(records: &[ComplexEncounterRecord]) -> Result<Ve
             return Ok(());
         }
         write_encounter_actions(buffer, &record.actions)?;
-        for slot in 0..4 {
-            buffer[96 + slot] = record.choice_results.get(slot).copied().unwrap_or(0);
-            buffer[100 + slot] = record.word_results.get(slot).copied().unwrap_or(0);
+        buffer[96] = fallback_i8(record.action_result, &record.choice_results, 0) as u8;
+        buffer[97] = fallback_i8(record.word_result, &record.word_results, 0) as u8;
+        write_i8_array(buffer, 98, &record.groups, 8);
+        for slot in 0..10 {
+            write_i16_be(buffer, 106 + slot * 2, record.spell_ids.get(slot).copied().unwrap_or(0));
         }
+        write_i8_array(buffer, 126, &record.spell_results, 10);
+        for slot in 0..5 {
+            write_i16_be(buffer, 136 + slot * 2, record.item_ids.get(slot).copied().unwrap_or(0));
+        }
+        write_i8_array(buffer, 146, &record.item_results, 5);
         buffer[151] = u8::from(record.can_back_out);
         buffer[152] = u8::from(record.thief);
         buffer[153] = record.max_times as u8;
@@ -2829,6 +2843,14 @@ fn write_encounter_actions(buffer: &mut [u8], actions: &[EncounterActionRow]) ->
 
 fn signed_bytes(buffer: &[u8]) -> Vec<i8> {
     buffer.iter().map(|value| *value as i8).collect()
+}
+
+fn fallback_i8(value: i8, values: &[u8], index: usize) -> i8 {
+    if value != 0 {
+        value
+    } else {
+        values.get(index).copied().unwrap_or(0) as i8
+    }
 }
 
 fn read_i16_array(buffer: &[u8], offset: usize, count: usize) -> Vec<i16> {
@@ -4162,8 +4184,13 @@ mod tests {
             raw_code: -2,
             id: 0x0304,
         });
-        encounters[1].choice_results[1] = 6;
-        encounters[1].word_results[2] = 7;
+        encounters[1].action_result = 6;
+        encounters[1].word_result = 7;
+        encounters[1].groups[4] = -8;
+        encounters[1].spell_ids[0] = 0x1112;
+        encounters[1].spell_results[1] = -9;
+        encounters[1].item_ids[2] = 0x1314;
+        encounters[1].item_results[3] = -10;
         encounters[1].can_back_out = true;
         encounters[1].thief = true;
         encounters[1].max_times = -3;
@@ -4175,10 +4202,8 @@ mod tests {
 
         let output = write_complex_encounters(&encounters).unwrap();
         assert_eq!(output.len(), input.len());
-        assert_eq!(
-            &output[encounter_start + 104..encounter_start + 151],
-            &input[encounter_start + 104..encounter_start + 151]
-        );
+        assert_eq!(output[encounter_start + 104], 0xA5);
+        assert_eq!(output[encounter_start + 105], 0xA5);
         assert_eq!(output[encounter_start + 157], 0x5A);
         assert_eq!(
             changed_offsets(&input, &output),
@@ -4186,8 +4211,15 @@ mod tests {
                 encounter_start + 4,
                 encounter_start + 40,
                 encounter_start + 41,
+                encounter_start + 96,
                 encounter_start + 97,
                 encounter_start + 102,
+                encounter_start + 106,
+                encounter_start + 107,
+                encounter_start + 127,
+                encounter_start + 140,
+                encounter_start + 141,
+                encounter_start + 149,
                 encounter_start + 151,
                 encounter_start + 152,
                 encounter_start + 153,
@@ -4840,6 +4872,13 @@ mod tests {
             }],
             choice_results: vec![1, 0, 0, 0],
             word_results: vec![2, 0, 0, 0],
+            action_result: 1,
+            word_result: 2,
+            groups: vec![3, 0, -1, 0, 0, 0, 0, 0],
+            spell_ids: vec![1109, 3605, 0, 0, 0, 0, 0, 0, 0, 0],
+            spell_results: vec![1, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+            item_ids: vec![641, 0, 0, 0, 0],
+            item_results: vec![1, 0, 0, 0, 0],
             can_back_out: true,
             thief: true,
             max_times: 2,
@@ -4855,7 +4894,16 @@ mod tests {
         let complex_bytes = write_complex_encounters(&[complex]).unwrap();
         assert_eq!(complex_bytes[1], 5);
         assert_eq!(i16_be(&complex_bytes, 34), 10);
-        assert_eq!(complex_bytes[100], 2);
+        assert_eq!(complex_bytes[96], 1);
+        assert_eq!(complex_bytes[97], 2);
+        assert_eq!(complex_bytes[98], 3);
+        assert_eq!(complex_bytes[100] as i8, -1);
+        assert_eq!(i16_be(&complex_bytes, 106), 1109);
+        assert_eq!(i16_be(&complex_bytes, 108), 3605);
+        assert_eq!(complex_bytes[126], 1);
+        assert_eq!(complex_bytes[127], 3);
+        assert_eq!(i16_be(&complex_bytes, 136), 641);
+        assert_eq!(complex_bytes[146], 1);
         assert_eq!(complex_bytes[151], 1);
         assert_eq!(i16_be(&complex_bytes, 158), 66);
         assert_eq!(complex_bytes[160], 4);

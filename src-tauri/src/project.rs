@@ -1021,6 +1021,20 @@ pub struct ComplexEncounterRecord {
     pub actions: Vec<EncounterActionRow>,
     pub choice_results: Vec<u8>,
     pub word_results: Vec<u8>,
+    #[serde(default)]
+    pub action_result: i8,
+    #[serde(default)]
+    pub word_result: i8,
+    #[serde(default)]
+    pub groups: Vec<i8>,
+    #[serde(default)]
+    pub spell_ids: Vec<i16>,
+    #[serde(default)]
+    pub spell_results: Vec<i8>,
+    #[serde(default)]
+    pub item_ids: Vec<i16>,
+    #[serde(default)]
+    pub item_results: Vec<i8>,
     pub can_back_out: bool,
     pub thief: bool,
     pub max_times: i8,
