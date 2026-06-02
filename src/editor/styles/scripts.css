@@ -2301,6 +2301,246 @@
 
 
 
+.thief-encounter-editor {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 8px;
+}
+
+
+
+.rogue-action-matrix,
+.rogue-prompt-panel,
+.rogue-trap-panel {
+  display: grid;
+  gap: 8px;
+  border: 1px solid #243542;
+  border-radius: 6px;
+  background: #0b141c;
+  padding: 8px;
+}
+
+
+
+.rogue-action-matrix > header,
+.rogue-prompt-panel > header,
+.rogue-trap-panel > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: end;
+}
+
+
+
+.rogue-action-matrix > header div,
+.rogue-prompt-panel > header,
+.rogue-trap-panel > header {
+  min-width: 0;
+}
+
+
+
+.rogue-action-matrix strong,
+.rogue-prompt-panel strong,
+.rogue-trap-panel strong {
+  color: #e7f3ff;
+  font-size: 11px;
+}
+
+
+
+.rogue-action-matrix small,
+.rogue-prompt-panel small,
+.rogue-trap-panel small {
+  color: #8298ad;
+  font-size: 10px;
+  line-height: 1.3;
+}
+
+
+
+.rogue-action-table {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+
+
+.rogue-action-table-header,
+.rogue-action-row {
+  display: grid;
+  grid-template-columns:
+    minmax(122px, 1.2fr)
+    minmax(54px, 0.44fr)
+    minmax(58px, 0.48fr)
+    minmax(58px, 0.48fr)
+    minmax(108px, 1fr)
+    minmax(108px, 1fr)
+    minmax(108px, 1fr)
+    minmax(108px, 1fr);
+  gap: 4px;
+  align-items: center;
+  min-width: 760px;
+}
+
+
+
+.rogue-action-table-header {
+  padding: 0 4px;
+  color: #7fb8ec;
+  font-size: 8px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+
+
+.rogue-action-row {
+  border: 1px solid #223443;
+  border-radius: 4px;
+  background: #08131b;
+  padding: 4px;
+}
+
+
+
+.rogue-action-row.secondary {
+  background: #0a1118;
+}
+
+
+
+.rogue-action-enabled {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: #e7f3ff;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+
+
+.rogue-action-enabled input {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 auto;
+}
+
+
+
+.rogue-action-enabled span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+
+.rogue-action-row .script-number-field,
+.rogue-action-row .script-reference-id-field {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+
+
+.rogue-action-row .script-number-field span,
+.rogue-action-row .script-reference-id-field > span {
+  display: none;
+}
+
+
+
+.rogue-action-row .script-number-field.compact input,
+.rogue-action-row .script-reference-id-field.compact select,
+.rogue-action-row .script-reference-id-field.compact input {
+  min-height: 22px;
+  padding: 2px 4px;
+  font-size: 10px;
+}
+
+
+
+.rogue-action-row .script-reference-id-field.compact {
+  grid-template-columns: minmax(0, 1fr) minmax(38px, 0.36fr);
+  gap: 3px;
+}
+
+
+
+.rogue-action-row .script-reference-id-field.compact small,
+.rogue-action-row .script-reference-id-field.compact button {
+  display: none;
+}
+
+
+
+.rogue-encounter-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.45fr) minmax(420px, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+
+
+
+.rogue-prompt-panel .script-reference-id-field.compact {
+  grid-template-columns: minmax(0, 1fr) minmax(58px, 0.24fr);
+}
+
+
+
+.rogue-trap-fields {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  align-items: end;
+}
+
+
+
+.rogue-trap-fields .script-reference-id-field.compact {
+  grid-template-columns: minmax(0, 1fr) minmax(58px, 0.3fr);
+}
+
+
+
+.rogue-toggle-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+
+
+.rogue-toggle-strip .script-target-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 24px;
+  border: 1px solid #263746;
+  border-radius: 4px;
+  background: #09121a;
+  padding: 4px 6px;
+}
+
+
+
+.rogue-toggle-strip .script-target-checkbox span {
+  color: #dbefff;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+
+
 .simple-encounter-action-matrix {
   grid-column: 1 / -1;
   display: grid;
@@ -2455,6 +2695,10 @@
   .complex-encounter-action-options {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
+
+  .rogue-encounter-detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 980px) {
@@ -2473,8 +2717,15 @@
   .complex-encounter-action-options,
   .complex-encounter-tool-grid,
   .complex-encounter-test-grid > div,
-  .complex-encounter-result-strip {
+  .complex-encounter-result-strip,
+  .rogue-trap-fields,
+  .rogue-toggle-strip {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rogue-action-table-header,
+  .rogue-action-row {
+    min-width: 720px;
   }
 
   .encounter-result-row > b {
@@ -2583,6 +2834,73 @@
 .script-reference-id-field > small,
 .script-reference-id-field > .btn {
   grid-column: 1 / -1;
+}
+
+
+
+.rogue-action-row .script-number-field.compact {
+  gap: 0;
+}
+
+
+
+.rogue-action-row .script-number-field.compact span,
+.rogue-action-row .script-reference-id-field.compact > span {
+  display: none;
+}
+
+
+
+.rogue-action-row .script-number-field.compact input,
+.rogue-action-row .script-reference-id-field.compact select,
+.rogue-action-row .script-reference-id-field.compact input {
+  min-height: 21px;
+  padding: 1px 4px;
+  font-size: 10px;
+  line-height: 1;
+}
+
+
+
+.rogue-action-row .script-reference-id-field.compact {
+  grid-template-columns: minmax(0, 1fr) minmax(38px, 0.34fr);
+  gap: 3px;
+}
+
+
+
+.rogue-action-row .script-reference-id-field.compact > input[type="number"] {
+  display: block;
+}
+
+
+
+.rogue-action-row .script-reference-id-field.compact > small,
+.rogue-action-row .script-reference-id-field.compact > .btn {
+  display: none;
+}
+
+
+
+.rogue-action-row .script-reference-id-field.compact > select,
+.rogue-action-row .script-reference-id-field.compact > input[type="number"] {
+  grid-column: auto;
+}
+
+
+
+.rogue-prompt-panel .script-reference-id-field.compact,
+.rogue-trap-fields .script-reference-id-field.compact {
+  grid-template-columns: minmax(0, 1fr) minmax(58px, 0.26fr);
+}
+
+
+
+.rogue-prompt-panel .script-reference-id-field.compact > select,
+.rogue-prompt-panel .script-reference-id-field.compact > input[type="number"],
+.rogue-trap-fields .script-reference-id-field.compact > select,
+.rogue-trap-fields .script-reference-id-field.compact > input[type="number"] {
+  grid-column: auto;
 }
 
 

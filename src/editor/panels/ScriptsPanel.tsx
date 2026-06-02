@@ -2300,15 +2300,17 @@ function SimpleEncounterActionCell({
 }
 
 const ROGUE_ACTION_LABELS = [
-  "Rogue Check 0",
+  "Acrobatic Act",
   "Detect Trap",
   "Disarm Trap",
-  "Acrobatic Act",
   "Force Lock",
   "Pick Lock",
   "Open Lock Magic",
-  "Disarm Trap Magic"
+  "Disarm Trap Magic",
+  "Rogue Support"
 ];
+
+const ROGUE_PRIMARY_ACTIONS = 5;
 
 function ThiefEncounterShell({
   project,
@@ -2326,62 +2328,116 @@ function ThiefEncounterShell({
   const update = (changes: Extract<ProjectCommand, { kind: "updateThiefEncounterRecord" }>["changes"]) => {
     onApplyCommand?.({ kind: "updateThiefEncounterRecord", label: "Update rogue encounter", id, changes });
   };
+  const enabledCount = (record.typeFlags ?? []).slice(0, 8).filter(Boolean).length;
+  const trapped = Boolean(record.typeFlags?.[9]);
+  const rogueOnly = Boolean(record.typeFlags?.[8]);
   return (
-    <div className="script-target-grid thief-encounter-editor">
-      <div className="script-shop-source-note">
-        <strong>Rogue action setup</strong>
-        <span>Complex encounters can call this record when the player chooses a rogue action. Detecting a trap can reveal Disarm Trap; failed actions can spring the trap.</span>
-      </div>
-      <ReferenceIdField
-        project={project}
-        catalog={catalog}
-        label="Prompt String"
-        emptyLabel="No prompt string"
-        opcode={1}
-        value={record.prompts?.[0] ?? 0}
-        createRecordType="message"
-        onCommit={(value) => update({ prompts: updateArraySlot(record.prompts ?? [], 0, value, 3) })}
-        onCreateTarget={(targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create rogue prompt", recordType: "message", id: targetId })}
-      />
-      <NumberField label="Prompt Sound" value={record.promptSounds?.[0] ?? 0} onCommit={(value) => update({ promptSounds: updateArraySlot(record.promptSounds ?? [], 0, value, 3) })} />
-      <NumberField label="Tumblers" value={record.tumblers} onCommit={(tumblers) => update({ tumblers })} />
-      <NumberField label="Trap Damage Low" value={record.lowDamage} onCommit={(lowDamage) => update({ lowDamage })} />
-      <NumberField label="Trap Damage High" value={record.highDamage} onCommit={(highDamage) => update({ highDamage })} />
-      <NumberField label="Trap Spell" value={record.spell} onCommit={(spell) => update({ spell })} />
-      <NumberField label="Trap Sound" value={record.prompts?.[1] ?? 0} onCommit={(value) => update({ prompts: updateArraySlot(record.prompts ?? [], 1, value, 3) })} />
-      <NumberField label="Spell Power" value={record.prompts?.[2] ?? 0} onCommit={(value) => update({ prompts: updateArraySlot(record.prompts ?? [], 2, value, 3) })} />
-      <NumberField label="% / Level To Knock" value={record.promptSounds?.[1] ?? 0} onCommit={(value) => update({ promptSounds: updateArraySlot(record.promptSounds ?? [], 1, value, 3) })} />
-      <NumberField label="% / Level To Disarm" value={record.promptSounds?.[2] ?? 0} onCommit={(value) => update({ promptSounds: updateArraySlot(record.promptSounds ?? [], 2, value, 3) })} />
-      <div className="script-encounter-action-grid rogue-action-grid">
-        {Array.from({ length: 8 }, (_, slot) => (
+    <div className="thief-encounter-editor">
+      <section className="rogue-action-matrix">
+        <header>
+          <div>
+            <strong>Rogue Action Tests</strong>
+            <small>{enabledCount}/8 enabled; success/fail columns return result codes, messages, and sounds.</small>
+          </div>
+        </header>
+        <div className="rogue-action-table" role="table" aria-label="Rogue action tests">
+          <div className="rogue-action-table-header" role="row">
+            <span>Action Required</span>
+            <span>% Mod</span>
+            <span>Result Success</span>
+            <span>Result Fail</span>
+            <span>Text Success</span>
+            <span>Text Fail</span>
+            <span>Sound Success</span>
+            <span>Sound Fail</span>
+          </div>
+          {Array.from({ length: 8 }, (_, slot) => (
           <RogueActionRow
             key={slot}
             slot={slot}
             record={record}
             project={project}
             catalog={catalog}
+            primary={slot < ROGUE_PRIMARY_ACTIONS}
             onUpdate={update}
             onCreateMessage={(targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create rogue message", recordType: "message", id: targetId })}
           />
-        ))}
-      </div>
-      <CollapsibleSection title="Rogue State Flags" eyebrow="advanced" count="10 flags" density="compact" className="script-encounter-text-section">
-        <p className="script-encounter-text-note">
-          These flags control which rogue actions are initially available and which trap states Realmz can change during play. Imported scenarios may rely on exact combinations.
-        </p>
-        <div className="script-encounter-outcome-grid">
-          {Array.from({ length: 10 }, (_, slot) => (
-            <label key={slot} className="script-target-checkbox">
-              <span>{rogueFlagLabel(slot)}</span>
-              <input
-                type="checkbox"
-                checked={Boolean(record.typeFlags?.[slot])}
-                onChange={(event) => update({ typeFlags: updateArraySlot(record.typeFlags ?? [], slot, event.currentTarget.checked, 10) })}
-              />
-            </label>
           ))}
         </div>
-      </CollapsibleSection>
+      </section>
+      <section className="rogue-encounter-detail-grid">
+        <div className="rogue-prompt-panel">
+          <header>
+            <strong>Encounter Prompt</strong>
+            <small>Shown when this rogue encounter starts.</small>
+          </header>
+          <ReferenceIdField
+            project={project}
+            catalog={catalog}
+            label="Prompt String"
+            emptyLabel="No prompt string"
+            opcode={1}
+            value={record.prompts?.[0] ?? 0}
+            createRecordType="message"
+            compact
+            onCommit={(value) => update({ prompts: updateArraySlot(record.prompts ?? [], 0, value, 3) })}
+            onCreateTarget={(targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create rogue prompt", recordType: "message", id: targetId })}
+          />
+          <ReferenceIdField
+            project={project}
+            catalog={catalog}
+            label="Prompt Sound"
+            emptyLabel="No prompt sound"
+            opcode={9}
+            value={record.promptSounds?.[0] ?? 0}
+            compact
+            onCommit={(value) => update({ promptSounds: updateArraySlot(record.promptSounds ?? [], 0, value, 3) })}
+          />
+        </div>
+        <div className="rogue-trap-panel">
+          <header>
+            <strong>Trap / Lock Setup</strong>
+            <small>{trapped ? "Trap armed" : "No armed trap"}; affects {rogueOnly ? "the acting rogue only" : "the whole party"}.</small>
+          </header>
+          <div className="rogue-toggle-strip">
+            <label className="script-target-checkbox">
+              <span>Is Trapped</span>
+              <input
+                type="checkbox"
+                checked={trapped}
+                onChange={(event) => update({ typeFlags: updateArraySlot(record.typeFlags ?? [], 9, event.currentTarget.checked, 10) })}
+              />
+            </label>
+            <label className="script-target-checkbox">
+              <span>Trap Affects Rogue Only</span>
+              <input
+                type="checkbox"
+                checked={rogueOnly}
+                onChange={(event) => update({ typeFlags: updateArraySlot(record.typeFlags ?? [], 8, event.currentTarget.checked, 10) })}
+              />
+            </label>
+          </div>
+          <div className="rogue-trap-fields">
+            <NumberField label="Lock Tumblers" value={record.tumblers} onCommit={(tumblers) => update({ tumblers })} compact />
+            <NumberField label="Trap Damage Low" value={record.lowDamage} onCommit={(lowDamage) => update({ lowDamage })} compact />
+            <NumberField label="Trap Damage High" value={record.highDamage} onCommit={(highDamage) => update({ highDamage })} compact />
+            <ReferenceIdField
+              project={project}
+              catalog={catalog}
+              label="Trap Sound"
+              emptyLabel="No trap sound"
+              opcode={9}
+              value={record.prompts?.[1] ?? 0}
+              compact
+              onCommit={(value) => update({ prompts: updateArraySlot(record.prompts ?? [], 1, value, 3) })}
+            />
+            <NumberField label="Trap Spell" value={record.spell} onCommit={(spell) => update({ spell })} compact />
+            <NumberField label="Power Level" value={record.prompts?.[2] ?? 0} onCommit={(value) => update({ prompts: updateArraySlot(record.prompts ?? [], 2, value, 3) })} compact />
+            <NumberField label="% / Level To Knock" value={record.promptSounds?.[1] ?? 0} onCommit={(value) => update({ promptSounds: updateArraySlot(record.promptSounds ?? [], 1, value, 3) })} compact />
+            <NumberField label="% / Level To Disarm" value={record.promptSounds?.[2] ?? 0} onCommit={(value) => update({ promptSounds: updateArraySlot(record.promptSounds ?? [], 2, value, 3) })} compact />
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
@@ -2391,6 +2447,7 @@ function RogueActionRow({
   record,
   project,
   catalog,
+  primary,
   onUpdate,
   onCreateMessage
 }: {
@@ -2398,49 +2455,69 @@ function RogueActionRow({
   record: Project["thiefEncounters"][number];
   project: Project;
   catalog?: LibraryCatalog | null;
+  primary: boolean;
   onUpdate: (changes: Extract<ProjectCommand, { kind: "updateThiefEncounterRecord" }>["changes"]) => void;
   onCreateMessage: (targetId: number) => void;
 }) {
   return (
-    <div className="script-encounter-action-row">
-      <header>
-        <strong>{ROGUE_ACTION_LABELS[slot] ?? `Rogue Action ${slot}`}</strong>
-      </header>
-      <NumberField label="% Modifier" value={record.modifiers?.[slot] ?? 0} onCommit={(value) => onUpdate({ modifiers: updateArraySlot(record.modifiers ?? [], slot, value, 8) })} />
-      <NumberField label="Success Result" value={record.successCodes?.[slot] ?? 0} onCommit={(value) => onUpdate({ successCodes: updateArraySlot(record.successCodes ?? [], slot, value, 8) })} />
-      <NumberField label="Failure Result" value={record.failureCodes?.[slot] ?? 0} onCommit={(value) => onUpdate({ failureCodes: updateArraySlot(record.failureCodes ?? [], slot, value, 8) })} />
+    <div className={primary ? "rogue-action-row" : "rogue-action-row secondary"} role="row">
+      <label className="rogue-action-enabled">
+        <input
+          type="checkbox"
+          checked={Boolean(record.typeFlags?.[slot])}
+          onChange={(event) => onUpdate({ typeFlags: updateArraySlot(record.typeFlags ?? [], slot, event.currentTarget.checked, 10) })}
+        />
+        <span>{ROGUE_ACTION_LABELS[slot] ?? `Rogue Action ${slot}`}</span>
+      </label>
+      <NumberField label="% Mod" value={record.modifiers?.[slot] ?? 0} onCommit={(value) => onUpdate({ modifiers: updateArraySlot(record.modifiers ?? [], slot, value, 8) })} compact />
+      <NumberField label="Success Result" value={record.successCodes?.[slot] ?? 0} onCommit={(value) => onUpdate({ successCodes: updateArraySlot(record.successCodes ?? [], slot, value, 8) })} compact />
+      <NumberField label="Fail Result" value={record.failureCodes?.[slot] ?? 0} onCommit={(value) => onUpdate({ failureCodes: updateArraySlot(record.failureCodes ?? [], slot, value, 8) })} compact />
       <ReferenceIdField
         project={project}
         catalog={catalog}
-        label="Success String"
+        label="Success Text"
         emptyLabel="No success string"
         opcode={1}
         value={record.successText?.[slot] ?? 0}
         createRecordType="message"
+        compact
         onCommit={(value) => onUpdate({ successText: updateArraySlot(record.successText ?? [], slot, value, 8) })}
         onCreateTarget={onCreateMessage}
       />
       <ReferenceIdField
         project={project}
         catalog={catalog}
-        label="Failure String"
+        label="Fail Text"
         emptyLabel="No failure string"
         opcode={1}
         value={record.failureText?.[slot] ?? 0}
         createRecordType="message"
+        compact
         onCommit={(value) => onUpdate({ failureText: updateArraySlot(record.failureText ?? [], slot, value, 8) })}
         onCreateTarget={onCreateMessage}
       />
-      <NumberField label="Success Sound" value={record.successSounds?.[slot] ?? 0} onCommit={(value) => onUpdate({ successSounds: updateArraySlot(record.successSounds ?? [], slot, value, 8) })} />
-      <NumberField label="Failure Sound" value={record.failureSounds?.[slot] ?? 0} onCommit={(value) => onUpdate({ failureSounds: updateArraySlot(record.failureSounds ?? [], slot, value, 8) })} />
+      <ReferenceIdField
+        project={project}
+        catalog={catalog}
+        label="Success Sound"
+        emptyLabel="No success sound"
+        opcode={9}
+        value={record.successSounds?.[slot] ?? 0}
+        compact
+        onCommit={(value) => onUpdate({ successSounds: updateArraySlot(record.successSounds ?? [], slot, value, 8) })}
+      />
+      <ReferenceIdField
+        project={project}
+        catalog={catalog}
+        label="Fail Sound"
+        emptyLabel="No failure sound"
+        opcode={9}
+        value={record.failureSounds?.[slot] ?? 0}
+        compact
+        onCommit={(value) => onUpdate({ failureSounds: updateArraySlot(record.failureSounds ?? [], slot, value, 8) })}
+      />
     </div>
   );
-}
-
-function rogueFlagLabel(slot: number) {
-  if (slot === 8) return "Trap affects whole party";
-  if (slot === 9) return "Trap is armed";
-  return ROGUE_ACTION_LABELS[slot] ?? `Flag ${slot}`;
 }
 
 function TimedEncounterShell({
