@@ -73,6 +73,7 @@ export async function readScenarioDirectory(handle: BrowserDirectoryHandle, trac
   const files = new Map<string, Uint8Array>();
   const sourceFiles: SourceFile[] = [];
   const tracked = new Set(trackedFiles);
+  const markerName = handle.name;
 
   for await (const [name, entry] of handle.entries()) {
     if (entry.kind !== "file") continue;
@@ -87,7 +88,7 @@ export async function readScenarioDirectory(handle: BrowserDirectoryHandle, trac
       role,
       editable: role === "supported-binary"
     });
-    if (tracked.has(name) || isResourceFileName(name)) {
+    if (tracked.has(name) || isResourceFileName(name) || name === markerName || isScenarioMarkerCandidate(name, bytes, tracked)) {
       files.set(name, bytes);
     }
   }
@@ -134,6 +135,7 @@ async function readScenarioFileSelection(selection: BrowserFileSelection, tracke
   const files = new Map<string, Uint8Array>();
   const sourceFiles: SourceFile[] = [];
   const tracked = new Set(trackedFiles);
+  const markerName = selection.name;
   for (const file of selection.files) {
     const name = fileBaseName(file);
     const relativePath = relativeSelectionPath(file);
@@ -148,7 +150,7 @@ async function readScenarioFileSelection(selection: BrowserFileSelection, tracke
       role,
       editable: role === "supported-binary"
     });
-    if (tracked.has(name) || isResourceFileName(name)) {
+    if (tracked.has(name) || isResourceFileName(name) || name === markerName || isScenarioMarkerCandidate(name, bytes, tracked)) {
       files.set(name, bytes);
     }
   }
@@ -192,6 +194,15 @@ function relativeSelectionPath(file: File) {
 
 function isResourceFileName(name: string) {
   return name === "Scenario" || name.endsWith(".rsrc") || name.endsWith(".rsf") || name.startsWith("._");
+}
+
+function isScenarioMarkerCandidate(name: string, bytes: Uint8Array, tracked: Set<string>) {
+  return bytes.byteLength >= 316
+    && !tracked.has(name)
+    && !isResourceFileName(name)
+    && !name.startsWith("Data ")
+    && name !== "Global"
+    && name !== "Layout";
 }
 
 const SUPPORTED_WRITE_FILES = new Set([

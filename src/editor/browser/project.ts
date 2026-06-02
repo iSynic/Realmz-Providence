@@ -73,6 +73,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
   parsed.tileAttributes.push(...await loadBundledLandlookMapstats());
   const scenarioName = source.name || "Untitled Scenario";
   const projectPath = `browser://${scenarioName}.providence`;
+  const scenarioShell = parseImportedScenarioShell(scenarioName, files) ?? defaultScenarioShell(scenarioName);
   const project: Project = {
     schemaVersion: 4,
     appVersion: "browser-preview",
@@ -80,7 +81,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
       name: scenarioName,
       projectPath,
       importedAt: new Date().toISOString(),
-      shell: defaultScenarioShell(scenarioName),
+      shell: scenarioShell,
       contactInfo: parseScenarioContactInfo(files.get("Data CI")) ?? defaultScenarioContactInfo(scenarioName),
       restrictions: parseScenarioRestrictions(files.get("Data RI")),
       globalMacroHooks: parseGlobalMacroHooks(files.get("Global")),
@@ -263,6 +264,35 @@ function parseScenarioShell(sourceFile: string, buffer?: Uint8Array): ScenarioSh
       confidence: "confirmed"
     }
   };
+}
+
+function parseImportedScenarioShell(scenarioName: string, files: Map<string, Uint8Array>): ScenarioShell | null {
+  const exact = parseScenarioShell(scenarioName, files.get(scenarioName));
+  if (exact) return exact;
+  const candidates = [...files.entries()]
+    .filter(([name, buffer]) => isScenarioMarkerCandidate(name, buffer))
+    .sort(([leftName, leftBytes], [rightName, rightBytes]) => {
+      const leftExactSize = leftBytes.byteLength === 316 ? 0 : 1;
+      const rightExactSize = rightBytes.byteLength === 316 ? 0 : 1;
+      return leftExactSize - rightExactSize || leftName.localeCompare(rightName);
+    });
+  for (const [name, buffer] of candidates) {
+    const shell = parseScenarioShell(name, buffer);
+    if (shell) return shell;
+  }
+  return null;
+}
+
+function isScenarioMarkerCandidate(name: string, buffer: Uint8Array) {
+  return buffer.byteLength >= 316
+    && name !== "Scenario"
+    && name !== "Global"
+    && name !== "Layout"
+    && name !== "Data CS"
+    && !name.startsWith("Data ")
+    && !name.endsWith(".rsrc")
+    && !name.endsWith(".rsf")
+    && !name.startsWith("._");
 }
 
 function parseScenarioRestrictions(buffer?: Uint8Array): Project["scenario"]["restrictions"] {
