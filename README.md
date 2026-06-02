@@ -11,6 +11,28 @@ That second part matters. Realmz scenarios contain a lot of classic Mac-era bina
 
 The app is built with React/Vite on the frontend and Tauri/Rust on the desktop side.
 
+## Screenshots
+
+Providence is built around direct scenario authoring: open a map, inspect the original records, edit the parts that are understood, and keep the rest preserved.
+
+![Providence map editor](docs/screenshots/map-editor.png)
+
+The editor also includes focused tools for combat, economy, strings, encounters, rules, scenario metadata, and assets.
+
+![Providence combat editor](docs/screenshots/combat-editor.png)
+
+Scenario resources can be inspected and previewed, including custom pictures, icons, sounds, text resources, and other classic Realmz resource-fork data.
+
+![Providence scenario assets](docs/screenshots/scenario-assets.png)
+
+## Getting Started
+
+Launch the desktop app, then click **New** to create a Providence project. A project is where Providence keeps the imported scenario files, decoded records, generated previews, and editor metadata.
+
+After creating a project, import a Realmz scenario folder if you already have one. Pick the folder that contains the scenario data files and resource files, and Providence will seed the project from those originals.
+
+You can also start from scratch in a new project. Use the Maps, Action Points, Strings, Scenario, Encounters, Combat, Economy, Rules, and Assets tools to build up the scenario piece by piece. When you are ready, use Export to write a conservative Realmz/Revisited-style scenario package.
+
 ## What Works
 
 Providence can currently:
@@ -140,4 +162,3 @@ public/              Static browser assets
 Providence is pre-1.0. It is already useful, but it is still an active archaeology and editor-design project.
 
 The safest mental model is: edit what Providence clearly supports, preserve everything else, and let export stay conservative.
-
