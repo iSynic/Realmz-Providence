@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { LibraryCatalog, Project, RealmzTargetRecordKind, SelectedEntity, SemanticEntity } from "../types";
-import { isCallableMacro, schemaEntities } from "../semanticGraph";
 import { selectEntityFromId } from "../utils";
 import { actionOptionFor, normalizeStepOpcode } from "../realmzActions";
 
@@ -183,23 +182,8 @@ export function targetOptionsForOpcode(project: Project | null, opcode: number, 
   }
   const cached = projectCache.get(cacheKey);
   if (cached) return cached;
-  const semanticTypes = targetSemanticTypes(code);
   const options: ScriptTargetOption[] = [];
   addTypedProjectTargets(project, code, options, catalog);
-  for (const type of semanticTypes) {
-    for (const entity of schemaEntities(project, type)) {
-      if (!entityMatchesOpcodeTarget(entity, code)) continue;
-      const value = numericTargetValue(entity);
-      if (value == null) continue;
-      options.push({
-        key: entity.id,
-        value,
-        label: `${entity.label} (${value})`,
-        detail: `${entity.type} | ${entity.editState}`,
-        entity: selectEntityFromId(entity.id)
-      });
-    }
-  }
   if (code === 9 || code === 27) {
     const wantedKinds = code === 9 ? new Set(["sound"]) : new Set(["picture", "icon"]);
     for (const asset of project.assets ?? []) {
@@ -214,6 +198,28 @@ export function targetOptionsForOpcode(project: Project | null, opcode: number, 
         previewMimeType: asset.mimeType,
         managedAsset: asset
       });
+    }
+    if (code === 27) {
+      for (const asset of project.assetCatalog.pictures ?? []) {
+        options.push({
+          key: `resource:${asset.resourceType}:${asset.resourceId}`,
+          value: asset.resourceId,
+          label: `${asset.name || `${asset.resourceType} ${asset.resourceId}`} (${asset.resourceType.trim()} ${asset.resourceId})`,
+          detail: `picture | ${asset.source}`,
+          entity: { type: "resource", id: `resource:${asset.resourceType}:${asset.resourceId}` },
+          previewPath: asset.previewPath
+        });
+      }
+      for (const asset of project.assetCatalog.icons ?? []) {
+        options.push({
+          key: `resource:${asset.resourceType}:${asset.resourceId}`,
+          value: asset.resourceId,
+          label: `${asset.name || `${asset.resourceType} ${asset.resourceId}`} (${asset.resourceType.trim()} ${asset.resourceId})`,
+          detail: `icon | ${asset.source}`,
+          entity: { type: "resource", id: `resource:${asset.resourceType}:${asset.resourceId}` },
+          previewPath: asset.previewPath
+        });
+      }
     }
     for (const asset of catalog?.assets ?? []) {
       if (asset.resourceId == null || !wantedKinds.has(asset.type)) continue;
@@ -245,7 +251,7 @@ export function targetOptionsForOpcode(project: Project | null, opcode: number, 
     }
   }
   if (isDirectMacroOpcode(code)) {
-    for (const trigger of project.triggers.filter((candidate) => candidate.source === "Data ED3" && isCallableMacro(project, candidate))) {
+    for (const trigger of project.triggers.filter((candidate) => candidate.source === "Data ED3")) {
       options.push({
         key: `macro:${trigger.recordIndex}`,
         value: trigger.recordIndex,
@@ -266,7 +272,7 @@ export function targetOptionForOpcodeValue(project: Project | null, opcode: numb
   const resolvedValue = resolveSignedTargetValue(code, value);
   if (resolvedValue === 0) return null;
   const id = Math.abs(resolvedValue);
-  const selected = optionFromTypedProjectTarget(project, code, id, catalog) ?? optionFromSemanticTarget(project, code, id);
+  const selected = optionFromTypedProjectTarget(project, code, id, catalog);
   return selected;
 }
 
@@ -443,24 +449,6 @@ function optionFromTypedProjectTarget(project: Project, code: number, id: number
         previewPath: libraryAsset.previewPath,
         previewMimeType: libraryAsset.mimeType,
         libraryAsset
-      };
-    }
-  }
-  return null;
-}
-
-function optionFromSemanticTarget(project: Project, code: number, id: number): ScriptTargetOption | null {
-  for (const type of targetSemanticTypes(code)) {
-    for (const entity of schemaEntities(project, type)) {
-      if (!entityMatchesOpcodeTarget(entity, code)) continue;
-      const value = numericTargetValue(entity);
-      if (value == null || Math.abs(value) !== id) continue;
-      return {
-        key: entity.id,
-        value,
-        label: `${entity.label} (${value})`,
-        detail: `${entity.type} | ${entity.editState}`,
-        entity: selectEntityFromId(entity.id)
       };
     }
   }

@@ -75,29 +75,18 @@ export function nextMapFocusNonce() {
 
 export function mapIdForEntity(project: Project | null, id: string) {
   if (!project) return null;
+  const mapMatch = id.match(/^map:(land|dungeon):(\d+)$/);
+  if (mapMatch) return `${mapMatch[1]}:${mapMatch[2]}`;
   const triggerMatch = id.match(/^trigger:(land|dungeon):(\d+):\d+$/);
   if (triggerMatch) return `${triggerMatch[1]}:${triggerMatch[2]}`;
   const randomMatch = id.match(/^random:(land|dungeon):(\d+):\d+$/);
   if (randomMatch) return `${randomMatch[1]}:${randomMatch[2]}`;
-  const entity = project.semanticSchema.entities.find((candidate) => candidate.id === id);
-  if (!entity) return null;
-  if (entity.type === "trigger" || entity.type === "random-region") {
-    const levelType = stringSummary(entity.summary.levelType);
-    const levelIndex = numberSummary(entity.summary.levelIndex);
-    if (levelType && levelIndex != null) return `${levelType}:${levelIndex}`;
+  const mapRecordMatch = id.match(/^map-record:(-?\d+)$/);
+  if (mapRecordMatch) {
+    const record = project.mapRecords.find((candidate) => candidate.id === Number(mapRecordMatch[1]));
+    if (record?.level != null) return `${record.isDungeon ? "dungeon" : "land"}:${record.level}`;
   }
-  if (entity.type === "map record") {
-    const level = numberSummary(entity.summary.level);
-    const isDungeon = booleanSummary(entity.summary.isDungeon);
-    if (level != null && isDungeon != null) return `${isDungeon ? "dungeon" : "land"}:${level}`;
-  }
-  const mapLink = project.semanticSchema.links.find(
-    (link) =>
-      link.from === id &&
-      ["located_on", "describes_map", "occupies_region", "names_map_level"].includes(link.kind) &&
-      link.to.startsWith("map:")
-  );
-  return mapLink ? mapLink.to.replace(/^map:/, "") : null;
+  return null;
 }
 
 function isActorIconResourceId(resourceId: number) {

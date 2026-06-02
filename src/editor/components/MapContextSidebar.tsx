@@ -1510,15 +1510,7 @@ function messageTargetPreview(project: Project | null, action: TriggerRecord["ac
 function messageTextForId(project: Project | null, id: number) {
   const record = project?.messages?.find((candidate) => candidate.id === id);
   if (record?.text?.trim()) return record.text.trim();
-  const entity = project?.semanticSchema?.entities?.find((candidate) => candidate.id === `message:${id}`);
-  const text = typeof entity?.summary?.text === "string"
-    ? entity.summary.text
-    : typeof entity?.summary?.preview === "string"
-      ? entity.summary.preview
-      : typeof entity?.label === "string"
-        ? entity.label
-        : "";
-  return text.trim();
+  return "";
 }
 
 function truncateMapInspectorText(text: string, max: number) {

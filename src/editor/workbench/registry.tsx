@@ -254,7 +254,7 @@ export function toolCount(
   let count = 0;
   if (tool.workbench !== "library" && activeWorkbench !== "library") {
     const directCount = directProjectToolCount(tool.id, project);
-    count += directCount ?? project?.semanticSchema.entities.filter((entity) => types.has(entity.type)).length ?? 0;
+    count += directCount ?? 0;
   }
   if (tool.workbench !== "project") {
     count += catalog?.entities.filter((entity) => types.has(entity.type)).length ?? 0;
@@ -288,10 +288,10 @@ function directProjectToolCount(toolId: string, project: Project | null) {
   if (toolId === "races") return project.raceOverrides.length;
   if (toolId === "castes") return project.casteOverrides.length;
   if (toolId === "messages" || toolId === "spell-check") return project.messages.length;
-  if (toolId === "text-resources") return 0;
+  if (toolId === "text-resources") return project.assets.filter((asset) => asset.kind === "text" || ["TEXT", "STR#", "styl"].includes(asset.resourceType.trim())).length;
   if (toolId === "project-assets") return project.assets.length;
   if (toolId === "pictures") return project.assetCatalog.pictures?.length ?? 0;
-  if (toolId === "sounds") return project.assets.filter((asset) => asset.resourceType === "snd").length;
+  if (toolId === "sounds") return project.assets.filter((asset) => asset.resourceType.trim() === "snd").length;
   if (toolId === "icons" || toolId === "special-land") return project.assetCatalog.icons?.length ?? 0;
   if (toolId === "decoded-records") return Object.values(project.records.counts).reduce((total, value) => total + value, 0);
   return null;

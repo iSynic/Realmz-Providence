@@ -394,11 +394,9 @@ function specialTilesForPalette(
   for (const asset of project?.assets ?? []) {
     if (asset.kind === "special-land-tile") placeable.add(asset.resourceId);
   }
-  for (const entity of project?.semanticSchema.entities ?? []) {
-    if (entity.type !== "special-land-tile" && entity.type !== "icon-resource") continue;
-    const resourceId = entitySummaryNumber(entity.summary, "resourceId") ?? entitySummaryNumber(entity.summary, "id");
-    if (resourceId == null) continue;
-    placeable.add(resourceId < 0 ? resourceId : -resourceId);
+  for (const asset of project?.assetCatalog.icons ?? []) {
+    const value = asset.resourceId < 0 ? asset.resourceId : -asset.resourceId;
+    placeable.add(value);
   }
   for (const asset of libraryAssets) {
     if (!isPaintableSpecialLandAsset(asset)) continue;

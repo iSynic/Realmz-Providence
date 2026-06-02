@@ -18,7 +18,7 @@ export function StatusBar({
       ? mappingPending
         ? `${project.maps.length} maps | ${project.triggers.length.toLocaleString()} triggers | mapping links...`
         : `${project.maps.length} maps | ${project.triggers.length.toLocaleString()} triggers | links on demand`
-      : `${project.maps.length} maps | ${project.triggers.length.toLocaleString()} triggers | ${project.semanticSchema.summary.linkCount.toLocaleString()} links`
+      : `${project.maps.length} maps | ${project.triggers.length.toLocaleString()} triggers | links on demand`
     : "Awaiting project";
   return (
     <footer className="status-bar">

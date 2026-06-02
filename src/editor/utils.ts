@@ -7,6 +7,7 @@ import {
   SemanticLink,
   SemanticRecord
 } from "./types";
+import { directSemanticLinksFor, labelForSelectedId } from "./directRecordIndex";
 import { semanticEntityById, semanticIndex, semanticLinksForId, semanticRecordById } from "./semanticIndex";
 
 export function hasDesktopRuntime() {
@@ -103,11 +104,28 @@ export function findSemanticRecord(project: Project | null, id: string | null): 
 }
 
 export function linksFor(project: Project | null, id: string | null) {
-  return semanticLinksForId(project, id);
+  const directLinks = directSemanticLinksFor(project, id);
+  const semanticLinks = semanticLinksForId(project, id);
+  if (directLinks.length === 0) return semanticLinks;
+  const seen = new Set(directLinks.map((link) => `${link.from}->${link.to}:${link.kind}`));
+  return {
+    outgoing: semanticLinks.outgoing,
+    incoming: [
+      ...directLinks,
+      ...semanticLinks.incoming.filter((link) => {
+      const key = `${link.from}->${link.to}:${link.kind}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    ]
+  };
 }
 
 export function semanticLabel(project: Project | null, id: string) {
   if (!project) return id;
+  const directLabel = labelForSelectedId(project, null, id);
+  if (directLabel && directLabel !== id) return directLabel;
   const index = semanticIndex(project);
   return (
     index.entitiesById.get(id)?.label ??
@@ -121,12 +139,6 @@ export function issuesFor(project: Project | null): Issue[] {
   return [
     ...project.validation.errors.map((message) => ({ severity: "error", message, source: "project" })),
     ...project.validation.warnings.map((message) => ({ severity: "warning", message, source: "project" })),
-    ...project.semanticSchema.diagnostics.map((diagnostic) => ({
-      severity: diagnostic.severity,
-      message: diagnostic.message,
-      source: diagnostic.source ?? diagnostic.type,
-      target: typeof diagnostic.data.target === "string" ? diagnostic.data.target : null
-    })),
     ...project.diagnostics.map((diagnostic) => ({
       severity: diagnostic.severity,
       message: diagnostic.message,
@@ -140,8 +152,4 @@ export function compactValue(value: unknown) {
   if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value);
   if (Array.isArray(value)) return value.length > 10 ? `${value.slice(0, 10).join(", ")}...` : value.join(", ");
   return JSON.stringify(value);
-}
-
-export function entityTypeCount(project: Project | null, type: string) {
-  return project?.semanticSchema.entities.filter((entity) => entity.type === type).length ?? 0;
 }

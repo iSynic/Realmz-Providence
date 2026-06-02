@@ -1,5 +1,4 @@
 import { LibraryCatalog, LibraryEntity, Project, ScenarioItemRecord, SemanticEntity } from "./types";
-import { schemaEntities } from "./semanticGraph";
 
 export type ItemReferenceOption = {
   key: string;
@@ -37,8 +36,6 @@ export function itemReferenceOptions(project: Project, catalog?: LibraryCatalog 
   const cached = readCachedItemReferenceOptions(project, catalog);
   if (cached) return cached;
   const entities = [
-    ...schemaEntities(project, "item"),
-    ...schemaEntities(project, "item-reference"),
     ...(catalog?.entities.filter((entity) => entity.type === "item" || entity.type === "item-reference") ?? [])
   ];
   const names = itemNamesFromStringLists(project, catalog);
@@ -67,11 +64,6 @@ export function itemReferenceOptions(project: Project, catalog?: LibraryCatalog 
   }
   for (const shop of project.shops ?? []) {
     for (const id of shop.itemIds) if (isCatalogItemId(id)) ids.add(id);
-  }
-  for (const link of project.semanticSchema.links ?? []) {
-    if (!link.to.startsWith("item:")) continue;
-    const id = trailingNumber(link.to);
-    if (id != null && isCatalogItemId(id)) ids.add(id);
   }
   const usageById = itemUsageMap(project);
   const iconByName = itemIconMapByName(entities, scenarioItemById, names);
@@ -241,11 +233,6 @@ function itemUsageMap(project: Project) {
       if (itemId !== 0) usageFor(itemId).shopSlots += 1;
     }
   }
-  for (const link of project.semanticSchema.links ?? []) {
-    if (!link.to.startsWith("item:")) continue;
-    const itemId = trailingNumber(link.to);
-    if (itemId != null) usageFor(itemId).semanticRefs += 1;
-  }
   return usageById;
 }
 
@@ -284,8 +271,6 @@ function formatItemUsage(usage: ItemUsage) {
 function itemNamesFromStringLists(project: Project, catalog?: LibraryCatalog | null) {
   const names = new Map<number, string>();
   const resources = [
-    ...schemaEntities(project, "resource"),
-    ...schemaEntities(project, "string-list-resource"),
     ...(catalog?.entities.filter((entity) => entity.type === "resource" || entity.type === "string-list-resource") ?? [])
   ];
   for (const resource of resources) {

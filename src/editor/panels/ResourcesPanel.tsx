@@ -66,10 +66,6 @@ export function ResourcesPanel({
   onDeleteAsset?: (assetId: string) => void;
   onSelectPaintTile?: (tile: number) => void;
 }) {
-  const resourceTypes = schemaEntities(project, "resource type");
-  const resources = schemaEntities(project).filter((entity) => entity.type === "resource" || entity.type === "runtime-cache" || entity.type === "asset-fallback" || entity.type === "render-profile");
-  const tileAtlases = schemaEntities(project, "tile atlas");
-  const gaps = resourceGaps(project);
   const libraryAssets = catalog?.assets ?? [];
   const [sectionOverride, setSectionOverride] = useState<AssetSection | null>(null);
   const section = sectionOverride ?? assetSectionFromEditor(activeEditor);
@@ -82,6 +78,10 @@ export function ResourcesPanel({
     setSectionOverride(null);
     setKindFilter(assetKindFilterFromEditor(activeEditor));
   }, [activeEditor]);
+  const resourceTypes = section === "advanced" ? schemaEntities(project, "resource type") : [];
+  const resources = section === "advanced" ? schemaEntities(project).filter((entity) => entity.type === "resource" || entity.type === "runtime-cache" || entity.type === "asset-fallback" || entity.type === "render-profile") : [];
+  const tileAtlases = section === "advanced" ? schemaEntities(project, "tile atlas") : [];
+  const gaps = section === "advanced" ? resourceGaps(project) : [];
   const [libraryPreviewFilter, setLibraryPreviewFilter] = useState<ResourcePreviewStatus | "all">("all");
   const [libraryPreviewStatuses, setLibraryPreviewStatuses] = useState<Record<string, ResourcePreviewStatus>>({});
   const [query, setQuery] = useState("");
@@ -191,7 +191,7 @@ export function ResourcesPanel({
                 desktopRuntime={desktopRuntime}
                 projectDir={projectDir}
                 onSelectEntity={onSelectEntity}
-                onOpenPreview={() => setPreviewItem({ type: "resource", entity: asset.entity, consumers: project ? resourceConsumers(project, asset.entity.id) : [] })}
+                onOpenPreview={() => setPreviewItem({ type: "resource", entity: asset.entity, consumers: project ? directResourceConsumers(project, asset) : [] })}
               />
             ))}
             {projectAssets.map((asset, index) => asset.kind === "special-land-tile" ? (
@@ -383,7 +383,7 @@ function ScenarioResourceAssetCard({
   onOpenPreview: () => void;
 }) {
   const preview = useProjectPreview(asset.previewPath, desktopRuntime, projectDir);
-  const consumers = project ? resourceConsumers(project, asset.entity.id) : [];
+  const consumers = project ? directResourceConsumers(project, asset) : [];
   return (
     <article className="managed-asset-card scenario-resource">
       <AssetPreview
@@ -426,26 +426,83 @@ function scenarioResourceAssets(project: Project | null): ScenarioResourceAsset[
   if (!project) return [];
   const assets: ScenarioResourceAsset[] = [];
   const seen = new Set<string>();
-  for (const entity of project.semanticSchema.entities) {
-    if (entity.type !== "resource") continue;
-    if (entity.summary.referenceOnly === true || entity.summary.scenarioSupplied === false || entity.confidence === "inferred") continue;
-    const resourceType = resourceTypeFromSummary(entity.summary);
-    const resourceId = resourceIdFromSummary(entity.summary);
-    if (!resourceType || resourceId == null) continue;
-    const key = `${resourceType}:${resourceId}:${entity.source}`;
-    if (seen.has(key)) continue;
+  const addResource = (resourceType: string, resourceId: number, label: string, source: string, previewPath?: string | null, extraSummary: Record<string, unknown> = {}) => {
+    const key = `${resourceType}:${resourceId}:${source}`;
+    if (seen.has(key)) return;
     seen.add(key);
+    const entity = directResourceEntity(resourceType, resourceId, label, source, previewPath, extraSummary);
     assets.push({
       entity,
       kind: managedKindForResource(resourceType),
       resourceType,
       resourceId,
-      source: entity.source,
+      source,
       bytes: typeof entity.summary.bytes === "number" ? entity.summary.bytes : 0,
-      previewPath: scenarioResourcePreviewPath(project, entity, resourceType, resourceId)
+      previewPath: previewPath ?? scenarioResourcePreviewPath(project, entity, resourceType, resourceId)
+    });
+  };
+  for (const picture of project.assetCatalog.pictures ?? []) {
+    addResource(picture.resourceType, picture.resourceId, picture.name || `${picture.resourceType} ${picture.resourceId}`, picture.source, picture.previewPath);
+  }
+  for (const icon of project.assetCatalog.icons ?? []) {
+    addResource(icon.resourceType, icon.resourceId, icon.name || `${icon.resourceType} ${icon.resourceId}`, icon.source, icon.previewPath);
+  }
+  for (const tileset of project.assetCatalog.tilesets ?? []) {
+    if (tileset.pictId == null) continue;
+    addResource("PICT", tileset.pictId, tileset.name, tileset.source, tileset.imagePath, {
+      family: "tile-atlas",
+      landlook: tileset.landlook,
+      previewStatus: tileset.available ? "ready" : "missing"
     });
   }
   return assets.sort((a, b) => a.resourceType.localeCompare(b.resourceType) || a.resourceId - b.resourceId || a.source.localeCompare(b.source));
+}
+
+function directResourceEntity(resourceType: string, resourceId: number, label: string, source: string, previewPath?: string | null, summary: Record<string, unknown> = {}): SemanticEntity {
+  const previewStatus = summary.previewStatus ?? (previewPath ? "ready" : "missing");
+  return {
+    id: `resource:${resourceType}:${resourceId}`,
+    type: resourceEntityType(resourceType),
+    label,
+    editState: "inspect-only",
+    confidence: "source-backed",
+    source,
+    recordRef: null,
+    byteRange: null,
+    editable: false,
+    summary: {
+      type: resourceType,
+      resourceType,
+      resourceId,
+      scenarioSupplied: true,
+      previewDataUrl: previewPath ?? "",
+      previewStatus,
+      ...summary
+    }
+  };
+}
+
+function resourceEntityType(resourceType: string) {
+  const normalized = resourceType.trim();
+  if (normalized === "PICT") return "picture";
+  if (normalized === "cicn") return "icon-resource";
+  if (normalized === "snd") return "sound";
+  if (normalized === "TEXT") return "text-resource";
+  if (normalized === "STR#") return "string-list-resource";
+  if (normalized === "styl") return "style-resource";
+  return "resource";
+}
+
+function directResourceConsumers(project: Project, asset: ScenarioResourceAsset) {
+  return resourceUsageLinks(project, asset.resourceType, asset.resourceId).map((usage, index) => ({
+    id: `direct-resource:${asset.resourceType}:${asset.resourceId}:${usage.key}:${index}`,
+    from: usage.entity?.id ?? usage.key,
+    to: asset.entity.id,
+    kind: usage.detail,
+    confidence: "source-backed",
+    evidence: [usage.label],
+    metadata: { label: usage.label, detail: usage.detail, direct: true }
+  }));
 }
 
 function resourceTypeFromSummary(summary: Record<string, unknown>) {

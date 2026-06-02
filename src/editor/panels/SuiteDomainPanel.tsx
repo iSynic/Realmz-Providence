@@ -8,6 +8,7 @@ import { selectEntityFromId } from "../utils";
 import { ScrollArea } from "../ui";
 import { renderListKey } from "../renderKeys";
 import { TargetRecordEditor } from "./ScriptsPanel";
+import { directRecordsForTool, labelForSelectedId, type DirectRecordRow } from "../directRecordIndex";
 import { ITEM_REFERENCE_CATEGORIES, itemReferenceOptions, type ItemReferenceCategory, type ItemReferenceOption } from "../itemReferences";
 
 const DOMAIN_CONFIG: Record<EditorTab, { title: string; subtitle: string; editors: DomainEditor[] }> = {
@@ -167,10 +168,9 @@ export function SuiteDomainPanel({
   const focusedEditor = config.editors.find((editor) => editor.id === activeEditor) ?? null;
   const headerEditor = tab === "encounters" || economyActive ? null : focusedEditor;
   const visibleEditors = focusedEditor ? [focusedEditor] : config.editors;
-  const projectEntities = project?.semanticSchema.entities ?? [];
   const libraryEntities = catalog?.entities ?? [];
   const selectedDetail =
-    projectEntities.find((entity) => entity.id === selectedEntity?.id) ??
+    directDetailForSelection(project, selectedEntity?.id ?? null) ??
     libraryEntities.find((entity) => entity.id === selectedEntity?.id) ??
     (tab === "records" ? [
       ...(project?.semanticSchema.records ?? []),
@@ -296,7 +296,7 @@ export function SuiteDomainPanel({
       )}
       <div className="domain-editor-grid">
         {showOverviewCards && visibleEditors.map((editor) => {
-          const matches = matchingEntities(editor, projectEntities, libraryEntities);
+          const matches = matchingEntries(editor, project, libraryEntities);
           return (
             <article key={editor.id} className="domain-editor-card">
               <header>
@@ -331,11 +331,98 @@ function editorSubtitle(editor: DomainEditor) {
   return `Inspect ${editor.label.toLowerCase()} records, resources, links, and diagnostics.`;
 }
 
-function matchingEntities(editor: DomainEditor, projectEntities: SemanticEntity[], libraryEntities: LibraryEntity[]) {
+type DomainListEntry = DirectRecordRow | LibraryEntity;
+
+function matchingEntries(editor: DomainEditor, project: Project | null, libraryEntities: LibraryEntity[]) {
   const wanted = new Set(editor.entityTypes);
-  const projectMatches = projectEntities.filter((entity) => wanted.has(entity.type));
+  const projectMatches = project ? directRowsForEditor(project, editor) : [];
   const libraryMatches = libraryEntities.filter((entity) => wanted.has(entity.type));
   return [...projectMatches, ...libraryMatches];
+}
+
+function directRowsForEditor(project: Project, editor: DomainEditor): DirectRecordRow[] {
+  const direct = directRecordsForTool(project, editor.id);
+  if (direct.length) return direct;
+  if (editor.id === "land" || editor.id === "map-editor" || editor.id === "dungeon") {
+    return project.maps
+      .filter((map) => editor.id === "dungeon" ? map.levelType === "dungeon" : editor.id === "land" ? map.levelType === "land" : true)
+      .map((map) => ({ id: `map:${map.levelType}:${map.index}`, label: map.name, type: "map", summary: `${map.width} x ${map.height} ${map.levelType}` }));
+  }
+  if (editor.id === "land-layout") {
+    return project.landLayout ? [{ id: "land-layout:0", label: "Land Layout", type: "land-layout", summary: `${project.landLayout.rows} x ${project.landLayout.cols}` }] : [];
+  }
+  if (editor.id === "special-land") {
+    return [
+      ...project.assets
+        .filter((asset) => asset.kind === "special-land-tile")
+        .map((asset) => ({ id: asset.id, label: asset.label, type: "special-land-tile", summary: `cicn ${asset.resourceId}` })),
+      ...(project.assetCatalog.icons ?? [])
+        .filter((asset) => asset.resourceId < 0)
+        .map((asset) => ({ id: `resource:${asset.resourceType}:${asset.resourceId}`, label: asset.name || `${asset.resourceType} ${asset.resourceId}`, type: "special-land-tile", summary: asset.source }))
+    ];
+  }
+  if (editor.id === "global-macros") {
+    return project.scenario.globalMacroHooks ? [{ id: "scenario:global-macros", label: "Global Events", type: "global-macro", summary: "Scenario global hooks" }] : [];
+  }
+  if (editor.id === "quests") {
+    return project.questLabels.map((record) => ({ id: `quest-flag:${record.id}`, label: record.label || `Quest ${record.id}`, type: "quest flag", summary: record.note ?? "" }));
+  }
+  if (editor.id === "startup") {
+    const rows: DirectRecordRow[] = [];
+    if (project.scenario.shell) rows.push({ id: "scenario:startup", label: "Startup Info", type: "scenario-startup", summary: `land ${project.scenario.shell.landLevel}` });
+    if (project.scenario.contactInfo) rows.push({ id: "contact:info", label: "Contact Info", type: "contact-info", summary: project.scenario.contactInfo.scenarioName || project.scenario.name });
+    return rows;
+  }
+  if (editor.id === "restrictions") {
+    return project.scenario.restrictions ? [{ id: "scenario:restrictions", label: "Restrictions", type: "scenario-restriction", summary: "Scenario restrictions" }] : [];
+  }
+  if (editor.id === "registration") {
+    return project.scenario.securityBackup ? [{ id: "scenario:security", label: "Security / Registration", type: "registration-security", summary: "Divinity code segments" }] : [];
+  }
+  if (editor.id === "spells") return project.spellOverrides.map((record) => ({ id: `spell:${record.id}`, label: record.displayName || `Spell ${record.id}`, type: "spell-reference", summary: `sound ${record.sound1}/${record.sound2}` }));
+  if (editor.id === "races") return project.raceOverrides.map((record) => ({ id: `race:${record.id}`, label: record.displayName || `Race ${record.id + 1}`, type: "race", summary: `default icons ${record.defaultIconSet}` }));
+  if (editor.id === "castes") return project.casteOverrides.map((record) => ({ id: `caste:${record.id}`, label: record.displayName || `Caste ${record.id + 1}`, type: "caste", summary: `default icon ${record.defaultIcon}` }));
+  if (editor.id === "pictures") {
+    return [
+      ...(project.assetCatalog.pictures ?? []).map((asset) => ({ id: `resource:${asset.resourceType}:${asset.resourceId}`, label: asset.name || `${asset.resourceType} ${asset.resourceId}`, type: "picture", summary: asset.source })),
+      ...project.assetCatalog.tilesets.filter((asset) => asset.pictId != null).map((asset) => ({ id: `resource:PICT:${asset.pictId}`, label: asset.name, type: "tile atlas", summary: asset.source }))
+    ];
+  }
+  if (editor.id === "sounds") {
+    return project.assets.filter((asset) => asset.resourceType.trim() === "snd").map((asset) => ({ id: asset.id, label: asset.label, type: "sound", summary: `snd ${asset.resourceId}` }));
+  }
+  if (editor.id === "resource-inventory") {
+    return [
+      ...project.assets.map((asset) => ({ id: asset.id, label: asset.label, type: asset.kind, summary: `${asset.resourceType} ${asset.resourceId}` })),
+      ...(project.assetCatalog.icons ?? []).map((asset) => ({ id: `resource:${asset.resourceType}:${asset.resourceId}`, label: asset.name || `${asset.resourceType} ${asset.resourceId}`, type: "icon-resource", summary: asset.source })),
+      ...(project.assetCatalog.pictures ?? []).map((asset) => ({ id: `resource:${asset.resourceType}:${asset.resourceId}`, label: asset.name || `${asset.resourceType} ${asset.resourceId}`, type: "picture", summary: asset.source }))
+    ];
+  }
+  if (editor.id === "text-import") {
+    return [
+      ...project.messages.map((record) => ({ id: `message:${record.id}`, label: `Message ${record.id}`, type: "message", summary: record.text.slice(0, 80) })),
+      ...project.optionLabels.map((record) => ({ id: `option-label:${record.id}`, label: `Option Label ${record.id}`, type: "option-label", summary: record.text.slice(0, 80) }))
+    ];
+  }
+  return [];
+}
+
+function directDetailForSelection(project: Project | null, entityId: string | null): DirectRecordRow | null {
+  if (!project || !entityId) return null;
+  const rows = [
+    ...DOMAIN_CONFIG.maps.editors.flatMap((editor) => directRowsForEditor(project, editor)),
+    ...DOMAIN_CONFIG.scripts.editors.flatMap((editor) => directRowsForEditor(project, editor)),
+    ...DOMAIN_CONFIG.scenario.editors.flatMap((editor) => directRowsForEditor(project, editor)),
+    ...DOMAIN_CONFIG.text.editors.flatMap((editor) => directRowsForEditor(project, editor)),
+    ...DOMAIN_CONFIG.combat.editors.flatMap((editor) => directRowsForEditor(project, editor)),
+    ...DOMAIN_CONFIG.economy.editors.flatMap((editor) => directRowsForEditor(project, editor)),
+    ...DOMAIN_CONFIG.rules.editors.flatMap((editor) => directRowsForEditor(project, editor)),
+    ...DOMAIN_CONFIG.assets.editors.flatMap((editor) => directRowsForEditor(project, editor))
+  ];
+  const direct = rows.find((row) => row.id === entityId);
+  if (direct) return direct;
+  const label = labelForSelectedId(project, null, entityId);
+  return label && label !== entityId ? { id: entityId, label, type: "record", summary: "Direct project record" } : null;
 }
 
 function DomainTargetSwitcher({
@@ -1108,7 +1195,6 @@ function itemIdFromEntityId(entityId: string) {
 
 function findItemCatalogEntity(project: Project, catalog: LibraryCatalog | null | undefined, itemId: number) {
   const entities = [
-    ...(project.semanticSchema.entities ?? []),
     ...(catalog?.entities ?? [])
   ];
   return entities.find((entity) => {
@@ -1128,17 +1214,7 @@ function itemUsageLinks(project: Project, itemId: number) {
     const quantity = shop.itemIds.reduce((total, id, slot) => id === itemId ? total + Math.max(0, shop.quantities[slot] ?? 0) : total, 0);
     if (quantity) links.push({ target: `shop:${shop.id}`, label: `Shop ${shop.id}`, detail: `${quantity} in stock` });
   }
-  for (const link of project.semanticSchema.links ?? []) {
-    if (link.to !== `item:${itemId}`) continue;
-    if (links.some((usage) => usage.target === link.from)) continue;
-    links.push({ target: link.from, label: semanticLinkLabel(project, link.from), detail: link.kind.replace(/_/g, " ") });
-  }
   return links.slice(0, 18);
-}
-
-function semanticLinkLabel(project: Project, entityId: string) {
-  const entity = project.semanticSchema.entities.find((candidate) => candidate.id === entityId);
-  return entity?.label ?? entityId;
 }
 
 function numberField(summary: Record<string, unknown>, key: string) {
@@ -1467,11 +1543,6 @@ function numericSummaryValue(summary: Record<string, unknown>, keys: string[]) {
 
 function economyItemReferenceCount(project: Project) {
   const ids = new Set<number>();
-  for (const entity of project.semanticSchema.entities) {
-    if (entity.type !== "item" && entity.type !== "item-reference") continue;
-    const id = itemIdFromEntityId(entity.id) ?? numericSummaryValue(entity.summary, ["itemId", "id", "recordIndex"]);
-    if (id != null && isCatalogItemId(id)) ids.add(id);
-  }
   for (const record of project.scenarioItems ?? []) {
     const id = record.itemId || 800 + record.id;
     if (isCatalogItemId(id)) ids.add(id);
@@ -1482,11 +1553,6 @@ function economyItemReferenceCount(project: Project) {
   }
   for (const shop of project.shops ?? []) {
     for (const id of shop.itemIds) if (isCatalogItemId(id)) ids.add(id);
-  }
-  for (const link of project.semanticSchema.links ?? []) {
-    if (!link.to.startsWith("item:")) continue;
-    const id = trailingNumber(link.to);
-    if (id != null && isCatalogItemId(id)) ids.add(id);
   }
   return ids.size;
 }
@@ -1500,7 +1566,7 @@ function DomainDetailPanel({
   catalog,
   onUpdateDraft
 }: {
-  detail: SemanticEntity | LibraryEntity | { id: string; label: string; type: string; editState: string; confidence: string; summary: Record<string, unknown>; source?: string; recordRef?: string | null; byteRange?: unknown } | null;
+  detail: SemanticEntity | LibraryEntity | DirectRecordRow | { id: string; label: string; type: string; editState: string; confidence: string; summary: Record<string, unknown>; source?: string; recordRef?: string | null; byteRange?: unknown } | null;
   catalog: LibraryCatalog | null;
   onUpdateDraft?: (entityId: string, changes: { label?: string; notes?: string }) => void;
 }) {
@@ -1520,7 +1586,7 @@ function DomainDetailPanel({
   }
   const source = "source" in detail ? detail.source : null;
   const recordRef = "recordRef" in detail ? detail.recordRef : null;
-  const summary = detail.summary ?? {};
+  const summary = typeof detail.summary === "object" ? detail.summary ?? {} : { summary: detail.summary };
   const canEditDraft = isDraftEntity(detail.id) && onUpdateDraft;
   const sourceLabel = source ? catalog?.sources.find((candidate) => candidate.id === source)?.relativePath ?? source : "none";
   const contentFacts = getContentFacts(detail);
@@ -1528,7 +1594,7 @@ function DomainDetailPanel({
     <aside className="domain-detail-panel">
       <header>
         <span>{ENTITY_TYPE_LABELS[detail.type] ?? detail.type}</span>
-        <b>{detail.editState}</b>
+        <b>{"editState" in detail ? detail.editState : "direct"}</b>
       </header>
       <ScrollArea className="domain-detail-scroll" aria-label="Domain detail">
         {canEditDraft ? (
@@ -1597,7 +1663,7 @@ function DomainDetailPanel({
           </div>
           <div>
             <span>Status</span>
-            <code>{userFacingConfidence(detail.confidence)}</code>
+            <code>{userFacingConfidence("confidence" in detail ? detail.confidence : "source-backed")}</code>
           </div>
         </section>
       </ScrollArea>
@@ -1655,10 +1721,11 @@ function useLibraryAssetPreview(asset: LibraryAsset | null) {
   return preview;
 }
 
-function findLibraryAssetForDetail(detail: { id: string; label?: string; type: string; summary: Record<string, unknown>; source?: string } | null, catalog: LibraryCatalog | null) {
+function findLibraryAssetForDetail(detail: { id: string; label?: string; type: string; summary: Record<string, unknown> | string; source?: string } | null, catalog: LibraryCatalog | null) {
   if (!detail || !catalog) return null;
-  const resourceType = typeof detail.summary.type === "string" ? detail.summary.type : null;
-  const resourceId = typeof detail.summary.resourceId === "number" ? detail.summary.resourceId : null;
+  const summary = typeof detail.summary === "object" ? detail.summary : {};
+  const resourceType = typeof summary.type === "string" ? summary.type : null;
+  const resourceId = typeof summary.resourceId === "number" ? summary.resourceId : null;
   if (resourceType && resourceId !== null) {
     return catalog.assets.find((asset) =>
       asset.resourceType === resourceType &&
@@ -1688,7 +1755,7 @@ function EntityRows({
   selectedEntity,
   onSelectEntity
 }: {
-  entities: Array<SemanticEntity | LibraryEntity>;
+  entities: DomainListEntry[];
   selectedEntity: SelectedEntity | null;
   onSelectEntity: (entity: SelectedEntity) => void;
 }) {
@@ -1699,7 +1766,7 @@ function EntityRows({
         const selected = selectedEntity?.id === entity.id;
         return (
           <button
-            key={renderListKey("domain-entity", entity, index)}
+            key={`domain-entity:${entity.id}:${index}`}
             className={selected ? "selected" : ""}
             type="button"
             onClick={() => onSelectEntity(selectEntityFromId(entity.id))}
@@ -1716,9 +1783,10 @@ function EntityRows({
   );
 }
 
-function entitySubtitle(entity: SemanticEntity | LibraryEntity | { type: string; editState: string; summary: Record<string, unknown> }) {
-  const summary = entity.summary ?? {};
-  if (summary.draft) return `draft | ${entity.editState}`;
+function entitySubtitle(entity: SemanticEntity | LibraryEntity | DomainListEntry | { type: string; editState?: string; summary: Record<string, unknown> | string }) {
+  const summary = typeof entity.summary === "object" ? entity.summary ?? {} : { textPreview: entity.summary };
+  const editState = "editState" in entity ? entity.editState : "direct";
+  if (summary.draft) return `draft | ${editState}`;
   if (summary.resourceId !== undefined) {
     const resource = `${String(summary.type ?? "resource").trim()} ${summary.resourceId}`;
     const size = summary.bytes !== undefined ? ` | ${formatBytes(Number(summary.bytes))}` : "";
@@ -1730,17 +1798,18 @@ function entitySubtitle(entity: SemanticEntity | LibraryEntity | { type: string;
   }
   if (summary.index !== undefined) {
     const bytes = summary.recordBytes !== undefined ? ` | ${formatBytes(Number(summary.recordBytes))}` : "";
-    return `entry ${summary.index}${bytes} | ${entity.editState}`;
+    return `entry ${summary.index}${bytes} | ${editState}`;
   }
-  if (summary.family) return `${summary.family} | ${entity.editState}`;
-  return `${ENTITY_TYPE_LABELS[entity.type] ?? entity.type} | ${entity.editState}`;
+  if (summary.family) return `${summary.family} | ${editState}`;
+  if (summary.textPreview) return `${summary.textPreview} | ${editState}`;
+  return `${ENTITY_TYPE_LABELS[entity.type] ?? entity.type} | ${editState}`;
 }
 
-function getContentFacts(detail: { type: string; editState: string; summary: Record<string, unknown> }) {
-  const summary = detail.summary ?? {};
+function getContentFacts(detail: { type: string; editState?: string; summary: Record<string, unknown> | string }) {
+  const summary = typeof detail.summary === "object" ? detail.summary ?? {} : { textPreview: detail.summary };
   const facts: Array<{ label: string; value: string }> = [
     { label: "Kind", value: ENTITY_TYPE_LABELS[detail.type] ?? detail.type },
-    { label: "State", value: detail.editState }
+    { label: "State", value: detail.editState ?? "direct" }
   ];
   if (summary.resourceId !== undefined) facts.push({ label: "Resource", value: `${String(summary.type ?? "resource").trim()} ${summary.resourceId}` });
   if (summary.index !== undefined) facts.push({ label: "Entry", value: String(summary.index) });

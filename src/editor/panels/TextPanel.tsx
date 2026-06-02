@@ -832,12 +832,12 @@ function exportDivinityTextFile(records: MessageRecord[]) {
 function textReferenceRows(project: Project, catalog: LibraryCatalog | null | undefined, query: string) {
   const wantedTypes = new Set(["text-resource", "string-list-resource", "style-resource"]);
   const rows = [
-    ...project.semanticSchema.entities.filter((entity) => wantedTypes.has(entity.type)).map((entity) => ({
-      id: entity.id,
-      label: entity.label,
-      detail: textResourceDetail(entity.summary ?? {}),
+    ...project.assets.filter((asset) => asset.kind === "text" || ["TEXT", "STR#", "styl"].includes(asset.resourceType.trim())).map((asset) => ({
+      id: asset.id,
+      label: asset.label,
+      detail: textResourceDetail({ resourceId: asset.resourceId, type: asset.resourceType, bytes: asset.bytes }),
       source: "Project",
-      preview: textResourcePreview(entity.summary ?? {})
+      preview: asset.originalPath?.startsWith("data:text/") ? decodeTextDataUrl(asset.originalPath) : ""
     })),
     ...(catalog?.entities ?? []).filter((entity) => wantedTypes.has(entity.type)).map((entity) => ({
       id: entity.id,
@@ -850,6 +850,17 @@ function textReferenceRows(project: Project, catalog: LibraryCatalog | null | un
   const normalized = query.trim().toLowerCase();
   if (!normalized) return rows;
   return rows.filter((row) => `${row.label} ${row.detail} ${row.source}`.toLowerCase().includes(normalized));
+}
+
+function decodeTextDataUrl(dataUrl: string | null | undefined) {
+  if (!dataUrl) return "";
+  const comma = dataUrl.indexOf(",");
+  if (comma < 0) return "";
+  try {
+    return decodeURIComponent(dataUrl.slice(comma + 1));
+  } catch {
+    return "";
+  }
 }
 
 function textResourceDetail(summary: Record<string, unknown>) {

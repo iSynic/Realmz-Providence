@@ -1,5 +1,4 @@
 import { LibraryCatalog, LibraryEntity, Project, SemanticEntity } from "./types";
-import { schemaEntities } from "./semanticGraph";
 
 export type MonsterReferenceOption = {
   key: string;
@@ -16,7 +15,6 @@ type MonsterEntity = SemanticEntity | LibraryEntity;
 export function monsterReferenceOptions(project: Project, catalog?: LibraryCatalog | null): MonsterReferenceOption[] {
   const projectMonsters = new Map((project.monsters ?? []).map((record) => [record.id, record]));
   const entities = [
-    ...schemaEntities(project, "monster"),
     ...(catalog?.entities.filter((entity) => entity.type === "monster") ?? [])
   ];
   const ids = new Set<number>();
@@ -36,12 +34,6 @@ export function monsterReferenceOptions(project: Project, catalog?: LibraryCatal
   }
   for (const monster of project.monsters ?? []) {
     ids.add(monster.id);
-  }
-
-  for (const link of project.semanticSchema.links ?? []) {
-    if (!link.to.startsWith("monster:")) continue;
-    const id = trailingNumber(link.to);
-    if (id != null) ids.add(Math.abs(id));
   }
 
   return [...ids]
@@ -101,8 +93,7 @@ function monsterUsage(project: Project, monsterId: number) {
   for (const battle of project.battles ?? []) {
     battleSlots += battle.grid.filter((value) => Math.abs(value) === monsterId).length;
   }
-  const linkedUses = (project.semanticSchema.links ?? []).filter((link) => link.to === `monster:${monsterId}`).length;
-  return { battleSlots, linkedUses };
+  return { battleSlots, linkedUses: 0 };
 }
 
 function formatMonsterUsage(usage: { battleSlots: number; linkedUses: number }) {

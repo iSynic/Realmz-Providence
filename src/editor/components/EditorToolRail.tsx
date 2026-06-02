@@ -1,5 +1,6 @@
 import { TABS } from "../constants";
 import { ActiveWorkbench, EditorTab, LibraryCatalog, Project } from "../types";
+import { domainCount } from "../workbench/registry";
 import { TutorialTip } from "./TutorialTip";
 
 const RAIL_HINTS: Record<EditorTab, { short: string; title: string; detail: string }> = {
@@ -56,25 +57,7 @@ export function EditorToolRail({
 }
 
 function countFor(tab: EditorTab, project: Project | null, catalog: LibraryCatalog | null, activeWorkbench: ActiveWorkbench, issueCount: number) {
-  if (tab === "linter") return issueCount;
-  const libraryEntities = activeWorkbench === "library" ? catalog?.entities ?? [] : [];
-  if (!project && libraryEntities.length === 0) return 0;
-  if (tab === "maps") return project?.maps.length ?? 0;
-  if (tab === "scripts") return project?.semanticSchema.entities.filter((entity) => entity.type === "trigger" || entity.type === "macro" || entity.type === "ed3-action-record").length ?? 0;
-  if (tab === "scenario") return (project?.semanticSchema.entities.filter((entity) => ["scenario", "contact-info", "global-macro", "registration-security"].includes(entity.type)).length ?? 0);
-  if (tab === "encounters") {
-    return project?.semanticSchema.entities.filter((entity) =>
-      ["simple encounter", "complex encounter", "thief-encounter", "timed-encounter"].includes(entity.type)
-    ).length ?? 0;
-  }
-  if (tab === "combat") return (project?.semanticSchema.entities.filter((entity) => ["battle", "monster"].includes(entity.type)).length ?? 0) + libraryEntities.filter((entity) => ["monster-scrapbook-entry", "monster-mash-icon"].includes(entity.type)).length;
-  if (tab === "economy") return (project?.semanticSchema.entities.filter((entity) => ["treasure", "shop", "item-reference"].includes(entity.type)).length ?? 0) + libraryEntities.filter((entity) => ["item", "bag-item", "vault-icon"].includes(entity.type)).length;
-  if (tab === "rules") return (project?.semanticSchema.entities.filter((entity) => ["spell-reference"].includes(entity.type)).length ?? 0) + libraryEntities.filter((entity) => ["spell", "race", "caste"].includes(entity.type)).length;
-  if (tab === "assets") return (project?.semanticSchema.entities.filter((entity) => entity.type === "resource" || entity.type === "tile atlas").length ?? 0) + libraryEntities.filter((entity) => ["resource", "resource type", "special-land-tile"].includes(entity.type)).length;
-  if (tab === "text") return project?.semanticSchema.entities.filter((entity) => ["message", "resource"].includes(entity.type)).length ?? 0;
-  if (tab === "records") return (project?.semanticSchema.records.length ?? 0) + (activeWorkbench === "library" ? catalog?.records.length ?? 0 : 0);
-  if (tab === "export") return project ? project.validation.exportableFiles.length + project.validation.passThroughFiles.length : 0;
-  return 0;
+  return domainCount(tab, project, catalog, activeWorkbench, issueCount);
 }
 
 function compactCount(value: number) {

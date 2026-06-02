@@ -115,8 +115,7 @@ function scriptDiagnosticDependencyKey(project: Project, catalog?: LibraryCatalo
     refKey(project.questLabels),
     refKey(project.assets),
     refKey(project.maps),
-    refKey(project.mapRecords),
-    refKey(project.semanticSchema)
+    refKey(project.mapRecords)
   ].join("|");
 }
 
