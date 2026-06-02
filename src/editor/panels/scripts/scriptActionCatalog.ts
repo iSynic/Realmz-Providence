@@ -16,7 +16,7 @@ export type ScriptActionCategory =
   | "Items"
   | "Rules"
   | "Logic"
-  | "Reusable Actions"
+  | "Extra Action Points"
   | "Advanced";
 
 export type ScriptActionStorage =
@@ -144,7 +144,7 @@ const CATEGORY_ORDER: ScriptActionCategory[] = [
   "Items",
   "Rules",
   "Logic",
-  "Reusable Actions",
+  "Extra Action Points",
   "Advanced"
 ];
 
@@ -170,7 +170,7 @@ const ACTION_OVERRIDES: Record<number, Partial<Pick<ScriptActionDefinition, "lab
   5: { label: "Start Complex Encounter", shortLabel: "Complex Encounter", category: "Encounters", description: "Run a complex encounter." },
   6: { label: "Open Shop", shortLabel: "Shop", category: "Rewards", description: "Open a shop." },
   7: { label: "Copy Action Data", shortLabel: "Copy Actions", category: "Advanced", description: "Copy or patch another action's stored settings." },
-  8: { label: "Run Same-Map Action Point", shortLabel: "Same-Map Action", category: "Reusable Actions", description: "Run another Action Point from the current map." },
+  8: { label: "Run Same-Map Action Point", shortLabel: "Same-Map Action", category: "Extra Action Points", description: "Run another Action Point from the current map." },
   9: { label: "Play Sound", shortLabel: "Sound", category: "Media", description: "Play a sound effect." },
   10: { label: "Give Treasure", shortLabel: "Treasure", category: "Rewards", description: "Give a treasure reward." },
   11: { label: "Give Victory Points", shortLabel: "Victory Points", category: "Rewards", description: "Give victory points to the party." },
@@ -195,7 +195,7 @@ const ACTION_OVERRIDES: Record<number, Partial<Pick<ScriptActionDefinition, "lab
   35: { label: "Change Encounter State", shortLabel: "Encounter State", category: "Encounters", description: "Change a simple encounter's state." },
   37: { label: "Move In Dungeon", shortLabel: "Dungeon Move", category: "Travel", description: "Move the party within a dungeon." },
   38: { label: "Force Branch", shortLabel: "Force Branch", category: "Logic", description: "Route execution to another result or action." },
-  39: { label: "Run Reusable Action", shortLabel: "Reusable Action", category: "Reusable Actions", description: "Run an Extra Action Point as a reusable action." },
+  39: { label: "Run Extra Action Point", shortLabel: "Extra AP", category: "Extra Action Points", description: "Run an Extra Action Point." },
   40: { label: "Branch On Condition", shortLabel: "Condition Branch", category: "Logic", description: "Branch based on party condition state." },
   41: { label: "Change Encounter Choice", shortLabel: "Encounter Choice", category: "Encounters", description: "Clear or change a simple encounter choice." },
   42: { label: "Branch By Percent", shortLabel: "Percent Branch", category: "Logic", description: "Branch based on a percent roll." },
@@ -233,7 +233,7 @@ const ACTION_OVERRIDES: Record<number, Partial<Pick<ScriptActionDefinition, "lab
   76: { label: "Set Quest Value", shortLabel: "Quest Value", category: "Logic", description: "Write a quest value." },
   77: { label: "Branch On Quest", shortLabel: "Quest Branch", category: "Logic", description: "Branch on a quest value." },
   78: { label: "Branch True Or False", shortLabel: "True/False", category: "Logic", description: "Branch to one result for false and another for true." },
-  81: { label: "Branch On Condition", shortLabel: "Condition Branch", category: "Logic", description: "Branch to reusable actions based on condition state." },
+  81: { label: "Branch On Condition", shortLabel: "Condition Branch", category: "Logic", description: "Branch to Extra Action Points based on condition state." },
   84: { label: "Registration Check", shortLabel: "Registration", category: "Advanced", description: "Run a legacy registration check." },
   85: { label: "Branch Randomly", shortLabel: "Random Branch", category: "Logic", description: "Branch to a random target in a range." },
   86: { label: "Branch On Party State", shortLabel: "Party Branch", category: "Logic", description: "Branch based on party, race, caste, gender, boat, camp, or level tests." },
@@ -248,8 +248,8 @@ const ACTION_OVERRIDES: Record<number, Partial<Pick<ScriptActionDefinition, "lab
   106: { label: "Change Darkness", shortLabel: "Darkness", category: "Travel", description: "Set outdoor darkness state." },
   107: { label: "Start Selective Battle", shortLabel: "Selective Battle", category: "Encounters", description: "Start an improved selective battle and route if the party flees." },
   108: { label: "Change Selected Character", shortLabel: "Selected Character", category: "Party", description: "Alter selected-character combat or stat fields." },
-  111: { label: "Return From Reusable Action", shortLabel: "Return", category: "Reusable Actions", description: "Return from a reusable action." },
-  112: { label: "Pop Script Stack", shortLabel: "Pop", category: "Reusable Actions", description: "Pop script stack state." },
+  111: { label: "Return From Extra Action Point", shortLabel: "Return", category: "Extra Action Points", description: "Return from an Extra Action Point." },
+  112: { label: "Pop Script Stack", shortLabel: "Pop", category: "Extra Action Points", description: "Pop script stack state." },
   120: { label: "Change Combat Monster", shortLabel: "Combat Monster", category: "Encounters", description: "Alter combat monster id, count, or icon state." },
   121: { label: "Destroy Lower Undead", shortLabel: "Destroy Undead", category: "Encounters", description: "Destroy lower-level undead." },
   122: { label: "Show Fumble Result", shortLabel: "Fumble", category: "Encounters", description: "Show combat fumble message or sound behavior." },
@@ -287,7 +287,7 @@ const ACTION_METADATA_OVERRIDES: Record<number, ScriptActionMetadataOverride> = 
     defaultDraft: { rawCode: 2, id: 0, parameters: [0, 0, 0, 0, 0] },
     parameterDefaults: [0, 0, 0, 0, 0],
     parameters: {
-      2: { label: "Sound / Revive Action", help: "Optional pre-battle sound. When Reward / Revive Mode is 10, this runs the reusable action after a revived loss." },
+      2: { label: "Sound / Revive Action", help: "Optional pre-battle sound. When Reward / Revive Mode is 10, this runs the Extra Action Point after a revived loss." },
       3: { label: "Before Message" },
       4: { label: "Reward / Revive Mode", help: "0 awards victory and treasure, 5 awards victory only, 10 revives the party after a loss and skips rewards." }
     }
@@ -300,7 +300,7 @@ const ACTION_METADATA_OVERRIDES: Record<number, ScriptActionMetadataOverride> = 
     parameterDefaults: [1, 0, 0, 0, 0],
     parameters: {
       0: { label: "Continue When", help: "1 continues on the left/yes choice; 0 continues on the right/no choice." },
-      1: { label: "Otherwise", help: "Behavior for the non-continuing answer: back up, branch to a reusable action or encounter, or eliminate." },
+      1: { label: "Otherwise", help: "Behavior for the non-continuing answer: back up, branch to an Extra Action Point or encounter, or eliminate." },
       2: { label: "Branch Target" },
       3: { label: "Left Option" },
       4: { label: "Right Option" }
@@ -381,7 +381,7 @@ const ACTION_METADATA_OVERRIDES: Record<number, ScriptActionMetadataOverride> = 
   39: {
     storage: "data-ed3-direct",
     target: {
-      label: "Reusable Action",
+      label: "Extra Action Point",
       realmzField: "ID",
       targetFamily: "extra-action-point",
       defaultValue: 0,
@@ -517,7 +517,7 @@ const LEGACY_CATEGORY_MAP: Record<string, ScriptActionCategory> = {
   Rules: "Rules",
   Quest: "Logic",
   Scenario: "Logic",
-  Core: "Reusable Actions",
+  Core: "Extra Action Points",
   Advanced: "Advanced",
   Unknown: "Advanced"
 };
@@ -618,10 +618,10 @@ export function scriptStepBranchHint(rawCode: number, id: number) {
   const code = normalizeStepOpcode(rawCode);
   if (code === 3) return "Routes the player's choice.";
   if (code === 8) return `Runs same-map Action Point ${id}.`;
-  if (code === 39) return `Runs reusable action ${id}.`;
+  if (code === 39) return `Runs Extra Action Point ${id}.`;
   if ([38, 46, 58, 59, 72, 75, 77, 78, 81, 85, 86, 87].includes(code)) return "Routes the script based on a condition or result.";
   if ([2, 48, 56, 107].includes(code)) return "May route based on battle setup or outcome.";
-  if ([111, 112].includes(code)) return "Returns from reusable action flow.";
+  if ([111, 112].includes(code)) return "Returns from Extra Action Point flow.";
   return "";
 }
 
@@ -658,7 +658,7 @@ export function scriptStepFlowRoutes(
     return routes;
   }
   if (code === 39) {
-      routes.push({ kind: "call", label: "Reusable Action", detail: targetRoute(project, "macro", draft.id, catalog)?.detail ?? `Runs reusable action ${draft.id}.`, target: targetRoute(project, "macro", draft.id, catalog) ?? undefined });
+      routes.push({ kind: "call", label: "Extra Action Point", detail: targetRoute(project, "macro", draft.id, catalog)?.detail ?? `Runs Extra Action Point ${draft.id}.`, target: targetRoute(project, "macro", draft.id, catalog) ?? undefined });
     return routes;
   }
   if ([38, 46, 58, 59, 42, 72, 75, 77, 78, 81, 85, 86, 87].includes(code)) {
@@ -668,7 +668,7 @@ export function scriptStepFlowRoutes(
     routes.push({ kind: "outcome", label: definition.shortLabel, detail: summarizeSettingsBackedAction(project, catalog, definition, draft) || "May start a battle or route from a battle outcome." });
   }
   if ([111, 112].includes(code)) {
-    routes.push({ kind: "stops", label: definition.shortLabel, detail: "Returns from reusable action flow." });
+    routes.push({ kind: "stops", label: definition.shortLabel, detail: "Returns from Extra Action Point flow." });
   }
   return routes;
 }
@@ -802,7 +802,7 @@ function coordinateLabel(value: number | undefined) {
 }
 
 function choiceBranchKindLabel(branchMode: number) {
-  if (branchMode === 1) return "Branch to a reusable action.";
+  if (branchMode === 1) return "Branch to an Extra Action Point.";
   if (branchMode === 2) return "Branch to a simple encounter result.";
   if (branchMode === 3) return "Branch to a complex encounter result.";
   return "";

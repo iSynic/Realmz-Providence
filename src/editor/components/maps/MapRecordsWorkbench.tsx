@@ -43,7 +43,7 @@ export function MapRecordsWorkbench({
             ["Shown", visibleRecords.length],
             ["Total Records", records.length],
             ["Current Map", selectedMap?.name ?? "All maps"],
-            ["Source", "Data MD2"]
+            ["Record Type", "Map settings"]
           ]}
         />
         <div className="context-action-stack compact">
@@ -237,7 +237,7 @@ function MapRecordEditor({
   const targetMapId = `${record.isDungeon ? "dungeon" : "land"}:${record.level}`;
   return (
     <details className="context-section map-record-editor" open>
-      <summary><span>Edit Map Record</span><b>Data MD2</b></summary>
+      <summary><span>Edit Map Record</span><b>Map Settings</b></summary>
       <MapDiagnostics diagnostics={mapRecordDiagnostics(record, map)} />
       <div className="map-authoring-form">
         <MapNumberField label="Start X" value={record.startX} min={0} max={89} onCommit={(startX) => update({ startX })} />
@@ -285,7 +285,7 @@ function MapRecordEditor({
         </button>
       </div>
       <p className="empty-copy compact">
-        Names stay read-only because they are stored in the scenario resource data. Data MD2 bytes 74..76 stay preserved from {semanticRecord.recordRef ?? "Data MD2"}.
+        Names stay read-only because they are stored in the scenario resource data. Unknown map-setting bytes stay preserved on export.
       </p>
     </details>
   );

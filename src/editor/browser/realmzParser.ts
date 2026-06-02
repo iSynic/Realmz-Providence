@@ -483,6 +483,7 @@ function parseDoor(
 ) {
   const doorid = i32(buffer, 0);
   const coordinate = source === "Data ED3" ? null : decodeDoorCoordinate(doorid, levelIndex);
+  const percent = signedByte(buffer[7]);
   const actions: Action[] = [];
   for (let slot = 0; slot < 8; slot += 1) {
     const rawCode = i16(buffer, 8 + slot * 2);
@@ -491,7 +492,7 @@ function parseDoor(
   }
   const active = source === "Data ED3"
     ? actions.length > 0
-    : Boolean(coordinate && (buffer[7] !== 0 || actions.length > 0 || doorid !== 0));
+    : Boolean(coordinate && percent >= 1 && (actions.length > 0 || doorid !== 0));
   return {
     id: `${source}:${levelIndex ?? "macro"}:${recordIndex}`,
     source,
@@ -503,7 +504,7 @@ function parseDoor(
     landid: buffer[4],
     targetX: buffer[5],
     targetY: buffer[6],
-    percent: buffer[7],
+    percent,
     coordinate,
     actions,
     provenance: provenance(source, recordIndex, byteOffset, DOOR_BYTES, "source-backed")
@@ -1021,9 +1022,42 @@ function buildAssetCatalog(
   }
   return {
     tilesets,
+    pictures: buildScenarioPictureCatalog(scenarioResources, diagnostics),
     icons: buildScenarioIconCatalog(maps, scenarioResources, diagnostics),
     sounds: buildScenarioSoundCatalog(scenarioResources, diagnostics)
   };
+}
+
+function buildScenarioPictureCatalog(
+  resources: Array<{ source: string; resource: ResourceEntry }>,
+  diagnostics: Diagnostic[]
+): ResourceAsset[] {
+  const seen = new Set<number>();
+  const pictures: ResourceAsset[] = [];
+  for (const match of resources) {
+    const { source, resource } = match;
+    if (resource.resourceType !== "PICT" || seen.has(resource.id)) continue;
+    const preview = inspectResourcePreview("PICT", resource.data);
+    if (preview.status !== "preview-ready" || !preview.dataUrl) {
+      const detail = preview.diagnostics[0]?.message ?? `Preview status was ${preview.status}.`;
+      diagnostics.push({
+        severity: preview.status === "malformed" ? "error" : "warning",
+        code: "unsupported-scenario-picture-preview",
+        message: `Scenario PICT ${resource.id} in ${source} could not be decoded for preview: ${detail}`,
+        source
+      });
+    }
+    pictures.push({
+      id: `scenario-pict-${resource.id}`,
+      resourceType: "PICT",
+      resourceId: resource.id,
+      name: resource.name || null,
+      source: `Browser import: ${source} PICT ${resource.id}`,
+      previewPath: preview.status === "preview-ready" ? preview.dataUrl : null
+    });
+    seen.add(resource.id);
+  }
+  return pictures.sort((a, b) => a.resourceId - b.resourceId);
 }
 
 function buildScenarioIconCatalog(

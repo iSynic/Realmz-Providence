@@ -21,7 +21,7 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
     if (!record) return [];
     const issues = validateRecordId(recordType, recordId);
     const bytes = asciiByteLength(record.text);
-    if (bytes > 255) issues.push(recordIssue("error", recordType, recordId, "message-too-long", "Message text is too long for Data SD2.", `Message ${recordId} is ${bytes} byte(s); Realmz supports 255.`));
+    if (bytes > 255) issues.push(recordIssue("error", recordType, recordId, "message-too-long", "Message text is too long.", `Message ${recordId} is ${bytes} byte(s); Realmz supports 255.`));
     if (hasNonAscii(record.text)) issues.push(recordIssue("warning", recordType, recordId, "message-non-ascii", "Message contains non-ASCII characters.", "Classic text records are byte-oriented; non-ASCII characters may export as fallback spaces or unsupported glyphs."));
     return issues;
   }
@@ -124,7 +124,7 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
     const record = project.treasures?.find((candidate) => candidate.id === recordId);
     if (!record) return [];
     const issues = validateRecordId(recordType, recordId);
-    if (record.itemIds.length > 20) issues.push(recordIssue("error", recordType, recordId, "treasure-item-count", "Treasure has too many item slots.", `Treasure ${recordId} has ${record.itemIds.length}; Realmz Data TD supports 20.`));
+    if (record.itemIds.length > 20) issues.push(recordIssue("error", recordType, recordId, "treasure-item-count", "Treasure has too many item slots.", `Treasure ${recordId} has ${record.itemIds.length}; Realmz supports 20.`));
     for (const field of ["exp", "gold", "gems", "jewelry"] as const) issues.push(...validateI16Field(recordType, recordId, field, record[field]));
     for (const [slot, item] of record.itemIds.entries()) {
       if (!isI16(item)) issues.push(recordIssue("error", recordType, recordId, `treasure-item-${slot}`, "Treasure item ID is outside Realmz integer range.", `Item slot ${slot} has ${item}.`));
@@ -135,7 +135,7 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
     const record = project.shops?.find((candidate) => candidate.id === recordId);
     if (!record) return [];
     const issues = validateRecordId(recordType, recordId);
-    if (record.itemIds.length > 1000 || record.quantities.length > 1000) issues.push(recordIssue("error", recordType, recordId, "shop-slot-count", "Shop has too many stocked slots.", `Shop ${recordId} exceeds Realmz Data SD capacity of 1000 item and quantity slots.`));
+    if (record.itemIds.length > 1000 || record.quantities.length > 1000) issues.push(recordIssue("error", recordType, recordId, "shop-slot-count", "Shop has too many stocked slots.", `Shop ${recordId} exceeds Realmz capacity of 1000 item and quantity slots.`));
     issues.push(...validateI16Field(recordType, recordId, "Inflation", record.inflation));
     for (const [slot, item] of record.itemIds.entries()) {
       if (!isI16(item)) issues.push(recordIssue("error", recordType, recordId, `shop-item-${slot}`, "Shop item ID is outside Realmz integer range.", `Item slot ${slot} has ${item}.`));
@@ -154,17 +154,17 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
     const maxTextBytes = recordType === "simpleEncounter" ? 79 : 39;
     for (const [slot, text] of record.texts.entries()) {
       const bytes = asciiByteLength(text);
-      if (bytes > maxTextBytes) issues.push(slotIssue("error", recordType, recordId, slot, "encounter-text-too-long", "Encounter text is too long.", `Text ${slot} is ${bytes} byte(s); ${recordType === "simpleEncounter" ? "Data ED" : "Data ED2"} supports ${maxTextBytes} display byte(s) plus one length byte.`));
+      if (bytes > maxTextBytes) issues.push(slotIssue("error", recordType, recordId, slot, "encounter-text-too-long", "Encounter text is too long.", `Text ${slot} is ${bytes} byte(s); Realmz supports ${maxTextBytes} display byte(s) plus one length byte.`));
       if (hasNonAscii(text)) issues.push(slotIssue("warning", recordType, recordId, slot, "encounter-text-non-ascii", "Encounter text contains non-ASCII characters.", "Classic encounter text is byte-oriented; non-ASCII characters may not round-trip as intended."));
     }
     if (recordType === "simpleEncounter") {
-      if ((record.choiceResults ?? []).length > 4) issues.push(recordIssue("error", recordType, recordId, "choice-result-count", "Simple encounter has too many choice result rows.", "Data ED stores four choice result bytes."));
+      if ((record.choiceResults ?? []).length > 4) issues.push(recordIssue("error", recordType, recordId, "choice-result-count", "Simple encounter has too many choice result rows.", "Simple encounters store four choice result bytes."));
     } else {
       const complex = record as Project["complexEncounters"][number];
       const actionResult = complex.actionResult ?? signedByteLike((complex.choiceResults ?? [])[0] ?? 0);
       const wordResult = complex.wordResult ?? signedByteLike((complex.wordResults ?? [])[0] ?? 0);
       for (const [label, value] of [["action result", actionResult], ["word result", wordResult]] as const) {
-        if (!isSignedByte(value)) issues.push(recordIssue("error", recordType, recordId, `complex-${label.replace(/\W+/g, "-")}`, `Complex encounter ${label} is outside signed-byte range.`, `${label} has ${value}; Data ED2 stores this as one byte.`));
+        if (!isSignedByte(value)) issues.push(recordIssue("error", recordType, recordId, `complex-${label.replace(/\W+/g, "-")}`, `Complex encounter ${label} is outside signed-byte range.`, `${label} has ${value}; Realmz stores this as one byte.`));
       }
       for (const [label, values, max] of [
         ["group flags", complex.groups ?? [], 8],
@@ -173,7 +173,7 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
         ["item IDs", complex.itemIds ?? [], 5],
         ["item results", complex.itemResults ?? [], 5]
       ] as const) {
-        if (values.length > max) issues.push(recordIssue("error", recordType, recordId, `complex-${label.replace(/\W+/g, "-")}`, `Complex encounter has too many ${label}.`, `Data ED2 stores ${max} ${label}.`));
+        if (values.length > max) issues.push(recordIssue("error", recordType, recordId, `complex-${label.replace(/\W+/g, "-")}`, `Complex encounter has too many ${label}.`, `Realmz stores ${max} ${label}.`));
         for (const [slot, value] of values.entries()) {
           const isResult = label.includes("results") || label === "group flags";
           if (isResult ? !isSignedByte(value) : !isI16(value)) {
@@ -200,7 +200,7 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
       issues.push(recordIssue("error", recordType, recordId, "timed-location-kind", "Timed encounter location requirement is invalid.", "Choose Any, Land, or Dungeon."));
     }
     if (record.stuff.length > 10) {
-      issues.push(recordIssue("error", recordType, recordId, "timed-extra-field-count", "Timed encounter has too many extra fields.", "Data TD3 stores exactly ten extra signed-short fields."));
+      issues.push(recordIssue("error", recordType, recordId, "timed-extra-field-count", "Timed encounter has too many extra fields.", "Timed encounters store exactly ten extra signed-short fields."));
     }
     issues.push(...validateReference(project, recordType, recordId, "Extra Action Point", 8, record.door, undefined, catalog));
     if (record.requiredQuest >= 0 && record.requiredQuest > 9999) {
@@ -212,7 +212,7 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
     const record = project.thiefEncounters?.find((candidate) => candidate.id === recordId);
     if (!record) return [];
     const issues = validateRecordId(recordType, recordId);
-    if (record.typeFlags.length > 10) issues.push(recordIssue("error", recordType, recordId, "rogue-flag-count", "Rogue encounter has too many state flags.", "Data TD2 stores ten state flags."));
+    if (record.typeFlags.length > 10) issues.push(recordIssue("error", recordType, recordId, "rogue-flag-count", "Rogue encounter has too many state flags.", "Rogue encounters store ten state flags."));
     for (const [label, values, max] of [
       ["modifiers", record.modifiers, 8],
       ["success result codes", record.successCodes, 8],
@@ -224,7 +224,7 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
       ["prompt/support fields", record.prompts, 3],
       ["prompt sounds", record.promptSounds, 3]
     ] as const) {
-      if (values.length > max) issues.push(recordIssue("error", recordType, recordId, `rogue-${label.replace(/\W+/g, "-")}`, `Rogue encounter has too many ${label}.`, `Data TD2 stores ${max} ${label}.`));
+      if (values.length > max) issues.push(recordIssue("error", recordType, recordId, `rogue-${label.replace(/\W+/g, "-")}`, `Rogue encounter has too many ${label}.`, `Rogue encounters store ${max} ${label}.`));
       for (const [slot, value] of values.entries()) {
         if (!isI16(value)) issues.push(recordIssue("error", recordType, recordId, `rogue-${label}-${slot}`, "Rogue encounter value is outside Realmz integer range.", `${label} slot ${slot} has ${value}.`));
       }
@@ -287,7 +287,7 @@ function validateEncounterActions(project: Project, recordType: RealmzTargetReco
     if (isDirectMacroOpcode(code) && action.id !== 0) {
       const macro = project.triggers.find((candidate) => candidate.source === "Data ED3" && candidate.recordIndex === action.id);
       if (!macro) issues.push(slotIssue("error", recordType, recordId, action.slot, "dangling-macro", "Extra Action Point target is missing.", `No callable Extra Action Point ${action.id} exists.`));
-      else if (!isCallableMacro(project, macro)) issues.push(slotIssue("warning", recordType, recordId, action.slot, "imported-extra-action-target", "Target is an imported Extra Action Point.", `Extra Action Point ${action.id} is available in Advanced Imports.`));
+      else if (!isCallableMacro(project, macro)) issues.push(slotIssue("warning", recordType, recordId, action.slot, "unlinked-extra-action-target", "Extra Action Point is not linked from known scenario flow yet.", `Extra Action Point ${action.id} exists, but Providence has not identified a normal call path for it yet.`));
     }
   }
   return issues;

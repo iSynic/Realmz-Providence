@@ -60,9 +60,9 @@ function buildMessageUsageLinks(project: Project) {
       if (![1, 62, 71].includes(code)) continue;
       add(targetMessageId, {
         key: `script:${trigger.id}:${action.slot}`,
-        label: triggerLabel(trigger),
+        label: triggerLabel(project, trigger),
         detail: `Action slot ${action.slot}: ${actionOptionFor(action.rawCode).label}`,
-        entity: { type: "trigger", id: trigger.id }
+        entity: triggerUsageEntity(trigger)
       });
     }
   }
@@ -323,9 +323,9 @@ function forEachScriptAction(project: Project, visit: (action: ScriptActionLike,
     for (const action of trigger.actions ?? []) {
       visit(action, {
         key: `script:${trigger.id}:${action.slot}`,
-        label: triggerLabel(trigger),
+        label: triggerLabel(project, trigger),
         actionLabel: `Action slot ${action.slot}`,
-        entity: { type: "trigger", id: trigger.id }
+        entity: triggerUsageEntity(trigger)
       });
     }
   }
@@ -416,12 +416,42 @@ export function assetOriginLabel(asset: ManagedAsset | LibraryAsset) {
   return "Realmz Library";
 }
 
-function triggerLabel(trigger: Project["triggers"][number]) {
+function triggerLabel(project: Project, trigger: Project["triggers"][number]) {
   if (trigger.levelType != null && trigger.levelIndex != null && trigger.coordinate) {
     return `${trigger.levelType} ${trigger.levelIndex} Action Point ${trigger.recordIndex}`;
   }
-  if (trigger.source === "Data ED3") return `Macro ${trigger.recordIndex}`;
+  if (trigger.source === "Data ED3") return `${authorFacingExtraActionKind(extraActionClassification(project, trigger))} ${trigger.recordIndex}`;
   return `Action Point ${trigger.recordIndex}`;
+}
+
+function triggerUsageEntity(trigger: Project["triggers"][number]): SelectedEntity {
+  if (trigger.source === "Data ED3") return { type: "macro", id: `macro:${trigger.recordIndex}` };
+  return { type: "trigger", id: trigger.id };
+}
+
+function extraActionClassification(project: Project, trigger: Project["triggers"][number]) {
+  const row = project.semanticSchema.decoding?.ed3Reachability?.find((candidate) => candidate.recordIndex === trigger.recordIndex);
+  if (!row?.reachable) return importedExtraActionLabel(row?.classification);
+  const rootType = String(row.rootType ?? "");
+  if (rootType.includes("global")) return "Global Macro";
+  if (rootType.includes("random")) return "Random Encounter Action";
+  if (rootType.includes("time")) return "Timed Encounter Action";
+  if (rootType.includes("battle") || rootType.includes("monster") || rootType.includes("item")) return "Battle / Monster / Item Action";
+  return "Callable Extra Action Point";
+}
+
+function importedExtraActionLabel(classification: string | null | undefined) {
+  if (classification === "probable-editor-padding") return "Imported Empty Slot";
+  if (classification === "runtime-mutation-candidate") return "Imported Runtime Mutation";
+  return "Imported Extra Action";
+}
+
+function authorFacingExtraActionKind(classification: string) {
+  if (classification === "Callable Extra Action Point") return "Extra Action Point";
+  if (classification === "Global Macro") return "Global Event";
+  if (classification === "Imported Empty Slot") return "Empty Extra Action Point";
+  if (classification === "Imported Runtime Mutation") return "Runtime Extra Action Point";
+  return "Unlinked Extra Action Point";
 }
 
 function tileMatchesCicn(tile: number, resourceId: number) {

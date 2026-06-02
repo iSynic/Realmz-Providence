@@ -25,6 +25,7 @@ import {
   actionBelongsTo,
   actionSummary,
   filterScriptsByInventory,
+  hasScriptWarning,
   issueCountsBySlot,
   scriptLabel,
   scriptMatchesQuery,
@@ -77,10 +78,10 @@ type SelectedEdcdUsage = {
 
 const SCRIPT_EDITOR_TABS = [
   { id: "action-points", label: "Action Points", title: "Create and edit map Action Points." },
-  { id: "macros", label: "Reusable Actions", title: "Reusable actions and branch targets." },
+  { id: "macros", label: "Extra Action Points", title: "Extra Action Points and branch targets." },
   { id: "global-macros", label: "Global Events", title: "Scenario-wide event hooks and startup logic." },
   { id: "quests", label: "Quests", title: "Quest flags and script references." },
-  { id: "ed3-evidence", label: "Advanced Imports", title: "Imported advanced action data kept with the scenario." }
+  { id: "ed3-evidence", label: "Unlinked Extra APs", title: "Extra Action Points not yet linked from known scenario behavior." }
 ];
 
 const scriptDiagnosticCache = new WeakMap<TriggerRecord, { key: string; diagnostics: ScriptDiagnostic[] }>();
@@ -126,9 +127,11 @@ function cachedValidateScriptTrigger(project: Project, trigger: TriggerRecord, c
 }
 
 function authorFacingExtraActionKind(classification: string) {
-  return classification
-    .replace(/\bGlobal Macro\b/g, "Global Event")
-    .replace(/\bMacro\b/g, "Reusable Action");
+  if (classification === "Callable Extra Action Point") return "Extra Action Point";
+  if (classification === "Global Macro") return "Global Event";
+  if (classification === "Imported Empty Slot") return "Empty Extra Action Point";
+  if (classification === "Imported Runtime Mutation") return "Runtime Extra Action Point";
+  return "Unlinked Extra Action Point";
 }
 
 export function ScriptsPanel({
@@ -253,6 +256,12 @@ function ScriptAuthoringPanel({
   const [warningScanReady, setWarningScanReady] = useState(false);
   const selectedScriptButtonRef = useRef<HTMLButtonElement | null>(null);
   const benchmarkStartedRef = useRef(false);
+  const selectedMap = projectMaps.find((map) => map.id === newActionPoint.mapId) ?? projectMaps[0] ?? null;
+  const canScopeToMap = Boolean(selectedMap && activeTabKind === "action-points");
+  const visibleInventoryFilters = useMemo(() => {
+    if (activeTabKind === "action-points") return SCRIPT_INVENTORY_FILTERS.filter((filter) => filter.id !== "macros");
+    return SCRIPT_INVENTORY_FILTERS.filter((filter) => filter.id === "all" || filter.id === "warnings");
+  }, [activeTabKind]);
   useEffect(() => {
     if (projectMaps.length === 0) return;
     if (!projectMaps.some((map) => map.id === newActionPoint.mapId)) {
@@ -260,17 +269,13 @@ function ScriptAuthoringPanel({
     }
   }, [newActionPoint.mapId, projectMaps]);
   useEffect(() => {
-    if (activeTabKind === "reusable-actions" || activeTabKind === "global-events" || activeTabKind === "advanced-imports") {
-      setInventoryFilter("macros");
-    } else if (activeTabKind === "quests") {
-      setInventoryFilter("all");
-    }
-  }, [activeTabKind, setInventoryFilter]);
+    const allowed = new Set(visibleInventoryFilters.map((filter) => filter.id));
+    if (allowed.has(inventoryFilter)) return;
+    setInventoryFilter(activeTabKind === "action-points" && canScopeToMap ? "current-map" : "all");
+  }, [activeTabKind, canScopeToMap, inventoryFilter, setInventoryFilter, visibleInventoryFilters]);
   useEffect(() => {
     selectedScriptButtonRef.current?.scrollIntoView({ block: "nearest" });
   }, [selectedEntity?.id, inventoryFilter, scriptQuery, scripts.length]);
-  const selectedMap = projectMaps.find((map) => map.id === newActionPoint.mapId) ?? projectMaps[0] ?? null;
-  const canScopeToMap = Boolean(selectedMap && activeTabKind === "action-points");
   const diagnosticDependencyKey = useMemo(() => project ? scriptDiagnosticDependencyKey(project, catalog) : "", [project, catalog]);
   useEffect(() => {
     setWarningScanReady(false);
@@ -283,7 +288,7 @@ function ScriptAuthoringPanel({
     if (!project || inventoryFilter !== "warnings" || !warningScanReady) return map;
     for (const trigger of scripts) {
       const diagnostics = cachedValidateScriptTrigger(project, trigger, catalog, diagnosticDependencyKey);
-      if (diagnostics.length > 0) map.set(trigger.id, diagnostics);
+      if (hasScriptWarning(diagnostics)) map.set(trigger.id, diagnostics);
     }
     return map;
   }, [project, scripts, catalog, diagnosticDependencyKey, inventoryFilter, warningScanReady]);
@@ -310,7 +315,7 @@ function ScriptAuthoringPanel({
       if (trigger.source === "Data ED3") {
         counts.set("macros", (counts.get("macros") ?? 0) + 1);
       }
-      if (inventoryFilter === "warnings" && warningScanReady && (fullWarningDiagnosticsById.get(trigger.id) ?? []).length > 0) {
+      if (inventoryFilter === "warnings" && warningScanReady && hasScriptWarning(fullWarningDiagnosticsById.get(trigger.id) ?? [])) {
         counts.set("warnings", (counts.get("warnings") ?? 0) + 1);
       }
     }
@@ -403,11 +408,20 @@ function ScriptAuthoringPanel({
       benchmarkStartedRef.current = false;
     };
   }, [filteredScripts, onSelectEntity, setDetailSurface]);
+  const selectedTriggerFromSelection = useMemo(
+    () => project?.triggers.find((trigger) => triggerMatchesSelection(trigger, selectedEntity?.id ?? "")) ?? null,
+    [project, selectedEntity?.id]
+  );
   const selectedTrigger =
-    scripts.find((trigger) => triggerMatchesSelection(trigger, selectedEntity?.id ?? "")) ??
+    selectedTriggerFromSelection ??
     filteredScripts[0] ??
     scripts[0] ??
     null;
+  useEffect(() => {
+    if (!selectedTrigger) return;
+    if (selectedTrigger.actions.some((action) => action.slot === selectedSlot)) return;
+    setSelectedSlot(selectedTrigger.actions[0]?.slot ?? 0);
+  }, [selectedTrigger?.id, selectedSlot, selectedTrigger]);
   const visibleScripts = useMemo(() => filteredScripts.slice(0, visibleScriptLimit), [filteredScripts, visibleScriptLimit]);
   const visibleDiagnosticsById = useMemo(() => {
     const map = new Map(fullWarningDiagnosticsById);
@@ -441,7 +455,7 @@ function ScriptAuthoringPanel({
   const selectedEdcdRowId = selectedOption.edcdShape ? Math.max(0, selectedDraft.id) : null;
   const isMacro = selectedTrigger?.source === "Data ED3";
   const selectedExtraActionClassification = selectedTrigger && isMacro ? authorFacingExtraActionKind(extraActionPointClassification(project, selectedTrigger)) : "Action Point";
-  const deleteMacroLabel = selectedExtraActionClassification === "Global Event" ? "Delete Global Event" : "Delete Reusable Action";
+  const deleteMacroLabel = selectedExtraActionClassification === "Global Event" ? "Delete Global Event" : "Delete Extra Action Point";
   const moveMapKey = selectedTrigger && !isMacro && selectedTrigger.levelType && selectedTrigger.levelIndex != null
     ? `${selectedTrigger.levelType}:${selectedTrigger.levelIndex}`
     : "";
@@ -586,12 +600,12 @@ function ScriptAuthoringPanel({
       <header>
         <div>
           <strong>{scriptPanelTitle(activeEditor)}</strong>
-          <small>Build scenario behavior from clear steps, targets, choices, and reusable actions.</small>
+          <small>Build scenario behavior from clear steps, targets, choices, and Extra Action Points.</small>
         </div>
         <div className="script-toolbar">
           {(activeTabKind === "action-points" || activeTabKind === "reusable-actions") && (
-            <button type="button" className="btn btn-secondary btn-xs" onClick={() => onApplyCommand?.({ kind: "createMacro", label: "Create Reusable Action" })}>
-              <Plus size={12} /> Reusable Action
+            <button type="button" className="btn btn-secondary btn-xs" onClick={() => onApplyCommand?.({ kind: "createMacro", label: "Create Extra Action Point" })}>
+              <Plus size={12} /> Extra Action Point
             </button>
           )}
           {selectedTrigger && (
@@ -656,7 +670,7 @@ function ScriptAuthoringPanel({
               placeholder="Filter action points..."
             />
             <div className="script-list-scope script-filter-chips" role="group" aria-label="Script inventory filter">
-              {SCRIPT_INVENTORY_FILTERS.map((filter) => (
+              {visibleInventoryFilters.map((filter) => (
                 <button
                   key={filter.id}
                   type="button"
@@ -671,15 +685,15 @@ function ScriptAuthoringPanel({
             </div>
             {activeTabKind === "advanced-imports" && (
               <div className="script-tab-note">
-                <strong>{scripts.length.toLocaleString()} imported action row(s)</strong>
-                <small>Advanced imported actions stay with the scenario and can be inspected here.</small>
+                <strong>{scripts.length.toLocaleString()} unlinked Extra Action Point(s)</strong>
+                <small>These Extra Action Points are preserved with the scenario, but Providence has not identified a normal call path for them yet.</small>
               </div>
             )}
             {activeTabKind === "quests" && (
               <QuestUsageSummary project={project} scripts={scripts} onSelectEntity={onSelectEntity} onApplyCommand={onApplyCommand} />
             )}
           </div>
-          <ScrollArea className="realmz-script-list" aria-label="Action Points and reusable actions">
+          <ScrollArea className="realmz-script-list" aria-label="Action Points and Extra Action Points">
             {visibleScripts.map((trigger) => (
               <ScriptListItem
                 key={trigger.id}
@@ -724,19 +738,24 @@ function ScriptAuthoringPanel({
                   <button className="btn btn-secondary btn-xs" type="button" onClick={() => onApplyCommand?.({ kind: "duplicateTrigger", label: "Duplicate script", triggerId: selectedTrigger.id })}>
                     <Copy size={12} /> Duplicate
                   </button>
-                  <button className="btn btn-danger btn-xs" type="button" title={isMacro ? "Delete this reusable action" : "Clear this Action Point record so it can be reused"} onClick={() => onApplyCommand?.({ kind: "deleteTrigger", label: isMacro ? deleteMacroLabel : "Clear Action Point", triggerId: selectedTrigger.id })}>
+                  <button className="btn btn-danger btn-xs" type="button" title={isMacro ? "Delete this Extra Action Point" : "Clear this Action Point record so it can be reused"} onClick={() => onApplyCommand?.({ kind: "deleteTrigger", label: isMacro ? deleteMacroLabel : "Clear Action Point", triggerId: selectedTrigger.id })}>
                     <Trash2 size={12} /> {isMacro ? deleteMacroLabel : "Clear Action Point"}
                   </button>
                 </div>
               </div>
               <ScriptDiagnostics issues={triggerDiagnostics.filter((issue) => issue.slot == null)} />
-              <div className="script-header-grid">
-                <NumberField
-                  label="% Chance"
-                  value={selectedTrigger.percent}
-                  onCommit={(percent) => onApplyCommand?.({ kind: "updateTriggerHeader", label: "Update action chance", triggerId: selectedTrigger.id, fields: { percent } })}
-                />
-                {!isMacro && (
+              {isMacro ? (
+                <div className="script-record-note">
+                  <strong>{selectedExtraActionClassification}</strong>
+                  <small>Extra Action Points store only the eight script steps. Map trigger fields like chance, location, and goto target do not apply until another script calls them.</small>
+                </div>
+              ) : (
+                <div className="script-header-grid">
+                  <NumberField
+                    label="% Chance"
+                    value={selectedTrigger.percent}
+                    onCommit={(percent) => onApplyCommand?.({ kind: "updateTriggerHeader", label: "Update action chance", triggerId: selectedTrigger.id, fields: { percent } })}
+                  />
                   <label>
                     <span>Map</span>
                     <select
@@ -751,37 +770,33 @@ function ScriptAuthoringPanel({
                       ))}
                     </select>
                   </label>
-                )}
-                {!isMacro && (
                   <NumberField
                     label="Cell X"
                     value={selectedTrigger.coordinate?.x ?? selectedTrigger.targetX ?? 0}
                     onCommit={(x) => moveSelectedActionPoint({ x })}
                   />
-                )}
-                {!isMacro && (
                   <NumberField
                     label="Cell Y"
                     value={selectedTrigger.coordinate?.y ?? selectedTrigger.targetY ?? 0}
                     onCommit={(y) => moveSelectedActionPoint({ y })}
                   />
-                )}
-                <NumberField
-                  label="Goto Level"
-                  value={selectedTrigger.landid ?? 0}
-                  onCommit={(landid) => onApplyCommand?.({ kind: "updateTriggerHeader", label: "Update action target level", triggerId: selectedTrigger.id, fields: { landid } })}
-                />
-                <NumberField
-                  label="Goto X"
-                  value={selectedTrigger.targetX ?? 0}
-                  onCommit={(targetX) => onApplyCommand?.({ kind: "updateTriggerHeader", label: "Update action target X", triggerId: selectedTrigger.id, fields: { targetX } })}
-                />
-                <NumberField
-                  label="Goto Y"
-                  value={selectedTrigger.targetY ?? 0}
-                  onCommit={(targetY) => onApplyCommand?.({ kind: "updateTriggerHeader", label: "Update action target Y", triggerId: selectedTrigger.id, fields: { targetY } })}
-                />
-              </div>
+                  <NumberField
+                    label="Goto Level"
+                    value={selectedTrigger.landid ?? 0}
+                    onCommit={(landid) => onApplyCommand?.({ kind: "updateTriggerHeader", label: "Update action target level", triggerId: selectedTrigger.id, fields: { landid } })}
+                  />
+                  <NumberField
+                    label="Goto X"
+                    value={selectedTrigger.targetX ?? 0}
+                    onCommit={(targetX) => onApplyCommand?.({ kind: "updateTriggerHeader", label: "Update action target X", triggerId: selectedTrigger.id, fields: { targetX } })}
+                  />
+                  <NumberField
+                    label="Goto Y"
+                    value={selectedTrigger.targetY ?? 0}
+                    onCommit={(targetY) => onApplyCommand?.({ kind: "updateTriggerHeader", label: "Update action target Y", triggerId: selectedTrigger.id, fields: { targetY } })}
+                  />
+                </div>
+              )}
               <div className={`realmz-visual-script${floatingDetail ? " has-floating-detail" : ""}${targetEditorPanel ? "" : " no-target-drawer"}${wideTargetRecord && targetEditorPanel && !floatingDetail ? " has-wide-target" : ""}`}>
                 <PanelSection
                   title="Steps"
@@ -1032,7 +1047,7 @@ function SourceEvidenceDetails({
         <FieldRow label="Script Entity" value={triggerEntityIdValue} />
         <FieldRow label="Record Index" value={trigger.recordIndex} />
         <FieldRow label="Door ID" value={trigger.doorid} />
-        <FieldRow label="Map" value={trigger.levelType != null ? `${trigger.levelType} ${trigger.levelIndex ?? 0}` : "Reusable Action"} />
+        <FieldRow label="Map" value={trigger.levelType != null ? `${trigger.levelType} ${trigger.levelIndex ?? 0}` : "Extra Action Point"} />
         <FieldRow label="Coordinate" value={trigger.coordinate ? `${trigger.coordinate.x}, ${trigger.coordinate.y}` : "none"} />
         <FieldRow label="Selected Slot" value={selectedSlot} />
         <FieldRow label="Slot Entity" value={resolvedSlotEntity?.id ?? "draft-only"} />
@@ -1040,7 +1055,7 @@ function SourceEvidenceDetails({
         <FieldRow label="Draft CODE/ID" value={`${selectedDraft.rawCode} / ${selectedDraft.id}`} />
         <FieldRow label="Opcode" value={selectedOption.label} />
         <FieldRow label="Dispatcher" value={isDispatcherNoopOpcode(selectedDraft.rawCode) ? "dispatcher no-op; Realmz ignores this CODE" : "has documented dispatcher behavior"} />
-        <FieldRow label="Data EDCD Row" value={selectedEdcdRowId != null ? `row ${selectedEdcdRowId}${resolvedEdcdUsage?.shape ? ` (${resolvedEdcdUsage.shape})` : ""}` : "none"} />
+        <FieldRow label="Settings Row" value={selectedEdcdRowId != null ? `row ${selectedEdcdRowId}${resolvedEdcdUsage?.shape ? ` (${resolvedEdcdUsage.shape})` : ""}` : "none"} />
         <FieldRow label="Edit State" value={resolvedSlotEntity?.editState ?? "authored/draft"} />
       </div>
       {resolvedEdcdUsage?.summary && <p className="field-help">{resolvedEdcdUsage.summary}</p>}
@@ -1094,10 +1109,10 @@ function ScriptFlowPreview({
       routes: scriptStepFlowRoutes(project, catalog, { rawCode: action.rawCode, id: action.id }),
       summary: scriptActionSummary(project, catalog, { rawCode: action.rawCode, id: action.id })
     }))
-    .filter((step) => step.routes.length > 0 || step.definition.category === "Reusable Actions" || step.definition.category === "Choices" || step.definition.category === "Logic");
+    .filter((step) => step.routes.length > 0 || step.definition.category === "Extra Action Points" || step.definition.category === "Choices" || step.definition.category === "Logic");
   if (flowSteps.length === 0) return null;
   return (
-    <div className="script-flow-preview" aria-label="Branch and reusable action preview">
+    <div className="script-flow-preview" aria-label="Branch and Extra Action Point preview">
       <strong>Flow Preview</strong>
       {flowSteps.slice(0, 5).map(({ action, definition, routes, summary }) => (
         <div key={`${action.slot}-${action.rawCode}-${action.id}`}>
@@ -3354,7 +3369,7 @@ function ShopStockEditor({
   };
   const filledCount = filledSlots.length;
   return (
-    <CollapsibleSection title="Shop Inventory" eyebrow="Data SD stock" count={`${filledCount} filled`} density="compact" className="script-shop-stock-section" defaultOpen>
+    <CollapsibleSection title="Shop Inventory" eyebrow="shop stock" count={`${filledCount} filled`} density="compact" className="script-shop-stock-section" defaultOpen>
       <div className="script-shop-workbench">
         <section className="script-shop-catalog-editor" aria-label="Add shop stock">
           <header>

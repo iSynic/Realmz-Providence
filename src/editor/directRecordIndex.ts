@@ -95,9 +95,9 @@ export function labelForSelectedId(project: Project | null, catalog: LibraryCata
         return resource?.label ?? `${resourceType} ${numericId}`;
       }
     }
-    if (id.startsWith("trigger:") || id.startsWith("macro:")) {
-      const trigger = [...index.triggers.values()].find((record) => record.id === id);
-      if (trigger) return trigger.source === "Data ED3" ? `Reusable Action ${trigger.recordIndex}` : `Action Point ${trigger.recordIndex}`;
+    if (id.startsWith("trigger:") || id.startsWith("macro:") || id.startsWith("Data ED3:macro:")) {
+      const trigger = [...index.triggers.values()].find((record) => triggerMatchesSelectedId(record, id));
+      if (trigger) return trigger.source === "Data ED3" ? `${authorFacingExtraActionKind(extraActionClassification(project, trigger))} ${trigger.recordIndex}` : `Action Point ${trigger.recordIndex}`;
     }
     if (id.startsWith("map:")) return index.maps.get(id)?.name ?? id;
     if (id.startsWith("asset:")) return index.assets.get(id)?.label ?? id;
@@ -157,12 +157,37 @@ export function directRecordsForTool(project: Project | null, toolId: string): D
   if (toolId === "macros" || toolId === "ed3-evidence") {
     return project.triggers.filter((trigger) => trigger.source === "Data ED3").map((trigger) => ({
       id: trigger.id,
-      label: `Reusable Action ${trigger.recordIndex}`,
-      type: "Reusable Action",
+      label: `Extra Action Point ${trigger.recordIndex}`,
+      type: "Extra Action Point",
       summary: `${trigger.actions.length} action step(s)`
     }));
   }
   return [];
+}
+
+function extraActionClassification(project: Project, trigger: Project["triggers"][number]) {
+  const row = project.semanticSchema.decoding?.ed3Reachability?.find((candidate) => candidate.recordIndex === trigger.recordIndex);
+  if (!row?.reachable) return importedExtraActionLabel(row?.classification);
+  const rootType = String(row.rootType ?? "");
+  if (rootType.includes("global")) return "Global Macro";
+  if (rootType.includes("random")) return "Random Encounter Action";
+  if (rootType.includes("time")) return "Timed Encounter Action";
+  if (rootType.includes("battle") || rootType.includes("monster") || rootType.includes("item")) return "Battle / Monster / Item Action";
+  return "Callable Extra Action Point";
+}
+
+function importedExtraActionLabel(classification: string | null | undefined) {
+  if (classification === "probable-editor-padding") return "Imported Empty Slot";
+  if (classification === "runtime-mutation-candidate") return "Imported Runtime Mutation";
+  return "Imported Extra Action";
+}
+
+function authorFacingExtraActionKind(classification: string) {
+  if (classification === "Callable Extra Action Point") return "Extra Action Point";
+  if (classification === "Global Macro") return "Global Event";
+  if (classification === "Imported Empty Slot") return "Empty Extra Action Point";
+  if (classification === "Imported Runtime Mutation") return "Runtime Extra Action Point";
+  return "Unlinked Extra Action Point";
 }
 
 function itemUsageLinks(project: Project, itemId: number): ContentUsageLink[] {
@@ -176,6 +201,12 @@ function itemUsageLinks(project: Project, itemId: number): ContentUsageLink[] {
     if (slots.length) links.push({ key: `shop:${shop.id}`, label: `Shop ${shop.id}`, detail: `${slots.length} shop slot${slots.length === 1 ? "" : "s"}` });
   }
   return links;
+}
+
+function triggerMatchesSelectedId(record: Project["triggers"][number], id: string) {
+  if (record.id === id) return true;
+  if (record.source === "Data ED3") return id === `macro:${record.recordIndex}` || id === `Data ED3:macro:${record.recordIndex}`;
+  return false;
 }
 
 function parseSelectedId(id: string):

@@ -548,6 +548,27 @@
   min-width: 0;
 }
 
+.script-record-note {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+  padding: 9px 11px;
+  border: 1px solid #2b4558;
+  border-radius: 6px;
+  background: #0b1720;
+}
+
+.script-record-note strong {
+  color: #9bd4ff;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.script-record-note small {
+  color: #b9c8d8;
+  line-height: 1.35;
+}
+
 
 
 .script-floating-detail .realmz-step-detail {

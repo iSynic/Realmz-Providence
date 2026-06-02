@@ -174,7 +174,7 @@ function ScenarioCoverageSummary({ coverage }: { coverage: ScenarioCoverageManif
         <div className="scenario-coverage-risks">
           {coverage.topRisks.slice(0, 5).map((risk) => (
             <article key={risk.id}>
-              <strong>{risk.family}</strong>
+              <strong>{coverageContainerDisplayName(risk.family)}</strong>
               <span>{coverageRiskLabel(risk)}</span>
             </article>
           ))}
@@ -185,7 +185,7 @@ function ScenarioCoverageSummary({ coverage }: { coverage: ScenarioCoverageManif
         <div className="scenario-coverage-container-list">
           {coverage.containers.slice(0, 12).map((container) => (
             <div key={container.container}>
-              <strong>{container.container}</strong>
+              <strong>{coverageContainerDisplayName(container.container)}</strong>
               <span>{formatCoverageContainerLabel(container)}</span>
               <small>{container.count.toLocaleString()} scenario(s), {container.sizes.slice(0, 4).join(", ")} byte size(s)</small>
               {container.truth && container.truth.riskFlags.length > 0 && (
@@ -213,6 +213,36 @@ function coverageRiskLabel(risk: ScenarioCoverageManifest["topRisks"][number]) {
   if (risk.status === "Needs editor labels") return "Label follow-up";
   if (risk.status === "Needs writer proof") return "Follow-up";
   return risk.status;
+}
+
+function coverageContainerDisplayName(container: string) {
+  const names: Record<string, string> = {
+    "Data ED3": "Extra Action Points",
+    "Data EDCD": "Action Step Settings",
+    "Data ED": "Simple Encounters",
+    "Data ED2": "Complex Encounters",
+    "Data TD2": "Rogue Encounters",
+    "Data TD3": "Timed Encounters",
+    "Data SD2": "Strings",
+    "Data OD": "Option Labels",
+    "Data SD": "Shops",
+    "Data TD": "Treasures",
+    "Data BD": "Battles",
+    "Data MD": "Monsters",
+    "Data MD2": "Map Records",
+    "Data DL": "Dungeon Tiles",
+    "Data LD": "Land Tiles",
+    "Data CS": "Scenario Security",
+    "Data CI": "Contact Info",
+    "Data RI": "Party Restrictions",
+    "Data NI": "Scenario Items"
+  };
+  if (names[container]) return names[container];
+  if (container.includes("Data OD") || container.toLowerCase().includes("strings sound")) return "Option Labels and String Sounds";
+  if (container.includes("Data DL") || container.includes("Data DD") || container.includes("Data RDD")) return "Dungeon Files";
+  if (container.includes("Data EDCD")) return "Action Step Settings";
+  if (container.includes("Data ED3")) return "Extra Action Points";
+  return container;
 }
 
 function formatTruthLabel(value: string) {

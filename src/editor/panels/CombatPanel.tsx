@@ -1066,7 +1066,7 @@ function messagePreview(project: Project, id: number) {
 function combatTargetSummary(project: Project, label: string, opcode: number, value: number) {
   if (!value) return "None";
   if (opcode === 1) return messagePreview(project, value);
-  if (opcode === 39) return `Reusable Action ${Math.abs(value)}`;
+  if (opcode === 39) return `Extra Action Point ${Math.abs(value)}`;
   return `${label} ${Math.abs(value)}`;
 }
 

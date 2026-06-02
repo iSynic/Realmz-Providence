@@ -503,7 +503,7 @@ function MessageEditor({
       <details className="advanced-details">
         <summary>Advanced Details</summary>
         <div className="summary-table">
-          <div><dt>Record</dt><dd>Data SD2 #{record.id}</dd></div>
+          <div><dt>Record</dt><dd>Scenario string #{record.id}</dd></div>
           <div><dt>State</dt><dd>{record.authored ? "Editable project string" : "Imported string"}</dd></div>
           <div><dt>Bytes</dt><dd>{record.rawBytes?.length ?? 0} preserved bytes</dd></div>
         </div>
@@ -715,7 +715,7 @@ function OptionLabelEditor({
       <details className="advanced-details">
         <summary>Advanced Details</summary>
         <div className="summary-table">
-          <div><dt>Record</dt><dd>Data OD #{record.id}</dd></div>
+          <div><dt>Record</dt><dd>Option label #{record.id}</dd></div>
           <div><dt>State</dt><dd>{record.authored ? "Editable option label" : "Imported option label"}</dd></div>
           <div><dt>Bytes</dt><dd>{record.rawBytes?.length ?? 0} preserved bytes</dd></div>
         </div>

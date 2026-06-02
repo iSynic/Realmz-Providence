@@ -21,6 +21,7 @@ import { editorReducer, initialEditorState, BROWSER_PREVIEW_STATUS } from "./edi
 import { ActiveWorkbench, EditorTab, MapEntity, MapViewFlag, ProjectCommand, SelectedEntity } from "./editor/types";
 import { hasDesktopRuntime, issuesFor } from "./editor/utils";
 import {
+  extraActionPointClassification,
   semanticMapRecordsForMap,
   semanticRandomLevelForMap,
   semanticTilesetForMap,
@@ -306,7 +307,54 @@ export function App() {
       }
       return;
     }
+    const route = editorRouteForEntity(entity.id);
+    if (route) {
+      dispatch({ type: "setTab", tab: route.tab });
+      dispatch({ type: "setActiveEditor", editor: route.editor });
+      dispatch({ type: "setStatus", status: `Opened ${route.label}.` });
+    }
     dispatch({ type: "selectEntity", entity });
+  }
+
+  function editorRouteForEntity(id: string): { tab: EditorTab; editor: string; label: string } | null {
+    if (/^message:-?\d+$/.test(id)) return { tab: "text", editor: "messages", label: "string reference" };
+    if (/^option-label:-?\d+$/.test(id)) return { tab: "text", editor: "option-labels", label: "option label reference" };
+    if (id.startsWith("trigger:") || id.startsWith("action-slot:trigger:")) {
+      return { tab: "scripts", editor: "action-points", label: "Action Point reference" };
+    }
+    if (id.startsWith("macro:") || id.startsWith("Data ED3:macro:") || id.startsWith("action-slot:macro:") || id.startsWith("action-slot:Data ED3:macro:")) {
+      return { tab: "scripts", editor: scriptEditorForMacroEntity(id), label: "extra action reference" };
+    }
+    if (/^encounter:simple:-?\d+$/.test(id)) return { tab: "encounters", editor: "simple", label: "Simple Encounter reference" };
+    if (/^encounter:complex:-?\d+$/.test(id)) return { tab: "encounters", editor: "complex", label: "Complex Encounter reference" };
+    if (/^thief:-?\d+$/.test(id)) return { tab: "encounters", editor: "rogue", label: "Rogue Encounter reference" };
+    if (/^time:-?\d+$/.test(id)) return { tab: "encounters", editor: "timed", label: "Timed Encounter reference" };
+    if (/^battle:-?\d+$/.test(id)) return { tab: "combat", editor: "battles", label: "Battle reference" };
+    if (/^monster:-?\d+$/.test(id)) return { tab: "combat", editor: "monsters", label: "Monster reference" };
+    if (/^treasure:-?\d+$/.test(id)) return { tab: "economy", editor: "treasure", label: "Treasure reference" };
+    if (/^shop:-?\d+$/.test(id)) return { tab: "economy", editor: "shops", label: "Shop reference" };
+    if (/^item:-?\d+$/.test(id)) return { tab: "economy", editor: "items", label: "Item reference" };
+    if (/^spell:-?\d+$/.test(id)) return { tab: "rules", editor: "spells", label: "Spell reference" };
+    if (/^race:-?\d+$/.test(id)) return { tab: "rules", editor: "races", label: "Race reference" };
+    if (/^caste:-?\d+$/.test(id)) return { tab: "rules", editor: "castes", label: "Caste reference" };
+    if (id.startsWith("resource:") || id.startsWith("picture:")) return { tab: "assets", editor: "pictures", label: "picture resource" };
+    if (id.startsWith("sound:")) return { tab: "assets", editor: "sounds", label: "sound resource" };
+    if (id.startsWith("asset:")) return { tab: "assets", editor: "project-assets", label: "scenario asset" };
+    return null;
+  }
+
+  function scriptEditorForMacroEntity(id: string) {
+    const macroId = macroRecordIndexFromEntityId(id);
+    const trigger = state.project?.triggers.find((candidate) => candidate.source === "Data ED3" && candidate.recordIndex === macroId);
+    if (!trigger) return "macros";
+    const classification = extraActionPointClassification(state.project, trigger);
+    if (classification === "Global Macro") return "global-macros";
+    return "macros";
+  }
+
+  function macroRecordIndexFromEntityId(id: string) {
+    const match = id.match(/(?:^|:)macro:(-?\d+)/);
+    return match ? Number(match[1]) : null;
   }
 
   function focusEntityOnMap(mapId: string, entity: SelectedEntity) {

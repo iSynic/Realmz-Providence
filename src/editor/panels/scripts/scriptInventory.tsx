@@ -42,6 +42,10 @@ function ScriptIssueBadge({ issues }: { issues: ScriptDiagnostic[] }) {
   return <small className={`script-issue-badge ${errors ? "danger" : "warning"}`}>{errors ? `${errors} error` : `${warnings} warning`}</small>;
 }
 
+export function hasScriptWarning(issues: ScriptDiagnostic[]) {
+  return issues.some((issue) => issue.severity === "error" || issue.severity === "warning");
+}
+
 export function issueCountsBySlot(issues: ScriptDiagnostic[]) {
   const counts = new Map<number, { errors: number; warnings: number }>();
   for (const issue of issues) {
@@ -55,9 +59,11 @@ export function issueCountsBySlot(issues: ScriptDiagnostic[]) {
 }
 
 function authorFacingExtraActionKind(classification: string) {
-  return classification
-    .replace(/\bGlobal Macro\b/g, "Global Event")
-    .replace(/\bMacro\b/g, "Reusable Action");
+  if (classification === "Callable Extra Action Point") return "Extra Action Point";
+  if (classification === "Global Macro") return "Global Event";
+  if (classification === "Imported Empty Slot") return "Empty Extra Action Point";
+  if (classification === "Imported Runtime Mutation") return "Runtime Extra Action Point";
+  return "Unlinked Extra Action Point";
 }
 
 export const SCRIPT_INVENTORY_FILTERS: Array<{ id: ScriptInventoryFilter; label: string }> = [
@@ -65,8 +71,7 @@ export const SCRIPT_INVENTORY_FILTERS: Array<{ id: ScriptInventoryFilter; label:
   { id: "all", label: "All" },
   { id: "active", label: "Active" },
   { id: "reusable", label: "Reusable" },
-  { id: "warnings", label: "Warnings" },
-  { id: "macros", label: "Reusable Actions" }
+  { id: "warnings", label: "Warnings" }
 ];
 
 export function scriptTabKind(activeEditor: string) {
@@ -104,7 +109,7 @@ export function filterScriptsByInventory(
   }
   if (filter === "warnings") {
     if (!project) return [];
-    return scripts.filter((trigger) => (triggerDiagnosticsById.get(trigger.id) ?? []).length > 0);
+    return scripts.filter((trigger) => hasScriptWarning(triggerDiagnosticsById.get(trigger.id) ?? []));
   }
   if (filter === "macros") {
     return scripts.filter((trigger) => trigger.source === "Data ED3");
@@ -118,7 +123,7 @@ export function isReusableActionPoint(trigger: TriggerRecord) {
 
 export function triggerVisibleForEditor(project: Project | null, trigger: TriggerRecord, activeEditor: string) {
   const tabKind = scriptTabKind(activeEditor);
-  if (tabKind === "reusable-actions") return extraActionTabClassification(project, trigger) === "reusable-actions" && isCallableMacro(project, trigger);
+  if (tabKind === "reusable-actions") return trigger.source === "Data ED3";
   if (tabKind === "global-events") return extraActionTabClassification(project, trigger) === "global-events";
   if (tabKind === "advanced-imports") return extraActionTabClassification(project, trigger) === "advanced-imports";
   if (activeEditor === "action-points") return trigger.source !== "Data ED3" && trigger.levelType != null && trigger.levelIndex != null;
@@ -128,8 +133,8 @@ export function triggerVisibleForEditor(project: Project | null, trigger: Trigge
 
 export function scriptPanelTitle(activeEditor: string) {
   if (activeEditor === "action-points") return "Action Points";
-  if (activeEditor === "macros") return "Reusable Actions";
-  if (activeEditor === "ed3-evidence") return "Imported Extra Actions";
+  if (activeEditor === "macros") return "Extra Action Points";
+  if (activeEditor === "ed3-evidence") return "Unlinked Extra Action Points";
   if (activeEditor === "global-macros") return "Global Events";
   if (activeEditor === "quests") return "Quests";
   return "Action Points";
@@ -148,7 +153,8 @@ export function scriptLabel(project: Project, trigger: TriggerRecord) {
 
 export function scriptSubtitle(project: Project, trigger: TriggerRecord) {
   if (trigger.source === "Data ED3") {
-    return `${authorFacingExtraActionKind(extraActionPointClassification(project, trigger))} | ${trigger.actions.length} step${trigger.actions.length === 1 ? "" : "s"}`;
+    const kind = authorFacingExtraActionKind(extraActionPointClassification(project, trigger));
+    return `${kind} | ${trigger.actions.length} step${trigger.actions.length === 1 ? "" : "s"}`;
   }
   const map = project.maps.find((candidate) => candidate.levelType === trigger.levelType && candidate.index === trigger.levelIndex);
   const mapLabel = map?.name ?? `${trigger.levelType ?? "map"} ${trigger.levelIndex ?? 0}`;

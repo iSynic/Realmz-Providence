@@ -179,7 +179,7 @@ export function targetPickerConfig(opcode: number) {
     9: { label: "Sound Resource", hint: "Select a playable sound resource or managed sound asset." },
     10: { label: "Treasure Target", hint: "Select a treasure record.", recordType: "treasure" },
     27: { label: "Picture Resource", hint: "Select a picture resource or managed picture asset." },
-    29: { label: "Map Reference", hint: "Select a map or map record." },
+    29: { label: "Map Item", hint: "Select map item 0 through 19." },
     35: { label: "Simple Encounter", hint: "Select the simple encounter this action mutates.", recordType: "simpleEncounter" },
     39: { label: "Extra Action Point", hint: "Select the Extra Action Point this action runs." },
     44: { label: "Complex Encounter", hint: "Select the complex encounter this action mutates.", recordType: "complexEncounter" },
@@ -275,7 +275,17 @@ export function targetOptionsForOpcode(project: Project | null, opcode: number, 
       });
     }
   }
-  if (code === 29 || code === 97 || code === 106) {
+  if (code === 29) {
+    for (let id = 0; id <= 19; id += 1) {
+      options.push({
+        key: `map-item:${id}`,
+        value: id,
+        label: `Map Item ${id}`,
+        detail: id === 0 ? "Given automatically at adventure start" : "Player-visible map item"
+      });
+    }
+  }
+  if (code === 97 || code === 106) {
     for (const map of project.maps) {
       options.push({
         key: `map:${map.id}`,
@@ -334,7 +344,16 @@ function optionFromTypedProjectTarget(project: Project, code: number, id: number
           sourceState: record.authored ? "Authored" : "Imported",
           entity: { type: "message", id: `message:${record.id}` }
         }
-      : null;
+      : id >= 10000
+        ? {
+            key: `legacy-message:${id}`,
+            value: id,
+            label: `Legacy Message Reference ${id}`,
+            detail: "High Realmz text/resource reference",
+            compatibility: "Legacy scenario reference",
+            sourceState: "No editable string record"
+          }
+        : null;
   }
   if ([2, 48, 56, 107].includes(code)) {
     const record = project.battles?.find((candidate) => candidate.id === id);
@@ -429,9 +448,19 @@ function optionFromTypedProjectTarget(project: Project, code: number, id: number
     const quest = project.questLabels?.find((candidate) => candidate.id === id);
     return quest
       ? { key: `quest:${quest.id}`, value: quest.id, label: quest.label, detail: quest.note || "Quest metadata", entity: { type: "questFlag", id: `quest:${quest.id}` } }
+      : { key: `quest:${id}`, value: id, label: `Quest Flag ${id}`, detail: "Scenario state flag", entity: { type: "questFlag", id: `quest:${id}` } };
+  }
+  if (code === 29) {
+    return id >= 0 && id <= 19
+      ? {
+          key: `map-item:${id}`,
+          value: id,
+          label: `Map Item ${id}`,
+          detail: id === 0 ? "Given automatically at adventure start" : "Player-visible map item"
+        }
       : null;
   }
-  if (code === 29 || code === 97 || code === 106) {
+  if (code === 97 || code === 106) {
     const map = project.maps.find((candidate) => candidate.index === id);
     return map
       ? {
@@ -483,6 +512,57 @@ function optionFromTypedProjectTarget(project: Project, code: number, id: number
           entity: { type: "resource", id: `resource:${soundAsset.resourceType}:${soundAsset.resourceId}` },
           previewPath: soundAsset.previewPath,
           previewMimeType: "audio/wav"
+        };
+      }
+      return {
+        key: `resource:snd:${id}`,
+        value: id,
+        label: `Sound ${id}`,
+        detail: "Realmz snd reference",
+        compatibility: "Realmz resource",
+        sourceState: "No preview source loaded",
+        entity: { type: "resource", id: `resource:snd :${id}` },
+        previewPath: null,
+        previewMimeType: "audio/wav"
+      };
+    }
+    if (code === 27) {
+      const pictureAsset = (project.assetCatalog.pictures ?? []).find((candidate) => candidate.resourceId === id);
+      if (pictureAsset) {
+        return {
+          key: `resource:${pictureAsset.resourceType}:${pictureAsset.resourceId}`,
+          value: pictureAsset.resourceId,
+          label: `${pictureAsset.name || `${pictureAsset.resourceType.trim()} ${pictureAsset.resourceId}`} (${pictureAsset.resourceType.trim()} ${pictureAsset.resourceId})`,
+          detail: `picture | ${pictureAsset.source}`,
+          compatibility: "Realmz resource",
+          sourceState: "Scenario resource",
+          entity: { type: "resource", id: `resource:${pictureAsset.resourceType}:${pictureAsset.resourceId}` },
+          previewPath: pictureAsset.previewPath
+        };
+      }
+      const iconAsset = (project.assetCatalog.icons ?? []).find((candidate) => candidate.resourceId === id);
+      if (iconAsset) {
+        return {
+          key: `resource:${iconAsset.resourceType}:${iconAsset.resourceId}`,
+          value: iconAsset.resourceId,
+          label: `${iconAsset.name || `${iconAsset.resourceType.trim()} ${iconAsset.resourceId}`} (${iconAsset.resourceType.trim()} ${iconAsset.resourceId})`,
+          detail: `icon | ${iconAsset.source}`,
+          compatibility: "Realmz resource",
+          sourceState: "Scenario resource",
+          entity: { type: "resource", id: `resource:${iconAsset.resourceType}:${iconAsset.resourceId}` },
+          previewPath: iconAsset.previewPath
+        };
+      }
+      if (id >= 30000) {
+        return {
+          key: `resource:PICT:${id}`,
+          value: id,
+          label: `Scenario Picture ${id}`,
+          detail: "Realmz PICT reference",
+          compatibility: "Realmz resource",
+          sourceState: "No preview source loaded",
+          entity: { type: "resource", id: `resource:PICT:${id}` },
+          previewPath: null
         };
       }
     }

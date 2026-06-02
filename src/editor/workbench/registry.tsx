@@ -76,13 +76,13 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     id: "scripts",
     label: "Action Points",
     shortLabel: "Action Points",
-    description: "Action Points, reusable actions, global events, quests, and links to the rest of the scenario.",
-    help: "Action Points are the scenario behavior hub. Build them from clear steps, targets, settings, and reusable actions.",
+    description: "Action Points, Extra Action Points, global events, quests, and links to the rest of the scenario.",
+    help: "Action Points are the scenario behavior hub. Build them from clear steps, targets, settings, and Extra Action Points.",
     tools: [
       t({ id: "action-points", label: "Action Points", iconLabel: "AP", workbench: "project", description: "Create and edit map Action Points.", entityTypes: ["trigger", "action-slot"], defaultInspector: "semantic" }),
-      t({ id: "macros", label: "Reusable Actions", iconLabel: "RA", workbench: "project", description: "Reusable actions and branch targets.", entityTypes: ["macro"], defaultInspector: "semantic" }),
+      t({ id: "macros", label: "Extra Action Points", iconLabel: "EA", workbench: "project", description: "Extra Action Points and branch targets.", entityTypes: ["macro"], defaultInspector: "semantic" }),
       t({ id: "global-macros", label: "Global Events", iconLabel: "GE", workbench: "project", description: "Scenario-wide event hooks and startup logic.", entityTypes: ["global-macro"], defaultInspector: "semantic" }),
-      t({ id: "ed3-evidence", label: "Advanced Imports", iconLabel: "AI", workbench: "project", description: "Imported advanced action data kept with the scenario.", entityTypes: ["ed3-action-record"], defaultInspector: "semantic" }),
+      t({ id: "ed3-evidence", label: "Unlinked Extra APs", iconLabel: "UE", workbench: "project", description: "Extra Action Points not yet linked from known scenario behavior.", entityTypes: ["ed3-action-record"], defaultInspector: "semantic" }),
       t({ id: "quests", label: "Quests", iconLabel: "Q", workbench: "project", description: "Quest flags and script references.", entityTypes: ["quest flag"], defaultInspector: "semantic" })
     ]
   },

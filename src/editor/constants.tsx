@@ -60,7 +60,7 @@ export const ENTITY_TYPE_LABELS: Record<string, string> = {
   map: "Map",
   trigger: "Trigger",
   macro: "Macro",
-  "ed3-action-record": "Imported Extra Action",
+  "ed3-action-record": "Extra Action Point",
   "action-slot": "Action Slot",
   "edcd-row": "Parameter Row",
   "simple encounter": "Simple Encounter",
@@ -105,7 +105,7 @@ export const ENTITY_TYPE_LABELS: Record<string, string> = {
   "scenario-startup": "Scenario Startup",
   "scenario-restriction": "Scenario Restriction",
   "registration-security": "Registration Security",
-  "global-macro": "Global Macro",
+  "global-macro": "Global Event",
   "land-layout": "Land Layout",
   "special-land-tile": "Special Land Tile",
   "library-file": "Library File"

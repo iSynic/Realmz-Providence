@@ -1,5 +1,4 @@
 import { LibraryCatalog, Project, RealmzTargetRecordKind, SelectedEntity } from "./types";
-import { isCallableMacro } from "./semanticGraph";
 import { selectEntityFromId } from "./utils";
 import { choiceBranchTargetKind, parseChoicePromptValue } from "./choiceDialogs";
 
@@ -90,7 +89,7 @@ export function edcdTargetOptions(project: Project, targetKind: EdcdTargetKind, 
   }
   if (targetKind === "macro") {
     return project.triggers
-      .filter((trigger) => trigger.source === "Data ED3" && isCallableMacro(project, trigger))
+      .filter((trigger) => trigger.source === "Data ED3")
       .map((trigger) => ({
         key: `macro:${trigger.recordIndex}`,
         value: trigger.recordIndex,
@@ -198,6 +197,8 @@ export function missingEdcdTargetReferences(project: Project, shape: string, fie
     const rawValue = values[index] ?? 0;
     const targetKind = edcdFieldTargetKind(shape, field, fieldNames, values, opcode);
     if (!targetKind || targetKind === "questLabel") continue;
+    if (targetKind === "sound") continue;
+    if (targetKind === "message" && Math.abs(rawValue) >= 10000) continue;
     const value = normalizedEdcdTargetValueForValidation(targetKind, rawValue, field, opcode);
     if (!Number.isFinite(value) || value < 0) continue;
     if (value === 0 && !["macro", "simpleEncounter", "complexEncounter"].includes(targetKind)) continue;
@@ -215,7 +216,7 @@ export function missingEdcdTargetReferences(project: Project, shape: string, fie
 
 function edcdTargetExists(project: Project, targetKind: EdcdTargetKind, value: number, catalog?: LibraryCatalog | null) {
   if (targetKind === "optionLabel") return (project.optionLabels ?? []).some((record) => record.id === value);
-  if (targetKind === "macro") return project.triggers.some((trigger) => trigger.source === "Data ED3" && trigger.recordIndex === value && isCallableMacro(project, trigger));
+  if (targetKind === "macro") return project.triggers.some((trigger) => trigger.source === "Data ED3" && trigger.recordIndex === value);
   if (targetKind === "questLabel") return (project.questLabels ?? []).some((record) => record.id === value);
   if (targetKind === "simpleEncounter") return (project.simpleEncounters ?? []).some((record) => record.id === value);
   if (targetKind === "complexEncounter") return (project.complexEncounters ?? []).some((record) => record.id === value);
@@ -223,6 +224,7 @@ function edcdTargetExists(project: Project, targetKind: EdcdTargetKind, value: n
   if (targetKind === "message") return (project.messages ?? []).some((record) => record.id === value);
   if (targetKind === "sound") {
     return (project.assets ?? []).some((asset) => asset.kind === "sound" && asset.resourceId === value) ||
+      (project.assetCatalog.sounds ?? []).some((asset) => asset.resourceId === value) ||
       (catalog?.assets ?? []).some((asset) => asset.type === "sound" && asset.resourceId === value);
   }
   if (targetKind === "monster") return (project.monsters ?? []).some((record) => record.id === value);

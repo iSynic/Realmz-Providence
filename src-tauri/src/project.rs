@@ -705,7 +705,7 @@ pub struct TriggerRecord {
     pub landid: u8,
     pub target_x: u8,
     pub target_y: u8,
-    pub percent: u8,
+    pub percent: i8,
     pub coordinate: Option<MapCoordinate>,
     pub actions: Vec<Action>,
     pub provenance: Provenance,

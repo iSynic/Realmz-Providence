@@ -1891,10 +1891,11 @@ fn parse_door(
             actions.push(describe_action(slot, raw_code, id));
         }
     }
+    let percent = buffer[7] as i8;
     let active = if source == "Data ED3" {
         !actions.is_empty()
     } else {
-        coordinate.is_some() && (buffer[7] != 0 || !actions.is_empty() || doorid != 0)
+        coordinate.is_some() && percent >= 1 && (!actions.is_empty() || doorid != 0)
     };
     TriggerRecord {
         id: format!(
@@ -1912,7 +1913,7 @@ fn parse_door(
         landid: buffer[4],
         target_x: buffer[5],
         target_y: buffer[6],
-        percent: buffer[7],
+        percent,
         coordinate,
         actions,
         provenance: Provenance {
@@ -1982,7 +1983,7 @@ fn write_door(buffer: &mut [u8], trigger: &TriggerRecord) -> Result<()> {
     buffer[4] = trigger.landid;
     buffer[5] = trigger.target_x;
     buffer[6] = trigger.target_y;
-    buffer[7] = trigger.percent;
+    buffer[7] = trigger.percent as u8;
     for action in &trigger.actions {
         if action.slot >= 8 {
             return Err(ProvidenceError::message(format!(

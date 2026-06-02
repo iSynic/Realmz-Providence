@@ -29,8 +29,8 @@ const DOMAIN_CONFIG: Record<EditorTab, { title: string; subtitle: string; editor
     editors: [
       { id: "action-points", label: "Action Points / GOSUBs", entityTypes: ["trigger", "action-slot"] },
       { id: "macros", label: "Macros", entityTypes: ["macro"], createType: "macro" },
-      { id: "ed3-evidence", label: "Imported Extra Actions", entityTypes: ["ed3-action-record"] },
-      { id: "global-macros", label: "Global Macros", entityTypes: ["global-macro"], createType: "global-macro" },
+      { id: "ed3-evidence", label: "Unlinked Extra Action Points", entityTypes: ["ed3-action-record"] },
+      { id: "global-macros", label: "Global Events", entityTypes: ["global-macro"], createType: "global-macro" },
       { id: "quests", label: "Quests", entityTypes: ["quest flag"], createType: "quest flag" }
     ]
   },
@@ -40,7 +40,7 @@ const DOMAIN_CONFIG: Record<EditorTab, { title: string; subtitle: string; editor
     editors: [
       { id: "startup", label: "Scenario Startup Information", entityTypes: ["scenario-startup", "scenario", "contact-info"], createType: "scenario-startup" },
       { id: "restrictions", label: "Scenario Restrictions", entityTypes: ["scenario-restriction"], createType: "scenario-restriction" },
-      { id: "global-macros", label: "Global Macros", entityTypes: ["global-macro", "macro"], createType: "global-macro" },
+      { id: "global-macros", label: "Global Events", entityTypes: ["global-macro", "macro"], createType: "global-macro" },
       { id: "registration", label: "Scenario Security / Registration Codes", entityTypes: ["registration-security", "action-slot"] }
     ]
   },
@@ -950,7 +950,7 @@ function ScenarioItemEditor({
           <span>Custom Item {itemId}</span>
           <h4>Scenario Item Fields</h4>
         </div>
-        <small>Data NI</small>
+        <small>Scenario items</small>
       </header>
       <div className="scenario-item-editor-grid">
         {SCENARIO_ITEM_EDIT_GROUPS.map((group) => (

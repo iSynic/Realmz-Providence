@@ -1237,6 +1237,97 @@
   font-weight: 900;
 }
 
+.scenario-registration-variants {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 8px;
+}
+
+.scenario-registration-variants > p {
+  margin: 0;
+  border: 1px solid #263847;
+  border-radius: 6px;
+  color: #9bb2c8;
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.scenario-registration-variant {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  border: 1px solid #274057;
+  border-radius: 7px;
+  background: #08141d;
+  padding: 8px;
+}
+
+.scenario-registration-variant > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.scenario-registration-variant > header span {
+  min-width: 0;
+  color: #e6f4ff;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.scenario-registration-variant > header b {
+  border: 1px solid #2b5f83;
+  border-radius: 999px;
+  background: #0b2436;
+  color: #9ed8ff;
+  padding: 2px 6px;
+  font-size: 9px;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.scenario-registration-variant > code {
+  display: block;
+  border: 1px solid #334657;
+  border-radius: 5px;
+  background: #050b10;
+  color: #ffd770;
+  padding: 6px 8px;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.scenario-registration-variant > small {
+  color: #8fb3d1;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.scenario-registration-variant.is-verified {
+  border-color: #2f7d4a;
+  background: #06180f;
+}
+
+.scenario-registration-variant.is-verified > header b {
+  border-color: #3d9d61;
+  background: #0d2d18;
+  color: #96f5ad;
+}
+
+.scenario-registration-variant.is-reported-unmatched {
+  border-color: #775b1e;
+  background: #1a1306;
+}
+
+.scenario-registration-variant.is-reported-unmatched > header b {
+  border-color: #8b6a25;
+  background: #271b05;
+  color: #ffd770;
+}
+
 
 
 .scenario-restriction-toolbar p {

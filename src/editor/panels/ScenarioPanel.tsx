@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { Project, ProjectCommand } from "../types";
 import { REALMZ_CASTES, REALMZ_RACES } from "../rulesCatalog";
+import {
+  SECURITY_SEGMENT_LENGTH,
+  cleanRegistrationName,
+  cleanSecuritySegment,
+  decodeSecuritySegments,
+  encodeSecuritySegments,
+  normalizedSecurityBytes,
+  registrationVariantsFor
+} from "../registrationCodes";
 
 type ScenarioPanelProps = {
   project: Project;
@@ -119,7 +128,7 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool
           <header>
             <div>
               <span>Contact Info</span>
-              <small>Data CI, eighteen Str255 fields</small>
+              <small>Scenario contact and registration metadata</small>
             </div>
             <b>{contact.authored ? "edited" : "source"}</b>
           </header>
@@ -165,14 +174,14 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool
             />
             <HubCard
               title="Race Overrides"
-              detail="Scenario Data Race replaces shared race data for third-party scenarios."
+              detail="Scenario race overrides replace shared race data for third-party scenarios."
               status={`${(project.raceOverrides ?? []).length}/30 parsed`}
               action="Open Races"
               onClick={() => onOpenTool("rules", "races")}
             />
             <HubCard
               title="Caste Overrides"
-              detail="Scenario Data Caste replaces shared caste data for third-party scenarios."
+              detail="Scenario caste overrides replace shared caste data for third-party scenarios."
               status={`${(project.casteOverrides ?? []).length}/30 parsed`}
               action="Open Castes"
               onClick={() => onOpenTool("rules", "castes")}
@@ -185,10 +194,10 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool
               onClick={() => document.getElementById("scenario-security")?.scrollIntoView({ behavior: "smooth", block: "start" })}
             />
             <HubCard
-              title="Global Macro Hooks"
-              detail="Start, death, quit, shop, and temple macro hook slots."
+              title="Global Events"
+              detail="Start, death, quit, shop, and temple event hooks."
               status={activeGlobalHookCount(project)}
-              action="Open Macros"
+              action="Open Events"
               onClick={() => onOpenTool("scripts", "global-macros")}
             />
           </div>
@@ -198,7 +207,7 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool
           <header>
             <div>
               <span>Party Restrictions</span>
-              <small>Optional Data RI admission rules</small>
+              <small>Optional party admission rules</small>
             </div>
             <b>{restrictions ? "configured" : "not present"}</b>
           </header>
@@ -239,7 +248,7 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool
                   value={restrictions.maxPartyCharacters}
                   min={1}
                   max={6}
-                  hint="Divinity allows 1-6 here. Use no Data RI record for no party-size restriction."
+                  hint="Divinity allows 1-6 here. Leave this blank for no party-size restriction."
                   onCommit={(maxPartyCharacters) => updateRestrictions(onApplyCommand, { maxPartyCharacters: clampInt(maxPartyCharacters, 1, 6) })}
                 />
                 <NumberField
@@ -260,7 +269,7 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool
             </>
           ) : (
             <div className="scenario-empty-state">
-              <p>No Data RI restriction record is present. Realmz will not apply extra race, caste, party-count, or candidate-level gates from this file.</p>
+              <p>No restriction record is present. Realmz will not apply extra race, caste, party-count, or candidate-level gates.</p>
               <button
                 type="button"
                 onClick={() => updateRestrictions(onApplyCommand, defaultRestrictions())}
@@ -292,7 +301,7 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool
         <article id="scenario-global-macros" className="scenario-card">
           <header>
             <div>
-              <span>Global Macro Hooks</span>
+              <span>Global Events</span>
               <small>Global file, seven Divinity-visible slots</small>
             </div>
             <b>{activeGlobalHookCount(project)}</b>
@@ -373,9 +382,10 @@ function SecurityRegistrationCard({
   const readableNote = securityBackup
     ? "Decoded with this scenario's security backup. Realmz uses these segments when checking registration codes."
     : hasSegments
-      ? "No Data CS backup was imported, so these fields show the stored segment text as best as possible."
+      ? "No security backup was imported, so these fields show the stored segment text as best as possible."
       : "No security segments are set.";
-  const registrationCode = registrationCodeFor(scenarioName, segment1, segment2, registrationName, serialNumber);
+  const registrationVariants = registrationVariantsFor({ scenarioName, segment1, segment2, registrationName, serialNumber });
+  const primaryRegistrationVariant = registrationVariants.find((variant) => variant.confidence === "verified") ?? registrationVariants[0] ?? null;
 
   const applySegments = () => {
     const encoded = encodeSecuritySegments(segment1, segment2, securityBackup ?? null);
@@ -440,9 +450,9 @@ function SecurityRegistrationCard({
         <header>
           <div>
             <span>Registration Code Generator</span>
-            <small>Enter the player's name and Realmz serial number.</small>
+            <small>Candidate and verified codes from source-backed Realmz paths.</small>
           </div>
-          <b>{registrationCode ?? "ready"}</b>
+          <b>{primaryRegistrationVariant?.code ?? "ready"}</b>
         </header>
         <div className="scenario-form-grid">
           <label className="scenario-field">
@@ -464,15 +474,23 @@ function SecurityRegistrationCard({
             />
           </label>
         </div>
-        <label className="scenario-field scenario-field-wide scenario-registration-code">
-          <span>Registration Code</span>
-          <input
-            readOnly
-            value={registrationCode ?? ""}
-            placeholder="Enter name and serial number"
-          />
-          <small>Send this code back with the exact registration name used here.</small>
-        </label>
+        <div className="scenario-registration-variants">
+          {registrationVariants.length === 0 ? (
+            <p>Enter a registration name and serial number to calculate candidate codes.</p>
+          ) : registrationVariants.map((variant) => (
+            <article key={`${variant.algorithmId}:${variant.code}:${variant.label}`} className={`scenario-registration-variant is-${variant.confidence}`}>
+              <header>
+                <span>{variant.label}</span>
+                <b>{variant.confidence === "verified" ? "Verified" : variant.confidence === "reported-unmatched" ? "Unmatched" : "Candidate"}</b>
+              </header>
+              <code>{variant.code}</code>
+              <small>{variant.detail}</small>
+            </article>
+          ))}
+        </div>
+        <p className="scenario-note">
+          Use verified Fantasoft codes when present. Candidate codes are shown for archaeology and compatibility testing until more official vectors prove the exact legacy path.
+        </p>
       </section>
       {unlocked && (
         <p className="scenario-security-warning">
@@ -483,7 +501,7 @@ function SecurityRegistrationCard({
         title="Technical Details"
         rows={[
           ["Startup bytes", `${bytePreview(shell.codeseg1)} / ${bytePreview(shell.codeseg2)}`],
-          ["Security backup", securityBackup ? `Data CS present (${bytePreview(securityBackup.codeseg1)})` : "No Data CS backup imported; Providence will create a zero-mask backup when applying edits."],
+          ["Security backup", securityBackup ? `present (${bytePreview(securityBackup.codeseg1)})` : "No security backup imported; Providence will create a zero-mask backup when applying edits."],
           ["Realmz decode", "segment2 = stored segment2 - backup segment1; segment1 = stored segment1 - segment2"]
         ]}
       />
@@ -674,136 +692,10 @@ function clampInt(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, Math.trunc(value)));
 }
 
-const SECURITY_SEGMENT_LENGTH = 20;
-
-function normalizedSecurityBytes(bytes: number[] | undefined | null) {
-  return Array.from({ length: SECURITY_SEGMENT_LENGTH }, (_, index) => ((bytes?.[index] ?? 0) & 0xff));
-}
-
-function decodeSecuritySegments(shell: NonNullable<Project["scenario"]["shell"]>, securityBackup: Project["scenario"]["securityBackup"]) {
-  const stored1 = normalizedSecurityBytes(shell.codeseg1);
-  const stored2 = normalizedSecurityBytes(shell.codeseg2);
-  const mask1 = normalizedSecurityBytes(securityBackup?.codeseg1);
-  const decoded2 = stored2.map((byte, index) => subtractByte(byte, mask1[index]));
-  const decoded1 = stored1.map((byte, index) => subtractByte(byte, decoded2[index]));
-  if (!securityBackup) {
-    return {
-      segment1: bytesToSecurityText(stored1),
-      segment2: bytesToSecurityText(stored2)
-    };
-  }
-  return {
-    segment1: bytesToSecurityText(decoded1),
-    segment2: bytesToSecurityText(decoded2)
-  };
-}
-
-function encodeSecuritySegments(segment1: string, segment2: string, securityBackup: Project["scenario"]["securityBackup"]) {
-  const plain1 = securityTextToBytes(segment1);
-  const plain2 = securityTextToBytes(segment2);
-  const backupCodeseg1 = normalizedSecurityBytes(securityBackup?.codeseg1);
-  const backupCodeseg2 = normalizedSecurityBytes(securityBackup?.codeseg2);
-  return {
-    codeseg1: plain1.map((byte, index) => addByte(byte, plain2[index])),
-    codeseg2: plain2.map((byte, index) => addByte(byte, backupCodeseg1[index])),
-    backupCodeseg1,
-    backupCodeseg2
-  };
-}
-
-function securityTextToBytes(value: string) {
-  const clean = cleanSecuritySegment(value);
-  return Array.from({ length: SECURITY_SEGMENT_LENGTH }, (_, index) => {
-    const code = clean.charCodeAt(index);
-    return Number.isFinite(code) ? code & 0xff : 0;
-  });
-}
-
-function bytesToSecurityText(bytes: number[]) {
-  const normalized = normalizedSecurityBytes(bytes);
-  const end = normalized.findIndex((byte) => byte === 0);
-  return normalized
-    .slice(0, end === -1 ? SECURITY_SEGMENT_LENGTH : end)
-    .map((byte) => (byte >= 32 && byte <= 126 ? String.fromCharCode(byte) : ""))
-    .join("");
-}
-
-function cleanSecuritySegment(value: string) {
-  return Array.from(value)
-    .filter((char) => {
-      const code = char.charCodeAt(0);
-      return code >= 32 && code <= 126;
-    })
-    .slice(0, SECURITY_SEGMENT_LENGTH)
-    .join("");
-}
-
-function addByte(left: number, right: number) {
-  return (left + right) & 0xff;
-}
-
-function subtractByte(left: number, right: number) {
-  return (left - right + 256) & 0xff;
-}
-
 function bytePreview(bytes: number[] | undefined | null) {
   return normalizedSecurityBytes(bytes)
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join(" ");
-}
-
-function registrationCodeFor(scenarioName: string, segment1: string, segment2: string, registrationName: string, serialNumber: string) {
-  const serial = Number(serialNumber);
-  if (!Number.isFinite(serial) || !Number.isInteger(serial) || serial === 0 || !registrationName.trim()) return null;
-  const name = cleanRegistrationName(registrationName).toLowerCase();
-  let nameValue = toInt32(serial);
-  for (let index = 1; index < name.length; index += 1) {
-    const current = name.charCodeAt(index);
-    const previous = name.charCodeAt(index - 1);
-    if (current) {
-      nameValue = toInt32(nameValue + index * current);
-      nameValue = toInt32(nameValue - current * previous);
-    }
-  }
-
-  const serialValue = cDiv(serial, 333);
-  if (serialValue === 0 || nameValue === 0) return null;
-  const part1 = toInt32(512 * cMod(450 + serialValue, 96 * nameValue));
-  const part2 = toInt32(999 + cMod(999 + nameValue, 456 * serialValue));
-  let code = toInt32(part1 + part2);
-
-  for (const char of segment1.toLowerCase()) {
-    code = toInt32(code + Math.imul(1689, char.charCodeAt(0)));
-  }
-  for (const char of segment2.toLowerCase()) {
-    code = toInt32(code - Math.imul(423, char.charCodeAt(0)));
-  }
-  for (const char of scenarioName.toLowerCase()) {
-    code = toInt32(code + Math.imul(112233, char.charCodeAt(0)));
-  }
-  return String(code);
-}
-
-function cleanRegistrationName(value: string) {
-  return Array.from(value)
-    .filter((char) => {
-      const code = char.charCodeAt(0);
-      return code >= 32 && code <= 126;
-    })
-    .slice(0, 26)
-    .join("");
-}
-
-function cDiv(left: number, right: number) {
-  return Math.trunc(left / right);
-}
-
-function cMod(left: number, right: number) {
-  return left - cDiv(left, right) * right;
-}
-
-function toInt32(value: number) {
-  return value | 0;
 }
 
 function scenarioIssues(project: Project, shell: NonNullable<Project["scenario"]["shell"]>) {
@@ -821,7 +713,7 @@ function readinessRows(project: Project, issues: string[]) {
     { label: "Marker/main file", ok: Boolean(project.scenario.shell), detail: project.scenario.shell?.sourceFile ?? "Will be created from edited startup shell." },
     { label: "Scenario resource fork", ok: hasFile("Scenario"), detail: hasFile("Scenario") ? "Resource fork present." : "Missing Scenario resource fork." },
     { label: "Startup fields", ok: issues.length === 0, detail: issues[0] ?? "Startup map and coordinates are valid." },
-    { label: "First-start authored files", ok: ["Data DD", "Data LD", "Data RD"].every(hasFile), detail: "Outdoor trigger, land, and random-level files checked." },
-    { label: "Contact info", ok: Boolean(project.scenario.contactInfo), detail: project.scenario.contactInfo ? "Data CI editable." : "No Data CI contact record." }
+    { label: "First-start records", ok: ["Data DD", "Data LD", "Data RD"].every(hasFile), detail: "Outdoor trigger, land, and random-level records checked." },
+    { label: "Contact info", ok: Boolean(project.scenario.contactInfo), detail: project.scenario.contactInfo ? "Editable." : "No contact record." }
   ];
 }

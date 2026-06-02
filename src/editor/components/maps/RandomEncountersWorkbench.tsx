@@ -68,7 +68,7 @@ export function RandomAreasWorkbench({
             ["Map", selectedMap.name],
             ["Active Rectangles", `${rects.length} / 20`],
             ["Priority", "Realmz checks 19 down to 0"],
-            ["Source", selectedMap.levelType === "land" ? "Data RD" : "Data RDD"]
+            ["Record Type", selectedMap.levelType === "land" ? "Land random encounters" : "Dungeon random encounters"]
           ]}
         />
         <div className="context-action-stack compact">
@@ -173,7 +173,7 @@ export function RandomRectangleEditor({
         rows={[
           ["Rectangle", rect.rectIndex],
           ["Edit State", "Realmz-writable"],
-          ["Source", map.levelType === "land" ? "Data RD" : "Data RDD"]
+          ["Record Type", map.levelType === "land" ? "Land random encounters" : "Dungeon random encounters"]
         ]}
       />
       <MapDiagnostics diagnostics={randomRectDiagnostics(rect)} />
@@ -213,7 +213,7 @@ export function RandomRectangleEditor({
         Clear Random Rectangle
       </button>
       <details className="context-section">
-        <summary><span>Technical Details</span><b>{map.levelType === "land" ? "Data RD" : "Data RDD"}</b></summary>
+        <summary><span>Technical Details</span><b>preserved bytes</b></summary>
         <RandomRectangleForm rect={rect} />
       </details>
     </div>

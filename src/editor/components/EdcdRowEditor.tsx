@@ -173,7 +173,7 @@ export function EdcdRowEditor({
         <CollapsibleSection title="Technical Details" eyebrow="advanced" density="compact" storageKey={`scripts.parameterRow.${rowId}.advanced.open`} defaultOpen={false}>
           <div className="realmz-raw-preview">
             {edcdUsage?.summary && <FieldRow label="Summary" value={edcdUsage.summary} />}
-            <FieldRow label="Data EDCD Row" value={rowId} />
+            <FieldRow label="Settings Row" value={rowId} />
             <FieldRow label="Internal Shape" value={shapeId} />
             <FieldRow label="Internal Fields" value={fieldNames.join(", ")} />
             {preservedFields.length > 0 && (
@@ -461,7 +461,7 @@ function ChoiceDialogEditor({
         ))}
         <CollapsibleSection title="Technical Details" eyebrow="advanced" density="compact" storageKey={`scripts.choiceDialog.${rowId}.advanced.open`} defaultOpen={false}>
           <div className="realmz-raw-preview">
-            <FieldRow label="Data EDCD Row" value={rowId} />
+            <FieldRow label="Settings Row" value={rowId} />
             <FieldRow label="Internal Shape" value="choice" />
             <FieldRow label="Internal Fields" value="replyPolarity, branchMode, branchTarget, promptA, promptB" />
             <FieldRow label="Raw Values" value={numericDraft.join(", ")} />

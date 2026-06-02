@@ -19,7 +19,8 @@ export type ScriptDiagnostic = {
 
 export function validateScriptTrigger(project: Project, trigger: TriggerRecord, catalog?: LibraryCatalog | null): ScriptDiagnostic[] {
   const diagnostics: ScriptDiagnostic[] = [];
-  if (trigger.source !== "Data ED3") {
+  if (trigger.source !== "Data ED3" && !trigger.active) return diagnostics;
+  if (trigger.source !== "Data ED3" && trigger.active) {
     const coordinate = trigger.coordinate;
     if (!coordinate) {
       diagnostics.push(issue("error", trigger.id, "missing-coordinate", "Action Point needs a map cell.", "Choose the land or dungeon cell that should trigger this Action Point."));
@@ -30,7 +31,7 @@ export function validateScriptTrigger(project: Project, trigger: TriggerRecord, 
       diagnostics.push(issue("warning", trigger.id, "ambiguous-door-id", "Action Point location needs a positive trigger value.", "Move or recreate this Action Point if it does not reload on the intended map cell."));
     }
   }
-  if (trigger.percent < 0 || trigger.percent > 100) {
+  if (trigger.source !== "Data ED3" && trigger.active && trigger.percent > 100) {
     diagnostics.push(issue("warning", trigger.id, "chance-range", "Chance is outside the usual 0..100 range.", `Current chance is ${trigger.percent}; confirm this is intentional before export.`));
   }
 
@@ -103,7 +104,7 @@ function validateAction(project: Project, trigger: TriggerRecord, slot: number, 
     if (!macro) {
       diagnostics.push(slotIssue("error", trigger.id, slot, "dangling-macro", "Extra Action Point target is missing.", `No callable Extra Action Point ${id} exists.`));
     } else if (!isCallableMacro(project, macro)) {
-      diagnostics.push(slotIssue("warning", trigger.id, slot, "ed3-evidence-target", "Target is an advanced imported action.", `Extra Action Point ${id} is available in Advanced Imports.`));
+      diagnostics.push(slotIssue("warning", trigger.id, slot, "unlinked-extra-action-target", "Extra Action Point is not linked from known scenario flow yet.", `Extra Action Point ${id} exists, but Providence has not identified a normal call path for it yet.`));
     }
   }
 

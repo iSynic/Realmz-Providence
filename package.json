@@ -40,7 +40,8 @@
     "smoke:editor:scripts-v2": "powershell -ExecutionPolicy Bypass -File scripts/run_scripts_v2_editor_smoke.ps1",
     "smoke:editor:scripts-v2:diagnostics": "powershell -ExecutionPolicy Bypass -File scripts/run_scripts_v2_diagnostics_smoke.ps1",
     "check:ap-actions": "node scripts/check_script_action_coverage.mjs",
-    "check": "npm run typecheck && npm run check:ap-actions && npm run build && npm run test:rust"
+    "check:registration-codes": "node scripts/check_registration_codes.mjs",
+    "check": "npm run typecheck && npm run check:ap-actions && npm run check:registration-codes && npm run build && npm run test:rust"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",
