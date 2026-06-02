@@ -2,6 +2,7 @@ import { ENTITY_TYPE_LABELS, SELECTABLE_ENTITY_TYPES } from "../constants";
 import { Project, SelectedEntity, SemanticEntity } from "../types";
 import { selectedEntityForSemantic } from "../utils";
 import { ScrollArea } from "../ui";
+import { isSemanticMappingPending } from "../app/appUtils";
 
 export function EntityBrowser({
   project,
@@ -13,6 +14,7 @@ export function EntityBrowser({
   onSelect: (entity: SelectedEntity) => void;
 }) {
   const entities = project?.semanticSchema.entities ?? [];
+  const mappingPending = isSemanticMappingPending(project);
   const groups = SELECTABLE_ENTITY_TYPES.map((type) => ({
     type,
     entities: entities.filter((entity) => entity.type === type)
@@ -22,12 +24,21 @@ export function EntityBrowser({
     <section className="entity-browser">
       <div className="panel-header">
         <span>Project Browser</span>
-        <b>{entities.length.toLocaleString()}</b>
+        <b>{mappingPending ? "mapping" : entities.length.toLocaleString()}</b>
       </div>
       <div className="semantic-summary-strip">
-        <Metric label="Sources" value={project?.semanticSchema.summary.sourceCount ?? 0} />
-        <Metric label="Records" value={project?.semanticSchema.summary.recordCount ?? 0} />
-        <Metric label="Links" value={project?.semanticSchema.summary.linkCount ?? 0} />
+        {mappingPending ? (
+          <span>
+            <b>Mapping</b>
+            <small>Scenario links</small>
+          </span>
+        ) : (
+          <>
+            <Metric label="Sources" value={project?.semanticSchema.summary.sourceCount ?? 0} />
+            <Metric label="Records" value={project?.semanticSchema.summary.recordCount ?? 0} />
+            <Metric label="Links" value={project?.semanticSchema.summary.linkCount ?? 0} />
+          </>
+        )}
       </div>
       <ScrollArea className="semantic-entity-list" aria-label="Project Browser">
         {groups.map((group) => (
@@ -47,6 +58,12 @@ export function EntityBrowser({
           </details>
         ))}
         {!project && <div className="entity-empty">Import a Realmz scenario to inspect semantic links.</div>}
+        {mappingPending && (
+          <div className="entity-empty semantic-mapping-empty">
+            <span>Mapping scenario links...</span>
+            <span className="semantic-mapping-progress" aria-label="Mapping scenario links" />
+          </div>
+        )}
       </ScrollArea>
     </section>
   );

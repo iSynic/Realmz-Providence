@@ -64,6 +64,10 @@ export function isProjectEmpty(project: Project) {
   );
 }
 
+export function isSemanticMappingPending(project: Project | null) {
+  return Boolean(project && (project.semanticSchema?.schemaVersion ?? 0) === 0);
+}
+
 export function nextMapFocusNonce() {
   mapFocusNonce += 1;
   return mapFocusNonce;

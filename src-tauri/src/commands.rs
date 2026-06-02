@@ -1,12 +1,13 @@
 use crate::error::{ProvidenceError, Result};
 use crate::exporter::{export_project as export_project_impl, ExportReport};
 use crate::importer::{
+    build_project_semantic_schema as build_project_semantic_schema_impl,
     create_project as create_project_impl, import_scenario as import_scenario_impl,
     import_scenario_into_project as import_scenario_into_project_impl,
     open_project as open_project_impl, save_project as save_project_impl,
 };
 use crate::media_assets::mime_for_path;
-use crate::project::{ProvidenceProject, ScenarioTarget, ValidationReport};
+use crate::project::{ProvidenceProject, ScenarioTarget, SemanticSchema, ValidationReport};
 use crate::resource_fork::parse_resource_fork_entries;
 use crate::resource_preview::{
     inspect_resource_preview, preview_data_url_for_resource, DecodedResourcePreview,
@@ -45,6 +46,13 @@ pub struct DefaultStoragePaths {
     pub project_root: String,
     pub workspace_dir: String,
     pub export_root: String,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectSemanticBuildResult {
+    pub semantic_schema: SemanticSchema,
+    pub validation: ValidationReport,
 }
 
 #[tauri::command]
@@ -203,6 +211,20 @@ pub fn import_scenario_into_project(
 #[tauri::command]
 pub fn open_project(project_dir: String) -> Result<ProvidenceProject> {
     open_project_impl(project_dir)
+}
+
+#[tauri::command]
+pub fn build_project_semantic_schema(
+    project_dir: String,
+    mut project: ProvidenceProject,
+) -> Result<ProjectSemanticBuildResult> {
+    let semantic_schema = build_project_semantic_schema_impl(project_dir, &project)?;
+    project.semantic_schema = semantic_schema.clone();
+    let validation = validate_project_impl(&project);
+    Ok(ProjectSemanticBuildResult {
+        semantic_schema,
+        validation,
+    })
 }
 
 #[tauri::command]

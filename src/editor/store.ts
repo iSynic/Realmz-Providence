@@ -16,6 +16,7 @@ import {
   ProjectCommand,
   ProvidenceWorkspace,
   SelectedEntity,
+  SemanticSchema,
   SidePanelMode,
   ValidationReport
 } from "./types";
@@ -85,6 +86,7 @@ export type EditorAction =
   | { type: "setTutorialEnabled"; enabled: boolean }
   | { type: "togglePanelCollapsed"; panelId: string }
   | { type: "setProject"; project: Project | null; selectedMapId?: string | null }
+  | { type: "setSemanticSchema"; schema: SemanticSchema; validation?: ValidationReport }
   | { type: "replaceProject"; project: Project }
   | { type: "markSaved"; project: Project }
   | { type: "setValidation"; validation: ValidationReport }
@@ -245,6 +247,17 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         lastCommandLabel: null,
         focusTarget: null
       };
+    case "setSemanticSchema":
+      return state.project
+        ? {
+            ...state,
+            project: {
+              ...state.project,
+              semanticSchema: action.schema,
+              validation: action.validation ?? state.project.validation
+            }
+          }
+        : state;
     case "replaceProject":
       return {
         ...state,

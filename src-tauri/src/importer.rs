@@ -8,6 +8,7 @@ use base64::{
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
+use std::io::BufWriter;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 use walkdir::WalkDir;
@@ -266,44 +267,18 @@ fn import_scenario_with_name(
     hydrate_custom_spell_names(&source_path, &mut project)?;
     import_tile_atlases(&source_path, &assets_dir, &mut project)?;
     import_icon_overlays(&source_path, &assets_dir, &mut project)?;
-    let semantic_parsed = ParsedScenario {
-        maps: project.maps.clone(),
-        land_layout: project.land_layout.clone(),
-        map_records: project.map_records.clone(),
-        tile_attributes: project.tile_attributes.clone(),
-        custom_landlooks: project.custom_landlooks.clone(),
-        triggers: project.triggers.clone(),
-        random_levels: project.random_levels.clone(),
-        extracodes: project.extracodes.clone(),
-        messages: project.messages.clone(),
-        option_labels: project.option_labels.clone(),
-        battles: project.battles.clone(),
-        monsters: project.monsters.clone(),
-        monster_sets: project.monster_sets.clone(),
-        monster_descriptions: project.monster_descriptions.clone(),
-        scenario_items: project.scenario_items.clone(),
-        treasures: project.treasures.clone(),
-        shops: project.shops.clone(),
-        simple_encounters: project.simple_encounters.clone(),
-        complex_encounters: project.complex_encounters.clone(),
-        thief_encounters: project.thief_encounters.clone(),
-        timed_encounters: project.timed_encounters.clone(),
-        spell_overrides: project.spell_overrides.clone(),
-        race_overrides: project.race_overrides.clone(),
-        caste_overrides: project.caste_overrides.clone(),
-        records: project.records.clone(),
-        diagnostics: project.diagnostics.clone(),
-        asset_catalog: project.asset_catalog.clone(),
-    };
-    project.semantic_schema = crate::semantic::build_semantic_schema(
-        &project.scenario,
-        &buffers,
-        &project.source.files,
-        &semantic_parsed,
-    );
     project.validation = crate::validation::validate_project(&project);
     save_project(project_dir, &project)?;
     Ok(project)
+}
+
+pub fn build_project_semantic_schema(
+    project_dir: impl AsRef<Path>,
+    project: &ProvidenceProject,
+) -> Result<SemanticSchema> {
+    let mut project = project.clone();
+    refresh_semantic_schema(project_dir.as_ref(), &mut project)?;
+    Ok(project.semantic_schema)
 }
 
 pub fn open_project(project_dir: impl AsRef<Path>) -> Result<ProvidenceProject> {
@@ -313,7 +288,6 @@ pub fn open_project(project_dir: impl AsRef<Path>) -> Result<ProvidenceProject> 
     let mut project: ProvidenceProject =
         serde_json::from_str(&text).with_json_path(project_path)?;
     backfill_tileset_metadata(&mut project);
-    refresh_semantic_schema(project_dir, &mut project)?;
     ensure_reference_tile_attributes(&mut project)?;
     hydrate_scenario_metadata(project_dir, &mut project)?;
     let raw_dir = project_dir.join(if project.source.raw_sources_dir.is_empty() {
@@ -324,7 +298,6 @@ pub fn open_project(project_dir: impl AsRef<Path>) -> Result<ProvidenceProject> 
     hydrate_custom_spell_names(&raw_dir, &mut project)?;
     refresh_custom_tile_atlases(project_dir, &mut project)?;
     import_icon_overlays(&raw_dir, &project_dir.join(ASSETS_DIR), &mut project)?;
-    project.validation = crate::validation::validate_project(&project);
     save_project(project_dir, &project)?;
     Ok(project)
 }
@@ -333,8 +306,91 @@ pub fn save_project(project_dir: impl AsRef<Path>, project: &ProvidenceProject) 
     let project_dir = project_dir.as_ref();
     fs::create_dir_all(project_dir).with_path(project_dir)?;
     let project_path = project_dir.join(PROJECT_FILE_NAME);
-    let text = serde_json::to_string_pretty(project).with_json_path(&project_path)?;
-    fs::write(&project_path, text).with_path(&project_path)
+    let file = fs::File::create(&project_path).with_path(&project_path)?;
+    let writer = BufWriter::new(file);
+    serde_json::to_writer(writer, &ProjectFile::from(project)).with_json_path(&project_path)
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ProjectFile<'a> {
+    schema_version: u32,
+    app_version: &'a str,
+    scenario: &'a ScenarioMeta,
+    source: &'a SourceSnapshot,
+    maps: &'a [MapEntity],
+    land_layout: &'a Option<LandLayout>,
+    map_records: &'a [MapRecord],
+    tile_attributes: &'a [TileAttributeProfile],
+    custom_landlooks: &'a [CustomLandlookMetadata],
+    triggers: &'a [TriggerRecord],
+    random_levels: &'a [RandomLevel],
+    extracodes: &'a [ExtraCodeRow],
+    messages: &'a [MessageRecord],
+    option_labels: &'a [OptionLabelRecord],
+    battles: &'a [BattleRecord],
+    monsters: &'a [MonsterRecord],
+    monster_sets: &'a [MonsterSet],
+    monster_descriptions: &'a [MonsterDescriptionRecord],
+    scenario_items: &'a [ScenarioItemRecord],
+    treasures: &'a [TreasureRecord],
+    shops: &'a [ShopRecord],
+    simple_encounters: &'a [SimpleEncounterRecord],
+    complex_encounters: &'a [ComplexEncounterRecord],
+    thief_encounters: &'a [ThiefEncounterRecord],
+    timed_encounters: &'a [TimedEncounterRecord],
+    quest_labels: &'a [QuestLabel],
+    spell_overrides: &'a [ScenarioSpellOverride],
+    race_overrides: &'a [ScenarioRaceOverride],
+    caste_overrides: &'a [ScenarioCasteOverride],
+    assets: &'a [ManagedAsset],
+    asset_catalog: &'a AssetCatalog,
+    editor_metadata: &'a EditorMetadata,
+    records: &'a RecordCatalog,
+    diagnostics: &'a [Diagnostic],
+    validation: &'a ValidationReport,
+}
+
+impl<'a> From<&'a ProvidenceProject> for ProjectFile<'a> {
+    fn from(project: &'a ProvidenceProject) -> Self {
+        Self {
+            schema_version: project.schema_version,
+            app_version: &project.app_version,
+            scenario: &project.scenario,
+            source: &project.source,
+            maps: &project.maps,
+            land_layout: &project.land_layout,
+            map_records: &project.map_records,
+            tile_attributes: &project.tile_attributes,
+            custom_landlooks: &project.custom_landlooks,
+            triggers: &project.triggers,
+            random_levels: &project.random_levels,
+            extracodes: &project.extracodes,
+            messages: &project.messages,
+            option_labels: &project.option_labels,
+            battles: &project.battles,
+            monsters: &project.monsters,
+            monster_sets: &project.monster_sets,
+            monster_descriptions: &project.monster_descriptions,
+            scenario_items: &project.scenario_items,
+            treasures: &project.treasures,
+            shops: &project.shops,
+            simple_encounters: &project.simple_encounters,
+            complex_encounters: &project.complex_encounters,
+            thief_encounters: &project.thief_encounters,
+            timed_encounters: &project.timed_encounters,
+            quest_labels: &project.quest_labels,
+            spell_overrides: &project.spell_overrides,
+            race_overrides: &project.race_overrides,
+            caste_overrides: &project.caste_overrides,
+            assets: &project.assets,
+            asset_catalog: &project.asset_catalog,
+            editor_metadata: &project.editor_metadata,
+            records: &project.records,
+            diagnostics: &project.diagnostics,
+            validation: &project.validation,
+        }
+    }
 }
 
 fn refresh_semantic_schema(project_dir: &Path, project: &mut ProvidenceProject) -> Result<()> {
@@ -840,13 +896,13 @@ fn import_icon_overlays(
         .join("resources")
         .join("icons");
     if reference_icon_dir.is_dir() {
-        for entry in fs::read_dir(&reference_icon_dir).with_path(&reference_icon_dir)? {
-            let entry = entry.with_path(&reference_icon_dir)?;
-            let path = entry.path();
-            if path.extension().and_then(|ext| ext.to_str()) != Some("png") {
+        for icon_id in &referenced_icon_ids {
+            let file_name = format!("icon_{icon_id}.png");
+            let path = reference_icon_dir.join(&file_name);
+            if !path.is_file() {
                 continue;
             }
-            let dest = icon_dir.join(entry.file_name());
+            let dest = icon_dir.join(&file_name);
             fs::copy(&path, &dest).with_path(&dest)?;
         }
     }
@@ -1272,5 +1328,39 @@ mod tests {
             .join(PROJECT_FILE_NAME)
             .is_file());
         assert_ne!(first.scenario.project_path, second.scenario.project_path);
+    }
+
+    #[test]
+    fn save_project_omits_derived_semantic_schema() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let project_dir = temp.path().join("Semantic Omit.providence");
+        let mut project =
+            create_project("Semantic Omit".to_string(), &project_dir).expect("create project");
+        project.semantic_schema.schema_version = 999;
+        project.semantic_schema.entities.push(SemanticEntity {
+            id: "derived:test".to_string(),
+            entity_type: "derived".to_string(),
+            label: "Derived Test".to_string(),
+            edit_state: SemanticEditState::InspectOnly,
+            confidence: Confidence::Inferred,
+            source: "test".to_string(),
+            record_ref: None,
+            byte_range: None,
+            editable: false,
+            summary: BTreeMap::new(),
+        });
+        assert!(
+            serde_json::to_string(&project)
+                .expect("serialize project response")
+                .contains("semanticSchema"),
+            "live project serialization should keep semantic schema for app responses"
+        );
+        save_project(&project_dir, &project).expect("save project");
+        let text =
+            fs::read_to_string(project_dir.join(PROJECT_FILE_NAME)).expect("read project json");
+        assert!(
+            !text.contains("semanticSchema"),
+            "project.json should not persist derived semantic schema"
+        );
     }
 }

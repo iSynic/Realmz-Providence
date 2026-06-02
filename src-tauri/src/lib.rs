@@ -30,6 +30,7 @@ pub fn run() {
             commands::import_scenario,
             commands::import_scenario_into_project,
             commands::open_project,
+            commands::build_project_semantic_schema,
             media_assets::load_project_asset,
             media_assets::load_project_asset_preview,
             media_assets::import_project_media_asset,

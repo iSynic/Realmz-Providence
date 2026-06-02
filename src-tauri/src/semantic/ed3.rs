@@ -16,7 +16,16 @@ pub(super) fn classify_ed3_reachability(schema: &mut SemanticSchema, triggers: &
         .map(|trigger| macro_entity_id(trigger.record_index))
         .collect();
     let mut incoming: BTreeMap<String, Vec<SemanticLink>> = BTreeMap::new();
+    let mut outgoing_by_macro: BTreeMap<usize, Vec<SemanticLink>> = BTreeMap::new();
     for link in &schema.links {
+        if is_macro_reachability_link(link) {
+            if let Some(index) = action_slot_macro_index(&link.from) {
+                outgoing_by_macro
+                    .entry(index)
+                    .or_default()
+                    .push(link.clone());
+            }
+        }
         if ed3_ids.contains(&link.to) {
             incoming
                 .entry(link.to.clone())
@@ -58,14 +67,7 @@ pub(super) fn classify_ed3_reachability(schema: &mut SemanticSchema, triggers: &
         let Some(current_index) = current.trim_start_matches("macro:").parse::<usize>().ok() else {
             continue;
         };
-        let prefix = format!("action-slot:macro:{current_index}:");
-        let outgoing: Vec<_> = schema
-            .links
-            .iter()
-            .filter(|link| is_macro_reachability_link(link) && link.from.starts_with(&prefix))
-            .cloned()
-            .collect();
-        for link in outgoing {
+        for link in outgoing_by_macro.get(&current_index).into_iter().flatten() {
             if !ed3_ids.contains(&link.to) || reachable.contains_key(&link.to) {
                 continue;
             }
@@ -81,7 +83,7 @@ pub(super) fn classify_ed3_reachability(schema: &mut SemanticSchema, triggers: &
                     evidence,
                 },
             );
-            queue.push_back(link.to);
+            queue.push_back(link.to.clone());
         }
     }
 
@@ -218,6 +220,14 @@ fn macro_entity_id(record_index: usize) -> String {
 
 fn is_ed3_action_slot(id: &str) -> bool {
     id.starts_with("action-slot:macro:")
+}
+
+fn action_slot_macro_index(id: &str) -> Option<usize> {
+    let mut parts = id.split(':');
+    if parts.next()? != "action-slot" || parts.next()? != "macro" {
+        return None;
+    }
+    parts.next()?.parse().ok()
 }
 
 fn is_macro_reachability_link(link: &SemanticLink) -> bool {

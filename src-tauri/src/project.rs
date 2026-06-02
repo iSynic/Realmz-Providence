@@ -65,7 +65,7 @@ pub struct ProvidenceProject {
     pub editor_metadata: EditorMetadata,
     pub records: RecordCatalog,
     pub diagnostics: Vec<Diagnostic>,
-    #[serde(default)]
+    #[serde(default, skip_deserializing)]
     pub semantic_schema: SemanticSchema,
     pub validation: ValidationReport,
 }

@@ -32,6 +32,8 @@ export function TextPanel({
   const [selectedReferenceId, setSelectedReferenceId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TextAuthoringTab>(() => activeEditor === "option-labels" ? "option-labels" : "strings");
   const [selectedOptionId, setSelectedOptionId] = useState<number | null>(null);
+  const [messageListLimit, setMessageListLimit] = useState(320);
+  const [optionListLimit, setOptionListLimit] = useState(320);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const records = useMemo(() => [...(project.messages ?? [])].sort((a, b) => a.id - b.id), [project.messages]);
   const optionRecords = useMemo(() => [...(project.optionLabels ?? [])].sort((a, b) => a.id - b.id), [project.optionLabels]);
@@ -62,9 +64,10 @@ export function TextPanel({
   }, [findQuery, records]);
   const reviewStringIds = useMemo(() => records.filter(isStringReviewCandidate).map((record) => record.id), [records]);
   const nextId = nextMessageId(records);
-  const resourceRows = useMemo(() => textReferenceRows(project, catalog, resourceQuery), [catalog, project, resourceQuery]);
+  const referencePanelRequested = showReferences || selectedReferenceId != null;
+  const resourceRows = useMemo(() => referencePanelRequested ? textReferenceRows(project, catalog, resourceQuery) : [], [catalog, project, referencePanelRequested, resourceQuery]);
   const selectedReference = selectedReferenceId ? resourceRows.find((row) => row.id === selectedReferenceId) ?? null : null;
-  const referencePanelOpen = showReferences || selectedReference != null;
+  const referencePanelOpen = referencePanelRequested;
   const handleTextFileImport = async (file: File | null) => {
     if (!file) return;
     const content = await file.text();
@@ -113,6 +116,10 @@ export function TextPanel({
     setSelectedOptionId(optionId);
   }, [selectedEntity]);
 
+  useEffect(() => {
+    setMessageListLimit(320);
+  }, [query]);
+
   return (
     <section className="text-workbench">
       <header className="text-workbench-header">
@@ -152,7 +159,6 @@ export function TextPanel({
           <button
             type="button"
             className="btn btn-secondary btn-sm"
-            disabled={resourceRows.length === 0}
             onClick={() => setShowReferences((value) => !value)}
             title="Show or hide readable TEXT, STR#, and style string resources."
           >
@@ -224,7 +230,7 @@ export function TextPanel({
             <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search strings..." />
           </div>
           <div className="text-message-list" role="list" aria-label="Scenario strings">
-            {filteredRecords.map((record) => {
+            {filteredRecords.slice(0, messageListLimit).map((record) => {
               const selected = record.id === selectedId;
               const usageCount = usageCounts.get(record.id) ?? 0;
               const byteLength = classicTextByteLength(record.text);
@@ -241,6 +247,11 @@ export function TextPanel({
                 </button>
               );
             })}
+            {filteredRecords.length > messageListLimit && (
+              <button type="button" className="text-list-more" onClick={() => setMessageListLimit((value) => value + 320)}>
+                Show {Math.min(320, filteredRecords.length - messageListLimit).toLocaleString()} more
+              </button>
+            )}
             {filteredRecords.length === 0 && <p>No strings match this search.</p>}
           </div>
         </aside>}
@@ -297,7 +308,10 @@ export function TextPanel({
           records={optionRecords}
           selectedId={effectiveOptionId}
           selectedRecord={selectedOption}
+          listLimit={optionListLimit}
           onSelect={selectOptionLabel}
+          onShowMore={() => setOptionListLimit((value) => value + 320)}
+          onResetListLimit={() => setOptionListLimit(320)}
           onSelectEntity={onSelectEntity}
           onApplyCommand={onApplyCommand}
         />
@@ -344,16 +358,7 @@ function StringNavigator({
       <button type="button" className="btn btn-secondary btn-sm icon-only" disabled={!next || next.id === selectedId} onClick={() => next && onSelect(next.id)} title="Next string">
         <ChevronRight size={15} />
       </button>
-      <label>
-        <span>Go To String</span>
-        <select value={selectedId} onChange={(event) => onSelect(Number(event.currentTarget.value))}>
-          {records.map((record) => (
-            <option key={record.id} value={record.id}>
-              {record.id}: {record.text || "Empty"}
-            </option>
-          ))}
-        </select>
-      </label>
+      <RecordJumpField label="Go To String" selectedId={selectedId} records={records} onSelect={onSelect} />
       <button type="button" className="btn btn-secondary btn-sm" onClick={onToggleList}>
         <List size={14} /> {showList ? "Hide Search List" : "Show Search List"}
       </button>
@@ -377,6 +382,42 @@ function StringNavigator({
         Find Long String {reviewCount ? `(${reviewCount})` : ""}
       </button>
     </nav>
+  );
+}
+
+function RecordJumpField({
+  label,
+  selectedId,
+  records,
+  onSelect
+}: {
+  label: string;
+  selectedId: number;
+  records: Array<{ id: number }>;
+  onSelect: (id: number) => void;
+}) {
+  const [draft, setDraft] = useState(String(selectedId));
+  const validIds = useMemo(() => new Set(records.map((record) => record.id)), [records]);
+  useEffect(() => {
+    setDraft(String(selectedId));
+  }, [selectedId]);
+  const commit = () => {
+    const id = Number(draft);
+    if (Number.isInteger(id) && validIds.has(id)) onSelect(id);
+  };
+  return (
+    <label>
+      <span>{label}</span>
+      <input
+        type="number"
+        value={draft}
+        onChange={(event) => setDraft(event.currentTarget.value)}
+        onBlur={commit}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") commit();
+        }}
+      />
+    </label>
   );
 }
 
@@ -476,7 +517,10 @@ function OptionLabelsWorkbench({
   records,
   selectedId,
   selectedRecord,
+  listLimit,
   onSelect,
+  onShowMore,
+  onResetListLimit,
   onSelectEntity,
   onApplyCommand
 }: {
@@ -484,7 +528,10 @@ function OptionLabelsWorkbench({
   records: OptionLabelRecord[];
   selectedId: number;
   selectedRecord: OptionLabelRecord | null;
+  listLimit: number;
   onSelect: (id: number) => void;
+  onShowMore: () => void;
+  onResetListLimit: () => void;
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
@@ -495,6 +542,9 @@ function OptionLabelsWorkbench({
     if (!normalized) return records;
     return records.filter((record) => `${record.id} ${record.text}`.toLowerCase().includes(normalized));
   }, [query, records]);
+  useEffect(() => {
+    onResetListLimit();
+  }, [query]);
   const selectedIndex = Math.max(0, records.findIndex((record) => record.id === selectedId));
   const previous = records[Math.max(0, selectedIndex - 1)] ?? null;
   const next = records[Math.min(records.length - 1, selectedIndex + 1)] ?? null;
@@ -508,16 +558,7 @@ function OptionLabelsWorkbench({
         <button type="button" className="btn btn-secondary btn-sm icon-only" disabled={!next || next.id === selectedId} onClick={() => next && onSelect(next.id)} title="Next option label">
           <ChevronRight size={15} />
         </button>
-        <label>
-          <span>Go To Label</span>
-          <select value={selectedId} onChange={(event) => onSelect(Number(event.currentTarget.value))}>
-            {records.map((record) => (
-              <option key={record.id} value={record.id}>
-                {record.id}: {record.text || "Empty"}
-              </option>
-            ))}
-          </select>
-        </label>
+        <RecordJumpField label="Go To Label" selectedId={selectedId} records={records} onSelect={onSelect} />
         <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowList((value) => !value)}>
           <List size={14} /> {showList ? "Hide Search List" : "Show Search List"}
         </button>
@@ -544,7 +585,7 @@ function OptionLabelsWorkbench({
               <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search option labels..." />
             </div>
             <div className="text-message-list" role="list" aria-label="Option labels">
-              {filteredRecords.map((record) => {
+              {filteredRecords.slice(0, listLimit).map((record) => {
                 const selected = record.id === selectedId;
                 const usages = optionLabelUsageLinks(project, record.id);
                 const byteLength = classicTextByteLength(record.text);
@@ -556,6 +597,11 @@ function OptionLabelsWorkbench({
                   </button>
                 );
               })}
+              {filteredRecords.length > listLimit && (
+                <button type="button" className="text-list-more" onClick={onShowMore}>
+                  Show {Math.min(320, filteredRecords.length - listLimit).toLocaleString()} more
+                </button>
+              )}
               {filteredRecords.length === 0 && <p>No option labels match this search.</p>}
             </div>
           </aside>

@@ -8,6 +8,7 @@ import { validateRealmzTargetRecord } from "../targetValidation";
 import { tileIconCandidates } from "../map/renderValues";
 
 const EMPTY_TARGET_COMPATIBILITY = { blockers: [], warnings: [], notes: [] };
+const pendingBrowserSemantics = new Map<string, { files: Map<string, Uint8Array>; sourceFiles: Project["source"]["files"] }>();
 
 export function createBrowserProject(projectName: string): Project {
   const safeName = projectName.trim() || "Untitled Scenario";
@@ -120,17 +121,65 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
     editorMetadata: { displayNames: {} },
     records: parsed.records,
     diagnostics: parsed.diagnostics,
-    semanticSchema: emptySemanticSchema(),
+    semanticSchema: emptySemanticSchema(0),
     validation: { ok: true, errors: [], warnings: [], exportableFiles: [], passThroughFiles: [], targetCompatibilityIssues: [], targetCompatibility: EMPTY_TARGET_COMPATIBILITY }
   };
-  project.semanticSchema = buildBrowserSemanticSchema({ scenario: project.scenario, buffers: files, sourceFiles, ...parsed });
+  pendingBrowserSemantics.set(browserSemanticCacheKey(project), { files, sourceFiles });
   project.validation = validateBrowserProject(project);
   return project;
 }
 
-function emptySemanticSchema(): Project["semanticSchema"] {
+export async function buildPendingBrowserSemanticSchema(project: Project): Promise<{ semanticSchema: Project["semanticSchema"]; validation: Project["validation"] } | null> {
+  const key = browserSemanticCacheKey(project);
+  const pending = pendingBrowserSemantics.get(key);
+  if (!pending) return null;
+  const request = {
+    scenario: project.scenario,
+    buffers: pending.files,
+    sourceFiles: pending.sourceFiles,
+    maps: project.maps,
+    mapRecords: project.mapRecords,
+    randomLevels: project.randomLevels,
+    triggers: project.triggers,
+    extracodes: project.extracodes,
+    assetCatalog: project.assetCatalog,
+    records: project.records
+  };
+  const semanticSchema = await buildBrowserSemanticSchemaAsync(request);
+  pendingBrowserSemantics.delete(key);
   return {
-    schemaVersion: 4,
+    semanticSchema,
+    validation: validateBrowserProject({ ...project, semanticSchema })
+  };
+}
+
+function browserSemanticCacheKey(project: Project) {
+  return project.source.sourcePath || project.scenario.projectPath || project.scenario.name;
+}
+
+function buildBrowserSemanticSchemaAsync(request: Parameters<typeof buildBrowserSemanticSchema>[0]): Promise<Project["semanticSchema"]> {
+  if (typeof Worker === "undefined") return Promise.resolve(buildBrowserSemanticSchema(request));
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL("./semanticWorker.ts", import.meta.url), { type: "module" });
+    worker.onmessage = (event: MessageEvent<{ ok: true; semanticSchema: Project["semanticSchema"] } | { ok: false; error: string }>) => {
+      worker.terminate();
+      if (event.data.ok) {
+        resolve(event.data.semanticSchema);
+      } else {
+        reject(new Error(event.data.error));
+      }
+    };
+    worker.onerror = (event) => {
+      worker.terminate();
+      reject(new Error(event.message || "Browser semantic worker failed."));
+    };
+    worker.postMessage(request);
+  });
+}
+
+function emptySemanticSchema(schemaVersion = 4): Project["semanticSchema"] {
+  return {
+    schemaVersion,
     sources: [],
     records: [],
     entities: [],

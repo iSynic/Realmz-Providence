@@ -8,6 +8,7 @@ import {
 } from "../browser/library";
 import { ensureBrowserReferenceTileAttributes } from "../browser/project";
 import { loadImage } from "../components/TileSprite";
+import { buildPendingBrowserSemanticSchema } from "../browser/project";
 import {
   PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES,
   referencedMapIconIds,
@@ -116,6 +117,38 @@ export function useAppBootstrapEffects({
   useEffect(() => {
     document.documentElement.dataset.tutorial = state.tutorialEnabled ? "on" : "off";
   }, [state.tutorialEnabled]);
+
+  useEffect(() => {
+    if (!state.project || !projectDir) return;
+    if ((state.project.semanticSchema?.schemaVersion ?? 0) > 0) return;
+    if (!shouldBuildSemanticSchemaForTab(state.activeTab)) return;
+    let disposed = false;
+    const project = state.project;
+    dispatch({ type: "setStatus", status: "Mapping scenario links..." });
+    const mapping = desktopRuntime
+      ? invoke<{ semanticSchema: Project["semanticSchema"]; validation: Project["validation"] }>("build_project_semantic_schema", { projectDir, project })
+      : waitForBrowserPaint().then(async () => {
+          const result = await buildPendingBrowserSemanticSchema(project);
+          if (!result) throw new Error("No browser scenario buffers are available for mapping.");
+          return result;
+        });
+    mapping
+      .then((result) => {
+        if (disposed) return;
+        const schema = result.semanticSchema;
+        dispatch({ type: "setSemanticSchema", schema, validation: result.validation });
+        dispatch({
+          type: "setStatus",
+          status: `Scenario mapping ready: ${schema.summary.entityCount.toLocaleString()} entities, ${schema.summary.linkCount.toLocaleString()} links`
+        });
+      })
+      .catch((error) => {
+        if (!disposed) dispatch({ type: "setStatus", status: `Scenario mapping failed: ${commandError(error)}` });
+      });
+    return () => {
+      disposed = true;
+    };
+  }, [desktopRuntime, dispatch, projectDir, state.activeTab, state.project]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -305,6 +338,16 @@ export function useAppBootstrapEffects({
       disposed = true;
     };
   }, [desktopRuntime, dispatch, iconLoadKey, projectDir, workspaceDir]);
+}
+
+function waitForBrowserPaint() {
+  return new Promise<void>((resolve) => {
+    requestAnimationFrame(() => window.setTimeout(resolve, 0));
+  });
+}
+
+function shouldBuildSemanticSchemaForTab(tab: EditorState["activeTab"]) {
+  return ["encounters", "combat", "economy", "rules", "assets", "records", "linter"].includes(tab);
 }
 
 function isInlineAssetUrl(value: string) {

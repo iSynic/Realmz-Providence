@@ -711,6 +711,12 @@
   font-size: 10px;
 }
 
+.text-message-list .text-list-more {
+  justify-content: center;
+  color: #ffd86b;
+  text-align: center;
+}
+
 
 
 .text-editor-surface {

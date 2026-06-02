@@ -9,6 +9,12 @@ export type ContentUsageLink = {
   entity?: SelectedEntity;
 };
 
+const emptyUsageLinks: ContentUsageLink[] = [];
+const textUsageIndexes = new WeakMap<Project, {
+  messageLinks: Map<number, ContentUsageLink[]>;
+  optionLabelLinks: Map<number, ContentUsageLink[]>;
+}>();
+
 export function classicTextByteLength(text: string) {
   return Array.from(text ?? "").length;
 }
@@ -18,13 +24,41 @@ export function unsupportedClassicTextChars(text: string) {
 }
 
 export function messageUsageLinks(project: Project, messageId: number): ContentUsageLink[] {
-  const links: ContentUsageLink[] = [];
+  return textUsageIndex(project).messageLinks.get(messageId) ?? emptyUsageLinks;
+}
+
+export function optionLabelUsageLinks(project: Project, optionLabelId: number): ContentUsageLink[] {
+  return textUsageIndex(project).optionLabelLinks.get(optionLabelId) ?? emptyUsageLinks;
+}
+
+function textUsageIndex(project: Project) {
+  const cached = textUsageIndexes.get(project);
+  if (cached) return cached;
+  const index = {
+    messageLinks: buildMessageUsageLinks(project),
+    optionLabelLinks: buildOptionLabelUsageLinks(project)
+  };
+  textUsageIndexes.set(project, index);
+  return index;
+}
+
+function buildMessageUsageLinks(project: Project) {
+  const links = new Map<number, ContentUsageLink[]>();
+  const add = (messageId: number, link: ContentUsageLink) => {
+    if (!Number.isFinite(messageId) || messageId <= 0) return;
+    const existing = links.get(messageId);
+    if (existing) {
+      existing.push(link);
+    } else {
+      links.set(messageId, [link]);
+    }
+  };
   for (const trigger of project.triggers ?? []) {
     for (const action of trigger.actions ?? []) {
       const code = normalizeStepOpcode(action.rawCode);
       const targetMessageId = code === 1 ? Math.abs(action.id) : action.id;
-      if (![1, 62, 71].includes(code) || targetMessageId !== messageId) continue;
-      links.push({
+      if (![1, 62, 71].includes(code)) continue;
+      add(targetMessageId, {
         key: `script:${trigger.id}:${action.slot}`,
         label: triggerLabel(trigger),
         detail: `Action slot ${action.slot}: ${actionOptionFor(action.rawCode).label}`,
@@ -33,55 +67,68 @@ export function messageUsageLinks(project: Project, messageId: number): ContentU
     }
   }
   for (const battle of project.battles ?? []) {
-    if (battle.messageBefore === messageId) {
-      links.push({ key: `battle:${battle.id}:before`, label: `Battle ${battle.id}`, detail: "Before battle message", entity: { type: "battle", id: `battle:${battle.id}` } });
-    }
-    if (battle.messageAfter === messageId) {
-      links.push({ key: `battle:${battle.id}:after`, label: `Battle ${battle.id}`, detail: "After battle message", entity: { type: "battle", id: `battle:${battle.id}` } });
-    }
+    add(battle.messageBefore, { key: `battle:${battle.id}:before`, label: `Battle ${battle.id}`, detail: "Before battle message", entity: { type: "battle", id: `battle:${battle.id}` } });
+    add(battle.messageAfter, { key: `battle:${battle.id}:after`, label: `Battle ${battle.id}`, detail: "After battle message", entity: { type: "battle", id: `battle:${battle.id}` } });
   }
   for (const encounter of project.simpleEncounters ?? []) {
-    if (encounter.prompt === messageId) {
-      links.push({ key: `simple:${encounter.id}:prompt`, label: `Simple Encounter ${encounter.id}`, detail: "Prompt message", entity: { type: "encounter", id: `encounter:simple:${encounter.id}` } });
-    }
+    add(encounter.prompt, { key: `simple:${encounter.id}:prompt`, label: `Simple Encounter ${encounter.id}`, detail: "Prompt message", entity: { type: "encounter", id: `encounter:simple:${encounter.id}` } });
     for (const action of encounter.actions ?? []) {
       const code = normalizeStepOpcode(action.rawCode);
       const targetMessageId = code === 1 ? Math.abs(action.id) : action.id;
-      if ([1, 62, 71].includes(code) && targetMessageId === messageId) {
-        links.push({ key: `simple:${encounter.id}:action:${action.slot}`, label: `Simple Encounter ${encounter.id}`, detail: `Action row ${action.slot} message`, entity: { type: "encounter", id: `encounter:simple:${encounter.id}` } });
+      if ([1, 62, 71].includes(code)) {
+        add(targetMessageId, { key: `simple:${encounter.id}:action:${action.slot}`, label: `Simple Encounter ${encounter.id}`, detail: `Action row ${action.slot} message`, entity: { type: "encounter", id: `encounter:simple:${encounter.id}` } });
       }
     }
   }
   for (const encounter of project.complexEncounters ?? []) {
-    if (encounter.prompt === messageId) {
-      links.push({ key: `complex:${encounter.id}:prompt`, label: `Complex Encounter ${encounter.id}`, detail: "Prompt message", entity: { type: "encounter", id: `encounter:complex:${encounter.id}` } });
-    }
+    add(encounter.prompt, { key: `complex:${encounter.id}:prompt`, label: `Complex Encounter ${encounter.id}`, detail: "Prompt message", entity: { type: "encounter", id: `encounter:complex:${encounter.id}` } });
     for (const action of encounter.actions ?? []) {
       const code = normalizeStepOpcode(action.rawCode);
       const targetMessageId = code === 1 ? Math.abs(action.id) : action.id;
-      if ([1, 62, 71].includes(code) && targetMessageId === messageId) {
-        links.push({ key: `complex:${encounter.id}:action:${action.slot}`, label: `Complex Encounter ${encounter.id}`, detail: `Action row ${action.slot} message`, entity: { type: "encounter", id: `encounter:complex:${encounter.id}` } });
+      if ([1, 62, 71].includes(code)) {
+        add(targetMessageId, { key: `complex:${encounter.id}:action:${action.slot}`, label: `Complex Encounter ${encounter.id}`, detail: `Action row ${action.slot} message`, entity: { type: "encounter", id: `encounter:complex:${encounter.id}` } });
       }
     }
   }
-  links.push(...edcdMessageUsageLinks(project, messageId));
+  const rows = edcdRowsById(project);
+  forEachScriptAction(project, (action, context) => {
+    const code = normalizeStepOpcode(action.rawCode);
+    if (!actionOptionFor(action.rawCode).edcdShape) return;
+    const row = rows.get(edcdRowId(action));
+    if (!row) return;
+    for (const target of edcdMessageTargets(code, row.values)) {
+      add(target.value, {
+        key: `${context.key}:edcd-message:${target.fieldIndex}`,
+        label: context.label,
+        detail: `${context.actionLabel}: ${target.label}`,
+        entity: context.entity
+      });
+    }
+  });
   for (const level of project.randomLevels ?? []) {
     for (const rect of level.rects ?? []) {
-      if (rect.text === messageId) {
-        links.push({
-          key: `random:${level.levelType}:${level.levelIndex}:${rect.rectIndex}:text`,
-          label: `${level.levelType} ${level.levelIndex} random area ${rect.rectIndex}`,
-          detail: "Random-area text",
-          entity: { type: "encounter", id: `random:${level.levelType}:${level.levelIndex}:${rect.rectIndex}` }
-        });
-      }
+      add(rect.text, {
+        key: `random:${level.levelType}:${level.levelIndex}:${rect.rectIndex}:text`,
+        label: `${level.levelType} ${level.levelIndex} random area ${rect.rectIndex}`,
+        detail: "Random-area text",
+        entity: { type: "encounter", id: `random:${level.levelType}:${level.levelIndex}:${rect.rectIndex}` }
+      });
     }
   }
   return links;
 }
 
-export function optionLabelUsageLinks(project: Project, optionLabelId: number): ContentUsageLink[] {
-  const links: ContentUsageLink[] = [];
+function buildOptionLabelUsageLinks(project: Project) {
+  const links = new Map<number, ContentUsageLink[]>();
+  const add = (optionLabelId: number, link: ContentUsageLink) => {
+    if (!Number.isFinite(optionLabelId) || optionLabelId <= 0) return;
+    const existing = links.get(optionLabelId);
+    if (existing) {
+      existing.push(link);
+    } else {
+      links.set(optionLabelId, [link]);
+    }
+  };
   const rows = edcdRowsById(project);
   forEachScriptAction(project, (action, context) => {
     const code = normalizeStepOpcode(action.rawCode);
@@ -93,8 +140,8 @@ export function optionLabelUsageLinks(project: Project, optionLabelId: number): 
       { fieldIndex: 4, value: row.values[4] ?? 0, label: "Choice option B" }
     ];
     for (const option of options) {
-      if (option.value >= 0 || Math.abs(option.value) !== optionLabelId) continue;
-      links.push({
+      if (option.value >= 0) continue;
+      add(Math.abs(option.value), {
         key: `${context.key}:option-label:${option.fieldIndex}`,
         label: context.label,
         detail: `${context.actionLabel}: ${option.label}`,
