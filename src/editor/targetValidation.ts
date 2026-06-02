@@ -157,9 +157,29 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
       if (bytes > maxTextBytes) issues.push(slotIssue("error", recordType, recordId, slot, "encounter-text-too-long", "Encounter text is too long.", `Text ${slot} is ${bytes} byte(s); ${recordType === "simpleEncounter" ? "Data ED" : "Data ED2"} supports ${maxTextBytes} display byte(s) plus one length byte.`));
       if (hasNonAscii(text)) issues.push(slotIssue("warning", recordType, recordId, slot, "encounter-text-non-ascii", "Encounter text contains non-ASCII characters.", "Classic encounter text is byte-oriented; non-ASCII characters may not round-trip as intended."));
     }
-    if (record.choiceResults.length > 4) issues.push(recordIssue("error", recordType, recordId, "choice-result-count", "Encounter has too many choice result rows.", "Realmz stores four choice result bytes."));
-    const wordResults = recordType === "complexEncounter" ? (record as { wordResults?: unknown }).wordResults : undefined;
-    if (Array.isArray(wordResults) && wordResults.length > 4) issues.push(recordIssue("error", recordType, recordId, "word-result-count", "Complex encounter has too many word result rows.", "Realmz stores four word result bytes."));
+    if (recordType === "simpleEncounter") {
+      if (record.choiceResults.length > 4) issues.push(recordIssue("error", recordType, recordId, "choice-result-count", "Simple encounter has too many choice result rows.", "Data ED stores four choice result bytes."));
+    } else {
+      const complex = record as Project["complexEncounters"][number];
+      for (const [label, value] of [["action result", complex.actionResult], ["word result", complex.wordResult]] as const) {
+        if (!isSignedByte(value)) issues.push(recordIssue("error", recordType, recordId, `complex-${label.replace(/\W+/g, "-")}`, `Complex encounter ${label} is outside signed-byte range.`, `${label} has ${value}; Data ED2 stores this as one byte.`));
+      }
+      for (const [label, values, max] of [
+        ["group flags", complex.groups, 8],
+        ["spell IDs", complex.spellIds, 10],
+        ["spell results", complex.spellResults, 10],
+        ["item IDs", complex.itemIds, 5],
+        ["item results", complex.itemResults, 5]
+      ] as const) {
+        if (values.length > max) issues.push(recordIssue("error", recordType, recordId, `complex-${label.replace(/\W+/g, "-")}`, `Complex encounter has too many ${label}.`, `Data ED2 stores ${max} ${label}.`));
+        for (const [slot, value] of values.entries()) {
+          const isResult = label.includes("results") || label === "group flags";
+          if (isResult ? !isSignedByte(value) : !isI16(value)) {
+            issues.push(recordIssue("error", recordType, recordId, `complex-${label.replace(/\W+/g, "-")}-${slot}`, `Complex encounter ${label} value is outside range.`, `${label} slot ${slot} has ${value}.`));
+          }
+        }
+      }
+    }
     issues.push(...validateReference(project, recordType, recordId, "Prompt message", 1, record.prompt, undefined, catalog));
     issues.push(...validateEncounterActions(project, recordType, recordId, record.actions, catalog));
     return issues;
@@ -295,6 +315,10 @@ function validateRecordId(recordType: RealmzTargetRecordKind, recordId: number) 
 
 function isI16(value: number) {
   return Number.isInteger(value) && value >= -32768 && value <= 32767;
+}
+
+function isSignedByte(value: number) {
+  return Number.isInteger(value) && value >= -128 && value <= 127;
 }
 
 function asciiByteLength(value: string) {

@@ -351,7 +351,30 @@ function emptySimpleEncounter(id: number): SimpleEncounterRecord {
 }
 
 function emptyComplexEncounter(id: number): ComplexEncounterRecord {
-  return { id, actions: [], choiceResults: [0, 0, 0, 0], wordResults: [0, 0, 0, 0], canBackOut: false, thief: false, maxTimes: 0, casteSuccess: 0, thiefSuccess: 0, thiefFail: 0, prompt: 0, texts: ["", "", "", "", "", "", "", "", ""], rawBytes: new Array(520).fill(0), authored: true, provenance: authoredProvenance("Data ED2", id, id * 520, 520) };
+  return {
+    id,
+    actions: [],
+    actionResult: 0,
+    wordResult: 0,
+    groups: new Array(8).fill(0),
+    spellIds: new Array(10).fill(0),
+    spellResults: new Array(10).fill(0),
+    itemIds: new Array(5).fill(0),
+    itemResults: new Array(5).fill(0),
+    choiceResults: [0, 0, 0, 0],
+    wordResults: [0, 0, 0, 0],
+    canBackOut: false,
+    thief: false,
+    maxTimes: 0,
+    casteSuccess: 0,
+    thiefSuccess: 0,
+    thiefFail: 0,
+    prompt: 0,
+    texts: ["", "", "", "", "", "", "", "", ""],
+    rawBytes: new Array(520).fill(0),
+    authored: true,
+    provenance: authoredProvenance("Data ED2", id, id * 520, 520)
+  };
 }
 
 function emptyThiefEncounter(id: number): ThiefEncounterRecord {

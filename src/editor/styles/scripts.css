@@ -2029,6 +2029,213 @@
 
 
 
+.complex-encounter-authoring {
+  gap: 8px;
+}
+
+
+
+.complex-encounter-action-options {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 5px;
+}
+
+
+
+.complex-encounter-action-option {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 3px;
+  min-width: 0;
+  align-items: start;
+  border: 1px solid #4d3340;
+  border-radius: 5px;
+  background: #1a1117;
+  padding: 4px;
+}
+
+
+
+.complex-encounter-action-option > b {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  color: #ffd9e0;
+  font-size: 9px;
+  line-height: 1;
+}
+
+
+
+.complex-encounter-action-option .script-encounter-text-field {
+  gap: 2px;
+}
+
+
+
+.complex-encounter-action-option .script-encounter-text-field span {
+  display: none;
+}
+
+
+
+.complex-encounter-action-option textarea {
+  min-height: 28px;
+  max-height: 58px;
+  padding: 4px;
+  font-size: 10px;
+  line-height: 1.2;
+  resize: vertical;
+}
+
+
+
+.complex-encounter-action-option small {
+  font-size: 8px;
+}
+
+
+
+.complex-encounter-result-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(90px, 1fr));
+  gap: 8px;
+  border: 1px solid #22313e;
+  border-radius: 5px;
+  background: #0e1821;
+  padding: 7px;
+}
+
+
+
+.complex-encounter-result-strip.compact {
+  grid-template-columns: repeat(auto-fit, minmax(48px, 1fr));
+  gap: 5px;
+  padding: 5px;
+}
+
+
+
+.complex-encounter-result-strip.single {
+  grid-template-columns: minmax(72px, 120px);
+}
+
+
+
+.complex-encounter-tool-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(280px, 1fr));
+  gap: 8px;
+}
+
+
+
+.complex-encounter-tool-panel,
+.complex-encounter-test-grid {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  border: 1px solid #243542;
+  border-radius: 6px;
+  background: #0b141c;
+  padding: 7px;
+}
+
+
+
+.complex-encounter-tool-panel > header,
+.complex-encounter-test-grid > header {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+
+
+.complex-encounter-tool-panel > header strong,
+.complex-encounter-test-grid > header strong {
+  color: #e7f3ff;
+  font-size: 10px;
+}
+
+
+
+.complex-encounter-tool-panel > header small,
+.complex-encounter-test-grid > header small {
+  color: #8298ad;
+  font-size: 9px;
+}
+
+
+
+.complex-encounter-test-grid > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+
+
+
+.complex-encounter-test-row {
+  display: grid;
+  grid-template-columns: 20px minmax(58px, 1fr) minmax(46px, 0.72fr);
+  gap: 4px;
+  align-items: end;
+  min-width: 0;
+}
+
+
+
+.complex-encounter-test-row > b {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  border: 1px solid #273847;
+  border-radius: 4px;
+  background: #0e1821;
+  color: #9fb7cf;
+  font-size: 9px;
+}
+
+
+
+.complex-encounter-authoring .script-number-field.compact span {
+  font-size: 7px;
+}
+
+
+
+.complex-encounter-authoring .script-number-field.compact input {
+  min-height: 22px;
+  padding: 2px 3px;
+  font-size: 9px;
+}
+
+
+
+.complex-encounter-authoring .encounter-word-answer {
+  padding: 5px;
+}
+
+
+
+.complex-encounter-authoring .encounter-word-answer span {
+  font-size: 8px;
+}
+
+
+
+.complex-encounter-authoring .encounter-word-answer textarea {
+  min-height: 34px;
+  padding: 4px;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+
+
 .script-encounter-text-field small {
   color: #8293a4;
   font-size: 10px;
@@ -2244,6 +2451,12 @@
   }
 }
 
+@media (max-width: 1180px) {
+  .complex-encounter-action-options {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 980px) {
   .encounter-record-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -2255,7 +2468,12 @@
   }
 
   .simple-encounter-result-columns,
-  .simple-encounter-action-cell {
+  .simple-encounter-action-cell,
+  .complex-encounter-action-option,
+  .complex-encounter-action-options,
+  .complex-encounter-tool-grid,
+  .complex-encounter-test-grid > div,
+  .complex-encounter-result-strip {
     grid-template-columns: minmax(0, 1fr);
   }
 

@@ -729,6 +729,13 @@ export type SimpleEncounterRecord = {
 export type ComplexEncounterRecord = {
   id: number;
   actions: EncounterActionRow[];
+  actionResult: number;
+  wordResult: number;
+  groups: number[];
+  spellIds: number[];
+  spellResults: number[];
+  itemIds: number[];
+  itemResults: number[];
   choiceResults: number[];
   wordResults: number[];
   canBackOut: boolean;
@@ -1058,7 +1065,7 @@ export type ProjectCommand =
   | { kind: "updateTreasureRecord"; label: string; id: number; changes: Partial<Pick<TreasureRecord, "itemIds" | "exp" | "gold" | "gems" | "jewelry">> }
   | { kind: "updateShopRecord"; label: string; id: number; changes: Partial<Pick<ShopRecord, "itemIds" | "quantities" | "inflation">> }
   | { kind: "updateSimpleEncounterRecord"; label: string; id: number; changes: Partial<Pick<SimpleEncounterRecord, "actions" | "choiceResults" | "canBackOut" | "maxTimes" | "casteSuccess" | "prompt" | "texts">> }
-  | { kind: "updateComplexEncounterRecord"; label: string; id: number; changes: Partial<Pick<ComplexEncounterRecord, "actions" | "choiceResults" | "wordResults" | "canBackOut" | "thief" | "maxTimes" | "casteSuccess" | "thiefSuccess" | "thiefFail" | "prompt" | "texts">> }
+  | { kind: "updateComplexEncounterRecord"; label: string; id: number; changes: Partial<Pick<ComplexEncounterRecord, "actions" | "actionResult" | "wordResult" | "groups" | "spellIds" | "spellResults" | "itemIds" | "itemResults" | "choiceResults" | "wordResults" | "canBackOut" | "thief" | "maxTimes" | "casteSuccess" | "thiefSuccess" | "thiefFail" | "prompt" | "texts">> }
   | { kind: "updateThiefEncounterRecord"; label: string; id: number; changes: Partial<Pick<ThiefEncounterRecord, "typeFlags" | "modifiers" | "successCodes" | "failureCodes" | "successText" | "failureText" | "successSounds" | "failureSounds" | "spell" | "lowDamage" | "highDamage" | "tumblers" | "prompts" | "promptSounds">> }
   | { kind: "updateTimedEncounterRecord"; label: string; id: number; changes: Partial<Pick<TimedEncounterRecord, "day" | "increment" | "percent" | "door" | "requiredLevel" | "requiredRandomRect" | "requiredX" | "requiredY" | "requiredItem" | "requiredQuest" | "locationKind" | "stuff">> }
   | { kind: "upsertQuestLabel"; label: string; quest: QuestLabel }
