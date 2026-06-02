@@ -2539,48 +2539,60 @@ function TimedEncounterShell({
   const setLocationKind = (locationKind: Project["timedEncounters"][number]["locationKind"]) => {
     update({ locationKind, stuff: updateArraySlot(record.stuff ?? [], 0, locationKindValue(locationKind), 10) });
   };
+  const locationValue = locationKindValue(record.locationKind);
   return (
-    <div className="script-target-grid timed-encounter-editor">
-      <div className="script-shop-source-note">
-        <strong>Midnight schedule</strong>
-        <span>Time Encounters are checked at midnight. Day and Increment set to -1 keeps this record inactive until an Action Point activates it.</span>
-      </div>
-      <NumberField label="Day" value={record.day} onCommit={(day) => update({ day })} />
-      <NumberField label="Increment" value={record.increment} onCommit={(increment) => update({ increment })} />
-      <NumberField label="% Chance" value={record.percent} onCommit={(percent) => update({ percent })} />
-      <ReferenceIdField
-        project={project}
-        catalog={catalog}
-        label="Extra Action Point To Activate"
-        emptyLabel="No Extra Action Point"
-        opcode={39}
-        value={record.door}
-        onCommit={(door) => update({ door })}
-      />
-      <NumberField label="Required Item ID" value={record.requiredItem} onCommit={(requiredItem) => update({ requiredItem })} />
-      <NumberField label="Required Quest ID" value={record.requiredQuest} onCommit={(requiredQuest) => update({ requiredQuest })} />
-      <label className="script-target-wide-field">
-        <span>Position Requirement</span>
-        <select value={record.locationKind} onChange={(event) => setLocationKind(event.currentTarget.value as Project["timedEncounters"][number]["locationKind"])}>
-          <option value="any">No position required</option>
-          <option value="land">Land level</option>
-          <option value="dungeon">Dungeon level</option>
-        </select>
-        <small>Use -1 in level, rectangle, X, or Y when that location field is not required.</small>
-      </label>
-      <NumberField label="Required Level" value={record.requiredLevel} onCommit={(requiredLevel) => update({ requiredLevel })} />
-      <NumberField label="Required Rect" value={record.requiredRandomRect} onCommit={(requiredRandomRect) => update({ requiredRandomRect })} />
-      <NumberField label="Required X" value={record.requiredX} onCommit={(requiredX) => update({ requiredX })} />
-      <NumberField label="Required Y" value={record.requiredY} onCommit={(requiredY) => update({ requiredY })} />
-      <CollapsibleSection title="Additional Data" eyebrow="advanced" count="9 fields" density="compact" className="script-encounter-text-section">
+    <div className="timed-encounter-editor">
+      <section className="timed-encounter-form">
+        <header>
+          <div>
+            <strong>Midnight Schedule</strong>
+            <small>Checked at midnight; Day and Increment set to -1 keeps the record inactive until an Action Point activates it.</small>
+          </div>
+          <span>{record.percent}% chance</span>
+        </header>
+        <div className="timed-encounter-columns">
+          <div className="timed-encounter-column">
+            <TimedNumberRow label="Day" value={record.day} onCommit={(day) => update({ day })} />
+            <TimedNumberRow label="Increment" value={record.increment} onCommit={(increment) => update({ increment })} />
+            <TimedNumberRow label="% Chance" value={record.percent} onCommit={(percent) => update({ percent })} />
+            <TimedReferenceRow
+              project={project}
+              catalog={catalog}
+              label="Extra AP To Activate"
+              emptyLabel="No Extra Action Point"
+              opcode={39}
+              value={record.door}
+              onCommit={(door) => update({ door })}
+            />
+            <TimedItemRow project={project} catalog={catalog} label="Required Item ID" value={record.requiredItem} onCommit={(requiredItem) => update({ requiredItem })} />
+            <TimedNumberRow label="Required Quest ID" value={record.requiredQuest} onCommit={(requiredQuest) => update({ requiredQuest })} />
+          </div>
+          <div className="timed-encounter-column">
+            <label className="timed-form-row timed-location-row">
+              <span>Position Required</span>
+              <select value={record.locationKind} onChange={(event) => setLocationKind(event.currentTarget.value as Project["timedEncounters"][number]["locationKind"])}>
+                <option value="any">-1 No position</option>
+                <option value="land">1 Land</option>
+                <option value="dungeon">2 Dungeon</option>
+              </select>
+            </label>
+            <TimedNumberRow label="Raw Position Code" value={locationValue} readOnly />
+            <TimedNumberRow label="Required Level" value={record.requiredLevel} onCommit={(requiredLevel) => update({ requiredLevel })} />
+            <TimedNumberRow label="Required Rect" value={record.requiredRandomRect} onCommit={(requiredRandomRect) => update({ requiredRandomRect })} />
+            <TimedNumberRow label="Required X" value={record.requiredX} onCommit={(requiredX) => update({ requiredX })} />
+            <TimedNumberRow label="Required Y" value={record.requiredY} onCommit={(requiredY) => update({ requiredY })} />
+          </div>
+        </div>
+      </section>
+      <CollapsibleSection title="Additional Data" eyebrow="advanced" count="9 fields" density="compact" className="script-encounter-text-section timed-extra-section">
         <p className="script-encounter-text-note">
           Realmz reserves additional signed-number fields in Time Encounters. Keep imported values unless you are matching a known Divinity setup.
         </p>
-        <div className="script-target-grid">
+        <div className="timed-extra-grid">
           {Array.from({ length: 9 }, (_, index) => {
             const slot = index + 1;
             return (
-              <NumberField
+              <TimedNumberRow
                 key={slot}
                 label={`Extra ${slot}`}
                 value={record.stuff?.[slot] ?? 0}
@@ -2590,6 +2602,71 @@ function TimedEncounterShell({
           })}
         </div>
       </CollapsibleSection>
+    </div>
+  );
+}
+
+function TimedNumberRow({
+  label,
+  value,
+  readOnly = false,
+  onCommit
+}: {
+  label: string;
+  value: number;
+  readOnly?: boolean;
+  onCommit?: (value: number) => void;
+}) {
+  return (
+    <label className="timed-form-row">
+      <span>{label}</span>
+      <input type="number" value={value} readOnly={readOnly} onChange={(event) => onCommit?.(Number(event.currentTarget.value))} />
+    </label>
+  );
+}
+
+function TimedReferenceRow({
+  project,
+  catalog,
+  label,
+  emptyLabel,
+  opcode,
+  value,
+  onCommit
+}: {
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  label: string;
+  emptyLabel: string;
+  opcode: number;
+  value: number;
+  onCommit: (value: number) => void;
+}) {
+  return (
+    <div className="timed-form-row">
+      <span>{label}</span>
+      <ReferenceIdField project={project} catalog={catalog} label={label} emptyLabel={emptyLabel} opcode={opcode} value={value} compact onCommit={onCommit} />
+    </div>
+  );
+}
+
+function TimedItemRow({
+  project,
+  catalog,
+  label,
+  value,
+  onCommit
+}: {
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  label: string;
+  value: number;
+  onCommit: (value: number) => void;
+}) {
+  return (
+    <div className="timed-form-row">
+      <span>{label}</span>
+      <ItemIdField project={project} catalog={catalog} label={label} value={value} compact onCommit={onCommit} />
     </div>
   );
 }
