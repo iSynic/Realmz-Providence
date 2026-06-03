@@ -1,7 +1,7 @@
 import { memo, ReactNode, useEffect, useMemo, useState } from "react";
 import { browserReferenceIconUrl } from "../browser/atlasPaths";
 import { TargetPicker } from "../components/RealmzTargetPicker";
-import { useResolvedPreviewUrl } from "../previewUrls";
+import { useResolvedPreviewUrl, type PreviewRuntimeContext } from "../previewUrls";
 import { isActorOrCreatureIconId } from "../resourceResolver";
 import { LibraryAsset, LibraryCatalog, BattleRecord, IconEntry, MonsterRecord, Project, ProjectCommand, SelectedEntity } from "../types";
 import { ScrollArea } from "../ui";
@@ -46,6 +46,7 @@ type CombatLookups = {
   monsters: MonsterRecord[];
   monsterById: Map<number, MonsterRecord>;
   iconAssetsByAbsId: Map<number, CombatIconAsset>;
+  realmzActorIconAssetsByAbsId: Map<number, LibraryAsset>;
   monsterMashAssetsByAbsId: Map<number, LibraryAsset>;
   tabCounts: Record<CombatWorkbenchTab, number>;
 };
@@ -56,6 +57,7 @@ type CombatPanelProps = {
   catalog: LibraryCatalog | null;
   selectedEntity: SelectedEntity | null;
   iconEntries: Record<number, IconEntry>;
+  previewContext?: PreviewRuntimeContext;
   onSelectEntity: (entity: SelectedEntity) => void;
   onSelectEditor: (editor: string) => void;
   onOpenTool?: (tab: "assets", editor: string) => void;
@@ -75,6 +77,7 @@ export function CombatPanel({
   catalog,
   selectedEntity,
   iconEntries,
+  previewContext = {},
   onSelectEntity,
   onSelectEditor,
   onOpenTool,
@@ -157,6 +160,7 @@ export function CombatPanel({
           catalog={catalog}
           iconEntries={iconEntries}
           lookups={lookups}
+          previewContext={previewContext}
           onOpenMash={() => onOpenTool?.("assets", "divinity-icons")}
         />
       )}
@@ -1017,11 +1021,13 @@ function MonsterScrapbookWorkbench({
   catalog,
   iconEntries,
   lookups,
+  previewContext,
   onOpenMash
 }: {
   catalog: LibraryCatalog | null;
   iconEntries: Record<number, IconEntry>;
   lookups: CombatLookups;
+  previewContext: PreviewRuntimeContext;
   onOpenMash: () => void;
 }) {
   const [query, setQuery] = useState("");
@@ -1056,7 +1062,7 @@ function MonsterScrapbookWorkbench({
               className={entry.id === selected?.id ? "selected" : ""}
               onClick={() => setSelectedId(entry.id)}
             >
-              <ScrapbookMonsterIcon entry={entry} iconEntries={iconEntries} lookups={lookups} compact />
+              <ScrapbookMonsterIcon entry={entry} iconEntries={iconEntries} lookups={lookups} previewContext={previewContext} compact />
               <span>
                 <strong>{scrapbookName(entry)}</strong>
                 <small>{scrapbookFacts(entry)}</small>
@@ -1077,7 +1083,7 @@ function MonsterScrapbookWorkbench({
               <button className="btn btn-secondary btn-sm" type="button" onClick={onOpenMash}>Open Monster Mash Icons</button>
             </header>
             <section className="scrapbook-summary">
-              <ScrapbookMonsterIcon entry={selected} iconEntries={iconEntries} lookups={lookups} />
+              <ScrapbookMonsterIcon entry={selected} iconEntries={iconEntries} lookups={lookups} previewContext={previewContext} />
               <div className="scrapbook-stat-grid">
                 <ScrapbookFact label="Hit Dice" value={summaryNumber(selected, "hitDice")} />
                 <ScrapbookFact label="Armor" value={summaryNumber(selected, "armor")} />
@@ -1151,20 +1157,25 @@ function ScrapbookMonsterIcon({
   entry,
   iconEntries,
   lookups,
+  previewContext,
   compact = false
 }: {
   entry: LibraryCatalog["entities"][number];
   iconEntries: Record<number, IconEntry>;
   lookups: CombatLookups;
+  previewContext: PreviewRuntimeContext;
   compact?: boolean;
 }) {
   const iconId = summaryNumber(entry, "iconId");
+  const absIconId = Math.abs(iconId);
   const icon = iconEntries[iconId] ?? iconEntries[Math.abs(iconId)] ?? iconEntries[-Math.abs(iconId)];
-  const mashAsset = lookups.monsterMashAssetsByAbsId.get(Math.abs(iconId)) ?? null;
-  const fallbackAsset = lookups.iconAssetsByAbsId.get(Math.abs(iconId));
-  const assetUrl = useResolvedPreviewUrl(mashAsset?.previewPath ?? fallbackAsset?.previewPath ?? null, null, mashAsset, {});
-  const referenceUrl = isActorOrCreatureIconId(Math.abs(iconId)) ? browserReferenceIconUrl(Math.abs(iconId)) : null;
-  const url = referenceUrl ?? icon?.url ?? assetUrl;
+  const realmzActorAsset = lookups.realmzActorIconAssetsByAbsId.get(absIconId) ?? null;
+  const mashAsset = lookups.monsterMashAssetsByAbsId.get(absIconId) ?? null;
+  const fallbackAsset = lookups.iconAssetsByAbsId.get(absIconId);
+  const realmzActorUrl = useResolvedPreviewUrl(null, null, realmzActorAsset, previewContext);
+  const fallbackUrl = useResolvedPreviewUrl(fallbackAsset?.previewPath ?? null, null, mashAsset, previewContext);
+  const referenceUrl = isActorOrCreatureIconId(absIconId) ? browserReferenceIconUrl(absIconId) : null;
+  const url = realmzActorUrl ?? referenceUrl ?? icon?.url ?? fallbackUrl;
   return (
     <div className={compact ? "monster-icon-preview compact" : "monster-icon-preview"}>
       {url ? <img src={url} alt="" /> : <span>{iconId || "?"}</span>}
@@ -1329,6 +1340,7 @@ function useCombatLookups(project: Project | null, catalog: LibraryCatalog | nul
         monsters: [],
         monsterById: new Map(),
         iconAssetsByAbsId: new Map(),
+        realmzActorIconAssetsByAbsId: new Map(),
         monsterMashAssetsByAbsId: new Map(),
         tabCounts: { battles: 0, monsters: 0, scrapbook: 0, mash: 0 }
       };
@@ -1336,6 +1348,7 @@ function useCombatLookups(project: Project | null, catalog: LibraryCatalog | nul
     const monsters = [...(project.monsters ?? [])].sort((a, b) => a.id - b.id);
     const monsterById = new Map(monsters.map((monster) => [monster.id, monster]));
     const iconAssetsByAbsId = new Map<number, CombatIconAsset>();
+    const realmzActorIconAssetsByAbsId = new Map<number, LibraryAsset>();
     const monsterMashAssetsByAbsId = new Map<number, LibraryAsset>();
     const addIconAsset = (asset: CombatIconAsset | null | undefined) => {
       if (!asset?.previewPath || asset.resourceId == null) return;
@@ -1349,6 +1362,10 @@ function useCombatLookups(project: Project | null, catalog: LibraryCatalog | nul
       if (asset.resourceType === "cicn") addIconAsset(asset);
     }
     for (const asset of catalog?.assets ?? []) {
+      if (isRealmzActorOrCreatureIconLibraryAsset(asset)) {
+        const key = Math.abs(asset.resourceId);
+        if (!realmzActorIconAssetsByAbsId.has(key)) realmzActorIconAssetsByAbsId.set(key, asset);
+      }
       if (!isMonsterMashLibraryAsset(asset)) continue;
       const key = Math.abs(asset.resourceId);
       if (!monsterMashAssetsByAbsId.has(key)) monsterMashAssetsByAbsId.set(key, asset);
@@ -1359,6 +1376,7 @@ function useCombatLookups(project: Project | null, catalog: LibraryCatalog | nul
       monsters,
       monsterById,
       iconAssetsByAbsId,
+      realmzActorIconAssetsByAbsId,
       monsterMashAssetsByAbsId,
       tabCounts: {
         battles: project.battles.length,
@@ -1370,8 +1388,16 @@ function useCombatLookups(project: Project | null, catalog: LibraryCatalog | nul
   }, [catalog?.assets, catalog?.entities, project]);
 }
 
+function isRealmzActorOrCreatureIconLibraryAsset(asset: LibraryAsset): asset is LibraryAsset & { resourceId: number } {
+  if (asset.resourceType !== "cicn" || asset.resourceId == null) return false;
+  if (!isActorOrCreatureIconId(Math.abs(asset.resourceId))) return false;
+  if (isMonsterMashLibraryAsset(asset)) return false;
+  const text = `${asset.source} ${asset.label} ${asset.relativePath}`.toLowerCase();
+  return text.includes(":realmz:") || text.includes("realmz-reference") || text.includes("the family jewels");
+}
+
 function isMonsterMashLibraryAsset(asset: LibraryAsset): asset is LibraryAsset & { resourceId: number } {
   if (asset.resourceType !== "cicn" || asset.resourceId == null) return false;
-  const text = `${asset.label} ${asset.relativePath}`.toLowerCase();
+  const text = `${asset.source} ${asset.label} ${asset.relativePath}`.toLowerCase();
   return text.includes("monster mash");
 }

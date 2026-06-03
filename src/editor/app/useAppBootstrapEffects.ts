@@ -236,7 +236,7 @@ export function useAppBootstrapEffects({
       const projectStampAssets = (state.project.assets ?? []).filter((asset) => asset.kind === "special-land-tile" && asset.resourceType === "cicn");
       const projectCatalogIconAssets = (state.project.assetCatalog.icons ?? []).filter((asset) => asset.resourceType === "cicn");
       const libraryIconAssets = (state.libraryCatalog?.assets ?? []).filter(isPaintableSpecialLandLibraryAsset);
-      const monsterIconAssets = (state.libraryCatalog?.assets ?? []).filter((asset) => isMonsterIconLibraryAsset(asset));
+      const realmzActorIconAssets = (state.libraryCatalog?.assets ?? []).filter((asset) => isRealmzActorOrCreatureIconLibraryAsset(asset));
       const rawIds = [
         ...new Set([
           ...state.project.maps.flatMap((map) => referencedMapIconIds(map.tiles)),
@@ -245,7 +245,7 @@ export function useAppBootstrapEffects({
             .filter((asset) => asset.resourceType === "cicn")
             .flatMap((asset) => iconCandidateIdsForResource(asset.resourceId)),
           ...projectStampAssets.flatMap((asset) => tileIconCandidates(asset.resourceId)),
-          ...monsterIconAssets.flatMap((asset) => asset.resourceId == null ? [] : iconCandidateIdsForResource(asset.resourceId)),
+          ...realmzActorIconAssets.flatMap((asset) => asset.resourceId == null ? [] : iconCandidateIdsForResource(asset.resourceId)),
           ...libraryIconAssets.flatMap((asset) => asset.resourceId == null ? [] : iconCandidateIdsForResource(asset.resourceId)),
           ...(!desktopRuntime ? PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES.flatMap(tileIconCandidates) : [])
         ])
@@ -269,9 +269,10 @@ export function useAppBootstrapEffects({
             });
             const libraryAsset = libraryIconAssets.find((asset) => {
               if (asset.resourceId == null) return false;
+              if (isMonsterMashLibraryAsset(asset)) return false;
               return iconCandidateIdsForResource(asset.resourceId).includes(id);
             });
-            const monsterIconAsset = monsterIconAssets.find((asset) => {
+            const realmzActorIconAsset = realmzActorIconAssets.find((asset) => {
               if (asset.resourceId == null) return false;
               return iconCandidateIdsForResource(asset.resourceId).includes(id);
             });
@@ -310,7 +311,7 @@ export function useAppBootstrapEffects({
               const referenceUrl = browserReferenceIconUrl(id);
               if (referenceUrl) urls.push(referenceUrl);
             }
-            const preferredLibraryAsset = isActorOrCreatureIconId(Math.abs(id)) ? monsterIconAsset ?? libraryAsset : libraryAsset ?? monsterIconAsset;
+            const preferredLibraryAsset = isActorOrCreatureIconId(Math.abs(id)) ? realmzActorIconAsset ?? libraryAsset : libraryAsset;
             if (preferredLibraryAsset) {
               try {
                 const libraryUrl = desktopRuntime
@@ -376,8 +377,16 @@ function iconCandidateIdsForResource(resourceId: number) {
   ].filter((id): id is number => typeof id === "number"))];
 }
 
-function isMonsterIconLibraryAsset(asset: { resourceType?: string | null; resourceId?: number | null; type?: string; label?: string; relativePath?: string }) {
+function isRealmzActorOrCreatureIconLibraryAsset(asset: { source?: string; resourceType?: string | null; resourceId?: number | null; type?: string; label?: string; relativePath?: string }) {
   if (asset.resourceType !== "cicn" || asset.resourceId == null) return false;
-  const text = `${asset.type ?? ""} ${asset.label ?? ""} ${asset.relativePath ?? ""}`.toLowerCase();
-  return isActorOrCreatureIconId(Math.abs(asset.resourceId)) && (text.includes("monster") || text.includes("mash"));
+  if (!isActorOrCreatureIconId(Math.abs(asset.resourceId))) return false;
+  if (isMonsterMashLibraryAsset(asset)) return false;
+  const text = `${asset.source ?? ""} ${asset.type ?? ""} ${asset.label ?? ""} ${asset.relativePath ?? ""}`.toLowerCase();
+  return text.includes(":realmz:") || text.includes("realmz-reference") || text.includes("the family jewels");
+}
+
+function isMonsterMashLibraryAsset(asset: { source?: string; resourceType?: string | null; resourceId?: number | null; type?: string; label?: string; relativePath?: string }) {
+  if (asset.resourceType !== "cicn" || asset.resourceId == null) return false;
+  const text = `${asset.source ?? ""} ${asset.type ?? ""} ${asset.label ?? ""} ${asset.relativePath ?? ""}`.toLowerCase();
+  return text.includes("monster mash");
 }

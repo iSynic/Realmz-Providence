@@ -333,7 +333,7 @@ pub fn export_project(
         &raw_dir,
         &mut written_files,
     )?;
-    let resource_result = write_managed_resources(project_dir, output_dir, project)?;
+    let resource_result = write_managed_resources(project_dir, output_dir, project, target)?;
     if resource_result.resource_file_written {
         written_files.push(resource_result.resource_file_name.clone());
     }
@@ -554,27 +554,30 @@ fn write_managed_resources(
     project_dir: &Path,
     output_dir: &Path,
     project: &ProvidenceProject,
+    target: ScenarioTarget,
 ) -> Result<ResourceExportResult> {
     let mut result = ResourceExportResult {
-        resource_file_name: resource_file_name(project),
+        resource_file_name: resource_file_name(project, target),
         ..ResourceExportResult::default()
     };
-    if project.assets.is_empty() {
-        return Ok(result);
-    }
     let raw_dir = project_dir.join(RAW_SOURCES_DIR);
     let raw_resource_path = raw_dir.join(&result.resource_file_name);
     let original = if raw_resource_path.is_file() {
         fs::read(&raw_resource_path).with_path(&raw_resource_path)?
     } else {
-        result.resource_warnings.push(format!(
-            "No source resource fork named {} was found; creating one for managed media.",
-            result.resource_file_name
-        ));
-        Vec::new()
+        match source_resource_bytes(project, &raw_dir, target)? {
+            Some(bytes) => bytes,
+            None => {
+                result.resource_warnings.push(format!(
+                    "No source resource fork named {} was found; creating one for export resources.",
+                    result.resource_file_name
+                ));
+                Vec::new()
+            }
+        }
     };
     result.preserved_resources = parse_resource_fork_entries(&original).len();
-    let mut updates = Vec::new();
+    let mut updates = map_name_resource_updates(project, &original);
     for asset in &project.assets {
         if !matches!(
             asset.export_state,
@@ -626,7 +629,29 @@ fn write_managed_resources(
     Ok(result)
 }
 
-fn resource_file_name(project: &ProvidenceProject) -> String {
+fn source_resource_bytes(
+    project: &ProvidenceProject,
+    raw_dir: &Path,
+    target: ScenarioTarget,
+) -> Result<Option<Vec<u8>>> {
+    for file in project
+        .source
+        .files
+        .iter()
+        .filter(|file| matches!(file.role, crate::project::SourceFileRole::ResourceFork))
+    {
+        if target == ScenarioTarget::WindowsRealmzFolder && file.name == "Scenario" {
+            continue;
+        }
+        let path = raw_dir.join(&file.relative_path);
+        if path.is_file() {
+            return fs::read(&path).with_path(&path).map(Some);
+        }
+    }
+    Ok(None)
+}
+
+fn resource_file_name(project: &ProvidenceProject, target: ScenarioTarget) -> String {
     let shell_name = scenario_shell_file_name(project);
     let mut preferred = vec![
         "Scenario.rsrc".to_string(),
@@ -641,6 +666,9 @@ fn resource_file_name(project: &ProvidenceProject) -> String {
             matches!(file.role, crate::project::SourceFileRole::ResourceFork)
                 && file.name.eq_ignore_ascii_case(&candidate)
         }) {
+            if target == ScenarioTarget::WindowsRealmzFolder && file.name == "Scenario" {
+                return "Scenario.rsrc".to_string();
+            }
             return file.name.clone();
         }
     }
@@ -649,8 +677,118 @@ fn resource_file_name(project: &ProvidenceProject) -> String {
         .files
         .iter()
         .find(|file| matches!(file.role, crate::project::SourceFileRole::ResourceFork))
-        .map(|file| file.name.clone())
-        .unwrap_or_else(|| "Scenario".to_string())
+        .map(|file| {
+            if target == ScenarioTarget::WindowsRealmzFolder && file.name == "Scenario" {
+                "Scenario.rsrc".to_string()
+            } else {
+                file.name.clone()
+            }
+        })
+        .unwrap_or_else(|| {
+            if target == ScenarioTarget::WindowsRealmzFolder {
+                "Scenario.rsrc".to_string()
+            } else {
+                "Scenario".to_string()
+            }
+        })
+}
+
+fn map_name_resource_updates(
+    project: &ProvidenceProject,
+    original_resource_fork: &[u8],
+) -> Vec<ResourceForkEntry> {
+    if project.map_records.is_empty() {
+        return Vec::new();
+    }
+    let existing = parse_resource_fork_entries(original_resource_fork);
+    if existing
+        .iter()
+        .any(|entry| entry.resource_type == "STR#" && entry.id == -102)
+        && existing
+            .iter()
+            .any(|entry| entry.resource_type == "STR#" && entry.id == -101)
+    {
+        return Vec::new();
+    }
+    let primary_names: Vec<String> = project
+        .map_records
+        .iter()
+        .map(|record| map_record_primary_name(project, record))
+        .collect();
+    let secondary_names: Vec<String> = project
+        .map_records
+        .iter()
+        .map(|record| {
+            record
+                .secondary_name
+                .as_deref()
+                .map(str::trim)
+                .filter(|name| !name.is_empty())
+                .unwrap_or("--------------------")
+                .to_string()
+        })
+        .collect();
+    vec![
+        ResourceForkEntry {
+            resource_type: "STR#".to_string(),
+            id: -102,
+            name: "Map Names".to_string(),
+            attributes: 0,
+            data: encode_string_list_resource(&primary_names),
+        },
+        ResourceForkEntry {
+            resource_type: "STR#".to_string(),
+            id: -101,
+            name: "Map Names".to_string(),
+            attributes: 0,
+            data: encode_string_list_resource(&secondary_names),
+        },
+    ]
+}
+
+fn map_record_primary_name(
+    project: &ProvidenceProject,
+    record: &crate::project::MapRecord,
+) -> String {
+    for candidate in [
+        record.name.as_deref(),
+        record.primary_name.as_deref(),
+        map_name_for_record_target(project, record).as_deref(),
+    ] {
+        if let Some(name) = candidate.map(str::trim).filter(|name| !name.is_empty()) {
+            return name.to_string();
+        }
+    }
+    format!("Map {}", record.id + 1)
+}
+
+fn map_name_for_record_target(
+    project: &ProvidenceProject,
+    record: &crate::project::MapRecord,
+) -> Option<String> {
+    let level_type = if record.is_dungeon {
+        LevelType::Dungeon
+    } else {
+        LevelType::Land
+    };
+    let level_index = usize::try_from(record.level).ok()?;
+    project
+        .maps
+        .iter()
+        .find(|map| map.level_type == level_type && map.index == level_index)
+        .filter(|map| {
+            map.name
+                != format!(
+                    "{} level {}",
+                    if level_type == LevelType::Dungeon {
+                        "Dungeon"
+                    } else {
+                        "Land"
+                    },
+                    map.index
+                )
+        })
+        .map(|map| map.name.clone())
 }
 
 fn scenario_shell_file_name(project: &ProvidenceProject) -> &str {

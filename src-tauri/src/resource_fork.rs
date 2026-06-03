@@ -145,6 +145,10 @@ pub fn parse_resource_fork_entries(buffer: &[u8]) -> Vec<ResourceForkEntry> {
     entries
 }
 
+pub fn resource_fork_payload(buffer: &[u8]) -> &[u8] {
+    extract_resource_fork(buffer)
+}
+
 pub fn write_resource_fork(entries: &[ResourceForkEntry]) -> Result<Vec<u8>> {
     let mut grouped: BTreeMap<String, Vec<ResourceForkEntry>> = BTreeMap::new();
     for entry in entries {

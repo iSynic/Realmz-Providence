@@ -231,6 +231,7 @@ function WorkbenchRouterContent({
         catalog={state.libraryCatalog}
         selectedEntity={state.selectedEntity}
         iconEntries={state.iconEntries}
+        previewContext={{ desktopRuntime, projectDir, workspaceDir }}
         onSelectEntity={onSelectEntity}
         onSelectEditor={onSelectEditor}
         onOpenTool={onOpenTool}

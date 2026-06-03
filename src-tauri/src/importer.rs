@@ -269,6 +269,7 @@ fn import_scenario_with_name(
     import_tile_atlases(&source_path, &assets_dir, &mut project)?;
     import_icon_overlays(&source_path, &assets_dir, &mut project)?;
     import_sound_assets(&source_path, &assets_dir, &mut project)?;
+    build_semantic_schema_from_raw_sources(project_dir, &mut project)?;
     project.validation = crate::validation::validate_project(&project);
     save_project(project_dir, &project)?;
     Ok(project)
@@ -410,6 +411,34 @@ fn refresh_semantic_schema(project_dir: &Path, project: &mut ProvidenceProject) 
         return Ok(());
     }
     backfill_target_records(project, &buffers);
+    build_semantic_schema(project, &buffers);
+    Ok(())
+}
+
+fn build_semantic_schema_from_raw_sources(
+    project_dir: &Path,
+    project: &mut ProvidenceProject,
+) -> Result<()> {
+    let raw_dir = project_dir.join(if project.source.raw_sources_dir.is_empty() {
+        RAW_SOURCES_DIR
+    } else {
+        project.source.raw_sources_dir.as_str()
+    });
+    if !raw_dir.is_dir() {
+        return Ok(());
+    }
+    let buffers = raw_source_buffers(&raw_dir, &project.source.files)?;
+    if buffers.is_empty() {
+        return Ok(());
+    }
+    build_semantic_schema(project, &buffers);
+    Ok(())
+}
+
+fn build_semantic_schema(
+    project: &mut ProvidenceProject,
+    buffers: &BTreeMap<String, Vec<u8>>,
+) {
     let semantic_parsed = ParsedScenario {
         maps: project.maps.clone(),
         land_layout: project.land_layout.clone(),
@@ -445,7 +474,6 @@ fn refresh_semantic_schema(project_dir: &Path, project: &mut ProvidenceProject) 
         &project.source.files,
         &semantic_parsed,
     );
-    Ok(())
 }
 
 fn backfill_target_records(project: &mut ProvidenceProject, buffers: &BTreeMap<String, Vec<u8>>) {
@@ -808,8 +836,57 @@ fn snapshot_sources(source_path: &Path, raw_dir: &Path) -> Result<Vec<SourceFile
             editable,
         });
     }
+    snapshot_macosx_resource_sidecars(source_path, raw_dir, &mut files)?;
     files.sort_by(|a, b| a.name.cmp(&b.name));
     Ok(files)
+}
+
+fn snapshot_macosx_resource_sidecars(
+    source_path: &Path,
+    raw_dir: &Path,
+    files: &mut Vec<SourceFile>,
+) -> Result<()> {
+    let macosx_dir = source_path.join("__MACOSX");
+    if !macosx_dir.is_dir() {
+        return Ok(());
+    }
+    let existing_names: BTreeSet<String> = files.iter().map(|file| file.name.clone()).collect();
+    for entry in WalkDir::new(&macosx_dir).max_depth(1).min_depth(1) {
+        let entry = entry.map_err(|error| ProvidenceError::message(error.to_string()))?;
+        if !entry.file_type().is_file() {
+            continue;
+        }
+        let Some(sidecar_name) = entry.path().file_name().and_then(|name| name.to_str()) else {
+            continue;
+        };
+        let Some(data_name) = sidecar_name.strip_prefix("._") else {
+            continue;
+        };
+        let bytes = fs::read(entry.path()).with_path(entry.path())?;
+        let resource_bytes = crate::resource_fork::resource_fork_payload(&bytes).to_vec();
+        if crate::resource_fork::parse_resource_fork_entries(&resource_bytes).is_empty() {
+            continue;
+        }
+        let resource_name = if data_name == "Scenario" {
+            "Scenario.rsrc".to_string()
+        } else {
+            format!("{data_name}.rsrc")
+        };
+        if existing_names.contains(&resource_name) || files.iter().any(|file| file.name == resource_name) {
+            continue;
+        }
+        let dest = raw_dir.join(&resource_name);
+        fs::write(&dest, &resource_bytes).with_path(&dest)?;
+        files.push(SourceFile {
+            name: resource_name.clone(),
+            relative_path: resource_name,
+            bytes: resource_bytes.len() as u64,
+            sha256: sha256_hex(&resource_bytes),
+            role: SourceFileRole::ResourceFork,
+            editable: false,
+        });
+    }
+    Ok(())
 }
 
 fn is_scenario_marker_source(source_path: &Path, name: &str, bytes: &[u8]) -> bool {
@@ -925,8 +1002,13 @@ fn import_icon_overlays(
             severity: DiagnosticSeverity::Warning,
             code: "missing-map-icon-overlay".to_string(),
             message: format!(
-                "{} map icon overlay(s) referenced by Realmz special field values were not found in the Scenario Utility reference assets or scenario resources",
-                missing.len()
+                "{} map icon overlay(s) referenced by Realmz special field values were not found in the Scenario Utility reference assets or scenario resources: {}",
+                missing.len(),
+                missing
+                    .iter()
+                    .map(i16::to_string)
+                    .collect::<Vec<_>>()
+                    .join(", ")
             ),
             source: Some("Data LD".to_string()),
         });
@@ -1190,7 +1272,7 @@ fn map_icon_ids(maps: &[MapEntity]) -> BTreeSet<i16> {
 fn normalize_icon_id(value: i16) -> Option<i16> {
     if value >= 0 {
         let icon_id = normalize_realmz_field_state(value);
-        return (icon_id > 200).then_some(icon_id);
+        return (379..900).contains(&icon_id).then_some(icon_id);
     }
     let mut icon_id = value;
     while icon_id < -999 {
@@ -1202,10 +1284,8 @@ fn normalize_icon_id(value: i16) -> Option<i16> {
 fn normalize_realmz_field_state(value: i16) -> i16 {
     let mut tile = clear_realmz_short_bit(value, 1);
     tile = clear_realmz_short_bit(tile, 2);
-    for _ in 0..3 {
-        if tile > 999 {
-            tile -= 1000;
-        }
+    while tile > 999 {
+        tile -= 1000;
     }
     tile
 }
@@ -1406,9 +1486,13 @@ mod tests {
     #[test]
     fn map_icon_normalization_matches_realmz_positive_and_negative_specials() {
         assert_eq!(normalize_icon_id(200), None);
+        assert_eq!(normalize_icon_id(378), None);
+        assert_eq!(normalize_icon_id(379), Some(379));
         assert_eq!(normalize_icon_id(462), Some(462));
         assert_eq!(normalize_icon_id(1462), Some(462));
-        assert_eq!(normalize_icon_id(1224), Some(224));
+        assert_eq!(normalize_icon_id(1224), None);
+        assert_eq!(normalize_icon_id(5081), None);
+        assert_eq!(normalize_icon_id(969), None);
         assert_eq!(normalize_icon_id(-462), Some(-462));
         assert_eq!(normalize_icon_id(-1462), Some(-462));
     }

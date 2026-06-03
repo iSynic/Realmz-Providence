@@ -1,5 +1,5 @@
 use realmz_providence_lib::exporter::export_project;
-use realmz_providence_lib::importer::{import_scenario, open_project, RAW_SOURCES_DIR};
+use realmz_providence_lib::importer::{import_scenario, open_project, sha256_hex, RAW_SOURCES_DIR};
 use realmz_providence_lib::project::{
     AssetImportTarget, DitherMode, ImageFitMode, ImageMatte, ImageScaleMode, ManagedAsset,
     ManagedAssetConversion, ManagedAssetExportState, ManagedAssetKind, PaletteMode,
@@ -30,6 +30,11 @@ fn out_fixture_path(name: &str) -> Option<std::path::PathBuf> {
     path.is_dir().then_some(path)
 }
 
+fn desktop_fixture_path(name: &str) -> Option<std::path::PathBuf> {
+    let path = Path::new("C:/Users/Eric/Desktop").join(name);
+    path.is_dir().then_some(path)
+}
+
 const HARDENED_FIXTURES: &[&str] = &[
     "City of Bywater",
     "Prelude to Pestilence",
@@ -55,7 +60,7 @@ fn imports_core_fixture_scenarios() {
         assert!(project_dir.join("project.json").is_file());
         assert!(project_dir.join(RAW_SOURCES_DIR).is_dir());
         assert!(project.source.immutable);
-        assert_generated_corpus_expectations(name, &project);
+        assert_generated_corpus_expectations(name, &source, &project);
         assert_fixture_contracts(name, &project);
         let atlased_tilesets: Vec<_> = project
             .asset_catalog
@@ -535,12 +540,15 @@ fn imports_destroy_scenario_local_map_icons() {
             "cicn {icon_id} should be cataloged as a project-local map icon"
         );
     }
+    let missing_icon_diagnostics: Vec<_> = project
+        .diagnostics
+        .iter()
+        .filter(|diagnostic| diagnostic.code == "missing-map-icon-overlay")
+        .map(|diagnostic| diagnostic.message.as_str())
+        .collect();
     assert!(
-        !project
-            .diagnostics
-            .iter()
-            .any(|diagnostic| diagnostic.code == "missing-map-icon-overlay"),
-        "scenario-local map icons should satisfy negative map icon references"
+        missing_icon_diagnostics.is_empty(),
+        "scenario-local map icons should satisfy negative map icon references: {missing_icon_diagnostics:?}"
     );
     fs::remove_file(project_dir.join("assets/icons/icon_-102.png")).unwrap();
     let reopened = open_project(&project_dir).unwrap();
@@ -668,11 +676,17 @@ fn print_fixture_corpus_summary() {
     }
 }
 
-fn assert_generated_corpus_expectations(name: &str, project: &ProvidenceProject) {
+fn assert_generated_corpus_expectations(name: &str, source: &Path, project: &ProvidenceProject) {
     let Some(expected) = generated_fixture_summary(name) else {
         eprintln!("Skipping generated corpus comparison for {name}; expectation not found.");
         return;
     };
+    if let Some(mismatch) = generated_fixture_file_mismatch(source, &expected) {
+        eprintln!(
+            "Skipping generated corpus comparison for {name}; local fixture no longer matches generated corpus: {mismatch}."
+        );
+        return;
+    }
     let counts = expected.get("counts").unwrap_or(&Value::Null);
     assert_expected_count(name, "levels", project.maps.len(), counts);
     assert_expected_count(
@@ -1180,7 +1194,12 @@ fn has_source_file(project: &ProvidenceProject, name: &str) -> bool {
 
 fn assert_semantic_schema(name: &str, source: &Path, project: &ProvidenceProject) {
     let schema = &project.semantic_schema;
-    assert_eq!(schema.schema_version, SEMANTIC_SCHEMA_VERSION);
+    assert_eq!(
+        schema.schema_version,
+        SEMANTIC_SCHEMA_VERSION,
+        "{name} from {} should use semantic schema version {SEMANTIC_SCHEMA_VERSION}",
+        source.display()
+    );
     assert!(
         !schema.sources.is_empty(),
         "{name} should inventory sources"
@@ -1863,6 +1882,76 @@ fn target_export_excludes_ignored_os_metadata() {
     assert!(
         !report.pass_through_files.iter().any(|file| file == ".DS_Store"),
         "ignored OS metadata should not appear as pass-through"
+    );
+}
+
+fn generated_fixture_file_mismatch(source: &Path, expected: &Value) -> Option<String> {
+    let files = expected.get("files")?.as_object()?;
+    for (file_name, metadata) in files {
+        let expected_bytes = metadata.get("bytes").and_then(Value::as_u64)?;
+        let expected_sha = metadata.get("sha256").and_then(Value::as_str)?;
+        let path = source.join(file_name);
+        let bytes = match fs::read(&path) {
+            Ok(bytes) => bytes,
+            Err(_) => return Some(format!("{file_name} is missing")),
+        };
+        if bytes.len() as u64 != expected_bytes {
+            return Some(format!(
+                "{file_name} is {} bytes, corpus has {expected_bytes}",
+                bytes.len()
+            ));
+        }
+        let actual_sha = sha256_hex(&bytes);
+        if !actual_sha.starts_with(expected_sha) {
+            return Some(format!(
+                "{file_name} sha256 starts with {}, corpus has {expected_sha}",
+                &actual_sha[..expected_sha.len().min(actual_sha.len())]
+            ));
+        }
+    }
+    None
+}
+
+#[test]
+fn windows_export_promotes_macosx_scenario_resource_fork() {
+    let Some(source) = desktop_fixture_path("City of Bywater") else {
+        eprintln!("Skipping Mac ZIP resource fork promotion test; Desktop City of Bywater fixture is absent.");
+        return;
+    };
+    if !source.join("__MACOSX").join("._Scenario").is_file() {
+        eprintln!("Skipping Mac ZIP resource fork promotion test; __MACOSX/._Scenario is absent.");
+        return;
+    }
+    let (_temp, project, export_dir, _report) =
+        export_fixture_with_target(&source, ScenarioTarget::WindowsRealmzFolder);
+
+    assert!(
+        project.source.files.iter().any(|file| {
+            file.name == "Scenario.rsrc" && matches!(file.role, SourceFileRole::ResourceFork)
+        }),
+        "import should promote __MACOSX/._Scenario into Scenario.rsrc"
+    );
+    let exported_resource_path = export_dir.join("Scenario.rsrc");
+    assert!(
+        exported_resource_path.is_file(),
+        "Windows export should include promoted Scenario.rsrc"
+    );
+    let exported_resources = parse_resource_fork_entries(&fs::read(&exported_resource_path).unwrap());
+    assert!(
+        exported_resources
+            .iter()
+            .any(|entry| entry.resource_type == "STR#" && entry.name == "Map Names"),
+        "exported Scenario.rsrc should preserve STR# Map Names"
+    );
+    let primary_names = exported_resources
+        .iter()
+        .find(|entry| entry.resource_type == "STR#" && entry.id == -102)
+        .map(|entry| decode_string_list_resource(&entry.data))
+        .unwrap_or_default();
+    assert_eq!(primary_names.len(), project.map_records.len());
+    assert!(
+        primary_names.iter().any(|name| !name.trim().is_empty()),
+        "generated map-name resources should populate the Maps/Notes menu"
     );
 }
 
