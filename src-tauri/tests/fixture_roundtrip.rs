@@ -3,7 +3,8 @@ use realmz_providence_lib::importer::{import_scenario, open_project, sha256_hex,
 use realmz_providence_lib::project::{
     AssetImportTarget, DitherMode, ImageFitMode, ImageMatte, ImageScaleMode, ManagedAsset,
     ManagedAssetConversion, ManagedAssetExportState, ManagedAssetKind, PaletteMode,
-    ProvidenceProject, ScenarioTarget, SourceFileRole, PROJECT_SCHEMA_VERSION, SEMANTIC_SCHEMA_VERSION,
+    ProvidenceProject, ScenarioTarget, SourceFileRole, TileAttributeFlag, TileAttributeSourceKind,
+    PROJECT_SCHEMA_VERSION, SEMANTIC_SCHEMA_VERSION,
 };
 use realmz_providence_lib::realmz::{
     update_custom_land_tile_attributes, update_custom_land_tile_combat_build,
@@ -209,6 +210,53 @@ fn custom_landlook_metadata_writer_mutates_only_owned_fields() {
             "unexpected custom landlook byte mutation at {offset}"
         );
     }
+}
+
+#[test]
+fn data_solids_export_mutates_only_selected_special_tile_solidity() {
+    let Some(source) = fixture_path("Tutorial") else {
+        eprintln!("Skipping Data Solids export fixture; Tutorial is absent.");
+        return;
+    };
+    let temp = tempdir().unwrap();
+    let project_dir = temp.path().join("project");
+    let export_dir = temp.path().join("exported");
+    let mut project = import_scenario(&source, &project_dir).unwrap();
+    let original = fs::read(source.join("Data Solids")).unwrap();
+    let tile = 190usize;
+    let next_value = if original[tile] == 0 { 1 } else { 0 };
+    let profile = project
+        .tile_attributes
+        .iter_mut()
+        .find(|profile| {
+            matches!(profile.source_kind, TileAttributeSourceKind::DataSolids)
+                && profile.tile == tile as i16
+        })
+        .expect("Tutorial should import Data Solids row 190");
+    profile.raw_byte = Some(next_value);
+    profile.solid_type = Some(next_value as i16);
+    profile.flags = if next_value == 0 {
+        vec![TileAttributeFlag::Walkable]
+    } else {
+        vec![TileAttributeFlag::Solid]
+    };
+
+    export_project(
+        &project_dir,
+        &project,
+        &export_dir,
+        ScenarioTarget::ProvidencePortableFolder,
+    )
+    .unwrap();
+
+    let exported = fs::read(export_dir.join("Data Solids")).unwrap();
+    assert_eq!(exported.len(), original.len());
+    assert_eq!(
+        changed_offsets(&original, &exported),
+        vec![tile],
+        "Data Solids authoring should mutate only the selected special tile row"
+    );
+    assert_eq!(exported[tile], next_value);
 }
 
 #[test]

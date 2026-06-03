@@ -10,7 +10,8 @@ import { InfoGrid } from "./InfoGrid";
 import { ActionPointCodeTable, CellTileEvidence, MapCapabilityPanel } from "./MapAffordances";
 import { PaintPalettePanel } from "./TileSelectionBar";
 import { classifyTileValue, standardTileValues, tileAttributeGroup } from "../map/tileMetadata";
-import { atlasBaseTile } from "../map/renderValues";
+import { atlasBaseTile, normalizeIconId } from "../map/renderValues";
+import { hasSecretMarkerTile, isSecretWalkableTile } from "../map/secrets";
 import { tileColor } from "./TileSprite";
 import { TileSwatch } from "./TileSwatch";
 import { TutorialTip } from "./TutorialTip";
@@ -351,8 +352,8 @@ function MapModeInspector({
         <InfoGrid
           rows={[
             ["Tileset", selectedTileset?.name ?? "none"],
-            ["Scope", selectedTileset ? "Built into Realmz" : "none"],
-            ["Editing", selectedTileset ? "Read-only" : "none"],
+            ["Scope", selectedTileset ? (selectedTileset.custom ? "Scenario custom" : "Built into Realmz") : "none"],
+            ["Editing", selectedTileset ? (selectedTileset.custom ? "Custom tiles writable" : "Reference only") : "none"],
             ["Tile Count", selectedTileset ? selectedTileset.columns * selectedTileset.rows : 0],
             ["Base Tile", selectedTileset?.baseTile ?? "none"],
             ["Current Map", selectedMap?.name ?? "none"]
@@ -984,6 +985,53 @@ function TileMeaningInspector({
   );
 }
 
+function SpecialTileSolidityEditor({
+  meaning,
+  onApplyCommand
+}: {
+  meaning: ReturnType<typeof classifyTileValue>;
+  onApplyCommand: (command: ProjectCommand) => void;
+}) {
+  const attributes = meaning.attributes;
+  if (meaning.raw >= 0 || attributes?.sourceKind !== "data-solids") return null;
+  const tile = attributes.tile ?? Math.abs(normalizeIconId(meaning.raw) ?? meaning.raw);
+  const solid = attributes.flags.includes("solid") || Boolean(attributes.solidType);
+  return (
+    <div className="tile-attribute-editor compact">
+      <div className="tile-meaning-title">
+        <span>Special Tile Solidity</span>
+        <b>Data Solids</b>
+      </div>
+      <InfoGrid
+        rows={[
+          ["Special Tile", meaning.raw],
+          ["Data Solids Row", tile],
+          ["Passable", solid ? "no" : "yes"],
+          ["Source", attributes.source]
+        ]}
+      />
+      <div className="tile-toggle-grid">
+        <button
+          type="button"
+          className={!solid ? "active" : ""}
+          onClick={() => onApplyCommand({ kind: "updateSpecialTileSolidity", label: "Make special tile passable", tile, solid: false })}
+        >
+          Passable
+          <b>{!solid ? "yes" : "set"}</b>
+        </button>
+        <button
+          type="button"
+          className={solid ? "active" : ""}
+          onClick={() => onApplyCommand({ kind: "updateSpecialTileSolidity", label: "Make special tile solid", tile, solid: true })}
+        >
+          Solid
+          <b>{solid ? "yes" : "set"}</b>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const PAINT_MODES: Array<{ id: MapPaintMode; label: string; body: string }> = [
   { id: "brush", label: "Brush", body: "Paint cells by dragging." },
   { id: "region", label: "Region Select", body: "Drag a rectangle, then fill or clear it with explicit actions." },
@@ -1238,6 +1286,10 @@ function SelectionInspector({
               ["Move Cost", selectedCellMeaning?.attributes?.movementCost ?? "unknown"],
               ["Sound", selectedCellMeaning?.attributes?.movementSoundId ?? "none"],
               ["Shore / Water", yesNo(selectedCellMeaning?.attributes?.shore)],
+              ["Runtime Path", yesNo(selectedCellMeaning?.attributes?.pathFlag)],
+              ["Road Art", selectedCellMeaning?.attributeFlags.includes("visual-path") ? "yes" : "no"],
+              ["Boat Required", selectedCellMeaning?.attributes?.boatRequirement ?? "unknown"],
+              ["Fly / Float", yesNo(selectedCellMeaning?.attributes?.flyFloatRequired)],
               ["Blocks LOS", yesNo(selectedCellMeaning?.attributes?.blocksLos)],
               ["Combat Expansion", normalizedCombatBuild(selectedCellMeaning?.attributes ?? null) ? "3 x 3" : "none"],
               ["Action Points", selection.triggers.length],
@@ -1248,6 +1300,12 @@ function SelectionInspector({
           />
           <CellTileEvidence cell={selection.cell} records={selection.records} />
           {selectedCellMeaning && <TileMeaningInspector title="Selected Cell Meaning" meaning={selectedCellMeaning} compact />}
+          {selectedCellMeaning && (
+            <SpecialTileSolidityEditor
+              meaning={selectedCellMeaning}
+              onApplyCommand={onApplyCommand}
+            />
+          )}
           <CellActionPointDetails
             project={project}
             triggers={selection.triggers}
@@ -1255,7 +1313,7 @@ function SelectionInspector({
             onOpenScripts={onOpenScripts}
           />
           <ScriptedChangeSection project={project} map={map} cell={selection.cell} onSelectEntity={onSelectEntity} onOpenScripts={onOpenScripts} />
-          <MapDiagnostics diagnostics={cellDiagnostics(selection)} />
+          <MapDiagnostics diagnostics={[...cellDiagnostics(selection), ...mapTileDiagnostics(selection, map, selectedCellMeaning)]} />
           <SelectionLinks
             map={map}
             triggers={selection.triggers}
@@ -1556,6 +1614,34 @@ function cellDiagnostics(selection: Extract<Selection, { kind: "cell" }>) {
   if (selection.rects.length > 1) {
     const priority = [...selection.rects].sort((a, b) => b.rectIndex - a.rectIndex)[0];
     diagnostics.push(`Multiple Random Rectangles overlap this cell; Realmz checks higher record indexes first, so rectangle ${priority.rectIndex} has priority here.`);
+  }
+  return diagnostics;
+}
+
+function mapTileDiagnostics(
+  selection: Extract<Selection, { kind: "cell" }>,
+  map: MapEntity | null,
+  meaning: ReturnType<typeof classifyTileValue> | null
+) {
+  const diagnostics: string[] = [];
+  if (!meaning) return diagnostics;
+  const attributes = meaning.attributes;
+  if (meaning.attributeFlags.includes("visual-path") && !attributes?.pathFlag) {
+    diagnostics.push("Tile is Divinity road/path art, but Realmz mapstats does not mark it as a runtime path.");
+  }
+  if (meaning.raw < 0 && attributes?.sourceKind !== "data-solids") {
+    diagnostics.push("Special negative tile has no decoded Data Solids row; passability remains unknown.");
+  }
+  if (meaning.attributeFlags.includes("unknown-metadata")) {
+    diagnostics.push("Tile behavior is unknown because no mapstats or Data Solids metadata matched this value.");
+  }
+  if (map) {
+    if (hasSecretMarkerTile(selection.cell.tile, map) && attributes?.flags.includes("solid")) {
+      diagnostics.push("Secret marker appears on a tile marked solid; verify that Realmz can actually enter this cell.");
+    }
+    if (isSecretWalkableTile(selection.cell.tile, map) && (attributes?.boatRequirement || attributes?.flyFloatRequired)) {
+      diagnostics.push("Secret/passable marker is on a tile with boat or fly/float movement requirements.");
+    }
   }
   return diagnostics;
 }

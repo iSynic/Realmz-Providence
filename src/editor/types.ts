@@ -984,6 +984,7 @@ export type ProjectCommand =
       tile: number;
       changes: Partial<Pick<MapstatsRecord, "sound" | "time" | "solid" | "shore" | "needBoat" | "isPath" | "los" | "flyFloat" | "forest" | "clearLandId">>;
     }
+  | { kind: "updateSpecialTileSolidity"; label: string; tile: number; solid: boolean }
   | { kind: "updateCustomLandTileCombatBuild"; label: string; landlook: number; tile: number; row: number; col: number; value: number }
   | { kind: "updateCustomLandlookBase"; label: string; landlook: number; baseTile?: number; baseScale?: number }
   | { kind: "updateCustomLandlookRangeSlot"; label: string; landlook: number; slot: number; firstTile?: number; lastTile?: number }

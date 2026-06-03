@@ -311,7 +311,9 @@ export function useAppBootstrapEffects({
               const referenceUrl = browserReferenceIconUrl(id);
               if (referenceUrl) urls.push(referenceUrl);
             }
-            const preferredLibraryAsset = isActorOrCreatureIconId(Math.abs(id)) ? realmzActorIconAsset ?? libraryAsset : libraryAsset;
+            const preferredLibraryAsset = isActorOrCreatureIconId(Math.abs(id))
+              ? realmzActorIconAsset ?? libraryAsset
+              : libraryAsset;
             if (preferredLibraryAsset) {
               try {
                 const libraryUrl = desktopRuntime

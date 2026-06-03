@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { EditorState } from "../../store";
-import { EditorTool, IconEntry, MapEntity, Project, TileAttributeFlag, TilesetAsset } from "../../types";
+import { EditorTool, IconEntry, Project, ProjectCommand, TileAttributeFlag, TilesetAsset } from "../../types";
 import { classifyTileValue, standardTileValues, tileAttributeGroup } from "../../map/tileMetadata";
 import { InfoGrid } from "../InfoGrid";
 import { TileSwatch } from "../TileSwatch";
 import { tileColor } from "../TileSprite";
-import { attributeSourceLabel, normalizedCombatBuild, tileAttributeLabel, tileAttributeRows, yesNo } from "./mapTileUiUtils";
+import { MapNumberField } from "./MapFormControls";
+import { attributeSourceLabel, normalizedCombatBuild, tileAttributeLabel, tileAttributeRows } from "./mapTileUiUtils";
 
 const LAND_TILE_FILTERS: Array<{ id: TileAttributeFlag | "all"; label: string; hint: string }> = [
   { id: "all", label: "All", hint: "Show the full current landlook atlas." },
@@ -30,7 +31,8 @@ export function LandTileAtlasEditor({
   selectedPaintTile,
   onSelectTile,
   onSetTool,
-  onOpenPalette
+  onOpenPalette,
+  onApplyCommand
 }: {
   project: Project | null;
   selectedTileset: TilesetAsset | null;
@@ -40,6 +42,7 @@ export function LandTileAtlasEditor({
   onSelectTile: (tile: number) => void;
   onSetTool: (tool: EditorTool) => void;
   onOpenPalette: () => void;
+  onApplyCommand: (command: ProjectCommand) => void;
 }) {
   const [filter, setFilter] = useState<TileAttributeFlag | "all">("all");
   const [query, setQuery] = useState("");
@@ -66,6 +69,7 @@ export function LandTileAtlasEditor({
   const meaning = classifyTileValue(inspectedTile, selectedTileset, attributes, icons);
   const attributeRows = tileAttributeRows(meaning);
   const quickFilters = meaning.attributeFlags.filter((flag) => LAND_TILE_FILTERS.some((item) => item.id === flag));
+  const editingScope = meaning.attributes?.editableScope === "scenario-custom" ? "Scenario custom" : "Read-only";
 
   return (
     <div className="land-tile-atlas-editor">
@@ -74,8 +78,8 @@ export function LandTileAtlasEditor({
           <InfoGrid
             rows={[
               ["Tileset", selectedTileset.name],
-              ["Scope", "Built into Realmz"],
-              ["Editing", "Read-only"],
+              ["Scope", selectedTileset.custom ? "Scenario custom" : "Built into Realmz"],
+              ["Editing", editingScope],
               ["Tile Count", tiles.length],
               ["Base Tile", selectedTileset.baseTile],
               ["Shown", visibleTiles.length]
@@ -168,9 +172,15 @@ export function LandTileAtlasEditor({
             profile={meaning.attributes}
             sourceTile={inspectedTile}
             tileset={selectedTileset}
+            onApplyCommand={onApplyCommand}
+          />
+          <TileAttributeEditor
+            meaning={meaning}
+            tileset={selectedTileset}
+            onApplyCommand={onApplyCommand}
           />
           <p className="context-capacity-note">
-            Built-in Realmz landlooks are read-only. Scenario custom landlook editing is hidden until custom tile-map writing is proven.
+            Built-in Realmz landlooks are read-only. Scenario custom landlooks and Data Solids special tiles are the current safe authoring surface.
           </p>
         </aside>
       </div>
@@ -183,15 +193,18 @@ function CombatBuildPreview({
   sourceTile,
   tileset,
   atlas,
-  icons
+  icons,
+  onApplyCommand
 }: {
   profile: ReturnType<typeof classifyTileValue>["attributes"];
   sourceTile?: number;
   tileset: TilesetAsset;
   atlas: EditorState["atlasEntries"][string] | null;
   icons: Record<number, IconEntry>;
+  onApplyCommand?: (command: ProjectCommand) => void;
 }) {
-  const rows = normalizedCombatBuild(profile);
+  const editable = profile?.editableScope === "scenario-custom" && profile.landlook != null && onApplyCommand;
+  const rows = normalizedCombatBuild(profile) ?? (editable ? [0, 1, 2].map(() => [0, 0, 0]) : null);
   if (!rows) {
     return (
       <div className="combat-build-preview compact">
@@ -226,13 +239,115 @@ function CombatBuildPreview({
               <div className="combat-build-cell" key={`${rowIndex}-${columnIndex}`} title={`Combat tile ${tile}`}>
                 <TileSwatch atlas={atlas} icons={icons} tile={tile} tileset={tileset} />
                 <span>{tile}</span>
+                {editable && (
+                  <input
+                    type="number"
+                    aria-label={`Combat tile row ${rowIndex + 1} column ${columnIndex + 1}`}
+                    value={tile}
+                    onChange={(event) => {
+                      onApplyCommand({
+                        kind: "updateCustomLandTileCombatBuild",
+                        label: "Update combat tile expansion",
+                        landlook: profile.landlook ?? tileset.landlook,
+                        tile: profile.tile,
+                        row: rowIndex,
+                        col: columnIndex,
+                        value: Number(event.currentTarget.value)
+                      });
+                    }}
+                  />
+                )}
               </div>
             )))}
           </div>
         </div>
       </div>
-      <p>Realmz expands this land tile into these combat-map cells when outdoor combat starts.</p>
+      <p>{editable ? "Edit the 3 x 3 combat-map cells Realmz uses when outdoor combat starts." : "Realmz expands this land tile into these combat-map cells when outdoor combat starts."}</p>
     </div>
   );
 }
 
+function TileAttributeEditor({
+  meaning,
+  tileset,
+  onApplyCommand
+}: {
+  meaning: ReturnType<typeof classifyTileValue>;
+  tileset: TilesetAsset;
+  onApplyCommand: (command: ProjectCommand) => void;
+}) {
+  const attributes = meaning.attributes;
+  if (!attributes) {
+    return (
+      <div className="tile-attribute-editor compact">
+        <div className="tile-meaning-title">
+          <span>Tile Behavior</span>
+          <b>unknown</b>
+        </div>
+        <p>No source-backed mapstats or Data Solids row is available for this tile.</p>
+      </div>
+    );
+  }
+  if (attributes.editableScope !== "scenario-custom") {
+    return (
+      <div className="tile-attribute-editor compact">
+        <div className="tile-meaning-title">
+          <span>Tile Behavior</span>
+          <b>{attributes.editableScope === "special-tile" ? "edit from selected special tile" : "read-only"}</b>
+        </div>
+        <p>{attributes.editableScope === "special-tile" ? "Select a special tile on the map canvas to edit its Data Solids passability." : "Standard Realmz landlook behavior is shown for reference and is not edited in this pass."}</p>
+      </div>
+    );
+  }
+  if (attributes.landlook == null) {
+    return null;
+  }
+  const update = (changes: Extract<ProjectCommand, { kind: "updateCustomLandTileAttributes" }>["changes"]) => {
+    onApplyCommand({
+      kind: "updateCustomLandTileAttributes",
+      label: "Update land tile behavior",
+      landlook: attributes.landlook ?? tileset.landlook,
+      tile: attributes.tile,
+      changes
+    });
+  };
+  return (
+    <div className="tile-attribute-editor">
+      <div className="tile-meaning-title">
+        <span>Tile Behavior</span>
+        <b>scenario custom</b>
+      </div>
+      <div className="tile-toggle-grid">
+        <ToggleButton label="Solid" active={Boolean(attributes.solidType)} onToggle={(value) => update({ solid: value ? 1 : 0 })} />
+        <ToggleButton label="Runtime Path" active={Boolean(attributes.pathFlag)} onToggle={(value) => update({ isPath: value ? 1 : 0 })} />
+        <ToggleButton label="Shore / Water" active={Boolean(attributes.shore)} onToggle={(value) => update({ shore: value ? 1 : 0 })} />
+        <ToggleButton label="Boat Required" active={Boolean(attributes.boatRequirement)} onToggle={(value) => update({ needBoat: value ? 1 : 0 })} />
+        <ToggleButton label="Fly / Float" active={Boolean(attributes.flyFloatRequired)} onToggle={(value) => update({ flyFloat: value ? 1 : 0 })} />
+        <ToggleButton label="Blocks LOS" active={Boolean(attributes.blocksLos)} onToggle={(value) => update({ los: value ? 1 : 0 })} />
+      </div>
+      <div className="map-authoring-form">
+        <MapNumberField label="Movement Sound" value={attributes.movementSoundId ?? 0} onCommit={(sound) => update({ sound })} />
+        <MapNumberField label="Time / Move" value={attributes.movementCost ?? 0} onCommit={(time) => update({ time })} />
+        <MapNumberField label="Forest Type" value={attributes.forestType ?? 0} onCommit={(forest) => update({ forest })} min={0} max={32767} />
+        <MapNumberField label="Clear Tile" value={attributes.clearLandId ?? 0} onCommit={(clearLandId) => update({ clearLandId })} />
+      </div>
+    </div>
+  );
+}
+
+function ToggleButton({
+  label,
+  active,
+  onToggle
+}: {
+  label: string;
+  active: boolean;
+  onToggle: (value: boolean) => void;
+}) {
+  return (
+    <button type="button" className={active ? "active" : ""} onClick={() => onToggle(!active)}>
+      {label}
+      <b>{active ? "yes" : "no"}</b>
+    </button>
+  );
+}

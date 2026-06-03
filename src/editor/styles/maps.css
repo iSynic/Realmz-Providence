@@ -1518,6 +1518,77 @@
   text-shadow: 0 1px 1px #000;
 }
 
+.combat-build-cell input {
+  position: absolute;
+  inset: auto 3px 3px 3px;
+  width: calc(100% - 6px);
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid rgba(82, 141, 198, 0.72);
+  border-radius: 3px;
+  background: rgba(4, 8, 12, 0.88);
+  color: #d7ecff;
+  font-size: 9px;
+  font-weight: 850;
+}
+
+.combat-build-cell:has(input) span {
+  display: none;
+}
+
+.tile-attribute-editor {
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid #253340;
+  border-radius: 6px;
+  background: #10161d;
+}
+
+.tile-attribute-editor.compact {
+  color: #95a8b8;
+}
+
+.tile-attribute-editor p {
+  margin: 0;
+  color: #95a8b8;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.tile-toggle-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.tile-toggle-grid button {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 7px 8px;
+  border: 1px solid #2b3d50;
+  border-radius: 5px;
+  background: #0d1319;
+  color: #c7d7e5;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.tile-toggle-grid button.active {
+  border-color: #3b91d9;
+  background: #12385a;
+  color: #e2f3ff;
+}
+
+.tile-toggle-grid button b {
+  color: #81cfff;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
 
 
 .land-tile-quick-filters {

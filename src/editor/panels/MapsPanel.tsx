@@ -225,6 +225,7 @@ export function MapsPanel({
                 setPaletteOpen(true);
                 setWorkbenchMode("canvas");
               }}
+              onApplyCommand={onApplyCommand}
             />
           </MapModeSurface>
         )}

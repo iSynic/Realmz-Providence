@@ -23,6 +23,7 @@ import {
 import { clampScroll, mapCellFromTileIndex, MAP_CELLS } from "../map/geometry";
 import { useMapInteractions } from "../map/useMapInteractions";
 import { hasSecretMarkerTile, isSecretWalkableTile } from "../map/secrets";
+import { loadMapOverlaySprites } from "../map/mapOverlaySprites";
 import { ScrollArea } from "../ui";
 import {
   drawBaseMap,
@@ -118,8 +119,12 @@ export function RealmzMapCanvas({
   const hudMoveCooldownRef = useRef(0);
   const [hudPosition, setHudPosition] = useState({ left: 10, top: 10 });
   const [hudAnchor, setHudAnchor] = useState<MapHudAnchor>("bottom-left");
+  const [overlaySpriteVersion, setOverlaySpriteVersion] = useState(0);
   const setHudNode = useCallback((node: HTMLDivElement | null) => {
     hudRef.current = node;
+  }, []);
+  useEffect(() => {
+    loadMapOverlaySprites(() => setOverlaySpriteVersion((version) => version + 1));
   }, []);
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -238,7 +243,7 @@ export function RealmzMapCanvas({
     if (showRandomRects && randomLevel) {
       drawRandomRectangles(ctx, map, randomLevel, selectedEntity, cell);
     }
-    if (viewOptions.showSecretOverlays) drawSecretTileOverlay(ctx, map, cell);
+    if (viewOptions.showSecretOverlays) drawSecretTileOverlay(ctx, map, cell, icons);
     if (previewMode !== "off") drawMapVisibilityPreview(ctx, map, tileset, tileAttributes, cell, previewMode, previewFocalPoint);
     drawTriggers(ctx, triggers, selectedEntity, cell);
     if (showMapRecords) drawMapRecords(ctx, mapRecords, selectedEntity, cell);
@@ -268,7 +273,8 @@ export function RealmzMapCanvas({
     icons,
     viewOptions,
     canvasCssSize,
-    overlayMapDependency
+    overlayMapDependency,
+    overlaySpriteVersion
   ]);
 
   useEffect(() => {

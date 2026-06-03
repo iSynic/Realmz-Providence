@@ -12,6 +12,7 @@ import {
   updateLandLayoutCell,
   updateMapRecord,
   updateRandomLevelSettings,
+  updateSpecialTileSolidity,
   updateRandomRect
 } from "./projectCommands/mapCommands";
 import {
@@ -77,6 +78,7 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "updateLandLayoutCell") return updateLandLayoutCell(project, command.row, command.col, command.value);
   if (command.kind === "clearLandLayout") return clearLandLayout(project);
   if (command.kind === "updateCustomLandTileAttributes") return updateCustomLandTileAttributes(project, command);
+  if (command.kind === "updateSpecialTileSolidity") return updateSpecialTileSolidity(project, command);
   if (command.kind === "updateCustomLandTileCombatBuild") return updateCustomLandTileCombatBuild(project, command);
   if (command.kind === "updateCustomLandlookBase") return updateCustomLandlookBase(project, command);
   if (command.kind === "updateCustomLandlookRangeSlot") return updateCustomLandlookRangeSlot(project, command);

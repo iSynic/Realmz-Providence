@@ -10,6 +10,7 @@ import { hasSecretMarkerTile, isSecretWalkableTile } from "./secrets";
 import { triggerEntityId } from "../utils";
 import { drawTileSprite, tileColor } from "../components/TileSprite";
 import { classifyTileValue } from "./tileMetadata";
+import { mapOverlaySprite } from "./mapOverlaySprites";
 
 export function drawBaseMap(
   ctx: CanvasRenderingContext2D,
@@ -230,34 +231,121 @@ export function drawMapRecords(
   }
 }
 
-export function drawSecretTileOverlay(ctx: CanvasRenderingContext2D, map: MapEntity, cell: number) {
-  ctx.save();
-  ctx.fillStyle = "rgba(217, 54, 35, 0.34)";
-  ctx.strokeStyle = "rgba(255, 132, 92, 0.75)";
-  ctx.lineWidth = Math.max(1, Math.min(2, cell * 0.07));
-  ctx.font = `${Math.max(8, cell * 0.68)}px monospace`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
+const whiteKeyedOverlayCache = new WeakMap<HTMLImageElement, HTMLCanvasElement>();
 
+export function drawSecretTileOverlay(ctx: CanvasRenderingContext2D, map: MapEntity, cell: number, icons: Record<number, IconEntry> = {}) {
+  ctx.save();
   for (let y = 0; y < MAP_CELLS; y += 1) {
     for (let x = 0; x < MAP_CELLS; x += 1) {
       const value = tileValueAt(map, x, y);
       if (isSecretWalkableTile(value, map)) {
-        ctx.fillRect(x * cell, y * cell, cell, cell);
-        ctx.strokeRect(x * cell + 0.5, y * cell + 0.5, cell - 1, cell - 1);
+        drawOfficialPathMarker(ctx, x, y, cell);
       }
       if (hasSecretMarkerTile(value, map)) {
-        ctx.lineWidth = Math.max(2, cell * 0.13);
-        ctx.strokeStyle = "rgba(8, 10, 13, 0.78)";
-        ctx.fillStyle = "#ff523b";
-        ctx.strokeText("S", (x + 0.5) * cell, (y + 0.55) * cell);
-        ctx.fillText("S", (x + 0.5) * cell, (y + 0.55) * cell);
-        ctx.fillStyle = "rgba(217, 54, 35, 0.34)";
-        ctx.strokeStyle = "rgba(255, 132, 92, 0.75)";
+        drawSecretMarker(ctx, x, y, cell, icons);
       }
     }
   }
   ctx.restore();
+}
+
+function drawOfficialPathMarker(ctx: CanvasRenderingContext2D, x: number, y: number, cell: number) {
+  const sprite = mapOverlaySprite("path");
+  const left = x * cell;
+  const top = y * cell;
+  const inset = Math.max(1, cell * 0.08);
+  if (sprite.image?.complete) {
+    ctx.save();
+    ctx.globalAlpha = 0.92;
+    ctx.imageSmoothingEnabled = false;
+    drawWhiteKeyedOverlayImage(ctx, sprite.image, left + inset, top + inset, cell - inset * 2, cell - inset * 2);
+    ctx.restore();
+    return;
+  }
+  ctx.save();
+  ctx.strokeStyle = "rgba(255, 60, 36, 0.86)";
+  ctx.lineWidth = Math.max(2, cell * 0.16);
+  ctx.beginPath();
+  ctx.moveTo(left + cell * 0.5, top + cell * 0.18);
+  ctx.lineTo(left + cell * 0.5, top + cell * 0.82);
+  ctx.moveTo(left + cell * 0.18, top + cell * 0.5);
+  ctx.lineTo(left + cell * 0.82, top + cell * 0.5);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawSecretMarker(ctx: CanvasRenderingContext2D, x: number, y: number, cell: number, icons: Record<number, IconEntry>) {
+  const left = x * cell;
+  const top = y * cell;
+  const icon = mapOverlaySprite("secret").image;
+  if (icon?.complete) {
+    const inset = Math.max(1, cell * 0.08);
+    ctx.save();
+    ctx.globalAlpha = 0.95;
+    ctx.imageSmoothingEnabled = false;
+    drawWhiteKeyedOverlayImage(ctx, icon, left + inset, top + inset, cell - inset * 2, cell - inset * 2);
+    ctx.restore();
+    return;
+  }
+  const referenceIcon = icons[139]?.image;
+  if (referenceIcon?.complete) {
+    const inset = Math.max(1, cell * 0.08);
+    ctx.save();
+    ctx.globalAlpha = 0.95;
+    ctx.imageSmoothingEnabled = false;
+    drawWhiteKeyedOverlayImage(ctx, referenceIcon, left + inset, top + inset, cell - inset * 2, cell - inset * 2);
+    ctx.restore();
+    return;
+  }
+  ctx.save();
+  ctx.font = `700 ${Math.max(8, cell * 0.68)}px monospace`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.lineWidth = Math.max(2, cell * 0.13);
+  ctx.strokeStyle = "rgba(8, 10, 13, 0.86)";
+  ctx.fillStyle = "#ff523b";
+  ctx.strokeText("S", left + cell * 0.5, top + cell * 0.55);
+  ctx.fillText("S", left + cell * 0.5, top + cell * 0.55);
+  ctx.restore();
+}
+
+function drawWhiteKeyedOverlayImage(
+  ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  x: number,
+  y: number,
+  width: number,
+  height: number
+) {
+  const keyed = whiteKeyedOverlay(image);
+  ctx.drawImage(keyed, x, y, width, height);
+}
+
+function whiteKeyedOverlay(image: HTMLImageElement) {
+  const cached = whiteKeyedOverlayCache.get(image);
+  if (cached) return cached;
+  const canvas = document.createElement("canvas");
+  const width = image.naturalWidth || image.width;
+  const height = image.naturalHeight || image.height;
+  canvas.width = Math.max(1, width);
+  canvas.height = Math.max(1, height);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return canvas;
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(image, 0, 0);
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+  for (let index = 0; index < data.length; index += 4) {
+    const red = data[index];
+    const green = data[index + 1];
+    const blue = data[index + 2];
+    if (red >= 238 && green >= 238 && blue >= 238) {
+      data[index + 3] = 0;
+    }
+  }
+  ctx.putImageData(imageData, 0, 0);
+  whiteKeyedOverlayCache.set(image, canvas);
+  return canvas;
 }
 
 export function drawMapVisibilityPreview(

@@ -1,4 +1,4 @@
-import { MapMarker, MapRecord, PaintCellChange, Project, ProjectCommand, Provenance, RandomLevel, RandomRect } from "../types";
+import { MapMarker, MapRecord, PaintCellChange, Project, ProjectCommand, Provenance, RandomLevel, RandomRect, TileAttributeFlag, TileAttributeProfile } from "../types";
 
 const RANDOM_LEVEL_BYTES = 644;
 const RANDOM_LEVEL_WORDS = RANDOM_LEVEL_BYTES / 2;
@@ -129,6 +129,74 @@ export function updateCustomLandTileAttributes(
     };
     return { ...landlook, records, authored: true };
   });
+}
+
+export function updateSpecialTileSolidity(
+  project: Project,
+  command: Extract<ProjectCommand, { kind: "updateSpecialTileSolidity" }>
+) {
+  const tile = Math.abs(Math.trunc(command.tile));
+  if (tile < 0 || tile > 1023) return project;
+  let changed = false;
+  let matched = false;
+  const tileAttributes = (project.tileAttributes ?? []).map((profile) => {
+    if (profile.sourceKind !== "data-solids" || profile.tile !== tile) return profile;
+    matched = true;
+    const next = specialTileSolidityProfile(profile, command.solid);
+    if (profile !== next) changed = true;
+    return next;
+  });
+  if (!matched) {
+    changed = true;
+    tileAttributes.push(specialTileSolidityProfile({
+      tile,
+      landlook: null,
+      solidType: command.solid ? 1 : 0,
+      movementSoundId: null,
+      movementCost: null,
+      shore: null,
+      boatRequirement: null,
+      pathFlag: null,
+      blocksLos: null,
+      flyFloatRequired: null,
+      forestType: null,
+      spare: null,
+      combatBuild: [],
+      clearLandId: null,
+      baseTile: null,
+      baseScale: null,
+      editableScope: "special-tile",
+      flags: [],
+      confidence: "source-backed",
+      sourceKind: "data-solids",
+      source: "Data Solids",
+      rawByte: command.solid ? 1 : 0
+    }, command.solid));
+  }
+  return changed ? { ...project, tileAttributes } : project;
+}
+
+function specialTileSolidityProfile(profile: TileAttributeProfile, solid: boolean): TileAttributeProfile {
+  const rawByte = solid ? 1 : 0;
+  const flags: TileAttributeFlag[] = solid ? ["solid"] : ["walkable"];
+  if (
+    profile.rawByte === rawByte &&
+    profile.solidType === rawByte &&
+    profile.flags.length === 1 &&
+    profile.flags[0] === flags[0]
+  ) {
+    return profile;
+  }
+  return {
+    ...profile,
+    solidType: rawByte,
+    rawByte,
+    flags,
+    editableScope: "special-tile",
+    confidence: "source-backed",
+    sourceKind: "data-solids",
+    source: "Data Solids"
+  };
 }
 
 export function updateCustomLandTileCombatBuild(
