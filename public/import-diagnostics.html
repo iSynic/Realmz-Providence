@@ -1,0 +1,833 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Providence Import Diagnostics</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b1116;
+        --panel: #111b23;
+        --panel-2: #071017;
+        --line: #2b4457;
+        --text: #e2f3ff;
+        --muted: #9bb6c8;
+        --good: #8dffbf;
+        --warn: #ffd666;
+        --bad: #ff9b9b;
+        --info: #9fd7ff;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 14px/1.45 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      }
+      main {
+        max-width: 1220px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 22px;
+      }
+      p {
+        color: var(--muted);
+      }
+      .controls,
+      .stage-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 16px 0;
+      }
+      button,
+      label.pick {
+        border: 1px solid var(--line);
+        background: var(--panel);
+        color: var(--text);
+        border-radius: 6px;
+        padding: 9px 12px;
+        cursor: pointer;
+        min-height: 38px;
+      }
+      button:hover,
+      label.pick:hover {
+        border-color: #5280a0;
+      }
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.45;
+      }
+      input[type="file"] {
+        display: none;
+      }
+      .status-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 8px;
+        margin: 14px 0;
+      }
+      .status-card {
+        border: 1px solid var(--line);
+        background: var(--panel);
+        border-radius: 6px;
+        padding: 10px;
+        min-height: 72px;
+      }
+      .status-card span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .status-card strong {
+        display: block;
+        margin-top: 4px;
+        font-size: 15px;
+        overflow-wrap: anywhere;
+      }
+      .split {
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+        gap: 12px;
+      }
+      @media (max-width: 980px) {
+        .split {
+          grid-template-columns: 1fr;
+        }
+      }
+      section {
+        border: 1px solid var(--line);
+        background: var(--panel-2);
+        border-radius: 6px;
+        min-height: 260px;
+        overflow: hidden;
+      }
+      section header {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        padding: 10px 12px;
+        background: var(--panel);
+        border-bottom: 1px solid var(--line);
+      }
+      section header h2 {
+        margin: 0;
+        font-size: 14px;
+      }
+      pre {
+        margin: 0;
+        min-height: 520px;
+        max-height: 650px;
+        overflow: auto;
+        padding: 12px;
+        white-space: pre-wrap;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 6px 8px;
+        border-bottom: 1px solid #1c2f3d;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        color: var(--muted);
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+        background: var(--panel);
+      }
+      td {
+        overflow-wrap: anywhere;
+      }
+      .ok {
+        color: var(--good);
+      }
+      .warn {
+        color: var(--warn);
+      }
+      .bad {
+        color: var(--bad);
+      }
+      .info {
+        color: var(--info);
+      }
+      .muted {
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Providence Import Diagnostics</h1>
+      <p>
+        Use this page before the full Providence app. It isolates picker behavior, file metadata, file reads,
+        parser work, project-part construction, and semantic-worker mapping. Each stage writes a durable trace
+        entry before it starts, so a reload after a crash should show the last reached boundary.
+      </p>
+
+      <div class="controls">
+        <label class="pick">
+          Pick Folder (webkitdirectory)
+          <input id="folder-input" type="file" webkitdirectory directory multiple />
+        </label>
+        <label class="pick">
+          Pick Top-Level Files (multiple)
+          <input id="files-input" type="file" multiple />
+        </label>
+        <button id="directory-picker" type="button">Try showDirectoryPicker</button>
+        <button id="copy-log" type="button">Copy Log</button>
+        <button id="clear-log" type="button">Clear Log</button>
+      </div>
+
+      <div class="stage-controls">
+        <button id="metadata-stage" type="button" disabled>1. Metadata Scan</button>
+        <button id="first-read-stage" type="button" disabled>2. First arrayBuffer()</button>
+        <button id="read-stage" type="button" disabled>3. Read Import Set</button>
+        <button id="parse-stage" type="button" disabled>4. Parse Buffers</button>
+        <button id="project-stage" type="button" disabled>5. Build Project Parts</button>
+        <button id="semantic-stage" type="button" disabled>6. Semantic Worker</button>
+      </div>
+
+      <div class="status-grid">
+        <div class="status-card"><span>Canonical Repro</span><strong>F:\Realmz\out_win_clang\Scenarios\Lord of the Abyss</strong></div>
+        <div class="status-card"><span>Source Mode</span><strong id="source-mode">None</strong></div>
+        <div class="status-card"><span>Files Visible</span><strong id="file-count">0</strong></div>
+        <div class="status-card"><span>Top-Level / Nested</span><strong id="level-count">0 / 0</strong></div>
+        <div class="status-card"><span>Total Bytes</span><strong id="total-bytes">0</strong></div>
+        <div class="status-card"><span>Heap</span><strong id="heap-status">Unavailable</strong></div>
+      </div>
+
+      <div class="split">
+        <section>
+          <header>
+            <h2>Trace</h2>
+            <span class="muted" id="trace-count">0 entries</span>
+          </header>
+          <pre id="trace-log"></pre>
+        </section>
+        <section>
+          <header>
+            <h2>Files</h2>
+            <span class="muted" id="file-table-count">No metadata</span>
+          </header>
+          <div style="max-height: 650px; overflow: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Bytes</th>
+                  <th>Level</th>
+                  <th>Role</th>
+                  <th>Read</th>
+                  <th>Path</th>
+                </tr>
+              </thead>
+              <tbody id="file-table"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script type="module">
+      import { TRACKED_FILES, parseLandlookMapstats, parseScenarioBuffers } from "/src/editor/browser/realmzParser.ts";
+
+      const STORAGE_KEY = "providence.importDiagnostics.trace.v2";
+      const DEFAULT_SCENARIO_NAME = "Lord of the Abyss";
+      const BUNDLED_MAPSTATS = [
+        ["Data P BD", 0],
+        ["Data SUB BD", 3],
+        ["Data Castle BD", 4],
+        ["Data Desert BD", 5],
+        ["Data Swamp BD", 9],
+        ["Data Snow BD", 10]
+      ];
+      const SUPPORTED_WRITE_FILES = new Set([
+        "Data LD",
+        "Data DL",
+        "Data DD",
+        "Data DDD",
+        "Data RD",
+        "Data RDD",
+        "Layout",
+        "Data ED3",
+        "Data EDCD",
+        "Data MD1",
+        "Data MD-1",
+        "Data CS",
+        "Data CI",
+        "Data RI",
+        "Data Solids",
+        "Data OD",
+        "Data DES"
+      ]);
+
+      const els = {
+        folderInput: document.querySelector("#folder-input"),
+        filesInput: document.querySelector("#files-input"),
+        directoryPicker: document.querySelector("#directory-picker"),
+        metadataStage: document.querySelector("#metadata-stage"),
+        firstReadStage: document.querySelector("#first-read-stage"),
+        readStage: document.querySelector("#read-stage"),
+        parseStage: document.querySelector("#parse-stage"),
+        projectStage: document.querySelector("#project-stage"),
+        semanticStage: document.querySelector("#semantic-stage"),
+        copyLog: document.querySelector("#copy-log"),
+        clearLog: document.querySelector("#clear-log"),
+        sourceMode: document.querySelector("#source-mode"),
+        fileCount: document.querySelector("#file-count"),
+        levelCount: document.querySelector("#level-count"),
+        totalBytes: document.querySelector("#total-bytes"),
+        heapStatus: document.querySelector("#heap-status"),
+        traceCount: document.querySelector("#trace-count"),
+        traceLog: document.querySelector("#trace-log"),
+        fileTableCount: document.querySelector("#file-table-count"),
+        fileTable: document.querySelector("#file-table")
+      };
+
+      const state = {
+        source: null,
+        rows: [],
+        readResult: null,
+        parsed: null,
+        projectParts: null,
+        traces: loadStoredTraces()
+      };
+
+      renderTrace();
+      logEnvironment();
+      setInterval(updateHeapStatus, 1000);
+      updateControls();
+      updateHeapStatus();
+
+      window.addEventListener("error", (event) => {
+        endTrace(startTrace("window.error", { message: event.message }), "error", {
+          message: event.error?.stack ?? event.message
+        });
+      });
+      window.addEventListener("unhandledrejection", (event) => {
+        const reason = event.reason;
+        endTrace(startTrace("window.unhandledrejection", { message: String(reason?.message ?? reason) }), "error", {
+          message: reason?.stack ?? String(reason)
+        });
+      });
+
+      els.folderInput.addEventListener("click", () => {
+        startAndEnd("picker.open", "ok", { mode: "webkitdirectory", message: "Folder input click fired." });
+      });
+      els.folderInput.addEventListener("change", () => {
+        const files = Array.from(els.folderInput.files ?? []);
+        setFileSource("webkitdirectory", selectionRootName(files), files);
+      });
+      els.filesInput.addEventListener("click", () => {
+        startAndEnd("picker.open", "ok", { mode: "multiple-files", message: "Plain multiple file input click fired." });
+      });
+      els.filesInput.addEventListener("change", () => {
+        const files = Array.from(els.filesInput.files ?? []);
+        setFileSource("multiple-files", DEFAULT_SCENARIO_NAME, files);
+      });
+      els.directoryPicker.addEventListener("click", () => runStage("picker.showDirectoryPicker", async (traceId) => {
+        if (typeof window.showDirectoryPicker !== "function") {
+          throw new Error("showDirectoryPicker is unavailable.");
+        }
+        const heartbeat = setInterval(() => {
+          updateTrace(traceId, {
+            message: "Waiting for native directory picker response..."
+          });
+        }, 2000);
+        try {
+          const handle = await window.showDirectoryPicker({ id: "realmz-scenario", mode: "read" });
+          state.source = { mode: "showDirectoryPicker", name: handle.name || DEFAULT_SCENARIO_NAME, handle };
+          state.rows = [];
+          state.readResult = null;
+          state.parsed = null;
+          state.projectParts = null;
+          updateControls();
+          renderSummary();
+          return { message: `Directory handle selected: ${state.source.name}` };
+        } finally {
+          clearInterval(heartbeat);
+        }
+      }));
+
+      els.metadataStage.addEventListener("click", () => runStage("metadata.scan", async () => {
+        if (!state.source) throw new Error("Pick a source first.");
+        const rows = state.source.handle
+          ? await directoryHandleRows(state.source.handle)
+          : fileRows(state.source.files, state.source.mode);
+        state.rows = rows;
+        state.readResult = null;
+        state.parsed = null;
+        state.projectParts = null;
+        renderSummary();
+        renderFileTable();
+        const top = rows.filter((row) => row.level === "top-level").length;
+        const nested = rows.length - top;
+        return {
+          message: `Metadata rows=${rows.length}, topLevel=${top}, nested=${nested}, totalBytes=${sumBytes(rows).toLocaleString()}`
+        };
+      }));
+
+      els.firstReadStage.addEventListener("click", () => runStage("file.firstArrayBuffer", async () => {
+        const rows = topLevelRows();
+        const row = rows.find((candidate) => shouldReadScenarioFile(candidate.name, roleForFile(candidate.name), markerName(), candidate.size));
+        if (!row) throw new Error("No readable top-level scenario file was found.");
+        const traceId = startTrace("file.firstArrayBuffer.detail", {
+          fileName: row.name,
+          fileSize: row.size,
+          message: `Reading ${row.name} (${row.size.toLocaleString()} bytes)`
+        });
+        try {
+          const bytes = new Uint8Array(await row.file.arrayBuffer());
+          endTrace(traceId, "ok", { message: `Read ${bytes.byteLength.toLocaleString()} byte(s).` });
+          return { fileName: row.name, fileSize: row.size, message: "First arrayBuffer() completed." };
+        } catch (error) {
+          endTrace(traceId, "error", { message: errorStack(error) });
+          throw error;
+        }
+      }));
+
+      els.readStage.addEventListener("click", () => runStage("importSet.read", async () => {
+        const rows = topLevelRows();
+        if (rows.length === 0) throw new Error("No top-level source files are available. Run metadata scan first.");
+        const tracked = new Set(TRACKED_FILES);
+        const files = new Map();
+        const sourceFiles = [];
+        const readRows = [];
+        for (const row of rows) {
+          const role = roleForFile(row.name);
+          const shouldRead = shouldReadScenarioFile(row.name, role, markerName(), row.size);
+          let bytes = null;
+          if (shouldRead) {
+            const traceId = startTrace("file.read", {
+              fileName: row.name,
+              fileSize: row.size,
+              message: `Reading ${row.relativePath}`
+            });
+            try {
+              bytes = new Uint8Array(await row.file.arrayBuffer());
+              endTrace(traceId, "ok", { message: `Read ${bytes.byteLength.toLocaleString()} byte(s).` });
+            } catch (error) {
+              endTrace(traceId, "error", { message: errorStack(error) });
+              throw error;
+            }
+          }
+          sourceFiles.push({
+            name: row.name,
+            relativePath: row.relativePath,
+            bytes: row.size,
+            sha256: bytes ? "diagnostic-read" : "diagnostic-unread",
+            role,
+            editable: role === "supported-binary"
+          });
+          row.role = role;
+          row.read = Boolean(bytes);
+          readRows.push(row.name);
+          if (bytes && (tracked.has(row.name) || isResourceFileName(row.name) || row.name === markerName() || isScenarioMarkerCandidate(row.name, bytes, tracked))) {
+            files.set(row.name, bytes);
+          }
+        }
+        sourceFiles.sort((a, b) => a.name.localeCompare(b.name));
+        state.readResult = { files, sourceFiles };
+        state.parsed = null;
+        state.projectParts = null;
+        renderFileTable();
+        updateControls();
+        return {
+          message: `Read ${files.size} import buffer(s); source inventory ${sourceFiles.length}; considered ${readRows.length} top-level file(s).`
+        };
+      }));
+
+      els.parseStage.addEventListener("click", () => runStage("parser.parseScenarioBuffers", async () => {
+        if (!state.readResult) throw new Error("Read the import set first.");
+        const parsed = parseScenarioBuffers(state.readResult.files);
+        state.parsed = parsed;
+        state.projectParts = null;
+        updateControls();
+        return {
+          message: `maps=${parsed.maps.length}, triggers=${parsed.triggers.length}, messages=${parsed.messages.length}, pictures=${parsed.assetCatalog.pictures?.length ?? 0}, icons=${parsed.assetCatalog.icons?.length ?? 0}, sounds=${parsed.assetCatalog.sounds?.length ?? 0}, diagnostics=${parsed.diagnostics.length}`
+        };
+      }));
+
+      els.projectStage.addEventListener("click", () => runStage("projectParts.construct", async () => {
+        if (!state.readResult || !state.parsed) throw new Error("Parse scenario buffers first.");
+        const mapstats = await loadBundledLandlookMapstats();
+        state.parsed.tileAttributes.push(...mapstats);
+        state.projectParts = {
+          scenario: {
+            name: markerName(),
+            projectPath: `browser://${markerName()}.providence`,
+            importedAt: new Date().toISOString()
+          },
+          buffers: state.readResult.files,
+          sourceFiles: state.readResult.sourceFiles,
+          maps: state.parsed.maps,
+          mapRecords: state.parsed.mapRecords,
+          randomLevels: state.parsed.randomLevels,
+          triggers: state.parsed.triggers,
+          extracodes: state.parsed.extracodes,
+          assetCatalog: state.parsed.assetCatalog,
+          records: state.parsed.records
+        };
+        updateControls();
+        const estimatedJsonBytes = JSON.stringify({
+          scenario: state.projectParts.scenario,
+          sourceFiles: state.projectParts.sourceFiles,
+          maps: state.projectParts.maps,
+          mapRecords: state.projectParts.mapRecords,
+          randomLevels: state.projectParts.randomLevels,
+          triggers: state.projectParts.triggers,
+          extracodes: state.projectParts.extracodes,
+          assetCatalog: state.projectParts.assetCatalog,
+          records: state.projectParts.records
+        }).length;
+        return {
+          message: `projectParts ready; mapstats=${mapstats.length}; estimated structured payload=${estimatedJsonBytes.toLocaleString()} chars`
+        };
+      }));
+
+      els.semanticStage.addEventListener("click", () => runStage("semanticWorker.postAndBuild", async (traceId) => {
+        if (!state.projectParts) throw new Error("Build project parts first.");
+        updateTrace(traceId, { message: "Creating semantic worker..." });
+        const worker = new Worker("/src/editor/browser/semanticWorker.ts", { type: "module" });
+        const response = await new Promise((resolve, reject) => {
+          const timeout = window.setTimeout(() => {
+            worker.terminate();
+            reject(new Error("Semantic worker timed out after 60 seconds."));
+          }, 60000);
+          worker.onmessage = (event) => {
+            window.clearTimeout(timeout);
+            worker.terminate();
+            resolve(event.data);
+          };
+          worker.onerror = (event) => {
+            window.clearTimeout(timeout);
+            worker.terminate();
+            reject(new Error(event.message || "Semantic worker failed."));
+          };
+          updateTrace(traceId, { message: "Posting project parts to semantic worker..." });
+          worker.postMessage(state.projectParts);
+        });
+        if (!response.ok) throw new Error(response.error || "Semantic worker returned an error.");
+        const schema = response.semanticSchema;
+        return {
+          message: `semantic ready: entities=${schema.summary.entityCount}, links=${schema.summary.linkCount}, records=${schema.summary.recordCount}, diagnostics=${schema.summary.diagnosticCount}`
+        };
+      }));
+
+      els.copyLog.addEventListener("click", async () => {
+        const text = JSON.stringify(state.traces, null, 2);
+        await navigator.clipboard.writeText(text);
+        startAndEnd("trace.copy", "ok", { message: "Copied trace JSON to clipboard." });
+      });
+      els.clearLog.addEventListener("click", () => {
+        state.traces = [];
+        storeTraces();
+        renderTrace();
+        logEnvironment();
+      });
+
+      function setFileSource(mode, name, files) {
+        state.source = { mode, name: name || DEFAULT_SCENARIO_NAME, files };
+        state.rows = [];
+        state.readResult = null;
+        state.parsed = null;
+        state.projectParts = null;
+        startAndEnd("picker.selection", files.length > 0 ? "ok" : "warning", {
+          mode,
+          message: `Received ${files.length} file(s); marker="${state.source.name}".`
+        });
+        renderSummary();
+        renderFileTable();
+        updateControls();
+      }
+
+      async function runStage(stage, fn) {
+        const traceId = startTrace(stage);
+        try {
+          const result = await fn(traceId);
+          endTrace(traceId, "ok", result ?? {});
+        } catch (error) {
+          endTrace(traceId, "error", { message: errorStack(error) });
+        } finally {
+          renderSummary();
+          renderFileTable();
+          updateControls();
+        }
+      }
+
+      function startAndEnd(stage, status, fields = {}) {
+        const traceId = startTrace(stage, fields);
+        endTrace(traceId, status, fields);
+      }
+
+      function startTrace(stage, fields = {}) {
+        const id = `${Date.now()}:${Math.random().toString(16).slice(2)}`;
+        const trace = {
+          id,
+          stage,
+          status: "started",
+          startedAt: new Date().toISOString(),
+          endedAt: null,
+          fileName: fields.fileName ?? null,
+          fileSize: fields.fileSize ?? null,
+          heapMb: heapMb(),
+          message: fields.message ?? ""
+        };
+        state.traces.push(trace);
+        storeTraces();
+        renderTrace();
+        return id;
+      }
+
+      function updateTrace(id, fields) {
+        const trace = state.traces.find((entry) => entry.id === id);
+        if (!trace) return;
+        Object.assign(trace, fields, { heapMb: heapMb() });
+        storeTraces();
+        renderTrace();
+      }
+
+      function endTrace(id, status, fields = {}) {
+        const trace = state.traces.find((entry) => entry.id === id);
+        if (!trace) return;
+        Object.assign(trace, fields, {
+          status,
+          endedAt: new Date().toISOString(),
+          heapMb: heapMb()
+        });
+        storeTraces();
+        renderTrace();
+      }
+
+      function loadStoredTraces() {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      }
+
+      function storeTraces() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.traces.slice(-500)));
+      }
+
+      function renderTrace() {
+        els.traceCount.textContent = `${state.traces.length} entr${state.traces.length === 1 ? "y" : "ies"}`;
+        els.traceLog.innerHTML = "";
+        for (const trace of state.traces.slice(-260)) {
+          const cls = trace.status === "ok" ? "ok" : trace.status === "error" ? "bad" : trace.status === "warning" ? "warn" : "info";
+          const line = document.createElement("div");
+          line.className = cls;
+          line.textContent = `[${trace.startedAt}${trace.endedAt ? ` -> ${trace.endedAt}` : ""}] ${trace.status.toUpperCase()} ${trace.stage} heap=${trace.heapMb ?? "n/a"}MB${trace.fileName ? ` file=${trace.fileName}` : ""}${trace.fileSize ? ` bytes=${trace.fileSize}` : ""}${trace.message ? ` :: ${trace.message}` : ""}`;
+          els.traceLog.appendChild(line);
+        }
+        els.traceLog.scrollTop = els.traceLog.scrollHeight;
+      }
+
+      function renderSummary() {
+        const rows = state.rows.length > 0
+          ? state.rows
+          : state.source?.files
+            ? fileRows(state.source.files, state.source.mode)
+            : [];
+        const top = rows.filter((row) => row.level === "top-level").length;
+        const nested = rows.length - top;
+        els.sourceMode.textContent = state.source ? `${state.source.mode}: ${state.source.name}` : "None";
+        els.fileCount.textContent = rows.length.toLocaleString();
+        els.levelCount.textContent = `${top.toLocaleString()} / ${nested.toLocaleString()}`;
+        els.totalBytes.textContent = sumBytes(rows).toLocaleString();
+        updateHeapStatus();
+      }
+
+      function renderFileTable() {
+        const rows = state.rows.length > 0
+          ? state.rows
+          : state.source?.files
+            ? fileRows(state.source.files, state.source.mode)
+            : [];
+        els.fileTableCount.textContent = rows.length ? `${rows.length.toLocaleString()} row(s)` : "No metadata";
+        els.fileTable.innerHTML = "";
+        for (const row of rows.slice().sort((a, b) => b.size - a.size).slice(0, 240)) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${escapeHtml(row.name)}</td>
+            <td>${row.size.toLocaleString()}</td>
+            <td class="${row.level === "top-level" ? "ok" : "warn"}">${row.level}</td>
+            <td>${escapeHtml(row.role ?? roleForFile(row.name))}</td>
+            <td>${row.read ? "yes" : "no"}</td>
+            <td>${escapeHtml(row.relativePath)}</td>
+          `;
+          els.fileTable.appendChild(tr);
+        }
+      }
+
+      function updateControls() {
+        const hasSource = Boolean(state.source);
+        const hasRows = state.rows.length > 0;
+        els.metadataStage.disabled = !hasSource;
+        els.firstReadStage.disabled = !hasRows;
+        els.readStage.disabled = !hasRows;
+        els.parseStage.disabled = !state.readResult;
+        els.projectStage.disabled = !state.parsed;
+        els.semanticStage.disabled = !state.projectParts;
+        els.directoryPicker.disabled = typeof window.showDirectoryPicker !== "function";
+      }
+
+      function updateHeapStatus() {
+        const memory = performance.memory;
+        els.heapStatus.textContent = memory
+          ? `${Math.round(memory.usedJSHeapSize / 1048576)} used / ${Math.round(memory.totalJSHeapSize / 1048576)} total / ${Math.round(memory.jsHeapSizeLimit / 1048576)} limit MB`
+          : "Unavailable";
+      }
+
+      async function directoryHandleRows(handle) {
+        const rows = [];
+        for await (const [name, entry] of handle.entries()) {
+          if (entry.kind !== "file") continue;
+          const file = await entry.getFile();
+          rows.push({
+            file,
+            name,
+            relativePath: name,
+            size: file.size,
+            level: "top-level",
+            role: roleForFile(name),
+            read: false
+          });
+        }
+        return rows.sort((a, b) => a.name.localeCompare(b.name));
+      }
+
+      function fileRows(files, mode) {
+        return files.map((file) => {
+          const relativePath = relativeSelectionPath(file);
+          const name = fileBaseName(file);
+          return {
+            file,
+            name,
+            relativePath,
+            size: file.size,
+            level: mode === "multiple-files" || isTopLevelSelectionFile(relativePath) ? "top-level" : "nested",
+            role: roleForFile(name),
+            read: false
+          };
+        });
+      }
+
+      function topLevelRows() {
+        return state.rows.filter((row) => row.level === "top-level");
+      }
+
+      function markerName() {
+        return state.source?.name || DEFAULT_SCENARIO_NAME;
+      }
+
+      function selectionRootName(files) {
+        const relative = relativeSelectionPath(files[0] ?? new File([], DEFAULT_SCENARIO_NAME));
+        return relative.split(/[\\/]/).filter(Boolean)[0] || DEFAULT_SCENARIO_NAME;
+      }
+
+      function relativeSelectionPath(file) {
+        return file.webkitRelativePath || file.name;
+      }
+
+      function fileBaseName(file) {
+        return relativeSelectionPath(file).split(/[\\/]/).filter(Boolean).pop() ?? file.name;
+      }
+
+      function isTopLevelSelectionFile(relativePath) {
+        const parts = relativePath.split(/[\\/]/).filter(Boolean);
+        return parts.length <= 2;
+      }
+
+      function roleForFile(name) {
+        if (SUPPORTED_WRITE_FILES.has(name)) return "supported-binary";
+        if (isResourceFileName(name)) return "resource-fork";
+        if (TRACKED_FILES.includes(name)) return "pass-through";
+        return "unknown";
+      }
+
+      function shouldReadScenarioFile(name, role, markerName, size) {
+        return role === "supported-binary" ||
+          role === "pass-through" ||
+          role === "resource-fork" ||
+          name === markerName ||
+          size <= 1024;
+      }
+
+      function isResourceFileName(name) {
+        return name === "Scenario" || name.endsWith(".rsrc") || name.endsWith(".rsf") || name.startsWith("._");
+      }
+
+      function isScenarioMarkerCandidate(name, bytes, tracked) {
+        return bytes.byteLength >= 316 &&
+          !tracked.has(name) &&
+          !isResourceFileName(name) &&
+          !name.startsWith("Data ") &&
+          name !== "Global" &&
+          name !== "Layout";
+      }
+
+      async function loadBundledLandlookMapstats() {
+        const out = [];
+        for (const [fileName, landlook] of BUNDLED_MAPSTATS) {
+          const traceId = startTrace("projectParts.loadMapstats", { fileName });
+          try {
+            const response = await fetch(`/bundled-libraries/realmz-reference/${encodeURIComponent(fileName)}`, { cache: "force-cache" });
+            if (!response.ok) {
+              endTrace(traceId, "warning", { message: `HTTP ${response.status}` });
+              continue;
+            }
+            const parsed = parseLandlookMapstats(new Uint8Array(await response.arrayBuffer()), landlook, fileName);
+            out.push(...parsed);
+            endTrace(traceId, "ok", { message: `Loaded ${parsed.length} tile attribute row(s).` });
+          } catch (error) {
+            endTrace(traceId, "warning", { message: errorStack(error) });
+          }
+        }
+        return out;
+      }
+
+      function sumBytes(rows) {
+        return rows.reduce((sum, row) => sum + row.size, 0);
+      }
+
+      function heapMb() {
+        return performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : null;
+      }
+
+      function logEnvironment() {
+        const input = document.createElement("input");
+        input.type = "file";
+        startAndEnd("environment", "ok", {
+          message: `secure=${window.isSecureContext}; showDirectoryPicker=${typeof window.showDirectoryPicker}; webkitdirectory=${"webkitdirectory" in input}; userAgent=${navigator.userAgent}`
+        });
+      }
+
+      function errorStack(error) {
+        return error?.stack ?? error?.message ?? String(error);
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+    </script>
+  </body>
+</html>
