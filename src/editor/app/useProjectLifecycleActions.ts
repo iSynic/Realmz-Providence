@@ -154,9 +154,19 @@ export function useProjectLifecycleActions({
         dispatch({ type: "setStatus", status: "Browser scenario import needs File System Access support, such as Chrome or Edge." });
         return;
       }
+      let handle;
       try {
         dispatch({ type: "setStatus", status: "Reading scenario folder in browser..." });
-        const handle = await pickBrowserScenarioSource();
+        handle = await pickBrowserScenarioSource();
+      } catch (error) {
+        if (isBrowserPickerAbort(error)) {
+          dispatch({ type: "setStatus", status: "Scenario import cancelled" });
+          return;
+        }
+        dispatch({ type: "setStatus", status: `Browser import failed: ${commandError(error)}` });
+        return;
+      }
+      try {
         const importedProject = await importBrowserScenario(handle);
         const project = {
           ...importedProject,
@@ -171,10 +181,6 @@ export function useProjectLifecycleActions({
         dispatch({ type: "setTab", tab: "maps" });
         dispatch({ type: "setStatus", status: `Imported ${handle.name} into ${project.scenario.name}` });
       } catch (error) {
-        if (isBrowserPickerAbort(error)) {
-          dispatch({ type: "setStatus", status: "Scenario import cancelled" });
-          return;
-        }
         dispatch({ type: "setStatus", status: `Browser import failed: ${commandError(error)}` });
       }
       return;

@@ -20,6 +20,8 @@ import { AtlasEntry, IconEntry, Project, ProvidenceWorkspace, TilesetAsset } fro
 import { commandError } from "../utils";
 import { isPaintableSpecialLandLibraryAsset } from "./appUtils";
 
+const BROWSER_ICON_OVERLAY_PRELOAD_LIMIT = 180;
+
 export function useAppBootstrapEffects({
   state,
   dispatch,
@@ -233,7 +235,7 @@ export function useAppBootstrapEffects({
       const projectStampAssets = (state.project.assets ?? []).filter((asset) => asset.kind === "special-land-tile" && asset.resourceType === "cicn");
       const projectCatalogIconAssets = (state.project.assetCatalog.icons ?? []).filter((asset) => asset.resourceType === "cicn");
       const libraryIconAssets = (state.libraryCatalog?.assets ?? []).filter(isPaintableSpecialLandLibraryAsset);
-      const ids = [
+      const rawIds = [
         ...new Set([
           ...state.project.maps.flatMap((map) => referencedMapIconIds(map.tiles)),
           ...(state.project.assetCatalog.icons ?? [])
@@ -244,6 +246,7 @@ export function useAppBootstrapEffects({
           ...(!desktopRuntime ? PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES.flatMap(tileIconCandidates) : [])
         ])
       ].sort((a, b) => a - b);
+      const ids = desktopRuntime ? rawIds : rawIds.slice(0, BROWSER_ICON_OVERLAY_PRELOAD_LIMIT);
       if (ids.length === 0) {
         dispatch({ type: "setIcons", entries: {}, status: "No icon overlays in maps" });
         return;
@@ -251,7 +254,7 @@ export function useAppBootstrapEffects({
       dispatch({
         type: "setIcons",
         entries: {},
-        status: `Loading ${ids.length} map icon overlay${ids.length === 1 ? "" : "s"}...`
+        status: `Loading ${ids.length}${ids.length < rawIds.length ? `/${rawIds.length}` : ""} map icon overlay${ids.length === 1 ? "" : "s"}...`
       });
       const pairs = await Promise.all(
         ids.map(async (id) => {

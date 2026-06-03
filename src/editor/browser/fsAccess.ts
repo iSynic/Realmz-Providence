@@ -46,7 +46,11 @@ export async function pickBrowserDirectory() {
 }
 
 export async function pickBrowserScenarioSource(): Promise<BrowserScenarioSource> {
-  if (canUseDirectoryInput()) return pickDirectoryInput();
+  try {
+    return await pickDirectoryInput();
+  } catch (error) {
+    if (canUseDirectoryInput() || !canUseDirectoryPicker()) throw error;
+  }
   if (canUseDirectoryPicker()) return pickBrowserDirectory();
   return pickDirectoryInput();
 }
@@ -78,17 +82,18 @@ export async function readScenarioDirectory(handle: BrowserDirectoryHandle, trac
   for await (const [name, entry] of handle.entries()) {
     if (entry.kind !== "file") continue;
     const file = await entry.getFile();
-    const bytes = new Uint8Array(await file.arrayBuffer());
     const role = roleForFile(name, tracked);
+    const shouldRead = shouldReadScenarioFile(name, role, markerName, file.size);
+    const bytes = shouldRead ? new Uint8Array(await file.arrayBuffer()) : null;
     sourceFiles.push({
       name,
       relativePath: name,
-      bytes: bytes.byteLength,
-      sha256: await sha256Hex(bytes),
+      bytes: file.size,
+      sha256: bytes ? await sha256Hex(bytes) : "browser-preview-unread",
       role,
       editable: role === "supported-binary"
     });
-    if (tracked.has(name) || isResourceFileName(name) || name === markerName || isScenarioMarkerCandidate(name, bytes, tracked)) {
+    if (bytes && (tracked.has(name) || isResourceFileName(name) || name === markerName || isScenarioMarkerCandidate(name, bytes, tracked))) {
       files.set(name, bytes);
     }
   }
@@ -140,17 +145,18 @@ async function readScenarioFileSelection(selection: BrowserFileSelection, tracke
     const name = fileBaseName(file);
     const relativePath = relativeSelectionPath(file);
     if (!name) continue;
-    const bytes = new Uint8Array(await file.arrayBuffer());
     const role = roleForFile(name, tracked);
+    const shouldRead = shouldReadScenarioFile(name, role, markerName, file.size);
+    const bytes = shouldRead ? new Uint8Array(await file.arrayBuffer()) : null;
     sourceFiles.push({
       name,
       relativePath,
-      bytes: bytes.byteLength,
-      sha256: await sha256Hex(bytes),
+      bytes: file.size,
+      sha256: bytes ? await sha256Hex(bytes) : "browser-preview-unread",
       role,
       editable: role === "supported-binary"
     });
-    if (tracked.has(name) || isResourceFileName(name) || name === markerName || isScenarioMarkerCandidate(name, bytes, tracked)) {
+    if (bytes && (tracked.has(name) || isResourceFileName(name) || name === markerName || isScenarioMarkerCandidate(name, bytes, tracked))) {
       files.set(name, bytes);
     }
   }
@@ -177,6 +183,14 @@ function roleForFile(name: string, tracked: Set<string>) {
   if (isResourceFileName(name)) return "resource-fork";
   if (tracked.has(name)) return "pass-through";
   return "unknown";
+}
+
+function shouldReadScenarioFile(name: string, role: string, markerName: string, size: number) {
+  return role === "supported-binary" ||
+    role === "pass-through" ||
+    role === "resource-fork" ||
+    name === markerName ||
+    size <= 1024;
 }
 
 function selectionRootName(files: File[]) {

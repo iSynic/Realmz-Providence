@@ -27,6 +27,7 @@ export function ProvidenceEditorShell({
   onProject,
   onDocuments,
   onDivinityManual,
+  onGlobalSearch,
   onNavigateBack,
   onNavigateForward,
   onToggleTutorial,
@@ -60,6 +61,7 @@ export function ProvidenceEditorShell({
   onProject: () => void;
   onDocuments: () => void;
   onDivinityManual: () => void;
+  onGlobalSearch: () => void;
   onNavigateBack: () => void;
   onNavigateForward: () => void;
   onToggleTutorial: () => void;
@@ -101,6 +103,7 @@ export function ProvidenceEditorShell({
         onProject={onProject}
         onDocuments={onDocuments}
         onDivinityManual={onDivinityManual}
+        onGlobalSearch={onGlobalSearch}
         onNavigateBack={onNavigateBack}
         onNavigateForward={onNavigateForward}
         onToggleTutorial={onToggleTutorial}

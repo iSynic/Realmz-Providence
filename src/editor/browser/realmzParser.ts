@@ -57,6 +57,12 @@ export const RACE_BYTES = 408;
 export const CASTE_BYTES = 576;
 export const THIEF_ENCOUNTER_BYTES = 118;
 export const TIMED_ENCOUNTER_BYTES = 40;
+const BROWSER_EAGER_PICTURE_PREVIEW_MAX_BYTES = 128 * 1024;
+const BROWSER_EAGER_PICTURE_PREVIEW_MAX_COUNT = 4;
+const BROWSER_EAGER_ICON_PREVIEW_MAX_BYTES = 24 * 1024;
+const BROWSER_EAGER_ICON_PREVIEW_MAX_COUNT = 64;
+const BROWSER_EAGER_SOUND_PREVIEW_MAX_BYTES = 96 * 1024;
+const BROWSER_EAGER_SOUND_PREVIEW_MAX_COUNT = 8;
 
 export const TRACKED_FILES = [
   "Scenario",
@@ -1034,18 +1040,24 @@ function buildScenarioPictureCatalog(
 ): ResourceAsset[] {
   const seen = new Set<number>();
   const pictures: ResourceAsset[] = [];
+  let previewCount = 0;
   for (const match of resources) {
     const { source, resource } = match;
     if (resource.resourceType !== "PICT" || seen.has(resource.id)) continue;
-    const preview = inspectResourcePreview("PICT", resource.data);
-    if (preview.status !== "preview-ready" || !preview.dataUrl) {
-      const detail = preview.diagnostics[0]?.message ?? `Preview status was ${preview.status}.`;
-      diagnostics.push({
-        severity: preview.status === "malformed" ? "error" : "warning",
-        code: "unsupported-scenario-picture-preview",
-        message: `Scenario PICT ${resource.id} in ${source} could not be decoded for preview: ${detail}`,
-        source
-      });
+    let previewPath: string | null = null;
+    if (resource.data.byteLength <= BROWSER_EAGER_PICTURE_PREVIEW_MAX_BYTES && previewCount < BROWSER_EAGER_PICTURE_PREVIEW_MAX_COUNT) {
+      const preview = inspectResourcePreview("PICT", resource.data);
+      if (preview.status !== "preview-ready" || !preview.dataUrl) {
+        const detail = preview.diagnostics[0]?.message ?? `Preview status was ${preview.status}.`;
+        diagnostics.push({
+          severity: preview.status === "malformed" ? "error" : "warning",
+          code: "unsupported-scenario-picture-preview",
+          message: `Scenario PICT ${resource.id} in ${source} could not be decoded for preview: ${detail}`,
+          source
+        });
+      }
+      previewPath = preview.status === "preview-ready" ? preview.dataUrl : null;
+      if (previewPath) previewCount += 1;
     }
     pictures.push({
       id: `scenario-pict-${resource.id}`,
@@ -1053,7 +1065,7 @@ function buildScenarioPictureCatalog(
       resourceId: resource.id,
       name: resource.name || null,
       source: `Browser import: ${source} PICT ${resource.id}`,
-      previewPath: preview.status === "preview-ready" ? preview.dataUrl : null
+      previewPath
     });
     seen.add(resource.id);
   }
@@ -1069,19 +1081,24 @@ function buildScenarioIconCatalog(
   if (referenced.size === 0) return [];
   const seen = new Set<number>();
   const icons: ResourceAsset[] = [];
+  let previewCount = 0;
   for (const match of resources) {
     const { source, resource } = match;
     if (resource.resourceType !== "cicn" || !referenced.has(resource.id) || seen.has(resource.id)) continue;
-    const preview = inspectResourcePreview("cicn", resource.data);
-    if (preview.status !== "preview-ready" || !preview.dataUrl) {
-      const detail = preview.diagnostics[0]?.message ?? `Preview status was ${preview.status}.`;
-      diagnostics.push({
-        severity: preview.status === "malformed" ? "error" : "warning",
-        code: "unsupported-map-icon-overlay",
-        message: `Scenario cicn ${resource.id} in ${source} could not be decoded as a map icon overlay: ${detail}`,
-        source
-      });
-      continue;
+    let previewPath: string | null = null;
+    if (resource.data.byteLength <= BROWSER_EAGER_ICON_PREVIEW_MAX_BYTES && previewCount < BROWSER_EAGER_ICON_PREVIEW_MAX_COUNT) {
+      const preview = inspectResourcePreview("cicn", resource.data);
+      if (preview.status !== "preview-ready" || !preview.dataUrl) {
+        const detail = preview.diagnostics[0]?.message ?? `Preview status was ${preview.status}.`;
+        diagnostics.push({
+          severity: preview.status === "malformed" ? "error" : "warning",
+          code: "unsupported-map-icon-overlay",
+          message: `Scenario cicn ${resource.id} in ${source} could not be decoded as a map icon overlay: ${detail}`,
+          source
+        });
+      }
+      previewPath = preview.status === "preview-ready" ? preview.dataUrl : null;
+      if (previewPath) previewCount += 1;
     }
     icons.push({
       id: `scenario-cicn-${resource.id}`,
@@ -1089,7 +1106,7 @@ function buildScenarioIconCatalog(
       resourceId: resource.id,
       name: resource.name || null,
       source: `Browser import: ${source} cicn ${resource.id}`,
-      previewPath: preview.dataUrl
+      previewPath
     });
     seen.add(resource.id);
   }
@@ -1102,18 +1119,24 @@ function buildScenarioSoundCatalog(
 ): ResourceAsset[] {
   const seen = new Set<number>();
   const sounds: ResourceAsset[] = [];
+  let previewCount = 0;
   for (const match of resources) {
     const { source, resource } = match;
     if (resource.resourceType !== "snd " || seen.has(resource.id)) continue;
-    const preview = inspectResourcePreview("snd ", resource.data);
-    if (preview.status !== "playable" || !preview.dataUrl) {
-      const detail = preview.diagnostics[0]?.message ?? `Preview status was ${preview.status}.`;
-      diagnostics.push({
-        severity: preview.status === "malformed" ? "error" : "warning",
-        code: "unsupported-scenario-sound-preview",
-        message: `Scenario snd ${resource.id} in ${source} could not be decoded for preview: ${detail}`,
-        source
-      });
+    let previewPath: string | null = null;
+    if (resource.data.byteLength <= BROWSER_EAGER_SOUND_PREVIEW_MAX_BYTES && previewCount < BROWSER_EAGER_SOUND_PREVIEW_MAX_COUNT) {
+      const preview = inspectResourcePreview("snd ", resource.data);
+      if (preview.status !== "playable" || !preview.dataUrl) {
+        const detail = preview.diagnostics[0]?.message ?? `Preview status was ${preview.status}.`;
+        diagnostics.push({
+          severity: preview.status === "malformed" ? "error" : "warning",
+          code: "unsupported-scenario-sound-preview",
+          message: `Scenario snd ${resource.id} in ${source} could not be decoded for preview: ${detail}`,
+          source
+        });
+      }
+      previewPath = preview.status === "playable" ? preview.dataUrl : null;
+      if (previewPath) previewCount += 1;
     }
     sounds.push({
       id: `scenario-snd-${resource.id}`,
@@ -1121,7 +1144,7 @@ function buildScenarioSoundCatalog(
       resourceId: resource.id,
       name: resource.name || null,
       source: `Browser import: ${source} snd ${resource.id}`,
-      previewPath: preview.status === "playable" ? preview.dataUrl : null
+      previewPath
     });
     seen.add(resource.id);
   }

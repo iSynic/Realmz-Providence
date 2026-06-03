@@ -14,7 +14,6 @@ import {
 } from "../types";
 import { FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RANDLEVEL_BYTES } from "./realmzParser";
 import { parseResourceFork, type ResourceEntry } from "./library";
-import { inspectResourcePreview } from "./resourcePreview";
 
 export function buildBrowserSemanticSchema(projectParts: {
   scenario: Project["scenario"];
@@ -1326,13 +1325,12 @@ function addResourceMemberEntities(schema: SemanticSchema, sourceName: string, r
       preview: hexPreview(resource.data, 20),
       scenarioSupplied: true
     };
-    const preview = inspectResourcePreview(resource.resourceType, resource.data);
     Object.assign(summary, {
-      previewStatus: preview.status,
-      previewMimeType: preview.mimeType,
-      previewDataUrl: preview.dataUrl,
-      previewSummary: preview.summary,
-      previewDiagnostics: preview.diagnostics
+      previewStatus: "metadata-only",
+      previewMimeType: resourcePreviewMimeType(resource.resourceType),
+      previewDataUrl: null,
+      previewSummary: {},
+      previewDiagnostics: []
     });
     const recordId = `record:${entityId}`;
     schema.records.push({
@@ -1738,6 +1736,14 @@ function byteRange(start: number, length: number) {
 
 function isResourceFile(name: string) {
   return name === "Scenario" || name.endsWith(".rsrc") || name.endsWith(".rsf") || name.startsWith("._");
+}
+
+function resourcePreviewMimeType(resourceType: string) {
+  if (resourceType === "PICT") return "image/pict";
+  if (resourceType === "cicn") return "image/cicn";
+  if (resourceType === "snd ") return "audio/x-mac-snd";
+  if (resourceType === "TEXT" || resourceType === "STR#" || resourceType === "styl") return "text/plain";
+  return "application/octet-stream";
 }
 
 function layoutFor(name: string) {

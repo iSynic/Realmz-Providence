@@ -1,0 +1,233 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Search, X } from "lucide-react";
+import {
+  buildGlobalSearchIndex,
+  GlobalSearchResult,
+  GlobalSearchScope,
+  searchGlobalIndex
+} from "../globalSearch";
+import { LibraryCatalog, Project } from "../types";
+
+const scopeLabels: Record<GlobalSearchScope, string> = {
+  scenario: "Scenario",
+  assets: "Assets",
+  libraries: "Libraries",
+  docs: "Docs",
+  diagnostics: "Diagnostics"
+};
+const scopeOrder: GlobalSearchScope[] = ["scenario", "assets", "libraries", "docs", "diagnostics"];
+const initialGroupLimit = 8;
+
+export function GlobalSearchDialog({
+  project,
+  catalog,
+  onClose,
+  onOpenResult
+}: {
+  project: Project | null;
+  catalog: LibraryCatalog | null;
+  onClose: () => void;
+  onOpenResult: (result: GlobalSearchResult) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [deferredQuery, setDeferredQuery] = useState("");
+  const [selectedScopes, setSelectedScopes] = useState<Set<GlobalSearchScope>>(() => new Set(scopeOrder));
+  const [expandedScopes, setExpandedScopes] = useState<Set<GlobalSearchScope>>(() => new Set());
+  const [activeIndex, setActiveIndex] = useState(0);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const index = useMemo(() => buildGlobalSearchIndex(project, catalog), [project, catalog]);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    const handle = window.setTimeout(() => setDeferredQuery(query), exactShortcutCandidate(query) ? 0 : 120);
+    return () => window.clearTimeout(handle);
+  }, [query]);
+
+  const results = useMemo(
+    () => searchGlobalIndex(index, deferredQuery, { scopes: [...selectedScopes] }),
+    [deferredQuery, index, selectedScopes]
+  );
+  const groups = useMemo(() => groupedResults(results), [results]);
+  const visibleResults = useMemo(() => {
+    return scopeOrder.flatMap((scope) => {
+      const rows = groups.get(scope) ?? [];
+      return expandedScopes.has(scope) ? rows : rows.slice(0, initialGroupLimit);
+    });
+  }, [expandedScopes, groups]);
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [deferredQuery, selectedScopes]);
+
+  function toggleScope(scope: GlobalSearchScope) {
+    setSelectedScopes((current) => {
+      const next = new Set(current);
+      if (next.has(scope) && next.size > 1) {
+        next.delete(scope);
+      } else {
+        next.add(scope);
+      }
+      return next;
+    });
+  }
+
+  function openResult(result: GlobalSearchResult) {
+    onOpenResult(result);
+    onClose();
+  }
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onClose();
+      return;
+    }
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActiveIndex((index) => Math.min(index + 1, Math.max(0, visibleResults.length - 1)));
+      return;
+    }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveIndex((index) => Math.max(0, index - 1));
+      return;
+    }
+    if (event.key === "Enter" && visibleResults[activeIndex]) {
+      event.preventDefault();
+      openResult(visibleResults[activeIndex]);
+    }
+  }
+
+  return (
+    <div className="global-search-backdrop" role="presentation" onMouseDown={onClose}>
+      <section
+        className="global-search-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Global search"
+        onMouseDown={(event) => event.stopPropagation()}
+        onKeyDown={handleKeyDown}
+      >
+        <header className="global-search-header">
+          <label className="global-search-input">
+            <Search size={17} />
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={(event) => setQuery(event.currentTarget.value)}
+              placeholder="Search scenario, libraries, assets, docs..."
+              aria-label="Search Providence"
+            />
+          </label>
+          <button type="button" className="global-search-close" onClick={onClose} aria-label="Close search">
+            <X size={16} />
+          </button>
+        </header>
+
+        <div className="global-search-scopes" aria-label="Search scopes">
+          {scopeOrder.map((scope) => (
+            <button
+              key={scope}
+              type="button"
+              className={selectedScopes.has(scope) ? "active" : ""}
+              onClick={() => toggleScope(scope)}
+            >
+              {scopeLabels[scope]}
+            </button>
+          ))}
+        </div>
+
+        <div className="global-search-results" role="listbox" aria-label="Search results">
+          {!deferredQuery.trim() && (
+            <div className="global-search-empty">
+              <strong>Search everything Providence knows about right now.</strong>
+              <span>Try `registration`, `string 349`, `macro 143`, `sound 208`, `pict 304`, an item name, a monster, or a map.</span>
+            </div>
+          )}
+          {deferredQuery.trim() && results.length === 0 && (
+            <div className="global-search-empty">
+              <strong>No matches found.</strong>
+              <span>Try a shorter phrase, a record type plus ID, or enable more search scopes.</span>
+            </div>
+          )}
+          {scopeOrder.map((scope) => {
+            const rows = groups.get(scope) ?? [];
+            if (rows.length === 0) return null;
+            const expanded = expandedScopes.has(scope);
+            const visible = expanded ? rows : rows.slice(0, initialGroupLimit);
+            return (
+              <section key={scope} className="global-search-group" aria-label={`${scopeLabels[scope]} results`}>
+                <header>
+                  <span>{scopeLabels[scope]}</span>
+                  <b>{rows.length.toLocaleString()}</b>
+                </header>
+                {visible.map((result) => {
+                  const visibleIndex = visibleResults.findIndex((candidate) => candidate.id === result.id);
+                  return (
+                    <button
+                      key={result.id}
+                      type="button"
+                      role="option"
+                      aria-selected={visibleIndex === activeIndex}
+                      className={visibleIndex === activeIndex ? "active" : ""}
+                      onClick={() => openResult(result)}
+                    >
+                      {result.preview && <img src={result.preview} alt="" />}
+                      <span>
+                        <strong>{result.title}</strong>
+                        <small>{result.subtitle}</small>
+                        {result.snippet && <em>{result.snippet}</em>}
+                      </span>
+                      <i>
+                        {result.badges.slice(0, 3).map((badge) => (
+                          <b key={badge}>{badge}</b>
+                        ))}
+                      </i>
+                    </button>
+                  );
+                })}
+                {rows.length > initialGroupLimit && (
+                  <button
+                    type="button"
+                    className="global-search-more"
+                    onClick={() => setExpandedScopes((current) => {
+                      const next = new Set(current);
+                      if (next.has(scope)) next.delete(scope);
+                      else next.add(scope);
+                      return next;
+                    })}
+                  >
+                    {expanded ? "Show fewer" : `Show ${rows.length - initialGroupLimit} more`}
+                  </button>
+                )}
+              </section>
+            );
+          })}
+        </div>
+
+        <footer className="global-search-footer">
+          <span>Enter opens</span>
+          <span>Esc closes</span>
+          <span>Ctrl+K toggles</span>
+        </footer>
+      </section>
+    </div>
+  );
+}
+
+function groupedResults(results: GlobalSearchResult[]) {
+  const groups = new Map<GlobalSearchScope, GlobalSearchResult[]>();
+  for (const result of results) {
+    const rows = groups.get(result.scope);
+    if (rows) rows.push(result);
+    else groups.set(result.scope, [result]);
+  }
+  return groups;
+}
+
+function exactShortcutCandidate(query: string) {
+  return /^(\D+\s+)?-?\d+$/.test(query.trim());
+}

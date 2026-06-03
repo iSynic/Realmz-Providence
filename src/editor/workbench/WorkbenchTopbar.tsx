@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { BookOpen, ChevronLeft, ChevronRight, Download, FilePlus2, FolderOpen, LibraryBig, RefreshCcw, Save, Upload } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, Download, FilePlus2, FolderOpen, LibraryBig, RefreshCcw, Save, Search, Upload } from "lucide-react";
 import { ActiveWorkbench } from "../types";
 import { IconButton } from "../components/IconButton";
 
@@ -27,6 +27,7 @@ export function WorkbenchTopbar({
   onProject,
   onDocuments,
   onDivinityManual,
+  onGlobalSearch,
   onNavigateBack,
   onNavigateForward,
   onToggleTutorial,
@@ -61,6 +62,7 @@ export function WorkbenchTopbar({
   onProject: () => void;
   onDocuments: () => void;
   onDivinityManual: () => void;
+  onGlobalSearch: () => void;
   onNavigateBack: () => void;
   onNavigateForward: () => void;
   onToggleTutorial: () => void;
@@ -118,6 +120,10 @@ export function WorkbenchTopbar({
         <span className={`runtime-pill${runtimeLive ? " live" : ""}`}>{runtimeLabel}</span>
         {dirty && <span className="dirty-pill">Dirty</span>}
         {editing && <span className="dirty-pill">Editing</span>}
+        <button className="topbar-action-button" type="button" onClick={onGlobalSearch} title="Search scenario, libraries, assets, and docs (Ctrl+K)">
+          <Search size={15} />
+          <span>Search</span>
+        </button>
         <button className="topbar-action-button" type="button" onClick={onLibrary} title="Open managed library workbench">
           <LibraryBig size={15} />
           <span>Library</span>

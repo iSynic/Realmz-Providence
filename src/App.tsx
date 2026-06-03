@@ -29,7 +29,9 @@ import {
 } from "./editor/semanticGraph";
 import { ProvidenceEditorShell } from "./editor/workbench/ProvidenceEditorShell";
 import { WorkbenchRouter } from "./editor/workbench/WorkbenchRouter";
+import { GlobalSearchDialog } from "./editor/workbench/GlobalSearchDialog";
 import { DivinityManualWindow } from "./editor/views/DivinityManualWindow";
+import { GlobalSearchResult } from "./editor/globalSearch";
 import {
   LazyDocumentsView as DocumentsView,
   WorkbenchChunkErrorBoundary,
@@ -77,6 +79,7 @@ export function App() {
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [documentsOpen, setDocumentsOpen] = useState(false);
   const [divinityManualOpen, setDivinityManualOpen] = useState(false);
+  const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
   const [projectNameDraft, setProjectNameDraft] = useState("Untitled Scenario");
   const [state, dispatch] = useReducer(editorReducer, desktopRuntime, initialEditorState);
   const importedMapIconCacheRef = useRef<{ key: string; ids: number[] }>({ key: "", ids: [] });
@@ -109,6 +112,17 @@ export function App() {
       disposed = true;
     };
   }, [desktopRuntime]);
+
+  useEffect(() => {
+    function handleGlobalSearchShortcut(event: KeyboardEvent) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setGlobalSearchOpen((open) => !open);
+      }
+    }
+    window.addEventListener("keydown", handleGlobalSearchShortcut);
+    return () => window.removeEventListener("keydown", handleGlobalSearchShortcut);
+  }, []);
 
   useEffect(() => {
     if (!state.project && state.activeWorkbench !== "library") return;
@@ -405,6 +419,33 @@ export function App() {
     dispatch({ type: "setStatus", status: `Opened ${editor.replace(/-/g, " ")}.` });
   }
 
+  function openGlobalSearchResult(result: GlobalSearchResult) {
+    if (result.route?.kind === "documents") {
+      dispatch({ type: "setDocsSection", section: result.route.sectionId });
+      setDocumentsOpen(true);
+      dispatch({ type: "setStatus", status: `Opened ${result.title}.` });
+      return;
+    }
+    if (result.route?.kind === "divinity-manual") {
+      setDivinityManualOpen(true);
+      dispatch({ type: "setStatus", status: `Opened ${result.title}.` });
+      return;
+    }
+    if (result.route?.kind === "workbench") {
+      dispatch({ type: "setWorkbench", workbench: result.route.workbench, tab: result.route.domain });
+      dispatch({ type: "setActiveDomain", domain: result.route.domain });
+      dispatch({ type: "setActiveEditor", editor: result.route.editor });
+      if (result.selectedEntity) dispatch({ type: "selectEntity", entity: result.selectedEntity });
+      dispatch({ type: "setStatus", status: `Opened ${result.title}.` });
+      return;
+    }
+    if (result.selectedEntity) {
+      selectEntity(result.selectedEntity);
+      return;
+    }
+    dispatch({ type: "setStatus", status: `Selected ${result.title}.` });
+  }
+
   function applyWorkbenchLocation(location: WorkbenchHistoryLocation) {
     dispatch({ type: "setWorkbench", workbench: location.workbench, tab: location.domain });
     dispatch({ type: "setActiveDomain", domain: location.domain });
@@ -442,6 +483,7 @@ export function App() {
       onProject={openProjectWorkbench}
       onDocuments={() => setDocumentsOpen(true)}
       onDivinityManual={() => setDivinityManualOpen(true)}
+      onGlobalSearch={() => setGlobalSearchOpen(true)}
       onNavigateBack={() => navigateWorkbenchHistory(-1)}
       onNavigateForward={() => navigateWorkbenchHistory(1)}
       onToggleTutorial={() => dispatch({ type: "setTutorialEnabled", enabled: !state.tutorialEnabled })}
@@ -540,6 +582,14 @@ export function App() {
         </WorkbenchChunkErrorBoundary>
       )}
       {divinityManualOpen && <DivinityManualWindow onClose={() => setDivinityManualOpen(false)} />}
+      {globalSearchOpen && (
+        <GlobalSearchDialog
+          project={state.project}
+          catalog={state.libraryCatalog}
+          onClose={() => setGlobalSearchOpen(false)}
+          onOpenResult={openGlobalSearchResult}
+        />
+      )}
     </ProvidenceEditorShell>
   );
 }
