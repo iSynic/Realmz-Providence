@@ -969,14 +969,19 @@ fn import_icon_overlays(
 ) -> Result<()> {
     let icon_dir = assets_dir.join(ICONS_DIR);
     fs::create_dir_all(&icon_dir).with_path(&icon_dir)?;
-    let referenced_icon_ids = map_icon_ids(&project.maps);
+    let map_icon_ids = map_icon_ids(&project.maps);
+    let monster_icon_ids = monster_icon_ids(&project.monsters);
+    let referenced_icon_ids = map_icon_ids
+        .union(&monster_icon_ids)
+        .copied()
+        .collect::<BTreeSet<_>>();
     let reference_icon_dir = Path::new(REFERENCE_UTILITY_ROOT)
         .join("assets")
         .join("realmz")
         .join("resources")
         .join("icons");
     if reference_icon_dir.is_dir() {
-        for icon_id in &referenced_icon_ids {
+        for icon_id in &map_icon_ids {
             let file_name = format!("icon_{icon_id}.png");
             let path = reference_icon_dir.join(&file_name);
             if !path.is_file() {
@@ -991,7 +996,7 @@ fn import_icon_overlays(
         .diagnostics
         .retain(|diagnostic| diagnostic.code != "missing-map-icon-overlay");
     let mut missing = BTreeSet::new();
-    for icon_id in referenced_icon_ids {
+    for icon_id in map_icon_ids {
         let file_name = format!("icon_{icon_id}.png");
         if !icon_dir.join(&file_name).is_file() {
             missing.insert(icon_id);
@@ -1011,6 +1016,34 @@ fn import_icon_overlays(
                     .join(", ")
             ),
             source: Some("Data LD".to_string()),
+        });
+    }
+    project
+        .diagnostics
+        .retain(|diagnostic| diagnostic.code != "missing-monster-icon-preview");
+    let missing_monster_icons = monster_icon_ids
+        .iter()
+        .copied()
+        .filter(|icon_id| is_scenario_local_monster_icon_id(*icon_id))
+        .filter(|icon_id| {
+            let file_name = format!("icon_{icon_id}.png");
+            !icon_dir.join(&file_name).is_file()
+        })
+        .collect::<Vec<_>>();
+    if !missing_monster_icons.is_empty() {
+        project.diagnostics.push(Diagnostic {
+            severity: DiagnosticSeverity::Warning,
+            code: "missing-monster-icon-preview".to_string(),
+            message: format!(
+                "{} scenario-local monster icon preview(s) referenced by monster records were not found in scenario resources: {}",
+                missing_monster_icons.len(),
+                missing_monster_icons
+                    .iter()
+                    .map(i16::to_string)
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+            source: Some("Data MD".to_string()),
         });
     }
     Ok(())
@@ -1047,9 +1080,9 @@ fn import_scenario_icon_overlays(
                     .unwrap_or_else(|| format!("preview status was {:?}", preview.status));
                 project.diagnostics.push(Diagnostic {
                     severity: DiagnosticSeverity::Warning,
-                    code: "unsupported-map-icon-overlay".to_string(),
+                    code: "unsupported-scenario-icon-preview".to_string(),
                     message: format!(
-                        "Scenario cicn {} in {} could not be decoded as a map icon overlay: {}",
+                        "Scenario cicn {} in {} could not be decoded as an icon preview: {}",
                         entry.id,
                         resource_path.display(),
                         detail
@@ -1061,9 +1094,9 @@ fn import_scenario_icon_overlays(
             let Some(png_bytes) = png_bytes_from_data_url(&data_url) else {
                 project.diagnostics.push(Diagnostic {
                     severity: DiagnosticSeverity::Warning,
-                    code: "unsupported-map-icon-overlay".to_string(),
+                    code: "unsupported-scenario-icon-preview".to_string(),
                     message: format!(
-                        "Scenario cicn {} decoded, but did not produce a PNG map icon overlay",
+                        "Scenario cicn {} decoded, but did not produce a PNG icon preview",
                         entry.id
                     ),
                     source: Some(resource_path.display().to_string()),
@@ -1267,6 +1300,18 @@ fn map_icon_ids(maps: &[MapEntity]) -> BTreeSet<i16> {
         }
     }
     ids
+}
+
+fn monster_icon_ids(monsters: &[MonsterRecord]) -> BTreeSet<i16> {
+    monsters
+        .iter()
+        .map(|monster| monster.icon_id)
+        .filter(|icon_id| *icon_id != 0)
+        .collect()
+}
+
+fn is_scenario_local_monster_icon_id(icon_id: i16) -> bool {
+    icon_id < 0 || icon_id >= 1000
 }
 
 fn normalize_icon_id(value: i16) -> Option<i16> {

@@ -567,6 +567,77 @@ fn imports_destroy_scenario_local_map_icons() {
 }
 
 #[test]
+fn imports_war_scenario_local_monster_icons() {
+    let Some(source) = fixture_path("War in the Sword Lands") else {
+        eprintln!("Skipping War in the Sword Lands fixture; base scenario is absent.");
+        return;
+    };
+    let temp = tempdir().unwrap();
+    let project_dir = temp.path().join("war_in_the_sword_lands");
+    let project = import_scenario(&source, &project_dir).unwrap();
+    let expected_icon_ids = [2314, 2316, 2322, 2334, 2350, 2361, 2373];
+    for icon_id in expected_icon_ids {
+        let relative_path = format!("assets/icons/icon_{icon_id}.png");
+        assert!(
+            project_dir.join(&relative_path).is_file(),
+            "{relative_path} should be decoded from the scenario resource fork"
+        );
+        assert!(
+            project.asset_catalog.icons.iter().any(|asset| {
+                asset.resource_type == "cicn"
+                    && asset.resource_id == icon_id as i32
+                    && asset.preview_path.as_deref() == Some(relative_path.as_str())
+            }),
+            "cicn {icon_id} should be cataloged as a project-local monster icon"
+        );
+    }
+    for monster_name in [
+        "Carrion Slug",
+        "Dragon Lizard",
+        "Sshrisk",
+        "Dune Spider",
+        "Giant Troll",
+        "Giant Rat",
+        "Silt Spider",
+    ] {
+        let monster = project
+            .monsters
+            .iter()
+            .find(|monster| monster.display_name == monster_name)
+            .unwrap_or_else(|| panic!("{monster_name} should be present in the War monster list"));
+        let relative_path = format!("assets/icons/icon_{}.png", monster.icon_id);
+        assert!(
+            project_dir.join(&relative_path).is_file(),
+            "{monster_name} should have a decoded project-local monster preview at {relative_path}"
+        );
+    }
+    let missing_icon_diagnostics: Vec<_> = project
+        .diagnostics
+        .iter()
+        .filter(|diagnostic| diagnostic.code == "missing-monster-icon-preview")
+        .map(|diagnostic| diagnostic.message.as_str())
+        .collect();
+    assert!(
+        missing_icon_diagnostics.is_empty(),
+        "scenario-local monster icons should satisfy War monster icon references: {missing_icon_diagnostics:?}"
+    );
+    fs::remove_file(project_dir.join("assets/icons/icon_2373.png")).unwrap();
+    let reopened = open_project(&project_dir).unwrap();
+    assert!(
+        project_dir.join("assets/icons/icon_2373.png").is_file(),
+        "opening an existing project should restore scenario-local monster icon previews from raw sources"
+    );
+    assert!(
+        reopened.asset_catalog.icons.iter().any(|asset| {
+            asset.resource_type == "cicn"
+                && asset.resource_id == 2373
+                && asset.preview_path.as_deref() == Some("assets/icons/icon_2373.png")
+        }),
+        "reopened project should retain the scenario-local Giant Troll icon preview path"
+    );
+}
+
+#[test]
 fn generated_corpus_summary_contract_is_readable() {
     let Some(summary) = generated_corpus_summary() else {
         eprintln!("Skipping generated corpus expectations; Scenario Utility summary is absent.");
