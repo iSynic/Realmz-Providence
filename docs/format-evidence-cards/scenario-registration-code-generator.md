@@ -8,7 +8,7 @@ The user-facing generator is visible again, but it deliberately shows evidence-l
 
 - source-ported Windows bundled-scenario formula from `regscen_pc`;
 - source-ported Mac bundled-scenario formula for the classic pre-later-slot branch in `regscen`;
-- source-ported PC v7.1 custom-scenario candidate from `regscen_pc_custom`;
+- source-ported Divinity Coder / custom-scenario candidate from `regscen_pc_custom`;
 - source-ported Mac classic custom-scenario candidate from the third-party scenario branch in `regscen`;
 - official Fantasoft Mac/Windows evidence vectors when scenario/name/serial match a known form.
 
@@ -20,7 +20,7 @@ Bundled official Fantasoft scenario codes and custom Divinity scenario codes are
 | --- | --- |
 | `F:\Realmz\src\realmz_orig\main.c:1503` | Legacy `regscen` includes a third-party scenario branch with segment demixing, `StringToNum`, and bit-flip logic. |
 | `F:\Realmz\src\realmz_orig\main.c:1833` | Windows `regscen_pc` handles bundled Fantasoft scenarios using registration name, serial, scenario menu slot, and the shell `reclevel`/`maxlevel` fields. |
-| `F:\Realmz\src\realmz_orig\main.c:1974` | PC v7.1 `regscen_pc_custom` computes a custom scenario registration value from registration name, serial, demixed code segments, and scenario title. |
+| `F:\Realmz\src\realmz_orig\main.c:1974` | PC v7.1 `regscen_pc_custom` computes the Divinity Coder / custom scenario registration value from registration name, serial, demixed code segments, and scenario title. |
 | `F:\Realmz\src\realmz_orig\main.c:1512` | Mac bundled scenarios compute a scenario serial component only for Destroy the Necronomicon and later slots. |
 | `F:\Realmz\src\realmz_orig\main.c:1686` | Mac bundled scenarios switch to an extra name/serial bit-flip branch for White Dragon-era and later slots. |
 | `F:\Realmz\src\realmz_orig\main.c:2058` | PC custom scenario code-segment contributions are cast through `short` before being added/subtracted from the 32-bit registration code. |
@@ -42,7 +42,8 @@ Known unresolved items:
 
 - `War in the Sword Lands` Windows official vector is off by 9 from the source formula against the local shell file, likely due to a shell/version/menu fixture mismatch or transcription issue. It remains evidence, not discarded.
 - Mac official vectors for White Dragon-era and later slots enter the extra bit-switch branch. The source port is present as a candidate, but those vectors are not yet source-matched. The likely missing detail is a classic-runtime behavior around `abs`, bit operations, serial display/internal serial, or old compiler integer promotion.
-- Custom scenario PC/Mac algorithms are source-ported candidates. They still need an actual custom-scenario acceptance vector generated in Realmz/Divinity before the UI should call them verified.
+- The custom scenario path formerly labeled `PC v7.1 custom` is now known to be the Divinity Coder path for custom scenarios. `Divinity Coder 7.0.9.rsrc` contains the same constants used by `regscen_pc_custom` (`333`, `450`, `96`, `456`, `999`, `1689`, `423`, and `112233`), and user testing on Mac confirmed that the Divinity-generated custom code is accepted by the runtime for a Divinity-authored scenario.
+- The Mac classic custom algorithm remains a source-ported candidate until a distinct acceptance vector proves when that branch is used.
 
 ## War and Divinity Investigation Notes
 
@@ -56,13 +57,30 @@ Known unresolved items:
 
 A second user-supplied vector for `AMBERK` / `13706024` produces `933071`, exactly matching the same Windows bundled formula for slot `20` and the local War shell fields. That makes the bundled formula look generally right for War, while the `RABREAUS` +9 mismatch should stay visible as unresolved source archaeology. The source also has a suspicious boundary split: `topfantasoftsceanrio` is `23`, but `regscen_pc` redirects `currentscenario > 19` into `regscen_pc_custom`. War is slot `20`, exactly on that boundary. Existing registration acceptance logs still identify it as Adventure menu position `20`, so the mismatch is not currently explained by a simple slot-number error.
 
-For Divinity/custom scenario work, the best local binary target is `F:\Realmz - Providence\public\bundled-libraries\divinity\Divinity.rsrc`. It is an AppleDouble-wrapped Classic Mac application resource fork with:
+For full Divinity editor archaeology, the best local binary target is `F:\Realmz - Providence\public\bundled-libraries\divinity\Divinity.rsrc`. It is an AppleDouble-wrapped Classic Mac application resource fork with:
 
 - `CODE 1` (`Mac Libraries`, `194,318` bytes)
 - `CODE 2` (`ANSI Libraries`, `26,295` bytes)
 - `DATA 0` (`28,568` bytes)
 
 The app contains symbols/strings such as `getcode`, `getscenario`, `editscenariodata`, `editextracode`, `switchscenario`, and `Data CS`. Capstone can disassemble the 68k CODE resources, but a blind sweep lands in mixed code/string/jump-table territory. The next useful step is a resource-aware disassembly pass that follows the CODE segment jump table and cross-references the `Data CS` and security strings back to owning functions.
+
+For Divinity Coder specifically, `F:\Divinity CD\Divinity CD\Install Options\World of Realmz\Divinity\Divinity Coder 7.0.9.rsrc` is the better target. It is an AppleDouble-wrapped Classic Mac resource fork with:
+
+- `CODE 1` (`Application`, `8,042` bytes)
+- `CODE 2` (`Mac Libraries`, `852` bytes)
+- `CODE 3` (`ANSI Libraries`, `25,731` bytes)
+- `DATA 0` (`2,521` bytes)
+
+Capstone disassembly of `CODE 1` around offsets `0x0eb4..0x12d2` shows the custom scenario generator path: lowercase registration name, serial/name value calculation, serial division by `333`, modulo math using `450`, `96`, `456`, and `999`, code-segment loops using `1689` and `423`, and scenario-title contribution using `112233`. This matches Providence's `pcCustomV71` implementation and explains why Divinity Coder's output follows that formula even when tested on Mac.
+
+A user-supplied Divinity Coder 7.0.9 screenshot and Mac runtime acceptance test confirms the same formula for:
+
+- Realmz serial: `9140886`
+- Scenario registration name: `SAMUEL`
+- Scenario: `Wrath of the Mind Lords`
+- Code segments: `p38beta` / `p38delta`
+- Divinity Coder result: `268585916`
 
 No Classic Mac Realmz runtime application with CODE resources was found locally. That means Divinity can help explain how the editor writes security data, but it cannot by itself prove the Realmz runtime acceptance algorithm for later Mac bundled scenarios.
 
@@ -131,6 +149,7 @@ These official vectors are treated as verified evidence when the scenario/name/s
 ## Providence Policy
 
 - Do not present a single generated code as authoritative unless it matches an official or otherwise verified vector.
+- Label the `regscen_pc_custom` formula as the Divinity Coder / custom path, not merely as a Windows-only path.
 - Keep source-ported algorithms visible as candidates for archaeology and compatibility testing.
 - Preserve marker/main code segments and `Data CS` exactly; the generator is helper output, not export-critical data.
 - Add future official or player-supplied vectors to `REGISTRATION_EVIDENCE_VECTORS` and keep `npm run check:registration-codes` green.

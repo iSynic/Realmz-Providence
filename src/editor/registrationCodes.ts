@@ -164,6 +164,16 @@ export const REGISTRATION_EVIDENCE_VECTORS: RegistrationEvidenceVector[] = [
     source: "Official Fantasoft MacOS registration form supplied by user."
   },
   {
+    scenarioName: "Wrath of the Mind Lords",
+    segment1: "p38beta",
+    segment2: "p38delta",
+    registrationName: "SAMUEL",
+    serialNumber: "9140886",
+    expectedCode: "268585916",
+    status: "reported",
+    source: "User-supplied Divinity Coder 7.0.9 screenshot and Mac runtime acceptance test for Wrath of the Mind Lords."
+  },
+  {
     scenarioName: "Prelude to Pestilence",
     segment1: "Macdom",
     segment2: "Norman Baites",
@@ -380,10 +390,10 @@ export function registrationVariantsFor(input: RegistrationInput): RegistrationV
   rawVariants.push(
     {
       algorithmId: "pcCustomV71",
-      label: "PC v7.1 custom",
+      label: "Divinity Coder / custom",
       confidence: "candidate",
       code: String(pcCustomV71(normalizedInput, serial)),
-      detail: "Source path: regscen_pc_custom in Realmz main.c."
+      detail: "Source path: regscen_pc_custom in Realmz main.c. Divinity Coder 7.0.9 contains the same arithmetic constants, and local Mac runtime testing accepted this path for a Divinity-authored custom scenario."
     },
     {
       algorithmId: "macCustomLegacy",
