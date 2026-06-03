@@ -233,6 +233,7 @@ function WorkbenchRouterContent({
         iconEntries={state.iconEntries}
         onSelectEntity={onSelectEntity}
         onSelectEditor={onSelectEditor}
+        onOpenTool={onOpenTool}
         onApplyCommand={onApplyCommand}
       />
     );

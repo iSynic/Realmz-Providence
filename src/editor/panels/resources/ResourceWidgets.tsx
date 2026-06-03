@@ -34,7 +34,7 @@ export const ASSET_SECTIONS: Array<{ id: AssetSection; editor: string; label: st
 export function assetSectionFromEditor(activeEditor: string): AssetSection {
   if (activeEditor === "decoded-records") return "records";
   if (activeEditor === "library-assets") return "realmz";
-  if (activeEditor === "divinity-reference") return "divinity";
+  if (activeEditor === "divinity-reference" || activeEditor === "divinity-icons") return "divinity";
   if (activeEditor === "resource-forks" || activeEditor === "render-assets") return "advanced";
   return "project";
 }
@@ -42,7 +42,7 @@ export function assetSectionFromEditor(activeEditor: string): AssetSection {
 export function assetKindFilterFromEditor(activeEditor: string): ManagedAssetKind | "all" {
   if (activeEditor === "pictures") return "picture";
   if (activeEditor === "sounds") return "sound";
-  if (activeEditor === "icons") return "icon";
+  if (activeEditor === "icons" || activeEditor === "divinity-icons") return "icon";
   if (activeEditor === "special-land") return "special-land-tile";
   return "all";
 }

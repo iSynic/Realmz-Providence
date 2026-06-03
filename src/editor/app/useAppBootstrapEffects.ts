@@ -15,6 +15,7 @@ import {
   tileIconCandidates
 } from "../map/renderValues";
 import { runProvidenceHarness } from "../harness";
+import { isActorOrCreatureIconId } from "../resourceResolver";
 import { BROWSER_PREVIEW_STATUS, EditorAction, EditorState } from "../store";
 import { AtlasEntry, IconEntry, Project, ProvidenceWorkspace, TilesetAsset } from "../types";
 import { commandError } from "../utils";
@@ -235,13 +236,16 @@ export function useAppBootstrapEffects({
       const projectStampAssets = (state.project.assets ?? []).filter((asset) => asset.kind === "special-land-tile" && asset.resourceType === "cicn");
       const projectCatalogIconAssets = (state.project.assetCatalog.icons ?? []).filter((asset) => asset.resourceType === "cicn");
       const libraryIconAssets = (state.libraryCatalog?.assets ?? []).filter(isPaintableSpecialLandLibraryAsset);
+      const monsterIconAssets = (state.libraryCatalog?.assets ?? []).filter((asset) => isMonsterIconLibraryAsset(asset));
       const rawIds = [
         ...new Set([
           ...state.project.maps.flatMap((map) => referencedMapIconIds(map.tiles)),
+          ...(state.project.monsters ?? []).flatMap((monster) => iconCandidateIdsForResource(monster.iconId)),
           ...(state.project.assetCatalog.icons ?? [])
             .filter((asset) => asset.resourceType === "cicn")
             .flatMap((asset) => iconCandidateIdsForResource(asset.resourceId)),
           ...projectStampAssets.flatMap((asset) => tileIconCandidates(asset.resourceId)),
+          ...monsterIconAssets.flatMap((asset) => asset.resourceId == null ? [] : iconCandidateIdsForResource(asset.resourceId)),
           ...libraryIconAssets.flatMap((asset) => asset.resourceId == null ? [] : iconCandidateIdsForResource(asset.resourceId)),
           ...(!desktopRuntime ? PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES.flatMap(tileIconCandidates) : [])
         ])
@@ -264,6 +268,10 @@ export function useAppBootstrapEffects({
               return iconCandidateIdsForResource(asset.resourceId).includes(id);
             });
             const libraryAsset = libraryIconAssets.find((asset) => {
+              if (asset.resourceId == null) return false;
+              return iconCandidateIdsForResource(asset.resourceId).includes(id);
+            });
+            const monsterIconAsset = monsterIconAssets.find((asset) => {
               if (asset.resourceId == null) return false;
               return iconCandidateIdsForResource(asset.resourceId).includes(id);
             });
@@ -302,11 +310,12 @@ export function useAppBootstrapEffects({
               const referenceUrl = browserReferenceIconUrl(id);
               if (referenceUrl) urls.push(referenceUrl);
             }
-            if (libraryAsset) {
+            const preferredLibraryAsset = isActorOrCreatureIconId(Math.abs(id)) ? monsterIconAsset ?? libraryAsset : libraryAsset ?? monsterIconAsset;
+            if (preferredLibraryAsset) {
               try {
                 const libraryUrl = desktopRuntime
-                  ? await invoke<string>("load_library_asset_preview", { workspaceDir, source: libraryAsset.source, relativePath: libraryAsset.relativePath })
-                  : (await loadBrowserBundledLibraryAssetPreview(libraryAsset)) ?? browserReferenceIconUrl(id);
+                  ? await invoke<string>("load_library_asset_preview", { workspaceDir, source: preferredLibraryAsset.source, relativePath: preferredLibraryAsset.relativePath })
+                  : (await loadBrowserBundledLibraryAssetPreview(preferredLibraryAsset)) ?? browserReferenceIconUrl(id);
                 if (libraryUrl) urls.push(libraryUrl);
               } catch {
                 // Fall through to any remaining project/reference icon paths.
@@ -365,4 +374,10 @@ function iconCandidateIdsForResource(resourceId: number) {
     ...tileIconCandidates(-resourceId),
     resourceId > 200 ? resourceId : null
   ].filter((id): id is number => typeof id === "number"))];
+}
+
+function isMonsterIconLibraryAsset(asset: { resourceType?: string | null; resourceId?: number | null; type?: string; label?: string; relativePath?: string }) {
+  if (asset.resourceType !== "cicn" || asset.resourceId == null) return false;
+  const text = `${asset.type ?? ""} ${asset.label ?? ""} ${asset.relativePath ?? ""}`.toLowerCase();
+  return isActorOrCreatureIconId(Math.abs(asset.resourceId)) && (text.includes("monster") || text.includes("mash"));
 }

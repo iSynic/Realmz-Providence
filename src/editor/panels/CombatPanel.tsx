@@ -1,8 +1,10 @@
 import { memo, ReactNode, useEffect, useMemo, useState } from "react";
 import { browserReferenceIconUrl } from "../browser/atlasPaths";
 import { TargetPicker } from "../components/RealmzTargetPicker";
+import { useResolvedPreviewUrl } from "../previewUrls";
 import { isActorOrCreatureIconId } from "../resourceResolver";
-import { LibraryCatalog, BattleRecord, IconEntry, MonsterRecord, Project, ProjectCommand, SelectedEntity } from "../types";
+import { LibraryAsset, LibraryCatalog, BattleRecord, IconEntry, MonsterRecord, Project, ProjectCommand, SelectedEntity } from "../types";
+import { ScrollArea } from "../ui";
 import { selectEntityFromId } from "../utils";
 
 export type CombatWorkbenchTab = "battles" | "monsters" | "scrapbook" | "mash";
@@ -44,6 +46,7 @@ type CombatLookups = {
   monsters: MonsterRecord[];
   monsterById: Map<number, MonsterRecord>;
   iconAssetsByAbsId: Map<number, CombatIconAsset>;
+  monsterMashAssetsByAbsId: Map<number, LibraryAsset>;
   tabCounts: Record<CombatWorkbenchTab, number>;
 };
 
@@ -55,6 +58,7 @@ type CombatPanelProps = {
   iconEntries: Record<number, IconEntry>;
   onSelectEntity: (entity: SelectedEntity) => void;
   onSelectEditor: (editor: string) => void;
+  onOpenTool?: (tab: "assets", editor: string) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 };
 
@@ -73,13 +77,18 @@ export function CombatPanel({
   iconEntries,
   onSelectEntity,
   onSelectEditor,
+  onOpenTool,
   onApplyCommand
 }: CombatPanelProps) {
   const [tab, setTab] = useState<CombatWorkbenchTab>(() => tabFromEditor(activeEditor));
   useEffect(() => setTab(tabFromEditor(activeEditor)), [activeEditor]);
   const selectTab = (next: CombatWorkbenchTab) => {
+    if (next === "mash") {
+      onOpenTool?.("assets", "divinity-icons");
+      return;
+    }
     setTab(next);
-    onSelectEditor(next === "battles" ? "battles" : next === "monsters" ? "monsters" : next);
+    onSelectEditor(next === "battles" ? "battles" : next === "monsters" ? "monsters" : "scrapbook");
   };
   const lookups = useCombatLookups(project, catalog);
 
@@ -144,17 +153,11 @@ export function CombatPanel({
         />
       )}
       {tab === "scrapbook" && (
-        <ReferenceOnlyCombatTab
-          title="Monster Scrapbook"
-          body="Shared monster reference entries are preserved as library material. Editing custom monster records happens in the Monsters tab."
-          count={lookups.tabCounts.scrapbook}
-        />
-      )}
-      {tab === "mash" && (
-        <ReferenceOnlyCombatTab
-          title="Monster Mash"
-          body="Shared Monster Mash icons are available as reference art for monster records. Scenario-specific icon replacement belongs in Assets."
-          count={lookups.tabCounts.mash}
+        <MonsterScrapbookWorkbench
+          catalog={catalog}
+          iconEntries={iconEntries}
+          lookups={lookups}
+          onOpenMash={() => onOpenTool?.("assets", "divinity-icons")}
         />
       )}
     </section>
@@ -563,8 +566,11 @@ function MonsterWorkbench({
             className={selected?.id === monster.id ? "selected" : ""}
             onClick={() => selectMonster(monster.id)}
           >
-            <strong>{monster.displayName || `Monster ${monster.id}`}</strong>
-            <small>{monsterFacts(monster)}</small>
+            <MonsterIcon monster={monster} iconEntries={iconEntries} project={project} lookups={lookups} compact />
+            <span>
+              <strong>{monster.displayName || `Monster ${monster.id}`}</strong>
+              <small>{monsterFacts(monster)}</small>
+            </span>
           </button>
         ))}
       </RecordList>
@@ -1007,18 +1013,200 @@ function CompactArrayFields({ label, values, length, onCommit }: { label: string
   );
 }
 
-function ReferenceOnlyCombatTab({ title, body, count }: { title: string; body: string; count: number }) {
-  return (
-    <article className="combat-reference-tab">
-      <header>
-        <div>
-          <span>{title}</span>
-          <small>{count.toLocaleString()} reference entr{count === 1 ? "y" : "ies"}</small>
-        </div>
-      </header>
-      <p>{body}</p>
-    </article>
+function MonsterScrapbookWorkbench({
+  catalog,
+  iconEntries,
+  lookups,
+  onOpenMash
+}: {
+  catalog: LibraryCatalog | null;
+  iconEntries: Record<number, IconEntry>;
+  lookups: CombatLookups;
+  onOpenMash: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const entries = useMemo(
+    () => (catalog?.entities ?? [])
+      .filter((entity) => entity.type === "monster-scrapbook-entry")
+      .sort((a, b) => scrapbookIndex(a) - scrapbookIndex(b)),
+    [catalog?.entities]
   );
+  const filtered = filterRecords(entries, query, scrapbookSearchText);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!filtered.some((entry) => entry.id === selectedId)) setSelectedId(filtered[0]?.id ?? null);
+  }, [filtered, selectedId]);
+  const selected = filtered.find((entry) => entry.id === selectedId) ?? filtered[0] ?? null;
+
+  return (
+    <div className="combat-record-layout scrapbook-layout">
+      <aside className="combat-record-list scrapbook-list" aria-label="Monster Scrapbook entries">
+        <header>
+          <div>
+            <strong>Monster Scrapbook</strong>
+            <small>{filtered.length.toLocaleString()} shown | {entries.length.toLocaleString()} total</small>
+          </div>
+        </header>
+        <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search built-in monsters..." />
+        <ScrollArea className="combat-record-scroll">
+          {filtered.map((entry) => (
+            <button
+              key={entry.id}
+              type="button"
+              className={entry.id === selected?.id ? "selected" : ""}
+              onClick={() => setSelectedId(entry.id)}
+            >
+              <ScrapbookMonsterIcon entry={entry} iconEntries={iconEntries} lookups={lookups} compact />
+              <span>
+                <strong>{scrapbookName(entry)}</strong>
+                <small>{scrapbookFacts(entry)}</small>
+              </span>
+            </button>
+          ))}
+          {filtered.length === 0 && <p className="empty-copy compact">No built-in monsters match that search.</p>}
+        </ScrollArea>
+      </aside>
+      <article className="combat-editor scrapbook-editor">
+        {selected ? (
+          <>
+            <header className="combat-editor-header">
+              <div>
+                <span>{scrapbookName(selected)}</span>
+                <small>{scrapbookFacts(selected)}</small>
+              </div>
+              <button className="btn btn-secondary btn-sm" type="button" onClick={onOpenMash}>Open Monster Mash Icons</button>
+            </header>
+            <section className="scrapbook-summary">
+              <ScrapbookMonsterIcon entry={selected} iconEntries={iconEntries} lookups={lookups} />
+              <div className="scrapbook-stat-grid">
+                <ScrapbookFact label="Hit Dice" value={summaryNumber(selected, "hitDice")} />
+                <ScrapbookFact label="Armor" value={summaryNumber(selected, "armor")} />
+                <ScrapbookFact label="Agility" value={summaryNumber(selected, "agility")} />
+                <ScrapbookFact label="Movement" value={summaryNumber(selected, "movementMax")} />
+                <ScrapbookFact label="Attacks" value={summaryNumber(selected, "attackCount")} />
+                <ScrapbookFact label="Magic Attacks" value={summaryNumber(selected, "magicAttackCount")} />
+                <ScrapbookFact label="Spell Points" value={summaryNumber(selected, "spellPoints")} />
+                <ScrapbookFact label="Experience" value={summaryNumber(selected, "exp")} />
+              </div>
+            </section>
+            {scrapbookDescription(selected) && (
+              <section className="monster-section">
+                <header><strong>Description</strong><small>Bundled Monster Scrapbook text.</small></header>
+                <p className="scrapbook-description">{scrapbookDescription(selected)}</p>
+              </section>
+            )}
+            <section className="monster-section">
+              <header><strong>Attacks</strong><small>Read-only Realmz monster rows.</small></header>
+              <div className="scrapbook-attack-grid">
+                {summaryNumberRows(selected, "attacks").map((attack, index) => (
+                  <div key={index} className="scrapbook-attack-row">
+                    <strong>Attack {index + 1}</strong>
+                    <span>low {attack[0] ?? 0}</span>
+                    <span>high {attack[1] ?? 0}</span>
+                    <span>form {attack[2] ?? 0}</span>
+                    <span>special {attack[3] ?? 0}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section className="monster-section">
+              <header><strong>Spells And Loot</strong><small>IDs preserved from the library record.</small></header>
+              <div className="scrapbook-pill-grid">
+                <ScrapbookArray label="Spells" values={summaryNumberArray(selected, "spells")} />
+                <ScrapbookArray label="Items" values={summaryNumberArray(selected, "items")} />
+                <ScrapbookArray label="Money" values={summaryNumberArray(selected, "money")} />
+              </div>
+            </section>
+          </>
+        ) : (
+          <EmptyCombatEditor title="No Monster Scrapbook entries" body="The bundled library catalog did not include Monster Scrapbook records." />
+        )}
+      </article>
+    </div>
+  );
+}
+
+function ScrapbookFact({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="scrapbook-fact">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function ScrapbookArray({ label, values }: { label: string; values: number[] }) {
+  const visible = values.filter((value) => value !== 0);
+  return (
+    <div className="scrapbook-array">
+      <span>{label}</span>
+      <div>
+        {(visible.length ? visible : [0]).map((value, index) => <b key={`${value}:${index}`}>{value}</b>)}
+      </div>
+    </div>
+  );
+}
+
+function ScrapbookMonsterIcon({
+  entry,
+  iconEntries,
+  lookups,
+  compact = false
+}: {
+  entry: LibraryCatalog["entities"][number];
+  iconEntries: Record<number, IconEntry>;
+  lookups: CombatLookups;
+  compact?: boolean;
+}) {
+  const iconId = summaryNumber(entry, "iconId");
+  const icon = iconEntries[iconId] ?? iconEntries[Math.abs(iconId)] ?? iconEntries[-Math.abs(iconId)];
+  const mashAsset = lookups.monsterMashAssetsByAbsId.get(Math.abs(iconId)) ?? null;
+  const fallbackAsset = lookups.iconAssetsByAbsId.get(Math.abs(iconId));
+  const assetUrl = useResolvedPreviewUrl(mashAsset?.previewPath ?? fallbackAsset?.previewPath ?? null, null, mashAsset, {});
+  const referenceUrl = isActorOrCreatureIconId(Math.abs(iconId)) ? browserReferenceIconUrl(Math.abs(iconId)) : null;
+  const url = referenceUrl ?? icon?.url ?? assetUrl;
+  return (
+    <div className={compact ? "monster-icon-preview compact" : "monster-icon-preview"}>
+      {url ? <img src={url} alt="" /> : <span>{iconId || "?"}</span>}
+    </div>
+  );
+}
+
+function scrapbookIndex(entry: LibraryCatalog["entities"][number]) {
+  return typeof entry.summary.index === "number" ? entry.summary.index : 0;
+}
+
+function scrapbookName(entry: LibraryCatalog["entities"][number]) {
+  return typeof entry.summary.displayName === "string" && entry.summary.displayName ? entry.summary.displayName : entry.label;
+}
+
+function scrapbookFacts(entry: LibraryCatalog["entities"][number]) {
+  return `ID ${scrapbookIndex(entry)}, HD ${summaryNumber(entry, "hitDice")}, armor ${summaryNumber(entry, "armor")}, agility ${summaryNumber(entry, "agility")}, icon ${summaryNumber(entry, "iconId")}`;
+}
+
+function scrapbookSearchText(entry: LibraryCatalog["entities"][number]) {
+  return `${scrapbookName(entry)} ${scrapbookFacts(entry)} ${scrapbookDescription(entry)} ${entry.source}`;
+}
+
+function scrapbookDescription(entry: LibraryCatalog["entities"][number]) {
+  return typeof entry.summary.description === "string" ? entry.summary.description : "";
+}
+
+function summaryNumber(entry: LibraryCatalog["entities"][number], key: string) {
+  const value = entry.summary[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+function summaryNumberArray(entry: LibraryCatalog["entities"][number], key: string) {
+  const value = entry.summary[key];
+  return Array.isArray(value) ? value.filter((item): item is number => typeof item === "number" && Number.isFinite(item)) : [];
+}
+
+function summaryNumberRows(entry: LibraryCatalog["entities"][number], key: string) {
+  const value = entry.summary[key];
+  return Array.isArray(value)
+    ? value.map((row) => Array.isArray(row) ? row.filter((item): item is number => typeof item === "number" && Number.isFinite(item)) : [])
+    : [];
 }
 
 function EmptyCombatEditor({ title, body }: { title: string; body: string }) {
@@ -1141,12 +1329,14 @@ function useCombatLookups(project: Project | null, catalog: LibraryCatalog | nul
         monsters: [],
         monsterById: new Map(),
         iconAssetsByAbsId: new Map(),
+        monsterMashAssetsByAbsId: new Map(),
         tabCounts: { battles: 0, monsters: 0, scrapbook: 0, mash: 0 }
       };
     }
     const monsters = [...(project.monsters ?? [])].sort((a, b) => a.id - b.id);
     const monsterById = new Map(monsters.map((monster) => [monster.id, monster]));
     const iconAssetsByAbsId = new Map<number, CombatIconAsset>();
+    const monsterMashAssetsByAbsId = new Map<number, LibraryAsset>();
     const addIconAsset = (asset: CombatIconAsset | null | undefined) => {
       if (!asset?.previewPath || asset.resourceId == null) return;
       const key = Math.abs(asset.resourceId);
@@ -1158,12 +1348,18 @@ function useCombatLookups(project: Project | null, catalog: LibraryCatalog | nul
     for (const asset of project.assetCatalog.icons ?? []) {
       if (asset.resourceType === "cicn") addIconAsset(asset);
     }
+    for (const asset of catalog?.assets ?? []) {
+      if (!isMonsterMashLibraryAsset(asset)) continue;
+      const key = Math.abs(asset.resourceId);
+      if (!monsterMashAssetsByAbsId.has(key)) monsterMashAssetsByAbsId.set(key, asset);
+    }
     const scrapbook = catalog?.entities.filter((entity) => entity.type === "monster-scrapbook-entry").length ?? 0;
     const mash = catalog?.entities.filter((entity) => entity.type === "monster-mash-icon").length ?? 0;
     return {
       monsters,
       monsterById,
       iconAssetsByAbsId,
+      monsterMashAssetsByAbsId,
       tabCounts: {
         battles: project.battles.length,
         monsters: project.monsters.length,
@@ -1172,4 +1368,10 @@ function useCombatLookups(project: Project | null, catalog: LibraryCatalog | nul
       }
     };
   }, [catalog?.assets, catalog?.entities, project]);
+}
+
+function isMonsterMashLibraryAsset(asset: LibraryAsset): asset is LibraryAsset & { resourceId: number } {
+  if (asset.resourceType !== "cicn" || asset.resourceId == null) return false;
+  const text = `${asset.label} ${asset.relativePath}`.toLowerCase();
+  return text.includes("monster mash");
 }

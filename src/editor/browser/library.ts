@@ -677,7 +677,7 @@ function family(name: string, entityType: string, label: string) {
 }
 
 function recordLayout(name: string): [string, number] | null {
-  if (name === "Monster Scrap Book") return ["monster-scrapbook-entry", 210];
+  if (name === "Monster Scrap Book") return ["monster-scrapbook-entry", 466];
   if (name === "Data ID" || name === "Data NI") return ["item", 100];
   if (name === "Data Race") return ["race", 408];
   if (name === "Data Caste") return ["caste", 576];
@@ -696,6 +696,8 @@ function recordSummary(type: string, index: number, recordBytes: number, record:
   };
   if (type === "item" && record.byteLength >= 100) {
     Object.assign(summary, itemRecordSummary(index, record, sourceName));
+  } else if (type === "monster-scrapbook-entry" && record.byteLength >= 466) {
+    Object.assign(summary, monsterRecordSummary(index, record));
   } else if (type === "spell" && record.byteLength >= 30) {
     Object.assign(summary, spellRecordSummary(index, record));
   } else if (type === "race" && record.byteLength >= 408) {
@@ -704,6 +706,41 @@ function recordSummary(type: string, index: number, recordBytes: number, record:
     Object.assign(summary, casteRecordSummary(index, record));
   }
   return summary;
+}
+
+function monsterRecordSummary(index: number, record: Uint8Array) {
+  return {
+    displayName: decodeClassicText(record.slice(170, 210)) || `Monster ${index}`,
+    description: decodePascalClassicText(record.slice(210, 466)),
+    hitDice: record[0] ?? 0,
+    staminaBonus: record[1] ?? 0,
+    agility: record[2] ?? 0,
+    movementMax: record[4] ?? 0,
+    armor: signedByte(record[5] ?? 0),
+    magicResistance: signedByte(record[6] ?? 0),
+    distance: signedByte(record[7] ?? 0),
+    size: signedByte(record[9] ?? 0),
+    attackCount: signedByte(record[18] ?? 0),
+    magicAttackCount: signedByte(record[19] ?? 0),
+    attacks: Array.from({ length: 5 }, (_, row) => Array.from(record.slice(20 + row * 4, 24 + row * 4), signedByte)),
+    damageBonus: signedByte(record[40] ?? 0),
+    castPercent: signedByte(record[41] ?? 0),
+    runPercent: signedByte(record[42] ?? 0),
+    surrenderPercent: signedByte(record[43] ?? 0),
+    missilePercent: signedByte(record[44] ?? 0),
+    money: readI16s(record, 58, 3),
+    spells: readI16s(record, 64, 10),
+    items: readI16s(record, 84, 6),
+    weapon: i16At(record, 96) ?? 0,
+    iconId: i16At(record, 98) ?? 0,
+    spellPoints: i16At(record, 100) ?? 0,
+    exp: i16At(record, 102) ?? 0
+  };
+}
+
+function decodePascalClassicText(bytes: Uint8Array) {
+  const length = Math.min(bytes[0] ?? 0, Math.max(0, bytes.byteLength - 1));
+  return decodeClassicText(bytes.slice(1, 1 + length));
 }
 
 function recordLabel(type: string, index: number, summary: Record<string, unknown>) {

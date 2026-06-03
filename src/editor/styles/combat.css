@@ -1,6 +1,7 @@
 .combat-workbench {
   flex: 1;
   min-width: 0;
+  overflow-x: hidden;
   overflow-y: auto;
   padding: 14px;
   background: #101113;
@@ -77,6 +78,15 @@
   grid-template-columns: minmax(210px, 280px) minmax(0, 1fr);
   gap: 12px;
   align-items: start;
+  max-width: 1480px;
+}
+
+.combat-record-layout.monster-layout {
+  grid-template-columns: minmax(250px, 310px) minmax(0, 1fr);
+}
+
+.combat-record-layout.scrapbook-layout {
+  grid-template-columns: minmax(250px, 320px) minmax(0, 980px);
 }
 
 .combat-record-list,
@@ -163,9 +173,40 @@
   padding: 8px 9px;
 }
 
+.monster-layout .combat-record-scroll button {
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.scrapbook-layout .combat-record-scroll button {
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.monster-layout .combat-record-scroll button > span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.scrapbook-layout .combat-record-scroll button > span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
 .combat-record-scroll button.selected {
   background: #10283d;
   box-shadow: inset 3px 0 0 #2b8fd8;
+}
+
+.combat-record-scroll strong,
+.combat-record-scroll small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .combat-editor {
@@ -173,6 +214,14 @@
   display: grid;
   gap: 10px;
   padding: 10px;
+}
+
+.monster-editor {
+  max-width: 1180px;
+}
+
+.scrapbook-editor {
+  max-width: 980px;
 }
 
 .combat-editor-actions,
@@ -271,6 +320,109 @@
   border: 1px solid #26333f;
   border-radius: 7px;
   background: #0d141b;
+}
+
+.scrapbook-summary {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 10px;
+  border: 1px solid #26333f;
+  border-radius: 7px;
+  background: #0d141b;
+}
+
+.scrapbook-summary .monster-icon-preview {
+  width: 82px;
+  height: 82px;
+}
+
+.scrapbook-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(116px, 1fr));
+  gap: 8px;
+}
+
+.scrapbook-fact,
+.scrapbook-array {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid #22313f;
+  border-radius: 6px;
+  background: #101821;
+}
+
+.scrapbook-fact span,
+.scrapbook-array > span {
+  color: #86c7ff;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.scrapbook-fact strong {
+  color: #f3f9ff;
+  font-size: 16px;
+}
+
+.scrapbook-attack-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+}
+
+.scrapbook-attack-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  padding: 8px;
+  border: 1px solid #22313f;
+  border-radius: 6px;
+  background: #101821;
+}
+
+.scrapbook-attack-row strong {
+  grid-column: 1 / -1;
+  color: #f5fbff;
+}
+
+.scrapbook-attack-row span {
+  color: #a9c4d8;
+  font-size: 10px;
+}
+
+.scrapbook-pill-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.scrapbook-array div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.scrapbook-array b {
+  min-width: 28px;
+  min-height: 22px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid #29445d;
+  border-radius: 5px;
+  background: #0b1219;
+  color: #d9efff;
+  font-size: 10px;
+}
+
+.scrapbook-description {
+  max-width: 72ch;
+  color: #bfd4e6;
+  font-size: 12px;
+  line-height: 1.55;
 }
 
 .battle-board {
@@ -487,8 +639,12 @@
 .monster-attacks-grid,
 .combat-compact-array {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 8px;
+}
+
+.monster-attacks-grid {
+  grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
 }
 
 .combat-check-field {
@@ -509,7 +665,7 @@
 
 .monster-attack-row {
   display: grid;
-  grid-template-columns: repeat(4, minmax(86px, 1fr));
+  grid-template-columns: repeat(2, minmax(86px, 1fr));
   gap: 6px;
   padding: 7px;
   border: 1px solid #22313f;
