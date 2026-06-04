@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { LibraryCatalog, ManagedAssetKind, Project, ResourcePreviewDiagnostic, ResourcePreviewStatus, SelectedEntity, SemanticEntity } from "../types";
 import { compactValue, selectEntityFromId, semanticLabel } from "../utils";
 import { resourceConsumers, resourceGaps, resourceMembersForType, schemaEntities } from "../semanticGraph";
@@ -14,11 +14,11 @@ import {
   AssetPagination,
   AssetSection,
   AssetPreview,
-  LIBRARY_PAGE_SIZE,
   LibraryAssetCard,
   ManagedAssetCard,
   PreviewStatusFilters,
   ResourceScopeBadge,
+  ResourcePreviewContents,
   ResourcePreviewItem,
   ResourcePreviewWindow,
   SpecialLandAssetCard,
@@ -28,15 +28,21 @@ import {
   assetMatchesSection,
   assetSectionFromEditor,
   assetSectionTitle,
-  formatBytes,
   libraryAssetMatchesKind,
   libraryAssetMatchesSection,
   numberSummary,
   resourceStatus,
   estimatedPreviewStatus,
-  useProjectPreview
+  useDeferredProjectPreview
 } from "./resources/ResourceWidgets";
 import { RecordsPanel } from "./RecordsPanel";
+
+type AssetPreviewSize = "small" | "medium" | "large";
+type ProjectGalleryItem =
+  | { type: "scenario"; asset: ScenarioResourceAsset }
+  | { type: "managed"; asset: Project["assets"][number] };
+
+const ASSET_PAGE_SIZE_OPTIONS = [50, 100, 200, 500, 0];
 
 const ASSETS_WORKBENCH_HELP = "Assets is the resource-fork workbench: scenario media that ships with the project, Realmz reference resources, Divinity reference art, decoded records, and raw resource inventory all live here with export-scope and preview-status labels.";
 const ASSET_KIND_FILTER_HELP = "Filter by Realmz resource family. Pictures are PICT resources, sounds are snd resources, icons and special land tiles are cicn resources, and text resources are TEXT or STR# entries.";
@@ -102,41 +108,58 @@ export function ResourcesPanel({
     setSectionOverride(null);
     setKindFilter(assetKindFilterFromEditor(activeEditor));
   }, [activeEditor]);
-  const resourceTypes = section === "advanced" ? schemaEntities(project, "resource type") : [];
-  const resources = section === "advanced" ? schemaEntities(project).filter((entity) => entity.type === "resource" || entity.type === "runtime-cache" || entity.type === "asset-fallback" || entity.type === "render-profile") : [];
-  const tileAtlases = section === "advanced" ? schemaEntities(project, "tile atlas") : [];
-  const gaps = section === "advanced" ? resourceGaps(project) : [];
+  const resourceTypes = useMemo(() => section === "advanced" ? schemaEntities(project, "resource type") : [], [project, section]);
+  const resources = useMemo(() => section === "advanced" ? schemaEntities(project).filter((entity) => entity.type === "resource" || entity.type === "runtime-cache" || entity.type === "asset-fallback" || entity.type === "render-profile") : [], [project, section]);
+  const tileAtlases = useMemo(() => section === "advanced" ? schemaEntities(project, "tile atlas") : [], [project, section]);
+  const gaps = useMemo(() => section === "advanced" ? resourceGaps(project) : [], [project, section]);
   const [libraryPreviewFilter, setLibraryPreviewFilter] = useState<ResourcePreviewStatus | "all">("all");
   const [libraryPreviewStatuses, setLibraryPreviewStatuses] = useState<Record<string, ResourcePreviewStatus>>({});
   const [query, setQuery] = useState("");
+  const [assetPageSize, setAssetPageSize] = useState(100);
+  const [assetPreviewSize, setAssetPreviewSize] = useState<AssetPreviewSize>("small");
+  const [selectedAsset, setSelectedAsset] = useState<ResourcePreviewItem | null>(null);
   const normalizedQuery = query.trim().toLowerCase();
-  const projectAssets = (project?.assets ?? []).filter((asset) =>
+  const projectAssets = useMemo(() => (project?.assets ?? []).filter((asset) =>
     assetMatchesSection(asset, section) &&
     assetMatchesKind(asset.kind, kindFilter) &&
     (!normalizedQuery || `${asset.label} ${asset.resourceType} ${asset.resourceId} ${asset.fileName}`.toLowerCase().includes(normalizedQuery))
-  );
-  const scenarioResources = scenarioResourceAssets(project).filter((asset) =>
+  ), [kindFilter, normalizedQuery, project?.assets, section]);
+  const allScenarioResources = useMemo(() => scenarioResourceAssets(project), [project]);
+  const scenarioResources = useMemo(() => allScenarioResources.filter((asset) =>
     section === "project" &&
     assetMatchesKind(asset.kind, kindFilter) &&
     (!normalizedQuery || `${asset.entity.label} ${asset.resourceType} ${asset.resourceId} ${asset.source}`.toLowerCase().includes(normalizedQuery))
-  );
+  ), [allScenarioResources, kindFilter, normalizedQuery, section]);
+  const projectGalleryItems = useMemo<ProjectGalleryItem[]>(() => [
+    ...scenarioResources.map((asset) => ({ type: "scenario" as const, asset })),
+    ...projectAssets.map((asset) => ({ type: "managed" as const, asset }))
+  ], [projectAssets, scenarioResources]);
   useEffect(() => {
     setLibraryPage(0);
-  }, [section, kindFilter, normalizedQuery, libraryPreviewFilter, showUiReference]);
-  const matchingLibraryAssets = libraryAssets
+  }, [section, kindFilter, normalizedQuery, libraryPreviewFilter, showUiReference, assetPageSize]);
+  useEffect(() => {
+    setSelectedAsset(null);
+  }, [section]);
+  const matchingLibraryAssets = useMemo(() => libraryAssets
     .filter((asset) => {
       if (!libraryAssetMatchesSection(asset, section, showUiReference)) return false;
       if (!libraryAssetMatchesKind(asset, kindFilter)) return false;
       if (normalizedQuery && !`${asset.label} ${asset.resourceType ?? ""} ${asset.resourceId ?? ""} ${asset.relativePath}`.toLowerCase().includes(normalizedQuery)) return false;
       if (libraryPreviewFilter === "all") return true;
       return (libraryPreviewStatuses[asset.id] ?? estimatedPreviewStatus(asset)) === libraryPreviewFilter;
-    });
-  const libraryPageCount = Math.max(1, Math.ceil(matchingLibraryAssets.length / LIBRARY_PAGE_SIZE));
+    }), [kindFilter, libraryAssets, libraryPreviewFilter, libraryPreviewStatuses, normalizedQuery, section, showUiReference]);
+  const libraryPageSize = effectiveAssetPageSize(assetPageSize, matchingLibraryAssets.length);
+  const projectPageSize = effectiveAssetPageSize(assetPageSize, projectGalleryItems.length);
+  const libraryPageCount = Math.max(1, Math.ceil(matchingLibraryAssets.length / libraryPageSize));
+  const projectPageCount = Math.max(1, Math.ceil(projectGalleryItems.length / projectPageSize));
   const currentLibraryPage = Math.min(libraryPage, libraryPageCount - 1);
-  const visibleLibraryAssets = matchingLibraryAssets.slice(currentLibraryPage * LIBRARY_PAGE_SIZE, (currentLibraryPage + 1) * LIBRARY_PAGE_SIZE);
+  const currentProjectPage = Math.min(libraryPage, projectPageCount - 1);
+  const visibleLibraryAssets = matchingLibraryAssets.slice(currentLibraryPage * libraryPageSize, (currentLibraryPage + 1) * libraryPageSize);
+  const visibleProjectItems = projectGalleryItems.slice(currentProjectPage * projectPageSize, (currentProjectPage + 1) * projectPageSize);
   const authoringGuidance = assetAuthoringGuidance(section, kindFilter);
   const selectedAdvancedType = resourceTypes.find((entity) => entity.id === advancedTypeId) ?? null;
   const advancedResources = selectedAdvancedType ? resourceMembersForType(project, selectedAdvancedType.id) : resources;
+  const selectedAssetKey = selectedAsset ? resourcePreviewItemKey(selectedAsset) : "";
   return (
     <section className="editor-full-panel asset-workbench">
       <header className="asset-workbench-header">
@@ -221,77 +244,127 @@ export function ResourcesPanel({
           )}
           {section === "project" && <div className="asset-subsection-heading">Ships With This Scenario</div>}
           {section === "project" && (
-          <div className="managed-asset-grid" aria-label="Scenario assets">
-            {scenarioResources.map((asset, index) => (
-              <ScenarioResourceAssetCard
-                key={renderListKey("scenario-resource-asset", asset.entity, index)}
-                asset={asset}
-                project={project}
-                desktopRuntime={desktopRuntime}
-                projectDir={projectDir}
-                onSelectEntity={onSelectEntity}
-                onOpenPreview={() => setPreviewItem({ type: "resource", entity: asset.entity, consumers: project ? directResourceConsumers(project, asset) : [] })}
+            <>
+              <AssetGalleryControls
+                pageSize={assetPageSize}
+                previewSize={assetPreviewSize}
+                onPageSizeChange={setAssetPageSize}
+                onPreviewSizeChange={setAssetPreviewSize}
               />
-            ))}
-            {projectAssets.map((asset, index) => asset.kind === "special-land-tile" ? (
-              <SpecialLandAssetCard
-                key={renderListKey("project-special-land", asset, index)}
-                asset={asset}
-                desktopRuntime={desktopRuntime}
-                projectDir={projectDir}
-                onReplaceAsset={onReplaceAsset}
-                onDeleteAsset={onDeleteAsset}
-                onSelectPaintTile={onSelectPaintTile}
-                onOpenPreview={(preview) => setPreviewItem({ type: "managed", asset, preview, usages: project ? resourceUsageLinks(project, asset.resourceType, asset.resourceId) : [] })}
-              />
-            ) : (
-              <ManagedAssetCard
-                key={renderListKey("managed-asset", asset, index)}
-                asset={asset}
-                project={project}
-                desktopRuntime={desktopRuntime}
-                projectDir={projectDir}
-                onReplaceAsset={onReplaceAsset}
-                onUpdateAsset={onUpdateAsset}
-                onDeleteAsset={onDeleteAsset}
-                onSelectEntity={onSelectEntity}
-                onOpenPreview={(preview) => setPreviewItem({ type: "managed", asset, preview, usages: project ? resourceUsageLinks(project, asset.resourceType, asset.resourceId) : [] })}
-              />
-            ))}
-            {project && projectAssets.length === 0 && scenarioResources.length === 0 && (
-              <p className="empty-copy compact">No scenario assets in this section yet. Imported assets here are the media Providence will package with this scenario.</p>
-            )}
-            {!project && <p className="empty-copy compact">Open a project to manage scenario assets.</p>}
-          </div>
+              <div className="asset-gallery-layout">
+                <div className="asset-gallery-column">
+                  {projectGalleryItems.length > projectPageSize && (
+                    <AssetPagination
+                      page={currentProjectPage}
+                      pageCount={projectPageCount}
+                      pageSize={projectPageSize}
+                      total={projectGalleryItems.length}
+                      onPageChange={setLibraryPage}
+                    />
+                  )}
+                  <div className={`managed-asset-grid asset-gallery preview-${assetPreviewSize}`} aria-label="Scenario assets">
+                    {visibleProjectItems.map((item, index) => item.type === "scenario" ? (
+                      <ScenarioResourceAssetCard
+                        key={renderListKey("scenario-resource-asset", item.asset.entity, index)}
+                        asset={item.asset}
+                        desktopRuntime={desktopRuntime}
+                        projectDir={projectDir}
+                        selected={selectedAssetKey === item.asset.entity.id}
+                        onSelect={() => setSelectedAsset({ type: "resource", entity: item.asset.entity, consumers: project ? directResourceConsumers(project, item.asset) : [] })}
+                      />
+                    ) : item.asset.kind === "special-land-tile" ? (
+                      <SpecialLandAssetCard
+                        key={renderListKey("project-special-land", item.asset, index)}
+                        asset={item.asset}
+                        desktopRuntime={desktopRuntime}
+                        projectDir={projectDir}
+                        compact
+                        selected={selectedAssetKey === item.asset.id}
+                        onReplaceAsset={onReplaceAsset}
+                        onDeleteAsset={onDeleteAsset}
+                        onSelectPaintTile={onSelectPaintTile}
+                        onSelect={(preview) => setSelectedAsset({ type: "managed", asset: item.asset, preview, usages: project ? resourceUsageLinks(project, item.asset.resourceType, item.asset.resourceId) : [] })}
+                      />
+                    ) : (
+                      <ManagedAssetCard
+                        key={renderListKey("managed-asset", item.asset, index)}
+                        asset={item.asset}
+                        project={project}
+                        desktopRuntime={desktopRuntime}
+                        projectDir={projectDir}
+                        compact
+                        selected={selectedAssetKey === item.asset.id}
+                        onReplaceAsset={onReplaceAsset}
+                        onUpdateAsset={onUpdateAsset}
+                        onDeleteAsset={onDeleteAsset}
+                        onSelectEntity={onSelectEntity}
+                        onSelect={(preview) => setSelectedAsset({ type: "managed", asset: item.asset, preview, usages: project ? resourceUsageLinks(project, item.asset.resourceType, item.asset.resourceId) : [] })}
+                      />
+                    ))}
+                    {project && projectGalleryItems.length === 0 && (
+                      <p className="empty-copy compact">No scenario assets in this section yet. Imported assets here are the media Providence will package with this scenario.</p>
+                    )}
+                    {!project && <p className="empty-copy compact">Open a project to manage scenario assets.</p>}
+                  </div>
+                </div>
+                <AssetSelectionInspector
+                  item={selectedAsset}
+                  desktopRuntime={desktopRuntime}
+                  projectDir={projectDir}
+                  onOpenDetail={(item) => setPreviewItem(item)}
+                  onSelectEntity={onSelectEntity}
+                />
+              </div>
+            </>
           )}
           {section !== "project" && (
             <>
               <div className="asset-subsection-heading">{assetSectionTitle(section)}</div>
-              {matchingLibraryAssets.length > LIBRARY_PAGE_SIZE && (
-                <AssetPagination
-                  page={currentLibraryPage}
-                  pageCount={libraryPageCount}
-                  total={matchingLibraryAssets.length}
-                  onPageChange={setLibraryPage}
+              <AssetGalleryControls
+                pageSize={assetPageSize}
+                previewSize={assetPreviewSize}
+                onPageSizeChange={setAssetPageSize}
+                onPreviewSizeChange={setAssetPreviewSize}
+              />
+              <div className="asset-gallery-layout">
+                <div className="asset-gallery-column">
+                  {matchingLibraryAssets.length > libraryPageSize && (
+                    <AssetPagination
+                      page={currentLibraryPage}
+                      pageCount={libraryPageCount}
+                      pageSize={libraryPageSize}
+                      total={matchingLibraryAssets.length}
+                      onPageChange={setLibraryPage}
+                    />
+                  )}
+                  <div className={`library-asset-strip asset-gallery preview-${assetPreviewSize}`} aria-label="Library assets">
+                    {visibleLibraryAssets.map((asset, index) => (
+                      <LibraryAssetCard
+                        key={renderListKey("library-asset", asset, index)}
+                        asset={asset}
+                        project={project}
+                        desktopRuntime={desktopRuntime}
+                        workspaceDir={workspaceDir}
+                        compact
+                        selected={selectedAssetKey === asset.id}
+                        onSelectEntity={onSelectEntity}
+                        onSelect={(preview) => setSelectedAsset({ type: "library", asset, preview, usages: project ? resourceUsageLinks(project, asset.resourceType, asset.resourceId) : [] })}
+                        onPreviewStatus={(assetId, status) => setLibraryPreviewStatuses((statuses) => statuses[assetId] === status ? statuses : { ...statuses, [assetId]: status })}
+                      />
+                    ))}
+                    {visibleLibraryAssets.length === 0 && libraryAssets.length > 0 && (
+                      <p className="empty-copy compact">No reference assets match this search.</p>
+                    )}
+                    {libraryAssets.length === 0 && <p className="empty-copy compact">Bundled libraries did not expose media assets.</p>}
+                  </div>
+                </div>
+                <AssetSelectionInspector
+                  item={selectedAsset}
+                  desktopRuntime={desktopRuntime}
+                  projectDir={projectDir}
+                  onOpenDetail={(item) => setPreviewItem(item)}
+                  onSelectEntity={onSelectEntity}
                 />
-              )}
-              <div className="library-asset-strip" aria-label="Library assets">
-                {visibleLibraryAssets.map((asset, index) => (
-                  <LibraryAssetCard
-                    key={renderListKey("library-asset", asset, index)}
-                    asset={asset}
-                    project={project}
-                    desktopRuntime={desktopRuntime}
-                    workspaceDir={workspaceDir}
-                    onSelectEntity={onSelectEntity}
-                    onOpenPreview={(preview) => setPreviewItem({ type: "library", asset, preview, usages: project ? resourceUsageLinks(project, asset.resourceType, asset.resourceId) : [] })}
-                    onPreviewStatus={(assetId, status) => setLibraryPreviewStatuses((statuses) => statuses[assetId] === status ? statuses : { ...statuses, [assetId]: status })}
-                  />
-                ))}
-                {visibleLibraryAssets.length === 0 && libraryAssets.length > 0 && (
-                  <p className="empty-copy compact">No reference assets match this search.</p>
-                )}
-                {libraryAssets.length === 0 && <p className="empty-copy compact">Bundled libraries did not expose media assets.</p>}
               </div>
             </>
           )}
@@ -404,6 +477,90 @@ export function ResourcesPanel({
   );
 }
 
+function AssetGalleryControls({
+  pageSize,
+  previewSize,
+  onPageSizeChange,
+  onPreviewSizeChange
+}: {
+  pageSize: number;
+  previewSize: AssetPreviewSize;
+  onPageSizeChange: (pageSize: number) => void;
+  onPreviewSizeChange: (previewSize: AssetPreviewSize) => void;
+}) {
+  return (
+    <div className="asset-gallery-controls" aria-label="Asset gallery controls">
+      <label>
+        <span>Preview Size</span>
+        <select value={previewSize} onChange={(event) => onPreviewSizeChange(event.currentTarget.value as AssetPreviewSize)}>
+          <option value="small">Small</option>
+          <option value="medium">Medium</option>
+          <option value="large">Large</option>
+        </select>
+      </label>
+      <label>
+        <span>Per Page</span>
+        <select value={pageSize} onChange={(event) => onPageSizeChange(Number(event.currentTarget.value))}>
+          {ASSET_PAGE_SIZE_OPTIONS.map((option) => (
+            <option key={option} value={option}>{option === 0 ? "All" : option}</option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
+}
+
+function AssetSelectionInspector({
+  item,
+  desktopRuntime,
+  projectDir,
+  onOpenDetail,
+  onSelectEntity
+}: {
+  item: ResourcePreviewItem | null;
+  desktopRuntime: boolean;
+  projectDir: string;
+  onOpenDetail: (item: ResourcePreviewItem) => void;
+  onSelectEntity: (entity: SelectedEntity) => void;
+}) {
+  const title = item ? resourcePreviewItemTitle(item) : "No Asset Selected";
+  return (
+    <aside className="asset-selection-inspector" aria-label="Selected asset inspector">
+      <header>
+        <div>
+          <span>Selection Inspector</span>
+          <strong>{title}</strong>
+        </div>
+        <button type="button" className="btn btn-secondary btn-xs" disabled={!item} onClick={() => item && onOpenDetail(item)}>
+          Open Detail
+        </button>
+      </header>
+      {item ? (
+        <ResourcePreviewContents item={item} desktopRuntime={desktopRuntime} projectDir={projectDir} onSelectEntity={onSelectEntity} />
+      ) : (
+        <p className="empty-copy compact">Select an asset to inspect preview scale, source, export scope, decoded metadata, and usage links.</p>
+      )}
+    </aside>
+  );
+}
+
+function effectiveAssetPageSize(pageSize: number, total: number) {
+  if (pageSize <= 0) return Math.max(1, total);
+  return pageSize;
+}
+
+function resourcePreviewItemKey(item: ResourcePreviewItem) {
+  if (item.type === "managed") return item.asset.id;
+  if (item.type === "library") return item.asset.id;
+  return item.entity.id;
+}
+
+function resourcePreviewItemTitle(item: ResourcePreviewItem) {
+  if (item.type === "managed") return item.asset.label;
+  if (item.type === "library") return item.asset.label;
+  return item.entity.label;
+}
+
 type ScenarioResourceAsset = {
   entity: SemanticEntity;
   kind: ManagedAssetKind;
@@ -416,55 +573,35 @@ type ScenarioResourceAsset = {
 
 function ScenarioResourceAssetCard({
   asset,
-  project,
   desktopRuntime,
   projectDir,
-  onSelectEntity,
-  onOpenPreview
+  selected,
+  onSelect
 }: {
   asset: ScenarioResourceAsset;
-  project: Project | null;
   desktopRuntime: boolean;
   projectDir: string;
-  onSelectEntity: (entity: SelectedEntity) => void;
-  onOpenPreview: () => void;
+  selected: boolean;
+  onSelect: () => void;
 }) {
-  const preview = useProjectPreview(asset.previewPath, desktopRuntime, projectDir);
-  const consumers = project ? directResourceConsumers(project, asset) : [];
+  const { previewRef, preview } = useDeferredProjectPreview<HTMLElement>(asset.previewPath, desktopRuntime, projectDir);
   return (
-    <article className="managed-asset-card scenario-resource">
+    <article ref={previewRef} className={`managed-asset-card scenario-resource compact-gallery-card${selected ? " selected" : ""}`} tabIndex={0} onClick={onSelect} onKeyDown={(event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        onSelect();
+      }
+    }}>
       <AssetPreview
         kind={asset.kind}
         label={asset.entity.label}
         preview={preview}
         status={scenarioResourcePreviewStatus(asset.entity)}
         diagnostics={scenarioResourcePreviewDiagnostics(asset.entity)}
-        onOpen={onOpenPreview}
+        onOpen={onSelect}
       />
-      <ResourceScopeBadge scope="ships-with-scenario" />
       <strong>{asset.entity.label}</strong>
       <small>{asset.resourceType} {asset.resourceId}</small>
-      <div className="asset-facts">
-        <span>{scenarioResourceRoleLabel(asset)}</span>
-        <span>{formatBytes(asset.bytes)}</span>
-        <span>{consumers.length} use{consumers.length === 1 ? "" : "s"}</span>
-        <span>{asset.source}</span>
-      </div>
-      {consumers.length > 0 && (
-        <div className="asset-usage-list">
-          {consumers.slice(0, 4).map((usage) => (
-            <button key={usage.id} type="button" onClick={() => onSelectEntity(selectEntityFromId(usage.from))}>
-              {usage.from}
-              <small>{usage.kind}</small>
-            </button>
-          ))}
-        </div>
-      )}
-      <div className="asset-card-actions">
-        <button className="btn btn-secondary btn-xs" type="button" onClick={onOpenPreview}>
-          Open Detail
-        </button>
-      </div>
     </article>
   );
 }
@@ -572,19 +709,6 @@ function managedKindForResource(resourceType: string): ManagedAssetKind {
   if (normalized === "snd") return "sound";
   if (normalized === "TEXT" || normalized === "STR#") return "text";
   return "other";
-}
-
-function scenarioResourceRoleLabel(asset: ScenarioResourceAsset) {
-  if (asset.resourceType === "PICT" && asset.resourceId >= 30000 && asset.resourceId <= 30128) return "Scenario picture";
-  if (asset.resourceType === "PICT" && asset.resourceId >= 306 && asset.resourceId <= 308) return "Custom landlook atlas";
-  if (asset.resourceType === "cicn" && asset.resourceId < 0) return "Special land tile";
-  if (asset.resourceType === "cicn") return "Icon";
-  if (asset.resourceType.trim() === "snd") return "Sound";
-  if (asset.resourceType === "TEXT") return "Text resource";
-  if (asset.resourceType === "STR#") return "String list";
-  if (asset.resourceType === "styl") return "Style data";
-  if (asset.resourceType === "vers") return "Version data";
-  return "Raw resource";
 }
 
 function scenarioResourcePreviewStatus(entity: SemanticEntity): ResourcePreviewStatus | "unknown" {

@@ -192,23 +192,44 @@ export function SpecialLandAssetCard({
   asset,
   desktopRuntime,
   projectDir,
+  compact = false,
+  selected = false,
   onReplaceAsset,
   onDeleteAsset,
   onSelectPaintTile,
+  onSelect,
   onOpenPreview
 }: {
   asset: ManagedAsset;
   desktopRuntime: boolean;
   projectDir: string;
+  compact?: boolean;
+  selected?: boolean;
   onReplaceAsset?: (assetId: string, file: File) => void;
   onDeleteAsset?: (assetId: string) => void;
   onSelectPaintTile?: (tile: number) => void;
+  onSelect?: (preview: string | null) => void;
   onOpenPreview?: (preview: string | null) => void;
 }) {
-  const preview = useProjectPreview(asset.previewPath, desktopRuntime, projectDir);
+  const { previewRef, preview } = useDeferredProjectPreview<HTMLElement>(asset.previewPath, desktopRuntime, projectDir, asset.sha256);
   const replaceInputRef = useRef<HTMLInputElement>(null);
+  const cardClass = `managed-asset-card special-land-card${compact ? " compact-gallery-card" : ""}${selected ? " selected" : ""}`;
+  if (compact) {
+    return (
+      <article ref={previewRef} className={cardClass} tabIndex={0} onClick={() => onSelect?.(preview)} onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect?.(preview);
+        }
+      }}>
+        <AssetPreview kind={asset.kind} label={asset.label} preview={preview} onOpen={() => onSelect?.(preview)} />
+        <strong>{asset.label}</strong>
+        <small>{asset.resourceType} {asset.resourceId}</small>
+      </article>
+    );
+  }
   return (
-    <article className="managed-asset-card special-land-card">
+    <article ref={previewRef} className={cardClass}>
       <AssetPreview kind={asset.kind} label={asset.label} preview={preview} onOpen={() => onOpenPreview?.(preview)} />
       <strong>{asset.label}</strong>
       <ResourceScopeBadge scope={resourceExportScope(asset)} />
@@ -255,28 +276,49 @@ export function ManagedAssetCard({
   project,
   desktopRuntime,
   projectDir,
+  compact = false,
+  selected = false,
   onReplaceAsset,
   onUpdateAsset,
   onDeleteAsset,
   onSelectEntity,
+  onSelect,
   onOpenPreview
 }: {
   asset: ManagedAsset;
   project: Project | null;
   desktopRuntime: boolean;
   projectDir: string;
+  compact?: boolean;
+  selected?: boolean;
   onReplaceAsset?: (assetId: string, file: File) => void;
   onUpdateAsset?: (assetId: string, changes: { label?: string; resourceId?: number }) => void;
   onDeleteAsset?: (assetId: string) => void;
   onSelectEntity?: (entity: SelectedEntity) => void;
+  onSelect?: (preview: string | null) => void;
   onOpenPreview?: (preview: string | null) => void;
 }) {
-  const preview = useProjectPreview(asset.previewPath, desktopRuntime, projectDir);
+  const { previewRef, preview } = useDeferredProjectPreview<HTMLElement>(asset.previewPath, desktopRuntime, projectDir, asset.sha256);
   const replaceInputRef = useRef<HTMLInputElement>(null);
   const usages = project ? resourceUsageLinks(project, asset.resourceType, asset.resourceId) : [];
   const rangeNotes = projectAssetRangeNotes(asset);
+  const cardClass = `managed-asset-card${compact ? " compact-gallery-card" : ""}${selected ? " selected" : ""}`;
+  if (compact) {
+    return (
+      <article ref={previewRef} className={cardClass} tabIndex={0} onClick={() => onSelect?.(preview)} onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect?.(preview);
+        }
+      }}>
+        <AssetPreview kind={asset.kind} label={asset.label} preview={preview} onOpen={() => onSelect?.(preview)} />
+        <strong>{asset.label}</strong>
+        <small>{asset.resourceType} {asset.resourceId}</small>
+      </article>
+    );
+  }
   return (
-    <article className="managed-asset-card">
+    <article ref={previewRef} className={cardClass}>
       <AssetPreview kind={asset.kind} label={asset.label} preview={preview} onOpen={() => onOpenPreview?.(preview)} />
       <ResourceScopeBadge scope={resourceExportScope(asset)} />
       <label className="domain-field">
@@ -423,7 +465,10 @@ export function LibraryAssetCard({
   project,
   desktopRuntime,
   workspaceDir,
+  compact = false,
+  selected = false,
   onSelectEntity,
+  onSelect,
   onOpenPreview,
   onPreviewStatus
 }: {
@@ -431,7 +476,10 @@ export function LibraryAssetCard({
   project: Project | null;
   desktopRuntime: boolean;
   workspaceDir: string;
+  compact?: boolean;
+  selected?: boolean;
   onSelectEntity?: (entity: SelectedEntity) => void;
+  onSelect?: (preview: AssetPreviewState) => void;
   onOpenPreview?: (preview: AssetPreviewState) => void;
   onPreviewStatus?: (assetId: string, status: ResourcePreviewStatus) => void;
 }) {
@@ -443,8 +491,30 @@ export function LibraryAssetCard({
   useEffect(() => {
     onPreviewStatus?.(asset.id, preview.status === "unknown" ? estimatedPreviewStatus(asset) : preview.status);
   }, [asset, onPreviewStatus, preview.status]);
+  const cardClass = `managed-asset-card library${compact ? " compact-gallery-card" : ""}${selected ? " selected" : ""}`;
+  if (compact) {
+    return (
+      <article className={cardClass} tabIndex={0} onClick={() => onSelect?.(preview)} onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect?.(preview);
+        }
+      }}>
+        <AssetPreview
+          kind={assetKind(asset.type)}
+          label={asset.label}
+          preview={preview.dataUrl}
+          status={preview.status}
+          diagnostics={preview.diagnostics}
+          onOpen={() => onSelect?.(preview)}
+        />
+        <strong>{asset.label}</strong>
+        <small>{asset.resourceType ?? asset.type} {asset.resourceId ?? ""}</small>
+      </article>
+    );
+  }
   return (
-    <article className="managed-asset-card library">
+    <article className={cardClass}>
       <AssetPreview
         kind={assetKind(asset.type)}
         label={asset.label}
@@ -493,18 +563,21 @@ export function LibraryAssetCard({
 export function AssetPagination({
   page,
   pageCount,
+  pageSize,
   total,
   onPageChange
 }: {
   page: number;
   pageCount: number;
+  pageSize: number;
   total: number;
   onPageChange: (page: number) => void;
 }) {
-  const first = page * LIBRARY_PAGE_SIZE + 1;
-  const last = Math.min(total, (page + 1) * LIBRARY_PAGE_SIZE);
+  const effectivePageSize = pageSize <= 0 ? total : pageSize;
+  const first = total === 0 ? 0 : page * effectivePageSize + 1;
+  const last = Math.min(total, (page + 1) * effectivePageSize);
   return (
-    <div className="asset-pagination" aria-label="Reference asset pages">
+    <div className="asset-pagination" aria-label="Asset pages">
       <button type="button" className="btn btn-secondary btn-xs" disabled={page === 0} onClick={() => onPageChange(Math.max(0, page - 1))}>
         Previous
       </button>
@@ -622,13 +695,6 @@ export function ResourcePreviewWindow({
   onSelectEntity: (entity: SelectedEntity) => void;
 }) {
   const title = item.type === "resource" ? item.entity.label : item.asset.label;
-  const scope = item.type === "managed"
-    ? resourceExportScope(item.asset)
-    : item.type === "library"
-      ? resourceExportScope(item.asset)
-      : item.entity.summary.scenarioSupplied === true
-        ? "ships-with-scenario"
-        : "unknown-advanced";
   return (
     <FloatingWorkbenchPanel
       title={title}
@@ -641,51 +707,74 @@ export function ResourcePreviewWindow({
       className="asset-resource-preview-window"
       actions={<button type="button" className="btn btn-ghost btn-xs" onClick={onClose} aria-label="Close resource preview"><X size={14} /></button>}
     >
-      <div className="resource-detail-view">
-        <p className="field-help">
-          <TutorialTip title="Resource Detail" body={RESOURCE_DETAIL_WINDOW_HELP} side="below">
-            <span>Origin, export scope, preview diagnostics, conversion notes, decoded fields, and usage links.</span>
-          </TutorialTip>
-        </p>
-        <ResourceScopeBadge scope={scope} />
-        {item.type === "managed" && (
-          <ManagedResourceDetail
-            item={item}
-            desktopRuntime={desktopRuntime}
-            projectDir={projectDir}
-            onSelectEntity={onSelectEntity}
-          />
-        )}
-        {item.type === "library" && (
-          <>
-            {managedAssetKindForLibrary(item.asset) === "text" && libraryPreviewText(item.preview) ? (
-              <pre className="resource-detail-text" aria-label={item.asset.label}>{libraryPreviewText(item.preview)}</pre>
-            ) : (
-              <ResourcePreviewMedia kind={managedAssetKindForLibrary(item.asset)} preview={item.preview.dataUrl} label={item.asset.label} />
-            )}
-            <ResourceFactGrid rows={[
-              ["Resource", `${item.asset.resourceType ?? item.asset.type} ${item.asset.resourceId ?? ""}`.trim()],
-              ["Role", roleLabel(resourceRole(item.asset))],
-              ["Origin", resourceOriginLabel(resourceOrigin(item.asset))],
-              ["Preview", previewFilterLabel(item.preview.status === "unknown" ? estimatedPreviewStatus(item.asset) : item.preview.status)],
-              ["Bytes", formatBytes(item.asset.bytes)],
-              ["Path", item.asset.relativePath]
-            ]} />
-            {Object.keys(item.preview.summary).length > 0 && <ResourceFactGrid title="Preview Details" rows={Object.entries(item.preview.summary)} />}
-            <ResourcePreviewDiagnostics diagnostics={item.preview.diagnostics} />
-            <UsageLinks usages={item.usages} onSelectEntity={onSelectEntity} />
-          </>
-        )}
-        {item.type === "resource" && (
-          <ScenarioResourceDetail
-            item={item}
-            desktopRuntime={desktopRuntime}
-            projectDir={projectDir}
-            onSelectEntity={onSelectEntity}
-          />
-        )}
-      </div>
+      <ResourcePreviewContents item={item} desktopRuntime={desktopRuntime} projectDir={projectDir} onSelectEntity={onSelectEntity} />
     </FloatingWorkbenchPanel>
+  );
+}
+
+export function ResourcePreviewContents({
+  item,
+  desktopRuntime,
+  projectDir,
+  onSelectEntity
+}: {
+  item: ResourcePreviewItem;
+  desktopRuntime: boolean;
+  projectDir: string;
+  onSelectEntity: (entity: SelectedEntity) => void;
+}) {
+  const scope = item.type === "managed"
+    ? resourceExportScope(item.asset)
+    : item.type === "library"
+      ? resourceExportScope(item.asset)
+      : item.entity.summary.scenarioSupplied === true
+        ? "ships-with-scenario"
+        : "unknown-advanced";
+  return (
+    <div className="resource-detail-view">
+      <p className="field-help">
+        <TutorialTip title="Resource Detail" body={RESOURCE_DETAIL_WINDOW_HELP} side="below">
+          <span>Origin, export scope, preview diagnostics, conversion notes, decoded fields, and usage links.</span>
+        </TutorialTip>
+      </p>
+      <ResourceScopeBadge scope={scope} />
+      {item.type === "managed" && (
+        <ManagedResourceDetail
+          item={item}
+          desktopRuntime={desktopRuntime}
+          projectDir={projectDir}
+          onSelectEntity={onSelectEntity}
+        />
+      )}
+      {item.type === "library" && (
+        <>
+          {managedAssetKindForLibrary(item.asset) === "text" && libraryPreviewText(item.preview) ? (
+            <pre className="resource-detail-text" aria-label={item.asset.label}>{libraryPreviewText(item.preview)}</pre>
+          ) : (
+            <ResourcePreviewMedia kind={managedAssetKindForLibrary(item.asset)} preview={item.preview.dataUrl} label={item.asset.label} />
+          )}
+          <ResourceFactGrid rows={[
+            ["Resource", `${item.asset.resourceType ?? item.asset.type} ${item.asset.resourceId ?? ""}`.trim()],
+            ["Role", roleLabel(resourceRole(item.asset))],
+            ["Origin", resourceOriginLabel(resourceOrigin(item.asset))],
+            ["Preview", previewFilterLabel(item.preview.status === "unknown" ? estimatedPreviewStatus(item.asset) : item.preview.status)],
+            ["Bytes", formatBytes(item.asset.bytes)],
+            ["Path", item.asset.relativePath]
+          ]} />
+          {Object.keys(item.preview.summary).length > 0 && <ResourceFactGrid title="Preview Details" rows={Object.entries(item.preview.summary)} />}
+          <ResourcePreviewDiagnostics diagnostics={item.preview.diagnostics} />
+          <UsageLinks usages={item.usages} onSelectEntity={onSelectEntity} />
+        </>
+      )}
+      {item.type === "resource" && (
+        <ScenarioResourceDetail
+          item={item}
+          desktopRuntime={desktopRuntime}
+          projectDir={projectDir}
+          onSelectEntity={onSelectEntity}
+        />
+      )}
+    </div>
   );
 }
 
@@ -753,7 +842,7 @@ export function ManagedResourceDetail({
   projectDir: string;
   onSelectEntity: (entity: SelectedEntity) => void;
 }) {
-  const originalPreview = useProjectPreview(item.asset.originalPath, desktopRuntime, projectDir);
+  const originalPreview = useProjectPreview(item.asset.originalPath, desktopRuntime, projectDir, true, item.asset.sha256);
   const isSound = item.asset.kind === "sound";
   const conversionRows = managedConversionRows(item.asset);
   return (
@@ -794,14 +883,56 @@ export function ManagedResourceDetail({
 
 export function ResourcePreviewMedia({ kind, preview, label }: { kind: ManagedAssetKind; preview: string | null; label: string }) {
   const [failedPreview, setFailedPreview] = useState<string | null>(null);
+  const [imageScale, setImageScale] = useState<"fit" | 1 | 2 | 4>("fit");
+  const [naturalSize, setNaturalSize] = useState<{ width: number; height: number } | null>(null);
   useEffect(() => setFailedPreview(null), [preview]);
+  useEffect(() => {
+    setImageScale("fit");
+    setNaturalSize(null);
+  }, [preview]);
   const usablePreview = preview && preview !== failedPreview ? preview : null;
   if (usablePreview && kind === "sound") return <audio className="resource-detail-audio" src={usablePreview} controls preload="metadata" />;
   if (usablePreview && kind === "text") {
     const text = decodeTextDataUrl(usablePreview);
     if (text != null) return <pre className="resource-detail-text" aria-label={label}>{text}</pre>;
   }
-  if (usablePreview) return <img className="resource-detail-image" src={usablePreview} alt={label} onError={() => setFailedPreview(usablePreview)} />;
+  if (usablePreview) {
+    const scaledSize = naturalSize && imageScale !== "fit"
+      ? { width: naturalSize.width * imageScale, height: naturalSize.height * imageScale }
+      : null;
+    return (
+      <div className="resource-detail-media">
+        <div className="resource-detail-media-toolbar" aria-label="Preview scale">
+          <span>{naturalSize ? `${naturalSize.width} x ${naturalSize.height}` : "Image preview"}</span>
+          {(["fit", 1, 2, 4] as const).map((scale) => (
+            <button
+              key={scale}
+              type="button"
+              className={imageScale === scale ? "active" : ""}
+              onClick={() => setImageScale(scale)}
+              aria-pressed={imageScale === scale}
+            >
+              {scale === "fit" ? "Fit" : `${scale}x`}
+            </button>
+          ))}
+        </div>
+        <div className="resource-detail-image-viewport">
+          <img
+            className={`resource-detail-image ${imageScale === "fit" ? "fit" : "scaled"}`}
+            src={usablePreview}
+            alt={label}
+            width={scaledSize?.width}
+            height={scaledSize?.height}
+            onLoad={(event) => setNaturalSize({
+              width: event.currentTarget.naturalWidth,
+              height: event.currentTarget.naturalHeight
+            })}
+            onError={() => setFailedPreview(usablePreview)}
+          />
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="resource-detail-missing">
       {kind === "sound" ? <Music size={28} /> : kind === "text" ? <FileText size={28} /> : <ImageIcon size={28} />}
@@ -990,26 +1121,78 @@ export function roleLabel(role: ReturnType<typeof resourceRole>) {
   return "Raw resource";
 }
 
-export function useProjectPreview(path: string, desktopRuntime: boolean, projectDir: string) {
+type ProjectPreviewCacheEntry = string | null | Promise<string | null>;
+
+const projectPreviewCache = new Map<string, ProjectPreviewCacheEntry>();
+
+export function useProjectPreview(path: string, desktopRuntime: boolean, projectDir: string, enabled = true, cacheVersion = "") {
   const [preview, setPreview] = useState<string | null>(() => path.startsWith("data:") ? path : null);
   useEffect(() => {
     let disposed = false;
+    if (!enabled) {
+      setPreview(path.startsWith("data:") ? path : null);
+      return;
+    }
     if (!desktopRuntime || path.startsWith("data:") || !projectDir) {
       setPreview(path.startsWith("data:") ? path : null);
       return;
     }
-    invoke<string>("load_project_asset_preview", { projectDir, relativePath: path })
+    loadProjectPreviewCached(projectDir, path, cacheVersion)
       .then((url) => {
         if (!disposed) setPreview(url);
-      })
-      .catch(() => {
-        if (!disposed) setPreview(null);
       });
     return () => {
       disposed = true;
     };
-  }, [desktopRuntime, path, projectDir]);
+  }, [cacheVersion, desktopRuntime, enabled, path, projectDir]);
   return preview;
+}
+
+export function useDeferredProjectPreview<T extends HTMLElement>(path: string, desktopRuntime: boolean, projectDir: string, cacheVersion = "") {
+  const [previewRef, previewEnabled] = usePreviewVisibility<T>();
+  const preview = useProjectPreview(path, desktopRuntime, projectDir, previewEnabled, cacheVersion);
+  return { previewRef, preview, previewEnabled };
+}
+
+function loadProjectPreviewCached(projectDir: string, relativePath: string, cacheVersion: string) {
+  const key = `${projectDir}\n${relativePath}\n${cacheVersion}`;
+  const cached = projectPreviewCache.get(key);
+  if (cached instanceof Promise) return cached;
+  if (projectPreviewCache.has(key)) return Promise.resolve(cached ?? null);
+  const request = invoke<string>("load_project_asset_preview", { projectDir, relativePath })
+    .then((url) => {
+      projectPreviewCache.set(key, url);
+      return url;
+    })
+    .catch(() => {
+      projectPreviewCache.set(key, null);
+      return null;
+    });
+  projectPreviewCache.set(key, request);
+  return request;
+}
+
+function usePreviewVisibility<T extends HTMLElement>() {
+  const ref = useRef<T | null>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (visible) return;
+    const element = ref.current;
+    if (!element) return;
+    if (!("IntersectionObserver" in window)) {
+      setVisible(true);
+      return;
+    }
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        setVisible(true);
+        observer.disconnect();
+      }
+    }, { rootMargin: "240px" });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [visible]);
+  return [ref, visible] as const;
 }
 
 type AssetPreviewState = {

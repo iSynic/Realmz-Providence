@@ -14,6 +14,9 @@ const textUsageIndexes = new WeakMap<Project, {
   messageLinks: Map<number, ContentUsageLink[]>;
   optionLabelLinks: Map<number, ContentUsageLink[]>;
 }>();
+const resourceUsageIndexes = new WeakMap<Project, {
+  mapCicnLinks: Map<number, ContentUsageLink[]>;
+}>();
 
 export function classicTextByteLength(text: string) {
   return Array.from(text ?? "").length;
@@ -181,12 +184,7 @@ export function resourceUsageLinks(project: Project, resourceType: string | null
     }
   }
   if (type === "cicn") {
-    for (const map of project.maps ?? []) {
-      const count = map.tiles.filter((tile) => tileMatchesCicn(tile, resourceId)).length;
-      if (count > 0) {
-        links.push({ key: `icon-map:${map.id}`, label: map.name, detail: `${count.toLocaleString()} tile${count === 1 ? "" : "s"} on map`, entity: { type: "map", id: `map:${map.levelType}:${map.index}` } });
-      }
-    }
+    links.push(...(resourceUsageIndex(project).mapCicnLinks.get(resourceId) ?? []));
     links.push(...edcdCicnUsageLinks(project, resourceId));
     for (const spell of project.spellOverrides ?? []) {
       const castFrames = spellAnimationFrameIds(spell.spellLook1, "blank-cast");
@@ -208,6 +206,45 @@ export function resourceUsageLinks(project: Project, resourceType: string | null
     }
   }
   return links;
+}
+
+function resourceUsageIndex(project: Project) {
+  const cached = resourceUsageIndexes.get(project);
+  if (cached) return cached;
+  const index = {
+    mapCicnLinks: buildMapCicnUsageLinks(project)
+  };
+  resourceUsageIndexes.set(project, index);
+  return index;
+}
+
+function buildMapCicnUsageLinks(project: Project) {
+  const links = new Map<number, ContentUsageLink[]>();
+  for (const map of project.maps ?? []) {
+    const counts = new Map<number, number>();
+    for (const tile of map.tiles ?? []) {
+      for (const resourceId of candidateCicnResourceIds(tile)) {
+        counts.set(resourceId, (counts.get(resourceId) ?? 0) + 1);
+      }
+    }
+    for (const [resourceId, count] of counts) {
+      const existing = links.get(resourceId) ?? [];
+      existing.push({
+        key: `icon-map:${map.id}`,
+        label: map.name,
+        detail: `${count.toLocaleString()} tile${count === 1 ? "" : "s"} on map`,
+        entity: { type: "map", id: `map:${map.levelType}:${map.index}` }
+      });
+      links.set(resourceId, existing);
+    }
+  }
+  return links;
+}
+
+function candidateCicnResourceIds(tile: number) {
+  const ids = new Set<number>([tile, -tile]);
+  if (tile < 0) ids.add(-2000 - tile);
+  return ids;
 }
 
 type ScriptActionLike = {
@@ -452,12 +489,4 @@ function authorFacingExtraActionKind(classification: string) {
   if (classification === "Imported Empty Slot") return "Empty Extra Action Point";
   if (classification === "Imported Runtime Mutation") return "Runtime Extra Action Point";
   return "Unlinked Extra Action Point";
-}
-
-function tileMatchesCicn(tile: number, resourceId: number) {
-  if (tile === resourceId) return true;
-  if (tile === -resourceId) return true;
-  if (tile < 0 && Math.abs(tile) === Math.abs(resourceId)) return true;
-  if (tile < 0 && resourceId < 0 && Math.abs(tile + 1000) === Math.abs(resourceId + 1000)) return true;
-  return false;
 }

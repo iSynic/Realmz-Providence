@@ -15,6 +15,7 @@ import {
   tileIconCandidates
 } from "../map/renderValues";
 import { runProvidenceHarness } from "../harness";
+import { runDesktopUiHarness } from "../desktopUiHarness";
 import { isActorOrCreatureIconId } from "../resourceResolver";
 import { BROWSER_PREVIEW_STATUS, EditorAction, EditorState } from "../store";
 import { AtlasEntry, IconEntry, Project, ProvidenceWorkspace, TilesetAsset } from "../types";
@@ -45,13 +46,17 @@ export function useAppBootstrapEffects({
   useEffect(() => {
     if (!desktopRuntime) return;
     let disposed = false;
-    void runProvidenceHarness((status) => {
+    const onStatus = (status: string) => {
       if (!disposed) dispatch({ type: "setStatus", status });
+    };
+    void runDesktopUiHarness({ dispatch, setProjectDir, onStatus }).then((handled) => {
+      if (handled || disposed) return;
+      void runProvidenceHarness(onStatus);
     });
     return () => {
       disposed = true;
     };
-  }, [desktopRuntime, dispatch]);
+  }, [desktopRuntime, dispatch, setProjectDir]);
 
   useEffect(() => {
     if (desktopRuntime) return;
