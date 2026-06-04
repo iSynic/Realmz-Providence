@@ -15,6 +15,7 @@ export function fillRegion(
   selectedTileset: TilesetAsset | null,
   paintVariation: MapPaintVariation,
   activePaintGroupId: string,
+  variationTiles: number[] | null | undefined,
   onApplyCommand: (command: ProjectCommand) => void
 ) {
   if (!map || !region) return;
@@ -23,7 +24,8 @@ export function fillRegion(
     selectedTileset,
     variation: paintVariation,
     activeGroupId: activePaintGroupId,
-    seed: paintSeed(map.id, region.left, region.top, region.right, region.bottom, selectedTile, activePaintGroupId)
+    variationTiles,
+    seed: paintSeed(map.id, region.left, region.top, region.right, region.bottom, selectedTile, activePaintGroupId, variationTiles?.join(","))
   });
   if (plan.changes.length === 0) return;
   onApplyCommand({

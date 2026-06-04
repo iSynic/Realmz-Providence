@@ -179,7 +179,10 @@ pub struct ScenarioGlobalMacroHooks {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct EditorMetadata {
+    #[serde(default)]
     pub display_names: BTreeMap<String, EditorDisplayName>,
+    #[serde(default)]
+    pub tile_palettes: Vec<TilePalette>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -195,6 +198,17 @@ pub struct EditorDisplayName {
 pub enum EditorNameSource {
     User,
     Generated,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TilePalette {
+    pub id: String,
+    pub name: String,
+    #[serde(default)]
+    pub tiles: Vec<i16>,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

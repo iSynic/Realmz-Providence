@@ -63,6 +63,14 @@ import {
   updateRecord,
   upsertQuestLabel
 } from "./projectCommands/targetRecordCommands";
+import {
+  addTileToPalette,
+  createTilePalette,
+  deleteTilePalette,
+  removeTileFromPalette,
+  renameTilePalette,
+  updateTilePaletteTiles
+} from "./projectCommands/tilePaletteCommands";
 
 export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "paintTiles") return paintTiles(project, command.mapId, command.cells);
@@ -77,6 +85,12 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "createLandLayout") return ensureLandLayout(project);
   if (command.kind === "updateLandLayoutCell") return updateLandLayoutCell(project, command.row, command.col, command.value);
   if (command.kind === "clearLandLayout") return clearLandLayout(project);
+  if (command.kind === "createTilePalette") return createTilePalette(project, command);
+  if (command.kind === "renameTilePalette") return renameTilePalette(project, command.paletteId, command.name);
+  if (command.kind === "deleteTilePalette") return deleteTilePalette(project, command.paletteId);
+  if (command.kind === "updateTilePaletteTiles") return updateTilePaletteTiles(project, command.paletteId, command.tiles);
+  if (command.kind === "addTileToPalette") return addTileToPalette(project, command.paletteId, command.tile);
+  if (command.kind === "removeTileFromPalette") return removeTileFromPalette(project, command.paletteId, command.tile);
   if (command.kind === "updateCustomLandTileAttributes") return updateCustomLandTileAttributes(project, command);
   if (command.kind === "updateSpecialTileSolidity") return updateSpecialTileSolidity(project, command);
   if (command.kind === "updateCustomLandTileCombatBuild") return updateCustomLandTileCombatBuild(project, command);

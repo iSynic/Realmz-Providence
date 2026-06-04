@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { EditorState } from "../store";
-import { MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
+import { MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilePaletteCategory, TilesetAsset, TriggerRecord } from "../types";
 import { triggerOverlayKinds } from "../semanticGraph";
 import { RealmzMapCanvas } from "../components/MapCanvas";
 import { LandLayoutEditor, LandTileAtlasEditor, MapContextSidebar, MapRecordsWorkbench, MapSelectionSidebar, RandomAreasWorkbench, type LandLayoutCellSelection } from "../components/MapContextSidebar";
@@ -68,6 +68,9 @@ export function MapsPanel({
   const [paintMode, setPaintMode] = useState<MapPaintMode>("brush");
   const [paintVariation, setPaintVariation] = useState<MapPaintVariation>("single");
   const [activePaintGroupId, setActivePaintGroupId] = useState("all");
+  const [paintPaletteMode, setPaintPaletteMode] = useState<TilePaletteCategory>("landlook");
+  const [activeCustomPaletteId, setActiveCustomPaletteId] = useState<string | null>(null);
+  const [paletteVariationTiles, setPaletteVariationTiles] = useState<number[] | null>(null);
   const [previewMode, setPreviewMode] = useState<MapPreviewMode>("off");
   const [previewFocalPoint, setPreviewFocalPoint] = useState<MapPreviewFocalPoint | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<MapRegionSelection | null>(null);
@@ -97,11 +100,29 @@ export function MapsPanel({
     localStorage.setItem(MAP_WORKBENCH_MODE_STORAGE_KEY, workbenchMode);
   }, [workbenchMode]);
   useEffect(() => {
+    if (paintPaletteMode !== "landlook") return;
     const groupTiles = landlookGroupTiles(selectedTileset, activePaintGroupId);
     if (groupTiles.length > 0 && !groupTiles.includes(state.selectedTile)) {
       onSelectTile(groupTiles[0]);
     }
-  }, [activePaintGroupId, onSelectTile, selectedTileset, state.selectedTile]);
+  }, [activePaintGroupId, onSelectTile, paintPaletteMode, selectedTileset, state.selectedTile]);
+  const customPalettes = state.project?.editorMetadata?.tilePalettes ?? [];
+  const activeCustomPalette = customPalettes.find((palette) => palette.id === activeCustomPaletteId) ?? customPalettes[0] ?? null;
+  const variationTiles = paletteVariationTiles;
+  useEffect(() => {
+    if (customPalettes.length === 0) {
+      if (activeCustomPaletteId !== null) setActiveCustomPaletteId(null);
+      return;
+    }
+    if (!activeCustomPaletteId || !customPalettes.some((palette) => palette.id === activeCustomPaletteId)) {
+      setActiveCustomPaletteId(customPalettes[0].id);
+    }
+  }, [activeCustomPaletteId, customPalettes]);
+  useEffect(() => {
+    if (paintPaletteMode !== "custom") return;
+    if (!activeCustomPalette?.tiles.length) return;
+    if (!activeCustomPalette.tiles.includes(state.selectedTile)) onSelectTile(activeCustomPalette.tiles[0]);
+  }, [activeCustomPalette, onSelectTile, paintPaletteMode, state.selectedTile]);
   const switchWorkbenchMode = (mode: MapWorkbenchMode) => {
     setWorkbenchMode(mode);
   };
@@ -133,6 +154,11 @@ export function MapsPanel({
         onSetPaintVariation={setPaintVariation}
         activePaintGroupId={activePaintGroupId}
         onSetActivePaintGroup={setPaintGroup}
+        paintPaletteMode={paintPaletteMode}
+        onSetPaintPaletteMode={setPaintPaletteMode}
+        activeCustomPaletteId={activeCustomPaletteId}
+        onSetActiveCustomPaletteId={setActiveCustomPaletteId}
+        onSetPaletteVariationTiles={setPaletteVariationTiles}
         selectedRegion={selectedRegion}
         onSetSelectedRegion={setSelectedRegion}
         replaceSourceTile={replaceSourceTile}
@@ -165,6 +191,7 @@ export function MapsPanel({
                 paintMode={paintMode}
                 paintVariation={paintVariation}
                 activePaintGroupId={activePaintGroupId}
+                variationTiles={variationTiles}
                 selectedTile={state.selectedTile}
                 zoom={state.zoom}
                 smoothTiles={state.smoothTiles}
@@ -293,6 +320,12 @@ export function MapsPanel({
         onSetPaintVariation={setPaintVariation}
         activePaintGroupId={activePaintGroupId}
         onSetActivePaintGroup={setPaintGroup}
+        paintPaletteMode={paintPaletteMode}
+        onSetPaintPaletteMode={setPaintPaletteMode}
+        activeCustomPaletteId={activeCustomPaletteId}
+        onSetActiveCustomPaletteId={setActiveCustomPaletteId}
+        variationTiles={variationTiles}
+        onSetPaletteVariationTiles={setPaletteVariationTiles}
         selectedRegion={selectedRegion}
         onSetSelectedRegion={setSelectedRegion}
         replaceSourceTile={replaceSourceTile}

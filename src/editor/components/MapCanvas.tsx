@@ -59,6 +59,7 @@ export function RealmzMapCanvas({
   paintMode,
   paintVariation,
   activePaintGroupId,
+  variationTiles,
   selectedTile,
   zoom,
   smoothTiles,
@@ -92,6 +93,7 @@ export function RealmzMapCanvas({
   paintMode: MapPaintMode;
   paintVariation: MapPaintVariation;
   activePaintGroupId: string;
+  variationTiles?: number[] | null;
   selectedTile: number;
   zoom: number;
   smoothTiles: boolean;
@@ -176,6 +178,7 @@ export function RealmzMapCanvas({
     paintMode,
     paintVariation,
     activePaintGroupId,
+    variationTiles,
     selectedTile,
     selectedTileset: tileset,
     triggers,

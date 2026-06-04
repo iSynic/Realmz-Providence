@@ -1,13 +1,16 @@
 import { Project, ProjectCommand, ScenarioCasteOverride, ScenarioRaceOverride, ScenarioSpellOverride } from "../types";
+import { normalizedEditorMetadata } from "./tilePaletteCommands";
 
 export function renameEditorEntity(project: Project, entityId: string, displayName: string) {
   const label = displayName.trim();
   if (!label) return project;
+  const metadata = normalizedEditorMetadata(project);
   return {
     ...project,
     editorMetadata: {
+      ...metadata,
       displayNames: {
-        ...(project.editorMetadata?.displayNames ?? {}),
+        ...metadata.displayNames,
         [entityId]: { label, source: "user" as const, updatedAt: new Date().toISOString() }
       }
     }

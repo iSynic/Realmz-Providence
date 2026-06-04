@@ -2423,6 +2423,7 @@
 
 
 .paint-palette-panel {
+  position: relative;
   display: grid;
   gap: 7px;
   padding: 0 10px 10px;
@@ -2516,6 +2517,69 @@
   padding: 1px;
 }
 
+.custom-palette-controls {
+  display: grid;
+  gap: 6px;
+  border: 1px solid #263341;
+  border-radius: 6px;
+  background: #0f151c;
+  padding: 7px;
+}
+
+.custom-palette-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  gap: 5px;
+  align-items: center;
+}
+
+.custom-palette-row:last-child {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.custom-palette-row select {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid #2f4960;
+  border-radius: 5px;
+  background: #0b1118;
+  color: #dfe8f1;
+  padding: 4px 6px;
+  font: inherit;
+}
+
+.custom-palette-row span {
+  min-width: 0;
+  overflow: hidden;
+  color: #8fa6ba;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette-tile-wrap {
+  position: relative;
+  display: grid;
+  min-width: 0;
+}
+
+.tile-strip .palette-tile-wrap {
+  flex: 0 0 42px;
+}
+
+.palette-tile-wrap > button:first-child {
+  width: 100%;
+}
+
+.paint-palette-empty {
+  grid-column: 1 / -1;
+  display: block;
+  border: 1px dashed #2b4052;
+  border-radius: 5px;
+  background: #0e151c;
+  padding: 10px;
+  line-height: 1.35;
+}
+
 
 
 .paint-palette-grid button,
@@ -2530,6 +2594,115 @@
   color: #f7fafc;
   font-size: 10px;
   text-shadow: 0 1px 2px #000;
+}
+
+.paint-palette-grid .palette-tile-action,
+.tile-strip .palette-tile-action {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  z-index: 6;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  aspect-ratio: auto;
+  padding: 0;
+  border-radius: 4px;
+  border-color: rgba(120, 215, 255, 0.48);
+  background: rgba(5, 12, 18, 0.88);
+  color: #bdeeff;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.palette-drop-dock {
+  position: absolute;
+  z-index: 40;
+  top: 98px;
+  right: 8px;
+  bottom: 54px;
+  width: min(170px, calc(100% - 22px));
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  border: 1px solid #4b86b5;
+  border-radius: 7px;
+  background: rgba(8, 15, 22, 0.96);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(120, 215, 255, 0.14);
+  padding: 8px;
+  pointer-events: auto;
+}
+
+.palette-drop-dock strong {
+  color: #dff3ff;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.palette-drop-dock button {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+  border: 1px solid #2f5876;
+  border-radius: 5px;
+  background: #10202d;
+  color: #dcefff;
+  padding: 7px 8px;
+  text-align: left;
+}
+
+.palette-drop-dock button:hover {
+  border-color: #78d7ff;
+  background: #15334a;
+}
+
+.palette-drop-dock button span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette-drop-dock button b {
+  color: #f3c869;
+}
+
+.palette-drag-ghost {
+  position: fixed;
+  z-index: 10000;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #78d7ff;
+  border-radius: 6px;
+  background: rgba(10, 18, 25, 0.9);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+  transform: translate(10px, 10px);
+}
+
+.palette-drag-ghost span {
+  position: absolute;
+  right: 2px;
+  bottom: 1px;
+  color: #dff3ff;
+  font-size: 9px;
+  text-shadow: 0 1px 2px #000;
+}
+
+.paint-palette-grid .palette-tile-action.remove,
+.tile-strip .palette-tile-action.remove {
+  border-color: rgba(255, 135, 135, 0.52);
+  color: #ffb4b4;
+}
+
+.paint-palette-grid .palette-tile-action:hover,
+.tile-strip .palette-tile-action:hover {
+  border-color: #78d7ff;
+  background: rgba(16, 42, 60, 0.95);
 }
 
 

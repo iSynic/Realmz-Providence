@@ -1,6 +1,6 @@
-import { memo, MutableRefObject, useEffect, useMemo, useRef, useState } from "react";
+import { memo, MutableRefObject, PointerEvent as ReactPointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import { EditorState } from "../store";
-import { IconEntry, LibraryAsset, MapEntity, MapPaintVariation, Project, TileAttributeFlag, TilePaletteCategory, TilesetAsset } from "../types";
+import { IconEntry, LibraryAsset, MapEntity, MapPaintVariation, Project, ProjectCommand, TileAttributeFlag, TilePaletteCategory, TilesetAsset } from "../types";
 import { classifyTileValue, isDivinityVisualPathTile, standardTileValues, tileAttributeGroup } from "../map/tileMetadata";
 import { LANDLOOK_TILE_GROUPS, landlookGroupById, landlookGroupRangeLabel, landlookGroupTiles } from "../map/paintGroups";
 import { PAINTABLE_REFERENCE_ACTOR_ICON_VALUES, PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES } from "../map/renderValues";
@@ -14,6 +14,7 @@ const FALLBACK_TILE_CHOICES = [
   0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 20, 24, 32, 40, 48, 64, 80, 96, 128, 160,
   192, 224, 256, 300, 350, 400, 500, 999
 ];
+const TILE_DRAG_THRESHOLD = 6;
 
 type PaintPalettePanelProps = {
   map: MapEntity | null;
@@ -26,10 +27,16 @@ type PaintPalettePanelProps = {
   atlas: EditorState["atlasEntries"][string] | null;
   icons?: Record<number, IconEntry>;
   atlasStatus: string;
+  mode: TilePaletteCategory;
+  onSetMode: (mode: TilePaletteCategory) => void;
   activePaintGroupId: string;
   paintVariation: MapPaintVariation;
+  activeCustomPaletteId: string | null;
   onSetActivePaintGroup: (groupId: string) => void;
+  onSetActiveCustomPaletteId: (paletteId: string | null) => void;
+  onSetVariationTiles: (tiles: number[] | null) => void;
   onSetPaintVariation: (variation: MapPaintVariation) => void;
+  onApplyCommand: (command: ProjectCommand) => void;
   variant?: "bar" | "sidebar";
 };
 
@@ -50,17 +57,27 @@ export function PaintPalettePanel({
   atlas,
   icons,
   atlasStatus,
+  mode,
+  onSetMode,
   activePaintGroupId,
+  activeCustomPaletteId,
+  onSetActiveCustomPaletteId,
+  onSetVariationTiles,
   paintVariation,
   onSetActivePaintGroup,
   onSetPaintVariation,
+  onApplyCommand,
   variant = "sidebar"
 }: PaintPalettePanelProps) {
   const standardTiles = useMemo(() => standardTileValues(tileset), [tileset]);
-  const [mode, setMode] = useState<TilePaletteCategory>("landlook");
   const [specialFilter, setSpecialFilter] = useState<SpecialIconFilter>("all");
   const [attributeFilter, setAttributeFilter] = useState<TileAttributeFlag | "all">("all");
+  const [tileDrag, setTileDrag] = useState<TileDragState | null>(null);
+  const tileDragRef = useRef<TileDragState | null>(null);
   const tileAttributes = project?.tileAttributes ?? [];
+  const customPalettes = project?.editorMetadata?.tilePalettes ?? [];
+  const activeCustomPalette = customPalettes.find((palette) => palette.id === activeCustomPaletteId) ?? customPalettes[0] ?? null;
+  const dragDockVisible = Boolean(tileDrag?.active);
   const usedTiles = useMemo(() => {
     if (mode !== "used" && mode !== "attributes") return [];
     return usedTilesForMap(map);
@@ -84,8 +101,9 @@ export function PaintPalettePanel({
     if (mode === "raw") return rawTiles;
     if (mode === "special") return specialTiles;
     if (mode === "attributes") return attributeTiles;
+    if (mode === "custom") return activeCustomPalette?.tiles ?? [];
     return groupedStandardTiles;
-  }, [attributeTiles, groupedStandardTiles, mode, rawTiles, specialTiles, usedTiles]);
+  }, [activeCustomPalette, attributeTiles, groupedStandardTiles, mode, rawTiles, specialTiles, usedTiles]);
   const [query, setQuery] = useState("");
   const buttonRefs = useRef(new Map<number, HTMLButtonElement>());
   const focusTile = inspectedTile ?? selectedTile;
@@ -96,8 +114,19 @@ export function PaintPalettePanel({
   }, [paletteTiles, query]);
   const selectedMeta = classifyTileValue(selectedTile, tileset, tileAttributes, icons);
   const activeGroup = landlookGroupById(activePaintGroupId);
-  const activeGroupTiles = useMemo(() => landlookGroupTiles(tileset, activePaintGroupId), [activePaintGroupId, tileset]);
-  const groupWarning = paintVariation !== "single" && activeGroupTiles.length === 0
+  const activeVariationLabel = mode === "custom" ? activeCustomPalette?.name ?? "Custom Palette" : activeGroup.label;
+  const activeVariationTiles = useMemo(
+    () => {
+      if (mode === "custom") return activeCustomPalette?.tiles ?? [];
+      if (mode === "special") return specialTiles;
+      if (mode === "used") return usedTiles;
+      if (mode === "attributes") return attributeTiles;
+      if (mode === "raw") return rawTiles;
+      return landlookGroupTiles(tileset, activePaintGroupId);
+    },
+    [activeCustomPalette, activePaintGroupId, attributeTiles, mode, rawTiles, specialTiles, tileset, usedTiles]
+  );
+  const groupWarning = paintVariation !== "single" && activeVariationTiles.length === 0
     ? "This group has no tiles in the current landlook; painting will use the selected tile."
     : null;
 
@@ -106,12 +135,86 @@ export function PaintPalettePanel({
     button?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: variant === "bar" ? "center" : "nearest" });
   }, [focusTile, filteredTiles.length, paletteTiles.length]);
 
+  useEffect(() => {
+    onSetVariationTiles(activeVariationTiles);
+  }, [activeVariationTiles, onSetVariationTiles]);
+
+  useEffect(() => {
+    if (!tileDrag) return;
+    const handleMove = (event: PointerEvent) => {
+      setTileDrag((current) => {
+        if (!current) return null;
+        const distance = Math.hypot(event.clientX - current.startX, event.clientY - current.startY);
+        const next = {
+          ...current,
+          x: event.clientX,
+          y: event.clientY,
+          active: current.active || distance >= TILE_DRAG_THRESHOLD
+        };
+        tileDragRef.current = next;
+        return next;
+      });
+    };
+    const handleUp = (event: PointerEvent) => {
+      const current = tileDragRef.current;
+      tileDragRef.current = null;
+      setTileDrag(null);
+      if (current?.active) finishTileDrag(current.tile, event.clientX, event.clientY);
+    };
+    const handleCancel = () => {
+      tileDragRef.current = null;
+      setTileDrag(null);
+    };
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp);
+    window.addEventListener("pointercancel", handleCancel);
+    return () => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+      window.removeEventListener("pointercancel", handleCancel);
+    };
+  }, [tileDrag]);
+
+  const beginTileDrag = (tile: number, event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (event.button !== 0) return;
+    const next = {
+      tile,
+      startX: event.clientX,
+      startY: event.clientY,
+      x: event.clientX,
+      y: event.clientY,
+      active: false
+    };
+    tileDragRef.current = next;
+    setTileDrag(next);
+  };
+  const finishTileDrag = (tile: number, clientX: number, clientY: number) => {
+    const target = document.elementFromPoint(clientX, clientY)?.closest<HTMLElement>("[data-palette-drop-target]");
+    const targetId = target?.dataset.paletteDropTarget ?? "";
+    if (!targetId) return;
+    if (targetId === "new") {
+      createPaletteWithTile(tile);
+      return;
+    }
+    const palette = customPalettes.find((candidate) => candidate.id === targetId);
+    if (!palette) return;
+    onApplyCommand({ kind: "addTileToPalette", label: `Add tile ${tile} to ${palette.name}`, paletteId: palette.id, tile });
+  };
+  const createPaletteWithTile = (tile: number) => {
+    const fallbackName = `Palette ${customPalettes.length + 1}`;
+    const name = window.prompt("Name this tile palette", fallbackName)?.trim();
+    if (!name) return;
+    const id = `tile-palette:${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+    onApplyCommand({ kind: "createTilePalette", label: `Create tile palette ${name}`, id, name, tiles: [tile] });
+    onSetActiveCustomPaletteId(id);
+  };
+
   const rootClass = variant === "bar" ? "tile-selection-bar" : "paint-palette-panel";
   const metaClass = variant === "bar" ? "tile-selection-meta" : "paint-palette-meta";
   const listClass = variant === "bar" ? "tile-strip" : "paint-palette-grid";
 
   return (
-    <section className={rootClass}>
+    <section className={`${rootClass}${dragDockVisible ? " dragging-tile" : ""}`}>
       <div className={metaClass}>
         <TutorialTip
           title="Paint Palette"
@@ -121,15 +224,16 @@ export function PaintPalettePanel({
           <strong>Palette</strong>
         </TutorialTip>
         <span>{tileset ? `${tileset.name} | ${standardTiles.length} tiles` : "No tileset"}</span>
-        <b>{paintVariation === "single" ? `Paint ${selectedTile}` : paintVariationLabel(paintVariation, activeGroup.label)}</b>
+        <b>{paintVariation === "single" ? `Paint ${selectedTile}` : paintVariationLabel(paintVariation, activeVariationLabel)}</b>
       </div>
       {variant === "sidebar" && (
         <div className="paint-palette-tabs" role="tablist" aria-label="Tile palette mode">
-          <button type="button" className={mode === "landlook" ? "active" : ""} onClick={() => setMode("landlook")}>Landlook</button>
-          <button type="button" className={mode === "special" ? "active" : ""} onClick={() => setMode("special")}>Special / Icons</button>
-          <button type="button" className={mode === "used" ? "active" : ""} onClick={() => setMode("used")}>Used</button>
-          <button type="button" className={mode === "attributes" ? "active" : ""} onClick={() => setMode("attributes")}>Attributes</button>
-          <button type="button" className={mode === "raw" ? "active" : ""} onClick={() => setMode("raw")}>Raw / Advanced</button>
+          <button type="button" className={mode === "landlook" ? "active" : ""} onClick={() => onSetMode("landlook")}>Landlook</button>
+          <button type="button" className={mode === "special" ? "active" : ""} onClick={() => onSetMode("special")}>Special / Icons</button>
+          <button type="button" className={mode === "custom" ? "active" : ""} onClick={() => onSetMode("custom")}>Custom</button>
+          <button type="button" className={mode === "used" ? "active" : ""} onClick={() => onSetMode("used")}>Used</button>
+          <button type="button" className={mode === "attributes" ? "active" : ""} onClick={() => onSetMode("attributes")}>Attributes</button>
+          <button type="button" className={mode === "raw" ? "active" : ""} onClick={() => onSetMode("raw")}>Raw / Advanced</button>
         </div>
       )}
       {variant === "sidebar" && mode === "landlook" && (
@@ -147,11 +251,20 @@ export function PaintPalettePanel({
           ))}
         </div>
       )}
+      {variant === "sidebar" && mode === "custom" && (
+        <CustomPaletteControls
+          palettes={customPalettes}
+          activePaletteId={activeCustomPalette?.id ?? null}
+          selectedTile={selectedTile}
+          onSetActivePaletteId={onSetActiveCustomPaletteId}
+          onApplyCommand={onApplyCommand}
+        />
+      )}
       {variant === "sidebar" && (
         <div className="paint-variation-panel" aria-label="Brush variation">
           <div className="paint-variation-header">
             <span>Variation</span>
-            <b>{paintVariationLabel(paintVariation, activeGroup.label)}</b>
+            <b>{paintVariationLabel(paintVariation, activeVariationLabel)}</b>
           </div>
           <div className="paint-variation-buttons" role="toolbar" aria-label="Brush variation mode">
             {PAINT_VARIATIONS.map((variation) => (
@@ -168,9 +281,9 @@ export function PaintPalettePanel({
           </div>
           {paintVariation !== "single" && (
             <div className="paint-group-preview">
-              <small>{activeGroup.label} {landlookGroupRangeLabel(activePaintGroupId)}</small>
+              <small>{mode === "custom" ? `${activeVariationLabel} (${activeVariationTiles.length} tiles)` : `${activeGroup.label} ${landlookGroupRangeLabel(activePaintGroupId)}`}</small>
               <div className="paint-group-preview-strip">
-                {activeGroupTiles.slice(0, 14).map((tile) => (
+                {activeVariationTiles.slice(0, 14).map((tile) => (
                   <button
                     key={tile}
                     type="button"
@@ -182,7 +295,7 @@ export function PaintPalettePanel({
                     <TileSwatch atlas={atlas} icons={icons} tile={tile} tileset={tileset} />
                   </button>
                 ))}
-                {activeGroupTiles.length > 14 && <span>+{activeGroupTiles.length - 14}</span>}
+                {activeVariationTiles.length > 14 && <span>+{activeVariationTiles.length - 14}</span>}
               </div>
               {groupWarning && <small className="paint-variation-warning">{groupWarning}</small>}
             </div>
@@ -240,6 +353,8 @@ export function PaintPalettePanel({
             tileset={tileset}
             tileAttributes={tileAttributes}
             buttonRefs={buttonRefs}
+            emptyMessage="No tiles match that search."
+            onBeginTileDrag={beginTileDrag}
           />
         </ScrollArea>
       ) : (
@@ -254,8 +369,20 @@ export function PaintPalettePanel({
             tileset={tileset}
             tileAttributes={tileAttributes}
             buttonRefs={buttonRefs}
+            emptyMessage={mode === "custom" ? "This custom palette is empty. Drag tiles here from another palette tab, or use Add Selected." : "No tiles match that search."}
+            onBeginTileDrag={beginTileDrag}
+            onRemoveTile={mode === "custom" && activeCustomPalette ? (tile) => onApplyCommand({ kind: "removeTileFromPalette", label: `Remove tile ${tile} from ${activeCustomPalette.name}`, paletteId: activeCustomPalette.id, tile }) : undefined}
           />
         </div>
+      )}
+      {dragDockVisible && (
+        <>
+          <PaletteDropDock palettes={customPalettes} />
+          <div className="palette-drag-ghost" style={{ left: tileDrag!.x, top: tileDrag!.y }}>
+            <TileSwatch atlas={atlas} icons={icons} tile={tileDrag!.tile} tileset={tileset} />
+            <span>{tileDrag!.tile}</span>
+          </div>
+        </>
       )}
       <small className="paint-palette-detail">
         <b>{selectedMeta.label}</b> | raw {selectedMeta.raw} | render {selectedMeta.renderTile} | {selectedMeta.compatibility}
@@ -274,7 +401,10 @@ const PaletteButtons = memo(function PaletteButtons({
   tiles,
   tileset,
   tileAttributes,
-  buttonRefs
+  buttonRefs,
+  emptyMessage,
+  onBeginTileDrag,
+  onRemoveTile
 }: {
   atlas: EditorState["atlasEntries"][string] | null;
   icons?: Record<number, IconEntry>;
@@ -285,28 +415,142 @@ const PaletteButtons = memo(function PaletteButtons({
   tileset: TilesetAsset | null;
   tileAttributes: Project["tileAttributes"];
   buttonRefs: MutableRefObject<Map<number, HTMLButtonElement>>;
+  emptyMessage: string;
+  onBeginTileDrag?: (tile: number, event: ReactPointerEvent<HTMLButtonElement>) => void;
+  onRemoveTile?: (tile: number) => void;
 }) {
   return (
     <>
       {tiles.map((tile) => (
-        <button
-          ref={(node) => {
-            if (node) buttonRefs.current.set(tile, node);
-            else buttonRefs.current.delete(tile);
-          }}
-          key={tile}
-          className={tileButtonClassWithMetadata(tile, selectedTile, inspectedTile, tileset, tileAttributes, icons)}
-          style={{ background: tileColor(tile) }}
-          title={tileTitle(tile, tileset, tileAttributes, icons)}
-          onClick={() => setSelectedTile(tile)}
-        >
-          <TileSwatch atlas={atlas} icons={icons} tile={tile} tileset={tileset} />
-        </button>
+        <span className="palette-tile-wrap" key={tile}>
+          <button
+            ref={(node) => {
+              if (node) buttonRefs.current.set(tile, node);
+              else buttonRefs.current.delete(tile);
+            }}
+            className={tileButtonClassWithMetadata(tile, selectedTile, inspectedTile, tileset, tileAttributes, icons)}
+            style={{ background: tileColor(tile) }}
+            title={tileTitle(tile, tileset, tileAttributes, icons)}
+            onClick={() => setSelectedTile(tile)}
+            onPointerDown={(event) => onBeginTileDrag?.(tile, event)}
+          >
+            <TileSwatch atlas={atlas} icons={icons} tile={tile} tileset={tileset} />
+          </button>
+          {onRemoveTile && (
+            <button className="palette-tile-action remove" type="button" title={`Remove tile ${tile} from custom palette`} onClick={() => onRemoveTile(tile)}>
+              -
+            </button>
+          )}
+        </span>
       ))}
-      {tiles.length === 0 && <small>No tiles match that search.</small>}
+      {tiles.length === 0 && <small className="paint-palette-empty">{emptyMessage}</small>}
     </>
   );
 });
+
+type TileDragState = {
+  tile: number;
+  startX: number;
+  startY: number;
+  x: number;
+  y: number;
+  active: boolean;
+};
+
+function PaletteDropDock({ palettes }: { palettes: Project["editorMetadata"]["tilePalettes"] }) {
+  return (
+    <div className="palette-drop-dock" aria-label="Custom palette drop targets">
+      <strong>Drop to palette</strong>
+      {palettes.map((palette) => (
+        <button key={palette.id} type="button" data-palette-drop-target={palette.id}>
+          <span>{palette.name}</span>
+          <b>{palette.tiles.length}</b>
+        </button>
+      ))}
+      <button type="button" data-palette-drop-target="new">
+        <span>New Palette</span>
+        <b>+</b>
+      </button>
+    </div>
+  );
+}
+
+function CustomPaletteControls({
+  palettes,
+  activePaletteId,
+  selectedTile,
+  onSetActivePaletteId,
+  onApplyCommand
+}: {
+  palettes: Project["editorMetadata"]["tilePalettes"];
+  activePaletteId: string | null;
+  selectedTile: number;
+  onSetActivePaletteId: (paletteId: string | null) => void;
+  onApplyCommand: (command: ProjectCommand) => void;
+}) {
+  const activePalette = palettes.find((palette) => palette.id === activePaletteId) ?? palettes[0] ?? null;
+  const createPalette = (initialTile?: number) => {
+    const fallbackName = `Palette ${palettes.length + 1}`;
+    const name = window.prompt("Name this tile palette", fallbackName)?.trim();
+    if (!name) return;
+    const id = `tile-palette:${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+    onApplyCommand({ kind: "createTilePalette", label: `Create tile palette ${name}`, id, name, tiles: initialTile == null ? [] : [initialTile] });
+    onSetActivePaletteId(id);
+  };
+  const renamePalette = () => {
+    if (!activePalette) return;
+    const name = window.prompt("Rename tile palette", activePalette.name)?.trim();
+    if (!name || name === activePalette.name) return;
+    onApplyCommand({ kind: "renameTilePalette", label: `Rename tile palette ${activePalette.name}`, paletteId: activePalette.id, name });
+  };
+  const deletePalette = () => {
+    if (!activePalette) return;
+    if (!window.confirm(`Delete tile palette "${activePalette.name}"?`)) return;
+    const next = palettes.find((palette) => palette.id !== activePalette.id) ?? null;
+    onSetActivePaletteId(next?.id ?? null);
+    onApplyCommand({ kind: "deleteTilePalette", label: `Delete tile palette ${activePalette.name}`, paletteId: activePalette.id });
+  };
+  const addSelected = () => {
+    if (!activePalette) {
+      createPalette(selectedTile);
+      return;
+    }
+    onApplyCommand({ kind: "addTileToPalette", label: `Add tile ${selectedTile} to ${activePalette.name}`, paletteId: activePalette.id, tile: selectedTile });
+  };
+  return (
+    <div className="custom-palette-controls">
+      <div className="custom-palette-row">
+        <select
+          value={activePalette?.id ?? ""}
+          onChange={(event) => onSetActivePaletteId(event.currentTarget.value || null)}
+          aria-label="Custom tile palette"
+        >
+          {palettes.length === 0 && <option value="">No custom palettes</option>}
+          {palettes.map((palette) => (
+            <option key={palette.id} value={palette.id}>
+              {palette.name} ({palette.tiles.length})
+            </option>
+          ))}
+        </select>
+        <button type="button" className="btn btn-secondary btn-xs" onClick={() => createPalette()}>
+          New
+        </button>
+        <button type="button" className="btn btn-secondary btn-xs" disabled={!activePalette} onClick={renamePalette}>
+          Rename
+        </button>
+        <button type="button" className="btn btn-ghost btn-xs" disabled={!activePalette} onClick={deletePalette}>
+          Delete
+        </button>
+      </div>
+      <div className="custom-palette-row">
+        <button type="button" className="btn btn-primary btn-xs" onClick={addSelected}>
+          Add Selected {selectedTile}
+        </button>
+        <span>{activePalette ? `${activePalette.tiles.length} tile${activePalette.tiles.length === 1 ? "" : "s"}` : "Create a palette to collect reusable map tiles."}</span>
+      </div>
+    </div>
+  );
+}
 
 export function tileButtonClass(tile: number, selectedTile: number, inspectedTile: number | null) {
   return tileButtonClassFor(tile, selectedTile, inspectedTile, null, [], undefined);

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { TOOLS } from "../constants";
 import { EditorState } from "../store";
-import { EditorTool, IconEntry, MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRecord, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TileAttributeFlag, TilesetAsset, TriggerRecord } from "../types";
+import { EditorTool, IconEntry, MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRecord, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TileAttributeFlag, TilePaletteCategory, TilesetAsset, TriggerRecord } from "../types";
 import { mapTileIndex, randomRectEntityId, tileValueAt } from "../map/geometry";
-import { allMapCells, buildReplaceChanges, dominantTiles, rectCells, regionCellCount, regionDimensions } from "../map/regionPaint";
+import { allMapCells, buildReplaceChanges, dominantTiles, rectCells, regionCellCount } from "../map/regionPaint";
 import { actionSlotEntitiesForTriggerRecord } from "../semanticGraph";
 import { compactValue, linksFor, mapEntityId, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
 import { InfoGrid } from "./InfoGrid";
@@ -74,6 +74,11 @@ export function MapContextSidebar({
   onSetPaintVariation,
   activePaintGroupId,
   onSetActivePaintGroup,
+  paintPaletteMode,
+  onSetPaintPaletteMode,
+  activeCustomPaletteId,
+  onSetActiveCustomPaletteId,
+  onSetPaletteVariationTiles,
   selectedRegion,
   onSetSelectedRegion,
   replaceSourceTile,
@@ -97,6 +102,11 @@ export function MapContextSidebar({
   onSetPaintVariation: (variation: MapPaintVariation) => void;
   activePaintGroupId: string;
   onSetActivePaintGroup: (groupId: string) => void;
+  paintPaletteMode: TilePaletteCategory;
+  onSetPaintPaletteMode: (mode: TilePaletteCategory) => void;
+  activeCustomPaletteId: string | null;
+  onSetActiveCustomPaletteId: (paletteId: string | null) => void;
+  onSetPaletteVariationTiles: (tiles: number[] | null) => void;
   selectedRegion: MapRegionSelection | null;
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
   replaceSourceTile: number | null;
@@ -165,6 +175,12 @@ export function MapSelectionSidebar({
   onSetPaintVariation,
   activePaintGroupId,
   onSetActivePaintGroup,
+  paintPaletteMode,
+  onSetPaintPaletteMode,
+  activeCustomPaletteId,
+  onSetActiveCustomPaletteId,
+  variationTiles,
+  onSetPaletteVariationTiles,
   selectedRegion,
   onSetSelectedRegion,
   replaceSourceTile,
@@ -202,6 +218,12 @@ export function MapSelectionSidebar({
   onSetPaintVariation: (variation: MapPaintVariation) => void;
   activePaintGroupId: string;
   onSetActivePaintGroup: (groupId: string) => void;
+  paintPaletteMode: TilePaletteCategory;
+  onSetPaintPaletteMode: (mode: TilePaletteCategory) => void;
+  activeCustomPaletteId: string | null;
+  onSetActiveCustomPaletteId: (paletteId: string | null) => void;
+  variationTiles: number[] | null;
+  onSetPaletteVariationTiles: (tiles: number[] | null) => void;
   selectedRegion: MapRegionSelection | null;
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
   replaceSourceTile: number | null;
@@ -258,6 +280,12 @@ export function MapSelectionSidebar({
             onSetPaintVariation={onSetPaintVariation}
             activePaintGroupId={activePaintGroupId}
             onSetActivePaintGroup={onSetActivePaintGroup}
+            paintPaletteMode={paintPaletteMode}
+            onSetPaintPaletteMode={onSetPaintPaletteMode}
+            activeCustomPaletteId={activeCustomPaletteId}
+            onSetActiveCustomPaletteId={onSetActiveCustomPaletteId}
+            variationTiles={variationTiles}
+            onSetPaletteVariationTiles={onSetPaletteVariationTiles}
             selectedRegion={selectedRegion}
             onSetSelectedRegion={onSetSelectedRegion}
             replaceSourceTile={replaceSourceTile}
@@ -280,6 +308,7 @@ export function MapSelectionSidebar({
             paintMode={paintMode}
             paintVariation={paintVariation}
             activePaintGroupId={activePaintGroupId}
+            variationTiles={variationTiles}
             selectedRegion={selectedRegion}
             onSetSelectedRegion={onSetSelectedRegion}
             replaceSourceTile={replaceSourceTile}
@@ -741,6 +770,12 @@ function PaintInspector({
   onSetPaintVariation,
   activePaintGroupId,
   onSetActivePaintGroup,
+  paintPaletteMode,
+  onSetPaintPaletteMode,
+  activeCustomPaletteId,
+  onSetActiveCustomPaletteId,
+  variationTiles,
+  onSetPaletteVariationTiles,
   selectedRegion,
   onSetSelectedRegion,
   replaceSourceTile,
@@ -762,6 +797,12 @@ function PaintInspector({
   onSetPaintVariation: (variation: MapPaintVariation) => void;
   activePaintGroupId: string;
   onSetActivePaintGroup: (groupId: string) => void;
+  paintPaletteMode: TilePaletteCategory;
+  onSetPaintPaletteMode: (mode: TilePaletteCategory) => void;
+  activeCustomPaletteId: string | null;
+  onSetActiveCustomPaletteId: (paletteId: string | null) => void;
+  variationTiles: number[] | null;
+  onSetPaletteVariationTiles: (tiles: number[] | null) => void;
   selectedRegion: MapRegionSelection | null;
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
   replaceSourceTile: number | null;
@@ -787,10 +828,16 @@ function PaintInspector({
       atlas={atlas}
       icons={state.iconEntries}
       atlasStatus={state.atlasStatus}
+      mode={paintPaletteMode}
+      onSetMode={onSetPaintPaletteMode}
       activePaintGroupId={activePaintGroupId}
       onSetActivePaintGroup={onSetActivePaintGroup}
+      activeCustomPaletteId={activeCustomPaletteId}
+      onSetActiveCustomPaletteId={onSetActiveCustomPaletteId}
+      onSetVariationTiles={onSetPaletteVariationTiles}
       paintVariation={paintVariation}
       onSetPaintVariation={onSetPaintVariation}
+      onApplyCommand={onApplyCommand}
       variant="sidebar"
     />
   );
@@ -812,6 +859,7 @@ function PaintInspector({
         selectedTile={state.selectedTile}
         paintVariation={paintVariation}
         activePaintGroupId={activePaintGroupId}
+        variationTiles={variationTiles}
         paintMode={paintMode}
         onSetPaintMode={onSetPaintMode}
         selectedRegion={selectedRegion}
@@ -828,10 +876,6 @@ function PaintInspector({
           tileAttributes={state.project?.tileAttributes ?? []}
           icons={state.iconEntries}
           paintMode={paintMode}
-          paintVariation={paintVariation}
-          activePaintGroupId={activePaintGroupId}
-          selectedRegion={selectedRegion}
-          onSetSelectedRegion={onSetSelectedRegion}
           replaceSourceTile={replaceSourceTile}
           onSetReplaceSourceTile={onSetReplaceSourceTile}
           selectedPaintTile={state.selectedTile}
@@ -1266,6 +1310,7 @@ function PaintModePanel({
   selectedTile,
   paintVariation,
   activePaintGroupId,
+  variationTiles,
   paintMode,
   onSetPaintMode,
   selectedRegion,
@@ -1279,6 +1324,7 @@ function PaintModePanel({
   selectedTile: number;
   paintVariation: MapPaintVariation;
   activePaintGroupId: string;
+  variationTiles: number[] | null | undefined;
   paintMode: MapPaintMode;
   onSetPaintMode: (mode: MapPaintMode) => void;
   selectedRegion: MapRegionSelection | null;
@@ -1309,8 +1355,8 @@ function PaintModePanel({
       </p>
       {selectedRegion && (
         <div className="paint-region-quick-actions">
-          <span>{regionLabel(selectedRegion)}</span>
-          <button type="button" onClick={() => fillRegion(map, selectedRegion, selectedTile, selectedTileset, paintVariation, activePaintGroupId, onApplyCommand)}>Fill</button>
+          <span>{regionLabel(selectedRegion)} | {regionCellCount(selectedRegion).toLocaleString()} cells</span>
+          <button type="button" onClick={() => fillRegion(map, selectedRegion, selectedTile, selectedTileset, paintVariation, activePaintGroupId, variationTiles, onApplyCommand)}>Fill</button>
           <button type="button" onClick={() => clearRegion(map, selectedRegion, selectedTileset, onApplyCommand)}>Clear</button>
           <button type="button" onClick={() => onSetSelectedRegion(null)}>Clear Selection</button>
         </div>
@@ -1333,10 +1379,6 @@ function RegionSelectionDetails({
   tileAttributes,
   icons,
   paintMode,
-  paintVariation,
-  activePaintGroupId,
-  selectedRegion,
-  onSetSelectedRegion,
   replaceSourceTile,
   onSetReplaceSourceTile,
   selectedPaintTile,
@@ -1348,10 +1390,6 @@ function RegionSelectionDetails({
   tileAttributes: Project["tileAttributes"];
   icons: EditorState["iconEntries"];
   paintMode: MapPaintMode;
-  paintVariation: MapPaintVariation;
-  activePaintGroupId: string;
-  selectedRegion: MapRegionSelection | null;
-  onSetSelectedRegion: (region: MapRegionSelection | null) => void;
   replaceSourceTile: number | null;
   onSetReplaceSourceTile: (tile: number | null) => void;
   selectedPaintTile: number;
@@ -1359,45 +1397,12 @@ function RegionSelectionDetails({
 }) {
   if (!map) return <p className="empty-copy compact">Select a map region to edit tiles.</p>;
   const cells = rectCells(map, region);
-  const dimensions = regionDimensions(region);
-  const clearTile = clearTileForMap(map, selectedTileset);
   const sourceTile = replaceSourceTile ?? dominantTiles(cells, 1)[0]?.tile ?? selectedPaintTile;
   const regionReplaceCount = buildReplaceChanges(map, cells, sourceTile, selectedPaintTile).length;
   const mapReplaceCount = buildReplaceChanges(map, allMapCells(map), sourceTile, selectedPaintTile).length;
   const selectedMeaning = classifyTileValue(selectedPaintTile, selectedTileset, tileAttributes, icons);
   return (
     <div className="region-selection-details">
-      <InfoGrid
-        rows={[
-          ["Bounds", `${region.left},${region.top} to ${region.right},${region.bottom}`],
-          ["Size", `${dimensions.width} x ${dimensions.height}`],
-          ["Cells", regionCellCount(region).toLocaleString()],
-          ["Paint Tile", selectedPaintTile],
-          ["Clear Tile", clearTile],
-          ["Selection", "Select drag"]
-        ]}
-      />
-      <details className="context-section" open>
-        <summary><span>Dominant Tiles</span><b>{cells.length}</b></summary>
-        <div className="dominant-tile-list">
-          {dominantTiles(cells).map((entry) => (
-            <button key={entry.tile} type="button" className="link-chip" onClick={() => onSetReplaceSourceTile(entry.tile)}>
-              Tile {entry.tile} <b>{entry.count}</b>
-            </button>
-          ))}
-        </div>
-      </details>
-      <div className="context-action-stack">
-        <button className="btn btn-primary btn-xs context-action-button" type="button" onClick={() => fillRegion(map, region, selectedPaintTile, selectedTileset, paintVariation, activePaintGroupId, onApplyCommand)}>
-          Fill Region
-        </button>
-        <button className="btn btn-ghost btn-xs context-action-button" type="button" onClick={() => clearRegion(map, region, selectedTileset, onApplyCommand)}>
-          Clear Region
-        </button>
-        <button className="btn btn-ghost btn-xs context-action-button" type="button" onClick={() => onSetSelectedRegion(null)}>
-          Clear Selection
-        </button>
-      </div>
       <details className="context-section" open={paintMode === "replace"}>
         <summary><span>Replace Tile</span><b>{sourceTile} to {selectedPaintTile}</b></summary>
         <div className="map-authoring-form">
@@ -1431,7 +1436,6 @@ function RegionSelectionDetails({
         </div>
         <p>{selectedMeaning.compatibility}</p>
       </div>
-      {!selectedRegion && <p className="empty-copy compact">No region is currently selected.</p>}
     </div>
   );
 }
@@ -1446,6 +1450,7 @@ function SelectionInspector({
   paintMode,
   paintVariation,
   activePaintGroupId,
+  variationTiles,
   selectedRegion,
   onSetSelectedRegion,
   replaceSourceTile,
@@ -1464,6 +1469,7 @@ function SelectionInspector({
   paintMode: MapPaintMode;
   paintVariation: MapPaintVariation;
   activePaintGroupId: string;
+  variationTiles: number[] | null | undefined;
   selectedRegion: MapRegionSelection | null;
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
   replaceSourceTile: number | null;
@@ -1622,10 +1628,6 @@ function SelectionInspector({
           tileAttributes={project?.tileAttributes ?? []}
           icons={icons}
           paintMode={paintMode}
-          paintVariation={paintVariation}
-          activePaintGroupId={activePaintGroupId}
-          selectedRegion={selectedRegion}
-          onSetSelectedRegion={onSetSelectedRegion}
           replaceSourceTile={replaceSourceTile}
           onSetReplaceSourceTile={onSetReplaceSourceTile}
           selectedPaintTile={selectedPaintTile}

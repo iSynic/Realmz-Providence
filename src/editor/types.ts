@@ -24,6 +24,7 @@ export type MapPaintIntent = {
   selectedTileset: TilesetAsset | null;
   variation: MapPaintVariation;
   activeGroupId: string;
+  variationTiles?: number[] | null;
   seed: number;
 };
 export type RegionPaintPlan = {
@@ -408,6 +409,7 @@ export type RuleNameResourceAudit = {
 export type TilePaletteCategory =
   | "landlook"
   | "special"
+  | "custom"
   | "used"
   | "attributes"
   | "raw";
@@ -430,6 +432,15 @@ export type EditorDisplayName = {
 
 export type EditorMetadata = {
   displayNames: Record<string, EditorDisplayName>;
+  tilePalettes: TilePalette[];
+};
+
+export type TilePalette = {
+  id: string;
+  name: string;
+  tiles: number[];
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type RealmzActionSlotDraft = {
@@ -977,6 +988,12 @@ export type ProjectCommand =
   | { kind: "createLandLayout"; label: string }
   | { kind: "updateLandLayoutCell"; label: string; row: number; col: number; value: number }
   | { kind: "clearLandLayout"; label: string }
+  | { kind: "createTilePalette"; label: string; name: string; id?: string; tiles?: number[] }
+  | { kind: "renameTilePalette"; label: string; paletteId: string; name: string }
+  | { kind: "deleteTilePalette"; label: string; paletteId: string }
+  | { kind: "updateTilePaletteTiles"; label: string; paletteId: string; tiles: number[] }
+  | { kind: "addTileToPalette"; label: string; paletteId: string; tile: number }
+  | { kind: "removeTileFromPalette"; label: string; paletteId: string; tile: number }
   | {
       kind: "updateCustomLandTileAttributes";
       label: string;

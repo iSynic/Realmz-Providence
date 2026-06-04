@@ -7,7 +7,9 @@ export function makePaintTileResolver(intent: MapPaintIntent): {
   effectiveVariation: MapPaintVariation;
   groupTileCount: number;
 } {
-  const groupTiles = landlookGroupTiles(intent.selectedTileset, intent.activeGroupId);
+  const groupTiles = Array.isArray(intent.variationTiles)
+    ? intent.variationTiles
+    : landlookGroupTiles(intent.selectedTileset, intent.activeGroupId);
   const effectiveVariation = intent.variation === "single" || groupTiles.length === 0 ? "single" : intent.variation;
   return {
     effectiveVariation,

@@ -57,7 +57,7 @@ export function createBrowserProject(projectName: string): Project {
     casteOverrides: [],
     assets: [],
     assetCatalog: { tilesets: [] },
-    editorMetadata: { displayNames: {} },
+    editorMetadata: { displayNames: {}, tilePalettes: [] },
     records: { counts: {}, alignments: [] },
     diagnostics: [],
     semanticSchema: emptySemanticSchema(),
@@ -119,7 +119,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
     casteOverrides: parsed.casteOverrides,
     assets: [],
     assetCatalog: parsed.assetCatalog,
-    editorMetadata: { displayNames: {} },
+    editorMetadata: { displayNames: {}, tilePalettes: [] },
     records: parsed.records,
     diagnostics: parsed.diagnostics,
     semanticSchema: emptySemanticSchema(0),
@@ -381,7 +381,9 @@ export async function openBrowserProject(source: BrowserScenarioSource): Promise
   project.spellOverrides ??= [];
   project.raceOverrides ??= [];
   project.casteOverrides ??= [];
-  project.editorMetadata ??= { displayNames: {} };
+  project.editorMetadata ??= { displayNames: {}, tilePalettes: [] };
+  project.editorMetadata.displayNames ??= {};
+  project.editorMetadata.tilePalettes ??= [];
   project.semanticSchema.decoding ??= { ed3Reachability: [], dispatcherNoops: [], confidenceDebt: [] };
   backfillTilesetMetadata(project);
   await ensureBrowserReferenceTileAttributes(project);

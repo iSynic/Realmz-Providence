@@ -1,6 +1,7 @@
 import { Action, ExtraCodeRow, Project, ProjectCommand, Provenance, TriggerRecord } from "../types";
 import { actionOptionFor, normalizeStepOpcode } from "../realmzActions";
 import { isReusableDoorPlaceholder } from "../actionPointCapacity";
+import { normalizedEditorMetadata } from "./tilePaletteCommands";
 
 const DOOR_RECORD_BYTES = 40;
 const DOORS_PER_LEVEL = 100;
@@ -369,16 +370,19 @@ function triggerIdFor(source: string, levelIndex: number, recordIndex: number) {
 function addDisplayName(metadata: Project["editorMetadata"], entityId: string, displayName?: string) {
   const label = displayName?.trim();
   if (!label) return metadata;
+  const normalized = normalizedMetadata(metadata);
   return {
+    ...normalized,
     displayNames: {
-      ...(metadata?.displayNames ?? {}),
+      ...normalized.displayNames,
       [entityId]: { label, source: "user" as const, updatedAt: new Date().toISOString() }
     }
   };
 }
 
 function removeDisplayNames(metadata: Project["editorMetadata"], entityIds: string[]) {
-  const displayNames = { ...(metadata?.displayNames ?? {}) };
+  const normalized = normalizedMetadata(metadata);
+  const displayNames = { ...normalized.displayNames };
   let changed = false;
   for (const id of entityIds) {
     if (id in displayNames) {
@@ -386,19 +390,24 @@ function removeDisplayNames(metadata: Project["editorMetadata"], entityIds: stri
       changed = true;
     }
   }
-  return changed ? { displayNames } : metadata;
+  return changed ? { ...normalized, displayNames } : metadata;
 }
 
 function remapDisplayName(metadata: Project["editorMetadata"], fromId: string, toId: string) {
   if (fromId === toId) return metadata;
-  const existing = metadata?.displayNames?.[fromId];
+  const normalized = normalizedMetadata(metadata);
+  const existing = normalized.displayNames[fromId];
   if (!existing) return metadata;
-  const displayNames = { ...(metadata?.displayNames ?? {}) };
+  const displayNames = { ...normalized.displayNames };
   delete displayNames[fromId];
   displayNames[toId] = { ...existing, updatedAt: new Date().toISOString() };
-  return { displayNames };
+  return { ...normalized, displayNames };
 }
 
 function displayNameFor(project: Project, entityId: string, fallback: string) {
   return project.editorMetadata?.displayNames?.[entityId]?.label ?? fallback;
+}
+
+function normalizedMetadata(metadata: Project["editorMetadata"]) {
+  return normalizedEditorMetadata({ editorMetadata: metadata } as Project);
 }

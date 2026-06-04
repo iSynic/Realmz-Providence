@@ -27,6 +27,7 @@ export function useMapInteractions({
   paintMode,
   paintVariation,
   activePaintGroupId,
+  variationTiles,
   selectedTile,
   selectedTileset,
   triggers,
@@ -53,6 +54,7 @@ export function useMapInteractions({
   paintMode: MapPaintMode;
   paintVariation: MapPaintVariation;
   activePaintGroupId: string;
+  variationTiles?: number[] | null;
   selectedTile: number;
   selectedTileset: TilesetAsset | null;
   triggers: TriggerRecord[];
@@ -105,7 +107,7 @@ export function useMapInteractions({
   useEffect(() => {
     if (!hover || !((activeTool === "paint" && paintMode === "brush") || activeTool === "stamp")) return;
     setPaintCursor({ ...hover, tile: brushTileForCell(hover) });
-  }, [activePaintGroupId, activeTool, hover, paintMode, paintVariation, selectedTile, selectedTileset]);
+  }, [activePaintGroupId, activeTool, hover, paintMode, paintVariation, selectedTile, selectedTileset, variationTiles]);
 
   function cellFromEvent(event: PointerEvent<HTMLCanvasElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -162,6 +164,7 @@ export function useMapInteractions({
       selectedTileset,
       variation: paintVariation,
       activeGroupId: activePaintGroupId,
+      variationTiles,
       seed: paintStrokeSeedRef.current
     });
     return resolver({ ...cell, index: mapTileIndex(map, cell.x, cell.y), tile: tileValueAt(map, cell.x, cell.y) }, paintSequenceRef.current);
@@ -305,7 +308,7 @@ export function useMapInteractions({
           paintActiveRef.current = true;
           strokeCellsRef.current.clear();
           const startCell = cellFromEvent(event);
-          paintStrokeSeedRef.current = paintSeed(map.id, startCell.x, startCell.y, selectedTile, activePaintGroupId);
+          paintStrokeSeedRef.current = paintSeed(map.id, startCell.x, startCell.y, selectedTile, activePaintGroupId, variationTiles?.join(","));
           paintSequenceRef.current = 0;
           onBeginPaintStroke(activeTool === "stamp" ? "Place stamp" : "Paint tiles");
         }
