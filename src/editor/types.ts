@@ -460,6 +460,7 @@ export type RuleNameResourceAudit = {
 export type TilePaletteCategory =
   | "landlook"
   | "special"
+  | "super"
   | "custom"
   | "used"
   | "attributes"

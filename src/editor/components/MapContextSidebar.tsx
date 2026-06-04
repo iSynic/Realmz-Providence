@@ -195,6 +195,8 @@ export function MapSelectionSidebar({
   smartBrushPlan,
   onClearSmartBrushMask,
   onApplySmartBrush,
+  selectedSuperTileStampId,
+  onSelectSuperTileStamp,
   onSelectEntity,
   onClearSelection,
   onApplyCommand
@@ -244,6 +246,8 @@ export function MapSelectionSidebar({
   smartBrushPlan: SmartBrushPlan;
   onClearSmartBrushMask: () => void;
   onApplySmartBrush: () => void;
+  selectedSuperTileStampId: string | null;
+  onSelectSuperTileStamp: (stampId: string) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
   onClearSelection: () => void;
   onApplyCommand: (command: ProjectCommand) => void;
@@ -259,7 +263,7 @@ export function MapSelectionSidebar({
   }, [paletteState]);
   const selection = selectionSummary(selectedMap, state.selectedEntity, state.selectedCell, selectedRegion, mapTriggers, selectedRandomLevel, mapRecords);
   const activeSelection = workbenchMode === "canvas" ? selection : null;
-  const isPaintInspector = workbenchMode === "canvas" && state.activeTool === "paint";
+  const isPaintInspector = workbenchMode === "canvas" && (state.activeTool === "paint" || state.activeTool === "stamp");
   if (!open) {
     return (
       <aside className="map-context-rail">
@@ -315,6 +319,9 @@ export function MapSelectionSidebar({
             smartBrushPlan={smartBrushPlan}
             onClearSmartBrushMask={onClearSmartBrushMask}
             onApplySmartBrush={onApplySmartBrush}
+            selectedSuperTileStampId={selectedSuperTileStampId}
+            onSelectSuperTileStamp={onSelectSuperTileStamp}
+            onSetTool={onSetTool}
             onSelectTile={onSelectTile}
             onApplyCommand={onApplyCommand}
             paletteOpen={paletteOpen}
@@ -858,6 +865,9 @@ function PaintInspector({
   smartBrushPlan,
   onClearSmartBrushMask,
   onApplySmartBrush,
+  selectedSuperTileStampId,
+  onSelectSuperTileStamp,
+  onSetTool,
   onSelectTile,
   onApplyCommand,
   paletteOpen,
@@ -893,6 +903,9 @@ function PaintInspector({
   smartBrushPlan: SmartBrushPlan;
   onClearSmartBrushMask: () => void;
   onApplySmartBrush: () => void;
+  selectedSuperTileStampId: string | null;
+  onSelectSuperTileStamp: (stampId: string) => void;
+  onSetTool: (tool: EditorTool) => void;
   onSelectTile: (tile: number) => void;
   onApplyCommand: (command: ProjectCommand) => void;
   paletteOpen: boolean;
@@ -914,8 +927,8 @@ function PaintInspector({
       atlas={atlas}
       icons={state.iconEntries}
       atlasStatus={state.atlasStatus}
-      mode={paintPaletteMode}
-      onSetMode={onSetPaintPaletteMode}
+      mode={state.activeTool === "stamp" ? "super" : paintPaletteMode}
+      onSetMode={state.activeTool === "stamp" ? () => undefined : onSetPaintPaletteMode}
       activePaintGroupId={activePaintGroupId}
       onSetActivePaintGroup={onSetActivePaintGroup}
       activeCustomPaletteId={activeCustomPaletteId}
@@ -924,6 +937,10 @@ function PaintInspector({
       paintVariation={paintVariation}
       onSetPaintVariation={onSetPaintVariation}
       onApplyCommand={onApplyCommand}
+      selectedSuperTileStampId={selectedSuperTileStampId}
+      onSelectSuperTileStamp={onSelectSuperTileStamp}
+      onActivateStampTool={() => onSetTool("stamp")}
+      stampOnly={state.activeTool === "stamp"}
       variant="sidebar"
     />
   );

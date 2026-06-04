@@ -494,6 +494,42 @@ export function drawPaintCursor(
   ctx.restore();
 }
 
+export function drawStampCursor(
+  ctx: CanvasRenderingContext2D,
+  {
+    cursor,
+    atlas,
+    icons,
+    viewOptions,
+    cell
+  }: {
+    cursor: Array<{ x: number; y: number; tile: number }>;
+    atlas: AtlasEntry | null;
+    icons: Record<number, IconEntry>;
+    viewOptions: MapViewOptions;
+    cell: number;
+  }
+) {
+  if (cursor.length === 0) return;
+  const left = Math.min(...cursor.map((preview) => preview.x)) * cell;
+  const top = Math.min(...cursor.map((preview) => preview.y)) * cell;
+  const right = (Math.max(...cursor.map((preview) => preview.x)) + 1) * cell;
+  const bottom = (Math.max(...cursor.map((preview) => preview.y)) + 1) * cell;
+  ctx.save();
+  ctx.globalAlpha = 0.88;
+  for (const preview of cursor) {
+    drawTileValueCell(ctx, { tile: preview.tile, x: preview.x, y: preview.y, atlas, icons, viewOptions, cell });
+  }
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = "#f8fafc";
+  ctx.lineWidth = Math.max(2, Math.min(5, cell * 0.14));
+  ctx.strokeRect(left + 1, top + 1, Math.max(1, right - left - 2), Math.max(1, bottom - top - 2));
+  ctx.strokeStyle = "rgba(5, 7, 10, 0.75)";
+  ctx.lineWidth = Math.max(1, Math.min(3, cell * 0.07));
+  ctx.strokeRect(left + 4, top + 4, Math.max(1, right - left - 8), Math.max(1, bottom - top - 8));
+  ctx.restore();
+}
+
 export function drawSelectedCell(ctx: CanvasRenderingContext2D, selectedCell: { x: number; y: number }, cell: number) {
   const left = selectedCell.x * cell;
   const top = selectedCell.y * cell;

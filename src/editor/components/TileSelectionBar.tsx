@@ -4,6 +4,7 @@ import { IconEntry, LibraryAsset, MapEntity, MapPaintVariation, Project, Project
 import { classifyTileValue, isDivinityVisualPathTile, standardTileValues, tileAttributeGroup } from "../map/tileMetadata";
 import { LANDLOOK_TILE_GROUPS, landlookGroupById, landlookGroupRangeLabel, landlookGroupTiles } from "../map/paintGroups";
 import { PAINTABLE_REFERENCE_ACTOR_ICON_VALUES, PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES, tileIconCandidates } from "../map/renderValues";
+import { SuperTileStamp, superTileStampsForMap } from "../map/superTileStamps";
 import { isActorOrCreatureIconId, isMapPlaceableLibraryAsset } from "../resourceResolver";
 import { tileColor } from "./TileSprite";
 import { TileSwatch } from "./TileSwatch";
@@ -19,6 +20,7 @@ const TILE_DRAG_THRESHOLD = 6;
 const PALETTE_MODE_HELP: Record<TilePaletteCategory, string> = {
   landlook: "Standard Realmz landlook or dungeon atlas tiles for the selected map renderer.",
   special: "Negative special land cicn tiles and icon-backed map values, including large structures and landmarks.",
+  super: "Prebuilt multi-tile brushes that place several map cells with one Stamp click.",
   custom: "Project-saved named tile buckets. Drag tiles from any palette tab into the reveal dock to collect them.",
   used: "Every raw tile value already present on the current map, including values outside the visible atlas range.",
   attributes: "Tiles grouped by decoded behavior such as solid, walkable, shore/water, path, boat, LOS, forest, and combat evidence.",
@@ -41,8 +43,12 @@ type PaintPalettePanelProps = {
   activePaintGroupId: string;
   paintVariation: MapPaintVariation;
   activeCustomPaletteId: string | null;
+  selectedSuperTileStampId?: string | null;
   onSetActivePaintGroup: (groupId: string) => void;
   onSetActiveCustomPaletteId: (paletteId: string | null) => void;
+  onSelectSuperTileStamp?: (stampId: string) => void;
+  onActivateStampTool?: () => void;
+  stampOnly?: boolean;
   onSetVariationTiles: (tiles: number[] | null) => void;
   onSetPaintVariation: (variation: MapPaintVariation) => void;
   onApplyCommand: (command: ProjectCommand) => void;
@@ -70,7 +76,11 @@ export function PaintPalettePanel({
   onSetMode,
   activePaintGroupId,
   activeCustomPaletteId,
+  selectedSuperTileStampId,
   onSetActiveCustomPaletteId,
+  onSelectSuperTileStamp,
+  onActivateStampTool,
+  stampOnly = false,
   onSetVariationTiles,
   paintVariation,
   onSetActivePaintGroup,
@@ -86,6 +96,7 @@ export function PaintPalettePanel({
   const tileAttributes = project?.tileAttributes ?? [];
   const customPalettes = project?.editorMetadata?.tilePalettes ?? [];
   const activeCustomPalette = customPalettes.find((palette) => palette.id === activeCustomPaletteId) ?? customPalettes[0] ?? null;
+  const superTileStamps = useMemo(() => (mode === "super" ? superTileStampsForMap(map, tileset) : []), [map, mode, tileset]);
   const dragDockVisible = Boolean(tileDrag?.active);
   const usedTiles = useMemo(() => {
     if (mode !== "used" && mode !== "attributes") return [];
@@ -113,6 +124,7 @@ export function PaintPalettePanel({
     if (mode === "special") return specialTiles;
     if (mode === "attributes") return attributeTiles;
     if (mode === "custom") return activeCustomPalette?.tiles ?? [];
+    if (mode === "super") return [];
     return groupedStandardTiles;
   }, [activeCustomPalette, attributeTiles, groupedStandardTiles, mode, rawTiles, specialTiles, usedTiles]);
   const [query, setQuery] = useState("");
@@ -123,6 +135,15 @@ export function PaintPalettePanel({
     if (!normalized) return paletteTiles;
     return paletteTiles.filter((tile) => String(tile).includes(normalized));
   }, [paletteTiles, query]);
+  const filteredSuperTileStamps = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) return superTileStamps;
+    return superTileStamps.filter((stamp) =>
+      stamp.label.toLowerCase().includes(normalized) ||
+      stamp.id.toLowerCase().includes(normalized) ||
+      stamp.cells.some((cell) => String(cell.tile).includes(normalized))
+    );
+  }, [query, superTileStamps]);
   const selectedMeta = classifyTileValue(selectedTile, tileset, tileAttributes, icons);
   const activeGroup = landlookGroupById(activePaintGroupId);
   const activeVariationLabel = mode === "custom" ? activeCustomPalette?.name ?? "Custom Palette" : activeGroup.label;
@@ -237,10 +258,11 @@ export function PaintPalettePanel({
         <span>{tileset ? `${tileset.name} | ${standardTiles.length} tiles` : "No tileset"}</span>
         <b>{paintVariation === "single" ? `Paint ${selectedTile}` : paintVariationLabel(paintVariation, activeVariationLabel)}</b>
       </div>
-      {variant === "sidebar" && (
+      {variant === "sidebar" && !stampOnly && (
         <div className="paint-palette-tabs" role="tablist" aria-label="Tile palette mode">
           <button type="button" className={mode === "landlook" ? "active" : ""} onClick={() => onSetMode("landlook")} title={PALETTE_MODE_HELP.landlook}>Landlook</button>
           <button type="button" className={mode === "special" ? "active" : ""} onClick={() => onSetMode("special")} title={PALETTE_MODE_HELP.special}>Special / Icons</button>
+          <button type="button" className={mode === "super" ? "active" : ""} onClick={() => onSetMode("super")} title={PALETTE_MODE_HELP.super}>Super Tiles</button>
           <button type="button" className={mode === "custom" ? "active" : ""} onClick={() => onSetMode("custom")} title={PALETTE_MODE_HELP.custom}>Custom</button>
           <button type="button" className={mode === "used" ? "active" : ""} onClick={() => onSetMode("used")} title={PALETTE_MODE_HELP.used}>Used</button>
           <button type="button" className={mode === "attributes" ? "active" : ""} onClick={() => onSetMode("attributes")} title={PALETTE_MODE_HELP.attributes}>Attributes</button>
@@ -271,7 +293,7 @@ export function PaintPalettePanel({
           onApplyCommand={onApplyCommand}
         />
       )}
-      {variant === "sidebar" && (
+      {variant === "sidebar" && mode !== "super" && (
         <div className="paint-variation-panel" aria-label="Brush variation">
           <div className="paint-variation-header">
             <span>Variation</span>
@@ -352,7 +374,19 @@ export function PaintPalettePanel({
           aria-label="Search tile id"
         />
       )}
-      {variant === "bar" ? (
+      {variant === "sidebar" && mode === "super" ? (
+        <SuperTileStampGrid
+          atlas={atlas}
+          icons={icons}
+          selectedStampId={selectedSuperTileStampId ?? null}
+          stamps={filteredSuperTileStamps}
+          tileset={tileset}
+          onSelectStamp={(stamp) => {
+            onSelectSuperTileStamp?.(stamp.id);
+            onActivateStampTool?.();
+          }}
+        />
+      ) : variant === "bar" ? (
         <ScrollArea className={listClass} orientation="horizontal" aria-label="Paint Palette">
           <PaletteButtons
             atlas={atlas}
@@ -395,12 +429,79 @@ export function PaintPalettePanel({
           </div>
         </>
       )}
-      <small className="paint-palette-detail">
-        <b>{selectedMeta.label}</b> | raw {selectedMeta.raw} | render {selectedMeta.renderTile} | {selectedMeta.compatibility}
-      </small>
+      {mode !== "super" && (
+        <small className="paint-palette-detail">
+          <b>{selectedMeta.label}</b> | raw {selectedMeta.raw} | render {selectedMeta.renderTile} | {selectedMeta.compatibility}
+        </small>
+      )}
       <small>{atlasStatus}</small>
     </section>
   );
+}
+
+function SuperTileStampGrid({
+  atlas,
+  icons,
+  selectedStampId,
+  stamps,
+  tileset,
+  onSelectStamp
+}: {
+  atlas: EditorState["atlasEntries"][string] | null;
+  icons?: Record<number, IconEntry>;
+  selectedStampId: string | null;
+  stamps: SuperTileStamp[];
+  tileset: TilesetAsset | null;
+  onSelectStamp: (stamp: SuperTileStamp) => void;
+}) {
+  return (
+    <div className="stamp-palette-section">
+      <div className="stamp-palette-grid" aria-label="Super tile brushes">
+        {stamps.map((stamp) => {
+          const bounds = stampBounds(stamp);
+          return (
+            <button
+              key={stamp.id}
+              type="button"
+              className={`stamp-palette-card${stamp.id === selectedStampId ? " selected" : ""}`}
+              onClick={() => onSelectStamp(stamp)}
+              title={`${stamp.description} Places ${stamp.cells.length} tiles.`}
+            >
+              <span
+                className="stamp-palette-preview"
+                style={{
+                  gridTemplateColumns: `repeat(${bounds.width}, 24px)`,
+                  gridTemplateRows: `repeat(${bounds.height}, 24px)`,
+                  width: `${bounds.width * 24 + 2}px`,
+                  height: `${bounds.height * 24 + 2}px`
+                }}
+              >
+                {stamp.cells.map((cell) => (
+                  <span
+                    key={`${cell.dx}:${cell.dy}:${cell.tile}`}
+                    style={{ gridColumn: cell.dx - bounds.left + 1, gridRow: cell.dy - bounds.top + 1, background: tileColor(cell.tile) }}
+                  >
+                    <TileSwatch atlas={atlas} icons={icons} tile={cell.tile} tileset={tileset} showBadge={false} />
+                  </span>
+                ))}
+              </span>
+              <span className="stamp-palette-label">{stamp.label}</span>
+              <small>{stamp.cells.length} tiles</small>
+            </button>
+          );
+        })}
+        {stamps.length === 0 && <small className="paint-palette-empty">No super-tile brushes are available for this map.</small>}
+      </div>
+    </div>
+  );
+}
+
+function stampBounds(stamp: SuperTileStamp) {
+  const left = Math.min(...stamp.cells.map((cell) => cell.dx));
+  const right = Math.max(...stamp.cells.map((cell) => cell.dx));
+  const top = Math.min(...stamp.cells.map((cell) => cell.dy));
+  const bottom = Math.max(...stamp.cells.map((cell) => cell.dy));
+  return { left, top, width: right - left + 1, height: bottom - top + 1 };
 }
 
 const PaletteButtons = memo(function PaletteButtons({

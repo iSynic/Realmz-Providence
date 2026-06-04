@@ -9,6 +9,7 @@ import { landlookGroupTiles } from "../map/paintGroups";
 import { buildPaintChanges, rectCells } from "../map/regionPaint";
 import { clearTileForMap } from "../map/tileClear";
 import { buildSmartTerrainChanges, buildSmartTerrainPaintChanges, smartBrushProfileForTileset } from "../map/smartTerrainBrush";
+import { superTileStampById, superTileStampsForMap } from "../map/superTileStamps";
 
 const MAP_WORKBENCH_MODE_STORAGE_KEY = "providence.mapWorkbenchMode.v1";
 
@@ -73,6 +74,7 @@ export function MapsPanel({
   const [activePaintGroupId, setActivePaintGroupId] = useState("all");
   const [paintPaletteMode, setPaintPaletteMode] = useState<TilePaletteCategory>("landlook");
   const [activeCustomPaletteId, setActiveCustomPaletteId] = useState<string | null>(null);
+  const [selectedSuperTileStampId, setSelectedSuperTileStampId] = useState<string | null>(null);
   const [paletteVariationTiles, setPaletteVariationTiles] = useState<number[] | null>(null);
   const [previewMode, setPreviewMode] = useState<MapPreviewMode>("off");
   const [previewFocalPoint, setPreviewFocalPoint] = useState<MapPreviewFocalPoint | null>(null);
@@ -107,15 +109,10 @@ export function MapsPanel({
   useEffect(() => {
     localStorage.setItem(MAP_WORKBENCH_MODE_STORAGE_KEY, workbenchMode);
   }, [workbenchMode]);
-  useEffect(() => {
-    if (paintPaletteMode !== "landlook") return;
-    const groupTiles = landlookGroupTiles(selectedTileset, activePaintGroupId);
-    if (groupTiles.length > 0 && !groupTiles.includes(state.selectedTile)) {
-      onSelectTile(groupTiles[0]);
-    }
-  }, [activePaintGroupId, onSelectTile, paintPaletteMode, selectedTileset, state.selectedTile]);
   const customPalettes = state.project?.editorMetadata?.tilePalettes ?? [];
   const activeCustomPalette = customPalettes.find((palette) => palette.id === activeCustomPaletteId) ?? customPalettes[0] ?? null;
+  const availableSuperTileStamps = useMemo(() => superTileStampsForMap(selectedMap, selectedTileset), [selectedMap, selectedTileset]);
+  const selectedSuperTileStamp = superTileStampById(selectedSuperTileStampId, selectedMap, selectedTileset);
   const variationTiles = paletteVariationTiles;
   const smartBrushPlan = useMemo(
     () => buildSmartTerrainChanges(selectedMap, smartBrushMask, smartBrushPreset, selectedTileset, atlas),
@@ -141,10 +138,14 @@ export function MapsPanel({
     }
   }, [activeCustomPaletteId, customPalettes]);
   useEffect(() => {
-    if (paintPaletteMode !== "custom") return;
-    if (!activeCustomPalette?.tiles.length) return;
-    if (!activeCustomPalette.tiles.includes(state.selectedTile)) onSelectTile(activeCustomPalette.tiles[0]);
-  }, [activeCustomPalette, onSelectTile, paintPaletteMode, state.selectedTile]);
+    if (availableSuperTileStamps.length === 0) {
+      if (selectedSuperTileStampId !== null) setSelectedSuperTileStampId(null);
+      return;
+    }
+    if (!selectedSuperTileStampId || !availableSuperTileStamps.some((stamp) => stamp.id === selectedSuperTileStampId)) {
+      setSelectedSuperTileStampId(availableSuperTileStamps[0].id);
+    }
+  }, [availableSuperTileStamps, selectedSuperTileStampId]);
   useEffect(() => {
     if (paintMode !== "smart") return;
     if (!selectedMap || selectedMap.levelType !== "land" || smartBrushProfileForTileset(selectedTileset) == null) {
@@ -190,13 +191,11 @@ export function MapsPanel({
   };
   const setPaintGroup = (groupId: string) => {
     setActivePaintGroupId(groupId);
-    const groupTiles = landlookGroupTiles(selectedTileset, groupId);
-    if (groupTiles.length > 0 && !groupTiles.includes(state.selectedTile)) onSelectTile(groupTiles[0]);
   };
   const openCanvasTool = (tool: EditorState["activeTool"]) => {
     setWorkbenchMode("canvas");
     onSetTool(tool);
-    if (tool === "paint") setPaletteOpen(true);
+    if (tool === "paint" || tool === "stamp") setPaletteOpen(true);
   };
   return (
     <>
@@ -255,6 +254,7 @@ export function MapsPanel({
                 activePaintGroupId={activePaintGroupId}
                 variationTiles={variationTiles}
                 selectedTile={state.selectedTile}
+                selectedSuperTileStamp={selectedSuperTileStamp}
                 zoom={state.zoom}
                 smoothTiles={state.smoothTiles}
                 viewOptions={state}
@@ -391,6 +391,8 @@ export function MapsPanel({
         onSetPaintPaletteMode={setPaintPaletteMode}
         activeCustomPaletteId={activeCustomPaletteId}
         onSetActiveCustomPaletteId={setActiveCustomPaletteId}
+        selectedSuperTileStampId={selectedSuperTileStamp?.id ?? null}
+        onSelectSuperTileStamp={setSelectedSuperTileStampId}
         variationTiles={variationTiles}
         onSetPaletteVariationTiles={setPaletteVariationTiles}
         selectedRegion={selectedRegion}

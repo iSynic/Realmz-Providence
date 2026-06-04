@@ -39,12 +39,14 @@ import {
   drawRegionSelection,
   drawSecretTileOverlay,
   drawSelectedCell,
+  drawStampCursor,
   drawSmartTerrainMask,
   drawSmartTerrainPreview,
   drawTileValueCell,
   drawTriggers,
   syncCanvasSize
 } from "../map/drawMapCanvas";
+import { SuperTileStamp } from "../map/superTileStamps";
 import { MapKeyHud } from "./MapCanvasHud";
 
 const BASE_CANVAS_SIZE = 900;
@@ -65,6 +67,7 @@ export function RealmzMapCanvas({
   activePaintGroupId,
   variationTiles,
   selectedTile,
+  selectedSuperTileStamp,
   zoom,
   smoothTiles,
   viewOptions,
@@ -104,6 +107,7 @@ export function RealmzMapCanvas({
   activePaintGroupId: string;
   variationTiles?: number[] | null;
   selectedTile: number;
+  selectedSuperTileStamp: SuperTileStamp | null;
   zoom: number;
   smoothTiles: boolean;
   viewOptions: MapViewOptions;
@@ -186,7 +190,7 @@ export function RealmzMapCanvas({
     drawBaseMapLayer(ctx, { map, atlas, icons, smoothTiles, viewOptions, size });
     baseRenderRef.current = baseRenderSnapshot({ map, atlas, icons, smoothTiles, viewOptions, size });
   }, [atlas, canvasCssSize, icons, map, smoothTiles, viewOptions]);
-  const { hover, hoverTarget, paintCursor, regionPreview, overlayHandlers } = useMapInteractions({
+  const { hover, hoverTarget, paintCursor, stampCursor, regionPreview, overlayHandlers } = useMapInteractions({
     map,
     activeTool,
     paintMode,
@@ -194,6 +198,7 @@ export function RealmzMapCanvas({
     activePaintGroupId,
     variationTiles,
     selectedTile,
+    selectedSuperTileStamp,
     selectedTileset: tileset,
     triggers,
     randomLevel,
@@ -284,9 +289,10 @@ export function RealmzMapCanvas({
     } else if (smartBrushPlan && (smartBrushPlan.cells.length > 0 || smartBrushPlan.skipped.length > 0)) {
       drawSmartTerrainPreview(ctx, { cells: smartBrushPlan.cells, skipped: smartBrushPlan.skipped, atlas, icons, viewOptions, cell });
     }
-    if (selectedCell && !selectedRegion && !paintCursor) drawSelectedCell(ctx, selectedCell, cell);
+    if (selectedCell && !selectedRegion && !paintCursor && !stampCursor) drawSelectedCell(ctx, selectedCell, cell);
     if (regionPreview) drawRegionSelection(ctx, regionPreview, cell, "preview");
     if (paintCursor) drawPaintCursor(ctx, { cursor: paintCursor, atlas, icons, viewOptions, cell });
+    else if (stampCursor) drawStampCursor(ctx, { cursor: stampCursor, atlas, icons, viewOptions, cell });
     else if (hover) drawHover(ctx, hover, cell);
   }, [
     triggers,
@@ -294,6 +300,7 @@ export function RealmzMapCanvas({
     mapRecords,
     hover,
     paintCursor,
+    stampCursor,
     showRandomRects,
     showMapRecords,
     selectedEntity,
@@ -524,7 +531,8 @@ function secretOverlaySignature(map: MapEntity) {
 function cursorForTool(tool: EditorTool, paintMode: MapPaintMode, target: MapHitTarget | null) {
   if (tool === "pan") return "grab";
   if (tool === "paint" && paintMode === "smart") return "crosshair";
-  if (tool === "paint" || tool === "stamp") return "none";
+  if (tool === "paint") return "none";
+  if (tool === "stamp") return "copy";
   if (tool === "random") return target?.kind === "randomRect" ? "move" : "crosshair";
   if (tool === "sample") return "copy";
   if (tool === "select" && target?.kind === "cell") return "grab";

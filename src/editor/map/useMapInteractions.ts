@@ -22,6 +22,7 @@ import { makePaintTileResolver, paintSeed } from "./paintResolver";
 import { clearTileForMap } from "./tileClear";
 import { nextActionPointRecordIndex } from "../actionPointCapacity";
 import { selectEntityFromId, triggerEntityId } from "../utils";
+import { buildSuperTileStampChanges, SuperTileStamp, superTileStampPreviewCells } from "./superTileStamps";
 
 export function useMapInteractions({
   map,
@@ -31,6 +32,7 @@ export function useMapInteractions({
   activePaintGroupId,
   variationTiles,
   selectedTile,
+  selectedSuperTileStamp,
   selectedTileset,
   triggers,
   randomLevel,
@@ -62,6 +64,7 @@ export function useMapInteractions({
   activePaintGroupId: string;
   variationTiles?: number[] | null;
   selectedTile: number;
+  selectedSuperTileStamp: SuperTileStamp | null;
   selectedTileset: TilesetAsset | null;
   triggers: TriggerRecord[];
   randomLevel: RandomLevel | null;
@@ -112,6 +115,7 @@ export function useMapInteractions({
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
   const [hoverTarget, setHoverTarget] = useState<MapHitTarget | null>(null);
   const [paintCursor, setPaintCursor] = useState<{ x: number; y: number; tile: number } | null>(null);
+  const [stampCursor, setStampCursor] = useState<Array<{ x: number; y: number; tile: number }> | null>(null);
   const [regionPreview, setRegionPreview] = useState<MapRegionSelection | null>(null);
 
   useEffect(() => {
@@ -123,6 +127,14 @@ export function useMapInteractions({
     if (!hover || !isBrushLikeTool(activeTool, paintMode)) return;
     setPaintCursor({ ...hover, tile: brushTileForCell(hover) });
   }, [activePaintGroupId, activeTool, hover, paintMode, paintVariation, selectedTile, selectedTileset, variationTiles]);
+
+  useEffect(() => {
+    if (activeTool !== "stamp" || !hover || !selectedSuperTileStamp) {
+      setStampCursor(null);
+      return;
+    }
+    setStampCursor(superTileStampPreviewCells(map, selectedSuperTileStamp, hover));
+  }, [activeTool, hover, map, selectedSuperTileStamp]);
 
   function cellFromEvent(event: PointerEvent<HTMLCanvasElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -194,6 +206,18 @@ export function useMapInteractions({
     setPaintCursor({ ...cell, tile: brushTileForCell(cell) });
   }
 
+  function placeStampAt(cell: { x: number; y: number }) {
+    if (!selectedSuperTileStamp) return;
+    const changes = buildSuperTileStampChanges(map, selectedSuperTileStamp, cell);
+    setStampCursor(superTileStampPreviewCells(map, selectedSuperTileStamp, cell));
+    setHoverTarget({ kind: "cell", cell: { ...cell, tile: tileValueAt(map, cell.x, cell.y) } });
+    selectTargetCell({ ...cell, tile: selectedSuperTileStamp.cells[0]?.tile ?? tileValueAt(map, cell.x, cell.y) });
+    if (changes.length === 0) return;
+    onBeginPaintStroke(`Place ${selectedSuperTileStamp.label}`);
+    onApplyCommand({ kind: "paintTiles", mapId: map.id, label: `Place ${selectedSuperTileStamp.label}`, cells: changes });
+    onCommitPaintStroke();
+  }
+
   function startPan(event: PointerEvent<HTMLCanvasElement>) {
     const wrap = wrapRef.current;
     if (!wrap) return false;
@@ -252,6 +276,10 @@ export function useMapInteractions({
     }
     if (activeTool === "select") {
       inspectAt(cell);
+      return;
+    }
+    if (activeTool === "stamp") {
+      placeStampAt(cell);
       return;
     }
     if (isBrushLikeTool(activeTool, paintMode)) paintAt(cell);
@@ -319,6 +347,7 @@ export function useMapInteractions({
     hover,
     hoverTarget,
     paintCursor,
+    stampCursor,
     regionPreview,
     overlayHandlers: {
       onPointerDown(event: PointerEvent<HTMLCanvasElement>) {
@@ -365,13 +394,17 @@ export function useMapInteractions({
           return;
         }
         event.currentTarget.setPointerCapture(event.pointerId);
+        if (activeTool === "stamp") {
+          applyToolAt(event);
+          return;
+        }
         if (isBrushLikeTool(activeTool, paintMode)) {
           paintActiveRef.current = true;
           strokeCellsRef.current.clear();
           const startCell = cellFromEvent(event);
           paintStrokeSeedRef.current = paintSeed(map.id, startCell.x, startCell.y, selectedTile, activePaintGroupId, variationTiles?.join(","));
           paintSequenceRef.current = 0;
-          onBeginPaintStroke(activeTool === "stamp" ? "Place stamp" : "Paint tiles");
+          onBeginPaintStroke("Paint tiles");
         }
         applyToolAt(event);
       },
@@ -415,6 +448,12 @@ export function useMapInteractions({
           return;
         }
         const cell = cellFromEvent(event);
+        if (activeTool === "stamp") {
+          setHover(cell);
+          setHoverTarget({ kind: "cell", cell: { ...cell, tile: tileValueAt(map, cell.x, cell.y) } });
+          if (selectedSuperTileStamp) setStampCursor(superTileStampPreviewCells(map, selectedSuperTileStamp, cell));
+          return;
+        }
         if (paintActiveRef.current) {
           setHover(cell);
           setHoverTarget({ kind: "cell", cell: { ...cell, tile: tileValueAt(map, cell.x, cell.y) } });
@@ -519,6 +558,7 @@ export function useMapInteractions({
         setRegionPreview(null);
         setHoverTarget(null);
         setPaintCursor(null);
+        setStampCursor(null);
         finishPaintStroke(false);
         if (event.currentTarget.hasPointerCapture(event.pointerId)) {
           event.currentTarget.releasePointerCapture(event.pointerId);
@@ -529,6 +569,7 @@ export function useMapInteractions({
         setHover(null);
         setHoverTarget(null);
         setPaintCursor(null);
+        setStampCursor(null);
       },
       onContextMenu(event: MouseEvent<HTMLCanvasElement>) {
         event.preventDefault();
@@ -538,6 +579,7 @@ export function useMapInteractions({
         selectDragRef.current = null;
         setRegionPreview(null);
         setPaintCursor(null);
+        setStampCursor(null);
         finishPaintStroke(false);
       }
     }
@@ -639,5 +681,5 @@ function pointInPolygon(x: number, y: number, polygon: Array<{ x: number; y: num
 }
 
 function isBrushLikeTool(activeTool: EditorTool, paintMode: MapPaintMode) {
-  return (activeTool === "paint" && (paintMode === "brush" || paintMode === "clear")) || activeTool === "stamp";
+  return activeTool === "paint" && (paintMode === "brush" || paintMode === "clear");
 }
