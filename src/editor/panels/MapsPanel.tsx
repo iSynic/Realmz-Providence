@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { EditorState } from "../store";
-import { LevelType, MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, SmartBrushMaskCell, SmartBrushPreset, TilePaletteCategory, TilesetAsset, TriggerRecord } from "../types";
+import { CustomMapStamp, LevelType, MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, SmartBrushMaskCell, SmartBrushPreset, TilePaletteCategory, TilesetAsset, TriggerRecord } from "../types";
 import { triggerOverlayKinds } from "../semanticGraph";
 import { RealmzMapCanvas } from "../components/MapCanvas";
 import { LandLayoutEditor, LandTileAtlasEditor, MapContextSidebar, MapRecordsWorkbench, MapSelectionSidebar, RandomAreasWorkbench, type LandLayoutCellSelection } from "../components/MapContextSidebar";
@@ -9,7 +9,8 @@ import { landlookGroupTiles } from "../map/paintGroups";
 import { buildPaintChanges, rectCells } from "../map/regionPaint";
 import { clearTileForMap } from "../map/tileClear";
 import { buildSmartTerrainChanges, buildSmartTerrainPaintChanges, smartBrushProfileForTileset } from "../map/smartTerrainBrush";
-import { superTileStampById, superTileStampsForMap } from "../map/superTileStamps";
+import { builtInStampToMapStamp, customMapStampToMapStamp, superTileStampsForMap } from "../map/superTileStamps";
+import { readGlobalMapStamps, writeGlobalMapStamps } from "../map/customMapStamps";
 
 const MAP_WORKBENCH_MODE_STORAGE_KEY = "providence.mapWorkbenchMode.v1";
 
@@ -75,6 +76,7 @@ export function MapsPanel({
   const [paintPaletteMode, setPaintPaletteMode] = useState<TilePaletteCategory>("landlook");
   const [activeCustomPaletteId, setActiveCustomPaletteId] = useState<string | null>(null);
   const [selectedSuperTileStampId, setSelectedSuperTileStampId] = useState<string | null>(null);
+  const [globalMapStamps, setGlobalMapStamps] = useState<CustomMapStamp[]>(() => readGlobalMapStamps());
   const [paletteVariationTiles, setPaletteVariationTiles] = useState<number[] | null>(null);
   const [previewMode, setPreviewMode] = useState<MapPreviewMode>("off");
   const [previewFocalPoint, setPreviewFocalPoint] = useState<MapPreviewFocalPoint | null>(null);
@@ -109,10 +111,20 @@ export function MapsPanel({
   useEffect(() => {
     localStorage.setItem(MAP_WORKBENCH_MODE_STORAGE_KEY, workbenchMode);
   }, [workbenchMode]);
+  useEffect(() => {
+    writeGlobalMapStamps(globalMapStamps);
+  }, [globalMapStamps]);
   const customPalettes = state.project?.editorMetadata?.tilePalettes ?? [];
   const activeCustomPalette = customPalettes.find((palette) => palette.id === activeCustomPaletteId) ?? customPalettes[0] ?? null;
-  const availableSuperTileStamps = useMemo(() => superTileStampsForMap(selectedMap, selectedTileset), [selectedMap, selectedTileset]);
-  const selectedSuperTileStamp = superTileStampById(selectedSuperTileStampId, selectedMap, selectedTileset);
+  const availableSuperTileStamps = useMemo(
+    () => [
+      ...superTileStampsForMap(selectedMap, selectedTileset).map(builtInStampToMapStamp),
+      ...(state.project?.editorMetadata?.mapStamps ?? []).map((stamp) => customMapStampToMapStamp(stamp, "project")),
+      ...globalMapStamps.map((stamp) => customMapStampToMapStamp(stamp, "global"))
+    ],
+    [globalMapStamps, selectedMap, selectedTileset, state.project?.editorMetadata?.mapStamps]
+  );
+  const selectedSuperTileStamp = availableSuperTileStamps.find((stamp) => stamp.id === selectedSuperTileStampId) ?? availableSuperTileStamps[0] ?? null;
   const variationTiles = paletteVariationTiles;
   const smartBrushPlan = useMemo(
     () => buildSmartTerrainChanges(selectedMap, smartBrushMask, smartBrushPreset, selectedTileset, atlas),
@@ -222,6 +234,8 @@ export function MapsPanel({
         onSetPaletteVariationTiles={setPaletteVariationTiles}
         selectedRegion={selectedRegion}
         onSetSelectedRegion={setSelectedRegion}
+        globalMapStamps={globalMapStamps}
+        onSetGlobalMapStamps={setGlobalMapStamps}
         replaceSourceTile={replaceSourceTile}
         onSetReplaceSourceTile={setReplaceSourceTile}
         onApplyCommand={onApplyCommand}
@@ -397,6 +411,8 @@ export function MapsPanel({
         onSetPaletteVariationTiles={setPaletteVariationTiles}
         selectedRegion={selectedRegion}
         onSetSelectedRegion={setSelectedRegion}
+        globalMapStamps={globalMapStamps}
+        onSetGlobalMapStamps={setGlobalMapStamps}
         replaceSourceTile={replaceSourceTile}
         onSetReplaceSourceTile={setReplaceSourceTile}
         smartBrushPreset={smartBrushPreset}

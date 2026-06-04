@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { TOOLS } from "../constants";
 import { EditorState } from "../store";
-import { EditorTool, IconEntry, MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRecord, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, SmartBrushMaskCell, SmartBrushPlan, SmartBrushPreset, TileAttributeFlag, TilePaletteCategory, TilesetAsset, TriggerRecord } from "../types";
+import { CustomMapStamp, EditorTool, IconEntry, MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRecord, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, SmartBrushMaskCell, SmartBrushPlan, SmartBrushPreset, TileAttributeFlag, TilePaletteCategory, TilesetAsset, TriggerRecord } from "../types";
 import { mapTileIndex, randomRectEntityId, tileValueAt } from "../map/geometry";
 import { allMapCells, buildReplaceChanges, dominantTiles, rectCells, regionCellCount } from "../map/regionPaint";
 import { actionSlotEntitiesForTriggerRecord } from "../semanticGraph";
@@ -83,6 +83,8 @@ export function MapContextSidebar({
   onSetPaletteVariationTiles,
   selectedRegion,
   onSetSelectedRegion,
+  globalMapStamps,
+  onSetGlobalMapStamps,
   replaceSourceTile,
   onSetReplaceSourceTile,
   onApplyCommand,
@@ -111,6 +113,8 @@ export function MapContextSidebar({
   onSetPaletteVariationTiles: (tiles: number[] | null) => void;
   selectedRegion: MapRegionSelection | null;
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
+  globalMapStamps: CustomMapStamp[];
+  onSetGlobalMapStamps: (stamps: CustomMapStamp[]) => void;
   replaceSourceTile: number | null;
   onSetReplaceSourceTile: (tile: number | null) => void;
   onApplyCommand: (command: ProjectCommand) => void;
@@ -187,6 +191,8 @@ export function MapSelectionSidebar({
   onSetPaletteVariationTiles,
   selectedRegion,
   onSetSelectedRegion,
+  globalMapStamps,
+  onSetGlobalMapStamps,
   replaceSourceTile,
   onSetReplaceSourceTile,
   smartBrushPreset,
@@ -238,6 +244,8 @@ export function MapSelectionSidebar({
   onSetPaletteVariationTiles: (tiles: number[] | null) => void;
   selectedRegion: MapRegionSelection | null;
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
+  globalMapStamps: CustomMapStamp[];
+  onSetGlobalMapStamps: (stamps: CustomMapStamp[]) => void;
   replaceSourceTile: number | null;
   onSetReplaceSourceTile: (tile: number | null) => void;
   smartBrushPreset: SmartBrushPreset;
@@ -311,6 +319,8 @@ export function MapSelectionSidebar({
             onSetPaintFillChance={setPaintFillChance}
             selectedRegion={selectedRegion}
             onSetSelectedRegion={onSetSelectedRegion}
+            globalMapStamps={globalMapStamps}
+            onSetGlobalMapStamps={onSetGlobalMapStamps}
             replaceSourceTile={replaceSourceTile}
             onSetReplaceSourceTile={onSetReplaceSourceTile}
             smartBrushPreset={smartBrushPreset}
@@ -857,6 +867,8 @@ function PaintInspector({
   onSetPaintFillChance,
   selectedRegion,
   onSetSelectedRegion,
+  globalMapStamps,
+  onSetGlobalMapStamps,
   replaceSourceTile,
   onSetReplaceSourceTile,
   smartBrushPreset,
@@ -895,6 +907,8 @@ function PaintInspector({
   onSetPaintFillChance: (chance: number) => void;
   selectedRegion: MapRegionSelection | null;
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
+  globalMapStamps: CustomMapStamp[];
+  onSetGlobalMapStamps: (stamps: CustomMapStamp[]) => void;
   replaceSourceTile: number | null;
   onSetReplaceSourceTile: (tile: number | null) => void;
   smartBrushPreset: SmartBrushPreset;
@@ -933,6 +947,9 @@ function PaintInspector({
       onSetActivePaintGroup={onSetActivePaintGroup}
       activeCustomPaletteId={activeCustomPaletteId}
       onSetActiveCustomPaletteId={onSetActiveCustomPaletteId}
+      selectedRegion={selectedRegion}
+      globalMapStamps={globalMapStamps}
+      onSetGlobalMapStamps={onSetGlobalMapStamps}
       onSetVariationTiles={onSetPaletteVariationTiles}
       paintVariation={paintVariation}
       onSetPaintVariation={onSetPaintVariation}
@@ -1461,7 +1478,7 @@ const PAINT_MODES: Array<{ id: MapPaintMode; label: string; body: string }> = [
   { id: "brush", label: "Brush", body: "Paint cells by dragging." },
   { id: "replace", label: "Replace Tile", body: "Replace one tile value in a region or map." },
   { id: "clear", label: "Eraser", body: "Restore cells to the current map's clear tile." },
-  { id: "smart", label: "Smart", body: "Draw a terrain mask and resolve edges automatically." }
+  { id: "smart", label: "Smart", body: "Beta: draw a terrain mask and resolve mountain, water, or forest edges automatically." }
 ];
 
 function PaintModePanel({
@@ -1516,7 +1533,7 @@ function PaintModePanel({
       <div className="paint-mode-header">
         <TutorialTip
           title="Paint Subtools"
-          body="Brush paints the selected value, Replace swaps a source tile, Eraser writes the map's clear tile, and Smart resolves a terrain mask into edge-aware terrain."
+          body="Brush paints the selected value, Replace swaps a source tile, Eraser writes the map's clear tile, and Smart is a beta terrain-mask resolver for mountains, water, and forest."
           side="right"
         >
           <span>Paint Subtool</span>
@@ -1549,11 +1566,12 @@ function PaintModePanel({
           <label className="map-number-field">
             <TutorialTip
               title="Terrain Preset"
-              body="Smart terrain currently supports curated standard landlook profiles for mountains, water, and forest. Draw the full intended shape, then apply the resolved preview."
+              body="Beta smart terrain currently supports curated standard landlook profiles for mountains, water, and forest. Draw the full intended shape, inspect the preview, then apply and touch up as needed."
               side="right"
             >
               <span>Terrain Preset</span>
             </TutorialTip>
+            <small className="context-capacity-note">Beta implementation; review preview before applying.</small>
             <select value={smartBrushPreset} onChange={(event) => onSetSmartBrushPreset(event.currentTarget.value as SmartBrushPreset)}>
               {SMART_BRUSH_PRESETS.map((preset) => (
                 <option key={preset.id} value={preset.id}>{preset.label}</option>

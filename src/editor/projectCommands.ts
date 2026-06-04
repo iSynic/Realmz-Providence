@@ -73,6 +73,13 @@ import {
   renameTilePalette,
   updateTilePaletteTiles
 } from "./projectCommands/tilePaletteCommands";
+import {
+  createMapStamp,
+  deleteMapStamp,
+  duplicateMapStamp,
+  renameMapStamp,
+  updateMapStamp
+} from "./projectCommands/mapStampCommands";
 
 export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "paintTiles") return paintTiles(project, command.mapId, command.cells);
@@ -95,6 +102,11 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "updateTilePaletteTiles") return updateTilePaletteTiles(project, command.paletteId, command.tiles);
   if (command.kind === "addTileToPalette") return addTileToPalette(project, command.paletteId, command.tile);
   if (command.kind === "removeTileFromPalette") return removeTileFromPalette(project, command.paletteId, command.tile);
+  if (command.kind === "createMapStamp") return createMapStamp(project, command);
+  if (command.kind === "renameMapStamp") return renameMapStamp(project, command.stampId, command.name);
+  if (command.kind === "deleteMapStamp") return deleteMapStamp(project, command.stampId);
+  if (command.kind === "duplicateMapStamp") return duplicateMapStamp(project, command.stampId, command.id, command.name);
+  if (command.kind === "updateMapStamp") return updateMapStamp(project, command.stampId, command.changes);
   if (command.kind === "updateCustomLandTileAttributes") return updateCustomLandTileAttributes(project, command);
   if (command.kind === "updateSpecialTileSolidity") return updateSpecialTileSolidity(project, command);
   if (command.kind === "updateCustomLandTileCombatBuild") return updateCustomLandTileCombatBuild(project, command);

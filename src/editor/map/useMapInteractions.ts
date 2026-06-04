@@ -22,7 +22,7 @@ import { makePaintTileResolver, paintSeed } from "./paintResolver";
 import { clearTileForMap } from "./tileClear";
 import { nextActionPointRecordIndex } from "../actionPointCapacity";
 import { selectEntityFromId, triggerEntityId } from "../utils";
-import { buildSuperTileStampChanges, SuperTileStamp, superTileStampPreviewCells } from "./superTileStamps";
+import { buildSuperTileStampChanges, MapStamp, superTileStampPreviewCells } from "./superTileStamps";
 
 export function useMapInteractions({
   map,
@@ -64,7 +64,7 @@ export function useMapInteractions({
   activePaintGroupId: string;
   variationTiles?: number[] | null;
   selectedTile: number;
-  selectedSuperTileStamp: SuperTileStamp | null;
+  selectedSuperTileStamp: MapStamp | null;
   selectedTileset: TilesetAsset | null;
   triggers: TriggerRecord[];
   randomLevel: RandomLevel | null;

@@ -1,4 +1,4 @@
-import { MapEntity, PaintCellChange, TilesetAsset } from "../types";
+import { CustomMapStamp, MapEntity, PaintCellChange, TilesetAsset } from "../types";
 import { mapTileIndex, tileValueAt } from "./geometry";
 import { standardTileValues } from "./tileMetadata";
 
@@ -8,9 +8,22 @@ export type SuperTileStampCell = {
   tile: number;
 };
 
+export type MapStampSource = "built-in" | "project" | "global";
+
+export type MapStamp = {
+  id: string;
+  label: string;
+  source: MapStampSource;
+  description: string;
+  width?: number;
+  height?: number;
+  cells: SuperTileStampCell[];
+};
+
 export type SuperTileStamp = {
   id: string;
   label: string;
+  source?: "built-in";
   category: "trees" | "structures";
   description: string;
   cells: SuperTileStampCell[];
@@ -128,6 +141,16 @@ export const SUPER_TILE_STAMPS: SuperTileStamp[] = [
     ]
   },
   {
+    id: "structure-wooden-tower-50-51",
+    label: "Wooden Tower -50/-51",
+    category: "structures",
+    description: "Vertical two-cell wooden lookout tower with the roof above the legs.",
+    cells: [
+      { dx: 0, dy: 0, tile: -50 },
+      { dx: 0, dy: 1, tile: -51 }
+    ]
+  },
+  {
     id: "structure-red-tower-36-33",
     label: "Red Tower -36/-33",
     category: "structures",
@@ -150,6 +173,18 @@ export const SUPER_TILE_STAMPS: SuperTileStamp[] = [
       { dx: 0, dy: 1, tile: -32 },
       { dx: 1, dy: 1, tile: -31 }
     ]
+  },
+  {
+    id: "structure-gnarled-root-25-28",
+    label: "Gnarled Root -25/-28",
+    category: "structures",
+    description: "Four-cell gnarled root landmark from authored map placement.",
+    cells: [
+      { dx: 0, dy: 0, tile: -26 },
+      { dx: 1, dy: 0, tile: -25 },
+      { dx: 0, dy: 1, tile: -28 },
+      { dx: 1, dy: 1, tile: -27 }
+    ]
   }
 ];
 
@@ -167,9 +202,25 @@ export function superTileStampById(id: string | null | undefined, map: MapEntity
   return stamps.find((stamp) => stamp.id === id) ?? stamps[0] ?? null;
 }
 
+export function customMapStampToMapStamp(stamp: CustomMapStamp, source: "project" | "global"): MapStamp {
+  return {
+    id: `${source}:${stamp.id}`,
+    label: stamp.name,
+    source,
+    description: `${source === "project" ? "Project" : "Global"} custom stamp. ${stamp.width} x ${stamp.height}.`,
+    width: stamp.width,
+    height: stamp.height,
+    cells: stamp.cells.map((cell) => ({ dx: cell.x, dy: cell.y, tile: cell.tile }))
+  };
+}
+
+export function builtInStampToMapStamp(stamp: SuperTileStamp): MapStamp {
+  return { ...stamp, id: `built-in:${stamp.id}`, source: "built-in" };
+}
+
 export function buildSuperTileStampChanges(
   map: MapEntity,
-  stamp: SuperTileStamp,
+  stamp: MapStamp,
   origin: { x: number; y: number }
 ): PaintCellChange[] {
   const changes: PaintCellChange[] = [];
@@ -185,7 +236,7 @@ export function buildSuperTileStampChanges(
   return changes;
 }
 
-export function superTileStampPreviewCells(map: MapEntity, stamp: SuperTileStamp, origin: { x: number; y: number }) {
+export function superTileStampPreviewCells(map: MapEntity, stamp: MapStamp, origin: { x: number; y: number }) {
   return stamp.cells
     .map((cell) => ({ x: origin.x + cell.dx, y: origin.y + cell.dy, tile: cell.tile }))
     .filter((cell) => cell.x >= 0 && cell.y >= 0 && cell.x < map.width && cell.y < map.height);

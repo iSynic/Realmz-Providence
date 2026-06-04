@@ -183,6 +183,8 @@ pub struct EditorMetadata {
     pub display_names: BTreeMap<String, EditorDisplayName>,
     #[serde(default)]
     pub tile_palettes: Vec<TilePalette>,
+    #[serde(default)]
+    pub map_stamps: Vec<CustomMapStamp>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -207,6 +209,27 @@ pub struct TilePalette {
     pub name: String,
     #[serde(default)]
     pub tiles: Vec<i16>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CustomMapStampCell {
+    pub x: i16,
+    pub y: i16,
+    pub tile: i16,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CustomMapStamp {
+    pub id: String,
+    pub name: String,
+    pub width: u16,
+    pub height: u16,
+    #[serde(default)]
+    pub cells: Vec<CustomMapStampCell>,
     pub created_at: String,
     pub updated_at: String,
 }

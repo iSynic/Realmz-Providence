@@ -1,10 +1,11 @@
-import { memo, MutableRefObject, PointerEvent as ReactPointerEvent, useEffect, useMemo, useRef, useState } from "react";
+import { CSSProperties, DragEvent, memo, MutableRefObject, PointerEvent as ReactPointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import { EditorState } from "../store";
-import { IconEntry, LibraryAsset, MapEntity, MapPaintVariation, Project, ProjectCommand, TileAttributeFlag, TilePaletteCategory, TilesetAsset } from "../types";
+import { CustomMapStamp, IconEntry, LibraryAsset, MapEntity, MapPaintVariation, MapRegionSelection, Project, ProjectCommand, TileAttributeFlag, TilePaletteCategory, TilesetAsset } from "../types";
 import { classifyTileValue, isDivinityVisualPathTile, standardTileValues, tileAttributeGroup } from "../map/tileMetadata";
 import { LANDLOOK_TILE_GROUPS, landlookGroupById, landlookGroupRangeLabel, landlookGroupTiles } from "../map/paintGroups";
 import { PAINTABLE_REFERENCE_ACTOR_ICON_VALUES, PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES, tileIconCandidates } from "../map/renderValues";
-import { SuperTileStamp, superTileStampsForMap } from "../map/superTileStamps";
+import { builtInStampToMapStamp, customMapStampToMapStamp, MapStamp, superTileStampsForMap } from "../map/superTileStamps";
+import { captureMapStampFromRegion, createMapStampId, normalizeMapStamps } from "../map/customMapStamps";
 import { isActorOrCreatureIconId, isMapPlaceableLibraryAsset } from "../resourceResolver";
 import { tileColor } from "./TileSprite";
 import { TileSwatch } from "./TileSwatch";
@@ -20,7 +21,7 @@ const TILE_DRAG_THRESHOLD = 6;
 const PALETTE_MODE_HELP: Record<TilePaletteCategory, string> = {
   landlook: "Standard Realmz landlook or dungeon atlas tiles for the selected map renderer.",
   special: "Negative special land cicn tiles and icon-backed map values, including large structures and landmarks.",
-  super: "Prebuilt multi-tile brushes that place several map cells with one Stamp click.",
+  super: "Stamp Library: built-in, project, and global multi-cell brushes for structures, tree pairs, landmarks, and custom assemblies.",
   custom: "Project-saved named tile buckets. Drag tiles from any palette tab into the reveal dock to collect them.",
   used: "Every raw tile value already present on the current map, including values outside the visible atlas range.",
   attributes: "Tiles grouped by decoded behavior such as solid, walkable, shore/water, path, boat, LOS, forest, and combat evidence.",
@@ -43,9 +44,12 @@ type PaintPalettePanelProps = {
   activePaintGroupId: string;
   paintVariation: MapPaintVariation;
   activeCustomPaletteId: string | null;
+  selectedRegion?: MapRegionSelection | null;
+  globalMapStamps?: CustomMapStamp[];
   selectedSuperTileStampId?: string | null;
   onSetActivePaintGroup: (groupId: string) => void;
   onSetActiveCustomPaletteId: (paletteId: string | null) => void;
+  onSetGlobalMapStamps?: (stamps: CustomMapStamp[]) => void;
   onSelectSuperTileStamp?: (stampId: string) => void;
   onActivateStampTool?: () => void;
   stampOnly?: boolean;
@@ -76,8 +80,11 @@ export function PaintPalettePanel({
   onSetMode,
   activePaintGroupId,
   activeCustomPaletteId,
+  selectedRegion,
+  globalMapStamps = [],
   selectedSuperTileStampId,
   onSetActiveCustomPaletteId,
+  onSetGlobalMapStamps,
   onSelectSuperTileStamp,
   onActivateStampTool,
   stampOnly = false,
@@ -96,7 +103,17 @@ export function PaintPalettePanel({
   const tileAttributes = project?.tileAttributes ?? [];
   const customPalettes = project?.editorMetadata?.tilePalettes ?? [];
   const activeCustomPalette = customPalettes.find((palette) => palette.id === activeCustomPaletteId) ?? customPalettes[0] ?? null;
-  const superTileStamps = useMemo(() => (mode === "super" ? superTileStampsForMap(map, tileset) : []), [map, mode, tileset]);
+  const projectMapStamps = project?.editorMetadata?.mapStamps ?? [];
+  const superTileStamps = useMemo(
+    () => (mode === "super"
+      ? [
+          ...superTileStampsForMap(map, tileset).map(builtInStampToMapStamp),
+          ...projectMapStamps.map((stamp) => customMapStampToMapStamp(stamp, "project")),
+          ...globalMapStamps.map((stamp) => customMapStampToMapStamp(stamp, "global"))
+        ]
+      : []),
+    [globalMapStamps, map, mode, projectMapStamps, tileset]
+  );
   const dragDockVisible = Boolean(tileDrag?.active);
   const usedTiles = useMemo(() => {
     if (mode !== "used" && mode !== "attributes") return [];
@@ -244,13 +261,14 @@ export function PaintPalettePanel({
   const rootClass = variant === "bar" ? "tile-selection-bar" : "paint-palette-panel";
   const metaClass = variant === "bar" ? "tile-selection-meta" : "paint-palette-meta";
   const listClass = variant === "bar" ? "tile-strip" : "paint-palette-grid";
+  const dropDockStyle = dragDockVisible && tileDrag ? paletteDropDockStyle(tileDrag) : undefined;
 
   return (
     <section className={`${rootClass}${dragDockVisible ? " dragging-tile" : ""}`}>
       <div className={metaClass}>
         <TutorialTip
           title="Paint Palette"
-          body="Click a tile to choose the raw Realmz map-field value Paint will place. Landlook tiles use the active atlas; Special / Icons includes negative cicn structures and landmarks; Custom palettes are project-saved buckets."
+          body="Click a tile to choose the raw Realmz map-field value Paint will place. Landlook tiles use the active atlas; Special / Icons includes negative cicn structures and landmarks; Custom palettes collect single tiles. In Stamp mode, this area becomes the Stamp Library for multi-cell brushes."
           side={variant === "bar" ? "above" : "right"}
         >
           <strong>Palette</strong>
@@ -375,16 +393,23 @@ export function PaintPalettePanel({
         />
       )}
       {variant === "sidebar" && mode === "super" ? (
-        <SuperTileStampGrid
+        <StampLibrary
           atlas={atlas}
           icons={icons}
+          map={map}
+          project={project ?? null}
+          selectedRegion={selectedRegion ?? null}
+          selectedTile={selectedTile}
           selectedStampId={selectedSuperTileStampId ?? null}
           stamps={filteredSuperTileStamps}
           tileset={tileset}
+          globalMapStamps={globalMapStamps}
           onSelectStamp={(stamp) => {
             onSelectSuperTileStamp?.(stamp.id);
             onActivateStampTool?.();
           }}
+          onApplyCommand={onApplyCommand}
+          onSetGlobalMapStamps={onSetGlobalMapStamps}
         />
       ) : variant === "bar" ? (
         <ScrollArea className={listClass} orientation="horizontal" aria-label="Paint Palette">
@@ -422,7 +447,7 @@ export function PaintPalettePanel({
       )}
       {dragDockVisible && (
         <>
-          <PaletteDropDock palettes={customPalettes} />
+          <PaletteDropDock palettes={customPalettes} style={dropDockStyle} />
           <div className="palette-drag-ghost" style={{ left: tileDrag!.x, top: tileDrag!.y }}>
             <TileSwatch atlas={atlas} icons={icons} tile={tileDrag!.tile} tileset={tileset} />
             <span>{tileDrag!.tile}</span>
@@ -439,25 +464,162 @@ export function PaintPalettePanel({
   );
 }
 
-function SuperTileStampGrid({
+type StampLibraryScope = "all" | "built-in" | "project" | "global";
+
+function StampLibrary({
   atlas,
   icons,
+  map,
+  project,
+  selectedRegion,
+  selectedTile,
   selectedStampId,
   stamps,
   tileset,
-  onSelectStamp
+  globalMapStamps,
+  onSelectStamp,
+  onApplyCommand,
+  onSetGlobalMapStamps
 }: {
   atlas: EditorState["atlasEntries"][string] | null;
   icons?: Record<number, IconEntry>;
+  map: MapEntity | null;
+  project: Project | null;
+  selectedRegion: MapRegionSelection | null;
+  selectedTile: number;
   selectedStampId: string | null;
-  stamps: SuperTileStamp[];
+  stamps: MapStamp[];
   tileset: TilesetAsset | null;
-  onSelectStamp: (stamp: SuperTileStamp) => void;
+  globalMapStamps: CustomMapStamp[];
+  onSelectStamp: (stamp: MapStamp) => void;
+  onApplyCommand: (command: ProjectCommand) => void;
+  onSetGlobalMapStamps?: (stamps: CustomMapStamp[]) => void;
 }) {
+  const [scope, setScope] = useState<StampLibraryScope>("all");
+  const [editing, setEditing] = useState<{ source: "project" | "global"; id: string; draft: CustomMapStamp } | null>(null);
+  const [editTool, setEditTool] = useState<"paint" | "erase">("paint");
+  const visibleStamps = scope === "all" ? stamps : stamps.filter((stamp) => stamp.source === scope);
+  const selectedStamp = stamps.find((stamp) => stamp.id === selectedStampId) ?? null;
+  const customSelected = selectedStamp?.source === "project" || selectedStamp?.source === "global" ? selectedStamp : null;
+  const captureDisabled = !project || !map || !selectedRegion;
+  const createFromSelection = () => {
+    if (!project || !map || !selectedRegion) return;
+    const fallbackName = `Stamp ${(project.editorMetadata?.mapStamps?.length ?? 0) + 1}`;
+    const name = window.prompt("Name this map stamp", fallbackName)?.trim();
+    if (!name) return;
+    const id = createMapStampId(name);
+    const stamp = captureMapStampFromRegion(map, selectedRegion, tileset, name, id);
+    if (!stamp) {
+      window.alert("The selected region only contains clear/base tiles, so no stamp was created.");
+      return;
+    }
+    onApplyCommand({ kind: "createMapStamp", label: `Create stamp ${stamp.name}`, id: stamp.id, name: stamp.name, width: stamp.width, height: stamp.height, cells: stamp.cells });
+    onSelectStamp(customMapStampToMapStamp(stamp, "project"));
+  };
+  const copySelectedToGlobal = () => {
+    if (!customSelected || !onSetGlobalMapStamps) return;
+    const source = customStampFromMapStamp(customSelected, project, globalMapStamps);
+    if (!source) return;
+    const copy = stampCopy(source, `${source.name} Global`);
+    onSetGlobalMapStamps([...globalMapStamps, copy]);
+    onSelectStamp(customMapStampToMapStamp(copy, "global"));
+  };
+  const copySelectedToProject = () => {
+    if (!customSelected || !project) return;
+    const source = customStampFromMapStamp(customSelected, project, globalMapStamps);
+    if (!source) return;
+    const copy = stampCopy(source, `${source.name} Project`);
+    onApplyCommand({ kind: "createMapStamp", label: `Copy stamp ${source.name} to project`, id: copy.id, name: copy.name, width: copy.width, height: copy.height, cells: copy.cells });
+    onSelectStamp(customMapStampToMapStamp(copy, "project"));
+  };
+  const renameSelected = () => {
+    if (!customSelected) return;
+    const source = customStampFromMapStamp(customSelected, project, globalMapStamps);
+    if (!source) return;
+    const name = window.prompt("Rename stamp", source.name)?.trim();
+    if (!name) return;
+    if (customSelected.source === "project") onApplyCommand({ kind: "renameMapStamp", label: `Rename stamp ${source.name}`, stampId: source.id, name });
+    else onSetGlobalMapStamps?.(globalMapStamps.map((stamp) => stamp.id === source.id ? { ...stamp, name, updatedAt: new Date().toISOString() } : stamp));
+  };
+  const duplicateSelected = () => {
+    if (!customSelected) return;
+    const source = customStampFromMapStamp(customSelected, project, globalMapStamps);
+    if (!source) return;
+    if (customSelected.source === "project") {
+      onApplyCommand({ kind: "duplicateMapStamp", label: `Duplicate stamp ${source.name}`, stampId: source.id, name: `Copy of ${source.name}` });
+    } else {
+      const copy = stampCopy(source, `Copy of ${source.name}`);
+      onSetGlobalMapStamps?.([...globalMapStamps, copy]);
+      onSelectStamp(customMapStampToMapStamp(copy, "global"));
+    }
+  };
+  const deleteSelected = () => {
+    if (!customSelected) return;
+    const source = customStampFromMapStamp(customSelected, project, globalMapStamps);
+    if (!source || !window.confirm(`Delete stamp "${source.name}"?`)) return;
+    if (customSelected.source === "project") onApplyCommand({ kind: "deleteMapStamp", label: `Delete stamp ${source.name}`, stampId: source.id });
+    else onSetGlobalMapStamps?.(globalMapStamps.filter((stamp) => stamp.id !== source.id));
+  };
+  const beginEdit = () => {
+    if (!customSelected) return;
+    const source = customStampFromMapStamp(customSelected, project, globalMapStamps);
+    if (!source) return;
+    const editSource = customSelected.source === "project" ? "project" : "global";
+    setEditing({ source: editSource, id: source.id, draft: cloneStamp(source) });
+  };
+  const saveEdit = () => {
+    if (!editing) return;
+    const draft = normalizeMapStamps([editing.draft])[0];
+    if (editing.source === "project") {
+      onApplyCommand({ kind: "updateMapStamp", label: `Update stamp ${draft.name}`, stampId: editing.id, changes: { name: draft.name, width: draft.width, height: draft.height, cells: draft.cells } });
+      onSelectStamp(customMapStampToMapStamp(draft, "project"));
+    } else {
+      onSetGlobalMapStamps?.(globalMapStamps.map((stamp) => stamp.id === editing.id ? { ...draft, id: editing.id, updatedAt: new Date().toISOString() } : stamp));
+      onSelectStamp(customMapStampToMapStamp({ ...draft, id: editing.id }, "global"));
+    }
+    setEditing(null);
+  };
   return (
     <div className="stamp-palette-section">
-      <div className="stamp-palette-grid" aria-label="Super tile brushes">
-        {stamps.map((stamp) => {
+      <div className="stamp-library-toolbar">
+        <div className="stamp-scope-tabs" role="toolbar" aria-label="Stamp library filter">
+          {STAMP_SCOPES.map((item) => (
+            <button key={item.id} type="button" className={scope === item.id ? "active" : ""} onClick={() => setScope(item.id)}>
+              {item.label}
+            </button>
+          ))}
+        </div>
+        <button className="btn btn-primary btn-xs" type="button" disabled={captureDisabled} onClick={createFromSelection} title={captureDisabled ? "Select a map region first." : "Create a project stamp from the selected map region."}>
+          New From Selection
+        </button>
+      </div>
+      {selectedStamp && (
+        <div className="stamp-library-actions">
+          <span>{selectedStamp.label} <small>{stampSourceLabel(selectedStamp.source)}</small></span>
+          <button className="btn btn-secondary btn-xs" type="button" disabled={!customSelected} onClick={beginEdit}>Edit</button>
+          <button className="btn btn-secondary btn-xs" type="button" disabled={!customSelected} onClick={renameSelected}>Rename</button>
+          <button className="btn btn-secondary btn-xs" type="button" disabled={!customSelected} onClick={duplicateSelected}>Duplicate</button>
+          <button className="btn btn-secondary btn-xs" type="button" disabled={!customSelected || selectedStamp.source === "global"} onClick={copySelectedToGlobal}>Copy To Global</button>
+          <button className="btn btn-secondary btn-xs" type="button" disabled={!customSelected || selectedStamp.source === "project" || !project} onClick={copySelectedToProject}>Copy To Project</button>
+          <button className="btn btn-ghost btn-xs" type="button" disabled={!customSelected} onClick={deleteSelected}>Delete</button>
+        </div>
+      )}
+      {editing && (
+        <StampEditor
+          atlas={atlas}
+          icons={icons}
+          draft={editing.draft}
+          editTool={editTool}
+          selectedTile={selectedTile}
+          tileset={tileset}
+          onSetDraft={(draft) => setEditing({ ...editing, draft })}
+          onSetEditTool={setEditTool}
+          onCancel={() => setEditing(null)}
+          onSave={saveEdit}
+        />
+      )}
+      <div className="stamp-palette-grid" aria-label="Map stamp brushes">
+        {visibleStamps.map((stamp) => {
           const bounds = stampBounds(stamp);
           return (
             <button
@@ -486,22 +648,156 @@ function SuperTileStampGrid({
                 ))}
               </span>
               <span className="stamp-palette-label">{stamp.label}</span>
-              <small>{stamp.cells.length} tiles</small>
+              <small>{stampSourceLabel(stamp.source)} | {stamp.cells.length} tiles</small>
             </button>
           );
         })}
-        {stamps.length === 0 && <small className="paint-palette-empty">No super-tile brushes are available for this map.</small>}
+        {visibleStamps.length === 0 && <small className="paint-palette-empty">No stamps are available in this library.</small>}
       </div>
     </div>
   );
 }
 
-function stampBounds(stamp: SuperTileStamp) {
+function StampEditor({
+  atlas,
+  icons,
+  draft,
+  editTool,
+  selectedTile,
+  tileset,
+  onSetDraft,
+  onSetEditTool,
+  onCancel,
+  onSave
+}: {
+  atlas: EditorState["atlasEntries"][string] | null;
+  icons?: Record<number, IconEntry>;
+  draft: CustomMapStamp;
+  editTool: "paint" | "erase";
+  selectedTile: number;
+  tileset: TilesetAsset | null;
+  onSetDraft: (draft: CustomMapStamp) => void;
+  onSetEditTool: (tool: "paint" | "erase") => void;
+  onCancel: () => void;
+  onSave: () => void;
+}) {
+  const [dragCell, setDragCell] = useState<{ x: number; y: number } | null>(null);
+  const cellAt = (x: number, y: number) => draft.cells.find((cell) => cell.x === x && cell.y === y) ?? null;
+  const setCell = (x: number, y: number, tile: number | null) => {
+    const cells = draft.cells.filter((cell) => cell.x !== x || cell.y !== y);
+    if (tile != null) cells.push({ x, y, tile });
+    onSetDraft({ ...draft, cells: cells.sort((a, b) => a.y - b.y || a.x - b.x) });
+  };
+  const resize = (field: "width" | "height", value: number) => {
+    const next = Math.max(1, Math.min(32, Math.trunc(value || 1)));
+    const width = field === "width" ? next : draft.width;
+    const height = field === "height" ? next : draft.height;
+    const trimmed = draft.cells.some((cell) => cell.x >= width || cell.y >= height);
+    if (trimmed && !window.confirm("Shrinking this stamp will remove cells outside the new bounds. Continue?")) return;
+    onSetDraft({ ...draft, width, height, cells: draft.cells.filter((cell) => cell.x < width && cell.y < height) });
+  };
+  const dropCell = (event: DragEvent<HTMLButtonElement>, x: number, y: number) => {
+    event.preventDefault();
+    if (!dragCell) return;
+    const source = cellAt(dragCell.x, dragCell.y);
+    if (!source) return;
+    const target = cellAt(x, y);
+    const cells = draft.cells.filter((cell) => !(cell.x === dragCell.x && cell.y === dragCell.y) && !(cell.x === x && cell.y === y));
+    cells.push({ x, y, tile: source.tile });
+    if (target) cells.push({ x: dragCell.x, y: dragCell.y, tile: target.tile });
+    onSetDraft({ ...draft, cells: cells.sort((a, b) => a.y - b.y || a.x - b.x) });
+    setDragCell(null);
+  };
+  return (
+    <div className="stamp-editor">
+      <div className="stamp-editor-fields">
+        <label>
+          <span>Name</span>
+          <input value={draft.name} onChange={(event) => onSetDraft({ ...draft, name: event.currentTarget.value })} />
+        </label>
+        <label>
+          <span>Width</span>
+          <input type="number" min={1} max={32} value={draft.width} onChange={(event) => resize("width", Number(event.currentTarget.value))} />
+        </label>
+        <label>
+          <span>Height</span>
+          <input type="number" min={1} max={32} value={draft.height} onChange={(event) => resize("height", Number(event.currentTarget.value))} />
+        </label>
+      </div>
+      <div className="stamp-editor-tools" role="toolbar" aria-label="Stamp edit tool">
+        <button type="button" className={editTool === "paint" ? "active" : ""} onClick={() => onSetEditTool("paint")}>Place {selectedTile}</button>
+        <button type="button" className={editTool === "erase" ? "active" : ""} onClick={() => onSetEditTool("erase")}>Transparent</button>
+      </div>
+      <div
+        className="stamp-editor-grid"
+        style={{ gridTemplateColumns: `repeat(${draft.width}, 32px)`, gridTemplateRows: `repeat(${draft.height}, 32px)` }}
+      >
+        {Array.from({ length: draft.width * draft.height }, (_, index) => {
+          const x = index % draft.width;
+          const y = Math.floor(index / draft.width);
+          const cell = cellAt(x, y);
+          return (
+            <button
+              key={`${x}:${y}`}
+              type="button"
+              className={cell ? "filled" : ""}
+              draggable={Boolean(cell)}
+              onDragStart={() => setDragCell({ x, y })}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={(event) => dropCell(event, x, y)}
+              onClick={() => setCell(x, y, editTool === "paint" ? selectedTile : null)}
+              title={cell ? `Tile ${cell.tile}` : "Transparent cell"}
+            >
+              {cell && <TileSwatch atlas={atlas} icons={icons} tile={cell.tile} tileset={tileset} showBadge={false} />}
+            </button>
+          );
+        })}
+      </div>
+      <div className="stamp-editor-actions">
+        <button className="btn btn-primary btn-xs" type="button" onClick={onSave}>Save Stamp</button>
+        <button className="btn btn-ghost btn-xs" type="button" onClick={onCancel}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+const STAMP_SCOPES: Array<{ id: StampLibraryScope; label: string }> = [
+  { id: "all", label: "All" },
+  { id: "built-in", label: "Built In" },
+  { id: "project", label: "Project" },
+  { id: "global", label: "Global" }
+];
+
+function stampBounds(stamp: MapStamp) {
+  if (stamp.width && stamp.height) return { left: 0, top: 0, width: stamp.width, height: stamp.height };
+  if (stamp.cells.length === 0) return { left: 0, top: 0, width: 1, height: 1 };
   const left = Math.min(...stamp.cells.map((cell) => cell.dx));
   const right = Math.max(...stamp.cells.map((cell) => cell.dx));
   const top = Math.min(...stamp.cells.map((cell) => cell.dy));
   const bottom = Math.max(...stamp.cells.map((cell) => cell.dy));
   return { left, top, width: right - left + 1, height: bottom - top + 1 };
+}
+
+function customStampFromMapStamp(stamp: MapStamp, project: Project | null, globalMapStamps: CustomMapStamp[]) {
+  const rawId = stamp.id.replace(/^(project|global):/, "");
+  if (stamp.source === "project") return project?.editorMetadata?.mapStamps?.find((candidate) => candidate.id === rawId) ?? null;
+  if (stamp.source === "global") return globalMapStamps.find((candidate) => candidate.id === rawId) ?? null;
+  return null;
+}
+
+function stampCopy(stamp: CustomMapStamp, name: string): CustomMapStamp {
+  const now = new Date().toISOString();
+  return { ...cloneStamp(stamp), id: createMapStampId(name), name, createdAt: now, updatedAt: now };
+}
+
+function cloneStamp(stamp: CustomMapStamp): CustomMapStamp {
+  return { ...stamp, cells: stamp.cells.map((cell) => ({ ...cell })) };
+}
+
+function stampSourceLabel(source: MapStamp["source"]) {
+  if (source === "built-in") return "Built-in";
+  if (source === "project") return "Project";
+  return "Global";
 }
 
 const PaletteButtons = memo(function PaletteButtons({
@@ -569,9 +865,23 @@ type TileDragState = {
   active: boolean;
 };
 
-function PaletteDropDock({ palettes }: { palettes: Project["editorMetadata"]["tilePalettes"] }) {
+function paletteDropDockStyle(tileDrag: TileDragState): CSSProperties {
+  const width = 190;
+  const maxHeight = 280;
+  const offset = 18;
+  const margin = 12;
+  const viewportWidth = window.innerWidth || 1024;
+  const viewportHeight = window.innerHeight || 768;
+  let left = tileDrag.startX + offset;
+  if (left + width + margin > viewportWidth) left = Math.max(margin, tileDrag.startX - width - offset);
+  let top = tileDrag.startY + offset;
+  if (top + maxHeight + margin > viewportHeight) top = Math.max(margin, viewportHeight - maxHeight - margin);
+  return { left, top, width, maxHeight };
+}
+
+function PaletteDropDock({ palettes, style }: { palettes: Project["editorMetadata"]["tilePalettes"]; style?: CSSProperties }) {
   return (
-    <div className="palette-drop-dock" aria-label="Custom palette drop targets">
+    <div className="palette-drop-dock" style={style} aria-label="Custom palette drop targets">
       <strong>Drop to palette</strong>
       {palettes.map((palette) => (
         <button key={palette.id} type="button" data-palette-drop-target={palette.id}>

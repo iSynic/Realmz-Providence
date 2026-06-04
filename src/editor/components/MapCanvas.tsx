@@ -46,7 +46,7 @@ import {
   drawTriggers,
   syncCanvasSize
 } from "../map/drawMapCanvas";
-import { SuperTileStamp } from "../map/superTileStamps";
+import { MapStamp } from "../map/superTileStamps";
 import { MapKeyHud } from "./MapCanvasHud";
 
 const BASE_CANVAS_SIZE = 900;
@@ -107,7 +107,7 @@ export function RealmzMapCanvas({
   activePaintGroupId: string;
   variationTiles?: number[] | null;
   selectedTile: number;
-  selectedSuperTileStamp: SuperTileStamp | null;
+  selectedSuperTileStamp: MapStamp | null;
   zoom: number;
   smoothTiles: boolean;
   viewOptions: MapViewOptions;

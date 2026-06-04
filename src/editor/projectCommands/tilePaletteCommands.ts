@@ -1,4 +1,4 @@
-import { Project, TilePalette } from "../types";
+import { CustomMapStamp, Project, TilePalette } from "../types";
 
 export function createTilePalette(project: Project, command: { id?: string; name: string; tiles?: number[] }) {
   const metadata = normalizedEditorMetadata(project);
@@ -66,7 +66,8 @@ export function removeTileFromPalette(project: Project, paletteId: string, tile:
 export function normalizedEditorMetadata(project: Project): Project["editorMetadata"] {
   return {
     displayNames: project.editorMetadata?.displayNames ?? {},
-    tilePalettes: normalizePalettes(project.editorMetadata?.tilePalettes ?? [])
+    tilePalettes: normalizePalettes(project.editorMetadata?.tilePalettes ?? []),
+    mapStamps: normalizeMapStamps(project.editorMetadata?.mapStamps ?? [])
   };
 }
 
@@ -116,14 +117,65 @@ function normalizeTile(tile: number) {
   return Math.trunc(tile);
 }
 
+function normalizeMapStamps(stamps: CustomMapStamp[]) {
+  const used = new Set<string>();
+  return stamps.map((stamp, index) => {
+    const name = normalizeStampName(stamp.name, index + 1);
+    const id = uniqueIdWithinSet(used, stamp.id?.trim() || stampIdFromName(name));
+    const width = normalizeDimension(stamp.width);
+    const height = normalizeDimension(stamp.height);
+    return {
+      ...stamp,
+      id,
+      name,
+      width,
+      height,
+      cells: normalizeStampCells(stamp.cells ?? [], width, height),
+      createdAt: stamp.createdAt || new Date(0).toISOString(),
+      updatedAt: stamp.updatedAt || stamp.createdAt || new Date(0).toISOString()
+    };
+  });
+}
+
+function normalizeStampCells(cells: CustomMapStamp["cells"], width: number, height: number) {
+  const out: CustomMapStamp["cells"] = [];
+  const seen = new Set<string>();
+  for (const cell of cells) {
+    const x = normalizeTile(cell.x);
+    const y = normalizeTile(cell.y);
+    const tile = normalizeTile(cell.tile);
+    if (x == null || y == null || tile == null || x < 0 || y < 0 || x >= width || y >= height) continue;
+    const key = `${x}:${y}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ x, y, tile });
+  }
+  return out.sort((a, b) => a.y - b.y || a.x - b.x);
+}
+
+function normalizeDimension(value: number) {
+  if (!Number.isFinite(value)) return 1;
+  return Math.max(1, Math.min(32, Math.trunc(value)));
+}
+
 function normalizePaletteName(name: string, index: number) {
   const trimmed = name.trim();
   return trimmed || `Palette ${index}`;
 }
 
+function normalizeStampName(name: string, index: number) {
+  const trimmed = name.trim();
+  return trimmed || `Stamp ${index}`;
+}
+
 function paletteIdFromName(name: string) {
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   return `tile-palette:${slug || "palette"}`;
+}
+
+function stampIdFromName(name: string) {
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return `map-stamp:${slug || "stamp"}`;
 }
 
 function uniquePaletteId(palettes: TilePalette[], preferred: string) {

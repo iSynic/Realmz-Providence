@@ -1066,7 +1066,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "Painting Workflow",
         paragraphs: [
           "Select inspects a tile and drag-selects rectangular regions. Pan moves the canvas, and right-click-drag pans from any map tool. Paint opens the Paint Inspector and uses the selected tile, palette mode, paint subtool, and variation setting.",
-          "The palette can be docked in the Paint Inspector or floated over the canvas. Custom palettes are project-saved tile buckets; drag tiles from any palette tab into the reveal dock to collect reusable town kits, terrain blends, dungeon props, or scenario-specific values."
+          "The palette can be docked in the Paint Inspector or floated over the canvas. Custom palettes are project-saved tile buckets; drag tiles from any palette tab into the reveal dock to collect reusable town kits, terrain blends, dungeon props, or scenario-specific values.",
+          "Stamp is a separate canvas tool for multi-cell placement. Use it when the thing you want to draw is a building, tree pair, landmark, or other assembled tile pattern rather than a single raw tile value."
         ],
         points: [
           "Brush paints the selected value by dragging.",
@@ -1078,20 +1079,44 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         ]
       },
       {
+        title: "Stamp Library",
+        paragraphs: [
+          "The Stamp tool places reusable multi-tile brushes on the map. Providence ships built-in stamps for known Realmz special-land assemblies such as paired trees, towers, gates, halls, domes, and other structures that are awkward to rebuild one cell at a time.",
+          "Project stamps are saved inside the Providence project. Global stamps are saved in the local app profile and are meant as a personal toolbox across projects. Neither kind writes extra Realmz scenario data; applying a stamp writes ordinary map tile values."
+        ],
+        points: [
+          "Built-In shows Providence's curated stamp set, including authored special-land structures.",
+          "Project shows stamps saved with the current project and traveling with that project file.",
+          "Global shows local personal stamps available across projects on this machine.",
+          "New From Selection captures the selected map region as a project stamp, omitting clear/base cells so transparent gaps do not overwrite surrounding terrain.",
+          "Edit opens a grid where cells can be filled with the current paint tile, cleared to transparent, resized, renamed, and rearranged.",
+          "Copy To Global and Copy To Project move useful stamps between the project library and your personal library.",
+          "Transparent stamp cells are skipped during placement; explicit clear/base tiles only paint when they are deliberately stored as cells."
+        ],
+        callout: {
+          tone: "info",
+          title: "Sample first when recreating authored structures",
+          body: "If a special-land assembly looks wrong, sample or select the real authored map placement and capture it as a project stamp. Authored adjacency is better evidence than the resource atlas row."
+        }
+      },
+      {
         title: "Smart Terrain",
         paragraphs: [
-          "Smart terrain is for land maps with supported standard landlooks. Draw the full intended region, preview the resolved result, then apply it as ordinary undoable tile edits.",
+          "Smart terrain is a beta implementation for land maps with supported standard landlooks. It is useful for roughing in mountains, water, and forest, but the edge resolver is still being refined and should be reviewed before release-quality maps are exported.",
+          "Draw the full intended region, preview the resolved result, then apply it as ordinary undoable tile edits.",
           "Mountains, water, and forest use curated tile families plus atlas-derived shape matching. Interior cells should become full terrain; boundary cells should choose edges, corners, notches, and narrow-line fallbacks that fit the mask."
         ],
         points: [
+          "Presets currently cover Mountains, Water, and Trees / Forest.",
           "Smart terrain preserves roads, buildings, special/icon tiles, Action Point markers, and unrelated terrain.",
           "Re-running Smart over the same family is allowed so rough output can be reshaped.",
+          "Mountains currently have the strongest profile; water and forest remain useful but need manual inspection and touch-up.",
           "Custom landlooks are intentionally unsupported until Providence can analyze or author their own smart profiles."
         ],
         callout: {
           tone: "warning",
-          title: "Draw the filled shape, not only the outline",
-          body: "The resolver needs the whole mask to know which cells are interior, which are boundary, and which neighbors should connect."
+          title: "Beta: review the preview",
+          body: "Smart terrain is not a final replacement for hand-authored Divinity tile work. Treat the preview as a starting point, especially for tapered water edges, narrow bands, and forest boundaries."
         }
       },
       {

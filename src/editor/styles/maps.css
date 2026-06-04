@@ -2734,15 +2734,12 @@
 }
 
 .palette-drop-dock {
-  position: absolute;
-  z-index: 40;
-  top: 98px;
-  right: 8px;
-  bottom: 54px;
-  width: min(170px, calc(100% - 22px));
+  position: fixed;
+  z-index: 10001;
   display: grid;
   align-content: start;
   gap: 6px;
+  overflow: auto;
   border: 1px solid #4b86b5;
   border-radius: 7px;
   background: rgba(8, 15, 22, 0.96);
@@ -4266,8 +4263,134 @@
   color: #f6d86b;
 }
 
+.stamp-library-toolbar,
+.stamp-library-actions,
+.stamp-editor-actions,
+.stamp-editor-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
 
+.stamp-scope-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1 1 180px;
+  min-width: 0;
+}
 
+.stamp-scope-tabs button,
+.stamp-editor-tools button {
+  min-height: 26px;
+  border: 1px solid #26394c;
+  border-radius: 5px;
+  background: #0b1218;
+  color: #bcd2e8;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1;
+  padding: 0 10px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.stamp-scope-tabs button.active,
+.stamp-editor-tools button.active {
+  border-color: #3f8fd5;
+  background: #123453;
+  color: #fff;
+}
+
+.stamp-library-actions {
+  padding: 8px;
+  border: 1px solid #223445;
+  border-radius: 6px;
+  background: rgba(8, 14, 20, 0.72);
+}
+
+.stamp-library-actions > span {
+  flex: 1 1 160px;
+  min-width: 0;
+  color: #d8e8f8;
+}
+
+.stamp-library-actions > span small {
+  margin-left: 6px;
+  color: #7fa7c9;
+}
+
+.stamp-editor {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  margin-bottom: 12px;
+  border: 1px solid #2b4154;
+  border-radius: 6px;
+  background: #0b1218;
+}
+
+.stamp-editor-fields {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) 72px 72px;
+  gap: 8px;
+}
+
+.stamp-editor-fields label {
+  display: grid;
+  gap: 4px;
+  color: #7fbfff;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+
+.stamp-editor-fields input {
+  width: 100%;
+  min-height: 30px;
+  border: 1px solid #2b4154;
+  border-radius: 4px;
+  background: #061019;
+  color: #f8fbff;
+  padding: 4px 6px;
+  font: inherit;
+}
+
+.stamp-editor-grid {
+  display: grid;
+  gap: 2px;
+  overflow: auto;
+  max-width: 100%;
+  padding: 6px;
+  border: 1px dashed #30465a;
+  border-radius: 6px;
+  background: #071019;
+}
+
+.stamp-editor-grid button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #26394c;
+  border-radius: 3px;
+  background:
+    linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(255,255,255,0.05) 25%, transparent 25%),
+    #101820;
+  background-size: 8px 8px;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.stamp-editor-grid button.filled {
+  background: #10161d;
+}
+
+.stamp-editor-grid .tile-swatch,
+.stamp-editor-grid .tile-swatch canvas {
+  width: 32px;
+  height: 32px;
+}
 
 
 .stamp-palette-grid {

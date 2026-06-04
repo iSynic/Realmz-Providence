@@ -485,12 +485,29 @@ export type EditorDisplayName = {
 export type EditorMetadata = {
   displayNames: Record<string, EditorDisplayName>;
   tilePalettes: TilePalette[];
+  mapStamps: CustomMapStamp[];
 };
 
 export type TilePalette = {
   id: string;
   name: string;
   tiles: number[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CustomMapStampCell = {
+  x: number;
+  y: number;
+  tile: number;
+};
+
+export type CustomMapStamp = {
+  id: string;
+  name: string;
+  width: number;
+  height: number;
+  cells: CustomMapStampCell[];
   createdAt: string;
   updatedAt: string;
 };
@@ -1048,6 +1065,11 @@ export type ProjectCommand =
   | { kind: "updateTilePaletteTiles"; label: string; paletteId: string; tiles: number[] }
   | { kind: "addTileToPalette"; label: string; paletteId: string; tile: number }
   | { kind: "removeTileFromPalette"; label: string; paletteId: string; tile: number }
+  | { kind: "createMapStamp"; label: string; id?: string; name: string; width: number; height: number; cells?: CustomMapStampCell[] }
+  | { kind: "renameMapStamp"; label: string; stampId: string; name: string }
+  | { kind: "deleteMapStamp"; label: string; stampId: string }
+  | { kind: "duplicateMapStamp"; label: string; stampId: string; id?: string; name?: string }
+  | { kind: "updateMapStamp"; label: string; stampId: string; changes: Partial<Pick<CustomMapStamp, "name" | "width" | "height" | "cells">> }
   | {
       kind: "updateCustomLandTileAttributes";
       label: string;
