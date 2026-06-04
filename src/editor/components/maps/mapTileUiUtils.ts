@@ -1,4 +1,5 @@
 import { TileAttributeFlag } from "../../types";
+import { landlookVisualCategoryLabel } from "../../map/landlookTileSemantics";
 import { classifyTileValue } from "../../map/tileMetadata";
 
 export function attributeSourceLabel(attributes: ReturnType<typeof classifyTileValue>["attributes"]) {
@@ -64,6 +65,9 @@ export function tileAttributeRows(meaning: ReturnType<typeof classifyTileValue>)
   return [
     ["Raw Value", meaning.raw],
     ["Rendered Tile", meaning.renderTile],
+    ["Visual Group", meaning.visual ? landlookVisualCategoryLabel(meaning.visual.category) : "unknown"],
+    ["Visual Confidence", meaning.visual?.confidence ?? "unknown"],
+    ["Visual Notes", meaning.visual?.notes ?? "none"],
     ["Solid Type", attributes?.solidType ?? "unknown"],
     ["Passable", attributes ? (attributes.flags.includes("solid") || attributes.boatRequirement || attributes.flyFloatRequired ? "restricted" : "yes") : "unknown"],
     ["Move Sound", attributes?.movementSoundId ?? "unknown"],

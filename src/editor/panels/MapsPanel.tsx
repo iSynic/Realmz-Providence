@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { EditorState } from "../store";
-import { LevelType, MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilePaletteCategory, TilesetAsset, TriggerRecord } from "../types";
+import { LevelType, MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, SmartBrushMaskCell, SmartBrushPreset, TilePaletteCategory, TilesetAsset, TriggerRecord } from "../types";
 import { triggerOverlayKinds } from "../semanticGraph";
 import { RealmzMapCanvas } from "../components/MapCanvas";
 import { LandLayoutEditor, LandTileAtlasEditor, MapContextSidebar, MapRecordsWorkbench, MapSelectionSidebar, RandomAreasWorkbench, type LandLayoutCellSelection } from "../components/MapContextSidebar";
@@ -8,6 +8,7 @@ import { MapViewFilters } from "../components/MapViewFilters";
 import { landlookGroupTiles } from "../map/paintGroups";
 import { buildPaintChanges, rectCells } from "../map/regionPaint";
 import { clearTileForMap } from "../map/tileClear";
+import { buildSmartTerrainChanges, buildSmartTerrainPaintChanges, smartBrushProfileForTileset } from "../map/smartTerrainBrush";
 
 const MAP_WORKBENCH_MODE_STORAGE_KEY = "providence.mapWorkbenchMode.v1";
 
@@ -76,6 +77,9 @@ export function MapsPanel({
   const [previewMode, setPreviewMode] = useState<MapPreviewMode>("off");
   const [previewFocalPoint, setPreviewFocalPoint] = useState<MapPreviewFocalPoint | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<MapRegionSelection | null>(null);
+  const [smartBrushPreset, setSmartBrushPreset] = useState<SmartBrushPreset>("mountains");
+  const [smartBrushMask, setSmartBrushMask] = useState<SmartBrushMaskCell[]>([]);
+  const [smartBrushDrawing, setSmartBrushDrawing] = useState(false);
   const [selectedLayoutCell, setSelectedLayoutCell] = useState<LandLayoutCellSelection>(null);
   const [replaceSourceTile, setReplaceSourceTile] = useState<number | null>(null);
   const semanticSchema = state.project?.semanticSchema;
@@ -95,6 +99,8 @@ export function MapsPanel({
   );
   useEffect(() => {
     setSelectedRegion(null);
+    setSmartBrushMask([]);
+    setSmartBrushDrawing(false);
     setReplaceSourceTile(null);
     setPreviewFocalPoint(null);
   }, [selectedMap?.id]);
@@ -111,6 +117,20 @@ export function MapsPanel({
   const customPalettes = state.project?.editorMetadata?.tilePalettes ?? [];
   const activeCustomPalette = customPalettes.find((palette) => palette.id === activeCustomPaletteId) ?? customPalettes[0] ?? null;
   const variationTiles = paletteVariationTiles;
+  const smartBrushPlan = useMemo(
+    () => buildSmartTerrainChanges(selectedMap, smartBrushMask, smartBrushPreset, selectedTileset, atlas),
+    [atlas, selectedMap, selectedTileset, smartBrushMask, smartBrushPreset]
+  );
+  const visibleSmartBrushPlan = smartBrushDrawing
+    ? {
+        cells: [],
+        skipped: [],
+        changedCount: 0,
+        skippedCount: 0,
+        profileConfidence: smartBrushPlan.profileConfidence,
+        reason: smartBrushMask.length > 0 ? "Release the pointer to resolve the full smart terrain shape." : "Draw a smart terrain mask on the map."
+      }
+    : smartBrushPlan;
   useEffect(() => {
     if (customPalettes.length === 0) {
       if (activeCustomPaletteId !== null) setActiveCustomPaletteId(null);
@@ -125,6 +145,14 @@ export function MapsPanel({
     if (!activeCustomPalette?.tiles.length) return;
     if (!activeCustomPalette.tiles.includes(state.selectedTile)) onSelectTile(activeCustomPalette.tiles[0]);
   }, [activeCustomPalette, onSelectTile, paintPaletteMode, state.selectedTile]);
+  useEffect(() => {
+    if (paintMode !== "smart") return;
+    if (!selectedMap || selectedMap.levelType !== "land" || smartBrushProfileForTileset(selectedTileset) == null) {
+      setPaintMode("brush");
+      setSmartBrushMask([]);
+      setSmartBrushDrawing(false);
+    }
+  }, [paintMode, selectedMap, selectedTileset]);
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Delete" && event.key !== "Backspace") return;
@@ -238,8 +266,13 @@ export function MapsPanel({
                 selectedEntity={state.selectedEntity}
                 selectedCell={state.selectedCell}
                 selectedRegion={selectedRegion}
+                smartBrushMask={smartBrushMask}
+                smartBrushPlan={paintMode === "smart" ? visibleSmartBrushPlan : null}
+                smartBrushDrawing={paintMode === "smart" && smartBrushDrawing}
                 onSelectCell={onSelectCell}
                 onSetSelectedRegion={setSelectedRegion}
+                onSetSmartBrushMask={setSmartBrushMask}
+                onSetSmartBrushDrawing={setSmartBrushDrawing}
                 onSampleTile={onSelectTile}
                 onSelectEntity={onSelectEntity}
                 onBeginPaintStroke={onBeginPaintStroke}
@@ -364,6 +397,26 @@ export function MapsPanel({
         onSetSelectedRegion={setSelectedRegion}
         replaceSourceTile={replaceSourceTile}
         onSetReplaceSourceTile={setReplaceSourceTile}
+        smartBrushPreset={smartBrushPreset}
+        onSetSmartBrushPreset={setSmartBrushPreset}
+        smartBrushMask={smartBrushMask}
+        smartBrushPlan={visibleSmartBrushPlan}
+        onClearSmartBrushMask={() => {
+          setSmartBrushMask([]);
+          setSmartBrushDrawing(false);
+        }}
+        onApplySmartBrush={() => {
+          if (!selectedMap) return;
+          const cells = buildSmartTerrainPaintChanges(smartBrushPlan);
+          if (cells.length === 0) return;
+          onApplyCommand({
+            kind: "paintTiles",
+            label: `Smart ${smartBrushPreset} terrain`,
+            mapId: selectedMap.id,
+            cells
+          });
+          setSmartBrushMask([]);
+        }}
         onSelectEntity={onSelectEntity}
         onClearSelection={onClearSelection}
         onApplyCommand={onApplyCommand}

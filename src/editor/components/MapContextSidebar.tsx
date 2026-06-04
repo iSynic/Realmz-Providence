@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { TOOLS } from "../constants";
 import { EditorState } from "../store";
-import { EditorTool, IconEntry, MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRecord, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TileAttributeFlag, TilePaletteCategory, TilesetAsset, TriggerRecord } from "../types";
+import { EditorTool, IconEntry, MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRecord, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, SmartBrushMaskCell, SmartBrushPlan, SmartBrushPreset, TileAttributeFlag, TilePaletteCategory, TilesetAsset, TriggerRecord } from "../types";
 import { mapTileIndex, randomRectEntityId, tileValueAt } from "../map/geometry";
 import { allMapCells, buildReplaceChanges, dominantTiles, rectCells, regionCellCount } from "../map/regionPaint";
 import { actionSlotEntitiesForTriggerRecord } from "../semanticGraph";
@@ -26,6 +26,7 @@ import { MapDiagnostics, MapNumberField } from "./maps/MapFormControls";
 import { RandomAreasWorkbench, RandomRectangleEditor, randomRectDiagnostics } from "./maps/RandomEncountersWorkbench";
 import { clearRegion, fillRegion, paintModeLabel, regionLabel, replaceRegion, replaceWholeMap } from "./maps/mapRegionUiUtils";
 import { MapRecordsWorkbench, RecordSelectionDetails } from "./maps/MapRecordsWorkbench";
+import { SMART_BRUSH_PRESETS, smartBrushProfileForTileset } from "../map/smartTerrainBrush";
 
 export { LandLayoutEditor };
 export type { LandLayoutCellSelection };
@@ -188,6 +189,12 @@ export function MapSelectionSidebar({
   onSetSelectedRegion,
   replaceSourceTile,
   onSetReplaceSourceTile,
+  smartBrushPreset,
+  onSetSmartBrushPreset,
+  smartBrushMask,
+  smartBrushPlan,
+  onClearSmartBrushMask,
+  onApplySmartBrush,
   onSelectEntity,
   onClearSelection,
   onApplyCommand
@@ -231,6 +238,12 @@ export function MapSelectionSidebar({
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
   replaceSourceTile: number | null;
   onSetReplaceSourceTile: (tile: number | null) => void;
+  smartBrushPreset: SmartBrushPreset;
+  onSetSmartBrushPreset: (preset: SmartBrushPreset) => void;
+  smartBrushMask: SmartBrushMaskCell[];
+  smartBrushPlan: SmartBrushPlan;
+  onClearSmartBrushMask: () => void;
+  onApplySmartBrush: () => void;
   onSelectEntity: (entity: SelectedEntity) => void;
   onClearSelection: () => void;
   onApplyCommand: (command: ProjectCommand) => void;
@@ -296,6 +309,12 @@ export function MapSelectionSidebar({
             onSetSelectedRegion={onSetSelectedRegion}
             replaceSourceTile={replaceSourceTile}
             onSetReplaceSourceTile={onSetReplaceSourceTile}
+            smartBrushPreset={smartBrushPreset}
+            onSetSmartBrushPreset={onSetSmartBrushPreset}
+            smartBrushMask={smartBrushMask}
+            smartBrushPlan={smartBrushPlan}
+            onClearSmartBrushMask={onClearSmartBrushMask}
+            onApplySmartBrush={onApplySmartBrush}
             onSelectTile={onSelectTile}
             onApplyCommand={onApplyCommand}
             paletteOpen={paletteOpen}
@@ -833,6 +852,12 @@ function PaintInspector({
   onSetSelectedRegion,
   replaceSourceTile,
   onSetReplaceSourceTile,
+  smartBrushPreset,
+  onSetSmartBrushPreset,
+  smartBrushMask,
+  smartBrushPlan,
+  onClearSmartBrushMask,
+  onApplySmartBrush,
   onSelectTile,
   onApplyCommand,
   paletteOpen,
@@ -862,6 +887,12 @@ function PaintInspector({
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
   replaceSourceTile: number | null;
   onSetReplaceSourceTile: (tile: number | null) => void;
+  smartBrushPreset: SmartBrushPreset;
+  onSetSmartBrushPreset: (preset: SmartBrushPreset) => void;
+  smartBrushMask: SmartBrushMaskCell[];
+  smartBrushPlan: SmartBrushPlan;
+  onClearSmartBrushMask: () => void;
+  onApplySmartBrush: () => void;
   onSelectTile: (tile: number) => void;
   onApplyCommand: (command: ProjectCommand) => void;
   paletteOpen: boolean;
@@ -923,9 +954,15 @@ function PaintInspector({
         onSetSelectedRegion={onSetSelectedRegion}
         replaceSourceTile={replaceSourceTile}
         onSetReplaceSourceTile={onSetReplaceSourceTile}
+        smartBrushPreset={smartBrushPreset}
+        onSetSmartBrushPreset={onSetSmartBrushPreset}
+        smartBrushMask={smartBrushMask}
+        smartBrushPlan={smartBrushPlan}
+        onClearSmartBrushMask={onClearSmartBrushMask}
+        onApplySmartBrush={onApplySmartBrush}
         onApplyCommand={onApplyCommand}
       />
-      {selectedRegion && (
+      {selectedRegion && paintMode !== "smart" && (
         <RegionSelectionDetails
           map={map}
           region={selectedRegion}
@@ -1394,7 +1431,8 @@ function SpecialTileSolidityEditor({
 const PAINT_MODES: Array<{ id: MapPaintMode; label: string; body: string }> = [
   { id: "brush", label: "Brush", body: "Paint cells by dragging." },
   { id: "replace", label: "Replace Tile", body: "Replace one tile value in a region or map." },
-  { id: "clear", label: "Eraser", body: "Restore cells to the current map's clear tile." }
+  { id: "clear", label: "Eraser", body: "Restore cells to the current map's clear tile." },
+  { id: "smart", label: "Smart", body: "Draw a terrain mask and resolve edges automatically." }
 ];
 
 function PaintModePanel({
@@ -1412,6 +1450,12 @@ function PaintModePanel({
   onSetSelectedRegion,
   replaceSourceTile,
   onSetReplaceSourceTile,
+  smartBrushPreset,
+  onSetSmartBrushPreset,
+  smartBrushMask,
+  smartBrushPlan,
+  onClearSmartBrushMask,
+  onApplySmartBrush,
   onApplyCommand
 }: {
   map: MapEntity | null;
@@ -1428,8 +1472,16 @@ function PaintModePanel({
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
   replaceSourceTile: number | null;
   onSetReplaceSourceTile: (tile: number | null) => void;
+  smartBrushPreset: SmartBrushPreset;
+  onSetSmartBrushPreset: (preset: SmartBrushPreset) => void;
+  smartBrushMask: SmartBrushMaskCell[];
+  smartBrushPlan: SmartBrushPlan;
+  onClearSmartBrushMask: () => void;
+  onApplySmartBrush: () => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
+  const smartUnavailable = paintMode === "smart" && smartBrushPlan.reason != null && smartBrushMask.length === 0;
+  const smartDisabled = !map || map.levelType !== "land" || smartBrushProfileForTileset(selectedTileset) == null;
   return (
     <div className="paint-mode-panel">
       <div className="paint-mode-header">
@@ -1438,7 +1490,14 @@ function PaintModePanel({
       </div>
       <div className="paint-mode-grid">
         {PAINT_MODES.map((mode) => (
-          <button key={mode.id} className={paintMode === mode.id ? "active" : ""} type="button" onClick={() => onSetPaintMode(mode.id)} title={mode.body}>
+          <button
+            key={mode.id}
+            className={paintMode === mode.id ? "active" : ""}
+            type="button"
+            disabled={mode.id === "smart" && smartDisabled}
+            onClick={() => onSetPaintMode(mode.id)}
+            title={mode.id === "smart" && smartDisabled ? "Smart terrain is available for supported land maps." : mode.body}
+          >
             {mode.label}
           </button>
         ))}
@@ -1448,8 +1507,47 @@ function PaintModePanel({
         {paintMode === "brush" && !selectedRegion && " Use Select and drag on the map to choose a region."}
         {paintMode === "replace" && "Replace one tile in the selected region."}
         {paintMode === "clear" && `Drag to restore ${clearTileLabel(map, selectedTileset)}.`}
+        {paintMode === "smart" && "Drag across the map to build a terrain mask, then apply the resolved preview."}
       </p>
-      {selectedRegion && (
+      {paintMode === "smart" && (
+        <div className="smart-brush-panel">
+          <label className="map-number-field">
+            <span>Terrain Preset</span>
+            <select value={smartBrushPreset} onChange={(event) => onSetSmartBrushPreset(event.currentTarget.value as SmartBrushPreset)}>
+              {SMART_BRUSH_PRESETS.map((preset) => (
+                <option key={preset.id} value={preset.id}>{preset.label}</option>
+              ))}
+            </select>
+          </label>
+          <InfoGrid
+            rows={[
+              ["Mask Cells", smartBrushMask.length],
+              ["Will Change", smartBrushPlan.changedCount],
+              ["Preserved", smartBrushPlan.skippedCount],
+              ["Profile", smartBrushPlan.profileConfidence === "pixel-ranked" ? "pixel ranked" : smartBrushPlan.profileConfidence === "curated-fallback" ? "curated fallback" : "unsupported"],
+              ["Landlook", selectedTileset?.landlook ?? "none"]
+            ]}
+          />
+          {smartBrushPlan.reason && <p className={`context-capacity-note${smartUnavailable ? " blocked" : ""}`}>{smartBrushPlan.reason}</p>}
+          {!smartBrushPlan.reason && (
+            <p className="empty-copy compact">
+              Preview preserves roads, buildings, icon-backed tiles, and unrelated terrain. Yellow outlined cells are preserved.
+            </p>
+          )}
+          <div className="context-action-stack">
+            <button className="btn btn-primary btn-xs context-action-button" type="button" disabled={smartBrushPlan.changedCount === 0} onClick={onApplySmartBrush}>
+              Apply Smart Terrain ({smartBrushPlan.changedCount})
+            </button>
+            <button className="btn btn-secondary btn-xs context-action-button" type="button" disabled={smartBrushMask.length === 0} onClick={onClearSmartBrushMask}>
+              Clear Smart Mask
+            </button>
+            <button className="btn btn-ghost btn-xs context-action-button" type="button" disabled={smartBrushMask.length === 0} onClick={onClearSmartBrushMask}>
+              Cancel Preview
+            </button>
+          </div>
+        </div>
+      )}
+      {selectedRegion && paintMode !== "smart" && (
         <div className="paint-region-quick-actions">
           <span>{regionLabel(selectedRegion)} | {regionCellCount(selectedRegion).toLocaleString()} cells</span>
           <label className="paint-fill-chance">

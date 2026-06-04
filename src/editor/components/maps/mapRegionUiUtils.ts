@@ -6,7 +6,8 @@ import { MapEntity, MapPaintMode, MapPaintVariation, MapRegionSelection, Project
 const PAINT_MODE_LABELS: Record<MapPaintMode, string> = {
   brush: "Brush",
   replace: "Replace Tile",
-  clear: "Eraser"
+  clear: "Eraser",
+  smart: "Smart"
 };
 
 export function fillRegion(

@@ -1,4 +1,5 @@
 import { atlasBaseTile, normalizeAtlasTile, normalizeIconId, normalizeTile, tileIconCandidates } from "./renderValues";
+import { LandlookTileVisualSemantics, landlookTileVisualSemantics } from "./landlookTileSemantics";
 import { IconEntry, TileAttributeFlag, TileAttributeProfile, TileRenderResolution, TilesetAsset } from "../types";
 
 export type TileValueKind =
@@ -23,6 +24,7 @@ export type TileValueMetadata = {
   iconAvailable: boolean;
   attributes: TileAttributeProfile | null;
   attributeFlags: TileAttributeFlag[];
+  visual: LandlookTileVisualSemantics | null;
   flags: {
     markerBit: boolean;
     pathBit: boolean;
@@ -53,6 +55,7 @@ export function classifyTileValue(
   const canRenderFromAtlas = Boolean(tileset?.available && tileset.imagePath && capacity > 0);
   const attribute = attributeProfileForTile(tile, tileset, attributes);
   const attributeFlags = tileAttributeGroup(attribute, tile, tileset);
+  const visual = !isDungeon && tile > 0 ? landlookTileVisualSemantics(renderTile) : null;
 
   let kind: TileValueKind = "unknown";
   let label = `Tile ${tile}`;
@@ -78,7 +81,7 @@ export function classifyTileValue(
     compatibility = "Positive thousand-band Realmz field state is preserved while rendering from the normalized base tile.";
   } else if (capacity > 0 && tile >= 1 && tile <= capacity) {
     kind = "standard-atlas";
-    label = `Landlook tile ${tile}`;
+    label = visual ? `${visual.label} (tile ${tile})` : `Landlook tile ${tile}`;
     compatibility = "Standard Realmz landlook atlas tile.";
   } else if (pathBit) {
     kind = "path-bit";
@@ -102,6 +105,7 @@ export function classifyTileValue(
     iconAvailable,
     attributes: attribute,
     attributeFlags,
+    visual,
     flags: { markerBit, pathBit, noteBit },
     compatibility
   };

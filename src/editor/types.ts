@@ -15,9 +15,52 @@ export type EditorTab =
 export type ActiveWorkbench = "project" | "library";
 export type EditorTool = "select" | "paint" | "stamp" | "trigger" | "random" | "sample" | "pan";
 export type MapWorkbenchMode = "canvas" | "land-layout" | "land-tiles" | "random-areas" | "map-records";
-export type MapPaintMode = "brush" | "replace" | "clear";
+export type MapPaintMode = "brush" | "replace" | "clear" | "smart";
 export type MapPaintVariation = "single" | "cycle-group" | "random-group";
 export type MapRegionSelection = { left: number; top: number; right: number; bottom: number };
+export type SmartBrushPreset = "mountains" | "water" | "forest";
+export type SmartBrushMaskCell = { x: number; y: number };
+export type SmartBrushRole =
+  | "center"
+  | "single"
+  | "north"
+  | "south"
+  | "east"
+  | "west"
+  | "northEast"
+  | "northWest"
+  | "southEast"
+  | "southWest"
+  | "lineHorizontal"
+  | "lineVertical"
+  | "capNorth"
+  | "capSouth"
+  | "capEast"
+  | "capWest"
+  | "notchNorthEast"
+  | "notchNorthWest"
+  | "notchSouthEast"
+  | "notchSouthWest";
+export type SmartBrushProfileConfidence = "pixel-ranked" | "curated-fallback" | "unsupported";
+export type SmartBrushProfile = {
+  landlook: number;
+  presets: Record<SmartBrushPreset, {
+    family: number[];
+    center: number[];
+    candidates: number[];
+    roleCandidates?: Partial<Record<SmartBrushRole, number[]>>;
+    fallbackRoles: Partial<Record<SmartBrushRole, number>>;
+  }>;
+};
+export type SmartBrushPreviewCell = SmartBrushMaskCell & { index: number; from: number; to: number; role: SmartBrushRole; score?: number | null };
+export type SmartBrushPlan = {
+  cells: SmartBrushPreviewCell[];
+  skipped: SmartBrushMaskCell[];
+  changedCount: number;
+  skippedCount: number;
+  profileConfidence: SmartBrushProfileConfidence;
+  reason: string | null;
+};
 export type PaintTileResolver = (cell: { x: number; y: number; index: number; tile: number }, sequence: number) => number;
 export type MapPaintIntent = {
   selectedTile: number;

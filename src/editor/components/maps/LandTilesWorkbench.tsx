@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { EditorState } from "../../store";
 import { EditorTool, IconEntry, Project, ProjectCommand, TileAttributeFlag, TilesetAsset } from "../../types";
+import { LandlookTileVisualCategory, landlookVisualCategoryLabel } from "../../map/landlookTileSemantics";
 import { classifyTileValue, standardTileValues, tileAttributeGroup } from "../../map/tileMetadata";
 import { InfoGrid } from "../InfoGrid";
 import { TileSwatch } from "../TileSwatch";
@@ -8,12 +9,23 @@ import { tileColor } from "../TileSprite";
 import { MapNumberField } from "./MapFormControls";
 import { attributeSourceLabel, normalizedCombatBuild, tileAttributeLabel, tileAttributeRows } from "./mapTileUiUtils";
 
-const LAND_TILE_FILTERS: Array<{ id: TileAttributeFlag | "all"; label: string; hint: string }> = [
+type LandTileFilterId = TileAttributeFlag | "all" | `visual:${LandlookTileVisualCategory}`;
+
+const LAND_TILE_FILTERS: Array<{ id: LandTileFilterId; label: string; hint: string }> = [
   { id: "all", label: "All", hint: "Show the full current landlook atlas." },
+  { id: "visual:water-shore", label: "Water / Shore", hint: "Water, coast, and shoreline art in the current atlas." },
+  { id: "visual:mountain-land", label: "Mountain / Land", hint: "Mountain tiles that blend into land." },
+  { id: "visual:mountain-water", label: "Mountain / Water", hint: "Mountain tiles that blend into water." },
+  { id: "visual:forest", label: "Trees", hint: "Forest and tree transition art." },
+  { id: "visual:road", label: "Road Art", hint: "Road, bridge, and path-looking art. This is visual, not necessarily runtime path metadata." },
+  { id: "visual:watercraft", label: "Boat", hint: "Boat or watercraft art, including tile 147." },
+  { id: "visual:rocks", label: "Rocks", hint: "Rock, rubble, and terrain-prop tiles." },
+  { id: "visual:graves", label: "Graves", hint: "Grave and graveyard tiles." },
+  { id: "visual:buildings", label: "Buildings", hint: "Houses, gates, and other building art." },
   { id: "walkable", label: "Walkable", hint: "Tiles Realmz treats as ordinary foot movement." },
   { id: "solid", label: "Solid", hint: "Tiles Realmz treats as blocking, boat-only, or fly/float-gated." },
   { id: "path", label: "Runtime Path", hint: "Tiles Realmz marks with the runtime path flag." },
-  { id: "visual-path", label: "Road Art", hint: "Road/path-looking art tiles. These are not runtime path tiles unless Realmz marks them that way." },
+  { id: "visual-path", label: "Runtime Road Art", hint: "Road/path-looking art tiles. These are not runtime path tiles unless Realmz marks them that way." },
   { id: "shore", label: "Shore / Water", hint: "Tiles marked as shore or water movement surfaces." },
   { id: "boat-required", label: "Boat", hint: "Tiles that require boat-style movement." },
   { id: "fly-float-required", label: "Fly / Float", hint: "Tiles that require fly or float movement." },
@@ -44,7 +56,7 @@ export function LandTileAtlasEditor({
   onOpenPalette: () => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
-  const [filter, setFilter] = useState<TileAttributeFlag | "all">("all");
+  const [filter, setFilter] = useState<LandTileFilterId>("all");
   const [query, setQuery] = useState("");
   const [inspectedTile, setInspectedTile] = useState(selectedPaintTile);
   useEffect(() => {
@@ -60,15 +72,23 @@ export function LandTileAtlasEditor({
   const normalizedQuery = query.trim().toLowerCase();
   const visibleTiles = tiles.filter((tile) => {
     const profile = classifyTileValue(tile, selectedTileset, attributes, icons);
-    if (filter !== "all" && !tileAttributeGroup(profile.attributes, tile, selectedTileset).includes(filter)) return false;
+    if (filter !== "all") {
+      if (filter.startsWith("visual:")) {
+        if (profile.visual?.category !== filter.slice("visual:".length)) return false;
+      } else if (!tileAttributeGroup(profile.attributes, tile, selectedTileset).includes(filter as TileAttributeFlag)) {
+        return false;
+      }
+    }
     if (!normalizedQuery) return true;
     return String(tile).includes(normalizedQuery)
       || profile.label.toLowerCase().includes(normalizedQuery)
+      || (profile.visual ? landlookVisualCategoryLabel(profile.visual.category).toLowerCase().includes(normalizedQuery) : false)
       || profile.attributeFlags.map(tileAttributeLabel).join(" ").toLowerCase().includes(normalizedQuery);
   });
   const meaning = classifyTileValue(inspectedTile, selectedTileset, attributes, icons);
   const attributeRows = tileAttributeRows(meaning);
   const quickFilters = meaning.attributeFlags.filter((flag) => LAND_TILE_FILTERS.some((item) => item.id === flag));
+  const visualFilter = meaning.visual ? `visual:${meaning.visual.category}` as LandTileFilterId : null;
   const editingScope = meaning.attributes?.editableScope === "scenario-custom" ? "Scenario custom" : "Read-only";
 
   return (
@@ -142,8 +162,13 @@ export function LandTileAtlasEditor({
                 <b>{attributeSourceLabel(meaning.attributes)}</b>
               </div>
               <InfoGrid rows={attributeRows} />
-              {quickFilters.length > 0 && (
+              {(visualFilter || quickFilters.length > 0) && (
                 <div className="land-tile-quick-filters" aria-label="Matching tile filters">
+                  {visualFilter && (
+                    <button type="button" onClick={() => setFilter(visualFilter)} title={`Show all ${landlookVisualCategoryLabel(meaning.visual!.category)} tiles`}>
+                      Show {landlookVisualCategoryLabel(meaning.visual!.category)}
+                    </button>
+                  )}
                   {quickFilters.map((flag) => (
                     <button key={flag} type="button" onClick={() => setFilter(flag)} title={`Show all ${tileAttributeLabel(flag)} tiles`}>
                       Show {tileAttributeLabel(flag)}

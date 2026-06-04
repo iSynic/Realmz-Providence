@@ -1,4 +1,4 @@
-import { AtlasEntry, IconEntry, MapEntity, MapPreviewFocalPoint, MapPreviewMode, MapRegionSelection, MapViewOptions, RandomLevel, SelectedEntity, SemanticEntity, TileAttributeProfile, TilesetAsset, TriggerRecord } from "../types";
+import { AtlasEntry, IconEntry, MapEntity, MapPreviewFocalPoint, MapPreviewMode, MapRegionSelection, MapViewOptions, RandomLevel, SelectedEntity, SemanticEntity, SmartBrushMaskCell, SmartBrushPreviewCell, TileAttributeProfile, TilesetAsset, TriggerRecord } from "../types";
 import {
   clampCell,
   MAP_CELLS,
@@ -96,6 +96,61 @@ export function drawTileValueCell(
     ctx.fillStyle = tileColor(tile);
     ctx.fillRect(left, top, size, size);
   }
+}
+
+export function drawSmartTerrainPreview(
+  ctx: CanvasRenderingContext2D,
+  {
+    cells,
+    skipped,
+    atlas,
+    icons,
+    viewOptions,
+    cell
+  }: {
+    cells: SmartBrushPreviewCell[];
+    skipped: SmartBrushMaskCell[];
+    atlas: AtlasEntry | null;
+    icons: Record<number, IconEntry>;
+    viewOptions: MapViewOptions;
+    cell: number;
+  }
+) {
+  ctx.save();
+  ctx.globalAlpha = 0.86;
+  for (const preview of cells) {
+    drawTileValueCell(ctx, { tile: preview.to, x: preview.x, y: preview.y, atlas, icons, viewOptions, cell });
+  }
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = "rgba(111, 211, 255, 0.96)";
+  ctx.lineWidth = Math.max(1, cell * 0.09);
+  for (const preview of cells) {
+    ctx.strokeRect(preview.x * cell + 1, preview.y * cell + 1, cell - 2, cell - 2);
+  }
+  ctx.fillStyle = "rgba(9, 13, 18, 0.34)";
+  ctx.strokeStyle = "rgba(255, 212, 122, 0.82)";
+  ctx.lineWidth = Math.max(1, cell * 0.07);
+  for (const skip of skipped) {
+    ctx.fillRect(skip.x * cell, skip.y * cell, cell, cell);
+    ctx.strokeRect(skip.x * cell + 1, skip.y * cell + 1, cell - 2, cell - 2);
+  }
+  ctx.restore();
+}
+
+export function drawSmartTerrainMask(
+  ctx: CanvasRenderingContext2D,
+  mask: SmartBrushMaskCell[],
+  cell: number
+) {
+  ctx.save();
+  ctx.fillStyle = "rgba(111, 211, 255, 0.18)";
+  ctx.strokeStyle = "rgba(111, 211, 255, 0.72)";
+  ctx.lineWidth = Math.max(1, cell * 0.07);
+  for (const maskCell of mask) {
+    ctx.fillRect(maskCell.x * cell, maskCell.y * cell, cell, cell);
+    ctx.strokeRect(maskCell.x * cell + 1, maskCell.y * cell + 1, cell - 2, cell - 2);
+  }
+  ctx.restore();
 }
 
 export function syncCanvasSize(canvas: HTMLCanvasElement, cssSize: number) {

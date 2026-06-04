@@ -16,6 +16,8 @@ import {
   RandomLevel,
   SelectedEntity,
   SemanticEntity,
+  SmartBrushMaskCell,
+  SmartBrushPlan,
   TileAttributeProfile,
   TilesetAsset,
   TriggerRecord
@@ -37,6 +39,8 @@ import {
   drawRegionSelection,
   drawSecretTileOverlay,
   drawSelectedCell,
+  drawSmartTerrainMask,
+  drawSmartTerrainPreview,
   drawTileValueCell,
   drawTriggers,
   syncCanvasSize
@@ -72,8 +76,13 @@ export function RealmzMapCanvas({
   selectedEntity,
   selectedCell,
   selectedRegion,
+  smartBrushMask,
+  smartBrushPlan,
+  smartBrushDrawing,
   onSelectCell,
   onSetSelectedRegion,
+  onSetSmartBrushMask,
+  onSetSmartBrushDrawing,
   onSampleTile,
   onSelectEntity,
   onBeginPaintStroke,
@@ -106,8 +115,13 @@ export function RealmzMapCanvas({
   selectedEntity: SelectedEntity | null;
   selectedCell: { x: number; y: number; tile: number } | null;
   selectedRegion: MapRegionSelection | null;
+  smartBrushMask: SmartBrushMaskCell[];
+  smartBrushPlan: SmartBrushPlan | null;
+  smartBrushDrawing: boolean;
   onSelectCell: (cell: { x: number; y: number; tile: number } | null) => void;
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
+  onSetSmartBrushMask: (mask: SmartBrushMaskCell[]) => void;
+  onSetSmartBrushDrawing: (drawing: boolean) => void;
   onSampleTile: (tile: number) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
   onBeginPaintStroke: (label: string) => void;
@@ -187,10 +201,14 @@ export function RealmzMapCanvas({
     showRandomRects,
     showMapRecords,
     selectedEntity,
+    smartBrushMask,
+    smartBrushDrawing,
     overlayCanvasRef,
     wrapRef,
     onSelectCell,
     onSetSelectedRegion,
+    onSetSmartBrushMask,
+    onSetSmartBrushDrawing,
     onSampleTile,
     onSelectEntity,
     onBeginPaintStroke,
@@ -261,6 +279,11 @@ export function RealmzMapCanvas({
     drawTriggers(ctx, triggers, selectedEntity, cell);
     if (showMapRecords) drawMapRecords(ctx, mapRecords, selectedEntity, cell);
     if (selectedRegion) drawRegionSelection(ctx, selectedRegion, cell, "selected");
+    if (smartBrushDrawing && smartBrushMask.length > 0) {
+      drawSmartTerrainMask(ctx, smartBrushMask, cell);
+    } else if (smartBrushPlan && (smartBrushPlan.cells.length > 0 || smartBrushPlan.skipped.length > 0)) {
+      drawSmartTerrainPreview(ctx, { cells: smartBrushPlan.cells, skipped: smartBrushPlan.skipped, atlas, icons, viewOptions, cell });
+    }
     if (selectedCell && !selectedRegion && !paintCursor) drawSelectedCell(ctx, selectedCell, cell);
     if (regionPreview) drawRegionSelection(ctx, regionPreview, cell, "preview");
     if (paintCursor) drawPaintCursor(ctx, { cursor: paintCursor, atlas, icons, viewOptions, cell });
@@ -276,6 +299,9 @@ export function RealmzMapCanvas({
     selectedEntity,
     selectedCell,
     selectedRegion,
+    smartBrushMask,
+    smartBrushPlan,
+    smartBrushDrawing,
     regionPreview,
     viewOptions.showSecretOverlays,
     previewMode,
@@ -356,7 +382,7 @@ export function RealmzMapCanvas({
           className="room-canvas room-canvas-overlay"
           tabIndex={0}
           style={{
-            cursor: cursorForTool(activeTool, hoverTarget),
+            cursor: cursorForTool(activeTool, paintMode, hoverTarget),
             left: `${coordinateGutterCss}px`,
             top: `${coordinateGutterCss}px`,
             right: "auto",
@@ -495,8 +521,9 @@ function secretOverlaySignature(map: MapEntity) {
   return (hash >>> 0).toString(36);
 }
 
-function cursorForTool(tool: EditorTool, target: MapHitTarget | null) {
+function cursorForTool(tool: EditorTool, paintMode: MapPaintMode, target: MapHitTarget | null) {
   if (tool === "pan") return "grab";
+  if (tool === "paint" && paintMode === "smart") return "crosshair";
   if (tool === "paint" || tool === "stamp") return "none";
   if (tool === "random") return target?.kind === "randomRect" ? "move" : "crosshair";
   if (tool === "sample") return "copy";

@@ -3,7 +3,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { Dispatch } from "react";
 import { isBrowserPickerAbort, pickBrowserProjectSource, pickBrowserScenarioSource } from "../browser/fsAccess";
 import { createBrowserWorkspace, importBrowserLibrary } from "../browser/library";
-import { benchmarkBrowserProject, createBrowserProject, importBrowserScenario, openBrowserProject, validateBrowserProject } from "../browser/project";
+import { benchmarkBrowserProject, createBrowserProject, ensureBrowserReferenceTileAttributes, importBrowserScenario, openBrowserProject, validateBrowserProject } from "../browser/project";
 import { LibraryDraftSpec, createLibraryDraft, updateLibraryDraft } from "../libraryDrafts";
 import { BROWSER_PREVIEW_STATUS, EditorAction, EditorState } from "../store";
 import { BenchmarkReport, ExportReport, LibraryCatalog, Project, ScenarioTarget, ValidationReport } from "../types";
@@ -70,7 +70,7 @@ export function useProjectLifecycleActions({
     setProjectDialogOpen(false);
     const targetProjectDir = defaultProjectPath(roots.project, projectName);
     if (!desktopRuntime) {
-      const project = createBrowserProject(projectName);
+      const project = await ensureBrowserReferenceTileAttributes(createBrowserProject(projectName));
       setProjectDir(project.scenario.projectPath);
       setExportDir(defaultExportPath(roots.export, project.scenario.name));
       dispatch({ type: "setProject", project, selectedMapId: null });
@@ -108,7 +108,7 @@ export function useProjectLifecycleActions({
           dispatch({ type: "setStatus", status: `Opened browser project ${project.scenario.name}` });
         } catch (error) {
           if (!isMissingProjectJson(error)) throw error;
-          const project = createBrowserProject(handle.name);
+          const project = await ensureBrowserReferenceTileAttributes(createBrowserProject(handle.name));
           setProjectDir(`browser://${handle.name}`);
           setExportDir(defaultExportPath(roots.export, project.scenario.name));
           dispatch({ type: "setProject", project, selectedMapId: null });
