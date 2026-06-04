@@ -184,7 +184,12 @@ export function useAppBootstrapEffects({
         return;
       }
       const loadable = state.project.assetCatalog.tilesets
-        .map((asset) => ({ asset, url: desktopRuntime ? asset.imagePath : browserTilesetAtlasUrl(asset) }))
+        .map((asset) => ({
+          asset,
+          url: desktopRuntime
+            ? asset.imagePath ?? (asset.pictId != null ? `reference-picture:${asset.pictId}` : null)
+            : browserTilesetAtlasUrl(asset)
+        }))
         .filter((entry): entry is { asset: TilesetAsset; url: string } => Boolean(entry.url));
       if (loadable.length === 0) {
         dispatch({ type: "setAtlases", entries: {}, status: "No tile atlases available" });
@@ -199,7 +204,9 @@ export function useAppBootstrapEffects({
         loadable.map(async ({ asset, url: assetUrl }) => {
           try {
             const url = desktopRuntime
-              ? await invoke<string>("load_project_asset", { projectDir, relativePath: assetUrl })
+              ? assetUrl.startsWith("reference-picture:")
+                ? await invoke<string>("load_reference_picture_asset", { pictId: Number(assetUrl.replace("reference-picture:", "")) })
+                : await invoke<string>("load_project_asset", { projectDir, relativePath: assetUrl })
               : assetUrl;
             const image = await loadImage(url);
             return [asset.id, { image, url, asset }] as const;

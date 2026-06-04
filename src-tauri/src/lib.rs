@@ -33,6 +33,7 @@ pub fn run() {
             commands::build_project_semantic_schema,
             media_assets::load_project_asset,
             media_assets::load_project_asset_preview,
+            media_assets::load_reference_picture_asset,
             media_assets::import_project_media_asset,
             media_assets::replace_project_media_asset,
             media_assets::update_project_asset,

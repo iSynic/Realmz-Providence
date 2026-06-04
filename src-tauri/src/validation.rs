@@ -106,6 +106,8 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
             ));
         }
     }
+    validate_dense_map_indices(project, LevelType::Land, &mut errors);
+    validate_dense_map_indices(project, LevelType::Dungeon, &mut errors);
     for trigger in &project.triggers {
         if trigger.actions.len() > 8 {
             errors.push(format!("{} has more than 8 actions.", trigger.id));
@@ -856,6 +858,25 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         pass_through_files,
         target_compatibility_issues,
         target_compatibility,
+    }
+}
+
+fn validate_dense_map_indices(project: &ProvidenceProject, level_type: LevelType, errors: &mut Vec<String>) {
+    let mut maps = project
+        .maps
+        .iter()
+        .filter(|map| map.level_type == level_type)
+        .collect::<Vec<_>>();
+    maps.sort_by_key(|map| map.index);
+    for (expected, map) in maps.iter().enumerate() {
+        if map.index != expected {
+            errors.push(format!(
+                "{} maps must have dense indices; expected {}, found {}.",
+                level_type.as_str(),
+                expected,
+                map.index
+            ));
+        }
     }
 }
 
@@ -2368,6 +2389,64 @@ mod tests {
             .any(|warning| warning.contains("points at missing Action Point")));
     }
 
+    #[test]
+    fn validates_empty_project_requires_a_map() {
+        let project = empty_project();
+        let report = validate_project(&project);
+
+        assert!(report
+            .errors
+            .iter()
+            .any(|error| error.contains("Project has no maps")));
+    }
+
+    #[test]
+    fn validates_authored_land_map_satisfies_map_presence() {
+        let mut project = empty_project();
+        project.maps.push(test_map(LevelType::Land, 0, 1));
+        project
+            .random_levels
+            .push(test_random_level(LevelType::Land, 0, 2));
+
+        let report = validate_project(&project);
+
+        assert!(!report
+            .errors
+            .iter()
+            .any(|error| error.contains("Project has no maps")));
+        assert!(!report
+            .errors
+            .iter()
+            .any(|error| error.contains("Realmz maps must be 90 x 90")));
+    }
+
+    #[test]
+    fn validates_map_indices_must_be_dense() {
+        let mut project = empty_project();
+        project.maps.push(test_map(LevelType::Land, 1, 1));
+
+        let report = validate_project(&project);
+
+        assert!(report.errors.iter().any(|error| {
+            error.contains("land maps must have dense indices; expected 0, found 1")
+        }));
+    }
+
+    #[test]
+    fn authored_map_fields_roundtrip_through_realmz_writer() {
+        let map = test_map(LevelType::Land, 0, 7);
+
+        let output = crate::realmz::write_fields(&[map], LevelType::Land)
+            .expect("write authored map");
+        let parsed = crate::realmz::parse_fields(&output, LevelType::Land, "Data LD");
+
+        assert_eq!(parsed.len(), 1);
+        assert_eq!(parsed[0].id, "land:0");
+        assert_eq!(parsed[0].tiles.len(), MAP_SIZE * MAP_SIZE);
+        assert_eq!(parsed[0].tiles[0], 7);
+        assert_eq!(parsed[0].tiles[MAP_SIZE * MAP_SIZE - 1], 7);
+    }
+
     fn resource_entity(id: &str, shared_fallback: bool) -> SemanticEntity {
         SemanticEntity {
             id: id.to_string(),
@@ -2455,6 +2534,65 @@ mod tests {
             diagnostics: Vec::new(),
             semantic_schema: SemanticSchema::default(),
             validation: ValidationReport::default(),
+        }
+    }
+
+    fn test_map(level_type: LevelType, index: usize, tile: i16) -> MapEntity {
+        let source = match level_type {
+            LevelType::Land => "Data LD",
+            LevelType::Dungeon => "Data DL",
+        };
+        MapEntity {
+            id: format!("{}:{}", level_type.as_str(), index),
+            level_type,
+            source: source.to_string(),
+            index,
+            name: format!("{} Level {}", level_type.as_str(), index),
+            width: MAP_SIZE,
+            height: MAP_SIZE,
+            tiles: vec![tile; MAP_SIZE * MAP_SIZE],
+            render: match level_type {
+                LevelType::Land => MapRender {
+                    tileset_id: "landlook-2".to_string(),
+                    landlook: Some(2),
+                    mode: RenderMode::OutdoorLandlook,
+                },
+                LevelType::Dungeon => MapRender {
+                    tileset_id: "dungeon-top-down-302".to_string(),
+                    landlook: Some(-1),
+                    mode: RenderMode::DungeonTopDown,
+                },
+            },
+            provenance: test_provenance(
+                source,
+                index,
+                index * crate::realmz::FIELD_BYTES,
+                crate::realmz::FIELD_BYTES,
+            ),
+        }
+    }
+
+    fn test_random_level(level_type: LevelType, index: usize, landlook: i8) -> RandomLevel {
+        let source = match level_type {
+            LevelType::Land => "Data RD",
+            LevelType::Dungeon => "Data RDD",
+        };
+        RandomLevel {
+            id: format!("{}:{}:randlevel", level_type.as_str(), index),
+            source: source.to_string(),
+            level_type,
+            level_index: index,
+            landlook,
+            is_dark: false,
+            use_los: false,
+            rects: Vec::new(),
+            raw_values: vec![0; crate::realmz::RANDLEVEL_BYTES / 2],
+            provenance: test_provenance(
+                source,
+                index,
+                index * crate::realmz::RANDLEVEL_BYTES,
+                crate::realmz::RANDLEVEL_BYTES,
+            ),
         }
     }
 

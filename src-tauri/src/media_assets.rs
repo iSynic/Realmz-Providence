@@ -16,6 +16,8 @@ use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::Path;
 
+const REFERENCE_UTILITY_ROOT: &str = "F:/Realmz Scenario Utility";
+
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MediaAssetImportRequest {
@@ -65,6 +67,23 @@ pub fn load_project_asset_preview(project_dir: String, relative_path: String) ->
         mime_for_path(&relative_path),
         STANDARD.encode(bytes)
     ))
+}
+
+#[tauri::command]
+pub fn load_reference_picture_asset(pict_id: i32) -> Result<String> {
+    if !(0..=32767).contains(&pict_id) {
+        return Err(ProvidenceError::message(format!(
+            "Reference picture id {pict_id} is outside the supported range."
+        )));
+    }
+    let path = Path::new(REFERENCE_UTILITY_ROOT)
+        .join("assets")
+        .join("realmz")
+        .join("resources")
+        .join("pictures")
+        .join(format!("picture_{pict_id}.png"));
+    let bytes = fs::read(&path).with_path(&path)?;
+    Ok(format!("data:image/png;base64,{}", STANDARD.encode(bytes)))
 }
 
 #[tauri::command]

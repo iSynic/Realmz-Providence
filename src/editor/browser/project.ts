@@ -503,6 +503,14 @@ export function validateBrowserProject(project: Project): ValidationReport {
       errors.push(`${map.name} must be a 90 x 90 map with 8100 tiles.`);
     }
   }
+  for (const levelType of ["land", "dungeon"] as const) {
+    const maps = project.maps.filter((map) => map.levelType === levelType).sort((a, b) => a.index - b.index);
+    maps.forEach((map, expected) => {
+      if (map.index !== expected) {
+        errors.push(`${levelType} maps must have dense indices; expected ${expected}, found ${map.index}.`);
+      }
+    });
+  }
   for (const alignment of project.records.alignments) {
     if (alignment.status === "has-trailing-bytes") {
       warnings.push(`${alignment.source} has ${alignment.trailingBytes} trailing bytes after full records.`);

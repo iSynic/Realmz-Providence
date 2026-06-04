@@ -2,7 +2,9 @@ import { Project, ProjectCommand } from "./types";
 import {
   clearLandLayout,
   clearRandomRect,
+  createMap,
   createRandomRect,
+  duplicateMap,
   ensureLandLayout,
   paintTiles,
   updateCustomLandTileAttributes,
@@ -74,6 +76,8 @@ import {
 
 export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "paintTiles") return paintTiles(project, command.mapId, command.cells);
+  if (command.kind === "createMap") return createMap(project, command);
+  if (command.kind === "duplicateMap") return duplicateMap(project, command);
   if (command.kind === "createMacro") return createMacro(project, command.displayName);
   if (command.kind === "deleteMacro" || command.kind === "deleteTrigger") return deleteTrigger(project, command.triggerId);
   if (command.kind === "duplicateTrigger") return duplicateTrigger(project, command.triggerId, command.displayName);

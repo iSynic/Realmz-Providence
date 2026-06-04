@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { EditorState } from "../store";
-import { MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilePaletteCategory, TilesetAsset, TriggerRecord } from "../types";
+import { LevelType, MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilePaletteCategory, TilesetAsset, TriggerRecord } from "../types";
 import { triggerOverlayKinds } from "../semanticGraph";
 import { RealmzMapCanvas } from "../components/MapCanvas";
 import { LandLayoutEditor, LandTileAtlasEditor, MapContextSidebar, MapRecordsWorkbench, MapSelectionSidebar, RandomAreasWorkbench, type LandLayoutCellSelection } from "../components/MapContextSidebar";
 import { MapViewFilters } from "../components/MapViewFilters";
 import { landlookGroupTiles } from "../map/paintGroups";
+import { buildPaintChanges, rectCells } from "../map/regionPaint";
+import { clearTileForMap } from "../map/tileClear";
 
 const MAP_WORKBENCH_MODE_STORAGE_KEY = "providence.mapWorkbenchMode.v1";
 
@@ -123,8 +125,40 @@ export function MapsPanel({
     if (!activeCustomPalette?.tiles.length) return;
     if (!activeCustomPalette.tiles.includes(state.selectedTile)) onSelectTile(activeCustomPalette.tiles[0]);
   }, [activeCustomPalette, onSelectTile, paintPaletteMode, state.selectedTile]);
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Delete" && event.key !== "Backspace") return;
+      if (isTextEditingTarget(event.target)) return;
+      if (workbenchMode !== "canvas" || state.activeTool !== "select" || !selectedMap) return;
+      const clearTile = clearTileForMap(selectedMap, selectedTileset);
+      const cells = selectedRegion
+        ? rectCells(selectedMap, selectedRegion)
+        : state.selectedCell
+          ? rectCells(selectedMap, { left: state.selectedCell.x, top: state.selectedCell.y, right: state.selectedCell.x, bottom: state.selectedCell.y })
+          : [];
+      const changes = buildPaintChanges(selectedMap, cells, clearTile);
+      if (changes.length === 0) return;
+      event.preventDefault();
+      onApplyCommand({
+        kind: "paintTiles",
+        label: selectedRegion ? "Clear selected region" : "Clear selected tile",
+        mapId: selectedMap.id,
+        cells: changes
+      });
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onApplyCommand, selectedMap, selectedRegion, selectedTileset, state.activeTool, state.selectedCell, workbenchMode]);
   const switchWorkbenchMode = (mode: MapWorkbenchMode) => {
     setWorkbenchMode(mode);
+  };
+  const createScenarioMap = (levelType: LevelType) => {
+    if (!state.project) return;
+    const index = nextMapIndex(state.project.maps, levelType);
+    const id = `${levelType}:${index}`;
+    onApplyCommand({ kind: "createMap", label: `Create ${levelType} map`, levelType });
+    onSelectMap(id);
+    setWorkbenchMode("canvas");
   };
   const setPaintGroup = (groupId: string) => {
     setActivePaintGroupId(groupId);
@@ -214,7 +248,7 @@ export function MapsPanel({
                 onCancelPaintStroke={onCancelPaintStroke}
               />
             ) : (
-              <div className="room-canvas-placeholder">Import or open a Providence project.</div>
+              <MapEmptyState project={state.project} onCreateMap={createScenarioMap} />
             )}
           </>
         )}
@@ -338,6 +372,39 @@ export function MapsPanel({
   );
 }
 
+function MapEmptyState({
+  project,
+  onCreateMap
+}: {
+  project: Project | null;
+  onCreateMap: (levelType: LevelType) => void;
+}) {
+  return (
+    <div className="room-canvas-placeholder map-empty-state">
+      <div>
+        <h2>{project ? "Create your first map" : "Open a project to begin mapping"}</h2>
+        <p>{project ? "Start with a blank outdoor land map or a dungeon map, then paint tiles and add authoring data." : "Create or import a Providence project to browse maps."}</p>
+      </div>
+      {project && (
+        <div className="map-empty-actions">
+          <button className="btn btn-primary btn-sm" type="button" onClick={() => onCreateMap("land")}>
+            New Land Map
+          </button>
+          <button className="btn btn-secondary btn-sm" type="button" onClick={() => onCreateMap("dungeon")}>
+            New Dungeon Map
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function nextMapIndex(maps: MapEntity[], levelType: LevelType) {
+  return maps
+    .filter((map) => map.levelType === levelType)
+    .reduce((max, map) => Math.max(max, map.index), -1) + 1;
+}
+
 function readStoredWorkbenchMode(): MapWorkbenchMode {
   if (typeof localStorage === "undefined") return "canvas";
   const stored = localStorage.getItem(MAP_WORKBENCH_MODE_STORAGE_KEY);
@@ -376,6 +443,12 @@ function defaultPreviewFocalPoint(map: MapEntity | null): MapPreviewFocalPoint {
 }
 
 type EditorStateSetter<Key extends keyof EditorState> = (value: EditorState[Key]) => void;
+
+function isTextEditingTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName.toLowerCase();
+  return tag === "input" || tag === "textarea" || tag === "select" || target.isContentEditable;
+}
 
 function triggerMatchesViewFilters(project: Project | null, trigger: TriggerRecord, state: EditorState) {
   const kinds = triggerOverlayKinds(project, trigger);

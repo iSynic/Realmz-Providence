@@ -1,5 +1,7 @@
-import { MapMarker, MapRecord, PaintCellChange, Project, ProjectCommand, Provenance, RandomLevel, RandomRect, TileAttributeFlag, TileAttributeProfile } from "../types";
+import { LevelType, MapEntity, MapMarker, MapRecord, PaintCellChange, Project, ProjectCommand, Provenance, RandomLevel, RandomRect, TileAttributeFlag, TileAttributeProfile, TilesetAsset } from "../types";
 
+const MAP_SIZE = 90;
+const FIELD_BYTES = MAP_SIZE * MAP_SIZE * 2;
 const RANDOM_LEVEL_BYTES = 644;
 const RANDOM_LEVEL_WORDS = RANDOM_LEVEL_BYTES / 2;
 const RANDOM_RECTS_PER_LEVEL = 20;
@@ -27,6 +29,32 @@ export function paintTiles(project: Project, mapId: string, cells: PaintCellChan
     return { ...map, tiles };
   });
   return projectChanged ? { ...project, maps } : project;
+}
+
+export function createMap(project: Project, command: Extract<ProjectCommand, { kind: "createMap" }>) {
+  const index = nextMapIndex(project, command.levelType);
+  const map = authoredMap(command.levelType, index, null);
+  const randomLevel = syncMapRenderForRandomLevel(authoredRandomLevel(command.levelType, index, map.render.landlook ?? -1));
+  return {
+    ...project,
+    maps: [...project.maps, map],
+    randomLevels: upsertRandomLevel(project.randomLevels, randomLevel),
+    assetCatalog: ensureMapTileset(project, map)
+  };
+}
+
+export function duplicateMap(project: Project, command: Extract<ProjectCommand, { kind: "duplicateMap" }>) {
+  const source = project.maps.find((map) => map.id === command.mapId);
+  if (!source) return project;
+  const index = nextMapIndex(project, source.levelType);
+  const map = authoredMap(source.levelType, index, source);
+  const randomLevel = syncMapRenderForRandomLevel(authoredRandomLevel(source.levelType, index, source.render.landlook ?? defaultLandlook(source.levelType)));
+  return {
+    ...project,
+    maps: [...project.maps, map],
+    randomLevels: upsertRandomLevel(project.randomLevels, randomLevel),
+    assetCatalog: ensureMapTileset(project, map)
+  };
 }
 
 export function updateRandomLevelSettings(
@@ -309,27 +337,177 @@ function ensureRandomLevel(project: Project, levelType: RandomLevel["levelType"]
 }
 
 function replaceRandomLevel(project: Project, level: RandomLevel) {
-  const randomLevels = [...project.randomLevels];
+  const randomLevels = upsertRandomLevel(project.randomLevels, level);
+  const maps = project.maps.map((map) => {
+    if (map.levelType !== level.levelType || map.index !== level.levelIndex) return map;
+    return {
+      ...map,
+      render: {
+        ...map.render,
+        landlook: level.landlook,
+        tilesetId: level.levelType === "dungeon" ? "dungeon-top-down-302" : `landlook-${level.landlook}`,
+        mode: level.levelType === "dungeon" ? "dungeon-top-down" : "outdoor-landlook"
+      }
+    };
+  });
+  const nextProject = {
+    ...project,
+    randomLevels,
+    maps
+  };
+  const map = maps.find((candidate) => candidate.levelType === level.levelType && candidate.index === level.levelIndex);
+  return map ? { ...nextProject, assetCatalog: ensureMapTileset(nextProject, map) } : nextProject;
+}
+
+function upsertRandomLevel(levels: RandomLevel[], level: RandomLevel) {
+  const randomLevels = [...levels];
   const index = randomLevels.findIndex((candidate) => candidate.levelType === level.levelType && candidate.levelIndex === level.levelIndex);
   if (index >= 0) randomLevels[index] = level;
   else randomLevels.push(level);
   randomLevels.sort((a, b) => a.levelType.localeCompare(b.levelType) || a.levelIndex - b.levelIndex);
+  return randomLevels;
+}
+
+function nextMapIndex(project: Project, levelType: LevelType) {
+  return project.maps
+    .filter((map) => map.levelType === levelType)
+    .reduce((max, map) => Math.max(max, map.index), -1) + 1;
+}
+
+function authoredMap(levelType: LevelType, index: number, source: MapEntity | null): MapEntity {
+  const render = defaultRender(levelType, source);
+  const fillTile = levelType === "land" ? landlookBaseTile(render.landlook ?? 0) ?? 1 : 0;
   return {
-    ...project,
-    randomLevels,
-    maps: project.maps.map((map) => {
-      if (map.levelType !== level.levelType || map.index !== level.levelIndex) return map;
-      return {
-        ...map,
-        render: {
-          ...map.render,
-          landlook: level.landlook,
-          tilesetId: level.levelType === "dungeon" ? "dungeon-top-down-302" : `landlook-${level.landlook}`,
-          mode: level.levelType === "dungeon" ? "dungeon-top-down" : "outdoor-landlook"
-        }
-      };
-    })
+    id: `${levelType}:${index}`,
+    levelType,
+    source: levelType === "land" ? "Data LD" : "Data DL",
+    index,
+    name: `${levelType === "land" ? "Land" : "Dungeon"} Level ${index}`,
+    width: MAP_SIZE,
+    height: MAP_SIZE,
+    tiles: source ? [...source.tiles] : new Array(MAP_SIZE * MAP_SIZE).fill(fillTile),
+    render,
+    provenance: authoredProvenance(levelType === "land" ? "Data LD" : "Data DL", index, index * FIELD_BYTES, FIELD_BYTES)
   };
+}
+
+function defaultRender(levelType: LevelType, source: MapEntity | null): MapEntity["render"] {
+  if (source) {
+    return {
+      tilesetId: source.render.tilesetId,
+      landlook: source.render.landlook,
+      mode: source.render.mode
+    };
+  }
+  if (levelType === "dungeon") {
+    return { tilesetId: "dungeon-top-down-302", landlook: -1, mode: "dungeon-top-down" };
+  }
+  return { tilesetId: "landlook-0", landlook: 0, mode: "outdoor-landlook" };
+}
+
+function defaultLandlook(levelType: LevelType) {
+  return levelType === "land" ? 0 : -1;
+}
+
+function authoredRandomLevel(levelType: LevelType, levelIndex: number, landlook: number): RandomLevel {
+  return {
+    id: `${levelType}:${levelIndex}:randlevel`,
+    source: levelType === "land" ? "Data RD" : "Data RDD",
+    levelType,
+    levelIndex,
+    landlook,
+    isDark: false,
+    useLos: false,
+    rects: [],
+    rawValues: new Array(RANDOM_LEVEL_WORDS).fill(0),
+    provenance: authoredProvenance(levelType === "land" ? "Data RD" : "Data RDD", levelIndex, levelIndex * RANDOM_LEVEL_BYTES, RANDOM_LEVEL_BYTES)
+  };
+}
+
+function ensureMapTileset(project: Project, map: MapEntity): Project["assetCatalog"] {
+  const assetCatalog = {
+    tilesets: [...(project.assetCatalog?.tilesets ?? [])],
+    pictures: project.assetCatalog?.pictures,
+    icons: project.assetCatalog?.icons,
+    sounds: project.assetCatalog?.sounds
+  };
+  const required = referenceTilesetForMap(map);
+  if (!required) return assetCatalog;
+  const existingIndex = assetCatalog.tilesets.findIndex((tileset) => tileset.id === required.id || tileset.landlook === required.landlook);
+  if (existingIndex >= 0) {
+    const existing = assetCatalog.tilesets[existingIndex];
+    assetCatalog.tilesets[existingIndex] = {
+      ...required,
+      ...existing,
+      baseTile: existing.baseTile ?? required.baseTile,
+      pictId: existing.pictId ?? required.pictId,
+      available: existing.available || required.available
+    };
+    return assetCatalog;
+  }
+  assetCatalog.tilesets.push(required);
+  return assetCatalog;
+}
+
+function referenceTilesetForMap(map: MapEntity): TilesetAsset | null {
+  if (map.levelType === "dungeon") {
+    return {
+      id: "dungeon-top-down-302",
+      landlook: 2,
+      name: "Dungeon Top Down",
+      source: "Realmz reference resources",
+      available: true,
+      imagePath: null,
+      pictId: 302,
+      tileWidth: 16,
+      tileHeight: 16,
+      columns: 4,
+      rows: 4,
+      custom: false,
+      baseTile: null
+    };
+  }
+  const landlook = map.render.landlook;
+  if (typeof landlook !== "number" || landlook < 0) return null;
+  return {
+    id: `landlook-${landlook}`,
+    landlook,
+    name: landlookName(landlook),
+    source: (landlook >= 6 && landlook <= 8) ? "Scenario resource fork" : "Realmz reference resources",
+    available: true,
+    imagePath: null,
+    pictId: landlookPictId(landlook),
+    tileWidth: 32,
+    tileHeight: 32,
+    columns: 20,
+    rows: 10,
+    custom: landlook >= 6 && landlook <= 8,
+    baseTile: landlookBaseTile(landlook)
+  };
+}
+
+function landlookName(landlook: number) {
+  const names: Record<number, string> = {
+    0: "Plains",
+    2: "Default Land",
+    3: "Subterranean",
+    4: "Castle",
+    5: "Desert",
+    6: "Custom 6",
+    7: "Custom 7",
+    8: "Custom 8",
+    9: "Swamp",
+    10: "Snow"
+  };
+  return names[landlook] ?? "Unknown landlook";
+}
+
+function landlookPictId(landlook: number) {
+  return ({ 0: 300, 2: 302, 3: 303, 4: 304, 5: 305, 6: 306, 7: 307, 8: 308, 9: 309, 10: 310 } as Record<number, number>)[landlook] ?? null;
+}
+
+function landlookBaseTile(landlook: number) {
+  return ({ 0: 156, 3: 155, 4: 111, 5: 191, 6: 156, 7: 156, 8: 156, 9: 155, 10: 155 } as Record<number, number | null>)[landlook] ?? null;
 }
 
 function syncMapRenderForRandomLevel(level: RandomLevel) {

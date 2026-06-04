@@ -944,6 +944,8 @@ export type MapRecord = {
 
 export type ProjectCommand =
   | { kind: "paintTiles"; mapId: string; label: string; cells: PaintCellChange[] }
+  | { kind: "createMap"; label: string; levelType: LevelType }
+  | { kind: "duplicateMap"; label: string; mapId: string }
   | { kind: "createMacro"; label: string; displayName?: string }
   | { kind: "deleteMacro"; label: string; triggerId: string }
   | { kind: "deleteTrigger"; label: string; triggerId: string }
@@ -1307,6 +1309,7 @@ export type MapEntity = {
   height: number;
   tiles: number[];
   render: { tilesetId: string; landlook: number | null; mode: string };
+  provenance?: Provenance;
 };
 
 export type LandLayout = {

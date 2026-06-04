@@ -12,6 +12,7 @@ import { PaintPalettePanel } from "./TileSelectionBar";
 import { classifyTileValue, standardTileValues, tileAttributeGroup } from "../map/tileMetadata";
 import { atlasBaseTile, normalizeIconId } from "../map/renderValues";
 import { hasSecretMarkerTile, isSecretWalkableTile } from "../map/secrets";
+import { clearTileForMap, clearTileLabel } from "../map/tileClear";
 import { tileColor } from "./TileSprite";
 import { TileSwatch } from "./TileSwatch";
 import { TutorialTip } from "./TutorialTip";
@@ -23,7 +24,7 @@ import { attributeSourceLabel, forestTypeLabel, normalizedCombatBuild, tileAttri
 import { LandTileAtlasEditor } from "./maps/LandTilesWorkbench";
 import { MapDiagnostics, MapNumberField } from "./maps/MapFormControls";
 import { RandomAreasWorkbench, RandomRectangleEditor, randomRectDiagnostics } from "./maps/RandomEncountersWorkbench";
-import { clearRegion, clearTileForMap, fillRegion, paintModeLabel, regionLabel, replaceRegion, replaceWholeMap } from "./maps/mapRegionUiUtils";
+import { clearRegion, fillRegion, paintModeLabel, regionLabel, replaceRegion, replaceWholeMap } from "./maps/mapRegionUiUtils";
 import { MapRecordsWorkbench, RecordSelectionDetails } from "./maps/MapRecordsWorkbench";
 
 export { LandLayoutEditor };
@@ -130,6 +131,8 @@ export function MapContextSidebar({
           project={state.project}
           selectedMap={selectedMap}
           onSelectMap={onSelectMap}
+          onSetWorkbenchMode={onSetWorkbenchMode}
+          onApplyCommand={onApplyCommand}
         />
         <MapToolset
           state={state}
@@ -234,6 +237,7 @@ export function MapSelectionSidebar({
 }) {
   const [open, setOpen] = useState(() => localStorage.getItem("providence.mapRightContextOpen.v1") !== "0");
   const [paletteState, setPaletteState] = useState<PaintPaletteState>(() => readPaintPaletteState());
+  const [paintFillChance, setPaintFillChance] = useState(100);
   useEffect(() => {
     localStorage.setItem("providence.mapRightContextOpen.v1", open ? "1" : "0");
   }, [open]);
@@ -286,6 +290,8 @@ export function MapSelectionSidebar({
             onSetActiveCustomPaletteId={onSetActiveCustomPaletteId}
             variationTiles={variationTiles}
             onSetPaletteVariationTiles={onSetPaletteVariationTiles}
+            paintFillChance={paintFillChance}
+            onSetPaintFillChance={setPaintFillChance}
             selectedRegion={selectedRegion}
             onSetSelectedRegion={onSetSelectedRegion}
             replaceSourceTile={replaceSourceTile}
@@ -517,8 +523,8 @@ function CoreMapSetup({
 }) {
   const clearLevel = () => {
     if (!selectedMap) return;
-    const fillTile = selectedTileset?.baseTile ?? selectedMap.tiles[0] ?? 1;
-    const confirmed = window.confirm(`Clear ${selectedMap.name} to tile ${fillTile}? This will overwrite all ${selectedMap.tiles.length.toLocaleString()} cells.`);
+    const fillTile = clearTileForMap(selectedMap, selectedTileset);
+    const confirmed = window.confirm(`Clear ${selectedMap.name} to ${clearTileLabel(selectedMap, selectedTileset)}? This will overwrite all ${selectedMap.tiles.length.toLocaleString()} cells.`);
     if (!confirmed) return;
     onApplyCommand({
       kind: "paintTiles",
@@ -567,6 +573,7 @@ function CoreMapSetup({
           map={selectedMap}
           randomLevel={randomLevel}
           selectedTileset={selectedTileset}
+          atlas={atlas}
           previewMode={previewMode}
           previewFocalPoint={previewFocalPoint}
           onSetPreviewMode={onSetPreviewMode}
@@ -610,25 +617,62 @@ function CoreMapSetup({
 function MapOutliner({
   project,
   selectedMap,
-  onSelectMap
+  onSelectMap,
+  onSetWorkbenchMode,
+  onApplyCommand
 }: {
   project: Project | null;
   selectedMap: MapEntity | null;
   onSelectMap: (id: string) => void;
+  onSetWorkbenchMode: (mode: MapWorkbenchMode) => void;
+  onApplyCommand: (command: ProjectCommand) => void;
 }) {
   const maps = project?.maps ?? [];
   const landCount = maps.filter((map) => map.levelType === "land").length;
   const dungeonCount = maps.filter((map) => map.levelType === "dungeon").length;
+  const createMap = (levelType: "land" | "dungeon") => {
+    if (!project) return;
+    const index = nextMapIndex(maps, levelType);
+    const id = `${levelType}:${index}`;
+    onApplyCommand({ kind: "createMap", label: `Create ${levelType} map`, levelType });
+    onSelectMap(id);
+    onSetWorkbenchMode("canvas");
+  };
+  const duplicateMap = () => {
+    if (!project || !selectedMap) return;
+    const index = nextMapIndex(maps, selectedMap.levelType);
+    const id = `${selectedMap.levelType}:${index}`;
+    onApplyCommand({ kind: "duplicateMap", label: `Duplicate ${selectedMap.name}`, mapId: selectedMap.id });
+    onSelectMap(id);
+    onSetWorkbenchMode("canvas");
+  };
   return (
     <section className="context-panel map-outliner-panel compact">
       <div className="panel-header">
         <span>Scenario Maps</span>
         <small>{maps.length.toLocaleString()}</small>
       </div>
+      <div className="map-outliner-actions">
+        <button className="btn btn-primary btn-xs" type="button" disabled={!project} onClick={() => createMap("land")}>
+          New Land
+        </button>
+        <button className="btn btn-secondary btn-xs" type="button" disabled={!project} onClick={() => createMap("dungeon")}>
+          New Dungeon
+        </button>
+        <button className="btn btn-secondary btn-xs" type="button" disabled={!project || !selectedMap} onClick={duplicateMap}>
+          Duplicate
+        </button>
+        {selectedMap?.levelType === "land" && (
+          <button className="btn btn-secondary btn-xs" type="button" onClick={() => onSetWorkbenchMode("land-layout")}>
+            Place In Layout
+          </button>
+        )}
+      </div>
       <label className="context-field compact">
         <span>Current Map</span>
         <select value={selectedMap?.id ?? ""} onChange={(event) => onSelectMap(event.currentTarget.value)} disabled={!project}>
           {!project && <option value="">No project loaded</option>}
+          {project && maps.length === 0 && <option value="">No maps yet</option>}
           {maps.map((map) => (
             <option key={map.id} value={map.id}>
               {map.name}
@@ -647,8 +691,15 @@ function MapOutliner({
         </p>
       )}
       {!project && <p className="empty-copy compact">Create or import a scenario to browse maps.</p>}
+      {project && maps.length === 0 && <p className="empty-copy compact">Create a land or dungeon map to begin authoring this scenario.</p>}
     </section>
   );
+}
+
+function nextMapIndex(maps: MapEntity[], levelType: "land" | "dungeon") {
+  return maps
+    .filter((map) => map.levelType === levelType)
+    .reduce((max, map) => Math.max(max, map.index), -1) + 1;
 }
 
 function MapToolset({
@@ -776,6 +827,8 @@ function PaintInspector({
   onSetActiveCustomPaletteId,
   variationTiles,
   onSetPaletteVariationTiles,
+  paintFillChance,
+  onSetPaintFillChance,
   selectedRegion,
   onSetSelectedRegion,
   replaceSourceTile,
@@ -803,6 +856,8 @@ function PaintInspector({
   onSetActiveCustomPaletteId: (paletteId: string | null) => void;
   variationTiles: number[] | null;
   onSetPaletteVariationTiles: (tiles: number[] | null) => void;
+  paintFillChance: number;
+  onSetPaintFillChance: (chance: number) => void;
   selectedRegion: MapRegionSelection | null;
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
   replaceSourceTile: number | null;
@@ -860,6 +915,8 @@ function PaintInspector({
         paintVariation={paintVariation}
         activePaintGroupId={activePaintGroupId}
         variationTiles={variationTiles}
+        paintFillChance={paintFillChance}
+        onSetPaintFillChance={onSetPaintFillChance}
         paintMode={paintMode}
         onSetPaintMode={onSetPaintMode}
         selectedRegion={selectedRegion}
@@ -876,6 +933,8 @@ function PaintInspector({
           tileAttributes={state.project?.tileAttributes ?? []}
           icons={state.iconEntries}
           paintMode={paintMode}
+          onSetSelectedRegion={onSetSelectedRegion}
+          showClearSelection={false}
           replaceSourceTile={replaceSourceTile}
           onSetReplaceSourceTile={onSetReplaceSourceTile}
           selectedPaintTile={state.selectedTile}
@@ -1031,10 +1090,23 @@ function clampPaletteRect(state: PaintPaletteState): PaintPaletteState {
   };
 }
 
+const STANDARD_LANDLOOK_OPTIONS = [
+  { value: 0, label: "0 - Plains" },
+  { value: 3, label: "3 - Subterranean" },
+  { value: 4, label: "4 - Castle" },
+  { value: 5, label: "5 - Desert" },
+  { value: 6, label: "6 - Custom 1" },
+  { value: 7, label: "7 - Custom 2" },
+  { value: 8, label: "8 - Custom 3" },
+  { value: 9, label: "9 - Swamp" },
+  { value: 10, label: "10 - Snow" }
+];
+
 function MapLevelSettings({
   map,
   randomLevel,
   selectedTileset,
+  atlas,
   previewMode,
   previewFocalPoint,
   onSetPreviewMode,
@@ -1044,6 +1116,7 @@ function MapLevelSettings({
   map: MapEntity | null;
   randomLevel: RandomLevel | null;
   selectedTileset: TilesetAsset | null;
+  atlas: EditorState["atlasEntries"][string] | null;
   previewMode: MapPreviewMode;
   previewFocalPoint: MapPreviewFocalPoint;
   onSetPreviewMode: (mode: MapPreviewMode) => void;
@@ -1063,10 +1136,29 @@ function MapLevelSettings({
     setApplied("Applied");
     window.setTimeout(() => setApplied(null), 1200);
   };
-  const atlasMissing = map.levelType === "land" && selectedTileset && (!selectedTileset.available || !selectedTileset.imagePath);
+  const atlasMissing = map.levelType === "land" && selectedTileset && !atlas && !selectedTileset.imagePath;
+  const currentLandlook = randomLevel?.landlook ?? map.render.landlook ?? (map.levelType === "land" ? 0 : -1);
+  const currentLandlookSupported = STANDARD_LANDLOOK_OPTIONS.some((option) => option.value === currentLandlook);
   return (
     <div className="map-level-settings">
-      <MapNumberField label="Landlook" value={randomLevel?.landlook ?? map.render.landlook ?? (map.levelType === "land" ? 2 : -1)} onCommit={(landlook) => commit({ landlook })} />
+      {map.levelType === "dungeon" ? (
+        <label className="map-select-field">
+          <span>Renderer</span>
+          <select value="-1" disabled>
+            <option value="-1">Dungeon top-down (-1)</option>
+          </select>
+        </label>
+      ) : (
+        <label className="map-select-field">
+          <span>Landlook</span>
+          <select value={String(currentLandlook)} onChange={(event) => commit({ landlook: Number(event.currentTarget.value) })}>
+            {!currentLandlookSupported && <option value={String(currentLandlook)}>Unsupported landlook {currentLandlook}</option>}
+            {STANDARD_LANDLOOK_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+        </label>
+      )}
       <label className="map-check-field">
         <input type="checkbox" checked={Boolean(randomLevel?.isDark)} onChange={(event) => commit({ isDark: event.currentTarget.checked })} />
         <span>Dark level</span>
@@ -1301,7 +1393,8 @@ function SpecialTileSolidityEditor({
 
 const PAINT_MODES: Array<{ id: MapPaintMode; label: string; body: string }> = [
   { id: "brush", label: "Brush", body: "Paint cells by dragging." },
-  { id: "replace", label: "Replace Tile", body: "Replace one tile value in a region or map." }
+  { id: "replace", label: "Replace Tile", body: "Replace one tile value in a region or map." },
+  { id: "clear", label: "Eraser", body: "Restore cells to the current map's clear tile." }
 ];
 
 function PaintModePanel({
@@ -1311,6 +1404,8 @@ function PaintModePanel({
   paintVariation,
   activePaintGroupId,
   variationTiles,
+  paintFillChance,
+  onSetPaintFillChance,
   paintMode,
   onSetPaintMode,
   selectedRegion,
@@ -1325,6 +1420,8 @@ function PaintModePanel({
   paintVariation: MapPaintVariation;
   activePaintGroupId: string;
   variationTiles: number[] | null | undefined;
+  paintFillChance: number;
+  onSetPaintFillChance: (chance: number) => void;
   paintMode: MapPaintMode;
   onSetPaintMode: (mode: MapPaintMode) => void;
   selectedRegion: MapRegionSelection | null;
@@ -1333,7 +1430,6 @@ function PaintModePanel({
   onSetReplaceSourceTile: (tile: number | null) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
-  const clearTile = clearTileForMap(map, selectedTileset);
   return (
     <div className="paint-mode-panel">
       <div className="paint-mode-header">
@@ -1351,12 +1447,25 @@ function PaintModePanel({
         {paintMode === "brush" && "Drag to paint."}
         {paintMode === "brush" && !selectedRegion && " Use Select and drag on the map to choose a region."}
         {paintMode === "replace" && "Replace one tile in the selected region."}
-        {paintMode === "clear" && `Clear region to tile ${clearTile}.`}
+        {paintMode === "clear" && `Drag to restore ${clearTileLabel(map, selectedTileset)}.`}
       </p>
       {selectedRegion && (
         <div className="paint-region-quick-actions">
           <span>{regionLabel(selectedRegion)} | {regionCellCount(selectedRegion).toLocaleString()} cells</span>
-          <button type="button" onClick={() => fillRegion(map, selectedRegion, selectedTile, selectedTileset, paintVariation, activePaintGroupId, variationTiles, onApplyCommand)}>Fill</button>
+          <label className="paint-fill-chance">
+            <span>Chance To Fill</span>
+            <b>{paintFillChance}%</b>
+            <input
+              type="range"
+              min={1}
+              max={100}
+              step={1}
+              value={paintFillChance}
+              onChange={(event) => onSetPaintFillChance(Number(event.currentTarget.value))}
+            />
+            <small>{paintFillChance === 100 ? "Fill every eligible cell." : `Scatter paint across about ${paintFillChance}% of the selected region.`}</small>
+          </label>
+          <button type="button" onClick={() => fillRegion(map, selectedRegion, selectedTile, selectedTileset, paintVariation, activePaintGroupId, variationTiles, paintFillChance, onApplyCommand)}>Fill</button>
           <button type="button" onClick={() => clearRegion(map, selectedRegion, selectedTileset, onApplyCommand)}>Clear</button>
           <button type="button" onClick={() => onSetSelectedRegion(null)}>Clear Selection</button>
         </div>
@@ -1379,6 +1488,8 @@ function RegionSelectionDetails({
   tileAttributes,
   icons,
   paintMode,
+  onSetSelectedRegion,
+  showClearSelection = true,
   replaceSourceTile,
   onSetReplaceSourceTile,
   selectedPaintTile,
@@ -1390,6 +1501,8 @@ function RegionSelectionDetails({
   tileAttributes: Project["tileAttributes"];
   icons: EditorState["iconEntries"];
   paintMode: MapPaintMode;
+  onSetSelectedRegion: (region: MapRegionSelection | null) => void;
+  showClearSelection?: boolean;
   replaceSourceTile: number | null;
   onSetReplaceSourceTile: (tile: number | null) => void;
   selectedPaintTile: number;
@@ -1403,6 +1516,13 @@ function RegionSelectionDetails({
   const selectedMeaning = classifyTileValue(selectedPaintTile, selectedTileset, tileAttributes, icons);
   return (
     <div className="region-selection-details">
+      {showClearSelection && (
+        <div className="context-action-stack">
+          <button className="btn btn-secondary btn-xs context-action-button" type="button" onClick={() => onSetSelectedRegion(null)}>
+            Clear Selection
+          </button>
+        </div>
+      )}
       <details className="context-section" open={paintMode === "replace"}>
         <summary><span>Replace Tile</span><b>{sourceTile} to {selectedPaintTile}</b></summary>
         <div className="map-authoring-form">
@@ -1546,6 +1666,23 @@ function SelectionInspector({
           {map && (
             <div className="context-action-stack">
               <button
+                className="btn btn-secondary btn-xs context-action-button"
+                type="button"
+                disabled={selection.cell.tile === clearTileForMap(map, selectedTileset)}
+                title={`Restore this cell to ${clearTileLabel(map, selectedTileset)}.`}
+                onClick={() => {
+                  const to = clearTileForMap(map, selectedTileset);
+                  onApplyCommand({
+                    kind: "paintTiles",
+                    label: `Clear tile ${selection.cell.x},${selection.cell.y}`,
+                    mapId: map.id,
+                    cells: [{ ...selection.cell, index: mapTileIndex(map, selection.cell.x, selection.cell.y), from: selection.cell.tile, to }]
+                  });
+                }}
+              >
+                Clear Tile To {clearTileForMap(map, selectedTileset)}
+              </button>
+              <button
                 className="btn btn-primary btn-xs context-action-button"
                 type="button"
                 disabled={project ? !actionPointCapacity(project.triggers, map.levelType, map.index).canCreate : false}
@@ -1604,7 +1741,7 @@ function SelectionInspector({
                   className="btn btn-ghost btn-xs context-action-button"
                   type="button"
                   onClick={() => {
-                    const fallback = atlasBaseTile(selectedTileset?.baseTile, selectedTileset?.custom);
+                    const fallback = clearTileForMap(map, selectedTileset);
                     onApplyCommand({
                       kind: "paintTiles",
                       label: "Remove stamp",
@@ -1613,7 +1750,7 @@ function SelectionInspector({
                     });
                   }}
                 >
-                  Remove Stamp to Tile {atlasBaseTile(selectedTileset?.baseTile, selectedTileset?.custom)}
+                  Remove Stamp to {clearTileLabel(map, selectedTileset)}
                 </button>
               )}
             </div>
@@ -1628,6 +1765,7 @@ function SelectionInspector({
           tileAttributes={project?.tileAttributes ?? []}
           icons={icons}
           paintMode={paintMode}
+          onSetSelectedRegion={onSetSelectedRegion}
           replaceSourceTile={replaceSourceTile}
           onSetReplaceSourceTile={onSetReplaceSourceTile}
           selectedPaintTile={selectedPaintTile}
