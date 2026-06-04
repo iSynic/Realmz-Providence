@@ -106,7 +106,7 @@ export function MapCapabilityPanel({
           <span><b>Control</b> Sample tile</span>
           <span><b>Shift</b> Paint 3 x 3</span>
           <span><b>Command</b> Create Action Point</span>
-          <span><b>Option</b> Center map / dungeon erase</span>
+          <span><b>Right Drag</b> Pan canvas</span>
         </div>
       </details>
     </>

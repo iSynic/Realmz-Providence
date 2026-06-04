@@ -4,7 +4,6 @@ import { MapEntity, MapPaintMode, MapPaintVariation, MapRegionSelection, Project
 
 const PAINT_MODE_LABELS: Record<MapPaintMode, string> = {
   brush: "Brush",
-  region: "Region Select",
   replace: "Replace Tile",
   clear: "Clear Region"
 };

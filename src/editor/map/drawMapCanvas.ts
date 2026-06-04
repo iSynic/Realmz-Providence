@@ -40,8 +40,6 @@ export function drawBaseMap(
       drawBaseMapCell(ctx, { map, x, y, atlas, icons, viewOptions, cell });
     }
   }
-
-  if (viewOptions.showRealmzCoordinates) drawCoordinateLabels(ctx, cell, size);
 }
 
 export function drawBaseMapCell(
@@ -114,18 +112,31 @@ function canvasBackingSize(cssSize: number) {
   return Math.max(900, Math.min(4096, Math.round(cssSize * deviceRatio)));
 }
 
-export function drawCoordinateLabels(ctx: CanvasRenderingContext2D, cell: number, size: number) {
+export function drawCoordinateLabels(ctx: CanvasRenderingContext2D, cell: number, size: number, gutter = 0) {
   if (cell < 9) return;
   ctx.save();
   ctx.font = `${Math.max(9, Math.min(18, cell * 0.38))}px monospace`;
   ctx.textBaseline = "top";
-  ctx.fillStyle = "rgba(4, 7, 10, 0.68)";
-  ctx.fillRect(0, 0, size, Math.max(18, cell * 0.72));
-  ctx.fillRect(0, 0, Math.max(28, cell * 1.05), size);
+  ctx.fillStyle = "rgba(4, 7, 10, 0.78)";
+  if (gutter > 0) {
+    ctx.fillRect(0, 0, size, gutter);
+    ctx.fillRect(0, size - gutter, size, gutter);
+    ctx.fillRect(0, 0, gutter, size);
+    ctx.fillRect(size - gutter, 0, gutter, size);
+  } else {
+    ctx.fillRect(0, 0, size, Math.max(18, cell * 0.72));
+    ctx.fillRect(0, 0, Math.max(28, cell * 1.05), size);
+  }
   ctx.fillStyle = "rgba(219, 235, 248, 0.82)";
   for (let value = 0; value < MAP_CELLS; value += 10) {
-    ctx.fillText(String(value), value * cell + 3, 3);
-    ctx.fillText(String(value), 3, value * cell + 3);
+    const label = String(value);
+    if (gutter > 0) {
+      ctx.fillText(label, gutter + value * cell + 3, Math.max(2, gutter * 0.16));
+      ctx.fillText(label, Math.max(2, gutter * 0.16), gutter + value * cell + 3);
+    } else {
+      ctx.fillText(label, value * cell + 3, 3);
+      ctx.fillText(label, 3, value * cell + 3);
+    }
   }
   ctx.restore();
 }
@@ -429,13 +440,51 @@ export function drawPaintCursor(
 }
 
 export function drawSelectedCell(ctx: CanvasRenderingContext2D, selectedCell: { x: number; y: number }, cell: number) {
-  const inset = Math.max(2, cell * 0.12);
+  const left = selectedCell.x * cell;
+  const top = selectedCell.y * cell;
+  const inset = Math.max(2, cell * 0.1);
+  const arm = Math.max(6, cell * 0.32);
+  const lineWidth = Math.max(2, Math.min(5, cell * 0.13));
+
   ctx.save();
-  ctx.strokeStyle = "#78d7ff";
-  ctx.lineWidth = Math.max(2, Math.min(5, cell * 0.14));
-  ctx.setLineDash([Math.max(4, cell * 0.34), Math.max(3, cell * 0.2)]);
-  ctx.strokeRect(selectedCell.x * cell + inset, selectedCell.y * cell + inset, cell - inset * 2, cell - inset * 2);
+  drawSelectionCorners(ctx, left, top, cell, inset, arm, lineWidth + 2, "rgba(2, 8, 12, 0.78)");
+  drawSelectionCorners(ctx, left, top, cell, inset, arm, lineWidth, "#80eaff");
   ctx.restore();
+}
+
+function drawSelectionCorners(
+  ctx: CanvasRenderingContext2D,
+  left: number,
+  top: number,
+  cell: number,
+  inset: number,
+  arm: number,
+  lineWidth: number,
+  strokeStyle: string
+) {
+  const right = left + cell - inset;
+  const bottom = top + cell - inset;
+  const x0 = left + inset;
+  const y0 = top + inset;
+
+  ctx.strokeStyle = strokeStyle;
+  ctx.lineWidth = lineWidth;
+  ctx.lineCap = "square";
+  ctx.lineJoin = "miter";
+  ctx.beginPath();
+  ctx.moveTo(x0, y0 + arm);
+  ctx.lineTo(x0, y0);
+  ctx.lineTo(x0 + arm, y0);
+  ctx.moveTo(right - arm, y0);
+  ctx.lineTo(right, y0);
+  ctx.lineTo(right, y0 + arm);
+  ctx.moveTo(right, bottom - arm);
+  ctx.lineTo(right, bottom);
+  ctx.lineTo(right - arm, bottom);
+  ctx.moveTo(x0 + arm, bottom);
+  ctx.lineTo(x0, bottom);
+  ctx.lineTo(x0, bottom - arm);
+  ctx.stroke();
 }
 
 export function drawRegionSelection(

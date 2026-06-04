@@ -15,7 +15,7 @@ export type EditorTab =
 export type ActiveWorkbench = "project" | "library";
 export type EditorTool = "select" | "paint" | "stamp" | "trigger" | "random" | "sample" | "pan";
 export type MapWorkbenchMode = "canvas" | "land-layout" | "land-tiles" | "random-areas" | "map-records";
-export type MapPaintMode = "brush" | "region" | "replace" | "clear";
+export type MapPaintMode = "brush" | "replace" | "clear";
 export type MapPaintVariation = "single" | "cycle-group" | "random-group";
 export type MapRegionSelection = { left: number; top: number; right: number; bottom: number };
 export type PaintTileResolver = (cell: { x: number; y: number; index: number; tile: number }, sequence: number) => number;

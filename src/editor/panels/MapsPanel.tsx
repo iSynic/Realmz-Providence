@@ -285,6 +285,8 @@ export function MapsPanel({
         onSetViewFlag={onSetViewFlag}
         onOpenPalette={() => setPaletteOpen(true)}
         onOpenScripts={onOpenScripts}
+        paletteOpen={paletteOpen}
+        onSetPaletteOpen={setPaletteOpen}
         paintMode={paintMode}
         onSetPaintMode={setPaintMode}
         paintVariation={paintVariation}

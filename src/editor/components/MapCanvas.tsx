@@ -28,6 +28,7 @@ import { ScrollArea } from "../ui";
 import {
   drawBaseMap,
   drawBaseMapCell,
+  drawCoordinateLabels,
   drawHover,
   drawMapRecords,
   drawPaintCursor,
@@ -43,6 +44,7 @@ import {
 import { MapKeyHud } from "./MapCanvasHud";
 
 const BASE_CANVAS_SIZE = 900;
+const COORDINATE_GUTTER_CELLS = 1;
 
 export function RealmzMapCanvas({
   map,
@@ -142,17 +144,22 @@ export function RealmzMapCanvas({
     wrap.addEventListener("pointermove", handlePointerMove, { passive: true });
     return () => wrap.removeEventListener("pointermove", handlePointerMove);
   }, []);
-  const canvasCssSize = Math.round(BASE_CANVAS_SIZE * zoom);
+  const mapCssSize = Math.round(BASE_CANVAS_SIZE * zoom);
+  const coordinateGutterCss = viewOptions.showRealmzCoordinates ? mapCssSize / MAP_CELLS : 0;
+  const canvasCssSize = Math.round(mapCssSize + coordinateGutterCss * 2);
   const previewPaintChange = useCallback((change: { x: number; y: number; to: number }) => {
     const canvas = baseCanvasRef.current;
     if (!canvas) return;
     const size = syncCanvasSize(canvas, canvasCssSize);
+    const layout = mapCanvasLayout(size, viewOptions.showRealmzCoordinates);
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const cell = size / MAP_CELLS;
     ctx.imageSmoothingEnabled = smoothTiles;
     ctx.imageSmoothingQuality = smoothTiles ? "high" : "low";
-    drawTileValueCell(ctx, { tile: change.to, x: change.x, y: change.y, atlas, icons, viewOptions, cell });
+    ctx.save();
+    ctx.translate(layout.gutter, layout.gutter);
+    drawTileValueCell(ctx, { tile: change.to, x: change.x, y: change.y, atlas, icons, viewOptions, cell: layout.cell });
+    ctx.restore();
   }, [atlas, canvasCssSize, icons, smoothTiles, viewOptions]);
   const resetPaintPreview = useCallback(() => {
     const canvas = baseCanvasRef.current;
@@ -160,7 +167,7 @@ export function RealmzMapCanvas({
     const size = syncCanvasSize(canvas, canvasCssSize);
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    drawBaseMap(ctx, { map, atlas, icons, smoothTiles, viewOptions, size });
+    drawBaseMapLayer(ctx, { map, atlas, icons, smoothTiles, viewOptions, size });
     baseRenderRef.current = baseRenderSnapshot({ map, atlas, icons, smoothTiles, viewOptions, size });
   }, [atlas, canvasCssSize, icons, map, smoothTiles, viewOptions]);
   const { hover, hoverTarget, paintCursor, regionPreview, overlayHandlers } = useMapInteractions({
@@ -211,12 +218,15 @@ export function RealmzMapCanvas({
     ctx.imageSmoothingEnabled = smoothTiles;
     ctx.imageSmoothingQuality = smoothTiles ? "high" : "low";
     if (changedCells && changedCells.length > 0) {
-      const cell = size / MAP_CELLS;
+      const layout = mapCanvasLayout(size, viewOptions.showRealmzCoordinates);
       for (const changed of changedCells) {
-        drawBaseMapCell(ctx, { map, x: changed.x, y: changed.y, atlas, icons, viewOptions, cell });
+        ctx.save();
+        ctx.translate(layout.gutter, layout.gutter);
+        drawBaseMapCell(ctx, { map, x: changed.x, y: changed.y, atlas, icons, viewOptions, cell: layout.cell });
+        ctx.restore();
       }
     } else if (!changedCells || changedCells.length > 0) {
-      drawBaseMap(ctx, { map, atlas, icons, smoothTiles, viewOptions, size });
+      drawBaseMapLayer(ctx, { map, atlas, icons, smoothTiles, viewOptions, size });
     }
     baseRenderRef.current = nextSnapshot;
   }, [
@@ -234,7 +244,7 @@ export function RealmzMapCanvas({
   useEffect(() => {
     const canvas = overlayCanvasRef.current;
     if (!canvas) return;
-    const size = syncCanvasSize(canvas, canvasCssSize);
+    const size = syncCanvasSize(canvas, mapCssSize);
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     const cell = size / MAP_CELLS;
@@ -272,7 +282,7 @@ export function RealmzMapCanvas({
     atlas,
     icons,
     viewOptions,
-    canvasCssSize,
+    mapCssSize,
     overlayMapDependency,
     overlaySpriteVersion
   ]);
@@ -342,7 +352,15 @@ export function RealmzMapCanvas({
           ref={overlayCanvasRef}
           className="room-canvas room-canvas-overlay"
           tabIndex={0}
-          style={{ cursor: cursorForTool(activeTool, hoverTarget) }}
+          style={{
+            cursor: cursorForTool(activeTool, hoverTarget),
+            left: `${coordinateGutterCss}px`,
+            top: `${coordinateGutterCss}px`,
+            right: "auto",
+            bottom: "auto",
+            width: `${mapCssSize}px`,
+            height: `${mapCssSize}px`
+          }}
           {...overlayHandlers}
         />
         <MapKeyHud
@@ -362,6 +380,44 @@ export function RealmzMapCanvas({
       </div>
     </ScrollArea>
   );
+}
+
+function drawBaseMapLayer(
+  ctx: CanvasRenderingContext2D,
+  {
+    map,
+    atlas,
+    icons,
+    smoothTiles,
+    viewOptions,
+    size
+  }: {
+    map: MapEntity;
+    atlas: AtlasEntry | null;
+    icons: Record<number, IconEntry>;
+    smoothTiles: boolean;
+    viewOptions: MapViewOptions;
+    size: number;
+  }
+) {
+  const layout = mapCanvasLayout(size, viewOptions.showRealmzCoordinates);
+  ctx.clearRect(0, 0, size, size);
+  ctx.save();
+  ctx.translate(layout.gutter, layout.gutter);
+  drawBaseMap(ctx, { map, atlas, icons, smoothTiles, viewOptions, size: layout.mapSize });
+  ctx.restore();
+  if (viewOptions.showRealmzCoordinates) drawCoordinateLabels(ctx, layout.cell, size, layout.gutter);
+}
+
+function mapCanvasLayout(size: number, showRealmzCoordinates: boolean) {
+  const totalCells = showRealmzCoordinates ? MAP_CELLS + COORDINATE_GUTTER_CELLS * 2 : MAP_CELLS;
+  const cell = size / totalCells;
+  const gutter = showRealmzCoordinates ? cell * COORDINATE_GUTTER_CELLS : 0;
+  return {
+    cell,
+    gutter,
+    mapSize: cell * MAP_CELLS
+  };
 }
 
 type BaseRenderSnapshot = {

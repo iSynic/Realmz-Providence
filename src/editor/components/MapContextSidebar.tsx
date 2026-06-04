@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { TOOLS } from "../constants";
 import { EditorState } from "../store";
 import { EditorTool, IconEntry, MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRecord, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TileAttributeFlag, TilesetAsset, TriggerRecord } from "../types";
@@ -40,6 +40,23 @@ const MAP_TOOLSET_MODES: Array<{ id: MapWorkbenchMode; label: string; body: stri
   { id: "random-areas", label: "Random Encounters", body: "Encounter rectangles" },
   { id: "map-records", label: "Map Records", body: "Canvas-backed starts and notes" }
 ];
+
+const PAINT_PALETTE_STORAGE_KEY = "providence.mapPaintPalette.v1";
+const DEFAULT_PALETTE_STATE: PaintPaletteState = {
+  mode: "docked",
+  x: 720,
+  y: 120,
+  width: 440,
+  height: 560
+};
+
+type PaintPaletteState = {
+  mode: "docked" | "floating";
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
 
 export function MapContextSidebar({
   state,
@@ -106,26 +123,12 @@ export function MapContextSidebar({
         />
         <MapToolset
           state={state}
-          selectedMap={selectedMap}
           selectedTileset={selectedTileset}
           atlas={atlas}
           workbenchMode={workbenchMode}
           onSetWorkbenchMode={onSetWorkbenchMode}
           onSetTool={onSetTool}
           onSelectTile={onSelectTile}
-          paintMode={paintMode}
-          onSetPaintMode={onSetPaintMode}
-          paintVariation={paintVariation}
-          onSetPaintVariation={onSetPaintVariation}
-          activePaintGroupId={activePaintGroupId}
-          onSetActivePaintGroup={onSetActivePaintGroup}
-          selectedRegion={selectedRegion}
-          onSetSelectedRegion={onSetSelectedRegion}
-          replaceSourceTile={replaceSourceTile}
-          onSetReplaceSourceTile={onSetReplaceSourceTile}
-          onApplyCommand={onApplyCommand}
-          paletteOpen={paletteOpen}
-          onSetPaletteOpen={onSetPaletteOpen}
         />
       </ScrollArea>
     </ResizablePane>
@@ -154,6 +157,8 @@ export function MapSelectionSidebar({
   onSetViewFlag,
   onOpenPalette,
   onOpenScripts,
+  paletteOpen,
+  onSetPaletteOpen,
   paintMode,
   onSetPaintMode,
   paintVariation,
@@ -189,6 +194,8 @@ export function MapSelectionSidebar({
   onSetViewFlag: (flag: MapViewFlag, value: boolean) => void;
   onOpenPalette: () => void;
   onOpenScripts: (entity: SelectedEntity) => void;
+  paletteOpen: boolean;
+  onSetPaletteOpen: (open: boolean) => void;
   paintMode: MapPaintMode;
   onSetPaintMode: (mode: MapPaintMode) => void;
   paintVariation: MapPaintVariation;
@@ -204,36 +211,65 @@ export function MapSelectionSidebar({
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
   const [open, setOpen] = useState(() => localStorage.getItem("providence.mapRightContextOpen.v1") !== "0");
+  const [paletteState, setPaletteState] = useState<PaintPaletteState>(() => readPaintPaletteState());
   useEffect(() => {
     localStorage.setItem("providence.mapRightContextOpen.v1", open ? "1" : "0");
   }, [open]);
+  useEffect(() => {
+    localStorage.setItem(PAINT_PALETTE_STORAGE_KEY, JSON.stringify(paletteState));
+  }, [paletteState]);
   const selection = selectionSummary(selectedMap, state.selectedEntity, state.selectedCell, selectedRegion, mapTriggers, selectedRandomLevel, mapRecords);
   const activeSelection = workbenchMode === "canvas" ? selection : null;
+  const isPaintInspector = workbenchMode === "canvas" && state.activeTool === "paint";
   if (!open) {
     return (
       <aside className="map-context-rail">
         <button type="button" onClick={() => setOpen(true)}>
-          Inspector
+          {isPaintInspector ? "Paint" : "Inspector"}
         </button>
       </aside>
     );
   }
   return (
-    <ResizablePane
-      className="editor-inspector map-context-sidebar"
-      ariaLabel="Map contextual inspector"
-      storageKey="providence.mapRightContextWidth.v1"
-      defaultWidth={380}
-      minWidth={320}
-      maxWidth={680}
-      edge="left"
-    >
-      <ScrollArea className="editor-inspector-scroll map-context-scroll" aria-label="Map contextual inspector">
-        <div className="panel-header map-context-header">
-        <span>{activeSelection ? "Selection Inspector" : "Map Setup"}</span>
-        <button className="btn btn-ghost btn-xs" type="button" onClick={() => setOpen(false)}>Collapse</button>
-      </div>
-        {activeSelection ? (
+    <>
+      <ResizablePane
+        className="editor-inspector map-context-sidebar"
+        ariaLabel="Map contextual inspector"
+        storageKey="providence.mapRightContextWidth.v1"
+        defaultWidth={380}
+        minWidth={320}
+        maxWidth={680}
+        edge="left"
+      >
+        <ScrollArea className="editor-inspector-scroll map-context-scroll" aria-label="Map contextual inspector">
+          <div className="panel-header map-context-header">
+          <span>{isPaintInspector ? "Paint Inspector" : activeSelection ? "Selection Inspector" : "Map Setup"}</span>
+          <button className="btn btn-ghost btn-xs" type="button" onClick={() => setOpen(false)}>Collapse</button>
+        </div>
+        {isPaintInspector ? (
+          <PaintInspector
+            state={state}
+            map={selectedMap}
+            selectedTileset={selectedTileset}
+            atlas={atlas}
+            paintMode={paintMode}
+            onSetPaintMode={onSetPaintMode}
+            paintVariation={paintVariation}
+            onSetPaintVariation={onSetPaintVariation}
+            activePaintGroupId={activePaintGroupId}
+            onSetActivePaintGroup={onSetActivePaintGroup}
+            selectedRegion={selectedRegion}
+            onSetSelectedRegion={onSetSelectedRegion}
+            replaceSourceTile={replaceSourceTile}
+            onSetReplaceSourceTile={onSetReplaceSourceTile}
+            onSelectTile={onSelectTile}
+            onApplyCommand={onApplyCommand}
+            paletteOpen={paletteOpen}
+            onSetPaletteOpen={onSetPaletteOpen}
+            paletteState={paletteState}
+            onSetPaletteState={setPaletteState}
+          />
+        ) : activeSelection ? (
           <SelectionInspector
             selection={activeSelection}
             map={selectedMap}
@@ -244,7 +280,6 @@ export function MapSelectionSidebar({
             paintMode={paintMode}
             paintVariation={paintVariation}
             activePaintGroupId={activePaintGroupId}
-            onSetPaintMode={onSetPaintMode}
             selectedRegion={selectedRegion}
             onSetSelectedRegion={onSetSelectedRegion}
             replaceSourceTile={replaceSourceTile}
@@ -292,8 +327,9 @@ export function MapSelectionSidebar({
             onApplyCommand={onApplyCommand}
           />
         )}
-      </ScrollArea>
-    </ResizablePane>
+        </ScrollArea>
+      </ResizablePane>
+    </>
   );
 }
 
@@ -588,54 +624,21 @@ function MapOutliner({
 
 function MapToolset({
   state,
-  selectedMap,
   selectedTileset,
   atlas,
   workbenchMode,
   onSetWorkbenchMode,
   onSetTool,
-  onSelectTile,
-  paintMode,
-  onSetPaintMode,
-  paintVariation,
-  onSetPaintVariation,
-  activePaintGroupId,
-  onSetActivePaintGroup,
-  selectedRegion,
-  onSetSelectedRegion,
-  replaceSourceTile,
-  onSetReplaceSourceTile,
-  onApplyCommand,
-  paletteOpen,
-  onSetPaletteOpen
+  onSelectTile
 }: {
   state: EditorState;
-  selectedMap: MapEntity | null;
   selectedTileset: TilesetAsset | null;
   atlas: EditorState["atlasEntries"][string] | null;
   workbenchMode: MapWorkbenchMode;
   onSetWorkbenchMode: (mode: MapWorkbenchMode) => void;
   onSetTool: (tool: EditorTool) => void;
   onSelectTile: (tile: number) => void;
-  paintMode: MapPaintMode;
-  onSetPaintMode: (mode: MapPaintMode) => void;
-  paintVariation: MapPaintVariation;
-  onSetPaintVariation: (variation: MapPaintVariation) => void;
-  activePaintGroupId: string;
-  onSetActivePaintGroup: (groupId: string) => void;
-  selectedRegion: MapRegionSelection | null;
-  onSetSelectedRegion: (region: MapRegionSelection | null) => void;
-  replaceSourceTile: number | null;
-  onSetReplaceSourceTile: (tile: number | null) => void;
-  onApplyCommand: (command: ProjectCommand) => void;
-  paletteOpen: boolean;
-  onSetPaletteOpen: (open: boolean) => void;
 }) {
-  const setPaintSubmode = (mode: MapPaintMode) => {
-    onSetTool("paint");
-    onSetPaintMode(mode);
-    onSetPaletteOpen(true);
-  };
   return (
     <section className="context-panel map-toolset-panel">
       <div className="panel-header">
@@ -676,43 +679,6 @@ function MapToolset({
             icons={state.iconEntries}
             onSelectTile={onSelectTile}
           />
-          <PaintModePanel
-            map={selectedMap}
-            selectedTileset={selectedTileset}
-            selectedTile={state.selectedTile}
-            paintVariation={paintVariation}
-            activePaintGroupId={activePaintGroupId}
-            paintMode={paintMode}
-            onSetPaintMode={setPaintSubmode}
-            selectedRegion={selectedRegion}
-            onSetSelectedRegion={onSetSelectedRegion}
-            replaceSourceTile={replaceSourceTile}
-            onSetReplaceSourceTile={onSetReplaceSourceTile}
-            onApplyCommand={onApplyCommand}
-          />
-          <button className={`toolset-disclosure${paletteOpen ? " open" : ""}`} onClick={() => onSetPaletteOpen(!paletteOpen)}>
-            <span>{paletteOpen ? "Collapse" : "Open"} Paint Palette</span>
-            <b>Paint {state.selectedTile}</b>
-          </button>
-          {paletteOpen && (
-            <PaintPalettePanel
-              map={selectedMap}
-              project={state.project}
-              libraryAssets={state.libraryCatalog?.assets ?? []}
-              selectedTile={state.selectedTile}
-              inspectedTile={state.selectedCell?.tile ?? null}
-              setSelectedTile={onSelectTile}
-              tileset={selectedTileset}
-              atlas={atlas}
-              icons={state.iconEntries}
-              atlasStatus={state.atlasStatus}
-              activePaintGroupId={activePaintGroupId}
-              onSetActivePaintGroup={onSetActivePaintGroup}
-              paintVariation={paintVariation}
-              onSetPaintVariation={onSetPaintVariation}
-              variant="sidebar"
-            />
-          )}
         </>
       ) : (
         <MapToolsetModeNotice
@@ -762,6 +728,263 @@ function MapToolsetModeNotice({
       </button>
     </div>
   );
+}
+
+function PaintInspector({
+  state,
+  map,
+  selectedTileset,
+  atlas,
+  paintMode,
+  onSetPaintMode,
+  paintVariation,
+  onSetPaintVariation,
+  activePaintGroupId,
+  onSetActivePaintGroup,
+  selectedRegion,
+  onSetSelectedRegion,
+  replaceSourceTile,
+  onSetReplaceSourceTile,
+  onSelectTile,
+  onApplyCommand,
+  paletteOpen,
+  onSetPaletteOpen,
+  paletteState,
+  onSetPaletteState
+}: {
+  state: EditorState;
+  map: MapEntity | null;
+  selectedTileset: TilesetAsset | null;
+  atlas: EditorState["atlasEntries"][string] | null;
+  paintMode: MapPaintMode;
+  onSetPaintMode: (mode: MapPaintMode) => void;
+  paintVariation: MapPaintVariation;
+  onSetPaintVariation: (variation: MapPaintVariation) => void;
+  activePaintGroupId: string;
+  onSetActivePaintGroup: (groupId: string) => void;
+  selectedRegion: MapRegionSelection | null;
+  onSetSelectedRegion: (region: MapRegionSelection | null) => void;
+  replaceSourceTile: number | null;
+  onSetReplaceSourceTile: (tile: number | null) => void;
+  onSelectTile: (tile: number) => void;
+  onApplyCommand: (command: ProjectCommand) => void;
+  paletteOpen: boolean;
+  onSetPaletteOpen: (open: boolean) => void;
+  paletteState: PaintPaletteState;
+  onSetPaletteState: (state: PaintPaletteState) => void;
+}) {
+  const selectedMeaning = classifyTileValue(state.selectedTile, selectedTileset, state.project?.tileAttributes ?? [], state.iconEntries);
+  const docked = paletteState.mode === "docked";
+  const palette = (
+    <PaintPalettePanel
+      map={map}
+      project={state.project}
+      libraryAssets={state.libraryCatalog?.assets ?? []}
+      selectedTile={state.selectedTile}
+      inspectedTile={state.selectedCell?.tile ?? null}
+      setSelectedTile={onSelectTile}
+      tileset={selectedTileset}
+      atlas={atlas}
+      icons={state.iconEntries}
+      atlasStatus={state.atlasStatus}
+      activePaintGroupId={activePaintGroupId}
+      onSetActivePaintGroup={onSetActivePaintGroup}
+      paintVariation={paintVariation}
+      onSetPaintVariation={onSetPaintVariation}
+      variant="sidebar"
+    />
+  );
+  return (
+    <section className="context-panel paint-inspector-panel">
+      <div className="paint-inspector-hero">
+        <div className="paint-inspector-preview" style={{ background: tileColor(state.selectedTile) }}>
+          <TileSwatch atlas={atlas} icons={state.iconEntries} tile={state.selectedTile} tileset={selectedTileset} />
+        </div>
+        <div>
+          <span>Selected Paint Tile</span>
+          <strong>{state.selectedTile}</strong>
+          <small>{selectedMeaning.label}</small>
+        </div>
+      </div>
+      <PaintModePanel
+        map={map}
+        selectedTileset={selectedTileset}
+        selectedTile={state.selectedTile}
+        paintVariation={paintVariation}
+        activePaintGroupId={activePaintGroupId}
+        paintMode={paintMode}
+        onSetPaintMode={onSetPaintMode}
+        selectedRegion={selectedRegion}
+        onSetSelectedRegion={onSetSelectedRegion}
+        replaceSourceTile={replaceSourceTile}
+        onSetReplaceSourceTile={onSetReplaceSourceTile}
+        onApplyCommand={onApplyCommand}
+      />
+      {selectedRegion && (
+        <RegionSelectionDetails
+          map={map}
+          region={selectedRegion}
+          selectedTileset={selectedTileset}
+          tileAttributes={state.project?.tileAttributes ?? []}
+          icons={state.iconEntries}
+          paintMode={paintMode}
+          paintVariation={paintVariation}
+          activePaintGroupId={activePaintGroupId}
+          selectedRegion={selectedRegion}
+          onSetSelectedRegion={onSetSelectedRegion}
+          replaceSourceTile={replaceSourceTile}
+          onSetReplaceSourceTile={onSetReplaceSourceTile}
+          selectedPaintTile={state.selectedTile}
+          onApplyCommand={onApplyCommand}
+        />
+      )}
+      <div className="paint-palette-shell">
+        <div className="paint-palette-shell-header">
+          <span>Tile Palette</span>
+          <div>
+            {!paletteOpen && (
+              <button className="btn btn-secondary btn-xs" type="button" onClick={() => onSetPaletteOpen(true)}>
+                Open
+              </button>
+            )}
+            {paletteOpen && (
+              <button className="btn btn-secondary btn-xs" type="button" onClick={() => onSetPaletteState({ ...paletteState, mode: docked ? "floating" : "docked" })}>
+                {docked ? "Float" : "Dock"}
+              </button>
+            )}
+            {paletteOpen && (
+              <button className="btn btn-ghost btn-xs" type="button" onClick={() => onSetPaletteOpen(false)}>
+                Close
+              </button>
+            )}
+          </div>
+        </div>
+        {paletteOpen && docked && palette}
+        {paletteOpen && !docked && <p className="empty-copy compact">Palette is floating over the map canvas.</p>}
+      </div>
+      {paletteOpen && !docked && (
+        <FloatingPaintPalette
+          paletteState={paletteState}
+          onSetPaletteState={onSetPaletteState}
+          onClose={() => onSetPaletteOpen(false)}
+          onDock={() => onSetPaletteState({ ...paletteState, mode: "docked" })}
+        >
+          {palette}
+        </FloatingPaintPalette>
+      )}
+    </section>
+  );
+}
+
+function FloatingPaintPalette({
+  paletteState,
+  onSetPaletteState,
+  onClose,
+  onDock,
+  children
+}: {
+  paletteState: PaintPaletteState;
+  onSetPaletteState: (state: PaintPaletteState) => void;
+  onClose: () => void;
+  onDock: () => void;
+  children: ReactNode;
+}) {
+  const draggingRef = useRef(false);
+  const resizingRef = useRef(false);
+  const stateRef = useRef(paletteState);
+  useEffect(() => {
+    stateRef.current = paletteState;
+  }, [paletteState]);
+  const startDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    draggingRef.current = true;
+    const start = { x: event.clientX, y: event.clientY, left: paletteState.x, top: paletteState.y };
+    const move = (moveEvent: PointerEvent) => {
+      const next = clampPaletteRect({
+        ...stateRef.current,
+        x: start.left + moveEvent.clientX - start.x,
+        y: start.top + moveEvent.clientY - start.y
+      });
+      onSetPaletteState(next);
+    };
+    const up = () => {
+      draggingRef.current = false;
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+  const startResize = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    resizingRef.current = true;
+    const start = { x: event.clientX, y: event.clientY, width: paletteState.width, height: paletteState.height };
+    const move = (moveEvent: PointerEvent) => {
+      const next = clampPaletteRect({
+        ...stateRef.current,
+        width: Math.max(320, start.width + moveEvent.clientX - start.x),
+        height: Math.max(360, start.height + moveEvent.clientY - start.y)
+      });
+      onSetPaletteState(next);
+    };
+    const up = () => {
+      resizingRef.current = false;
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+  const clamped = clampPaletteRect(paletteState);
+  return (
+    <div
+      className="floating-paint-palette"
+      style={{ left: `${clamped.x}px`, top: `${clamped.y}px`, width: `${clamped.width}px`, height: `${clamped.height}px` }}
+    >
+      <div className="floating-paint-palette-header" onPointerDown={startDrag}>
+        <span>Paint Palette</span>
+        <button type="button" onPointerDown={(event) => event.stopPropagation()} onClick={onDock}>Dock</button>
+        <button type="button" onPointerDown={(event) => event.stopPropagation()} onClick={onClose}>Close</button>
+      </div>
+      <div className="floating-paint-palette-body">{children}</div>
+      <button className="floating-paint-palette-resize" type="button" aria-label="Resize paint palette" onPointerDown={startResize} />
+    </div>
+  );
+}
+
+function readPaintPaletteState(): PaintPaletteState {
+  if (typeof localStorage === "undefined") return DEFAULT_PALETTE_STATE;
+  try {
+    const parsed = JSON.parse(localStorage.getItem(PAINT_PALETTE_STORAGE_KEY) ?? "");
+    if (!parsed || typeof parsed !== "object") return DEFAULT_PALETTE_STATE;
+    return clampPaletteRect({
+      mode: parsed.mode === "floating" ? "floating" : "docked",
+      x: numberOrDefault(parsed.x, DEFAULT_PALETTE_STATE.x),
+      y: numberOrDefault(parsed.y, DEFAULT_PALETTE_STATE.y),
+      width: numberOrDefault(parsed.width, DEFAULT_PALETTE_STATE.width),
+      height: numberOrDefault(parsed.height, DEFAULT_PALETTE_STATE.height)
+    });
+  } catch {
+    return DEFAULT_PALETTE_STATE;
+  }
+}
+
+function numberOrDefault(value: unknown, fallback: number) {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function clampPaletteRect(state: PaintPaletteState): PaintPaletteState {
+  if (typeof window === "undefined") return state;
+  const margin = 12;
+  const width = Math.min(Math.max(320, state.width), Math.max(320, window.innerWidth - margin * 2));
+  const height = Math.min(Math.max(360, state.height), Math.max(360, window.innerHeight - margin * 2));
+  return {
+    ...state,
+    width,
+    height,
+    x: Math.max(margin, Math.min(state.x, window.innerWidth - width - margin)),
+    y: Math.max(margin, Math.min(state.y, window.innerHeight - height - margin))
+  };
 }
 
 function MapLevelSettings({
@@ -1034,7 +1257,6 @@ function SpecialTileSolidityEditor({
 
 const PAINT_MODES: Array<{ id: MapPaintMode; label: string; body: string }> = [
   { id: "brush", label: "Brush", body: "Paint cells by dragging." },
-  { id: "region", label: "Region Select", body: "Drag a rectangle, then fill or clear it with explicit actions." },
   { id: "replace", label: "Replace Tile", body: "Replace one tile value in a region or map." }
 ];
 
@@ -1081,7 +1303,7 @@ function PaintModePanel({
       </div>
       <p className="paint-mode-hint">
         {paintMode === "brush" && "Drag to paint."}
-        {paintMode === "region" && "Drag to select a region, then choose Fill or Clear."}
+        {paintMode === "brush" && !selectedRegion && " Use Select and drag on the map to choose a region."}
         {paintMode === "replace" && "Replace one tile in the selected region."}
         {paintMode === "clear" && `Clear region to tile ${clearTile}.`}
       </p>
@@ -1113,7 +1335,6 @@ function RegionSelectionDetails({
   paintMode,
   paintVariation,
   activePaintGroupId,
-  onSetPaintMode,
   selectedRegion,
   onSetSelectedRegion,
   replaceSourceTile,
@@ -1129,7 +1350,6 @@ function RegionSelectionDetails({
   paintMode: MapPaintMode;
   paintVariation: MapPaintVariation;
   activePaintGroupId: string;
-  onSetPaintMode: (mode: MapPaintMode) => void;
   selectedRegion: MapRegionSelection | null;
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
   replaceSourceTile: number | null;
@@ -1154,7 +1374,7 @@ function RegionSelectionDetails({
           ["Cells", regionCellCount(region).toLocaleString()],
           ["Paint Tile", selectedPaintTile],
           ["Clear Tile", clearTile],
-          ["Mode", paintModeLabel(paintMode)]
+          ["Selection", "Select drag"]
         ]}
       />
       <details className="context-section" open>
@@ -1212,9 +1432,6 @@ function RegionSelectionDetails({
         <p>{selectedMeaning.compatibility}</p>
       </div>
       {!selectedRegion && <p className="empty-copy compact">No region is currently selected.</p>}
-      <button className="btn btn-ghost btn-xs context-action-button" type="button" onClick={() => onSetPaintMode("region")}>
-        Return to Region Select
-      </button>
     </div>
   );
 }
@@ -1229,7 +1446,6 @@ function SelectionInspector({
   paintMode,
   paintVariation,
   activePaintGroupId,
-  onSetPaintMode,
   selectedRegion,
   onSetSelectedRegion,
   replaceSourceTile,
@@ -1248,7 +1464,6 @@ function SelectionInspector({
   paintMode: MapPaintMode;
   paintVariation: MapPaintVariation;
   activePaintGroupId: string;
-  onSetPaintMode: (mode: MapPaintMode) => void;
   selectedRegion: MapRegionSelection | null;
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
   replaceSourceTile: number | null;
@@ -1409,7 +1624,6 @@ function SelectionInspector({
           paintMode={paintMode}
           paintVariation={paintVariation}
           activePaintGroupId={activePaintGroupId}
-          onSetPaintMode={onSetPaintMode}
           selectedRegion={selectedRegion}
           onSetSelectedRegion={onSetSelectedRegion}
           replaceSourceTile={replaceSourceTile}

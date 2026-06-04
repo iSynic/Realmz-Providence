@@ -1,4 +1,4 @@
-import { KeyboardEvent, PointerEvent, RefObject, useEffect, useRef, useState } from "react";
+import { KeyboardEvent, MouseEvent, PointerEvent, RefObject, useEffect, useRef, useState } from "react";
 import {
   EditorTool,
   MapEntity,
@@ -76,10 +76,9 @@ export function useMapInteractions({
 }) {
   const panRef = useRef<{ x: number; y: number; scrollLeft: number; scrollTop: number } | null>(null);
   const selectDragRef = useRef<{
+    start: { x: number; y: number };
     x: number;
     y: number;
-    scrollLeft: number;
-    scrollTop: number;
     moved: boolean;
   } | null>(null);
   const paintActiveRef = useRef(false);
@@ -87,11 +86,6 @@ export function useMapInteractions({
     start: { x: number; y: number };
     rectIndex: number | null;
     moved: boolean;
-  } | null>(null);
-  const regionDragRef = useRef<{
-    start: { x: number; y: number };
-    moved: boolean;
-    mode: MapPaintMode;
   } | null>(null);
   const strokeCellsRef = useRef<Set<string>>(new Set());
   const paintSequenceRef = useRef(0);
@@ -181,6 +175,21 @@ export function useMapInteractions({
     setPaintCursor({ ...cell, tile: brushTileForCell(cell) });
   }
 
+  function startPan(event: PointerEvent<HTMLCanvasElement>) {
+    const wrap = wrapRef.current;
+    if (!wrap) return false;
+    panRef.current = {
+      x: event.clientX,
+      y: event.clientY,
+      scrollLeft: wrap.scrollLeft,
+      scrollTop: wrap.scrollTop
+    };
+    setHoverTarget(null);
+    setPaintCursor(null);
+    event.currentTarget.setPointerCapture(event.pointerId);
+    return true;
+  }
+
   function applyToolAt(event: PointerEvent<HTMLCanvasElement>) {
     const cell = cellFromEvent(event);
     setHover(cell);
@@ -258,32 +267,26 @@ export function useMapInteractions({
     overlayHandlers: {
       onPointerDown(event: PointerEvent<HTMLCanvasElement>) {
         event.currentTarget.focus();
+        if (event.button === 2) {
+          event.preventDefault();
+          startPan(event);
+          return;
+        }
         if (activeTool === "select") {
           const cell = cellFromEvent(event);
-          const wrap = wrapRef.current;
           setHover(cell);
           setHoverTarget(targetAt(cell));
           selectDragRef.current = {
+            start: cell,
             x: event.clientX,
             y: event.clientY,
-            scrollLeft: wrap?.scrollLeft ?? 0,
-            scrollTop: wrap?.scrollTop ?? 0,
             moved: false
           };
           event.currentTarget.setPointerCapture(event.pointerId);
           return;
         }
         if (activeTool === "pan") {
-          const wrap = wrapRef.current;
-          if (wrap) {
-            panRef.current = {
-              x: event.clientX,
-              y: event.clientY,
-              scrollLeft: wrap.scrollLeft,
-              scrollTop: wrap.scrollTop
-            };
-            event.currentTarget.setPointerCapture(event.pointerId);
-          }
+          startPan(event);
           return;
         }
         if (activeTool === "random") {
@@ -294,15 +297,6 @@ export function useMapInteractions({
           setHover(cell);
           setHoverTarget(hit);
           selectTargetCell(hit.cell);
-          event.currentTarget.setPointerCapture(event.pointerId);
-          return;
-        }
-        if (activeTool === "paint" && paintMode !== "brush") {
-          const cell = cellFromEvent(event);
-          regionDragRef.current = { start: cell, moved: false, mode: paintMode };
-          setHover(cell);
-          setHoverTarget({ kind: "cell", cell: { ...cell, tile: tileValueAt(map, cell.x, cell.y) } });
-          setRegionPreview(normalizeRegionBounds(cell, cell));
           event.currentTarget.setPointerCapture(event.pointerId);
           return;
         }
@@ -324,13 +318,10 @@ export function useMapInteractions({
           const dx = event.clientX - selectDragRef.current.x;
           const dy = event.clientY - selectDragRef.current.y;
           if (selectDragRef.current.moved || Math.hypot(dx, dy) > 4) {
-            const wrap = wrapRef.current;
+            if (!selectDragRef.current.moved) onSelectCell(null);
             selectDragRef.current.moved = true;
             setHoverTarget(null);
-            if (wrap) {
-              wrap.scrollLeft = selectDragRef.current.scrollLeft - dx;
-              wrap.scrollTop = selectDragRef.current.scrollTop - dy;
-            }
+            setRegionPreview(normalizeRegionBounds(selectDragRef.current.start, cell));
             return;
           }
           setHoverTarget(targetAt(cell));
@@ -354,16 +345,6 @@ export function useMapInteractions({
           }
           return;
         }
-        if (regionDragRef.current) {
-          const cell = cellFromEvent(event);
-          const drag = regionDragRef.current;
-          const moved = drag.moved || cell.x !== drag.start.x || cell.y !== drag.start.y;
-          drag.moved = moved;
-          setHover(cell);
-          setHoverTarget({ kind: "cell", cell: { ...cell, tile: tileValueAt(map, cell.x, cell.y) } });
-          setRegionPreview(normalizeRegionBounds(drag.start, cell));
-          return;
-        }
         const cell = cellFromEvent(event);
         if (paintActiveRef.current) {
           setHover(cell);
@@ -377,16 +358,31 @@ export function useMapInteractions({
         updatePaintCursor(cell);
       },
       onPointerUp(event: PointerEvent<HTMLCanvasElement>) {
-        if (selectDragRef.current) {
-          const didDrag = selectDragRef.current.moved;
-          selectDragRef.current = null;
-          if (!didDrag) applyToolAt(event);
+        if (panRef.current) {
+          panRef.current = null;
           if (event.currentTarget.hasPointerCapture(event.pointerId)) {
             event.currentTarget.releasePointerCapture(event.pointerId);
           }
           return;
         }
-        panRef.current = null;
+        if (selectDragRef.current) {
+          const didDrag = selectDragRef.current.moved;
+          const start = selectDragRef.current.start;
+          selectDragRef.current = null;
+          if (!didDrag) {
+            applyToolAt(event);
+          } else {
+            const end = cellFromEvent(event);
+            setRegionPreview(null);
+            onSetSelectedRegion(normalizeRegionBounds(start, end));
+            onSelectCell(null);
+            setHoverTarget(null);
+          }
+          if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+            event.currentTarget.releasePointerCapture(event.pointerId);
+          }
+          return;
+        }
         if (randomDragRef.current) {
           const drag = randomDragRef.current;
           randomDragRef.current = null;
@@ -430,20 +426,6 @@ export function useMapInteractions({
           }
           return;
         }
-        if (regionDragRef.current) {
-          const drag = regionDragRef.current;
-          regionDragRef.current = null;
-          const end = cellFromEvent(event);
-          const region = normalizeRegionBounds(drag.start, end);
-          setRegionPreview(null);
-          onSetSelectedRegion(region);
-          onSelectCell(null);
-          setHoverTarget(null);
-          if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-            event.currentTarget.releasePointerCapture(event.pointerId);
-          }
-          return;
-        }
         finishPaintStroke(true);
         if (event.currentTarget.hasPointerCapture(event.pointerId)) {
           event.currentTarget.releasePointerCapture(event.pointerId);
@@ -453,7 +435,6 @@ export function useMapInteractions({
         panRef.current = null;
         selectDragRef.current = null;
         randomDragRef.current = null;
-        regionDragRef.current = null;
         setRegionPreview(null);
         setHoverTarget(null);
         setPaintCursor(null);
@@ -463,14 +444,17 @@ export function useMapInteractions({
         }
       },
       onPointerLeave() {
-        if (paintActiveRef.current || panRef.current || selectDragRef.current || randomDragRef.current || regionDragRef.current) return;
+        if (paintActiveRef.current || panRef.current || selectDragRef.current || randomDragRef.current) return;
         setHover(null);
         setHoverTarget(null);
         setPaintCursor(null);
       },
+      onContextMenu(event: MouseEvent<HTMLCanvasElement>) {
+        event.preventDefault();
+      },
       onKeyDown(event: KeyboardEvent<HTMLCanvasElement>) {
         if (event.key !== "Escape") return;
-        regionDragRef.current = null;
+        selectDragRef.current = null;
         setRegionPreview(null);
         setPaintCursor(null);
         finishPaintStroke(false);
