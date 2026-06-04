@@ -61,9 +61,9 @@ const RANGES: SemanticRange[] = [
   { first: 150, last: 154, label: "Tree / forest detail", category: "forest", confidence: "likely" },
   { first: 155, last: 158, label: "Open land / clear terrain", category: "open", confidence: "known" },
   { first: 159, last: 167, label: "Rocks / rubble / terrain prop", category: "rocks", confidence: "known" },
-  { first: 170, last: 179, label: "Desert / ruin / hazard detail", category: "hazard", confidence: "uncertain" },
-  { first: 180, last: 183, label: "Brown terrain / rough ground", category: "terrain-prop", confidence: "uncertain" },
-  { first: 184, last: 185, label: "Road / bridge segment", category: "road", confidence: "likely" },
+  { first: 170, last: 179, label: "Large structure / landmark piece", category: "buildings", confidence: "likely" },
+  { first: 180, last: 183, label: "Large structure / terrain piece", category: "buildings", confidence: "uncertain" },
+  { first: 184, last: 185, label: "Structure / bridge segment", category: "buildings", confidence: "likely" },
   { first: 186, last: 186, label: "Small building / landmark", category: "buildings", confidence: "likely" },
   { first: 187, last: 189, label: "Graves / graveyard", category: "graves", confidence: "known" },
   { first: 190, last: 200, label: "House / settlement building", category: "buildings", confidence: "known" }

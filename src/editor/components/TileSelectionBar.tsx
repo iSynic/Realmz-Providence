@@ -3,7 +3,7 @@ import { EditorState } from "../store";
 import { IconEntry, LibraryAsset, MapEntity, MapPaintVariation, Project, ProjectCommand, TileAttributeFlag, TilePaletteCategory, TilesetAsset } from "../types";
 import { classifyTileValue, isDivinityVisualPathTile, standardTileValues, tileAttributeGroup } from "../map/tileMetadata";
 import { LANDLOOK_TILE_GROUPS, landlookGroupById, landlookGroupRangeLabel, landlookGroupTiles } from "../map/paintGroups";
-import { PAINTABLE_REFERENCE_ACTOR_ICON_VALUES, PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES } from "../map/renderValues";
+import { PAINTABLE_REFERENCE_ACTOR_ICON_VALUES, PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES, tileIconCandidates } from "../map/renderValues";
 import { isActorOrCreatureIconId, isMapPlaceableLibraryAsset } from "../resourceResolver";
 import { tileColor } from "./TileSprite";
 import { TileSwatch } from "./TileSwatch";
@@ -40,7 +40,7 @@ type PaintPalettePanelProps = {
   variant?: "bar" | "sidebar";
 };
 
-type SpecialIconFilter = "placeable" | "actors" | "used" | "all";
+type SpecialIconFilter = "structures" | "placeable" | "actors" | "used" | "all";
 
 export function TileSelectionBar(props: Omit<PaintPalettePanelProps, "variant">) {
   return <PaintPalettePanel {...props} variant="bar" />;
@@ -94,8 +94,10 @@ export function PaintPalettePanel({
     return candidates.filter((tile) => tileAttributeGroup(classifyTileValue(tile, tileset, tileAttributes, icons).attributes, tile, tileset).includes(attributeFilter));
   }, [attributeFilter, icons, mode, standardTiles, tileAttributes, tileset, usedTiles]);
   const groupedStandardTiles = useMemo(() => {
-    return landlookGroupTiles(tileset, activePaintGroupId);
-  }, [activePaintGroupId, tileset]);
+    const tiles = landlookGroupTiles(tileset, activePaintGroupId);
+    if (activePaintGroupId !== "structures") return tiles;
+    return [...new Set([...tiles, ...specialStructureTilesForPalette(project ?? null, libraryAssets, icons)])].sort((a, b) => a - b);
+  }, [activePaintGroupId, icons, libraryAssets, project, tileset]);
   const paletteTiles = useMemo(() => {
     if (mode === "used") return usedTiles;
     if (mode === "raw") return rawTiles;
@@ -608,15 +610,23 @@ const ATTRIBUTE_FILTERS: Array<{ id: TileAttributeFlag | "all"; label: string; h
 
 const SPECIAL_ICON_FILTERS: Array<{ id: SpecialIconFilter; label: string; hint: string }> = [
   { id: "all", label: "All", hint: "All currently exposed special/icon paint values, including special land and actor-style cicn art." },
+  { id: "structures", label: "Structures", hint: "Large Realmz building, landmark, and town-piece special land icons." },
   { id: "actors", label: "NPCs / Creatures", hint: "Broader cicn actor, corpse, monster, and creature art exposed as negative map-field aliases for special/icon painting." },
   { id: "placeable", label: "Special Land", hint: "Project/library special land tiles and negative icon values commonly authored as map field values." },
-  { id: "used", label: "Used Here", hint: "Negative icon values already used in the current map." },
+  { id: "used", label: "Used Here", hint: "Special/icon-backed values already used in the current map." },
 ];
 
 const PAINT_VARIATIONS: Array<{ id: MapPaintVariation; label: string; hint: string }> = [
   { id: "single", label: "Single Tile", hint: "Paint the selected tile, matching the current behavior." },
   { id: "cycle-group", label: "Cycle Group", hint: "Advance through the active tile group once for each newly painted cell." },
   { id: "random-group", label: "Random Group", hint: "Pick a stable pseudo-random tile from the active tile group for each newly painted cell." }
+];
+
+const SPECIAL_STRUCTURE_TILE_VALUES = [
+  ...tileValueRange(-99, -90),
+  -83,
+  ...tileValueRange(-79, -50),
+  ...tileValueRange(-47, -25)
 ];
 
 function paintVariationLabel(variation: MapPaintVariation, groupLabel: string) {
@@ -635,6 +645,7 @@ function specialTilesForPalette(
   const placeable = new Set<number>();
   const actors = new Set<number>();
   const used = new Set<number>();
+  const structures = new Set<number>(specialStructureTilesForPalette(project, libraryAssets, icons));
   for (const asset of project?.assets ?? []) {
     if (asset.kind === "special-land-tile") placeable.add(asset.resourceId);
   }
@@ -656,17 +667,49 @@ function specialTilesForPalette(
     actors.add(tile);
   }
   for (const tile of map?.tiles ?? []) {
-    if (tile < 0) used.add(tile);
+    if (tile < 0 || tileIconCandidates(tile).length > 0) used.add(tile);
   }
   for (const id of Object.keys(icons ?? {})) {
     const tile = Number(id);
     if (Number.isFinite(tile) && tile < 0) placeable.add(tile);
   }
   const values = new Set<number>();
+  if (filter === "structures" || filter === "all") for (const value of structures) values.add(value);
   if (filter === "placeable" || filter === "all") for (const value of placeable) values.add(value);
   if (filter === "actors" || filter === "all") for (const value of actors) values.add(value);
   if (filter === "used" || filter === "all") for (const value of used) values.add(value);
   return [...values].sort((a, b) => a - b);
+}
+
+function specialStructureTilesForPalette(
+  project: Project | null,
+  libraryAssets: LibraryAsset[],
+  icons?: Record<number, IconEntry>
+) {
+  const values = new Set<number>(SPECIAL_STRUCTURE_TILE_VALUES);
+  for (const asset of project?.assets ?? []) {
+    if (asset.kind !== "special-land-tile" || asset.resourceType !== "cicn") continue;
+    if (isSpecialStructureTileValue(asset.resourceId)) values.add(asset.resourceId);
+  }
+  for (const asset of project?.assetCatalog.icons ?? []) {
+    if (asset.resourceType !== "cicn") continue;
+    const value = asset.resourceId < 0 ? asset.resourceId : -asset.resourceId;
+    if (isSpecialStructureTileValue(value)) values.add(value);
+  }
+  for (const asset of libraryAssets) {
+    if (!isPaintableSpecialLandAsset(asset) || asset.resourceId == null) continue;
+    const value = asset.resourceId < 0 ? asset.resourceId : -asset.resourceId;
+    if (isSpecialStructureTileValue(value)) values.add(value);
+  }
+  for (const id of Object.keys(icons ?? {})) {
+    const value = Number(id);
+    if (Number.isFinite(value) && isSpecialStructureTileValue(value)) values.add(value);
+  }
+  return [...values].sort((a, b) => a - b);
+}
+
+function isSpecialStructureTileValue(value: number) {
+  return SPECIAL_STRUCTURE_TILE_VALUES.includes(value);
 }
 
 function isPaintableSpecialLandAsset(asset: LibraryAsset) {
@@ -730,4 +773,10 @@ function attributeTableLabel(sourceKind: string | undefined, source: string) {
   if (sourceKind === "mapstats") return "the landlook table";
   if (sourceKind === "data-solids") return "the special tile table";
   return source || "decoded tile data";
+}
+
+function tileValueRange(start: number, end: number) {
+  const values: number[] = [];
+  for (let value = start; value <= end; value += 1) values.push(value);
+  return values;
 }

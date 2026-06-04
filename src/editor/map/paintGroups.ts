@@ -19,6 +19,7 @@ export const LANDLOOK_TILE_GROUPS: LandlookTileGroup[] = [
   { id: "boats", label: "Boats", ranges: [[147, 147]], hint: "Watercraft tile 147." },
   { id: "open", label: "Open", ranges: [[155, 158]], hint: "Divinity open range tiles 155-158." },
   { id: "rocks", label: "Rocks / Rubble", ranges: [[159, 167]], hint: "Divinity rubble range and adjacent terrain-object tiles." },
+  { id: "structures", label: "Structures", ranges: [[113, 114], [170, 186], [190, 200]], hint: "Gates, large building pieces, landmarks, and settlement building tiles." },
   { id: "graves", label: "Graves", ranges: [[187, 189]], hint: "Grave and graveyard tiles." },
   { id: "houses", label: "Houses", ranges: [[190, 200]], hint: "Divinity house range tiles 190-200." }
 ];

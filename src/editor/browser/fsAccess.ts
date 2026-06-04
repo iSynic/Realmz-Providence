@@ -79,15 +79,15 @@ export async function readScenarioDirectory(handle: BrowserDirectoryHandle, trac
   const tracked = new Set(trackedFiles);
   const markerName = handle.name;
 
-  for await (const [name, entry] of handle.entries()) {
-    if (entry.kind !== "file") continue;
-    const file = await entry.getFile();
+  for await (const candidate of walkScenarioDirectory(handle)) {
+    const { name, relativePath, handle: fileHandle } = candidate;
+    const file = await fileHandle.getFile();
     const role = roleForFile(name, tracked);
     const shouldRead = shouldReadScenarioFile(name, role, markerName, file.size);
     const bytes = shouldRead ? new Uint8Array(await file.arrayBuffer()) : null;
     sourceFiles.push({
       name,
-      relativePath: name,
+      relativePath,
       bytes: file.size,
       sha256: bytes ? await sha256Hex(bytes) : "browser-preview-unread",
       role,
@@ -100,6 +100,20 @@ export async function readScenarioDirectory(handle: BrowserDirectoryHandle, trac
 
   sourceFiles.sort((a, b) => a.name.localeCompare(b.name));
   return { files, sourceFiles };
+}
+
+async function* walkScenarioDirectory(
+  handle: BrowserDirectoryHandle,
+  prefix = ""
+): AsyncIterableIterator<{ name: string; relativePath: string; handle: BrowserFileHandle }> {
+  for await (const [name, entry] of handle.entries()) {
+    const relativePath = prefix ? `${prefix}/${name}` : name;
+    if (entry.kind === "file") {
+      yield { name, relativePath, handle: entry };
+    } else {
+      yield* walkScenarioDirectory(entry, relativePath);
+    }
+  }
 }
 
 export async function readProjectJson(source: BrowserScenarioSource) {

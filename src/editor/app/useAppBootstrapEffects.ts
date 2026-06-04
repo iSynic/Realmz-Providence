@@ -244,19 +244,32 @@ export function useAppBootstrapEffects({
       const projectCatalogIconAssets = (state.project.assetCatalog.icons ?? []).filter((asset) => asset.resourceType === "cicn");
       const libraryIconAssets = (state.libraryCatalog?.assets ?? []).filter(isPaintableSpecialLandLibraryAsset);
       const realmzActorIconAssets = (state.libraryCatalog?.assets ?? []).filter((asset) => isRealmzActorOrCreatureIconLibraryAsset(asset));
-      const rawIds = [
-        ...new Set([
-          ...state.project.maps.flatMap((map) => referencedMapIconIds(map.tiles)),
-          ...(state.project.monsters ?? []).flatMap((monster) => iconCandidateIdsForResource(monster.iconId)),
-          ...(state.project.assetCatalog.icons ?? [])
-            .filter((asset) => asset.resourceType === "cicn")
-            .flatMap((asset) => iconCandidateIdsForResource(asset.resourceId)),
-          ...projectStampAssets.flatMap((asset) => tileIconCandidates(asset.resourceId)),
-          ...realmzActorIconAssets.flatMap((asset) => asset.resourceId == null ? [] : iconCandidateIdsForResource(asset.resourceId)),
-          ...libraryIconAssets.flatMap((asset) => asset.resourceId == null ? [] : iconCandidateIdsForResource(asset.resourceId)),
-          ...(!desktopRuntime ? PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES.flatMap(tileIconCandidates) : [])
-        ])
-      ].sort((a, b) => a - b);
+      const mapIconIds = state.project.maps.flatMap((map) => referencedMapIconIds(map.tiles));
+      const projectIconIds = [
+        ...(state.project.assetCatalog.icons ?? [])
+          .filter((asset) => asset.resourceType === "cicn")
+          .flatMap((asset) => iconCandidateIdsForResource(asset.resourceId)),
+        ...projectStampAssets.flatMap((asset) => tileIconCandidates(asset.resourceId))
+      ];
+      const specialReferenceIconIds = !desktopRuntime ? PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES.flatMap(tileIconCandidates) : [];
+      const specialLibraryIconIds = libraryIconAssets
+        .filter((asset) => asset.resourceId != null && !isActorOrCreatureIconId(Math.abs(asset.resourceId)))
+        .flatMap((asset) => asset.resourceId == null ? [] : iconCandidateIdsForResource(asset.resourceId));
+      const monsterIconIds = (state.project.monsters ?? []).flatMap((monster) => iconCandidateIdsForResource(monster.iconId));
+      const actorIconIds = [
+        ...realmzActorIconAssets.flatMap((asset) => asset.resourceId == null ? [] : iconCandidateIdsForResource(asset.resourceId)),
+        ...libraryIconAssets
+          .filter((asset) => asset.resourceId != null && isActorOrCreatureIconId(Math.abs(asset.resourceId)))
+          .flatMap((asset) => asset.resourceId == null ? [] : iconCandidateIdsForResource(asset.resourceId))
+      ];
+      const rawIds = uniqueIconIds([
+        ...mapIconIds,
+        ...projectIconIds,
+        ...specialReferenceIconIds,
+        ...specialLibraryIconIds,
+        ...monsterIconIds,
+        ...actorIconIds
+      ]);
       const ids = desktopRuntime ? rawIds : rawIds.slice(0, BROWSER_ICON_OVERLAY_PRELOAD_LIMIT);
       if (ids.length === 0) {
         dispatch({ type: "setIcons", entries: {}, status: "No icon overlays in maps" });
@@ -384,6 +397,17 @@ function iconCandidateIdsForResource(resourceId: number) {
     ...tileIconCandidates(-resourceId),
     resourceId > 200 ? resourceId : null
   ].filter((id): id is number => typeof id === "number"))];
+}
+
+function uniqueIconIds(ids: number[]) {
+  const seen = new Set<number>();
+  const out: number[] = [];
+  for (const id of ids) {
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  return out;
 }
 
 function isRealmzActorOrCreatureIconLibraryAsset(asset: { source?: string; resourceType?: string | null; resourceId?: number | null; type?: string; label?: string; relativePath?: string }) {
