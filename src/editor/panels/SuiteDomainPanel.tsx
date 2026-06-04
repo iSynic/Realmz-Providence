@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ENTITY_TYPE_LABELS } from "../constants";
 import { loadBrowserBundledLibraryAssetPreview } from "../browser/library";
+import { TutorialTip } from "../components/TutorialTip";
 import { useIconPreviewUrl, type PreviewRuntimeContext } from "../previewUrls";
 import { isDraftEntity, LibraryDraftSpec } from "../libraryDrafts";
 import { EditorTab, LibraryAsset, LibraryCatalog, LibraryEntity, ManagedAssetKind, Project, ProjectCommand, RealmzTargetRecordKind, ScenarioItemRecord, SemanticEntity, SelectedEntity } from "../types";
@@ -131,6 +132,23 @@ type DomainEditor = {
 
 type EconomySection = "treasure" | "items" | "shops";
 
+const ECONOMY_HEADER_HELP = "Economy covers scenario Treasure records, scenario Shop records, item references, custom scenario items, and bundled read-only item/icon libraries.";
+const ENCOUNTERS_HEADER_HELP = "Encounters covers source Data ED, Data ED2, Data TD2, and Data TD3 records: simple choices, complex branch tests, rogue/thief scenes, and timed macro triggers.";
+const ECONOMY_SECTION_HELP: Record<EconomySection, string> = {
+  treasure: "Data TD reward records with victory points, money, gems, jewelry, and twenty item slots.",
+  items: "Shared Realmz item families plus scenario Data NI items. Built-in items are reference/copy sources; custom scenario items live in IDs 900-999.",
+  shops: "Data SD source shop records with item IDs, quantities, and inflation. Saved-game/runtime stock can mutate separately."
+};
+const ITEM_EDITOR_HELP = "Browse item IDs by Divinity family, inspect built-in/library data, and copy built-in items into scenario custom slots when you need editable item definitions.";
+const TREASURE_EDITOR_HELP = "Build source-backed Data TD treasure rewards. Fixed rewards and item slots are exported as scenario data and can be targeted from scripts and encounters.";
+const TREASURE_ITEMS_HELP = "Treasure records have twenty ordered item slots. Zero means empty; use the item browser to fill the next open slot or edit a raw ID directly to preserve imported data.";
+const SHOP_RECORD_HELP = "Shop records are source Data SD stock definitions. Realmz may copy them into runtime cache stock during play, so source stock and saved-game stock are separate concepts.";
+const CUSTOM_ITEM_HELP = "Custom scenario items use item IDs 900-999. Built-in items stay reference-only unless copied into one of these scenario-backed slots.";
+const SIMPLE_ENCOUNTER_HELP = "Simple Encounters are source Data ED records with a prompt, four choice text buffers, back-out behavior, attempt fields, and four result action rows.";
+const COMPLEX_ENCOUNTER_HELP = "Complex Encounters are source Data ED2 records with spell, item, thief, typed-word, and action-picker branch tests that feed four result action rows.";
+const THIEF_ENCOUNTER_HELP = "Rogue Encounters are source Data TD2 records for lock, trap, search, and thief-skill scenes. Runtime can mutate trap/action state after play begins.";
+const TIMED_ENCOUNTER_HELP = "Timed Encounters are source Data TD3 records that execute a macro/door when schedule, chance, item, quest, and location gates match.";
+
 export function SuiteDomainPanel({
   tab,
   activeEditor = "domain",
@@ -214,6 +232,8 @@ export function SuiteDomainPanel({
     overviewTargetRecordType && targetRecordTypes.includes(overviewTargetRecordType) ? [overviewTargetRecordType] :
     targetRecordTypes.slice(0, 1);
   const itemWorkbenchActive = economyActive && economySection === "items";
+  const headerHelp = domainHeaderHelp(tab);
+  const headerTitle = headerEditor ? headerEditor.label : config.title;
   const suppressDetailPanel = tab === "encounters" || economyActive;
   const showTargetSwitcher = targetRecordTypes.length > 1 && (tab === "encounters" || (!economyActive && !focusedTargetEditor));
   const showOverviewCards = tab !== "records" && tab !== "linter" && !focusedTargetEditor && !itemWorkbenchActive && targetRecordTypes.length === 0;
@@ -221,7 +241,15 @@ export function SuiteDomainPanel({
     <section className={`domain-workbench${suppressDetailPanel ? " domain-workbench-no-detail" : ""}`}>
       <header className="domain-header">
         <div>
-          <h1>{headerEditor ? headerEditor.label : config.title}</h1>
+          <h1>
+            {headerHelp ? (
+              <TutorialTip title={headerTitle} body={headerHelp} side="right">
+                <span>{headerTitle}</span>
+              </TutorialTip>
+            ) : (
+              headerTitle
+            )}
+          </h1>
           <p>{headerEditor ? editorSubtitle(headerEditor) : config.subtitle}</p>
         </div>
         <small>{project ? project.scenario.name : "Library workbench"}</small>
@@ -351,6 +379,12 @@ function editorSubtitle(editor: DomainEditor) {
   return `Inspect ${editor.label.toLowerCase()} records, resources, links, and diagnostics.`;
 }
 
+function domainHeaderHelp(tab: EditorTab) {
+  if (tab === "economy") return ECONOMY_HEADER_HELP;
+  if (tab === "encounters") return ENCOUNTERS_HEADER_HELP;
+  return null;
+}
+
 type DomainListEntry = DirectRecordRow | LibraryEntity;
 
 function matchingEntries(editor: DomainEditor, project: Project | null, libraryEntities: LibraryEntity[]) {
@@ -465,6 +499,7 @@ function DomainTargetSwitcher({
       {recordTypes.map((recordType) => {
         const selected = selectedRecordType === recordType;
         const count = targetRecords(project, recordType).length;
+        const help = targetRecordHelp(recordType);
         return (
           <button
             key={recordType}
@@ -474,7 +509,13 @@ function DomainTargetSwitcher({
             className={selected ? "active" : ""}
             onClick={() => onSelectRecordType(recordType)}
           >
-            <span>{targetRecordLabel(recordType)}</span>
+            {help ? (
+              <TutorialTip title={targetRecordLabel(recordType)} body={help} side="right">
+                <span>{targetRecordLabel(recordType)}</span>
+              </TutorialTip>
+            ) : (
+              <span>{targetRecordLabel(recordType)}</span>
+            )}
             <b>{count.toLocaleString()}</b>
           </button>
         );
@@ -493,10 +534,10 @@ function EconomySectionSwitcher({
   onSelectSection: (section: EconomySection) => void;
 }) {
   const itemCount = useMemo(() => economyItemReferenceCount(project), [project]);
-  const sections: Array<{ id: EconomySection; label: string; count: number }> = [
-    { id: "treasure", label: "Treasure", count: project.treasures.length },
-    { id: "items", label: "Items", count: itemCount },
-    { id: "shops", label: "Shops", count: project.shops.length }
+  const sections: Array<{ id: EconomySection; label: string; count: number; help: string }> = [
+    { id: "treasure", label: "Treasure", count: project.treasures.length, help: ECONOMY_SECTION_HELP.treasure },
+    { id: "items", label: "Items", count: itemCount, help: ECONOMY_SECTION_HELP.items },
+    { id: "shops", label: "Shops", count: project.shops.length, help: ECONOMY_SECTION_HELP.shops }
   ];
   return (
     <div className="domain-target-switcher economy-section-switcher" role="tablist" aria-label="Economy sections">
@@ -511,7 +552,9 @@ function EconomySectionSwitcher({
             className={selected ? "active" : ""}
             onClick={() => onSelectSection(section.id)}
           >
-            <span>{section.label}</span>
+            <TutorialTip title={section.label} body={section.help} side="right">
+              <span>{section.label}</span>
+            </TutorialTip>
             <b>{section.count.toLocaleString()}</b>
           </button>
         );
@@ -567,7 +610,11 @@ function ItemCatalogWorkbench({
     <article className="item-workbench">
       <header className="item-workbench-header">
         <div>
-          <h2>Item Editor</h2>
+          <h2>
+            <TutorialTip title="Item Editor" body={ITEM_EDITOR_HELP} side="right">
+              <span>Item Editor</span>
+            </TutorialTip>
+          </h2>
           <p>Browse Realmz items by Divinity category, including scenario special items loaded from this scenario's item table.</p>
         </div>
         <strong>{options.length.toLocaleString()} item reference{options.length === 1 ? "" : "s"}</strong>
@@ -753,7 +800,7 @@ function ItemDetailPanel({
         <ItemFact label="Cursed As" value={numberText(summary, "cursedItemId")} />
       </div>
       <div className="item-detail-columns">
-        <ItemFieldGroup title="Equipping">
+        <ItemFieldGroup title="Equipping" help="Stats and equipment-facing fields used by Realmz item wear/use behavior. Built-in values are reference data unless this is a custom scenario item.">
           <ItemFact label="Strength" value={numberText(summary, "st")} />
           <ItemFact label="Luck" value={numberText(summary, "lu")} />
           <ItemFact label="Movement" value={numberText(summary, "movement")} />
@@ -763,7 +810,7 @@ function ItemDetailPanel({
           <ItemFact label="Hands" value={numberText(summary, "hands")} />
           <ItemFact label="Weight" value={numberText(summary, "weight")} />
         </ItemFieldGroup>
-        <ItemFieldGroup title="Damage">
+        <ItemFieldGroup title="Damage" help="Damage and resistance modifiers used by weapon and item behavior. Values come from shared Data ID or scenario Data NI depending on the item family.">
           <ItemFact label="Base Damage" value={numberText(summary, "damage")} />
           <ItemFact label="Heat" value={numberText(summary, "heat")} />
           <ItemFact label="Cold" value={numberText(summary, "cold")} />
@@ -773,7 +820,7 @@ function ItemDetailPanel({
           <ItemFact label="Vs. Undead" value={numberText(summary, "vsUndead")} />
           <ItemFact label="Vs. Evil" value={numberText(summary, "vsEvil")} />
         </ItemFieldGroup>
-        <ItemFieldGroup title="Special Behavior">
+        <ItemFieldGroup title="Special Behavior" help="Special item fields drive unusual runtime behavior. Door-like items can call Extra Action Points, so changes here can affect Scripts.">
           <ItemFact label="Special 1" value={numberText(summary, "special1")} />
           <ItemFact label="Special 2" value={numberText(summary, "special2")} />
           <ItemFact label="Special 3" value={numberText(summary, "special3")} />
@@ -783,7 +830,7 @@ function ItemDetailPanel({
           <ItemFact label="Drop On Empty" value={numberText(summary, "dropOnEmpty")} />
           <ItemFact label="Magic Flag" value={numberText(summary, "magical")} />
         </ItemFieldGroup>
-        <ItemFieldGroup title="Use Restrictions">
+        <ItemFieldGroup title="Use Restrictions" help="Race, caste, category, and class-gating values used to decide who can use this item.">
           <ItemFact label="Item Category Bits" value={formatPair(summary.itemCat0, summary.itemCat1)} />
           <ItemFact label="Race Restrictions" value={numberText(summary, "raceRestrictions")} />
           <ItemFact label="Caste Restrictions" value={numberText(summary, "casteRestrictions")} />
@@ -820,10 +867,18 @@ function ItemDetailPanel({
   );
 }
 
-function ItemFieldGroup({ title, children }: { title: string; children: ReactNode }) {
+function ItemFieldGroup({ title, help, children }: { title: string; help?: string; children: ReactNode }) {
   return (
     <section className="item-field-group">
-      <header>{title}</header>
+      <header>
+        {help ? (
+          <TutorialTip title={title} body={help} side="right">
+            <span>{title}</span>
+          </TutorialTip>
+        ) : (
+          title
+        )}
+      </header>
       <div>{children}</div>
     </section>
   );
@@ -960,7 +1015,11 @@ function ScenarioItemEditor({
       <header>
         <div>
           <span>Custom Item {itemId}</span>
-          <h4>Scenario Item Fields</h4>
+          <h4>
+            <TutorialTip title="Scenario Item Fields" body={CUSTOM_ITEM_HELP} side="right">
+              <span>Scenario Item Fields</span>
+            </TutorialTip>
+          </h4>
         </div>
         <small>Scenario items</small>
       </header>
@@ -1261,7 +1320,11 @@ function TreasureWorkbench({
       <header className="treasure-workbench-header">
         <div>
           <span>Treasure Records</span>
-          <h2>Treasure Editor</h2>
+          <h2>
+            <TutorialTip title="Treasure Editor" body={TREASURE_EDITOR_HELP} side="right">
+              <span>Treasure Editor</span>
+            </TutorialTip>
+          </h2>
           <p>Build Realmz reward records from money, victory points, and up to 20 item slots.</p>
         </div>
         <button
@@ -1278,7 +1341,9 @@ function TreasureWorkbench({
       <div className="treasure-workbench-layout">
         <aside className="treasure-record-browser">
           <header>
-            <strong>{records.length.toLocaleString()} records</strong>
+            <TutorialTip title="Treasure Records" body={TREASURE_EDITOR_HELP} side="right">
+              <strong>{records.length.toLocaleString()} records</strong>
+            </TutorialTip>
             <small>{records.reduce((total, entry) => total + treasureFilledItems(project, entry.id), 0).toLocaleString()} item slots filled</small>
           </header>
           <ScrollArea className="treasure-record-list" aria-label="Treasure records">
@@ -1450,7 +1515,9 @@ function TreasureLootEditor({
       <div className="treasure-catalog-panel">
         <header>
           <div>
-            <strong>Add Item</strong>
+            <TutorialTip title="Add Treasure Item" body="Choose from the same Divinity item families used by the Item Editor. Clicking an item fills the next open treasure slot." side="right">
+              <strong>Add Item</strong>
+            </TutorialTip>
             <small>{openSlot >= 0 ? `Next open slot ${openSlot}` : "All 20 slots are filled"}</small>
           </div>
         </header>
@@ -1493,7 +1560,9 @@ function TreasureLootEditor({
       <div className="treasure-slot-panel">
         <header>
           <div>
-            <strong>Treasure Items</strong>
+            <TutorialTip title="Treasure Items" body={TREASURE_ITEMS_HELP} side="right">
+              <strong>Treasure Items</strong>
+            </TutorialTip>
             <small>{itemIds.filter(Boolean).length} of 20 slots filled</small>
           </div>
         </header>
@@ -1651,6 +1720,7 @@ function TargetRecordWorkbench({
   const selectedId = targetIdFromSelection(selectedEntity?.id ?? "", recordType) ?? records[0]?.id ?? 1;
   const opcode = opcodeForTargetRecord(recordType);
   const nextId = nextTargetRecordId(project, recordType);
+  const recordHelp = targetRecordHelp(recordType);
   const [editorReady, setEditorReady] = useState(false);
   useEffect(() => {
     setEditorReady(false);
@@ -1661,7 +1731,13 @@ function TargetRecordWorkbench({
     <article className="domain-target-workbench">
       <header>
         <div>
-          <span>{targetRecordLabel(recordType)} Records</span>
+          {recordHelp ? (
+            <TutorialTip title={`${targetRecordLabel(recordType)} Records`} body={recordHelp} side="right">
+              <span>{targetRecordLabel(recordType)} Records</span>
+            </TutorialTip>
+          ) : (
+            <span>{targetRecordLabel(recordType)} Records</span>
+          )}
           <small>{records.length.toLocaleString()} editable Realmz fixed-record entr{records.length === 1 ? "y" : "ies"}</small>
         </div>
         <button
@@ -1823,6 +1899,16 @@ function targetRecordLabel(recordType: RealmzTargetRecordKind) {
     questLabel: "Quest Label"
   };
   return labels[recordType];
+}
+
+function targetRecordHelp(recordType: RealmzTargetRecordKind) {
+  if (recordType === "shop") return SHOP_RECORD_HELP;
+  if (recordType === "treasure") return TREASURE_EDITOR_HELP;
+  if (recordType === "simpleEncounter") return SIMPLE_ENCOUNTER_HELP;
+  if (recordType === "complexEncounter") return COMPLEX_ENCOUNTER_HELP;
+  if (recordType === "thiefEncounter") return THIEF_ENCOUNTER_HELP;
+  if (recordType === "timedEncounter") return TIMED_ENCOUNTER_HELP;
+  return null;
 }
 
 function nextTargetRecordId(project: Project, recordType: RealmzTargetRecordKind) {

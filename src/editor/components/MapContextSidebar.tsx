@@ -934,7 +934,13 @@ function PaintInspector({
           <TileSwatch atlas={atlas} icons={state.iconEntries} tile={state.selectedTile} tileset={selectedTileset} />
         </div>
         <div>
-          <span>Selected Paint Tile</span>
+          <TutorialTip
+            title="Selected Paint Tile"
+            body="This is the raw Realmz map-field value the Paint tool will place. It may be a standard landlook tile, dungeon tile, negative special land icon, icon-backed value, or raw used value."
+            side="right"
+          >
+            <span>Selected Paint Tile</span>
+          </TutorialTip>
           <strong>{state.selectedTile}</strong>
           <small>{selectedMeaning.label}</small>
         </div>
@@ -980,7 +986,13 @@ function PaintInspector({
       )}
       <div className="paint-palette-shell">
         <div className="paint-palette-shell-header">
-          <span>Tile Palette</span>
+          <TutorialTip
+            title="Tile Palette"
+            body="Dock the palette in the Paint Inspector or float it over the map. Custom palettes are saved with the project; drag tiles from any tab into the reveal dock to collect them."
+            side="right"
+          >
+            <span>Tile Palette</span>
+          </TutorialTip>
           <div>
             {!paletteOpen && (
               <button className="btn btn-secondary btn-xs" type="button" onClick={() => onSetPaletteOpen(true)}>
@@ -1485,7 +1497,13 @@ function PaintModePanel({
   return (
     <div className="paint-mode-panel">
       <div className="paint-mode-header">
-        <span>Paint Subtool</span>
+        <TutorialTip
+          title="Paint Subtools"
+          body="Brush paints the selected value, Replace swaps a source tile, Eraser writes the map's clear tile, and Smart resolves a terrain mask into edge-aware terrain."
+          side="right"
+        >
+          <span>Paint Subtool</span>
+        </TutorialTip>
         <b>{paintModeLabel(paintMode)}</b>
       </div>
       <div className="paint-mode-grid">
@@ -1512,7 +1530,13 @@ function PaintModePanel({
       {paintMode === "smart" && (
         <div className="smart-brush-panel">
           <label className="map-number-field">
-            <span>Terrain Preset</span>
+            <TutorialTip
+              title="Terrain Preset"
+              body="Smart terrain currently supports curated standard landlook profiles for mountains, water, and forest. Draw the full intended shape, then apply the resolved preview."
+              side="right"
+            >
+              <span>Terrain Preset</span>
+            </TutorialTip>
             <select value={smartBrushPreset} onChange={(event) => onSetSmartBrushPreset(event.currentTarget.value as SmartBrushPreset)}>
               {SMART_BRUSH_PRESETS.map((preset) => (
                 <option key={preset.id} value={preset.id}>{preset.label}</option>
@@ -1524,7 +1548,7 @@ function PaintModePanel({
               ["Mask Cells", smartBrushMask.length],
               ["Will Change", smartBrushPlan.changedCount],
               ["Preserved", smartBrushPlan.skippedCount],
-              ["Profile", smartBrushPlan.profileConfidence === "pixel-ranked" ? "pixel ranked" : smartBrushPlan.profileConfidence === "curated-fallback" ? "curated fallback" : "unsupported"],
+              ["Profile", smartBrushPlan.profileConfidence === "corpus-ranked" ? "corpus ranked" : smartBrushPlan.profileConfidence === "pixel-ranked" ? "pixel ranked" : smartBrushPlan.profileConfidence === "curated-fallback" ? "curated fallback" : "unsupported"],
               ["Landlook", selectedTileset?.landlook ?? "none"]
             ]}
           />
@@ -1533,6 +1557,18 @@ function PaintModePanel({
             <p className="empty-copy compact">
               Preview preserves roads, buildings, icon-backed tiles, and unrelated terrain. Yellow outlined cells are preserved.
             </p>
+          )}
+          {smartBrushPlan.cells.length > 0 && (
+            <details className="context-debug-details">
+              <summary>Smart Debug</summary>
+              <div className="context-chip-row">
+                {smartBrushPlan.cells.slice(0, 6).map((cell) => (
+                  <span key={`${cell.x}:${cell.y}`} className="context-chip">
+                    {cell.x},{cell.y} m{cell.neighborMask ?? "-"} {cell.from}{"->"}{cell.to} {cell.source ?? "fallback"}{cell.samples != null ? ` ${cell.samples}` : ""}{cell.score != null ? ` ${cell.score.toFixed(2)}` : ""}
+                  </span>
+                ))}
+              </div>
+            </details>
           )}
           <div className="context-action-stack">
             <button className="btn btn-primary btn-xs context-action-button" type="button" disabled={smartBrushPlan.changedCount === 0} onClick={onApplySmartBrush}>
@@ -1551,7 +1587,13 @@ function PaintModePanel({
         <div className="paint-region-quick-actions">
           <span>{regionLabel(selectedRegion)} | {regionCellCount(selectedRegion).toLocaleString()} cells</span>
           <label className="paint-fill-chance">
-            <span>Chance To Fill</span>
+            <TutorialTip
+              title="Chance To Fill"
+              body="Use less than 100% to scatter the selected tile, random group, cycle group, or custom palette across a region. This is useful for flavor tiles such as rocks, trees, graves, and ruins."
+              side="right"
+            >
+              <span>Chance To Fill</span>
+            </TutorialTip>
             <b>{paintFillChance}%</b>
             <input
               type="range"

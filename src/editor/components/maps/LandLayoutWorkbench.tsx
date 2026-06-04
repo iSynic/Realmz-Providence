@@ -3,11 +3,36 @@ import { EditorState } from "../../store";
 import { IconEntry, MapEntity, Project, ProjectCommand, TilesetAsset } from "../../types";
 import { tileValueAt } from "../../map/geometry";
 import { InfoGrid } from "../InfoGrid";
+import { TutorialTip } from "../TutorialTip";
 import { drawTileSprite, tileColor } from "../TileSprite";
 
 export type LandLayoutCellSelection = { row: number; col: number } | null;
 const LAND_LAYOUT_ROWS = 8;
 const LAND_LAYOUT_COLS = 16;
+const LAND_LAYOUT_HELP =
+  "The Land Layout table is Realmz's outdoor edge-travel map. When the party exits a land level at an edge, Realmz looks up that level in this grid and moves to the neighboring filled cell.";
+const CREATE_LAYOUT_HELP =
+  "Create the scenario Layout table. Without it, outdoor maps can still exist, but Realmz will not automatically connect them by walking off map edges.";
+const CLEAR_LAYOUT_HELP =
+  "Clear every layout cell back to no edge travel. This is a broad structural edit because it removes automatic outdoor adjacency for the whole scenario.";
+const LAYOUT_DISPLAY_HELP =
+  "Preview mode draws miniature map thumbnails; Compact mode favors dense editing. Both modes edit the same 8 by 16 Realmz layout table.";
+const LAYOUT_NEIGHBORS_HELP =
+  "Neighbor Preview shows the north, south, east, and west cells around the selected layout slot. Those are the exits Realmz checks for edge travel.";
+const LAYOUT_GRID_HELP =
+  "Each cell stores a land level reference. Blank means no automatic edge travel, -1 means land level 0, and positive values refer to matching land level indices.";
+const LAYOUT_CELL_VALUE_HELP =
+  "Choose which outdoor land level occupies this layout cell. Realmz stores land level 0 as -1, so Providence keeps that legacy value visible.";
+const LAYOUT_DETAIL_HELP =
+  "Selected Cell explains the raw stored value, linked map, current map, missing-map warnings, and neighbor travel context for the active layout slot.";
+const PLACE_CURRENT_LAND_HELP =
+  "Write the currently selected land map into this layout cell. Use this when placing a newly authored land map into the outdoor world grid.";
+const CLEAR_CELL_HELP =
+  "Set this layout cell to blank/no edge travel. Adjacent maps will stop using this cell as an automatic outdoor transition.";
+const OPEN_LINKED_MAP_HELP =
+  "Open the land level referenced by this layout cell so you can paint or inspect the destination map.";
+const LAYOUT_LEGEND_HELP =
+  "Layout values are legacy Realmz references: dash means no edge travel, -1 means land level 0, and positive values match their land level index.";
 
 export function LandLayoutEditor({
   project,
@@ -74,28 +99,44 @@ export function LandLayoutEditor({
         <p className="empty-copy compact">
           This scenario has no Layout file yet. Realmz will not automatically move between outdoor levels when the party walks off a map edge.
         </p>
-        <button className="btn btn-primary btn-sm" type="button" onClick={() => onApplyCommand({ kind: "createLandLayout", label: "Create land layout" })}>
-          Create Layout Table
-        </button>
+        <TutorialTip title="Create Layout Table" body={CREATE_LAYOUT_HELP} side="below">
+          <button className="btn btn-primary btn-sm" type="button" onClick={() => onApplyCommand({ kind: "createLandLayout", label: "Create land layout" })}>
+            Create Layout Table
+          </button>
+        </TutorialTip>
       </div>
     );
   }
   return (
     <div className="land-layout-editor">
       <p className="empty-copy compact">
-        Arrange outdoor levels in the grid. Realmz matches the party's current outdoor level in this table, then uses the neighboring cell when the party walks off a map edge.
+        <TutorialTip title="Land Layout" body={LAND_LAYOUT_HELP} side="below">
+          <span>
+            Arrange outdoor levels in the grid. Realmz matches the party's current outdoor level in this table, then uses the neighboring cell when the party walks off a map edge.
+          </span>
+        </TutorialTip>
       </p>
       <div className="land-layout-toolbar">
-        <button className="btn btn-secondary btn-xs" type="button" onClick={() => onApplyCommand({ kind: "clearLandLayout", label: "Clear land layout" })}>
-          Clear Layout
-        </button>
+        <TutorialTip title="Layout Grid" body={LAYOUT_GRID_HELP} side="below">
+          <span className="map-help-anchor">Layout Grid</span>
+        </TutorialTip>
+        <TutorialTip title="Clear Layout" body={CLEAR_LAYOUT_HELP} side="below">
+          <button className="btn btn-secondary btn-xs" type="button" onClick={() => onApplyCommand({ kind: "clearLandLayout", label: "Clear land layout" })}>
+            Clear Layout
+          </button>
+        </TutorialTip>
+        <TutorialTip title="Layout Display Mode" body={LAYOUT_DISPLAY_HELP} side="below">
+          <span className="map-help-anchor">Display</span>
+        </TutorialTip>
         <div className="segmented-control compact" role="group" aria-label="Land layout display mode">
           <button className={previewMode === "preview" ? "active" : ""} type="button" onClick={() => setPreviewMode("preview")}>Preview</button>
           <button className={previewMode === "compact" ? "active" : ""} type="button" onClick={() => setPreviewMode("compact")}>Compact</button>
         </div>
-        <button className={`btn btn-secondary btn-xs${showNeighbors ? " active" : ""}`} type="button" onClick={() => setShowNeighbors(!showNeighbors)}>
-          {showNeighbors ? "Hide Neighbors" : "Show Neighbors"}
-        </button>
+        <TutorialTip title="Neighbor Preview" body={LAYOUT_NEIGHBORS_HELP} side="below">
+          <button className={`btn btn-secondary btn-xs${showNeighbors ? " active" : ""}`} type="button" onClick={() => setShowNeighbors(!showNeighbors)}>
+            {showNeighbors ? "Hide Neighbors" : "Show Neighbors"}
+          </button>
+        </TutorialTip>
         {selectedMap?.levelType === "land" && <span>Current: {selectedMap.name}</span>}
       </div>
       {stats.warnings.length > 0 && (
@@ -145,7 +186,9 @@ export function LandLayoutEditor({
         />
       </div>
       <div className="land-layout-legend">
-        <span><b>-</b> No edge travel</span>
+        <TutorialTip title="Layout Values" body={LAYOUT_LEGEND_HELP} side="below">
+          <span><b>-</b> No edge travel</span>
+        </TutorialTip>
         <span><b>-1</b> Land level 0</span>
         <span><b>1+</b> Matching land level</span>
       </div>
@@ -215,6 +258,7 @@ function LandLayoutGridCell({
         value={String(value)}
         onClick={(event) => event.stopPropagation()}
         onChange={(event) => onApplyCommand({ kind: "updateLandLayoutCell", label: "Update land layout", row, col, value: Number(event.currentTarget.value) })}
+        title={LAYOUT_CELL_VALUE_HELP}
       >
         <option value="0">-</option>
         {landMaps.map((map) => (
@@ -274,7 +318,9 @@ function LandLayoutDetailPanel({
   return (
     <aside className="land-layout-detail-panel">
       <div className="panel-header">
-        <span>Selected Cell</span>
+        <TutorialTip title="Selected Layout Cell" body={LAYOUT_DETAIL_HELP} side="below">
+          <span>Selected Cell</span>
+        </TutorialTip>
         <small>{detail.label}</small>
       </div>
       <div className="land-layout-detail-hero">
@@ -294,39 +340,47 @@ function LandLayoutDetailPanel({
         </div>
       )}
       <div className="context-action-stack compact">
-        <button
-          className="btn btn-primary btn-xs context-action-button"
-          type="button"
-          disabled={!selectedCell || currentLandValue == null}
-          onClick={() => {
-            if (!selectedCell || currentLandValue == null) return;
-            onApplyCommand({ kind: "updateLandLayoutCell", label: "Place current land in layout", row: selectedCell.row, col: selectedCell.col, value: currentLandValue });
-          }}
-        >
-          Place Current Land Here
-        </button>
-        <button
-          className="btn btn-secondary btn-xs context-action-button"
-          type="button"
-          disabled={!selectedCell || detail.value === 0}
-          onClick={() => {
-            if (!selectedCell) return;
-            onApplyCommand({ kind: "updateLandLayoutCell", label: "Clear land layout cell", row: selectedCell.row, col: selectedCell.col, value: 0 });
-          }}
-        >
-          Clear Cell
-        </button>
-        <button
-          className="btn btn-secondary btn-xs context-action-button"
-          type="button"
-          disabled={!detail.target}
-          onClick={() => detail.target && onSelectMap(detail.target.id)}
-        >
-          Open Linked Map
-        </button>
-        <button className="btn btn-secondary btn-xs context-action-button" type="button" onClick={() => onSetShowNeighbors(!showNeighbors)}>
-          {showNeighbors ? "Hide Neighbors" : "Show Neighbors"}
-        </button>
+        <TutorialTip title="Place Current Land" body={PLACE_CURRENT_LAND_HELP} side="left">
+          <button
+            className="btn btn-primary btn-xs context-action-button"
+            type="button"
+            disabled={!selectedCell || currentLandValue == null}
+            onClick={() => {
+              if (!selectedCell || currentLandValue == null) return;
+              onApplyCommand({ kind: "updateLandLayoutCell", label: "Place current land in layout", row: selectedCell.row, col: selectedCell.col, value: currentLandValue });
+            }}
+          >
+            Place Current Land Here
+          </button>
+        </TutorialTip>
+        <TutorialTip title="Clear Layout Cell" body={CLEAR_CELL_HELP} side="left">
+          <button
+            className="btn btn-secondary btn-xs context-action-button"
+            type="button"
+            disabled={!selectedCell || detail.value === 0}
+            onClick={() => {
+              if (!selectedCell) return;
+              onApplyCommand({ kind: "updateLandLayoutCell", label: "Clear land layout cell", row: selectedCell.row, col: selectedCell.col, value: 0 });
+            }}
+          >
+            Clear Cell
+          </button>
+        </TutorialTip>
+        <TutorialTip title="Open Linked Map" body={OPEN_LINKED_MAP_HELP} side="left">
+          <button
+            className="btn btn-secondary btn-xs context-action-button"
+            type="button"
+            disabled={!detail.target}
+            onClick={() => detail.target && onSelectMap(detail.target.id)}
+          >
+            Open Linked Map
+          </button>
+        </TutorialTip>
+        <TutorialTip title="Neighbor Preview" body={LAYOUT_NEIGHBORS_HELP} side="left">
+          <button className="btn btn-secondary btn-xs context-action-button" type="button" onClick={() => onSetShowNeighbors(!showNeighbors)}>
+            {showNeighbors ? "Hide Neighbors" : "Show Neighbors"}
+          </button>
+        </TutorialTip>
       </div>
       {showNeighbors && (
         <LandLayoutNeighborPreview
@@ -367,7 +421,9 @@ function LandLayoutNeighborPreview({
   return (
     <section className="land-layout-neighbor-panel">
       <div className="panel-header compact">
-        <span>Neighbor Preview</span>
+        <TutorialTip title="Neighbor Preview" body={LAYOUT_NEIGHBORS_HELP} side="below">
+          <span>Neighbor Preview</span>
+        </TutorialTip>
         <small>N / S / E / W</small>
       </div>
       <div className="land-layout-neighbor-grid">

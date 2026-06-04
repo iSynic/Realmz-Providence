@@ -3,6 +3,7 @@ import { Download, Gauge } from "lucide-react";
 import { BenchmarkReport, ExportReport, Project, ScenarioTarget } from "../types";
 import { InfoGrid } from "../components/InfoGrid";
 import { ScrollArea } from "../ui";
+import { TutorialTip } from "../components/TutorialTip";
 import {
   assetFallbacks,
   blockedSemanticObjects,
@@ -13,6 +14,17 @@ import {
   sourcePassThroughList,
   unresolvedLinks
 } from "../semanticGraph";
+
+const EXPORT_WORKBENCH_HELP = "Export writes a Realmz-compatible scenario folder from the current project and reports what was written, preserved, passed through, blocked, or warned.";
+const EXPORT_TARGET_HELP = "Choose the package shape to write. Portable Providence is useful for internal roundtrips; Mac Classic and Windows Realmz match the target runtime folder conventions.";
+const EXPORT_ACTION_HELP = "Export Scenario Folder runs the writer for the selected target. Run validation first, then inspect the export report for blocked assets, resource warnings, and target compatibility notes.";
+const BENCHMARK_HELP = "Benchmark Project measures large-scenario UI and validation scale so release candidates do not regress on dense maps, triggers, or EDCD rows.";
+const EXPORT_REPORT_HELP = "The export report is the release ledger for this session: output folder, target, source files, pass-through files, resource writes, preserved resources, blocked assets, and warnings.";
+const EXPORT_PLAN_HELP = "Export Plan previews the current project boundary before writing: writer-supported records, pass-through files, resource gaps, runtime caches, unresolved links, and blocked objects.";
+const RESOURCE_NOTES_HELP = "Resource Export Notes explain resource fork entries that were preserved, skipped, blocked, or written with caution. Review used resource warnings before release.";
+const TARGET_COMPAT_HELP = "Target Compatibility reports target-specific blockers, warnings, and notes for Mac Classic, Windows Realmz, or portable Providence exports.";
+const EXPORT_SOURCES_HELP = "Export sources show writer-supported source files and pass-through files. Writer-supported files are encoded from project data; pass-through files are copied from the source snapshot.";
+const PERFORMANCE_GATE_HELP = "Performance Gate is a lightweight release smoke for scale. Run it after importing or editing a large scenario to catch slow validation or canvas-size regressions.";
 
 export function ExportPanel({
   project,
@@ -33,44 +45,58 @@ export function ExportPanel({
     <div className="editor-full-panel export-workbench">
       <section className="tab-panel">
         <div className="panel-header">
-          <span>Realmz Folder Export</span>
+          <TutorialTip title="Realmz Folder Export" body={EXPORT_WORKBENCH_HELP} side="below">
+            <span>Realmz Folder Export</span>
+          </TutorialTip>
         </div>
         <div className="export-actions">
           <label className="field compact">
-            <span>Target</span>
+            <TutorialTip title="Export Target" body={EXPORT_TARGET_HELP} side="below">
+              <span>Target</span>
+            </TutorialTip>
             <select value={target} onChange={(event) => setTarget(event.target.value as ScenarioTarget)}>
               <option value="providence-portable-folder">Portable Providence Folder</option>
               <option value="mac-classic-folder">Mac Classic Folder</option>
               <option value="windows-realmz-folder">Windows Realmz Folder</option>
             </select>
           </label>
-          <button className="btn btn-primary" disabled={!project} onClick={() => onExport(target)}>
-            <Download size={14} /> Export Scenario Folder
-          </button>
-          <button className="btn btn-secondary" disabled={!project} onClick={onBenchmark}>
-            <Gauge size={14} /> Benchmark Project
-          </button>
+          <TutorialTip title="Export Scenario Folder" body={EXPORT_ACTION_HELP} side="below">
+            <button className="btn btn-primary" disabled={!project} onClick={() => onExport(target)}>
+              <Download size={14} /> Export Scenario Folder
+            </button>
+          </TutorialTip>
+          <TutorialTip title="Benchmark Project" body={BENCHMARK_HELP} side="below">
+            <button className="btn btn-secondary" disabled={!project} onClick={onBenchmark}>
+              <Gauge size={14} /> Benchmark Project
+            </button>
+          </TutorialTip>
         </div>
         {exportReport ? (
-          <InfoGrid
-            rows={[
-              ["Output", exportReport.outputPath],
-              ["Target", exportTargetLabel(exportReport.target)],
-              ["Written", exportReport.writtenFiles.join(", ") || "none"],
-              ["Pass-through", exportReport.passThroughFiles.length.toLocaleString()],
-              ["Resources", exportReport.writtenResources.join(", ") || "none"],
-              ["Preserved Resources", exportReport.preservedResources.toLocaleString()],
-              ["Blocked Assets", exportReport.blockedAssets.join(", ") || "none"],
-              ["Warnings", exportReport.warnings.length.toLocaleString()]
-            ]}
-          />
+          <TutorialTip title="Export Report" body={EXPORT_REPORT_HELP} side="below">
+            <div>
+              <InfoGrid
+                rows={[
+                  ["Output", exportReport.outputPath],
+                  ["Target", exportTargetLabel(exportReport.target)],
+                  ["Written", exportReport.writtenFiles.join(", ") || "none"],
+                  ["Pass-through", exportReport.passThroughFiles.length.toLocaleString()],
+                  ["Resources", exportReport.writtenResources.join(", ") || "none"],
+                  ["Preserved Resources", exportReport.preservedResources.toLocaleString()],
+                  ["Blocked Assets", exportReport.blockedAssets.join(", ") || "none"],
+                  ["Warnings", exportReport.warnings.length.toLocaleString()]
+                ]}
+              />
+            </div>
+          </TutorialTip>
         ) : (
           <p className="empty-copy">No export has been run in this session.</p>
         )}
       </section>
       <section className="tab-panel">
         <div className="panel-header">
-          <span>Export Plan</span>
+          <TutorialTip title="Export Plan" body={EXPORT_PLAN_HELP} side="below">
+            <span>Export Plan</span>
+          </TutorialTip>
         </div>
         <InfoGrid
           rows={[
@@ -87,7 +113,11 @@ export function ExportPanel({
         {exportReport?.resourceWarnings.length ? (
           <ScrollArea className="lint-results compact" aria-label="Resource export notes">
             <section>
-              <header>Resource Export Notes</header>
+              <header>
+                <TutorialTip title="Resource Export Notes" body={RESOURCE_NOTES_HELP} side="below">
+                  <span>Resource Export Notes</span>
+                </TutorialTip>
+              </header>
               {exportReport.resourceWarnings.map((warning) => (
                 <div key={warning} className="lint-issue warning">! {warning}</div>
               ))}
@@ -97,7 +127,11 @@ export function ExportPanel({
         {exportReport && targetCompatibilityCount(exportReport) > 0 ? (
           <ScrollArea className="lint-results compact" aria-label="Target compatibility notes">
             <section>
-              <header>Target Compatibility</header>
+              <header>
+                <TutorialTip title="Target Compatibility" body={TARGET_COMPAT_HELP} side="below">
+                  <span>Target Compatibility</span>
+                </TutorialTip>
+              </header>
               {exportReport.targetCompatibility.blockers.map((issue) => (
                 <div key={`blocker-${issue.target}-${issue.code}-${issue.message}`} className="lint-issue error">
                   x {issue.message}
@@ -116,6 +150,9 @@ export function ExportPanel({
             </section>
           </ScrollArea>
         ) : null}
+        <TutorialTip title="Export Sources" body={EXPORT_SOURCES_HELP} side="below">
+          <span className="export-sources-help-label">Export Sources</span>
+        </TutorialTip>
         <ScrollArea className="record-table" aria-label="Export sources">
           {plan.exportableSources.map((source) => (
             <article key={source.name} className="record-row">
@@ -139,7 +176,9 @@ export function ExportPanel({
       </section>
       <section className="tab-panel">
         <div className="panel-header">
-          <span>Performance Gate</span>
+          <TutorialTip title="Performance Gate" body={PERFORMANCE_GATE_HELP} side="below">
+            <span>Performance Gate</span>
+          </TutorialTip>
         </div>
         {benchmark ? (
           <InfoGrid

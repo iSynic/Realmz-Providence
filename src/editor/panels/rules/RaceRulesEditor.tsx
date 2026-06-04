@@ -46,14 +46,14 @@ function RaceForm({ record, hasScenarioVersion, iconAssets, onUpdate }: { record
   return (
     <div className="rules-editor-stack">
       {!hasScenarioVersion && <div className="rules-help-callout">This is the built-in Realmz race. Changing a field creates a scenario-specific version of this race.</div>}
-      <RuleSection title="Identity And Miscellaneous" badge="mixed" help="Race name, portrait set, movement, regeneration, and broad combat modifiers.">
-        <TextField label="Race Name" value={record.displayName || REALMZ_RACES[record.id] || ""} onCommit={(displayName) => update({ displayName })} span help="Name shown for this race." />
-        <IconNumberField label="Default Portrait Set" value={record.defaultIconSet} assets={iconAssets} iconId={racePortraitSetFirstIconId} onCommit={(defaultIconSet) => update({ defaultIconSet })} help="Portrait set used for this race." />
-        <NumberField label="Can Regenerate" value={record.canRegenerate} onCommit={(canRegenerate) => update({ canRegenerate })} compact help="Whether this race regenerates naturally." />
-        <NumberField label="Base Movement Points" value={record.baseMove} onCommit={(baseMove) => update({ baseMove })} compact help="Base movement points for this race." />
-        <NumberField label="Magic Resistance +/-" value={record.magRes} onCommit={(magRes) => update({ magRes })} compact help="Race modifier to magic resistance." />
-        <NumberField label="Two Handed Weapon +/-" value={record.twoHand} onCommit={(twoHand) => update({ twoHand })} compact longLabel help="Race modifier for two-handed weapons." />
-        <NumberField label="Missile Weapon +/-" value={record.missile} onCommit={(missile) => update({ missile })} compact help="Race modifier for missile weapons." />
+      <RuleSection title="Identity And Miscellaneous" badge="mixed" help="Race name, portrait set, movement, regeneration, and broad combat modifiers. Names are editor/display labels unless a scenario storage path is proven.">
+        <TextField label="Race Name" value={record.displayName || REALMZ_RACES[record.id] || ""} onCommit={(displayName) => update({ displayName })} span help="Editor/display label for this race. Realmz normally resolves race names from shared strings, so behavior changes live in Data Race while labels remain display metadata unless proven otherwise." />
+        <IconNumberField label="Default Portrait Set" value={record.defaultIconSet} assets={iconAssets} iconId={racePortraitSetFirstIconId} onCommit={(defaultIconSet) => update({ defaultIconSet })} help="Portrait set used by race selection and generated characters. Providence previews the first icon when the reference library can resolve it." />
+        <NumberField label="Can Regenerate" value={record.canRegenerate} onCommit={(canRegenerate) => update({ canRegenerate })} compact help="Nonzero values enable natural regeneration behavior for this race." />
+        <NumberField label="Base Movement Points" value={record.baseMove} onCommit={(baseMove) => update({ baseMove })} compact help="Base movement points before caste, map, and runtime modifiers." />
+        <NumberField label="Magic Resistance +/-" value={record.magRes} onCommit={(magRes) => update({ magRes })} compact help="Race-level magic resistance modifier applied before other runtime effects." />
+        <NumberField label="Two Handed Weapon +/-" value={record.twoHand} onCommit={(twoHand) => update({ twoHand })} compact longLabel help="Race modifier for two-handed weapon handling." />
+        <NumberField label="Missile Weapon +/-" value={record.missile} onCommit={(missile) => update({ missile })} compact help="Race modifier for missile weapon handling." />
       </RuleSection>
       <RuleSection title="Attribute Minimums And Maximums" badge="editable" help="Race attribute limits used during character creation and advancement.">
         <PairGrid labels={RACE_ATTRIBUTES} values={record.minMax} onChange={(minMax) => update({ minMax })} leftLabel="Min" rightLabel="Max" />
@@ -62,17 +62,17 @@ function RaceForm({ record, hasScenarioVersion, iconAssets, onUpdate }: { record
         <ArrayFields title="+/- To Hit" labels={["Magic Using", "Undead", "Demonic/Devil", "Reptilian", "Very Evil", "Intelligent", "Giant Size", "Non-Humanoid"]} values={record.plusMinusToHit} onChange={(plusMinusToHit) => update({ plusMinusToHit })} />
         <ArrayFields title="DRVs Spell Class" labels={RESISTANCE_TYPES} values={record.drvBonus} onChange={(drvBonus) => update({ drvBonus })} />
       </RuleSection>
-      <RuleSection title="Possible Castes" badge="editable" help="Castes this race may choose.">
+      <RuleSection title="Possible Castes" badge="editable" help="Castes this race may choose. Check Scenario restrictions too, because a banned caste can still make a technically allowed race impossible to use.">
         <CheckboxMatrix labels={REALMZ_CASTES} values={record.canCaste} onChange={(canCaste) => update({ canCaste })} />
       </RuleSection>
-      <RuleSection title="Usable Items" badge="editable" help="Item categories this race can use.">
+      <RuleSection title="Usable Items" badge="editable" help="Broad item categories this race can use. Economy item restrictions can also require exact races, exact castes, descriptors, or caste classes.">
         <BitsetEditor labels={ITEM_CATEGORY_LABELS} values={record.itemTypes} onChange={(itemTypes) => update({ itemTypes })} />
       </RuleSection>
-      <RuleSection title="Age Parameters" badge="editable" help="Age bands and stat changes applied by age group.">
-        <NumberField label="Max Age" value={record.maxAge} onCommit={(maxAge) => update({ maxAge })} compact help="Maximum age for this race." />
+      <RuleSection title="Age Parameters" badge="editable" help="Age bands and stat changes applied by age group during character creation and aging.">
+        <NumberField label="Max Age" value={record.maxAge} onCommit={(maxAge) => update({ maxAge })} compact help="Maximum age for this race. Mortality and age-change behavior also depends on adjacent race record fields preserved by the writer." />
         <AgeBands record={record} onChange={(ageRange, ageChange) => update({ ageRange, ageChange })} />
       </RuleSection>
-      <RuleSection title="Conditions And Descriptors" badge="editable" help="Condition levels and race descriptor flags.">
+      <RuleSection title="Conditions And Descriptors" badge="editable" help="Condition thresholds and race descriptor flags used by restrictions, item usability, and runtime checks.">
         <ArrayFields title="Condition Levels" labels={CONDITION_LABELS} values={record.conditions} onChange={(conditions) => update({ conditions })} compact />
         <BitsetEditor labels={RACE_DESCRIPTOR_LABELS} values={[record.descriptors]} onChange={(values) => update({ descriptors: values[0] ?? 0 })} />
       </RuleSection>

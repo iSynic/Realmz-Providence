@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { TutorialTip } from "../TutorialTip";
 
 export function MapDiagnostics({ diagnostics }: { diagnostics: string[] }) {
   if (diagnostics.length === 0) {
@@ -17,12 +18,14 @@ export function MapNumberField({
   label,
   value,
   onCommit,
+  help,
   min = -32768,
   max = 32767
 }: {
   label: string;
   value: number;
   onCommit: (value: number) => void;
+  help?: string;
   min?: number;
   max?: number;
 }) {
@@ -35,7 +38,13 @@ export function MapNumberField({
   };
   return (
     <label className="map-number-field">
-      <span>{label}</span>
+      <span>
+        {help ? (
+          <TutorialTip title={label} body={help} side="right">
+            <span>{label}</span>
+          </TutorialTip>
+        ) : label}
+      </span>
       <input
         type="number"
         aria-label={label}

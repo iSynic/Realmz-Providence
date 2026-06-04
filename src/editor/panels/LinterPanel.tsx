@@ -7,6 +7,14 @@ import { assetFallbacks, blockedSemanticObjects, generatedRuntimeCaches, resourc
 import { loadScenarioCoverageManifest } from "../scenarioCoverage";
 import type { ScenarioCoverageManifest } from "../scenarioCoverage";
 import { ScrollArea } from "../ui";
+import { TutorialTip } from "../components/TutorialTip";
+
+const LINTER_HELP = "The linter is the pre-export release safety surface. It groups validation errors, resource gaps, unresolved semantic links, source/runtime-cache boundaries, and writer readiness so authors can fix blockers before exporting.";
+const RERUN_HELP = "Re-run validation after editing records, assets, maps, or scenario settings. Validation is the quickest way to refresh export blockers and compatibility warnings.";
+const LINTER_SUMMARY_HELP = "Blocking export errors should be fixed before exporting. Warnings may still allow export, but they explain compatibility, fallback, pass-through, or source ownership risks.";
+const SCENARIO_COVERAGE_HELP = "Scenario Coverage summarizes Providence's corpus and writer-readiness evidence: which scenario containers are understood, authoring-ready, preserved, runtime-only, or still writer-gated.";
+const ADVANCED_COVERAGE_HELP = "Advanced coverage details show container-level evidence from the generated coverage manifest. Use this when a warning mentions writer gates, preserved ranges, or runtime state.";
+const SEMANTIC_INSPECTOR_HELP = "The semantic inspector shows the selected linter target, its source, summary fields, links, and editability state so you can jump from a warning to the underlying record.";
 
 export function LinterPanel({
   project,
@@ -51,20 +59,30 @@ export function LinterPanel({
     <div className="editor-full-panel lint-workbench">
       <section className="tab-panel lint-panel">
         <div className="panel-header">
-          <span>Project Linter</span>
-          <button className="btn btn-primary btn-xs" disabled={!project} onClick={onValidate}>
-            Re-run
-          </button>
+          <TutorialTip title="Project Linter" body={LINTER_HELP} side="below">
+            <span>Project Linter</span>
+          </TutorialTip>
+          <TutorialTip title="Re-run Validation" body={RERUN_HELP} side="below">
+            <button className="btn btn-primary btn-xs" disabled={!project} onClick={onValidate}>
+              Re-run
+            </button>
+          </TutorialTip>
         </div>
-        <div className="lint-summary">
-          {project?.validation.ok ? <CheckCircle2 size={18} /> : <XCircle size={18} />}
-          <span>{project ? (project.validation.ok ? "No blocking export errors" : "Blocking export issues found") : "No project loaded"}</span>
-        </div>
+        <TutorialTip title="Validation Summary" body={LINTER_SUMMARY_HELP} side="below">
+          <div className="lint-summary">
+            {project?.validation.ok ? <CheckCircle2 size={18} /> : <XCircle size={18} />}
+            <span>{project ? (project.validation.ok ? "No blocking export errors" : "Blocking export issues found") : "No project loaded"}</span>
+          </div>
+        </TutorialTip>
         <ScrollArea className="lint-results" aria-label="Project Linter">
           <ScenarioCoverageSummary coverage={coverage} />
           {semanticGroups.map((group) => (
             <section key={group.title}>
-              <header>{group.title}</header>
+              <header>
+                <TutorialTip title={group.title} body={semanticGroupHelp(group.title)} side="below">
+                  <span>{group.title}</span>
+                </TutorialTip>
+              </header>
               {group.rows.map((row) => (
                 <LintInsightRow key={row.id} row={row} onSelectEntity={onSelectEntity} />
               ))}
@@ -72,7 +90,11 @@ export function LinterPanel({
           ))}
           {grouped.map(([source, sourceIssues]) => (
             <section key={source}>
-              <header>{source}</header>
+              <header>
+                <TutorialTip title={source} body={issueSourceHelp(source)} side="below">
+                  <span>{source}</span>
+                </TutorialTip>
+              </header>
               {sourceIssues.map((issue, index) => (
                 <LintIssueRow
                   key={`${issue.message}-${index}`}
@@ -86,6 +108,11 @@ export function LinterPanel({
         </ScrollArea>
       </section>
       <aside className="tab-panel semantic-right">
+        <div className="panel-header">
+          <TutorialTip title="Semantic Inspector" body={SEMANTIC_INSPECTOR_HELP} side="below">
+            <span>Semantic Inspector</span>
+          </TutorialTip>
+        </div>
         <ScrollArea className="semantic-right-scroll" aria-label="Linter semantic inspector">
           <SemanticInspector project={project} selectedEntity={selectedEntity} onSelect={onSelectEntity} />
         </ScrollArea>
@@ -94,11 +121,48 @@ export function LinterPanel({
   );
 }
 
+function semanticGroupHelp(title: string) {
+  if (title === "Resource Coverage") {
+    return "Resource Coverage reports missing resources, resource-fork gaps, and fallback-only assets. Used resource gaps should be reviewed before export because Realmz may display missing art, text, or sound.";
+  }
+  if (title === "Export Boundaries") {
+    return "Export Boundaries separates writer-supported source files from pass-through files, generated runtime caches, and read-only records. Fix the source record rather than editing generated cache data.";
+  }
+  if (title === "Link Integrity") {
+    return "Link Integrity shows semantic references with unresolved endpoints, such as scripts pointing at missing messages, maps, monsters, resources, or macros.";
+  }
+  return "This linter group collects related release-readiness diagnostics. Open a row to inspect the target record or evidence.";
+}
+
+function issueSourceHelp(source: string) {
+  const lower = source.toLowerCase();
+  if (lower.includes("export")) {
+    return "Export issues are release blockers or warnings produced by Providence's current writer and package compatibility checks.";
+  }
+  if (lower.includes("resource")) {
+    return "Resource issues usually mean a record points at missing, fallback-only, malformed, or unsupported resource-fork data.";
+  }
+  if (lower.includes("scenario")) {
+    return "Scenario issues usually affect load readiness: startup shell, contact/restriction data, required files, resource fork availability, or first-start coordinates.";
+  }
+  if (lower.includes("map")) {
+    return "Map issues usually affect Realmz level data, Action Point placement, random areas, special/icon tiles, map records, or tile metadata.";
+  }
+  if (lower.includes("script") || lower.includes("action")) {
+    return "Script issues usually mean an Action Point row, EDCD parameter, or macro target needs a valid linked record before export.";
+  }
+  return "These validation issues come from the named project area. Open the row to inspect the linked target when available.";
+}
+
 function ScenarioCoverageSummary({ coverage }: { coverage: ScenarioCoverageManifest | null }) {
   if (!coverage) {
     return (
       <section className="scenario-coverage-card">
-        <header>Scenario Coverage</header>
+        <header>
+          <TutorialTip title="Scenario Coverage" body={SCENARIO_COVERAGE_HELP} side="below">
+            <span>Scenario Coverage</span>
+          </TutorialTip>
+        </header>
         <div className="entity-empty">Coverage details are loading.</div>
       </section>
     );
@@ -108,7 +172,9 @@ function ScenarioCoverageSummary({ coverage }: { coverage: ScenarioCoverageManif
   return (
     <section className="scenario-coverage-card">
       <header>
-        <span>Scenario Coverage</span>
+        <TutorialTip title="Scenario Coverage" body={SCENARIO_COVERAGE_HELP} side="below">
+          <span>Scenario Coverage</span>
+        </TutorialTip>
         <small>{summary.scenarioRoots.toLocaleString()} checked scenario roots</small>
       </header>
       <div className="scenario-coverage-metrics">
@@ -181,7 +247,11 @@ function ScenarioCoverageSummary({ coverage }: { coverage: ScenarioCoverageManif
         </div>
       )}
       <details className="scenario-coverage-details">
-        <summary>Advanced Details</summary>
+        <summary>
+          <TutorialTip title="Advanced Coverage Details" body={ADVANCED_COVERAGE_HELP} side="below">
+            <span>Advanced Details</span>
+          </TutorialTip>
+        </summary>
         <div className="scenario-coverage-container-list">
           {coverage.containers.slice(0, 12).map((container) => (
             <div key={container.container}>

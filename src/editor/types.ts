@@ -41,18 +41,26 @@ export type SmartBrushRole =
   | "notchNorthWest"
   | "notchSouthEast"
   | "notchSouthWest";
-export type SmartBrushProfileConfidence = "pixel-ranked" | "curated-fallback" | "unsupported";
+export type SmartBrushProfileConfidence = "corpus-ranked" | "pixel-ranked" | "curated-fallback" | "unsupported";
+export type SmartBrushCandidateEvidence = {
+  tiles: number[];
+  samples: number;
+  confidence: "high" | "medium" | "low" | "fallback";
+};
 export type SmartBrushProfile = {
   landlook: number;
   presets: Record<SmartBrushPreset, {
     family: number[];
     center: number[];
     candidates: number[];
+    sampleCount?: number;
+    confidence?: "high" | "medium" | "low" | "fallback";
+    maskCandidates?: Record<string, SmartBrushCandidateEvidence>;
     roleCandidates?: Partial<Record<SmartBrushRole, number[]>>;
     fallbackRoles: Partial<Record<SmartBrushRole, number>>;
   }>;
 };
-export type SmartBrushPreviewCell = SmartBrushMaskCell & { index: number; from: number; to: number; role: SmartBrushRole; score?: number | null };
+export type SmartBrushPreviewCell = SmartBrushMaskCell & { index: number; from: number; to: number; role: SmartBrushRole; score?: number | null; neighborMask?: number; source?: string; samples?: number | null };
 export type SmartBrushPlan = {
   cells: SmartBrushPreviewCell[];
   skipped: SmartBrushMaskCell[];

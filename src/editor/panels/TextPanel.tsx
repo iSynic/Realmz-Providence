@@ -3,9 +3,22 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { LibraryCatalog, MessageRecord, OptionLabelRecord, Project, ProjectCommand, SelectedEntity } from "../types";
 import { selectEntityFromId } from "../utils";
 import { classicTextByteLength, messageUsageLinks, optionLabelUsageLinks, unsupportedClassicTextChars } from "../contentLinks";
+import { TutorialTip } from "../components/TutorialTip";
 
 const DIVINITY_TEXT_SEPARATOR = `${" ".repeat(20)}\uf8ff${" ".repeat(20)}`;
 type TextAuthoringTab = "strings" | "option-labels";
+const TEXT_WORKBENCH_HELP = "Text authors the central Data SD2 message pool, Data OD two-choice option labels, and readable TEXT/STR#/styl reference resources. Other tools link back here through numeric message and option-label IDs.";
+const EXPORT_TEXT_HELP = "Export Text writes all Data SD2 strings with Divinity-style separators so the file can be spell-checked without changing the project.";
+const IMPORT_TEXT_HELP = "Import Text accepts a file from this export workflow and refuses imports with the wrong number of string segments to avoid shifting every string ID.";
+const REFERENCE_STRINGS_HELP = "Reference Strings shows readable TEXT, STR#, and style resources from project or library resource forks. These are searchable evidence, not the central Data SD2 message pool.";
+const STRINGS_TAB_HELP = "Strings edits Data SD2 message records: Realmz text boxes used by scripts, battles, encounters, random areas, notes, and many prompts.";
+const OPTION_LABELS_TAB_HELP = "Option Labels edits Data OD compact labels for two-choice dialogs. Realmz uses the first visible character as the keyboard shortcut.";
+const FIND_OCCURRENCE_HELP = "Find Occurrence searches every scenario string by ID or text, then jumps through matching Data SD2 records.";
+const FIND_LONG_STRING_HELP = "Find Long String jumps to strings at the Realmz byte limit or with characters that need cleanup before export.";
+const STRING_BYTE_LIMIT_HELP = "Realmz message records are fixed 256-byte Pascal strings, so the editable text must fit in 255 Classic text bytes before export.";
+const OPTION_BYTE_LIMIT_HELP = "Data OD option labels use 25-byte Pascal slots, leaving 24 bytes of editable label text.";
+const USED_BY_HELP = "Used By links show the records Providence knows refer to this text. Check these before changing wording or meaning.";
+const ADVANCED_TEXT_HELP = "Advanced Details shows source status and preserved raw bytes for the current fixed-width text record.";
 
 export function TextPanel({
   project,
@@ -124,7 +137,11 @@ export function TextPanel({
     <section className="text-workbench">
       <header className="text-workbench-header">
         <div>
-          <h1>String Editor</h1>
+          <h1>
+            <TutorialTip title="String Editor" body={TEXT_WORKBENCH_HELP} side="below">
+              <span>String Editor</span>
+            </TutorialTip>
+          </h1>
           <p>Edit scenario strings and two-choice option labels used by Realmz dialogs.</p>
         </div>
         <div className="text-workbench-actions">
@@ -140,30 +157,36 @@ export function TextPanel({
               event.currentTarget.value = "";
             }}
           />
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            onClick={() => exportDivinityTextFile(records)}
-            title="Export all strings as a plain text spell-check file with Divinity-style separators."
-          >
-            Export Text
-          </button>
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            onClick={() => importInputRef.current?.click()}
-            title="Import a plain text file previously exported from this Strings editor."
-          >
-            Import Text
-          </button>
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            onClick={() => setShowReferences((value) => !value)}
-            title="Show or hide readable TEXT, STR#, and style string resources."
-          >
-            <List size={14} /> {referencePanelOpen ? "Hide References" : "Reference Strings"}
-          </button>
+          <TutorialTip title="Export Text" body={EXPORT_TEXT_HELP} side="below">
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => exportDivinityTextFile(records)}
+              title="Export all strings as a plain text spell-check file with Divinity-style separators."
+            >
+              Export Text
+            </button>
+          </TutorialTip>
+          <TutorialTip title="Import Text" body={IMPORT_TEXT_HELP} side="below">
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => importInputRef.current?.click()}
+              title="Import a plain text file previously exported from this Strings editor."
+            >
+              Import Text
+            </button>
+          </TutorialTip>
+          <TutorialTip title="Reference Strings" body={REFERENCE_STRINGS_HELP} side="below">
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => setShowReferences((value) => !value)}
+              title="Show or hide readable TEXT, STR#, and style string resources."
+            >
+              <List size={14} /> {referencePanelOpen ? "Hide References" : "Reference Strings"}
+            </button>
+          </TutorialTip>
           <button
             type="button"
             className="btn btn-primary btn-sm"
@@ -177,12 +200,16 @@ export function TextPanel({
         </div>
       </header>
       <div className="text-authoring-tabs" role="tablist" aria-label="String editors">
-        <button type="button" className={activeTab === "strings" ? "active" : ""} role="tab" aria-selected={activeTab === "strings"} onClick={() => setActiveTab("strings")}>
-          Strings
-        </button>
-        <button type="button" className={activeTab === "option-labels" ? "active" : ""} role="tab" aria-selected={activeTab === "option-labels"} onClick={() => setActiveTab("option-labels")}>
-          Option Labels
-        </button>
+        <TutorialTip title="Strings" body={STRINGS_TAB_HELP} side="below">
+          <button type="button" className={activeTab === "strings" ? "active" : ""} role="tab" aria-selected={activeTab === "strings"} onClick={() => setActiveTab("strings")}>
+            Strings
+          </button>
+        </TutorialTip>
+        <TutorialTip title="Option Labels" body={OPTION_LABELS_TAB_HELP} side="below">
+          <button type="button" className={activeTab === "option-labels" ? "active" : ""} role="tab" aria-selected={activeTab === "option-labels"} onClick={() => setActiveTab("option-labels")}>
+            Option Labels
+          </button>
+        </TutorialTip>
       </div>
       {activeTab === "strings" && (
         <StringNavigator
@@ -272,7 +299,11 @@ export function TextPanel({
             <section className="text-reference-panel">
               <header>
                 <div>
-                  <h2>Reference Strings</h2>
+                  <h2>
+                    <TutorialTip title="Reference Strings" body={REFERENCE_STRINGS_HELP} side="below">
+                      <span>Reference Strings</span>
+                    </TutorialTip>
+                  </h2>
                   <p>Readable TEXT, STR#, and style resources are searchable reference material.</p>
                 </div>
                 <div className="text-reference-actions">
@@ -363,7 +394,9 @@ function StringNavigator({
         <List size={14} /> {showList ? "Hide Search List" : "Show Search List"}
       </button>
       <label className="text-find-field">
-        <span>Find Occurrence</span>
+        <TutorialTip title="Find Occurrence" body={FIND_OCCURRENCE_HELP} side="below">
+          <span>Find Occurrence</span>
+        </TutorialTip>
         <input value={findQuery} onChange={(event) => onFindQueryChange(event.currentTarget.value)} placeholder="Search all strings..." />
       </label>
       <button type="button" className="btn btn-secondary btn-sm" disabled={!findCount} onClick={onFindFirst}>
@@ -372,15 +405,17 @@ function StringNavigator({
       <button type="button" className="btn btn-secondary btn-sm" disabled={!findCount} onClick={onFindNext}>
         Find Next {findCount ? `(${findCount})` : ""}
       </button>
-      <button
-        type="button"
-        className="btn btn-secondary btn-sm"
-        disabled={!reviewCount}
-        onClick={onFindNextReview}
-        title="Find the next string at the Realmz length limit or with characters that need cleanup before export."
-      >
-        Find Long String {reviewCount ? `(${reviewCount})` : ""}
-      </button>
+      <TutorialTip title="Find Long String" body={FIND_LONG_STRING_HELP} side="below">
+        <button
+          type="button"
+          className="btn btn-secondary btn-sm"
+          disabled={!reviewCount}
+          onClick={onFindNextReview}
+          title="Find the next string at the Realmz length limit or with characters that need cleanup before export."
+        >
+          Find Long String {reviewCount ? `(${reviewCount})` : ""}
+        </button>
+      </TutorialTip>
     </nav>
   );
 }
@@ -483,13 +518,19 @@ function MessageEditor({
         <textarea value={text} onChange={(event) => setText(event.currentTarget.value)} />
       </label>
       <div className={`text-message-status ${byteLength > 255 || unsupportedChars.length ? "warning" : "ok"}`}>
-        <span>{byteLength}/255 bytes before export</span>
+        <TutorialTip title="String Byte Limit" body={STRING_BYTE_LIMIT_HELP} side="below">
+          <span>{byteLength}/255 bytes before export</span>
+        </TutorialTip>
         {byteLength > 255 && <b>Too long for a Realmz message record.</b>}
         {unsupportedChars.length > 0 && <b>{unsupportedChars.length} non-ASCII character{unsupportedChars.length === 1 ? "" : "s"} will export as ?.</b>}
         {!changed && byteLength <= 255 && unsupportedChars.length === 0 && <b>Ready</b>}
       </div>
       <section className="text-used-by-panel">
-        <header>Used By</header>
+        <header>
+          <TutorialTip title="Used By" body={USED_BY_HELP} side="below">
+            <span>Used By</span>
+          </TutorialTip>
+        </header>
         <div>
           {usages.map((usage) => (
             <button key={usage.key} type="button" onClick={() => usage.entity && onSelectEntity(usage.entity)}>
@@ -501,7 +542,11 @@ function MessageEditor({
         </div>
       </section>
       <details className="advanced-details">
-        <summary>Advanced Details</summary>
+        <summary>
+          <TutorialTip title="Advanced Details" body={ADVANCED_TEXT_HELP} side="below">
+            <span>Advanced Details</span>
+          </TutorialTip>
+        </summary>
         <div className="summary-table">
           <div><dt>Record</dt><dd>Scenario string #{record.id}</dd></div>
           <div><dt>State</dt><dd>{record.authored ? "Editable project string" : "Imported string"}</dd></div>
@@ -563,7 +608,9 @@ function OptionLabelsWorkbench({
           <List size={14} /> {showList ? "Hide Search List" : "Show Search List"}
         </button>
         <label className="text-find-field">
-          <span>Search Labels</span>
+          <TutorialTip title="Search Labels" body="Search Data OD option labels by ID or visible text. These labels are separate from the central Data SD2 message pool." side="below">
+            <span>Search Labels</span>
+          </TutorialTip>
           <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search option labels..." />
         </label>
         <button
@@ -692,8 +739,14 @@ function OptionLabelEditor({
         <input value={text} onChange={(event) => setText(event.currentTarget.value)} />
       </label>
       <div className={`text-message-status ${byteLength > 24 || unsupportedChars.length || duplicateShortcut ? "warning" : "ok"}`}>
-        <span>{byteLength}/24 bytes before export</span>
-        {shortcut && <span>Shortcut: {shortcut.toUpperCase()}</span>}
+        <TutorialTip title="Option Label Byte Limit" body={OPTION_BYTE_LIMIT_HELP} side="below">
+          <span>{byteLength}/24 bytes before export</span>
+        </TutorialTip>
+        {shortcut && (
+          <TutorialTip title="Option Shortcut" body={OPTION_LABELS_TAB_HELP} side="below">
+            <span>Shortcut: {shortcut.toUpperCase()}</span>
+          </TutorialTip>
+        )}
         {!shortcut && <b>First visible character becomes the keyboard shortcut.</b>}
         {duplicateShortcut && <b>Another option label uses this shortcut.</b>}
         {byteLength > 24 && <b>Too long for a Realmz option label.</b>}
@@ -701,7 +754,11 @@ function OptionLabelEditor({
         {!changed && byteLength <= 24 && unsupportedChars.length === 0 && !duplicateShortcut && <b>Ready</b>}
       </div>
       <section className="text-used-by-panel">
-        <header>Used By</header>
+        <header>
+          <TutorialTip title="Used By" body={USED_BY_HELP} side="below">
+            <span>Used By</span>
+          </TutorialTip>
+        </header>
         <div>
           {usages.map((usage) => (
             <button key={usage.key} type="button" onClick={() => usage.entity && onSelectEntity(usage.entity)} disabled={!usage.entity}>
@@ -713,7 +770,11 @@ function OptionLabelEditor({
         </div>
       </section>
       <details className="advanced-details">
-        <summary>Advanced Details</summary>
+        <summary>
+          <TutorialTip title="Advanced Details" body={ADVANCED_TEXT_HELP} side="below">
+            <span>Advanced Details</span>
+          </TutorialTip>
+        </summary>
         <div className="summary-table">
           <div><dt>Record</dt><dd>Option label #{record.id}</dd></div>
           <div><dt>State</dt><dd>{record.authored ? "Editable option label" : "Imported option label"}</dd></div>

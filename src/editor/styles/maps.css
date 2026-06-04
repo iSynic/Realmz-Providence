@@ -1329,6 +1329,36 @@
   margin: 0;
 }
 
+.context-debug-details {
+  padding: 6px;
+  border: 1px dashed #314354;
+  border-radius: 5px;
+  color: #b7cde4;
+  font-size: 10px;
+}
+
+.context-debug-details summary {
+  cursor: pointer;
+  color: #8fc8ff;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.context-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.context-chip {
+  padding: 3px 5px;
+  border: 1px solid #2b4660;
+  border-radius: 4px;
+  background: #0b141d;
+  color: #d7e8ff;
+}
+
 
 
 .selection-link-list {
@@ -2026,6 +2056,15 @@
   border: 1px solid #243442;
   border-radius: 6px;
   background: #0c1218;
+}
+
+.map-help-anchor {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  color: #8fc7ff;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 
@@ -3468,6 +3507,11 @@
 
 
 .context-action-stack .context-action-button {
+  width: 100%;
+}
+
+.context-action-stack > .tutorial-tip {
+  display: block;
   width: 100%;
 }
 

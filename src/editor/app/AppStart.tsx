@@ -1,3 +1,14 @@
+import { TutorialTip } from "../components/TutorialTip";
+
+const NEW_PROJECT_DIALOG_HELP =
+  "A Providence project is its own folder package. Create the package first, then import a Realmz scenario only while the project is still empty.";
+const PROJECT_NAME_HELP =
+  "The project name becomes the Providence package name and default export name. It does not have to match an imported Realmz scenario folder, though matching names are easier to track.";
+const PROJECT_START_HELP =
+  "Start with New when authoring or importing a scenario, Open when returning to a Providence project package, or Library when you only need bundled Realmz/Divinity reference material.";
+const PROJECT_RUNTIME_HELP =
+  "Desktop projects can save, export, and use native folder dialogs. Browser preview loads bundled libraries in memory and has limited file-system support.";
+
 export function ProjectNameDialog({
   value,
   onChange,
@@ -19,11 +30,15 @@ export function ProjectNameDialog({
         }}
       >
         <div className="panel-header">
-          <span>New Providence Project</span>
+          <TutorialTip title="New Providence Project" body={NEW_PROJECT_DIALOG_HELP} side="below">
+            <span>New Providence Project</span>
+          </TutorialTip>
         </div>
         <div className="project-name-dialog-body">
           <label>
-            <span>Project Name</span>
+            <TutorialTip title="Project Name" body={PROJECT_NAME_HELP} side="below">
+              <span>Project Name</span>
+            </TutorialTip>
             <input autoFocus value={value} onChange={(event) => onChange(event.currentTarget.value)} />
           </label>
           <p>Providence will create this project under the default project directory. Import remains available only while the project is empty.</p>
@@ -61,9 +76,15 @@ export function ProjectStart({
       <img className="project-start-splash" src="/providence-splash.png" alt="" draggable={false} />
       <div className="project-start-panel">
         <img className="project-start-mark" src="/divinity-icon.png" alt="" draggable={false} />
-        <h1>Realmz Providence</h1>
+        <h1>
+          <TutorialTip title="Project Start" body={PROJECT_START_HELP} side="below">
+            <span>Realmz Providence</span>
+          </TutorialTip>
+        </h1>
         <p>Create a scenario project, open an existing project, or work in the bundled Realmz/Divinity library before a scenario exists.</p>
-        <small>{desktopRuntime ? `Projects are created under ${projectRoot}. Bundled libraries are seeded automatically.` : "Browser preview loads bundled library fixtures into memory."}</small>
+        <TutorialTip title={desktopRuntime ? "Desktop Runtime" : "Browser Preview"} body={PROJECT_RUNTIME_HELP} side="below">
+          <small>{desktopRuntime ? `Projects are created under ${projectRoot}. Bundled libraries are seeded automatically.` : "Browser preview loads bundled library fixtures into memory."}</small>
+        </TutorialTip>
         {!desktopRuntime && <small>{browserPreviewStatus}</small>}
       </div>
     </section>

@@ -1,9 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
+import { TutorialTip } from "../../components/TutorialTip";
 import { LibraryAsset, ProjectCommand, ScenarioSpellOverride } from "../../types";
 import { SPELL_CASTER_CLASSES, SPELL_DAMAGE_TYPES, SPELL_RESIST_CLASSES, SPELL_TARGET_TYPES } from "../../rulesCatalog";
 import { EmptyRulesState, NumberField, RuleSection, SelectField, SoundNumberField, SpellAnimationIconField, FastplotTileNumberField, TextField, CheckboxField } from "./RuleFields";
 import { buildSpellEntries, previousSpellPackedId, nextSpellPackedId, selectedIdFor, spellCustomId, spellPackedId } from "./ruleUtils";
 import { SpellRuleEntry, SpellRulesEditorProps } from "./ruleTypes";
+
+const SPELL_EDITOR_HELP = "Browse packed Realmz spell IDs from shared Data S and create scenario-local custom spell overrides in Data Spell. Built-in spell classes are reference/copy sources.";
+const SPELL_CLASS_HELP = "Spell IDs encode class, level, and slot. The Custom class is the scenario-owned class; copying a built-in spell here creates an editable Data Spell record.";
+const SPELL_GOTO_HELP = "Select the exact packed spell ID. Realmz references spells by this packed value in scripts, encounters, castes, items, and combat logic.";
+const SPELL_CREATE_HELP = "Copying a built-in spell creates or replaces the matching Custom-class Data Spell slot. The shared Data S catalog remains unchanged.";
+const SPELL_CLEAR_HELP = "Clearing removes the scenario-local Data Spell override for this custom slot and returns it to an empty custom spell entry.";
 
 export function SpellRulesEditor({ project, catalog, selectedEntity, queueAtlasUrl, onSelectEntity, onApplyCommand }: SpellRulesEditorProps) {
   const entries = useMemo(() => buildSpellEntries(project, catalog), [project, catalog]);
@@ -31,13 +38,17 @@ export function SpellRulesEditor({ project, catalog, selectedEntity, queueAtlasU
       <section className="rules-selector rules-divinity-selector">
         <div className="rules-selector-title">
           <div>
-            <h2>Spell Editor</h2>
+            <h2>
+              <TutorialTip title="Spell Editor" body={SPELL_EDITOR_HELP} side="right">
+                <span>Spell Editor</span>
+              </TutorialTip>
+            </h2>
             <p>Browse Realmz spell classes the way Divinity does. Custom spells are scenario-local and writable.</p>
           </div>
           <small>{project.spellOverrides?.length ?? 0} custom spell(s)</small>
         </div>
         <div className="rules-record-picker">
-          <SelectField label="Spellcaster Class" value={spellcasterClass} options={SPELL_CASTER_CLASSES} onCommit={(value) => {
+          <SelectField label="Spellcaster Class" value={spellcasterClass} options={SPELL_CASTER_CLASSES} help={SPELL_CLASS_HELP} onCommit={(value) => {
             setSpellcasterClass(value);
             selectPacked(spellPackedId(value, 0, 0));
           }} />
@@ -46,7 +57,9 @@ export function SpellRulesEditor({ project, catalog, selectedEntity, queueAtlasU
             <button type="button" className="btn btn-secondary btn-xs" title="Next spell" onClick={() => selectedEntry && selectPacked(nextSpellPackedId(selectedEntry))}>›</button>
           </div>
           <label>
-            <span>Go To Spell</span>
+            <TutorialTip title="Go To Spell" body={SPELL_GOTO_HELP} side="below">
+              <span>Go To Spell</span>
+            </TutorialTip>
             <select value={selectedEntry?.packedId ?? ""} onChange={(event) => selectPacked(Number(event.currentTarget.value))}>
               {visibleEntries.map((candidate) => (
                 <option key={candidate.packedId} value={candidate.packedId}>
@@ -56,13 +69,13 @@ export function SpellRulesEditor({ project, catalog, selectedEntity, queueAtlasU
             </select>
           </label>
           {selectedEntry?.spellcasterClass === 4 && !selectedEntry.hasScenarioVersion && (
-            <button type="button" className="btn btn-primary btn-xs" onClick={() => createCustomFrom(selectedEntry)}>Create Custom Spell</button>
+            <button type="button" className="btn btn-primary btn-xs" title={SPELL_CREATE_HELP} onClick={() => createCustomFrom(selectedEntry)}>Create Custom Spell</button>
           )}
           {selectedEntry?.spellcasterClass !== 4 && selectedEntry && (
-            <button type="button" className="btn btn-primary btn-xs" onClick={() => createCustomFrom(selectedEntry)}>Copy To Custom Slot</button>
+            <button type="button" className="btn btn-primary btn-xs" title={SPELL_CREATE_HELP} onClick={() => createCustomFrom(selectedEntry)}>Copy To Custom Slot</button>
           )}
           {selectedEntry?.spellcasterClass === 4 && selectedEntry.hasScenarioVersion && (
-            <button type="button" className="btn btn-danger btn-xs" onClick={() => onApplyCommand({ kind: "clearSpellOverride", label: "Remove custom spell", id: selectedEntry.customId })}>Clear Custom Spell</button>
+            <button type="button" className="btn btn-danger btn-xs" title={SPELL_CLEAR_HELP} onClick={() => onApplyCommand({ kind: "clearSpellOverride", label: "Remove custom spell", id: selectedEntry.customId })}>Clear Custom Spell</button>
           )}
         </div>
         {selectedEntry && (
@@ -111,8 +124,8 @@ function SpellForm({
     <div className="rules-editor-stack">
       {!editable && (
         <div className="rules-help-callout">
-          {entry.spellcasterClass === 4 ? "This custom slot is empty. Create it to edit this scenario's custom spell table." : "Realmz loads this as a built-in spell. Copy it into a Custom slot to make a scenario-local editable version."}
-          <button type="button" className="btn btn-primary btn-xs" onClick={onCreateCustom}>{entry.spellcasterClass === 4 ? "Create Custom Spell" : "Copy To Custom Slot"}</button>
+          {entry.spellcasterClass === 4 ? "This custom slot is empty. Create it to edit this scenario's Data Spell table." : "Realmz loads this as a built-in spell from shared Data S. Copy it into a Custom slot to make a scenario-local editable version."}
+          <button type="button" className="btn btn-primary btn-xs" title={SPELL_CREATE_HELP} onClick={onCreateCustom}>{entry.spellcasterClass === 4 ? "Create Custom Spell" : "Copy To Custom Slot"}</button>
         </div>
       )}
       <RuleSection title="Identity" badge="metadata" help="Spell name, catalog location, and description text. Built-in spells can be copied into custom slots before editing.">

@@ -2,6 +2,42 @@ import { useRef } from "react";
 import { BookOpen, ChevronLeft, ChevronRight, Download, FilePlus2, FolderOpen, LibraryBig, RefreshCcw, Save, Search, Upload } from "lucide-react";
 import { ActiveWorkbench } from "../types";
 import { IconButton } from "../components/IconButton";
+import { TutorialTip } from "../components/TutorialTip";
+
+const TOPBAR_SEARCH_HELP =
+  "Global Search jumps across scenario records, maps, scripts, strings, assets, bundled libraries, documentation, and diagnostics. Use Ctrl+K, then try shortcuts like monster 12, pict 304, string 349, or macro 143.";
+const TOPBAR_DOCUMENTS_HELP =
+  "Documents opens the Providence handbook: author workflows, Divinity Manual crosswalks, source evidence, compatibility terms, and release guidance.";
+const TOPBAR_HELP_HELP =
+  "Help On enables hover and focus help bubbles throughout the current tool. Turn it off when you want a quieter workspace; the Documents handbook remains available either way.";
+const TOPBAR_MANUAL_HELP =
+  "Triple-click the Realmz Providence mark to open the local Divinity Manual. Providence docs summarize workflows; the manual remains the chapter-level legacy reference.";
+const TOPBAR_RUNTIME_HELP =
+  "The runtime badge tells you whether you are in the desktop app or browser preview. Desktop is the release target for native folder dialogs, save, and export.";
+const TOPBAR_DIRTY_HELP =
+  "Dirty means the Providence project has unsaved editor changes. Save writes the project package; it does not export a Realmz scenario folder.";
+const TOPBAR_EDITING_HELP =
+  "Editing appears while a text field or editable control owns focus. Keyboard shortcuts may defer to that field until editing ends.";
+const TOPBAR_LIBRARY_HELP =
+  "Library opens bundled Realmz and Divinity reference data. These records and assets are evidence and picker sources, not automatically project-owned content.";
+const TOPBAR_PROJECT_HELP =
+  "Project returns from Library Workbench to the active Providence project, where scenario maps, records, resources, diagnostics, and export live.";
+const TOPBAR_NEW_PROJECT_HELP =
+  "New creates an empty Providence folder package. Import remains available only while the project is still empty, so create the package before importing a Realmz scenario.";
+const TOPBAR_OPEN_PROJECT_HELP =
+  "Open loads an existing Providence project package. Open expects Providence project files, not a raw Realmz scenario folder; use Import for raw scenarios.";
+const TOPBAR_IMPORT_HELP =
+  "Import reads a Realmz scenario folder into an empty Providence project, keeping source snapshots so export can preserve unsupported files safely.";
+const TOPBAR_UNDO_HELP =
+  "Undo reverses the latest Providence project command, such as edits to maps, records, resources, or editor metadata.";
+const TOPBAR_REDO_HELP =
+  "Redo reapplies an undone Providence project command when history is available.";
+const TOPBAR_SAVE_HELP =
+  "Save writes the Providence project package on desktop. Browser preview keeps more state in memory and cannot replace the desktop save path.";
+const TOPBAR_EXPORT_HELP =
+  "Export writes a Realmz-readable scenario folder from the current project state, after validation and preservation checks have had a chance to catch risky output.";
+const TOPBAR_HISTORY_HELP =
+  "Workbench history moves backward and forward through recently visited Providence tools without changing the project itself.";
 
 export function WorkbenchTopbar({
   activeWorkbench,
@@ -90,15 +126,17 @@ export function WorkbenchTopbar({
     <header className="editor-topbar workbench-topbar">
       <div className="topbar-title-cluster">
         <div className="app-mark">
-          <button
-            className="mark-glyph app-mark-button"
-            type="button"
-            onClick={handleManualIconClick}
-            title="Triple-click to open the Divinity Manual"
-            aria-label="Realmz Providence. Triple-click to open the Divinity Manual."
-          >
-            <img src="/divinity-icon.png" alt="" draggable={false} />
-          </button>
+          <TutorialTip title="Divinity Manual" body={TOPBAR_MANUAL_HELP} side="below">
+            <button
+              className="mark-glyph app-mark-button"
+              type="button"
+              onClick={handleManualIconClick}
+              title="Triple-click to open the Divinity Manual"
+              aria-label="Realmz Providence. Triple-click to open the Divinity Manual."
+            >
+              <img src="/divinity-icon.png" alt="" draggable={false} />
+            </button>
+          </TutorialTip>
           <div>
             <strong>{title}</strong>
             <small>{subtitle}</small>
@@ -106,81 +144,119 @@ export function WorkbenchTopbar({
         </div>
         <div>
           <div className="topbar-history-nav" aria-label="Workbench navigation history">
-            <button type="button" aria-label="Go back to previous tool" title="Back to previous tool" disabled={!canNavigateBack} onClick={onNavigateBack}>
-              <ChevronLeft size={15} />
-            </button>
-            <button type="button" aria-label="Go forward to next tool" title="Forward to next tool" disabled={!canNavigateForward} onClick={onNavigateForward}>
-              <ChevronRight size={15} />
-            </button>
+            <TutorialTip title="Workbench History" body={TOPBAR_HISTORY_HELP} side="below">
+              <button type="button" aria-label="Go back to previous tool" title="Back to previous tool" disabled={!canNavigateBack} onClick={onNavigateBack}>
+                <ChevronLeft size={15} />
+              </button>
+            </TutorialTip>
+            <TutorialTip title="Workbench History" body={TOPBAR_HISTORY_HELP} side="below">
+              <button type="button" aria-label="Go forward to next tool" title="Forward to next tool" disabled={!canNavigateForward} onClick={onNavigateForward}>
+                <ChevronRight size={15} />
+              </button>
+            </TutorialTip>
           </div>
         </div>
       </div>
 
       <div className="editor-topbar-actions">
-        <span className={`runtime-pill${runtimeLive ? " live" : ""}`}>{runtimeLabel}</span>
-        {dirty && <span className="dirty-pill">Dirty</span>}
-        {editing && <span className="dirty-pill">Editing</span>}
-        <button className="topbar-action-button" type="button" onClick={onGlobalSearch} title="Search scenario, libraries, assets, and docs (Ctrl+K)">
-          <Search size={15} />
-          <span>Search</span>
-        </button>
-        <button className="topbar-action-button" type="button" onClick={onLibrary} title="Open managed library workbench">
-          <LibraryBig size={15} />
-          <span>Library</span>
-        </button>
-        <button className="topbar-action-button" type="button" onClick={onDocuments} title="Open Providence documents">
-          <BookOpen size={15} />
-          <span>Documents</span>
-        </button>
-        <button className={`topbar-action-button${tutorialEnabled ? " active" : ""}`} type="button" onClick={onToggleTutorial} title="Toggle hover help bubbles">
-          <span>{tutorialEnabled ? "Help On" : "Help Off"}</span>
-        </button>
-        {activeWorkbench === "library" && (
-          <button className="topbar-action-button" type="button" onClick={onProject} title="Return to project workbench">
-            <span className="grid-button-glyph" aria-hidden="true">RP</span>
-            <span>Project</span>
-          </button>
+        <TutorialTip title="Runtime Mode" body={TOPBAR_RUNTIME_HELP} side="below">
+          <span className={`runtime-pill${runtimeLive ? " live" : ""}`}>{runtimeLabel}</span>
+        </TutorialTip>
+        {dirty && (
+          <TutorialTip title="Unsaved Project" body={TOPBAR_DIRTY_HELP} side="below">
+            <span className="dirty-pill">Dirty</span>
+          </TutorialTip>
         )}
-        <button className="topbar-action-button" type="button" onClick={onNewProject} title="Create a new Providence project">
-          <FilePlus2 size={15} />
-          <span>New</span>
-        </button>
-        <button
-          className="topbar-action-button"
-          type="button"
-          onClick={onOpenProject}
-          disabled={!canUseFiles}
-          title={canUseFiles ? "Open Providence project package" : browserPreviewStatus}
-        >
-          <FolderOpen size={15} />
-          <span>Open</span>
-        </button>
-        {importAllowed && (
+        {editing && (
+          <TutorialTip title="Editing Focus" body={TOPBAR_EDITING_HELP} side="below">
+            <span className="dirty-pill">Editing</span>
+          </TutorialTip>
+        )}
+        <TutorialTip title="Global Search" body={TOPBAR_SEARCH_HELP} side="below">
+          <button className="topbar-action-button" type="button" onClick={onGlobalSearch} title="Search scenario, libraries, assets, and docs (Ctrl+K)">
+            <Search size={15} />
+            <span>Search</span>
+          </button>
+        </TutorialTip>
+        <TutorialTip title="Library Workbench" body={TOPBAR_LIBRARY_HELP} side="below">
+          <button className="topbar-action-button" type="button" onClick={onLibrary} title="Open managed library workbench">
+            <LibraryBig size={15} />
+            <span>Library</span>
+          </button>
+        </TutorialTip>
+        <TutorialTip title="Providence Documents" body={TOPBAR_DOCUMENTS_HELP} side="below">
+          <button className="topbar-action-button" type="button" onClick={onDocuments} title="Open Providence documents">
+            <BookOpen size={15} />
+            <span>Documents</span>
+          </button>
+        </TutorialTip>
+        <TutorialTip title="Hover Help" body={TOPBAR_HELP_HELP} side="below">
+          <button className={`topbar-action-button${tutorialEnabled ? " active" : ""}`} type="button" onClick={onToggleTutorial} title="Toggle hover help bubbles">
+            <span>{tutorialEnabled ? "Help On" : "Help Off"}</span>
+          </button>
+        </TutorialTip>
+        {activeWorkbench === "library" && (
+          <TutorialTip title="Project Workbench" body={TOPBAR_PROJECT_HELP} side="below">
+            <button className="topbar-action-button" type="button" onClick={onProject} title="Return to project workbench">
+              <span className="grid-button-glyph" aria-hidden="true">RP</span>
+              <span>Project</span>
+            </button>
+          </TutorialTip>
+        )}
+        <TutorialTip title="New Project" body={TOPBAR_NEW_PROJECT_HELP} side="below">
+          <button className="topbar-action-button" type="button" onClick={onNewProject} title="Create a new Providence project">
+            <FilePlus2 size={15} />
+            <span>New</span>
+          </button>
+        </TutorialTip>
+        <TutorialTip title="Open Project" body={TOPBAR_OPEN_PROJECT_HELP} side="below">
           <button
             className="topbar-action-button"
             type="button"
-            onClick={onImportScenario}
+            onClick={onOpenProject}
             disabled={!canUseFiles}
-            title={canUseFiles ? "Import a Realmz scenario into this empty project" : browserPreviewStatus}
+            title={canUseFiles ? "Open Providence project package" : browserPreviewStatus}
           >
-            <Upload size={15} />
-            <span>Import</span>
+            <FolderOpen size={15} />
+            <span>Open</span>
           </button>
+        </TutorialTip>
+        {importAllowed && (
+          <TutorialTip title="Import Scenario" body={TOPBAR_IMPORT_HELP} side="below">
+            <button
+              className="topbar-action-button"
+              type="button"
+              onClick={onImportScenario}
+              disabled={!canUseFiles}
+              title={canUseFiles ? "Import a Realmz scenario into this empty project" : browserPreviewStatus}
+            >
+              <Upload size={15} />
+              <span>Import</span>
+            </button>
+          </TutorialTip>
         )}
         <div className="editor-undo-redo" aria-label="Undo and redo">
-          <IconButton title={undoLabel ? `Undo ${undoLabel} (Ctrl+Z)` : "Undo (Ctrl+Z)"} onClick={onUndo} disabled={!canUndo}>
-            <RefreshCcw size={15} />
-          </IconButton>
-          <IconButton title={redoLabel ? `Redo ${redoLabel} (Ctrl+Y)` : "Redo (Ctrl+Y)"} onClick={onRedo} disabled={!canRedo}>
-            <RefreshCcw size={15} className="redo-icon" />
-          </IconButton>
+          <TutorialTip title="Undo" body={TOPBAR_UNDO_HELP} side="below">
+            <IconButton title={undoLabel ? `Undo ${undoLabel} (Ctrl+Z)` : "Undo (Ctrl+Z)"} onClick={onUndo} disabled={!canUndo}>
+              <RefreshCcw size={15} />
+            </IconButton>
+          </TutorialTip>
+          <TutorialTip title="Redo" body={TOPBAR_REDO_HELP} side="below">
+            <IconButton title={redoLabel ? `Redo ${redoLabel} (Ctrl+Y)` : "Redo (Ctrl+Y)"} onClick={onRedo} disabled={!canRedo}>
+              <RefreshCcw size={15} className="redo-icon" />
+            </IconButton>
+          </TutorialTip>
         </div>
-        <IconButton title={canSave ? "Save project" : browserPreviewStatus} onClick={onSave} disabled={!canSave}>
-          <Save size={15} />
-        </IconButton>
-        <IconButton title={canExport ? "Export scenario" : browserPreviewStatus} onClick={onExport} disabled={!canExport}>
-          <Download size={15} />
-        </IconButton>
+        <TutorialTip title="Save Project" body={TOPBAR_SAVE_HELP} side="below">
+          <IconButton title={canSave ? "Save project" : browserPreviewStatus} onClick={onSave} disabled={!canSave}>
+            <Save size={15} />
+          </IconButton>
+        </TutorialTip>
+        <TutorialTip title="Export Scenario" body={TOPBAR_EXPORT_HELP} side="below">
+          <IconButton title={canExport ? "Export scenario" : browserPreviewStatus} onClick={onExport} disabled={!canExport}>
+            <Download size={15} />
+          </IconButton>
+        </TutorialTip>
       </div>
     </header>
   );

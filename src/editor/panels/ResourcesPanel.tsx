@@ -7,6 +7,7 @@ import { tileColor } from "../components/TileSprite";
 import { ScrollArea } from "../ui";
 import { renderListKey } from "../renderKeys";
 import { MediaAssetImportOptions } from "../mediaAssets";
+import { TutorialTip } from "../components/TutorialTip";
 import {
   ASSET_SECTIONS,
   AssetImportBar,
@@ -36,6 +37,29 @@ import {
   useProjectPreview
 } from "./resources/ResourceWidgets";
 import { RecordsPanel } from "./RecordsPanel";
+
+const ASSETS_WORKBENCH_HELP = "Assets is the resource-fork workbench: scenario media that ships with the project, Realmz reference resources, Divinity reference art, decoded records, and raw resource inventory all live here with export-scope and preview-status labels.";
+const ASSET_KIND_FILTER_HELP = "Filter by Realmz resource family. Pictures are PICT resources, sounds are snd resources, icons and special land tiles are cicn resources, and text resources are TEXT or STR# entries.";
+const UI_REFERENCE_HELP = "Divinity and Realmz editor interface art is useful for research, but it is not scenario media. Keep it hidden unless you are comparing manual/editor artwork.";
+const SPECIAL_LAND_FILTER_HELP = "Special Land Tiles are 32 x 32 cicn resources painted as negative map field values. Realmz draws the landlook base tile under the transparent icon.";
+const RESOURCE_FALLBACK_HELP = "Fallback warnings identify records that point at resources Providence could not resolve from the scenario or bundled Realmz libraries. Treat used fallbacks as release risks.";
+const TILE_ATLAS_HELP = "Tile atlases are landlook render sources. Standard Realmz atlases are reference data; scenario custom landlooks ship only when the scenario supplies them.";
+
+function assetSectionHelp(section: AssetSection) {
+  if (section === "project") {
+    return "Scenario Assets are project-owned media that Providence can package into the scenario resource fork or companion files. Use this section for authored pictures, sounds, icons, text, and special land tiles.";
+  }
+  if (section === "realmz") {
+    return "Reference Libraries are Realmz built-ins. They are available to Realmz at runtime and can power previews and pickers, but they are not copied into your scenario.";
+  }
+  if (section === "divinity") {
+    return "Divinity Reference contains editor/manual evidence and comparison art. These resources are read-only and usually should not appear in normal authoring pickers.";
+  }
+  if (section === "records") {
+    return "Decoded Records shows parsed scenario records rather than media assets. It is useful when tracing which data records refer to a resource.";
+  }
+  return "Advanced Inventory is the raw resource-fork ledger. It exposes imported PICT, cicn, snd, TEXT, STR#, styl, RLMZ, vers, malformed, and compatibility resources for diagnostics.";
+}
 
 export function ResourcesPanel({
   project,
@@ -117,7 +141,11 @@ export function ResourcesPanel({
     <section className="editor-full-panel asset-workbench">
       <header className="asset-workbench-header">
         <div>
-          <h1>Assets</h1>
+          <h1>
+            <TutorialTip title="Assets Workbench" body={ASSETS_WORKBENCH_HELP} side="below">
+              <span>Assets</span>
+            </TutorialTip>
+          </h1>
           <p>Manage media that ships with this scenario, and browse bundled reference resources for previews and pickers.</p>
         </div>
         <AssetImportBar onImportAssets={project ? onImportAssets : undefined} compact />
@@ -132,27 +160,33 @@ export function ResourcesPanel({
             className={section === item.id ? "active" : ""}
             onClick={() => setSectionOverride(item.id)}
           >
-            {item.label}
+            <TutorialTip title={item.label} body={assetSectionHelp(item.id)} side="below">
+              <span>{item.label}</span>
+            </TutorialTip>
           </button>
         ))}
       </div>
       {section !== "records" && (
         <div className="asset-filter-row">
           <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search assets..." />
-          <select value={kindFilter} onChange={(event) => setKindFilter(event.currentTarget.value as ManagedAssetKind | "all")} aria-label="Asset kind filter">
-            <option value="all">All Types</option>
-            <option value="picture">Pictures</option>
-            <option value="sound">Sounds</option>
-            <option value="icon">Icons</option>
-            <option value="special-land-tile">Special Land Tiles</option>
-            <option value="text">Text Resources</option>
-            <option value="other">Other</option>
-          </select>
+          <TutorialTip title="Asset Kind Filter" body={ASSET_KIND_FILTER_HELP} side="below">
+            <select value={kindFilter} onChange={(event) => setKindFilter(event.currentTarget.value as ManagedAssetKind | "all")} aria-label="Asset kind filter">
+              <option value="all">All Types</option>
+              <option value="picture">Pictures</option>
+              <option value="sound">Sounds</option>
+              <option value="icon">Icons</option>
+              <option value="special-land-tile">Special Land Tiles</option>
+              <option value="text">Text Resources</option>
+              <option value="other">Other</option>
+            </select>
+          </TutorialTip>
           <PreviewStatusFilters value={libraryPreviewFilter} onChange={setLibraryPreviewFilter} />
           {section === "divinity" && (
             <label className="asset-inline-toggle" title="Show Divinity/Realmz application interface artwork. These resources are not scenario media.">
               <input type="checkbox" checked={showUiReference} onChange={(event) => setShowUiReference(event.currentTarget.checked)} />
-              Show UI Reference
+              <TutorialTip title="UI Reference Art" body={UI_REFERENCE_HELP} side="below">
+                <span>Show UI Reference</span>
+              </TutorialTip>
             </label>
           )}
         </div>
@@ -164,12 +198,17 @@ export function ResourcesPanel({
       {section !== "advanced" && section !== "records" && (
         <section className="tab-panel asset-authoring-panel">
           <div className="panel-header">
-            <span>{assetSectionTitle(section)}</span>
+            <TutorialTip title={assetSectionTitle(section)} body={assetSectionHelp(section)} side="below">
+              <span>{assetSectionTitle(section)}</span>
+            </TutorialTip>
             <b>{section === "project" ? `${(projectAssets.length + scenarioResources.length).toLocaleString()} scenario asset${projectAssets.length + scenarioResources.length === 1 ? "" : "s"}` : `${matchingLibraryAssets.length.toLocaleString()} reference asset${matchingLibraryAssets.length === 1 ? "" : "s"}`}</b>
           </div>
           {kindFilter === "special-land-tile" && (
             <div className="special-land-explainer">
-              Special Land Tiles are 32 x 32 <code>cicn</code> resources addressed by negative tile ids. They paint directly onto map cells.
+              <TutorialTip title="Special Land Tiles" body={SPECIAL_LAND_FILTER_HELP} side="below">
+                <span>Special Land Tiles</span>
+              </TutorialTip>{" "}
+              are 32 x 32 <code>cicn</code> resources addressed by negative tile ids. They paint directly onto map cells.
             </div>
           )}
           {authoringGuidance && (
@@ -261,7 +300,9 @@ export function ResourcesPanel({
       {section === "advanced" && (
       <section className="tab-panel resource-browser">
         <div className="panel-header">
-          <span>Advanced Resources</span>
+          <TutorialTip title="Advanced Resources" body={assetSectionHelp("advanced")} side="below">
+            <span>Advanced Resources</span>
+          </TutorialTip>
           <b>{resources.length.toLocaleString()}</b>
         </div>
         <div className="resource-type-grid">
@@ -286,7 +327,11 @@ export function ResourcesPanel({
         {gaps.length > 0 && (
           <ScrollArea className="lint-results compact" aria-label="Resource Fallbacks">
             <section>
-              <header>Resource Fallbacks</header>
+              <header>
+                <TutorialTip title="Resource Fallbacks" body={RESOURCE_FALLBACK_HELP} side="below">
+                  <span>Resource Fallbacks</span>
+                </TutorialTip>
+              </header>
               {gaps.slice(0, 8).map((gap, index) => (
                 <button key={renderListKey("resource-gap", gap.entity, index)} className="lint-issue warning" onClick={() => onSelectEntity(selectEntityFromId(gap.entity.id))}>
                   ! {gap.entity.label} uses {gap.reason}
@@ -325,7 +370,9 @@ export function ResourcesPanel({
       {section === "advanced" && (
       <section className="tab-panel atlas-browser">
         <div className="panel-header">
-          <span>Tile Atlases</span>
+          <TutorialTip title="Tile Atlases" body={TILE_ATLAS_HELP} side="below">
+            <span>Tile Atlases</span>
+          </TutorialTip>
           <b>{tileAtlases.length.toLocaleString()}</b>
         </div>
         <ScrollArea className="asset-grid compact" aria-label="Tile Atlases">

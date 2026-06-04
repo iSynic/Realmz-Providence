@@ -16,6 +16,15 @@ const FALLBACK_TILE_CHOICES = [
 ];
 const TILE_DRAG_THRESHOLD = 6;
 
+const PALETTE_MODE_HELP: Record<TilePaletteCategory, string> = {
+  landlook: "Standard Realmz landlook or dungeon atlas tiles for the selected map renderer.",
+  special: "Negative special land cicn tiles and icon-backed map values, including large structures and landmarks.",
+  custom: "Project-saved named tile buckets. Drag tiles from any palette tab into the reveal dock to collect them.",
+  used: "Every raw tile value already present on the current map, including values outside the visible atlas range.",
+  attributes: "Tiles grouped by decoded behavior such as solid, walkable, shore/water, path, boat, LOS, forest, and combat evidence.",
+  raw: "Advanced compatibility values and map-used raw values for auditing or expert painting."
+};
+
 type PaintPalettePanelProps = {
   map: MapEntity | null;
   project?: Project | null;
@@ -220,7 +229,7 @@ export function PaintPalettePanel({
       <div className={metaClass}>
         <TutorialTip
           title="Paint Palette"
-          body="Click a tile to choose what the Paint tool will place. Sprite thumbnails use the loaded Realmz atlas; color-only swatches are decoded fallback or special tile values."
+          body="Click a tile to choose the raw Realmz map-field value Paint will place. Landlook tiles use the active atlas; Special / Icons includes negative cicn structures and landmarks; Custom palettes are project-saved buckets."
           side={variant === "bar" ? "above" : "right"}
         >
           <strong>Palette</strong>
@@ -230,12 +239,12 @@ export function PaintPalettePanel({
       </div>
       {variant === "sidebar" && (
         <div className="paint-palette-tabs" role="tablist" aria-label="Tile palette mode">
-          <button type="button" className={mode === "landlook" ? "active" : ""} onClick={() => onSetMode("landlook")}>Landlook</button>
-          <button type="button" className={mode === "special" ? "active" : ""} onClick={() => onSetMode("special")}>Special / Icons</button>
-          <button type="button" className={mode === "custom" ? "active" : ""} onClick={() => onSetMode("custom")}>Custom</button>
-          <button type="button" className={mode === "used" ? "active" : ""} onClick={() => onSetMode("used")}>Used</button>
-          <button type="button" className={mode === "attributes" ? "active" : ""} onClick={() => onSetMode("attributes")}>Attributes</button>
-          <button type="button" className={mode === "raw" ? "active" : ""} onClick={() => onSetMode("raw")}>Raw / Advanced</button>
+          <button type="button" className={mode === "landlook" ? "active" : ""} onClick={() => onSetMode("landlook")} title={PALETTE_MODE_HELP.landlook}>Landlook</button>
+          <button type="button" className={mode === "special" ? "active" : ""} onClick={() => onSetMode("special")} title={PALETTE_MODE_HELP.special}>Special / Icons</button>
+          <button type="button" className={mode === "custom" ? "active" : ""} onClick={() => onSetMode("custom")} title={PALETTE_MODE_HELP.custom}>Custom</button>
+          <button type="button" className={mode === "used" ? "active" : ""} onClick={() => onSetMode("used")} title={PALETTE_MODE_HELP.used}>Used</button>
+          <button type="button" className={mode === "attributes" ? "active" : ""} onClick={() => onSetMode("attributes")} title={PALETTE_MODE_HELP.attributes}>Attributes</button>
+          <button type="button" className={mode === "raw" ? "active" : ""} onClick={() => onSetMode("raw")} title={PALETTE_MODE_HELP.raw}>Raw / Advanced</button>
         </div>
       )}
       {variant === "sidebar" && mode === "landlook" && (

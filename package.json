@@ -21,6 +21,7 @@
     "archaeology:rules-coverage": "node scripts/generate_rules_coverage.mjs",
     "archaeology:resource-coverage": "node scripts/generate_resource_coverage.mjs",
     "archaeology:target-compatibility": "node scripts/generate_target_compatibility.mjs",
+    "archaeology:smart-terrain": "node scripts/generate_smart_terrain_corpus.mjs",
     "archaeology:divinity-opcodes": "node scripts/extract_divinity_opcode_help.mjs",
     "archaeology:opcode-crosswalk": "node scripts/generate_opcode_edcd_crosswalk.mjs",
     "smoke:oracle": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_smoke.ps1",
@@ -41,6 +42,7 @@
     "smoke:editor:scripts-v2:diagnostics": "powershell -ExecutionPolicy Bypass -File scripts/run_scripts_v2_diagnostics_smoke.ps1",
     "check:ap-actions": "node scripts/check_script_action_coverage.mjs",
     "check:registration-codes": "node scripts/check_registration_codes.mjs",
+    "check:smart-terrain-profiles": "node scripts/check_smart_terrain_profiles.mjs",
     "check": "npm run typecheck && npm run check:ap-actions && npm run check:registration-codes && npm run build && npm run test:rust"
   },
   "dependencies": {

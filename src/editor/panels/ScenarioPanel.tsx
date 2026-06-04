@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { TutorialTip } from "../components/TutorialTip";
 import { Project, ProjectCommand } from "../types";
 import { REALMZ_CASTES, REALMZ_RACES } from "../rulesCatalog";
 import {
@@ -10,6 +11,21 @@ import {
   normalizedSecurityBytes,
   registrationVariantsFor
 } from "../registrationCodes";
+
+const SCENARIO_HELP = "Scenario owns the startup shell Realmz checks before play begins: marker/main fields, contact metadata, party restrictions, global hooks, registration segments, and load-readiness.";
+const STARTUP_HELP = "The marker/main scenario file stores recommended level, maximum party level, startup land/X/Y, creator-user check, and two registration/security code segments.";
+const CONTACT_HELP = "Data CI stores release-facing scenario title, version, author/contact text, payment/title strings, and the public description.";
+const HUB_HELP = "Divinity's Scenario area links to pictures, rules overrides, security, global hooks, and release metadata. Providence routes those deeper editors to their focused tools.";
+const RESTRICTIONS_HELP = "Data RI optionally bans races/castes and gates party size or character level before a party can enter the scenario.";
+const READINESS_HELP = "Load Readiness checks whether Realmz can select and start the exported scenario. The broader Linter still owns full release validation.";
+const GLOBAL_EVENTS_HELP = "Global event hooks live in the Global source file. Start, Death, Quit, Shop, and Temple have source-backed runtime consumers; reserved slots are preserved.";
+const SECURITY_HELP = "Legacy security stores two 20-character code segments in the marker/main file. Changing them changes the registration code players need.";
+const REGISTRATION_GENERATOR_HELP = "The generator shows evidence-labeled algorithms. Divinity Coder/custom-scenario codes and bundled Fantasoft scenario codes are different formula families.";
+const STARTUP_LEVEL_HELP = "Recommended level is the party level target shown during party selection.";
+const MAX_LEVEL_HELP = "Maximum party level is an optional startup gate. Imported values such as 999 often mean no practical cap.";
+const STARTUP_LAND_HELP = "The outdoor land level Realmz loads first when the scenario starts.";
+const STARTUP_COORD_HELP = "Startup map/view coordinate. Keep it inside the 0..89 Realmz map bounds.";
+const CREATOR_USER_HELP = "Legacy Str255 creator/user check field. Empty means no creator/user check.";
 
 type ScenarioPanelProps = {
   project: Project;
@@ -29,7 +45,9 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool
     <section className="scenario-workbench">
       <header className="scenario-hero">
         <div>
-          <h1>Scenario</h1>
+          <h1>
+            <HelpTitle title="Scenario" help={SCENARIO_HELP} />
+          </h1>
           <p>Author startup, contact, party restrictions, and Realmz load-readiness.</p>
         </div>
         <span>{project.scenario.name}</span>
@@ -39,7 +57,7 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool
         <article id="scenario-startup" className="scenario-card scenario-card-primary">
           <header>
             <div>
-              <span>Startup Shell</span>
+              <HelpTitle title="Startup Shell" help={STARTUP_HELP} />
               <small>Marker/main scenario file</small>
             </div>
             <b>{shell.sourceFile || project.scenario.name}</b>
@@ -57,16 +75,18 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool
             />
             <NumberField
               label="Recommended Level"
+              help={STARTUP_LEVEL_HELP}
               value={shell.recLevel}
               onCommit={(recLevel) => onApplyCommand({ kind: "updateScenarioShell", label: "Update recommended level", changes: { recLevel } })}
             />
             <NumberField
               label="Maximum Party Level"
+              help={MAX_LEVEL_HELP}
               value={shell.maxLevel}
               onCommit={(maxLevel) => onApplyCommand({ kind: "updateScenarioShell", label: "Update max party level", changes: { maxLevel } })}
             />
             <label className="scenario-field">
-              <span>Startup Land</span>
+              <HelpTitle title="Startup Land" help={STARTUP_LAND_HELP} />
               <select
                 value={shell.landLevel}
                 onChange={(event) => onApplyCommand({
@@ -82,16 +102,19 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool
             </label>
             <NumberField
               label="Startup X"
+              help={STARTUP_COORD_HELP}
               value={shell.lookX}
               onCommit={(lookX) => onApplyCommand({ kind: "updateScenarioShell", label: "Update startup X", changes: { lookX } })}
             />
             <NumberField
               label="Startup Y"
+              help={STARTUP_COORD_HELP}
               value={shell.lookY}
               onCommit={(lookY) => onApplyCommand({ kind: "updateScenarioShell", label: "Update startup Y", changes: { lookY } })}
             />
             <TextField
               label="Creator / User Check"
+              help={CREATOR_USER_HELP}
               value={shell.creatorUser}
               onCommit={(creatorUser) => onApplyCommand({ kind: "updateScenarioShell", label: "Update creator check", changes: { creatorUser } })}
             />
@@ -127,7 +150,7 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool
         <article id="scenario-contact" className="scenario-card">
           <header>
             <div>
-              <span>Contact Info</span>
+              <HelpTitle title="Contact Info" help={CONTACT_HELP} />
               <small>Scenario contact and registration metadata</small>
             </div>
             <b>{contact.authored ? "edited" : "source"}</b>
@@ -152,7 +175,7 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool
         <article id="scenario-authoring-hub" className="scenario-card">
           <header>
             <div>
-              <span>Divinity Scenario Hub</span>
+              <HelpTitle title="Divinity Scenario Hub" help={HUB_HELP} />
               <small>Scenario links into focused Providence tools</small>
             </div>
             <b>roadmap</b>
@@ -206,7 +229,7 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool
         <article id="scenario-restrictions" className="scenario-card">
           <header>
             <div>
-              <span>Party Restrictions</span>
+              <HelpTitle title="Party Restrictions" help={RESTRICTIONS_HELP} />
               <small>Optional party admission rules</small>
             </div>
             <b>{restrictions ? "configured" : "not present"}</b>
@@ -245,6 +268,7 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool
               <div className="scenario-form-grid">
                 <NumberField
                   label="Maximum Number Of Characters"
+                  help="Maximum party character count from Data RI. Divinity/Realmz party size is normally 1-6."
                   value={restrictions.maxPartyCharacters}
                   min={1}
                   max={6}
@@ -253,6 +277,7 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool
                 />
                 <NumberField
                   label="Maximum Level Of Any Character"
+                  help="Extra Data RI level gate. Zero means no additional character-level cap."
                   value={restrictions.maxPartyLevel}
                   min={0}
                   hint="0 means no maximum character level."
@@ -283,7 +308,7 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool
         <article id="scenario-readiness" className="scenario-card">
           <header>
             <div>
-              <span>Load Readiness</span>
+              <HelpTitle title="Load Readiness" help={READINESS_HELP} />
               <small>Realmz standard scenario shell</small>
             </div>
             <b>{issues.length ? `${issues.length} issue(s)` : "ready"}</b>
@@ -301,7 +326,7 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool
         <article id="scenario-global-macros" className="scenario-card">
           <header>
             <div>
-              <span>Global Events</span>
+              <HelpTitle title="Global Events" help={GLOBAL_EVENTS_HELP} />
               <small>Global file, seven Divinity-visible slots</small>
             </div>
             <b>{activeGlobalHookCount(project)}</b>
@@ -419,7 +444,7 @@ function SecurityRegistrationCard({
     <article id="scenario-security" className="scenario-card scenario-security-card">
       <header>
         <div>
-          <span>Security / Registration</span>
+          <HelpTitle title="Security / Registration" help={SECURITY_HELP} />
           <small>Two Divinity code segments, up to 20 characters each</small>
         </div>
         <b>{status}</b>
@@ -435,7 +460,7 @@ function SecurityRegistrationCard({
       </div>
       <div className="scenario-form-grid">
         <label className="scenario-field scenario-security-field">
-          <span>Code Segment 1</span>
+          <HelpTitle title="Code Segment 1" help={SECURITY_HELP} />
           <input
             readOnly={!unlocked}
             maxLength={SECURITY_SEGMENT_LENGTH}
@@ -445,7 +470,7 @@ function SecurityRegistrationCard({
           <small>{segment1.length}/{SECURITY_SEGMENT_LENGTH} characters</small>
         </label>
         <label className="scenario-field scenario-security-field">
-          <span>Code Segment 2</span>
+          <HelpTitle title="Code Segment 2" help={SECURITY_HELP} />
           <input
             readOnly={!unlocked}
             maxLength={SECURITY_SEGMENT_LENGTH}
@@ -458,7 +483,7 @@ function SecurityRegistrationCard({
       <section className="scenario-registration-generator">
         <header>
           <div>
-            <span>Registration Code Generator</span>
+            <HelpTitle title="Registration Code Generator" help={REGISTRATION_GENERATOR_HELP} />
             <small>Verified evidence and source-ported candidate formulas for {registrationScenarioName}.</small>
           </div>
           <b>{primaryRegistrationVariant?.code ?? "ready"}</b>
@@ -518,10 +543,18 @@ function SecurityRegistrationCard({
   );
 }
 
-function TextField({ label, value, onCommit }: { label: string; value: string; onCommit: (value: string) => void }) {
+function HelpTitle({ title, help }: { title: string; help: string }) {
   return (
-    <label className="scenario-field">
-      <span>{label}</span>
+    <TutorialTip title={title} body={help} side="right">
+      <span>{title}</span>
+    </TutorialTip>
+  );
+}
+
+function TextField({ label, value, help, onCommit }: { label: string; value: string; help?: string; onCommit: (value: string) => void }) {
+  return (
+    <label className="scenario-field" title={help}>
+      {help ? <HelpTitle title={label} help={help} /> : <span>{label}</span>}
       <input
         key={value}
         defaultValue={value}
@@ -540,6 +573,7 @@ function NumberField({
   min,
   max,
   hint,
+  help,
   onCommit
 }: {
   label: string;
@@ -547,11 +581,12 @@ function NumberField({
   min?: number;
   max?: number;
   hint?: string;
+  help?: string;
   onCommit: (value: number) => void;
 }) {
   return (
-    <label className="scenario-field">
-      <span>{label}</span>
+    <label className="scenario-field" title={help}>
+      {help ? <HelpTitle title={label} help={help} /> : <span>{label}</span>}
       <input
         key={value}
         type="number"

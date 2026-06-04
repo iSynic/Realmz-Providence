@@ -41,12 +41,12 @@ export function MapCapabilityPanel({
           <b>{activeToolLabel(activeTool)}</b>
         </summary>
         <div className="affordance-button-grid">
-          <AffordanceButton label="Paint Tiles" body="Use Paint and Sample to edit Realmz land and dungeon tile fields through the paint command path." tone="ready" onClick={() => { onSetTool("paint"); onOpenPalette(); }} />
-          <AffordanceButton label="Special / Icons" body="Open the Paint palette's special land and icon-backed Realmz tile values." tone="ready" onClick={() => { onSetTool("paint"); onOpenPalette(); }} />
-          <AffordanceButton label="Action Points" body="Use the Action Point tool or selected-cell actions to create, move, edit, and clear AP records." tone="ready" onClick={() => onSetTool("trigger")} />
-          <AffordanceButton label="Map Flags" body="Landlook, darkness, and LOS are writable through the current map setup controls." tone="ready" onClick={onFocusFlags} />
-          <AffordanceButton label="Edit Land Tiles" body="Open the current landlook atlas and decoded tile properties in the Land Tiles workbench." tone="ready" onClick={onFocusAtlas} />
-          <AffordanceButton label="Clear Level" body="Clear every cell to the level's base tile after confirmation." tone="danger" onClick={onClearLevel} />
+          <AffordanceButton label="Paint Tiles" body="Use Paint and Sample to edit raw Realmz map-field values. Brush, Replace, Eraser, Fill Chance, custom palettes, and Smart terrain all write normal undoable tile edits." tone="ready" onClick={() => { onSetTool("paint"); onOpenPalette(); }} />
+          <AffordanceButton label="Special / Icons" body="Open the Paint palette to place negative special land cicn tiles and icon-backed values. Large buildings and landmarks usually live here, not in ordinary landlook terrain." tone="ready" onClick={() => { onSetTool("paint"); onOpenPalette(); }} />
+          <AffordanceButton label="Action Points" body="Use the Action Point tool or selected-cell actions to create, move, edit, and clear AP records. Use Scripts for the deeper opcode and target workflow." tone="ready" onClick={() => onSetTool("trigger")} />
+          <AffordanceButton label="Map Flags" body="Edit map setup such as landlook, renderer, darkness, and line of sight. Providence previews LOS/darkness as editor guidance, not Realmz runtime visibility cache data." tone="ready" onClick={onFocusFlags} />
+          <AffordanceButton label="Edit Land Tiles" body="Open the current landlook atlas, tile metadata, Data Solids evidence, and Divinity-style combat expansion preview for the selected map." tone="ready" onClick={onFocusAtlas} />
+          <AffordanceButton label="Clear Level" body="Clear every cell to the level's base tile after confirmation. On dungeon maps the clear tile can be walkable blank space." tone="danger" onClick={onClearLevel} />
         </div>
       </details>
       <details className="context-section affordance-section">
@@ -54,9 +54,9 @@ export function MapCapabilityPanel({
           <span>Land Layout</span>
           <b>ready</b>
         </summary>
-        <p className="empty-copy compact">Edit the outdoor level layout grid used when the party walks off a map edge. Blank cells mean no automatic edge travel.</p>
+        <p className="empty-copy compact">Edit the outdoor level layout grid used when the party walks off a map edge. Blank cells mean no automatic edge travel, even when map art visually touches another level.</p>
         <div className="affordance-button-grid compact">
-          <AffordanceButton label="Open Layout" body="Open the land-level adjacency grid in the Land Layout workbench." tone="ready" onClick={onFocusLayout} />
+          <AffordanceButton label="Open Layout" body="Open the Divinity-style land adjacency grid. Layout cells point at land level indices and control edge-to-edge outdoor travel." tone="ready" onClick={onFocusLayout} />
         </div>
       </details>
       <details className="context-section affordance-section" open>
@@ -65,10 +65,10 @@ export function MapCapabilityPanel({
           <b>{randomLevel?.rects.length ?? 0} / 20{showRandomRects ? "" : " hidden"}</b>
         </summary>
         <div className="affordance-button-grid compact">
-          <AffordanceButton label="Set Area" body="Use the Random Area tool or selected-cell actions to create and resize a Random Rectangle." tone="ready" onClick={() => onSetTool("random")} />
-          <AffordanceButton label="Highlight" body="Locate and highlight the first selected Random Rectangle on the map." tone="ready" onClick={onHighlightRandomRect} disabled={!randomLevel?.rects.length} />
-          <AffordanceButton label="Show All" body="Show every Random Rectangle on the current level." tone="ready" onClick={onShowRandomRects} />
-          <AffordanceButton label="Edit Fields" body="Select a Random Rectangle to edit bounds, chance, battles, text, sound, and extra AP doors." tone="ready" onClick={onEditRandomRect} disabled={!randomLevel?.rects.length} />
+          <AffordanceButton label="Set Area" body="Use the Random Area tool or selected-cell actions to create and resize a Random Rectangle. Realmz stores up to twenty per level." tone="ready" onClick={() => onSetTool("random")} />
+          <AffordanceButton label="Highlight" body="Locate and highlight the first selected Random Rectangle on the map without changing its stored fields." tone="ready" onClick={onHighlightRandomRect} disabled={!randomLevel?.rects.length} />
+          <AffordanceButton label="Show All" body="Show every Random Rectangle on the current level, including regions used for invisible encounters and extra Action Point doors." tone="ready" onClick={onShowRandomRects} />
+          <AffordanceButton label="Edit Fields" body="Select a Random Rectangle to edit bounds, chance out of 10,000, battle range, text, sound, option byte, and extra AP doors." tone="ready" onClick={onEditRandomRect} disabled={!randomLevel?.rects.length} />
         </div>
         <div className="mini-rect-list">
           {randomLevel?.rects.slice(0, 6).map((rect) => (
@@ -87,6 +87,7 @@ export function MapCapabilityPanel({
             <span>Cell Flags</span>
             <b>inspect</b>
           </summary>
+          <p className="empty-copy compact">Dungeon cells pack wall, door, stair, secret, and movement-edge flags. Providence shows the decoded shape here while deeper flag authoring remains staged for a later pass.</p>
           <div className="bit-toggle-grid">
             {["Wall", "Door", "Stairs", "Secret", "Move Up", "Move Right", "Move Down", "Move Left"].map((label) => (
               <label key={label}>

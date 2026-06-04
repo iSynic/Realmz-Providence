@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Search, X } from "lucide-react";
+import { TutorialTip } from "../components/TutorialTip";
 import {
   buildGlobalSearchIndex,
   GlobalSearchResult,
@@ -17,6 +18,14 @@ const scopeLabels: Record<GlobalSearchScope, string> = {
 };
 const scopeOrder: GlobalSearchScope[] = ["scenario", "assets", "libraries", "docs", "diagnostics"];
 const initialGroupLimit = 8;
+const GLOBAL_SEARCH_HELP =
+  "Global Search indexes the current scenario, scenario assets, bundled libraries, documentation, validation, and diagnostics. It is the fastest way to jump to a record, resource, topic, or warning.";
+const SEARCH_SCOPES_HELP =
+  "Scopes narrow the result set without changing the project. Scenario is editable project data, Assets includes project and reference media, Libraries are bundled reference entries, Docs are handbook topics, and Diagnostics are linter/export clues.";
+const SEARCH_RESULTS_HELP =
+  "Results are grouped by scope and scored by exact ID, title, aliases, snippets, and numeric shortcuts. Opening a result navigates to its workbench or Documents topic.";
+const SEARCH_SHORTCUTS_HELP =
+  "Shortcut searches support record/resource phrases such as string 349, macro 143, ap 4, monster 12, item 900, pict 304, sound 208, icon 139, map 0, or a bare numeric ID.";
 
 export function GlobalSearchDialog({
   project,
@@ -113,7 +122,9 @@ export function GlobalSearchDialog({
       >
         <header className="global-search-header">
           <label className="global-search-input">
-            <Search size={17} />
+            <TutorialTip title="Global Search" body={GLOBAL_SEARCH_HELP} side="below">
+              <span className="global-search-help-anchor"><Search size={17} /></span>
+            </TutorialTip>
             <input
               ref={inputRef}
               value={query}
@@ -128,6 +139,9 @@ export function GlobalSearchDialog({
         </header>
 
         <div className="global-search-scopes" aria-label="Search scopes">
+          <TutorialTip title="Search Scopes" body={SEARCH_SCOPES_HELP} side="below">
+            <span className="global-search-scope-label">Scopes</span>
+          </TutorialTip>
           {scopeOrder.map((scope) => (
             <button
               key={scope}
@@ -143,7 +157,9 @@ export function GlobalSearchDialog({
         <div className="global-search-results" role="listbox" aria-label="Search results">
           {!deferredQuery.trim() && (
             <div className="global-search-empty">
-              <strong>Search everything Providence knows about right now.</strong>
+              <TutorialTip title="Shortcut Searches" body={SEARCH_SHORTCUTS_HELP} side="below">
+                <strong>Search everything Providence knows about right now.</strong>
+              </TutorialTip>
               <span>Try `registration`, `string 349`, `macro 143`, `sound 208`, `pict 304`, an item name, a monster, or a map.</span>
             </div>
           )}
@@ -161,7 +177,9 @@ export function GlobalSearchDialog({
             return (
               <section key={scope} className="global-search-group" aria-label={`${scopeLabels[scope]} results`}>
                 <header>
-                  <span>{scopeLabels[scope]}</span>
+                  <TutorialTip title={`${scopeLabels[scope]} Results`} body={SEARCH_RESULTS_HELP} side="below">
+                    <span>{scopeLabels[scope]}</span>
+                  </TutorialTip>
                   <b>{rows.length.toLocaleString()}</b>
                 </header>
                 {visible.map((result) => {
@@ -209,7 +227,9 @@ export function GlobalSearchDialog({
         </div>
 
         <footer className="global-search-footer">
-          <span>Enter opens</span>
+          <TutorialTip title="Search Keyboard Flow" body={SEARCH_SHORTCUTS_HELP} side="above">
+            <span>Enter opens</span>
+          </TutorialTip>
           <span>Esc closes</span>
           <span>Ctrl+K toggles</span>
         </footer>

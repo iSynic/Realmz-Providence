@@ -14,25 +14,25 @@ const FILTERS: { flag: MapViewFlag; label: string; title: string; body: string }
     flag: "showRealTiles",
     label: "Real tiles",
     title: "Real Tiles",
-    body: "Draw available Realmz PICT tile atlases instead of only decoded fallback colors."
+    body: "Draw available Realmz PICT tile atlases and special/icon art instead of decoded fallback colors. Turn this off when raw value auditing matters more than final appearance."
   },
   {
     flag: "showRealmzCoordinates",
     label: "Realmz XY",
     title: "Realmz Coordinates",
-    body: "Show Realmz grid coordinates along the map so tile and Action Point positions line up with source records."
+    body: "Show Realmz grid coordinates outside the map edge so tile, Action Point, random rectangle, and map-start positions line up with source records without covering edge tiles."
   },
   {
     flag: "showTriggers",
     label: "Triggers",
     title: "Action Points",
-    body: "Show placed Action Points and Dungeon Action Points on the map canvas."
+    body: "Show placed Action Points and Dungeon Action Points on the map canvas. Use this before painting near scripted cells so AP placement is not accidentally obscured."
   },
   {
     flag: "showRandomRects",
     label: "Random",
     title: "Random Rectangles",
-    body: "Show Random Rectangles used for random battles, invisible encounters, and Extra Action Points."
+    body: "Show Random Rectangles used for random battles, invisible encounters, and Extra Action Points. Realmz stores their chance as times in 10,000."
   },
   {
     flag: "showEncounterOverlays",
@@ -74,13 +74,13 @@ const FILTERS: { flag: MapViewFlag; label: string; title: string; body: string }
     flag: "showSecretOverlays",
     label: "Secrets",
     title: "Secret Tile Overlay",
-    body: "Show the Realmz Utility-style red overlay for encoded passability, hidden walkable tiles, and discoverable secret markers. Action Point visibility is controlled by the other filters."
+    body: "Show official-style Realmz secret and passable marker overlays on top of the underlying tile art. These markers do not replace the map tile itself."
   },
   {
     flag: "showMapRecords",
     label: "Starts",
     title: "Map Starts",
-    body: "Show map-record start positions and scenario entry points when Providence can resolve them."
+    body: "Show map-record start positions and scenario entry points when Providence can resolve them. These are separate from Action Point trigger locations."
   }
 ];
 

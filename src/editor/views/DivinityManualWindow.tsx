@@ -44,7 +44,7 @@ function centeredManualBounds(width: number, height: number): ManualBounds {
   });
 }
 
-export function DivinityManualWindow({ onClose }: { onClose: () => void }) {
+export function DivinityManualWindow({ href = "", onClose }: { href?: string; onClose: () => void }) {
   const [bounds, setBounds] = useState(initialManualBounds);
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef<{
@@ -131,7 +131,7 @@ export function DivinityManualWindow({ onClose }: { onClose: () => void }) {
         style={boundsStyle}
         onClick={(event) => event.stopPropagation()}
       >
-        <iframe className="divinity-manual-frame" title="Divinity Manual" src={DEFAULT_DIVINITY_MANUAL_URL} />
+        <iframe className="divinity-manual-frame" title="Divinity Manual" src={`${DEFAULT_DIVINITY_MANUAL_URL}${href}`} />
         <div
           className="divinity-manual-drag-strip"
           aria-hidden="true"

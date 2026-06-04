@@ -1,10 +1,22 @@
 import { ReactNode, useEffect, useState } from "react";
 import { loadBrowserBundledLibraryAssetPreview } from "../../browser/library";
+import { TutorialTip } from "../../components/TutorialTip";
 import { LibraryAsset, LibraryCatalog, ScenarioCasteOverride, ScenarioRaceOverride } from "../../types";
 import { CONDITION_LABELS, ITEM_CATEGORY_LABELS, RACE_ATTRIBUTES } from "../../rulesCatalog";
 import { fastplotTileId, spellAnimationFrameIds, spellAnimationHint, spellAnimationIsBlank, SpellAnimationZeroMode, spellSoundResourceId } from "../../resourceIds";
 import { findLibraryResourceAsset } from "../../resourceResolver";
 import { capitalize, classNames, victoryPointLabels } from "./ruleUtils";
+
+type TutorialSide = "right" | "left" | "below" | "above";
+
+function HelpLabel({ label, help, side = "below" }: { label: string; help?: string; side?: TutorialSide }) {
+  if (!help) return <span>{label}</span>;
+  return (
+    <TutorialTip title={label} body={help} side={side}>
+      <span>{label}</span>
+    </TutorialTip>
+  );
+}
 
 export function RulesLayout<T extends { id: number }>({
   title,
@@ -49,12 +61,19 @@ export function RulesLayout<T extends { id: number }>({
   const selectedSummary = selectedRecord ? summaryFor(selectedRecord) : fallbackSummaryFor(selectedId);
   const previousId = selectedId <= 0 ? maxRecords - 1 : selectedId - 1;
   const nextId = selectedId >= maxRecords - 1 ? 0 : selectedId + 1;
+  const help = rulesFamilyHelp(recordNoun);
+  const customizeHelp = `Create or update this scenario's ${recordNoun.toLowerCase()} override. The shared Realmz ${recordNoun.toLowerCase()} table remains the reference source.`;
+  const clearHelp = `Remove this scenario's ${recordNoun.toLowerCase()} override and fall back to the shared Realmz ${recordNoun.toLowerCase()} definition.`;
   return (
     <div className="rules-layout rules-layout-single">
       <section className="rules-selector">
         <div className="rules-selector-title">
           <div>
-            <h2>{title}</h2>
+            <h2>
+              <TutorialTip title={title} body={help} side="right">
+                <span>{title}</span>
+              </TutorialTip>
+            </h2>
             <p>{note}</p>
           </div>
           <small>{scenarioCount} scenario custom, {libraryCount} built-in reference(s)</small>
@@ -65,7 +84,7 @@ export function RulesLayout<T extends { id: number }>({
             <button type="button" className="btn btn-secondary btn-xs" title={`Next ${recordNoun.toLowerCase()}`} onClick={() => onSelect(nextId)}>›</button>
           </div>
           <label>
-            <span>Go To {recordNoun}</span>
+            <HelpLabel label={`Go To ${recordNoun}`} help={`Jump to a fixed ${recordNoun.toLowerCase()} table slot. Realmz keeps ${recordNoun.toLowerCase()} IDs dense, so the number is part of the scenario contract.`} />
             <input
               type="number"
               min={0}
@@ -83,12 +102,13 @@ export function RulesLayout<T extends { id: number }>({
               return <option key={id} value={id}>{id}: {record ? labelFor(record) : fallbackLabelFor(id)}</option>;
             })}
           </select>
-          <button type="button" className="btn btn-primary btn-xs" disabled={selectedIsScenario} onClick={() => onCreate(selectedId)}>
+          <button type="button" className="btn btn-primary btn-xs" title={customizeHelp} disabled={selectedIsScenario} onClick={() => onCreate(selectedId)}>
             Customize In This Scenario
           </button>
           <button
             type="button"
             className="btn btn-danger btn-xs"
+            title={clearHelp}
             disabled={!selectedIsScenario}
             onClick={() => selectedRecord && onClear(selectedId)}
           >
@@ -112,10 +132,25 @@ function entryHasScenarioVersion(record: unknown) {
   return typeof record === "object" && record !== null && "hasScenarioVersion" in record && Boolean((record as { hasScenarioVersion?: boolean }).hasScenarioVersion);
 }
 
+function rulesFamilyHelp(recordNoun: string) {
+  if (recordNoun === "Race") return "Realmz normally uses the shared race table. Customizing a race creates or updates this scenario's Data Race override for that race ID.";
+  if (recordNoun === "Caste") return "Realmz normally uses the shared caste table. Customizing a caste creates or updates this scenario's Data Caste override for that caste ID.";
+  return "Rules data is shared by default and scenario-local only when an override exists.";
+}
+
 export function RuleSection({ title, badge, help, children }: { title: string; badge: string; help?: string; children: ReactNode }) {
   return (
     <section className="rules-section">
-      <header title={help}><span>{title}</span><b>{badge}</b></header>
+      <header title={help}>
+        {help ? (
+          <TutorialTip title={title} body={help} side="right">
+            <span>{title}</span>
+          </TutorialTip>
+        ) : (
+          <span>{title}</span>
+        )}
+        <b>{badge}</b>
+      </header>
       <div className="rules-field-grid">{children}</div>
     </section>
   );
@@ -152,7 +187,7 @@ export function TextField({
   };
   return (
     <label className={classNames("scenario-field", wide && "scenario-field-wide", span && "rules-field-span")} title={help}>
-      <span>{label}</span>
+      <HelpLabel label={label} help={help} />
       {wide ? (
         <textarea
           key={value}
@@ -177,7 +212,7 @@ export function TextField({
 export function NumberField({ label, value, onCommit, disabled = false, compact = false, longLabel = false, hint, help }: { label: string; value: number; onCommit?: (value: number) => void; disabled?: boolean; compact?: boolean; longLabel?: boolean; hint?: string; help?: string }) {
   return (
     <label className={classNames("scenario-field", compact && "rules-field-compact", longLabel && "rules-field-long-label")} title={help}>
-      <span>{label}</span>
+      <HelpLabel label={label} help={help} />
       <input
         key={value}
         type="number"
@@ -196,7 +231,7 @@ export function NumberField({ label, value, onCommit, disabled = false, compact 
 export function SelectField({ label, value, options, onCommit, disabled = false, help }: { label: string; value: number; options: string[]; onCommit: (value: number) => void; disabled?: boolean; help?: string }) {
   return (
     <label className="scenario-field rules-field-medium" title={help}>
-      <span>{label}</span>
+      <HelpLabel label={label} help={help} />
       <select value={value} disabled={disabled} onChange={(event) => onCommit(Number(event.currentTarget.value))}>
         {options.map((option, index) => <option key={option} value={index}>{index} - {option}</option>)}
       </select>
@@ -208,7 +243,7 @@ export function CheckboxField({ label, checked, onCommit, disabled = false, help
   return (
     <label className="rules-checkbox-field" title={help}>
       <input type="checkbox" checked={checked} disabled={disabled} onChange={(event) => onCommit(event.currentTarget.checked)} />
-      <span>{label}</span>
+      <HelpLabel label={label} help={help} />
     </label>
   );
 }
@@ -236,7 +271,7 @@ export function SpellAnimationIconField({
   const preview = useAnimatedPreview(previews);
   return (
     <label className="scenario-field rules-icon-number" title={help}>
-      <span>{label}</span>
+      <HelpLabel label={label} help={help} />
       <div>
         {preview ? (
           <span className="rules-animation-preview">
@@ -283,7 +318,7 @@ export function FastplotTileNumberField({
   } : undefined;
   return (
     <label className="scenario-field rules-icon-number" title={help}>
-      <span>{label}</span>
+      <HelpLabel label={label} help={help} />
       <div>
         {style ? <span className="rules-fastplot-preview" style={style} aria-hidden="true" /> : <b>{value || "-"}</b>}
         <input
@@ -328,7 +363,7 @@ export function IconNumberField({
   const preview = useRuleIconPreview(asset);
   return (
     <label className={classNames("scenario-field", "rules-icon-number", compact && "rules-icon-number-compact")} title={help}>
-      <span>{label}</span>
+      <HelpLabel label={label} help={help} />
       <div>
         {preview ? <img src={preview} alt={`${label} ${resolvedIconId}`} /> : <b>{value || "-"}</b>}
         <input
@@ -366,7 +401,7 @@ export function SoundNumberField({ label, value, assets, onCommit, disabled = fa
   };
   return (
     <label className="scenario-field rules-sound-number" title={help}>
-      <span>{label}</span>
+      <HelpLabel label={label} help={help} />
       <div>
         <input
           key={value}

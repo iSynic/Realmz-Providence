@@ -1,6 +1,7 @@
 import { Upload, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ManagedAssetKind } from "../../types";
+import { TutorialTip } from "../../components/TutorialTip";
 import {
   assetTargetForKind,
   fileToMediaAssetRequest,
@@ -10,6 +11,15 @@ import {
   SCENARIO_PICTURE_MIN_ID,
   SCENARIO_SOUND_MIN_ID
 } from "../../mediaAssets";
+
+const ASSET_IMPORT_HELP = "Import converts source media into a Realmz-ready scenario asset. Pictures become PICT resources, sounds become snd resources, and icon-like images become 32 x 32 cicn resources when imported as icons or special land tiles.";
+const IMPORT_KIND_HELP = "Choose the Realmz resource family before importing. The same image can become a scenario picture, a general icon, or a map-paintable special land tile.";
+const IMPORT_CONVERSION_HELP = "Providence previews the original source beside the Realmz-ready output so you can catch scaling, transparency, palette, and sound-conversion issues before the asset is added to the project.";
+const IMPORT_TARGET_HELP = "Target shows the Realmz resource family Providence will write: PICT for pictures, snd for sounds, or cicn for icons and special land tiles.";
+const IMPORT_FIT_HELP = "Fit controls how an image becomes a fixed 32 x 32 icon or special-land tile: padding preserves shape, crop fills the tile, and stretch forces the image to the target size.";
+const IMPORT_SCALE_HELP = "Smooth scaling is useful for pictures and art imports. Crisp pixels preserves hard pixel-art edges for Realmz-style icons, sprites, and map tiles.";
+const IMPORT_MATTE_HELP = "Transparency matters for cicn overlays. Special Land Tiles should usually keep transparent pixels so the landlook base tile remains visible underneath.";
+const IMPORT_DITHER_HELP = "Color reduction converts images into a classic 256-color output. Floyd-Steinberg dithering can help pictures, while small icons often look cleaner without dithering.";
 
 export function AssetImportBar({
   onImportAssets,
@@ -98,9 +108,11 @@ export function AssetImportBar({
   return (
     <div className={`asset-import-bar${compact ? " compact" : ""}`}>
       {fixedKind && <span className="asset-import-fixed-kind">{kindLabel(fixedKind)}</span>}
-      <button type="button" className="btn btn-primary" onClick={() => inputRef.current?.click()} disabled={!onImportAssets}>
-        <Upload size={14} /> {label}
-      </button>
+      <TutorialTip title="Import Scenario Asset" body={ASSET_IMPORT_HELP} side="below">
+        <button type="button" className="btn btn-primary" onClick={() => inputRef.current?.click()} disabled={!onImportAssets}>
+          <Upload size={14} /> {label}
+        </button>
+      </TutorialTip>
       <input
         ref={inputRef}
         type="file"
@@ -128,7 +140,9 @@ export function AssetImportBar({
             <div className="asset-import-dialog-body">
               <div className="asset-import-preview-comparison">
                 <div className="asset-import-preview">
-                  <strong>Realmz-ready output</strong>
+                  <TutorialTip title="Realmz-Ready Output" body={IMPORT_CONVERSION_HELP} side="below">
+                    <strong>Realmz-ready output</strong>
+                  </TutorialTip>
                   {previewDataUrl && activeKind === "sound" && <audio controls src={previewDataUrl} />}
                   {previewDataUrl && activeKind !== "sound" && <img src={previewDataUrl} alt="Converted asset preview" />}
                   {!previewDataUrl && <span>{previewSummary}</span>}
@@ -142,7 +156,9 @@ export function AssetImportBar({
               </div>
               <div className="asset-import-settings">
                 <label>
-                  Import As
+                  <TutorialTip title="Import As" body={IMPORT_KIND_HELP} side="below">
+                    <span>Import As</span>
+                  </TutorialTip>
                   <select
                     value={activeKind}
                     disabled={Boolean(fixedKind)}
@@ -161,7 +177,9 @@ export function AssetImportBar({
                   </select>
                 </label>
                 <div className="asset-import-facts">
-                  <span>Target</span><b>{targetLabel(activeKind)}</b>
+                  <TutorialTip title="Import Target" body={IMPORT_TARGET_HELP} side="below">
+                    <span>Target</span>
+                  </TutorialTip><b>{targetLabel(activeKind)}</b>
                   <span>Source</span><b>{sourceInfo ? sourceSummary(sourceInfo) : "Reading..."}</b>
                   <span>Output</span><b>{previewSummary}</b>
                 </div>
@@ -169,7 +187,9 @@ export function AssetImportBar({
                   <>
                     {fixedSizeImage && (
                       <label>
-                        Fit
+                        <TutorialTip title="Fit Mode" body={IMPORT_FIT_HELP} side="below">
+                          <span>Fit</span>
+                        </TutorialTip>
                         <select value={fitMode} onChange={(event) => setFitMode(event.currentTarget.value as MediaAssetImportOptions["fitMode"])}>
                           <option value="fit">Fit with padding</option>
                           <option value="crop">Crop center</option>
@@ -178,14 +198,18 @@ export function AssetImportBar({
                       </label>
                     )}
                     <label>
-                      Scale Quality
+                      <TutorialTip title="Scale Quality" body={IMPORT_SCALE_HELP} side="below">
+                        <span>Scale Quality</span>
+                      </TutorialTip>
                       <select value={scaleMode} onChange={(event) => setScaleMode(event.currentTarget.value as MediaAssetImportOptions["scaleMode"])}>
                         <option value="smooth">Smooth</option>
                         <option value="crisp">Crisp pixels</option>
                       </select>
                     </label>
                     <label>
-                      Transparent Pixels
+                      <TutorialTip title="Transparent Pixels" body={IMPORT_MATTE_HELP} side="below">
+                        <span>Transparent Pixels</span>
+                      </TutorialTip>
                       <select value={matte} onChange={(event) => setMatte(event.currentTarget.value as MediaAssetImportOptions["matte"])}>
                         {activeKind !== "picture" && <option value="transparent">Keep transparent</option>}
                         <option value="white">Fill white</option>
@@ -193,7 +217,9 @@ export function AssetImportBar({
                       </select>
                     </label>
                     <label>
-                      Color Reduction
+                      <TutorialTip title="Color Reduction" body={IMPORT_DITHER_HELP} side="below">
+                        <span>Color Reduction</span>
+                      </TutorialTip>
                       <select value={ditherMode} onChange={(event) => setDitherMode(event.currentTarget.value as MediaAssetImportOptions["ditherMode"])}>
                         <option value="none">Adaptive 256, no dither</option>
                         <option value="floyd-steinberg">Adaptive 256, Floyd-Steinberg</option>

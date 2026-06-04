@@ -79,6 +79,7 @@ export function App() {
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [documentsOpen, setDocumentsOpen] = useState(false);
   const [divinityManualOpen, setDivinityManualOpen] = useState(false);
+  const [divinityManualHref, setDivinityManualHref] = useState("");
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
   const [projectNameDraft, setProjectNameDraft] = useState("Untitled Scenario");
   const [state, dispatch] = useReducer(editorReducer, desktopRuntime, initialEditorState);
@@ -482,7 +483,10 @@ export function App() {
       onLibrary={openLibraryHub}
       onProject={openProjectWorkbench}
       onDocuments={() => setDocumentsOpen(true)}
-      onDivinityManual={() => setDivinityManualOpen(true)}
+      onDivinityManual={() => {
+        setDivinityManualHref("");
+        setDivinityManualOpen(true);
+      }}
       onGlobalSearch={() => setGlobalSearchOpen(true)}
       onNavigateBack={() => navigateWorkbenchHistory(-1)}
       onNavigateForward={() => navigateWorkbenchHistory(1)}
@@ -576,12 +580,16 @@ export function App() {
             <DocumentsView
               initialSection={state.docsSection}
               onSectionChange={(section: string) => dispatch({ type: "setDocsSection", section })}
+              onOpenDivinityReference={(href: string) => {
+                setDivinityManualHref(href);
+                setDivinityManualOpen(true);
+              }}
               onClose={() => setDocumentsOpen(false)}
             />
           </Suspense>
         </WorkbenchChunkErrorBoundary>
       )}
-      {divinityManualOpen && <DivinityManualWindow onClose={() => setDivinityManualOpen(false)} />}
+      {divinityManualOpen && <DivinityManualWindow href={divinityManualHref} onClose={() => setDivinityManualOpen(false)} />}
       {globalSearchOpen && (
         <GlobalSearchDialog
           project={state.project}

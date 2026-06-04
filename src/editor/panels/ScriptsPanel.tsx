@@ -5,6 +5,7 @@ import { linksFor, selectEntityFromId, semanticLabel, triggerEntityId } from "..
 import { actionSlotEntitiesForTriggerRecord, extraActionPointClassification } from "../semanticGraph";
 import { EdcdRowEditor } from "../components/EdcdRowEditor";
 import { TargetPicker, resolveSignedMessageTarget, signedTargetBehaviorLabel, signedTargetValueForSelection, targetOptionForOpcodeValue, targetOptionsForOpcode, type ScriptTargetOption } from "../components/RealmzTargetPicker";
+import { TutorialTip } from "../components/TutorialTip";
 import { playPreviewUrl, useIconPreviewUrl, useResolvedPreviewUrl } from "../previewUrls";
 import { categoryColor } from "../components/TileSprite";
 import { CollapsibleSection, EmptyState, FieldRow, FloatingWorkbenchPanel, PanelSection, ScrollArea } from "../ui";
@@ -83,6 +84,71 @@ const SCRIPT_EDITOR_TABS = [
   { id: "quests", label: "Quests", title: "Quest flags and script references." },
   { id: "ed3-evidence", label: "Unlinked Extra APs", title: "Extra Action Points not yet linked from known scenario behavior." }
 ];
+
+const SCRIPT_WORKBENCH_HELP =
+  "Scripts is the Divinity Action Point hub: map triggers, reusable Extra Action Points, global hooks, quest usage, CODE/ID steps, EDCD settings, targets, diagnostics, and source evidence.";
+const CREATE_AP_HELP =
+  "Creates a map or dungeon Action Point at the chosen cell. Realmz stores these as fixed records, so Providence reuses empty slots instead of shifting later record IDs.";
+const INVENTORY_FILTER_HELP =
+  "Use Current Map while authoring one area, Active for non-empty records, Reusable for cleared fixed slots, Warnings before release, and All when tracing links across the scenario.";
+const SCRIPT_RECORD_HELP =
+  "This selected record is the source-backed script container. Map Action Points have chance/location/goto fields; Extra Action Points store only the eight steps until another script calls them.";
+const CLEAR_SCRIPT_HELP =
+  "Clear keeps Realmz's fixed record shape intact. Clearing a map Action Point makes the slot reusable; deleting an Extra Action Point uses the safe row command for that reusable script.";
+const STEP_LIST_HELP =
+  "Realmz scripts have eight ordered CODE/ID slots. Select a slot to edit it, then apply the draft; moving, duplicating, or clearing a step affects only that selected slot.";
+const STEP_DETAIL_HELP =
+  "The selected-step editor pairs Divinity opcode help with Providence target validation. CODE chooses the behavior, ID is either a direct target or an EDCD row pointer, and Settings owns the five-short EDCD fields.";
+const TARGET_DRAWER_HELP =
+  "Target Details opens an inline editor for direct script targets such as messages, battles, treasure, shops, encounters, and monsters. EDCD-backed actions keep their real target fields in Settings instead.";
+const FLOW_PREVIEW_HELP =
+  "Flow Preview summarizes obvious branches, GOSUBs, Extra Action Point calls, choices, and logic paths. It is a navigation aid, not a full runtime interpreter.";
+const TECHNICAL_DETAILS_HELP =
+  "Technical Details shows the raw Realmz storage: source file, record index, door ID, selected slot, applied and draft CODE/ID, EDCD row, dispatcher status, and semantic links.";
+const ACTION_HELP_HELP =
+  "Action Help merges the Divinity manual wording with the decoded opcode definition so the selected step's target and Settings fields are easier to interpret.";
+const TARGET_PICKER_HELP =
+  "The target picker resolves the selected opcode's expected record type and can create safe source-backed shells when Providence has a writer for that target family.";
+const ACTION_PALETTE_HELP =
+  "The action palette is the searchable Divinity scripting-code catalog. Pick a category, search by behavior or target, and choose the action to load its default CODE/ID draft.";
+const SETTINGS_HELP =
+  "Settings edits Data EDCD sidecar rows. For EDCD-backed opcodes, the slot ID points to this row and the real message, battle, branch, item, sound, or mutation fields live here.";
+const SIMPLE_ENCOUNTER_SOURCE_HELP =
+  "Simple Encounters are Data ED source records. The prompt points to a Message, the four option labels live inside this record, and each option result jumps to one of four script columns.";
+const COMPLEX_ENCOUNTER_SOURCE_HELP =
+  "Complex Encounters are Data ED2 source records. Spell, item, thief, typed-word, and action-picker tests all reduce to result numbers that run one of four script columns.";
+const ROGUE_ENCOUNTER_SOURCE_HELP =
+  "Rogue Encounters are Data TD2 source records for locks, traps, search, and thief-skill actions. Runtime can mark traps detected, disabled, or sprung without changing this source record.";
+const TIMED_ENCOUNTER_SOURCE_HELP =
+  "Time Encounters are Data TD3 source records. Realmz checks schedule, chance, location, item, and quest gates, then runs the Extra Action Point target when everything matches.";
+const ENCOUNTER_SETUP_HELP =
+  "Encounter setup owns the shared source fields: prompt message, back-out behavior, max attempts, and caste-success value. The prompt is a central Message; option labels below are inline buffers.";
+const COMPLEX_THIEF_BRANCH_HELP =
+  "The complex thief branch links into a Rogue Encounter. Success and failure values are result numbers, so they should point at the result script columns you want Realmz to run afterward.";
+const SIMPLE_OPTIONS_HELP =
+  "Each simple option has an inline label and a Result number. Result 1-4 chooses the matching action column below; zero means no result path.";
+const COMPLEX_BAR_ACTIONS_HELP =
+  "Complex encounters show up to eight action labels on the encounter bar. The group flags and Action Picker result decide which result column runs when a player chooses a matching action.";
+const COMPLEX_WORD_HELP =
+  "The word answer is a typed-player-text branch. When the typed phrase matches this buffer, the Word Result chooses which result script column runs.";
+const COMPLEX_SPELL_TESTS_HELP =
+  "Spell and scroll tests match packed Realmz spell IDs or low spell-class IDs. A matching row returns its Result number into the shared result script columns.";
+const COMPLEX_ITEM_TESTS_HELP =
+  "Item tests match Realmz item IDs from Economy or the reference item library. A matching row returns its Result number into the shared result script columns.";
+const ENCOUNTER_RESULT_ACTION_HELP =
+  "Encounter result columns are compact script rows. Result 1, 2, 3, or 4 chooses one column, then Realmz executes its ordered CODE/ID rows.";
+const ROGUE_ACTION_TESTS_HELP =
+  "Rogue action rows control which thief actions are available, the skill modifier, success/failure result codes, and the text/sound feedback for each outcome.";
+const ROGUE_PROMPT_HELP =
+  "The rogue prompt is shown when this thief scene begins. It can also play a sound before the player chooses or attempts a rogue action.";
+const ROGUE_TRAP_HELP =
+  "Trap and lock setup controls whether the record is trapped, who damage affects, tumbler count, damage range, optional spell effect, and knock/disarm percentages.";
+const TIMED_SCHEDULE_HELP =
+  "The midnight schedule controls when this record is considered. Day and Increment define timing, Percent gates execution, and Extra AP To Activate is the macro Realmz runs.";
+const TIMED_LOCATION_HELP =
+  "Location gates restrict the timed encounter to any map, land, or dungeon, then optionally to level, random rectangle, X, and Y. Raw Position Code is preserved for source accuracy.";
+const TIMED_EXTRA_HELP =
+  "These reserved signed fields are preserved imported data. Edit them only when matching a known Divinity setup or source-backed fixture.";
 
 const scriptDiagnosticCache = new WeakMap<TriggerRecord, { key: string; diagnostics: ScriptDiagnostic[] }>();
 const objectIdentity = new WeakMap<object, number>();
@@ -577,6 +643,11 @@ function ScriptAuthoringPanel({
   ) : null;
   const targetEditorPanel = selectedTrigger && targetDrawerOpen && directTargetDrawerAvailable ? (
     <PanelSection title="Target Details" eyebrow="selected step" density="compact" className={`script-target-drawer${wideTargetRecord ? " wide-target" : ""}`} actions={<button type="button" className="btn btn-secondary btn-xs icon-only" title="Hide target details" onClick={() => setTargetDrawerOpen(false)}><X size={12} /></button>}>
+      <p className="field-help">
+        <TutorialTip title="Target Details" body={TARGET_DRAWER_HELP} side="below">
+          <span>Inline editor for the selected direct target.</span>
+        </TutorialTip>
+      </p>
       <TargetRecordEditor
         project={project}
         catalog={catalog}
@@ -599,7 +670,9 @@ function ScriptAuthoringPanel({
     <section className="realmz-script-editor">
       <header>
         <div>
-          <strong>{scriptPanelTitle(activeEditor)}</strong>
+          <TutorialTip title="Scripts Workbench" body={SCRIPT_WORKBENCH_HELP} side="below">
+            <strong>{scriptPanelTitle(activeEditor)}</strong>
+          </TutorialTip>
           <small>Build scenario behavior from clear steps, targets, choices, and Extra Action Points.</small>
         </div>
         <div className="script-toolbar">
@@ -618,7 +691,9 @@ function ScriptAuthoringPanel({
       {selectedMap && activeTabKind === "action-points" && (
         <div className="script-create-strip">
           <label>
-            <span>New Action Point</span>
+            <TutorialTip title="New Action Point" body={CREATE_AP_HELP} side="below">
+              <span>New Action Point</span>
+            </TutorialTip>
             <select value={newActionPoint.mapId} onChange={(event) => setNewActionPoint({ ...newActionPoint, mapId: event.currentTarget.value })}>
               {projectMaps.map((map) => (
                 <option key={map.id} value={map.id}>{map.name}</option>
@@ -669,6 +744,11 @@ function ScriptAuthoringPanel({
               onChange={(event) => setScriptQuery(event.currentTarget.value)}
               placeholder="Filter action points..."
             />
+            <small className="script-capacity-note">
+              <TutorialTip title="Inventory Filters" body={INVENTORY_FILTER_HELP} side="below">
+                <span>Choose the inventory slice before editing or release-checking scripts.</span>
+              </TutorialTip>
+            </small>
             <div className="script-list-scope script-filter-chips" role="group" aria-label="Script inventory filter">
               {visibleInventoryFilters.map((filter) => (
                 <button
@@ -722,7 +802,9 @@ function ScriptAuthoringPanel({
             <>
               <div className="script-record-header">
                 <label className="script-name-field">
-                  <span>Name</span>
+                  <TutorialTip title="Selected Script Record" body={SCRIPT_RECORD_HELP} side="below">
+                    <span>Name</span>
+                  </TutorialTip>
                   <input
                     key={selectedTrigger.id}
                     defaultValue={scriptLabel(project, selectedTrigger)}
@@ -738,9 +820,11 @@ function ScriptAuthoringPanel({
                   <button className="btn btn-secondary btn-xs" type="button" onClick={() => onApplyCommand?.({ kind: "duplicateTrigger", label: "Duplicate script", triggerId: selectedTrigger.id })}>
                     <Copy size={12} /> Duplicate
                   </button>
-                  <button className="btn btn-danger btn-xs" type="button" title={isMacro ? "Delete this Extra Action Point" : "Clear this Action Point record so it can be reused"} onClick={() => onApplyCommand?.({ kind: "deleteTrigger", label: isMacro ? deleteMacroLabel : "Clear Action Point", triggerId: selectedTrigger.id })}>
-                    <Trash2 size={12} /> {isMacro ? deleteMacroLabel : "Clear Action Point"}
-                  </button>
+                  <TutorialTip title={isMacro ? "Delete Extra Action Point" : "Clear Action Point"} body={CLEAR_SCRIPT_HELP} side="below">
+                    <button className="btn btn-danger btn-xs" type="button" title={isMacro ? "Delete this Extra Action Point" : "Clear this Action Point record so it can be reused"} onClick={() => onApplyCommand?.({ kind: "deleteTrigger", label: isMacro ? deleteMacroLabel : "Clear Action Point", triggerId: selectedTrigger.id })}>
+                      <Trash2 size={12} /> {isMacro ? deleteMacroLabel : "Clear Action Point"}
+                    </button>
+                  </TutorialTip>
                 </div>
               </div>
               <ScriptDiagnostics issues={triggerDiagnostics.filter((issue) => issue.slot == null)} />
@@ -809,6 +893,11 @@ function ScriptAuthoringPanel({
                     </button>
                   ) : undefined}
                 >
+                  <p className="field-help">
+                    <TutorialTip title="Eight Step Slots" body={STEP_LIST_HELP} side="below">
+                      <span>Each card is one ordered Realmz CODE/ID slot.</span>
+                    </TutorialTip>
+                  </p>
                   <ScrollArea className="realmz-step-list" aria-label="Script steps">
                     {Array.from({ length: 8 }, (_, slot) => {
                       const action = selectedTrigger.actions.find((candidate) => candidate.slot === slot);
@@ -845,6 +934,11 @@ function ScriptAuthoringPanel({
                 </PanelSection>
                 {!floatingDetail && (
                   <PanelSection title={`Step ${selectedSlot + 1} Details`} eyebrow={selectedDefinition.category} actions={stepDetailActions}>
+                    <p className="field-help">
+                      <TutorialTip title="Step Details" body={STEP_DETAIL_HELP} side="below">
+                        <span>Pick an action, resolve its target, adjust Settings if needed, then Apply Step.</span>
+                      </TutorialTip>
+                    </p>
                     {stepDetailBody}
                   </PanelSection>
                 )}
@@ -862,6 +956,11 @@ function ScriptAuthoringPanel({
                     </>
                   }
                 >
+                  <p className="field-help">
+                    <TutorialTip title="Step Details" body={STEP_DETAIL_HELP} side="below">
+                      <span>Pick an action, resolve its target, adjust Settings if needed, then Apply Step.</span>
+                    </TutorialTip>
+                  </p>
                   {stepDetailBody}
                   {targetEditorPanel}
                 </FloatingWorkbenchPanel>
@@ -990,6 +1089,11 @@ function SourceEvidence({
   ].filter(Boolean).length;
   return (
     <CollapsibleSection title="Technical Details" eyebrow="advanced" count={String(count)} density="compact" storageKey="scripts.sourceEvidence.open" defaultOpen={false}>
+      <p className="field-help">
+        <TutorialTip title="Technical Details" body={TECHNICAL_DETAILS_HELP} side="below">
+          <span>Raw storage, CODE/ID, EDCD row, dispatcher status, and semantic links.</span>
+        </TutorialTip>
+      </p>
       <SourceEvidenceDetails
         project={project}
         trigger={trigger}
@@ -1113,7 +1217,9 @@ function ScriptFlowPreview({
   if (flowSteps.length === 0) return null;
   return (
     <div className="script-flow-preview" aria-label="Branch and Extra Action Point preview">
-      <strong>Flow Preview</strong>
+      <TutorialTip title="Flow Preview" body={FLOW_PREVIEW_HELP} side="below">
+        <strong>Flow Preview</strong>
+      </TutorialTip>
       {flowSteps.slice(0, 5).map(({ action, definition, routes, summary }) => (
         <div key={`${action.slot}-${action.rawCode}-${action.id}`}>
           <span>{action.slot + 1}</span>
@@ -1251,7 +1357,9 @@ function SelectedStepDetail({
   const actionHelp = selectedDivinityHelp ? (
     <div className="realmz-action-help-card">
       <header>
-        <strong>Action Help</strong>
+        <TutorialTip title="Action Help" body={ACTION_HELP_HELP} side="below">
+          <strong>Action Help</strong>
+        </TutorialTip>
         <span>{selectedDefinition.categoryLabel}</span>
       </header>
       <p>{selectedDivinityHelp.use || selectedDefinition.description}</p>
@@ -1370,6 +1478,11 @@ function SelectedStepDetail({
         </label>
       </div>
       {actionHelp}
+      <p className="field-help">
+        <TutorialTip title="Target Picker" body={TARGET_PICKER_HELP} side="below">
+          <span>Choose or create the record this action targets when the target is direct.</span>
+        </TutorialTip>
+      </p>
       <TargetPicker
         project={project}
         catalog={catalog}
@@ -1385,6 +1498,11 @@ function SelectedStepDetail({
         }}
       />
       <CollapsibleSection title="Add Or Change Step" eyebrow="action palette" count={filteredDefinitions.length} density="compact" storageKey="scripts.actionPalette.open" defaultOpen={selectedDraft.rawCode === 0}>
+        <p className="field-help">
+          <TutorialTip title="Action Palette" body={ACTION_PALETTE_HELP} side="below">
+            <span>Search the Divinity scripting-code catalog by behavior, target, or setting.</span>
+          </TutorialTip>
+        </p>
         <div className="realmz-opcode-catalog">
           <div className="realmz-step-category-bar">
             {SCRIPT_ACTION_CATEGORIES.map((category) => (
@@ -1422,6 +1540,11 @@ function SelectedStepDetail({
         </div>
       </CollapsibleSection>
       <CollapsibleSection title="Settings" eyebrow={selectedOption.edcdShape ? "action settings" : "optional"} density="compact" storageKey="scripts.edcdEditor.open" defaultOpen={Boolean(selectedOption.edcdShape || selectedEdcdUsage)}>
+        <p className="field-help">
+          <TutorialTip title="EDCD Settings" body={SETTINGS_HELP} side="below">
+            <span>Five-short sidecar settings for EDCD-backed Realmz opcodes.</span>
+          </TutorialTip>
+        </p>
         <EdcdRowEditor
           project={project}
           catalog={catalog}
@@ -1899,6 +2022,7 @@ export function TargetRecordEditor({
         badge={badge}
         exists={Boolean(record)}
         issues={targetIssues}
+        help={SIMPLE_ENCOUNTER_SOURCE_HELP}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create simple encounter", recordType: "simpleEncounter", id: targetId })}
         onClear={() => onApplyCommand?.({ kind: "deleteTargetRecord", label: "Clear simple encounter", recordType: "simpleEncounter", id: targetId })}
       >
@@ -1929,6 +2053,7 @@ export function TargetRecordEditor({
         badge={badge}
         exists={Boolean(record)}
         issues={targetIssues}
+        help={COMPLEX_ENCOUNTER_SOURCE_HELP}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create complex encounter", recordType: "complexEncounter", id: targetId })}
         onClear={() => onApplyCommand?.({ kind: "deleteTargetRecord", label: "Clear complex encounter", recordType: "complexEncounter", id: targetId })}
       >
@@ -1970,6 +2095,7 @@ export function TargetRecordEditor({
         badge={badge}
         exists={Boolean(record)}
         issues={targetIssues}
+        help={TIMED_ENCOUNTER_SOURCE_HELP}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create time encounter", recordType: "timedEncounter", id: targetId })}
         onClear={() => onApplyCommand?.({ kind: "deleteTargetRecord", label: "Clear time encounter", recordType: "timedEncounter", id: targetId })}
       >
@@ -1993,6 +2119,7 @@ export function TargetRecordEditor({
         badge={badge}
         exists={Boolean(record)}
         issues={targetIssues}
+        help={ROGUE_ENCOUNTER_SOURCE_HELP}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create rogue encounter", recordType: "thiefEncounter", id: targetId })}
         onClear={() => onApplyCommand?.({ kind: "deleteTargetRecord", label: "Clear rogue encounter", recordType: "thiefEncounter", id: targetId })}
       >
@@ -2038,6 +2165,7 @@ function InlineTargetShell({
   onCreate,
   onClear,
   issues,
+  help,
   children
 }: {
   title: string;
@@ -2046,12 +2174,19 @@ function InlineTargetShell({
   onCreate: () => void;
   onClear?: () => void;
   issues?: ScriptDiagnostic[];
+  help?: string;
   children: ReactNode;
 }) {
   return (
     <div className="script-inline-target-editor">
       <header>
-        <strong>{title}</strong>
+        {help ? (
+          <TutorialTip title={title} body={help} side="below">
+            <strong>{title}</strong>
+          </TutorialTip>
+        ) : (
+          <strong>{title}</strong>
+        )}
         <span>{exists ? badge : "missing-target"}</span>
         <div className="script-inline-target-actions">
           {!exists && <button type="button" className="btn btn-secondary btn-xs" onClick={onCreate}>Create {title}</button>}
@@ -2132,6 +2267,11 @@ function EncounterShell({
   return (
     <div className="script-target-grid encounter-record-grid">
       <section className="encounter-setup-panel">
+        <p className="field-help" style={{ gridColumn: "1 / -1" }}>
+          <TutorialTip title="Encounter Setup" body={ENCOUNTER_SETUP_HELP} side="below">
+            <span>Prompt, availability, and shared source fields.</span>
+          </TutorialTip>
+        </p>
         <div className="encounter-prompt-field">
           <ReferenceIdField
             project={project}
@@ -2157,6 +2297,11 @@ function EncounterShell({
       </section>
       {recordKind === "complex" && (
         <section className="encounter-complex-rules">
+          <p className="field-help" style={{ gridColumn: "1 / -1" }}>
+            <TutorialTip title="Complex Thief Branch" body={COMPLEX_THIEF_BRANCH_HELP} side="below">
+              <span>Thief success and failure values choose encounter result columns.</span>
+            </TutorialTip>
+          </p>
           <label className="script-target-checkbox">
             <span>Thief</span>
             <input type="checkbox" defaultChecked={Boolean(thief)} onChange={(event) => update({ thief: event.currentTarget.checked })} />
@@ -2228,7 +2373,9 @@ function EncounterResultActionMatrix({
     <section className="simple-encounter-action-matrix">
       <header>
         <div>
-          <strong>{title}</strong>
+          <TutorialTip title={title} body={ENCOUNTER_RESULT_ACTION_HELP} side="below">
+            <strong>{title}</strong>
+          </TutorialTip>
           <small>{description}</small>
         </div>
       </header>
@@ -2351,7 +2498,9 @@ function ThiefEncounterShell({
       <section className="rogue-action-matrix">
         <header>
           <div>
-            <strong>Rogue Action Tests</strong>
+            <TutorialTip title="Rogue Action Tests" body={ROGUE_ACTION_TESTS_HELP} side="below">
+              <strong>Rogue Action Tests</strong>
+            </TutorialTip>
             <small>{enabledCount}/8 enabled; success/fail columns return result codes, messages, and sounds.</small>
           </div>
         </header>
@@ -2383,7 +2532,9 @@ function ThiefEncounterShell({
       <section className="rogue-encounter-detail-grid">
         <div className="rogue-prompt-panel">
           <header>
-            <strong>Encounter Prompt</strong>
+            <TutorialTip title="Rogue Prompt" body={ROGUE_PROMPT_HELP} side="below">
+              <strong>Encounter Prompt</strong>
+            </TutorialTip>
             <small>Shown when this rogue encounter starts.</small>
           </header>
           <ReferenceIdField
@@ -2411,7 +2562,9 @@ function ThiefEncounterShell({
         </div>
         <div className="rogue-trap-panel">
           <header>
-            <strong>Trap / Lock Setup</strong>
+            <TutorialTip title="Trap / Lock Setup" body={ROGUE_TRAP_HELP} side="below">
+              <strong>Trap / Lock Setup</strong>
+            </TutorialTip>
             <small>{trapped ? "Trap armed" : "No armed trap"}; affects {rogueOnly ? "the acting rogue only" : "the whole party"}.</small>
           </header>
           <div className="rogue-toggle-strip">
@@ -2560,7 +2713,9 @@ function TimedEncounterShell({
       <section className="timed-encounter-form">
         <header>
           <div>
-            <strong>Midnight Schedule</strong>
+            <TutorialTip title="Midnight Schedule" body={TIMED_SCHEDULE_HELP} side="below">
+              <strong>Midnight Schedule</strong>
+            </TutorialTip>
             <small>Checked at midnight; Day and Increment set to -1 keeps the record inactive until an Action Point activates it.</small>
           </div>
           <span>{record.percent}% chance</span>
@@ -2584,7 +2739,9 @@ function TimedEncounterShell({
           </div>
           <div className="timed-encounter-column">
             <label className="timed-form-row timed-location-row">
-              <span>Position Required</span>
+              <TutorialTip title="Timed Location Gate" body={TIMED_LOCATION_HELP} side="below">
+                <span>Position Required</span>
+              </TutorialTip>
               <select value={record.locationKind} onChange={(event) => setLocationKind(event.currentTarget.value as Project["timedEncounters"][number]["locationKind"])}>
                 <option value="any">-1 No position</option>
                 <option value="land">1 Land</option>
@@ -2601,7 +2758,9 @@ function TimedEncounterShell({
       </section>
       <CollapsibleSection title="Additional Data" eyebrow="advanced" count="9 fields" density="compact" className="script-encounter-text-section timed-extra-section">
         <p className="script-encounter-text-note">
-          Realmz reserves additional signed-number fields in Time Encounters. Keep imported values unless you are matching a known Divinity setup.
+          <TutorialTip title="Additional Time Encounter Data" body={TIMED_EXTRA_HELP} side="below">
+            <span>Realmz reserves additional signed-number fields in Time Encounters. Keep imported values unless you are matching a known Divinity setup.</span>
+          </TutorialTip>
         </p>
         <div className="timed-extra-grid">
           {Array.from({ length: 9 }, (_, index) => {
@@ -2732,7 +2891,9 @@ function EncounterResultEditor({
       <section className="encounter-result-editor complex-encounter-authoring">
         <header>
           <div>
-            <strong>Encounter Bar Actions</strong>
+            <TutorialTip title="Encounter Bar Actions" body={COMPLEX_BAR_ACTIONS_HELP} side="below">
+              <strong>Encounter Bar Actions</strong>
+            </TutorialTip>
             <small>Eight action labels, four action result fields, and one word/phrase trigger.</small>
           </div>
         </header>
@@ -2758,7 +2919,9 @@ function EncounterResultEditor({
         <div className="complex-encounter-tool-grid">
           <section className="complex-encounter-tool-panel">
             <header>
-              <strong>Action Picker</strong>
+              <TutorialTip title="Action Picker Branch" body={COMPLEX_BAR_ACTIONS_HELP} side="below">
+                <strong>Action Picker</strong>
+              </TutorialTip>
               <small>Action result and required group flags.</small>
             </header>
             <div className="complex-encounter-result-strip compact">
@@ -2776,7 +2939,9 @@ function EncounterResultEditor({
           </section>
           <section className="complex-encounter-tool-panel">
             <header>
-              <strong>Word / Phrase</strong>
+              <TutorialTip title="Word / Phrase Branch" body={COMPLEX_WORD_HELP} side="below">
+                <strong>Word / Phrase</strong>
+              </TutorialTip>
               <small>Spoken keyword and result column.</small>
             </header>
             <label className="script-encounter-text-field encounter-word-answer">
@@ -2794,6 +2959,7 @@ function EncounterResultEditor({
           </section>
           <ComplexEncounterTestGrid
             title="Spell / Scroll Tests"
+            help={COMPLEX_SPELL_TESTS_HELP}
             idLabel="Spell ID"
             resultLabel="Result"
             count={10}
@@ -2804,6 +2970,7 @@ function EncounterResultEditor({
           />
           <ComplexEncounterTestGrid
             title="Item Tests"
+            help={COMPLEX_ITEM_TESTS_HELP}
             idLabel="Item ID"
             resultLabel="Result"
             count={5}
@@ -2820,7 +2987,9 @@ function EncounterResultEditor({
     <section className="encounter-result-editor">
       <header>
         <div>
-          <strong>Player Options</strong>
+          <TutorialTip title="Simple Player Options" body={SIMPLE_OPTIONS_HELP} side="below">
+            <strong>Player Options</strong>
+          </TutorialTip>
           <small>{count} classic Pascal text buffers, {maxLength} display bytes each</small>
         </div>
       </header>
@@ -2850,6 +3019,7 @@ function EncounterResultEditor({
 
 function ComplexEncounterTestGrid({
   title,
+  help,
   idLabel,
   resultLabel,
   count,
@@ -2859,6 +3029,7 @@ function ComplexEncounterTestGrid({
   onResultsCommit
 }: {
   title: string;
+  help?: string;
   idLabel: string;
   resultLabel: string;
   count: number;
@@ -2870,7 +3041,13 @@ function ComplexEncounterTestGrid({
   return (
     <section className="complex-encounter-test-grid">
       <header>
-        <strong>{title}</strong>
+        {help ? (
+          <TutorialTip title={title} body={help} side="below">
+            <strong>{title}</strong>
+          </TutorialTip>
+        ) : (
+          <strong>{title}</strong>
+        )}
         <small>{count} decoded source-backed test row{count === 1 ? "" : "s"}</small>
       </header>
       <div>

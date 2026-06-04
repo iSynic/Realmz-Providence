@@ -11,145 +11,19 @@ import {
   TilesetAsset
 } from "../types";
 import { mapTileIndex, tileValueAt } from "./geometry";
+import { GENERATED_SMART_TERRAIN_PROFILES } from "./generatedSmartTerrainProfiles";
 import { atlasBaseTile, normalizeAtlasTile, tileIconCandidates } from "./renderValues";
 import { clearTileForMap } from "./tileClear";
 
-const STANDARD_LANDLOOKS = [0, 2, 3, 4, 5, 9, 10];
 const TILE_SIZE = 32;
 
 const WATER_FAMILY = [
   ...range(1, 60),
   ...range(105, 112)
 ];
-const WATER_EDGE_FAMILY = [
-  ...range(1, 32),
-  ...range(38, 51)
-];
-const WATER_BOUNDARY_FAMILY = WATER_EDGE_FAMILY.filter((tile) => tile !== 22);
 const MOUNTAIN_LAND_FAMILY = range(61, 85);
 const MOUNTAIN_WATER_FAMILY = range(86, 93);
-const MOUNTAIN_FAMILY = [...MOUNTAIN_LAND_FAMILY, ...MOUNTAIN_WATER_FAMILY];
 const FOREST_FAMILY = range(121, 129);
-
-const BASE_PRESETS: SmartBrushProfile["presets"] = {
-  water: {
-    family: WATER_FAMILY,
-    center: [60, 35, 34, 33],
-    candidates: WATER_BOUNDARY_FAMILY,
-    roleCandidates: {
-      north: WATER_BOUNDARY_FAMILY,
-      south: WATER_BOUNDARY_FAMILY,
-      east: WATER_BOUNDARY_FAMILY,
-      west: WATER_BOUNDARY_FAMILY,
-      northEast: WATER_BOUNDARY_FAMILY,
-      northWest: WATER_BOUNDARY_FAMILY,
-      southEast: WATER_BOUNDARY_FAMILY,
-      southWest: WATER_BOUNDARY_FAMILY,
-      lineHorizontal: [43, 38, 39, 40, 41],
-      lineVertical: [42, 44, 45, 46],
-      capNorth: WATER_BOUNDARY_FAMILY,
-      capSouth: WATER_BOUNDARY_FAMILY,
-      capEast: WATER_BOUNDARY_FAMILY,
-      capWest: WATER_BOUNDARY_FAMILY,
-      notchNorthEast: WATER_BOUNDARY_FAMILY,
-      notchNorthWest: WATER_BOUNDARY_FAMILY,
-      notchSouthEast: WATER_BOUNDARY_FAMILY,
-      notchSouthWest: WATER_BOUNDARY_FAMILY
-    },
-    fallbackRoles: {
-      center: 60,
-      single: 60,
-      north: 3,
-      south: 31,
-      east: 2,
-      west: 42,
-      northEast: 4,
-      northWest: 1,
-      southEast: 24,
-      southWest: 21,
-      lineHorizontal: 43,
-      lineVertical: 42,
-      capNorth: 4,
-      capSouth: 3,
-      capEast: 1,
-      capWest: 2,
-      notchNorthEast: 28,
-      notchNorthWest: 27,
-      notchSouthEast: 49,
-      notchSouthWest: 48
-    }
-  },
-  mountains: {
-    family: MOUNTAIN_FAMILY,
-    center: [61],
-    candidates: MOUNTAIN_FAMILY,
-    fallbackRoles: {
-      center: 61,
-      single: 61,
-      north: 83,
-      south: 63,
-      east: 62,
-      west: 80,
-      northEast: 84,
-      northWest: 81,
-      southEast: 64,
-      southWest: 72,
-      lineHorizontal: 83,
-      lineVertical: 62,
-      notchNorthEast: 70,
-      notchNorthWest: 69,
-      notchSouthEast: 73,
-      notchSouthWest: 72
-    }
-  },
-  forest: {
-    family: FOREST_FAMILY,
-    center: [128, 129],
-    candidates: FOREST_FAMILY,
-    roleCandidates: {
-      north: [121, 124, 125, 126],
-      south: [122, 123, 127],
-      east: [123, 125, 128],
-      west: [122, 124, 129],
-      northEast: [121, 125, 126],
-      northWest: [121, 124, 126],
-      southEast: [123, 127, 128],
-      southWest: [122, 127, 129],
-      lineHorizontal: [128, 129],
-      lineVertical: [126, 127],
-      capNorth: [126, 124, 125],
-      capSouth: [127, 122, 123],
-      capEast: [128, 123, 125],
-      capWest: [129, 122, 124],
-      notchNorthEast: [125, 128],
-      notchNorthWest: [124, 129],
-      notchSouthEast: [123, 128],
-      notchSouthWest: [122, 129]
-    },
-    fallbackRoles: {
-      center: 128,
-      single: 121,
-      north: 121,
-      south: 127,
-      east: 122,
-      west: 124,
-      northEast: 125,
-      northWest: 124,
-      southEast: 128,
-      southWest: 126,
-      lineHorizontal: 128,
-      lineVertical: 126,
-      capNorth: 126,
-      capSouth: 127,
-      capEast: 128,
-      capWest: 129,
-      notchNorthEast: 125,
-      notchNorthWest: 124,
-      notchSouthEast: 123,
-      notchSouthWest: 122
-    }
-  }
-};
 
 export const SMART_BRUSH_PRESETS: Array<{ id: SmartBrushPreset; label: string; body: string }> = [
   { id: "mountains", label: "Mountains", body: "Blend mountain terrain into the current landlook." },
@@ -157,10 +31,7 @@ export const SMART_BRUSH_PRESETS: Array<{ id: SmartBrushPreset; label: string; b
   { id: "forest", label: "Trees / Forest", body: "Blend contiguous forest and tree cover." }
 ];
 
-export const SMART_BRUSH_PROFILES: SmartBrushProfile[] = STANDARD_LANDLOOKS.map((landlook) => ({
-  landlook,
-  presets: BASE_PRESETS
-}));
+export const SMART_BRUSH_PROFILES: SmartBrushProfile[] = GENERATED_SMART_TERRAIN_PROFILES;
 
 type RegionSignature = Record<SignatureKey, number>;
 type SignatureKey = "fill" | "center" | "north" | "south" | "east" | "west" | "northWest" | "northEast" | "southWest" | "southEast";
@@ -218,7 +89,11 @@ export function buildSmartTerrainChanges(
   const maskSet = new Set(cells.map(maskKey));
   const planCells: SmartBrushPlan["cells"] = [];
   const skipped: SmartBrushMaskCell[] = [];
-  const confidence = atlas ? "pixel-ranked" : "curated-fallback";
+  const confidence = presetProfile.confidence && presetProfile.confidence !== "fallback"
+    ? "corpus-ranked"
+    : atlas
+      ? "pixel-ranked"
+      : "curated-fallback";
 
   for (const cell of cells) {
     const from = tileValueAt(map, cell.x, cell.y);
@@ -228,9 +103,9 @@ export function buildSmartTerrainChanges(
     }
     const context = shapeContext(cell, maskSet);
     const role = resolveSmartTerrainRoleFromContext(context);
-    const match = resolveSmartTerrainMatch(map, cell, context, preset, profile, tileset, atlas);
+    const match = resolveSmartTerrainMatch(map, cell, context, maskSet, preset, profile, tileset, atlas);
     const index = mapTileIndex(map, cell.x, cell.y);
-    planCells.push({ ...cell, index, from, to: match.tile, role, score: match.score });
+    planCells.push({ ...cell, index, from, to: match.tile, role, score: match.score, neighborMask: match.neighborMask, source: match.source, samples: match.samples });
   }
 
   return {
@@ -272,6 +147,7 @@ function resolveSmartTerrainMatch(
   map: MapEntity,
   cell: SmartBrushMaskCell,
   context: ShapeContext,
+  maskSet: Set<string>,
   preset: SmartBrushPreset,
   profile: SmartBrushProfile,
   tileset: TilesetAsset | null,
@@ -279,50 +155,97 @@ function resolveSmartTerrainMatch(
 ) {
   const presetProfile = profile.presets[preset];
   const role = resolveSmartTerrainRoleFromContext(context);
-  const interior = context.n && context.s && context.e && context.w;
-  if (interior) {
+  const neighborMask = smartNeighborMask(context);
+  const interiorDistance = distanceToMaskBoundary(cell, maskSet);
+  if (interiorDistance >= 2) {
     const tile = centerTileForCell(presetProfile, map.id, preset, cell);
-    return { tile, score: 1 };
+    return { tile, score: 1, neighborMask, source: "center", samples: presetProfile.sampleCount ?? null };
   }
 
-  const candidates = smartCandidatesForCell(map, cell, context, role, preset, presetProfile);
+  const candidateEvidence = smartCandidatesForCell(map, cell, context, neighborMask, role, preset, presetProfile);
+  const candidates = atlas
+    ? broadShapeCandidatesForContext(map, cell, context, preset, presetProfile)
+    : candidateEvidence.tiles;
   const fallbackTile = tileForSmartRole(presetProfile, role);
   if (!atlas) {
-    return { tile: fallbackTile, score: null };
+    const picked = candidates.length > 0
+      ? seededPick(candidates, map.id, preset, cell, `${role}:${neighborMask}`)
+      : fallbackTile;
+    return { tile: picked, score: null, neighborMask, source: candidateEvidence.source, samples: candidateEvidence.samples };
   }
 
   const desired = desiredSignatureForContext(context);
   const scored = candidates
     .map((tile) => {
       const signature = tileSignatureFor(tile, preset, tileset, atlas);
-      return signature ? { tile, score: scoreSignature(signature, desired, role) } : null;
+      return signature ? { tile, score: scoreSignature(signature, desired, role) + corpusCandidateBias(tile, candidateEvidence) } : null;
     })
     .filter((entry): entry is { tile: number; score: number } => Boolean(entry))
     .sort((a, b) => b.score - a.score || a.tile - b.tile);
 
-  if (scored.length === 0) return { tile: fallbackTile, score: null };
+  if (scored.length === 0) return { tile: fallbackTile, score: null, neighborMask, source: "fallback", samples: candidateEvidence.samples };
   const best = scored[0].score;
-  const close = scored.filter((entry) => entry.score >= best - 0.055).slice(0, 4);
+  const close = scored.filter((entry) => entry.score >= best - 0.04).slice(0, 4);
   const picked = seededPick(close, map.id, preset, cell, role);
-  return picked;
+  return { ...picked, neighborMask, source: candidateEvidence.source, samples: candidateEvidence.samples };
 }
 
 function smartCandidatesForCell(
   map: MapEntity,
   cell: SmartBrushMaskCell,
   context: ShapeContext,
+  neighborMask: number,
   role: SmartBrushRole,
   preset: SmartBrushPreset,
   presetProfile: SmartBrushProfile["presets"][SmartBrushPreset]
 ) {
-  const roleCandidates = presetProfile.roleCandidates?.[role] ?? null;
-  const baseCandidates = roleCandidates && roleCandidates.length > 0
-    ? roleCandidates
-    : preset === "mountains"
-    ? touchesOutsideWater(map, cell, context) ? MOUNTAIN_WATER_FAMILY : MOUNTAIN_LAND_FAMILY
-    : presetProfile.candidates;
-  const boundaryCandidates = baseCandidates.filter((tile) => !presetProfile.center.includes(tile));
-  return boundaryCandidates.length > 0 ? boundaryCandidates : baseCandidates;
+  const exactEvidence = presetProfile.maskCandidates?.[String(neighborMask)] ?? null;
+  const exactCandidates = filterCandidatesForContext(exactEvidence?.tiles ?? [], map, cell, context, preset, presetProfile);
+  const roleCandidates = filterCandidatesForContext(presetProfile.roleCandidates?.[role] ?? [], map, cell, context, preset, presetProfile);
+  const combined = uniqueNumbers([...roleCandidates, ...exactCandidates]);
+  if (combined.length > 0) return { tiles: combined, source: exactCandidates.length > 0 ? "corpus-mask-prior" : "corpus-role", samples: exactEvidence?.samples ?? null };
+  const fallbackCandidates = filterCandidatesForContext(presetProfile.candidates, map, cell, context, preset, presetProfile);
+  if (fallbackCandidates.length > 0) return { tiles: fallbackCandidates, source: "corpus-family", samples: null };
+  return { tiles: [tileForSmartRole(presetProfile, role)], source: "fallback", samples: null };
+}
+
+function broadShapeCandidatesForContext(
+  map: MapEntity,
+  cell: SmartBrushMaskCell,
+  context: ShapeContext,
+  preset: SmartBrushPreset,
+  presetProfile: SmartBrushProfile["presets"][SmartBrushPreset]
+) {
+  return filterCandidatesForContext(presetProfile.family, map, cell, context, preset, presetProfile);
+}
+
+function corpusCandidateBias(tile: number, evidence: { tiles: number[] }) {
+  const index = evidence.tiles.indexOf(tile);
+  if (index < 0) return 0;
+  return Math.max(0.01, 0.055 - index * 0.008);
+}
+
+function filterCandidatesForContext(
+  candidates: number[],
+  map: MapEntity,
+  cell: SmartBrushMaskCell,
+  context: ShapeContext,
+  preset: SmartBrushPreset,
+  presetProfile: SmartBrushProfile["presets"][SmartBrushPreset]
+) {
+  let out = candidates.filter((tile) => !presetProfile.center.includes(tile));
+  if (preset === "mountains") {
+    const preferred = touchesOutsideWater(map, cell, context) ? MOUNTAIN_WATER_FAMILY : MOUNTAIN_LAND_FAMILY;
+    const narrowed = out.filter((tile) => preferred.includes(tile));
+    if (narrowed.length > 0) out = narrowed;
+  }
+  if (preset === "water" && isNarrowContext(context)) {
+    out = out.filter((tile) => tile !== 22);
+  }
+  if (preset === "forest") {
+    out = out.filter((tile) => FOREST_FAMILY.includes(tile));
+  }
+  return out.length > 0 ? out : candidates;
 }
 
 function touchesOutsideWater(map: MapEntity, cell: SmartBrushMaskCell, context: ShapeContext) {
@@ -413,7 +336,9 @@ function terrainPixelPredicate(preset: SmartBrushPreset) {
     return ([r, g, b]: number[]) => b > 72 && b > r * 1.2 && b > g * 1.02;
   }
   if (preset === "forest") {
-    return ([r, g, b]: number[]) => g > 38 && r < 84 && b < 72 && g > r * 1.06;
+    return ([r, g, b]: number[]) =>
+      (g >= 28 && g <= 105 && r <= 80 && b <= 68 && g >= r * 0.85 && g - b >= 8 && (g < 72 || r < 55)) ||
+      (r >= 45 && r <= 125 && g >= 25 && g <= 95 && b <= 62 && r > b * 1.2 && g > b * 1.05 && Math.abs(r - g) < 55);
   }
   return ([r, g, b]: number[]) =>
     (r > 44 && g < 96 && b < 78 && r >= g * 0.72) ||
@@ -520,6 +445,29 @@ function shapeContext(cell: SmartBrushMaskCell, maskSet: Set<string>): ShapeCont
   };
 }
 
+function smartNeighborMask(context: ShapeContext) {
+  return (context.n ? 1 : 0)
+    | (context.e ? 2 : 0)
+    | (context.s ? 4 : 0)
+    | (context.w ? 8 : 0)
+    | (context.ne ? 16 : 0)
+    | (context.se ? 32 : 0)
+    | (context.sw ? 64 : 0)
+    | (context.nw ? 128 : 0);
+}
+
+function distanceToMaskBoundary(cell: SmartBrushMaskCell, maskSet: Set<string>) {
+  for (let distance = 0; distance <= 4; distance += 1) {
+    for (let y = cell.y - distance; y <= cell.y + distance; y += 1) {
+      for (let x = cell.x - distance; x <= cell.x + distance; x += 1) {
+        if (Math.max(Math.abs(x - cell.x), Math.abs(y - cell.y)) !== distance) continue;
+        if (!hasMaskCell(maskSet, x, y)) return distance;
+      }
+    }
+  }
+  return 5;
+}
+
 function resolveSmartTerrainRoleFromContext(context: ShapeContext): SmartBrushRole {
   const outside = [
     !context.n ? "north" : null,
@@ -549,10 +497,15 @@ function resolveSmartTerrainRoleFromContext(context: ShapeContext): SmartBrushRo
   return "single";
 }
 
+function isNarrowContext(context: ShapeContext) {
+  const cardinals = [context.n, context.s, context.e, context.w].filter(Boolean).length;
+  return cardinals <= 2;
+}
+
 function isSmartTerrainReplaceable(tile: number, preset: SmartBrushPreset, profile: SmartBrushProfile, clearTile: number) {
   if (tile === clearTile) return true;
   if (tileIconCandidates(tile).length > 0) return false;
-  return classifySmartTerrainFamily(normalizeAtlasTile(tile), profile) === preset;
+  return tile >= 0;
 }
 
 function tileForSmartRole(profile: SmartBrushProfile["presets"][SmartBrushPreset], role: SmartBrushRole) {
@@ -565,14 +518,7 @@ function centerTileForCell(
   preset: SmartBrushPreset,
   cell: SmartBrushMaskCell
 ) {
-  if (preset === "forest") {
-    const pattern = [
-      [128, 129],
-      [129, 128]
-    ];
-    return pattern[Math.abs(cell.y) % 2][Math.abs(cell.x) % 2];
-  }
-  return seededPick(profile.center, mapId, preset, cell, "center");
+  return profile.center[0] ?? seededPick(profile.center, mapId, preset, cell, "center");
 }
 
 function seededPick<T>(values: T[], mapId: string, preset: SmartBrushPreset, cell: SmartBrushMaskCell, salt: string): T {
@@ -626,4 +572,8 @@ function range(start: number, end: number) {
   const out: number[] = [];
   for (let value = start; value <= end; value += 1) out.push(value);
   return out;
+}
+
+function uniqueNumbers(values: number[]) {
+  return [...new Set(values)];
 }

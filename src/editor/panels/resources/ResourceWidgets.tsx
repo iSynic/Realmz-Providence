@@ -6,6 +6,7 @@ import { compactValue, selectEntityFromId } from "../../utils";
 import { resourceConsumers } from "../../semanticGraph";
 import { resourceUsageLinks } from "../../contentLinks";
 import { ResourcePreviewBadge, ResourcePreviewDiagnostics } from "../../components/ResourcePreviewStatus";
+import { TutorialTip } from "../../components/TutorialTip";
 import { inspectBrowserBundledLibraryAssetPreview } from "../../browser/library";
 import { FloatingWorkbenchPanel, ScrollArea } from "../../ui";
 import { renderListKey } from "../../renderKeys";
@@ -22,6 +23,20 @@ import { AssetImportBar } from "./AssetImportDialog";
 
 export type AssetSection = "project" | "realmz" | "divinity" | "records" | "advanced";
 export const LIBRARY_PAGE_SIZE = 20;
+const SPECIAL_LAND_AUTHORING_HELP = "Special Land Tiles are scenario-local cicn resources addressed by negative map tile values. They are separate from standard landlook atlases and can be selected for map painting.";
+const PROJECT_ASSET_NAME_HELP = "This is an editor-facing Providence label. It helps authors identify the asset, but Realmz still resolves the exported resource by type and numeric resource ID.";
+const PROJECT_RESOURCE_ID_HELP = "The resource ID is the Realmz lookup key. Pictures, sounds, icons, and special land tiles can be referenced from scripts, maps, startup fields, monsters, items, and other records by this number.";
+const PROJECT_ASSET_REPLACE_HELP = "Replace keeps the same Providence asset and resource ID, but reconverts the selected source file into the Realmz-ready output for this asset kind.";
+const PROJECT_ASSET_DELETE_HELP = "Delete removes this project-owned asset from Providence. Check Used By links first; records that still point at its resource ID can become missing-resource warnings.";
+const ASSET_USAGE_LINKS_HELP = "Used By links are decoded semantic references to this resource ID. Follow them before renumbering, replacing, or deleting an asset.";
+const SPECIAL_LAND_PAINT_HELP = "Select for painting sends this negative cicn tile value to Maps. Realmz draws the current landlook base tile first, then overlays the transparent special-land icon.";
+const SPECIAL_LAND_REPLACE_HELP = "Replacing a Special Land Tile reconverts an image to a 32 x 32 cicn overlay while keeping the same negative tile/resource ID.";
+const PREVIEW_STATUS_FILTER_HELP = "Preview filters help separate usable media from text-only, metadata-only, unsupported, malformed, and missing fallback resources. They do not change export scope.";
+const LIBRARY_DETAIL_HELP = "Open Detail inspects this read-only reference asset, its preview diagnostics, origin, export scope, and any project usage links. Reference assets do not become scenario-owned unless explicitly imported.";
+const RESOURCE_PREVIEW_HELP = "Preview opens the detail window for the decoded media, conversion notes, source/origin labels, preview diagnostics, and usage links.";
+const RESOURCE_DETAIL_WINDOW_HELP = "The resource detail window compares scenario-owned, reference, and raw resource evidence. Use it to verify origin, export scope, conversion output, decoded fields, and usage before editing.";
+const RESOURCE_OUTPUT_HELP = "Realmz-ready output is the converted resource Providence will package or preview for Realmz: PICT for pictures, snd for sounds, or cicn for icons and special land tiles.";
+const RESOURCE_SOURCE_HELP = "Original source is the file imported into Providence. It is kept for editor evidence, while the Realmz-ready output is what the scenario writer uses.";
 
 export const ASSET_SECTIONS: Array<{ id: AssetSection; editor: string; label: string }> = [
   { id: "project", editor: "project-assets", label: "Scenario Assets" },
@@ -125,7 +140,9 @@ export function SpecialLandTilePanel({
   return (
     <section className="tab-panel asset-authoring-panel special-land-authoring">
       <div className="panel-header">
-        <span>Special Land Tiles</span>
+        <TutorialTip title="Special Land Tiles" body={SPECIAL_LAND_AUTHORING_HELP} side="below">
+          <span>Special Land Tiles</span>
+        </TutorialTip>
         <div className="panel-header-actions">
           <b>{authoredTiles.length.toLocaleString()} authored</b>
           <AssetImportBar
@@ -202,15 +219,21 @@ export function SpecialLandAssetCard({
         <span>32 x 32 export</span>
       </div>
       <div className="asset-card-actions">
-        <button className="btn btn-primary btn-xs" type="button" onClick={() => onSelectPaintTile?.(asset.resourceId)}>
-          Select for painting
-        </button>
-        <button className="btn btn-secondary btn-xs" type="button" disabled={!onReplaceAsset} onClick={() => replaceInputRef.current?.click()}>
-          <Upload size={12} /> Replace
-        </button>
-        <button className="btn btn-danger btn-xs" type="button" onClick={() => onDeleteAsset?.(asset.id)}>
-          <Trash2 size={12} /> Delete
-        </button>
+        <TutorialTip title="Paint With Special Tile" body={SPECIAL_LAND_PAINT_HELP} side="below">
+          <button className="btn btn-primary btn-xs" type="button" onClick={() => onSelectPaintTile?.(asset.resourceId)}>
+            Select for painting
+          </button>
+        </TutorialTip>
+        <TutorialTip title="Replace Special Tile" body={SPECIAL_LAND_REPLACE_HELP} side="below">
+          <button className="btn btn-secondary btn-xs" type="button" disabled={!onReplaceAsset} onClick={() => replaceInputRef.current?.click()}>
+            <Upload size={12} /> Replace
+          </button>
+        </TutorialTip>
+        <TutorialTip title="Delete Scenario Asset" body={PROJECT_ASSET_DELETE_HELP} side="below">
+          <button className="btn btn-danger btn-xs" type="button" onClick={() => onDeleteAsset?.(asset.id)}>
+            <Trash2 size={12} /> Delete
+          </button>
+        </TutorialTip>
       </div>
       <input
         ref={replaceInputRef}
@@ -257,7 +280,9 @@ export function ManagedAssetCard({
       <AssetPreview kind={asset.kind} label={asset.label} preview={preview} onOpen={() => onOpenPreview?.(preview)} />
       <ResourceScopeBadge scope={resourceExportScope(asset)} />
       <label className="domain-field">
-        <span>Name</span>
+        <TutorialTip title="Asset Name" body={PROJECT_ASSET_NAME_HELP} side="below">
+          <span>Name</span>
+        </TutorialTip>
         <input
           defaultValue={asset.label}
           onBlur={(event) => {
@@ -267,7 +292,9 @@ export function ManagedAssetCard({
         />
       </label>
       <label className="domain-field compact-field">
-        <span>{asset.resourceType.trim() || asset.resourceType} ID</span>
+        <TutorialTip title="Resource ID" body={PROJECT_RESOURCE_ID_HELP} side="below">
+          <span>{asset.resourceType.trim() || asset.resourceType} ID</span>
+        </TutorialTip>
         <input
           type="number"
           defaultValue={asset.resourceId}
@@ -291,6 +318,9 @@ export function ManagedAssetCard({
       )}
       {usages.length > 0 && (
         <div className="asset-usage-list">
+          <TutorialTip title="Used By" body={ASSET_USAGE_LINKS_HELP} side="below">
+            <strong>Used By</strong>
+          </TutorialTip>
           {usages.slice(0, 4).map((usage) => (
             <button key={usage.key} type="button" disabled={!usage.entity} onClick={() => usage.entity && onSelectEntity?.(usage.entity)}>
               {usage.label}
@@ -300,12 +330,16 @@ export function ManagedAssetCard({
         </div>
       )}
       <div className="asset-card-actions">
-        <button className="btn btn-secondary btn-xs" type="button" disabled={!onReplaceAsset} onClick={() => replaceInputRef.current?.click()}>
-          <Upload size={12} /> Replace
-        </button>
-        <button className="btn btn-danger btn-xs" type="button" onClick={() => onDeleteAsset?.(asset.id)}>
-          <Trash2 size={12} /> Delete
-        </button>
+        <TutorialTip title="Replace Scenario Asset" body={PROJECT_ASSET_REPLACE_HELP} side="below">
+          <button className="btn btn-secondary btn-xs" type="button" disabled={!onReplaceAsset} onClick={() => replaceInputRef.current?.click()}>
+            <Upload size={12} /> Replace
+          </button>
+        </TutorialTip>
+        <TutorialTip title="Delete Scenario Asset" body={PROJECT_ASSET_DELETE_HELP} side="below">
+          <button className="btn btn-danger btn-xs" type="button" onClick={() => onDeleteAsset?.(asset.id)}>
+            <Trash2 size={12} /> Delete
+          </button>
+        </TutorialTip>
       </div>
       <input
         ref={replaceInputRef}
@@ -363,7 +397,9 @@ export function PreviewStatusFilters({
           className={value === option ? "active" : ""}
           onClick={() => onChange(option)}
         >
-          {previewFilterLabel(option)}
+          <TutorialTip title={previewFilterLabel(option)} body={PREVIEW_STATUS_FILTER_HELP} side="below">
+            <span>{previewFilterLabel(option)}</span>
+          </TutorialTip>
         </button>
       ))}
     </div>
@@ -431,6 +467,9 @@ export function LibraryAssetCard({
       </div>
       {usages.length > 0 && (
         <div className="asset-usage-list">
+          <TutorialTip title="Used By" body={ASSET_USAGE_LINKS_HELP} side="below">
+            <strong>Used By</strong>
+          </TutorialTip>
           {usages.slice(0, 4).map((usage) => (
             <button key={usage.key} type="button" disabled={!usage.entity} onClick={() => usage.entity && onSelectEntity?.(usage.entity)}>
               {usage.label}
@@ -441,9 +480,11 @@ export function LibraryAssetCard({
       )}
       <ResourcePreviewDiagnostics diagnostics={preview.diagnostics} />
       <div className="asset-card-actions">
-        <button className="btn btn-secondary btn-xs" type="button" onClick={() => onOpenPreview?.(preview)}>
-          Open Detail
-        </button>
+        <TutorialTip title="Reference Asset Detail" body={LIBRARY_DETAIL_HELP} side="below">
+          <button className="btn btn-secondary btn-xs" type="button" onClick={() => onOpenPreview?.(preview)}>
+            Open Detail
+          </button>
+        </TutorialTip>
       </div>
     </article>
   );
@@ -497,23 +538,31 @@ export function AssetPreview({
     return (
       <div className="asset-audio-preview-shell">
         <audio className="asset-audio-preview" src={preview} controls preload="metadata" />
-        {onOpen && <button type="button" onClick={onOpen}>Open Detail</button>}
+        {onOpen && (
+          <TutorialTip title="Resource Preview" body={RESOURCE_PREVIEW_HELP} side="below">
+            <button type="button" onClick={onOpen}>Open Detail</button>
+          </TutorialTip>
+        )}
       </div>
     );
   }
   if (preview && kind === "text") {
     return (
-      <button type="button" className="asset-text-preview-card" onClick={onOpen}>
-        <FileText size={22} />
-        <span>Open text resource</span>
-      </button>
+      <TutorialTip title="Resource Preview" body={RESOURCE_PREVIEW_HELP} side="below">
+        <button type="button" className="asset-text-preview-card" onClick={onOpen}>
+          <FileText size={22} />
+          <span>Open text resource</span>
+        </button>
+      </TutorialTip>
     );
   }
   if (preview && kind !== "sound") {
     return (
-      <button type="button" className="asset-preview-button" onClick={onOpen}>
-        <img className="asset-image-preview" src={preview} alt={label} />
-      </button>
+      <TutorialTip title="Resource Preview" body={RESOURCE_PREVIEW_HELP} side="below">
+        <button type="button" className="asset-preview-button" onClick={onOpen}>
+          <img className="asset-image-preview" src={preview} alt={label} />
+        </button>
+      </TutorialTip>
     );
   }
   const placeholder = (
@@ -523,7 +572,11 @@ export function AssetPreview({
       {diagnostics[0] && <small>{diagnosticPreviewText(diagnostics[0])}</small>}
     </div>
   );
-  return onOpen ? <button type="button" className="asset-preview-button" onClick={onOpen}>{placeholder}</button> : placeholder;
+  return onOpen ? (
+    <TutorialTip title="Resource Preview" body={RESOURCE_PREVIEW_HELP} side="below">
+      <button type="button" className="asset-preview-button" onClick={onOpen}>{placeholder}</button>
+    </TutorialTip>
+  ) : placeholder;
 }
 
 export type ResourcePreviewItem =
@@ -532,7 +585,27 @@ export type ResourcePreviewItem =
   | { type: "resource"; entity: SemanticEntity; consumers: ReturnType<typeof resourceConsumers> };
 
 export function ResourceScopeBadge({ scope }: { scope: ResourceExportScope }) {
-  return <span className={`resource-scope-badge ${scope}`}>{resourceExportScopeLabel(scope)}</span>;
+  return (
+    <TutorialTip title={resourceExportScopeLabel(scope)} body={resourceScopeHelp(scope)} side="below">
+      <span className={`resource-scope-badge ${scope}`}>{resourceExportScopeLabel(scope)}</span>
+    </TutorialTip>
+  );
+}
+
+function resourceScopeHelp(scope: ResourceExportScope) {
+  if (scope === "ships-with-scenario") {
+    return "This resource is scenario-owned or scenario-supplied and should be packaged with the exported scenario when its writer path is supported.";
+  }
+  if (scope === "realmz-built-in-reference") {
+    return "This is a Realmz built-in reference asset. Realmz can resolve it at runtime, but Providence should not copy it into the scenario export.";
+  }
+  if (scope === "divinity-reference") {
+    return "This is Divinity/editor reference evidence. Use it for comparison and documentation, not as authored scenario media unless explicitly imported.";
+  }
+  if (scope === "ui-reference") {
+    return "This is application interface artwork. It is useful for research but should stay out of normal scenario authoring.";
+  }
+  return "Providence has not proven this resource's export role yet. Inspect Advanced Inventory before treating it as authored scenario media.";
 }
 
 export function ResourcePreviewWindow({
@@ -569,6 +642,11 @@ export function ResourcePreviewWindow({
       actions={<button type="button" className="btn btn-ghost btn-xs" onClick={onClose} aria-label="Close resource preview"><X size={14} /></button>}
     >
       <div className="resource-detail-view">
+        <p className="field-help">
+          <TutorialTip title="Resource Detail" body={RESOURCE_DETAIL_WINDOW_HELP} side="below">
+            <span>Origin, export scope, preview diagnostics, conversion notes, decoded fields, and usage links.</span>
+          </TutorialTip>
+        </p>
         <ResourceScopeBadge scope={scope} />
         {item.type === "managed" && (
           <ManagedResourceDetail
@@ -649,7 +727,9 @@ function ScenarioResourceDetail({
       <ResourceFactGrid title="Decoded Fields" rows={resourceDecodedRows(item.entity.summary)} />
       {item.consumers.length > 0 && (
         <div className="resource-usage-list">
-          <strong>Used By</strong>
+          <TutorialTip title="Used By" body={ASSET_USAGE_LINKS_HELP} side="below">
+            <strong>Used By</strong>
+          </TutorialTip>
           {item.consumers.slice(0, 20).map((link) => (
             <button key={link.id} type="button" onClick={() => onSelectEntity(selectEntityFromId(link.from))}>
               {link.from}
@@ -681,14 +761,18 @@ export function ManagedResourceDetail({
       <div className="resource-preview-comparison">
         <div className="resource-preview-panel">
           <header>
-            <strong>{isSound ? "Realmz Sound Preview" : "Realmz-Ready Output"}</strong>
+            <TutorialTip title="Realmz-Ready Output" body={RESOURCE_OUTPUT_HELP} side="below">
+              <strong>{isSound ? "Realmz Sound Preview" : "Realmz-Ready Output"}</strong>
+            </TutorialTip>
             <span>{managedOutputSummary(item.asset)}</span>
           </header>
           <ResourcePreviewMedia kind={item.asset.kind} preview={item.preview} label={`${item.asset.label} converted preview`} />
         </div>
         <div className="resource-preview-panel">
           <header>
-            <strong>Original Source</strong>
+            <TutorialTip title="Original Source" body={RESOURCE_SOURCE_HELP} side="below">
+              <strong>Original Source</strong>
+            </TutorialTip>
             <span>{managedSourceSummary(item.asset)}</span>
           </header>
           <ResourcePreviewMedia kind={item.asset.kind} preview={originalPreview} label={`${item.asset.label} original source`} />
@@ -878,7 +962,9 @@ export function UsageLinks({ usages, onSelectEntity }: { usages: ReturnType<type
   if (usages.length === 0) return null;
   return (
     <div className="resource-usage-list">
-      <strong>Used By</strong>
+      <TutorialTip title="Used By" body={ASSET_USAGE_LINKS_HELP} side="below">
+        <strong>Used By</strong>
+      </TutorialTip>
       {usages.slice(0, 20).map((usage) => (
         <button key={usage.key} type="button" disabled={!usage.entity} onClick={() => usage.entity && onSelectEntity(usage.entity)}>
           {usage.label}

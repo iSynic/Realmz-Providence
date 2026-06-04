@@ -1,6 +1,7 @@
 import { memo, ReactNode, useEffect, useMemo, useState } from "react";
 import { browserReferenceIconUrl } from "../browser/atlasPaths";
 import { TargetPicker } from "../components/RealmzTargetPicker";
+import { TutorialTip } from "../components/TutorialTip";
 import { useResolvedPreviewUrl, type PreviewRuntimeContext } from "../previewUrls";
 import { isActorOrCreatureIconId } from "../resourceResolver";
 import { LibraryAsset, LibraryCatalog, BattleRecord, IconEntry, MonsterRecord, Project, ProjectCommand, SelectedEntity } from "../types";
@@ -71,6 +72,22 @@ const TAB_LABELS: Record<CombatWorkbenchTab, string> = {
   mash: "Monster Mash"
 };
 
+const TAB_HELP: Record<CombatWorkbenchTab, string> = {
+  battles: "Author Data BD battle records: a 13 x 13 signed monster grid, distance, before/after messages, and battle macro target.",
+  monsters: "Author scenario Data MD monster templates used by battles, spawn/add-ally scripts, bestiary generation, and monster death macros.",
+  scrapbook: "Browse bundled read-only Monster Scrapbook records for built-in monster stats, descriptions, item/spell clues, and icon IDs.",
+  mash: "Open the Assets reference view for Monster Mash cicn art. These icons are reference material unless copied or decoded into the scenario."
+};
+
+const BATTLE_RECORDS_HELP = "Data BD records are fixed 346-byte battle records. They store a 13 x 13 signed monster grid, distance, before/after message IDs, and a battle macro field.";
+const BATTLE_GRID_HELP = "Each grid cell stores a signed monster ID. Zero is empty, abs(value) points at a Data MD monster, and a negative value forces the friendly/alternate side after Realmz loads it.";
+const MONSTER_PLACEMENT_HELP = "Choose a scenario monster template for the placement brush. Erase clears cells; Force Friend writes the negative grid value Realmz uses for side flipping.";
+const MONSTER_RECORDS_HELP = "Data MD records are 210-byte scenario monster templates. Realmz copies them into runtime combat state, so Providence edits the source template rather than generated bestiary cache data.";
+const MONSTER_ICON_FIELD_HELP = "Monster icons are cicn resource IDs. Providence prefers project-local decoded scenario icons, then project assets, then bundled Realmz reference actor/creature art.";
+const MONSTER_DEATH_ACTION_HELP = "Defeat Action is the monster death macro/door target. Realmz can run this when the monster dies, so treat it as linked behavior rather than a decorative number.";
+const BATTLE_ACTION_HELP = "Battle Action is an Extra Action Point / macro reference used by combat-round logic. Runtime evidence is sign-sensitive, so imported values should keep their source evidence visible.";
+const SCRAPBOOK_HELP = "Monster Scrapbook is bundled read-only reference data. It does not replace the current scenario's editable Data MD monster records.";
+
 export function CombatPanel({
   activeEditor = "domain",
   project,
@@ -112,7 +129,15 @@ export function CombatPanel({
     <section className="combat-workbench">
       <header className="combat-hero">
         <div>
-          <h1>Combat</h1>
+          <h1>
+            <TutorialTip
+              title="Combat Workbench"
+              body="Use Combat for scenario battles, scenario monsters, built-in Monster Scrapbook reference records, and Monster Mash icon reference material."
+              side="right"
+            >
+              <span>Combat</span>
+            </TutorialTip>
+          </h1>
           <p>Author battles, monster placement, monster records, and combat art references.</p>
         </div>
         <small>{project.scenario.name}</small>
@@ -126,6 +151,7 @@ export function CombatPanel({
             aria-selected={tab === candidate}
             className={tab === candidate ? "active" : ""}
             onClick={() => selectTab(candidate)}
+            title={TAB_HELP[candidate]}
           >
             <span>{TAB_LABELS[candidate]}</span>
             <b>{lookups.tabCounts[candidate].toLocaleString()}</b>
@@ -205,6 +231,7 @@ function BattleWorkbench({
         count={filtered.length}
         total={battles.length}
         newLabel={`New Battle ${nextBattleId}`}
+        help={BATTLE_RECORDS_HELP}
         onNew={() => {
           onApplyCommand?.({ kind: "createTargetRecord", label: "Create battle", recordType: "battle", id: nextBattleId });
           selectBattle(nextBattleId);
@@ -295,6 +322,7 @@ function BattleEditor({
           label="Before Message"
           opcode={1}
           value={battle.messageBefore}
+          help="Data BD before-message ID. Realmz displays this Data SD2 message before combat starts when the value is nonzero."
           onCommit={(messageBefore) => onUpdate({ messageBefore })}
           onSelectEntity={onSelectEntity}
           onCreate={(id) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create before battle message", recordType: "message", id })}
@@ -305,6 +333,7 @@ function BattleEditor({
           label="After Message"
           opcode={1}
           value={battle.messageAfter}
+          help="Data BD after-message ID. Realmz copies this Data SD2 message for post-battle display when the value is nonzero."
           onCommit={(messageAfter) => onUpdate({ messageAfter })}
           onSelectEntity={onSelectEntity}
           onCreate={(id) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create after battle message", recordType: "message", id })}
@@ -315,6 +344,7 @@ function BattleEditor({
           label="Battle Action"
           opcode={39}
           value={battle.battleMacro}
+          help={BATTLE_ACTION_HELP}
           onCommit={(battleMacro) => onUpdate({ battleMacro })}
           onSelectEntity={onSelectEntity}
         />
@@ -397,7 +427,9 @@ function BattleBoard({
       <div className="battle-board-card">
         <header>
           <div>
-            <strong>Battle Grid</strong>
+            <TutorialTip title="Battle Grid" body={BATTLE_GRID_HELP} side="right">
+              <strong>Battle Grid</strong>
+            </TutorialTip>
             <small>13 x 13 monster placement board</small>
           </div>
           <b>{battle.grid.filter(Boolean).length} placed</b>
@@ -434,15 +466,15 @@ function BattleBoard({
           onSelect={(monsterId) => setBrush((current) => ({ ...current, monsterId, erase: false }))}
         />
         <div className="placement-controls">
-          <ToggleButton active={brush.erase} label="Erase" onClick={() => setBrush((current) => ({ ...current, erase: !current.erase }))} />
-          <ToggleButton active={brush.forceFriend} label="Force Friend" disabled={brush.erase || !brush.monsterId} onClick={() => setBrush((current) => ({ ...current, forceFriend: !current.forceFriend }))} />
+          <ToggleButton active={brush.erase} label="Erase" help="Clear clicked battle cells back to zero." onClick={() => setBrush((current) => ({ ...current, erase: !current.erase }))} />
+          <ToggleButton active={brush.forceFriend} label="Force Friend" help="Write a negative monster ID so Realmz flips the loaded monster to the friendly/alternate side." disabled={brush.erase || !brush.monsterId} onClick={() => setBrush((current) => ({ ...current, forceFriend: !current.forceFriend }))} />
         </div>
         <div className="selected-battle-cell">
           <strong>Selected Cell {selectedIndex % 13}, {Math.floor(selectedIndex / 13)}</strong>
           <small>{selectedCell?.value ? monsterPlacementLabel(selectedMonster, selectedCell.value) : "Empty cell"}</small>
           <MonsterSelect lookups={lookups} value={selectedCell?.monsterId ?? 0} onCommit={(monsterId) => updateSelected(monsterId)} />
           <div className="placement-controls">
-            <ToggleButton active={(selectedCell?.value ?? 0) < 0} label="Force Friend" disabled={!selectedCell?.monsterId} onClick={() => selectedCell && updateSelected(selectedCell.value < 0 ? selectedCell.monsterId : -selectedCell.monsterId)} />
+            <ToggleButton active={(selectedCell?.value ?? 0) < 0} label="Force Friend" help="Toggle the sign of this battle-grid value. The absolute value stays the same monster record." disabled={!selectedCell?.monsterId} onClick={() => selectedCell && updateSelected(selectedCell.value < 0 ? selectedCell.monsterId : -selectedCell.monsterId)} />
             <button type="button" className="btn btn-secondary btn-xs" onClick={() => updateSelected(0)}>Clear Cell</button>
           </div>
           {selectedMonster && (
@@ -485,7 +517,9 @@ function MonsterPalette({
   return (
     <div className="monster-palette">
       <header>
-        <strong>Monster To Place</strong>
+        <TutorialTip title="Monster Placement Brush" body={MONSTER_PLACEMENT_HELP} side="right">
+          <strong>Monster To Place</strong>
+        </TutorialTip>
         <small>{selectedId ? `Monster ${selectedId}` : "Choose a monster"}</small>
       </header>
       {selectedMonster && (
@@ -558,6 +592,7 @@ function MonsterWorkbench({
         count={filtered.length}
         total={lookups.monsters.length}
         newLabel={`New Monster ${nextMonsterId}`}
+        help={MONSTER_RECORDS_HELP}
         onNew={() => {
           onApplyCommand?.({ kind: "createTargetRecord", label: "Create monster", recordType: "monster", id: nextMonsterId });
           selectMonster(nextMonsterId);
@@ -633,12 +668,12 @@ function MonsterEditor({
         <div className="monster-field-grid">
           <TextField label="Monster Name" value={monster.displayName} onCommit={(displayName) => onUpdate({ displayName })} />
           <NumberField label="Name ID" value={monster.nameId} onCommit={(nameId) => onUpdate({ nameId })} />
-          <NumberField label="Icon" value={monster.iconId} onCommit={(iconId) => onUpdate({ iconId })} />
+          <NumberField label="Icon" value={monster.iconId} help={MONSTER_ICON_FIELD_HELP} onCommit={(iconId) => onUpdate({ iconId })} />
           <label className="combat-check-field">
             <span>Hide From Bestiary</span>
             <input type="checkbox" checked={monster.notOnMenu} onChange={(event) => onUpdate({ notOnMenu: event.currentTarget.checked })} />
           </label>
-          <NumberField label="Defeat Action" value={monster.deathMacro} onCommit={(deathMacro) => onUpdate({ deathMacro })} />
+          <NumberField label="Defeat Action" value={monster.deathMacro} help={MONSTER_DEATH_ACTION_HELP} onCommit={(deathMacro) => onUpdate({ deathMacro })} />
         </div>
       </section>
       <MonsterNumberSection
@@ -740,6 +775,7 @@ function TargetField({
   label,
   opcode,
   value,
+  help,
   onCommit,
   onSelectEntity,
   onCreate
@@ -749,6 +785,7 @@ function TargetField({
   label: string;
   opcode: number;
   value: number;
+  help?: string;
   onCommit: (value: number) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
   onCreate?: (id: number) => void;
@@ -757,7 +794,7 @@ function TargetField({
   const targetId = normalizedTargetValue(opcode, value);
   return (
     <div className="combat-target-field">
-      <span>{label}</span>
+      <FieldLabel label={label} help={help} />
       {!editing ? (
         <div className="combat-target-summary">
           <strong>{combatTargetSummary(project, label, opcode, value)}</strong>
@@ -800,6 +837,7 @@ function RecordList({
   count,
   total,
   newLabel,
+  help,
   onNew,
   children
 }: {
@@ -809,6 +847,7 @@ function RecordList({
   count: number;
   total: number;
   newLabel: string;
+  help?: string;
   onNew: () => void;
   children: ReactNode;
 }) {
@@ -816,7 +855,13 @@ function RecordList({
     <aside className="combat-record-list">
       <header>
         <div>
-          <strong>{title}</strong>
+          {help ? (
+            <TutorialTip title={title} body={help} side="right">
+              <strong>{title}</strong>
+            </TutorialTip>
+          ) : (
+            <strong>{title}</strong>
+          )}
           <small>{count.toLocaleString()} shown | {total.toLocaleString()} total</small>
         </div>
         <button type="button" className="btn btn-primary btn-xs" onClick={onNew}>{newLabel}</button>
@@ -923,7 +968,7 @@ function resolveMonsterIcon(monster: MonsterRecord, iconEntries: Record<number, 
 function MonsterSelect({ lookups, value, onCommit }: { lookups: CombatLookups; value: number; onCommit: (value: number) => void }) {
   return (
     <label className="combat-field">
-      <span>Selected Cell Monster</span>
+      <FieldLabel label="Selected Cell Monster" help="This writes the absolute monster ID for the selected battle cell. Use Force Friend to preserve Realmz's negative side-flip encoding." />
       <select value={value} onChange={(event) => onCommit(Number(event.currentTarget.value))}>
         <option value={0}>Empty</option>
         {lookups.monsters.map((monster) => (
@@ -934,12 +979,12 @@ function MonsterSelect({ lookups, value, onCommit }: { lookups: CombatLookups; v
   );
 }
 
-function NumberField({ label, value, onCommit }: { label: string; value: number; onCommit: (value: number) => void }) {
+function NumberField({ label, value, help, onCommit }: { label: string; value: number; help?: string; onCommit: (value: number) => void }) {
   const [draft, setDraft] = useState(String(value));
   useEffect(() => setDraft(String(value)), [value]);
   return (
     <label className="combat-field">
-      <span>{label}</span>
+      <FieldLabel label={label} help={help} />
       <input
         type="number"
         value={draft}
@@ -953,12 +998,12 @@ function NumberField({ label, value, onCommit }: { label: string; value: number;
   );
 }
 
-function TextField({ label, value, onCommit }: { label: string; value: string; onCommit: (value: string) => void }) {
+function TextField({ label, value, help, onCommit }: { label: string; value: string; help?: string; onCommit: (value: string) => void }) {
   const [draft, setDraft] = useState(value);
   useEffect(() => setDraft(value), [value]);
   return (
     <label className="combat-field">
-      <span>{label}</span>
+      <FieldLabel label={label} help={help} />
       <input
         value={draft}
         onChange={(event) => setDraft(event.currentTarget.value)}
@@ -971,11 +1016,22 @@ function TextField({ label, value, onCommit }: { label: string; value: string; o
   );
 }
 
-function ToggleButton({ active, label, disabled, onClick }: { active: boolean; label: string; disabled?: boolean; onClick: () => void }) {
+function ToggleButton({ active, label, disabled, help, onClick }: { active: boolean; label: string; disabled?: boolean; help?: string; onClick: () => void }) {
   return (
-    <button type="button" className={`combat-toggle${active ? " active" : ""}`} disabled={disabled} onClick={onClick}>
+    <button type="button" className={`combat-toggle${active ? " active" : ""}`} disabled={disabled} title={help} onClick={onClick}>
       {label}
     </button>
+  );
+}
+
+function FieldLabel({ label, help }: { label: string; help?: string }) {
+  if (!help) return <span>{label}</span>;
+  return (
+    <span>
+      <TutorialTip title={label} body={help} side="right">
+        <span>{label}</span>
+      </TutorialTip>
+    </span>
   );
 }
 
@@ -1049,7 +1105,9 @@ function MonsterScrapbookWorkbench({
       <aside className="combat-record-list scrapbook-list" aria-label="Monster Scrapbook entries">
         <header>
           <div>
-            <strong>Monster Scrapbook</strong>
+            <TutorialTip title="Monster Scrapbook" body={SCRAPBOOK_HELP} side="right">
+              <strong>Monster Scrapbook</strong>
+            </TutorialTip>
             <small>{filtered.length.toLocaleString()} shown | {entries.length.toLocaleString()} total</small>
           </div>
         </header>
@@ -1080,7 +1138,7 @@ function MonsterScrapbookWorkbench({
                 <span>{scrapbookName(selected)}</span>
                 <small>{scrapbookFacts(selected)}</small>
               </div>
-              <button className="btn btn-secondary btn-sm" type="button" onClick={onOpenMash}>Open Monster Mash Icons</button>
+              <button className="btn btn-secondary btn-sm" type="button" title={TAB_HELP.mash} onClick={onOpenMash}>Open Monster Mash Icons</button>
             </header>
             <section className="scrapbook-summary">
               <ScrapbookMonsterIcon entry={selected} iconEntries={iconEntries} lookups={lookups} previewContext={previewContext} />

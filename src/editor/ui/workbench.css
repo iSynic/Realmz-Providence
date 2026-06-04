@@ -876,9 +876,18 @@ a.workbench-link-chip:hover,
 }
 
 .documents-content-workbench {
-  display: grid;
-  align-content: start;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   gap: 12px;
+}
+
+.documents-content-workbench > .workbench-panel-section {
+  flex: 0 0 auto;
+}
+
+.documents-content-workbench .workbench-preview-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
 }
 
 .documents-content-workbench .workbench-panel-section-body {

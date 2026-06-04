@@ -2,7 +2,49 @@ import { useEffect, useState } from "react";
 import { MapEntity, MapMarker, MapRecord, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, SelectedEntity, SemanticEntity } from "../../types";
 import { compactValue, linksFor, selectEntityFromId, semanticLabel } from "../../utils";
 import { InfoGrid } from "../InfoGrid";
+import { TutorialTip } from "../TutorialTip";
 import { MapDiagnostics, MapNumberField } from "./MapFormControls";
+
+const MAP_RECORDS_HELP =
+  "Map Records are Divinity Map Editor records: named/startable map entries with start coordinates, optional PICT links, markers, display rectangles, notes, and source-backed map settings.";
+const MAP_RECORD_FILTER_HELP =
+  "When a map is selected, Providence shows map records whose land/dungeon flag and level index point at that map. Switch maps or clear the selection to inspect other records.";
+const MAP_RECORD_CANVAS_HELP =
+  "Show map-record starts and markers on the canvas. This switches to Canvas mode with the map-record overlay enabled, without changing the records.";
+const MAP_RECORD_ROW_HELP =
+  "Select a map record to inspect source evidence, editable fields, outgoing links, incoming references, and canvas navigation actions.";
+const MAP_RECORD_SUMMARY_HELP =
+  "This summary combines the record's display name, target level, start coordinate, PICT link, marker count, display rectangle, and note.";
+const MAP_RECORD_OPEN_HELP =
+  "Open the map targeted by this record and select the record overlay on the canvas. Useful for checking whether the start coordinate and markers line up visually.";
+const MAP_RECORD_COPY_HELP =
+  "Copy the record's start coordinate as x,y for cross-checking scripts, manual notes, or bug reports.";
+const MAP_RECORD_DETAILS_HELP =
+  "Semantic details show the decoded source record, byte range, confidence, and links so you can distinguish editable fields from preserved evidence.";
+const MAP_RECORD_EDITOR_HELP =
+  "Edit source-backed Data MD2 map-record fields. Names remain read-only because they come from scenario resource data; unknown bytes stay preserved on export.";
+const MAP_RECORD_START_HELP =
+  "Start X and Start Y are the 0..89 map coordinates where Realmz places the party or cursor for this map record.";
+const MAP_RECORD_LEVEL_HELP =
+  "Level plus Dungeon record chooses the target Realmz land or dungeon level. Changing it can move this record away from the currently selected map.";
+const MAP_RECORD_PICT_HELP =
+  "Picture ID is the PICT resource Realmz can associate with this map record. Zero or blank means no picture link.";
+const MAP_RECORD_ICON_SIZE_HELP =
+  "Icon Size is an imported map-record display field. Keep it visible for compatibility and edit carefully unless the target behavior is known.";
+const MAP_RECORD_SHOW_HELP =
+  "Show is an imported display/control field from the map record. It is source-backed but still legacy-sensitive, so prefer conservative edits.";
+const MAP_RECORD_DUNGEON_HELP =
+  "Dungeon record toggles whether the target level is read as dungeon or land. This must agree with the level index you intend to target.";
+const MAP_RECORD_NOTE_HELP =
+  "The map-record note is a short source-backed annotation field. It can document author intent or legacy clues but is still limited to classic record storage.";
+const MAP_RECORD_MARKERS_HELP =
+  "Map records can carry up to ten icon markers. Marker icon IDs and x/y coordinates are separate from Action Points and random rectangles.";
+const MAP_RECORD_MARKER_FIELD_HELP =
+  "Marker fields store an icon ID plus x/y map coordinate. Set all three values to zero when a marker slot should be inactive.";
+const MAP_RECORD_RECT_HELP =
+  "The display rectangle is a source-backed map-record rectangle. Keep bounds ordered; inverted values will be reported by diagnostics.";
+const MAP_RECORD_LINKS_HELP =
+  "Outgoing and incoming links show how semantic records connect this map record to maps, pictures, scripts, text, or other project data.";
 
 export function MapRecordsWorkbench({
   project,
@@ -37,6 +79,11 @@ export function MapRecordsWorkbench({
   if (!project) return <p className="empty-copy compact">Open a project to browse map records.</p>;
   return (
     <div className="map-records-workbench">
+      <p className="empty-copy compact">
+        <TutorialTip title="Map Records" body={MAP_RECORDS_HELP} side="below">
+          <span>Browse and edit source-backed map records for starts, pictures, markers, rectangles, and notes.</span>
+        </TutorialTip>
+      </p>
       <div className="map-records-toolbar">
         <InfoGrid
           rows={[
@@ -47,16 +94,24 @@ export function MapRecordsWorkbench({
           ]}
         />
         <div className="context-action-stack compact">
-          <button className="btn btn-primary btn-xs context-action-button" type="button" onClick={() => {
-            onSetWorkbenchMode("canvas");
-            onSetViewFlag("showMapRecords", true);
-          }}>
-            Show On Canvas
-          </button>
+          <TutorialTip title="Visible Map Records" body={MAP_RECORD_FILTER_HELP} side="below">
+            <span className="map-help-anchor">Current Filter</span>
+          </TutorialTip>
+          <TutorialTip title="Show Map Records On Canvas" body={MAP_RECORD_CANVAS_HELP} side="below">
+            <button className="btn btn-primary btn-xs context-action-button" type="button" onClick={() => {
+              onSetWorkbenchMode("canvas");
+              onSetViewFlag("showMapRecords", true);
+            }}>
+              Show On Canvas
+            </button>
+          </TutorialTip>
         </div>
       </div>
       <div className="map-records-layout">
         <div className="map-records-table" role="list" aria-label="Map records">
+          <TutorialTip title="Map Record Rows" body={MAP_RECORD_ROW_HELP} side="below">
+            <span className="map-help-anchor map-record-list-help">Map Record Rows</span>
+          </TutorialTip>
           {visibleRecords.map((record) => (
             <button
               key={record.id}
@@ -77,6 +132,9 @@ export function MapRecordsWorkbench({
           {selectedRecord && selectedSemantic ? (
             <>
               <div className="map-record-summary-card">
+                <TutorialTip title="Map Record Summary" body={MAP_RECORD_SUMMARY_HELP} side="below">
+                  <span className="map-help-anchor">Record Summary</span>
+                </TutorialTip>
                 <InfoGrid
                   rows={[
                     ["Name", selectedRecord.primaryName || selectedRecord.name || `Map Record ${selectedRecord.id}`],
@@ -90,17 +148,21 @@ export function MapRecordsWorkbench({
                   ]}
                 />
                 <div className="context-action-stack compact">
-                  <button className="btn btn-primary btn-xs context-action-button" type="button" onClick={() => {
-                    onSelectMap(`map:${selectedRecord.isDungeon ? "dungeon" : "land"}:${selectedRecord.level}`);
-                    onSetWorkbenchMode("canvas");
-                    onSetViewFlag("showMapRecords", true);
-                    onSelectEntity(selectEntityFromId(`map-record:${selectedRecord.id}`));
-                  }}>
-                    Open Related Map
-                  </button>
-                  <button className="btn btn-ghost btn-xs context-action-button" type="button" onClick={() => navigator.clipboard?.writeText(`${selectedRecord.startX},${selectedRecord.startY}`)}>
-                    Copy Coordinates
-                  </button>
+                  <TutorialTip title="Open Related Map" body={MAP_RECORD_OPEN_HELP} side="below">
+                    <button className="btn btn-primary btn-xs context-action-button" type="button" onClick={() => {
+                      onSelectMap(`map:${selectedRecord.isDungeon ? "dungeon" : "land"}:${selectedRecord.level}`);
+                      onSetWorkbenchMode("canvas");
+                      onSetViewFlag("showMapRecords", true);
+                      onSelectEntity(selectEntityFromId(`map-record:${selectedRecord.id}`));
+                    }}>
+                      Open Related Map
+                    </button>
+                  </TutorialTip>
+                  <TutorialTip title="Copy Coordinates" body={MAP_RECORD_COPY_HELP} side="below">
+                    <button className="btn btn-ghost btn-xs context-action-button" type="button" onClick={() => navigator.clipboard?.writeText(`${selectedRecord.startX},${selectedRecord.startY}`)}>
+                      Copy Coordinates
+                    </button>
+                  </TutorialTip>
                 </div>
               </div>
               <RecordSelectionDetails
@@ -170,6 +232,9 @@ export function RecordSelectionDetails({
     .map(([key, value]) => [labelizeKey(key), compactValue(value)] as [string, string]);
   return (
     <div className="record-selection-details">
+      <TutorialTip title="Map Record Evidence" body={MAP_RECORD_DETAILS_HELP} side="below">
+        <span className="map-help-anchor">Source Evidence</span>
+      </TutorialTip>
       <InfoGrid
         rows={[
           ["Label", record.label],
@@ -192,7 +257,12 @@ export function RecordSelectionDetails({
       )}
       {summaryRows.length > 0 && (
         <details className="context-section" open>
-          <summary><span>Decoded Fields</span><b>{summaryRows.length}</b></summary>
+          <summary>
+            <TutorialTip title="Decoded Fields" body={MAP_RECORD_DETAILS_HELP} side="below">
+              <span>Decoded Fields</span>
+            </TutorialTip>
+            <b>{summaryRows.length}</b>
+          </summary>
           <InfoGrid rows={summaryRows} />
         </details>
       )}
@@ -237,52 +307,75 @@ function MapRecordEditor({
   const targetMapId = `${record.isDungeon ? "dungeon" : "land"}:${record.level}`;
   return (
     <details className="context-section map-record-editor" open>
-      <summary><span>Edit Map Record</span><b>Map Settings</b></summary>
+      <summary>
+        <TutorialTip title="Edit Map Record" body={MAP_RECORD_EDITOR_HELP} side="below">
+          <span>Edit Map Record</span>
+        </TutorialTip>
+        <b>Map Settings</b>
+      </summary>
       <MapDiagnostics diagnostics={mapRecordDiagnostics(record, map)} />
       <div className="map-authoring-form">
-        <MapNumberField label="Start X" value={record.startX} min={0} max={89} onCommit={(startX) => update({ startX })} />
-        <MapNumberField label="Start Y" value={record.startY} min={0} max={89} onCommit={(startY) => update({ startY })} />
-        <MapNumberField label="Level" value={record.level} min={0} max={255} onCommit={(level) => update({ level })} />
-        <MapNumberField label="Picture ID" value={record.pictId} onCommit={(pictId) => update({ pictId })} />
-        <MapNumberField label="Icon Size" value={record.iconSize} onCommit={(iconSize) => update({ iconSize })} />
-        <MapNumberField label="Show" value={record.show} onCommit={(show) => update({ show })} />
+        <MapNumberField label="Start X" value={record.startX} min={0} max={89} help={MAP_RECORD_START_HELP} onCommit={(startX) => update({ startX })} />
+        <MapNumberField label="Start Y" value={record.startY} min={0} max={89} help={MAP_RECORD_START_HELP} onCommit={(startY) => update({ startY })} />
+        <MapNumberField label="Level" value={record.level} min={0} max={255} help={MAP_RECORD_LEVEL_HELP} onCommit={(level) => update({ level })} />
+        <MapNumberField label="Picture ID" value={record.pictId} help={MAP_RECORD_PICT_HELP} onCommit={(pictId) => update({ pictId })} />
+        <MapNumberField label="Icon Size" value={record.iconSize} help={MAP_RECORD_ICON_SIZE_HELP} onCommit={(iconSize) => update({ iconSize })} />
+        <MapNumberField label="Show" value={record.show} help={MAP_RECORD_SHOW_HELP} onCommit={(show) => update({ show })} />
         <label className="map-check-field">
           <input type="checkbox" checked={record.isDungeon} onChange={(event) => update({ isDungeon: event.currentTarget.checked })} />
-          <span>Dungeon record</span>
+          <TutorialTip title="Dungeon Record" body={MAP_RECORD_DUNGEON_HELP} side="right">
+            <span>Dungeon record</span>
+          </TutorialTip>
         </label>
       </div>
       <label className="context-field">
-        <span>Note</span>
+        <TutorialTip title="Map Record Note" body={MAP_RECORD_NOTE_HELP} side="right">
+          <span>Note</span>
+        </TutorialTip>
         <textarea value={record.note} maxLength={255} onChange={(event) => update({ note: event.currentTarget.value })} />
       </label>
       <details className="context-section">
-        <summary><span>Markers</span><b>{activeMarkerCount(record)}/10</b></summary>
+        <summary>
+          <TutorialTip title="Map Record Markers" body={MAP_RECORD_MARKERS_HELP} side="below">
+            <span>Markers</span>
+          </TutorialTip>
+          <b>{activeMarkerCount(record)}/10</b>
+        </summary>
         <div className="map-authoring-form">
           {markers.map((marker, slot) => (
             <div className="map-door-pair" key={slot}>
-              <MapNumberField label={`M${slot + 1} Icon`} value={marker.iconId} onCommit={(iconId) => updateMarker(slot, { iconId })} />
-              <MapNumberField label={`M${slot + 1} X`} value={marker.x} onCommit={(x) => updateMarker(slot, { x })} />
-              <MapNumberField label={`M${slot + 1} Y`} value={marker.y} onCommit={(y) => updateMarker(slot, { y })} />
+              <MapNumberField label={`M${slot + 1} Icon`} value={marker.iconId} help={MAP_RECORD_MARKER_FIELD_HELP} onCommit={(iconId) => updateMarker(slot, { iconId })} />
+              <MapNumberField label={`M${slot + 1} X`} value={marker.x} help={MAP_RECORD_MARKER_FIELD_HELP} onCommit={(x) => updateMarker(slot, { x })} />
+              <MapNumberField label={`M${slot + 1} Y`} value={marker.y} help={MAP_RECORD_MARKER_FIELD_HELP} onCommit={(y) => updateMarker(slot, { y })} />
             </div>
           ))}
         </div>
       </details>
       <details className="context-section">
-        <summary><span>Display Rect</span><b>{record.rect.left},{record.rect.top}</b></summary>
+        <summary>
+          <TutorialTip title="Display Rectangle" body={MAP_RECORD_RECT_HELP} side="below">
+            <span>Display Rect</span>
+          </TutorialTip>
+          <b>{record.rect.left},{record.rect.top}</b>
+        </summary>
         <div className="map-authoring-form">
-          <MapNumberField label="Top" value={record.rect.top} onCommit={(top) => update({ rect: { ...record.rect, top } })} />
-          <MapNumberField label="Left" value={record.rect.left} onCommit={(left) => update({ rect: { ...record.rect, left } })} />
-          <MapNumberField label="Bottom" value={record.rect.bottom} onCommit={(bottom) => update({ rect: { ...record.rect, bottom } })} />
-          <MapNumberField label="Right" value={record.rect.right} onCommit={(right) => update({ rect: { ...record.rect, right } })} />
+          <MapNumberField label="Top" value={record.rect.top} help={MAP_RECORD_RECT_HELP} onCommit={(top) => update({ rect: { ...record.rect, top } })} />
+          <MapNumberField label="Left" value={record.rect.left} help={MAP_RECORD_RECT_HELP} onCommit={(left) => update({ rect: { ...record.rect, left } })} />
+          <MapNumberField label="Bottom" value={record.rect.bottom} help={MAP_RECORD_RECT_HELP} onCommit={(bottom) => update({ rect: { ...record.rect, bottom } })} />
+          <MapNumberField label="Right" value={record.rect.right} help={MAP_RECORD_RECT_HELP} onCommit={(right) => update({ rect: { ...record.rect, right } })} />
         </div>
       </details>
       <div className="context-action-stack">
-        <button className="btn btn-primary btn-xs context-action-button" type="button" onClick={() => onSelectEntity({ type: "map", id: `map:${targetMapId}` })}>
-          Open Related Map
-        </button>
-        <button className="btn btn-ghost btn-xs context-action-button" type="button" onClick={() => navigator.clipboard?.writeText(`${record.startX},${record.startY}`)}>
-          Copy Coordinates
-        </button>
+        <TutorialTip title="Open Related Map" body={MAP_RECORD_OPEN_HELP} side="below">
+          <button className="btn btn-primary btn-xs context-action-button" type="button" onClick={() => onSelectEntity({ type: "map", id: `map:${targetMapId}` })}>
+            Open Related Map
+          </button>
+        </TutorialTip>
+        <TutorialTip title="Copy Coordinates" body={MAP_RECORD_COPY_HELP} side="below">
+          <button className="btn btn-ghost btn-xs context-action-button" type="button" onClick={() => navigator.clipboard?.writeText(`${record.startX},${record.startY}`)}>
+            Copy Coordinates
+          </button>
+        </TutorialTip>
       </div>
       <p className="empty-copy compact">
         Names stay read-only because they are stored in the scenario resource data. Unknown map-setting bytes stay preserved on export.
@@ -350,7 +443,12 @@ function RelatedLinkSection({
 }) {
   return (
     <details className="context-section" open={links.length > 0}>
-      <summary><span>{title}</span><b>{links.length}</b></summary>
+      <summary>
+        <TutorialTip title={title} body={MAP_RECORD_LINKS_HELP} side="below">
+          <span>{title}</span>
+        </TutorialTip>
+        <b>{links.length}</b>
+      </summary>
       <div className="selection-link-list">
         {links.slice(0, 24).map((link) => {
           const id = direction === "outgoing" ? link.to : link.from;
