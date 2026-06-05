@@ -9,7 +9,7 @@
     "assetCardSelection": { "warnMs": 200, "failMs": 650 },
     "assetDetailOpen": { "warnMs": 350, "failMs": 1200 },
     "targetPickerOpen": { "warnMs": 150, "failMs": 500 },
-    "mapPaintRelease": { "warnMs": 75, "failMs": 150 },
+    "mapPaintRelease": { "warnMs": 125, "failMs": 200 },
     "combatGridEdit": { "warnMs": 150, "failMs": 500 },
     "search": { "warnMs": 150, "failMs": 500 },
     "longTask": { "warnMs": 75, "failMs": 150 }

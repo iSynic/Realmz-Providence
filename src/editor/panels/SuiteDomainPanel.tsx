@@ -193,7 +193,8 @@ export function SuiteDomainPanel({
   const headerEditor = tab === "encounters" || economyActive ? null : focusedEditor;
   const visibleEditors = focusedEditor ? [focusedEditor] : config.editors;
   const libraryEntities = catalog?.entities ?? [];
-  const selectedDetail =
+  const suppressDetailPanel = tab === "encounters" || economyActive;
+  const selectedDetail = suppressDetailPanel ? null :
     directDetailForSelection(project, selectedEntity?.id ?? null) ??
     libraryEntities.find((entity) => entity.id === selectedEntity?.id) ??
     (tab === "records" ? [
@@ -234,7 +235,6 @@ export function SuiteDomainPanel({
   const itemWorkbenchActive = economyActive && economySection === "items";
   const headerHelp = domainHeaderHelp(tab);
   const headerTitle = headerEditor ? headerEditor.label : config.title;
-  const suppressDetailPanel = tab === "encounters" || economyActive;
   const showTargetSwitcher = targetRecordTypes.length > 1 && (tab === "encounters" || (!economyActive && !focusedTargetEditor));
   const showOverviewCards = tab !== "records" && tab !== "linter" && !focusedTargetEditor && !itemWorkbenchActive && targetRecordTypes.length === 0;
   return (
@@ -578,7 +578,8 @@ function ItemCatalogWorkbench({
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
-  const options = useMemo(() => itemReferenceOptions(project, catalog), [project, catalog]);
+  const deferredOptions = useDeferredItemReferenceOptions(project, catalog);
+  const options = deferredOptions ?? [];
   const [category, setCategory] = useState<ItemReferenceCategory | "all">("weapon");
   const [query, setQuery] = useState("");
   const selectedFromEntity = itemIdFromEntityId(selectedEntity?.id ?? "");
@@ -617,7 +618,7 @@ function ItemCatalogWorkbench({
           </h2>
           <p>Browse Realmz items by Divinity category, including scenario special items loaded from this scenario's item table.</p>
         </div>
-        <strong>{options.length.toLocaleString()} item reference{options.length === 1 ? "" : "s"}</strong>
+            <strong>{deferredOptions ? `${options.length.toLocaleString()} item reference${options.length === 1 ? "" : "s"}` : "Loading item references"}</strong>
       </header>
       <div className="item-workbench-layout">
         <aside className="item-browser-panel">
@@ -699,6 +700,23 @@ function ItemOptionIcon({
       {usableUrl ? <img src={usableUrl} alt="" onError={() => setFailedUrl(usableUrl)} /> : <i>{itemCategoryBadge(option.category)}</i>}
     </span>
   );
+}
+
+function useDeferredItemReferenceOptions(project: Project, catalog?: LibraryCatalog | null) {
+  const [options, setOptions] = useState<ItemReferenceOption[] | null>(null);
+  useEffect(() => {
+    let disposed = false;
+    setOptions(null);
+    const timer = window.setTimeout(() => {
+      const next = itemReferenceOptions(project, catalog);
+      if (!disposed) setOptions(next);
+    }, 120);
+    return () => {
+      disposed = true;
+      window.clearTimeout(timer);
+    };
+  }, [catalog, project]);
+  return options;
 }
 
 function itemCategoryBadge(category: ItemReferenceCategory) {
@@ -1311,7 +1329,8 @@ function TreasureWorkbench({
   const visibleRecords = records.slice(0, 140);
   const selectedId = targetIdFromSelection(selectedEntity?.id ?? "", "treasure") ?? records[0]?.id ?? 1;
   const record = project.treasures.find((candidate) => candidate.id === selectedId) ?? null;
-  const options = useMemo(() => itemReferenceOptions(project, catalog), [project, catalog]);
+  const deferredOptions = useDeferredItemReferenceOptions(project, catalog);
+  const options = deferredOptions ?? [];
   const optionsByValue = useMemo(() => new Map(options.map((option) => [option.value, option])), [options]);
   const nextId = nextTargetRecordId(project, "treasure");
   const rewards = record ? treasureRewardTotal(record) : 0;
@@ -1361,7 +1380,7 @@ function TreasureWorkbench({
                     <strong>Treasure {entry.id}</strong>
                     <small>{targetRecordSummary(project, "treasure", entry.id)}</small>
                   </span>
-                  <TreasureMiniIcons itemIds={itemIds} optionsByValue={optionsByValue} project={project} catalog={catalog} previewContext={previewContext} />
+                  <TreasureMiniIcons itemIds={itemIds} optionsByValue={optionsByValue} />
                 </button>
               );
             })}
@@ -1396,6 +1415,7 @@ function TreasureWorkbench({
                 recordId={record.id}
                 itemIds={record.itemIds}
                 options={options}
+                optionsLoading={!deferredOptions}
                 optionsByValue={optionsByValue}
                 onApplyCommand={onApplyCommand}
               />
@@ -1420,28 +1440,26 @@ function TreasureWorkbench({
 
 function TreasureMiniIcons({
   itemIds,
-  optionsByValue,
-  project,
-  catalog,
-  previewContext
+  optionsByValue
 }: {
   itemIds: number[];
   optionsByValue: Map<number, ItemReferenceOption>;
-  project: Project;
-  catalog?: LibraryCatalog | null;
-  previewContext: PreviewRuntimeContext;
 }) {
   return (
     <span className="treasure-mini-icons" aria-hidden="true">
       {itemIds.length ? itemIds.map((itemId, index) => {
         const option = optionsByValue.get(itemId);
-        return option ? (
-          <ItemOptionIcon key={`${itemId}:${index}`} option={option} project={project} catalog={catalog} previewContext={previewContext} />
-        ) : (
-          <i key={`${itemId}:${index}`}>{itemId}</i>
-        );
+        return <TreasureMiniItemBadge key={`${itemId}:${index}`} itemId={itemId} option={option} />;
       }) : <em>empty</em>}
     </span>
+  );
+}
+
+function TreasureMiniItemBadge({ itemId, option }: { itemId: number; option?: ItemReferenceOption }) {
+  return (
+    <i title={option ? `${itemOptionName(option)} (${itemId})` : `Item ${itemId}`}>
+      {option ? itemCategoryBadge(option.category) : itemId}
+    </i>
   );
 }
 
@@ -1475,6 +1493,7 @@ function TreasureLootEditor({
   recordId,
   itemIds,
   options,
+  optionsLoading,
   optionsByValue,
   onApplyCommand
 }: {
@@ -1484,6 +1503,7 @@ function TreasureLootEditor({
   recordId: number;
   itemIds: number[];
   options: ItemReferenceOption[];
+  optionsLoading: boolean;
   optionsByValue: Map<number, ItemReferenceOption>;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
@@ -1554,6 +1574,7 @@ function TreasureLootEditor({
               <b>{option.value}</b>
             </button>
           ))}
+          {optionsLoading && <p>Loading item references...</p>}
           {filteredOptions.length === 0 && <p>No items match this category/search.</p>}
         </ScrollArea>
       </div>

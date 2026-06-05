@@ -889,16 +889,27 @@ const MonsterIcon = memo(function MonsterIcon({
 }) {
   const resolution = resolveMonsterIcon(monster, iconEntries, project, lookups);
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
-  useEffect(() => setFailedUrl(null), [resolution.url]);
+  const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
+  useEffect(() => {
+    setFailedUrl(null);
+    setLoadedUrl(null);
+  }, [resolution.url]);
   const usableUrl = resolution.url && resolution.url !== failedUrl ? resolution.url : null;
+  const ready = !usableUrl || loadedUrl === usableUrl;
   return (
-    <span className={`monster-icon-preview${compact ? " compact" : ""}${large ? " large" : ""}`} title={resolution.label}>
+    <span
+      className={`monster-icon-preview${compact ? " compact" : ""}${large ? " large" : ""}`}
+      title={resolution.label}
+      data-combat-preview="monster-icon"
+      data-combat-preview-ready={ready ? "true" : "false"}
+    >
       {usableUrl ? (
         <img
           src={usableUrl}
           alt=""
           loading="lazy"
           decoding="async"
+          onLoad={() => setLoadedUrl(usableUrl)}
           onError={() => setFailedUrl(usableUrl)}
         />
       ) : (
@@ -1234,9 +1245,21 @@ function ScrapbookMonsterIcon({
   const fallbackUrl = useResolvedPreviewUrl(fallbackAsset?.previewPath ?? null, null, mashAsset, previewContext);
   const referenceUrl = isActorOrCreatureIconId(absIconId) ? browserReferenceIconUrl(absIconId) : null;
   const url = realmzActorUrl ?? referenceUrl ?? icon?.url ?? fallbackUrl;
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
+  useEffect(() => {
+    setFailedUrl(null);
+    setLoadedUrl(null);
+  }, [url]);
+  const usableUrl = url && url !== failedUrl ? url : null;
+  const ready = !usableUrl || loadedUrl === usableUrl;
   return (
-    <div className={compact ? "monster-icon-preview compact" : "monster-icon-preview"}>
-      {url ? <img src={url} alt="" /> : <span>{iconId || "?"}</span>}
+    <div
+      className={compact ? "monster-icon-preview compact" : "monster-icon-preview"}
+      data-combat-preview="monster-icon"
+      data-combat-preview-ready={ready ? "true" : "false"}
+    >
+      {usableUrl ? <img src={usableUrl} alt="" loading="lazy" decoding="async" onLoad={() => setLoadedUrl(usableUrl)} onError={() => setFailedUrl(usableUrl)} /> : <span>{iconId || "?"}</span>}
     </div>
   );
 }

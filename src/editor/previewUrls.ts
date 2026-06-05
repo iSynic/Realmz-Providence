@@ -14,6 +14,8 @@ export type PreviewRuntimeContext = {
   resourceId?: number | null;
 };
 
+const previewUrlCache = new Map<string, Promise<string | null>>();
+
 export function isDirectPreviewUrl(path: string) {
   return /^(data:|blob:|https?:\/\/|\/)/i.test(path);
 }
@@ -35,6 +37,23 @@ export function findIconProjectAsset(project: Project | null | undefined, iconId
 }
 
 export async function resolvePreviewUrl(
+  directPath: string | null | undefined,
+  managedAsset: Project["assets"][number] | null | undefined,
+  libraryAsset: LibraryAsset | null | undefined,
+  context: PreviewRuntimeContext
+) {
+  const cacheKey = previewCacheKey(directPath, managedAsset, libraryAsset, context);
+  if (cacheKey) {
+    const cached = previewUrlCache.get(cacheKey);
+    if (cached) return cached;
+    const request = resolvePreviewUrlUncached(directPath, managedAsset, libraryAsset, context);
+    previewUrlCache.set(cacheKey, request);
+    return request;
+  }
+  return resolvePreviewUrlUncached(directPath, managedAsset, libraryAsset, context);
+}
+
+async function resolvePreviewUrlUncached(
   directPath: string | null | undefined,
   managedAsset: Project["assets"][number] | null | undefined,
   libraryAsset: LibraryAsset | null | undefined,
@@ -66,6 +85,29 @@ export async function resolvePreviewUrl(
   }
   if (directPath) return directPath;
   return null;
+}
+
+function previewCacheKey(
+  directPath: string | null | undefined,
+  managedAsset: Project["assets"][number] | null | undefined,
+  libraryAsset: LibraryAsset | null | undefined,
+  context: PreviewRuntimeContext
+) {
+  if (directPath && isDirectPreviewUrl(directPath)) return null;
+  const projectKey = context.project ? `${context.project.scenario.name}:${context.project.source.sourcePath}` : "";
+  return [
+    context.desktopRuntime ? "desktop" : "browser",
+    context.projectDir ?? "",
+    context.workspaceDir ?? "",
+    projectKey,
+    context.resourceType ?? "",
+    context.resourceId ?? "",
+    managedAsset?.id ?? "",
+    managedAsset?.previewPath ?? "",
+    libraryAsset?.id ?? "",
+    libraryAsset?.relativePath ?? "",
+    directPath ?? ""
+  ].join("\n");
 }
 
 export async function resolveIconPreviewUrl(

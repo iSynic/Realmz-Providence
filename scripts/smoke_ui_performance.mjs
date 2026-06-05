@@ -210,7 +210,8 @@ async function runApProbes(client, budgets, scenario) {
       const input = document.querySelector(".script-list-filter");
       if (!input) return false;
       input.focus();
-      input.value = "Action Point 1";
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+      setter?.call(input, "Action Point 1");
       input.dispatchEvent(new Event("input", { bubbles: true }));
       return true;
     })()
@@ -288,6 +289,10 @@ async function runMapProbes(client, budgets, scenario) {
       const canvas = document.querySelector(".room-canvas-overlay");
       const target = window.__providencePerfPaintTarget;
       if (!canvas || !target) return false;
+      window.__providencePerfPaintBefore = {
+        dirty: Boolean(document.querySelector(".dirty-pill, .dirty-indicator, .project-dirty, [data-project-dirty='true']")),
+        selected: document.body.innerText.match(/\\d+,\\d+\\s+to\\s+\\d+,\\d+|Paint tiles|Selected Paint Tile/)?.[0] ?? null
+      };
       const paint = [...document.querySelectorAll("button")]
         .find((button) => button.textContent?.trim() === "Paint");
       paint?.click();
@@ -299,14 +304,22 @@ async function runMapProbes(client, budgets, scenario) {
       canvas.dispatchEvent(up);
       return true;
     })()
-  `, `document.querySelector(".rail-tool.domain-maps.active")`);
+  `, `
+    (() => {
+      const active = document.querySelector(".rail-tool.domain-maps.active");
+      const selectedText = document.body.innerText.match(/\\d+,\\d+\\s+to\\s+\\d+,\\d+|Paint tiles|Selected Paint Tile/)?.[0] ?? null;
+      window.__providencePerfPaintAfter = {
+        dirty: Boolean(document.querySelector(".dirty-pill, .dirty-indicator, .project-dirty, [data-project-dirty='true']")),
+        selected: selectedText
+      };
+      return Boolean(active) && JSON.stringify(window.__providencePerfPaintAfter) !== JSON.stringify(window.__providencePerfPaintBefore);
+    })()
+  `);
 }
 
 async function runCombatProbes(client, budgets, scenario) {
   await warmDomain(client, "combat");
-  await waitFor(async () => evalValue(client, `
-    (() => [...document.images].every((image) => image.complete))()
-  `), 20_000, "Timed out waiting for combat images.");
+  await waitForCombatPreviews(client, "Timed out waiting for combat images.");
   await evalValue(client, "new Promise((resolve) => setTimeout(resolve, 1500))");
   await evalValue(client, `
     (() => {
@@ -319,7 +332,7 @@ async function runCombatProbes(client, budgets, scenario) {
       return Boolean(battleTab);
     })()
   `);
-  await waitFor(async () => evalValue(client, `(() => [...document.images].every((image) => image.complete))()`), 20_000, "Timed out waiting for warmed battle images.");
+  await waitForCombatPreviews(client, "Timed out waiting for warmed battle images.");
   await evalValue(client, "new Promise((resolve) => setTimeout(resolve, 350))");
   await probe(client, scenario, budgets, "Combat battle select", "recordSelection", `
     (() => {
@@ -355,6 +368,19 @@ async function runCombatProbes(client, budgets, scenario) {
       return Boolean(cell);
     })()
   `, `document.querySelector(".battle-board button")`);
+}
+
+async function waitForCombatPreviews(client, message) {
+  await waitFor(async () => evalValue(client, `
+    (() => {
+      const previews = [...document.querySelectorAll("[data-combat-preview='monster-icon']")];
+      const visiblePreviews = previews.filter((preview) => {
+        const rect = preview.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0 && rect.bottom >= 0 && rect.right >= 0 && rect.top <= window.innerHeight && rect.left <= window.innerWidth;
+      });
+      return previews.length > 0 && visiblePreviews.every((preview) => preview.getAttribute("data-combat-preview-ready") === "true");
+    })()
+  `), 20_000, message);
 }
 
 async function runSearchProbes(client, budgets, scenario) {
@@ -466,7 +492,8 @@ async function probe(client, scenario, budgets, label, budgetKey, actionExpressi
         ...result,
         status: "skip",
         skipped: true,
-        reason: "Target control was not available in this scenario state."
+        reason: "Target control was not available in this scenario state.",
+        debug: await smokeDebug(client)
       });
     } else {
       scenario.probes.push(result);
@@ -480,9 +507,25 @@ async function probe(client, scenario, budgets, label, budgetKey, actionExpressi
       error: String(error?.message ?? error),
       longTasks: [],
       maxLongTaskMs: 0,
-      longTaskStatus: "pass"
+      longTaskStatus: "pass",
+      debug: await smokeDebug(client).catch(() => null)
     });
   }
+}
+
+async function smokeDebug(client) {
+  return evalValue(client, `
+    (() => ({
+      activeDomain: document.querySelector(".rail-tool.active")?.className ?? null,
+      activeEditor: document.querySelector("[data-active-editor]")?.getAttribute("data-active-editor") ?? null,
+      loading: document.body.innerText.includes("Loading editor section"),
+      visibleButtons: document.querySelectorAll("button").length,
+      assetCards: document.querySelectorAll(".managed-asset-card").length,
+      combatPreviews: document.querySelectorAll("[data-combat-preview='monster-icon']").length,
+      mapCanvas: Boolean(document.querySelector(".room-canvas-overlay")),
+      targetPickers: document.querySelectorAll(".realmz-target-picker").length
+    }))()
+  `);
 }
 
 function budgetStatus(durationMs, budget) {

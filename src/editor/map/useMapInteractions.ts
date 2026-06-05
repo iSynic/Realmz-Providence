@@ -7,6 +7,7 @@ import {
   MapPaintVariation,
   MapRegionSelection,
   PaintCellChange,
+  PaintTileResolver,
   ProjectCommand,
   RandomLevel,
   SelectedEntity,
@@ -110,6 +111,7 @@ export function useMapInteractions({
   const strokeCellsRef = useRef<Set<string>>(new Set());
   const paintSequenceRef = useRef(0);
   const paintStrokeSeedRef = useRef(0);
+  const paintResolverRef = useRef<PaintTileResolver | null>(null);
   const pendingPaintChangesRef = useRef<PaintCellChange[]>([]);
   const lastPaintCellRef = useRef<{ x: number; y: number; tile: number } | null>(null);
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
@@ -122,6 +124,10 @@ export function useMapInteractions({
     if (isBrushLikeTool(activeTool, paintMode)) return;
     setPaintCursor(null);
   }, [activeTool, paintMode]);
+
+  useEffect(() => {
+    paintResolverRef.current = null;
+  }, [activePaintGroupId, activeTool, map.id, paintMode, paintVariation, selectedTile, selectedTileset, variationTiles]);
 
   useEffect(() => {
     if (!hover || !isBrushLikeTool(activeTool, paintMode)) return;
@@ -187,14 +193,15 @@ export function useMapInteractions({
 
   function brushTileForCell(cell: { x: number; y: number }) {
     if (activeTool === "paint" && paintMode === "clear") return clearTileForMap(map, selectedTileset);
-    const { resolver } = makePaintTileResolver({
+    const resolver = paintResolverRef.current ?? makePaintTileResolver({
       selectedTile,
       selectedTileset,
       variation: paintVariation,
       activeGroupId: activePaintGroupId,
       variationTiles,
       seed: paintStrokeSeedRef.current
-    });
+    }).resolver;
+    paintResolverRef.current = resolver;
     return resolver({ ...cell, index: mapTileIndex(map, cell.x, cell.y), tile: tileValueAt(map, cell.x, cell.y) }, paintSequenceRef.current);
   }
 
@@ -328,6 +335,7 @@ export function useMapInteractions({
     const changes = pendingPaintChangesRef.current;
     pendingPaintChangesRef.current = [];
     paintSequenceRef.current = 0;
+    paintResolverRef.current = null;
     if (commit && changes.length > 0) {
       onApplyCommand({ kind: "paintTiles", mapId: map.id, label: "Paint tiles", cells: changes });
     } else if (!commit && changes.length > 0) {
