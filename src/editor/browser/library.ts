@@ -1,4 +1,5 @@
 import { DecodedResourcePreview, LibraryCatalog, LibraryEntity, LibraryRecord, LibrarySource, ProvidenceWorkspace } from "../types";
+import { browserReferenceAtlasUrl } from "./atlasPaths";
 import { BrowserDirectoryHandle, BrowserFileSelection, BrowserScenarioSource } from "./fsAccess";
 import { inspectResourcePreview } from "./resourcePreview";
 
@@ -77,6 +78,18 @@ export async function loadBrowserBundledLibraryAssetPreview(asset: LibraryCatalo
 }
 
 export async function inspectBrowserBundledLibraryAssetPreview(asset: LibraryCatalog["assets"][number]): Promise<DecodedResourcePreview> {
+  const referenceAtlasUrl = asset.resourceType === "PICT" && typeof asset.resourceId === "number"
+    ? browserReferenceAtlasUrl(asset.resourceId)
+    : null;
+  if (referenceAtlasUrl) {
+    return {
+      status: "preview-ready",
+      mimeType: "image/png",
+      dataUrl: referenceAtlasUrl,
+      summary: { bytes: String(asset.bytes), source: asset.source, resourceId: String(asset.resourceId) },
+      diagnostics: []
+    };
+  }
   if (asset.previewPath) {
     return {
       status: asset.type === "sound" ? "playable" : asset.type === "text" ? "text-ready" : "preview-ready",

@@ -27,7 +27,7 @@ export function RecordsPanel({
   selectedEntity: SelectedEntity | null;
   onSelectEntity: (entity: SelectedEntity) => void;
 }) {
-  const records = project?.semanticSchema.records ?? [];
+  const records = project?.semanticSchema?.records ?? [];
   const groups = semanticRecordGroups(project);
   return (
     <div className="editor-full-panel semantic-workbench">

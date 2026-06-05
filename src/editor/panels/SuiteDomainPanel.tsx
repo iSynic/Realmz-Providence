@@ -197,12 +197,12 @@ export function SuiteDomainPanel({
     directDetailForSelection(project, selectedEntity?.id ?? null) ??
     libraryEntities.find((entity) => entity.id === selectedEntity?.id) ??
     (tab === "records" ? [
-      ...(project?.semanticSchema.records ?? []),
+      ...(project?.semanticSchema?.records ?? []),
       ...(catalog?.records ?? [])
     ].find((record) => record.id === selectedEntity?.id) : null) ??
     null;
   const records = tab === "records" ? [
-    ...(project?.semanticSchema.records.map((record) => ({ id: record.id, label: record.label, type: record.type, editState: record.editState })) ?? []),
+    ...(project?.semanticSchema?.records?.map((record) => ({ id: record.id, label: record.label, type: record.type, editState: record.editState })) ?? []),
     ...(catalog?.records.map((record) => ({ id: record.id, label: record.label, type: record.type, editState: record.editState })) ?? [])
   ] : [];
   const economyTargetRecordTypes = economyActive ? economyTargetRecordTypesForSection(economySection) : null;

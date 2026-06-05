@@ -90,7 +90,12 @@ export function TargetPicker({
     normalizeStepOpcode(opcode) === 9 ? selected?.previewPath ?? null : null,
     normalizeStepOpcode(opcode) === 9 ? selected?.managedAsset ?? null : null,
     normalizeStepOpcode(opcode) === 9 ? selected?.libraryAsset ?? null : null,
-    previewContext
+    {
+      ...previewContext,
+      project,
+      resourceType: normalizeStepOpcode(opcode) === 9 ? "snd " : null,
+      resourceId: normalizeStepOpcode(opcode) === 9 ? selected?.value ?? resolvedValue : null
+    }
   );
   if (!config) return null;
   const visibleTargets = selected && !filteredTargets.some((target) => target.key === selected.key)
@@ -486,11 +491,11 @@ function optionFromTypedProjectTarget(project: Project, code: number, id: number
   }
   if (code === 9 || code === 27) {
     const wantedKinds = code === 9 ? new Set(["sound"]) : new Set(["picture", "icon"]);
-    const asset = (project.assets ?? []).find((candidate) => candidate.resourceId === id && wantedKinds.has(candidate.kind));
+    const asset = (project.assets ?? []).find((candidate) => targetResourceIdMatches(code, candidate.resourceId, id) && wantedKinds.has(candidate.kind));
     if (asset) {
       return {
         key: asset.id,
-        value: asset.resourceId,
+        value: id,
         label: `${asset.label} (${asset.resourceType.trim()} ${asset.resourceId})`,
         detail: `${asset.kind} | ${asset.exportState}`,
         entity: { type: "resource", id: asset.id },
@@ -500,18 +505,36 @@ function optionFromTypedProjectTarget(project: Project, code: number, id: number
       };
     }
     if (code === 9) {
-      const soundAsset = (project.assetCatalog.sounds ?? []).find((candidate) => candidate.resourceId === id);
+      const soundAsset = (project.assetCatalog.sounds ?? []).find((candidate) => targetResourceIdMatches(code, candidate.resourceId, id));
       if (soundAsset) {
+        const fallbackLibraryAsset = findCatalogResourceAsset(catalog, "snd", id, "sound");
         return {
           key: `resource:${soundAsset.resourceType}:${soundAsset.resourceId}`,
-          value: soundAsset.resourceId,
+          value: id,
           label: `${soundAsset.name || `${soundAsset.resourceType.trim()} ${soundAsset.resourceId}`} (${soundAsset.resourceType.trim()} ${soundAsset.resourceId})`,
           detail: `sound | ${soundAsset.source}`,
           compatibility: "Realmz resource",
-          sourceState: "Scenario resource",
+          sourceState: soundAsset.previewPath ? "Scenario resource" : fallbackLibraryAsset ? "Scenario resource; preview from bundled library" : "Scenario resource",
           entity: { type: "resource", id: `resource:${soundAsset.resourceType}:${soundAsset.resourceId}` },
           previewPath: soundAsset.previewPath,
-          previewMimeType: "audio/wav"
+          previewMimeType: "audio/wav",
+          libraryAsset: fallbackLibraryAsset ?? undefined
+        };
+      }
+      const fallbackLibraryAsset = findCatalogResourceAsset(catalog, "snd", id, "sound");
+      if (fallbackLibraryAsset) {
+        return {
+          key: fallbackLibraryAsset.id,
+          value: id,
+          label: `${fallbackLibraryAsset.label} (${fallbackLibraryAsset.resourceType?.trim() || "snd"} ${fallbackLibraryAsset.resourceId})`,
+          detail: `${fallbackLibraryAsset.type} | bundled library`,
+          summary: fallbackLibraryAsset.relativePath,
+          compatibility: "Realmz resource",
+          sourceState: "Preview from bundled library",
+          entity: { type: "resource", id: fallbackLibraryAsset.id },
+          previewPath: fallbackLibraryAsset.previewPath,
+          previewMimeType: fallbackLibraryAsset.mimeType,
+          libraryAsset: fallbackLibraryAsset
         };
       }
       return {
@@ -585,6 +608,21 @@ function optionFromTypedProjectTarget(project: Project, code: number, id: number
     }
   }
   return null;
+}
+
+function targetResourceIdMatches(opcode: number, availableId: number, requestedId: number) {
+  if (availableId === requestedId) return true;
+  return opcode === 9 && Math.abs(availableId) === Math.abs(requestedId);
+}
+
+function findCatalogResourceAsset(catalog: LibraryCatalog | null | undefined, resourceType: string, resourceId: number, wantedType?: string) {
+  const normalizedType = resourceType.trim().toLowerCase();
+  const absId = Math.abs(resourceId);
+  return catalog?.assets.find((asset) => {
+    if (asset.resourceId == null || Math.abs(asset.resourceId) !== absId) return false;
+    if ((asset.resourceType ?? "").trim().toLowerCase() !== normalizedType) return false;
+    return !wantedType || asset.type === wantedType;
+  }) ?? null;
 }
 
 function addTypedProjectTargets(project: Project, code: number, options: ScriptTargetOption[], catalog?: LibraryCatalog | null) {

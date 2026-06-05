@@ -1239,12 +1239,12 @@ function humanActionValueLabel(label: string) {
   return clean && clean !== "Value" ? clean : "Value";
 }
 
-function useSoundPreviewUrl(option: ScriptTargetOption | null, desktopRuntime: boolean, projectDir: string, workspaceDir: string) {
+function useSoundPreviewUrl(option: ScriptTargetOption | null, project: Project, desktopRuntime: boolean, projectDir: string, workspaceDir: string) {
   return useResolvedPreviewUrl(
     option?.previewPath ?? option?.managedAsset?.previewPath ?? option?.libraryAsset?.previewPath ?? null,
     option?.managedAsset ?? null,
     option?.libraryAsset ?? null,
-    { desktopRuntime, projectDir, workspaceDir }
+    { desktopRuntime, projectDir, workspaceDir, project, resourceType: "snd ", resourceId: option?.value ?? null }
   );
 }
 
@@ -1328,6 +1328,7 @@ function SelectedStepDetail({
   }, [catalog, project, selectedDefinition.target, selectedDraft.id, selectedDraft.rawCode]);
   const selectedSoundPreviewUrl = useSoundPreviewUrl(
     normalizeStepOpcode(selectedDraft.rawCode) === 9 ? selectedTargetPreview : null,
+    project,
     desktopRuntime,
     projectDir,
     workspaceDir

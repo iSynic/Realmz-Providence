@@ -7,7 +7,7 @@ import { selectEntityFromId, triggerEntityId } from "./utils";
 export type GlobalSearchScope = "scenario" | "assets" | "libraries" | "docs" | "diagnostics";
 
 export type GlobalSearchRoute =
-  | { kind: "workbench"; workbench: "project" | "library"; domain: EditorTab; editor: string }
+  | { kind: "workbench"; workbench: "project" | "library"; domain: EditorTab; editor: string; searchHint?: string }
   | { kind: "documents"; sectionId: string }
   | { kind: "divinity-manual"; href?: string };
 
@@ -350,6 +350,9 @@ function catalogRows(catalog: LibraryCatalog) {
   const rows: SearchableRow[] = [];
   const add = (row: SearchableRow) => rows.push(withSearchText(row));
   for (const entity of catalog.entities ?? []) {
+    const routeDomain = domainForLibraryEntity(entity.type);
+    const routeEditor = editorForLibraryEntity(entity.type);
+    const routeSearchHint = routeDomain === "assets" ? libraryEntityAssetSearchHint(entity) : "";
     add({
       id: entity.id,
       scope: "libraries",
@@ -359,7 +362,7 @@ function catalogRows(catalog: LibraryCatalog) {
       snippet: compactSummary(entity.summary),
       badges: ["Library", entity.type],
       selectedEntity: selectEntityFromId(entity.id),
-      route: { kind: "workbench", workbench: "library", domain: domainForLibraryEntity(entity.type), editor: editorForLibraryEntity(entity.type) },
+      route: { kind: "workbench", workbench: "library", domain: routeDomain, editor: routeEditor, searchHint: routeSearchHint || undefined },
       numericId: trailingNumber(entity.id),
       aliases: [entity.type.replace(/-/g, " ")]
     });
@@ -388,7 +391,7 @@ function catalogRows(catalog: LibraryCatalog) {
       subtitle: [asset.resourceType, asset.resourceId, asset.source].filter((part) => part !== null && part !== undefined && part !== "").join(" | "),
       snippet: asset.relativePath,
       badges: ["Reference Asset", asset.type],
-      route: { kind: "workbench", workbench: "library", domain: "assets", editor: "library-assets" },
+      route: { kind: "workbench", workbench: "library", domain: "assets", editor: "library-assets", searchHint: assetSearchHint(asset.resourceType ?? asset.type, asset.resourceId, asset.label) },
       selectedEntity: selectEntityFromId(asset.id),
       preview: asset.previewPath ?? null,
       numericId: asset.resourceId ?? trailingNumber(asset.id) ?? undefined,
@@ -410,7 +413,7 @@ function addAssetRows(project: Project, add: (row: SearchableRow) => void) {
       snippet: [asset.provenance, asset.exportState, asset.originalPath].filter(Boolean).join(" | "),
       badges: ["Scenario Asset", asset.kind],
       selectedEntity: selectEntityFromId(asset.id),
-      route: { kind: "workbench", workbench: "project", domain: "assets", editor: assetEditor(asset.kind, asset.resourceType) },
+      route: { kind: "workbench", workbench: "project", domain: "assets", editor: assetEditor(asset.kind, asset.resourceType), searchHint: assetSearchHint(asset.resourceType, asset.resourceId, asset.label) },
       preview: asset.previewPath,
       numericId: asset.resourceId,
       aliases: resourceAliases(asset.resourceType, asset.resourceId)
@@ -427,7 +430,7 @@ function addAssetRows(project: Project, add: (row: SearchableRow) => void) {
       snippet: asset.previewPath ?? "",
       badges: ["Scenario Resource", asset.resourceType],
       selectedEntity: selectEntityFromId(id),
-      route: { kind: "workbench", workbench: "project", domain: "assets", editor: assetEditor("other", asset.resourceType) },
+      route: { kind: "workbench", workbench: "project", domain: "assets", editor: assetEditor("other", asset.resourceType), searchHint: assetSearchHint(asset.resourceType, asset.resourceId, asset.name ?? "") },
       preview: asset.previewPath ?? null,
       numericId: asset.resourceId,
       aliases: resourceAliases(asset.resourceType, asset.resourceId)
@@ -442,7 +445,7 @@ function addAssetRows(project: Project, add: (row: SearchableRow) => void) {
       subtitle: `Landlook ${tileset.landlook} | PICT ${tileset.pictId ?? "none"}`,
       snippet: `${tileset.columns} x ${tileset.rows} | ${tileset.source}`,
       badges: ["Tileset"],
-      route: { kind: "workbench", workbench: "project", domain: "assets", editor: "pictures" },
+      route: { kind: "workbench", workbench: "project", domain: "assets", editor: "pictures", searchHint: tileset.pictId != null ? `PICT ${tileset.pictId}` : `landlook ${tileset.landlook}` },
       preview: tileset.imagePath,
       numericId: tileset.pictId ?? tileset.landlook,
       aliases: [`landlook ${tileset.landlook}`, tileset.pictId != null ? `pict ${tileset.pictId}` : ""]
@@ -633,10 +636,36 @@ function resourceAliases(resourceType: string | null | undefined, resourceId: nu
   if (resourceId == null) return [];
   const normalized = (resourceType ?? "").trim();
   const aliases = [`${normalized} ${resourceId}`];
-  if (normalized === "snd") aliases.push(`sound ${resourceId}`);
+  if (normalized === "snd") {
+    aliases.push(`sound ${resourceId}`);
+    if (resourceId !== 0) {
+      aliases.push(`snd ${Math.abs(resourceId)}`, `snd ${-Math.abs(resourceId)}`, `sound ${Math.abs(resourceId)}`, `sound ${-Math.abs(resourceId)}`);
+    }
+  }
   if (normalized === "PICT") aliases.push(`pict ${resourceId}`, `picture ${resourceId}`);
   if (normalized === "cicn") aliases.push(`icon ${resourceId}`);
   return aliases;
+}
+
+function assetSearchHint(resourceType: string | null | undefined, resourceId: number | null | undefined, label = "") {
+  const normalizedType = (resourceType ?? "").trim();
+  if (normalizedType && resourceId != null) return `${normalizedType} ${resourceId}`;
+  if (label.trim()) return label.trim();
+  return "";
+}
+
+function libraryEntityAssetSearchHint(entity: { id: string; label: string; summary: Record<string, unknown> }) {
+  const resourceType = typeof entity.summary.resourceType === "string"
+    ? entity.summary.resourceType
+    : typeof entity.summary.type === "string"
+      ? entity.summary.type
+      : "";
+  const resourceId = typeof entity.summary.resourceId === "number"
+    ? entity.summary.resourceId
+    : typeof entity.summary.resourceId === "string"
+      ? Number(entity.summary.resourceId)
+      : trailingNumber(entity.id);
+  return assetSearchHint(resourceType, Number.isFinite(resourceId) ? resourceId : null, entity.label);
 }
 
 function assetEditor(kind: string, resourceType: string) {

@@ -2,12 +2,16 @@ import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import { loadBrowserBundledLibraryAssetPreview } from "./browser/library";
 import { browserReferenceIconUrl } from "./browser/atlasPaths";
+import { loadBrowserScenarioResourcePreview } from "./browser/project";
 import { LibraryAsset, LibraryCatalog, Project } from "./types";
 
 export type PreviewRuntimeContext = {
   desktopRuntime?: boolean;
   projectDir?: string;
   workspaceDir?: string;
+  project?: Project | null;
+  resourceType?: string | null;
+  resourceId?: number | null;
 };
 
 export function isDirectPreviewUrl(path: string) {
@@ -46,7 +50,10 @@ export async function resolvePreviewUrl(
   if (directPath && context.desktopRuntime && context.projectDir) {
     return invoke<string>("load_project_asset_preview", { projectDir: context.projectDir, relativePath: directPath });
   }
-  if (directPath) return directPath;
+  if (!context.desktopRuntime && context.project && context.resourceType && context.resourceId != null) {
+    const browserScenarioPreview = loadBrowserScenarioResourcePreview(context.project, context.resourceType, context.resourceId);
+    if (browserScenarioPreview) return browserScenarioPreview;
+  }
   if (libraryAsset) {
     if (context.desktopRuntime && context.workspaceDir) {
       return invoke<string>("load_library_asset_preview", {
@@ -57,6 +64,7 @@ export async function resolvePreviewUrl(
     }
     return loadBrowserBundledLibraryAssetPreview(libraryAsset) ?? libraryAsset.previewPath ?? null;
   }
+  if (directPath) return directPath;
   return null;
 }
 
@@ -118,7 +126,7 @@ export function useResolvedPreviewUrl(
     return () => {
       disposed = true;
     };
-  }, [context.desktopRuntime, context.projectDir, context.workspaceDir, directPath, libraryAsset, managedAsset]);
+  }, [context.desktopRuntime, context.project, context.projectDir, context.resourceId, context.resourceType, context.workspaceDir, directPath, libraryAsset, managedAsset]);
   return url;
 }
 

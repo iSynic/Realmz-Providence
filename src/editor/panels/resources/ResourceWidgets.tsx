@@ -8,6 +8,7 @@ import { resourceUsageLinks } from "../../contentLinks";
 import { ResourcePreviewBadge, ResourcePreviewDiagnostics } from "../../components/ResourcePreviewStatus";
 import { TutorialTip } from "../../components/TutorialTip";
 import { inspectBrowserBundledLibraryAssetPreview } from "../../browser/library";
+import { loadBrowserScenarioResourcePreview } from "../../browser/project";
 import { FloatingWorkbenchPanel, ScrollArea } from "../../ui";
 import { renderListKey } from "../../renderKeys";
 import { ResourceExportScope, isMapPlaceableLibraryAsset, managedAssetKindForLibrary, resourceExportScope, resourceExportScopeLabel, resourceOrigin, resourceOriginLabel, resourceRole } from "../../resourceResolver";
@@ -483,18 +484,27 @@ export function LibraryAssetCard({
   onOpenPreview?: (preview: AssetPreviewState) => void;
   onPreviewStatus?: (assetId: string, status: ResourcePreviewStatus) => void;
 }) {
-  const preview = useLibraryPreview(asset, desktopRuntime, workspaceDir);
-  const usages = project ? resourceUsageLinks(project, asset.resourceType, asset.resourceId) : [];
+  const [previewRef, previewVisible] = usePreviewVisibility<HTMLElement>();
+  const isSound = managedAssetKindForLibrary(asset) === "sound";
+  const preview = useLibraryPreview(asset, desktopRuntime, workspaceDir, selected || (!isSound && previewVisible));
+  const usages = !compact && project ? resourceUsageLinks(project, asset.resourceType, asset.resourceId) : [];
+  const selectedPreviewKey = `${preview.status}:${preview.dataUrl?.length ?? 0}:${preview.diagnostics.length}:${Object.keys(preview.summary).length}`;
+  const lastSelectedPreviewKey = useRef("");
   const origin = resourceOrigin(asset);
   const scope = resourceExportScope(asset);
   const placeable = isMapPlaceableLibraryAsset(asset);
   useEffect(() => {
     onPreviewStatus?.(asset.id, preview.status === "unknown" ? estimatedPreviewStatus(asset) : preview.status);
   }, [asset, onPreviewStatus, preview.status]);
+  useEffect(() => {
+    if (!selected || !onSelect || lastSelectedPreviewKey.current === selectedPreviewKey) return;
+    lastSelectedPreviewKey.current = selectedPreviewKey;
+    onSelect(preview);
+  }, [onSelect, preview, selected, selectedPreviewKey]);
   const cardClass = `managed-asset-card library${compact ? " compact-gallery-card" : ""}${selected ? " selected" : ""}`;
   if (compact) {
     return (
-      <article className={cardClass} tabIndex={0} onClick={() => onSelect?.(preview)} onKeyDown={(event) => {
+      <article ref={previewRef} className={cardClass} tabIndex={0} onClick={() => onSelect?.(preview)} onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           onSelect?.(preview);
@@ -514,7 +524,7 @@ export function LibraryAssetCard({
     );
   }
   return (
-    <article className={cardClass}>
+    <article ref={previewRef} className={cardClass}>
       <AssetPreview
         kind={assetKind(asset.type)}
         label={asset.label}
@@ -683,12 +693,14 @@ function resourceScopeHelp(scope: ResourceExportScope) {
 
 export function ResourcePreviewWindow({
   item,
+  project,
   desktopRuntime,
   projectDir,
   onClose,
   onSelectEntity
 }: {
   item: ResourcePreviewItem;
+  project: Project | null;
   desktopRuntime: boolean;
   projectDir: string;
   onClose: () => void;
@@ -707,18 +719,20 @@ export function ResourcePreviewWindow({
       className="asset-resource-preview-window"
       actions={<button type="button" className="btn btn-ghost btn-xs" onClick={onClose} aria-label="Close resource preview"><X size={14} /></button>}
     >
-      <ResourcePreviewContents item={item} desktopRuntime={desktopRuntime} projectDir={projectDir} onSelectEntity={onSelectEntity} />
+      <ResourcePreviewContents item={item} project={project} desktopRuntime={desktopRuntime} projectDir={projectDir} onSelectEntity={onSelectEntity} />
     </FloatingWorkbenchPanel>
   );
 }
 
 export function ResourcePreviewContents({
   item,
+  project,
   desktopRuntime,
   projectDir,
   onSelectEntity
 }: {
   item: ResourcePreviewItem;
+  project: Project | null;
   desktopRuntime: boolean;
   projectDir: string;
   onSelectEntity: (entity: SelectedEntity) => void;
@@ -769,6 +783,7 @@ export function ResourcePreviewContents({
       {item.type === "resource" && (
         <ScenarioResourceDetail
           item={item}
+          project={project}
           desktopRuntime={desktopRuntime}
           projectDir={projectDir}
           onSelectEntity={onSelectEntity}
@@ -780,23 +795,33 @@ export function ResourcePreviewContents({
 
 function ScenarioResourceDetail({
   item,
+  project,
   desktopRuntime,
   projectDir,
   onSelectEntity
 }: {
   item: Extract<ResourcePreviewItem, { type: "resource" }>;
+  project: Project | null;
   desktopRuntime: boolean;
   projectDir: string;
   onSelectEntity: (entity: SelectedEntity) => void;
 }) {
   const rawPreview = resourcePreviewDataUrl(item.entity.summary);
+  const resourceType = resourceTypeFromSummary(item.entity.summary);
+  const resourceId = resourceIdFromSummary(item.entity.summary);
+  const [browserPreview, setBrowserPreview] = useState<string | null>(null);
   const preview = useProjectPreview(rawPreview ?? "", desktopRuntime, projectDir);
+  useEffect(() => {
+    if (preview || rawPreview || desktopRuntime || resourceType === null || resourceId === null) return;
+    setBrowserPreview(loadBrowserScenarioResourcePreview(project, resourceType, resourceId));
+  }, [desktopRuntime, preview, project, rawPreview, resourceId, resourceType]);
+  const resolvedPreview = preview ?? browserPreview;
   return (
     <>
-      {preview ? (
+      {resolvedPreview ? (
         <ResourcePreviewMedia
           kind={resourceKindFromSummary(item.entity.summary)}
-          preview={preview}
+          preview={resolvedPreview}
           label={item.entity.label}
         />
       ) : resourceSummaryText(item.entity.summary) ? (
@@ -985,6 +1010,16 @@ function resourceKindFromSummary(summary: Record<string, unknown>): ManagedAsset
   if (normalized === "snd") return "sound";
   if (normalized === "TEXT" || normalized === "STR#") return "text";
   return "other";
+}
+
+function resourceTypeFromSummary(summary: Record<string, unknown>) {
+  const value = typeof summary.resourceType === "string" ? summary.resourceType : typeof summary.type === "string" ? summary.type : "";
+  return value.trim() ? value : null;
+}
+
+function resourceIdFromSummary(summary: Record<string, unknown>) {
+  const value = typeof summary.resourceId === "number" ? summary.resourceId : typeof summary.resourceId === "string" ? Number(summary.resourceId) : NaN;
+  return Number.isFinite(value) ? value : null;
 }
 
 function resourcePreviewDataUrl(summary: Record<string, unknown>) {
@@ -1211,82 +1246,146 @@ export function initialPreviewState(dataUrl: string | null): AssetPreviewState {
   };
 }
 
-export function useLibraryPreview(asset: LibraryAsset, desktopRuntime: boolean, workspaceDir: string) {
-  const [preview, setPreview] = useState<AssetPreviewState>(() => initialPreviewState(asset.previewPath ?? null));
+type LibraryPreviewCacheEntry = AssetPreviewState | Promise<AssetPreviewState>;
+
+const libraryPreviewCache = new Map<string, LibraryPreviewCacheEntry>();
+const LIBRARY_PREVIEW_CONCURRENCY = 4;
+let activeLibraryPreviewLoads = 0;
+const libraryPreviewQueue: Array<{
+  load: () => Promise<AssetPreviewState>;
+  resolve: (preview: AssetPreviewState) => void;
+  reject: (error: unknown) => void;
+}> = [];
+
+export function useLibraryPreview(asset: LibraryAsset, desktopRuntime: boolean, workspaceDir: string, enabled = true) {
+  const cacheKey = libraryPreviewCacheKey(asset, desktopRuntime, workspaceDir);
+  const [preview, setPreview] = useState<AssetPreviewState>(() => cachedLibraryPreview(cacheKey) ?? initialLibraryPreviewState(asset));
   useEffect(() => {
     let disposed = false;
-    if (!desktopRuntime) {
-      inspectBrowserBundledLibraryAssetPreview(asset)
-        .then((decoded) => {
-          if (!disposed) {
-            setPreview({
-              dataUrl: decoded.dataUrl ?? asset.previewPath ?? null,
-              status: decoded.status,
-              summary: decoded.summary,
-              diagnostics: decoded.diagnostics
-            });
-          }
-        })
-        .catch((error) => {
-          if (!disposed) {
-            setPreview({
-              ...initialPreviewState(asset.previewPath ?? null),
-              status: "unsupported-variant",
-              diagnostics: [previewDiagnostic("browser.preview_failed", error instanceof Error ? error.message : "Browser preview fallback could not decode this bundled asset.", "browser-library")]
-            });
-          }
-        });
-      return () => {
-        disposed = true;
-      };
-    }
-    if (!workspaceDir) {
-      setPreview({
-        ...initialPreviewState(asset.previewPath ?? null),
-        status: asset.previewPath ? estimatedPreviewStatus(asset) : "missing-fallback",
-        diagnostics: asset.previewPath ? [] : [previewDiagnostic("desktop.workspace_missing", "Workspace path is not available for structured preview inspection.", "tauri")]
-      });
+    const cached = cachedLibraryPreview(cacheKey);
+    if (cached) {
+      setPreview(cached);
       return;
     }
-    invoke<DecodedResourcePreview>("inspect_library_asset_preview", { workspaceDir, source: asset.source, relativePath: asset.relativePath })
+    if (!enabled) {
+      setPreview(initialLibraryPreviewState(asset));
+      return;
+    }
+    loadLibraryPreviewCached(asset, desktopRuntime, workspaceDir, cacheKey)
       .then((decoded) => {
-        if (!disposed) {
-          setPreview({
-            dataUrl: decoded.dataUrl ?? asset.previewPath ?? null,
-            status: decoded.status,
-            summary: decoded.summary,
-            diagnostics: decoded.diagnostics
-          });
-        }
-      })
-      .catch(() => {
-        invoke<string>("load_library_asset_preview", { workspaceDir, source: asset.source, relativePath: asset.relativePath })
-          .then((url) => {
-            if (!disposed) {
-              setPreview({
-                dataUrl: url,
-                status: "preview-ready",
-                summary: {},
-                diagnostics: [previewDiagnostic("desktop.structured_preview_failed", "Structured resource preview failed, but raw preview bytes were available.", "tauri")]
-              });
-            }
-          })
-          .catch(() => {
-            if (!disposed) {
-              setPreview({
-                dataUrl: null,
-                status: "unsupported-variant",
-                summary: {},
-                diagnostics: [previewDiagnostic("desktop.no_preview", "No preview decoder or raw fallback could read this resource.", "tauri")]
-              });
-            }
-          });
+        if (!disposed) setPreview(decoded);
       });
     return () => {
       disposed = true;
     };
-  }, [asset.id, asset.previewPath, asset.relativePath, asset.source, desktopRuntime, workspaceDir]);
+  }, [asset, cacheKey, desktopRuntime, enabled, workspaceDir]);
   return preview;
+}
+
+function cachedLibraryPreview(cacheKey: string) {
+  const cached = libraryPreviewCache.get(cacheKey);
+  return cached && !(cached instanceof Promise) ? cached : null;
+}
+
+function loadLibraryPreviewCached(asset: LibraryAsset, desktopRuntime: boolean, workspaceDir: string, cacheKey: string) {
+  const cached = libraryPreviewCache.get(cacheKey);
+  if (cached instanceof Promise) return cached;
+  if (cached) return Promise.resolve(cached);
+  const request = enqueueLibraryPreviewLoad(() => loadLibraryPreview(asset, desktopRuntime, workspaceDir))
+    .then((preview) => {
+      libraryPreviewCache.set(cacheKey, preview);
+      return preview;
+    });
+  libraryPreviewCache.set(cacheKey, request);
+  return request;
+}
+
+function enqueueLibraryPreviewLoad(load: () => Promise<AssetPreviewState>) {
+  return new Promise<AssetPreviewState>((resolve, reject) => {
+    libraryPreviewQueue.push({ load, resolve, reject });
+    pumpLibraryPreviewQueue();
+  });
+}
+
+function pumpLibraryPreviewQueue() {
+  while (activeLibraryPreviewLoads < LIBRARY_PREVIEW_CONCURRENCY && libraryPreviewQueue.length > 0) {
+    const next = libraryPreviewQueue.shift();
+    if (!next) return;
+    activeLibraryPreviewLoads += 1;
+    next.load()
+      .then(next.resolve, next.reject)
+      .finally(() => {
+        activeLibraryPreviewLoads = Math.max(0, activeLibraryPreviewLoads - 1);
+        window.setTimeout(pumpLibraryPreviewQueue, 0);
+      });
+  }
+}
+
+function loadLibraryPreview(asset: LibraryAsset, desktopRuntime: boolean, workspaceDir: string): Promise<AssetPreviewState> {
+  if (!desktopRuntime) {
+    return inspectBrowserBundledLibraryAssetPreview(asset)
+      .then((decoded) => ({
+        dataUrl: decoded.dataUrl ?? asset.previewPath ?? null,
+        status: decoded.status,
+        summary: decoded.summary,
+        diagnostics: decoded.diagnostics
+      }))
+      .catch((error) => ({
+        ...initialPreviewState(asset.previewPath ?? null),
+        status: "unsupported-variant",
+        diagnostics: [previewDiagnostic("browser.preview_failed", error instanceof Error ? error.message : "Browser preview fallback could not decode this bundled asset.", "browser-library")]
+      }));
+  }
+  if (!workspaceDir) {
+    return Promise.resolve({
+      ...initialLibraryPreviewState(asset),
+      status: asset.previewPath ? estimatedPreviewStatus(asset) : "missing-fallback",
+      diagnostics: asset.previewPath ? [] : [previewDiagnostic("desktop.workspace_missing", "Workspace path is not available for structured preview inspection.", "tauri")]
+    });
+  }
+  return invoke<DecodedResourcePreview>("inspect_library_asset_preview", { workspaceDir, source: asset.source, relativePath: asset.relativePath })
+    .then((decoded) => ({
+      dataUrl: decoded.dataUrl ?? asset.previewPath ?? null,
+      status: decoded.status,
+      summary: decoded.summary,
+      diagnostics: decoded.diagnostics
+    }))
+    .catch(() => invoke<string>("load_library_asset_preview", { workspaceDir, source: asset.source, relativePath: asset.relativePath })
+      .then((url) => ({
+        dataUrl: url,
+        status: "preview-ready" as const,
+        summary: {},
+        diagnostics: [previewDiagnostic("desktop.structured_preview_failed", "Structured resource preview failed, but raw preview bytes were available.", "tauri")]
+      }))
+      .catch(() => ({
+        dataUrl: null,
+        status: "unsupported-variant" as const,
+        summary: {},
+        diagnostics: [previewDiagnostic("desktop.no_preview", "No preview decoder or raw fallback could read this resource.", "tauri")]
+      })));
+}
+
+function libraryPreviewCacheKey(asset: LibraryAsset, desktopRuntime: boolean, workspaceDir: string) {
+  return [
+    desktopRuntime ? "desktop" : "browser",
+    workspaceDir,
+    asset.id,
+    asset.source,
+    asset.relativePath,
+    asset.previewPath ?? ""
+  ].join("\n");
+}
+
+function initialLibraryPreviewState(asset: LibraryAsset): AssetPreviewState {
+  if (managedAssetKindForLibrary(asset) === "sound") {
+    return {
+      dataUrl: null,
+      status: estimatedPreviewStatus(asset),
+      summary: {},
+      diagnostics: []
+    };
+  }
+  return initialPreviewState(asset.previewPath ?? null);
 }
 
 export function estimatedPreviewStatus(asset: LibraryAsset): ResourcePreviewStatus {
@@ -1310,7 +1409,7 @@ export function previewFallbackLabel(kind: ManagedAssetKind, status: ResourcePre
   if (status === "malformed") return "Malformed resource";
   if (status === "unsupported-variant") return "Cannot preview";
   if (status === "metadata-only") return "Info only";
-  if (kind === "sound") return "Not playable yet";
+  if (kind === "sound") return "Select to play";
   return "No preview";
 }
 

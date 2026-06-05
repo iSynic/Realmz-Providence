@@ -81,6 +81,7 @@ export function App() {
   const [divinityManualOpen, setDivinityManualOpen] = useState(false);
   const [divinityManualHref, setDivinityManualHref] = useState("");
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
+  const [assetSearchHint, setAssetSearchHint] = useState<{ query: string; nonce: number } | null>(null);
   const [projectNameDraft, setProjectNameDraft] = useState("Untitled Scenario");
   const [state, dispatch] = useReducer(editorReducer, desktopRuntime, initialEditorState);
   const importedMapIconCacheRef = useRef<{ key: string; ids: number[] }>({ key: "", ids: [] });
@@ -162,7 +163,7 @@ export function App() {
   );
   const visibleIssues = useMemo(
     () => issuesFor(state.project),
-    [state.project?.validation, state.project?.semanticSchema.diagnostics, state.project?.diagnostics]
+    [state.project?.validation, state.project?.semanticSchema?.diagnostics, state.project?.diagnostics]
   );
   const selectedAtlas = selectedTileset ? state.atlasEntries[selectedTileset.id] ?? null : null;
   const atlasLoadKey = useMemo(
@@ -297,7 +298,7 @@ export function App() {
       const mapId = `${match[1]}:${match[2]}`;
       if (state.project.maps.some((map) => map.id === mapId)) {
         dispatch({ type: "setSelectedMap", id: mapId });
-        dispatch({ type: "setTab", tab: "maps" });
+        openProjectDomain("maps");
         return;
       }
     }
@@ -308,7 +309,7 @@ export function App() {
         dispatch({ type: "setSelectedMap", id: mapId });
         dispatch({ type: "selectEntity", entity });
         focusEntityOnMap(mapId, entity);
-        dispatch({ type: "setTab", tab: "maps" });
+        openProjectDomain("maps");
         return;
       }
     }
@@ -318,13 +319,13 @@ export function App() {
       dispatch({ type: "selectEntity", entity });
       focusEntityOnMap(mapId, entity);
       if (state.activeTab === "records" || state.activeTab === "encounters") {
-        dispatch({ type: "setTab", tab: "maps" });
+        openProjectDomain("maps");
       }
       return;
     }
     const route = editorRouteForEntity(entity.id);
     if (route) {
-      dispatch({ type: "setTab", tab: route.tab });
+      openProjectDomain(route.tab);
       dispatch({ type: "setActiveEditor", editor: route.editor });
       dispatch({ type: "setStatus", status: `Opened ${route.label}.` });
     }
@@ -409,15 +410,23 @@ export function App() {
 
   function openScriptsForEntity(entity: SelectedEntity) {
     dispatch({ type: "selectEntity", entity });
-    dispatch({ type: "setActiveDomain", domain: "scripts" });
+    openProjectDomain("scripts");
     dispatch({ type: "setActiveEditor", editor: "action-points" });
     dispatch({ type: "setStatus", status: "Opened selected Action Point in Scripts/AP" });
   }
 
   function openProjectTool(tab: "assets" | "rules" | "scripts" | "text", editor: string) {
-    dispatch({ type: "setActiveDomain", domain: tab });
+    openProjectDomain(tab);
     dispatch({ type: "setActiveEditor", editor });
     dispatch({ type: "setStatus", status: `Opened ${editor.replace(/-/g, " ")}.` });
+  }
+
+  function openProjectDomain(domain: EditorTab) {
+    if (state.project) {
+      dispatch({ type: "setWorkbench", workbench: "project", tab: domain });
+    } else {
+      dispatch({ type: "setActiveDomain", domain });
+    }
   }
 
   function openGlobalSearchResult(result: GlobalSearchResult) {
@@ -436,6 +445,11 @@ export function App() {
       dispatch({ type: "setWorkbench", workbench: result.route.workbench, tab: result.route.domain });
       dispatch({ type: "setActiveDomain", domain: result.route.domain });
       dispatch({ type: "setActiveEditor", editor: result.route.editor });
+      if (result.route.domain === "assets" && result.route.searchHint) {
+        setAssetSearchHint({ query: result.route.searchHint, nonce: Date.now() });
+      } else if (result.route.domain !== "assets") {
+        setAssetSearchHint(null);
+      }
       if (result.selectedEntity) dispatch({ type: "selectEntity", entity: result.selectedEntity });
       dispatch({ type: "setStatus", status: `Opened ${result.title}.` });
       return;
@@ -499,7 +513,7 @@ export function App() {
       onSave={saveProject}
       onExport={exportProject}
       onSelectDomain={(domain) => {
-        dispatch({ type: "setActiveDomain", domain });
+        openProjectDomain(domain);
         dispatch({ type: "setActiveEditor", editor: domain === "scripts" ? "action-points" : "domain" });
       }}
       onSelectEditor={(editor) => dispatch({ type: "setActiveEditor", editor })}
@@ -528,6 +542,7 @@ export function App() {
         desktopRuntime={desktopRuntime}
         projectDir={projectDir}
         workspaceDir={workspaceDir}
+        assetSearchHint={assetSearchHint}
         exportReport={state.exportReport}
         benchmark={state.benchmark}
         issues={visibleIssues}
@@ -535,7 +550,7 @@ export function App() {
         onSelectTile={(tile) => {
           dispatch({ type: "setSelectedTile", tile });
           if (state.activeTab !== "maps") {
-            dispatch({ type: "setTab", tab: "maps" });
+            openProjectDomain("maps");
             dispatch({ type: "setStatus", status: `Selected Special Land Tile ${tile} for painting` });
           }
         }}

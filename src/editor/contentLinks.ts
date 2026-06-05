@@ -467,7 +467,7 @@ function triggerUsageEntity(trigger: Project["triggers"][number]): SelectedEntit
 }
 
 function extraActionClassification(project: Project, trigger: Project["triggers"][number]) {
-  const row = project.semanticSchema.decoding?.ed3Reachability?.find((candidate) => candidate.recordIndex === trigger.recordIndex);
+  const row = project.semanticSchema?.decoding?.ed3Reachability?.find((candidate) => candidate.recordIndex === trigger.recordIndex);
   if (!row?.reachable) return importedExtraActionLabel(row?.classification);
   const rootType = String(row.rootType ?? "");
   if (rootType.includes("global")) return "Global Macro";

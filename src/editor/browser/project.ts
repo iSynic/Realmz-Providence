@@ -1,14 +1,18 @@
 import { BenchmarkReport, Project, ScenarioShell, ValidationReport } from "../types";
 import { BrowserScenarioSource, readProjectJson, readScenarioSource } from "./fsAccess";
 import { browserReferenceAtlasUrl, browserTilesetAtlasUrl, hasBrowserReferenceAtlas } from "./atlasPaths";
+import { parseResourceFork } from "./library";
 import { buildBrowserSemanticSchema } from "./semantic";
 import { landlookBaseTile, landlookName, landlookPictId, parseLandlookMapstats, parseScenarioBuffers, TRACKED_FILES } from "./realmzParser";
+import { inspectResourcePreview } from "./resourcePreview";
 import { assetFallbacks, blockedSemanticObjects, generatedRuntimeCaches, resourceGaps, unresolvedLinks } from "../semanticGraph";
 import { validateRealmzTargetRecord } from "../targetValidation";
 import { tileIconCandidates } from "../map/renderValues";
 
 const EMPTY_TARGET_COMPATIBILITY = { blockers: [], warnings: [], notes: [] };
 const pendingBrowserSemantics = new Map<string, { files: Map<string, Uint8Array>; sourceFiles: Project["source"]["files"] }>();
+const browserScenarioPreviewSources = new Map<string, Map<string, Uint8Array>>();
+const browserScenarioResourcePreviewCache = new Map<string, string | null>();
 
 export function createBrowserProject(projectName: string): Project {
   const safeName = projectName.trim() || "Untitled Scenario";
@@ -126,8 +130,43 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
     validation: { ok: true, errors: [], warnings: [], exportableFiles: [], passThroughFiles: [], targetCompatibilityIssues: [], targetCompatibility: EMPTY_TARGET_COMPATIBILITY }
   };
   pendingBrowserSemantics.set(browserSemanticCacheKey(project), { files, sourceFiles });
+  browserScenarioPreviewSources.set(browserSemanticCacheKey(project), files);
   project.validation = validateBrowserProject(project);
   return project;
+}
+
+export function loadBrowserScenarioResourcePreview(project: Project | null | undefined, resourceType: string, resourceId: number) {
+  if (!project || !Number.isFinite(resourceId)) return null;
+  const cacheKey = `${browserSemanticCacheKey(project)}\n${normalizeResourceType(resourceType)}\n${resourceId}`;
+  if (browserScenarioResourcePreviewCache.has(cacheKey)) return browserScenarioResourcePreviewCache.get(cacheKey) ?? null;
+  const files = browserScenarioPreviewSources.get(browserSemanticCacheKey(project));
+  if (!files) return null;
+  const wantedType = normalizeResourceType(resourceType);
+  for (const [name, bytes] of files) {
+    if (!isScenarioResourceForkName(name)) continue;
+    for (const resource of parseResourceFork(bytes)) {
+      if (normalizeResourceType(resource.resourceType) !== wantedType || !resourceIdsMatch(wantedType, resource.id, resourceId)) continue;
+      const preview = inspectResourcePreview(resource.resourceType, resource.data);
+      browserScenarioResourcePreviewCache.set(cacheKey, preview.dataUrl ?? null);
+      return preview.dataUrl ?? null;
+    }
+  }
+  browserScenarioResourcePreviewCache.set(cacheKey, null);
+  return null;
+}
+
+function normalizeResourceType(resourceType: string) {
+  return resourceType.trim();
+}
+
+function resourceIdsMatch(resourceType: string, availableId: number, requestedId: number) {
+  if (availableId === requestedId) return true;
+  return resourceType === "snd" && Math.abs(availableId) === Math.abs(requestedId);
+}
+
+function isScenarioResourceForkName(name: string) {
+  const normalized = name.trim().toLowerCase();
+  return normalized === "scenario.rsrc" || normalized === "scenario.rsf" || normalized.endsWith("/scenario.rsrc") || normalized.endsWith("\\scenario.rsrc") || normalized.endsWith("/scenario.rsf") || normalized.endsWith("\\scenario.rsf");
 }
 
 export async function buildPendingBrowserSemanticSchema(project: Project): Promise<{ semanticSchema: Project["semanticSchema"]; validation: Project["validation"] } | null> {

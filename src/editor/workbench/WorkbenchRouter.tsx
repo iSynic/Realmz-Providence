@@ -44,6 +44,7 @@ function WorkbenchRouterContent({
   desktopRuntime,
   projectDir,
   workspaceDir,
+  assetSearchHint,
   exportReport,
   benchmark,
   issues,
@@ -94,6 +95,7 @@ function WorkbenchRouterContent({
         selectedEntity={state.selectedEntity}
         desktopRuntime={desktopRuntime}
         workspaceDir={workspaceDir}
+        searchHint={assetSearchHint}
         onSelectEntity={onSelectEntity}
       />
     );
@@ -325,6 +327,7 @@ type WorkbenchRouterProps = {
   desktopRuntime: boolean;
   projectDir: string;
   workspaceDir: string;
+  assetSearchHint: { query: string; nonce: number } | null;
   exportReport: ExportReport | null;
   benchmark: BenchmarkReport | null;
   issues: Issue[];

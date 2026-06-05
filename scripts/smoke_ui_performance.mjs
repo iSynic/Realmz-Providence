@@ -124,6 +124,7 @@ async function runScenario({ baseUrl, budgets, spec }) {
     });
 
     await runToolSwitches(client, budgets, scenario);
+    await runAssetsProbes(client, budgets, scenario);
     await runApProbes(client, budgets, scenario);
     await runMapProbes(client, budgets, scenario);
     await runCombatProbes(client, budgets, scenario);
@@ -172,7 +173,6 @@ async function runToolSwitches(client, budgets, scenario) {
     ["rules", "Rules"],
     ["assets", "Assets"],
     ["text", "Text"],
-    ["records", "Records"],
     ["linter", "Linter"],
     ["export", "Export"]
   ];
@@ -377,6 +377,73 @@ async function runSearchProbes(client, budgets, scenario) {
       })()
     `, `document.querySelector(".rail-tool.domain-${domain}.active")`);
   }
+}
+
+async function runAssetsProbes(client, budgets, scenario) {
+  await warmDomain(client, "assets");
+  await probe(client, scenario, budgets, "Assets switch to reference libraries", "assetSectionSwitch", `
+    (() => {
+      const tab = [...document.querySelectorAll(".asset-section-tabs button")]
+        .find((button) => button.textContent?.includes("Reference Libraries"));
+      tab?.click();
+      return Boolean(tab);
+    })()
+  `, `document.querySelector(".library-asset-strip") && document.body.innerText.includes("Reference Libraries")`);
+
+  await probe(client, scenario, budgets, "Assets reference card selection", "assetCardSelection", `
+    (() => {
+      const card = [...document.querySelectorAll(".library-asset-strip .managed-asset-card")]
+        .find((candidate) => !candidate.classList.contains("selected"));
+      card?.click();
+      return Boolean(card);
+    })()
+  `, `document.querySelector(".asset-selection-inspector strong") && document.querySelector(".library-asset-strip .managed-asset-card.selected")`);
+
+  await probe(client, scenario, budgets, "Assets reference page size change", "assetSectionSwitch", `
+    (() => {
+      const select = document.querySelector('select[aria-label="Assets per page"]');
+      if (!select) return false;
+      select.value = "200";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      return true;
+    })()
+  `, `document.querySelector('select[aria-label="Assets per page"]')?.value === "200"`);
+
+  await probe(client, scenario, budgets, "Assets switch to scenario assets", "assetSectionSwitch", `
+    (() => {
+      const tab = [...document.querySelectorAll(".asset-section-tabs button")]
+        .find((button) => button.textContent?.includes("Scenario Assets"));
+      tab?.click();
+      return Boolean(tab);
+    })()
+  `, `document.querySelector(".asset-gallery") && document.body.innerText.includes("Scenario Assets")`);
+
+  await probe(client, scenario, budgets, "Assets scenario card selection", "assetCardSelection", `
+    (() => {
+      const card = [...document.querySelectorAll(".asset-gallery .managed-asset-card")]
+        .find((candidate) => !candidate.classList.contains("selected"));
+      card?.click();
+      return Boolean(card);
+    })()
+  `, `document.querySelector(".asset-selection-inspector strong") && document.querySelector(".asset-gallery .managed-asset-card.selected")`);
+
+  await probe(client, scenario, budgets, "Assets selected detail open", "assetDetailOpen", `
+    (() => {
+      const button = [...document.querySelectorAll(".asset-selection-inspector button")]
+        .find((candidate) => candidate.textContent?.includes("Open Detail"));
+      button?.click();
+      return Boolean(button && !button.disabled);
+    })()
+  `, `document.querySelector(".asset-resource-preview-window") || document.querySelector(".workbench-floating-panel")`);
+
+  await probe(client, scenario, budgets, "Assets switch back to reference libraries", "assetSectionSwitch", `
+    (() => {
+      const tab = [...document.querySelectorAll(".asset-section-tabs button")]
+        .find((button) => button.textContent?.includes("Reference Libraries"));
+      tab?.click();
+      return Boolean(tab);
+    })()
+  `, `document.querySelector(".library-asset-strip") && document.body.innerText.includes("Reference Libraries")`);
 }
 
 async function warmDomain(client, domain) {

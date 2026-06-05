@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { LibraryCatalog, ManagedAssetKind, Project, ResourcePreviewDiagnostic, ResourcePreviewStatus, SelectedEntity, SemanticEntity } from "../types";
 import { compactValue, selectEntityFromId, semanticLabel } from "../utils";
+import { loadBrowserScenarioResourcePreview } from "../browser/project";
 import { resourceConsumers, resourceGaps, resourceMembersForType, schemaEntities } from "../semanticGraph";
 import { resourceUsageLinks } from "../contentLinks";
 import { tileColor } from "../components/TileSprite";
@@ -75,6 +76,7 @@ export function ResourcesPanel({
   desktopRuntime = false,
   projectDir = "",
   workspaceDir = "",
+  searchHint,
   onSelectEntity,
   onImportAssets,
   onReplaceAsset,
@@ -89,6 +91,7 @@ export function ResourcesPanel({
   desktopRuntime?: boolean;
   projectDir?: string;
   workspaceDir?: string;
+  searchHint?: { query: string; nonce: number } | null;
   onSelectEntity: (entity: SelectedEntity) => void;
   onImportAssets?: (files: File[], kind: ManagedAssetKind, options?: MediaAssetImportOptions) => void;
   onReplaceAsset?: (assetId: string, file: File) => void;
@@ -113,22 +116,24 @@ export function ResourcesPanel({
   const tileAtlases = useMemo(() => section === "advanced" ? schemaEntities(project, "tile atlas") : [], [project, section]);
   const gaps = useMemo(() => section === "advanced" ? resourceGaps(project) : [], [project, section]);
   const [libraryPreviewFilter, setLibraryPreviewFilter] = useState<ResourcePreviewStatus | "all">("all");
-  const [libraryPreviewStatuses, setLibraryPreviewStatuses] = useState<Record<string, ResourcePreviewStatus>>({});
   const [query, setQuery] = useState("");
   const [assetPageSize, setAssetPageSize] = useState(100);
   const [assetPreviewSize, setAssetPreviewSize] = useState<AssetPreviewSize>("small");
   const [selectedAsset, setSelectedAsset] = useState<ResourcePreviewItem | null>(null);
   const normalizedQuery = query.trim().toLowerCase();
+  useEffect(() => {
+    if (searchHint?.query) setQuery(searchHint.query);
+  }, [searchHint?.nonce, searchHint?.query]);
   const projectAssets = useMemo(() => (project?.assets ?? []).filter((asset) =>
     assetMatchesSection(asset, section) &&
     assetMatchesKind(asset.kind, kindFilter) &&
-    (!normalizedQuery || `${asset.label} ${asset.resourceType} ${asset.resourceId} ${asset.fileName}`.toLowerCase().includes(normalizedQuery))
+    (!normalizedQuery || assetSearchText(asset.label, asset.resourceType, asset.resourceId, asset.fileName).includes(normalizedQuery))
   ), [kindFilter, normalizedQuery, project?.assets, section]);
   const allScenarioResources = useMemo(() => scenarioResourceAssets(project), [project]);
   const scenarioResources = useMemo(() => allScenarioResources.filter((asset) =>
     section === "project" &&
     assetMatchesKind(asset.kind, kindFilter) &&
-    (!normalizedQuery || `${asset.entity.label} ${asset.resourceType} ${asset.resourceId} ${asset.source}`.toLowerCase().includes(normalizedQuery))
+    (!normalizedQuery || assetSearchText(asset.entity.label, asset.resourceType, asset.resourceId, asset.source).includes(normalizedQuery))
   ), [allScenarioResources, kindFilter, normalizedQuery, section]);
   const projectGalleryItems = useMemo<ProjectGalleryItem[]>(() => [
     ...scenarioResources.map((asset) => ({ type: "scenario" as const, asset })),
@@ -144,10 +149,10 @@ export function ResourcesPanel({
     .filter((asset) => {
       if (!libraryAssetMatchesSection(asset, section, showUiReference)) return false;
       if (!libraryAssetMatchesKind(asset, kindFilter)) return false;
-      if (normalizedQuery && !`${asset.label} ${asset.resourceType ?? ""} ${asset.resourceId ?? ""} ${asset.relativePath}`.toLowerCase().includes(normalizedQuery)) return false;
+      if (normalizedQuery && !assetSearchText(asset.label, asset.resourceType ?? "", asset.resourceId ?? null, asset.relativePath).includes(normalizedQuery)) return false;
       if (libraryPreviewFilter === "all") return true;
-      return (libraryPreviewStatuses[asset.id] ?? estimatedPreviewStatus(asset)) === libraryPreviewFilter;
-    }), [kindFilter, libraryAssets, libraryPreviewFilter, libraryPreviewStatuses, normalizedQuery, section, showUiReference]);
+      return estimatedPreviewStatus(asset) === libraryPreviewFilter;
+    }), [kindFilter, libraryAssets, libraryPreviewFilter, normalizedQuery, section, showUiReference]);
   const libraryPageSize = effectiveAssetPageSize(assetPageSize, matchingLibraryAssets.length);
   const projectPageSize = effectiveAssetPageSize(assetPageSize, projectGalleryItems.length);
   const libraryPageCount = Math.max(1, Math.ceil(matchingLibraryAssets.length / libraryPageSize));
@@ -267,6 +272,7 @@ export function ResourcesPanel({
                       <ScenarioResourceAssetCard
                         key={renderListKey("scenario-resource-asset", item.asset.entity, index)}
                         asset={item.asset}
+                        project={project}
                         desktopRuntime={desktopRuntime}
                         projectDir={projectDir}
                         selected={selectedAssetKey === item.asset.entity.id}
@@ -309,6 +315,7 @@ export function ResourcesPanel({
                 </div>
                 <AssetSelectionInspector
                   item={selectedAsset}
+                  project={project}
                   desktopRuntime={desktopRuntime}
                   projectDir={projectDir}
                   onOpenDetail={(item) => setPreviewItem(item)}
@@ -349,7 +356,6 @@ export function ResourcesPanel({
                         selected={selectedAssetKey === asset.id}
                         onSelectEntity={onSelectEntity}
                         onSelect={(preview) => setSelectedAsset({ type: "library", asset, preview, usages: project ? resourceUsageLinks(project, asset.resourceType, asset.resourceId) : [] })}
-                        onPreviewStatus={(assetId, status) => setLibraryPreviewStatuses((statuses) => statuses[assetId] === status ? statuses : { ...statuses, [assetId]: status })}
                       />
                     ))}
                     {visibleLibraryAssets.length === 0 && libraryAssets.length > 0 && (
@@ -360,6 +366,7 @@ export function ResourcesPanel({
                 </div>
                 <AssetSelectionInspector
                   item={selectedAsset}
+                  project={project}
                   desktopRuntime={desktopRuntime}
                   projectDir={projectDir}
                   onOpenDetail={(item) => setPreviewItem(item)}
@@ -467,6 +474,7 @@ export function ResourcesPanel({
       {previewItem && (
         <ResourcePreviewWindow
           item={previewItem}
+          project={project}
           desktopRuntime={desktopRuntime}
           projectDir={projectDir}
           onClose={() => setPreviewItem(null)}
@@ -492,7 +500,7 @@ function AssetGalleryControls({
     <div className="asset-gallery-controls" aria-label="Asset gallery controls">
       <label>
         <span>Preview Size</span>
-        <select value={previewSize} onChange={(event) => onPreviewSizeChange(event.currentTarget.value as AssetPreviewSize)}>
+        <select aria-label="Asset preview size" value={previewSize} onChange={(event) => onPreviewSizeChange(event.currentTarget.value as AssetPreviewSize)}>
           <option value="small">Small</option>
           <option value="medium">Medium</option>
           <option value="large">Large</option>
@@ -500,7 +508,7 @@ function AssetGalleryControls({
       </label>
       <label>
         <span>Per Page</span>
-        <select value={pageSize} onChange={(event) => onPageSizeChange(Number(event.currentTarget.value))}>
+        <select aria-label="Assets per page" value={pageSize} onChange={(event) => onPageSizeChange(Number(event.currentTarget.value))}>
           {ASSET_PAGE_SIZE_OPTIONS.map((option) => (
             <option key={option} value={option}>{option === 0 ? "All" : option}</option>
           ))}
@@ -512,12 +520,14 @@ function AssetGalleryControls({
 
 function AssetSelectionInspector({
   item,
+  project,
   desktopRuntime,
   projectDir,
   onOpenDetail,
   onSelectEntity
 }: {
   item: ResourcePreviewItem | null;
+  project: Project | null;
   desktopRuntime: boolean;
   projectDir: string;
   onOpenDetail: (item: ResourcePreviewItem) => void;
@@ -536,7 +546,7 @@ function AssetSelectionInspector({
         </button>
       </header>
       {item ? (
-        <ResourcePreviewContents item={item} desktopRuntime={desktopRuntime} projectDir={projectDir} onSelectEntity={onSelectEntity} />
+        <ResourcePreviewContents item={item} project={project} desktopRuntime={desktopRuntime} projectDir={projectDir} onSelectEntity={onSelectEntity} />
       ) : (
         <p className="empty-copy compact">Select an asset to inspect preview scale, source, export scope, decoded metadata, and usage links.</p>
       )}
@@ -573,18 +583,20 @@ type ScenarioResourceAsset = {
 
 function ScenarioResourceAssetCard({
   asset,
+  project,
   desktopRuntime,
   projectDir,
   selected,
   onSelect
 }: {
   asset: ScenarioResourceAsset;
+  project: Project | null;
   desktopRuntime: boolean;
   projectDir: string;
   selected: boolean;
   onSelect: () => void;
 }) {
-  const { previewRef, preview } = useDeferredProjectPreview<HTMLElement>(asset.previewPath, desktopRuntime, projectDir);
+  const { previewRef, preview } = useScenarioResourcePreview<HTMLElement>(project, asset, desktopRuntime, projectDir);
   return (
     <article ref={previewRef} className={`managed-asset-card scenario-resource compact-gallery-card${selected ? " selected" : ""}`} tabIndex={0} onClick={onSelect} onKeyDown={(event) => {
       if (event.key === "Enter" || event.key === " ") {
@@ -604,6 +616,21 @@ function ScenarioResourceAssetCard({
       <small>{asset.resourceType} {asset.resourceId}</small>
     </article>
   );
+}
+
+function useScenarioResourcePreview<T extends HTMLElement>(
+  project: Project | null,
+  asset: ScenarioResourceAsset,
+  desktopRuntime: boolean,
+  projectDir: string
+) {
+  const { previewRef, preview: projectPreview, previewEnabled } = useDeferredProjectPreview<T>(asset.previewPath, desktopRuntime, projectDir);
+  const [browserPreview, setBrowserPreview] = useState<string | null>(null);
+  useEffect(() => {
+    if (!previewEnabled || projectPreview || asset.previewPath || desktopRuntime) return;
+    setBrowserPreview(loadBrowserScenarioResourcePreview(project, asset.resourceType, asset.resourceId));
+  }, [asset.previewPath, asset.resourceId, asset.resourceType, desktopRuntime, project, projectPreview, previewEnabled]);
+  return { previewRef, preview: projectPreview ?? browserPreview };
 }
 
 function scenarioResourceAssets(project: Project | null): ScenarioResourceAsset[] {
@@ -750,7 +777,20 @@ function scenarioResourcePreviewPath(project: Project, entity: SemanticEntity, r
     return project.assetCatalog.icons?.find((asset) => asset.resourceId === resourceId)?.previewPath ?? "";
   }
   if (resourceType.trim() === "snd") {
-    return project.assetCatalog.sounds?.find((asset) => asset.resourceId === resourceId)?.previewPath ?? "";
+    return project.assetCatalog.sounds?.find((asset) => soundResourceIdMatches(asset.resourceId, resourceId))?.previewPath ?? "";
   }
   return "";
+}
+
+function assetSearchText(label: string, resourceType: string | null | undefined, resourceId: number | null | undefined, extra = "") {
+  const type = (resourceType ?? "").trim();
+  const parts = [label, type, resourceId ?? "", extra];
+  if (type === "snd" && typeof resourceId === "number" && resourceId !== 0) {
+    parts.push(`${type} ${Math.abs(resourceId)}`, `${type} ${-Math.abs(resourceId)}`, `sound ${Math.abs(resourceId)}`, `sound ${-Math.abs(resourceId)}`);
+  }
+  return parts.join(" ").toLowerCase();
+}
+
+function soundResourceIdMatches(availableId: number, requestedId: number) {
+  return availableId === requestedId || Math.abs(availableId) === Math.abs(requestedId);
 }

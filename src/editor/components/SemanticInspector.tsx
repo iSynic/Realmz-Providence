@@ -17,7 +17,7 @@ export function SemanticInspector({
   const subjectId = entity?.id ?? record?.id ?? selectedEntity?.id ?? null;
   const links = linksFor(project, subjectId);
   const recordSourceName = record?.source?.replace(/^source:file:/, "");
-  const diagnostics = project?.semanticSchema.diagnostics.filter(
+  const diagnostics = project?.semanticSchema?.diagnostics?.filter(
     (diagnostic) =>
       diagnostic.source === entity?.source ||
       diagnostic.source === record?.source ||

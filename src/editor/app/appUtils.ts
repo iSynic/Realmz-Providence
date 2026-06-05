@@ -57,8 +57,8 @@ export function isProjectEmpty(project: Project) {
     project.randomLevels.length === 0 &&
     project.extracodes.length === 0 &&
     project.source.files.length === 0 &&
-    project.semanticSchema.records.length === 0 &&
-    project.semanticSchema.entities.length === 0 &&
+    (project.semanticSchema?.records ?? []).length === 0 &&
+    (project.semanticSchema?.entities ?? []).length === 0 &&
     project.records.alignments.length === 0 &&
     Object.keys(project.records.counts).length === 0
   );

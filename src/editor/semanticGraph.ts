@@ -62,7 +62,7 @@ export type ResourceGap = {
 };
 
 export function schemaEntities(project: Project | null, type?: string) {
-  const entities = project?.semanticSchema.entities ?? [];
+  const entities = project?.semanticSchema?.entities ?? [];
   return type ? entities.filter((entity) => entity.type === type) : entities;
 }
 
@@ -75,7 +75,7 @@ export function recordById(project: Project | null, id: string | null | undefine
 }
 
 export function sourceByName(project: Project | null, name: string) {
-  return project?.semanticSchema.sources.find((source) => source.name === name || source.id === `source:file:${name}`) ?? null;
+  return project?.semanticSchema?.sources?.find((source) => source.name === name || source.id === `source:file:${name}`) ?? null;
 }
 
 export function linkById(project: Project | null, id: string | null | undefined) {
@@ -227,7 +227,7 @@ export function ed3ReachabilityFor(project: Project | null, recordIndex: number)
   if (!project) return null;
   let cache = ed3ReachabilityCache.get(project);
   if (!cache) {
-    cache = new Map((project.semanticSchema.decoding?.ed3Reachability ?? []).map((row) => [row.recordIndex, row]));
+    cache = new Map((project.semanticSchema?.decoding?.ed3Reachability ?? []).map((row) => [row.recordIndex, row]));
     ed3ReachabilityCache.set(project, cache);
   }
   return cache.get(recordIndex) ?? null;
@@ -261,7 +261,7 @@ export function isCallableMacro(project: Project | null, trigger: TriggerRecord)
   if (row?.reachable) return true;
   if (project?.editorMetadata?.displayNames?.[trigger.id]?.source === "user") return true;
   if (trigger.provenance?.confidence === "inferred") return true;
-  if ((project?.semanticSchema.schemaVersion ?? 0) < 4 && trigger.active) return true;
+  if ((project?.semanticSchema?.schemaVersion ?? 0) < 4 && trigger.active) return true;
   return false;
 }
 
@@ -274,10 +274,10 @@ export function ed3EvidenceRecords(project: Project | null) {
 
 export function semanticRecordGroups(project: Project | null): SemanticRecordGroup[] {
   if (!project) return [];
-  return project.semanticSchema.sources
+  return (project.semanticSchema?.sources ?? [])
     .map((source) => ({
       source,
-      records: project.semanticSchema.records.filter((record) => record.source === source.id)
+      records: (project.semanticSchema?.records ?? []).filter((record) => record.source === source.id)
     }))
     .filter((group) => group.records.length > 0 || group.source.layout || group.source.origin !== "runtime-cache");
 }
@@ -318,29 +318,29 @@ export function assetFallbacks(project: Project | null) {
 export function sourcePassThroughList(project: Project | null) {
   if (!project) return [] as SemanticSource[];
   const names = new Set(project.validation.passThroughFiles);
-  return project.semanticSchema.sources.filter((source) => names.has(source.name));
+  return (project.semanticSchema?.sources ?? []).filter((source) => names.has(source.name));
 }
 
 export function editableSemanticRecords(project: Project | null) {
-  return project?.semanticSchema.records.filter((record) => record.editState === "editable") ?? [];
+  return project?.semanticSchema?.records?.filter((record) => record.editState === "editable") ?? [];
 }
 
 export function blockedSemanticObjects(project: Project | null) {
   if (!project) return { entities: [] as SemanticEntity[], records: [] as SemanticRecord[] };
   return {
-    entities: project.semanticSchema.entities.filter((entity) => entity.editState === "blocked"),
-    records: project.semanticSchema.records.filter((record) => record.editState === "blocked")
+    entities: (project.semanticSchema?.entities ?? []).filter((entity) => entity.editState === "blocked"),
+    records: (project.semanticSchema?.records ?? []).filter((record) => record.editState === "blocked")
   };
 }
 
 export function unresolvedLinks(project: Project | null) {
   if (!project) return [] as SemanticLink[];
   const known = new Set([
-    ...project.semanticSchema.entities.map((entity) => entity.id),
-    ...project.semanticSchema.records.map((record) => record.id),
-    ...project.semanticSchema.sources.map((source) => source.id)
+    ...(project.semanticSchema?.entities ?? []).map((entity) => entity.id),
+    ...(project.semanticSchema?.records ?? []).map((record) => record.id),
+    ...(project.semanticSchema?.sources ?? []).map((source) => source.id)
   ]);
-  return project.semanticSchema.links.filter((link) => !known.has(link.from) || !known.has(link.to));
+  return (project.semanticSchema?.links ?? []).filter((link) => !known.has(link.from) || !known.has(link.to));
 }
 
 export function numberSummary(entity: SemanticEntity | null | undefined, key: string) {
