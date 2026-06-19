@@ -1,0 +1,19 @@
+{
+  "fixtureVersion": 1,
+  "id": "strings-sound-field-147-to-145",
+  "title": "String Sound 147 To 145",
+  "status": "observed",
+  "divinityAction": "In Divinity full registered version, change the same string sound field from 147 to 145.",
+  "source": {
+    "before": "before/",
+    "after": "after/"
+  },
+  "outputs": {
+    "beforeSnapshot": "before.snapshot.json",
+    "afterSnapshot": "after.snapshot.json",
+    "diffJson": "diff.json",
+    "diffMarkdown": "diff.md",
+    "evidenceCard": "../../../docs/evidence-cards/strings-sound-field-147-to-145.md"
+  },
+  "notes": []
+}

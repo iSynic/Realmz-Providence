@@ -1,0 +1,120 @@
+{
+  "diffVersion": 1,
+  "beforeLabel": "strings-sound-field-string2-143: before",
+  "afterLabel": "strings-sound-field-string2-143: after",
+  "filesAdded": [],
+  "filesRemoved": [],
+  "filesChanged": [
+    {
+      "name": "Data SD2",
+      "role": "supported-write",
+      "beforeSize": 13053,
+      "afterSize": 13053,
+      "beforeSha256": "bb71d51beff09bc70eac146f59eddcab13f1a50f4606118c6dec4929191005ec",
+      "afterSha256": "ee8d474bdf7a25f0cfe13b9dc275c7f308bbb000c2dd15ba07ca29ca6297ddd2",
+      "byteRanges": [
+        {
+          "offset": 1281,
+          "beforeLen": 1,
+          "afterLen": 1,
+          "beforeHex": "35",
+          "afterHex": "20",
+          "hexTruncated": false
+        }
+      ],
+      "resourcesAdded": [],
+      "resourcesRemoved": [],
+      "resourcesChanged": [],
+      "decodedFamily": "messages",
+      "explanation": "known-scenario-file-change"
+    },
+    {
+      "name": "Icon.rsrc",
+      "role": "resource-fork",
+      "beforeSize": 2670,
+      "afterSize": 2670,
+      "beforeSha256": "dc42c72dff409fddcc41841a63c0f3d050bebefdde71f16647966d8d4c099fd2",
+      "afterSha256": "6ba673ccb40686154a5c447f3f0ff41ff159aaf88651cc9b1fbf42c6e713d84f",
+      "byteRanges": [
+        {
+          "offset": 77,
+          "beforeLen": 1,
+          "afterLen": 1,
+          "beforeHex": "26",
+          "afterHex": "8c",
+          "hexTruncated": false
+        }
+      ],
+      "resourcesAdded": [],
+      "resourcesRemoved": [],
+      "resourcesChanged": [],
+      "decodedFamily": null,
+      "explanation": "raw-byte-change"
+    },
+    {
+      "name": "Scenario",
+      "role": "tracked-pass-through",
+      "beforeSize": 600,
+      "afterSize": 600,
+      "beforeSha256": "89f0112fe34d9ce6705f1602e4e510e600070001a280924b0243eefb92644f73",
+      "afterSha256": "7b0c673e7fb5bd2e58dda85abfa549e52d04c6405c85e4fcc6bb975d139a68cc",
+      "byteRanges": [
+        {
+          "offset": 7,
+          "beforeLen": 1,
+          "afterLen": 1,
+          "beforeHex": "02",
+          "afterHex": "00",
+          "hexTruncated": false
+        },
+        {
+          "offset": 23,
+          "beforeLen": 1,
+          "afterLen": 1,
+          "beforeHex": "03",
+          "afterHex": "02",
+          "hexTruncated": false
+        },
+        {
+          "offset": 39,
+          "beforeLen": 1,
+          "afterLen": 1,
+          "beforeHex": "91",
+          "afterHex": "8f",
+          "hexTruncated": false
+        },
+        {
+          "offset": 429,
+          "beforeLen": 1,
+          "afterLen": 1,
+          "beforeHex": "06",
+          "afterHex": "01",
+          "hexTruncated": false
+        },
+        {
+          "offset": 433,
+          "beforeLen": 1,
+          "afterLen": 1,
+          "beforeHex": "09",
+          "afterHex": "00",
+          "hexTruncated": false
+        }
+      ],
+      "resourcesAdded": [],
+      "resourcesRemoved": [],
+      "resourcesChanged": [],
+      "decodedFamily": "scenario-support-file",
+      "explanation": "raw-byte-change"
+    }
+  ],
+  "summary": {
+    "addedFiles": 0,
+    "removedFiles": 0,
+    "changedFiles": 3,
+    "byteRanges": 7,
+    "resourcesAdded": 0,
+    "resourcesRemoved": 0,
+    "resourcesChanged": 0,
+    "unexplainedChanges": 2
+  }
+}

@@ -98,13 +98,14 @@ function diffFixture(fixtureId, opts) {
   if (!fs.existsSync(afterSnapshot)) fail(`Missing ${path.relative(repoRoot, afterSnapshot)}.`);
   const diffJson = path.join(fixtureDir, "diff.json");
   const diffMarkdown = path.join(fixtureDir, "diff.md");
-  runDiff(beforeSnapshot, afterSnapshot, diffJson, diffMarkdown);
-  ensureDir(evidenceCardRoot);
   const evidenceCard = path.join(evidenceCardRoot, `${fixtureId}.md`);
-  writeEvidenceCard(fixtureId, fixtureDir, evidenceCard);
+  runDiff(beforeSnapshot, afterSnapshot, diffJson, diffMarkdown);
   const metadataPath = path.join(fixtureDir, "metadata.json");
   const metadata = readJsonIfExists(metadataPath) ?? { fixtureVersion: 1, id: fixtureId, title: titleFromId(fixtureId) };
   metadata.status = "observed";
+  if (Array.isArray(metadata.notes)) {
+    metadata.notes = metadata.notes.filter((note) => !String(note).toLowerCase().includes("placeholder only"));
+  }
   metadata.outputs = {
     ...(metadata.outputs ?? {}),
     diffJson: "diff.json",
@@ -112,6 +113,8 @@ function diffFixture(fixtureId, opts) {
     evidenceCard: path.relative(fixtureDir, evidenceCard).replaceAll("\\", "/")
   };
   writeJson(metadataPath, metadata);
+  ensureDir(evidenceCardRoot);
+  writeEvidenceCard(fixtureId, fixtureDir, evidenceCard);
   writeFixtureReadme(fixtureDir, metadata);
   console.log(`Wrote ${path.relative(repoRoot, diffJson)} and ${path.relative(repoRoot, evidenceCard)}`);
 }
@@ -223,6 +226,16 @@ function writeEvidenceCard(fixtureId, fixtureDir, output) {
         ].join("\n")
       : "No diff has been captured yet.",
     "",
+    ...(Array.isArray(diff?.filesChanged) && diff.filesChanged.length
+      ? [
+          "## Changed Files",
+          "",
+          ...diff.filesChanged.flatMap((file) => [
+            `- \`${file.name}\`: ${file.byteRanges?.length ?? 0} byte range(s), ${file.decodedFamily ?? "unknown family"}, ${file.explanation}.`
+          ]),
+          ""
+        ]
+      : []),
     "## Evidence Files",
     "",
     `- Fixture metadata: \`${path.relative(repoRoot, path.join(fixtureDir, "metadata.json")).replaceAll("\\", "/")}\``,

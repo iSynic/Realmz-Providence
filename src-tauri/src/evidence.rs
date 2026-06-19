@@ -306,6 +306,21 @@ pub fn diff_to_markdown(diff: &ScenarioSnapshotDiff) -> String {
                 ));
             }
             out.push('\n');
+            if !file.byte_ranges.is_empty() {
+                out.push_str("| Offset | Before Len | After Len | Before Hex | After Hex |\n");
+                out.push_str("| ---: | ---: | ---: | --- | --- |\n");
+                for range in &file.byte_ranges {
+                    out.push_str(&format!(
+                        "| `{}` | `{}` | `{}` | `{}` | `{}` |\n",
+                        range.offset,
+                        range.before_len,
+                        range.after_len,
+                        range.before_hex,
+                        range.after_hex
+                    ));
+                }
+                out.push('\n');
+            }
         }
     }
     out
@@ -330,11 +345,12 @@ fn collect_snapshot_files(source_path: &Path) -> Result<Vec<SnapshotFile>> {
         let bytes = fs::read(path).map_err(|error| {
             ProvidenceError::message(format!("Failed to read '{}': {error}", path.display()))
         })?;
+        let has_resource_entries = !parse_resource_fork_entries(&bytes).is_empty();
         let role = if supported.contains(name) {
             SnapshotFileRole::SupportedWrite
         } else if is_scenario_marker_source(source_path, name, &bytes) {
             SnapshotFileRole::ScenarioShell
-        } else if is_resource_file_name(name) {
+        } else if has_resource_entries || is_resource_sidecar_file_name(name) {
             SnapshotFileRole::ResourceFork
         } else if tracked.contains(name) {
             SnapshotFileRole::TrackedPassThrough
@@ -513,7 +529,7 @@ fn diff_file(before: &SnapshotFile, after: &SnapshotFile) -> Result<FileDiff> {
         resources_added,
         resources_removed,
         resources_changed,
-        decoded_family: decoded_family(&before.name).map(str::to_string),
+        decoded_family: decoded_family(&before.name, before.role).map(str::to_string),
         explanation: explanation.to_string(),
     })
 }
@@ -635,13 +651,16 @@ fn is_scenario_marker_source(source_path: &Path, name: &str, bytes: &[u8]) -> bo
     name.eq_ignore_ascii_case(scenario_dir_name) && parse_scenario_shell(name, bytes).is_ok()
 }
 
-fn is_resource_file_name(name: &str) -> bool {
-    name == "Scenario" || name.ends_with(".rsrc") || name.ends_with(".rsf") || name.starts_with("._")
+fn is_resource_sidecar_file_name(name: &str) -> bool {
+    name.ends_with(".rsrc") || name.ends_with(".rsf") || name.starts_with("._")
 }
 
-fn decoded_family(name: &str) -> Option<&'static str> {
+fn decoded_family(name: &str, role: SnapshotFileRole) -> Option<&'static str> {
+    if matches!(role, SnapshotFileRole::ScenarioShell) {
+        return Some("scenario-shell");
+    }
     match name {
-        "Scenario" => Some("scenario-shell"),
+        "Scenario" => Some("scenario-support-file"),
         "Global" => Some("global-startup"),
         "Data LD" | "Data DL" => Some("map-fields"),
         "Data RD" | "Data RDD" => Some("random-levels"),

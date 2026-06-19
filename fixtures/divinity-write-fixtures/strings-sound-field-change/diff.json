@@ -1,0 +1,97 @@
+{
+  "diffVersion": 1,
+  "beforeLabel": "strings-sound-field-change: before",
+  "afterLabel": "strings-sound-field-change: after",
+  "filesAdded": [],
+  "filesRemoved": [],
+  "filesChanged": [
+    {
+      "name": "Data SD2",
+      "role": "supported-write",
+      "beforeSize": 13053,
+      "afterSize": 13053,
+      "beforeSha256": "c8015a7d9953f4ebecc691983bb3bd555e8378c50f81055d8f4a5a0aaa348669",
+      "afterSha256": "bb71d51beff09bc70eac146f59eddcab13f1a50f4606118c6dec4929191005ec",
+      "byteRanges": [
+        {
+          "offset": 1025,
+          "beforeLen": 2,
+          "afterLen": 2,
+          "beforeHex": "346f",
+          "afterHex": "2020",
+          "hexTruncated": false
+        },
+        {
+          "offset": 1028,
+          "beforeLen": 7,
+          "afterLen": 7,
+          "beforeHex": "6566666563742e",
+          "afterHex": "20202020202020",
+          "hexTruncated": false
+        }
+      ],
+      "resourcesAdded": [],
+      "resourcesRemoved": [],
+      "resourcesChanged": [],
+      "decodedFamily": "messages",
+      "explanation": "known-scenario-file-change"
+    },
+    {
+      "name": "Scenario",
+      "role": "tracked-pass-through",
+      "beforeSize": 600,
+      "afterSize": 600,
+      "beforeSha256": "4f12836a3ec69db7f95d90945d93cbe6de3239a0ce6a83d4e8bc1d3694dc576e",
+      "afterSha256": "93741a587de65815a81cd306670f524fe7b749737261be4c5385fb1edf8428a1",
+      "byteRanges": [
+        {
+          "offset": 7,
+          "beforeLen": 1,
+          "afterLen": 1,
+          "beforeHex": "00",
+          "afterHex": "03",
+          "hexTruncated": false
+        },
+        {
+          "offset": 38,
+          "beforeLen": 2,
+          "afterLen": 2,
+          "beforeHex": "026e",
+          "afterHex": "0093",
+          "hexTruncated": false
+        },
+        {
+          "offset": 429,
+          "beforeLen": 1,
+          "afterLen": 1,
+          "beforeHex": "00",
+          "afterHex": "02",
+          "hexTruncated": false
+        },
+        {
+          "offset": 433,
+          "beforeLen": 1,
+          "afterLen": 1,
+          "beforeHex": "02",
+          "afterHex": "09",
+          "hexTruncated": false
+        }
+      ],
+      "resourcesAdded": [],
+      "resourcesRemoved": [],
+      "resourcesChanged": [],
+      "decodedFamily": "scenario-support-file",
+      "explanation": "raw-byte-change"
+    }
+  ],
+  "summary": {
+    "addedFiles": 0,
+    "removedFiles": 0,
+    "changedFiles": 2,
+    "byteRanges": 6,
+    "resourcesAdded": 0,
+    "resourcesRemoved": 0,
+    "resourcesChanged": 0,
+    "unexplainedChanges": 1
+  }
+}

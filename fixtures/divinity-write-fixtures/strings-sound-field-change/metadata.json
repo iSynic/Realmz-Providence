@@ -2,20 +2,18 @@
   "fixtureVersion": 1,
   "id": "strings-sound-field-change",
   "title": "Strings Sound Field Change",
-  "status": "planned",
-  "divinityAction": "Open a scenario in Divinity, edit exactly one string/message sound field, save, and capture the edited scenario as the after state.",
+  "status": "observed",
+  "divinityAction": "In Divinity full registered version, set String 3 sound to 147 from the New Scenario baseline.",
   "source": {
-    "before": null,
-    "after": null
+    "before": "before/",
+    "after": "after/"
   },
   "outputs": {
-    "beforeSnapshot": null,
-    "afterSnapshot": null,
-    "diffJson": null,
-    "diffMarkdown": null,
+    "beforeSnapshot": "before.snapshot.json",
+    "afterSnapshot": "after.snapshot.json",
+    "diffJson": "diff.json",
+    "diffMarkdown": "diff.md",
     "evidenceCard": "../../../docs/evidence-cards/strings-sound-field-change.md"
   },
-  "notes": [
-    "Placeholder only. No scenario assets are committed in this fixture."
-  ]
+  "notes": []
 }

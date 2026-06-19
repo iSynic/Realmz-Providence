@@ -2,20 +2,32 @@
 
 Fixture: `strings-sound-field-change`
 
-Status: `planned`
+Status: `observed`
 
 ## Divinity Action
 
-Open a scenario in Divinity, edit exactly one string/message sound field, save, and capture the edited scenario as the after state.
+In Divinity full registered version, set String 3 sound to 147 from the New Scenario baseline.
 
 ## Snapshot Diff Summary
 
-No diff has been captured yet. This placeholder exists to document the intended first Evidence Lab fixture without committing scenario assets.
+- Added files: 0
+- Removed files: 0
+- Changed files: 2
+- Byte ranges: 6
+- Resource changes: +0 / -0 / ~0
+- Unexplained changes: 1
+
+## Changed Files
+
+- `Data SD2`: 2 byte range(s), messages, known-scenario-file-change.
+- `Scenario`: 4 byte range(s), scenario-support-file, raw-byte-change.
 
 ## Evidence Files
 
 - Fixture metadata: `fixtures/divinity-write-fixtures/strings-sound-field-change/metadata.json`
+- Snapshot diff JSON: `fixtures/divinity-write-fixtures/strings-sound-field-change/diff.json`
+- Snapshot diff Markdown: `fixtures/divinity-write-fixtures/strings-sound-field-change/diff.md`
 
 ## Interpretation
 
-This card is a planned capture, not observed evidence. Once before/after snapshots are generated, rerun `npm run archaeology:diff-divinity-fixture -- strings-sound-field-change` to replace this summary with real byte and resource changes.
+This card records what Divinity changed. It does not claim Providence can write the same change until a matching writer test exists.

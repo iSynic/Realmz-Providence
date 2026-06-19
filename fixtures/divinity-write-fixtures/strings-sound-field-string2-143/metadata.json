@@ -1,0 +1,19 @@
+{
+  "fixtureVersion": 1,
+  "id": "strings-sound-field-string2-143",
+  "title": "String 2 Sound 143",
+  "status": "observed",
+  "divinityAction": "In Divinity full registered version, change String 2 sound to 143 from the prior String 3 sound 145 baseline.",
+  "source": {
+    "before": "before/",
+    "after": "after/"
+  },
+  "outputs": {
+    "beforeSnapshot": "before.snapshot.json",
+    "afterSnapshot": "after.snapshot.json",
+    "diffJson": "diff.json",
+    "diffMarkdown": "diff.md",
+    "evidenceCard": "../../../docs/evidence-cards/strings-sound-field-string2-143.md"
+  },
+  "notes": []
+}
