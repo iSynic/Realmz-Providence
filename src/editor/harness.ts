@@ -218,6 +218,13 @@ async function executeHarnessScript(
     project = await invoke<Project>("open_project", { projectDir: script.projectDir });
   }
 
+  onStatus?.("Harness: building semantic schema...");
+  const semanticRefresh = await invoke<{ semanticSchema: Project["semanticSchema"]; validation: Project["validation"] }>(
+    "build_project_semantic_schema",
+    { projectDir: script.projectDir, project }
+  );
+  project = { ...project, semanticSchema: semanticRefresh.semanticSchema, validation: semanticRefresh.validation };
+
   onStatus?.("Harness: validating project...");
   const validation = await invoke<ValidationReport>("validate_project", { project });
   project = { ...project, validation };
