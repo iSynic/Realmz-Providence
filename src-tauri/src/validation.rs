@@ -2491,6 +2491,7 @@ mod tests {
                 project_path: String::new(),
                 imported_at: String::new(),
                 shell: None,
+                support_file: None,
                 contact_info: None,
                 restrictions: None,
                 global_macro_hooks: None,

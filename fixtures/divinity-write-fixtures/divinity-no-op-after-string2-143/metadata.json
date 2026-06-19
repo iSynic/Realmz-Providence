@@ -1,0 +1,21 @@
+{
+  "fixtureVersion": 1,
+  "id": "divinity-no-op-after-string2-143",
+  "title": "Divinity No-Op After String 2 Sound 143",
+  "status": "observed",
+  "divinityAction": "Open the prior String 2 sound 143 scratch scenario in Divinity full registered version, make no intentional edits, and return the scenario. Divinity has no explicit save command.",
+  "source": {
+    "before": "before/",
+    "after": "after/"
+  },
+  "outputs": {
+    "beforeSnapshot": "before.snapshot.json",
+    "afterSnapshot": "after.snapshot.json",
+    "diffJson": "diff.json",
+    "diffMarkdown": "diff.md",
+    "evidenceCard": "../../../docs/evidence-cards/divinity-no-op-after-string2-143.md"
+  },
+  "notes": [
+    "Compared against the prior String 2 sound 143 capture, no Scenario sound field bytes changed. Only Icon.rsrc offset 77 changed from 0x8c to 0xae."
+  ]
+}

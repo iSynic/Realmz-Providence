@@ -1172,6 +1172,67 @@ pub fn write_scenario_shell(shell: &ScenarioShell) -> Result<Vec<u8>> {
     Ok(output)
 }
 
+pub fn parse_scenario_support_file(
+    source_file: &str,
+    buffer: &[u8],
+) -> Result<ScenarioSupportFile> {
+    if buffer.len() < 40 {
+        return Err(ProvidenceError::message(format!(
+            "{} is {} byte(s); Scenario support file must be at least 40 bytes",
+            source_file,
+            buffer.len()
+        )));
+    }
+    Ok(ScenarioSupportFile {
+        source_file: source_file.to_string(),
+        divinity_string_editor_slot: Some(buffer[23] as i32),
+        divinity_string_sound_id: Some(i16_be(buffer, 38) as i32),
+        raw_bytes: buffer.to_vec(),
+        authored: false,
+        provenance: Some(provenance(source_file, 0, 0, buffer.len())),
+    })
+}
+
+pub fn write_scenario_support_file(support: &ScenarioSupportFile) -> Result<Vec<u8>> {
+    if !support.authored && !support.raw_bytes.is_empty() {
+        return Ok(support.raw_bytes.clone());
+    }
+    let mut output = if !support.raw_bytes.is_empty() {
+        support.raw_bytes.clone()
+    } else {
+        vec![0u8; 600]
+    };
+    if output.len() < 40 {
+        output.resize(40, 0);
+    }
+    if support.authored {
+        if let Some(slot) = support.divinity_string_editor_slot {
+            if !(0..=255).contains(&slot) {
+                return Err(ProvidenceError::message(format!(
+                    "Divinity string editor slot {slot} is outside the 0..255 byte range"
+                )));
+            }
+            let raw_slot = support.raw_bytes.get(23).map(|value| *value as i32);
+            if raw_slot != Some(slot) {
+                output[23] = slot as u8;
+            }
+        }
+        if let Some(sound_id) = support.divinity_string_sound_id {
+            if !(i16::MIN as i32..=i16::MAX as i32).contains(&sound_id) {
+                return Err(ProvidenceError::message(format!(
+                    "Divinity string sound id {sound_id} is outside the signed 16-bit range"
+                )));
+            }
+            let raw_sound =
+                (support.raw_bytes.len() >= 40).then(|| i16_be(&support.raw_bytes, 38) as i32);
+            if raw_sound != Some(sound_id) {
+                write_i16_be(&mut output, 38, sound_id as i16);
+            }
+        }
+    }
+    Ok(output)
+}
+
 pub fn parse_scenario_contact_info(buffer: &[u8]) -> Result<ScenarioContactInfo> {
     if buffer.len() < 4608 {
         return Err(ProvidenceError::message(format!(
@@ -3885,6 +3946,36 @@ mod tests {
             changed_offsets(&input, &output),
             vec![0, 1, 2, 3, 60, 61, 62]
         );
+    }
+
+    #[test]
+    fn scenario_support_file_decodes_divinity_string_sound_evidence_fields() {
+        let mut input = vec![0u8; 600];
+        input[23] = 2;
+        write_i16_be(&mut input, 38, 143);
+
+        let support = parse_scenario_support_file("Scenario", &input).unwrap();
+
+        assert_eq!(support.divinity_string_editor_slot, Some(2));
+        assert_eq!(support.divinity_string_sound_id, Some(143));
+    }
+
+    #[test]
+    fn scenario_support_file_writes_divinity_string_sound_without_touching_unrelated_bytes() {
+        let mut input = vec![0u8; 600];
+        input[23] = 2;
+        write_i16_be(&mut input, 38, 143);
+
+        let mut support = parse_scenario_support_file("Scenario", &input).unwrap();
+        support.authored = true;
+        support.divinity_string_editor_slot = Some(3);
+        support.divinity_string_sound_id = Some(145);
+
+        let output = write_scenario_support_file(&support).unwrap();
+
+        assert_eq!(output[23], 3);
+        assert_eq!(i16_be(&output, 38), 145);
+        assert_eq!(changed_offsets(&input, &output), vec![23, 39]);
     }
 
     #[test]

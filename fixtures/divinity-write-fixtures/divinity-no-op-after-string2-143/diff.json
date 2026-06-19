@@ -1,0 +1,42 @@
+{
+  "diffVersion": 1,
+  "beforeLabel": "divinity-no-op-after-string2-143: before",
+  "afterLabel": "divinity-no-op-after-string2-143: after",
+  "filesAdded": [],
+  "filesRemoved": [],
+  "filesChanged": [
+    {
+      "name": "Icon.rsrc",
+      "role": "resource-fork",
+      "beforeSize": 2670,
+      "afterSize": 2670,
+      "beforeSha256": "6ba673ccb40686154a5c447f3f0ff41ff159aaf88651cc9b1fbf42c6e713d84f",
+      "afterSha256": "3b04bac9a09b23965107c1e3110d3b0b30c10902ad7f2fd053278a27a222a8a9",
+      "byteRanges": [
+        {
+          "offset": 77,
+          "beforeLen": 1,
+          "afterLen": 1,
+          "beforeHex": "8c",
+          "afterHex": "ae",
+          "hexTruncated": false
+        }
+      ],
+      "resourcesAdded": [],
+      "resourcesRemoved": [],
+      "resourcesChanged": [],
+      "decodedFamily": null,
+      "explanation": "raw-byte-change"
+    }
+  ],
+  "summary": {
+    "addedFiles": 0,
+    "removedFiles": 0,
+    "changedFiles": 1,
+    "byteRanges": 1,
+    "resourcesAdded": 0,
+    "resourcesRemoved": 0,
+    "resourcesChanged": 0,
+    "unexplainedChanges": 1
+  }
+}

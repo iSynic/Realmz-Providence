@@ -7,7 +7,7 @@ use realmz_providence_lib::project::{
     PROJECT_SCHEMA_VERSION, SEMANTIC_SCHEMA_VERSION,
 };
 use realmz_providence_lib::realmz::{
-    update_custom_land_tile_attributes, update_custom_land_tile_combat_build,
+    i16_be, update_custom_land_tile_attributes, update_custom_land_tile_combat_build,
     update_custom_landlook_base, update_custom_landlook_range_slot, CustomLandTileAttributePatch,
     SUPPORTED_WRITE_FILES, TRACKED_FILES,
 };
@@ -210,6 +210,47 @@ fn custom_landlook_metadata_writer_mutates_only_owned_fields() {
             "unexpected custom landlook byte mutation at {offset}"
         );
     }
+}
+
+#[test]
+fn evidence_lab_string_sound_support_file_exports() {
+    let source = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .join("fixtures/divinity-write-fixtures/strings-sound-field-string2-143/after");
+    assert!(
+        source.is_dir(),
+        "Evidence Lab synthetic fixture should be present"
+    );
+    let temp = tempdir().unwrap();
+    let project_dir = temp.path().join("project");
+    import_scenario(&source, &project_dir).unwrap();
+    let mut project = open_project(&project_dir).unwrap();
+    let support_file = project
+        .scenario
+        .support_file
+        .as_mut()
+        .expect("Evidence Lab fixture should import a Scenario support file");
+
+    assert_eq!(support_file.divinity_string_editor_slot, Some(2));
+    assert_eq!(support_file.divinity_string_sound_id, Some(143));
+
+    support_file.authored = true;
+    support_file.divinity_string_editor_slot = Some(3);
+    support_file.divinity_string_sound_id = Some(145);
+    let support_file_name = support_file.source_file.clone();
+    let export_dir = temp.path().join("exported");
+    export_project(
+        &project_dir,
+        &project,
+        &export_dir,
+        ScenarioTarget::ProvidencePortableFolder,
+    )
+    .unwrap();
+
+    let output = fs::read(export_dir.join(support_file_name)).unwrap();
+    assert_eq!(output[23], 3);
+    assert_eq!(i16_be(&output, 38), 145);
 }
 
 #[test]

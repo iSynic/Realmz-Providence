@@ -43,6 +43,7 @@ pub fn create_project(
             project_path: project_path_text,
             imported_at: timestamp(),
             shell: Some(default_scenario_shell(&project_name)),
+            support_file: None,
             contact_info: Some(default_contact_info(&project_name)),
             restrictions: None,
             global_macro_hooks: None,
@@ -198,6 +199,9 @@ fn import_scenario_with_name(
         .to_string();
 
     let scenario_shell = read_scenario_shell(&source_path, &scenario_name)?;
+    let support_file = buffers
+        .get("Scenario")
+        .and_then(|buffer| crate::realmz::parse_scenario_support_file("Scenario", buffer).ok());
     let contact_info = buffers
         .get("Data CI")
         .and_then(|buffer| crate::realmz::parse_scenario_contact_info(buffer).ok());
@@ -220,6 +224,7 @@ fn import_scenario_with_name(
             project_path,
             imported_at: timestamp(),
             shell: scenario_shell,
+            support_file,
             contact_info,
             restrictions,
             global_macro_hooks,
@@ -544,6 +549,14 @@ fn hydrate_scenario_metadata(project_dir: &Path, project: &mut ProvidenceProject
     }
     if project.scenario.shell.is_none() {
         project.scenario.shell = read_scenario_shell_from_raw(&raw_dir, project)?;
+    }
+    if project.scenario.support_file.is_none() {
+        let path = raw_dir.join("Scenario");
+        if path.is_file() {
+            let bytes = fs::read(&path).with_path(&path)?;
+            project.scenario.support_file =
+                crate::realmz::parse_scenario_support_file("Scenario", &bytes).ok();
+        }
     }
     if project.scenario.contact_info.is_none() {
         let path = raw_dir.join("Data CI");

@@ -565,6 +565,15 @@ export type ScenarioShell = {
   provenance?: Provenance;
 };
 
+export type ScenarioSupportFile = {
+  sourceFile: string;
+  divinityStringEditorSlot?: number | null;
+  divinityStringSoundId?: number | null;
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: Provenance;
+};
+
 export type ScenarioContactInfo = {
   scenarioName: string;
   version: string;
@@ -611,6 +620,7 @@ export type ScenarioMeta = {
   projectPath: string;
   importedAt: string;
   shell?: ScenarioShell | null;
+  supportFile?: ScenarioSupportFile | null;
   contactInfo?: ScenarioContactInfo | null;
   restrictions?: ScenarioRestrictions | null;
   globalMacroHooks?: ScenarioGlobalMacroHooks | null;

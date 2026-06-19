@@ -10,9 +10,9 @@ use crate::realmz::{
     write_macro_file, write_map_records, write_messages, write_monster_descriptions,
     write_monster_set, write_monsters, write_option_labels, write_race_overrides,
     write_random_levels, write_scenario_contact_info, write_scenario_items,
-    write_scenario_restrictions, write_scenario_shell, write_shops, write_simple_encounters,
-    write_spell_overrides, write_thief_encounters, write_tile_solids, write_timed_encounters,
-    write_treasures, DOOR_BYTES, EXTRACODE_BYTES,
+    write_scenario_restrictions, write_scenario_shell, write_scenario_support_file, write_shops,
+    write_simple_encounters, write_spell_overrides, write_thief_encounters, write_tile_solids,
+    write_timed_encounters, write_treasures, DOOR_BYTES, EXTRACODE_BYTES,
 };
 use crate::resource_fork::{
     decode_string_list_resource, encode_string_list_resource, merge_resource_entries,
@@ -74,6 +74,14 @@ pub fn export_project(
             output_dir,
             scenario_shell_file_name(project),
             write_scenario_shell(shell)?,
+            &mut written_files,
+        )?;
+    }
+    if let Some(support_file) = &project.scenario.support_file {
+        write_if_nonempty(
+            output_dir,
+            &support_file.source_file,
+            write_scenario_support_file(support_file)?,
             &mut written_files,
         )?;
     }

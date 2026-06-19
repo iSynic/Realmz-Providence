@@ -24,6 +24,7 @@ export function createBrowserProject(projectName: string): Project {
       projectPath: `browser://${safeName}.providence`,
       importedAt: new Date().toISOString(),
       shell: defaultScenarioShell(safeName),
+      supportFile: null,
       contactInfo: defaultScenarioContactInfo(safeName),
       restrictions: null,
       globalMacroHooks: null,
@@ -86,6 +87,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
       projectPath,
       importedAt: new Date().toISOString(),
       shell: scenarioShell,
+      supportFile: parseScenarioSupportFile("Scenario", files.get("Scenario")),
       contactInfo: parseScenarioContactInfo(files.get("Data CI")) ?? defaultScenarioContactInfo(scenarioName),
       restrictions: parseScenarioRestrictions(files.get("Data RI")),
       globalMacroHooks: parseGlobalMacroHooks(files.get("Global")),
@@ -294,6 +296,24 @@ function parseScenarioShell(sourceFile: string, buffer?: Uint8Array): ScenarioSh
     codeseg2: Array.from(buffer.slice(40, 60)),
     creatorUser: pascalString(buffer.slice(60, 316)),
     trailingBytes: Array.from(buffer.slice(316)),
+    authored: false,
+    provenance: {
+      sourceFile,
+      recordIndex: 0,
+      byteOffset: 0,
+      byteLength: buffer.byteLength,
+      confidence: "confirmed"
+    }
+  };
+}
+
+function parseScenarioSupportFile(sourceFile: string, buffer?: Uint8Array): Project["scenario"]["supportFile"] {
+  if (!buffer || buffer.byteLength < 40) return null;
+  return {
+    sourceFile,
+    divinityStringEditorSlot: buffer[23],
+    divinityStringSoundId: i16At(buffer, 38),
+    rawBytes: Array.from(buffer),
     authored: false,
     provenance: {
       sourceFile,

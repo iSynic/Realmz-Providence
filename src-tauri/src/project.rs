@@ -80,6 +80,8 @@ pub struct ScenarioMeta {
     #[serde(default)]
     pub shell: Option<ScenarioShell>,
     #[serde(default)]
+    pub support_file: Option<ScenarioSupportFile>,
+    #[serde(default)]
     pub contact_info: Option<ScenarioContactInfo>,
     #[serde(default)]
     pub restrictions: Option<ScenarioRestrictions>,
@@ -87,6 +89,22 @@ pub struct ScenarioMeta {
     pub global_macro_hooks: Option<ScenarioGlobalMacroHooks>,
     #[serde(default)]
     pub security_backup: Option<ScenarioShell>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScenarioSupportFile {
+    pub source_file: String,
+    #[serde(default)]
+    pub divinity_string_editor_slot: Option<i32>,
+    #[serde(default)]
+    pub divinity_string_sound_id: Option<i32>,
+    #[serde(default)]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    #[serde(default)]
+    pub provenance: Option<Provenance>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
