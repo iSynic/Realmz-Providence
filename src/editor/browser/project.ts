@@ -489,9 +489,9 @@ function backfillTilesetMetadata(project: Project) {
       id: "dungeon-top-down-302",
       landlook: 2,
       name: "Dungeon Top Down",
-      source: "Browser project hydration: Scenario Utility reference PICT PNG",
+      source: "Browser project hydration: bundled Realmz reference PICT",
       available: hasBrowserReferenceAtlas(302),
-      imagePath: browserReferenceAtlasUrl(302),
+      imagePath: null,
       pictId: 302,
       tileWidth: 16,
       tileHeight: 16,
@@ -504,10 +504,10 @@ function backfillTilesetMetadata(project: Project) {
   for (const tileset of project.assetCatalog.tilesets) {
     if (tileset.baseTile == null) tileset.baseTile = landlookBaseTile(tileset.landlook);
     const referenceUrl = browserReferenceAtlasUrl(tileset.pictId);
-    if (referenceUrl && (!tileset.imagePath || tileset.imagePath.startsWith("assets/") || tileset.imagePath.startsWith("assets\\"))) {
-      tileset.imagePath = referenceUrl;
+    if (referenceUrl && (!tileset.imagePath || tileset.imagePath.startsWith("assets/") || tileset.imagePath.startsWith("assets\\") || isLegacyLocalReferencePath(tileset.imagePath))) {
+      tileset.imagePath = null;
       tileset.available = true;
-      tileset.source = "Browser project hydration: Scenario Utility reference PICT PNG";
+      tileset.source = "Browser project hydration: bundled Realmz reference PICT";
     }
   }
 }
@@ -520,10 +520,10 @@ function browserReferenceTileset(landlook: number) {
     landlook,
     name: landlookName(landlook),
     source: imagePath
-      ? "Browser project hydration: Scenario Utility reference PICT PNG"
+      ? "Browser project hydration: bundled Realmz reference PICT"
       : "Browser project hydration: missing reference atlas",
     available: hasBrowserReferenceAtlas(pictId),
-    imagePath,
+    imagePath: null,
     pictId,
     tileWidth: 32,
     tileHeight: 32,
@@ -532,6 +532,13 @@ function browserReferenceTileset(landlook: number) {
     baseTile: landlookBaseTile(landlook),
     custom: landlook >= 6 && landlook <= 8
   };
+}
+
+function isLegacyLocalReferencePath(value: string) {
+  const normalized = value.replace(/\\/g, "/").toLowerCase();
+  return normalized.startsWith("/@fs/")
+    || normalized.includes("realmz scenario utility/")
+    || normalized.includes("f:/realmz");
 }
 
 export function validateBrowserProject(project: Project): ValidationReport {

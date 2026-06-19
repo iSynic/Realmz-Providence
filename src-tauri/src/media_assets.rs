@@ -7,16 +7,18 @@ use crate::project::{
     ProvidenceProject,
 };
 use crate::resource_fork::{
-    encode_cicn_resource, encode_pict_resource_with_dither, encode_snd_resource, PcmAudioPayload,
-    RgbaImagePayload,
+    encode_cicn_resource, encode_pict_resource_with_dither, encode_snd_resource,
+    parse_resource_fork_entries, PcmAudioPayload, RgbaImagePayload,
 };
+use crate::resource_preview::preview_data_url_for_resource;
 use crate::validation::validate_project as validate_project_impl;
+use crate::workspace::BUNDLED_LIBRARY_DIR;
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use sha2::{Digest, Sha256};
 use std::fs;
-use std::path::Path;
-
-const REFERENCE_UTILITY_ROOT: &str = "F:/Realmz Scenario Utility";
+use std::path::{Path, PathBuf};
+use tauri::Manager;
+use walkdir::WalkDir;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -70,20 +72,74 @@ pub fn load_project_asset_preview(project_dir: String, relative_path: String) ->
 }
 
 #[tauri::command]
-pub fn load_reference_picture_asset(pict_id: i32) -> Result<String> {
+pub fn load_reference_picture_asset(app: tauri::AppHandle, pict_id: i32) -> Result<String> {
     if !(0..=32767).contains(&pict_id) {
         return Err(ProvidenceError::message(format!(
             "Reference picture id {pict_id} is outside the supported range."
         )));
     }
-    let path = Path::new(REFERENCE_UTILITY_ROOT)
-        .join("assets")
-        .join("realmz")
-        .join("resources")
-        .join("pictures")
-        .join(format!("picture_{pict_id}.png"));
-    let bytes = fs::read(&path).with_path(&path)?;
-    Ok(format!("data:image/png;base64,{}", STANDARD.encode(bytes)))
+    let Some(root) = bundled_library_root(&app) else {
+        return Err(ProvidenceError::message(
+            "Bundled Realmz reference library was not found.",
+        ));
+    };
+    let realmz_root = root.join("realmz-reference");
+    let pict_id = pict_id as i16;
+    for entry in WalkDir::new(&realmz_root)
+        .into_iter()
+        .filter_map(std::result::Result::ok)
+        .filter(|entry| entry.file_type().is_file())
+    {
+        let path = entry.path();
+        let bytes = fs::read(path).with_path(path)?;
+        for resource in parse_resource_fork_entries(&bytes) {
+            if resource.resource_type != "PICT" || resource.id != pict_id {
+                continue;
+            }
+            if let Some(data_url) = preview_data_url_for_resource("PICT", &resource.data)? {
+                return Ok(data_url);
+            }
+            return Err(ProvidenceError::message(format!(
+                "Bundled Realmz PICT {pict_id} could not be decoded as a preview."
+            )));
+        }
+    }
+    Err(ProvidenceError::message(format!(
+        "Bundled Realmz PICT {pict_id} was not found."
+    )))
+}
+
+fn bundled_library_root(app: &tauri::AppHandle) -> Option<PathBuf> {
+    let resource_candidate = app
+        .path()
+        .resource_dir()
+        .ok()
+        .map(|path| path.join(BUNDLED_LIBRARY_DIR));
+    if resource_candidate
+        .as_ref()
+        .is_some_and(|path| path.is_dir())
+    {
+        return resource_candidate;
+    }
+
+    let dev_candidate = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("public")
+        .join(BUNDLED_LIBRARY_DIR);
+    if dev_candidate.is_dir() {
+        return Some(dev_candidate);
+    }
+
+    let cwd_candidate = Path::new("public").join(BUNDLED_LIBRARY_DIR);
+    if cwd_candidate.is_dir() {
+        return Some(cwd_candidate);
+    }
+
+    std::env::current_exe()
+        .ok()
+        .and_then(|exe| exe.parent().map(Path::to_path_buf))
+        .map(|dir| dir.join(BUNDLED_LIBRARY_DIR))
+        .filter(|path| path.is_dir())
 }
 
 #[tauri::command]

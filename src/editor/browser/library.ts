@@ -1,5 +1,4 @@
 import { DecodedResourcePreview, LibraryCatalog, LibraryEntity, LibraryRecord, LibrarySource, ProvidenceWorkspace } from "../types";
-import { browserReferenceAtlasUrl } from "./atlasPaths";
 import { BrowserDirectoryHandle, BrowserFileSelection, BrowserScenarioSource } from "./fsAccess";
 import { inspectResourcePreview } from "./resourcePreview";
 
@@ -32,9 +31,9 @@ export function createBrowserWorkspace(catalog: LibraryCatalog | null = null): P
     workspacePath: BROWSER_WORKSPACE_PATH,
     managedLibraryPath: "browser://workspace/library",
     referenceRoots: {
-      divinity: "F:\\Divinity CD\\Divinity CD\\Install Options\\World of Realmz\\Divinity",
-      realmzData: "F:\\Realmz\\base\\Realmz\\Data Files",
-      newScenario: "F:\\Realmz\\base\\Realmz\\Scenarios\\New Scenario"
+      divinity: "bundled://divinity",
+      realmzData: "bundled://realmz-reference",
+      newScenario: "browser://new-scenario-template"
     },
     recentProjects: [],
     activeLibraryCatalog: catalog,
@@ -78,18 +77,6 @@ export async function loadBrowserBundledLibraryAssetPreview(asset: LibraryCatalo
 }
 
 export async function inspectBrowserBundledLibraryAssetPreview(asset: LibraryCatalog["assets"][number]): Promise<DecodedResourcePreview> {
-  const referenceAtlasUrl = asset.resourceType === "PICT" && typeof asset.resourceId === "number"
-    ? browserReferenceAtlasUrl(asset.resourceId)
-    : null;
-  if (referenceAtlasUrl) {
-    return {
-      status: "preview-ready",
-      mimeType: "image/png",
-      dataUrl: referenceAtlasUrl,
-      summary: { bytes: String(asset.bytes), source: asset.source, resourceId: String(asset.resourceId) },
-      diagnostics: []
-    };
-  }
   if (asset.previewPath) {
     return {
       status: asset.type === "sound" ? "playable" : asset.type === "text" ? "text-ready" : "preview-ready",

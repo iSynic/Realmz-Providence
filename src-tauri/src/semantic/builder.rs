@@ -593,7 +593,7 @@ fn add_referenced_resource_placeholders(schema: &mut SemanticSchema) {
             source_type: "shared reference".to_string(),
             origin: SemanticSourceOrigin::SharedReference,
             name: "Realmz shared resources".to_string(),
-            path: Some("F:\\Realmz".to_string()),
+            path: Some("bundled://realmz-reference".to_string()),
             exists: true,
             bytes: 0,
             sha256: None,
@@ -649,7 +649,7 @@ fn add_referenced_resource_placeholders(schema: &mut SemanticSchema) {
                     "sharedFallback",
                     json!(shared_resource_can_fallback(resource_type)),
                 ),
-                ("fallbackSource", json!("F:\\Realmz shared resources")),
+                ("fallbackSource", json!("bundled Realmz shared resources")),
                 (
                     "sourcePrecedence",
                     json!("scenario resource, shared Realmz resource, generated fallback"),

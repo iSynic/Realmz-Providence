@@ -20,15 +20,15 @@ import {
 } from "lucide-react";
 import { EditorTab, EditorTool } from "./types";
 
-export const DEFAULT_SOURCE = "F:\\Realmz\\base\\Realmz\\Scenarios\\Tutorial";
-export const DEFAULT_PROJECT = "F:\\Realmz - Providence\\projects\\Tutorial.providence";
-export const DEFAULT_EXPORT = "F:\\Realmz - Providence\\exports\\Tutorial";
-export const DEFAULT_WORKSPACE = "F:\\Realmz - Providence\\workspace";
-export const DEFAULT_DIVINITY_ROOT = "F:\\Divinity CD\\Divinity CD\\Install Options\\World of Realmz\\Divinity";
-export const DEFAULT_DIVINITY_MANUAL_ROOT = "C:\\Users\\Eric\\Desktop\\Divinity Manual";
+export const DEFAULT_SOURCE = "";
+export const DEFAULT_PROJECT = "projects\\Tutorial.providence";
+export const DEFAULT_EXPORT = "exports\\Tutorial";
+export const DEFAULT_WORKSPACE = "workspace";
+export const DEFAULT_DIVINITY_ROOT = "bundled://divinity";
+export const DEFAULT_DIVINITY_MANUAL_ROOT = "bundled://divinity-manual";
 export const DEFAULT_DIVINITY_MANUAL_URL = "/divinity-manual/index.html";
-export const DEFAULT_REALMZ_DATA_ROOT = "F:\\Realmz\\base\\Realmz\\Data Files";
-export const DEFAULT_NEW_SCENARIO_ROOT = "F:\\Realmz\\base\\Realmz\\Scenarios\\New Scenario";
+export const DEFAULT_REALMZ_DATA_ROOT = "bundled://realmz-reference";
+export const DEFAULT_NEW_SCENARIO_ROOT = "bundled://new-scenario-template";
 
 export const TILE_CHOICES = [
   0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 20, 24, 32, 40, 48, 64, 80, 96, 128, 160,

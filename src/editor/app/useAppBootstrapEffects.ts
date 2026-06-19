@@ -212,7 +212,9 @@ export function useAppBootstrapEffects({
               ? assetUrl.startsWith("reference-picture:")
                 ? await invoke<string>("load_reference_picture_asset", { pictId: Number(assetUrl.replace("reference-picture:", "")) })
                 : await invoke<string>("load_project_asset", { projectDir, relativePath: assetUrl })
-              : assetUrl;
+              : assetUrl.startsWith("reference-picture:")
+                ? await loadBrowserReferencePictureAsset(state.libraryCatalog, Number(assetUrl.replace("reference-picture:", "")))
+                : assetUrl;
             const image = await loadImage(url);
             return [asset.id, { image, url, asset }] as const;
           } catch (error) {
@@ -236,7 +238,7 @@ export function useAppBootstrapEffects({
     return () => {
       disposed = true;
     };
-  }, [atlasLoadKey, desktopRuntime, dispatch, projectDir]);
+  }, [atlasLoadKey, desktopRuntime, dispatch, projectDir, state.libraryCatalog]);
 
   useEffect(() => {
     let disposed = false;
@@ -394,6 +396,18 @@ function shouldBuildSemanticSchemaForTab(tab: EditorState["activeTab"]) {
 
 function isInlineAssetUrl(value: string) {
   return value.startsWith("data:") || value.startsWith("blob:") || value.startsWith("http:") || value.startsWith("https:") || value.startsWith("/");
+}
+
+async function loadBrowserReferencePictureAsset(catalog: EditorState["libraryCatalog"], pictId: number) {
+  const asset = catalog?.assets.find((candidate) => {
+    return candidate.resourceType === "PICT"
+      && candidate.resourceId === pictId
+      && `${candidate.source} ${candidate.relativePath}`.toLowerCase().includes("realmz");
+  });
+  if (!asset) throw new Error(`Bundled Realmz PICT ${pictId} is not available.`);
+  const preview = await loadBrowserBundledLibraryAssetPreview(asset);
+  if (!preview) throw new Error(`Bundled Realmz PICT ${pictId} did not produce a preview.`);
+  return preview;
 }
 
 function iconCandidateIdsForResource(resourceId: number) {

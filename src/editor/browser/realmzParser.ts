@@ -988,14 +988,15 @@ function buildAssetCatalog(
     const customPreview = landlook >= 6 && landlook <= 8 && pictId !== null
       ? customAtlasPreview(scenarioResources, pictId, landlook, diagnostics)
       : null;
-    const imagePath = customPreview?.imagePath ?? browserReferenceAtlasUrl(pictId);
-    const hasAtlas = customPreview?.available ?? hasBrowserReferenceAtlas(pictId);
+    const referenceAvailable = hasBrowserReferenceAtlas(pictId);
+    const imagePath = customPreview?.imagePath ?? null;
+    const hasAtlas = customPreview?.available ?? referenceAvailable;
     return {
       id: `landlook-${landlook}`,
       landlook,
       name: landlookName(landlook),
-      source: customPreview?.source ?? (imagePath
-        ? "Browser import: Scenario Utility reference PICT PNG"
+      source: customPreview?.source ?? (referenceAvailable
+        ? "Browser import: bundled Realmz reference PICT"
         : "Browser import: custom or missing reference atlas"),
       available: hasAtlas,
       imagePath,
@@ -1009,14 +1010,13 @@ function buildAssetCatalog(
     };
   });
   if (maps.some((map) => map.levelType === "dungeon")) {
-    const imagePath = browserReferenceAtlasUrl(302);
     tilesets.push({
       id: "dungeon-top-down-302",
       landlook: 2,
       name: "Dungeon Top Down",
-      source: "Browser import: Scenario Utility reference PICT PNG",
-      available: imagePath !== null,
-      imagePath,
+      source: "Browser import: bundled Realmz reference PICT",
+      available: hasBrowserReferenceAtlas(302),
+      imagePath: null,
       pictId: 302,
       tileWidth: 16,
       tileHeight: 16,

@@ -19,7 +19,6 @@ pub const ASSETS_DIR: &str = "assets";
 pub const TILE_ATLASES_DIR: &str = "tile-atlases";
 pub const ICONS_DIR: &str = "icons";
 pub const SOUNDS_DIR: &str = "sounds";
-const REFERENCE_UTILITY_ROOT: &str = "F:/Realmz Scenario Utility";
 
 pub fn create_project(
     project_name: String,
@@ -737,23 +736,7 @@ fn standard_landlook_metadata_files() -> [(&'static str, i8); 6] {
 }
 
 fn reference_landlook_metadata_path(file_name: &str) -> Option<PathBuf> {
-    for base in [
-        Path::new("public")
-            .join("bundled-libraries")
-            .join("realmz-reference"),
-        Path::new(env!("CARGO_MANIFEST_DIR"))
-            .parent()
-            .unwrap_or_else(|| Path::new("."))
-            .join("public")
-            .join("bundled-libraries")
-            .join("realmz-reference"),
-        Path::new(REFERENCE_UTILITY_ROOT)
-            .join("assets")
-            .join("realmz")
-            .join("resources")
-            .join("binary"),
-        Path::new("F:\\Realmz\\base\\Realmz\\Data Files").to_path_buf(),
-    ] {
+    for base in bundled_realmz_reference_roots() {
         let path = base.join(file_name);
         if path.is_file() {
             return Some(path);
@@ -951,6 +934,11 @@ fn import_tile_atlases(
                 CustomAtlasImport::Missing => {}
             }
         }
+        if !tileset.custom && tileset.pict_id.is_some() {
+            tileset.image_path = None;
+            tileset.available = true;
+            continue;
+        }
         tileset.available = false;
         project.diagnostics.push(Diagnostic {
             severity: DiagnosticSeverity::Warning,
@@ -975,22 +963,7 @@ fn import_icon_overlays(
         .union(&monster_icon_ids)
         .copied()
         .collect::<BTreeSet<_>>();
-    let reference_icon_dir = Path::new(REFERENCE_UTILITY_ROOT)
-        .join("assets")
-        .join("realmz")
-        .join("resources")
-        .join("icons");
-    if reference_icon_dir.is_dir() {
-        for icon_id in &map_icon_ids {
-            let file_name = format!("icon_{icon_id}.png");
-            let path = reference_icon_dir.join(&file_name);
-            if !path.is_file() {
-                continue;
-            }
-            let dest = icon_dir.join(&file_name);
-            fs::copy(&path, &dest).with_path(&dest)?;
-        }
-    }
+    let bundled_map_icon_ids = bundled_reference_resource_ids("cicn", &map_icon_ids)?;
     import_scenario_icon_overlays(source_path, &icon_dir, &referenced_icon_ids, project)?;
     project
         .diagnostics
@@ -998,7 +971,7 @@ fn import_icon_overlays(
     let mut missing = BTreeSet::new();
     for icon_id in map_icon_ids {
         let file_name = format!("icon_{icon_id}.png");
-        if !icon_dir.join(&file_name).is_file() {
+        if !icon_dir.join(&file_name).is_file() && !bundled_map_icon_ids.contains(&icon_id) {
             missing.insert(icon_id);
         }
     }
@@ -1007,7 +980,7 @@ fn import_icon_overlays(
             severity: DiagnosticSeverity::Warning,
             code: "missing-map-icon-overlay".to_string(),
             message: format!(
-                "{} map icon overlay(s) referenced by Realmz special field values were not found in the Scenario Utility reference assets or scenario resources: {}",
+                "{} map icon overlay(s) referenced by Realmz special field values were not found in bundled Realmz reference resources or scenario resources: {}",
                 missing.len(),
                 missing
                     .iter()
@@ -1343,23 +1316,79 @@ fn clear_realmz_short_bit(value: i16, bit: u8) -> i16 {
 fn atlas_source_path(source_path: &Path, tileset: &TilesetAsset) -> Option<PathBuf> {
     if tileset.custom {
         let cache_key = scenario_cache_key(source_path);
-        let cached = Path::new(REFERENCE_UTILITY_ROOT)
-            .join("tmp")
-            .join("tile-atlases")
+        let cached = Path::new("tmp")
+            .join("providence-tile-atlases")
             .join(cache_key)
             .join(format!("{}.png", tileset.id));
         if cached.is_file() {
             return Some(cached);
         }
     }
-    tileset.pict_id.map(|pict_id| {
-        Path::new(REFERENCE_UTILITY_ROOT)
-            .join("assets")
-            .join("realmz")
-            .join("resources")
-            .join("pictures")
-            .join(format!("picture_{pict_id}.png"))
-    })
+    None
+}
+
+fn bundled_realmz_reference_roots() -> Vec<PathBuf> {
+    let mut roots = Vec::new();
+    roots.push(
+        Path::new("public")
+            .join("bundled-libraries")
+            .join("realmz-reference"),
+    );
+    roots.push(
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("public")
+            .join("bundled-libraries")
+            .join("realmz-reference"),
+    );
+    roots.push(Path::new("bundled-libraries").join("realmz-reference"));
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            roots.push(parent.join("bundled-libraries").join("realmz-reference"));
+            roots.push(
+                parent
+                    .join("resources")
+                    .join("bundled-libraries")
+                    .join("realmz-reference"),
+            );
+        }
+    }
+    let mut seen = BTreeSet::new();
+    roots
+        .into_iter()
+        .filter(|path| seen.insert(path.to_string_lossy().to_string()))
+        .collect()
+}
+
+fn bundled_reference_resource_ids(
+    resource_type: &str,
+    wanted: &BTreeSet<i16>,
+) -> Result<BTreeSet<i16>> {
+    let mut found = BTreeSet::new();
+    if wanted.is_empty() {
+        return Ok(found);
+    }
+    for root in bundled_realmz_reference_roots() {
+        if !root.is_dir() {
+            continue;
+        }
+        for entry in WalkDir::new(&root)
+            .into_iter()
+            .filter_map(std::result::Result::ok)
+            .filter(|entry| entry.file_type().is_file())
+        {
+            let bytes = fs::read(entry.path()).with_path(entry.path())?;
+            for resource in crate::resource_fork::parse_resource_fork_entries(&bytes) {
+                if resource.resource_type == resource_type && wanted.contains(&resource.id) {
+                    found.insert(resource.id);
+                }
+            }
+            if found.len() == wanted.len() {
+                return Ok(found);
+            }
+        }
+    }
+    Ok(found)
 }
 
 enum CustomAtlasImport {

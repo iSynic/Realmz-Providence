@@ -1417,7 +1417,7 @@ function inferredEntity(id: string): SemanticEntity | null {
         resourceId,
         scenarioSupplied: false,
         sharedFallback: ["PICT", "cicn", "STR#", "snd ", "TEXT", "styl", "vers"].includes(resourceType),
-        fallbackSource: "F:\\Realmz shared resources"
+        fallbackSource: "bundled Realmz shared resources"
       }
     };
   }

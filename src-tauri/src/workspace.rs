@@ -17,10 +17,9 @@ pub const WORKSPACE_FILE_NAME: &str = "workspace.json";
 pub const LIBRARY_DIR: &str = "library";
 pub const LIBRARY_CATALOG_FILE: &str = "catalog.json";
 pub const BUNDLED_LIBRARY_DIR: &str = "bundled-libraries";
-pub const DEFAULT_DIVINITY_ROOT: &str =
-    "F:\\Divinity CD\\Divinity CD\\Install Options\\World of Realmz\\Divinity";
-pub const DEFAULT_REALMZ_DATA_ROOT: &str = "F:\\Realmz\\base\\Realmz\\Data Files";
-pub const DEFAULT_NEW_SCENARIO_ROOT: &str = "F:\\Realmz\\base\\Realmz\\Scenarios\\New Scenario";
+pub const DEFAULT_DIVINITY_ROOT: &str = "bundled://divinity";
+pub const DEFAULT_REALMZ_DATA_ROOT: &str = "bundled://realmz-reference";
+pub const DEFAULT_NEW_SCENARIO_ROOT: &str = "bundled://new-scenario-template";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

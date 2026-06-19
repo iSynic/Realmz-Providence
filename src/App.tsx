@@ -38,9 +38,9 @@ import {
   WorkbenchLoading
 } from "./editor/workbench/LazyWorkbenchPanels";
 
-const DEFAULT_SCENARIO_ROOT = "F:\\Realmz\\base\\Realmz\\Scenarios";
-const DEFAULT_PROJECT_ROOT = "F:\\Realmz - Providence\\projects";
-const DEFAULT_EXPORT_ROOT = "F:\\Realmz - Providence\\exports";
+const DEFAULT_SCENARIO_ROOT = "";
+const DEFAULT_PROJECT_ROOT = "projects";
+const DEFAULT_EXPORT_ROOT = "exports";
 
 type DefaultStoragePaths = {
   appDataDir: string;
