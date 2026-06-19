@@ -1,6 +1,7 @@
 mod commands;
 pub mod dungeon;
 pub mod error;
+pub mod evidence;
 pub mod exporter;
 pub mod harness;
 pub mod importer;

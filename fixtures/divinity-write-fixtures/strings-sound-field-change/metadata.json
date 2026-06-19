@@ -1,0 +1,21 @@
+{
+  "fixtureVersion": 1,
+  "id": "strings-sound-field-change",
+  "title": "Strings Sound Field Change",
+  "status": "planned",
+  "divinityAction": "Open a scenario in Divinity, edit exactly one string/message sound field, save, and capture the edited scenario as the after state.",
+  "source": {
+    "before": null,
+    "after": null
+  },
+  "outputs": {
+    "beforeSnapshot": null,
+    "afterSnapshot": null,
+    "diffJson": null,
+    "diffMarkdown": null,
+    "evidenceCard": "../../../docs/evidence-cards/strings-sound-field-change.md"
+  },
+  "notes": [
+    "Placeholder only. No scenario assets are committed in this fixture."
+  ]
+}
