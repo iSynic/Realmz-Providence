@@ -33,6 +33,7 @@ export type ProvidenceHarnessScript = {
     validationErrorsNotContain?: string[];
     validationWarningsNotContain?: string[];
     projectHasMaps?: boolean;
+    scenarioSupportFile?: { fields?: Record<string, unknown> };
     projectTiles?: Array<{ mapId: string; index: number; value: number }>;
     mapRecords?: Array<{ id: number; fields?: Record<string, unknown> }>;
     randomLevels?: Array<{ levelType: "land" | "dungeon"; levelIndex: number; fields?: Record<string, unknown>; rects?: Array<{ rectIndex: number; fields?: Record<string, unknown> }> }>;
@@ -286,6 +287,19 @@ function assertHarnessResult(
   }
   if (assertions.projectHasMaps && project.maps.length === 0) {
     errors.push(assertionError("projectHasMaps", "at least one map", project.maps.length));
+  }
+  if (assertions.scenarioSupportFile) {
+    const supportFile = project.scenario.supportFile ?? null;
+    if (!supportFile) {
+      errors.push(assertionError("scenarioSupportFile", "support file exists", null));
+    } else {
+      for (const [field, expected] of Object.entries(assertions.scenarioSupportFile.fields ?? {})) {
+        const observed = readAssertionField(supportFile, field);
+        if (!sameJsonValue(observed, expected)) {
+          errors.push(assertionError(`scenarioSupportFile:${field}`, expected, observed));
+        }
+      }
+    }
   }
   for (const tileAssertion of assertions.projectTiles ?? []) {
     const map = project.maps.find((candidate) => candidate.id === tileAssertion.mapId);

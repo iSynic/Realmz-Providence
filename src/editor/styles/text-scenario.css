@@ -1260,6 +1260,59 @@
   color: #f5ce70;
 }
 
+.text-string-sound-panel {
+  display: grid;
+  gap: 8px;
+  border: 1px solid #26333f;
+  border-radius: 6px;
+  background: #0d141c;
+  padding: 10px;
+}
+
+.text-string-sound-panel > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.text-string-sound-panel > header > div:first-child,
+.text-string-sound-panel label {
+  display: grid;
+  gap: 5px;
+}
+
+.text-string-sound-panel span,
+.text-string-sound-panel label > span {
+  color: #70b8f3;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.text-string-sound-panel small {
+  color: #a8bed0;
+  font-size: 11px;
+}
+
+.text-string-sound-panel input,
+.text-string-sound-panel select {
+  min-height: 32px;
+  border: 1px solid #2d3b49;
+  border-radius: 6px;
+  background: #0b1118;
+  color: #f5fbff;
+  padding: 6px 8px;
+  font: inherit;
+}
+
+.text-string-sound-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
 
 
 .text-used-by-panel {

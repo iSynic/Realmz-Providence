@@ -1,9 +1,11 @@
-import { ChevronLeft, ChevronRight, Copy, Eraser, List, MessageSquarePlus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, Eraser, List, MessageSquarePlus, Volume2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LibraryCatalog, MessageRecord, OptionLabelRecord, Project, ProjectCommand, SelectedEntity } from "../types";
 import { selectEntityFromId } from "../utils";
 import { classicTextByteLength, messageUsageLinks, optionLabelUsageLinks, unsupportedClassicTextChars } from "../contentLinks";
 import { TutorialTip } from "../components/TutorialTip";
+import { filterTargetOptions, targetOptionForOpcodeValue, targetOptionsForOpcode, type ScriptTargetOption } from "../components/RealmzTargetPicker";
+import { playPreviewUrl, useResolvedPreviewUrl, type PreviewRuntimeContext } from "../previewUrls";
 
 const DIVINITY_TEXT_SEPARATOR = `${" ".repeat(20)}\uf8ff${" ".repeat(20)}`;
 type TextAuthoringTab = "strings" | "option-labels";
@@ -16,6 +18,7 @@ const OPTION_LABELS_TAB_HELP = "Option Labels edits Data OD compact labels for t
 const FIND_OCCURRENCE_HELP = "Find Occurrence searches every scenario string by ID or text, then jumps through matching Data SD2 records.";
 const FIND_LONG_STRING_HELP = "Find Long String jumps to strings at the Realmz byte limit or with characters that need cleanup before export.";
 const STRING_BYTE_LIMIT_HELP = "Realmz message records are fixed 256-byte Pascal strings, so the editable text must fit in 255 Classic text bytes before export.";
+const STRING_SOUND_HELP = "Choose the sound Realmz plays with this string. Divinity stores this assignment beside the scenario support data, while the visible text stays in Data SD2.";
 const OPTION_BYTE_LIMIT_HELP = "Data OD option labels use 25-byte Pascal slots, leaving 24 bytes of editable label text.";
 const USED_BY_HELP = "Used By links show the records Providence knows refer to this text. Check these before changing wording or meaning.";
 const ADVANCED_TEXT_HELP = "Advanced Details shows source status and preserved raw bytes for the current fixed-width text record.";
@@ -25,6 +28,9 @@ export function TextPanel({
   catalog,
   selectedEntity,
   activeEditor = "messages",
+  desktopRuntime = false,
+  projectDir = "",
+  workspaceDir = "",
   onSelectEntity,
   onApplyCommand
 }: {
@@ -32,6 +38,9 @@ export function TextPanel({
   catalog?: LibraryCatalog | null;
   selectedEntity: SelectedEntity | null;
   activeEditor?: string;
+  desktopRuntime?: boolean;
+  projectDir?: string;
+  workspaceDir?: string;
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
@@ -287,8 +296,10 @@ export function TextPanel({
             <MessageEditor
               key={selectedRecord.id}
               project={project}
+              catalog={catalog}
               record={selectedRecord}
               records={records}
+              previewContext={{ desktopRuntime, projectDir, workspaceDir }}
               onSelectEntity={onSelectEntity}
               onApplyCommand={onApplyCommand}
             />
@@ -458,23 +469,37 @@ function RecordJumpField({
 
 function MessageEditor({
   project,
+  catalog,
   record,
   records,
+  previewContext,
   onSelectEntity,
   onApplyCommand
 }: {
   project: Project;
+  catalog?: LibraryCatalog | null;
   record: MessageRecord;
   records: MessageRecord[];
+  previewContext: PreviewRuntimeContext;
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
   const [text, setText] = useState(record.text);
+  const [soundQuery, setSoundQuery] = useState("");
   const byteLength = classicTextByteLength(text);
   const unsupportedChars = unsupportedClassicTextChars(text);
   const changed = text !== record.text;
   const usages = messageUsageLinks(project, record.id);
   const nextId = nextMessageId(records);
+  const currentSoundId = stringSoundForMessage(project, record.id);
+  const soundOptions = useMemo(() => targetOptionsForOpcode(project, 9, catalog), [catalog, project]);
+  const selectedSound = useMemo(() => currentSoundId ? targetOptionForOpcodeValue(project, 9, currentSoundId, catalog) : null, [catalog, currentSoundId, project]);
+  const filteredSoundOptions = useMemo(() => filterTargetOptions(soundOptions, soundQuery).slice(0, 160), [soundOptions, soundQuery]);
+  const visibleSoundOptions = selectedSound && !filteredSoundOptions.some((option) => option.key === selectedSound.key)
+    ? [selectedSound, ...filteredSoundOptions.slice(0, 159)]
+    : filteredSoundOptions;
+  const selectedPreviewUrl = useStringSoundPreviewUrl(selectedSound, currentSoundId, project, previewContext);
+  const updateSound = (soundId: number) => onApplyCommand({ kind: "updateStringSound", label: `Set String ${record.id} sound`, messageId: record.id, soundId });
   return (
     <article className="text-message-editor">
       <header>
@@ -525,6 +550,55 @@ function MessageEditor({
         {unsupportedChars.length > 0 && <b>{unsupportedChars.length} non-ASCII character{unsupportedChars.length === 1 ? "" : "s"} will export as ?.</b>}
         {!changed && byteLength <= 255 && unsupportedChars.length === 0 && <b>Ready</b>}
       </div>
+      <section className="text-string-sound-panel">
+        <header>
+          <div>
+            <TutorialTip title="String Sound" body={STRING_SOUND_HELP} side="below">
+              <span>Sound</span>
+            </TutorialTip>
+            <small>{currentSoundId ? soundSummaryLabel(selectedSound, currentSoundId) : "No sound"}</small>
+          </div>
+          <div className="text-string-sound-actions">
+            {selectedSound?.entity && (
+              <button type="button" className="btn btn-secondary btn-xs" onClick={() => selectedSound.entity && onSelectEntity(selectedSound.entity)}>
+                Open Sound
+              </button>
+            )}
+            <button
+              type="button"
+              className="btn btn-secondary btn-xs"
+              disabled={!selectedPreviewUrl}
+              onClick={() => selectedPreviewUrl && playPreviewUrl(selectedPreviewUrl)}
+            >
+              <Volume2 size={12} /> Play
+            </button>
+            <button type="button" className="btn btn-secondary btn-xs" disabled={!currentSoundId} onClick={() => updateSound(0)}>
+              Clear
+            </button>
+          </div>
+        </header>
+        <label>
+          <span>Choose sound</span>
+          <input value={soundQuery} onChange={(event) => setSoundQuery(event.currentTarget.value)} placeholder="Search sounds..." />
+          <select
+            value={currentSoundId ? String(Math.abs(currentSoundId)) : ""}
+            onChange={(event) => updateSound(Number(event.currentTarget.value || 0))}
+          >
+            <option value="">No sound</option>
+            {currentSoundId && !selectedSound && <option value={Math.abs(currentSoundId)}>Current sound {currentSoundId}</option>}
+            {visibleSoundOptions.map((option) => (
+              <option key={option.key} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+        </label>
+        <small>
+          {selectedSound
+            ? [selectedSound.detail, selectedSound.summary, selectedSound.compatibility, selectedSound.sourceState].filter(Boolean).join(" | ")
+            : currentSoundId
+              ? `Sound ${currentSoundId}`
+              : "Choose a sound resource for this string."}
+        </small>
+      </section>
       <section className="text-used-by-panel">
         <header>
           <TutorialTip title="Used By" body={USED_BY_HELP} side="below">
@@ -554,6 +628,29 @@ function MessageEditor({
         </div>
       </details>
     </article>
+  );
+}
+
+function stringSoundForMessage(project: Project, messageId: number) {
+  const supportFile = project.scenario.supportFile;
+  if (!supportFile || supportFile.divinityStringEditorSlot !== messageId) return 0;
+  return supportFile.divinityStringSoundId ?? 0;
+}
+
+function soundSummaryLabel(option: ScriptTargetOption | null, soundId: number) {
+  if (!soundId) return "No sound";
+  if (!option) return `Sound ${soundId}`;
+  const signedPrefix = soundId < 0 ? `Sound ${soundId}: ` : "";
+  return `${signedPrefix}${option.label}`;
+}
+
+function useStringSoundPreviewUrl(option: ScriptTargetOption | null, soundId: number, project: Project, previewContext: PreviewRuntimeContext) {
+  const previewResourceId = soundId ? Math.abs(soundId) : option?.value ?? null;
+  return useResolvedPreviewUrl(
+    option?.previewPath ?? option?.managedAsset?.previewPath ?? option?.libraryAsset?.previewPath ?? null,
+    option?.managedAsset ?? null,
+    option?.libraryAsset ?? null,
+    { ...previewContext, project, resourceType: "snd ", resourceId: previewResourceId }
   );
 }
 

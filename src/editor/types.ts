@@ -1157,6 +1157,7 @@ export type ProjectCommand =
   | { kind: "deleteTargetRecord"; label: string; recordType: RealmzTargetRecordKind; id: number }
   | { kind: "duplicateMessageRecord"; label: string; fromId: number; toId?: number }
   | { kind: "updateMessageRecord"; label: string; id: number; changes: Partial<Pick<MessageRecord, "text">> }
+  | { kind: "updateStringSound"; label: string; messageId: number; soundId: number }
   | { kind: "bulkUpdateMessageRecords"; label: string; updates: Array<{ id: number; text: string }> }
   | { kind: "createOptionLabel"; label: string; id?: number }
   | { kind: "clearOptionLabel"; label: string; id: number }

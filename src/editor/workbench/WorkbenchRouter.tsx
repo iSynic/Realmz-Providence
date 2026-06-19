@@ -219,6 +219,9 @@ function WorkbenchRouterContent({
         catalog={state.libraryCatalog}
         selectedEntity={state.selectedEntity}
         activeEditor={state.activeEditor}
+        desktopRuntime={desktopRuntime}
+        projectDir={projectDir}
+        workspaceDir={workspaceDir}
         onSelectEntity={onSelectEntity}
         onApplyCommand={onApplyCommand}
       />

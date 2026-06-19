@@ -224,6 +224,7 @@ fn evidence_lab_string_sound_support_file_exports() {
     );
     let temp = tempdir().unwrap();
     let project_dir = temp.path().join("project");
+    let original_data_sd2 = fs::read(source.join("Data SD2")).unwrap();
     import_scenario(&source, &project_dir).unwrap();
     let mut project = open_project(&project_dir).unwrap();
     let support_file = project
@@ -251,6 +252,11 @@ fn evidence_lab_string_sound_support_file_exports() {
     let output = fs::read(export_dir.join(support_file_name)).unwrap();
     assert_eq!(output[23], 3);
     assert_eq!(i16_be(&output, 38), 145);
+    assert_eq!(
+        fs::read(export_dir.join("Data SD2")).unwrap(),
+        original_data_sd2,
+        "changing the selected string sound should not rewrite Data SD2 string text bytes"
+    );
 }
 
 #[test]

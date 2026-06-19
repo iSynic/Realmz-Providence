@@ -63,6 +63,7 @@ import {
   emptyScenarioItem,
   updateOptionLabel,
   updateRecord,
+  updateStringSound,
   upsertQuestLabel
 } from "./projectCommands/targetRecordCommands";
 import {
@@ -125,6 +126,7 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "deleteTargetRecord") return deleteTargetRecord(project, command.recordType, command.id);
   if (command.kind === "duplicateMessageRecord") return duplicateMessageRecord(project, command.fromId, command.toId);
   if (command.kind === "updateMessageRecord") return updateRecord(project, "messages", command.id, command.changes);
+  if (command.kind === "updateStringSound") return updateStringSound(project, command.messageId, command.soundId);
   if (command.kind === "bulkUpdateMessageRecords") return bulkUpdateMessageRecords(project, command.updates);
   if (command.kind === "createOptionLabel") return createOptionLabel(project, command.id);
   if (command.kind === "clearOptionLabel") return clearOptionLabel(project, command.id);

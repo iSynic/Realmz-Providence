@@ -698,7 +698,7 @@ function usageCounts(project: Project, opcodes: number[]) {
   return counts;
 }
 
-function filterTargetOptions(options: ScriptTargetOption[], query: string) {
+export function filterTargetOptions(options: ScriptTargetOption[], query: string) {
   const normalized = query.trim().toLowerCase();
   if (!normalized) return options;
   return options.filter((option) => [

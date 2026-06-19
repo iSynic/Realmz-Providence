@@ -100,6 +100,24 @@ export function bulkUpdateMessageRecords(project: Project, updates: Array<{ id: 
   return { ...project, messages };
 }
 
+export function updateStringSound(project: Project, messageId: number, soundId: number): Project {
+  if (!Number.isInteger(messageId) || messageId < 0 || !Number.isFinite(soundId)) return project;
+  const supportFile = project.scenario.supportFile ?? { sourceFile: "Scenario" };
+  return {
+    ...project,
+    scenario: {
+      ...project.scenario,
+      supportFile: {
+        ...supportFile,
+        sourceFile: supportFile.sourceFile || "Scenario",
+        authored: true,
+        divinityStringEditorSlot: messageId,
+        divinityStringSoundId: Math.trunc(soundId)
+      }
+    }
+  };
+}
+
 export function createOptionLabel(project: Project, requestedId?: number): Project {
   const id = requestedId ?? nextOptionLabelId(project);
   if (!Number.isInteger(id) || id < 0) return project;

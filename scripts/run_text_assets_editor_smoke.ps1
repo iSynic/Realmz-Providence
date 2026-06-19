@@ -29,6 +29,7 @@ $exportDir = Join-Path $RunRoot "exported-Tutorial"
 $commands = @(
   @{ kind = "createTargetRecord"; label = "Create smoke message"; recordType = "message"; id = 252 },
   @{ kind = "updateMessageRecord"; label = "Write smoke message"; id = 252; changes = @{ text = "Providence text and assets smoke message." } },
+  @{ kind = "updateStringSound"; label = "Assign smoke string sound"; messageId = 252; soundId = 143 },
   @{ kind = "duplicateMessageRecord"; label = "Duplicate smoke message"; fromId = 252; toId = 253 },
   @{ kind = "bulkUpdateMessageRecords"; label = "Import smoke text batch"; updates = @(
       @{ id = 252; text = "Providence text import/export smoke message." },
@@ -59,7 +60,15 @@ $script = @{
   commands = $commands
   assertions = @{
     validationOk = $true
-    commandsAppliedAtLeast = 15
+    commandsAppliedAtLeast = 16
+    scenarioSupportFile = @{
+      fields = @{
+        sourceFile = "Scenario"
+        authored = $true
+        divinityStringEditorSlot = 252
+        divinityStringSoundId = 143
+      }
+    }
     actionSlots = @(
       @{ triggerId = "Data DD:0:5"; slot = 0; rawCode = 1; id = 252 },
       @{ triggerId = "Data DD:0:5"; slot = 1; rawCode = 3; id = 252 }
