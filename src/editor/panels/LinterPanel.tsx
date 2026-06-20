@@ -10,6 +10,7 @@ import type { ScenarioCoverageManifest } from "../scenarioCoverage";
 import { ScrollArea } from "../ui";
 import { TutorialTip } from "../components/TutorialTip";
 import { ED3_CLASSIFICATION_ORDER, ed3ClassificationCounts, ed3DiagnosticSummaries, ed3RiskySummaries } from "../scriptDiagnostics";
+import { buildEdcdRowUsages, type EdcdRowStatus, type EdcdRowUsage } from "../edcdRows";
 
 const LINTER_HELP = "The linter is the pre-export release safety surface. It groups validation errors, resource gaps, unresolved semantic links, source/runtime-cache boundaries, and writer readiness so authors can fix blockers before exporting.";
 const RERUN_HELP = "Re-run validation after editing records, assets, maps, or scenario settings. Validation is the quickest way to refresh export blockers and compatibility warnings.";
@@ -18,6 +19,7 @@ const SCENARIO_COVERAGE_HELP = "Scenario Coverage summarizes what Providence can
 const ADVANCED_COVERAGE_HELP = "Advanced coverage details show container-level evidence from the generated coverage manifest. Use this when a warning mentions writer gates, preserved ranges, or runtime state.";
 const SEMANTIC_INSPECTOR_HELP = "The semantic inspector shows the selected linter target, its source, summary fields, links, and editability state so you can jump from a warning to the underlying record.";
 const LINTER_ROW_LIMIT = 24;
+const EDCD_STATUS_ORDER: EdcdRowStatus[] = ["missing", "conflict", "shared", "unused", "in-use"];
 
 export function LinterPanel({
   project,
@@ -402,6 +404,9 @@ function semanticLintGroups(project: Project | null) {
   const ed3Summaries = ed3DiagnosticSummaries(project);
   const ed3Counts = ed3ClassificationCounts(ed3Summaries);
   const ed3Risky = ed3RiskySummaries(ed3Summaries);
+  const edcdUsages = buildEdcdRowUsages(project);
+  const edcdCounts = edcdStatusCounts(edcdUsages);
+  const edcdRisky = edcdUsages.filter((usage) => ["missing", "shared", "conflict"].includes(usage.status));
   return [
     {
       title: "Resource Coverage",
@@ -485,6 +490,38 @@ function semanticLintGroups(project: Project | null) {
         .filter((row): row is LintInsight => Boolean(row))
     },
     {
+      title: "Action Settings Rows",
+      defaultOpen: edcdRisky.length > 0 && edcdRisky.length <= 6,
+      summary: edcdSettingsSummary(edcdUsages, edcdRisky),
+      rows: [
+        ...EDCD_STATUS_ORDER
+          .map((status): LintInsight | null => {
+            const count = edcdCounts.get(status) ?? 0;
+            if (count === 0) return null;
+            return {
+              id: `edcd-status:${status}`,
+              severity: status === "missing" || status === "conflict" ? "warning" : "info",
+              message: edcdStatusMessage(status, count),
+              detail: edcdStatusDetail(status)
+            };
+          })
+          .filter((row): row is LintInsight => Boolean(row)),
+        ...edcdRisky.slice(0, 8).map((usage): LintInsight => ({
+          id: `edcd-risk:${usage.rowId}`,
+          severity: usage.status === "missing" || usage.status === "conflict" ? "warning" : "info",
+          message: edcdRiskMessage(usage),
+          detail: usage.warnings[0] ?? usage.summary,
+          target: usage.exists ? `record:Data EDCD:${usage.rowId}` : undefined
+        })),
+        edcdRisky.length > 8 ? {
+          id: "edcd-risk-more",
+          severity: "info" as const,
+          message: `${(edcdRisky.length - 8).toLocaleString()} more settings row${edcdRisky.length - 8 === 1 ? "" : "s"} need review.`,
+          detail: "Use Scripts > Settings Rows to filter, inspect, duplicate, or repair settings rows."
+        } : null
+      ].filter((row): row is LintInsight => Boolean(row))
+    },
+    {
       title: "Link Integrity",
       defaultOpen: unresolved.length > 0 && unresolved.length <= 12,
       summary: `${unresolved.length.toLocaleString()} unresolved link${unresolved.length === 1 ? "" : "s"} found. These are the references most likely to affect author-visible behavior.`,
@@ -511,6 +548,41 @@ function scriptTriageSummary(total: number, risky: number) {
   if (total === 0) return "No imported Extra Action rows were found.";
   if (risky === 0) return "Imported Extra Action rows are either callable, empty, or not currently actionable.";
   return `${risky.toLocaleString()} imported Extra Action row${risky === 1 ? "" : "s"} may need review before you treat them as intentional scenario behavior.`;
+}
+
+function edcdStatusCounts(usages: EdcdRowUsage[]) {
+  const counts = new Map<EdcdRowStatus, number>();
+  for (const usage of usages) counts.set(usage.status, (counts.get(usage.status) ?? 0) + 1);
+  return counts;
+}
+
+function edcdSettingsSummary(usages: EdcdRowUsage[], risky: EdcdRowUsage[]) {
+  if (usages.length === 0) return "No action settings rows are present.";
+  if (risky.length === 0) return `${usages.length.toLocaleString()} action settings row${usages.length === 1 ? "" : "s"} found with no missing, shared, or conflicting row usage.`;
+  return `${risky.length.toLocaleString()} of ${usages.length.toLocaleString()} action settings row${usages.length === 1 ? "" : "s"} need author review.`;
+}
+
+function edcdStatusMessage(status: EdcdRowStatus, count: number) {
+  if (status === "missing") return `${count.toLocaleString()} referenced settings row${count === 1 ? "" : "s"} missing.`;
+  if (status === "conflict") return `${count.toLocaleString()} settings row${count === 1 ? "" : "s"} used by conflicting action shapes.`;
+  if (status === "shared") return `${count.toLocaleString()} settings row${count === 1 ? "" : "s"} shared by multiple steps.`;
+  if (status === "unused") return `${count.toLocaleString()} imported settings row${count === 1 ? "" : "s"} currently unused.`;
+  return `${count.toLocaleString()} settings row${count === 1 ? "" : "s"} used by one step.`;
+}
+
+function edcdStatusDetail(status: EdcdRowStatus) {
+  if (status === "missing") return "Create the row or choose a different settings row before relying on that step.";
+  if (status === "conflict") return "Different action types are reading the same five values differently; duplicate or repair the row before editing.";
+  if (status === "shared") return "Shared rows are valid, but step-specific edits should duplicate the row first.";
+  if (status === "unused") return "Unused imported rows are preserved, but they are not currently linked from known script flow.";
+  return "These rows have one known caller and can be edited from the selected step or Settings Rows tab.";
+}
+
+function edcdRiskMessage(usage: EdcdRowUsage) {
+  if (usage.status === "missing") return `Settings row ${usage.rowId} is referenced but missing.`;
+  if (usage.status === "conflict") return `Settings row ${usage.rowId} has conflicting callers.`;
+  if (usage.status === "shared") return `Settings row ${usage.rowId} is shared by ${usage.callers.length} steps.`;
+  return `Review settings row ${usage.rowId}.`;
 }
 
 function ed3SummaryMessage(classification: string, count: number, label: string) {

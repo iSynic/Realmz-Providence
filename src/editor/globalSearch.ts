@@ -4,6 +4,7 @@ import { monsterReferenceOptions } from "./monsterReferences";
 import { AssetWorkbenchSection, EditorTab, LibraryCatalog, ManagedAssetKind, Project, SelectedEntity } from "./types";
 import { selectEntityFromId, triggerEntityId } from "./utils";
 import { ed3DiagnosticForTrigger } from "./scriptDiagnostics";
+import { buildEdcdRowUsages } from "./edcdRows";
 
 export type GlobalSearchScope = "scenario" | "assets" | "libraries" | "docs" | "diagnostics";
 
@@ -144,6 +145,30 @@ function projectRows(project: Project, catalog?: LibraryCatalog | null) {
       selectedEntity: selectEntityFromId(id),
       numericId: trigger.recordIndex,
       aliases: [isExtra ? `macro ${trigger.recordIndex}` : `ap ${trigger.recordIndex}`, `action point ${trigger.recordIndex}`, ed3Summary?.classification ?? "", ed3Summary?.label ?? ""]
+    });
+  }
+
+  for (const usage of buildEdcdRowUsages(project, catalog)) {
+    add({
+      id: `edcd-settings:${usage.rowId}`,
+      scope: "scenario",
+      kind: usage.status === "missing" ? "Missing Settings Row" : usage.status === "shared" ? "Shared Settings Row" : "Action Settings Row",
+      title: `Settings Row ${usage.rowId}`,
+      subtitle: `${usage.statusLabel} | ${usage.primaryActionLabel ?? usage.primaryShape ?? "Raw settings"}`,
+      snippet: usage.summary,
+      badges: ["Settings", usage.statusLabel],
+      selectedEntity: selectEntityFromId(`record:Data EDCD:${usage.rowId}`),
+      route: { kind: "workbench", workbench: "project", domain: "scripts", editor: "settings-rows", searchHint: String(usage.rowId) },
+      numericId: usage.rowId,
+      aliases: [
+        `settings ${usage.rowId}`,
+        `settings row ${usage.rowId}`,
+        `edcd ${usage.rowId}`,
+        `data edcd ${usage.rowId}`,
+        usage.status,
+        usage.primaryActionLabel ?? "",
+        usage.primaryShape ?? ""
+      ]
     });
   }
 

@@ -31,6 +31,7 @@
     "archaeology:divinity-opcodes": "node scripts/extract_divinity_opcode_help.mjs",
     "archaeology:opcode-crosswalk": "node scripts/generate_opcode_edcd_crosswalk.mjs",
     "archaeology:script-diagnostics": "node scripts/report_script_diagnostics.mjs",
+    "archaeology:edcd-settings": "node scripts/report_edcd_settings_rows.mjs",
     "smoke:oracle": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_smoke.ps1",
     "smoke:oracle:matrix": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_smoke_matrix.ps1",
     "smoke:oracle:gameplay": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_gameplay.ps1",

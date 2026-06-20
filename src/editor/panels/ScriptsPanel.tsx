@@ -4,6 +4,7 @@ import { Action, Ed3ReachabilityRow, EncounterActionRow, LevelType, LibraryCatal
 import { linksFor, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
 import { actionSlotEntitiesForTriggerRecord, ed3ReachabilityFor, extraActionEvidenceSummary, extraActionPointClassification } from "../semanticGraph";
 import { EdcdRowEditor } from "../components/EdcdRowEditor";
+import { buildEdcdRowUsages, edcdUsageMatchesFilter, edcdUsageStatusTone, edcdUsageToEditorUsage, nextUnusedEdcdRowId, normalizeEdcdValues, type EdcdRowFilter, type EdcdRowUsage, type EdcdRowCaller } from "../edcdRows";
 import { TargetPicker, resolveSignedMessageTarget, signedTargetBehaviorLabel, signedTargetValueForSelection, targetOptionForOpcodeValue, targetOptionsForOpcode, type ScriptTargetOption } from "../components/RealmzTargetPicker";
 import { TutorialTip } from "../components/TutorialTip";
 import { playPreviewUrl, useIconPreviewUrl, useResolvedPreviewUrl } from "../previewUrls";
@@ -75,6 +76,12 @@ function includeSelectedTrigger(records: TriggerRecord[], selected: TriggerRecor
   return [selected, ...visible];
 }
 
+function defaultDraftForProject(project: Project, definition: ScriptActionDefinition) {
+  const draft = definition.defaultDraft;
+  if (!draft.parameters || draft.id !== 0) return { rawCode: draft.rawCode, id: draft.id };
+  return { rawCode: draft.rawCode, id: nextUnusedEdcdRowId(project) };
+}
+
 type SelectedEdcdUsage = {
   rowId?: number;
   shape?: string;
@@ -92,6 +99,7 @@ const SCRIPT_EDITOR_TABS = [
   { id: "macros", label: "Extra Action Points", title: "Extra Action Points and branch targets." },
   { id: "global-macros", label: "Global Events", title: "Scenario-wide event hooks and startup logic." },
   { id: "quests", label: "Quests", title: "Quest flags and script references." },
+  { id: "settings-rows", label: "Settings Rows", title: "Advanced browser for EDCD action settings rows." },
   { id: "ed3-evidence", label: "Unlinked Extra APs", title: "Extra Action Points not yet linked from known scenario behavior." }
 ];
 
@@ -122,7 +130,7 @@ const TARGET_PICKER_HELP =
 const ACTION_PALETTE_HELP =
   "The action palette is the searchable Divinity scripting-code catalog. Pick a category, search by behavior or target, and choose the action to load its default CODE/ID draft.";
 const SETTINGS_HELP =
-  "Settings edits Data EDCD sidecar rows. For EDCD-backed opcodes, the slot ID points to this row and the real message, battle, branch, item, sound, or mutation fields live here.";
+  "Settings rows hold the editable options for many Realmz actions. Imported scripts keep their original row numbers; new actions get an unused row automatically, so authors should normally edit the fields instead of memorizing row IDs.";
 const SIMPLE_ENCOUNTER_SOURCE_HELP =
   "Simple Encounters are Data ED source records. The prompt points to a Message, the four option labels live inside this record, and each option result jumps to one of four script columns.";
 const COMPLEX_ENCOUNTER_SOURCE_HELP =
@@ -255,6 +263,7 @@ export function ScriptsPanel({
         projectDir={projectDir}
         workspaceDir={workspaceDir}
         onSelectEntity={handleSelectEntity}
+        onSelectEditor={onSelectEditor}
         onOpenTool={onOpenTool}
         onApplyCommand={handleApplyCommand}
       />
@@ -300,6 +309,7 @@ function ScriptAuthoringPanel({
   projectDir,
   workspaceDir,
   onSelectEntity,
+  onSelectEditor,
   onOpenTool,
   onApplyCommand
 }: {
@@ -311,10 +321,12 @@ function ScriptAuthoringPanel({
   projectDir: string;
   workspaceDir: string;
   onSelectEntity: (entity: SelectedEntity) => void;
+  onSelectEditor?: (editor: string) => void;
   onOpenTool?: (tab: "text", editor: string) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const activeTabKind = scriptTabKind(activeEditor);
+  const edcdUsages = useMemo(() => project ? buildEdcdRowUsages(project, catalog) : [], [project, catalog]);
   const scripts = useMemo(
     () => project?.triggers.filter((trigger) => triggerVisibleForEditor(project, trigger, activeEditor)) ?? [],
     [project, activeEditor]
@@ -536,7 +548,11 @@ function ScriptAuthoringPanel({
   const selectedDefinition = scriptActionDefinitionFor(selectedDraft.rawCode);
   const filteredDefinitions = actionDefinitionsForCategory(categoryFilter, opcodeQuery);
   const selectedSlotEntity: SemanticEntity | undefined = undefined;
-  const selectedEdcdUsage: SelectedEdcdUsage | undefined = undefined;
+  const edcdUsageByRow = new Map(edcdUsages.map((usage) => [usage.rowId, usage]));
+  const selectedEdcdUsageModel = selectedOption.edcdShape ? edcdUsageByRow.get(Math.max(0, selectedDraft.id)) ?? null : null;
+  const selectedEdcdUsage: SelectedEdcdUsage | undefined = selectedEdcdUsageModel
+    ? edcdUsageToEditorUsage(selectedEdcdUsageModel, selectedOption.edcdShape)
+    : undefined;
   const triggerDiagnostics = selectedTrigger ? visibleDiagnosticsById.get(selectedTrigger.id) ?? [] : [];
   const selectedSlotDiagnostics = useMemo(
     () => selectedTrigger
@@ -545,6 +561,26 @@ function ScriptAuthoringPanel({
     [project, selectedTrigger, selectedSlot, selectedDraft.rawCode, selectedDraft.id, catalog]
   );
   const selectedEdcdRowId = selectedOption.edcdShape ? Math.max(0, selectedDraft.id) : null;
+  if (activeTabKind === "settings-rows") {
+    return (
+      <SettingsRowsPanel
+        project={project}
+        catalog={catalog}
+        selectedEntity={selectedEntity}
+        usages={edcdUsages}
+        onSelectEntity={onSelectEntity}
+        onOpenTool={onOpenTool}
+        onOpenCaller={(caller) => {
+          const trigger = project.triggers.find((candidate) => candidate.id === caller.triggerId);
+          if (!trigger) return;
+          setSelectedSlot(caller.slot);
+          onSelectEntity(selectEntityFromId(triggerSelectionId(trigger)));
+          onSelectEditor?.(scriptEditorForTriggerSource(trigger.source));
+        }}
+        onApplyCommand={onApplyCommand}
+      />
+    );
+  }
   const isMacro = selectedTrigger?.source === "Data ED3";
   const selectedExtraActionClassification = selectedTrigger && isMacro ? authorFacingExtraActionKind(extraActionPointClassification(project, selectedTrigger)) : "Action Point";
   const selectedExtraActionEvidence = selectedTrigger && isMacro ? extraActionEvidenceSummary(project, selectedTrigger) : null;
@@ -652,6 +688,9 @@ function ScriptAuthoringPanel({
       selectedOption={selectedOption}
       selectedDefinition={selectedDefinition}
       selectedEdcdUsage={selectedEdcdUsage}
+      selectedRowUsage={selectedEdcdUsageModel}
+      edcdUsages={edcdUsages}
+      selectedTriggerId={selectedTrigger.id}
       selectedEdcdRowId={selectedEdcdRowId}
       selectedSlotEntity={selectedSlotEntity}
       selectedSlotDiagnostics={selectedSlotDiagnostics}
@@ -696,7 +735,7 @@ function ScriptAuthoringPanel({
   }) : null;
   return (
     <section className="realmz-script-editor">
-      <header>
+      <header className="settings-rows-header">
         <div>
           <TutorialTip title="Scripts Workbench" body={SCRIPT_WORKBENCH_HELP} side="below">
             <strong>{scriptPanelTitle(activeEditor)}</strong>
@@ -1108,6 +1147,241 @@ function Ed3EvidenceDetails({ row }: { row: Ed3ReachabilityRow | null }) {
   );
 }
 
+const EDCD_ROW_FILTERS: Array<{ id: EdcdRowFilter; label: string }> = [
+  { id: "all", label: "All" },
+  { id: "in-use", label: "In Use" },
+  { id: "shared", label: "Shared" },
+  { id: "unused", label: "Unused" },
+  { id: "missing", label: "Missing" },
+  { id: "conflict", label: "Conflicts" }
+];
+
+function SettingsRowsPanel({
+  project,
+  catalog,
+  selectedEntity,
+  usages,
+  onSelectEntity,
+  onOpenTool,
+  onOpenCaller,
+  onApplyCommand
+}: {
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  selectedEntity: SelectedEntity | null;
+  usages: EdcdRowUsage[];
+  onSelectEntity: (entity: SelectedEntity) => void;
+  onOpenTool?: (tab: "text", editor: string) => void;
+  onOpenCaller: (caller: EdcdRowCaller) => void;
+  onApplyCommand?: (command: ProjectCommand) => void;
+}) {
+  const [filter, setFilter] = usePersistentValue<EdcdRowFilter>("scripts.edcdRows.filter", "all");
+  const [query, setQuery] = useState("");
+  const [selectedRowId, setSelectedRowId] = useState<number | null>(null);
+  const [templateOpcode, setTemplateOpcode] = useState<number>(() => SCRIPT_ACTION_DEFINITIONS.find((definition) => definition.edcdShape)?.opcode ?? 2);
+  const edcdTemplates = SCRIPT_ACTION_DEFINITIONS.filter((definition) => definition.edcdShape && definition.authoringLevel !== "ignored");
+  const selectedEntityRowId = edcdRowIdFromSelectedEntity(selectedEntity);
+
+  useEffect(() => {
+    if (selectedEntityRowId == null) return;
+    setSelectedRowId(selectedEntityRowId);
+    setQuery(String(selectedEntityRowId));
+  }, [selectedEntityRowId]);
+  const selectedTemplate = scriptActionDefinitionFor(templateOpcode);
+  const usageCounts = useMemo(() => {
+    const counts = new Map<EdcdRowFilter, number>(EDCD_ROW_FILTERS.map((entry) => [entry.id, 0]));
+    for (const usage of usages) {
+      counts.set("all", (counts.get("all") ?? 0) + 1);
+      counts.set(usage.status, (counts.get(usage.status) ?? 0) + 1);
+    }
+    return counts;
+  }, [usages]);
+  const filteredUsages = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    return usages.filter((usage) => {
+      if (!edcdUsageMatchesFilter(usage, filter)) return false;
+      if (!normalized) return true;
+      return [
+        usage.rowId,
+        usage.statusLabel,
+        usage.summary,
+        usage.primaryActionLabel,
+        usage.primaryShape,
+        usage.possibleShapes.join(" "),
+        usage.values.join(" "),
+        usage.callers.map((caller) => `${caller.actionLabel} ${caller.triggerRecordIndex} ${caller.slot}`).join(" ")
+      ].join(" ").toLowerCase().includes(normalized);
+    });
+  }, [filter, query, usages]);
+  const selectedUsage = filteredUsages.find((usage) => usage.rowId === selectedRowId)
+    ?? usages.find((usage) => usage.rowId === selectedRowId)
+    ?? filteredUsages[0]
+    ?? usages[0]
+    ?? null;
+  const selectedShape = selectedUsage?.primaryShape ?? selectedTemplate.edcdShape ?? undefined;
+  const selectedOpcode = selectedUsage?.primaryOpcode ?? selectedTemplate.opcode;
+  const editorUsage = selectedUsage ? edcdUsageToEditorUsage(selectedUsage, selectedShape) : null;
+  const canDelete = selectedUsage?.exists && selectedUsage.status === "unused";
+  const duplicateRow = () => {
+    if (!selectedUsage) return;
+    const nextId = nextUnusedEdcdRowId(project);
+    onApplyCommand?.({ kind: "updateEdcdRow", label: `Duplicate settings ${selectedUsage.rowId}`, rowId: nextId, values: selectedUsage.values });
+    setSelectedRowId(nextId);
+  };
+  const createRow = () => {
+    const nextId = selectedUsage && !selectedUsage.exists ? selectedUsage.rowId : nextUnusedEdcdRowId(project);
+    const values = normalizeEdcdValues(selectedUsage?.exists ? selectedUsage.values : selectedTemplate.defaultDraft.parameters);
+    onApplyCommand?.({ kind: "updateEdcdRow", label: `Create settings ${nextId}`, rowId: nextId, values });
+    setSelectedRowId(nextId);
+  };
+
+  return (
+    <section className="settings-rows-workbench">
+      <header>
+        <div>
+          <TutorialTip title="Settings Rows" body={SETTINGS_HELP} side="below">
+            <strong>Settings Rows</strong>
+          </TutorialTip>
+          <small>Inspect, reuse, repair, and document the sidecar settings used by EDCD-backed actions.</small>
+        </div>
+        <div className="script-toolbar">
+          <button type="button" className="btn btn-secondary btn-xs" onClick={createRow}>
+            <Plus size={12} /> Create Row From Template
+          </button>
+        </div>
+      </header>
+      <div className="settings-rows-layout">
+        <aside className="settings-row-list-column">
+          <div className="settings-row-filter-panel">
+            <input
+              className="script-list-filter"
+              value={query}
+              onChange={(event) => setQuery(event.currentTarget.value)}
+              placeholder="Filter settings rows..."
+            />
+            <div className="script-list-scope script-filter-chips" role="group" aria-label="Settings row filter">
+              {EDCD_ROW_FILTERS.map((entry) => (
+                <button
+                  key={entry.id}
+                  type="button"
+                  className={filter === entry.id ? "active" : ""}
+                  onClick={() => setFilter(entry.id)}
+                >
+                  <span>{entry.label}</span>
+                  <b>{usageCounts.get(entry.id) ?? 0}</b>
+                </button>
+              ))}
+            </div>
+          </div>
+          <ScrollArea className="settings-row-list" aria-label="Settings rows">
+            {filteredUsages.map((usage) => (
+              <button
+                key={usage.rowId}
+                type="button"
+                className={`settings-row-card${usage.rowId === selectedUsage?.rowId ? " selected" : ""} ${edcdUsageStatusTone(usage.status)}`}
+                onClick={() => setSelectedRowId(usage.rowId)}
+              >
+                <span>
+                  <strong>Settings Row {usage.rowId}</strong>
+                  <small>{usage.summary}</small>
+                </span>
+                <b>{usage.statusLabel}</b>
+                <small>{usage.callers.length} caller{usage.callers.length === 1 ? "" : "s"}{usage.primaryShape ? ` | ${usage.primaryShape}` : ""}</small>
+              </button>
+            ))}
+            {filteredUsages.length === 0 && <EmptyState compact title="No settings rows" body="No rows match this filter." />}
+          </ScrollArea>
+        </aside>
+        <main className="settings-row-detail">
+          {selectedUsage ? (
+            <PanelSection
+              title={`Settings Row ${selectedUsage.rowId}`}
+              eyebrow={selectedUsage.statusLabel}
+              density="compact"
+              actions={
+                <>
+                  <button type="button" className="btn btn-secondary btn-xs" onClick={duplicateRow} disabled={!selectedUsage.exists}>
+                    <Copy size={12} /> Duplicate Row
+                  </button>
+                  <button type="button" className="btn btn-danger btn-xs" disabled={!canDelete} title={canDelete ? "Delete this unused settings row." : "Only unused rows can be deleted here."} onClick={() => onApplyCommand?.({ kind: "deleteEdcdRow", label: `Delete settings ${selectedUsage.rowId}`, rowId: selectedUsage.rowId })}>
+                    <Trash2 size={12} /> Delete Unused Row
+                  </button>
+                </>
+              }
+            >
+              <div className="settings-row-overview">
+                <div className={`settings-row-status ${edcdUsageStatusTone(selectedUsage.status)}`}>
+                  <strong>{selectedUsage.statusLabel}</strong>
+                  <span>{selectedUsage.exists ? "Stored in project settings rows." : "Referenced by a script but not created yet."}</span>
+                </div>
+                {selectedUsage.warnings.map((warning) => <p key={warning} className="field-warning">{warning}</p>)}
+                {selectedUsage.callers.length > 0 && (
+                  <div className="settings-row-callers">
+                    <strong>Used By</strong>
+                    {selectedUsage.callers.map((caller) => (
+                      <button key={`${caller.triggerId}-${caller.slot}`} type="button" className="settings-row-caller" onClick={() => onOpenCaller(caller)}>
+                        <span>{caller.actionShortLabel}</span>
+                        <small>{callerLabel(project, caller)} | step {caller.slot + 1}</small>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {!selectedUsage.primaryShape && (
+                  <label className="script-required-field">
+                    <span>Template</span>
+                    <select value={templateOpcode} onChange={(event) => setTemplateOpcode(Number(event.currentTarget.value))}>
+                      {edcdTemplates.map((definition) => (
+                        <option key={definition.opcode} value={definition.opcode}>{definition.label}</option>
+                      ))}
+                    </select>
+                    <small>Choose a template to interpret or create this row with guided fields.</small>
+                  </label>
+                )}
+              </div>
+              <EdcdRowEditor
+                project={project}
+                catalog={catalog}
+                edcdUsage={editorUsage}
+                fallbackRowId={selectedUsage.rowId}
+                fallbackShape={selectedShape}
+                fallbackFieldNames={selectedShape ? edcdFieldNamesForShape(selectedShape) : undefined}
+                fallbackInitialValues={selectedUsage.exists ? selectedUsage.values : selectedTemplate.defaultDraft.parameters}
+                fallbackOpcode={selectedOpcode}
+                parameterLabels={selectedOpcode != null ? scriptActionDefinitionFor(selectedOpcode).parameters : undefined}
+                selectedSlotLabel="settings row"
+                onSelectEntity={onSelectEntity}
+                onOpenText={(editor) => onOpenTool?.("text", editor)}
+                onApplyCommand={onApplyCommand}
+              />
+            </PanelSection>
+          ) : (
+            <EmptyState title="No settings rows yet" body="Create a settings row from a template or add an EDCD-backed action to a script." />
+          )}
+        </main>
+      </div>
+    </section>
+  );
+}
+
+function callerLabel(project: Project, caller: EdcdRowCaller) {
+  const trigger = project.triggers.find((candidate) => candidate.id === caller.triggerId);
+  if (!trigger) return `Record ${caller.triggerRecordIndex}`;
+  return scriptLabel(project, trigger);
+}
+
+function scriptEditorForTriggerSource(source: string) {
+  if (source === "Data ED3") return "macros";
+  if (source === "Global") return "global-macros";
+  return "action-points";
+}
+
+function edcdRowIdFromSelectedEntity(entity: SelectedEntity | null) {
+  const match = /^record:Data EDCD:(-?\d+)$/.exec(entity?.id ?? "");
+  if (!match) return null;
+  const rowId = Number(match[1]);
+  return Number.isFinite(rowId) ? Math.max(0, Math.trunc(rowId)) : null;
+}
+
 function questUsageSummary(project: Project, scripts: TriggerRecord[]) {
   const questCodes = new Set([46, 47, 76, 77]);
   const byId = new Map<number, { id: number; label: string; authored: boolean; uses: Array<{ trigger: TriggerRecord; slot: number }> }>();
@@ -1328,6 +1602,9 @@ function SelectedStepDetail({
   selectedOption,
   selectedDefinition,
   selectedEdcdUsage,
+  selectedRowUsage,
+  edcdUsages,
+  selectedTriggerId,
   selectedEdcdRowId,
   selectedSlotEntity,
   selectedSlotDiagnostics,
@@ -1362,6 +1639,9 @@ function SelectedStepDetail({
     diagnostics?: string[];
     summary?: string;
   };
+  selectedRowUsage?: EdcdRowUsage | null;
+  edcdUsages: EdcdRowUsage[];
+  selectedTriggerId: string;
   selectedEdcdRowId: number | null;
   selectedSlotEntity?: SemanticEntity;
   selectedSlotDiagnostics: ScriptDiagnostic[];
@@ -1381,6 +1661,8 @@ function SelectedStepDetail({
   const [previewExpanded, setPreviewExpanded] = useState(false);
   const selectedDivinityHelp = divinityHelpForOpcode(selectedDraft.rawCode);
   const selectedIdLabel = selectedDefinition.target?.label ?? humanActionValueLabel(opcodeIdMeaning(selectedDraft.rawCode));
+  const selectedDefaultEdcdValues = selectedDefinition.defaultDraft.parameters;
+  const draftForNewDefinition = (definition: ScriptActionDefinition) => defaultDraftForProject(project, definition);
   const selectedParameterLabels = selectedDefinition.parameters.length > 0
     ? selectedDefinition.parameters.map((parameter) => ({
       index: parameter.index,
@@ -1466,6 +1748,49 @@ function SelectedStepDetail({
       )}
     </div>
   ) : null;
+  const isEdcdBackedStep = Boolean(selectedOption.edcdShape);
+  const edcdRowOptions = edcdUsages.filter((usage) => usage.exists || usage.callers.length > 0);
+  const duplicateSettingsForStep = () => {
+    if (!isEdcdBackedStep) return;
+    const nextId = nextUnusedEdcdRowId(project);
+    const values = normalizeEdcdValues(selectedRowUsage?.values ?? selectedDefaultEdcdValues);
+    onApplyCommand?.({ kind: "updateEdcdRow", label: `Duplicate settings ${selectedDraft.id}`, rowId: nextId, values });
+    onSetSelectedDraft({ ...selectedDraft, id: nextId });
+    if (selectedSlotApplied) {
+      onApplyCommand?.({
+        kind: "updateActionSlot",
+        label: `Use settings ${nextId}`,
+        triggerId: selectedTriggerId,
+        slot: selectedSlot,
+        rawCode: selectedDraft.rawCode,
+        id: nextId
+      });
+    }
+  };
+  const settingsEditor = (isEdcdBackedStep || selectedEdcdUsage) ? (
+    <CollapsibleSection title="Settings" eyebrow={isEdcdBackedStep ? "action settings" : "optional"} density="compact" storageKey="scripts.edcdEditor.open" defaultOpen={Boolean(isEdcdBackedStep || selectedEdcdUsage)}>
+      <p className="field-help">
+        <TutorialTip title="Action Settings" body={SETTINGS_HELP} side="below">
+          <span>Edit this action's settings fields. The row number is kept for Realmz compatibility.</span>
+        </TutorialTip>
+      </p>
+      <EdcdRowEditor
+        project={project}
+        catalog={catalog}
+        edcdUsage={selectedEdcdUsage}
+        fallbackRowId={selectedDraft.id}
+        fallbackShape={selectedOption.edcdShape}
+        fallbackFieldNames={edcdFieldNamesForShape(selectedOption.edcdShape)}
+        fallbackInitialValues={selectedDefaultEdcdValues}
+        fallbackOpcode={selectedDraft.rawCode}
+        parameterLabels={selectedParameterLabels}
+        selectedSlotLabel={`step ${selectedSlot + 1}`}
+        onSelectEntity={onSelectEntity}
+        onOpenText={(editor) => onOpenTool?.("text", editor)}
+        onApplyCommand={onApplyCommand}
+      />
+    </CollapsibleSection>
+  ) : null;
   return (
     <div className="realmz-step-detail selected-step-detail">
       {selectedDraftDirty && (
@@ -1525,7 +1850,7 @@ function SelectedStepDetail({
             value={selectedDraft.rawCode}
             onChange={(event) => {
               const nextDefinition = scriptActionDefinitionFor(Number(event.currentTarget.value));
-              onSetSelectedDraft({ rawCode: nextDefinition.defaultDraft.rawCode, id: nextDefinition.defaultDraft.id });
+              onSetSelectedDraft(draftForNewDefinition(nextDefinition));
             }}
           >
             {actionSelectDefinitions.map((definition) => (
@@ -1533,41 +1858,82 @@ function SelectedStepDetail({
             ))}
           </select>
         </label>
-        <label className="script-required-field realmz-step-id-field">
-          <span>{selectedDefinition.target?.label ?? selectedIdLabel}</span>
-          <input
-            type="number"
-            value={selectedDraft.id}
-            onChange={(event) => onSetSelectedDraft({ ...selectedDraft, id: Number(event.currentTarget.value) })}
-            aria-label={`Slot ${selectedSlot} ${selectedIdLabel}`}
-          />
-          {selectedOption.edcdShape && (
-            <small>
-              {selectedDefinition.target?.help || "Uses the settings below."}
-            </small>
-          )}
-        </label>
+        {isEdcdBackedStep ? (
+          <div className="script-required-field realmz-step-id-field settings-row-field">
+            <span>{selectedDefinition.target?.label ?? selectedIdLabel}</span>
+            <div className={`settings-row-current ${selectedRowUsage ? edcdUsageStatusTone(selectedRowUsage.status) : "warning"}`}>
+              <strong>Settings row {selectedDraft.id}</strong>
+              <small>{selectedRowUsage?.summary ?? "Will create this settings row when values are applied."}</small>
+            </div>
+            <details className="settings-row-selector">
+              <summary>Use Different Row</summary>
+              <div>
+                <select
+                  value={selectedDraft.id}
+                  onChange={(event) => onSetSelectedDraft({ ...selectedDraft, id: Number(event.currentTarget.value) })}
+                >
+                  {!edcdRowOptions.some((usage) => usage.rowId === selectedDraft.id) && <option value={selectedDraft.id}>Settings row {selectedDraft.id}</option>}
+                  {edcdRowOptions.map((usage) => (
+                    <option key={usage.rowId} value={usage.rowId}>
+                      Row {usage.rowId} - {usage.statusLabel} - {usage.primaryActionLabel ?? usage.primaryShape ?? "raw settings"}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  value={selectedDraft.id}
+                  onChange={(event) => onSetSelectedDraft({ ...selectedDraft, id: Number(event.currentTarget.value) })}
+                  aria-label={`Slot ${selectedSlot} settings row`}
+                />
+              </div>
+              <small>Existing imports keep their row number. New actions start on an unused row automatically.</small>
+            </details>
+          </div>
+        ) : (
+          <label className="script-required-field realmz-step-id-field">
+            <span>{selectedDefinition.target?.label ?? selectedIdLabel}</span>
+            <input
+              type="number"
+              value={selectedDraft.id}
+              onChange={(event) => onSetSelectedDraft({ ...selectedDraft, id: Number(event.currentTarget.value) })}
+              aria-label={`Slot ${selectedSlot} ${selectedIdLabel}`}
+            />
+          </label>
+        )}
       </div>
+      {isEdcdBackedStep && selectedRowUsage?.warnings.map((warning) => (
+        <p key={warning} className="field-warning">{warning}</p>
+      ))}
+      {isEdcdBackedStep && selectedRowUsage?.status === "shared" && (
+        <button type="button" className="btn btn-secondary btn-xs duplicate-settings-button" onClick={duplicateSettingsForStep}>
+          <Copy size={12} /> Duplicate Settings For This Step
+        </button>
+      )}
+      {isEdcdBackedStep ? settingsEditor : null}
       {actionHelp}
-      <p className="field-help">
-        <TutorialTip title="Target Picker" body={TARGET_PICKER_HELP} side="below">
-          <span>Choose or create the record this action targets when the target is direct.</span>
-        </TutorialTip>
-      </p>
-      <TargetPicker
-        project={project}
-        catalog={catalog}
-        opcode={selectedDraft.rawCode}
-        value={selectedDraft.id}
-        previewContext={{ desktopRuntime, projectDir, workspaceDir }}
-        onChange={(id) => onSetSelectedDraft({ ...selectedDraft, id })}
-        onInspect={onSelectEntity}
-        onCreate={(recordType, id) => {
-          const targetId = id ?? nextAuthorableTargetId(project, recordType);
-          onApplyCommand?.({ kind: "createTargetRecord", label: `Create ${recordType}`, recordType, id: targetId });
-          onSetSelectedDraft({ ...selectedDraft, id: signedTargetValueForSelection(selectedDraft.rawCode, selectedDraft.id, targetId) });
-        }}
-      />
+      {!isEdcdBackedStep && (
+        <>
+          <p className="field-help">
+            <TutorialTip title="Target Picker" body={TARGET_PICKER_HELP} side="below">
+              <span>Choose or create the record this action targets when the target is direct.</span>
+            </TutorialTip>
+          </p>
+          <TargetPicker
+            project={project}
+            catalog={catalog}
+            opcode={selectedDraft.rawCode}
+            value={selectedDraft.id}
+            previewContext={{ desktopRuntime, projectDir, workspaceDir }}
+            onChange={(id) => onSetSelectedDraft({ ...selectedDraft, id })}
+            onInspect={onSelectEntity}
+            onCreate={(recordType, id) => {
+              const targetId = id ?? nextAuthorableTargetId(project, recordType);
+              onApplyCommand?.({ kind: "createTargetRecord", label: `Create ${recordType}`, recordType, id: targetId });
+              onSetSelectedDraft({ ...selectedDraft, id: signedTargetValueForSelection(selectedDraft.rawCode, selectedDraft.id, targetId) });
+            }}
+          />
+        </>
+      )}
       <CollapsibleSection title="Add Or Change Step" eyebrow="action palette" count={filteredDefinitions.length} density="compact" storageKey="scripts.actionPalette.open" defaultOpen={selectedDraft.rawCode === 0}>
         <p className="field-help">
           <TutorialTip title="Action Palette" body={ACTION_PALETTE_HELP} side="below">
@@ -1600,7 +1966,7 @@ function SelectedStepDetail({
                 key={definition.opcode}
                 type="button"
                 className={selectedDraft.rawCode === definition.opcode ? "selected" : ""}
-                onClick={() => onSetSelectedDraft({ rawCode: definition.defaultDraft.rawCode, id: definition.defaultDraft.id })}
+                onClick={() => onSetSelectedDraft(draftForNewDefinition(definition))}
               >
                 <strong>{definition.shortLabel}</strong>
                 <span>{definition.summary}</span>
@@ -1610,27 +1976,7 @@ function SelectedStepDetail({
           </div>
         </div>
       </CollapsibleSection>
-      <CollapsibleSection title="Settings" eyebrow={selectedOption.edcdShape ? "action settings" : "optional"} density="compact" storageKey="scripts.edcdEditor.open" defaultOpen={Boolean(selectedOption.edcdShape || selectedEdcdUsage)}>
-        <p className="field-help">
-          <TutorialTip title="EDCD Settings" body={SETTINGS_HELP} side="below">
-            <span>Five-short sidecar settings for EDCD-backed Realmz opcodes.</span>
-          </TutorialTip>
-        </p>
-        <EdcdRowEditor
-          project={project}
-          catalog={catalog}
-          edcdUsage={selectedEdcdUsage}
-          fallbackRowId={selectedDraft.id}
-          fallbackShape={selectedOption.edcdShape}
-          fallbackFieldNames={edcdFieldNamesForShape(selectedOption.edcdShape)}
-          fallbackOpcode={selectedDraft.rawCode}
-          parameterLabels={selectedParameterLabels}
-          selectedSlotLabel={`step ${selectedSlot + 1}`}
-          onSelectEntity={onSelectEntity}
-          onOpenText={(editor) => onOpenTool?.("text", editor)}
-          onApplyCommand={onApplyCommand}
-        />
-      </CollapsibleSection>
+      {!isEdcdBackedStep ? settingsEditor : null}
       {selectedSlotApplied ? null : (
         <EmptyState compact title="Step not applied yet" body="Apply this step to update the script." />
       )}

@@ -91,6 +91,7 @@ export function scriptTabKind(activeEditor: string) {
   if (activeEditor === "macros") return "reusable-actions";
   if (activeEditor === "global-macros") return "global-events";
   if (activeEditor === "quests") return "quests";
+  if (activeEditor === "settings-rows") return "settings-rows";
   if (activeEditor === "ed3-evidence") return "advanced-imports";
   return "action-points";
 }
@@ -150,6 +151,7 @@ export function triggerVisibleForEditor(project: Project | null, trigger: Trigge
   if (tabKind === "advanced-imports") return extraActionTabClassification(project, trigger) === "advanced-imports";
   if (activeEditor === "action-points") return trigger.source !== "Data ED3" && trigger.levelType != null && trigger.levelIndex != null;
   if (activeEditor === "quests") return trigger.actions.some((action) => [46, 47, 76, 77].includes(action.code));
+  if (activeEditor === "settings-rows") return false;
   return (trigger.source !== "Data ED3" && trigger.levelType != null && trigger.levelIndex != null) || isCallableMacro(project, trigger);
 }
 
@@ -159,6 +161,7 @@ export function scriptPanelTitle(activeEditor: string) {
   if (activeEditor === "ed3-evidence") return "Unlinked Extra Action Points";
   if (activeEditor === "global-macros") return "Global Events";
   if (activeEditor === "quests") return "Quests";
+  if (activeEditor === "settings-rows") return "Settings Rows";
   return "Action Points";
 }
 
