@@ -1942,12 +1942,12 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "Divinity Crosswalk",
         paragraphs: [
           "Divinity's Strings screen has previous/next navigation, Go To No., a String field, a character count, Find First/Next Occurrence, Export Text, Import Text, and maximum-length search. Providence mirrors that workflow while showing usage links and byte-accurate Realmz validation.",
-          "The Divinity screen also shows a Sound field. Providence stores that assignment in the scenario support data while keeping visible string text in Data SD2. A negative sound value means Realmz waits for the sound to finish; it is not a separate sound asset."
+          "The Divinity screen also shows a Sound field. Providence stores that assignment in the scenario support data while keeping visible string text in Data SD2. A negative string sound value is preserved as legacy sign data; it is not a separate sound asset."
         ],
         callout: {
           tone: "info",
           title: "Sound sign behavior",
-          body: "Choose one sound ID, then use Wait for sound to finish when you need the negative Realmz value. Providence keeps preview availability separate from whether the sound ID is valid to reference."
+          body: "For Action Point Play Sound, negative values are classic Realmz/Divinity wait-for-completion values. For String sounds, Providence preserves the sign without claiming proven wait behavior. Preview availability stays separate from whether the sound ID is valid to reference."
         }
       },
       {
@@ -1997,7 +1997,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "Do not assume an unused string is safe to remove if it might be reached by an unknown or preserved script path.",
           "Do not confuse Data ED/Data ED2 inline encounter display buffers with central Data SD2 message records.",
           "Do not treat TEXT or STR# resources as editable Data SD2 strings unless a writer path explicitly imports or converts them.",
-          "Do not treat positive and negative sound values as different sounds; the sign controls wait behavior."
+          "Do not treat positive and negative sound values as different sounds; the sign stores field-specific behavior or legacy compatibility data."
         ]
       }
     ],

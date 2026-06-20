@@ -279,7 +279,7 @@ fn evidence_lab_string_sound_support_file_exports() {
     assert_eq!(
         fs::read(export_dir.join("Data SD2")).unwrap(),
         original_data_sd2,
-        "changing string sound wait behavior should not rewrite Data SD2 string text bytes"
+        "changing string sound sign should not rewrite Data SD2 string text bytes"
     );
 }
 
