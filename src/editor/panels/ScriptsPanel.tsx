@@ -1,8 +1,8 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { AlertTriangle, ArrowDown, ArrowUp, Copy, CopyPlus, Plus, Save, Trash2, Volume2, X } from "lucide-react";
-import { Action, EncounterActionRow, LevelType, LibraryCatalog, Project, ProjectCommand, RealmzTargetRecordKind, ScriptDetailSurface, ScriptInventoryFilter, SelectedEntity, SemanticEntity, TriggerRecord } from "../types";
+import { Action, Ed3ReachabilityRow, EncounterActionRow, LevelType, LibraryCatalog, Project, ProjectCommand, RealmzTargetRecordKind, ScriptDetailSurface, ScriptInventoryFilter, SelectedEntity, SemanticEntity, TriggerRecord } from "../types";
 import { linksFor, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
-import { actionSlotEntitiesForTriggerRecord, extraActionEvidenceSummary, extraActionPointClassification } from "../semanticGraph";
+import { actionSlotEntitiesForTriggerRecord, ed3ReachabilityFor, extraActionEvidenceSummary, extraActionPointClassification } from "../semanticGraph";
 import { EdcdRowEditor } from "../components/EdcdRowEditor";
 import { TargetPicker, resolveSignedMessageTarget, signedTargetBehaviorLabel, signedTargetValueForSelection, targetOptionForOpcodeValue, targetOptionsForOpcode, type ScriptTargetOption } from "../components/RealmzTargetPicker";
 import { TutorialTip } from "../components/TutorialTip";
@@ -21,10 +21,12 @@ import { ITEM_REFERENCE_CATEGORIES, itemReferenceDetail, itemReferenceOptions, t
 import { monsterReferenceDetail, monsterReferenceOptions } from "../monsterReferences";
 import { CONDITION_LABELS, RESISTANCE_TYPES } from "../rulesCatalog";
 import {
+  ED3_EVIDENCE_FILTERS,
   SCRIPT_INVENTORY_FILTERS,
   ScriptListItem,
   actionBelongsTo,
   actionSummary,
+  ed3Classification,
   filterScriptsByInventory,
   hasScriptWarning,
   issueCountsBySlot,
@@ -326,6 +328,11 @@ function ScriptAuthoringPanel({
   const canScopeToMap = Boolean(selectedMap && activeTabKind === "action-points");
   const visibleInventoryFilters = useMemo(() => {
     if (activeTabKind === "action-points") return SCRIPT_INVENTORY_FILTERS.filter((filter) => filter.id !== "macros");
+    if (activeTabKind === "advanced-imports") return [
+      ...SCRIPT_INVENTORY_FILTERS.filter((filter) => filter.id === "all"),
+      ...ED3_EVIDENCE_FILTERS,
+      ...SCRIPT_INVENTORY_FILTERS.filter((filter) => filter.id === "warnings")
+    ];
     return SCRIPT_INVENTORY_FILTERS.filter((filter) => filter.id === "all" || filter.id === "warnings");
   }, [activeTabKind]);
   useEffect(() => {
@@ -365,7 +372,11 @@ function ScriptAuthoringPanel({
       ["active", 0],
       ["reusable", 0],
       ["warnings", inventoryFilter === "warnings" && warningScanReady ? 0 : null],
-      ["macros", 0]
+      ["macros", 0],
+      ["ed3-padding", 0],
+      ["ed3-runtime", 0],
+      ["ed3-orphan", 0],
+      ["ed3-needs-trace", 0]
     ]);
     for (const trigger of scripts) {
       counts.set("all", (counts.get("all") ?? 0) + 1);
@@ -380,13 +391,16 @@ function ScriptAuthoringPanel({
       }
       if (trigger.source === "Data ED3") {
         counts.set("macros", (counts.get("macros") ?? 0) + 1);
+        const classification = ed3Classification(project, trigger);
+        const filter = ED3_EVIDENCE_FILTERS.find((candidate) => candidate.classification === classification);
+        if (filter) counts.set(filter.id, (counts.get(filter.id) ?? 0) + 1);
       }
       if (inventoryFilter === "warnings" && warningScanReady && hasScriptWarning(fullWarningDiagnosticsById.get(trigger.id) ?? [])) {
         counts.set("warnings", (counts.get("warnings") ?? 0) + 1);
       }
     }
     return counts;
-  }, [scripts, selectedMap, canScopeToMap, fullWarningDiagnosticsById, inventoryFilter, warningScanReady]);
+  }, [project, scripts, selectedMap, canScopeToMap, fullWarningDiagnosticsById, inventoryFilter, warningScanReady]);
   const scopedScripts = useMemo(
     () => filterScriptsByInventory(project, scripts, inventoryFilter, selectedMap, canScopeToMap, fullWarningDiagnosticsById),
     [project, scripts, inventoryFilter, selectedMap, canScopeToMap, fullWarningDiagnosticsById]
@@ -522,6 +536,7 @@ function ScriptAuthoringPanel({
   const isMacro = selectedTrigger?.source === "Data ED3";
   const selectedExtraActionClassification = selectedTrigger && isMacro ? authorFacingExtraActionKind(extraActionPointClassification(project, selectedTrigger)) : "Action Point";
   const selectedExtraActionEvidence = selectedTrigger && isMacro ? extraActionEvidenceSummary(project, selectedTrigger) : null;
+  const selectedEd3Reachability = selectedTrigger && isMacro ? ed3ReachabilityFor(project, selectedTrigger.recordIndex) ?? null : null;
   const deleteMacroLabel = selectedExtraActionClassification === "Global Event" ? "Delete Global Event" : "Delete Extra Action Point";
   const moveMapKey = selectedTrigger && !isMacro && selectedTrigger.levelType && selectedTrigger.levelIndex != null
     ? `${selectedTrigger.levelType}:${selectedTrigger.levelIndex}`
@@ -764,12 +779,12 @@ function ScriptAuthoringPanel({
                 </button>
               ))}
             </div>
-            {activeTabKind === "advanced-imports" && (
-              <div className="script-tab-note">
-                <strong>{scripts.length.toLocaleString()} unlinked Extra Action Point(s)</strong>
-                <small>These Extra Action Points are preserved with the scenario, but Providence has not identified a normal call path for them yet.</small>
-              </div>
-            )}
+          {activeTabKind === "advanced-imports" && (
+            <div className="script-tab-note">
+              <strong>{scripts.length.toLocaleString()} unlinked Extra Action Point(s)</strong>
+              <small>These Extra Action Points are preserved with the scenario, but Providence has not identified a normal call path for them yet. Use the ED3 filters to separate likely padding, runtime residue, orphan authored-looking rows, and rows that need runtime tracing.</small>
+            </div>
+          )}
             {activeTabKind === "quests" && (
               <QuestUsageSummary project={project} scripts={scripts} onSelectEntity={onSelectEntity} onApplyCommand={onApplyCommand} />
             )}
@@ -830,15 +845,18 @@ function ScriptAuthoringPanel({
               </div>
               <ScriptDiagnostics issues={triggerDiagnostics.filter((issue) => issue.slot == null)} />
               {isMacro ? (
-                <div className="script-record-note">
-                  <strong>{selectedExtraActionClassification}</strong>
-                  {selectedExtraActionEvidence && (
-                    <span className={`script-evidence-pill ${selectedExtraActionEvidence.tone}`}>
-                      {selectedExtraActionEvidence.label}
-                    </span>
-                  )}
-                  <small>{selectedExtraActionEvidence?.detail ?? "Extra Action Points store only the eight script steps. Map trigger fields like chance, location, and goto target do not apply until another script calls them."}</small>
-                </div>
+                <>
+                  <div className="script-record-note">
+                    <strong>{selectedExtraActionClassification}</strong>
+                    {selectedExtraActionEvidence && (
+                      <span className={`script-evidence-pill ${selectedExtraActionEvidence.tone}`}>
+                        {selectedExtraActionEvidence.label}
+                      </span>
+                    )}
+                    <small>{selectedExtraActionEvidence?.detail ?? "Extra Action Points store only the eight script steps. Map trigger fields like chance, location, and goto target do not apply until another script calls them."}</small>
+                  </div>
+                  <Ed3EvidenceDetails row={selectedEd3Reachability} />
+                </>
               ) : (
                 <div className="script-header-grid">
                   <NumberField
@@ -1040,6 +1058,36 @@ function QuestUsageSummary({
         </div>
       ))}
       {quests.length > 8 && <small>{quests.length - 8} more quest flag(s); filter the list to narrow.</small>}
+    </div>
+  );
+}
+
+function Ed3EvidenceDetails({ row }: { row: Ed3ReachabilityRow | null }) {
+  if (!row) {
+    return (
+      <div className="ed3-evidence-details">
+        <strong>ED3 Evidence</strong>
+        <small>No semantic reachability row is available for this imported Extra Action Point.</small>
+      </div>
+    );
+  }
+  const rawSignature = row.rawSignature.length > 0 ? row.rawSignature.join(", ") : "empty";
+  const evidence = row.evidence.length > 0 ? row.evidence.join(", ") : "none";
+  return (
+    <div className="ed3-evidence-details">
+      <header>
+        <strong>ED3 Evidence</strong>
+        <span>{row.reachable ? "source-backed" : "not source-reachable"}</span>
+      </header>
+      <div className="ed3-evidence-grid">
+        <FieldRow label="Classification" value={row.classification} />
+        <FieldRow label="Root Type" value={row.rootType ?? "none"} />
+        <FieldRow label="Incoming Refs" value={row.incomingRefs} />
+        <FieldRow label="Occupied Steps" value={row.actionCount} />
+        <FieldRow label="Raw Signature" value={rawSignature} />
+        <FieldRow label="Evidence" value={evidence} />
+      </div>
+      <small>{row.promotionRule}</small>
     </div>
   );
 }

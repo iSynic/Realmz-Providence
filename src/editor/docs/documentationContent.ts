@@ -1358,6 +1358,25 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         ]
       },
       {
+        title: "Imported ED3 Triage",
+        paragraphs: [
+          "Imported Data ED3 rows are preserved exactly, but not every occupied row is a callable authoring macro. Realmz scenarios can contain fixed-row padding, old editor leftovers, runtime-cache residue, and authored-looking rows whose caller has not been proven yet.",
+          "Providence separates those rows in Unlinked Extra APs so authors can decide what to keep, promote, duplicate, or ignore without losing source bytes."
+        ],
+        points: [
+          "Likely Padding means an empty or fixed-shape row that looks like editor/storage slack rather than script behavior.",
+          "Runtime Residue means the row resembles state mutated during play or generated runtime storage more than authored scenario logic.",
+          "Orphan Authored means the row has a small authored-looking script body, but Providence has not found an incoming GOSUB, hook, random rectangle, battle, monster, or item path.",
+          "Needs Trace means the row has enough content that it should be checked against Realmz runtime behavior before it is treated as disposable or promoted to normal authoring.",
+          "The selected-row ED3 details show incoming reference count, root type, occupied steps, raw signature, and the rule Providence used for the classification."
+        ],
+        callout: {
+          tone: "warning",
+          title: "Unlinked does not mean safe to delete",
+          body: "A row can be source-preserved and still lack a decoded caller. Use the ED3 filters to triage, then duplicate or promote rows only after checking the surrounding scenario behavior."
+        }
+      },
+      {
         title: "Authoring Workflow",
         points: [
           "Choose the right tab: Action Points for map-cell scripts, Extra Action Points for reusable behavior, Global Events for scenario hooks, Quests for flag usage, and Unlinked Extra APs for preserved imported rows without proven callers.",

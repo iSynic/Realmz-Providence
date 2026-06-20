@@ -1,7 +1,7 @@
 import { memo, type RefObject, useEffect, useState } from "react";
 import { Action, Project, ScriptInventoryFilter, SelectedEntity, SemanticEntity, TriggerRecord } from "../../types";
 import { selectEntityFromId, triggerEntityId } from "../../utils";
-import { extraActionEvidenceSummary, extraActionPointClassification, isCallableMacro } from "../../semanticGraph";
+import { ed3ReachabilityFor, extraActionEvidenceSummary, extraActionPointClassification, isCallableMacro } from "../../semanticGraph";
 import { isReusableDoorPlaceholder } from "../../actionPointCapacity";
 import { ScriptDiagnostic } from "../../scriptValidation";
 
@@ -79,6 +79,13 @@ export const SCRIPT_INVENTORY_FILTERS: Array<{ id: ScriptInventoryFilter; label:
   { id: "warnings", label: "Warnings" }
 ];
 
+export const ED3_EVIDENCE_FILTERS: Array<{ id: ScriptInventoryFilter; label: string; classification: string }> = [
+  { id: "ed3-padding", label: "Likely Padding", classification: "probable-editor-padding" },
+  { id: "ed3-runtime", label: "Runtime Residue", classification: "runtime-mutation-candidate" },
+  { id: "ed3-orphan", label: "Orphan Authored", classification: "orphan-authored-content" },
+  { id: "ed3-needs-trace", label: "Needs Trace", classification: "needs-runtime-trace" }
+];
+
 export function scriptTabKind(activeEditor: string) {
   if (activeEditor === "macros") return "reusable-actions";
   if (activeEditor === "global-macros") return "global-events";
@@ -116,10 +123,19 @@ export function filterScriptsByInventory(
     if (!project) return [];
     return scripts.filter((trigger) => hasScriptWarning(triggerDiagnosticsById.get(trigger.id) ?? []));
   }
+  const ed3Filter = ED3_EVIDENCE_FILTERS.find((candidate) => candidate.id === filter);
+  if (ed3Filter) {
+    return scripts.filter((trigger) => ed3Classification(project, trigger) === ed3Filter.classification);
+  }
   if (filter === "macros") {
     return scripts.filter((trigger) => trigger.source === "Data ED3");
   }
   return scripts;
+}
+
+export function ed3Classification(project: Project | null, trigger: TriggerRecord) {
+  if (trigger.source !== "Data ED3") return null;
+  return ed3ReachabilityFor(project, trigger.recordIndex)?.classification ?? null;
 }
 
 export function isReusableActionPoint(trigger: TriggerRecord) {

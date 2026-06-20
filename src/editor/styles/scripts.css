@@ -617,6 +617,58 @@
   line-height: 1.35;
 }
 
+.ed3-evidence-details {
+  display: grid;
+  gap: 7px;
+  margin: -2px 0 10px;
+  padding: 9px 11px;
+  border: 1px solid #243849;
+  border-radius: 6px;
+  background: #08131b;
+}
+
+.ed3-evidence-details header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ed3-evidence-details header strong,
+.ed3-evidence-details > strong {
+  color: #dcecff;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.ed3-evidence-details header span {
+  color: #8fb4d3;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.ed3-evidence-details > small {
+  color: #9fb0c0;
+  line-height: 1.35;
+}
+
+.ed3-evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 14px;
+}
+
+.ed3-evidence-grid .field-row {
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .ed3-evidence-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 
 
 .script-floating-detail .realmz-step-detail {

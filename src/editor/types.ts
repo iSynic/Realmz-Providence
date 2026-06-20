@@ -96,7 +96,17 @@ export type MapPreviewMode = "off" | "los" | "darkness" | "both";
 export type MapPreviewFocalPoint = { x: number; y: number };
 export type FocusedPanel = "main" | "tool-sidebar" | "outliner" | "inspector" | "canvas" | "docs";
 export type ScriptDetailSurface = "docked" | "floating";
-export type ScriptInventoryFilter = "current-map" | "all" | "active" | "reusable" | "warnings" | "macros";
+export type ScriptInventoryFilter =
+  | "current-map"
+  | "all"
+  | "active"
+  | "reusable"
+  | "warnings"
+  | "macros"
+  | "ed3-padding"
+  | "ed3-runtime"
+  | "ed3-orphan"
+  | "ed3-needs-trace";
 export type SidePanelMode = "auto" | "hidden" | "compact" | "wide";
 export type OverlayPreset = "authoring" | "inspection" | "clean" | "diagnostic";
 export type MapViewFlag =
