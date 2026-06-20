@@ -33,7 +33,7 @@ type SemanticRange = {
   notes?: string;
 };
 
-const EXACT: Record<number, LandlookTileVisualSemantics> = {
+const PLAINS_EXACT: Record<number, LandlookTileVisualSemantics> = {
   36: { label: "Blank / unused land tile", category: "blank", confidence: "likely" },
   37: { label: "Blank / unused land tile", category: "blank", confidence: "likely" },
   61: { label: "Solid mountain", category: "mountain-land", confidence: "known", notes: "Full-looking mountain region fill tile for the Plains landlook." },
@@ -48,7 +48,7 @@ const EXACT: Record<number, LandlookTileVisualSemantics> = {
   169: { label: "Brown terrain fill", category: "terrain-prop", confidence: "uncertain" }
 };
 
-const RANGES: SemanticRange[] = [
+const PLAINS_RANGES: SemanticRange[] = [
   { first: 1, last: 35, label: "Water and shore transition", category: "water-shore", confidence: "likely" },
   { first: 38, last: 60, label: "Water and shore transition", category: "water-shore", confidence: "likely" },
   { first: 61, last: 85, label: "Mountain to land", category: "mountain-land", confidence: "known" },
@@ -70,10 +70,107 @@ const RANGES: SemanticRange[] = [
   { first: 190, last: 200, label: "House / settlement building", category: "buildings", confidence: "known" }
 ];
 
-export function landlookTileVisualSemantics(tile: number): LandlookTileVisualSemantics | null {
-  const exact = EXACT[tile];
+type LandlookVisualProfile = {
+  exact?: Record<number, LandlookTileVisualSemantics>;
+  ranges?: SemanticRange[];
+};
+
+const STANDARD_LANDLOOK_VISUAL_PROFILES: Record<number, LandlookVisualProfile> = {
+  0: { exact: PLAINS_EXACT, ranges: PLAINS_RANGES },
+  2: { exact: PLAINS_EXACT, ranges: PLAINS_RANGES },
+  3: {
+    exact: {
+      ...PLAINS_EXACT,
+      61: { label: "Solid cave wall", category: "mountain-land", confidence: "likely", notes: "Subterranean atlas slot aligned with the Plains mountain fill family." },
+      147: { label: "Boat / raft", category: "watercraft", confidence: "known" }
+    },
+    ranges: relabelRanges(PLAINS_RANGES, {
+      "water-shore": "Underground water / shore",
+      "mountain-land": "Cave wall to floor",
+      "mountain-water": "Cave wall to water",
+      "road": "Cavern path / bridge art",
+      "forest": "Underground growth transition",
+      "tree-detail": "Underground growth detail",
+      "rocks": "Cave rocks / rubble",
+      "buildings": "Underground structures"
+    })
+  },
+  4: {
+    exact: {
+      ...PLAINS_EXACT,
+      61: { label: "Solid masonry / wall fill", category: "mountain-land", confidence: "likely", notes: "Castle atlas slot aligned with the terrain-wall family, not literal mountains." },
+      147: { label: "Moat boat / watercraft", category: "watercraft", confidence: "known" }
+    },
+    ranges: relabelRanges(PLAINS_RANGES, {
+      "water-shore": "Moat / water transition",
+      "mountain-land": "Masonry wall to floor",
+      "mountain-water": "Masonry wall to water",
+      "road": "Castle road / wall art",
+      "forest": "Courtyard vegetation transition",
+      "tree-detail": "Courtyard vegetation detail",
+      "rocks": "Stone rubble / courtyard prop",
+      "graves": "Tomb / memorial tiles",
+      "buildings": "Castle structures"
+    })
+  },
+  5: {
+    exact: {
+      ...PLAINS_EXACT,
+      61: { label: "Solid desert ridge", category: "mountain-land", confidence: "likely", notes: "Desert atlas slot aligned with the mountain/ridge fill family." },
+      147: { label: "Desert boat / watercraft", category: "watercraft", confidence: "known" }
+    },
+    ranges: relabelRanges(PLAINS_RANGES, {
+      "water-shore": "Oasis / shore transition",
+      "mountain-land": "Rock / dune to sand",
+      "mountain-water": "Rock / dune to water",
+      "road": "Desert road / trail art",
+      "forest": "Desert scrub transition",
+      "tree-detail": "Desert scrub detail",
+      "rocks": "Desert rocks / rubble",
+      "buildings": "Desert structures"
+    })
+  },
+  9: {
+    exact: {
+      ...PLAINS_EXACT,
+      61: { label: "Solid bog bank", category: "mountain-land", confidence: "likely", notes: "Swamp atlas slot aligned with the raised-terrain fill family." },
+      147: { label: "Swamp boat / skiff", category: "watercraft", confidence: "known" }
+    },
+    ranges: relabelRanges(PLAINS_RANGES, {
+      "water-shore": "Swamp water / bog shore",
+      "mountain-land": "Bog bank to ground",
+      "mountain-water": "Bog bank to water",
+      "road": "Swamp path / bridge art",
+      "forest": "Swamp tree transition",
+      "tree-detail": "Swamp tree detail",
+      "rocks": "Swamp rocks / muck prop",
+      "buildings": "Swamp structures"
+    })
+  },
+  10: {
+    exact: {
+      ...PLAINS_EXACT,
+      61: { label: "Solid snowy ridge", category: "mountain-land", confidence: "likely", notes: "Snow atlas slot aligned with the mountain/ridge fill family." },
+      147: { label: "Snow boat / watercraft", category: "watercraft", confidence: "known" }
+    },
+    ranges: relabelRanges(PLAINS_RANGES, {
+      "water-shore": "Ice / water transition",
+      "mountain-land": "Snowy ridge to snow",
+      "mountain-water": "Snowy ridge to water",
+      "road": "Snow road / trail art",
+      "forest": "Snow forest transition",
+      "tree-detail": "Snow tree detail",
+      "rocks": "Snow rocks / rubble",
+      "buildings": "Snow structures"
+    })
+  }
+};
+
+export function landlookTileVisualSemantics(tile: number, landlook?: number | null): LandlookTileVisualSemantics | null {
+  const profile = STANDARD_LANDLOOK_VISUAL_PROFILES[landlook ?? 0] ?? STANDARD_LANDLOOK_VISUAL_PROFILES[0];
+  const exact = profile.exact?.[tile];
   if (exact) return exact;
-  const range = RANGES.find((entry) => tile >= entry.first && tile <= entry.last);
+  const range = (profile.ranges ?? PLAINS_RANGES).find((entry) => tile >= entry.first && tile <= entry.last);
   if (!range) return null;
   return {
     label: range.label,
@@ -83,7 +180,17 @@ export function landlookTileVisualSemantics(tile: number): LandlookTileVisualSem
   };
 }
 
-export function landlookVisualCategoryLabel(category: LandlookTileVisualCategory) {
+function relabelRanges(ranges: SemanticRange[], labels: Partial<Record<LandlookTileVisualCategory, string>>) {
+  return ranges.map((range) => ({
+    ...range,
+    label: labels[range.category] ?? range.label
+  }));
+}
+
+export function landlookVisualCategoryLabel(category: LandlookTileVisualCategory, landlook?: number | null) {
+  const profile = STANDARD_LANDLOOK_VISUAL_PROFILES[landlook ?? -1];
+  const rangeLabel = profile?.ranges?.find((range) => range.category === category)?.label;
+  if (rangeLabel) return rangeLabel;
   switch (category) {
     case "water-shore": return "Water / shore";
     case "mountain-land": return "Mountain to land";

@@ -132,7 +132,7 @@ export function findEdge() {
 }
 
 export async function launchBrowser(processes, windowSize = "1500,1050") {
-  const userDataDir = path.join(root, "tmp", "ui-performance-edge-profile");
+  const userDataDir = path.join(root, "tmp", "ui-performance-edge-profile", `${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`);
   fs.mkdirSync(userDataDir, { recursive: true });
   const port = 9451 + Math.floor(Math.random() * 300);
   const browserProcess = spawn(findEdge(), [
@@ -142,8 +142,7 @@ export async function launchBrowser(processes, windowSize = "1500,1050") {
     "--disable-gpu",
     "--no-first-run",
     "--no-default-browser-check",
-    `--window-size=${windowSize}`,
-    "about:blank"
+    `--window-size=${windowSize}`
   ], { stdio: "ignore", windowsHide: true });
   processes.push(browserProcess);
   const targets = await waitFor(async () => {

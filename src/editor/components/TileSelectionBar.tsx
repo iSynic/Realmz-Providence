@@ -2,7 +2,7 @@ import { CSSProperties, DragEvent, memo, MutableRefObject, PointerEvent as React
 import { EditorState } from "../store";
 import { CustomMapStamp, IconEntry, LibraryAsset, MapEntity, MapPaintVariation, MapRegionSelection, Project, ProjectCommand, TileAttributeFlag, TilePaletteCategory, TilesetAsset } from "../types";
 import { classifyTileValue, isDivinityVisualPathTile, standardTileValues, tileAttributeGroup } from "../map/tileMetadata";
-import { LANDLOOK_TILE_GROUPS, landlookGroupById, landlookGroupRangeLabel, landlookGroupTiles } from "../map/paintGroups";
+import { landlookGroupById, landlookGroupRangeLabel, landlookGroupTiles, landlookTileGroups } from "../map/paintGroups";
 import { PAINTABLE_REFERENCE_ACTOR_ICON_VALUES, PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES, tileIconCandidates } from "../map/renderValues";
 import { builtInStampToMapStamp, customMapStampToMapStamp, MapStamp, superTileStampsForMap } from "../map/superTileStamps";
 import { captureMapStampFromRegion, createMapStampId, normalizeMapStamps } from "../map/customMapStamps";
@@ -162,7 +162,8 @@ export function PaintPalettePanel({
     );
   }, [query, superTileStamps]);
   const selectedMeta = classifyTileValue(selectedTile, tileset, tileAttributes, icons);
-  const activeGroup = landlookGroupById(activePaintGroupId);
+  const landlookGroups = useMemo(() => landlookTileGroups(tileset), [tileset]);
+  const activeGroup = landlookGroupById(activePaintGroupId, tileset);
   const activeVariationLabel = mode === "custom" ? activeCustomPalette?.name ?? "Custom Palette" : activeGroup.label;
   const activeVariationTiles = useMemo(
     () => {
@@ -289,7 +290,7 @@ export function PaintPalettePanel({
       )}
       {variant === "sidebar" && mode === "landlook" && (
         <div className="paint-tile-groups" role="toolbar" aria-label="Landlook tile groups">
-          {LANDLOOK_TILE_GROUPS.map((group) => (
+          {landlookGroups.map((group) => (
             <button
               key={group.id}
               type="button"
@@ -332,7 +333,7 @@ export function PaintPalettePanel({
           </div>
           {paintVariation !== "single" && (
             <div className="paint-group-preview">
-              <small>{mode === "custom" ? `${activeVariationLabel} (${activeVariationTiles.length} tiles)` : `${activeGroup.label} ${landlookGroupRangeLabel(activePaintGroupId)}`}</small>
+              <small>{mode === "custom" ? `${activeVariationLabel} (${activeVariationTiles.length} tiles)` : `${activeGroup.label} ${landlookGroupRangeLabel(activePaintGroupId, tileset)}`}</small>
               <div className="paint-group-preview-strip">
                 {activeVariationTiles.slice(0, 14).map((tile) => (
                   <button

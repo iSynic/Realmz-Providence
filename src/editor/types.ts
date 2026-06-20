@@ -13,6 +13,14 @@ export type EditorTab =
   | "linter"
   | "export";
 export type ActiveWorkbench = "project" | "library";
+export type AssetWorkbenchSection = "project" | "realmz" | "divinity" | "records" | "advanced";
+export type AssetSearchHint = {
+  query: string;
+  nonce: number;
+  section?: AssetWorkbenchSection;
+  kindFilter?: ManagedAssetKind | "all";
+  selectedEntityId?: string | null;
+};
 export type EditorTool = "select" | "paint" | "stamp" | "trigger" | "random" | "sample" | "pan";
 export type MapWorkbenchMode = "canvas" | "land-layout" | "land-tiles" | "random-areas" | "map-records";
 export type MapPaintMode = "brush" | "replace" | "clear" | "smart";

@@ -36,6 +36,12 @@ const LAND_TILE_FILTERS: Array<{ id: LandTileFilterId; label: string; hint: stri
   { id: "unknown-metadata", label: "Unknown", hint: "Tiles with no decoded attribute data yet." }
 ];
 
+function landTileFilterLabel(item: { id: LandTileFilterId; label: string }, tileset: TilesetAsset) {
+  if (!item.id.startsWith("visual:")) return item.label;
+  const category = item.id.slice("visual:".length) as LandlookTileVisualCategory;
+  return landlookVisualCategoryLabel(category, tileset.landlook);
+}
+
 export function LandTileAtlasEditor({
   project,
   selectedTileset,
@@ -83,7 +89,7 @@ export function LandTileAtlasEditor({
     if (!normalizedQuery) return true;
     return String(tile).includes(normalizedQuery)
       || profile.label.toLowerCase().includes(normalizedQuery)
-      || (profile.visual ? landlookVisualCategoryLabel(profile.visual.category).toLowerCase().includes(normalizedQuery) : false)
+      || (profile.visual ? landlookVisualCategoryLabel(profile.visual.category, selectedTileset.landlook).toLowerCase().includes(normalizedQuery) : false)
       || profile.attributeFlags.map(tileAttributeLabel).join(" ").toLowerCase().includes(normalizedQuery);
   });
   const meaning = classifyTileValue(inspectedTile, selectedTileset, attributes, icons);
@@ -124,7 +130,7 @@ export function LandTileAtlasEditor({
                 onClick={() => setFilter(item.id)}
                 title={item.hint}
               >
-                {item.label}
+                {landTileFilterLabel(item, selectedTileset)}
               </button>
             ))}
           </div>
@@ -166,8 +172,8 @@ export function LandTileAtlasEditor({
               {(visualFilter || quickFilters.length > 0) && (
                 <div className="land-tile-quick-filters" aria-label="Matching tile filters">
                   {visualFilter && (
-                    <button type="button" onClick={() => setFilter(visualFilter)} title={`Show all ${landlookVisualCategoryLabel(meaning.visual!.category)} tiles`}>
-                      Show {landlookVisualCategoryLabel(meaning.visual!.category)}
+                    <button type="button" onClick={() => setFilter(visualFilter)} title={`Show all ${landlookVisualCategoryLabel(meaning.visual!.category, selectedTileset.landlook)} tiles`}>
+                      Show {landlookVisualCategoryLabel(meaning.visual!.category, selectedTileset.landlook)}
                     </button>
                   )}
                   {quickFilters.map((flag) => (

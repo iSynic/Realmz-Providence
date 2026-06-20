@@ -213,8 +213,15 @@ export function SpecialLandAssetCard({
   onOpenPreview?: (preview: string | null) => void;
 }) {
   const { previewRef, preview } = useDeferredProjectPreview<HTMLElement>(asset.previewPath, desktopRuntime, projectDir, asset.sha256);
+  const selectedPreviewKey = `${asset.id}:${preview ?? ""}`;
+  const lastSelectedPreviewKey = useRef("");
   const replaceInputRef = useRef<HTMLInputElement>(null);
   const cardClass = `managed-asset-card special-land-card${compact ? " compact-gallery-card" : ""}${selected ? " selected" : ""}`;
+  useEffect(() => {
+    if (!selected || !onSelect || lastSelectedPreviewKey.current === selectedPreviewKey) return;
+    lastSelectedPreviewKey.current = selectedPreviewKey;
+    onSelect(preview);
+  }, [onSelect, preview, selected, selectedPreviewKey]);
   if (compact) {
     return (
       <article ref={previewRef} className={cardClass} tabIndex={0} onClick={() => onSelect?.(preview)} onKeyDown={(event) => {
@@ -299,11 +306,25 @@ export function ManagedAssetCard({
   onSelect?: (preview: string | null) => void;
   onOpenPreview?: (preview: string | null) => void;
 }) {
-  const { previewRef, preview } = useDeferredProjectPreview<HTMLElement>(asset.previewPath, desktopRuntime, projectDir, asset.sha256);
+  const previewLoadOverride = asset.kind === "sound" ? selected : undefined;
+  const { previewRef, preview } = useDeferredProjectPreview<HTMLElement>(
+    asset.previewPath,
+    desktopRuntime,
+    projectDir,
+    asset.sha256,
+    previewLoadOverride
+  );
+  const selectedPreviewKey = `${asset.id}:${preview ?? ""}`;
+  const lastSelectedPreviewKey = useRef("");
   const replaceInputRef = useRef<HTMLInputElement>(null);
   const usages = project ? resourceUsageLinks(project, asset.resourceType, asset.resourceId) : [];
   const rangeNotes = projectAssetRangeNotes(asset);
   const cardClass = `managed-asset-card${compact ? " compact-gallery-card" : ""}${selected ? " selected" : ""}`;
+  useEffect(() => {
+    if (!selected || !onSelect || lastSelectedPreviewKey.current === selectedPreviewKey) return;
+    lastSelectedPreviewKey.current = selectedPreviewKey;
+    onSelect(preview);
+  }, [onSelect, preview, selected, selectedPreviewKey]);
   if (compact) {
     return (
       <article ref={previewRef} className={cardClass} tabIndex={0} onClick={() => onSelect?.(preview)} onKeyDown={(event) => {
@@ -1183,9 +1204,15 @@ export function useProjectPreview(path: string, desktopRuntime: boolean, project
   return preview;
 }
 
-export function useDeferredProjectPreview<T extends HTMLElement>(path: string, desktopRuntime: boolean, projectDir: string, cacheVersion = "") {
+export function useDeferredProjectPreview<T extends HTMLElement>(
+  path: string,
+  desktopRuntime: boolean,
+  projectDir: string,
+  cacheVersion = "",
+  loadOverride?: boolean
+) {
   const [previewRef, previewEnabled] = usePreviewVisibility<T>();
-  const preview = useProjectPreview(path, desktopRuntime, projectDir, previewEnabled, cacheVersion);
+  const preview = useProjectPreview(path, desktopRuntime, projectDir, loadOverride ?? previewEnabled, cacheVersion);
   return { previewRef, preview, previewEnabled };
 }
 
@@ -1410,6 +1437,7 @@ export function previewFallbackLabel(kind: ManagedAssetKind, status: ResourcePre
   if (status === "unsupported-variant") return "Cannot preview";
   if (status === "metadata-only") return "Info only";
   if (kind === "sound") return "Select to play";
+  if (status === "preview-ready") return "No preview loaded yet";
   return "No preview";
 }
 

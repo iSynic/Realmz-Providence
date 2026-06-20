@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { LibraryCatalog, ManagedAssetKind, Project, ResourcePreviewDiagnostic, ResourcePreviewStatus, SelectedEntity, SemanticEntity } from "../types";
+import { AssetSearchHint, LibraryAsset, LibraryCatalog, ManagedAssetKind, Project, ResourcePreviewDiagnostic, ResourcePreviewStatus, SelectedEntity, SemanticEntity } from "../types";
 import { compactValue, selectEntityFromId, semanticLabel } from "../utils";
 import { loadBrowserScenarioResourcePreview } from "../browser/project";
 import { resourceConsumers, resourceGaps, resourceMembersForType, schemaEntities } from "../semanticGraph";
@@ -91,7 +91,7 @@ export function ResourcesPanel({
   desktopRuntime?: boolean;
   projectDir?: string;
   workspaceDir?: string;
-  searchHint?: { query: string; nonce: number } | null;
+  searchHint?: AssetSearchHint | null;
   onSelectEntity: (entity: SelectedEntity) => void;
   onImportAssets?: (files: File[], kind: ManagedAssetKind, options?: MediaAssetImportOptions) => void;
   onReplaceAsset?: (assetId: string, file: File) => void;
@@ -122,8 +122,12 @@ export function ResourcesPanel({
   const [selectedAsset, setSelectedAsset] = useState<ResourcePreviewItem | null>(null);
   const normalizedQuery = query.trim().toLowerCase();
   useEffect(() => {
-    if (searchHint?.query) setQuery(searchHint.query);
-  }, [searchHint?.nonce, searchHint?.query]);
+    if (!searchHint) return;
+    setQuery(searchHint.query ?? "");
+    if (searchHint.section) setSectionOverride(searchHint.section);
+    if (searchHint.kindFilter) setKindFilter(searchHint.kindFilter);
+    setLibraryPage(0);
+  }, [searchHint?.kindFilter, searchHint?.nonce, searchHint?.query, searchHint?.section]);
   const projectAssets = useMemo(() => (project?.assets ?? []).filter((asset) =>
     assetMatchesSection(asset, section) &&
     assetMatchesKind(asset.kind, kindFilter) &&
@@ -165,6 +169,18 @@ export function ResourcesPanel({
   const selectedAdvancedType = resourceTypes.find((entity) => entity.id === advancedTypeId) ?? null;
   const advancedResources = selectedAdvancedType ? resourceMembersForType(project, selectedAdvancedType.id) : resources;
   const selectedAssetKey = selectedAsset ? resourcePreviewItemKey(selectedAsset) : "";
+  useEffect(() => {
+    if (!searchHint?.selectedEntityId) return;
+    const item = previewItemForEntityId(
+      searchHint.selectedEntityId,
+      project,
+      projectAssets,
+      allScenarioResources,
+      libraryAssets,
+      searchHint.section ?? section
+    );
+    if (item) setSelectedAsset(item);
+  }, [allScenarioResources, libraryAssets, project, projectAssets, searchHint?.nonce, searchHint?.section, searchHint?.selectedEntityId, section]);
   return (
     <section className="editor-full-panel asset-workbench">
       <header className="asset-workbench-header">
@@ -571,6 +587,50 @@ function resourcePreviewItemTitle(item: ResourcePreviewItem) {
   return item.entity.label;
 }
 
+function previewItemForEntityId(
+  entityId: string,
+  project: Project | null,
+  projectAssets: Project["assets"],
+  scenarioResources: ScenarioResourceAsset[],
+  libraryAssets: LibraryAsset[],
+  section: AssetSection
+): ResourcePreviewItem | null {
+  const managed = projectAssets.find((asset) => asset.id === entityId);
+  if (managed) {
+    return {
+      type: "managed",
+      asset: managed,
+      preview: null,
+      usages: project ? resourceUsageLinks(project, managed.resourceType, managed.resourceId) : []
+    };
+  }
+  const scenarioResource = scenarioResources.find((asset) => asset.entity.id === entityId);
+  if (scenarioResource) {
+    return {
+      type: "resource",
+      entity: scenarioResource.entity,
+      consumers: project ? directResourceConsumers(project, scenarioResource) : []
+    };
+  }
+  if (section === "realmz" || section === "divinity") {
+    const libraryAsset = libraryAssets.find((asset) => asset.id === entityId);
+    if (libraryAsset) {
+      return {
+        type: "library",
+        asset: libraryAsset,
+        preview: {
+          dataUrl: null,
+          status: estimatedPreviewStatus(libraryAsset),
+          summary: {},
+          diagnostics: []
+        },
+        usages: project ? resourceUsageLinks(project, libraryAsset.resourceType, libraryAsset.resourceId) : []
+      };
+    }
+  }
+  return null;
+}
+
 type ScenarioResourceAsset = {
   entity: SemanticEntity;
   kind: ManagedAssetKind;
@@ -596,7 +656,7 @@ function ScenarioResourceAssetCard({
   selected: boolean;
   onSelect: () => void;
 }) {
-  const { previewRef, preview } = useScenarioResourcePreview<HTMLElement>(project, asset, desktopRuntime, projectDir);
+  const { previewRef, preview } = useScenarioResourcePreview<HTMLElement>(project, asset, desktopRuntime, projectDir, selected);
   return (
     <article ref={previewRef} className={`managed-asset-card scenario-resource compact-gallery-card${selected ? " selected" : ""}`} tabIndex={0} onClick={onSelect} onKeyDown={(event) => {
       if (event.key === "Enter" || event.key === " ") {
@@ -622,14 +682,23 @@ function useScenarioResourcePreview<T extends HTMLElement>(
   project: Project | null,
   asset: ScenarioResourceAsset,
   desktopRuntime: boolean,
-  projectDir: string
+  projectDir: string,
+  selected: boolean
 ) {
-  const { previewRef, preview: projectPreview, previewEnabled } = useDeferredProjectPreview<T>(asset.previewPath, desktopRuntime, projectDir);
+  const previewLoadOverride = asset.kind === "sound" ? selected : undefined;
+  const { previewRef, preview: projectPreview, previewEnabled } = useDeferredProjectPreview<T>(
+    asset.previewPath,
+    desktopRuntime,
+    projectDir,
+    "",
+    previewLoadOverride
+  );
   const [browserPreview, setBrowserPreview] = useState<string | null>(null);
+  const browserPreviewEnabled = asset.kind === "sound" ? selected : previewEnabled;
   useEffect(() => {
-    if (!previewEnabled || projectPreview || asset.previewPath || desktopRuntime) return;
+    if (!browserPreviewEnabled || projectPreview || asset.previewPath || desktopRuntime) return;
     setBrowserPreview(loadBrowserScenarioResourcePreview(project, asset.resourceType, asset.resourceId));
-  }, [asset.previewPath, asset.resourceId, asset.resourceType, desktopRuntime, project, projectPreview, previewEnabled]);
+  }, [asset.previewPath, asset.resourceId, asset.resourceType, browserPreviewEnabled, desktopRuntime, project, projectPreview]);
   return { previewRef, preview: projectPreview ?? browserPreview };
 }
 

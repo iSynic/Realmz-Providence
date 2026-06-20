@@ -1,6 +1,6 @@
 import { ReactNode, Suspense } from "react";
 import { EditorState } from "../store";
-import { BenchmarkReport, ExportReport, ManagedAssetKind, MapEntity, MapViewFlag, ProjectCommand, RandomLevel, ScenarioTarget, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
+import { AssetSearchHint, BenchmarkReport, ExportReport, ManagedAssetKind, MapEntity, MapViewFlag, ProjectCommand, RandomLevel, ScenarioTarget, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
 import { MediaAssetImportOptions } from "../mediaAssets";
 import { LibraryDraftSpec } from "../libraryDrafts";
 import { Issue } from "../types";
@@ -274,6 +274,7 @@ function WorkbenchRouterContent({
         desktopRuntime={desktopRuntime}
         projectDir={projectDir}
         workspaceDir={workspaceDir}
+        searchHint={assetSearchHint}
         onSelectEntity={onSelectEntity}
         onImportAssets={onImportAssets}
         onReplaceAsset={onReplaceAsset}
@@ -330,7 +331,7 @@ type WorkbenchRouterProps = {
   desktopRuntime: boolean;
   projectDir: string;
   workspaceDir: string;
-  assetSearchHint: { query: string; nonce: number } | null;
+  assetSearchHint: AssetSearchHint | null;
   exportReport: ExportReport | null;
   benchmark: BenchmarkReport | null;
   issues: Issue[];

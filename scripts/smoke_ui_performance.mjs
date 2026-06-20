@@ -373,12 +373,15 @@ async function runCombatProbes(client, budgets, scenario) {
 async function waitForCombatPreviews(client, message) {
   await waitFor(async () => evalValue(client, `
     (() => {
+      if (!document.querySelector(".rail-tool.domain-combat.active")) return false;
+      const combatReady = !document.body.innerText.includes("Loading editor section");
       const previews = [...document.querySelectorAll("[data-combat-preview='monster-icon']")];
       const visiblePreviews = previews.filter((preview) => {
         const rect = preview.getBoundingClientRect();
         return rect.width > 0 && rect.height > 0 && rect.bottom >= 0 && rect.right >= 0 && rect.top <= window.innerHeight && rect.left <= window.innerWidth;
       });
-      return previews.length > 0 && visiblePreviews.every((preview) => preview.getAttribute("data-combat-preview-ready") === "true");
+      if (visiblePreviews.length === 0) return combatReady;
+      return visiblePreviews.every((preview) => preview.getAttribute("data-combat-preview-ready") === "true");
     })()
   `), 20_000, message);
 }

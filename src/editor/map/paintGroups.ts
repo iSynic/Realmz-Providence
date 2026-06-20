@@ -29,8 +29,85 @@ export const LANDLOOK_TILE_GROUPS: LandlookTileGroup[] = [
   { id: "houses", label: "Houses", ranges: [[190, 200]], categories: ["buildings"], hint: "Divinity house range tiles 190-200." }
 ];
 
-export function landlookGroupById(groupId: string | null | undefined) {
-  return LANDLOOK_TILE_GROUPS.find((group) => group.id === groupId) ?? LANDLOOK_TILE_GROUPS[0];
+const STANDARD_LANDLOOK_GROUP_OVERRIDES: Record<number, Partial<Record<string, Partial<LandlookTileGroup>>>> = {
+  3: {
+    terrain: { label: "Cavern Terrain", hint: "Underground water, floor, and cavern terrain slots for the Subterranean atlas." },
+    mountain: { label: "Cave Walls", hint: "Wall/rock terrain slots aligned with the Plains mountain families; verify individual cave shapes visually." },
+    "mountain-land": { label: "Wall / Floor", hint: "Cave wall-to-floor edge and fill slots." },
+    "mountain-water": { label: "Wall / Water", hint: "Cave wall-to-water edge slots." },
+    roads: { label: "Paths / Bridges", hint: "Cavern path, bridge, and route art plus source-backed runtime path tiles." },
+    trees: { label: "Cave Growth", hint: "Underground growth transition/detail slots where present in this atlas." },
+    forest: { label: "Growth Fill", hint: "Contiguous underground growth transition slots." },
+    "tree-detail": { label: "Growth Detail", hint: "Decorative underground growth/detail slots." },
+    rocks: { label: "Cave Rubble", hint: "Cave rocks, rubble, and terrain-object slots." },
+    structures: { label: "Underground Structures", hint: "Doors, gates, built pieces, and underground landmark slots." },
+    houses: { label: "Built Pieces", hint: "Structure slots in the settlement/building range." }
+  },
+  4: {
+    terrain: { label: "Castle Terrain", hint: "Moat, floor, courtyard, and non-wall terrain slots for the Castle atlas." },
+    mountain: { label: "Masonry Walls", hint: "Castle wall/masonry terrain slots aligned with the mountain families; these are not literal mountains." },
+    "mountain-land": { label: "Wall / Floor", hint: "Masonry wall-to-floor edge and fill slots." },
+    "mountain-water": { label: "Wall / Moat", hint: "Masonry wall-to-water/moat edge slots." },
+    roads: { label: "Roads / Walls", hint: "Castle road, wall, bridge, and route-looking art plus source-backed runtime path tiles." },
+    trees: { label: "Courtyard Greenery", hint: "Courtyard vegetation transition/detail slots where present in this atlas." },
+    forest: { label: "Greenery Fill", hint: "Contiguous courtyard vegetation transition slots." },
+    "tree-detail": { label: "Greenery Detail", hint: "Decorative courtyard vegetation/detail slots." },
+    rocks: { label: "Stone Rubble", hint: "Stone rubble and courtyard prop slots." },
+    graves: { label: "Tombs / Memorials", hint: "Tomb, memorial, and graveyard slots." },
+    structures: { label: "Castle Structures", hint: "Gates, towers, masonry building pieces, and castle landmarks." },
+    houses: { label: "Buildings", hint: "Castle building range slots." }
+  },
+  5: {
+    terrain: { label: "Desert Terrain", hint: "Oasis, sand, and desert terrain slots." },
+    mountain: { label: "Ridges / Dunes", hint: "Desert ridge, rock, and dune slots aligned with the mountain families." },
+    "mountain-land": { label: "Ridge / Sand", hint: "Rock/dune-to-sand edge and fill slots." },
+    "mountain-water": { label: "Ridge / Oasis", hint: "Rock/dune-to-water edge slots." },
+    roads: { label: "Roads / Trails", hint: "Desert road, trail, bridge, and path-looking art plus runtime path tiles." },
+    trees: { label: "Scrub / Palms", hint: "Desert scrub, palm, and vegetation transition/detail slots." },
+    forest: { label: "Scrub Fill", hint: "Contiguous desert vegetation transition slots." },
+    "tree-detail": { label: "Scrub Detail", hint: "Decorative desert scrub/palm detail slots." },
+    rocks: { label: "Desert Rocks", hint: "Desert rocks, rubble, and terrain-object slots." },
+    structures: { label: "Desert Structures", hint: "Desert gates, landmarks, buildings, and settlement pieces." },
+    houses: { label: "Desert Buildings", hint: "Desert building range slots." }
+  },
+  9: {
+    terrain: { label: "Swamp Terrain", hint: "Swamp water, bog, open ground, and non-bank terrain slots." },
+    mountain: { label: "Bog Banks", hint: "Raised bog bank terrain slots aligned with the mountain families." },
+    "mountain-land": { label: "Bank / Ground", hint: "Bog bank-to-ground edge and fill slots." },
+    "mountain-water": { label: "Bank / Water", hint: "Bog bank-to-water edge slots." },
+    roads: { label: "Paths / Bridges", hint: "Swamp path, bridge, and route-looking art plus runtime path tiles." },
+    trees: { label: "Swamp Trees", hint: "Swamp tree transition and decorative detail slots." },
+    forest: { label: "Swamp Tree Fill", hint: "Contiguous swamp tree transition slots." },
+    "tree-detail": { label: "Swamp Tree Detail", hint: "Decorative swamp tree/detail slots." },
+    rocks: { label: "Muck / Rubble", hint: "Swamp rocks, muck, and terrain-object slots." },
+    structures: { label: "Swamp Structures", hint: "Swamp gates, landmarks, buildings, and settlement pieces." },
+    houses: { label: "Swamp Buildings", hint: "Swamp building range slots." }
+  },
+  10: {
+    terrain: { label: "Snow Terrain", hint: "Ice, snow, water, and non-ridge terrain slots." },
+    mountain: { label: "Snowy Ridges", hint: "Snow ridge and icy mountain slots aligned with the mountain families." },
+    "mountain-land": { label: "Ridge / Snow", hint: "Snowy ridge-to-snow edge and fill slots." },
+    "mountain-water": { label: "Ridge / Water", hint: "Snowy ridge-to-water edge slots." },
+    roads: { label: "Roads / Snow Trails", hint: "Snow road, trail, bridge, and path-looking art plus runtime path tiles." },
+    trees: { label: "Snow Forest", hint: "Snow forest transition and decorative detail slots." },
+    forest: { label: "Snow Forest Fill", hint: "Contiguous snow forest transition slots." },
+    "tree-detail": { label: "Snow Tree Detail", hint: "Decorative snow tree/detail slots." },
+    rocks: { label: "Snow Rocks", hint: "Snow rocks, rubble, and terrain-object slots." },
+    structures: { label: "Snow Structures", hint: "Snow gates, landmarks, buildings, and settlement pieces." },
+    houses: { label: "Snow Buildings", hint: "Snow building range slots." }
+  }
+};
+
+export function landlookTileGroups(tileset?: TilesetAsset | null) {
+  const landlook = tileset?.landlook ?? 0;
+  const overrides = STANDARD_LANDLOOK_GROUP_OVERRIDES[landlook] ?? (tileset?.custom ? customLandlookGroupOverrides(tileset) : null);
+  if (!overrides) return LANDLOOK_TILE_GROUPS;
+  return LANDLOOK_TILE_GROUPS.map((group) => ({ ...group, ...overrides[group.id] }));
+}
+
+export function landlookGroupById(groupId: string | null | undefined, tileset?: TilesetAsset | null) {
+  const groups = landlookTileGroups(tileset);
+  return groups.find((group) => group.id === groupId) ?? groups[0];
 }
 
 export function landlookGroupTiles(
@@ -40,16 +117,16 @@ export function landlookGroupTiles(
   icons?: Record<number, IconEntry>
 ) {
   const standardTiles = standardTileValues(tileset);
-  const group = landlookGroupById(groupId);
+  const group = landlookGroupById(groupId, tileset);
   if (group.id === "all") return standardTiles;
   return standardTiles.filter((tile) => landlookGroupIncludesTile(tile, group, tileset, attributes, icons));
 }
 
-export function landlookGroupRangeLabel(groupId: string | null | undefined) {
-  const group = landlookGroupById(groupId);
+export function landlookGroupRangeLabel(groupId: string | null | undefined, tileset?: TilesetAsset | null) {
+  const group = landlookGroupById(groupId, tileset);
   if (group.id === "all") return "all landlook tiles";
   const ranges = group.ranges.map(([from, to]) => `${from}-${to}`).join(", ");
-  const categories = group.categories?.map(landlookVisualCategoryLabel).join(", ");
+  const categories = group.categories?.map((category) => landlookVisualCategoryLabel(category, tileset?.landlook ?? null)).join(", ");
   const flags = group.flags?.map((flag) => flag.replace(/-/g, " ")).join(", ");
   return [ranges, categories, flags].filter(Boolean).join(" | ");
 }
@@ -66,4 +143,20 @@ export function landlookGroupIncludesTile(
   if (metadata.visual && group.categories?.includes(metadata.visual.category)) return true;
   const flags = tileAttributeGroup(metadata.attributes, tile, tileset);
   return Boolean(group.flags?.some((flag) => flags.includes(flag)));
+}
+
+function customLandlookGroupOverrides(tileset: TilesetAsset): Partial<Record<string, Partial<LandlookTileGroup>>> {
+  return {
+    terrain: { label: "Custom Terrain", hint: `Custom atlas ${tileset.name}: terrain slots are range-based until this custom landlook is labeled.` },
+    mountain: { label: "Custom Terrain 61-93", hint: "Custom atlas slots 61-93. Verify visually; these may not be mountains." },
+    "mountain-land": { label: "Custom 61-85", hint: "Custom atlas slots 61-85. Verify visually before treating them as terrain edges." },
+    "mountain-water": { label: "Custom 86-93", hint: "Custom atlas slots 86-93. Verify visually before treating them as water edges." },
+    roads: { label: "Custom Roads / Path", hint: "Custom atlas road/path-looking slots plus source-backed runtime path tiles." },
+    trees: { label: "Custom Vegetation", hint: "Custom atlas vegetation/detail slots by conventional range; verify visually." },
+    forest: { label: "Custom Vegetation Fill", hint: "Custom atlas slots 118-129 by conventional range; verify visually." },
+    "tree-detail": { label: "Custom Detail", hint: "Custom atlas slots 150-154 by conventional range; verify visually." },
+    rocks: { label: "Custom Rocks / Props", hint: "Custom atlas slots 159-167 by conventional range; verify visually." },
+    structures: { label: "Custom Structures", hint: "Custom atlas structure ranges plus scenario special/icon structure tiles." },
+    houses: { label: "Custom Buildings", hint: "Custom atlas slots 190-200 by conventional range; verify visually." }
+  };
 }

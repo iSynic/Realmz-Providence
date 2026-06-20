@@ -1,13 +1,13 @@
 import { DOCUMENTATION_TOPICS, documentationSearchText } from "./docs/documentationContent";
 import { itemReferenceOptions } from "./itemReferences";
 import { monsterReferenceOptions } from "./monsterReferences";
-import { EditorTab, LibraryCatalog, Project, SelectedEntity } from "./types";
+import { AssetWorkbenchSection, EditorTab, LibraryCatalog, ManagedAssetKind, Project, SelectedEntity } from "./types";
 import { selectEntityFromId, triggerEntityId } from "./utils";
 
 export type GlobalSearchScope = "scenario" | "assets" | "libraries" | "docs" | "diagnostics";
 
 export type GlobalSearchRoute =
-  | { kind: "workbench"; workbench: "project" | "library"; domain: EditorTab; editor: string; searchHint?: string }
+  | { kind: "workbench"; workbench: "project" | "library"; domain: EditorTab; editor: string; searchHint?: string; assetSection?: AssetWorkbenchSection; assetKindFilter?: ManagedAssetKind | "all" }
   | { kind: "documents"; sectionId: string }
   | { kind: "divinity-manual"; href?: string };
 
@@ -391,7 +391,15 @@ function catalogRows(catalog: LibraryCatalog) {
       subtitle: [asset.resourceType, asset.resourceId, asset.source].filter((part) => part !== null && part !== undefined && part !== "").join(" | "),
       snippet: asset.relativePath,
       badges: ["Reference Asset", asset.type],
-      route: { kind: "workbench", workbench: "library", domain: "assets", editor: "library-assets", searchHint: assetSearchHint(asset.resourceType ?? asset.type, asset.resourceId, asset.label) },
+      route: {
+        kind: "workbench",
+        workbench: "library",
+        domain: "assets",
+        editor: "library-assets",
+        searchHint: assetSearchHint(asset.resourceType ?? asset.type, asset.resourceId, asset.label),
+        assetSection: libraryAssetSearchSection(asset),
+        assetKindFilter: assetKindFilter(asset.resourceType ?? asset.type, asset.type)
+      },
       selectedEntity: selectEntityFromId(asset.id),
       preview: asset.previewPath ?? null,
       numericId: asset.resourceId ?? trailingNumber(asset.id) ?? undefined,
@@ -413,7 +421,7 @@ function addAssetRows(project: Project, add: (row: SearchableRow) => void) {
       snippet: [asset.provenance, asset.exportState, asset.originalPath].filter(Boolean).join(" | "),
       badges: ["Scenario Asset", asset.kind],
       selectedEntity: selectEntityFromId(asset.id),
-      route: { kind: "workbench", workbench: "project", domain: "assets", editor: assetEditor(asset.kind, asset.resourceType), searchHint: assetSearchHint(asset.resourceType, asset.resourceId, asset.label) },
+      route: { kind: "workbench", workbench: "project", domain: "assets", editor: assetEditor(asset.kind, asset.resourceType), searchHint: assetSearchHint(asset.resourceType, asset.resourceId, asset.label), assetSection: "project", assetKindFilter: asset.kind },
       preview: asset.previewPath,
       numericId: asset.resourceId,
       aliases: resourceAliases(asset.resourceType, asset.resourceId)
@@ -430,7 +438,7 @@ function addAssetRows(project: Project, add: (row: SearchableRow) => void) {
       snippet: asset.previewPath ?? "",
       badges: ["Scenario Resource", asset.resourceType],
       selectedEntity: selectEntityFromId(id),
-      route: { kind: "workbench", workbench: "project", domain: "assets", editor: assetEditor("other", asset.resourceType), searchHint: assetSearchHint(asset.resourceType, asset.resourceId, asset.name ?? "") },
+      route: { kind: "workbench", workbench: "project", domain: "assets", editor: assetEditor("other", asset.resourceType), searchHint: assetSearchHint(asset.resourceType, asset.resourceId, asset.name ?? ""), assetSection: "project", assetKindFilter: assetKindFilter(asset.resourceType, "other") },
       preview: asset.previewPath ?? null,
       numericId: asset.resourceId,
       aliases: resourceAliases(asset.resourceType, asset.resourceId)
@@ -445,7 +453,7 @@ function addAssetRows(project: Project, add: (row: SearchableRow) => void) {
       subtitle: `Landlook ${tileset.landlook} | PICT ${tileset.pictId ?? "none"}`,
       snippet: `${tileset.columns} x ${tileset.rows} | ${tileset.source}`,
       badges: ["Tileset"],
-      route: { kind: "workbench", workbench: "project", domain: "assets", editor: "pictures", searchHint: tileset.pictId != null ? `PICT ${tileset.pictId}` : `landlook ${tileset.landlook}` },
+      route: { kind: "workbench", workbench: "project", domain: "assets", editor: "pictures", searchHint: tileset.pictId != null ? `PICT ${tileset.pictId}` : `landlook ${tileset.landlook}`, assetSection: "project", assetKindFilter: "picture" },
       preview: tileset.imagePath,
       numericId: tileset.pictId ?? tileset.landlook,
       aliases: [`landlook ${tileset.landlook}`, tileset.pictId != null ? `pict ${tileset.pictId}` : ""]
@@ -652,6 +660,22 @@ function assetSearchHint(resourceType: string | null | undefined, resourceId: nu
   if (normalizedType && resourceId != null) return `${normalizedType} ${resourceId}`;
   if (label.trim()) return label.trim();
   return "";
+}
+
+function assetKindFilter(resourceType: string | null | undefined, kind: string): ManagedAssetKind | "all" {
+  const type = (resourceType ?? "").trim();
+  if (type === "PICT" || kind === "picture") return "picture";
+  if (type === "snd" || type === "snd " || kind === "sound") return "sound";
+  if (type === "cicn" || kind === "icon" || kind.includes("icon")) return "icon";
+  if (kind === "special-land-tile") return "special-land-tile";
+  if (["TEXT", "STR#", "styl"].includes(type) || kind === "text") return "text";
+  return "all";
+}
+
+function libraryAssetSearchSection(asset: { source?: string; relativePath?: string; label?: string; type?: string }): AssetWorkbenchSection {
+  const parts = [asset.source, asset.relativePath, asset.label, asset.type].join(" ").toLowerCase();
+  if (parts.includes("divinity") || parts.includes("manual") || parts.includes("ui")) return "divinity";
+  return "realmz";
 }
 
 function libraryEntityAssetSearchHint(entity: { id: string; label: string; summary: Record<string, unknown> }) {

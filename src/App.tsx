@@ -18,7 +18,7 @@ import {
   tileIconCandidates
 } from "./editor/map/renderValues";
 import { editorReducer, initialEditorState, BROWSER_PREVIEW_STATUS } from "./editor/store";
-import { ActiveWorkbench, EditorTab, MapEntity, MapViewFlag, ProjectCommand, SelectedEntity } from "./editor/types";
+import { ActiveWorkbench, AssetSearchHint, EditorTab, MapEntity, MapViewFlag, ProjectCommand, SelectedEntity } from "./editor/types";
 import { hasDesktopRuntime, issuesFor } from "./editor/utils";
 import {
   extraActionPointClassification,
@@ -81,7 +81,7 @@ export function App() {
   const [divinityManualOpen, setDivinityManualOpen] = useState(false);
   const [divinityManualHref, setDivinityManualHref] = useState("");
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
-  const [assetSearchHint, setAssetSearchHint] = useState<{ query: string; nonce: number } | null>(null);
+  const [assetSearchHint, setAssetSearchHint] = useState<AssetSearchHint | null>(null);
   const [projectNameDraft, setProjectNameDraft] = useState("Untitled Scenario");
   const [state, dispatch] = useReducer(editorReducer, desktopRuntime, initialEditorState);
   const importedMapIconCacheRef = useRef<{ key: string; ids: number[] }>({ key: "", ids: [] });
@@ -446,7 +446,13 @@ export function App() {
       dispatch({ type: "setActiveDomain", domain: result.route.domain });
       dispatch({ type: "setActiveEditor", editor: result.route.editor });
       if (result.route.domain === "assets" && result.route.searchHint) {
-        setAssetSearchHint({ query: result.route.searchHint, nonce: Date.now() });
+        setAssetSearchHint({
+          query: result.route.searchHint,
+          nonce: Date.now(),
+          section: result.route.assetSection,
+          kindFilter: result.route.assetKindFilter,
+          selectedEntityId: result.selectedEntity?.id ?? null
+        });
       } else if (result.route.domain !== "assets") {
         setAssetSearchHint(null);
       }

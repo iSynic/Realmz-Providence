@@ -55,7 +55,7 @@ export function classifyTileValue(
   const canRenderFromAtlas = Boolean(tileset?.available && tileset.imagePath && capacity > 0);
   const attribute = attributeProfileForTile(tile, tileset, attributes);
   const attributeFlags = tileAttributeGroup(attribute, tile, tileset);
-  const visual = !isDungeon && tile > 0 ? landlookTileVisualSemantics(renderTile) : null;
+  const visual = !isDungeon && tile > 0 ? landlookTileVisualSemantics(renderTile, tileset?.landlook ?? null) : null;
 
   let kind: TileValueKind = "unknown";
   let label = `Tile ${tile}`;
