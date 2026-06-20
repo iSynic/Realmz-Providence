@@ -3782,6 +3782,61 @@ mod tests {
     }
 
     #[test]
+    fn custom_landlook_behavior_update_writes_all_editable_behavior_words() {
+        let input =
+            vec![0u8; MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 4 + LANDLOOK_RANGE_TAIL_BYTES];
+        let metadata = parse_custom_landlook_metadata(&input, 6, "Data Custom 1 BD");
+        let tile = 9usize;
+        let updated = update_custom_land_tile_attributes(
+            &metadata,
+            tile,
+            CustomLandTileAttributePatch {
+                sound: Some(7),
+                time: Some(2),
+                solid: Some(1),
+                shore: Some(1),
+                need_boat: Some(3),
+                is_path: Some(1),
+                los: Some(1),
+                fly_float: Some(1),
+                forest: Some(2),
+                clear_land_id: Some(155),
+            },
+        );
+
+        let output = write_custom_landlook_metadata(&updated).unwrap();
+        let start = tile * MAPSTATS_RECORD_BYTES;
+        for (offset, value) in [
+            (0, 7),
+            (2, 2),
+            (4, 1),
+            (6, 1),
+            (8, 3),
+            (10, 1),
+            (12, 1),
+            (14, 1),
+            (16, 2),
+            (38, 155),
+        ] {
+            assert_eq!(i16_be(&output, start + offset), value);
+        }
+        let changed: Vec<_> = input
+            .iter()
+            .zip(output.iter())
+            .enumerate()
+            .filter_map(|(index, (before, after))| (before != after).then_some(index))
+            .collect();
+        assert!(changed.iter().all(|offset| {
+            let relative = offset.saturating_sub(start);
+            *offset >= start
+                && *offset < start + MAPSTATS_RECORD_BYTES
+                && relative != 18
+                && !(20..38).contains(&relative)
+        }));
+        assert!(!changed.is_empty());
+    }
+
+    #[test]
     fn custom_landlook_combat_update_mutates_only_selected_build_cell() {
         let input =
             vec![0u8; MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 4 + LANDLOOK_RANGE_TAIL_BYTES];

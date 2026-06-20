@@ -16,6 +16,27 @@ export function yesNo(value: boolean | null | undefined) {
   return value ? "yes" : "no";
 }
 
+export function solidTypeLabel(value: number | null | undefined) {
+  if (value == null) return "unknown";
+  if (value === 0) return "clear / passable";
+  if (value === 1) return "solid";
+  return `solid type ${value}`;
+}
+
+export function passabilityLabel(attributes: ReturnType<typeof classifyTileValue>["attributes"]) {
+  if (!attributes) return "unknown";
+  if (attributes.boatRequirement) return `boat required (${attributes.boatRequirement})`;
+  if (attributes.flyFloatRequired) return "fly / float required";
+  if (attributes.flags.includes("solid") || (attributes.solidType ?? 0) !== 0) return "blocked";
+  return "walkable";
+}
+
+export function movementCostLabel(value: number | null | undefined) {
+  if (value == null) return "unknown";
+  if (value === 0) return "default";
+  return value;
+}
+
 export function forestTypeLabel(value: number | null | undefined) {
   if (value == null) return "unknown";
   if (value === 0) return "not forest";
@@ -65,13 +86,14 @@ export function tileAttributeRows(meaning: ReturnType<typeof classifyTileValue>)
   return [
     ["Raw Value", meaning.raw],
     ["Rendered Tile", meaning.renderTile],
+    ["Behavior Source", attributeSourceLabel(attributes)],
     ["Visual Group", meaning.visual ? landlookVisualCategoryLabel(meaning.visual.category) : "unknown"],
     ["Visual Confidence", meaning.visual?.confidence ?? "unknown"],
     ["Visual Notes", meaning.visual?.notes ?? "none"],
-    ["Solid Type", attributes?.solidType ?? "unknown"],
-    ["Passable", attributes ? (attributes.flags.includes("solid") || attributes.boatRequirement || attributes.flyFloatRequired ? "restricted" : "yes") : "unknown"],
+    ["Solidity", solidTypeLabel(attributes?.solidType)],
+    ["Passability", passabilityLabel(attributes)],
     ["Move Sound", attributes?.movementSoundId ?? "unknown"],
-    ["Time / Move", attributes?.movementCost ?? "unknown"],
+    ["Time / Move", movementCostLabel(attributes?.movementCost)],
     ["Shore / Water", yesNo(attributes?.shore)],
     ["Boat Required", attributes?.boatRequirement ?? "unknown"],
     ["Runtime Path", yesNo(attributes?.pathFlag)],

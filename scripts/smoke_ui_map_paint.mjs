@@ -122,14 +122,16 @@ async function runMapPaintSmoke(baseUrl, projectUrl) {
     return value === true;
   }, 30_000, "Timed out waiting for Providence shell.");
   await waitFor(async () => {
-    const value = await evalValue(client, "document.body.innerText.includes('Action Point Hub') || document.body.innerText.includes('Scenario Maps')");
+    const value = await evalValue(client, "Boolean(document.querySelector('nav.domain-rail button.domain-maps'))");
     return value === true;
   }, 30_000, async () => `Timed out waiting for benchmark project. ${await pageDiagnostic(client)}`);
 
   await evalValue(client, `
     (() => {
       localStorage.setItem("providence.mapWorkbenchMode.v1", "canvas");
-      const map = document.querySelector("button.domain-maps");
+      const map = document.querySelector("nav.domain-rail button.domain-maps")
+        ?? [...document.querySelectorAll("button")]
+          .find((button) => button.textContent && button.textContent.trim().startsWith("Maps"));
       map?.click();
       return Boolean(map);
     })()

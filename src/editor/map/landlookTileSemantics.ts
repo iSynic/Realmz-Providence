@@ -5,6 +5,7 @@ export type LandlookTileVisualCategory =
   | "road"
   | "watercraft"
   | "forest"
+  | "tree-detail"
   | "rocks"
   | "graves"
   | "buildings"
@@ -56,9 +57,9 @@ const RANGES: SemanticRange[] = [
   { first: 105, last: 112, label: "Terrain edge transition", category: "uncertain", confidence: "uncertain" },
   { first: 113, last: 114, label: "Gate / structure", category: "buildings", confidence: "likely" },
   { first: 115, last: 117, label: "Fire / hazard", category: "hazard", confidence: "likely" },
-  { first: 118, last: 129, label: "Forest / tree transition", category: "forest", confidence: "likely" },
+  { first: 118, last: 129, label: "Forest transition", category: "forest", confidence: "likely", notes: "Primary contiguous forest tiles used by the smart forest brush." },
   { first: 130, last: 146, label: "Road / bridge / path art", category: "road", confidence: "likely", notes: "Visual road art is distinct from Realmz's runtime path flag." },
-  { first: 150, last: 154, label: "Tree / forest detail", category: "forest", confidence: "likely" },
+  { first: 150, last: 154, label: "Tree detail", category: "tree-detail", confidence: "known", notes: "Decorative tree/detail pieces, not contiguous smart-forest fill tiles." },
   { first: 155, last: 158, label: "Open land / clear terrain", category: "open", confidence: "known" },
   { first: 159, last: 167, label: "Rocks / rubble / terrain prop", category: "rocks", confidence: "known" },
   { first: 170, last: 179, label: "Large structure / landmark piece", category: "buildings", confidence: "likely" },
@@ -89,7 +90,8 @@ export function landlookVisualCategoryLabel(category: LandlookTileVisualCategory
     case "mountain-water": return "Mountain to water";
     case "road": return "Road / path art";
     case "watercraft": return "Boat / watercraft";
-    case "forest": return "Forest / trees";
+    case "forest": return "Forest transition";
+    case "tree-detail": return "Tree detail";
     case "rocks": return "Rocks / rubble";
     case "graves": return "Graves";
     case "buildings": return "Buildings";

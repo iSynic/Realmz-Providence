@@ -131,10 +131,10 @@ export function PaintPalettePanel({
     return candidates.filter((tile) => tileAttributeGroup(classifyTileValue(tile, tileset, tileAttributes, icons).attributes, tile, tileset).includes(attributeFilter));
   }, [attributeFilter, icons, mode, standardTiles, tileAttributes, tileset, usedTiles]);
   const groupedStandardTiles = useMemo(() => {
-    const tiles = landlookGroupTiles(tileset, activePaintGroupId);
+    const tiles = landlookGroupTiles(tileset, activePaintGroupId, tileAttributes, icons);
     if (activePaintGroupId !== "structures") return tiles;
     return [...new Set([...tiles, ...specialStructureTilesForPalette(project ?? null, libraryAssets, icons)])].sort((a, b) => a - b);
-  }, [activePaintGroupId, icons, libraryAssets, project, tileset]);
+  }, [activePaintGroupId, icons, libraryAssets, project, tileAttributes, tileset]);
   const paletteTiles = useMemo(() => {
     if (mode === "used") return usedTiles;
     if (mode === "raw") return rawTiles;
@@ -171,9 +171,9 @@ export function PaintPalettePanel({
       if (mode === "used") return usedTiles;
       if (mode === "attributes") return attributeTiles;
       if (mode === "raw") return rawTiles;
-      return landlookGroupTiles(tileset, activePaintGroupId);
+      return landlookGroupTiles(tileset, activePaintGroupId, tileAttributes, icons);
     },
-    [activeCustomPalette, activePaintGroupId, attributeTiles, mode, rawTiles, specialTiles, tileset, usedTiles]
+    [activeCustomPalette, activePaintGroupId, attributeTiles, icons, mode, rawTiles, specialTiles, tileAttributes, tileset, usedTiles]
   );
   const groupWarning = paintVariation !== "single" && activeVariationTiles.length === 0
     ? "This group has no tiles in the current landlook; painting will use the selected tile."
