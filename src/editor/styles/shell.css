@@ -3212,6 +3212,55 @@ button.documents-source-chip {
   overflow: hidden;
 }
 
+.linter-section-details > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 9px;
+  background: #1a1d21;
+  color: #aab2bd;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  list-style: none;
+}
+
+.linter-section-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.linter-section-details > summary::before {
+  content: ">";
+  color: #79a9d5;
+}
+
+.linter-section-details[open] > summary::before {
+  content: "v";
+}
+
+.linter-section-details > summary span {
+  flex: 1;
+}
+
+.linter-section-details > summary small {
+  padding: 2px 7px;
+  border: 1px solid #294159;
+  border-radius: 999px;
+  color: #9dc8ed;
+  background: #0d1721;
+  font-size: 10px;
+}
+
+.linter-section-summary {
+  margin: 0;
+  padding: 8px 9px;
+  border-top: 1px solid #20252b;
+  color: #b9d1e8;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
 .scenario-coverage-card {
   border-color: #284564 !important;
   background: rgba(13, 28, 44, 0.55);

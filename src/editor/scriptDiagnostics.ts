@@ -185,13 +185,13 @@ function ed3ClassificationMetadata(classification: string, rootType: string | nu
     };
   }
   return {
-    label: "Unclassified imported ED3 row",
-    searchTitle: "Unclassified Extra Action",
+    label: "Unclassified imported action row",
+    searchTitle: "Unclassified Action Row",
     linterLabel: "Unclassified",
     badge: "Unknown",
-    tone: "warning" as const,
-    linterSeverity: "warning" as const,
-    detail: () => "Providence preserved this row but could not classify its reachability evidence."
+    tone: "muted" as const,
+    linterSeverity: null,
+    detail: () => "Providence preserved this imported row but does not yet have enough context to explain whether it is used."
   };
 }
 

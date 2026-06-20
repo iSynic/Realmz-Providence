@@ -1,5 +1,6 @@
 import { CheckCircle2, XCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { Issue, Project, SelectedEntity } from "../types";
 import { SemanticInspector } from "../components/SemanticInspector";
 import { selectEntityFromId } from "../utils";
@@ -13,9 +14,10 @@ import { ED3_CLASSIFICATION_ORDER, ed3ClassificationCounts, ed3DiagnosticSummari
 const LINTER_HELP = "The linter is the pre-export release safety surface. It groups validation errors, resource gaps, unresolved semantic links, source/runtime-cache boundaries, and writer readiness so authors can fix blockers before exporting.";
 const RERUN_HELP = "Re-run validation after editing records, assets, maps, or scenario settings. Validation is the quickest way to refresh export blockers and compatibility warnings.";
 const LINTER_SUMMARY_HELP = "Blocking export errors should be fixed before exporting. Warnings may still allow export, but they explain compatibility, fallback, pass-through, or source ownership risks.";
-const SCENARIO_COVERAGE_HELP = "Scenario Coverage summarizes Providence's corpus and writer-readiness evidence: which scenario containers are understood, authoring-ready, preserved, runtime-only, or still writer-gated.";
+const SCENARIO_COVERAGE_HELP = "Scenario Coverage summarizes what Providence can safely author today and which areas still need review before export.";
 const ADVANCED_COVERAGE_HELP = "Advanced coverage details show container-level evidence from the generated coverage manifest. Use this when a warning mentions writer gates, preserved ranges, or runtime state.";
 const SEMANTIC_INSPECTOR_HELP = "The semantic inspector shows the selected linter target, its source, summary fields, links, and editability state so you can jump from a warning to the underlying record.";
+const LINTER_ROW_LIMIT = 24;
 
 export function LinterPanel({
   project,
@@ -78,32 +80,42 @@ export function LinterPanel({
         <ScrollArea className="lint-results" aria-label="Project Linter">
           <ScenarioCoverageSummary coverage={coverage} />
           {semanticGroups.map((group) => (
-            <section key={group.title}>
-              <header>
-                <TutorialTip title={group.title} body={semanticGroupHelp(group.title)} side="below">
-                  <span>{group.title}</span>
-                </TutorialTip>
-              </header>
+            <LinterSection
+              key={group.title}
+              title={group.title}
+              help={semanticGroupHelp(group.title)}
+              count={group.rows.length}
+              defaultOpen={group.defaultOpen}
+              summary={group.summary}
+            >
               {group.rows.map((row) => (
                 <LintInsightRow key={row.id} row={row} onSelectEntity={onSelectEntity} />
               ))}
-            </section>
+            </LinterSection>
           ))}
           {grouped.map(([source, sourceIssues]) => (
-            <section key={source}>
-              <header>
-                <TutorialTip title={source} body={issueSourceHelp(source)} side="below">
-                  <span>{source}</span>
-                </TutorialTip>
-              </header>
-              {sourceIssues.map((issue, index) => (
+            <LinterSection
+              key={source}
+              title={source}
+              help={issueSourceHelp(source)}
+              count={sourceIssues.length}
+              defaultOpen={sourceIssues.some((issue) => issue.severity === "error")}
+              summary={issueGroupSummary(source, sourceIssues)}
+            >
+              {sourceIssues.slice(0, LINTER_ROW_LIMIT).map((issue, index) => (
                 <LintIssueRow
                   key={`${issue.message}-${index}`}
                   issue={issue}
                   onSelectEntity={onSelectEntity}
                 />
               ))}
-            </section>
+              {sourceIssues.length > LINTER_ROW_LIMIT && (
+                <article className="info">
+                  Showing {LINTER_ROW_LIMIT.toLocaleString()} of {sourceIssues.length.toLocaleString()} rows.
+                  <small>Use search or the owning tool to narrow this group before editing records.</small>
+                </article>
+              )}
+            </LinterSection>
           ))}
           {project && issues.length === 0 && <div className="entity-empty">All checks passed.</div>}
         </ScrollArea>
@@ -133,7 +145,7 @@ function semanticGroupHelp(title: string) {
     return "Link Integrity shows semantic references with unresolved endpoints, such as scripts pointing at missing messages, maps, monsters, resources, or macros.";
   }
   if (title === "Script Source Triage") {
-    return "Script Source Triage summarizes imported Data ED3 rows by reachability classification and highlights rows that may be stale, runtime residue, or authored behavior without a proven caller.";
+    return "Script Source Triage separates callable Extra Action Points from imported rows that may be unused, runtime leftovers, or behavior Providence has not proven yet.";
   }
   return "This linter group collects related release-readiness diagnostics. Open a row to inspect the target record or evidence.";
 }
@@ -158,6 +170,45 @@ function issueSourceHelp(source: string) {
   return "These validation issues come from the named project area. Open the row to inspect the linked target when available.";
 }
 
+function LinterSection({
+  title,
+  help,
+  count,
+  defaultOpen,
+  summary,
+  children
+}: {
+  title: string;
+  help: string;
+  count: number;
+  defaultOpen?: boolean;
+  summary?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section>
+      <details className="linter-section-details" open={defaultOpen}>
+        <summary>
+          <TutorialTip title={title} body={help} side="below">
+            <span>{title}</span>
+          </TutorialTip>
+          <small>{count.toLocaleString()}</small>
+        </summary>
+        {summary && <p className="linter-section-summary">{summary}</p>}
+        {children}
+      </details>
+    </section>
+  );
+}
+
+function issueGroupSummary(source: string, issues: Issue[]) {
+  const errors = issues.filter((issue) => issue.severity === "error").length;
+  const warnings = issues.length - errors;
+  if (errors > 0) return `${errors.toLocaleString()} blocker${errors === 1 ? "" : "s"} should be fixed before export.`;
+  if (source.toLowerCase() === "project") return `${warnings.toLocaleString()} project-wide warning${warnings === 1 ? "" : "s"}; expand only when you need the full queue.`;
+  return `${warnings.toLocaleString()} warning${warnings === 1 ? "" : "s"}; most can be reviewed from the owning tool.`;
+}
+
 function ScenarioCoverageSummary({ coverage }: { coverage: ScenarioCoverageManifest | null }) {
   if (!coverage) {
     return (
@@ -173,6 +224,16 @@ function ScenarioCoverageSummary({ coverage }: { coverage: ScenarioCoverageManif
   }
   const summary = coverage.summary;
   const strict = summary.strictCompleteness;
+  const readyContainers = strict
+    ? strict.writerProvenData.fixtureProvenContainers + strict.writerProvenData.partiallyProvenContainers
+    : summary.editableContainers;
+  const reviewContainers = strict
+    ? strict.writerProvenData.partiallyProvenContainers + strict.strictOutstanding.preservedUnknownContainers
+    : summary.preservedContainers + summary.needsFormatWork;
+  const writerGates = strict ? strict.writerProvenData.writerGatedContainers : summary.needsFormatWork;
+  const authoringReady = summary.functionalAuthoringReadiness
+    ? `${summary.functionalAuthoringReadiness.readySystems}/${summary.functionalAuthoringReadiness.totalSystems}`
+    : "Unknown";
   return (
     <section className="scenario-coverage-card">
       <header>
@@ -182,63 +243,15 @@ function ScenarioCoverageSummary({ coverage }: { coverage: ScenarioCoverageManif
         <small>{summary.scenarioRoots.toLocaleString()} checked scenario roots</small>
       </header>
       <div className="scenario-coverage-metrics">
-        {strict ? (
-          <>
-            <Metric label="Known Semantic Containers" value={`${strict.scenarioSemantics.completeContainers + strict.scenarioSemantics.mixedContainers}/${strict.containerCount}`} />
-            <Metric label="Mixed, Not Unknown" value={strict.scenarioSemantics.mixedContainers} />
-            <Metric label="Writer Gates Remaining" value={strict.writerProvenData.writerGatedContainers} />
-            <Metric label="Package Warnings" value={strict.packageCompatibility.warnings} />
-            <Metric label="Functional Authoring" value={summary.functionalAuthoringReadiness ? `${summary.functionalAuthoringReadiness.readySystems}/${summary.functionalAuthoringReadiness.totalSystems}` : "Unknown"} />
-          </>
-        ) : (
-          <>
-            <Metric label="Editable" value={summary.editableContainers} />
-            <Metric label="Preserved" value={summary.preservedContainers} />
-            <Metric label="Runtime State" value={summary.runtimeStateContainers} />
-            <Metric label="Needs Format Work" value={summary.needsFormatWork} />
-          </>
-        )}
-        <Metric label="Ignored" value={summary.ignoredNonScenarioFiles} />
+        <Metric label="Ready to Author" value={readyContainers} />
+        <Metric label="Needs Review" value={reviewContainers} />
+        <Metric label="Writer Blockers" value={writerGates} />
+        <Metric label="Package Notes" value={strict ? strict.packageCompatibility.warnings : summary.targetCompatibility?.targetCompatibilityIssues ?? 0} />
+        <Metric label="Authoring Systems" value={authoringReady} />
       </div>
       <div className="scenario-coverage-note">
-        {strict && (
-          <>
-            Semantic audit: {(strict.scenarioSemantics.completeContainers + strict.scenarioSemantics.mixedContainers).toLocaleString()} / {strict.containerCount.toLocaleString()} tracked container(s) are understood at the scenario boundary; {strict.scenarioSemantics.mixedContainers.toLocaleString()} include known compatibility/runtime ranges that Providence preserves instead of claiming as author-owned fields.
-            Writer readiness: {(strict.writerProvenData.fixtureProvenContainers + strict.writerProvenData.partiallyProvenContainers).toLocaleString()} authoring-ready container(s);
-            {strict.writerProvenData.partiallyProvenContainers.toLocaleString()} include preserved compatibility/runtime ranges;
-            {strict.writerProvenData.writerGatedContainers.toLocaleString()} writer gate(s) remain.
-            {strict.strictOutstanding.preservedUnknownContainers.toLocaleString()} preserved unknown container(s);
-            {strict.strictOutstanding.targetWarnings.toLocaleString()} package warning(s).
-            {" "}
-          </>
-        )}
-        {summary.completeness && (
-          <>
-            Scenario boundary: {formatCoveragePhrase(summary.completeness.scenarioSemanticOwnership.status)}.
-            Resource forks: {summary.completeness.resourceContainerOwnership.parsedResourceForks.toLocaleString()} / {summary.completeness.resourceContainerOwnership.resourceForkFiles.toLocaleString()} parsed.
-            Media codecs: {formatCoveragePhrase(summary.completeness.mediaCodecInternals.status)}.
-            {" "}
-          </>
-        )}
-        {summary.targetCompatibility && (
-          <>
-            Targets: {summary.targetCompatibility.macClassicScenarios.toLocaleString()} Mac-style and {summary.targetCompatibility.windowsRealmzScenarios.toLocaleString()} Windows-style scenario(s), {summary.targetCompatibility.targetCompatibilityIssues.toLocaleString()} packaging note(s).
-            {" "}
-          </>
-        )}
-        {summary.functionalAuthoringReadiness && (
-          <>
-            Functional authoring: {formatCoveragePhrase(summary.functionalAuthoringReadiness.status)} across {summary.functionalAuthoringReadiness.readySystems.toLocaleString()} / {summary.functionalAuthoringReadiness.totalSystems.toLocaleString()} blocker-focused system(s).
-            {" "}
-          </>
-        )}
-        Action Points: {summary.ed3.recordBytes}-byte Extra Action rows, {summary.ed3.runtimeCallsites ?? "known"} runtime callsite(s).
-        Parameters: {summary.edcd.edcdBackedOpcodes ?? "known"} opcode-backed shapes, {summary.edcd.fieldComparisonGaps ?? 0} label gap(s) left.
-        {summary.dungeon && (
-          <>
-            {" "}Dungeons: {summary.dungeon.bits ?? "known"} cell bits, {summary.dungeon.writerSafeBits ?? 0} primitive bit(s), {summary.dungeon.preservedUnknownBits ?? 0} preserved unknown bit(s).
-          </>
-        )}
+        Providence can safely author the main scenario systems that have fixture coverage, while preserving legacy compatibility data it does not edit directly.
+        Use the warning sections below for work that may affect export or in-game behavior. Advanced details are available for developer evidence and format coverage.
       </div>
       {coverage.topRisks.length > 0 && (
         <div className="scenario-coverage-risks">
@@ -366,7 +379,7 @@ type LintInsight = {
 function LintInsightRow({ row, onSelectEntity }: { row: LintInsight; onSelectEntity: (entity: SelectedEntity) => void }) {
   const content = (
     <>
-      {row.severity === "error" ? "x" : "!"} {row.message}
+      {row.severity === "error" ? "x" : row.severity === "warning" ? "!" : "i"} {row.message}
       <small>{row.detail}</small>
     </>
   );
@@ -392,6 +405,8 @@ function semanticLintGroups(project: Project | null) {
   return [
     {
       title: "Resource Coverage",
+      defaultOpen: gaps.length > 0,
+      summary: resourceCoverageSummary(gaps.length, fallbacks.length),
       rows: [
         ...gaps.slice(0, 12).map((gap): LintInsight => ({
           id: `gap:${gap.entity.id}`,
@@ -400,29 +415,31 @@ function semanticLintGroups(project: Project | null) {
           detail: `${gap.consumers.length.toLocaleString()} incoming reference(s).`,
           target: gap.entity.id
         })),
-        ...fallbacks.slice(0, 8).map((entity): LintInsight => ({
-          id: `asset:${entity.id}`,
-          severity: "warning",
-          message: `${entity.label} is using an asset fallback.`,
-          detail: String(entity.summary.reason ?? entity.id),
-          target: entity.id
-        }))
+        fallbacks.length > 0 ? {
+          id: "asset-fallback-summary",
+          severity: "info" as const,
+          message: `${fallbacks.length.toLocaleString()} referenced resource${fallbacks.length === 1 ? "" : "s"} will use Realmz's shared library fallback.`,
+          detail: "This is usually fine. Expand Assets only if an image, sound, or text preview looks wrong."
+        } : null
       ]
+        .filter((row): row is LintInsight => Boolean(row))
     },
     {
       title: "Export Boundaries",
+      defaultOpen: false,
+      summary: "These are compatibility notes about what Providence writes directly and what it preserves unchanged.",
       rows: [
         {
           id: "pass-through",
-          severity: "warning" as const,
-          message: `${passThrough.length.toLocaleString()} source file(s) will pass through unchanged.`,
-          detail: passThrough.slice(0, 8).map((source) => source.name).join(", ") || "No pass-through files."
+          severity: "info" as const,
+          message: `${passThrough.length.toLocaleString()} source file${passThrough.length === 1 ? "" : "s"} will be preserved unchanged.`,
+          detail: passThrough.length > 0 ? "Providence will keep these files with the scenario package but does not edit them yet." : "No pass-through files."
         },
         {
           id: "runtime-caches",
           severity: "warning" as const,
-          message: `${caches.length.toLocaleString()} generated runtime cache model(s) are blocked from authoring.`,
-          detail: caches.map((cache) => cache.id.replace("runtime-cache:", "")).join(", ") || "none"
+          message: `${caches.length.toLocaleString()} runtime cache model${caches.length === 1 ? "" : "s"} cannot be edited.`,
+          detail: "These are generated by Realmz at runtime and should not be authored directly."
         },
         {
           id: "blocked-objects",
@@ -430,10 +447,12 @@ function semanticLintGroups(project: Project | null) {
           message: `${blocked.entities.length + blocked.records.length} item(s) are not editable yet.`,
           detail: "These items are visible for review but cannot be written by this exporter."
         }
-      ].filter((row) => !row.message.startsWith("0 ") || row.id === "runtime-caches")
+      ].filter((row) => !row.message.startsWith("0 "))
     },
     {
       title: "Script Source Triage",
+      defaultOpen: ed3Risky.length > 0 && ed3Risky.length <= 8,
+      summary: scriptTriageSummary(ed3Summaries.length, ed3Risky.length),
       rows: [
         ...ED3_CLASSIFICATION_ORDER
           .map((classification): LintInsight | null => {
@@ -444,24 +463,31 @@ function semanticLintGroups(project: Project | null) {
             return {
               id: `ed3-summary:${classification}`,
               severity: "info",
-              message: `${count.toLocaleString()} ${label} ED3 row${count === 1 ? "" : "s"}.`,
-              detail: classification === "probable-editor-padding"
-                ? "Likely padding is summarized here but not listed row-by-row."
-                : sample?.detail ?? "ED3 reachability summary."
+              message: ed3SummaryMessage(classification, count, label),
+              detail: ed3SummaryDetail(classification, sample?.detail)
             };
           })
           .filter((row): row is LintInsight => Boolean(row)),
-        ...ed3Risky.slice(0, 16).map((summary): LintInsight => ({
+        ...ed3Risky.slice(0, 8).map((summary): LintInsight => ({
           id: `ed3-risk:${summary.recordIndex}`,
           severity: summary.linterSeverity ?? "warning",
-          message: `${summary.linterLabel} ED3 row ${summary.recordIndex}.`,
-          detail: `${summary.detail} ${summary.incomingRefs.toLocaleString()} incoming ref(s); signature ${summary.rawSignature.join(", ") || "empty"}.`,
+          message: `Review Extra Action row ${summary.recordIndex}.`,
+          detail: humanScriptTriageDetail(summary.classification),
           target: summary.entityId
-        }))
+        })),
+        ed3Risky.length > 8 ? {
+          id: "ed3-risk-more",
+          severity: "info" as const,
+          message: `${(ed3Risky.length - 8).toLocaleString()} more imported action row${ed3Risky.length - 8 === 1 ? "" : "s"} need review.`,
+          detail: "Use Scripts filters or the developer report when you need row-by-row evidence."
+        } : null
       ]
+        .filter((row): row is LintInsight => Boolean(row))
     },
     {
       title: "Link Integrity",
+      defaultOpen: unresolved.length > 0 && unresolved.length <= 12,
+      summary: `${unresolved.length.toLocaleString()} unresolved link${unresolved.length === 1 ? "" : "s"} found. These are the references most likely to affect author-visible behavior.`,
       rows: unresolved.slice(0, 16).map((link): LintInsight => ({
         id: `unresolved:${link.id}`,
         severity: "warning",
@@ -473,11 +499,50 @@ function semanticLintGroups(project: Project | null) {
   ].filter((group) => group.rows.length > 0);
 }
 
+function resourceCoverageSummary(gapCount: number, fallbackCount: number) {
+  if (gapCount === 0 && fallbackCount === 0) return "All referenced resources currently resolve.";
+  const parts = [];
+  if (gapCount > 0) parts.push(`${gapCount.toLocaleString()} missing/problem resource${gapCount === 1 ? "" : "s"}`);
+  if (fallbackCount > 0) parts.push(`${fallbackCount.toLocaleString()} shared-library fallback${fallbackCount === 1 ? "" : "s"}`);
+  return `${parts.join("; ")}. Missing resources deserve review; fallbacks are often normal Realmz behavior.`;
+}
+
+function scriptTriageSummary(total: number, risky: number) {
+  if (total === 0) return "No imported Extra Action rows were found.";
+  if (risky === 0) return "Imported Extra Action rows are either callable, empty, or not currently actionable.";
+  return `${risky.toLocaleString()} imported Extra Action row${risky === 1 ? "" : "s"} may need review before you treat them as intentional scenario behavior.`;
+}
+
+function ed3SummaryMessage(classification: string, count: number, label: string) {
+  if (classification === "source-backed") return `${count.toLocaleString()} callable Extra Action row${count === 1 ? "" : "s"}.`;
+  if (classification === "probable-editor-padding") return `${count.toLocaleString()} likely empty imported row${count === 1 ? "" : "s"}.`;
+  if (classification === "runtime-mutation-candidate") return `${count.toLocaleString()} possible runtime leftover row${count === 1 ? "" : "s"}.`;
+  if (classification === "orphan-authored-content") return `${count.toLocaleString()} possible orphan authored row${count === 1 ? "" : "s"}.`;
+  if (classification === "needs-runtime-trace") return `${count.toLocaleString()} row${count === 1 ? "" : "s"} need runtime confirmation.`;
+  return `${count.toLocaleString()} ${label.toLowerCase()} row${count === 1 ? "" : "s"}.`;
+}
+
+function ed3SummaryDetail(classification: string, fallback?: string) {
+  if (classification === "source-backed") return "These are linked from known scenario flow and can be inspected normally in Scripts.";
+  if (classification === "probable-editor-padding") return "These look empty or unused, so Providence counts them but does not list every row.";
+  if (classification === "runtime-mutation-candidate") return "These may be leftover state that Realmz mutates while running a scenario.";
+  if (classification === "orphan-authored-content") return "These contain action-like content but no caller Providence can prove yet.";
+  if (classification === "needs-runtime-trace") return "These may be real behavior, but need playtesting or deeper tracing before editing confidently.";
+  return fallback ?? "Providence preserved these rows but cannot explain them yet.";
+}
+
+function humanScriptTriageDetail(classification: string) {
+  if (classification === "runtime-mutation-candidate") return "May be runtime state rather than author-authored behavior. Open it before editing.";
+  if (classification === "orphan-authored-content") return "Looks authored, but Providence has not found what calls it yet.";
+  if (classification === "needs-runtime-trace") return "Could be reachable through behavior Providence has not decoded. Verify before relying on it.";
+  return "Imported row needs review before editing.";
+}
+
 function LintIssueRow({ issue, onSelectEntity }: { issue: Issue; onSelectEntity: (entity: SelectedEntity) => void }) {
   const target = issue.target ?? (isSemanticId(issue.source) ? issue.source : null);
   const content = (
     <>
-      {issue.severity === "error" ? "x" : "!"} {issue.message}
+      {issue.severity === "error" ? "x" : issue.severity === "warning" ? "!" : "i"} {issue.message}
       {target && <small>{target}</small>}
     </>
   );
