@@ -42,9 +42,10 @@ if (outPath) {
 
 function collectProjectPictures(project, sourcePath, outputRows) {
   const projectLabel = project?.metadata?.title ?? project?.name ?? path.basename(path.dirname(sourcePath));
+  const catalogRows = [];
   for (const picture of project?.assetCatalog?.pictures ?? []) {
     if (!isPictRecord(picture)) continue;
-    outputRows.push(rowFromCatalogEntry({
+    catalogRows.push(rowFromCatalogEntry({
       scope: "scenario",
       source: picture.source ?? projectLabel,
       resourceType: picture.resourceType ?? "PICT",
@@ -56,7 +57,7 @@ function collectProjectPictures(project, sourcePath, outputRows) {
   }
   for (const tileset of project?.assetCatalog?.tilesets ?? []) {
     if (tileset.pictId == null) continue;
-    outputRows.push(rowFromCatalogEntry({
+    catalogRows.push(rowFromCatalogEntry({
       scope: "scenario-tileset",
       source: tileset.source ?? projectLabel,
       resourceType: "PICT",
@@ -67,16 +68,25 @@ function collectProjectPictures(project, sourcePath, outputRows) {
       status: tileset.available === false ? "missing-fallback" : undefined
     }));
   }
+  outputRows.push(...catalogRows);
+  const readyCatalogIds = new Set(
+    catalogRows
+      .filter((row) => row.status === "preview-ready" && row.resourceId != null)
+      .map((row) => `${row.resourceType}:${row.resourceId}`)
+  );
   for (const entity of project?.semanticSchema?.entities ?? []) {
     const summary = entity?.summary ?? {};
     const resourceType = summary.resourceType ?? summary.type;
     if (String(resourceType ?? "").trim() !== "PICT") continue;
+    const resourceId = summary.resourceId ?? summary.id;
+    if (resourceId == null) continue;
+    if (readyCatalogIds.has(`PICT:${resourceId}`)) continue;
     outputRows.push(rowFromCatalogEntry({
       scope: "semantic-resource",
       source: entity.source ?? projectLabel,
       resourceType: "PICT",
-      resourceId: summary.resourceId ?? summary.id,
-      label: entity.label ?? `PICT ${summary.resourceId ?? ""}`.trim(),
+      resourceId,
+      label: entity.label ?? `PICT ${resourceId}`.trim(),
       previewPath: summary.previewPath ?? summary.previewDataUrl ?? null,
       diagnostics: summary.previewDiagnostics ?? summary.diagnostics ?? [],
       status: normalizeSummaryStatus(summary)
@@ -111,7 +121,7 @@ function collectDivinityManualPicts(outputRows) {
 function rowFromCatalogEntry(entry) {
   const diagnostics = Array.isArray(entry.diagnostics) ? entry.diagnostics : [];
   const firstDiagnostic = diagnostics[0];
-  const status = entry.status ?? (entry.previewPath ? "preview-ready" : diagnosticStatus(firstDiagnostic));
+  const status = entry.status ?? (entry.previewPath || hasBuiltInReferencePict(entry.resourceId) ? "preview-ready" : diagnosticStatus(firstDiagnostic));
   return {
     scope: entry.scope,
     source: entry.source,
@@ -120,8 +130,27 @@ function rowFromCatalogEntry(entry) {
     label: entry.label,
     status,
     diagnostic: diagnosticKey(firstDiagnostic, status),
-    previewPath: entry.previewPath ?? null
+    previewPath: entry.previewPath ?? builtInReferencePictPreviewPath(entry.resourceId)
   };
+}
+
+function hasBuiltInReferencePict(resourceId) {
+  return builtInReferencePictPreviewPath(resourceId) !== null;
+}
+
+function builtInReferencePictPreviewPath(resourceId) {
+  const id = Number(resourceId);
+  if (!Number.isFinite(id)) return null;
+  const atlasPaths = {
+    300: "reference://realmz/pict/300",
+    302: "reference://realmz/pict/302",
+    303: "reference://realmz/pict/303",
+    304: "reference://realmz/pict/304",
+    305: "reference://realmz/pict/305",
+    309: "reference://realmz/pict/309",
+    310: "reference://realmz/pict/310"
+  };
+  return atlasPaths[id] ?? null;
 }
 
 function isPictRecord(entry) {

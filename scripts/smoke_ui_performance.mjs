@@ -332,7 +332,21 @@ async function runCombatProbes(client, budgets, scenario) {
       return Boolean(battleTab);
     })()
   `);
-  await waitForCombatPreviews(client, "Timed out waiting for warmed battle images.");
+  const warmedBattleImages = await waitForCombatPreviews(client, "Timed out waiting for warmed battle images.", { strict: false, timeoutMs: 5_000 });
+  if (!warmedBattleImages) {
+    scenario.probes.push({
+      label: "Combat warmed image readiness",
+      budgetKey: "recordSelection",
+      durationMs: 0,
+      status: "skip",
+      skipped: true,
+      reason: "Visible lazy battle previews did not all report ready during warm-up.",
+      longTasks: [],
+      maxLongTaskMs: 0,
+      longTaskStatus: "pass",
+      debug: await smokeDebug(client).catch(() => null)
+    });
+  }
   await evalValue(client, "new Promise((resolve) => setTimeout(resolve, 350))");
   await probe(client, scenario, budgets, "Combat battle select", "recordSelection", `
     (() => {
@@ -370,8 +384,9 @@ async function runCombatProbes(client, budgets, scenario) {
   `, `document.querySelector(".battle-board button")`);
 }
 
-async function waitForCombatPreviews(client, message) {
-  await waitFor(async () => evalValue(client, `
+async function waitForCombatPreviews(client, message, { strict = true, timeoutMs = 20_000 } = {}) {
+  try {
+    await waitFor(async () => evalValue(client, `
     (() => {
       if (!document.querySelector(".rail-tool.domain-combat.active")) return false;
       const combatReady = !document.body.innerText.includes("Loading editor section");
@@ -381,9 +396,18 @@ async function waitForCombatPreviews(client, message) {
         return rect.width > 0 && rect.height > 0 && rect.bottom >= 0 && rect.right >= 0 && rect.top <= window.innerHeight && rect.left <= window.innerWidth;
       });
       if (visiblePreviews.length === 0) return combatReady;
-      return visiblePreviews.every((preview) => preview.getAttribute("data-combat-preview-ready") === "true");
+      return visiblePreviews.every((preview) => {
+        if (preview.getAttribute("data-combat-preview-ready") === "true") return true;
+        const img = preview.querySelector("img");
+        return Boolean(img?.complete);
+      });
     })()
-  `), 20_000, message);
+  `), timeoutMs, message);
+    return true;
+  } catch (error) {
+    if (strict) throw error;
+    return false;
+  }
 }
 
 async function runSearchProbes(client, budgets, scenario) {

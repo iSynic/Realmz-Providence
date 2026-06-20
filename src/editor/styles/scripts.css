@@ -347,6 +347,24 @@
   text-transform: uppercase;
 }
 
+.script-reachability-badge.ready {
+  color: #a7f3c3;
+  border-color: #27734a;
+  background: #0c2418;
+}
+
+.script-reachability-badge.muted {
+  color: #93a4b7;
+  border-color: #334252;
+  background: #111820;
+}
+
+.script-reachability-badge.warning {
+  color: #ffd37a;
+  border-color: #7d6224;
+  background: #221a0b;
+}
+
 
 
 .ed3-evidence-strip {
@@ -562,6 +580,36 @@
   color: #9bd4ff;
   font-size: 11px;
   text-transform: uppercase;
+}
+
+.script-evidence-pill {
+  width: fit-content;
+  border: 1px solid #315270;
+  border-radius: 3px;
+  background: #0d1b27;
+  color: #9fc2df;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.script-evidence-pill.ready {
+  color: #a7f3c3;
+  border-color: #27734a;
+  background: #0c2418;
+}
+
+.script-evidence-pill.muted {
+  color: #93a4b7;
+  border-color: #334252;
+  background: #111820;
+}
+
+.script-evidence-pill.warning {
+  color: #ffd37a;
+  border-color: #7d6224;
+  background: #221a0b;
 }
 
 .script-record-note small {

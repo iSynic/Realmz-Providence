@@ -1,7 +1,7 @@
 import { memo, type RefObject, useEffect, useState } from "react";
 import { Action, Project, ScriptInventoryFilter, SelectedEntity, SemanticEntity, TriggerRecord } from "../../types";
 import { selectEntityFromId, triggerEntityId } from "../../utils";
-import { extraActionPointClassification, isCallableMacro } from "../../semanticGraph";
+import { extraActionEvidenceSummary, extraActionPointClassification, isCallableMacro } from "../../semanticGraph";
 import { isReusableDoorPlaceholder } from "../../actionPointCapacity";
 import { ScriptDiagnostic } from "../../scriptValidation";
 
@@ -20,6 +20,7 @@ export const ScriptListItem = memo(function ScriptListItem({
   issues: ScriptDiagnostic[];
   onSelectEntity: (entity: SelectedEntity) => void;
 }) {
+  const ed3Evidence = trigger.source === "Data ED3" ? extraActionEvidenceSummary(project, trigger) : null;
   return (
     <button
       type="button"
@@ -29,7 +30,11 @@ export const ScriptListItem = memo(function ScriptListItem({
     >
       <strong>{scriptLabel(project, trigger)}</strong>
       <small>{scriptSubtitle(project, trigger)}</small>
-      {trigger.source === "Data ED3" && <small className="script-reachability-badge">{authorFacingExtraActionKind(extraActionPointClassification(project, trigger))}</small>}
+      {trigger.source === "Data ED3" && (
+        <small className={`script-reachability-badge ${ed3Evidence?.tone ?? ""}`} title={ed3Evidence?.detail}>
+          {ed3Evidence?.label ?? authorFacingExtraActionKind(extraActionPointClassification(project, trigger))}
+        </small>
+      )}
       <ScriptIssueBadge issues={issues} />
     </button>
   );

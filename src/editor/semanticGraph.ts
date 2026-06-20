@@ -245,12 +245,71 @@ export function extraActionPointClassification(project: Project | null, trigger:
   return "Callable Extra Action Point";
 }
 
+export function extraActionEvidenceSummary(project: Project | null, trigger: TriggerRecord) {
+  if (trigger.source !== "Data ED3") return null;
+  const row = ed3ReachabilityFor(project, trigger.recordIndex);
+  const classification = row?.classification ?? "unknown";
+  const actionCount = row?.actionCount ?? trigger.actions.filter((action) => action.rawCode !== 0 || action.id !== 0).length;
+  if (row?.reachable) {
+    return {
+      label: rootTypeLabel(row.rootType),
+      tone: "ready" as const,
+      detail: `Source-backed call path found; ${actionCount} occupied step${actionCount === 1 ? "" : "s"}.`
+    };
+  }
+  if (classification === "probable-editor-padding") {
+    return {
+      label: "Likely empty padding",
+      tone: "muted" as const,
+      detail: "No occupied steps and no source-backed caller. This is probably an unused imported ED3 slot."
+    };
+  }
+  if (classification === "runtime-mutation-candidate") {
+    return {
+      label: "Possible runtime mutation residue",
+      tone: "warning" as const,
+      detail: "Contains action-state mutation opcodes but no source-backed caller. Treat as preserved imported evidence until runtime use is proven."
+    };
+  }
+  if (classification === "orphan-authored-content") {
+    return {
+      label: "Possible orphan authored action",
+      tone: "warning" as const,
+      detail: "Has authored-looking content but no known caller. It may be unused, stale, or reached by behavior Providence has not decoded yet."
+    };
+  }
+  if (classification === "needs-runtime-trace") {
+    return {
+      label: "Needs runtime trace",
+      tone: "warning" as const,
+      detail: "Multiple occupied steps but no source-backed caller. Confirm with Realmz runtime behavior before treating it as callable."
+    };
+  }
+  return {
+    label: "Unclassified imported ED3 row",
+    tone: "warning" as const,
+    detail: "Providence preserved this row but could not classify its reachability evidence."
+  };
+}
+
 function importedExtraActionLabel(classification: string | null | undefined) {
   if (classification === "probable-editor-padding") return "Imported Empty Slot";
   if (classification === "runtime-mutation-candidate") return "Imported Runtime Mutation";
   if (classification === "orphan-authored-content") return "Imported Extra Action";
   if (classification === "needs-runtime-trace") return "Imported Extra Action";
   return "Imported Extra Action";
+}
+
+function rootTypeLabel(rootType: string | null | undefined) {
+  const value = rootType ?? "";
+  if (value.includes("global")) return "Source-backed global event";
+  if (value.includes("random")) return "Source-backed random encounter action";
+  if (value.includes("time")) return "Source-backed timed encounter action";
+  if (value.includes("battle")) return "Source-backed battle action";
+  if (value.includes("monster")) return "Source-backed monster action";
+  if (value.includes("item")) return "Source-backed item action";
+  if (value.includes("recursive")) return "Source-backed recursive macro";
+  return "Source-backed Extra Action Point";
 }
 
 export function isCallableMacro(project: Project | null, trigger: TriggerRecord) {

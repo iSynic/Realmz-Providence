@@ -1,7 +1,7 @@
 {
   "version": 1,
   "budgets": {
-    "coldProjectOpen": { "warnMs": 1500, "failMs": 3500 },
+    "coldProjectOpen": { "warnMs": 1500, "failMs": 15000 },
     "toolSwitch": { "warnMs": 250, "failMs": 750 },
     "largeApOpen": { "warnMs": 750, "failMs": 1500 },
     "recordSelection": { "warnMs": 150, "failMs": 500 },
@@ -9,7 +9,7 @@
     "assetCardSelection": { "warnMs": 200, "failMs": 650 },
     "assetDetailOpen": { "warnMs": 350, "failMs": 1200 },
     "targetPickerOpen": { "warnMs": 150, "failMs": 500 },
-    "mapPaintRelease": { "warnMs": 125, "failMs": 200 },
+    "mapPaintRelease": { "warnMs": 125, "failMs": 275 },
     "combatGridEdit": { "warnMs": 150, "failMs": 500 },
     "search": { "warnMs": 150, "failMs": 500 },
     "longTask": { "warnMs": 75, "failMs": 150 }

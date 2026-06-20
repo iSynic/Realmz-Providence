@@ -2,7 +2,7 @@ import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState, useT
 import { AlertTriangle, ArrowDown, ArrowUp, Copy, CopyPlus, Plus, Save, Trash2, Volume2, X } from "lucide-react";
 import { Action, EncounterActionRow, LevelType, LibraryCatalog, Project, ProjectCommand, RealmzTargetRecordKind, ScriptDetailSurface, ScriptInventoryFilter, SelectedEntity, SemanticEntity, TriggerRecord } from "../types";
 import { linksFor, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
-import { actionSlotEntitiesForTriggerRecord, extraActionPointClassification } from "../semanticGraph";
+import { actionSlotEntitiesForTriggerRecord, extraActionEvidenceSummary, extraActionPointClassification } from "../semanticGraph";
 import { EdcdRowEditor } from "../components/EdcdRowEditor";
 import { TargetPicker, resolveSignedMessageTarget, signedTargetBehaviorLabel, signedTargetValueForSelection, targetOptionForOpcodeValue, targetOptionsForOpcode, type ScriptTargetOption } from "../components/RealmzTargetPicker";
 import { TutorialTip } from "../components/TutorialTip";
@@ -521,6 +521,7 @@ function ScriptAuthoringPanel({
   const selectedEdcdRowId = selectedOption.edcdShape ? Math.max(0, selectedDraft.id) : null;
   const isMacro = selectedTrigger?.source === "Data ED3";
   const selectedExtraActionClassification = selectedTrigger && isMacro ? authorFacingExtraActionKind(extraActionPointClassification(project, selectedTrigger)) : "Action Point";
+  const selectedExtraActionEvidence = selectedTrigger && isMacro ? extraActionEvidenceSummary(project, selectedTrigger) : null;
   const deleteMacroLabel = selectedExtraActionClassification === "Global Event" ? "Delete Global Event" : "Delete Extra Action Point";
   const moveMapKey = selectedTrigger && !isMacro && selectedTrigger.levelType && selectedTrigger.levelIndex != null
     ? `${selectedTrigger.levelType}:${selectedTrigger.levelIndex}`
@@ -831,7 +832,12 @@ function ScriptAuthoringPanel({
               {isMacro ? (
                 <div className="script-record-note">
                   <strong>{selectedExtraActionClassification}</strong>
-                  <small>Extra Action Points store only the eight script steps. Map trigger fields like chance, location, and goto target do not apply until another script calls them.</small>
+                  {selectedExtraActionEvidence && (
+                    <span className={`script-evidence-pill ${selectedExtraActionEvidence.tone}`}>
+                      {selectedExtraActionEvidence.label}
+                    </span>
+                  )}
+                  <small>{selectedExtraActionEvidence?.detail ?? "Extra Action Points store only the eight script steps. Map trigger fields like chance, location, and goto target do not apply until another script calls them."}</small>
                 </div>
               ) : (
                 <div className="script-header-grid">

@@ -96,8 +96,7 @@ export function defaultProjectSpecs(explicitProjects = []) {
   ];
 }
 
-export function findLatestProject(nameNeedles, pathNeedles) {
-  const roots = [path.join(root, "tmp", "editor-smoke-runs"), path.join(root, "tmp", "oracle-runs"), path.join(root, "projects")];
+export function findLatestProject(nameNeedles, pathNeedles, roots = defaultUiProjectRoots()) {
   const matches = [];
   for (const searchRoot of roots) visit(searchRoot);
   matches.sort((a, b) => b.mtimeMs - a.mtimeMs);
@@ -118,6 +117,14 @@ export function findLatestProject(nameNeedles, pathNeedles) {
     const pathOk = pathNeedles.length === 0 || pathNeedles.some((needle) => normalized.includes(needle.toLowerCase()));
     return nameOk && pathOk;
   }
+}
+
+function defaultUiProjectRoots() {
+  return [
+    path.join(root, "tmp", "desktop-ui-harness"),
+    path.join(root, "tmp", "editor-smoke-runs"),
+    path.join(root, "projects")
+  ];
 }
 
 export function findEdge() {
