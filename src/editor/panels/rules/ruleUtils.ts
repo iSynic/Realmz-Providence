@@ -2,7 +2,13 @@ import { LibraryCatalog, Project, ScenarioCasteOverride, ScenarioRaceOverride, S
 import { REALMZ_CASTES, REALMZ_RACES, SPELL_CASTER_CLASSES } from "../../rulesCatalog";
 import { CasteRuleEntry, RaceRuleEntry, RulesFamily, SpellRuleEntry } from "./ruleTypes";
 
+const spellEntryCache = new WeakMap<Project, { catalog: LibraryCatalog | null; overrides: ScenarioSpellOverride[] | undefined; entries: SpellRuleEntry[] }>();
+const raceEntryCache = new WeakMap<Project, { catalog: LibraryCatalog | null; overrides: ScenarioRaceOverride[] | undefined; entries: RaceRuleEntry[] }>();
+const casteEntryCache = new WeakMap<Project, { catalog: LibraryCatalog | null; overrides: ScenarioCasteOverride[] | undefined; entries: CasteRuleEntry[] }>();
+
 export function buildSpellEntries(project: Project, catalog: LibraryCatalog | null): SpellRuleEntry[] {
+  const cached = spellEntryCache.get(project);
+  if (cached && cached.catalog === catalog && cached.overrides === project.spellOverrides) return cached.entries;
   const scenario = new Map((project.spellOverrides ?? []).map((record) => [record.id, record]));
   const library = new Map<number, ScenarioSpellOverride>();
   for (const entity of catalog?.entities ?? []) {
@@ -35,6 +41,7 @@ export function buildSpellEntries(project: Project, catalog: LibraryCatalog | nu
       }
     }
   }
+  spellEntryCache.set(project, { catalog, overrides: project.spellOverrides, entries });
   return entries;
 }
 
@@ -141,6 +148,8 @@ export function nextSpellPackedId(entry: SpellRuleEntry) {
 }
 
 export function buildRaceEntries(project: Project, catalog: LibraryCatalog | null): RaceRuleEntry[] {
+  const cached = raceEntryCache.get(project);
+  if (cached && cached.catalog === catalog && cached.overrides === project.raceOverrides) return cached.entries;
   const scenario = new Map((project.raceOverrides ?? []).map((record) => [record.id, record]));
   const library = new Map<number, ScenarioRaceOverride>();
   for (const entity of catalog?.entities ?? []) {
@@ -149,7 +158,7 @@ export function buildRaceEntries(project: Project, catalog: LibraryCatalog | nul
     if (!Number.isInteger(id) || id < 0 || id >= 30) continue;
     library.set(id, raceFromSummary(entity.summary, id));
   }
-  return Array.from({ length: 30 }, (_, id) => {
+  const entries = Array.from({ length: 30 }, (_, id) => {
     const scenarioRecord = scenario.get(id) ?? null;
     return {
       id,
@@ -157,9 +166,13 @@ export function buildRaceEntries(project: Project, catalog: LibraryCatalog | nul
       hasScenarioVersion: Boolean(scenarioRecord)
     };
   });
+  raceEntryCache.set(project, { catalog, overrides: project.raceOverrides, entries });
+  return entries;
 }
 
 export function buildCasteEntries(project: Project, catalog: LibraryCatalog | null): CasteRuleEntry[] {
+  const cached = casteEntryCache.get(project);
+  if (cached && cached.catalog === catalog && cached.overrides === project.casteOverrides) return cached.entries;
   const scenario = new Map((project.casteOverrides ?? []).map((record) => [record.id, record]));
   const library = new Map<number, ScenarioCasteOverride>();
   for (const entity of catalog?.entities ?? []) {
@@ -168,7 +181,7 @@ export function buildCasteEntries(project: Project, catalog: LibraryCatalog | nu
     if (!Number.isInteger(id) || id < 0 || id >= 30) continue;
     library.set(id, casteFromSummary(entity.summary, id));
   }
-  return Array.from({ length: 30 }, (_, id) => {
+  const entries = Array.from({ length: 30 }, (_, id) => {
     const scenarioRecord = scenario.get(id) ?? null;
     return {
       id,
@@ -176,6 +189,8 @@ export function buildCasteEntries(project: Project, catalog: LibraryCatalog | nu
       hasScenarioVersion: Boolean(scenarioRecord)
     };
   });
+  casteEntryCache.set(project, { catalog, overrides: project.casteOverrides, entries });
+  return entries;
 }
 
 export function raceFromSummary(summary: Record<string, unknown>, id: number): ScenarioRaceOverride {
