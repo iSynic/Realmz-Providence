@@ -249,13 +249,37 @@ fn evidence_lab_string_sound_support_file_exports() {
     )
     .unwrap();
 
-    let output = fs::read(export_dir.join(support_file_name)).unwrap();
+    let output = fs::read(export_dir.join(&support_file_name)).unwrap();
     assert_eq!(output[23], 3);
     assert_eq!(i16_be(&output, 38), 145);
     assert_eq!(
         fs::read(export_dir.join("Data SD2")).unwrap(),
         original_data_sd2,
         "changing the selected string sound should not rewrite Data SD2 string text bytes"
+    );
+
+    let support_file = project
+        .scenario
+        .support_file
+        .as_mut()
+        .expect("Evidence Lab fixture should keep a Scenario support file");
+    support_file.divinity_string_sound_id = Some(-145);
+    let export_dir = temp.path().join("exported-negative");
+    export_project(
+        &project_dir,
+        &project,
+        &export_dir,
+        ScenarioTarget::ProvidencePortableFolder,
+    )
+    .unwrap();
+
+    let output = fs::read(export_dir.join(&support_file_name)).unwrap();
+    assert_eq!(output[23], 3);
+    assert_eq!(i16_be(&output, 38), -145);
+    assert_eq!(
+        fs::read(export_dir.join("Data SD2")).unwrap(),
+        original_data_sd2,
+        "changing string sound wait behavior should not rewrite Data SD2 string text bytes"
     );
 }
 

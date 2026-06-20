@@ -4,7 +4,7 @@ import { LibraryCatalog, MessageRecord, OptionLabelRecord, Project, ProjectComma
 import { selectEntityFromId } from "../utils";
 import { classicTextByteLength, messageUsageLinks, optionLabelUsageLinks, unsupportedClassicTextChars } from "../contentLinks";
 import { TutorialTip } from "../components/TutorialTip";
-import { filterTargetOptions, targetOptionForOpcodeValue, targetOptionsForOpcode, type ScriptTargetOption } from "../components/RealmzTargetPicker";
+import { filterTargetOptions, signedSoundValueForSelection, signedSoundWaitsForCompletion, soundReferenceOptionForQuery, targetOptionForOpcodeValue, targetOptionsForOpcode, type ScriptTargetOption } from "../components/RealmzTargetPicker";
 import { playPreviewUrl, useResolvedPreviewUrl, type PreviewRuntimeContext } from "../previewUrls";
 
 const DIVINITY_TEXT_SEPARATOR = `${" ".repeat(20)}\uf8ff${" ".repeat(20)}`;
@@ -18,7 +18,7 @@ const OPTION_LABELS_TAB_HELP = "Option Labels edits Data OD compact labels for t
 const FIND_OCCURRENCE_HELP = "Find Occurrence searches every scenario string by ID or text, then jumps through matching Data SD2 records.";
 const FIND_LONG_STRING_HELP = "Find Long String jumps to strings at the Realmz byte limit or with characters that need cleanup before export.";
 const STRING_BYTE_LIMIT_HELP = "Realmz message records are fixed 256-byte Pascal strings, so the editable text must fit in 255 Classic text bytes before export.";
-const STRING_SOUND_HELP = "Choose the sound Realmz plays with this string. Divinity stores this assignment beside the scenario support data, while the visible text stays in Data SD2.";
+const STRING_SOUND_HELP = "Choose the sound Realmz plays with this string. Divinity stores this assignment beside the scenario support data, while the visible text stays in Data SD2. Negative sound values mean wait for the sound to finish.";
 const OPTION_BYTE_LIMIT_HELP = "Data OD option labels use 25-byte Pascal slots, leaving 24 bytes of editable label text.";
 const USED_BY_HELP = "Used By links show the records Providence knows refer to this text. Check these before changing wording or meaning.";
 const ADVANCED_TEXT_HELP = "Advanced Details shows source status and preserved raw bytes for the current fixed-width text record.";
@@ -494,12 +494,20 @@ function MessageEditor({
   const currentSoundId = stringSoundForMessage(project, record.id);
   const soundOptions = useMemo(() => targetOptionsForOpcode(project, 9, catalog), [catalog, project]);
   const selectedSound = useMemo(() => currentSoundId ? targetOptionForOpcodeValue(project, 9, currentSoundId, catalog) : null, [catalog, currentSoundId, project]);
-  const filteredSoundOptions = useMemo(() => filterTargetOptions(soundOptions, soundQuery).slice(0, 160), [soundOptions, soundQuery]);
+  const filteredSoundOptions = useMemo(() => {
+    const matches = filterTargetOptions(soundOptions, soundQuery);
+    const typed = soundReferenceOptionForQuery(9, soundQuery);
+    return typed && !matches.some((option) => option.value === typed.value)
+      ? [typed, ...matches].slice(0, 160)
+      : matches.slice(0, 160);
+  }, [soundOptions, soundQuery]);
   const visibleSoundOptions = selectedSound && !filteredSoundOptions.some((option) => option.key === selectedSound.key)
     ? [selectedSound, ...filteredSoundOptions.slice(0, 159)]
     : filteredSoundOptions;
   const selectedPreviewUrl = useStringSoundPreviewUrl(selectedSound, currentSoundId, project, previewContext);
   const updateSound = (soundId: number) => onApplyCommand({ kind: "updateStringSound", label: `Set String ${record.id} sound`, messageId: record.id, soundId });
+  const updateSoundSelection = (soundId: number) => updateSound(signedSoundValueForSelection(soundId, signedSoundWaitsForCompletion(currentSoundId)));
+  const updateSoundWait = (waitForCompletion: boolean) => updateSound(signedSoundValueForSelection(currentSoundId, waitForCompletion));
   return (
     <article className="text-message-editor">
       <header>
@@ -568,6 +576,7 @@ function MessageEditor({
               type="button"
               className="btn btn-secondary btn-xs"
               disabled={!selectedPreviewUrl}
+              title={selectedPreviewUrl ? "Play this sound preview." : "No preview is available for this sound reference."}
               onClick={() => selectedPreviewUrl && playPreviewUrl(selectedPreviewUrl)}
             >
               <Volume2 size={12} /> Play
@@ -582,7 +591,7 @@ function MessageEditor({
           <input value={soundQuery} onChange={(event) => setSoundQuery(event.currentTarget.value)} placeholder="Search sounds..." />
           <select
             value={currentSoundId ? String(Math.abs(currentSoundId)) : ""}
-            onChange={(event) => updateSound(Number(event.currentTarget.value || 0))}
+            onChange={(event) => updateSoundSelection(Number(event.currentTarget.value || 0))}
           >
             <option value="">No sound</option>
             {currentSoundId && !selectedSound && <option value={Math.abs(currentSoundId)}>Current sound {currentSoundId}</option>}
@@ -591,9 +600,18 @@ function MessageEditor({
             ))}
           </select>
         </label>
+        <label className="text-string-sound-wait">
+          <input
+            type="checkbox"
+            checked={signedSoundWaitsForCompletion(currentSoundId)}
+            disabled={!currentSoundId}
+            onChange={(event) => updateSoundWait(event.currentTarget.checked)}
+          />
+          <span>Wait for sound to finish</span>
+        </label>
         <small>
           {selectedSound
-            ? [selectedSound.detail, selectedSound.summary, selectedSound.compatibility, selectedSound.sourceState].filter(Boolean).join(" | ")
+            ? [selectedSound.detail, selectedSound.summary, signedSoundWaitsForCompletion(currentSoundId) ? "Wait for sound to finish" : "", selectedSound.compatibility, selectedSound.sourceState].filter(Boolean).join(" | ")
             : currentSoundId
               ? `Sound ${currentSoundId}`
               : "Choose a sound resource for this string."}
@@ -640,8 +658,7 @@ function stringSoundForMessage(project: Project, messageId: number) {
 function soundSummaryLabel(option: ScriptTargetOption | null, soundId: number) {
   if (!soundId) return "No sound";
   if (!option) return `Sound ${soundId}`;
-  const signedPrefix = soundId < 0 ? `Sound ${soundId}: ` : "";
-  return `${signedPrefix}${option.label}`;
+  return signedSoundWaitsForCompletion(soundId) ? `${option.label} · waits` : option.label;
 }
 
 function useStringSoundPreviewUrl(option: ScriptTargetOption | null, soundId: number, project: Project, previewContext: PreviewRuntimeContext) {

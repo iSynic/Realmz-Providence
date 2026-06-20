@@ -4,6 +4,7 @@ import { LibraryCatalog, Project, RealmzTargetRecordKind, SelectedEntity, Semant
 import { selectEntityFromId } from "../utils";
 import { actionOptionFor, normalizeStepOpcode } from "../realmzActions";
 import { playPreviewUrl, useResolvedPreviewUrl, type PreviewRuntimeContext } from "../previewUrls";
+import { divinityCompatibleSoundIds, divinitySoundReferenceLabel, isDivinityCompatibleSoundId } from "../soundReferences";
 
 export type ScriptTargetOption = {
   key: string;
@@ -47,8 +48,22 @@ export function signedTargetValueForSelection(opcode: number, currentValue: numb
   return selectedValue;
 }
 
+export function supportsSignedSoundReference(opcode: number) {
+  return normalizeStepOpcode(opcode) === 9;
+}
+
+export function signedSoundWaitsForCompletion(value: number) {
+  return value < 0;
+}
+
+export function signedSoundValueForSelection(soundId: number, waitForCompletion: boolean) {
+  if (!soundId) return 0;
+  return waitForCompletion ? -Math.abs(soundId) : Math.abs(soundId);
+}
+
 export function signedTargetBehaviorLabel(opcode: number, value: number) {
   const code = normalizeStepOpcode(opcode);
+  if (code === 9 && value < 0) return "Wait for sound to finish";
   return value < 0 ? SIGNED_DIRECT_TARGET_BEHAVIOR[code] ?? "" : "";
 }
 
@@ -84,7 +99,11 @@ export function TargetPicker({
     if (!targetsLoaded && !query.trim()) return selectedStub ? [selectedStub] : [];
     return targetOptionsForOpcode(project, opcode, catalog);
   }, [catalog, opcode, project, query, selectedStub, targetsLoaded]);
-  const filteredTargets = targetsLoaded || query.trim() ? filterTargetOptions(targets, query) : selectedStub ? [selectedStub] : [];
+  const filteredTargetBase = targetsLoaded || query.trim() ? filterTargetOptions(targets, query) : selectedStub ? [selectedStub] : [];
+  const typedSoundTarget = soundReferenceOptionForQuery(opcode, query);
+  const filteredTargets = typedSoundTarget && !filteredTargetBase.some((target) => target.value === typedSoundTarget.value)
+    ? [typedSoundTarget, ...filteredTargetBase]
+    : filteredTargetBase;
   const selected = targets.find((target) => target.value === resolvedValue) ?? selectedStub ?? null;
   const selectedPreviewUrl = useResolvedPreviewUrl(
     normalizeStepOpcode(opcode) === 9 ? selected?.previewPath ?? null : null,
@@ -104,6 +123,7 @@ export function TargetPicker({
   const hasCurrentValue = Number.isFinite(resolvedValue) && resolvedValue !== 0 && !selected;
   const canCreateTarget = Boolean(config.recordType && onCreate && (!selected || hasCurrentValue || value === 0));
   const behavior = signedTargetBehaviorLabel(opcode, value);
+  const showWaitControl = supportsSignedSoundReference(opcode) && resolvedValue !== 0;
   const detail = selected
     ? [selected.detail, selected.summary, behavior, selected.compatibility, selected.sourceState].filter(Boolean).join(" | ")
     : config.hint;
@@ -140,6 +160,16 @@ export function TargetPicker({
           ))}
         </select>
       </label>
+      {showWaitControl && (
+        <label className="realmz-target-picker-wait">
+          <input
+            type="checkbox"
+            checked={signedSoundWaitsForCompletion(value)}
+            onChange={(event) => onChange(signedSoundValueForSelection(resolvedValue, event.currentTarget.checked))}
+          />
+          <span>Wait for sound to finish</span>
+        </label>
+      )}
       <small>{detail}</small>
       {selected?.entity && (
         <button className="btn btn-secondary btn-xs" type="button" onClick={() => onInspect(selected.entity!)}>
@@ -151,7 +181,7 @@ export function TargetPicker({
           className="btn btn-secondary btn-xs"
           type="button"
           disabled={!selectedPreviewUrl}
-          title={selectedPreviewUrl ? "Play this sound preview." : "No playable preview is available for this sound."}
+          title={selectedPreviewUrl ? "Play this sound preview." : "No preview is available for this sound reference."}
           onClick={() => selectedPreviewUrl && playPreviewUrl(selectedPreviewUrl)}
         >
           <Volume2 size={12} /> Play
@@ -278,6 +308,11 @@ export function targetOptionsForOpcode(project: Project | null, opcode: number, 
         previewMimeType: asset.mimeType,
         libraryAsset: asset
       });
+    }
+    if (code === 9) {
+      for (const id of divinityCompatibleSoundIds()) {
+        options.push(soundReferenceOption(id));
+      }
     }
   }
   if (code === 29) {
@@ -537,17 +572,7 @@ function optionFromTypedProjectTarget(project: Project, code: number, id: number
           libraryAsset: fallbackLibraryAsset
         };
       }
-      return {
-        key: `resource:snd:${id}`,
-        value: id,
-        label: `Sound ${id}`,
-        detail: "Realmz snd reference",
-        compatibility: "Realmz resource",
-        sourceState: "No preview source loaded",
-        entity: { type: "resource", id: `resource:snd :${id}` },
-        previewPath: null,
-        previewMimeType: "audio/wav"
-      };
+      return soundReferenceOption(id);
     }
     if (code === 27) {
       const pictureAsset = (project.assetCatalog.pictures ?? []).find((candidate) => candidate.resourceId === id);
@@ -623,6 +648,30 @@ function findCatalogResourceAsset(catalog: LibraryCatalog | null | undefined, re
     if ((asset.resourceType ?? "").trim().toLowerCase() !== normalizedType) return false;
     return !wantedType || asset.type === wantedType;
   }) ?? null;
+}
+
+function soundReferenceOption(id: number): ScriptTargetOption {
+  const compatible = isDivinityCompatibleSoundId(id);
+  return {
+    key: `resource:snd:${Math.abs(id)}`,
+    value: Math.abs(id),
+    label: divinitySoundReferenceLabel(id),
+    detail: compatible ? "sound | built-in Realmz/Divinity reference" : "sound | Realmz snd reference",
+    compatibility: compatible ? "Divinity-compatible sound ID" : "Realmz resource",
+    sourceState: "Reference only; no preview source loaded",
+    entity: { type: "resource", id: `resource:snd :${Math.abs(id)}` },
+    previewPath: null,
+    previewMimeType: "audio/wav"
+  };
+}
+
+export function soundReferenceOptionForQuery(opcode: number, query: string) {
+  if (normalizeStepOpcode(opcode) !== 9) return null;
+  const match = query.trim().toLowerCase().match(/^(?:sound|snd)?\s*(-?\d+)$/);
+  if (!match) return null;
+  const id = Math.abs(Number(match[1]));
+  if (!Number.isInteger(id) || id === 0) return null;
+  return soundReferenceOption(id);
 }
 
 function addTypedProjectTargets(project: Project, code: number, options: ScriptTargetOption[], catalog?: LibraryCatalog | null) {

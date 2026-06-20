@@ -121,7 +121,7 @@ export const MARKDOWN_REFERENCES = {
   resourceTaxonomyEvidence: repoRef("Resource Fork Taxonomy", "Scenario-owned, Realmz reference, Divinity reference, UI-only, and advanced resource scope rules.", "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"),
   resourceIconEvidence: repoRef("Special/Icon Tile Runtime Anchors", "Negative tile values, normalized cicn lookup, base terrain rendering, and Data Solids behavior.", "docs/format-evidence-cards/resource-icon-runtime-anchors.md"),
   scenarioMusicEvidence: repoRef("Scenario Music and Format Files", "Custom scenario music modules, legacy Custom N files, and Format compatibility markers.", "docs/format-evidence-cards/scenario-music-and-format-files.md"),
-  textEvidence: repoRef("Strings, Data OD, and String Sound", "Data SD2 strings, Data OD option labels, Divinity text import/export, and caller-owned sound evidence.", "docs/format-evidence-cards/strings-data-od-string-sound.md"),
+  textEvidence: repoRef("Strings, Data OD, and String Sound", "Data SD2 strings, Data OD option labels, Divinity text import/export, and string sound support data.", "docs/format-evidence-cards/strings-data-od-string-sound.md"),
   actionPointEvidence: repoRef("Action Point and Extra AP Reachability", "Data DD/Data DDD/Data ED3 storage, GOSUB reachability, global hooks, random rectangles, battle and monster macro paths.", "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md"),
   opcodeEdcdEvidence: repoRef("Opcode / EDCD Crosswalk", "Divinity opcode help, Realmz dispatcher anchors, CODE/ID meaning, and five-short EDCD shape coverage.", "docs/format-evidence-cards/opcode-edcd-crosswalk.md"),
   scriptRuntimeEvidence: repoRef("Scripts Runtime State Semantics", "Source-authored scripts, generated runtime state, encounter/shop mutation, and dispatcher-no-op classification.", "docs/format-evidence-cards/scripts-runtime-state-semantics.md"),
@@ -1942,12 +1942,12 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "Divinity Crosswalk",
         paragraphs: [
           "Divinity's Strings screen has previous/next navigation, Go To No., a String field, a character count, Find First/Next Occurrence, Export Text, Import Text, and maximum-length search. Providence mirrors that workflow while showing usage links and byte-accurate Realmz validation.",
-          "The Divinity screen also shows a Sound field. Realmz source evidence does not tie that field to a writable Data SD2 or Data OD offset. In Providence, sound belongs on the caller record that actually plays it, such as an Action Point, encounter, battle, or other script/action row."
+          "The Divinity screen also shows a Sound field. Providence stores that assignment in the scenario support data while keeping visible string text in Data SD2. A negative sound value means Realmz waits for the sound to finish; it is not a separate sound asset."
         ],
         callout: {
           tone: "info",
-          title: "Sound is caller-owned",
-          body: "Do not look for a per-string sound byte in Text. The audited runtime displays messages through Data SD2 and plays sounds from the action or caller path that requested the message."
+          title: "Sound sign behavior",
+          body: "Choose one sound ID, then use Wait for sound to finish when you need the negative Realmz value. Providence keeps preview availability separate from whether the sound ID is valid to reference."
         }
       },
       {
@@ -1997,7 +1997,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "Do not assume an unused string is safe to remove if it might be reached by an unknown or preserved script path.",
           "Do not confuse Data ED/Data ED2 inline encounter display buffers with central Data SD2 message records.",
           "Do not treat TEXT or STR# resources as editable Data SD2 strings unless a writer path explicitly imports or converts them.",
-          "Do not try to edit Divinity's Strings Sound field here; edit sound IDs on the caller/action record that owns them."
+          "Do not treat positive and negative sound values as different sounds; the sign controls wait behavior."
         ]
       }
     ],

@@ -1,6 +1,6 @@
 import { LibraryCatalog, Project, RealmzTargetRecordKind } from "./types";
 import { actionOptionFor, isDispatcherNoopOpcode, normalizeStepOpcode } from "./realmzActions";
-import { isDirectMacroOpcode, resolveSignedMessageTarget, targetOptionsForOpcode, targetPickerConfig } from "./components/RealmzTargetPicker";
+import { isDirectMacroOpcode, resolveSignedMessageTarget, targetOptionForOpcodeValue, targetPickerConfig } from "./components/RealmzTargetPicker";
 import { isCallableMacro } from "./semanticGraph";
 import { missingEdcdTargetReferences } from "./edcdTargets";
 import { edcdFieldNamesForShape } from "./realmzEdcd";
@@ -298,7 +298,7 @@ function validateReference(project: Project, recordType: RealmzTargetRecordKind,
   const config = targetPickerConfig(opcode);
   if (!config) return [];
   const resolvedId = resolveSignedMessageTarget(opcode, id);
-  const exists = targetOptionsForOpcode(project, opcode, catalog).some((target) => target.value === resolvedId);
+  const exists = Boolean(targetOptionForOpcodeValue(project, opcode, resolvedId, catalog));
   if (exists) return [];
   const detail = `${resolvedId} is kept as-is, but Providence cannot find the referenced ${config.label.toLowerCase()}.`;
   return [slot == null

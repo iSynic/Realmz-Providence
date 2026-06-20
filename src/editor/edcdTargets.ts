@@ -1,6 +1,7 @@
 import { LibraryCatalog, Project, RealmzTargetRecordKind, SelectedEntity } from "./types";
 import { selectEntityFromId } from "./utils";
 import { choiceBranchTargetKind, parseChoicePromptValue } from "./choiceDialogs";
+import { divinityCompatibleSoundIds, divinitySoundReferenceLabel, isDivinityCompatibleSoundId } from "./soundReferences";
 
 export type EdcdTargetKind =
   | "message"
@@ -166,7 +167,16 @@ export function edcdTargetOptions(project: Project, targetKind: EdcdTargetKind, 
         entity: { type: "resource", id: asset.id }
       });
     }
-    return options;
+    for (const id of divinityCompatibleSoundIds()) {
+      options.push({
+        key: `builtin-sound:${id}`,
+        value: id,
+        label: divinitySoundReferenceLabel(id),
+        detail: "built-in Realmz/Divinity sound reference",
+        entity: { type: "resource", id: `resource:snd :${id}` }
+      });
+    }
+    return dedupeEdcdTargetOptions(options);
   }
   if (targetKind === "monster") {
     return (project.monsters ?? []).map((record) => ({
@@ -225,10 +235,27 @@ function edcdTargetExists(project: Project, targetKind: EdcdTargetKind, value: n
   if (targetKind === "sound") {
     return (project.assets ?? []).some((asset) => asset.kind === "sound" && asset.resourceId === value) ||
       (project.assetCatalog.sounds ?? []).some((asset) => asset.resourceId === value) ||
-      (catalog?.assets ?? []).some((asset) => asset.type === "sound" && asset.resourceId === value);
+      (catalog?.assets ?? []).some((asset) => asset.type === "sound" && asset.resourceId === value) ||
+      isDivinityCompatibleSoundId(value);
   }
   if (targetKind === "monster") return (project.monsters ?? []).some((record) => record.id === value);
   return (project.battles ?? []).some((record) => record.id === value);
+}
+
+function dedupeEdcdTargetOptions(options: EdcdTargetOption[]) {
+  const byValue = new Map<number, EdcdTargetOption>();
+  for (const option of options) {
+    const existing = byValue.get(option.value);
+    if (!existing || edcdTargetOptionScore(option) > edcdTargetOptionScore(existing)) byValue.set(option.value, option);
+  }
+  return [...byValue.values()].sort((a, b) => a.value - b.value || a.label.localeCompare(b.label));
+}
+
+function edcdTargetOptionScore(option: EdcdTargetOption) {
+  if (option.key.startsWith("asset:")) return 3;
+  if (option.key.startsWith("library:")) return 2;
+  if (option.key.startsWith("builtin-sound:")) return 1;
+  return 0;
 }
 
 function normalizedEdcdTargetValueForValidation(targetKind: EdcdTargetKind, rawValue: number, field: string, opcode?: number) {
