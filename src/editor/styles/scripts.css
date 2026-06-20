@@ -3871,6 +3871,12 @@
 
 
 
+.realmz-script-list button.script-list-more-button {
+  align-items: center;
+  color: #ffd86b;
+  text-align: center;
+}
+
 .realmz-script-list button.selected {
   border-color: #2b8fd8;
   background: #10283d;

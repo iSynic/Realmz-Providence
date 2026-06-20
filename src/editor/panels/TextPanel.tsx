@@ -72,6 +72,10 @@ export function TextPanel({
     if (!normalized) return records;
     return records.filter((record) => `${record.id} ${record.text}`.toLowerCase().includes(normalized));
   }, [query, records]);
+  const visibleMessageRecords = useMemo(
+    () => includeSelectedRecord(filteredRecords, selectedId, messageListLimit),
+    [filteredRecords, messageListLimit, selectedId]
+  );
   const usageCounts = useMemo(() => {
     const counts = new Map<number, number>();
     for (const record of records) counts.set(record.id, messageUsageLinks(project, record.id).length);
@@ -266,7 +270,7 @@ export function TextPanel({
             <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search strings..." />
           </div>
           <div className="text-message-list" role="list" aria-label="Scenario strings">
-            {filteredRecords.slice(0, messageListLimit).map((record) => {
+            {visibleMessageRecords.map((record) => {
               const selected = record.id === selectedId;
               const usageCount = usageCounts.get(record.id) ?? 0;
               const byteLength = classicTextByteLength(record.text);
@@ -285,7 +289,7 @@ export function TextPanel({
             })}
             {filteredRecords.length > messageListLimit && (
               <button type="button" className="text-list-more" onClick={() => setMessageListLimit((value) => value + 320)}>
-                Show {Math.min(320, filteredRecords.length - messageListLimit).toLocaleString()} more
+                Show {Math.min(320, Math.max(0, filteredRecords.length - messageListLimit)).toLocaleString()} more
               </button>
             )}
             {filteredRecords.length === 0 && <p>No strings match this search.</p>}
@@ -905,6 +909,13 @@ function selectedMessageId(selectedEntity: SelectedEntity | null, records: Messa
     if (Number.isInteger(id)) return id;
   }
   return records[0]?.id ?? null;
+}
+
+function includeSelectedRecord<T extends { id: number }>(records: T[], selectedId: number, limit: number) {
+  const visible = records.slice(0, limit);
+  if (visible.some((record) => record.id === selectedId)) return visible;
+  const selected = records.find((record) => record.id === selectedId);
+  return selected ? [selected, ...visible] : visible;
 }
 
 function selectedOptionLabelId(selectedEntity: SelectedEntity | null) {

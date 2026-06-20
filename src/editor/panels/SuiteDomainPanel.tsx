@@ -313,7 +313,7 @@ export function SuiteDomainPanel({
               <b>{records.length.toLocaleString()}</b>
             </header>
             <ScrollArea className="domain-entity-list" aria-label="Decoded records">
-              {records.slice(0, 240).map((record, index) => (
+              {includeSelectedEntry(records, selectedEntity?.id ?? null, 240).map((record, index) => (
                 <button key={renderListKey("domain-record", record, index)} type="button" onClick={() => onSelectEntity(selectEntityFromId(record.id))}>
                   <strong>{record.label}</strong>
                   <small>{record.type} | {record.editState}</small>
@@ -1326,8 +1326,8 @@ function TreasureWorkbench({
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const records = targetRecords(project, "treasure");
-  const visibleRecords = records.slice(0, 140);
   const selectedId = targetIdFromSelection(selectedEntity?.id ?? "", "treasure") ?? records[0]?.id ?? 1;
+  const visibleRecords = useMemo(() => includeSelectedRecord(records, selectedId, 140), [records, selectedId]);
   const record = project.treasures.find((candidate) => candidate.id === selectedId) ?? null;
   const deferredOptions = useDeferredItemReferenceOptions(project, catalog);
   const options = deferredOptions ?? [];
@@ -1737,8 +1737,8 @@ function TargetRecordWorkbench({
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const records = targetRecords(project, recordType);
-  const visibleRecords = records.slice(0, 80);
   const selectedId = targetIdFromSelection(selectedEntity?.id ?? "", recordType) ?? records[0]?.id ?? 1;
+  const visibleRecords = useMemo(() => includeSelectedRecord(records, selectedId, 80), [records, selectedId]);
   const opcode = opcodeForTargetRecord(recordType);
   const nextId = nextTargetRecordId(project, recordType);
   const recordHelp = targetRecordHelp(recordType);
@@ -1859,6 +1859,13 @@ function targetRecords(project: Project, recordType: RealmzTargetRecordKind): Ar
     recordType === "timedEncounter" ? project.timedEncounters :
     project.questLabels;
   return [...(records ?? [])].sort((a, b) => a.id - b.id);
+}
+
+function includeSelectedRecord<T extends { id: number }>(records: T[], selectedId: number, limit: number) {
+  const visible = records.slice(0, limit);
+  if (visible.some((record) => record.id === selectedId)) return visible;
+  const selected = records.find((record) => record.id === selectedId);
+  return selected ? [selected, ...visible] : visible;
 }
 
 function targetIdFromSelection(entityId: string, recordType: RealmzTargetRecordKind) {
@@ -2244,7 +2251,7 @@ function EntityRows({
   selectedEntity: SelectedEntity | null;
   onSelectEntity: (entity: SelectedEntity) => void;
 }) {
-  const visible = entities.slice(0, 80);
+  const visible = includeSelectedEntry(entities, selectedEntity?.id ?? null, 80);
   return (
     <ScrollArea className="domain-entity-list" aria-label="Domain entities">
       {visible.map((entity, index) => {
@@ -2266,6 +2273,13 @@ function EntityRows({
       )}
     </ScrollArea>
   );
+}
+
+function includeSelectedEntry<T extends { id: string }>(entries: T[], selectedId: string | null, limit: number) {
+  const visible = entries.slice(0, limit);
+  if (!selectedId || visible.some((entry) => entry.id === selectedId)) return visible;
+  const selected = entries.find((entry) => entry.id === selectedId);
+  return selected ? [selected, ...visible] : visible;
 }
 
 function entitySubtitle(entity: SemanticEntity | LibraryEntity | DomainListEntry | { type: string; editState?: string; summary: Record<string, unknown> | string }) {

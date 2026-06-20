@@ -67,6 +67,14 @@ const MONSTER_TRAIT_LABELS = [
 
 const MONSTER_MONEY_LABELS = ["Gold", "Gems", "Jewelry"];
 
+function includeSelectedTrigger(records: TriggerRecord[], selected: TriggerRecord | null, limit: number) {
+  const cappedLimit = Math.max(0, limit);
+  const visible = records.slice(0, cappedLimit);
+  if (!selected || visible.some((record) => record.id === selected.id)) return visible;
+  if (!records.some((record) => record.id === selected.id)) return visible;
+  return [selected, ...visible];
+}
+
 type SelectedEdcdUsage = {
   rowId?: number;
   shape?: string;
@@ -502,7 +510,11 @@ function ScriptAuthoringPanel({
     if (selectedTrigger.actions.some((action) => action.slot === selectedSlot)) return;
     setSelectedSlot(selectedTrigger.actions[0]?.slot ?? 0);
   }, [selectedTrigger?.id, selectedSlot, selectedTrigger]);
-  const visibleScripts = useMemo(() => filteredScripts.slice(0, visibleScriptLimit), [filteredScripts, visibleScriptLimit]);
+  const visibleScripts = useMemo(
+    () => includeSelectedTrigger(filteredScripts, selectedTrigger, visibleScriptLimit),
+    [filteredScripts, selectedTrigger, visibleScriptLimit]
+  );
+  const hiddenScriptCount = Math.max(0, filteredScripts.length - Math.min(filteredScripts.length, visibleScriptLimit));
   const visibleDiagnosticsById = useMemo(() => {
     const map = new Map(fullWarningDiagnosticsById);
     if (!project) return map;
@@ -806,10 +818,14 @@ function ScriptAuthoringPanel({
                 {inventoryFilter === "warnings" && !warningScanReady ? "Scanning warnings..." : "No scripts match this view."}
               </div>
             )}
-            {filteredScripts.length > visibleScripts.length && (
-              <div className="script-list-empty">
-                Showing the first {visibleScripts.length} matches. Narrow the filter to jump further.
-              </div>
+            {hiddenScriptCount > 0 && (
+              <button
+                className="script-list-more-button"
+                type="button"
+                onClick={() => setVisibleScriptLimit((value) => Math.min(filteredScripts.length, value + 180))}
+              >
+                Show {Math.min(180, hiddenScriptCount).toLocaleString()} more
+              </button>
             )}
           </ScrollArea>
         </div>
