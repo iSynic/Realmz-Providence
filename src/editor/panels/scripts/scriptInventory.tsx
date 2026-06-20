@@ -1,9 +1,10 @@
 import { memo, type RefObject, useEffect, useState } from "react";
 import { Action, Project, ScriptInventoryFilter, SelectedEntity, SemanticEntity, TriggerRecord } from "../../types";
 import { selectEntityFromId, triggerEntityId } from "../../utils";
-import { ed3ReachabilityFor, extraActionEvidenceSummary, extraActionPointClassification, isCallableMacro } from "../../semanticGraph";
+import { extraActionEvidenceSummary, extraActionPointClassification, isCallableMacro } from "../../semanticGraph";
 import { isReusableDoorPlaceholder } from "../../actionPointCapacity";
 import { ScriptDiagnostic } from "../../scriptValidation";
+import { ed3DiagnosticForTrigger } from "../../scriptDiagnostics";
 
 export const ScriptListItem = memo(function ScriptListItem({
   project,
@@ -135,7 +136,7 @@ export function filterScriptsByInventory(
 
 export function ed3Classification(project: Project | null, trigger: TriggerRecord) {
   if (trigger.source !== "Data ED3") return null;
-  return ed3ReachabilityFor(project, trigger.recordIndex)?.classification ?? null;
+  return ed3DiagnosticForTrigger(project, trigger)?.classification ?? null;
 }
 
 export function isReusableActionPoint(trigger: TriggerRecord) {

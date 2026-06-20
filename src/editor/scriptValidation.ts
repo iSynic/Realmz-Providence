@@ -6,6 +6,7 @@ import { missingEdcdTargetReferences } from "./edcdTargets";
 import { edcdFieldNamesForShape } from "./realmzEdcd";
 import { parameterLabelsForOpcode } from "./opcodeCrosswalk";
 import { scriptParameterLabelForOpcode } from "./scriptActionLabels";
+import { ed3DiagnosticForTrigger } from "./scriptDiagnostics";
 
 export type ScriptDiagnosticSeverity = "error" | "warning" | "info";
 
@@ -66,6 +67,7 @@ function validateAction(project: Project, trigger: TriggerRecord, slot: number, 
   if (option.edcdShape) {
     const rowId = Math.max(0, id);
     const row = project.extracodes.find((candidate) => candidate.id === rowId);
+    diagnostics.push(slotIssue("info", trigger.id, slot, "edcd-parameter-row", "ID selects a settings row.", `${option.shortLabel} uses Data EDCD row ${rowId}; the editable targets live in Settings fields, not in the step ID itself.`));
     if (!row) {
       diagnostics.push(slotIssue("warning", trigger.id, slot, "missing-settings", "Missing settings.", `${option.shortLabel} needs settings ${rowId}; create them before relying on this behavior.`));
     } else if (row.values.length !== 5 || row.values.some((value) => !Number.isFinite(value))) {
@@ -104,7 +106,10 @@ function validateAction(project: Project, trigger: TriggerRecord, slot: number, 
     if (!macro) {
       diagnostics.push(slotIssue("error", trigger.id, slot, "dangling-macro", "Extra Action Point target is missing.", `No callable Extra Action Point ${id} exists.`));
     } else if (!isCallableMacro(project, macro)) {
-      diagnostics.push(slotIssue("warning", trigger.id, slot, "unlinked-extra-action-target", "Extra Action Point is not linked from known scenario flow yet.", `Extra Action Point ${id} exists, but Providence has not identified a normal call path for it yet.`));
+      const summary = ed3DiagnosticForTrigger(project, macro);
+      diagnostics.push(slotIssue("warning", trigger.id, slot, "unlinked-extra-action-target", "Extra Action Point is not linked from known scenario flow yet.", summary
+        ? `Extra Action Point ${id} is classified as ${summary.linterLabel}: ${summary.detail} ${summary.promotionRule}`
+        : `Extra Action Point ${id} exists, but Providence has not identified a normal call path for it yet.`));
     }
   }
 

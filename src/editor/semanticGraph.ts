@@ -12,6 +12,7 @@ import {
 } from "./types";
 import { mapEntityId, triggerEntityId } from "./utils";
 import { semanticEntityById, semanticLinkById, semanticLinksForId, semanticRecordById } from "./semanticIndex";
+import { ed3DiagnosticForTrigger } from "./scriptDiagnostics";
 
 const MAP_LINK_KINDS = new Set(["located_on", "contains_region", "describes_map", "configures_map", "names_map_level"]);
 const TEXT_LINK_KINDS = new Set(["shows_message", "uses_resource", "has_text_resource", "has_style_resource", "has_name_evidence"]);
@@ -235,9 +236,9 @@ export function ed3ReachabilityFor(project: Project | null, recordIndex: number)
 
 export function extraActionPointClassification(project: Project | null, trigger: TriggerRecord) {
   if (trigger.source !== "Data ED3") return "Action Point";
-  const row = ed3ReachabilityFor(project, trigger.recordIndex);
-  if (!row?.reachable) return importedExtraActionLabel(row?.classification);
-  const rootType = String(row.rootType ?? "");
+  const summary = ed3DiagnosticForTrigger(project, trigger);
+  if (!summary?.reachable) return importedExtraActionLabel(summary?.classification);
+  const rootType = String(summary.rootType ?? "");
   if (rootType.includes("global")) return "Global Macro";
   if (rootType.includes("random")) return "Random Encounter Action";
   if (rootType.includes("time")) return "Timed Encounter Action";
@@ -247,49 +248,8 @@ export function extraActionPointClassification(project: Project | null, trigger:
 
 export function extraActionEvidenceSummary(project: Project | null, trigger: TriggerRecord) {
   if (trigger.source !== "Data ED3") return null;
-  const row = ed3ReachabilityFor(project, trigger.recordIndex);
-  const classification = row?.classification ?? "unknown";
-  const actionCount = row?.actionCount ?? trigger.actions.filter((action) => action.rawCode !== 0 || action.id !== 0).length;
-  if (row?.reachable) {
-    return {
-      label: rootTypeLabel(row.rootType),
-      tone: "ready" as const,
-      detail: `Source-backed call path found; ${actionCount} occupied step${actionCount === 1 ? "" : "s"}.`
-    };
-  }
-  if (classification === "probable-editor-padding") {
-    return {
-      label: "Likely empty padding",
-      tone: "muted" as const,
-      detail: "No occupied steps and no source-backed caller. This is probably an unused imported ED3 slot."
-    };
-  }
-  if (classification === "runtime-mutation-candidate") {
-    return {
-      label: "Possible runtime mutation residue",
-      tone: "warning" as const,
-      detail: "Contains action-state mutation opcodes but no source-backed caller. Treat as preserved imported evidence until runtime use is proven."
-    };
-  }
-  if (classification === "orphan-authored-content") {
-    return {
-      label: "Possible orphan authored action",
-      tone: "warning" as const,
-      detail: "Has authored-looking content but no known caller. It may be unused, stale, or reached by behavior Providence has not decoded yet."
-    };
-  }
-  if (classification === "needs-runtime-trace") {
-    return {
-      label: "Needs runtime trace",
-      tone: "warning" as const,
-      detail: "Multiple occupied steps but no source-backed caller. Confirm with Realmz runtime behavior before treating it as callable."
-    };
-  }
-  return {
-    label: "Unclassified imported ED3 row",
-    tone: "warning" as const,
-    detail: "Providence preserved this row but could not classify its reachability evidence."
-  };
+  const summary = ed3DiagnosticForTrigger(project, trigger);
+  return summary ? { label: summary.label, tone: summary.tone, detail: summary.detail } : null;
 }
 
 function importedExtraActionLabel(classification: string | null | undefined) {
@@ -298,18 +258,6 @@ function importedExtraActionLabel(classification: string | null | undefined) {
   if (classification === "orphan-authored-content") return "Imported Extra Action";
   if (classification === "needs-runtime-trace") return "Imported Extra Action";
   return "Imported Extra Action";
-}
-
-function rootTypeLabel(rootType: string | null | undefined) {
-  const value = rootType ?? "";
-  if (value.includes("global")) return "Source-backed global event";
-  if (value.includes("random")) return "Source-backed random encounter action";
-  if (value.includes("time")) return "Source-backed timed encounter action";
-  if (value.includes("battle")) return "Source-backed battle action";
-  if (value.includes("monster")) return "Source-backed monster action";
-  if (value.includes("item")) return "Source-backed item action";
-  if (value.includes("recursive")) return "Source-backed recursive macro";
-  return "Source-backed Extra Action Point";
 }
 
 export function isCallableMacro(project: Project | null, trigger: TriggerRecord) {

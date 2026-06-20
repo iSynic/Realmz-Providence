@@ -3,6 +3,7 @@ import { itemReferenceOptions } from "./itemReferences";
 import { monsterReferenceOptions } from "./monsterReferences";
 import { AssetWorkbenchSection, EditorTab, LibraryCatalog, ManagedAssetKind, Project, SelectedEntity } from "./types";
 import { selectEntityFromId, triggerEntityId } from "./utils";
+import { ed3DiagnosticForTrigger } from "./scriptDiagnostics";
 
 export type GlobalSearchScope = "scenario" | "assets" | "libraries" | "docs" | "diagnostics";
 
@@ -129,17 +130,20 @@ function projectRows(project: Project, catalog?: LibraryCatalog | null) {
   for (const trigger of project.triggers ?? []) {
     const isExtra = trigger.source === "Data ED3";
     const id = isExtra ? `macro:${trigger.recordIndex}` : triggerEntityId(trigger.levelType, trigger.levelIndex, trigger.recordIndex, trigger.source);
+    const ed3Summary = isExtra ? ed3DiagnosticForTrigger(project, trigger) : null;
     add({
       id,
       scope: "scenario",
-      kind: isExtra ? "Extra Action Point" : "Action Point",
-      title: isExtra ? `Extra Action Point ${trigger.recordIndex}` : `Action Point ${trigger.recordIndex}`,
-      subtitle: isExtra ? `${trigger.actions.length} step(s)` : `${trigger.levelType ?? "Unknown"} level ${trigger.levelIndex ?? "?"} | ${trigger.coordinate?.x ?? "?"},${trigger.coordinate?.y ?? "?"}`,
-      snippet: trigger.actions.map((action) => `${action.slot}: ${action.label || action.category || action.rawCode}`).join(" | "),
-      badges: [isExtra ? "Extra AP" : "Action Point", `${trigger.actions.length} step${trigger.actions.length === 1 ? "" : "s"}`],
+      kind: isExtra ? ed3Summary?.searchTitle ?? "Extra Action Point" : "Action Point",
+      title: isExtra ? `${ed3Summary?.searchTitle ?? "Extra Action Point"} ${trigger.recordIndex}` : `Action Point ${trigger.recordIndex}`,
+      subtitle: isExtra ? `${ed3Summary?.actionCount ?? trigger.actions.length} step(s) | ${ed3Summary?.detail ?? "Data ED3 row"}` : `${trigger.levelType ?? "Unknown"} level ${trigger.levelIndex ?? "?"} | ${trigger.coordinate?.x ?? "?"},${trigger.coordinate?.y ?? "?"}`,
+      snippet: isExtra
+        ? `${trigger.actions.map((action) => `${action.slot}: ${action.label || action.category || action.rawCode}`).join(" | ")} | ${ed3Summary?.promotionRule ?? ""}`.trim()
+        : trigger.actions.map((action) => `${action.slot}: ${action.label || action.category || action.rawCode}`).join(" | "),
+      badges: [isExtra ? ed3Summary?.badge ?? "Extra AP" : "Action Point", `${trigger.actions.length} step${trigger.actions.length === 1 ? "" : "s"}`],
       selectedEntity: selectEntityFromId(id),
       numericId: trigger.recordIndex,
-      aliases: [isExtra ? `macro ${trigger.recordIndex}` : `ap ${trigger.recordIndex}`, `action point ${trigger.recordIndex}`]
+      aliases: [isExtra ? `macro ${trigger.recordIndex}` : `ap ${trigger.recordIndex}`, `action point ${trigger.recordIndex}`, ed3Summary?.classification ?? "", ed3Summary?.label ?? ""]
     });
   }
 

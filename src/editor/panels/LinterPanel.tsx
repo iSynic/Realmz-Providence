@@ -8,6 +8,7 @@ import { loadScenarioCoverageManifest } from "../scenarioCoverage";
 import type { ScenarioCoverageManifest } from "../scenarioCoverage";
 import { ScrollArea } from "../ui";
 import { TutorialTip } from "../components/TutorialTip";
+import { ED3_CLASSIFICATION_ORDER, ed3ClassificationCounts, ed3DiagnosticSummaries, ed3RiskySummaries } from "../scriptDiagnostics";
 
 const LINTER_HELP = "The linter is the pre-export release safety surface. It groups validation errors, resource gaps, unresolved semantic links, source/runtime-cache boundaries, and writer readiness so authors can fix blockers before exporting.";
 const RERUN_HELP = "Re-run validation after editing records, assets, maps, or scenario settings. Validation is the quickest way to refresh export blockers and compatibility warnings.";
@@ -130,6 +131,9 @@ function semanticGroupHelp(title: string) {
   }
   if (title === "Link Integrity") {
     return "Link Integrity shows semantic references with unresolved endpoints, such as scripts pointing at missing messages, maps, monsters, resources, or macros.";
+  }
+  if (title === "Script Source Triage") {
+    return "Script Source Triage summarizes imported Data ED3 rows by reachability classification and highlights rows that may be stale, runtime residue, or authored behavior without a proven caller.";
   }
   return "This linter group collects related release-readiness diagnostics. Open a row to inspect the target record or evidence.";
 }
@@ -353,7 +357,7 @@ function Metric({ label, value }: { label: string; value: number | string }) {
 
 type LintInsight = {
   id: string;
-  severity: "warning" | "error";
+  severity: "info" | "warning" | "error";
   message: string;
   detail: string;
   target?: string | null;
@@ -382,6 +386,9 @@ function semanticLintGroups(project: Project | null) {
   const passThrough = sourcePassThroughList(project);
   const unresolved = unresolvedLinks(project);
   const blocked = blockedSemanticObjects(project);
+  const ed3Summaries = ed3DiagnosticSummaries(project);
+  const ed3Counts = ed3ClassificationCounts(ed3Summaries);
+  const ed3Risky = ed3RiskySummaries(ed3Summaries);
   return [
     {
       title: "Resource Coverage",
@@ -424,6 +431,34 @@ function semanticLintGroups(project: Project | null) {
           detail: "These items are visible for review but cannot be written by this exporter."
         }
       ].filter((row) => !row.message.startsWith("0 ") || row.id === "runtime-caches")
+    },
+    {
+      title: "Script Source Triage",
+      rows: [
+        ...ED3_CLASSIFICATION_ORDER
+          .map((classification): LintInsight | null => {
+            const count = ed3Counts.get(classification) ?? 0;
+            if (count === 0) return null;
+            const sample = ed3Summaries.find((summary) => summary.classification === classification);
+            const label = sample?.linterLabel ?? classification;
+            return {
+              id: `ed3-summary:${classification}`,
+              severity: "info",
+              message: `${count.toLocaleString()} ${label} ED3 row${count === 1 ? "" : "s"}.`,
+              detail: classification === "probable-editor-padding"
+                ? "Likely padding is summarized here but not listed row-by-row."
+                : sample?.detail ?? "ED3 reachability summary."
+            };
+          })
+          .filter((row): row is LintInsight => Boolean(row)),
+        ...ed3Risky.slice(0, 16).map((summary): LintInsight => ({
+          id: `ed3-risk:${summary.recordIndex}`,
+          severity: summary.linterSeverity ?? "warning",
+          message: `${summary.linterLabel} ED3 row ${summary.recordIndex}.`,
+          detail: `${summary.detail} ${summary.incomingRefs.toLocaleString()} incoming ref(s); signature ${summary.rawSignature.join(", ") || "empty"}.`,
+          target: summary.entityId
+        }))
+      ]
     },
     {
       title: "Link Integrity",
