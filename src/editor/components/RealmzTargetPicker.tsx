@@ -133,10 +133,10 @@ export function TargetPicker({
         <span>{config.label}</span>
         <input
           value={query}
-          onFocus={() => setTargetsLoaded(true)}
           onChange={(event) => {
-            setTargetsLoaded(true);
-            setQuery(event.currentTarget.value);
+            const nextQuery = event.currentTarget.value;
+            setTargetsLoaded(Boolean(nextQuery.trim()));
+            setQuery(nextQuery);
           }}
           placeholder={`Search ${config.label.toLowerCase()}...`}
           aria-label={`Search ${config.label}`}

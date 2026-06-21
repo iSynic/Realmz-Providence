@@ -215,8 +215,8 @@ export function EdcdRowEditor({
     const value = Number(draft[index] ?? "0");
     const presentation = guidedFieldPresentation(shapeId, internalName, numericDraft, opcode);
     const modeOptions = guidedModeOptionsForField(shapeId, internalName, opcode);
-    const isItemField = !preserved && edcdFieldLooksLikeItem(shapeId, internalName);
     const targetKind = !preserved && !modeOptions ? edcdFieldTargetKind(shapeId, internalName, fieldNames, numericDraft, opcode) : null;
+    const isItemField = !preserved && !targetKind && edcdFieldLooksLikeItem(shapeId, internalName);
     const selectedItem = itemOptions.find((option) => option.value === value);
     const targetOptions = targetKind ? edcdTargetOptions(project, targetKind, catalog) : [];
     const selectedTarget = targetOptions.find((option) => option.value === value);
@@ -376,6 +376,12 @@ function guidedSectionsForShape(shape: string, fields: GuidedField[], values: nu
 }
 
 function guidedSectionPlan(shape: string, opcode?: number) {
+  if (shape === "action-data-patching") {
+    return [
+      { title: "What To Replace", eyebrow: "Target Script", names: ["levelorcache", "targetrecord", "levelkind", "resultslot"] },
+      { title: "Replacement Codes", eyebrow: "Source", names: ["macro"] }
+    ];
+  }
   if (shape.includes("branch") || ["choice", "force-branch", "percent-branch", "range-branch", "random-branch"].includes(shape)) {
     return [
       { title: "Condition", eyebrow: "When To Branch", names: ["testa", "testb", "percent", "condition", "expectedstate", "testselector", "signedtestvalue", "daylimit", "hourlimit", "pickedselector", "failurebehavior", "falsebehavior", "abilityorattribute", "adjustment", "attributeflag", "threshold", "quest"] },
@@ -431,6 +437,30 @@ function guidedFieldPresentation(shape: string, name: string, values: number[], 
   const normalizedShape = normalizeShape(shape);
   const normalizedName = normalizeField(name);
   const branchMode = fieldValue(values, 2);
+  if (normalizedShape === "action-data-patching" && normalizedName === "levelorcache") {
+    return {
+      label: "Target Kind / Level",
+      help: "-2 replaces a simple encounter script, -3 replaces a complex encounter script. Otherwise this is the land/dungeon level that owns the Action Point being patched."
+    };
+  }
+  if (normalizedShape === "action-data-patching" && normalizedName === "targetrecord") {
+    const levelOrCache = fieldValue(values, 0);
+    return {
+      label: levelOrCache === -2 ? "Simple Encounter" : levelOrCache === -3 ? "Complex Encounter" : "Action Point Number",
+      help: levelOrCache === -2 || levelOrCache === -3
+        ? "Encounter script whose result row will be replaced."
+        : "Action Point number on the selected land/dungeon level whose CODE/ID slots will be replaced."
+    };
+  }
+  if (normalizedShape === "action-data-patching" && normalizedName === "macro") {
+    return { label: "Replacement Extra Action Point", help: "Extra Action Point that contains the new CODE/ID slots to copy into the target script." };
+  }
+  if (normalizedShape === "action-data-patching" && normalizedName === "levelkind") {
+    return { label: "Action Point Level Kind", help: "Only used when replacing an Action Point. Encounter replacements ignore this field." };
+  }
+  if (normalizedShape === "action-data-patching" && normalizedName === "resultslot") {
+    return { label: "Encounter Result Slot", help: "Only used when replacing a simple or complex encounter result script. Action Point replacements ignore this field." };
+  }
   if (normalizedShape === "force-branch" && normalizedName === "slot" && branchMode === 0) {
     return {
       label: "Result Slot",
@@ -454,6 +484,28 @@ function guidedFieldPresentation(shape: string, name: string, values: number[], 
 function guidedModeOptionsForField(shape: string, name: string, opcode?: number): ModeOption[] | null {
   const normalizedShape = normalizeShape(shape);
   const normalizedName = normalizeField(name);
+  if (normalizedShape === "action-data-patching" && normalizedName === "levelorcache") {
+    return [
+      { value: -3, label: "Complex Encounter Script" },
+      { value: -2, label: "Simple Encounter Script" },
+      { value: 0, label: "Action Point on current/same land type" }
+    ];
+  }
+  if (normalizedShape === "action-data-patching" && normalizedName === "levelkind") {
+    return [
+      { value: 0, label: "Same land type / current AP context" },
+      { value: 1, label: "Land Level" },
+      { value: 2, label: "Dungeon Level" }
+    ];
+  }
+  if (normalizedShape === "action-data-patching" && normalizedName === "resultslot") {
+    return [
+      { value: 0, label: "Result slot 0" },
+      { value: 1, label: "Result slot 1" },
+      { value: 2, label: "Result slot 2" },
+      { value: 3, label: "Result slot 3" }
+    ];
+  }
   if (normalizedShape === "force-branch" && normalizedName === "testb" && opcode === 46) {
     return [
       { value: 0, label: "Quest is not set" },
@@ -517,6 +569,19 @@ function guidedSummaryForEdcd(
   importedSummary?: string
 ) {
   const normalized = normalizeShape(shape);
+  if (normalized === "action-data-patching") {
+    const levelOrCache = values[0] ?? 0;
+    const targetRecord = values[1] ?? 0;
+    const sourceMacro = values[2] ?? 0;
+    const levelKind = values[3] ?? 0;
+    const resultSlot = values[4] ?? 0;
+    const source = edcdTargetOptions(project, "macro", catalog).find((option) => option.value === Math.abs(sourceMacro));
+    const sourceLabel = source?.label ?? `Extra Action Point ${sourceMacro}`;
+    if (levelOrCache === -2) return `Replace Simple Encounter ${targetRecord}, result slot ${resultSlot}, with ${sourceLabel}.`;
+    if (levelOrCache === -3) return `Replace Complex Encounter ${targetRecord}, result slot ${resultSlot}, with ${sourceLabel}.`;
+    const levelLabel = levelKind === 2 ? `dungeon level ${levelOrCache}` : levelKind === 1 ? `land level ${levelOrCache}` : `the matching Action Point context`;
+    return `Replace Action Point ${targetRecord} on ${levelLabel} with ${sourceLabel}.`;
+  }
   if (normalized === "force-branch") {
     const condition = forceBranchConditionSummary(opcode, values[0] ?? 0, values[1] ?? 0);
     const destination = branchDestinationSummary(project, catalog, values[2] ?? 0, values[3] ?? 0, values[4] ?? 0, "force");
@@ -991,6 +1056,7 @@ function fieldNameIsPreserved(name: string) {
 function settingsTitleForShape(shape: string) {
   const normalized = shape.toLowerCase();
   const labels: Record<string, string> = {
+    "action-data-patching": "Action Code Replacement",
     battle: "Battle Setup",
     choice: "Choice Dialog",
     "random-message": "Message Range",

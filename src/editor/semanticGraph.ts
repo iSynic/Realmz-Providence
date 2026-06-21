@@ -253,11 +253,9 @@ export function extraActionEvidenceSummary(project: Project | null, trigger: Tri
 }
 
 function importedExtraActionLabel(classification: string | null | undefined) {
-  if (classification === "probable-editor-padding") return "Imported Empty Slot";
-  if (classification === "runtime-mutation-candidate") return "Imported Runtime Mutation";
-  if (classification === "orphan-authored-content") return "Imported Extra Action";
-  if (classification === "needs-runtime-trace") return "Imported Extra Action";
-  return "Imported Extra Action";
+  if (classification === "probable-editor-padding") return "Likely Padding";
+  if (classification === "runtime-mutation-candidate") return "Runtime Residue";
+  return "Unlinked Extra Action";
 }
 
 export function isCallableMacro(project: Project | null, trigger: TriggerRecord) {

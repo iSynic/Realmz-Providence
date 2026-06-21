@@ -2,18 +2,27 @@ import { LibraryCatalog, Project, RealmzTargetRecordKind, SelectedEntity } from 
 import { selectEntityFromId } from "./utils";
 import { choiceBranchTargetKind, parseChoicePromptValue } from "./choiceDialogs";
 import { divinityCompatibleSoundIds, divinitySoundReferenceLabel, isDivinityCompatibleSoundId } from "./soundReferences";
+import { itemReferenceOptions } from "./itemReferences";
 
 export type EdcdTargetKind =
   | "message"
   | "optionLabel"
   | "battle"
+  | "treasure"
+  | "item"
   | "shop"
   | "simpleEncounter"
   | "complexEncounter"
+  | "thiefEncounter"
+  | "timedEncounter"
   | "questLabel"
   | "macro"
   | "sound"
-  | "monster";
+  | "monster"
+  | "mapLevel"
+  | "mapRecord"
+  | "randomEncounterRectangle"
+  | "scrollingText";
 
 export type EdcdTargetOption = {
   key: string;
@@ -35,6 +44,14 @@ export function edcdFieldTargetKind(shape: string, name: string, fieldNames: str
   const normalizedShape = shape.toLowerCase();
   const normalizedName = name.toLowerCase();
   const fieldValue = valueForField(fieldNames, values, normalizedName);
+  if (normalizedShape === "action-data-patching") {
+    if (normalizedName === "macro") return "macro";
+    if (normalizedName === "targetrecord") {
+      const levelOrCache = valueForField(fieldNames, values, "levelorcache") ?? values[0] ?? 0;
+      if (levelOrCache === -2) return "simpleEncounter";
+      if (levelOrCache === -3) return "complexEncounter";
+    }
+  }
   if (normalizedShape === "quest-value" && opcode === 76 && normalizedName === "target") {
     const threshold = valueForField(fieldNames, values, "threshold") ?? 0;
     if (threshold === 0) return null;
@@ -66,8 +83,17 @@ export function edcdFieldTargetKind(shape: string, name: string, fieldNames: str
   if (normalizedShape === "battle" && opcode === 2 && normalizedName === "soundorrevivelossmacro") {
     return (values[4] ?? 0) === 10 ? "macro" : "sound";
   }
+  if (normalizedName.includes("scrollingtext")) return "scrollingText";
+  if (normalizedName.includes("timedencounter") || normalizedName === "timeencounter") return "timedEncounter";
+  if (normalizedName.includes("thief") || normalizedName.includes("rogue")) return "thiefEncounter";
+  if (normalizedName.includes("treasure")) return "treasure";
+  if (normalizedName.includes("randomrect") || (normalizedName === "rectangle" && normalizedShape.includes("random"))) return "randomEncounterRectangle";
+  if (normalizedName.includes("maprecord")) return "mapRecord";
+  if (normalizedName === "landlevel" || normalizedName === "maplevel" || (normalizedName === "level" && (normalizedShape.includes("teleport") || normalizedShape.includes("random-region") || normalizedShape.includes("dungeon")))) return "mapLevel";
+  if (normalizedShape.includes("item") && (normalizedName.includes("item") || normalizedName === "required")) return "item";
   if (normalizedName === "shop") return "shop";
   if (normalizedName === "simpleencounter") return "simpleEncounter";
+  if (normalizedName === "complexencounter") return "complexEncounter";
   if (normalizedName === "quest") return "questLabel";
   if (normalizedName.includes("macro")) return "macro";
   if (normalizedName.includes("sound")) return "sound";
@@ -124,6 +150,42 @@ export function edcdTargetOptions(project: Project, targetKind: EdcdTargetKind, 
       label: `Complex Encounter ${record.id}`,
       detail: `${record.actions.length} action row(s), prompt ${record.prompt}`,
       entity: selectEntityFromId(`encounter:complex:${record.id}`)
+    }));
+  }
+  if (targetKind === "thiefEncounter") {
+    return (project.thiefEncounters ?? []).map((record) => ({
+      key: `thief:${record.id}`,
+      value: record.id,
+      label: `Rogue Encounter ${record.id}`,
+      detail: `${record.typeFlags.filter(Boolean).length} enabled action(s), ${record.tumblers} tumbler(s)`,
+      entity: selectEntityFromId(`thief:${record.id}`)
+    }));
+  }
+  if (targetKind === "timedEncounter") {
+    return (project.timedEncounters ?? []).map((record) => ({
+      key: `timed:${record.id}`,
+      value: record.id,
+      label: `Timed Encounter ${record.id}`,
+      detail: `day ${record.day}, ${record.percent}% chance, ${record.locationKind}`,
+      entity: selectEntityFromId(`time:${record.id}`)
+    }));
+  }
+  if (targetKind === "treasure") {
+    return (project.treasures ?? []).map((record) => ({
+      key: `treasure:${record.id}`,
+      value: record.id,
+      label: `Treasure ${record.id}`,
+      detail: `${record.itemIds.filter(Boolean).length} item(s), ${record.gold} gold, ${record.exp} exp`,
+      entity: selectEntityFromId(`treasure:${record.id}`)
+    }));
+  }
+  if (targetKind === "item") {
+    return itemReferenceOptions(project, catalog).map((option) => ({
+      key: option.key,
+      value: option.value,
+      label: option.label,
+      detail: [option.detail, option.sourceState].filter(Boolean).join(" | "),
+      entity: selectEntityFromId(`item:${option.value}`)
     }));
   }
   if (targetKind === "shop") {
@@ -187,6 +249,48 @@ export function edcdTargetOptions(project: Project, targetKind: EdcdTargetKind, 
       entity: { type: "monster", id: `monster:${record.id}` }
     }));
   }
+  if (targetKind === "mapLevel") {
+    return dedupeEdcdTargetOptions((project.maps ?? []).map((map) => ({
+      key: `map-level:${map.levelType}:${map.index}`,
+      value: map.index,
+      label: `${map.levelType === "dungeon" ? "Dungeon" : "Land"} Level ${map.index}`,
+      detail: `${map.name}, ${map.width} x ${map.height}`,
+      entity: selectEntityFromId(`map:${map.id}`)
+    })));
+  }
+  if (targetKind === "mapRecord") {
+    return (project.mapRecords ?? []).map((record) => ({
+      key: `map-record:${record.id}`,
+      value: record.id,
+      label: record.name || record.primaryName || `Map Record ${record.id}`,
+      detail: `${record.isDungeon ? "dungeon" : "land"} level ${record.level}, starts at ${record.startX},${record.startY}`,
+      entity: selectEntityFromId(`map-record:${record.id}`)
+    }));
+  }
+  if (targetKind === "randomEncounterRectangle") {
+    const options: EdcdTargetOption[] = [];
+    for (const level of project.randomLevels ?? []) {
+      for (const rect of level.rects ?? []) {
+        options.push({
+          key: `random-rect:${level.levelType}:${level.levelIndex}:${rect.rectIndex}`,
+          value: rect.rectIndex,
+          label: `Random Area ${rect.rectIndex}`,
+          detail: `${level.levelType} level ${level.levelIndex}, ${rect.percent}% chance, battles ${rect.battleRange.join("-")}`,
+          entity: selectEntityFromId(`random:${level.levelType}:${level.levelIndex}:${rect.rectIndex}`)
+        });
+      }
+    }
+    return dedupeEdcdTargetOptions(options);
+  }
+  if (targetKind === "scrollingText") {
+    return (project.messages ?? []).map((record) => ({
+      key: `scrolling-text:${record.id}`,
+      value: record.id,
+      label: `Scrolling Text ${record.id}`,
+      detail: record.text || "empty text",
+      entity: selectEntityFromId(`message:${record.id}`)
+    }));
+  }
   return (project.battles ?? []).map((record) => ({
     key: `battle:${record.id}`,
     value: record.id,
@@ -208,6 +312,7 @@ export function missingEdcdTargetReferences(project: Project, shape: string, fie
     const targetKind = edcdFieldTargetKind(shape, field, fieldNames, values, opcode);
     if (!targetKind || targetKind === "questLabel") continue;
     if (targetKind === "sound") continue;
+    if (targetKind === "scrollingText") continue;
     if (targetKind === "message" && Math.abs(rawValue) >= 10000) continue;
     const value = normalizedEdcdTargetValueForValidation(targetKind, rawValue, field, opcode);
     if (!Number.isFinite(value) || value < 0) continue;
@@ -230,6 +335,10 @@ function edcdTargetExists(project: Project, targetKind: EdcdTargetKind, value: n
   if (targetKind === "questLabel") return (project.questLabels ?? []).some((record) => record.id === value);
   if (targetKind === "simpleEncounter") return (project.simpleEncounters ?? []).some((record) => record.id === value);
   if (targetKind === "complexEncounter") return (project.complexEncounters ?? []).some((record) => record.id === value);
+  if (targetKind === "thiefEncounter") return (project.thiefEncounters ?? []).some((record) => record.id === value);
+  if (targetKind === "timedEncounter") return (project.timedEncounters ?? []).some((record) => record.id === value);
+  if (targetKind === "treasure") return (project.treasures ?? []).some((record) => record.id === value);
+  if (targetKind === "item") return itemReferenceOptions(project, catalog).some((option) => option.value === value);
   if (targetKind === "shop") return (project.shops ?? []).some((record) => record.id === value);
   if (targetKind === "message") return (project.messages ?? []).some((record) => record.id === value);
   if (targetKind === "sound") {
@@ -239,6 +348,10 @@ function edcdTargetExists(project: Project, targetKind: EdcdTargetKind, value: n
       isDivinityCompatibleSoundId(value);
   }
   if (targetKind === "monster") return (project.monsters ?? []).some((record) => record.id === value);
+  if (targetKind === "mapLevel") return (project.maps ?? []).some((record) => record.index === value);
+  if (targetKind === "mapRecord") return (project.mapRecords ?? []).some((record) => record.id === value);
+  if (targetKind === "randomEncounterRectangle") return (project.randomLevels ?? []).some((level) => level.rects.some((rect) => rect.rectIndex === value));
+  if (targetKind === "scrollingText") return (project.messages ?? []).some((record) => record.id === value);
   return (project.battles ?? []).some((record) => record.id === value);
 }
 
@@ -267,6 +380,7 @@ function normalizedEdcdTargetValueForValidation(targetKind: EdcdTargetKind, rawV
 
 export function createRecordTypeForEdcdTarget(targetKind: EdcdTargetKind | null): RealmzTargetRecordKind | null {
   if (!targetKind || targetKind === "macro" || targetKind === "optionLabel" || targetKind === "sound") return null;
+  if (targetKind === "item" || targetKind === "mapLevel" || targetKind === "mapRecord" || targetKind === "randomEncounterRectangle" || targetKind === "scrollingText") return null;
   return targetKind;
 }
 
@@ -275,13 +389,21 @@ export function edcdTargetLabel(targetKind: EdcdTargetKind) {
     message: "message",
     optionLabel: "option label",
     battle: "battle",
+    treasure: "treasure",
+    item: "item",
     shop: "shop",
     simpleEncounter: "simple encounter",
     complexEncounter: "complex encounter",
+    thiefEncounter: "rogue encounter",
+    timedEncounter: "timed encounter",
     questLabel: "quest label",
     macro: "Extra Action Point",
     sound: "sound",
-    monster: "monster"
+    monster: "monster",
+    mapLevel: "map level",
+    mapRecord: "map record",
+    randomEncounterRectangle: "random encounter area",
+    scrollingText: "scrolling text"
   };
   return labels[targetKind];
 }

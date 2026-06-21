@@ -688,7 +688,7 @@ function addTriggers(schema: SemanticSchema, triggers: TriggerRecord[], extracod
     schema.entities.push({
       id,
       type: trigger.source === "Data ED3" ? "ed3-action-record" : "trigger",
-      label: trigger.source === "Data ED3" ? `Imported Extra Action ${trigger.recordIndex}` : `Trigger ${trigger.recordIndex}`,
+      label: trigger.source === "Data ED3" ? `Unlinked Extra Action ${trigger.recordIndex}` : `Trigger ${trigger.recordIndex}`,
       editState: "inspect-only",
       confidence: "source-backed",
       source: trigger.source,
@@ -1537,8 +1537,9 @@ function classifyEd3Reachability(schema: SemanticSchema, triggers: TriggerRecord
 
 function browserExtraActionClassification(rootType: string | null, classification: string, reachable: boolean) {
   if (!reachable) {
-    if (classification === "probable-editor-padding") return "Imported Empty Slot";
-    return "Imported Extra Action";
+    if (classification === "probable-editor-padding") return "Likely Padding";
+    if (classification === "runtime-mutation-candidate") return "Runtime Residue";
+    return "Unlinked Extra Action";
   }
   if (rootType?.includes("global")) return "Global Macro";
   if (rootType?.includes("random")) return "Random Encounter Action";

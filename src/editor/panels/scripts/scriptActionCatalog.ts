@@ -1,4 +1,4 @@
-import { ACTION_OPTIONS, actionOptionFor, normalizeStepOpcode, type RealmzActionOption } from "../../realmzActions";
+import { ACTION_OPTIONS, actionOptionFor, isDispatcherNoopOpcode, normalizeStepOpcode, type RealmzActionOption } from "../../realmzActions";
 import { crosswalkForOpcode, parameterLabelsForOpcode } from "../../opcodeCrosswalk";
 import { signedTargetBehaviorLabel, targetOptionForOpcodeValue, targetPickerConfig } from "../../components/RealmzTargetPicker";
 import { choiceBranchModeLabel, choiceBranchTargetKind, parseChoicePromptValue } from "../../choiceDialogs";
@@ -149,13 +149,14 @@ const CATEGORY_ORDER: ScriptActionCategory[] = [
 ];
 
 const FIRST_CLASS_ACTIONS = new Set([
-  1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 14, 19, 20, 21, 22, 23, 27, 30, 31, 33, 35, 37, 38, 39, 40,
-  41, 42, 43, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 60, 61, 62, 63, 64, 65, 67, 68,
-  69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 81, 85, 86, 87, 90, 92, 97, 103, 104, 106, 107, 108,
-  120, 122, 123, 124, 125, 126, 127, -14, -23
+  1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 14, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34,
+  35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 60,
+  61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 81, 82, 83, 85, 86,
+  87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107,
+  108, 111, 112, 119, 120, 122, 123, 124, 125, 126, 127, -14, -23
 ]);
 
-const ADVANCED_ACTIONS = new Set([7, 84, 98, 99, 112, 121]);
+const ADVANCED_ACTIONS = new Set([84, 121]);
 
 const IGNORED_ACTIONS = new Set([0]);
 
@@ -169,7 +170,7 @@ const ACTION_OVERRIDES: Record<number, Partial<Pick<ScriptActionDefinition, "lab
   4: { label: "Start Simple Encounter", shortLabel: "Simple Encounter", category: "Encounters", description: "Run a simple encounter." },
   5: { label: "Start Complex Encounter", shortLabel: "Complex Encounter", category: "Encounters", description: "Run a complex encounter." },
   6: { label: "Open Shop", shortLabel: "Shop", category: "Rewards", description: "Open a shop." },
-  7: { label: "Copy Action Data", shortLabel: "Copy Actions", category: "Advanced", description: "Copy or patch another action's stored settings." },
+  7: { label: "Change Action Point Codes", shortLabel: "Patch Actions", category: "Logic", description: "Replace another Action Point or encounter result script with codes stored in an Extra Action Point." },
   8: { label: "Run Same-Map Action Point", shortLabel: "Same-Map Action", category: "Extra Action Points", description: "Run another Action Point from the current map." },
   9: { label: "Play Sound", shortLabel: "Sound", category: "Media", description: "Play a sound effect." },
   10: { label: "Give Treasure", shortLabel: "Treasure", category: "Rewards", description: "Give a treasure reward." },
@@ -187,12 +188,18 @@ const ACTION_OVERRIDES: Record<number, Partial<Pick<ScriptActionDefinition, "lab
   22: { label: "Change Item", shortLabel: "Item Change", category: "Items", description: "Drop, charge, or replace item data." },
   23: { label: "Change Random Encounter Area", shortLabel: "Random Area", category: "Encounters", description: "Adjust a random encounter area." },
   24: { label: "Continue Steps", shortLabel: "Continue", category: "Logic", description: "Keep evaluating following steps." },
+  25: { label: "Exit And Delete Action Point", shortLabel: "Exit/Delete AP", category: "Logic", description: "Stop this script and delete or disable the current Action Point after it fires." },
+  26: { label: "Get Click", shortLabel: "Get Click", category: "Logic", description: "Wait for or capture a player click for following action behavior." },
   27: { label: "Show Picture", shortLabel: "Picture", category: "Media", description: "Show a picture resource." },
+  28: { label: "Redraw Screen", shortLabel: "Redraw", category: "Media", description: "Force Realmz to redraw the game screen." },
   29: { label: "Show Map Reference", shortLabel: "Map Reference", category: "Travel", description: "Use or reveal map-related data." },
   30: { label: "Pick Characters By Check", shortLabel: "Pick By Check", category: "Party", description: "Pick characters by ability or attribute check." },
   31: { label: "Branch On Check", shortLabel: "Check Branch", category: "Logic", description: "Branch based on an ability or attribute check." },
+  32: { label: "Offer Temple", shortLabel: "Temple", category: "Rewards", description: "Offer temple services using the ID value as the temple inflation rate." },
   33: { label: "Change Gold", shortLabel: "Gold", category: "Rewards", description: "Take, give, or check party gold." },
+  34: { label: "Break Encounter Loop", shortLabel: "Break Loop", category: "Encounters", description: "Break out of an encounter loop; only meaningful inside encounter scripts." },
   35: { label: "Change Encounter State", shortLabel: "Encounter State", category: "Encounters", description: "Change a simple encounter's state." },
+  36: { label: "Capture Or Restore Equipment", shortLabel: "Equipment State", category: "Items", description: "Capture or restore the party's equipment state." },
   37: { label: "Move In Dungeon", shortLabel: "Dungeon Move", category: "Travel", description: "Move the party within a dungeon." },
   38: { label: "Force Branch", shortLabel: "Force Branch", category: "Logic", description: "Route execution to another result or action." },
   39: { label: "Run Extra Action Point", shortLabel: "Extra AP", category: "Extra Action Points", description: "Run an Extra Action Point." },
@@ -200,6 +207,7 @@ const ACTION_OVERRIDES: Record<number, Partial<Pick<ScriptActionDefinition, "lab
   41: { label: "Change Encounter Choice", shortLabel: "Encounter Choice", category: "Encounters", description: "Clear or change a simple encounter choice." },
   42: { label: "Branch By Percent", shortLabel: "Percent Branch", category: "Logic", description: "Branch based on a percent roll." },
   43: { label: "Change Condition", shortLabel: "Condition", category: "Party", description: "Give or alter a party or character condition." },
+  44: { label: "Eliminate Complex Encounter Choice", shortLabel: "Eliminate Choice", category: "Encounters", description: "Eliminate a branch from a complex encounter choice." },
   45: { label: "Move Party Without Trigger", shortLabel: "Move Only", category: "Travel", description: "Move the party without firing the arrival trigger." },
   46: { label: "Force Branch", shortLabel: "Force Branch", category: "Logic", description: "Route execution to another result or action." },
   47: { label: "Set Quest Flag", shortLabel: "Quest Flag", category: "Logic", description: "Set a quest flag value." },
@@ -221,6 +229,7 @@ const ACTION_OVERRIDES: Record<number, Partial<Pick<ScriptActionDefinition, "lab
   63: { label: "Change Time", shortLabel: "Time", category: "Logic", description: "Set or offset game time." },
   64: { label: "Branch On Time", shortLabel: "Time Branch", category: "Logic", description: "Branch based on the current game day and hour." },
   65: { label: "Give Random Items", shortLabel: "Random Items", category: "Items", description: "Give a random item from a range." },
+  66: { label: "Set Camping Ability", shortLabel: "Camping", category: "Travel", description: "Control whether the party can camp." },
   67: { label: "Branch On Item Charges", shortLabel: "Charge Branch", category: "Items", description: "Branch based on item charges." },
   68: { label: "Change Fatigue", shortLabel: "Fatigue", category: "Party", description: "Alter party or character fatigue." },
   69: { label: "Set Spell Flags", shortLabel: "Spell Flags", category: "Rules", description: "Set combat spellcasting flags." },
@@ -234,29 +243,44 @@ const ACTION_OVERRIDES: Record<number, Partial<Pick<ScriptActionDefinition, "lab
   77: { label: "Branch On Quest", shortLabel: "Quest Branch", category: "Logic", description: "Branch on a quest value." },
   78: { label: "Branch True Or False", shortLabel: "True/False", category: "Logic", description: "Branch to one result for false and another for true." },
   81: { label: "Branch On Condition", shortLabel: "Condition Branch", category: "Logic", description: "Branch to Extra Action Points based on condition state." },
-  84: { label: "Registration Check", shortLabel: "Registration", category: "Advanced", description: "Run a legacy registration check." },
+  82: { label: "Turn Cleric Turning Off", shortLabel: "Turning Off", category: "Rules", description: "Disable cleric turning behavior." },
+  83: { label: "Turn Cleric Turning On", shortLabel: "Turning On", category: "Rules", description: "Enable cleric turning behavior." },
+  84: { label: "Not Used", shortLabel: "Not Used", category: "Advanced", description: "Documented as not used. Providence preserves existing values but does not present this as normal authoring behavior." },
   85: { label: "Branch Randomly", shortLabel: "Random Branch", category: "Logic", description: "Branch to a random target in a range." },
   86: { label: "Branch On Party State", shortLabel: "Party Branch", category: "Logic", description: "Branch based on party, race, caste, gender, boat, camp, or level tests." },
   87: { label: "Conditional Branch", shortLabel: "Conditional", category: "Logic", description: "Branch based on conditional tests." },
+  88: { label: "Drop Special Character", shortLabel: "Drop Special", category: "Party", description: "Remove a special character from the party." },
+  89: { label: "Add Special Character", shortLabel: "Add Special", category: "Party", description: "Add a special character to the party." },
   90: { label: "Change Party State", shortLabel: "Party State", category: "Party", description: "Alter victory or experience-style party state." },
+  91: { label: "Drop All Equipment", shortLabel: "Drop Equipment", category: "Items", description: "Drop all party equipment." },
   92: { label: "Change Random Area Shape", shortLabel: "Area Shape", category: "Encounters", description: "Change a random encounter area's percent and shape." },
+  93: { label: "Turn Compass On", shortLabel: "Compass On", category: "Travel", description: "Enable the compass display." },
+  94: { label: "Turn Compass Off", shortLabel: "Compass Off", category: "Travel", description: "Disable the compass display." },
+  95: { label: "Change Look Direction", shortLabel: "Look Direction", category: "Travel", description: "Force the party to face a direction." },
+  96: { label: "Force 3D Dungeon View", shortLabel: "3D View", category: "Travel", description: "Force the party to use the 3D view while in dungeons." },
   97: { label: "Use Map Record", shortLabel: "Map Record", category: "Travel", description: "Use or reference a map record." },
-  98: { label: "Registration Check", shortLabel: "Registration", category: "Advanced", description: "Run a legacy registration check." },
-  99: { label: "Registration Gate", shortLabel: "Registration Gate", category: "Advanced", description: "Run a legacy registration gate." },
+  98: { label: "Require Registration", shortLabel: "Require Reg", category: "Logic", description: "Run a legacy registration requirement check." },
+  99: { label: "Get Scenario Registration", shortLabel: "Get Registration", category: "Logic", description: "Run the legacy scenario registration gate." },
+  100: { label: "End Battle", shortLabel: "End Battle", category: "Encounters", description: "End the current battle." },
+  101: { label: "Back Up Party", shortLabel: "Back Up", category: "Travel", description: "Move the party back one square opposite the direction they entered from. Classic Divinity notes this only works on land levels." },
+  102: { label: "Level Up Picked Characters", shortLabel: "Level Up", category: "Party", description: "Level up the currently picked characters." },
   103: { label: "Change Boat Or Camp", shortLabel: "Boat/Camp", category: "Travel", description: "Change boat or camp state." },
   104: { label: "Set Encounter Status", shortLabel: "Encounter Status", category: "Encounters", description: "Set encounter status." },
+  105: { label: "Suspend Or Activate Allies", shortLabel: "Allies", category: "Party", description: "Suspend or activate allies." },
   106: { label: "Change Darkness", shortLabel: "Darkness", category: "Travel", description: "Set outdoor darkness state." },
   107: { label: "Start Selective Battle", shortLabel: "Selective Battle", category: "Encounters", description: "Start an improved selective battle and route if the party flees." },
   108: { label: "Change Selected Character", shortLabel: "Selected Character", category: "Party", description: "Alter selected-character combat or stat fields." },
   111: { label: "Return From Extra Action Point", shortLabel: "Return", category: "Extra Action Points", description: "Return from an Extra Action Point." },
   112: { label: "Pop Script Stack", shortLabel: "Pop", category: "Extra Action Points", description: "Pop script stack state." },
+  119: { label: "Revive NPC After Combat", shortLabel: "Revive NPC", category: "Encounters", description: "Revive an NPC after combat." },
   120: { label: "Change Combat Monster", shortLabel: "Combat Monster", category: "Encounters", description: "Alter combat monster id, count, or icon state." },
   121: { label: "Destroy Lower Undead", shortLabel: "Destroy Undead", category: "Encounters", description: "Destroy lower-level undead." },
   122: { label: "Show Fumble Result", shortLabel: "Fumble", category: "Encounters", description: "Show combat fumble message or sound behavior." },
   123: { label: "Rout Monsters", shortLabel: "Rout", category: "Encounters", description: "Cause matching active combat monsters to rout." },
   124: { label: "Spawn Monsters", shortLabel: "Spawn", category: "Encounters", description: "Spawn combat monsters." },
   125: { label: "Destroy Related Monsters", shortLabel: "Destroy Related", category: "Encounters", description: "Destroy related combat monsters." },
-  126: { label: "Run Battle Action", shortLabel: "Battle Action", category: "Encounters", description: "Run battle action behavior." }
+  126: { label: "Run Battle Action", shortLabel: "Battle Action", category: "Encounters", description: "Run battle action behavior." },
+  127: { label: "Continue If Monster Present", shortLabel: "Monster Present", category: "Encounters", description: "Continue monster or battle macro behavior if a matching monster is present." }
 };
 
 type ScriptActionMetadataOverride = {
@@ -854,11 +878,15 @@ function buildActionDefinition(option: RealmzActionOption, forceAdvanced = false
         ? parameterRowTarget()
         : undefined;
   const storage = metadata?.storage ?? inferredStorage(code, option);
+  const preservedLabel = isDispatcherNoopOpcode(code) ? `Unknown Opcode ${code}` : `Preserved Action ${code}`;
+  const preservedShortLabel = isDispatcherNoopOpcode(code) ? "Unknown Opcode" : "Preserved Action";
   const description = hasGenericOpcodeLabel
-    ? "Imported action kept available for advanced scripts."
+    ? isDispatcherNoopOpcode(code)
+      ? "Providence keeps this opcode available for inspection, but classic Realmz does not expose a normal authoring path for it."
+      : "Providence preserves this known script row even though it does not have a complete friendly editor yet."
     : override?.description ?? option.description;
-  const label = hasGenericOpcodeLabel ? `Imported Action ${code}` : override?.label ?? option.shortLabel;
-  const shortLabel = hasGenericOpcodeLabel ? "Imported Action" : override?.shortLabel ?? option.shortLabel;
+  const label = hasGenericOpcodeLabel ? preservedLabel : override?.label ?? option.shortLabel;
+  const shortLabel = hasGenericOpcodeLabel ? preservedShortLabel : override?.shortLabel ?? option.shortLabel;
   const formKind = formKindFor(code, category, storage, metadata?.edcdShape ?? option.edcdShape, target?.targetFamily);
   return {
     opcode: code,

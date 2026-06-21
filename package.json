@@ -32,6 +32,7 @@
     "archaeology:opcode-crosswalk": "node scripts/generate_opcode_edcd_crosswalk.mjs",
     "archaeology:script-diagnostics": "node scripts/report_script_diagnostics.mjs",
     "archaeology:edcd-settings": "node scripts/report_edcd_settings_rows.mjs",
+    "archaeology:ap-opcode-coverage": "node scripts/report_ap_opcode_coverage.mjs",
     "smoke:oracle": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_smoke.ps1",
     "smoke:oracle:matrix": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_smoke_matrix.ps1",
     "smoke:oracle:gameplay": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_gameplay.ps1",

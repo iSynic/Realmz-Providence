@@ -211,9 +211,9 @@ function cachedValidateScriptTrigger(project: Project, trigger: TriggerRecord, c
 function authorFacingExtraActionKind(classification: string) {
   if (classification === "Callable Extra Action Point") return "Extra Action Point";
   if (classification === "Global Macro") return "Global Event";
-  if (classification === "Imported Empty Slot") return "Empty Extra Action Point";
-  if (classification === "Imported Runtime Mutation") return "Runtime Extra Action Point";
-  return "Unlinked Extra Action Point";
+  if (classification === "Likely Padding" || classification === "Imported Empty Slot") return "Likely Padding";
+  if (classification === "Runtime Residue" || classification === "Imported Runtime Mutation") return "Runtime Residue";
+  return "Unlinked Extra Action";
 }
 
 export function ScriptsPanel({
@@ -1007,7 +1007,7 @@ function ScriptAuthoringPanel({
                       );
                     })}
                   </ScrollArea>
-                  <ScriptFlowPreview project={project} catalog={catalog} trigger={selectedTrigger} />
+                  <ScriptFlowPreview project={project} catalog={catalog} trigger={selectedTrigger} onSelectEntity={onSelectEntity} />
                 </PanelSection>
                 {!floatingDetail && (
                   <PanelSection title="Current Step" eyebrow={`slot ${selectedSlot + 1} | ${selectedDefinition.category}`} actions={stepDetailActions}>
@@ -1530,11 +1530,13 @@ function EvidenceLinkGroup({
 function ScriptFlowPreview({
   project,
   catalog,
-  trigger
+  trigger,
+  onSelectEntity
 }: {
   project: Project;
   catalog?: LibraryCatalog | null;
   trigger: TriggerRecord;
+  onSelectEntity: (entity: SelectedEntity) => void;
 }) {
   const flowSteps = trigger.actions
     .filter((action) => action.rawCode !== 0)
@@ -1559,6 +1561,11 @@ function ScriptFlowPreview({
             <b>{definition.shortLabel}</b>
             <small>{routes[0]?.target ? `${routes[0].label}: ${routes[0].target.label}` : routes[0]?.detail || summary}</small>
           </p>
+          {routes[0]?.target && (
+            <button type="button" className="btn btn-secondary btn-xs" onClick={() => onSelectEntity(selectEntityForFlowTarget(routes[0].target!))}>
+              Open Target
+            </button>
+          )}
         </div>
       ))}
       {flowSteps.length > 5 && <small>{flowSteps.length - 5} more routed step(s)</small>}
@@ -1566,9 +1573,57 @@ function ScriptFlowPreview({
   );
 }
 
+function selectEntityForFlowTarget(target: { targetKind: string; value: number }): SelectedEntity {
+  if (target.targetKind === "macro") return selectEntityFromId(`macro:${target.value}`);
+  if (target.targetKind === "simpleEncounter") return selectEntityFromId(`encounter:simple:${target.value}`);
+  if (target.targetKind === "complexEncounter") return selectEntityFromId(`encounter:complex:${target.value}`);
+  if (target.targetKind === "thiefEncounter") return selectEntityFromId(`thief:${target.value}`);
+  if (target.targetKind === "timedEncounter") return selectEntityFromId(`time:${target.value}`);
+  if (target.targetKind === "message" || target.targetKind === "scrollingText") return selectEntityFromId(`message:${target.value}`);
+  if (target.targetKind === "treasure") return selectEntityFromId(`treasure:${target.value}`);
+  if (target.targetKind === "shop") return selectEntityFromId(`shop:${target.value}`);
+  if (target.targetKind === "monster") return selectEntityFromId(`monster:${target.value}`);
+  if (target.targetKind === "battle") return selectEntityFromId(`battle:${target.value}`);
+  if (target.targetKind === "mapRecord") return selectEntityFromId(`map-record:${target.value}`);
+  if (target.targetKind === "item") return selectEntityFromId(`item:${target.value}`);
+  return selectEntityFromId(`${target.targetKind}:${target.value}`);
+}
+
 function humanActionValueLabel(label: string) {
   const clean = label.replace(/\bID\b/g, "Value").replace(/\bNumber\b/g, "Value").replace(/\s+/g, " ").trim();
   return clean && clean !== "Value" ? clean : "Value";
+}
+
+function actionAuthoringStateLabel(definition: ScriptActionDefinition) {
+  if (definition.validationPosture === "no-effect") return "Preserve-only / no normal effect";
+  if (definition.authoringLevel === "first-class") return "Friendly editor";
+  if (definition.authoringLevel === "guided") return "Guided settings editor";
+  if (definition.authoringLevel === "advanced") return "Preserved action";
+  return "Empty step";
+}
+
+function actionAuthoringStateDetail(definition: ScriptActionDefinition) {
+  if (definition.validationPosture === "no-effect") {
+    return "Realmz does not expose normal runtime behavior for this dispatcher row. Providence preserves the stored CODE/ID values, but routine authoring is disabled.";
+  }
+  if (definition.authoringLevel === "first-class") {
+    return "Providence knows the target type and can edit this as normal scenario behavior.";
+  }
+  if (definition.authoringLevel === "guided") {
+    return "Providence edits the attached settings row with named fields, while keeping the original row number and file storage intact.";
+  }
+  if (definition.authoringLevel === "advanced") {
+    return "Providence can preserve and expose the stored values, but this action does not yet have a complete friendly authoring form.";
+  }
+  return "Realmz skips empty slots.";
+}
+
+function actionStorageLabel(definition: ScriptActionDefinition) {
+  if (definition.storage === "direct-code-id") return "Direct CODE / ID";
+  if (definition.storage === "data-edcd-parameter-row") return "Settings row";
+  if (definition.storage === "data-ed3-direct") return "Extra Action Point row";
+  if (definition.storage === "same-map-action-point-copy") return "Same-map Action Point copy";
+  return definition.storage;
 }
 
 function useSoundPreviewUrl(option: ScriptTargetOption | null, project: Project, desktopRuntime: boolean, projectDir: string, workspaceDir: string) {
@@ -1939,6 +1994,9 @@ function SelectedStepDetail({
         </p>
         <div className="realmz-raw-preview">
           <FieldRow label="Opcode" value={selectedDefinition.label} />
+          <FieldRow label="Authoring State" value={`${actionAuthoringStateLabel(selectedDefinition)} - ${actionAuthoringStateDetail(selectedDefinition)}`} />
+          <FieldRow label="Storage" value={actionStorageLabel(selectedDefinition)} />
+          <FieldRow label="Export Behavior" value="Unchanged values are preserved on export. Edits update the same classic Realmz fields Providence already imports." />
           <FieldRow label="CODE / ID" value={`${selectedDraft.rawCode} / ${selectedDraft.id}`} />
           <FieldRow label="Target Meaning" value={selectedDefinition.target?.help || selectedDefinition.description || "No direct target required."} />
           {settingLabels.length > 0 && (

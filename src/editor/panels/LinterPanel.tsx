@@ -545,9 +545,9 @@ function resourceCoverageSummary(gapCount: number, fallbackCount: number) {
 }
 
 function scriptTriageSummary(total: number, risky: number) {
-  if (total === 0) return "No imported Extra Action rows were found.";
-  if (risky === 0) return "Imported Extra Action rows are either callable, empty, or not currently actionable.";
-  return `${risky.toLocaleString()} imported Extra Action row${risky === 1 ? "" : "s"} may need review before you treat them as intentional scenario behavior.`;
+  if (total === 0) return "No unlinked Extra Action rows were found.";
+  if (risky === 0) return "Extra Action rows are either callable, likely padding, or not currently actionable.";
+  return `${risky.toLocaleString()} unlinked Extra Action row${risky === 1 ? "" : "s"} may need review before you treat them as intentional scenario behavior.`;
 }
 
 function edcdStatusCounts(usages: EdcdRowUsage[]) {

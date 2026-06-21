@@ -37,8 +37,18 @@ if (!firstClassMatch) {
   failures.push("Missing FIRST_CLASS_ACTIONS set.");
 } else {
   const firstClass = new Set((firstClassMatch[1].match(/-?\d+/g) ?? []).map(Number));
-  for (const opcode of [1, 2, 3, 8, 11, 14, 19, 20, 39, 45, 48, 56, 92, 106, 122]) {
+  for (const opcode of [1, 2, 3, 8, 11, 14, 19, 20, 24, 25, 26, 29, 39, 45, 48, 56, 82, 83, 98, 99, 101, 112, 119, 122, 127]) {
     if (!firstClass.has(opcode)) failures.push(`Common action ${opcode} is not marked first-class.`);
+  }
+}
+
+const advancedMatch = catalog.match(/const ADVANCED_ACTIONS = new Set\(\[([\s\S]*?)\]\);/);
+if (!advancedMatch) {
+  failures.push("Missing ADVANCED_ACTIONS set.");
+} else {
+  const advanced = new Set((advancedMatch[1].match(/-?\d+/g) ?? []).map(Number));
+  for (const opcode of [7, 98, 99, 101, 112]) {
+    if (advanced.has(opcode)) failures.push(`Known authorable action ${opcode} is still forced into the preserved/advanced bucket.`);
   }
 }
 
@@ -86,6 +96,17 @@ for (const [label, source] of normalUiSources) {
 
 if (/label:\s*["']Opcode\s+\d+/i.test(catalog)) {
   failures.push("Action catalog contains a visible Opcode label.");
+}
+
+for (const snippet of [
+  "Back Up Party",
+  "Change Action Point Codes",
+  "Get Click",
+  "Offer Temple",
+  "Continue If Monster Present",
+  "Revive NPC After Combat"
+]) {
+  if (!catalog.includes(snippet)) failures.push(`Action catalog is missing promoted opcode label: ${snippet}`);
 }
 
 if (failures.length > 0) {

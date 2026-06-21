@@ -67,9 +67,9 @@ export function issueCountsBySlot(issues: ScriptDiagnostic[]) {
 function authorFacingExtraActionKind(classification: string) {
   if (classification === "Callable Extra Action Point") return "Extra Action Point";
   if (classification === "Global Macro") return "Global Event";
-  if (classification === "Imported Empty Slot") return "Empty Extra Action Point";
-  if (classification === "Imported Runtime Mutation") return "Runtime Extra Action Point";
-  return "Unlinked Extra Action Point";
+  if (classification === "Likely Padding" || classification === "Imported Empty Slot") return "Likely Padding";
+  if (classification === "Runtime Residue" || classification === "Imported Runtime Mutation") return "Runtime Residue";
+  return "Unlinked Extra Action";
 }
 
 export const SCRIPT_INVENTORY_FILTERS: Array<{ id: ScriptInventoryFilter; label: string }> = [
@@ -158,7 +158,7 @@ export function triggerVisibleForEditor(project: Project | null, trigger: Trigge
 export function scriptPanelTitle(activeEditor: string) {
   if (activeEditor === "action-points") return "Action Points";
   if (activeEditor === "macros") return "Extra Action Points";
-  if (activeEditor === "ed3-evidence") return "Unlinked Extra Action Points";
+  if (activeEditor === "ed3-evidence") return "Unlinked Extra Actions";
   if (activeEditor === "global-macros") return "Global Events";
   if (activeEditor === "quests") return "Quests";
   if (activeEditor === "settings-rows") return "Settings Rows";

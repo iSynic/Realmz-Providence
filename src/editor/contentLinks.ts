@@ -478,15 +478,15 @@ function extraActionClassification(project: Project, trigger: Project["triggers"
 }
 
 function importedExtraActionLabel(classification: string | null | undefined) {
-  if (classification === "probable-editor-padding") return "Imported Empty Slot";
-  if (classification === "runtime-mutation-candidate") return "Imported Runtime Mutation";
-  return "Imported Extra Action";
+  if (classification === "probable-editor-padding") return "Likely Padding";
+  if (classification === "runtime-mutation-candidate") return "Runtime Residue";
+  return "Unlinked Extra Action";
 }
 
 function authorFacingExtraActionKind(classification: string) {
   if (classification === "Callable Extra Action Point") return "Extra Action Point";
   if (classification === "Global Macro") return "Global Event";
-  if (classification === "Imported Empty Slot") return "Empty Extra Action Point";
-  if (classification === "Imported Runtime Mutation") return "Runtime Extra Action Point";
-  return "Unlinked Extra Action Point";
+  if (classification === "Likely Padding" || classification === "Imported Empty Slot") return "Likely Padding";
+  if (classification === "Runtime Residue" || classification === "Imported Runtime Mutation") return "Runtime Residue";
+  return "Unlinked Extra Action";
 }
