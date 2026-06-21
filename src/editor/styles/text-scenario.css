@@ -2082,6 +2082,16 @@
   line-height: 1.45;
 }
 
+.scenario-note-warning {
+  color: #f2c66f;
+}
+
+.scenario-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 
 
 .scenario-hub-card small {

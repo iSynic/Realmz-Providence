@@ -938,7 +938,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "Global event hooks live in the Global source file. Start, Death, Quit, Shop, and Temple have source-backed runtime consumers; reserved slots should be preserved unless further evidence promotes them."
         ],
         points: [
-          "Start runs during new-game/startup flow.",
+          "Start runs during new-game/startup flow. A Start hook value of 0 means no startup macro, so tests should use a nonzero Extra Action Point row.",
           "Death and Quit attach to party loss/revive and game-exit paths.",
           "Shop and Temple fire from the button flow; teleporting or sending a party to a shop by negative shop ID does not trigger these hooks.",
           "Scenario pictures are managed in Assets, including the Divinity title/splash picture range.",
@@ -1407,7 +1407,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         ],
         points: [
           "Positive and negative values can have different meanings. Examples include one-shot vs repeat random rectangles, signed battle macro behavior, negative sound sequencing, and branch/backstep sentinels.",
-          "Global Events are source-backed hooks such as new game, party death, quit/end game, before shop, and before temple. Other Global slots remain preserved evidence until a source-backed consumer is known.",
+          "Global Events are source-backed hooks such as new game, party death, quit/end game, before shop, and before temple. Start hook row 0 means no startup macro, so smoke-test macros should use a nonzero Extra Action Point row.",
+          "Other Global slots remain preserved evidence until a source-backed consumer is known.",
           "Unlinked Extra APs are preserved imported script rows. Duplicate or promote them into authored behavior before relying on them as callable scenario logic."
         ],
         callout: {
@@ -1581,7 +1582,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         points: [
           "Spell tests accept exact packed spell IDs or spell class IDs below 7.",
           "Item tests match used item IDs from the item library.",
-          "The thief path links to a Data TD2 rogue encounter.",
+          "The thief path links to a Data TD2 Rogue Encounter. That Rogue Encounter returns result numbers into the Complex Encounter result columns.",
           "The word path compares typed player text against the encounter's word buffer.",
           "Action-picker tests use eight group flags plus the action result.",
           "Complex encounter source records are 520 bytes across current corpus evidence."
@@ -1611,8 +1612,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           },
           {
             title: "Thief",
-            body: "Links to a Rogue Encounter. Its success and failure fields decide which result columns run.",
-            facts: ["Data TD2", "success/fail"]
+            body: "Links to a Rogue Encounter. The Rogue Encounter owns the lock/trap action checks and returns success or failure result codes.",
+            facts: ["Data TD2", "result codes"]
           },
           {
             title: "Word",
@@ -1636,6 +1637,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "Type flags decide which thief actions are available.",
           "Modifiers adjust the skill roll for each action.",
           "Success and failure codes return branch results to the complex encounter flow.",
+          "Open Lock spell chance and Disarm Trap spell chance are separate support fields, even though both live in Rogue Encounter data.",
           "Success/failure text IDs should resolve to Data SD2 messages when nonzero.",
           "Success/failure sound IDs should resolve to sound resources when nonzero.",
           "Trap damage should validate low <= high when both values are present."
@@ -1651,6 +1653,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "Enable only the rogue actions that should appear or be tested for this scene.",
           "Use % Mod to tune difficulty relative to the party's thief skill.",
           "Use success and failure result codes to return to the expected complex encounter result columns.",
+          "For Open Lock spell tests, set Open Lock spell chance / level and the Open Lock Magic success/failure results. For Disarm Trap spell tests, set Disarm Trap spell chance / level and the Disarm Trap success/failure results.",
           "Resolve success/failure text fields to Data SD2 messages so the player sees useful feedback.",
           "Use trap damage, trap spell, power level, and knock/disarm percentage fields together; avoid changing reserved fields unless matching known Divinity behavior."
         ]

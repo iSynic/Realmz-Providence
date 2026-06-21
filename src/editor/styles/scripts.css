@@ -1431,6 +1431,50 @@
   padding: 8px;
 }
 
+.complex-rogue-summary {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 8px;
+  border: 1px solid #24445f;
+  border-radius: 6px;
+  background: #081923;
+  padding: 8px;
+}
+
+.complex-rogue-summary header,
+.complex-rogue-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.complex-rogue-summary header span {
+  color: #87c4ff;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.complex-rogue-summary dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 6px;
+  margin: 0;
+}
+
+.complex-rogue-summary dt {
+  color: #6fb8ff;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.complex-rogue-summary dd {
+  margin: 0;
+  color: #d8e9f8;
+  font-size: 11px;
+}
+
 
 
 .encounter-record-grid > .script-target-checkbox {

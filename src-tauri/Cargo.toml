@@ -1,6 +1,6 @@
 [package]
 name = "realmz-providence"
-version = "0.1.17"
+version = "0.1.18"
 description = "Modern Realmz scenario editor and creator."
 authors = ["Realmz Providence contributors"]
 edition = "2021"

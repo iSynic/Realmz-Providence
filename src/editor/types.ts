@@ -1044,6 +1044,7 @@ export type ProjectCommand =
   | { kind: "createMap"; label: string; levelType: LevelType }
   | { kind: "duplicateMap"; label: string; mapId: string }
   | { kind: "createMacro"; label: string; displayName?: string }
+  | { kind: "createStartupTestMacro"; label: string; complexEncounterId?: number }
   | { kind: "deleteMacro"; label: string; triggerId: string }
   | { kind: "deleteTrigger"; label: string; triggerId: string }
   | { kind: "duplicateTrigger"; label: string; triggerId: string; displayName?: string }

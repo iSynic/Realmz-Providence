@@ -174,6 +174,7 @@ function WorkbenchRouterContent({
         project={state.project}
         onApplyCommand={onApplyCommand}
         onSelectMap={onSelectMap}
+        onSelectEntity={onSelectEntity}
         onOpenTool={onOpenTool}
       />
     );

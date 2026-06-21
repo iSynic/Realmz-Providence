@@ -2,6 +2,7 @@ import { Action, ExtraCodeRow, Project, ProjectCommand, Provenance, TriggerRecor
 import { actionOptionFor, normalizeStepOpcode } from "../realmzActions";
 import { isReusableDoorPlaceholder } from "../actionPointCapacity";
 import { normalizedEditorMetadata } from "./tilePaletteCommands";
+import { defaultGlobalMacroHooks } from "./scenarioRulesCommands";
 
 const DOOR_RECORD_BYTES = 40;
 const DOORS_PER_LEVEL = 100;
@@ -30,6 +31,70 @@ export function createMacro(project: Project, displayName?: string) {
     ...project,
     triggers: [...project.triggers, macro],
     editorMetadata: addDisplayName(project.editorMetadata, macro.id, displayName)
+  };
+}
+
+export function createStartupTestMacro(project: Project, complexEncounterId?: number) {
+  const recordIndex = nextStartupMacroRecordIndex(project);
+  const existing = project.triggers.find((trigger) => trigger.source === "Data ED3" && trigger.recordIndex === recordIndex);
+  const triggerId = `Data ED3:macro:${recordIndex}`;
+  const actions = startupTestActions(complexEncounterId);
+  const macro: TriggerRecord = existing
+    ? {
+        ...existing,
+        id: triggerId,
+        source: "Data ED3",
+        levelType: null,
+        levelIndex: null,
+        recordIndex,
+        active: true,
+        doorid: 0,
+        landid: 0,
+        targetX: 0,
+        targetY: 0,
+        percent: 100,
+        coordinate: null,
+        actions,
+        provenance: existing.provenance ?? authoredProvenance("Data ED3", recordIndex, recordIndex * DOOR_RECORD_BYTES, DOOR_RECORD_BYTES)
+      }
+    : {
+        id: triggerId,
+        source: "Data ED3",
+        levelType: null,
+        levelIndex: null,
+        recordIndex,
+        active: true,
+        doorid: 0,
+        landid: 0,
+        targetX: 0,
+        targetY: 0,
+        percent: 100,
+        coordinate: null,
+        actions,
+        provenance: authoredProvenance("Data ED3", recordIndex, recordIndex * DOOR_RECORD_BYTES, DOOR_RECORD_BYTES)
+      };
+  const hooks = project.scenario.globalMacroHooks ?? defaultGlobalMacroHooks();
+  const defaultHooks = defaultGlobalMacroHooks();
+  const slots = defaultHooks.slots.map((defaultSlot) => {
+    const current = hooks.slots.find((candidate) => candidate.slot === defaultSlot.slot) ?? defaultSlot;
+    return current.slot === 0 ? { ...current, door: recordIndex } : current;
+  });
+  const defaultSlotIds = new Set(defaultHooks.slots.map((slot) => slot.slot));
+  const extraSlots = hooks.slots.filter((slot) => !defaultSlotIds.has(slot.slot));
+  return {
+    ...project,
+    triggers: existing
+      ? project.triggers.map((trigger) => (trigger.source === "Data ED3" && trigger.recordIndex === recordIndex ? macro : trigger))
+      : [...project.triggers, macro],
+    scenario: {
+      ...project.scenario,
+      globalMacroHooks: {
+        ...hooks,
+        slots: [...slots, ...extraSlots],
+        authored: true
+      }
+    },
+    editorMetadata: addDisplayName(project.editorMetadata, triggerId, `Startup Test Macro ${recordIndex}`)
   };
 }
 
@@ -357,6 +422,20 @@ function upsertAllocatedTrigger(triggers: TriggerRecord[], trigger: TriggerRecor
 
 function slotInRange(slot: number) {
   return Number.isInteger(slot) && slot >= 0 && slot < 8;
+}
+
+function nextStartupMacroRecordIndex(project: Project) {
+  const macros = project.triggers.filter((trigger) => trigger.source === "Data ED3");
+  const reusable = macros
+    .filter((trigger) => trigger.recordIndex > 0 && !trigger.active && trigger.actions.length === 0)
+    .sort((a, b) => a.recordIndex - b.recordIndex)[0];
+  if (reusable) return reusable.recordIndex;
+  return Math.max(0, ...macros.map((trigger) => trigger.recordIndex)) + 1;
+}
+
+function startupTestActions(complexEncounterId?: number): Action[] {
+  if (complexEncounterId == null || !Number.isInteger(complexEncounterId) || complexEncounterId < 0) return [];
+  return [describeAction(0, 5, complexEncounterId), describeAction(7, 24, 0)];
 }
 
 function packDoorId(levelIndex: number, x: number, y: number) {

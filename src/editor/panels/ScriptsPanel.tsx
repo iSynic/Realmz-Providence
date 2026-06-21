@@ -140,7 +140,7 @@ const TIMED_ENCOUNTER_SOURCE_HELP =
 const ENCOUNTER_SETUP_HELP =
   "Encounter setup owns the shared source fields: prompt message, back-out behavior, max attempts, and caste-success value. The prompt is a central Message; option labels below are inline buffers.";
 const COMPLEX_THIEF_BRANCH_HELP =
-  "The complex thief branch links into a Rogue Encounter. Success and failure values are result numbers, so they should point at the result script columns you want Realmz to run afterward.";
+  "The complex thief branch links into a Rogue Encounter. That rogue scene decides which lock, trap, and thief actions are available, then returns result numbers into this Complex Encounter's result script columns.";
 const SIMPLE_OPTIONS_HELP =
   "Each simple option has an inline label and a Result number. Result 1-4 chooses the matching action column below; zero means no result path.";
 const COMPLEX_BAR_ACTIONS_HELP =
@@ -158,7 +158,7 @@ const ROGUE_ACTION_TESTS_HELP =
 const ROGUE_PROMPT_HELP =
   "The rogue prompt is shown when this thief scene begins. It can also play a sound before the player chooses or attempts a rogue action.";
 const ROGUE_TRAP_HELP =
-  "Trap and lock setup controls whether the record is trapped, who damage affects, tumbler count, damage range, optional spell effect, and knock/disarm percentages.";
+  "Trap and lock setup controls whether the record is trapped, who damage affects, tumbler count, damage range, optional trap spell, Open Lock spell chance, and Disarm Trap spell chance.";
 const TIMED_SCHEDULE_HELP =
   "The midnight schedule controls when this record is considered. Day and Increment define timing, Percent gates execution, and Extra AP To Activate is the macro Realmz runs.";
 const TIMED_LOCATION_HELP =
@@ -721,6 +721,7 @@ function ScriptAuthoringPanel({
         desktopRuntime={desktopRuntime}
         projectDir={projectDir}
         workspaceDir={workspaceDir}
+        onSelectEntity={onSelectEntity}
         onApplyCommand={onApplyCommand}
       />
     </PanelSection>
@@ -2068,6 +2069,7 @@ export function TargetRecordEditor({
   desktopRuntime = false,
   projectDir = "",
   workspaceDir = "",
+  onSelectEntity,
   onApplyCommand
 }: {
   project: Project;
@@ -2078,6 +2080,7 @@ export function TargetRecordEditor({
   desktopRuntime?: boolean;
   projectDir?: string;
   workspaceDir?: string;
+  onSelectEntity?: (entity: SelectedEntity) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const descriptor = realmzScriptStepDescriptorFor(opcode);
@@ -2531,6 +2534,7 @@ export function TargetRecordEditor({
             choiceResults={record.choiceResults}
             actions={record.actions}
             catalog={catalog}
+            onSelectEntity={onSelectEntity}
             onApplyCommand={onApplyCommand}
           />
         )}
@@ -2573,6 +2577,7 @@ export function TargetRecordEditor({
             thiefFail={record.thiefFail}
             actions={record.actions}
             catalog={catalog}
+            onSelectEntity={onSelectEntity}
             onApplyCommand={onApplyCommand}
           />
         )}
@@ -2723,6 +2728,7 @@ function EncounterShell({
   thiefFail,
   actions,
   catalog,
+  onSelectEntity,
   onApplyCommand
 }: {
   project: Project;
@@ -2747,6 +2753,7 @@ function EncounterShell({
   thiefSuccess?: number;
   thiefFail?: number;
   actions: EncounterActionRow[];
+  onSelectEntity?: (entity: SelectedEntity) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const update = (changes: Record<string, unknown>) => {
@@ -2791,15 +2798,25 @@ function EncounterShell({
         <section className="encounter-complex-rules">
           <p className="field-help" style={{ gridColumn: "1 / -1" }}>
             <TutorialTip title="Complex Thief Branch" body={COMPLEX_THIEF_BRANCH_HELP} side="below">
-              <span>Thief success and failure values choose encounter result columns.</span>
+              <span>Rogue Encounter runs a lock/trap scene, then returns a result number.</span>
             </TutorialTip>
           </p>
           <label className="script-target-checkbox">
             <span>Thief</span>
             <input type="checkbox" defaultChecked={Boolean(thief)} onChange={(event) => update({ thief: event.currentTarget.checked })} />
           </label>
-          <NumberField label="Thief Success" value={thiefSuccess ?? 0} onCommit={(value) => update({ thiefSuccess: value })} compact />
-          <NumberField label="Thief Fail" value={thiefFail ?? 0} onCommit={(value) => update({ thiefFail: value })} compact />
+          <NumberField label="Rogue Encounter" value={thiefSuccess ?? 0} onCommit={(value) => update({ thiefSuccess: value })} compact />
+          <NumberField label="Preserved Rogue Fail Field" value={thiefFail ?? 0} onCommit={(value) => update({ thiefFail: value })} compact />
+          {Boolean(thief) && (
+            <ComplexRogueSummary
+              project={project}
+              rogueId={thiefSuccess ?? 0}
+              preservedFailField={thiefFail ?? 0}
+              onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create rogue encounter", recordType: "thiefEncounter", id: thiefSuccess ?? 0 })}
+              onOpen={() => onSelectEntity?.({ type: "encounter", id: `thief:${thiefSuccess ?? 0}` })}
+              onRunOnStart={() => onApplyCommand?.({ kind: "createStartupTestMacro", label: "Run encounter on scenario start", complexEncounterId: id })}
+            />
+          )}
         </section>
       )}
       <EncounterResultEditor
@@ -2842,6 +2859,97 @@ function EncounterShell({
       )}
     </div>
   );
+}
+
+function ComplexRogueSummary({
+  project,
+  rogueId,
+  preservedFailField,
+  onCreate,
+  onOpen,
+  onRunOnStart
+}: {
+  project: Project;
+  rogueId: number;
+  preservedFailField: number;
+  onCreate: () => void;
+  onOpen: () => void;
+  onRunOnStart: () => void;
+}) {
+  const record = project.thiefEncounters?.find((candidate) => candidate.id === rogueId);
+  const enabled = record
+    ? ROGUE_ACTION_LABELS.map((label, slot) => (record.typeFlags?.[slot] ? label : null)).filter((label): label is string => Boolean(label))
+    : [];
+  return (
+    <div className="complex-rogue-summary">
+      <header>
+        <strong>Rogue Encounter Summary</strong>
+        <span>{rogueId > 0 ? `Rogue Encounter ${rogueId}` : "No rogue encounter selected"}</span>
+      </header>
+      {record ? (
+        <>
+          <dl>
+            <div>
+              <dt>Available actions</dt>
+              <dd>{enabled.length ? enabled.join(", ") : "No rogue actions enabled"}</dd>
+            </div>
+            <div>
+              <dt>Open Lock spell chance</dt>
+              <dd>{record.promptSounds?.[1] ?? 0}</dd>
+            </div>
+            <div>
+              <dt>Open Lock results</dt>
+              <dd>{rogueOutcomeSummary(record, ROGUE_OPEN_LOCK_SLOT)}</dd>
+            </div>
+            <div>
+              <dt>Disarm Trap spell chance</dt>
+              <dd>{record.promptSounds?.[2] ?? 0}</dd>
+            </div>
+            <div>
+              <dt>Disarm Trap results</dt>
+              <dd>{rogueOutcomeSummary(record, ROGUE_DISARM_TRAP_SLOT)}</dd>
+            </div>
+            {preservedFailField !== 0 && (
+              <div>
+                <dt>Preserved fail field</dt>
+                <dd>{preservedFailField}</dd>
+              </div>
+            )}
+          </dl>
+          <div className="complex-rogue-actions">
+            <button type="button" className="btn btn-secondary btn-xs" onClick={onOpen}>
+              Open Rogue Encounter
+            </button>
+            <button type="button" className="btn btn-secondary btn-xs" onClick={onRunOnStart}>
+              Run Encounter On Scenario Start
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="field-help">Choose or create a Rogue Encounter record for this thief branch before relying on Open Lock or Disarm Trap behavior.</p>
+          <div className="complex-rogue-actions">
+            <button type="button" className="btn btn-secondary btn-xs" disabled={rogueId <= 0} onClick={onCreate}>
+              Create Rogue Encounter
+            </button>
+            <button type="button" className="btn btn-secondary btn-xs" onClick={onRunOnStart}>
+              Run Encounter On Scenario Start
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function rogueOutcomeSummary(record: Project["thiefEncounters"][number], slot: number) {
+  const success = record.successCodes?.[slot] ?? 0;
+  const failure = record.failureCodes?.[slot] ?? 0;
+  return `success ${resultCodeLabel(success)}, failure ${resultCodeLabel(failure)}`;
+}
+
+function resultCodeLabel(value: number) {
+  return value > 0 ? `Result ${value}` : "no result";
 }
 
 function EncounterResultActionMatrix({
@@ -2959,12 +3067,14 @@ const ROGUE_ACTION_LABELS = [
   "Disarm Trap",
   "Force Lock",
   "Pick Lock",
+  "Pick Pocket",
   "Open Lock Magic",
-  "Disarm Trap Magic",
   "Rogue Support"
 ];
 
 const ROGUE_PRIMARY_ACTIONS = 5;
+const ROGUE_DISARM_TRAP_SLOT = 2;
+const ROGUE_OPEN_LOCK_SLOT = 6;
 
 function ThiefEncounterShell({
   project,
@@ -3093,9 +3203,10 @@ function ThiefEncounterShell({
             />
             <NumberField label="Trap Spell" value={record.spell} onCommit={(spell) => update({ spell })} compact />
             <NumberField label="Power Level" value={record.prompts?.[2] ?? 0} onCommit={(value) => update({ prompts: updateArraySlot(record.prompts ?? [], 2, value, 3) })} compact />
-            <NumberField label="% / Level To Knock" value={record.promptSounds?.[1] ?? 0} onCommit={(value) => update({ promptSounds: updateArraySlot(record.promptSounds ?? [], 1, value, 3) })} compact />
-            <NumberField label="% / Level To Disarm" value={record.promptSounds?.[2] ?? 0} onCommit={(value) => update({ promptSounds: updateArraySlot(record.promptSounds ?? [], 2, value, 3) })} compact />
+            <NumberField label="Open Lock spell chance / level" value={record.promptSounds?.[1] ?? 0} onCommit={(value) => update({ promptSounds: updateArraySlot(record.promptSounds ?? [], 1, value, 3) })} compact />
+            <NumberField label="Disarm Trap spell chance / level" value={record.promptSounds?.[2] ?? 0} onCommit={(value) => update({ promptSounds: updateArraySlot(record.promptSounds ?? [], 2, value, 3) })} compact />
           </div>
+          <p className="field-help">Open Lock and Disarm Trap are separate spell-special paths. Open Lock uses the Open Lock chance and row; Disarm Trap uses the Disarm chance and row.</p>
         </div>
       </section>
     </div>

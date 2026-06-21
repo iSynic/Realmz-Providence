@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { TutorialTip } from "../components/TutorialTip";
-import { Project, ProjectCommand } from "../types";
+import { Project, ProjectCommand, SelectedEntity } from "../types";
 import { REALMZ_CASTES, REALMZ_RACES } from "../rulesCatalog";
 import {
   SECURITY_SEGMENT_LENGTH,
@@ -31,16 +31,20 @@ type ScenarioPanelProps = {
   project: Project;
   onApplyCommand: (command: ProjectCommand) => void;
   onSelectMap: (id: string) => void;
+  onSelectEntity?: (entity: SelectedEntity) => void;
   onOpenTool: (tab: "assets" | "rules" | "scripts", editor: string) => void;
 };
 
-export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool }: ScenarioPanelProps) {
+export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onSelectEntity, onOpenTool }: ScenarioPanelProps) {
   const shell = project.scenario.shell ?? defaultShell(project);
   const contact = project.scenario.contactInfo ?? defaultContact(project);
   const restrictions = project.scenario.restrictions;
   const securityBackup = project.scenario.securityBackup ?? null;
   const startupMap = project.maps.find((map) => map.levelType === "land" && map.index === shell.landLevel) ?? null;
   const issues = scenarioIssues(project, shell);
+  const hookRows = globalHooks(project);
+  const startHook = hookRows.find((hook) => hook.slot === 0);
+  const nextStartupMacroId = nextStartupTestMacroRecordIndex(project);
   return (
     <section className="scenario-workbench">
       <header className="scenario-hero">
@@ -332,8 +336,24 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool
             <b>{activeGlobalHookCount(project)}</b>
           </header>
           <p className="scenario-note">Shop and Temple hooks fire only from the shop/temple button flow. Sending the party to a shop by negative shop ID does not trigger these hooks.</p>
+          {startHook?.door === 0 && (
+            <p className="scenario-note scenario-note-warning">Start is set to 0, which classic Realmz treats as no startup macro. Use a nonzero Extra Action Point row when building a startup smoke test.</p>
+          )}
+          <div className="scenario-card-actions">
+            <button
+              type="button"
+              className="btn btn-secondary btn-xs"
+              onClick={() => {
+                onApplyCommand({ kind: "createStartupTestMacro", label: "Create startup test macro" });
+                onSelectEntity?.({ type: "macro", id: `Data ED3:macro:${nextStartupMacroId}` });
+                onOpenTool("scripts", "global-macros");
+              }}
+            >
+              Create Startup Test Macro
+            </button>
+          </div>
           <div className="scenario-global-hook-grid">
-            {globalHooks(project).map((hook) => (
+            {hookRows.map((hook) => (
               <label key={hook.slot} className={hook.sourceBacked ? "scenario-field" : "scenario-field is-preserved"}>
                 <span>{hook.label}</span>
                 <input
@@ -729,6 +749,15 @@ function globalHooks(project: Project) {
 function activeGlobalHookCount(project: Project) {
   const count = globalHooks(project).filter((hook) => hook.door !== 0).length;
   return count === 1 ? "1 active hook" : `${count} active hooks`;
+}
+
+function nextStartupTestMacroRecordIndex(project: Project) {
+  const macros = project.triggers.filter((trigger) => trigger.source === "Data ED3");
+  const reusable = macros
+    .filter((trigger) => trigger.recordIndex > 0 && !trigger.active && trigger.actions.length === 0)
+    .sort((a, b) => a.recordIndex - b.recordIndex)[0];
+  if (reusable) return reusable.recordIndex;
+  return Math.max(0, ...macros.map((trigger) => trigger.recordIndex)) + 1;
 }
 
 function clampInt(value: number, min: number, max: number) {

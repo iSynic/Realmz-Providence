@@ -7,6 +7,9 @@ import { edcdFieldNamesForShape } from "./realmzEdcd";
 import { parameterLabelsForOpcode } from "./opcodeCrosswalk";
 import { scriptParameterLabelForOpcode } from "./scriptActionLabels";
 
+const ROGUE_DISARM_TRAP_SLOT = 2;
+const ROGUE_OPEN_LOCK_SLOT = 6;
+
 export type TargetRecordDiagnostic = {
   id: string;
   severity: "error" | "warning" | "info";
@@ -181,6 +184,14 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
           }
         }
       }
+      if (complex.thief && complex.thiefSuccess > 0) {
+        const rogue = project.thiefEncounters?.find((candidate) => candidate.id === complex.thiefSuccess);
+        if (!rogue) {
+          issues.push(recordIssue("warning", recordType, recordId, "complex-rogue-missing", "Rogue Encounter target is missing.", `This thief branch opens Rogue Encounter ${complex.thiefSuccess}, but that record does not exist yet.`));
+        } else {
+          issues.push(...validateComplexRogueResultColumns(recordType, recordId, complex, rogue));
+        }
+      }
     }
     issues.push(...validateReference(project, recordType, recordId, "Prompt message", 1, record.prompt, undefined, catalog));
     issues.push(...validateEncounterActions(project, recordType, recordId, record.actions, catalog));
@@ -236,10 +247,97 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
     if (record.lowDamage !== 0 && record.highDamage !== 0 && record.lowDamage > record.highDamage) {
       issues.push(recordIssue("warning", recordType, recordId, "rogue-damage-range", "Trap damage low is greater than high.", "Swap the low/high trap damage values unless this is intentional imported data."));
     }
+    issues.push(...validateRogueVisibleOutcomes(recordType, recordId, record));
     return issues;
   }
   return [];
 }
+
+function validateComplexRogueResultColumns(
+  recordType: RealmzTargetRecordKind,
+  recordId: number,
+  complex: Project["complexEncounters"][number],
+  rogue: Project["thiefEncounters"][number]
+) {
+  const issues: TargetRecordDiagnostic[] = [];
+  const checks = [
+    { slot: ROGUE_OPEN_LOCK_SLOT, label: "Open Lock", enabled: (rogue.promptSounds?.[1] ?? 0) > 0 },
+    { slot: ROGUE_DISARM_TRAP_SLOT, label: "Disarm Trap", enabled: (rogue.promptSounds?.[2] ?? 0) > 0 }
+  ];
+  for (const check of checks) {
+    if (!check.enabled) continue;
+    for (const outcome of [
+      { kind: "success", result: rogue.successCodes?.[check.slot] ?? 0 },
+      { kind: "failure", result: rogue.failureCodes?.[check.slot] ?? 0 }
+    ] as const) {
+      if (outcome.result <= 0) continue;
+      if (outcome.result > 4) continue;
+      if (!complexResultHasVisibleAction(complex, outcome.result)) {
+        issues.push(recordIssue(
+          "warning",
+          recordType,
+          recordId,
+          `complex-rogue-${check.label}-${outcome.kind}-empty-result`,
+          `${check.label} ${outcome.kind} runs an empty result column.`,
+          `${check.label} ${outcome.kind} returns Result ${outcome.result}, but that Complex Encounter result column has no message, branch, reward, or exit action.`
+        ));
+      }
+    }
+  }
+  return issues;
+}
+
+function validateRogueVisibleOutcomes(recordType: RealmzTargetRecordKind, recordId: number, record: Project["thiefEncounters"][number]) {
+  const issues: TargetRecordDiagnostic[] = [];
+  const checks = [
+    { slot: ROGUE_OPEN_LOCK_SLOT, label: "Open Lock", enabled: (record.promptSounds?.[1] ?? 0) > 0 },
+    { slot: ROGUE_DISARM_TRAP_SLOT, label: "Disarm Trap", enabled: (record.promptSounds?.[2] ?? 0) > 0 }
+  ];
+  for (const slot of Array.from({ length: 8 }, (_, index) => index)) {
+    const label = ROGUE_ACTION_LABELS[slot] ?? `Rogue action ${slot}`;
+    if (record.typeFlags?.[slot] && !rogueOutcomeHasVisiblePath(record, slot, "success")) {
+      issues.push(slotIssue("warning", recordType, recordId, slot, "rogue-success-no-visible-result", `${label} success has no visible result.`, `${label} can be attempted, but success currently runs no visible result. Add a message, sound, or result code so players can tell what happened.`));
+    }
+    if (record.typeFlags?.[slot] && !rogueOutcomeHasVisiblePath(record, slot, "failure")) {
+      issues.push(slotIssue("warning", recordType, recordId, slot, "rogue-failure-no-visible-result", `${label} failure has no visible result.`, `${label} can be attempted, but failure currently runs no visible result. Add a message, sound, or result code so players can tell what happened.`));
+    }
+  }
+  for (const check of checks) {
+    if (!check.enabled) continue;
+    if ((record.successCodes?.[check.slot] ?? 0) === 0) {
+      issues.push(slotIssue("warning", recordType, recordId, check.slot, "rogue-spell-success-result-zero", `${check.label} spell success returns no result.`, `${check.label} can be attempted, but success currently returns no Complex Encounter result. Add a success result row so players can tell what happened.`));
+    }
+    if ((record.failureCodes?.[check.slot] ?? 0) === 0) {
+      issues.push(slotIssue("warning", recordType, recordId, check.slot, "rogue-spell-failure-result-zero", `${check.label} spell failure returns no result.`, `${check.label} can be attempted, but failure currently returns no Complex Encounter result. Add a failure result row so players can tell what happened.`));
+    }
+  }
+  return issues;
+}
+
+function complexResultHasVisibleAction(complex: Project["complexEncounters"][number], resultCode: number) {
+  const resultIndex = resultCode - 1;
+  if (resultIndex < 0 || resultIndex > 3) return true;
+  const start = resultIndex * 8;
+  return complex.actions.some((action) => action.slot >= start && action.slot < start + 8 && (action.rawCode !== 0 || action.id !== 0));
+}
+
+function rogueOutcomeHasVisiblePath(record: Project["thiefEncounters"][number], slot: number, outcome: "success" | "failure") {
+  const codes = outcome === "success" ? record.successCodes : record.failureCodes;
+  const messages = outcome === "success" ? record.successText : record.failureText;
+  const sounds = outcome === "success" ? record.successSounds : record.failureSounds;
+  return Boolean((codes?.[slot] ?? 0) || (messages?.[slot] ?? 0) || (sounds?.[slot] ?? 0));
+}
+
+const ROGUE_ACTION_LABELS = [
+  "Acrobatic Act",
+  "Detect Trap",
+  "Disarm Trap",
+  "Force Lock",
+  "Pick Lock",
+  "Pick Pocket",
+  "Open Lock Magic",
+  "Rogue Support"
+];
 
 function validateEncounterActions(project: Project, recordType: RealmzTargetRecordKind, recordId: number, actions: Array<{ slot: number; rawCode: number; id: number }>, catalog?: LibraryCatalog | null) {
   const issues: TargetRecordDiagnostic[] = [];

@@ -1801,6 +1801,7 @@ function TargetRecordWorkbench({
               desktopRuntime={previewContext.desktopRuntime}
               projectDir={previewContext.projectDir}
               workspaceDir={previewContext.workspaceDir}
+              onSelectEntity={onSelectEntity}
               onApplyCommand={onApplyCommand}
             />
           ) : (
