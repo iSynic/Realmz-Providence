@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AssetSearchHint, LibraryAsset, LibraryCatalog, ManagedAssetKind, Project, ResourcePreviewDiagnostic, ResourcePreviewStatus, SelectedEntity, SemanticEntity } from "../types";
 import { compactValue, selectEntityFromId, semanticLabel } from "../utils";
 import { loadBrowserScenarioResourcePreview } from "../browser/project";
+import { useResolvedPreviewUrl } from "../previewUrls";
 import { resourceConsumers, resourceGaps, resourceMembersForType, schemaEntities } from "../semanticGraph";
 import { resourceUsageLinks } from "../contentLinks";
 import { tileColor } from "../components/TileSprite";
@@ -289,8 +290,10 @@ export function ResourcesPanel({
                         key={renderListKey("scenario-resource-asset", item.asset.entity, index)}
                         asset={item.asset}
                         project={project}
+                        catalog={catalog}
                         desktopRuntime={desktopRuntime}
                         projectDir={projectDir}
+                        workspaceDir={workspaceDir}
                         selected={selectedAssetKey === item.asset.entity.id}
                         onSelect={() => setSelectedAsset({ type: "resource", entity: item.asset.entity, consumers: project ? directResourceConsumers(project, item.asset) : [] })}
                       />
@@ -644,19 +647,23 @@ type ScenarioResourceAsset = {
 function ScenarioResourceAssetCard({
   asset,
   project,
+  catalog,
   desktopRuntime,
   projectDir,
+  workspaceDir,
   selected,
   onSelect
 }: {
   asset: ScenarioResourceAsset;
   project: Project | null;
+  catalog?: LibraryCatalog | null;
   desktopRuntime: boolean;
   projectDir: string;
+  workspaceDir: string;
   selected: boolean;
   onSelect: () => void;
 }) {
-  const { previewRef, preview } = useScenarioResourcePreview<HTMLElement>(project, asset, desktopRuntime, projectDir, selected);
+  const { previewRef, preview } = useScenarioResourcePreview<HTMLElement>(project, catalog, asset, desktopRuntime, projectDir, workspaceDir, selected);
   return (
     <article ref={previewRef} className={`managed-asset-card scenario-resource compact-gallery-card${selected ? " selected" : ""}`} tabIndex={0} onClick={onSelect} onKeyDown={(event) => {
       if (event.key === "Enter" || event.key === " ") {
@@ -680,9 +687,11 @@ function ScenarioResourceAssetCard({
 
 function useScenarioResourcePreview<T extends HTMLElement>(
   project: Project | null,
+  catalog: LibraryCatalog | null | undefined,
   asset: ScenarioResourceAsset,
   desktopRuntime: boolean,
   projectDir: string,
+  workspaceDir: string,
   selected: boolean
 ) {
   const previewLoadOverride = asset.kind === "sound" ? selected : undefined;
@@ -693,13 +702,28 @@ function useScenarioResourcePreview<T extends HTMLElement>(
     "",
     previewLoadOverride
   );
+  const referencePictureId = referencePictureIdFromPath(asset.previewPath);
+  const referencePictureAsset = useMemo(() => {
+    if (referencePictureId == null) return null;
+    return catalog?.assets.find((candidate) =>
+      candidate.resourceType === "PICT" &&
+      candidate.resourceId === referencePictureId &&
+      `${candidate.source} ${candidate.relativePath}`.toLowerCase().includes("realmz")
+    ) ?? null;
+  }, [catalog, referencePictureId]);
+  const referencePicturePreview = useResolvedPreviewUrl(
+    referencePictureId != null ? null : undefined,
+    null,
+    referencePictureAsset,
+    { desktopRuntime, projectDir, workspaceDir, project, resourceType: "PICT", resourceId: referencePictureId }
+  );
   const [browserPreview, setBrowserPreview] = useState<string | null>(null);
   const browserPreviewEnabled = asset.kind === "sound" ? selected : previewEnabled;
   useEffect(() => {
-    if (!browserPreviewEnabled || projectPreview || asset.previewPath || desktopRuntime) return;
+    if (!browserPreviewEnabled || referencePicturePreview || projectPreview || asset.previewPath || desktopRuntime) return;
     setBrowserPreview(loadBrowserScenarioResourcePreview(project, asset.resourceType, asset.resourceId));
-  }, [asset.previewPath, asset.resourceId, asset.resourceType, browserPreviewEnabled, desktopRuntime, project, projectPreview]);
-  return { previewRef, preview: projectPreview ?? browserPreview };
+  }, [asset.previewPath, asset.resourceId, asset.resourceType, browserPreviewEnabled, desktopRuntime, project, projectPreview, referencePicturePreview]);
+  return { previewRef, preview: referencePicturePreview ?? projectPreview ?? browserPreview };
 }
 
 function scenarioResourceAssets(project: Project | null): ScenarioResourceAsset[] {
@@ -735,14 +759,14 @@ function scenarioResourceAssets(project: Project | null): ScenarioResourceAsset[
     addResource("PICT", tileset.pictId, tileset.name, tileset.source, tileset.imagePath, {
       family: "tile-atlas",
       landlook: tileset.landlook,
-      previewStatus: tileset.available ? "ready" : "missing"
+      previewStatus: tileset.available ? "preview-ready" : "missing-fallback"
     });
   }
   return assets.sort((a, b) => a.resourceType.localeCompare(b.resourceType) || a.resourceId - b.resourceId || a.source.localeCompare(b.source));
 }
 
 function directResourceEntity(resourceType: string, resourceId: number, label: string, source: string, previewPath?: string | null, summary: Record<string, unknown> = {}): SemanticEntity {
-  const previewStatus = summary.previewStatus ?? (previewPath ? "ready" : "missing");
+  const previewStatus = summary.previewStatus ?? initialScenarioPreviewStatus(resourceType, previewPath);
   return {
     id: `resource:${resourceType}:${resourceId}`,
     type: resourceEntityType(resourceType),
@@ -763,6 +787,22 @@ function directResourceEntity(resourceType: string, resourceId: number, label: s
       ...summary
     }
   };
+}
+
+function initialScenarioPreviewStatus(resourceType: string, previewPath?: string | null): ResourcePreviewStatus {
+  if (previewPath) return "preview-ready";
+  const normalized = resourceType.trim();
+  if (normalized === "PICT" || normalized === "cicn") return "preview-ready";
+  if (normalized === "snd") return "playable";
+  if (normalized === "TEXT" || normalized === "STR#") return "text-ready";
+  return "metadata-only";
+}
+
+function referencePictureIdFromPath(path: string) {
+  const match = path.match(/^reference-picture:(\d+)$/);
+  if (!match) return null;
+  const id = Number(match[1]);
+  return Number.isInteger(id) ? id : null;
 }
 
 function resourceEntityType(resourceType: string) {

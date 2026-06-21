@@ -958,63 +958,65 @@ function ScriptAuthoringPanel({
                   />
                 </div>
               )}
-              <div className={`realmz-visual-script${floatingDetail ? " has-floating-detail" : ""}${targetEditorPanel ? "" : " no-target-drawer"}${wideTargetRecord && targetEditorPanel && !floatingDetail ? " has-wide-target" : ""}`}>
-                <PanelSection
-                  title="Steps"
-                  eyebrow={`${usedStepCount} of 8 used`}
-                  count="8 max"
-                  density="compact"
-                  actions={firstEmptyStep != null ? (
-                    <button type="button" className="btn btn-primary btn-xs" onClick={() => setSelectedSlot(firstEmptyStep)}>
-                      <Plus size={12} /> Add Step
-                    </button>
-                  ) : undefined}
-                >
-                  <p className="field-help">
-                    <TutorialTip title="Eight Step Slots" body={STEP_LIST_HELP} side="below">
-                      <span>Each card is one ordered Realmz CODE/ID slot.</span>
-                    </TutorialTip>
-                  </p>
-                  <ScrollArea className="realmz-step-list" aria-label="Script steps">
-                    {Array.from({ length: 8 }, (_, slot) => {
-                      const action = selectedTrigger.actions.find((candidate) => candidate.slot === slot);
-                      const current = slotDraft(slot, action);
-                      const option = actionOptionFor(current.rawCode);
-                      const definition = scriptActionDefinitionFor(current.rawCode);
-                      const changed = action ? current.rawCode !== action.rawCode || current.id !== action.id : current.rawCode !== 0 || current.id !== 0;
-                      const slotIssues = issueCounts.get(slot) ?? { errors: 0, warnings: 0 };
-                      const branchHint = scriptStepBranchHint(current.rawCode, current.id);
-                      return (
-                        <button
-                          key={slot}
-                          className={`realmz-step-card${slot === selectedSlot ? " selected" : ""}${changed ? " dirty" : ""}${slotIssues.errors ? " has-error" : slotIssues.warnings ? " has-warning" : ""}`}
-                          type="button"
-                          onClick={() => setSelectedSlot(slot)}
-                          style={{ borderColor: categoryColor(option.category) }}
-                        >
-                          <span className="slot-index">{slot + 1}</span>
-                          <span>
-                            <strong>{definition.shortLabel}</strong>
-                            <small>{scriptActionSummary(project, catalog, current, actionSummary(action))}</small>
-                            {branchHint && <small className="script-step-branch-hint">{branchHint}</small>}
-                          </span>
-                          <b>
-                            {option.edcdShape && <em>Settings</em>}
-                            {slotIssues.errors + slotIssues.warnings > 0 && <em className={slotIssues.errors ? "danger" : "warning"}>{slotIssues.errors + slotIssues.warnings}</em>}
-                            {definition.category}
-                          </b>
-                        </button>
-                      );
-                    })}
-                  </ScrollArea>
-                  <ScriptFlowPreview project={project} catalog={catalog} trigger={selectedTrigger} onSelectEntity={onSelectEntity} />
-                </PanelSection>
-                {!floatingDetail && (
-                  <PanelSection title="Current Step" eyebrow={`slot ${selectedSlot + 1} | ${selectedDefinition.category}`} actions={stepDetailActions}>
-                    {stepDetailBody}
+              <div className="realmz-visual-script-scroll" aria-label="Script step authoring area">
+                <div className={`realmz-visual-script${floatingDetail ? " has-floating-detail" : ""}${targetEditorPanel ? "" : " no-target-drawer"}${wideTargetRecord && targetEditorPanel && !floatingDetail ? " has-wide-target" : ""}`}>
+                  <PanelSection
+                    title="Steps"
+                    eyebrow={`${usedStepCount} of 8 used`}
+                    count="8 max"
+                    density="compact"
+                    actions={firstEmptyStep != null ? (
+                      <button type="button" className="btn btn-primary btn-xs" onClick={() => setSelectedSlot(firstEmptyStep)}>
+                        <Plus size={12} /> Add Step
+                      </button>
+                    ) : undefined}
+                  >
+                    <p className="field-help">
+                      <TutorialTip title="Eight Step Slots" body={STEP_LIST_HELP} side="below">
+                        <span>Each card is one ordered Realmz CODE/ID slot.</span>
+                      </TutorialTip>
+                    </p>
+                    <ScrollArea className="realmz-step-list" aria-label="Script steps">
+                      {Array.from({ length: 8 }, (_, slot) => {
+                        const action = selectedTrigger.actions.find((candidate) => candidate.slot === slot);
+                        const current = slotDraft(slot, action);
+                        const option = actionOptionFor(current.rawCode);
+                        const definition = scriptActionDefinitionFor(current.rawCode);
+                        const changed = action ? current.rawCode !== action.rawCode || current.id !== action.id : current.rawCode !== 0 || current.id !== 0;
+                        const slotIssues = issueCounts.get(slot) ?? { errors: 0, warnings: 0 };
+                        const branchHint = scriptStepBranchHint(current.rawCode, current.id);
+                        return (
+                          <button
+                            key={slot}
+                            className={`realmz-step-card${slot === selectedSlot ? " selected" : ""}${changed ? " dirty" : ""}${slotIssues.errors ? " has-error" : slotIssues.warnings ? " has-warning" : ""}`}
+                            type="button"
+                            onClick={() => setSelectedSlot(slot)}
+                            style={{ borderColor: categoryColor(option.category) }}
+                          >
+                            <span className="slot-index">{slot + 1}</span>
+                            <span>
+                              <strong>{definition.shortLabel}</strong>
+                              <small>{scriptActionSummary(project, catalog, current, actionSummary(action))}</small>
+                              {branchHint && <small className="script-step-branch-hint">{branchHint}</small>}
+                            </span>
+                            <b>
+                              {option.edcdShape && <em>Settings</em>}
+                              {slotIssues.errors + slotIssues.warnings > 0 && <em className={slotIssues.errors ? "danger" : "warning"}>{slotIssues.errors + slotIssues.warnings}</em>}
+                              {definition.category}
+                            </b>
+                          </button>
+                        );
+                      })}
+                    </ScrollArea>
+                    <ScriptFlowPreview project={project} catalog={catalog} trigger={selectedTrigger} onSelectEntity={onSelectEntity} />
                   </PanelSection>
-                )}
-                {!floatingDetail && targetEditorPanel}
+                  {!floatingDetail && (
+                    <PanelSection title="Current Step" eyebrow={`slot ${selectedSlot + 1} | ${selectedDefinition.category}`} actions={stepDetailActions}>
+                      {stepDetailBody}
+                    </PanelSection>
+                  )}
+                  {!floatingDetail && targetEditorPanel}
+                </div>
               </div>
               {floatingDetail && (
                 <FloatingWorkbenchPanel
@@ -1638,13 +1640,25 @@ function actionStorageLabel(definition: ScriptActionDefinition) {
   return definition.storage;
 }
 
-function useSoundPreviewUrl(option: ScriptTargetOption | null, project: Project, desktopRuntime: boolean, projectDir: string, workspaceDir: string) {
+function useTargetPreviewUrl(option: ScriptTargetOption | null, opcode: number, project: Project, desktopRuntime: boolean, projectDir: string, workspaceDir: string) {
+  const code = normalizeStepOpcode(opcode);
+  const resourceType = code === 9 ? "snd " : code === 27 ? targetPreviewResourceType(option) : null;
   return useResolvedPreviewUrl(
-    option?.previewPath ?? option?.managedAsset?.previewPath ?? option?.libraryAsset?.previewPath ?? null,
-    option?.managedAsset ?? null,
-    option?.libraryAsset ?? null,
-    { desktopRuntime, projectDir, workspaceDir, project, resourceType: "snd ", resourceId: option?.value ?? null }
+    resourceType ? option?.previewPath ?? option?.managedAsset?.previewPath ?? option?.libraryAsset?.previewPath ?? null : null,
+    resourceType ? option?.managedAsset ?? null : null,
+    resourceType ? option?.libraryAsset ?? null : null,
+    { desktopRuntime, projectDir, workspaceDir, project, resourceType, resourceId: resourceType ? option?.value ?? null : null }
   );
+}
+
+function targetPreviewResourceType(option: ScriptTargetOption | null) {
+  const managedType = option?.managedAsset?.resourceType?.trim();
+  if (managedType) return managedType;
+  const libraryType = option?.libraryAsset?.resourceType?.trim();
+  if (libraryType) return libraryType;
+  const entityId = option?.entity?.id ?? "";
+  const match = entityId.match(/^resource:([^:]+):/);
+  return match?.[1]?.trim() || "PICT";
 }
 
 function SelectedStepDetail({
@@ -1734,8 +1748,9 @@ function SelectedStepDetail({
     if (!selectedDefinition.target || selectedDefinition.target.targetFamily === "parameter-row") return null;
     return targetOptionForOpcodeValue(project, selectedDraft.rawCode, selectedDraft.id, catalog);
   }, [catalog, project, selectedDefinition.target, selectedDraft.id, selectedDraft.rawCode]);
-  const selectedSoundPreviewUrl = useSoundPreviewUrl(
-    normalizeStepOpcode(selectedDraft.rawCode) === 9 ? selectedTargetPreview : null,
+  const selectedTargetPreviewUrl = useTargetPreviewUrl(
+    selectedTargetPreview,
+    selectedDraft.rawCode,
     project,
     desktopRuntime,
     projectDir,
@@ -1824,13 +1839,26 @@ function SelectedStepDetail({
             <p>{selectedTargetPreview.detail}</p>
             {selectedTargetPreview.summary && <small>{selectedTargetPreview.summary}</small>}
             {previewBehavior && <small>{previewBehavior}</small>}
+            {normalizeStepOpcode(selectedDraft.rawCode) === 27 && selectedTargetPreviewUrl && (
+              <button
+                type="button"
+                className="realmz-picture-preview-button"
+                title="Picture preview"
+                onClick={() => selectedTargetPreview?.entity && onSelectEntity(selectedTargetPreview.entity)}
+              >
+                <img src={selectedTargetPreviewUrl} alt={selectedTargetPreview.label} />
+              </button>
+            )}
+            {normalizeStepOpcode(selectedDraft.rawCode) === 27 && !selectedTargetPreviewUrl && (
+              <small className="realmz-preview-unavailable">Picture preview loading or unavailable for this PICT variant.</small>
+            )}
             {normalizeStepOpcode(selectedDraft.rawCode) === 9 && (
               <button
                 type="button"
                 className="btn btn-secondary btn-xs realmz-sound-preview-button"
-                disabled={!selectedSoundPreviewUrl}
-                title={selectedSoundPreviewUrl ? "Play this sound preview." : "No playable preview is available for this sound."}
-                onClick={() => selectedSoundPreviewUrl && playPreviewUrl(selectedSoundPreviewUrl)}
+                disabled={!selectedTargetPreviewUrl}
+                title={selectedTargetPreviewUrl ? "Play this sound preview." : "No playable preview is available for this sound."}
+                onClick={() => selectedTargetPreviewUrl && playPreviewUrl(selectedTargetPreviewUrl)}
               >
                 <Volume2 size={12} /> Play
               </button>

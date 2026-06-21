@@ -11,6 +11,7 @@
 .script-detail {
   min-height: 0;
   max-height: calc(100vh - 150px);
+  overflow-x: hidden;
   overflow-y: scroll;
 }
 
@@ -691,8 +692,10 @@
   top: 0;
   height: auto;
   min-height: 0;
+  min-width: 0;
+  max-width: 100%;
   max-height: none;
-  overflow: visible;
+  overflow: hidden;
 }
 
 
@@ -1061,7 +1064,7 @@
 
 .realmz-step-form-grid {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(110px, 220px);
+  grid-template-columns: minmax(180px, 0.72fr) minmax(160px, 1.28fr);
   gap: 8px;
   align-items: start;
   justify-content: stretch;
@@ -1104,11 +1107,11 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   border: 1px solid #2a3d50;
   border-radius: 6px;
   background: #0a1219;
-  padding: 7px 8px;
+  padding: 5px 6px;
   min-width: 0;
 }
 
@@ -1124,7 +1127,7 @@
 
 .current-action-choice strong {
   color: #eef5fb;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.25;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1133,8 +1136,8 @@
 
 .current-action-choice small {
   color: #8da1b3;
-  font-size: 10px;
-  line-height: 1.35;
+  font-size: 9px;
+  line-height: 1.25;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1179,7 +1182,7 @@
 }
 
 .action-chooser-grid {
-  max-height: min(360px, 45vh);
+  max-height: min(260px, 34vh);
   overflow: auto;
   padding-right: 2px;
 }
@@ -4094,6 +4097,8 @@
   .realmz-visual-script.has-wide-target,
   .realmz-visual-script.has-floating-detail {
     grid-template-columns: 1fr;
+    min-width: 0;
+    width: 100%;
   }
 
   .script-target-drawer.wide-target .script-target-grid,
@@ -4124,13 +4129,26 @@
 
 @media (max-width: 1700px) {
   .realmz-visual-script {
-    grid-template-columns: minmax(210px, 260px) minmax(620px, 1fr);
+    grid-template-columns: minmax(210px, 250px) minmax(560px, 1fr);
+    min-width: 790px;
+    width: max(100%, 790px);
   }
 
   .script-target-drawer {
     grid-column: 1 / -1;
     position: static;
     max-height: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .realmz-visual-script,
+  .realmz-visual-script.no-target-drawer,
+  .realmz-visual-script.has-wide-target,
+  .realmz-visual-script.has-floating-detail {
+    grid-template-columns: 1fr;
+    min-width: 0;
+    width: 100%;
   }
 }
 
@@ -4384,6 +4402,15 @@
   padding-right: 8px;
 }
 
+.realmz-visual-script-scroll {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding-bottom: 6px;
+  scrollbar-gutter: stable;
+}
+
 
 
 
@@ -4411,11 +4438,17 @@
 .realmz-visual-script {
   flex: 1 1 auto;
   display: grid;
-  grid-template-columns: minmax(210px, 260px) minmax(680px, 1.45fr) minmax(420px, 0.9fr);
+  grid-template-columns: minmax(210px, 250px) minmax(560px, 1.35fr) minmax(340px, 0.9fr);
   gap: 10px;
   align-items: stretch;
   margin-top: 10px;
   min-height: min(720px, max(520px, calc(100vh - 500px)));
+  min-width: 1130px;
+  width: max(100%, 1130px);
+  max-width: none;
+}
+
+.realmz-visual-script > * {
   min-width: 0;
   max-width: 100%;
 }
@@ -4426,6 +4459,8 @@
 
 .realmz-visual-script.has-floating-detail {
   grid-template-columns: minmax(210px, 260px);
+  min-width: min(100%, 260px);
+  width: 100%;
 }
 
 
@@ -4433,7 +4468,9 @@
 
 
 .realmz-visual-script.has-wide-target {
-  grid-template-columns: minmax(210px, 260px) minmax(700px, 1fr);
+  grid-template-columns: minmax(210px, 250px) minmax(640px, 1fr);
+  min-width: 900px;
+  width: max(100%, 900px);
 }
 
 
@@ -4441,7 +4478,9 @@
 
 
 .realmz-visual-script.no-target-drawer {
-  grid-template-columns: minmax(210px, 260px) minmax(680px, 1fr);
+  grid-template-columns: minmax(210px, 250px) minmax(560px, 1fr);
+  min-width: 790px;
+  width: max(100%, 790px);
 }
 
 
@@ -4565,6 +4604,35 @@
 .realmz-sound-preview-button {
   justify-self: start;
   margin-top: 3px;
+}
+
+.realmz-picture-preview-button,
+.realmz-target-picker-preview {
+  display: inline-grid;
+  place-items: center;
+  justify-self: start;
+  width: min(220px, 100%);
+  max-width: 100%;
+  min-height: 76px;
+  max-height: 160px;
+  border: 1px solid #2f536e;
+  border-radius: 6px;
+  background: #070d12;
+  padding: 5px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.realmz-picture-preview-button img,
+.realmz-target-picker-preview img {
+  max-width: 100%;
+  max-height: 148px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.realmz-preview-unavailable {
+  color: #a7b5c4;
 }
 
 .script-step-route-preview {
@@ -4796,6 +4864,11 @@
   color: #8293a4;
   font-size: 10px;
   line-height: 1.35;
+}
+
+.realmz-target-picker-preview {
+  grid-column: 1 / -1;
+  width: min(260px, 100%);
 }
 
 

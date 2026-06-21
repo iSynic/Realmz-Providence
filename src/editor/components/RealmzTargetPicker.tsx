@@ -105,15 +105,20 @@ export function TargetPicker({
     ? [typedSoundTarget, ...filteredTargetBase]
     : filteredTargetBase;
   const selected = targets.find((target) => target.value === resolvedValue) ?? selectedStub ?? null;
+  const previewResourceType = normalizeStepOpcode(opcode) === 9
+    ? "snd "
+    : normalizeStepOpcode(opcode) === 27
+      ? targetPreviewResourceType(selected)
+      : null;
   const selectedPreviewUrl = useResolvedPreviewUrl(
-    normalizeStepOpcode(opcode) === 9 ? selected?.previewPath ?? null : null,
-    normalizeStepOpcode(opcode) === 9 ? selected?.managedAsset ?? null : null,
-    normalizeStepOpcode(opcode) === 9 ? selected?.libraryAsset ?? null : null,
+    previewResourceType ? selected?.previewPath ?? null : null,
+    previewResourceType ? selected?.managedAsset ?? null : null,
+    previewResourceType ? selected?.libraryAsset ?? null : null,
     {
       ...previewContext,
       project,
-      resourceType: normalizeStepOpcode(opcode) === 9 ? "snd " : null,
-      resourceId: normalizeStepOpcode(opcode) === 9 ? selected?.value ?? resolvedValue : null
+      resourceType: previewResourceType,
+      resourceId: previewResourceType ? selected?.value ?? resolvedValue : null
     }
   );
   if (!config) return null;
@@ -185,6 +190,16 @@ export function TargetPicker({
           onClick={() => selectedPreviewUrl && playPreviewUrl(selectedPreviewUrl)}
         >
           <Volume2 size={12} /> Play
+        </button>
+      )}
+      {normalizeStepOpcode(opcode) === 27 && selected && selectedPreviewUrl && (
+        <button
+          className="realmz-target-picker-preview"
+          type="button"
+          title="Open picture target"
+          onClick={() => selected?.entity && onInspect(selected.entity)}
+        >
+          <img src={selectedPreviewUrl} alt={selected.label} />
         </button>
       )}
       {canCreateTarget && (
@@ -633,6 +648,16 @@ function optionFromTypedProjectTarget(project: Project, code: number, id: number
     }
   }
   return null;
+}
+
+function targetPreviewResourceType(option: ScriptTargetOption | null) {
+  const managedType = option?.managedAsset?.resourceType?.trim();
+  if (managedType) return managedType;
+  const libraryType = option?.libraryAsset?.resourceType?.trim();
+  if (libraryType) return libraryType;
+  const entityId = option?.entity?.id ?? "";
+  const match = entityId.match(/^resource:([^:]+):/);
+  return match?.[1]?.trim() || "PICT";
 }
 
 function targetResourceIdMatches(opcode: number, availableId: number, requestedId: number) {
