@@ -5,7 +5,7 @@ import { linksFor, selectEntityFromId, semanticLabel, triggerEntityId } from "..
 import { actionSlotEntitiesForTriggerRecord, ed3ReachabilityFor, extraActionEvidenceSummary, extraActionPointClassification } from "../semanticGraph";
 import { EdcdRowEditor } from "../components/EdcdRowEditor";
 import { buildEdcdRowUsages, edcdUsageMatchesFilter, edcdUsageStatusTone, edcdUsageToEditorUsage, nextUnusedEdcdRowId, normalizeEdcdValues, type EdcdRowFilter, type EdcdRowUsage, type EdcdRowCaller } from "../edcdRows";
-import { TargetPicker, resolveSignedMessageTarget, signedTargetBehaviorLabel, signedTargetValueForSelection, targetOptionForOpcodeValue, targetOptionsForOpcode, type ScriptTargetOption } from "../components/RealmzTargetPicker";
+import { TargetPicker, resolveSignedMessageTarget, signedTargetBehaviorLabel, signedTargetValueForSelection, targetOptionForOpcodeValue, targetOptionsForOpcode, targetPickerConfig, type ScriptTargetOption } from "../components/RealmzTargetPicker";
 import { TutorialTip } from "../components/TutorialTip";
 import { playPreviewUrl, useIconPreviewUrl, useResolvedPreviewUrl } from "../previewUrls";
 import { categoryColor } from "../components/TileSprite";
@@ -115,20 +115,18 @@ const CLEAR_SCRIPT_HELP =
   "Clear keeps Realmz's fixed record shape intact. Clearing a map Action Point makes the slot reusable; deleting an Extra Action Point uses the safe row command for that reusable script.";
 const STEP_LIST_HELP =
   "Realmz scripts have eight ordered CODE/ID slots. Select a slot to edit it, then apply the draft; moving, duplicating, or clearing a step affects only that selected slot.";
-const STEP_DETAIL_HELP =
-  "The selected-step editor pairs Divinity opcode help with Providence target validation. CODE chooses the behavior, ID is either a direct target or an EDCD row pointer, and Settings owns the five-short EDCD fields.";
 const TARGET_DRAWER_HELP =
-  "Target Details opens an inline editor for direct script targets such as messages, battles, treasure, shops, encounters, and monsters. EDCD-backed actions keep their real target fields in Settings instead.";
+  "Edit Target Record opens an inline editor for direct script targets such as messages, battles, treasure, shops, encounters, and monsters. EDCD-backed actions keep their real target fields in Action Settings instead.";
 const FLOW_PREVIEW_HELP =
   "Flow Preview summarizes obvious branches, GOSUBs, Extra Action Point calls, choices, and logic paths. It is a navigation aid, not a full runtime interpreter.";
 const TECHNICAL_DETAILS_HELP =
   "Technical Details shows the raw Realmz storage: source file, record index, door ID, selected slot, applied and draft CODE/ID, EDCD row, dispatcher status, and semantic links.";
-const ACTION_HELP_HELP =
-  "Action Help merges the Divinity manual wording with the decoded opcode definition so the selected step's target and Settings fields are easier to interpret.";
+const STEP_REFERENCE_HELP =
+  "Step Reference keeps the opcode notes, Divinity wording, and raw CODE/ID storage available without making them the main authoring surface.";
 const TARGET_PICKER_HELP =
   "The target picker resolves the selected opcode's expected record type and can create safe source-backed shells when Providence has a writer for that target family.";
-const ACTION_PALETTE_HELP =
-  "The action palette is the searchable Divinity scripting-code catalog. Pick a category, search by behavior or target, and choose the action to load its default CODE/ID draft.";
+const ACTION_CHOOSER_HELP =
+  "Choose Action changes only the selected step draft. Apply Step is still required before the script record is updated.";
 const SETTINGS_HELP =
   "Settings rows hold the editable options for many Realmz actions. Imported scripts keep their original row numbers; new actions get an unused row automatically, so authors should normally edit the fields instead of memorizing row IDs.";
 const SIMPLE_ENCOUNTER_SOURCE_HELP =
@@ -629,8 +627,8 @@ function ScriptAuthoringPanel({
     onApplyCommand?.({ kind: "moveActionPoint", label: "Move Action Point", triggerId: selectedTrigger.id, levelType, levelIndex, x, y });
   };
   const floatingDetail = detailSurface === "floating";
-  const directTargetDrawerAvailable = !selectedOption.edcdShape;
   const targetRecordType = realmzScriptStepDescriptorFor(selectedDraft.rawCode).targetType;
+  const directTargetDrawerAvailable = Boolean(targetRecordType);
   const wideTargetRecord = targetRecordType === "battle" || targetRecordType === "treasure" || targetRecordType === "shop" || targetRecordType === "simpleEncounter" || targetRecordType === "complexEncounter" || targetRecordType === "thiefEncounter" || targetRecordType === "timedEncounter";
   const detailSurfaceButton = (
     <button
@@ -660,11 +658,11 @@ function ScriptAuthoringPanel({
       <button
         type="button"
         className={`btn btn-secondary btn-xs${targetDrawerOpen && directTargetDrawerAvailable ? " active" : ""}`}
-        title={directTargetDrawerAvailable ? targetDrawerOpen ? "Hide target details" : "Show target details" : "This action stores target fields in Settings."}
+        title={directTargetDrawerAvailable ? targetDrawerOpen ? "Hide target record editor" : "Edit the selected target record" : "This action does not have an inline target record editor."}
         disabled={!directTargetDrawerAvailable}
         onClick={() => directTargetDrawerAvailable && setTargetDrawerOpen(!targetDrawerOpen)}
       >
-        Target
+        Edit Target
       </button>
       <button
         type="button"
@@ -709,10 +707,10 @@ function ScriptAuthoringPanel({
     />
   ) : null;
   const targetEditorPanel = selectedTrigger && targetDrawerOpen && directTargetDrawerAvailable ? (
-    <PanelSection title="Target Details" eyebrow="selected step" density="compact" className={`script-target-drawer${wideTargetRecord ? " wide-target" : ""}`} actions={<button type="button" className="btn btn-secondary btn-xs icon-only" title="Hide target details" onClick={() => setTargetDrawerOpen(false)}><X size={12} /></button>}>
+    <PanelSection title="Edit Target Record" eyebrow="selected step" density="compact" className={`script-target-drawer${wideTargetRecord ? " wide-target" : ""}`} actions={<button type="button" className="btn btn-secondary btn-xs icon-only" title="Hide target record editor" onClick={() => setTargetDrawerOpen(false)}><X size={12} /></button>}>
       <p className="field-help">
-        <TutorialTip title="Target Details" body={TARGET_DRAWER_HELP} side="below">
-          <span>Inline editor for the selected direct target.</span>
+        <TutorialTip title="Edit Target Record" body={TARGET_DRAWER_HELP} side="below">
+          <span>Edit the record selected by this step.</span>
         </TutorialTip>
       </p>
       <TargetRecordEditor
@@ -1012,12 +1010,7 @@ function ScriptAuthoringPanel({
                   <ScriptFlowPreview project={project} catalog={catalog} trigger={selectedTrigger} />
                 </PanelSection>
                 {!floatingDetail && (
-                  <PanelSection title={`Step ${selectedSlot + 1} Details`} eyebrow={selectedDefinition.category} actions={stepDetailActions}>
-                    <p className="field-help">
-                      <TutorialTip title="Step Details" body={STEP_DETAIL_HELP} side="below">
-                        <span>Pick an action, resolve its target, adjust Settings if needed, then Apply Step.</span>
-                      </TutorialTip>
-                    </p>
+                  <PanelSection title="Current Step" eyebrow={`slot ${selectedSlot + 1} | ${selectedDefinition.category}`} actions={stepDetailActions}>
                     {stepDetailBody}
                   </PanelSection>
                 )}
@@ -1025,7 +1018,7 @@ function ScriptAuthoringPanel({
               </div>
               {floatingDetail && (
                 <FloatingWorkbenchPanel
-                  title={`Step ${selectedSlot + 1} Details`}
+                  title="Current Step"
                   eyebrow={`${scriptLabel(project, selectedTrigger)} | ${selectedDefinition.category}`}
                   storageKey="scripts.floatingEditor.position"
                   className="script-floating-detail"
@@ -1035,11 +1028,6 @@ function ScriptAuthoringPanel({
                     </>
                   }
                 >
-                  <p className="field-help">
-                    <TutorialTip title="Step Details" body={STEP_DETAIL_HELP} side="below">
-                      <span>Pick an action, resolve its target, adjust Settings if needed, then Apply Step.</span>
-                    </TutorialTip>
-                  </p>
                   {stepDetailBody}
                   {targetEditorPanel}
                 </FloatingWorkbenchPanel>
@@ -1659,6 +1647,7 @@ function SelectedStepDetail({
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const [previewExpanded, setPreviewExpanded] = useState(false);
+  const [actionChooserOpen, setActionChooserOpen] = useState(false);
   const selectedDivinityHelp = divinityHelpForOpcode(selectedDraft.rawCode);
   const selectedIdLabel = selectedDefinition.target?.label ?? humanActionValueLabel(opcodeIdMeaning(selectedDraft.rawCode));
   const selectedDefaultEdcdValues = selectedDefinition.defaultDraft.parameters;
@@ -1688,14 +1677,10 @@ function SelectedStepDetail({
   useEffect(() => {
     setPreviewExpanded(false);
   }, [selectedSlot, selectedDraft.rawCode, selectedDraft.id]);
+  useEffect(() => {
+    setActionChooserOpen(false);
+  }, [selectedSlot]);
   const selectedFlowRoutes = useMemo(() => scriptStepFlowRoutes(project, catalog, selectedDraft), [catalog, project, selectedDraft]);
-  const actionSelectDefinitions = useMemo(() => {
-    return SCRIPT_ACTION_DEFINITIONS.filter((definition) => (
-      definition.opcode === selectedDefinition.opcode
-      || categoryFilter === "Advanced"
-      || (definition.authoringLevel !== "advanced" && definition.authoringLevel !== "ignored")
-    ));
-  }, [categoryFilter, selectedDefinition.opcode]);
   const settingLabels = visibleParameters.map((parameter) => `${parameter.index + 1}. ${parameter.label}`);
   const previewBehavior = signedTargetBehaviorLabel(selectedDraft.rawCode, selectedDraft.id);
   const previewCanExpand = Boolean(
@@ -1707,49 +1692,13 @@ function SelectedStepDetail({
       previewBehavior
     ].filter(Boolean).join(" ").length > 96
   ) || selectedFlowRoutes.length > 1;
-  const actionHelp = selectedDivinityHelp ? (
-    <div className="realmz-action-help-card">
-      <header>
-        <TutorialTip title="Action Help" body={ACTION_HELP_HELP} side="below">
-          <strong>Action Help</strong>
-        </TutorialTip>
-        <span>{selectedDefinition.categoryLabel}</span>
-      </header>
-      <p>{selectedDivinityHelp.use || selectedDefinition.description}</p>
-      <div className="realmz-action-help-facts">
-        <FieldRow label={selectedDefinition.target?.label ?? "Target"} value={(selectedDefinition.target?.help || selectedDefinition.description || "No target required")} />
-        {visibleParameters.length > 0 && (
-          <FieldRow
-            label="Settings"
-            value={settingLabels.slice(0, 4).join("; ") + (settingLabels.length > 4 ? `; ${settingLabels.length - 4} more` : "")}
-          />
-        )}
-      </div>
-      {settingLabels.length > 4 && (
-        <details className="realmz-action-settings-details">
-          <summary>All Settings</summary>
-          <div>
-            {visibleParameters.map((parameter) => (
-              <FieldRow key={parameter.index} label={`${parameter.index + 1}. ${parameter.label}`} value={parameter.help || "Script setting"} />
-            ))}
-          </div>
-        </details>
-      )}
-      {(selectedDivinityHelp.options || selectedDivinityHelp.extraCodes) && (
-        <details className="realmz-original-help">
-          <summary>Original Divinity Text</summary>
-          {selectedDivinityHelp.options && selectedDivinityHelp.options.toLowerCase() !== "none" && (
-            <FieldRow label="Options" value={selectedDivinityHelp.options} />
-          )}
-          {selectedDivinityHelp.extraCodes && selectedDivinityHelp.extraCodes.toLowerCase() !== "none" && (
-            <FieldRow label="E-Codes" value={selectedDivinityHelp.extraCodes} />
-          )}
-        </details>
-      )}
-    </div>
-  ) : null;
   const isEdcdBackedStep = Boolean(selectedOption.edcdShape);
+  const hasInlineTargetPicker = !isEdcdBackedStep && Boolean(targetPickerConfig(selectedDraft.rawCode));
   const edcdRowOptions = edcdUsages.filter((usage) => usage.exists || usage.callers.length > 0);
+  const useActionDefinition = (definition: ScriptActionDefinition) => {
+    onSetSelectedDraft(draftForNewDefinition(definition));
+    setActionChooserOpen(false);
+  };
   const duplicateSettingsForStep = () => {
     if (!isEdcdBackedStep) return;
     const nextId = nextUnusedEdcdRowId(project);
@@ -1768,12 +1717,7 @@ function SelectedStepDetail({
     }
   };
   const settingsEditor = (isEdcdBackedStep || selectedEdcdUsage) ? (
-    <CollapsibleSection title="Settings" eyebrow={isEdcdBackedStep ? "action settings" : "optional"} density="compact" storageKey="scripts.edcdEditor.open" defaultOpen={Boolean(isEdcdBackedStep || selectedEdcdUsage)}>
-      <p className="field-help">
-        <TutorialTip title="Action Settings" body={SETTINGS_HELP} side="below">
-          <span>Edit this action's settings fields. The row number is kept for Realmz compatibility.</span>
-        </TutorialTip>
-      </p>
+    <CollapsibleSection title="Action Settings" eyebrow={isEdcdBackedStep ? "guided fields" : "optional"} density="compact" storageKey="scripts.edcdEditor.open" defaultOpen={Boolean(isEdcdBackedStep || selectedEdcdUsage)}>
       <EdcdRowEditor
         project={project}
         catalog={catalog}
@@ -1844,20 +1788,22 @@ function SelectedStepDetail({
         )}
       </div>
       <div className="realmz-step-form-grid">
-        <label className="script-required-field realmz-step-action-field">
+        <div className={`script-required-field realmz-step-action-field current-action-field${hasInlineTargetPicker ? " wide" : ""}`}>
           <span>Action</span>
-          <select
-            value={selectedDraft.rawCode}
-            onChange={(event) => {
-              const nextDefinition = scriptActionDefinitionFor(Number(event.currentTarget.value));
-              onSetSelectedDraft(draftForNewDefinition(nextDefinition));
-            }}
-          >
-            {actionSelectDefinitions.map((definition) => (
-              <option key={definition.opcode} value={definition.opcode}>{definition.label}</option>
-            ))}
-          </select>
-        </label>
+          <div className="current-action-choice">
+            <div>
+              <strong>{selectedDefinition.label}</strong>
+              <small>{selectedDefinition.description}</small>
+            </div>
+            <button
+              type="button"
+              className="btn btn-secondary btn-xs"
+              onClick={() => setActionChooserOpen((current) => !current)}
+            >
+              {selectedDraft.rawCode === 0 ? "Choose Action" : "Change Action"}
+            </button>
+          </div>
+        </div>
         {isEdcdBackedStep ? (
           <div className="script-required-field realmz-step-id-field settings-row-field">
             <span>{selectedDefinition.target?.label ?? selectedIdLabel}</span>
@@ -1866,8 +1812,8 @@ function SelectedStepDetail({
               <small>{selectedRowUsage?.summary ?? "Will create this settings row when values are applied."}</small>
             </div>
             <details className="settings-row-selector">
-              <summary>Use Different Row</summary>
-              <div>
+              <summary>Advanced Row</summary>
+              <div className="settings-row-selector-body">
                 <select
                   value={selectedDraft.id}
                   onChange={(event) => onSetSelectedDraft({ ...selectedDraft, id: Number(event.currentTarget.value) })}
@@ -1889,7 +1835,7 @@ function SelectedStepDetail({
               <small>Existing imports keep their row number. New actions start on an unused row automatically.</small>
             </details>
           </div>
-        ) : (
+        ) : hasInlineTargetPicker ? null : (
           <label className="script-required-field realmz-step-id-field">
             <span>{selectedDefinition.target?.label ?? selectedIdLabel}</span>
             <input
@@ -1898,9 +1844,60 @@ function SelectedStepDetail({
               onChange={(event) => onSetSelectedDraft({ ...selectedDraft, id: Number(event.currentTarget.value) })}
               aria-label={`Slot ${selectedSlot} ${selectedIdLabel}`}
             />
+            <small>{selectedDefinition.target?.help || selectedDefinition.description}</small>
           </label>
         )}
       </div>
+      {actionChooserOpen && (
+        <div className="script-action-chooser" role="dialog" aria-label="Choose action for selected step">
+          <header>
+            <div>
+              <TutorialTip title="Choose Action" body={ACTION_CHOOSER_HELP} side="below">
+                <strong>{selectedDraft.rawCode === 0 ? "Choose Action" : "Change Action"}</strong>
+              </TutorialTip>
+              <small>This changes the selected step draft. Use Apply Step when you are ready.</small>
+            </div>
+            <button type="button" className="btn btn-secondary btn-xs icon-only" title="Close action chooser" onClick={() => setActionChooserOpen(false)}>
+              <X size={12} />
+            </button>
+          </header>
+          <div className="realmz-opcode-catalog">
+            <div className="realmz-step-category-bar">
+              {SCRIPT_ACTION_CATEGORIES.map((category) => (
+                <button
+                  key={category}
+                  type="button"
+                  className={categoryFilter === category ? "active" : ""}
+                  onClick={() => onSetCategoryFilter(category)}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+            <input
+              className="realmz-opcode-search"
+              value={opcodeQuery}
+              onChange={(event) => onSetOpcodeQuery(event.currentTarget.value)}
+              placeholder="Search actions, targets, and settings..."
+              aria-label="Search script actions"
+            />
+            <div className="realmz-step-picker-grid action-chooser-grid">
+              {filteredDefinitions.map((definition) => (
+                <button
+                  key={definition.opcode}
+                  type="button"
+                  className={selectedDraft.rawCode === definition.opcode ? "selected" : ""}
+                  onClick={() => useActionDefinition(definition)}
+                >
+                  <strong>{definition.shortLabel}</strong>
+                  <span>{definition.summary}</span>
+                  <small>{selectedDraft.rawCode === definition.opcode ? "Current action" : "Use For This Step"}</small>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       {isEdcdBackedStep && selectedRowUsage?.warnings.map((warning) => (
         <p key={warning} className="field-warning">{warning}</p>
       ))}
@@ -1910,12 +1907,11 @@ function SelectedStepDetail({
         </button>
       )}
       {isEdcdBackedStep ? settingsEditor : null}
-      {actionHelp}
-      {!isEdcdBackedStep && (
+      {hasInlineTargetPicker && (
         <>
           <p className="field-help">
             <TutorialTip title="Target Picker" body={TARGET_PICKER_HELP} side="below">
-              <span>Choose or create the record this action targets when the target is direct.</span>
+              <span>{selectedDefinition.target?.help || selectedDefinition.description}</span>
             </TutorialTip>
           </p>
           <TargetPicker
@@ -1934,49 +1930,30 @@ function SelectedStepDetail({
           />
         </>
       )}
-      <CollapsibleSection title="Add Or Change Step" eyebrow="action palette" count={filteredDefinitions.length} density="compact" storageKey="scripts.actionPalette.open" defaultOpen={selectedDraft.rawCode === 0}>
+      {!isEdcdBackedStep ? settingsEditor : null}
+      <CollapsibleSection title="Step Reference" eyebrow="technical details" density="compact" storageKey="scripts.stepReference.open" defaultOpen={false}>
         <p className="field-help">
-          <TutorialTip title="Action Palette" body={ACTION_PALETTE_HELP} side="below">
-            <span>Search the Divinity scripting-code catalog by behavior, target, or setting.</span>
+          <TutorialTip title="Step Reference" body={STEP_REFERENCE_HELP} side="below">
+            <span>Raw storage and original reference wording for this selected step.</span>
           </TutorialTip>
         </p>
-        <div className="realmz-opcode-catalog">
-          <div className="realmz-step-category-bar">
-            {SCRIPT_ACTION_CATEGORIES.map((category) => (
-              <button
-                key={category}
-                type="button"
-                className={categoryFilter === category ? "active" : ""}
-                onClick={() => onSetCategoryFilter(category)}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-          <input
-            className="realmz-opcode-search"
-            value={opcodeQuery}
-            onChange={(event) => onSetOpcodeQuery(event.currentTarget.value)}
-            placeholder="Search actions, targets, and settings..."
-            aria-label="Search script actions"
-          />
-          <div className="realmz-step-picker-grid">
-            {filteredDefinitions.map((definition) => (
-              <button
-                key={definition.opcode}
-                type="button"
-                className={selectedDraft.rawCode === definition.opcode ? "selected" : ""}
-                onClick={() => onSetSelectedDraft(draftForNewDefinition(definition))}
-              >
-                <strong>{definition.shortLabel}</strong>
-                <span>{definition.summary}</span>
-                {definition.target && <small>{definition.target.label}</small>}
-              </button>
-            ))}
-          </div>
+        <div className="realmz-raw-preview">
+          <FieldRow label="Opcode" value={selectedDefinition.label} />
+          <FieldRow label="CODE / ID" value={`${selectedDraft.rawCode} / ${selectedDraft.id}`} />
+          <FieldRow label="Target Meaning" value={selectedDefinition.target?.help || selectedDefinition.description || "No direct target required."} />
+          {settingLabels.length > 0 && (
+            <FieldRow label="Settings Fields" value={settingLabels.join("; ")} />
+          )}
+          {selectedEdcdRowId != null && <FieldRow label="Settings Row" value={selectedEdcdRowId} />}
+          {selectedDivinityHelp?.use && <FieldRow label="Divinity Use" value={selectedDivinityHelp.use} />}
+          {selectedDivinityHelp?.options && selectedDivinityHelp.options.toLowerCase() !== "none" && (
+            <FieldRow label="Divinity Options" value={selectedDivinityHelp.options} />
+          )}
+          {selectedDivinityHelp?.extraCodes && selectedDivinityHelp.extraCodes.toLowerCase() !== "none" && (
+            <FieldRow label="Divinity E-Codes" value={selectedDivinityHelp.extraCodes} />
+          )}
         </div>
       </CollapsibleSection>
-      {!isEdcdBackedStep ? settingsEditor : null}
       {selectedSlotApplied ? null : (
         <EmptyState compact title="Step not applied yet" body="Apply this step to update the script." />
       )}

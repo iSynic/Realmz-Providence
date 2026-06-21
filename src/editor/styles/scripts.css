@@ -1071,7 +1071,8 @@
 
 
 
-.realmz-step-form-grid label {
+.realmz-step-form-grid label,
+.realmz-step-form-grid .current-action-field {
   display: grid;
   gap: 4px;
   min-width: 0;
@@ -1079,7 +1080,8 @@
 
 
 
-.realmz-step-form-grid label span {
+.realmz-step-form-grid label span,
+.realmz-step-form-grid .current-action-field > span {
   color: #788593;
   font-size: 10px;
   font-weight: 800;
@@ -1096,6 +1098,97 @@
   color: #8ba1b3;
   font-size: 10px;
   line-height: 1.35;
+}
+
+.current-action-choice {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #2a3d50;
+  border-radius: 6px;
+  background: #0a1219;
+  padding: 7px 8px;
+  min-width: 0;
+}
+
+.current-action-field.wide {
+  grid-column: 1 / -1;
+}
+
+.current-action-choice > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.current-action-choice strong {
+  color: #eef5fb;
+  font-size: 12px;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.current-action-choice small {
+  color: #8da1b3;
+  font-size: 10px;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.script-action-chooser {
+  display: grid;
+  gap: 9px;
+  border: 1px solid #2b4f72;
+  border-radius: 7px;
+  background: #0b141c;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+  padding: 9px;
+}
+
+.script-action-chooser > header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid #223241;
+  padding-bottom: 8px;
+}
+
+.script-action-chooser > header > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.script-action-chooser strong {
+  color: #f2c94c;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.script-action-chooser small {
+  color: #9badbd;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.action-chooser-grid {
+  max-height: min(360px, 45vh);
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.action-chooser-grid button small {
+  color: #d6b95b;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .settings-row-field {
