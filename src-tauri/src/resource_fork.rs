@@ -420,25 +420,16 @@ pub fn inspect_resource_preview(
     summary.insert("resourceType".to_string(), resource_type.trim().to_string());
     summary.insert("bytes".to_string(), data.len().to_string());
     match resource_type {
-        "PICT" => match decode_pict_packbits8(data) {
-            Ok(image) => {
-                summary.insert("width".to_string(), image.width.to_string());
-                summary.insert("height".to_string(), image.height.to_string());
-                Ok(DecodedResourcePreview {
-                    status: ResourcePreviewStatus::PreviewReady,
-                    mime_type: "image/png".to_string(),
-                    data_url: Some(encode_png_data_url(image.width, image.height, &image.rgba)?),
-                    summary,
-                    diagnostics: Vec::new(),
-                })
-            }
-            Err(error) => Ok(metadata_preview(
-                ResourcePreviewStatus::UnsupportedVariant,
-                "image/pict",
-                summary,
-                format!("PICT decoder could not render this resource variant: {error}"),
-            )),
-        },
+        "PICT" => {
+            let preview = crate::resource_preview::inspect_resource_preview("PICT", data)?;
+            Ok(DecodedResourcePreview {
+                status: preview_status_from_shared(preview.status),
+                mime_type: preview.mime_type,
+                data_url: preview.data_url,
+                summary: preview.summary,
+                diagnostics: diagnostics_from_shared(preview.diagnostics),
+            })
+        }
         "cicn" => match decode_cicn(data) {
             Ok(image) => {
                 summary.insert("width".to_string(), image.width.to_string());
@@ -533,6 +524,42 @@ fn text_preview(summary: BTreeMap<String, String>, text: String) -> DecodedResou
     }
 }
 
+fn preview_status_from_shared(
+    status: crate::resource_preview::ResourcePreviewStatus,
+) -> ResourcePreviewStatus {
+    match status {
+        crate::resource_preview::ResourcePreviewStatus::PreviewReady => {
+            ResourcePreviewStatus::PreviewReady
+        }
+        crate::resource_preview::ResourcePreviewStatus::Playable => ResourcePreviewStatus::Playable,
+        crate::resource_preview::ResourcePreviewStatus::TextReady => {
+            ResourcePreviewStatus::TextReady
+        }
+        crate::resource_preview::ResourcePreviewStatus::MetadataOnly => {
+            ResourcePreviewStatus::MetadataOnly
+        }
+        crate::resource_preview::ResourcePreviewStatus::Malformed => {
+            ResourcePreviewStatus::Malformed
+        }
+        crate::resource_preview::ResourcePreviewStatus::UnsupportedVariant
+        | crate::resource_preview::ResourcePreviewStatus::MissingFallback => {
+            ResourcePreviewStatus::UnsupportedVariant
+        }
+    }
+}
+
+fn diagnostics_from_shared(
+    diagnostics: Vec<crate::resource_preview::ResourcePreviewDiagnostic>,
+) -> Vec<ResourcePreviewDiagnostic> {
+    diagnostics
+        .into_iter()
+        .map(|diagnostic| ResourcePreviewDiagnostic {
+            severity: diagnostic.severity,
+            message: diagnostic.message,
+        })
+        .collect()
+}
+
 fn metadata_preview(
     status: ResourcePreviewStatus,
     mime_type: &str,
@@ -613,6 +640,7 @@ struct DecodedImage {
     rgba: Vec<u8>,
 }
 
+#[cfg(test)]
 fn decode_pict_packbits8(pict: &[u8]) -> Result<DecodedImage> {
     let Some(rect) = find_packbits_rect(pict) else {
         return Err(ProvidenceError::message("No 8-bit PackBitsRect found"));
@@ -673,6 +701,7 @@ fn decode_pict_packbits8(pict: &[u8]) -> Result<DecodedImage> {
     })
 }
 
+#[cfg(test)]
 struct PackBitsRect {
     row_bytes: usize,
     color_table_offset: usize,
@@ -683,6 +712,7 @@ struct PackBitsRect {
     data_offset: usize,
 }
 
+#[cfg(test)]
 fn find_packbits_rect(pict: &[u8]) -> Option<PackBitsRect> {
     let mut offset = 10usize;
     while offset + 80 < pict.len() {
@@ -871,6 +901,7 @@ fn color_component_8(component: usize) -> u8 {
     (component / 0x0101) as u8
 }
 
+#[cfg(test)]
 fn color_table_palette_index(
     flags: usize,
     entry_index: usize,
@@ -1160,6 +1191,7 @@ fn packbits(row: &[u8]) -> Vec<u8> {
     output
 }
 
+#[cfg(test)]
 fn decode_packbits_row(
     buffer: &[u8],
     offset: usize,
@@ -1508,7 +1540,10 @@ mod tests {
         for (path, ids) in fixtures {
             let path = std::path::Path::new(path);
             if !path.is_file() {
-                eprintln!("Skipping cicn fixture {}; local fixture is absent.", path.display());
+                eprintln!(
+                    "Skipping cicn fixture {}; local fixture is absent.",
+                    path.display()
+                );
                 continue;
             }
             let fork = std::fs::read(path).expect("read cicn fixture resource fork");

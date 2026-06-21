@@ -209,7 +209,7 @@ function groupRows(inputRows) {
 
 function renderMarkdown(report) {
   const lines = [
-    "# PICT Preview Gap Report",
+    "# PICT Codec Corpus Report",
     "",
     `- Project: ${report.project ?? "none supplied"}`,
     `- Resources scanned: ${report.totals.resources}`,

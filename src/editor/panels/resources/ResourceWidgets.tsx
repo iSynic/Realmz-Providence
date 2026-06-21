@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { FileText, ImageIcon, Music, Upload, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { DecodedResourcePreview, LibraryAsset, ManagedAsset, ManagedAssetKind, Project, ResourcePreviewDiagnostic, ResourcePreviewStatus, SelectedEntity, SemanticEntity } from "../../types";
+import { DecodedResourcePreview, LibraryAsset, LibraryCatalog, ManagedAsset, ManagedAssetKind, Project, ResourcePreviewDiagnostic, ResourcePreviewStatus, SelectedEntity, SemanticEntity } from "../../types";
 import { compactValue, selectEntityFromId } from "../../utils";
 import { resourceConsumers } from "../../semanticGraph";
 import { resourceUsageLinks } from "../../contentLinks";
@@ -9,6 +9,7 @@ import { ResourcePreviewBadge, ResourcePreviewDiagnostics } from "../../componen
 import { TutorialTip } from "../../components/TutorialTip";
 import { inspectBrowserBundledLibraryAssetPreview } from "../../browser/library";
 import { loadBrowserScenarioResourcePreview } from "../../browser/project";
+import { useResolvedPreviewUrl } from "../../previewUrls";
 import { FloatingWorkbenchPanel, ScrollArea } from "../../ui";
 import { renderListKey } from "../../renderKeys";
 import { ResourceExportScope, isMapPlaceableLibraryAsset, managedAssetKindForLibrary, resourceExportScope, resourceExportScopeLabel, resourceOrigin, resourceOriginLabel, resourceRole } from "../../resourceResolver";
@@ -715,15 +716,19 @@ function resourceScopeHelp(scope: ResourceExportScope) {
 export function ResourcePreviewWindow({
   item,
   project,
+  catalog,
   desktopRuntime,
   projectDir,
+  workspaceDir,
   onClose,
   onSelectEntity
 }: {
   item: ResourcePreviewItem;
   project: Project | null;
+  catalog?: LibraryCatalog | null;
   desktopRuntime: boolean;
   projectDir: string;
+  workspaceDir?: string;
   onClose: () => void;
   onSelectEntity: (entity: SelectedEntity) => void;
 }) {
@@ -740,7 +745,7 @@ export function ResourcePreviewWindow({
       className="asset-resource-preview-window"
       actions={<button type="button" className="btn btn-ghost btn-xs" onClick={onClose} aria-label="Close resource preview"><X size={14} /></button>}
     >
-      <ResourcePreviewContents item={item} project={project} desktopRuntime={desktopRuntime} projectDir={projectDir} onSelectEntity={onSelectEntity} />
+      <ResourcePreviewContents item={item} project={project} catalog={catalog} desktopRuntime={desktopRuntime} projectDir={projectDir} workspaceDir={workspaceDir} onSelectEntity={onSelectEntity} />
     </FloatingWorkbenchPanel>
   );
 }
@@ -748,14 +753,18 @@ export function ResourcePreviewWindow({
 export function ResourcePreviewContents({
   item,
   project,
+  catalog,
   desktopRuntime,
   projectDir,
+  workspaceDir,
   onSelectEntity
 }: {
   item: ResourcePreviewItem;
   project: Project | null;
+  catalog?: LibraryCatalog | null;
   desktopRuntime: boolean;
   projectDir: string;
+  workspaceDir?: string;
   onSelectEntity: (entity: SelectedEntity) => void;
 }) {
   const scope = item.type === "managed"
@@ -805,8 +814,10 @@ export function ResourcePreviewContents({
         <ScenarioResourceDetail
           item={item}
           project={project}
+          catalog={catalog}
           desktopRuntime={desktopRuntime}
           projectDir={projectDir}
+          workspaceDir={workspaceDir}
           onSelectEntity={onSelectEntity}
         />
       )}
@@ -817,26 +828,40 @@ export function ResourcePreviewContents({
 function ScenarioResourceDetail({
   item,
   project,
+  catalog,
   desktopRuntime,
   projectDir,
+  workspaceDir,
   onSelectEntity
 }: {
   item: Extract<ResourcePreviewItem, { type: "resource" }>;
   project: Project | null;
+  catalog?: LibraryCatalog | null;
   desktopRuntime: boolean;
   projectDir: string;
+  workspaceDir?: string;
   onSelectEntity: (entity: SelectedEntity) => void;
 }) {
   const rawPreview = resourcePreviewDataUrl(item.entity.summary);
   const resourceType = resourceTypeFromSummary(item.entity.summary);
   const resourceId = resourceIdFromSummary(item.entity.summary);
   const [browserPreview, setBrowserPreview] = useState<string | null>(null);
-  const preview = useProjectPreview(rawPreview ?? "", desktopRuntime, projectDir);
+  const referencePictureId = referencePictureIdFromPath(rawPreview);
+  const referencePictureAsset = referencePictureId === null ? null : findReferencePictureAsset(catalog, referencePictureId);
+  const preview = useProjectPreview(referencePictureId === null ? rawPreview ?? "" : "", desktopRuntime, projectDir);
+  const referencePreview = useResolvedPreviewUrl(null, null, referencePictureAsset, {
+    desktopRuntime,
+    projectDir,
+    workspaceDir,
+    project: referencePictureId === null ? null : project,
+    resourceType: referencePictureId === null ? null : "PICT",
+    resourceId: referencePictureId
+  });
   useEffect(() => {
-    if (preview || rawPreview || desktopRuntime || resourceType === null || resourceId === null) return;
+    if (referencePreview || preview || rawPreview || resourceType === null || resourceId === null) return;
     setBrowserPreview(loadBrowserScenarioResourcePreview(project, resourceType, resourceId));
-  }, [desktopRuntime, preview, project, rawPreview, resourceId, resourceType]);
-  const resolvedPreview = preview ?? browserPreview;
+  }, [referencePreview, preview, project, rawPreview, resourceId, resourceType]);
+  const resolvedPreview = referencePreview ?? preview ?? browserPreview;
   return (
     <>
       {resolvedPreview ? (
@@ -875,6 +900,22 @@ function ScenarioResourceDetail({
       )}
     </>
   );
+}
+
+function referencePictureIdFromPath(path: string | null | undefined) {
+  if (!path) return null;
+  const match = /^reference-picture:(-?\d+)$/i.exec(path.trim());
+  if (!match) return null;
+  const id = Number(match[1]);
+  return Number.isFinite(id) ? id : null;
+}
+
+function findReferencePictureAsset(catalog: LibraryCatalog | null | undefined, pictureId: number) {
+  return catalog?.assets.find((asset) =>
+    asset.resourceType === "PICT" &&
+    asset.resourceId === pictureId &&
+    resourceOrigin(asset) === "realmz-library"
+  ) ?? null;
 }
 
 export function ManagedResourceDetail({

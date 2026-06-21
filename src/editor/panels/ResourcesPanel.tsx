@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AssetSearchHint, LibraryAsset, LibraryCatalog, ManagedAssetKind, Project, ResourcePreviewDiagnostic, ResourcePreviewStatus, SelectedEntity, SemanticEntity } from "../types";
 import { compactValue, selectEntityFromId, semanticLabel } from "../utils";
+import { browserReferenceAtlasToken } from "../browser/atlasPaths";
 import { loadBrowserScenarioResourcePreview } from "../browser/project";
 import { useResolvedPreviewUrl } from "../previewUrls";
 import { resourceConsumers, resourceGaps, resourceMembersForType, schemaEntities } from "../semanticGraph";
@@ -335,8 +336,10 @@ export function ResourcesPanel({
                 <AssetSelectionInspector
                   item={selectedAsset}
                   project={project}
+                  catalog={catalog}
                   desktopRuntime={desktopRuntime}
                   projectDir={projectDir}
+                  workspaceDir={workspaceDir}
                   onOpenDetail={(item) => setPreviewItem(item)}
                   onSelectEntity={onSelectEntity}
                 />
@@ -386,8 +389,10 @@ export function ResourcesPanel({
                 <AssetSelectionInspector
                   item={selectedAsset}
                   project={project}
+                  catalog={catalog}
                   desktopRuntime={desktopRuntime}
                   projectDir={projectDir}
+                  workspaceDir={workspaceDir}
                   onOpenDetail={(item) => setPreviewItem(item)}
                   onSelectEntity={onSelectEntity}
                 />
@@ -494,8 +499,10 @@ export function ResourcesPanel({
         <ResourcePreviewWindow
           item={previewItem}
           project={project}
+          catalog={catalog}
           desktopRuntime={desktopRuntime}
           projectDir={projectDir}
+          workspaceDir={workspaceDir}
           onClose={() => setPreviewItem(null)}
           onSelectEntity={onSelectEntity}
         />
@@ -540,15 +547,19 @@ function AssetGalleryControls({
 function AssetSelectionInspector({
   item,
   project,
+  catalog,
   desktopRuntime,
   projectDir,
+  workspaceDir,
   onOpenDetail,
   onSelectEntity
 }: {
   item: ResourcePreviewItem | null;
   project: Project | null;
+  catalog?: LibraryCatalog | null;
   desktopRuntime: boolean;
   projectDir: string;
+  workspaceDir: string;
   onOpenDetail: (item: ResourcePreviewItem) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
 }) {
@@ -565,7 +576,7 @@ function AssetSelectionInspector({
         </button>
       </header>
       {item ? (
-        <ResourcePreviewContents item={item} project={project} desktopRuntime={desktopRuntime} projectDir={projectDir} onSelectEntity={onSelectEntity} />
+        <ResourcePreviewContents item={item} project={project} catalog={catalog} desktopRuntime={desktopRuntime} projectDir={projectDir} workspaceDir={workspaceDir} onSelectEntity={onSelectEntity} />
       ) : (
         <p className="empty-copy compact">Select an asset to inspect preview scale, source, export scope, decoded metadata, and usage links.</p>
       )}
@@ -720,9 +731,9 @@ function useScenarioResourcePreview<T extends HTMLElement>(
   const [browserPreview, setBrowserPreview] = useState<string | null>(null);
   const browserPreviewEnabled = asset.kind === "sound" ? selected : previewEnabled;
   useEffect(() => {
-    if (!browserPreviewEnabled || referencePicturePreview || projectPreview || asset.previewPath || desktopRuntime) return;
+    if (!browserPreviewEnabled || referencePicturePreview || projectPreview || asset.previewPath) return;
     setBrowserPreview(loadBrowserScenarioResourcePreview(project, asset.resourceType, asset.resourceId));
-  }, [asset.previewPath, asset.resourceId, asset.resourceType, browserPreviewEnabled, desktopRuntime, project, projectPreview, referencePicturePreview]);
+  }, [asset.previewPath, asset.resourceId, asset.resourceType, browserPreviewEnabled, project, projectPreview, referencePicturePreview]);
   return { previewRef, preview: referencePicturePreview ?? projectPreview ?? browserPreview };
 }
 
@@ -734,7 +745,8 @@ function scenarioResourceAssets(project: Project | null): ScenarioResourceAsset[
     const key = `${resourceType}:${resourceId}:${source}`;
     if (seen.has(key)) return;
     seen.add(key);
-    const entity = directResourceEntity(resourceType, resourceId, label, source, previewPath, extraSummary);
+    const resolvedPreviewPath = previewPath ?? scenarioResourcePreviewPath(project, resourceType, resourceId);
+    const entity = directResourceEntity(resourceType, resourceId, label, source, resolvedPreviewPath, extraSummary);
     assets.push({
       entity,
       kind: managedKindForResource(resourceType),
@@ -742,7 +754,7 @@ function scenarioResourceAssets(project: Project | null): ScenarioResourceAsset[
       resourceId,
       source,
       bytes: typeof entity.summary.bytes === "number" ? entity.summary.bytes : 0,
-      previewPath: previewPath ?? scenarioResourcePreviewPath(project, entity, resourceType, resourceId)
+      previewPath: resolvedPreviewPath
     });
   };
   for (const picture of project.assetCatalog.pictures ?? []) {
@@ -875,11 +887,11 @@ function isResourcePreviewDiagnostic(entry: unknown): entry is ResourcePreviewDi
     typeof entry.decoder === "string";
 }
 
-function scenarioResourcePreviewPath(project: Project, entity: SemanticEntity, resourceType: string, resourceId: number) {
-  if (typeof entity.summary.previewDataUrl === "string" && entity.summary.previewDataUrl) return entity.summary.previewDataUrl;
+function scenarioResourcePreviewPath(project: Project, resourceType: string, resourceId: number) {
   if (resourceType === "PICT") {
     return project.assetCatalog.pictures?.find((asset) => asset.resourceId === resourceId)?.previewPath ??
       project.assetCatalog.tilesets.find((asset) => asset.pictId === resourceId)?.imagePath ??
+      browserReferenceAtlasToken(resourceId) ??
       "";
   }
   if (resourceType === "cicn") {

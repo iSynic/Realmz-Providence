@@ -12,7 +12,7 @@ import { tileIconCandidates } from "../map/renderValues";
 const EMPTY_TARGET_COMPATIBILITY = { blockers: [], warnings: [], notes: [] };
 const pendingBrowserSemantics = new Map<string, { files: Map<string, Uint8Array>; sourceFiles: Project["source"]["files"] }>();
 const browserScenarioPreviewSources = new Map<string, Map<string, Uint8Array>>();
-const browserScenarioResourcePreviewCache = new Map<string, string | null>();
+const browserScenarioResourcePreviewCache = new Map<string, string>();
 
 export function createBrowserProject(projectName: string): Project {
   const safeName = projectName.trim() || "Untitled Scenario";
@@ -140,7 +140,8 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
 export function loadBrowserScenarioResourcePreview(project: Project | null | undefined, resourceType: string, resourceId: number) {
   if (!project || !Number.isFinite(resourceId)) return null;
   const cacheKey = `${browserSemanticCacheKey(project)}\n${normalizeResourceType(resourceType)}\n${resourceId}`;
-  if (browserScenarioResourcePreviewCache.has(cacheKey)) return browserScenarioResourcePreviewCache.get(cacheKey) ?? null;
+  const cachedPreview = browserScenarioResourcePreviewCache.get(cacheKey);
+  if (cachedPreview) return cachedPreview;
   const files = browserScenarioPreviewSources.get(browserSemanticCacheKey(project));
   if (!files) return null;
   const wantedType = normalizeResourceType(resourceType);
@@ -149,11 +150,10 @@ export function loadBrowserScenarioResourcePreview(project: Project | null | und
     for (const resource of parseResourceFork(bytes)) {
       if (normalizeResourceType(resource.resourceType) !== wantedType || !resourceIdsMatch(wantedType, resource.id, resourceId)) continue;
       const preview = inspectResourcePreview(resource.resourceType, resource.data);
-      browserScenarioResourcePreviewCache.set(cacheKey, preview.dataUrl ?? null);
+      if (preview.dataUrl) browserScenarioResourcePreviewCache.set(cacheKey, preview.dataUrl);
       return preview.dataUrl ?? null;
     }
   }
-  browserScenarioResourcePreviewCache.set(cacheKey, null);
   return null;
 }
 
@@ -167,8 +167,12 @@ function resourceIdsMatch(resourceType: string, availableId: number, requestedId
 }
 
 function isScenarioResourceForkName(name: string) {
-  const normalized = name.trim().toLowerCase();
-  return normalized === "scenario.rsrc" || normalized === "scenario.rsf" || normalized.endsWith("/scenario.rsrc") || normalized.endsWith("\\scenario.rsrc") || normalized.endsWith("/scenario.rsf") || normalized.endsWith("\\scenario.rsf");
+  const normalized = name.trim().replace(/\\/g, "/").toLowerCase();
+  const baseName = normalized.split("/").pop() ?? normalized;
+  return baseName === "scenario" ||
+    baseName === "._scenario" ||
+    baseName === "scenario.rsrc" ||
+    baseName === "scenario.rsf";
 }
 
 export async function buildPendingBrowserSemanticSchema(project: Project): Promise<{ semanticSchema: Project["semanticSchema"]; validation: Project["validation"] } | null> {
