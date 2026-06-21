@@ -245,7 +245,13 @@ const ACTION_OVERRIDES: Record<number, Partial<Pick<ScriptActionDefinition, "lab
   81: { label: "Branch On Condition", shortLabel: "Condition Branch", category: "Logic", description: "Branch to Extra Action Points based on condition state." },
   82: { label: "Turn Cleric Turning Off", shortLabel: "Turning Off", category: "Rules", description: "Disable cleric turning behavior." },
   83: { label: "Turn Cleric Turning On", shortLabel: "Turning On", category: "Rules", description: "Enable cleric turning behavior." },
-  84: { label: "Not Used", shortLabel: "Not Used", category: "Advanced", description: "Documented as not used. Providence preserves existing values but does not present this as normal authoring behavior." },
+  84: {
+    label: "Registration Check Discrepancy",
+    shortLabel: "Registration Check?",
+    category: "Advanced",
+    description: "Manual/Divinity material labels this not used, but Realmz Revisited contains a registration-check dispatcher case. Providence preserves existing values until classic behavior is verified.",
+    searchTerms: ["not used", "registration", "discrepancy", "preserve"]
+  },
   85: { label: "Branch Randomly", shortLabel: "Random Branch", category: "Logic", description: "Branch to a random target in a range." },
   86: { label: "Branch On Party State", shortLabel: "Party Branch", category: "Logic", description: "Branch based on party, race, caste, gender, boat, camp, or level tests." },
   87: { label: "Conditional Branch", shortLabel: "Conditional", category: "Logic", description: "Branch based on conditional tests." },
@@ -274,7 +280,13 @@ const ACTION_OVERRIDES: Record<number, Partial<Pick<ScriptActionDefinition, "lab
   112: { label: "Pop Script Stack", shortLabel: "Pop", category: "Extra Action Points", description: "Pop script stack state." },
   119: { label: "Revive NPC After Combat", shortLabel: "Revive NPC", category: "Encounters", description: "Revive an NPC after combat." },
   120: { label: "Change Combat Monster", shortLabel: "Combat Monster", category: "Encounters", description: "Alter combat monster id, count, or icon state." },
-  121: { label: "Destroy Lower Undead", shortLabel: "Destroy Undead", category: "Encounters", description: "Destroy lower-level undead." },
+  121: {
+    label: "De-animate Lower Undead",
+    shortLabel: "De-animate Undead",
+    category: "Encounters",
+    description: "Combat macro action. Outside monster or battle macro contexts, Providence preserves imported rows instead of presenting this as routine AP authoring.",
+    searchTerms: ["destroy undead", "lower undead", "deanimate", "de-animate", "macro only", "combat macro"]
+  },
   122: { label: "Show Fumble Result", shortLabel: "Fumble", category: "Encounters", description: "Show combat fumble message or sound behavior." },
   123: { label: "Rout Monsters", shortLabel: "Rout", category: "Encounters", description: "Cause matching active combat monsters to rout." },
   124: { label: "Spawn Monsters", shortLabel: "Spawn", category: "Encounters", description: "Spawn combat monsters." },

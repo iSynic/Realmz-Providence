@@ -18,6 +18,8 @@ const DOCUMENTED_OPCODE_CODES = [
   ...range(119, 127)
 ];
 
+const NOT_USED_ACTION_CODES = new Set([79, 80, 109, 110, 113, 114, 115, 116, 117, 118]);
+
 const ACTION_DETAILS: Record<number, Partial<RealmzActionOption>> = {
   [-23]: { shortLabel: "Dungeon Random Region", category: "Encounter", description: "Mutate dungeon random encounter rectangle data.", edcdShape: "random-region-mutation" },
   [-14]: { shortLabel: "Pick Inverse Characters", category: "Characters", description: "Select the inverse of the current character set." },
@@ -103,7 +105,7 @@ const ACTION_DETAILS: Record<number, Partial<RealmzActionOption>> = {
   81: { shortLabel: "Condition Branch", category: "Branch", description: "Branch to macros based on condition state.", edcdShape: "condition-branch" },
   82: { shortLabel: "Turning Off", category: "Rules", description: "Disable cleric turning behavior." },
   83: { shortLabel: "Turning On", category: "Rules", description: "Enable cleric turning behavior." },
-  84: { shortLabel: "Not Used", category: "Advanced", description: "Documented as not used; preserved for compatibility." },
+  84: { shortLabel: "Registration Check?", category: "Advanced", description: "Manual/Divinity material labels this not used, but Realmz Revisited contains a registration-check dispatcher case. Preserve imports until classic behavior is verified." },
   85: { shortLabel: "Random Branch", category: "Branch", description: "Branch to a random target in range.", edcdShape: "random-branch" },
   86: { shortLabel: "Misc Branch", category: "Branch", description: "Branch based on party, race, caste, gender, boat, camp, or level tests.", edcdShape: "misc-conditional-branch" },
   87: { shortLabel: "Conditional Branch", category: "Branch", description: "Branch based on conditional EDCD tests, with message behavior in some cases.", edcdShape: "conditional-branch" },
@@ -132,7 +134,7 @@ const ACTION_DETAILS: Record<number, Partial<RealmzActionOption>> = {
   112: { shortLabel: "Pop", category: "Core", description: "Pop script stack state." },
   119: { shortLabel: "Revive NPC", category: "Combat", description: "Revive an NPC after combat." },
   120: { shortLabel: "Combat Monster", category: "Combat", description: "Alter combat monster id/count/icon state.", edcdShape: "combat-monster-mutation" },
-  121: { shortLabel: "De-animate Undead", category: "Combat", description: "Source loads EDCD before destroying lower-level undead.", edcdShape: "unused-edcd-load" },
+  121: { shortLabel: "De-animate Lower Undead", category: "Combat", description: "Combat macro action that destroys lower undead during battle. Imported ordinary AP uses stay preserved until runtime evidence proves they are safe there.", edcdShape: "unused-edcd-load" },
   122: { shortLabel: "Fumble", category: "Combat", description: "Show combat fumble message/sound behavior.", edcdShape: "fumble" },
   123: { shortLabel: "Rout", category: "Combat", description: "Cause matching active combat monsters to rout.", edcdShape: "rout" },
   124: { shortLabel: "Spawn", category: "Combat", description: "Spawn combat monsters using EDCD fields.", edcdShape: "spawn" },
@@ -160,6 +162,15 @@ export function actionOptionFor(rawCode: number): RealmzActionOption {
   const normalizedCode = normalizeStepOpcode(rawCode);
   const known = ACTION_OPTIONS.find((option) => option.code === normalizedCode);
   if (known) return known;
+  if (NOT_USED_ACTION_CODES.has(normalizedCode)) {
+    return {
+      code: normalizedCode,
+      label: `${normalizedCode} Inert Imported Action`,
+      shortLabel: "Inert Imported Action",
+      category: "Advanced",
+      description: "Documented Not Used opcode. Providence preserves the stored value for compatibility, but this is not normal authoring behavior."
+    };
+  }
   if (isDispatcherNoopOpcode(rawCode)) {
     return {
       code: normalizedCode,

@@ -1595,6 +1595,9 @@ function humanActionValueLabel(label: string) {
 }
 
 function actionAuthoringStateLabel(definition: ScriptActionDefinition) {
+  if (definition.opcode === 121) return "Macro-only action";
+  if (definition.opcode === 84) return "Manual/source discrepancy";
+  if (definition.shortLabel === "Inert Imported Action") return "Inert imported action";
   if (definition.validationPosture === "no-effect") return "Preserve-only / no normal effect";
   if (definition.authoringLevel === "first-class") return "Friendly editor";
   if (definition.authoringLevel === "guided") return "Guided settings editor";
@@ -1603,6 +1606,15 @@ function actionAuthoringStateLabel(definition: ScriptActionDefinition) {
 }
 
 function actionAuthoringStateDetail(definition: ScriptActionDefinition) {
+  if (definition.opcode === 121) {
+    return "Realmz source performs this only during combat. Ordinary AP imports are preserved here; use monster or battle macro surfaces for intentional authoring.";
+  }
+  if (definition.opcode === 84) {
+    return "Divinity/manual material says this is not used, while Realmz Revisited contains a registration-check case. Providence preserves it until classic behavior is verified.";
+  }
+  if (definition.shortLabel === "Inert Imported Action") {
+    return "This is a documented Not Used opcode. Providence keeps the imported CODE/ID value, but it is not normal authoring behavior.";
+  }
   if (definition.validationPosture === "no-effect") {
     return "Realmz does not expose normal runtime behavior for this dispatcher row. Providence preserves the stored CODE/ID values, but routine authoring is disabled.";
   }
