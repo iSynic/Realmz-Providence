@@ -154,11 +154,11 @@ const COMPLEX_ITEM_TESTS_HELP =
 const ENCOUNTER_RESULT_ACTION_HELP =
   "Encounter result columns are compact script rows. Result 1, 2, 3, or 4 chooses one column, then Realmz executes its ordered CODE/ID rows.";
 const ROGUE_ACTION_TESTS_HELP =
-  "Rogue action rows control which thief actions are available, the skill modifier, success/failure result codes, and the text/sound feedback for each outcome.";
+  "Rogue action rows control which thief actions are available, the skill modifier, success/failure result codes, and the text/sound feedback for each outcome. Open Lock Magic and Disarm Trap also expose their spell-special chance fields here.";
 const ROGUE_PROMPT_HELP =
   "The rogue prompt is shown when this thief scene begins. It can also play a sound before the player chooses or attempts a rogue action.";
 const ROGUE_TRAP_HELP =
-  "Trap and lock setup controls whether the record is trapped, who damage affects, tumbler count, damage range, optional trap spell, Open Lock spell chance, and Disarm Trap spell chance.";
+  "Trap and lock setup controls whether the record is trapped, who damage affects, tumbler count, damage range, optional trap spell, and power level. Open Lock and Disarm Trap spell paths are configured beside their rows above.";
 const TIMED_SCHEDULE_HELP =
   "The midnight schedule controls when this record is considered. Day and Increment define timing, Percent gates execution, and Extra AP To Activate is the macro Realmz runs.";
 const TIMED_LOCATION_HELP =
@@ -2894,20 +2894,12 @@ function ComplexRogueSummary({
               <dd>{enabled.length ? enabled.join(", ") : "No rogue actions enabled"}</dd>
             </div>
             <div>
-              <dt>Open Lock spell chance</dt>
-              <dd>{record.promptSounds?.[1] ?? 0}</dd>
+              <dt>Open Lock spell</dt>
+              <dd>{rogueSpellPathSummary(record, ROGUE_OPEN_LOCK_SPELL_PATH)}</dd>
             </div>
             <div>
-              <dt>Open Lock results</dt>
-              <dd>{rogueOutcomeSummary(record, ROGUE_OPEN_LOCK_SLOT)}</dd>
-            </div>
-            <div>
-              <dt>Disarm Trap spell chance</dt>
-              <dd>{record.promptSounds?.[2] ?? 0}</dd>
-            </div>
-            <div>
-              <dt>Disarm Trap results</dt>
-              <dd>{rogueOutcomeSummary(record, ROGUE_DISARM_TRAP_SLOT)}</dd>
+              <dt>Disarm Trap spell</dt>
+              <dd>{rogueSpellPathSummary(record, ROGUE_DISARM_TRAP_SPELL_PATH)}</dd>
             </div>
             {preservedFailField !== 0 && (
               <div>
@@ -2950,6 +2942,107 @@ function rogueOutcomeSummary(record: Project["thiefEncounters"][number], slot: n
 
 function resultCodeLabel(value: number) {
   return value > 0 ? `Result ${value}` : "no result";
+}
+
+const ROGUE_PRIMARY_ACTIONS = 5;
+const ROGUE_DISARM_TRAP_SLOT = 2;
+const ROGUE_OPEN_LOCK_SLOT = 6;
+
+type RogueSpellPathConfig = {
+  slot: number;
+  chanceSlot: number;
+  title: string;
+  rowLabel: string;
+  disabledWarning: string;
+};
+
+const ROGUE_OPEN_LOCK_SPELL_PATH: RogueSpellPathConfig = {
+  slot: ROGUE_OPEN_LOCK_SLOT,
+  chanceSlot: 1,
+  title: "Open Lock spell path",
+  rowLabel: "Open Lock Magic",
+  disabledWarning: "Open Lock spell path is disabled until Chance / level is nonzero."
+};
+
+const ROGUE_DISARM_TRAP_SPELL_PATH: RogueSpellPathConfig = {
+  slot: ROGUE_DISARM_TRAP_SLOT,
+  chanceSlot: 2,
+  title: "Disarm Trap spell path",
+  rowLabel: "Disarm Trap",
+  disabledWarning: "Disarm Trap spell path is disabled until Chance / level is nonzero."
+};
+
+const ROGUE_SPELL_PATHS: RogueSpellPathConfig[] = [
+  ROGUE_OPEN_LOCK_SPELL_PATH,
+  ROGUE_DISARM_TRAP_SPELL_PATH
+];
+
+function rogueSpellPathForSlot(slot: number) {
+  return ROGUE_SPELL_PATHS.find((path) => path.slot === slot) ?? null;
+}
+
+function rogueSpellPathChance(record: Project["thiefEncounters"][number], config: RogueSpellPathConfig) {
+  return record.promptSounds?.[config.chanceSlot] ?? 0;
+}
+
+function rogueSpellPathEnabled(record: Project["thiefEncounters"][number], config: RogueSpellPathConfig) {
+  return rogueSpellPathChance(record, config) > 0;
+}
+
+function rogueActionHasOutcomeData(record: Project["thiefEncounters"][number], slot: number) {
+  return Boolean(
+    (record.successCodes?.[slot] ?? 0) ||
+    (record.failureCodes?.[slot] ?? 0) ||
+    (record.successText?.[slot] ?? 0) ||
+    (record.failureText?.[slot] ?? 0) ||
+    (record.successSounds?.[slot] ?? 0) ||
+    (record.failureSounds?.[slot] ?? 0)
+  );
+}
+
+function rogueOutcomeHasVisiblePath(record: Project["thiefEncounters"][number], slot: number, outcome: "success" | "failure") {
+  const codes = outcome === "success" ? record.successCodes : record.failureCodes;
+  const messages = outcome === "success" ? record.successText : record.failureText;
+  const sounds = outcome === "success" ? record.successSounds : record.failureSounds;
+  return Boolean((codes?.[slot] ?? 0) || (messages?.[slot] ?? 0) || (sounds?.[slot] ?? 0));
+}
+
+function rogueSpellPathWarnings(record: Project["thiefEncounters"][number], config: RogueSpellPathConfig) {
+  const warnings: string[] = [];
+  if (!rogueSpellPathEnabled(record, config)) {
+    if (rogueActionHasOutcomeData(record, config.slot)) warnings.push(config.disabledWarning);
+    return warnings;
+  }
+  if (!rogueOutcomeHasVisiblePath(record, config.slot, "success")) {
+    warnings.push(`${config.title} success currently has no visible result. Add a message, sound, or result code so players can tell what happened.`);
+  }
+  if (!rogueOutcomeHasVisiblePath(record, config.slot, "failure")) {
+    warnings.push(`${config.title} failure currently has no visible result. Add a message, sound, or result code so players can tell what happened.`);
+  }
+  return warnings;
+}
+
+function rogueSpellPathSummary(record: Project["thiefEncounters"][number], config: RogueSpellPathConfig) {
+  const chance = rogueSpellPathChance(record, config);
+  if (chance <= 0) return `Disabled; set Chance / level above 0 to use ${config.rowLabel}. ${rogueOutcomeSummary(record, config.slot)}.`;
+  return `Enabled (${chance}); success -> ${resultCodeLabel(record.successCodes?.[config.slot] ?? 0)}, failure -> ${resultCodeLabel(record.failureCodes?.[config.slot] ?? 0)}.`;
+}
+
+function RogueSpellStatusStrip({ record }: { record: Project["thiefEncounters"][number] }) {
+  return (
+    <div className="rogue-spell-status-strip">
+      {ROGUE_SPELL_PATHS.map((config) => {
+        const enabled = rogueSpellPathEnabled(record, config);
+        return (
+          <div key={config.slot} className={`rogue-spell-status-card ${enabled ? "enabled" : "disabled"}`}>
+            <b>{config.title}</b>
+            <em>{enabled ? "Enabled" : "Disabled"}</em>
+            <small>Chance / level {rogueSpellPathChance(record, config)}; edit beside the {config.rowLabel} row.</small>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function EncounterResultActionMatrix({
@@ -3072,10 +3165,6 @@ const ROGUE_ACTION_LABELS = [
   "Rogue Support"
 ];
 
-const ROGUE_PRIMARY_ACTIONS = 5;
-const ROGUE_DISARM_TRAP_SLOT = 2;
-const ROGUE_OPEN_LOCK_SLOT = 6;
-
 function ThiefEncounterShell({
   project,
   catalog,
@@ -3118,16 +3207,16 @@ function ThiefEncounterShell({
             <span>Sound Fail</span>
           </div>
           {Array.from({ length: 8 }, (_, slot) => (
-          <RogueActionRow
-            key={slot}
-            slot={slot}
-            record={record}
-            project={project}
-            catalog={catalog}
-            primary={slot < ROGUE_PRIMARY_ACTIONS}
-            onUpdate={update}
-            onCreateMessage={(targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create rogue message", recordType: "message", id: targetId })}
-          />
+            <RogueActionRow
+              key={slot}
+              slot={slot}
+              record={record}
+              project={project}
+              catalog={catalog}
+              primary={slot < ROGUE_PRIMARY_ACTIONS}
+              onUpdate={update}
+              onCreateMessage={(targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create rogue message", recordType: "message", id: targetId })}
+            />
           ))}
         </div>
       </section>
@@ -3203,10 +3292,9 @@ function ThiefEncounterShell({
             />
             <NumberField label="Trap Spell" value={record.spell} onCommit={(spell) => update({ spell })} compact />
             <NumberField label="Power Level" value={record.prompts?.[2] ?? 0} onCommit={(value) => update({ prompts: updateArraySlot(record.prompts ?? [], 2, value, 3) })} compact />
-            <NumberField label="Open Lock spell chance / level" value={record.promptSounds?.[1] ?? 0} onCommit={(value) => update({ promptSounds: updateArraySlot(record.promptSounds ?? [], 1, value, 3) })} compact />
-            <NumberField label="Disarm Trap spell chance / level" value={record.promptSounds?.[2] ?? 0} onCommit={(value) => update({ promptSounds: updateArraySlot(record.promptSounds ?? [], 2, value, 3) })} compact />
           </div>
-          <p className="field-help">Open Lock and Disarm Trap are separate spell-special paths. Open Lock uses the Open Lock chance and row; Disarm Trap uses the Disarm chance and row.</p>
+          <RogueSpellStatusStrip record={record} />
+          <p className="field-help">Open Lock and Disarm Trap spell-special paths are configured beside their action rows above. Trap / Lock Setup keeps the physical trap, tumbler, damage, prompt, and trap-spell fields.</p>
         </div>
       </section>
     </div>
@@ -3230,63 +3318,100 @@ function RogueActionRow({
   onUpdate: (changes: Extract<ProjectCommand, { kind: "updateThiefEncounterRecord" }>["changes"]) => void;
   onCreateMessage: (targetId: number) => void;
 }) {
+  const spellPath = rogueSpellPathForSlot(slot);
   return (
-    <div className={primary ? "rogue-action-row" : "rogue-action-row secondary"} role="row">
-      <label className="rogue-action-enabled">
-        <input
-          type="checkbox"
-          checked={Boolean(record.typeFlags?.[slot])}
-          onChange={(event) => onUpdate({ typeFlags: updateArraySlot(record.typeFlags ?? [], slot, event.currentTarget.checked, 10) })}
+    <>
+      <div className={primary ? "rogue-action-row" : "rogue-action-row secondary"} role="row">
+        <label className="rogue-action-enabled">
+          <input
+            type="checkbox"
+            checked={Boolean(record.typeFlags?.[slot])}
+            onChange={(event) => onUpdate({ typeFlags: updateArraySlot(record.typeFlags ?? [], slot, event.currentTarget.checked, 10) })}
+          />
+          <span>{ROGUE_ACTION_LABELS[slot] ?? `Rogue Action ${slot}`}</span>
+        </label>
+        <NumberField label="% Mod" value={record.modifiers?.[slot] ?? 0} onCommit={(value) => onUpdate({ modifiers: updateArraySlot(record.modifiers ?? [], slot, value, 8) })} compact />
+        <NumberField label="Success Result" value={record.successCodes?.[slot] ?? 0} onCommit={(value) => onUpdate({ successCodes: updateArraySlot(record.successCodes ?? [], slot, value, 8) })} compact />
+        <NumberField label="Fail Result" value={record.failureCodes?.[slot] ?? 0} onCommit={(value) => onUpdate({ failureCodes: updateArraySlot(record.failureCodes ?? [], slot, value, 8) })} compact />
+        <ReferenceIdField
+          project={project}
+          catalog={catalog}
+          label="Success Text"
+          emptyLabel="No success string"
+          opcode={1}
+          value={record.successText?.[slot] ?? 0}
+          createRecordType="message"
+          compact
+          onCommit={(value) => onUpdate({ successText: updateArraySlot(record.successText ?? [], slot, value, 8) })}
+          onCreateTarget={onCreateMessage}
         />
-        <span>{ROGUE_ACTION_LABELS[slot] ?? `Rogue Action ${slot}`}</span>
-      </label>
-      <NumberField label="% Mod" value={record.modifiers?.[slot] ?? 0} onCommit={(value) => onUpdate({ modifiers: updateArraySlot(record.modifiers ?? [], slot, value, 8) })} compact />
-      <NumberField label="Success Result" value={record.successCodes?.[slot] ?? 0} onCommit={(value) => onUpdate({ successCodes: updateArraySlot(record.successCodes ?? [], slot, value, 8) })} compact />
-      <NumberField label="Fail Result" value={record.failureCodes?.[slot] ?? 0} onCommit={(value) => onUpdate({ failureCodes: updateArraySlot(record.failureCodes ?? [], slot, value, 8) })} compact />
-      <ReferenceIdField
-        project={project}
-        catalog={catalog}
-        label="Success Text"
-        emptyLabel="No success string"
-        opcode={1}
-        value={record.successText?.[slot] ?? 0}
-        createRecordType="message"
-        compact
-        onCommit={(value) => onUpdate({ successText: updateArraySlot(record.successText ?? [], slot, value, 8) })}
-        onCreateTarget={onCreateMessage}
-      />
-      <ReferenceIdField
-        project={project}
-        catalog={catalog}
-        label="Fail Text"
-        emptyLabel="No failure string"
-        opcode={1}
-        value={record.failureText?.[slot] ?? 0}
-        createRecordType="message"
-        compact
-        onCommit={(value) => onUpdate({ failureText: updateArraySlot(record.failureText ?? [], slot, value, 8) })}
-        onCreateTarget={onCreateMessage}
-      />
-      <ReferenceIdField
-        project={project}
-        catalog={catalog}
-        label="Success Sound"
-        emptyLabel="No success sound"
-        opcode={9}
-        value={record.successSounds?.[slot] ?? 0}
-        compact
-        onCommit={(value) => onUpdate({ successSounds: updateArraySlot(record.successSounds ?? [], slot, value, 8) })}
-      />
-      <ReferenceIdField
-        project={project}
-        catalog={catalog}
-        label="Fail Sound"
-        emptyLabel="No failure sound"
-        opcode={9}
-        value={record.failureSounds?.[slot] ?? 0}
-        compact
-        onCommit={(value) => onUpdate({ failureSounds: updateArraySlot(record.failureSounds ?? [], slot, value, 8) })}
-      />
+        <ReferenceIdField
+          project={project}
+          catalog={catalog}
+          label="Fail Text"
+          emptyLabel="No failure string"
+          opcode={1}
+          value={record.failureText?.[slot] ?? 0}
+          createRecordType="message"
+          compact
+          onCommit={(value) => onUpdate({ failureText: updateArraySlot(record.failureText ?? [], slot, value, 8) })}
+          onCreateTarget={onCreateMessage}
+        />
+        <ReferenceIdField
+          project={project}
+          catalog={catalog}
+          label="Success Sound"
+          emptyLabel="No success sound"
+          opcode={9}
+          value={record.successSounds?.[slot] ?? 0}
+          compact
+          onCommit={(value) => onUpdate({ successSounds: updateArraySlot(record.successSounds ?? [], slot, value, 8) })}
+        />
+        <ReferenceIdField
+          project={project}
+          catalog={catalog}
+          label="Fail Sound"
+          emptyLabel="No failure sound"
+          opcode={9}
+          value={record.failureSounds?.[slot] ?? 0}
+          compact
+          onCommit={(value) => onUpdate({ failureSounds: updateArraySlot(record.failureSounds ?? [], slot, value, 8) })}
+        />
+      </div>
+      {spellPath && (
+        <RogueSpellPathPanel
+          record={record}
+          config={spellPath}
+          onUpdate={(value) => onUpdate({ promptSounds: updateArraySlot(record.promptSounds ?? [], spellPath.chanceSlot, value, 3) })}
+        />
+      )}
+    </>
+  );
+}
+
+function RogueSpellPathPanel({
+  record,
+  config,
+  onUpdate
+}: {
+  record: Project["thiefEncounters"][number];
+  config: RogueSpellPathConfig;
+  onUpdate: (value: number) => void;
+}) {
+  const enabled = rogueSpellPathEnabled(record, config);
+  const warnings = rogueSpellPathWarnings(record, config);
+  return (
+    <div className={`rogue-spell-path-panel ${enabled ? "enabled" : "disabled"}`}>
+      <header>
+        <div>
+          <strong>{config.title}</strong>
+          <small>{config.rowLabel} supplies this spell-special path's success/failure result, text, and sound.</small>
+        </div>
+        <em>{enabled ? "Enabled" : "Disabled"}</em>
+      </header>
+      <NumberField label="Chance / level" value={rogueSpellPathChance(record, config)} onCommit={onUpdate} compact />
+      <p>{rogueSpellPathSummary(record, config)}</p>
+      {warnings.map((warning) => <p key={warning} className="field-warning">{warning}</p>)}
     </div>
   );
 }

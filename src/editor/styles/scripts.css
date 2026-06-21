@@ -2739,6 +2739,95 @@
 
 
 
+.rogue-spell-path-panel {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.6fr) minmax(110px, 0.2fr) minmax(240px, 1fr);
+  gap: 6px;
+  align-items: end;
+  min-width: 760px;
+  border: 1px solid #27455d;
+  border-radius: 4px;
+  background: #081722;
+  padding: 6px;
+}
+
+
+
+.rogue-spell-path-panel.enabled {
+  border-color: #246146;
+  background: #081b17;
+}
+
+
+
+.rogue-spell-path-panel.disabled {
+  border-color: #3b4b5b;
+}
+
+
+
+.rogue-spell-path-panel header {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+
+
+.rogue-spell-path-panel header div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+
+
+.rogue-spell-path-panel header em {
+  width: fit-content;
+  border: 1px solid #2b4a62;
+  border-radius: 999px;
+  background: #0c2030;
+  color: #9fd2ff;
+  padding: 1px 6px;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+
+
+.rogue-spell-path-panel.enabled header em {
+  border-color: #286c49;
+  background: #0d2a1f;
+  color: #97f4be;
+}
+
+
+
+.rogue-spell-path-panel strong {
+  color: #e7f3ff;
+  font-size: 11px;
+}
+
+
+
+.rogue-spell-path-panel small,
+.rogue-spell-path-panel p {
+  color: #91aabd;
+  font-size: 10px;
+  line-height: 1.35;
+  margin: 0;
+}
+
+
+
+.rogue-spell-path-panel .field-warning {
+  grid-column: 1 / -1;
+}
+
+
+
 .rogue-action-enabled {
   display: flex;
   align-items: center;
@@ -2833,6 +2922,65 @@
 
 .rogue-trap-fields .script-reference-id-field.compact {
   grid-template-columns: minmax(0, 1fr) minmax(58px, 0.3fr);
+}
+
+
+
+.rogue-spell-status-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+
+
+.rogue-spell-status-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 8px;
+  border: 1px solid #263746;
+  border-radius: 4px;
+  background: #08131b;
+  padding: 6px;
+}
+
+
+
+.rogue-spell-status-card.enabled {
+  border-color: #286c49;
+  background: #081b17;
+}
+
+
+
+.rogue-spell-status-card b {
+  color: #dbefff;
+  font-size: 10px;
+}
+
+
+
+.rogue-spell-status-card em {
+  color: #9fd2ff;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+
+
+.rogue-spell-status-card.enabled em {
+  color: #97f4be;
+}
+
+
+
+.rogue-spell-status-card small {
+  grid-column: 1 / -1;
+  color: #8298ad;
+  font-size: 10px;
+  line-height: 1.3;
 }
 
 
@@ -3228,12 +3376,14 @@
   .complex-encounter-test-grid > div,
   .complex-encounter-result-strip,
   .rogue-trap-fields,
+  .rogue-spell-status-strip,
   .rogue-toggle-strip {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .rogue-action-table-header,
-  .rogue-action-row {
+  .rogue-action-row,
+  .rogue-spell-path-panel {
     min-width: 720px;
   }
 

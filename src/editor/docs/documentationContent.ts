@@ -1637,7 +1637,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "Type flags decide which thief actions are available.",
           "Modifiers adjust the skill roll for each action.",
           "Success and failure codes return branch results to the complex encounter flow.",
-          "Open Lock spell chance and Disarm Trap spell chance are separate support fields, even though both live in Rogue Encounter data.",
+          "Open Lock spell chance and Disarm Trap spell chance are separate support fields shown beside the rows they use.",
           "Success/failure text IDs should resolve to Data SD2 messages when nonzero.",
           "Success/failure sound IDs should resolve to sound resources when nonzero.",
           "Trap damage should validate low <= high when both values are present."
@@ -1653,7 +1653,9 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "Enable only the rogue actions that should appear or be tested for this scene.",
           "Use % Mod to tune difficulty relative to the party's thief skill.",
           "Use success and failure result codes to return to the expected complex encounter result columns.",
-          "For Open Lock spell tests, set Open Lock spell chance / level and the Open Lock Magic success/failure results. For Disarm Trap spell tests, set Disarm Trap spell chance / level and the Disarm Trap success/failure results.",
+          "For Open Lock spell tests, set the Chance / level in the Open Lock spell path panel, then configure the Open Lock Magic success/failure results.",
+          "For Disarm Trap spell tests, set the Chance / level in the Disarm Trap spell path panel, then configure the Disarm Trap success/failure results.",
+          "Confirm the linked Complex Encounter result rows visibly do something, such as showing a message, branching, giving a reward, or exiting.",
           "Resolve success/failure text fields to Data SD2 messages so the player sees useful feedback.",
           "Use trap damage, trap spell, power level, and knock/disarm percentage fields together; avoid changing reserved fields unless matching known Divinity behavior."
         ]
