@@ -3421,7 +3421,7 @@
 
 
 
-@media (max-width: 1700px) {
+@media (max-width: 1800px) {
   .script-target-drawer.wide-target .script-target-grid,
   .script-floating-detail .script-target-drawer.wide-target .script-target-grid {
     grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -4673,7 +4673,7 @@
 
 
 
-@media (max-width: 1700px) {
+@media (max-width: 1800px) {
   .realmz-visual-script {
     grid-template-columns: minmax(210px, 250px) minmax(560px, 1fr);
     min-width: 790px;
@@ -5017,6 +5017,14 @@
   grid-template-columns: minmax(210px, 250px) minmax(640px, 1fr);
   min-width: 900px;
   width: max(100%, 900px);
+}
+
+@media (max-width: 1800px) {
+  .realmz-visual-script.has-wide-target {
+    grid-template-columns: minmax(210px, 250px) minmax(560px, 1fr);
+    min-width: 790px;
+    width: max(100%, 790px);
+  }
 }
 
 

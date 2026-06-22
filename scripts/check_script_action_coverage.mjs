@@ -83,7 +83,13 @@ for (const snippet of [
   if (!inventory.includes(snippet)) failures.push(`Script inventory is missing tab classification support: ${snippet}`);
 }
 
-if (!panel.includes("QuestUsageSummary")) failures.push("Scripts panel is missing the quest usage summary.");
+for (const snippet of [
+  "QuestUsageTimeline",
+  "Story Flags & Continuity Notes",
+  "Raw Divinity Quest Flags"
+]) {
+  if (!panel.includes(snippet)) failures.push(`Scripts panel is missing story flag usage UI: ${snippet}`);
+}
 if (!panel.includes("moveSelectedStep")) failures.push("Scripts panel does not preserve selected step during move.");
 
 const normalUiSources = [
