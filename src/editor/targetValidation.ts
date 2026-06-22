@@ -351,9 +351,25 @@ function validateEncounterActions(project: Project, recordType: RealmzTargetReco
     const code = normalizeStepOpcode(action.rawCode);
     const option = actionOptionFor(action.rawCode);
     if (option.category === "Unknown") {
-      issues.push(slotIssue("warning", recordType, recordId, action.slot, "unknown-action", "This imported action needs Technical Details.", `Imported action ${action.rawCode} is kept with this scenario but is not part of the normal action list.`));
+      issues.push(slotIssue(
+        "warning",
+        recordType,
+        recordId,
+        action.slot,
+        "unknown-action",
+        "Unknown opcode.",
+        `CODE ${action.rawCode} is preserved unchanged, but Providence does not have a safe authoring definition for it yet. Replace it with a known action or inspect Technical Details before relying on it.`
+      ));
     } else if (isDispatcherNoopOpcode(action.rawCode)) {
-      issues.push(slotIssue("info", recordType, recordId, action.slot, "dispatcher-noop", "This step has no in-game effect.", `Imported action ${action.rawCode} is ignored by Realmz.`));
+      issues.push(slotIssue(
+        "info",
+        recordType,
+        recordId,
+        action.slot,
+        "dispatcher-noop",
+        "Inert imported action.",
+        `CODE ${action.rawCode} is kept for compatibility, but Realmz has no normal dispatcher behavior for it.`
+      ));
     }
     if (option.edcdShape) {
       const rowId = Math.max(0, action.id);

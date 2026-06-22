@@ -203,6 +203,10 @@ pub struct EditorMetadata {
     pub tile_palettes: Vec<TilePalette>,
     #[serde(default)]
     pub map_stamps: Vec<CustomMapStamp>,
+    #[serde(default)]
+    pub quest_threads: Vec<QuestThread>,
+    #[serde(default)]
+    pub quest_context_sources: Vec<QuestContextSource>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -250,6 +254,81 @@ pub struct CustomMapStamp {
     pub cells: Vec<CustomMapStampCell>,
     pub created_at: String,
     pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuestThread {
+    pub id: String,
+    pub name: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
+    pub quest_ids: Vec<i16>,
+    #[serde(default)]
+    pub context_refs: Vec<QuestContextRef>,
+    pub created_at: String,
+    pub updated_at: String,
+    #[serde(default)]
+    pub source: Option<QuestThreadSource>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum QuestThreadSource {
+    User,
+    Bundled,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuestContextSource {
+    pub id: String,
+    pub title: String,
+    pub source_type: QuestContextSourceType,
+    #[serde(default)]
+    pub scenario_slug: Option<String>,
+    #[serde(default)]
+    pub source_url: Option<String>,
+    #[serde(default)]
+    pub source_path: Option<String>,
+    #[serde(default)]
+    pub fetched_at: Option<String>,
+    pub content_hash: String,
+    #[serde(default)]
+    pub sections: Vec<QuestContextSection>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum QuestContextSourceType {
+    BundledHintGuide,
+    BundledScenarioContext,
+    WebGuide,
+    Manual,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuestContextSection {
+    pub id: String,
+    pub title: String,
+    pub snippet: String,
+    #[serde(default)]
+    pub terms: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuestContextRef {
+    pub source_id: String,
+    #[serde(default)]
+    pub section_id: Option<String>,
+    pub label: String,
+    #[serde(default)]
+    pub snippet: Option<String>,
+    #[serde(default)]
+    pub terms: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

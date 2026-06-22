@@ -4141,6 +4141,348 @@
   gap: 4px;
 }
 
+.quest-workbench {
+  display: grid;
+  gap: 10px;
+  min-height: 0;
+}
+
+.recognized-scenario-context {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid rgba(45, 138, 208, 0.55);
+  border-radius: 6px;
+  background: #0b1a27;
+  padding: 10px;
+}
+
+.recognized-scenario-context div,
+.known-thread-summary {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.recognized-scenario-context strong,
+.known-thread-summary strong {
+  color: #f1f7fb;
+  font-size: 12px;
+}
+
+.recognized-scenario-context small,
+.known-thread-summary small,
+.known-thread-summary span {
+  color: #a8bfd3;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.recognized-scenario-context > span {
+  border: 1px solid #2b5d83;
+  border-radius: 999px;
+  color: #a9d8ff;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.quest-workbench-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  gap: 10px;
+  min-height: 0;
+}
+
+.quest-thread-column,
+.quest-detail-panel {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.quest-card-list,
+.quest-raw-list,
+.quest-flow-list,
+.quest-warning-list,
+.quest-context-source-list,
+.quest-context-ref-list,
+.quest-detail-grid {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.quest-thread-card,
+.quest-suggestion-card,
+.quest-raw-row,
+.quest-flow-row,
+.quest-warning-row,
+.quest-context-source-row,
+.quest-context-ref {
+  border: 1px solid #263746;
+  border-radius: 6px;
+  background: #0b1219;
+  color: #dcecf8;
+}
+
+.quest-thread-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+  padding: 6px;
+}
+
+.quest-thread-card.selected,
+.quest-raw-row.selected {
+  border-color: #2d8ad0;
+  background: #102235;
+  box-shadow: inset 3px 0 #2da3ff;
+}
+
+.quest-thread-card > button:first-child,
+.quest-raw-row {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.quest-thread-card strong,
+.quest-suggestion-card strong,
+.quest-raw-row b,
+.quest-flow-row b {
+  color: #f1f7fb;
+  font-size: 12px;
+}
+
+.quest-thread-card small,
+.quest-suggestion-card small,
+.quest-raw-row small,
+.quest-flow-row small,
+.quest-flow-row em,
+.quest-context-source-row small,
+.quest-context-ref small {
+  min-width: 0;
+  overflow: hidden;
+  color: #98aec2;
+  font-size: 10px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+}
+
+.quest-suggestion-card {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+}
+
+.quest-context-panel,
+.quest-manual-import {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.quest-context-panel > small {
+  color: #98aec2;
+  line-height: 1.4;
+}
+
+.quest-context-source-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.quest-context-source-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+  padding: 7px;
+}
+
+.quest-context-source-row span,
+.quest-context-ref {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.quest-context-source-row b,
+.quest-context-ref strong {
+  color: #e7f3fb;
+  font-size: 11px;
+}
+
+.quest-context-ref {
+  padding: 8px;
+  border-color: rgba(45, 138, 208, 0.4);
+}
+
+.quest-context-ref small {
+  white-space: normal;
+}
+
+.quest-context-term-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.quest-context-term-row span {
+  border: 1px solid #25445f;
+  border-radius: 4px;
+  background: #0d1a26;
+  color: #a9c6df;
+  padding: 2px 5px;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.quest-manual-import input,
+.quest-manual-import textarea {
+  width: 100%;
+}
+
+.quest-raw-panel .workbench-panel-section-body {
+  max-height: 430px;
+  overflow: auto;
+}
+
+.quest-raw-row {
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  padding: 8px;
+}
+
+.field-stack {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.field-stack span {
+  color: #7fc3ff;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.field-stack input,
+.field-stack textarea {
+  width: 100%;
+}
+
+.quest-chip-grid,
+.quest-add-grid,
+.quest-usage-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.quest-chip,
+.quest-usage-counts span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #2d4052;
+  border-radius: 5px;
+  background: #0e1720;
+  color: #bdd4e8;
+  padding: 5px 7px;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.quest-chip button {
+  display: inline-flex;
+  border: 0;
+  background: transparent;
+  color: #9fb3c6;
+  padding: 0;
+}
+
+.quest-usage-counts {
+  margin-bottom: 4px;
+}
+
+.quest-flow-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+}
+
+.quest-flow-row span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.quest-flow-row em {
+  font-style: normal;
+  white-space: normal;
+}
+
+.quest-flow-row.set,
+.quest-flow-row.incremented {
+  border-left: 3px solid #59a374;
+}
+
+.quest-flow-row.cleared {
+  border-left: 3px solid #d6b95b;
+}
+
+.quest-flow-row.tested,
+.quest-flow-row.required,
+.quest-flow-row.branches {
+  border-left: 3px solid #2d8ad0;
+}
+
+.quest-flow-row.unknown {
+  border-left: 3px solid #9f7aea;
+}
+
+.quest-warning-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 7px;
+  align-items: center;
+  border-color: rgba(214, 185, 91, 0.5);
+  color: #f1d581;
+  padding: 7px;
+  font-size: 11px;
+}
+
+.quest-warning-row b {
+  color: #ffeab0;
+}
+
 @media (max-width: 1100px) {
   .settings-rows-layout {
     grid-template-columns: 1fr;
@@ -4148,6 +4490,10 @@
 
   .settings-row-list-column {
     min-height: 360px;
+  }
+
+  .quest-workbench-layout {
+    grid-template-columns: 1fr;
   }
 }
 

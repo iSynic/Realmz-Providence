@@ -1,0 +1,1197 @@
+{
+  "reportVersion": 1,
+  "scenario": {
+    "name": "Castle in the Clouds Analysis",
+    "sourcePath": "\\\\?\\F:\\Realmz\\out_win_clang\\Scenarios\\Castle in the Clouds",
+    "projectPath": "tmp\\castle-clouds-analysis\\Castle.providence\\project.json"
+  },
+  "counts": {
+    "messages": 1156,
+    "actionPoints": 1300,
+    "extraActionPoints": 292,
+    "simpleEncounters": 19,
+    "complexEncounters": 22,
+    "rogueEncounters": 11,
+    "timedEncounters": 8,
+    "questLabels": 0
+  },
+  "threadCandidates": [
+    {
+      "name": "Keto Allegiances And Gates",
+      "disposition": "story context",
+      "rationale": "Early strings repeatedly ask the player to pledge allegiance to Lord or Lady Keto and gate passage/shop access by that allegiance.",
+      "messageIds": [
+        1,
+        2,
+        11,
+        33,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        109
+      ]
+    },
+    {
+      "name": "Find The Real Ketos",
+      "disposition": "likely main quest chain",
+      "rationale": "The decoded strings distinguish impostors from the real Lord and Lady Keto; the user-reported progression issue likely belongs in this chain.",
+      "messageIds": [
+        174,
+        175,
+        319,
+        320,
+        322,
+        325,
+        327,
+        328,
+        470,
+        881,
+        933,
+        935,
+        939
+      ]
+    },
+    {
+      "name": "Ulmac, Ambersair, And Ketonia",
+      "disposition": "likely main resolution gate",
+      "rationale": "Several messages say Ulmac and Ambersair controlled Ketonia or must be destroyed before the royal reunion/restoration can resolve.",
+      "messageIds": [
+        137,
+        138,
+        139,
+        140,
+        158,
+        165,
+        174,
+        175,
+        176,
+        227,
+        295,
+        296,
+        319,
+        320,
+        321,
+        322,
+        323,
+        326
+      ]
+    }
+  ],
+  "evidence": {
+    "messages": [
+      {
+        "id": 1,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "You finally arrived at the gates of McBane City after a long journey. You were told that McBane City is peaceful and free of bandits. You look forward to some rest and relaxation after your recent exploits."
+      },
+      {
+        "id": 2,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "The guards at the gate wave you through and ask you what your business is in McBane. When you tell the guards you are looking for a warm bed and good food they smile and tell you that McBane has the best Inns and shops in the land."
+      },
+      {
+        "id": 11,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "You are at the east gate of McBane City."
+      },
+      {
+        "id": 33,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "North gate of McBane City"
+      },
+      {
+        "id": 69,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "There is a big stone wall in front of you. If it wasn't for the footprints you would swear that it's a dead end."
+      },
+      {
+        "id": 97,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "East Gate of McBane City."
+      },
+      {
+        "id": 98,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "The front gates of this city are wide open and seem unguarded."
+      },
+      {
+        "id": 99,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "There are two guards at this gate with similar armor, but one wears a red sash while the other wears a purple sash. They both look at you with less than appealing looks. They allow you to pass. You can tell they don't like each other."
+      },
+      {
+        "id": 100,
+        "matchedTerms": [
+          "lord keto"
+        ],
+        "text": "Some village guards wearing red sashes come up to you and ask you to pledge allegiance to Lord Keto."
+      },
+      {
+        "id": 101,
+        "matchedTerms": [
+          "lord keto"
+        ],
+        "text": "The guards are happy that you chose to join the Just Lord Keto."
+      },
+      {
+        "id": 102,
+        "matchedTerms": [
+          "lady keto"
+        ],
+        "text": "Some village guards wearing purple sashes come up to you and ask you to pledge allegiance to Lady Keto."
+      },
+      {
+        "id": 103,
+        "matchedTerms": [
+          "lady keto",
+          "alliance"
+        ],
+        "text": "The guards are happy that you have chosen to join the Fair Lady Keto's alliance."
+      },
+      {
+        "id": 104,
+        "matchedTerms": [
+          "lady keto"
+        ],
+        "text": "This is a shop that sides with Lady Keto."
+      },
+      {
+        "id": 105,
+        "matchedTerms": [
+          "lord keto"
+        ],
+        "text": "This is a shop that sides with Lord Keto."
+      },
+      {
+        "id": 106,
+        "matchedTerms": [
+          "lord keto"
+        ],
+        "text": "An old woman comes up to you and says, \"Beware of Lord Keto for he is wicked and evil.\""
+      },
+      {
+        "id": 107,
+        "matchedTerms": [
+          "lady keto"
+        ],
+        "text": "Someone cloaked so the face is not visible says to you, \"Beware of Lady Keto, because she is an evil witch.\""
+      },
+      {
+        "id": 109,
+        "matchedTerms": [
+          "lord keto",
+          "lady keto",
+          "gate"
+        ],
+        "text": "\"This is Lady Keto's gate. All followers of Lord Keto must enter through Lord Keto's gate.\""
+      },
+      {
+        "id": 112,
+        "matchedTerms": [
+          "lord keto",
+          "lady keto",
+          "gate"
+        ],
+        "text": "\"This is the gate for Lord Keto. Followers of Lady Keto must enter through the other gate.\""
+      },
+      {
+        "id": 115,
+        "matchedTerms": [
+          "lady keto"
+        ],
+        "text": "This is a small shop. The owner doesn't pledge his allegiance to either Lord or Lady Keto."
+      },
+      {
+        "id": 119,
+        "matchedTerms": [
+          "lord keto"
+        ],
+        "text": "Lord Keto's guards see that you are not allies and attack."
+      },
+      {
+        "id": 121,
+        "matchedTerms": [
+          "lady keto"
+        ],
+        "text": "Lady Keto's guards see that you are allies of the lady and let you pass."
+      },
+      {
+        "id": 122,
+        "matchedTerms": [
+          "lord keto"
+        ],
+        "text": "Lord Keto's guards see that you are allies of the lord and let you pass."
+      },
+      {
+        "id": 123,
+        "matchedTerms": [
+          "lord keto"
+        ],
+        "text": "\"You must be allies of Lord Keto if you don't wish to join us.\" The guards attack."
+      },
+      {
+        "id": 132,
+        "matchedTerms": [
+          "lord keto"
+        ],
+        "text": "You here someone yell out \"There are the murderers of Lord Keto's guards!\""
+      },
+      {
+        "id": 133,
+        "matchedTerms": [
+          "lady keto"
+        ],
+        "text": "You are suddenly surrounded by more of Lady Keto's guards and they are not here to ask any more questions."
+      },
+      {
+        "id": 134,
+        "matchedTerms": [
+          "lady keto"
+        ],
+        "text": "\"You will see how we deal with traitors of Lady Keto!\""
+      },
+      {
+        "id": 135,
+        "matchedTerms": [
+          "lord keto",
+          "lady keto"
+        ],
+        "text": "Lord Keto doesn't want any allies of Lady Keto to live. So you must die!"
+      },
+      {
+        "id": 136,
+        "matchedTerms": [
+          "lothshor"
+        ],
+        "text": "An old man comes out of the largest of what can only be described as shacks and greets you. \"Good people, I am Lothshor and I am the leader of these people.\" As he is talking people cautiously start coming out of their shacks."
+      },
+      {
+        "id": 137,
+        "matchedTerms": [
+          "lord keto",
+          "lady keto",
+          "lothshor",
+          "ketonia"
+        ],
+        "text": "\"We have left the Town of Ketonia, because of the war between Lord Keto and Lady Keto. Many of the people have lost close relatives to the ludicrous fighting.\" Lothshor gazes at you and tells you that you are welcome to stay as long as you want.\""
+      },
+      {
+        "id": 138,
+        "matchedTerms": [
+          "ulmac",
+          "ambersair",
+          "lothshor",
+          "ketonia"
+        ],
+        "text": "Do you tell Lothshor of your mighty victory over the evil sorcerer, Ulmac and the witch Ambersair and that they were controlling Ketonia?"
+      },
+      {
+        "id": 139,
+        "matchedTerms": [
+          "ulmac"
+        ],
+        "text": "\"I wish what you're saying were true, but I can't believe such a story. If there was such a sorcerer, how could your small party defeat this Ulmac?\""
+      },
+      {
+        "id": 140,
+        "matchedTerms": [
+          "lothshor",
+          "ketonia"
+        ],
+        "text": "You explain again and Lothshor decides to test your abilities with a quest to find Aristan. \"Aristan was chosen to sneak back into Ketonia and see if things have changed. He has not returned and we assume he is lost."
+      },
+      {
+        "id": 148,
+        "matchedTerms": [
+          "lord keto"
+        ],
+        "text": "Some of Lord Keto's guards meet you here and take you to Lord Keto's audience room."
+      },
+      {
+        "id": 149,
+        "matchedTerms": [
+          "lord keto"
+        ],
+        "text": "Do you enter Lord Keto's Castle?"
+      },
+      {
+        "id": 150,
+        "matchedTerms": [
+          "lord keto"
+        ],
+        "text": "A bunch of guards tell you that Lord Keto would like to see you in his chambers. Before you can say anything you are teleported to Lord Keto's audience chambers."
+      },
+      {
+        "id": 151,
+        "matchedTerms": [
+          "lord keto"
+        ],
+        "text": "You are in front of Lord Keto's Throne and you are surrounded by Lord Keto's guards."
+      },
+      {
+        "id": 152,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "An iron gate prevents you from going up the stairs."
+      },
+      {
+        "id": 157,
+        "matchedTerms": [
+          "lady keto",
+          "alliance"
+        ],
+        "text": "\"How dare you enter my castle! I will end your alliance with Lady Keto with your death!\""
+      },
+      {
+        "id": 158,
+        "matchedTerms": [
+          "lord keto",
+          "lady keto",
+          "ketonia"
+        ],
+        "text": "Lord Keto is impressed to see such powerful warriors. \"You must go to Lady Keto's castle and Destroy her. She is an evil witch determined to destroy Ketonia.\" Do you agree to destroy Lady Keto?"
+      },
+      {
+        "id": 165,
+        "matchedTerms": [
+          "ketonia"
+        ],
+        "text": "The box opens easily and you find some parchment with the following written on it: \"Great Wizard Zukar, I wish you could come to my fair city to meet with me. My invitation is not one of social nature, but of grave importance to the survival of Ketonia."
+      },
+      {
+        "id": 166,
+        "matchedTerms": [
+          "lord keto"
+        ],
+        "text": "\"I am willing to give you anything within my worldly belongings to get your services. Your presence is needed urgently since time is not on our side. My messenger is one of my best guards and he will now serve you as a gesture of good will.\"-Lord Keto"
+      },
+      {
+        "id": 168,
+        "matchedTerms": [
+          "lord keto"
+        ],
+        "text": "\"...best guards...esture of good wil...Lord Keto.\""
+      },
+      {
+        "id": 171,
+        "matchedTerms": [
+          "lord keto",
+          "gate"
+        ],
+        "text": "The entrance is blocked by an iron gate and a guard on the other side says to you, \"Lord Keto has given you orders, so be gone!!\""
+      },
+      {
+        "id": 174,
+        "matchedTerms": [
+          "lord keto",
+          "ulmac"
+        ],
+        "text": "\"Who are you good people? You can't be part of Ulmac's plot to destroy my city.\" With these words, you realize that this must be the real Lord Keto imprisoned here."
+      },
+      {
+        "id": 175,
+        "matchedTerms": [
+          "lord keto",
+          "lady keto",
+          "ulmac",
+          "impostor"
+        ],
+        "text": "\"Good people, I beg of you to find Lady Keto. I fear she was killed by the impostor that has taken her place, but I must know. I can not help you in my present condition, but please, find Lady Keto and destroy the Wicked Ulmac.\" Lord Keto falls asleep."
+      },
+      {
+        "id": 176,
+        "matchedTerms": [
+          "lord keto",
+          "ketonia"
+        ],
+        "text": "You see a ring on his finger that has the official seal of Ketonia. You realize that this must be the real Lord Keto and you bandage his wounds."
+      },
+      {
+        "id": 226,
+        "matchedTerms": [
+          "lord keto"
+        ],
+        "text": "There is a statue of Lord Keto here."
+      },
+      {
+        "id": 227,
+        "matchedTerms": [
+          "ketonia"
+        ],
+        "text": "There is a pile of old junk here. There are some worthless paintings of what you think is Ketonia in the past. It looks a lot more cheerful and bright. There are also some small, rickety boxes. In one of them you find some treasure!"
+      },
+      {
+        "id": 232,
+        "matchedTerms": [
+          "lothshor"
+        ],
+        "text": "You tell Lothshor of your find of the half eaten body in the forest of Lukia trees. Lothshor says that must be Aristan. \"I know his parents well, and it will be hard for me to tell them of his fate. Thank you good people now I must be off.\""
+      },
+      {
+        "id": 258,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "You come across an old man in ragged and dirty clothing. He warns you not to go near the iron gate in the north. \"Full of evil it is. Stay away or even the mighty Zukar will not be able to save you!\" He leaves before you can ask more."
+      },
+      {
+        "id": 259,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "The gate to this city is ajar and falling apart. The door is rotting and it looks like repairs haven't been done for years. Do you enter?"
+      },
+      {
+        "id": 264,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "This looks like it used to be the town's City Hall. There are a lot of chairs and a few tables. You find some parchment on one of the tables. It states that the undead have started to take over the city and all citizens are encourage to move."
+      },
+      {
+        "id": 272,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "The guards at the gate ask rudely, \"What is your business with Lord Voltan?\""
+      },
+      {
+        "id": 279,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "An unshaven guard whose face could scare a dead man tells says, \"All the information you need is that you are not wanted here. Go away!\""
+      },
+      {
+        "id": 291,
+        "matchedTerms": [
+          "lady keto"
+        ],
+        "text": "A group of Lady Keto's guards are here. They tell you that you are to go north to the Lady's visitation chambers immediately! Then the guards move your party down the hall."
+      },
+      {
+        "id": 292,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "An iron gate prevents you from continuing."
+      },
+      {
+        "id": 293,
+        "matchedTerms": [
+          "lady keto"
+        ],
+        "text": "You enter the large and beautiful chambers of Lady Keto. There are guards everywhere as well as what appear to be priests and magic users."
+      },
+      {
+        "id": 294,
+        "matchedTerms": [
+          "lady keto"
+        ],
+        "text": "Lady Keto is dark skinned and very beautiful. So much so that you are almost mesmerized by here presence. She speaks to you as if you've known her for a long time. \"Welcome to my castle great warriors. I am glad you have come to see me."
+      },
+      {
+        "id": 295,
+        "matchedTerms": [
+          "ulmac"
+        ],
+        "text": "\"I could use the services of such courageous adventurers. You see, my husband has gone crazy and he thinks I am a witch destined to destroy him. I think he has been deceived by his advisor Ulmac. I wish the city could be at peace again."
+      },
+      {
+        "id": 296,
+        "matchedTerms": [
+          "lord keto",
+          "lady keto",
+          "ulmac"
+        ],
+        "text": "Unfortunately, I don't think I have any choice but to lock up Lord Keto and destroy Ulmac. I need you to go to Lord Keto's castle and take it over.\" Will you do what Lady Keto asks?"
+      },
+      {
+        "id": 297,
+        "matchedTerms": [
+          "lord keto",
+          "lady keto"
+        ],
+        "text": "\"How dare you enter my castle wearing the colors of the crazy Lord Keto. I will show you how I deal with traitors under my rule!\" A cloud of smoke rises from the floor and Lady Keto disappears as her guards attack!"
+      },
+      {
+        "id": 298,
+        "matchedTerms": [
+          "lady keto"
+        ],
+        "text": "Lady Keto frowns in disapproval. With a wave of her had she disappears into a cloud of smoke. Her guards immediately attack!"
+      },
+      {
+        "id": 299,
+        "matchedTerms": [
+          "lady keto"
+        ],
+        "text": "More of Lady Keto's come into the chambers and attack!"
+      },
+      {
+        "id": 300,
+        "matchedTerms": [
+          "lady keto"
+        ],
+        "text": "Some of Lady Keto's Minions are here waiting for you!!"
+      },
+      {
+        "id": 310,
+        "matchedTerms": [
+          "lady keto"
+        ],
+        "text": "From the surroundings you can tell these are the private chambers of Lady Keto. A very ugly woman, wearing Lady Keto's clothes, is here with some of her helpers. The woman is not so friendly when she talks to you. \"You should not have crossed me!!\""
+      },
+      {
+        "id": 311,
+        "matchedTerms": [
+          "lady keto"
+        ],
+        "text": "This must have been Lady Keto's Library and work room. There seems to be a few fairly new items in the room. You can tell because they don't seem to fit in. There is a table with various potions boiling and frothing."
+      },
+      {
+        "id": 319,
+        "matchedTerms": [
+          "lord keto",
+          "ulmac",
+          "impostor",
+          "dead"
+        ],
+        "text": "The gods were on your side and the woman comes back from the dead. She looks at you with a very strange look and asks you where is Lord Keto. \"You must find Lord Keto and not that impostor that Ulmac must surely be controlling.\""
+      },
+      {
+        "id": 320,
+        "matchedTerms": [
+          "lord keto",
+          "lady keto",
+          "ulmac",
+          "ambersair",
+          "impostor",
+          "ketonia"
+        ],
+        "text": "Lady Keto tells you about Ketonia. It used to be peaceful and prosperous. Then Ulmac came and deceived Lord Keto and took power through an impostor that he somehow conjured up with the help of that witch, Ambersair."
+      },
+      {
+        "id": 321,
+        "matchedTerms": [
+          "lady keto",
+          "ambersair"
+        ],
+        "text": "From the look on Lady Keto's face, you can tell she has only pure hatred in her heart for Ambersair."
+      },
+      {
+        "id": 322,
+        "matchedTerms": [
+          "lord keto",
+          "lady keto",
+          "ambersair"
+        ],
+        "text": "You tell Lady Keto of your victory over the evil witch, Ambersair. She thanks you for destroying her nemesis, but she urges you to find Lord Keto. \"I will look for help from a special friend and come to help if I can. Go now for time is short!\""
+      },
+      {
+        "id": 323,
+        "matchedTerms": [
+          "lady keto",
+          "ambersair",
+          "ketonia"
+        ],
+        "text": "\"You must first find Ambersair and destroy her. I will seek the help of a good friend of Ketonia. May the gods be on your side.\" Lady Keto slips off into the shadows."
+      },
+      {
+        "id": 325,
+        "matchedTerms": [
+          "lord keto",
+          "lady keto"
+        ],
+        "text": "You tell lady Keto that you have found Lord Keto and that he's doing well and looking forward to seeing his Lady again."
+      },
+      {
+        "id": 326,
+        "matchedTerms": [
+          "lady keto",
+          "ulmac"
+        ],
+        "text": "Lady Keto asks you if you have destroyed the evil wizard Ulmac. When she hears that you haven't, she frowns in despair. She tells you that he must be destroyed. She also tells you that she will meet you at the local stables once you have killed Ulmac."
+      },
+      {
+        "id": 327,
+        "matchedTerms": [
+          "lord keto",
+          "lady keto"
+        ],
+        "text": "You tell Lord Keto that you have found Lady Keto and she is now well. Lord Keto thanks you."
+      },
+      {
+        "id": 328,
+        "matchedTerms": [
+          "lord keto",
+          "ulmac",
+          "ketonia"
+        ],
+        "text": "Lord Keto asks if you have found Ulmac and destroyed him. When you tell him that you haven't, he grimaces. He tells you that you must kill Ulmac or Ketonia can never be free again. Lord Keto collapses from exhaustion and falls asleep."
+      },
+      {
+        "id": 329,
+        "matchedTerms": [
+          "lord keto",
+          "ambersair"
+        ],
+        "text": "Lord Keto asks you if you have killed the witch Ambersair. When you tell him that you haven't, he tells you that she must be killed. \"You must go and find her. I will seek the help of a friend.\""
+      },
+      {
+        "id": 364,
+        "matchedTerms": [
+          "lady keto"
+        ],
+        "text": "When you enter this room, you see several of Lady Keto's guards here, sharpening and oiling their weapons. One of them looks at your weapons and your purses full of gold. The large guard speaks and tells you that he has orders to kill all intruders."
+      },
+      {
+        "id": 367,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "The guards just about roll over with laughter, but then they become deadly serious and attack."
+      },
+      {
+        "id": 373,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "The guards thank you for your donation, but now they want your weapons and your armor. They plan on taking them from your cold dead hands."
+      },
+      {
+        "id": 389,
+        "matchedTerms": [
+          "dead",
+          "gate"
+        ],
+        "text": "When you enter this cell you find a lifeless body chained to the wall. From the look of the body as well as the stench, you guess that this person has be dead for a few days due to malnutrition. Do you investigate the body?"
+      },
+      {
+        "id": 396,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "This cell has a couple of dead bodies in it. They are not alone as there are numerous rats feasting on what is left of whatever creatures where kept here."
+      },
+      {
+        "id": 403,
+        "matchedTerms": [
+          "lady keto"
+        ],
+        "text": "Some of Lady Keto's guards see you and attack."
+      },
+      {
+        "id": 429,
+        "matchedTerms": [
+          "ketonia"
+        ],
+        "text": "After several minutes of searching you find a book entitled, \"The History of Ketonia\". Do you keep the book?"
+      },
+      {
+        "id": 430,
+        "matchedTerms": [
+          "ketonia"
+        ],
+        "text": "In the rich and ornate book that you have found you read about the life and times of Ketonia before the blight took over the land. You read passages describing past fairs and celebrations held in the city of Ketonia."
+      },
+      {
+        "id": 440,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "This seems to be some sort of lab as there are various boiling potions and glass jars on a very large table in the middle of the room. There is a pipe smoking on the corner of the table as though it were freshly lit. Do you wish to investigate?"
+      },
+      {
+        "id": 453,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "This room has a desk, a nice bed and some personal items. There is an open book on the desk. Do you investigate what is in the book?"
+      },
+      {
+        "id": 467,
+        "matchedTerms": [
+          "lady keto"
+        ],
+        "text": "Do you enter Lady Keto's Castle?"
+      },
+      {
+        "id": 469,
+        "matchedTerms": [
+          "lord keto"
+        ],
+        "text": "Lord Keto pulls a small amulet from a pouch and you are transported outside."
+      },
+      {
+        "id": 470,
+        "matchedTerms": [
+          "ketonia"
+        ],
+        "text": "The Keto's see each other and run to embrace. You have brought peace to Ketonia again. The Keto's wish you luck with your exploits."
+      },
+      {
+        "id": 480,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "The other residents of this cave are here to investigate since they think there might be leftovers from the gazers."
+      },
+      {
+        "id": 483,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "The area fills with undead crawling from the shadows."
+      },
+      {
+        "id": 498,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "Here in the corner, under some personal items, is a stash of weapons. Do you investigate the stash?"
+      },
+      {
+        "id": 522,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "The guards decide that they are dead if the captain knows of their plan so they attack."
+      },
+      {
+        "id": 525,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "You walk into this room and find the bodies of 6 dead guards. It looks like they were plotting to attack someone. Whoever they were plotting to attack must have found them before they could carry out their plans."
+      },
+      {
+        "id": 536,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "You enter this room and see who was trying to keep you out of his resting place. A powerful vampire is here with some of his undead minions."
+      },
+      {
+        "id": 570,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "Then, before your eyes, the lid of the coffin opens with an eerie creek and the inhabitant of the coffin sits up and hisses at you before he turns into a bat attacking with the help of some other undead that seemingly come from nowhere."
+      },
+      {
+        "id": 579,
+        "matchedTerms": [
+          "lady keto"
+        ],
+        "text": "You join Lady Keto's side and a battle ensues."
+      },
+      {
+        "id": 580,
+        "matchedTerms": [
+          "lady keto"
+        ],
+        "text": "One of Lady Keto's guards says that you have fought well and that Lady Keto could use your services. She urges you to see the Lady."
+      },
+      {
+        "id": 581,
+        "matchedTerms": [
+          "lord keto"
+        ],
+        "text": "You join Lord Keto's side and a battle ensues."
+      },
+      {
+        "id": 582,
+        "matchedTerms": [
+          "lord keto"
+        ],
+        "text": "One of Lord Keto's guards tells you that you have fought well and that Lord Keto could use such warriors. He urges you to see Lord Keto."
+      },
+      {
+        "id": 583,
+        "matchedTerms": [
+          "ketonia"
+        ],
+        "text": "You made it through the fight that time, but you realize that you are not making many friends here in Ketonia."
+      },
+      {
+        "id": 585,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "An iron gate just came down behind you. It looks like you walked into a trap. The bars are very thick and heavy. You can barely see through them."
+      },
+      {
+        "id": 586,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "The gate opens and you can leave."
+      },
+      {
+        "id": 587,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "Your party turns into a large gaseous cloud and you can easily move through the gate."
+      },
+      {
+        "id": 595,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "From the other side of the wall in the middle of the room, you can hear some chanting. Do you investigate the source of the chanting?"
+      },
+      {
+        "id": 596,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "You have interrupted some type of strange ceremony. The participants turn around and see that you are not one of them. These magi, warriors, and clerics are clearly undead as their bodies are in variuos states of decay."
+      },
+      {
+        "id": 597,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "Now there are pieces of undead every where."
+      },
+      {
+        "id": 598,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "To your, surprise the pieces of the undead grow new bodies and an even greater number of undead attack you!!"
+      },
+      {
+        "id": 599,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "You have hacked the undead into even smaller pieces, but you see signs that the pieces are growing again. Do you leave now while you can? Or do you fight again?"
+      },
+      {
+        "id": 600,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "Entering this room again you find a very large amount of undead are here. They attack immediately since they were waiting for you to return."
+      },
+      {
+        "id": 602,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "Upon entering this room you can see a very large table filled with gold and other various treasures. Do you enter this room and investigate the treasure?"
+      },
+      {
+        "id": 621,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "Entering this room you find several undead clerics praying in a very strange language. Before they attack, a portal opens up and some Hell Beasts charge out to help them. Looks like you were interrupting some sort of summoning."
+      },
+      {
+        "id": 623,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "Entering this room you see a very strange sight. There are undead warriors practicing fencing while others are watching. One of the fencing warriors loses concentration when he sees you and the other warrior lops off his arm."
+      },
+      {
+        "id": 624,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "The warrior that lost his arm picks up the sword with the other arm and attacks with the rest of the undead warriors."
+      },
+      {
+        "id": 628,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "This must be where the warriors keep the good items as there is some fairly nice looking equipment in here. There are also some undead warriors fighting over a piece of equipment that they both want. They turn their anger towards you."
+      },
+      {
+        "id": 629,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "Entering this room you find several undead magic users murmuring strange things. Each seems to ignore the other until you walk in and then they all start concentrating on your party."
+      },
+      {
+        "id": 653,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "Entering this room you are a bit overcome by the amount of soot and cinders flying around this room. There is a very large fire giant pounding on a red hot piece of steel. It would appear to be a blacksmith's room where very deadly weapons are made."
+      },
+      {
+        "id": 664,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "Olmsted tells you that he knows of a place where there is a very good long sword that he has made. He tells you that is protected by some very powerful undead creatures, but he would be willing to help you defeat them."
+      },
+      {
+        "id": 673,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "Olmsted, finds some fire giant friends of his and you move downstairs to attack the party of undead that Olmsted knew of. Olmsted and his fellow fire giants burst through the door and attack the waiting undead."
+      },
+      {
+        "id": 688,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "Before you know it, you are alone again, except for the dead bodies."
+      },
+      {
+        "id": 705,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "Entering this room you see some caecodeamen warriors pushing red hot pokers in the body of a long dead fire giant. They seem to be enjoying just mutilating the dead body. When they see you, they drool in anticipation of new victims!!"
+      },
+      {
+        "id": 721,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "This room is full of old bones. There are so many that you can't easily move across them. You can see a glitter of light reflecting off of something shiny across the room. Do you investigate?"
+      },
+      {
+        "id": 732,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "You here the voice again. \"You have defeated them, but we are not done with you yet.\" Some very large undead come your way."
+      },
+      {
+        "id": 733,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "You don't hear a word after defeating the undead creatures. Maybe you have surprised whomever they served."
+      },
+      {
+        "id": 734,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "Here, engraved on the wall is a picture a very powerful cleric or magician casting a spell. The spell seems to be some sort of gate, blink or teleport spell since the picture also depicts numerous monsters coming through a magic hole."
+      },
+      {
+        "id": 738,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "The gates of the city are open and the guard room is empty."
+      },
+      {
+        "id": 758,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "The sign on top of the entrance gate says Merdonis Graveyard."
+      },
+      {
+        "id": 760,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "In front of you is a partially dug up grave. There are several shovels laying on the ground, but no one is around. Do you investigate the partially dug grave?"
+      },
+      {
+        "id": 772,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "The dog you saw here before is now dead and rotting."
+      },
+      {
+        "id": 774,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "There are a lot of Merdonis guards here at the gate. You are certain of this because you can see quite a few arrows coming towards you."
+      },
+      {
+        "id": 800,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "When you tell the old man that you seek Zukar and would like to know the way the man grins. \"I know the way\" he says, \"but I can only take you to the front gates. After that, you are on your own.\""
+      },
+      {
+        "id": 801,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "The man tells you that the castle is protected by a vast maze with monsters. He also tells you that many of those that he has taken to the front gates have never returned."
+      },
+      {
+        "id": 802,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "The man asks you if you would like to go to the castle gates now?"
+      },
+      {
+        "id": 803,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "The man takes you up a very long and winding path. The path is hidden by the green growth on either side. You would have never made your way alone. Finally, you reach the front gates of the Castle in the Clouds. The man bids you farewell and leaves."
+      },
+      {
+        "id": 804,
+        "matchedTerms": [
+          "gate"
+        ],
+        "text": "The old man tells you that you are welcome to rest here in town as long as you want. \"When you are ready to leave go to the well and I will take you to the front gates.\" The man leaves you to rest."
+      },
+      {
+        "id": 811,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "Here, next to an old dead tree, is a quiver of arrows. Do you take closer look?"
+      },
+      {
+        "id": 863,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "Some undead are making their way towards you. Do you attack?"
+      },
+      {
+        "id": 865,
+        "matchedTerms": [
+          "lord keto"
+        ],
+        "text": "You can see some of Lord Keto's guards in the distance. Do you attack?"
+      },
+      {
+        "id": 867,
+        "matchedTerms": [
+          "lady keto"
+        ],
+        "text": "You see some of Lady Keto's guards. Do you attack?"
+      },
+      {
+        "id": 880,
+        "matchedTerms": [
+          "dead"
+        ],
+        "text": "Here you find the dead bodies of the McBane guards you did not help. They have been stripped of all their worthy belongings. If only you had helped them, this would not have happened."
+      },
+      {
+        "id": 881,
+        "matchedTerms": [
+          "lady keto",
+          "ketonia"
+        ],
+        "text": "You find a necklace on the remains of the body. the charm bears the seal of Ketonia. This must have been the body of the real Lady Keto. Before you can react, though, the body vaporizes into a wisp of smoke."
+      },
+      {
+        "id": 892,
+        "matchedTerms": [
+          "lady keto"
+        ],
+        "text": "Lady Keto, or who you thought was Lady Keto, sees you and motions for her minions to attack while she slips away."
+      },
+      {
+        "id": 893,
+        "matchedTerms": [
+          "lord keto"
+        ],
+        "text": "When you walk into Lord Keto's throne room you are immediately attacked by who you thought was Lord Keto and his guards."
+      },
+      {
+        "id": 932,
+        "matchedTerms": [
+          "lothshor"
+        ],
+        "text": "Lothshor, is here working on something. He looks like he does not want to be disturbed."
+      },
+      {
+        "id": 933,
+        "matchedTerms": [
+          "lady keto",
+          "ketonia"
+        ],
+        "text": "It looks like you have destroyed the real Lady Keto, by not using too weak of magic. Ketonia, can never be as it was without Lady Keto!"
+      },
+      {
+        "id": 935,
+        "matchedTerms": [
+          "lady keto"
+        ],
+        "text": "\"You have killed the fair and just Lady Keto! You are not worthy to appear before my holy place.\" Do you beg the being to help you?"
+      },
+      {
+        "id": 936,
+        "matchedTerms": [
+          "lady keto"
+        ],
+        "text": "The being booms out to you, \"You think you can just beg and things will change so they are right?\" Before you can say anything the being continues saying, \"You must sacrifice all your gold and gems for Lady Keto's life.\""
+      },
+      {
+        "id": 939,
+        "matchedTerms": [
+          "lady keto"
+        ],
+        "text": "The being tells you that Lady Keto is now safe and before you know it the being disappears."
+      },
+      {
+        "id": 944,
+        "matchedTerms": [
+          "lord keto"
+        ],
+        "text": "This looks like Lord Keto's private room."
+      },
+      {
+        "id": 955,
+        "matchedTerms": [
+          "lord keto"
+        ],
+        "text": "The person you thought was Lord Keto speaks. \"I see you have returned and by the way you look I can tell you don't want to talk!\" The guards attack."
+      }
+    ],
+    "guideCandidates": [
+      "F:/Divinity CD/Divinity CD/Install Options/World of Realmz/Hint Guides/Castle Tip Sheet.rsrc"
+    ]
+  },
+  "notes": [
+    "This report is a context aid, not a proof of runtime behavior.",
+    "Quest flags are not named in this imported project; follow-up work should correlate these story beats with AP/EDCD reads and writes.",
+    "Bundled UI context should remain humble: show likely continuity and nearby evidence, then let authors curate exact threads."
+  ]
+}

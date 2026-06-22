@@ -35,6 +35,8 @@
     "archaeology:edcd-settings": "node scripts/report_edcd_settings_rows.mjs",
     "archaeology:ap-opcode-coverage": "node scripts/report_ap_opcode_coverage.mjs",
     "archaeology:ap-action-gaps": "node scripts/report_ap_action_gaps.mjs",
+    "archaeology:scenario-context": "node scripts/report_scenario_context.mjs",
+    "archaeology:quest-context": "node scripts/report_quest_context_coverage.mjs",
     "smoke:oracle": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_smoke.ps1",
     "smoke:oracle:matrix": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_smoke_matrix.ps1",
     "smoke:oracle:gameplay": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_gameplay.ps1",

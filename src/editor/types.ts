@@ -504,6 +504,8 @@ export type EditorMetadata = {
   displayNames: Record<string, EditorDisplayName>;
   tilePalettes: TilePalette[];
   mapStamps: CustomMapStamp[];
+  questThreads: QuestThread[];
+  questContextSources: QuestContextSource[];
 };
 
 export type TilePalette = {
@@ -528,6 +530,46 @@ export type CustomMapStamp = {
   cells: CustomMapStampCell[];
   createdAt: string;
   updatedAt: string;
+};
+
+export type QuestThread = {
+  id: string;
+  name: string;
+  description: string;
+  questIds: number[];
+  contextRefs?: QuestContextRef[];
+  createdAt: string;
+  updatedAt: string;
+  source?: "user" | "bundled";
+};
+
+export type QuestContextSourceType = "bundled-hint-guide" | "bundled-scenario-context" | "web-guide" | "manual";
+
+export type QuestContextSection = {
+  id: string;
+  title: string;
+  snippet: string;
+  terms: string[];
+};
+
+export type QuestContextSource = {
+  id: string;
+  title: string;
+  sourceType: QuestContextSourceType;
+  scenarioSlug?: string;
+  sourceUrl?: string;
+  sourcePath?: string;
+  fetchedAt?: string;
+  contentHash: string;
+  sections: QuestContextSection[];
+};
+
+export type QuestContextRef = {
+  sourceId: string;
+  sectionId?: string;
+  label: string;
+  snippet?: string;
+  terms?: string[];
 };
 
 export type RealmzActionSlotDraft = {
@@ -1194,6 +1236,11 @@ export type ProjectCommand =
   | { kind: "updateTimedEncounterRecord"; label: string; id: number; changes: Partial<Pick<TimedEncounterRecord, "day" | "increment" | "percent" | "door" | "requiredLevel" | "requiredRandomRect" | "requiredX" | "requiredY" | "requiredItem" | "requiredQuest" | "locationKind" | "stuff">> }
   | { kind: "upsertQuestLabel"; label: string; quest: QuestLabel }
   | { kind: "deleteQuestLabel"; label: string; id: number }
+  | { kind: "createQuestThread"; label: string; id?: string; name: string; description?: string; questIds?: number[]; contextRefs?: QuestContextRef[] }
+  | { kind: "updateQuestThread"; label: string; threadId: string; changes: Partial<Pick<QuestThread, "name" | "description" | "questIds" | "contextRefs">> }
+  | { kind: "deleteQuestThread"; label: string; threadId: string }
+  | { kind: "addQuestContextSource"; label: string; source: QuestContextSource }
+  | { kind: "deleteQuestContextSource"; label: string; sourceId: string }
   | { kind: "applyRealmzScriptStep"; label: string; triggerId: string; slot: number; opcode: number; id: number; edcdValues?: number[] }
   | { kind: "updateScenarioShell"; label: string; changes: Partial<ScenarioShell> }
   | { kind: "updateScenarioSecurityCodes"; label: string; shellChanges: Partial<ScenarioShell>; backupChanges?: Partial<ScenarioShell> }

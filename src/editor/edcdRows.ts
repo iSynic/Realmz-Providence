@@ -6,6 +6,7 @@ import { scriptActionDefinitionFor, scriptActionSummary } from "./panels/scripts
 export type EdcdRowStatus = "in-use" | "shared" | "unused" | "missing" | "conflict";
 
 export type EdcdRowCaller = {
+  contextKind: "trigger" | "simpleEncounter" | "complexEncounter";
   triggerId: string;
   triggerSource: string;
   triggerRecordIndex: number;
@@ -60,32 +61,71 @@ export function buildEdcdRowUsages(project: Project, catalog?: LibraryCatalog | 
 
   for (const trigger of project.triggers) {
     for (const action of trigger.actions) {
-      const option = actionOptionFor(action.rawCode);
-      if (!option.edcdShape) continue;
-      const rowId = edcdRowIdForAction(action);
-      const definition = scriptActionDefinitionFor(action.rawCode);
-      const caller: EdcdRowCaller = {
+      addCaller(callersByRow, action, {
+        contextKind: "trigger",
         triggerId: trigger.id,
         triggerSource: trigger.source,
         triggerRecordIndex: trigger.recordIndex,
         triggerLevelType: trigger.levelType,
         triggerLevelIndex: trigger.levelIndex,
-        triggerCoordinate: trigger.coordinate,
-        slot: action.slot,
-        rawCode: action.rawCode,
-        opcode: normalizeStepOpcode(action.rawCode),
-        actionLabel: definition.label,
-        actionShortLabel: definition.shortLabel,
-        shape: option.edcdShape
-      };
-      const existing = callersByRow.get(rowId) ?? [];
-      existing.push(caller);
-      callersByRow.set(rowId, existing);
+        triggerCoordinate: trigger.coordinate
+      });
+    }
+  }
+
+  for (const encounter of project.simpleEncounters) {
+    for (const action of encounter.actions) {
+      addCaller(callersByRow, action, {
+        contextKind: "simpleEncounter",
+        triggerId: `encounter:simple:${encounter.id}`,
+        triggerSource: "Data ED",
+        triggerRecordIndex: encounter.id,
+        triggerLevelType: null,
+        triggerLevelIndex: null,
+        triggerCoordinate: null
+      });
+    }
+  }
+
+  for (const encounter of project.complexEncounters) {
+    for (const action of encounter.actions) {
+      addCaller(callersByRow, action, {
+        contextKind: "complexEncounter",
+        triggerId: `encounter:complex:${encounter.id}`,
+        triggerSource: "Data ED2",
+        triggerRecordIndex: encounter.id,
+        triggerLevelType: null,
+        triggerLevelIndex: null,
+        triggerCoordinate: null
+      });
     }
   }
 
   const ids = new Set<number>([...rows.keys(), ...callersByRow.keys()]);
   return [...ids].sort((a, b) => a - b).map((rowId) => buildEdcdRowUsage(project, catalog, rowId, rows.get(rowId) ?? null, callersByRow.get(rowId) ?? []));
+}
+
+function addCaller(
+  callersByRow: Map<number, EdcdRowCaller[]>,
+  action: Pick<Action, "slot" | "rawCode" | "id">,
+  context: Omit<EdcdRowCaller, "slot" | "rawCode" | "opcode" | "actionLabel" | "actionShortLabel" | "shape">
+) {
+  const option = actionOptionFor(action.rawCode);
+  if (!option.edcdShape) return;
+  const rowId = edcdRowIdForAction(action);
+  const definition = scriptActionDefinitionFor(action.rawCode);
+  const caller: EdcdRowCaller = {
+    ...context,
+    slot: action.slot,
+    rawCode: action.rawCode,
+    opcode: normalizeStepOpcode(action.rawCode),
+    actionLabel: definition.label,
+    actionShortLabel: definition.shortLabel,
+    shape: option.edcdShape
+  };
+  const existing = callersByRow.get(rowId) ?? [];
+  existing.push(caller);
+  callersByRow.set(rowId, existing);
 }
 
 export function edcdUsageForRow(project: Project, catalog: LibraryCatalog | null | undefined, rowId: number) {

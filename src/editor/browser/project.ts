@@ -63,7 +63,7 @@ export function createBrowserProject(projectName: string): Project {
     casteOverrides: [],
     assets: [],
     assetCatalog: { tilesets: [] },
-    editorMetadata: { displayNames: {}, tilePalettes: [], mapStamps: [] },
+    editorMetadata: { displayNames: {}, tilePalettes: [], mapStamps: [], questThreads: [], questContextSources: [] },
     records: { counts: {}, alignments: [] },
     diagnostics: [],
     semanticSchema: emptySemanticSchema(),
@@ -126,7 +126,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
     casteOverrides: parsed.casteOverrides,
     assets: [],
     assetCatalog: parsed.assetCatalog,
-    editorMetadata: { displayNames: {}, tilePalettes: [], mapStamps: [] },
+    editorMetadata: { displayNames: {}, tilePalettes: [], mapStamps: [], questThreads: [], questContextSources: [] },
     records: parsed.records,
     diagnostics: parsed.diagnostics,
     semanticSchema: emptySemanticSchema(0),
@@ -445,10 +445,12 @@ export async function openBrowserProject(source: BrowserScenarioSource): Promise
   project.spellOverrides ??= [];
   project.raceOverrides ??= [];
   project.casteOverrides ??= [];
-  project.editorMetadata ??= { displayNames: {}, tilePalettes: [], mapStamps: [] };
+  project.editorMetadata ??= { displayNames: {}, tilePalettes: [], mapStamps: [], questThreads: [], questContextSources: [] };
   project.editorMetadata.displayNames ??= {};
   project.editorMetadata.tilePalettes ??= [];
   project.editorMetadata.mapStamps ??= [];
+  project.editorMetadata.questThreads ??= [];
+  project.editorMetadata.questContextSources ??= [];
   project.semanticSchema.decoding ??= { ed3Reachability: [], dispatcherNoops: [], confidenceDebt: [] };
   backfillTilesetMetadata(project);
   project.validation = validateBrowserProject(project);

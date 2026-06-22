@@ -5,10 +5,12 @@ const root = process.cwd();
 const catalogPath = path.join(root, "src/editor/panels/scripts/scriptActionCatalog.ts");
 const panelPath = path.join(root, "src/editor/panels/ScriptsPanel.tsx");
 const edcdPath = path.join(root, "src/editor/components/EdcdRowEditor.tsx");
+const edcdRowsPath = path.join(root, "src/editor/edcdRows.ts");
 
 const catalog = fs.readFileSync(catalogPath, "utf8");
 const panel = fs.readFileSync(panelPath, "utf8");
 const edcd = fs.readFileSync(edcdPath, "utf8");
+const edcdRows = fs.readFileSync(edcdRowsPath, "utf8");
 const targetPickerPath = path.join(root, "src/editor/components/RealmzTargetPicker.tsx");
 const inventoryPath = path.join(root, "src/editor/panels/scripts/scriptInventory.tsx");
 const validationPath = path.join(root, "src/editor/scriptValidation.ts");
@@ -100,6 +102,22 @@ if (/label:\s*["']Opcode\s+\d+/i.test(catalog)) {
 
 if (catalog.includes("Preserved Action")) {
   failures.push("Action catalog should not expose generic Preserved Action wording.");
+}
+
+for (const snippet of [
+  "project.simpleEncounters",
+  "project.complexEncounters",
+  "contextKind: \"simpleEncounter\"",
+  "contextKind: \"complexEncounter\""
+]) {
+  if (!edcdRows.includes(snippet)) failures.push(`EDCD row usage is missing encounter caller coverage: ${snippet}`);
+}
+
+for (const snippet of [
+  "Simple Encounter ${caller.triggerRecordIndex}",
+  "Complex Encounter ${caller.triggerRecordIndex}"
+]) {
+  if (!panel.includes(snippet)) failures.push(`Settings Rows caller labels do not cover encounter scripts: ${snippet}`);
 }
 
 for (const snippet of [

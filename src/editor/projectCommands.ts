@@ -82,6 +82,13 @@ import {
   renameMapStamp,
   updateMapStamp
 } from "./projectCommands/mapStampCommands";
+import {
+  addQuestContextSource,
+  createQuestThread,
+  deleteQuestContextSource,
+  deleteQuestThread,
+  updateQuestThread
+} from "./projectCommands/questThreadCommands";
 
 export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "paintTiles") return paintTiles(project, command.mapId, command.cells);
@@ -146,6 +153,11 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "updateTimedEncounterRecord") return updateRecord(project, "timedEncounters", command.id, command.changes);
   if (command.kind === "upsertQuestLabel") return upsertQuestLabel(project, command.quest);
   if (command.kind === "deleteQuestLabel") return { ...project, questLabels: (project.questLabels ?? []).filter((quest) => quest.id !== command.id) };
+  if (command.kind === "createQuestThread") return createQuestThread(project, command);
+  if (command.kind === "updateQuestThread") return updateQuestThread(project, command.threadId, command.changes);
+  if (command.kind === "deleteQuestThread") return deleteQuestThread(project, command.threadId);
+  if (command.kind === "addQuestContextSource") return addQuestContextSource(project, command.source);
+  if (command.kind === "deleteQuestContextSource") return deleteQuestContextSource(project, command.sourceId);
   if (command.kind === "applyRealmzScriptStep") {
     const withSlot = updateActionSlot(project, command.triggerId, command.slot, command.opcode, command.id);
     return command.edcdValues ? updateEdcdRow(withSlot, command.id, command.edcdValues) : withSlot;

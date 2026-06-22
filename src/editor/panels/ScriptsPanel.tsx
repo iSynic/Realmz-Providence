@@ -1,6 +1,6 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { AlertTriangle, ArrowDown, ArrowUp, Copy, CopyPlus, Plus, Save, Trash2, Volume2, X } from "lucide-react";
-import { Action, Ed3ReachabilityRow, EncounterActionRow, LevelType, LibraryCatalog, Project, ProjectCommand, RealmzTargetRecordKind, ScriptDetailSurface, ScriptInventoryFilter, SelectedEntity, SemanticEntity, TriggerRecord } from "../types";
+import { AlertTriangle, ArrowDown, ArrowUp, Copy, CopyPlus, FileText, Link as LinkIcon, Plus, Save, Trash2, Volume2, X } from "lucide-react";
+import { Action, Ed3ReachabilityRow, EncounterActionRow, LevelType, LibraryCatalog, Project, ProjectCommand, QuestContextSource, QuestThread, RealmzTargetRecordKind, ScriptDetailSurface, ScriptInventoryFilter, SelectedEntity, SemanticEntity, TriggerRecord } from "../types";
 import { linksFor, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
 import { actionSlotEntitiesForTriggerRecord, ed3ReachabilityFor, extraActionEvidenceSummary, extraActionPointClassification } from "../semanticGraph";
 import { EdcdRowEditor } from "../components/EdcdRowEditor";
@@ -18,6 +18,8 @@ import { ScriptDiagnostic, validateActionDraft, validateScriptTrigger } from "..
 import { actionPointCapacity, isReusableDoorPlaceholder, nextActionPointRecordIndex } from "../actionPointCapacity";
 import { realmzScriptStepDescriptorFor } from "../realmzScriptDescriptors";
 import { validateRealmzTargetRecord } from "../targetValidation";
+import { buildQuestPresentation, questCategoryLabel, QUEST_CATEGORIES, type QuestFlagModel, type QuestThreadSuggestion, type QuestUsage } from "../questUsage";
+import { fetchQuestContextSource, fileToQuestContextSource, indexQuestContextText, QUEST_CONTEXT_WEB_SOURCES, saveQuestContextSourceCache } from "../questContext";
 import { ITEM_REFERENCE_CATEGORIES, itemReferenceDetail, itemReferenceOptions, type ItemReferenceCategory, type ItemReferenceOption } from "../itemReferences";
 import { monsterReferenceDetail, monsterReferenceOptions } from "../monsterReferences";
 import { CONDITION_LABELS, RESISTANCE_TYPES } from "../rulesCatalog";
@@ -569,12 +571,32 @@ function ScriptAuthoringPanel({
         onSelectEntity={onSelectEntity}
         onOpenTool={onOpenTool}
         onOpenCaller={(caller) => {
-          const trigger = project.triggers.find((candidate) => candidate.id === caller.triggerId);
-          if (!trigger) return;
-          setSelectedSlot(caller.slot);
-          onSelectEntity(selectEntityFromId(triggerSelectionId(trigger)));
-          onSelectEditor?.(scriptEditorForTriggerSource(trigger.source));
+          if (caller.contextKind === "trigger") {
+            const trigger = project.triggers.find((candidate) => candidate.id === caller.triggerId);
+            if (!trigger) return;
+            setSelectedSlot(caller.slot);
+            onSelectEntity(selectEntityFromId(triggerSelectionId(trigger)));
+            onSelectEditor?.(scriptEditorForTriggerSource(trigger.source));
+            return;
+          }
+          if (caller.contextKind === "simpleEncounter") {
+            onSelectEntity(selectEntityFromId(`encounter:simple:${caller.triggerRecordIndex}`));
+            onSelectEditor?.("simple");
+            return;
+          }
+          onSelectEntity(selectEntityFromId(`encounter:complex:${caller.triggerRecordIndex}`));
+          onSelectEditor?.("complex");
         }}
+        onApplyCommand={onApplyCommand}
+      />
+    );
+  }
+  if (activeTabKind === "quests") {
+    return (
+      <QuestWorkbench
+        project={project}
+        scripts={project.triggers}
+        onSelectEntity={onSelectEntity}
         onApplyCommand={onApplyCommand}
       />
     );
@@ -835,9 +857,6 @@ function ScriptAuthoringPanel({
               <small>These Extra Action Points are preserved with the scenario, but Providence has not identified a normal call path for them yet. Use the ED3 filters to separate likely padding, runtime residue, orphan authored-looking rows, and rows that need runtime tracing.</small>
             </div>
           )}
-            {activeTabKind === "quests" && (
-              <QuestUsageSummary project={project} scripts={scripts} onSelectEntity={onSelectEntity} onApplyCommand={onApplyCommand} />
-            )}
           </div>
           <ScrollArea className="realmz-script-list" aria-label="Action Points and Extra Action Points">
             {visibleScripts.map((trigger) => (
@@ -1056,7 +1075,7 @@ function ScriptAuthoringPanel({
   );
 }
 
-function QuestUsageSummary({
+function QuestWorkbench({
   project,
   scripts,
   onSelectEntity,
@@ -1067,30 +1086,498 @@ function QuestUsageSummary({
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
-  const quests = useMemo(() => questUsageSummary(project, scripts), [project, scripts]);
-  if (quests.length === 0) {
-    return (
-      <div className="script-tab-note">
-        <strong>No quest actions yet</strong>
-        <small>Quest steps appear here after scripts read, change, or branch on quest values.</small>
-      </div>
-    );
-  }
+  const model = useMemo(() => buildQuestPresentation(project, scripts), [project, scripts]);
+  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
+  const [selectedQuestId, setSelectedQuestId] = useState<number | null>(null);
+  const [contextPanelOpen, setContextPanelOpen] = useState(false);
+  const [contextBusy, setContextBusy] = useState<string | null>(null);
+  const [contextStatus, setContextStatus] = useState<string | null>(null);
+  const [manualContextTitle, setManualContextTitle] = useState("");
+  const [manualContextText, setManualContextText] = useState("");
+  const contextFileInputRef = useRef<HTMLInputElement | null>(null);
+  const selectedThread = model.threads.find((thread) => thread.id === selectedThreadId) ?? null;
+  const selectedQuest = selectedQuestId == null ? null : model.questById.get(selectedQuestId) ?? null;
+  const threadQuests = selectedThread ? selectedThread.questIds.map((id) => model.questById.get(id)).filter(Boolean) as QuestFlagModel[] : [];
+  const contextSources = project.editorMetadata?.questContextSources ?? [];
+  const activeUses = selectedThread
+    ? threadQuests.flatMap((quest) => quest.uses.map((usage) => ({ ...usage, questLabel: quest.label }))).sort((a, b) => a.sortKey.localeCompare(b.sortKey))
+    : selectedQuest?.uses.map((usage) => ({ ...usage, questLabel: selectedQuest.label })) ?? [];
+
+  useEffect(() => {
+    if (selectedThreadId && !model.threads.some((thread) => thread.id === selectedThreadId)) setSelectedThreadId(null);
+    if (selectedQuestId != null && !model.questById.has(selectedQuestId)) setSelectedQuestId(null);
+    if (!selectedThreadId && selectedQuestId == null) {
+      if (model.threads[0]) setSelectedThreadId(model.threads[0].id);
+      else if (model.quests[0]) setSelectedQuestId(model.quests[0].id);
+    }
+  }, [model.threads, model.quests, model.questById, selectedQuestId, selectedThreadId]);
+
+  const createThread = () => {
+    onApplyCommand?.({ kind: "createQuestThread", label: "Create quest thread", name: `Quest Thread ${model.threads.length + 1}` });
+  };
+  const updateThread = (thread: QuestThread, changes: Partial<Pick<QuestThread, "name" | "description" | "questIds" | "contextRefs">>) => {
+    onApplyCommand?.({ kind: "updateQuestThread", label: "Update quest thread", threadId: thread.id, changes });
+  };
+  const addQuestToThread = (thread: QuestThread, questId: number) => {
+    updateThread(thread, { questIds: [...thread.questIds, questId] });
+  };
+  const removeQuestFromThread = (thread: QuestThread, questId: number) => {
+    updateThread(thread, { questIds: thread.questIds.filter((id) => id !== questId) });
+  };
+  const acceptSuggestion = (suggestion: QuestThreadSuggestion) => {
+    onApplyCommand?.({
+      kind: "createQuestThread",
+      label: "Accept quest thread suggestion",
+      name: suggestion.name,
+      description: suggestion.description,
+      questIds: suggestion.questIds,
+      contextRefs: suggestion.contextRefs
+    });
+  };
+  const addContextSource = (source: QuestContextSource) => {
+    onApplyCommand?.({ kind: "addQuestContextSource", label: "Add quest context source", source });
+    saveQuestContextSourceCache([...contextSources.filter((existing) => existing.id !== source.id), source]);
+    setContextStatus(`Added ${source.title} with ${source.sections.length} indexed section${source.sections.length === 1 ? "" : "s"}.`);
+  };
+  const fetchContext = async (sourceId: string) => {
+    const adapter = QUEST_CONTEXT_WEB_SOURCES.find((candidate) => candidate.id === sourceId);
+    if (!adapter) return;
+    setContextBusy(adapter.id);
+    setContextStatus(null);
+    try {
+      addContextSource(await fetchQuestContextSource(adapter, project));
+    } catch (error) {
+      setContextStatus(`${adapter.title} could not be fetched in this browser session. Import or paste guide text instead. ${error instanceof Error ? error.message : ""}`.trim());
+    } finally {
+      setContextBusy(null);
+    }
+  };
+  const importContextFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setContextBusy("files");
+    setContextStatus(null);
+    try {
+      for (const file of Array.from(files)) addContextSource(await fileToQuestContextSource(file, project));
+    } catch (error) {
+      setContextStatus(`Could not import guide text. ${error instanceof Error ? error.message : ""}`.trim());
+    } finally {
+      setContextBusy(null);
+      if (contextFileInputRef.current) contextFileInputRef.current.value = "";
+    }
+  };
+  const addManualContext = () => {
+    if (!manualContextText.trim()) return;
+    addContextSource(indexQuestContextText(manualContextText, {
+      title: manualContextTitle.trim() || "Manual quest notes",
+      sourceType: "manual"
+    }));
+    setManualContextTitle("");
+    setManualContextText("");
+  };
+
   return (
-    <div className="script-quest-summary" aria-label="Quest usage summary">
-      <strong>Quest Flags</strong>
-      {quests.slice(0, 8).map((quest) => (
-        <div key={quest.id} className="script-quest-summary-row">
-          <span>
-            <b>{quest.label}</b>
-            <small>{quest.uses.length} script use{quest.uses.length === 1 ? "" : "s"}</small>
-          </span>
+    <section className="quest-workbench">
+      <header className="settings-rows-header">
+        <div>
+          <strong>Quest Flags & Threads</strong>
+          <small>Realmz stores raw flags and branches. Providence surfaces evidence and possible continuity, then lets authors curate the story layer.</small>
+        </div>
+        <div className="script-toolbar">
+          <button type="button" className="btn btn-secondary btn-xs" onClick={() => setContextPanelOpen((open) => !open)}>
+            <FileText size={12} /> Find Quest Context
+          </button>
+          <button type="button" className="btn btn-secondary btn-xs" onClick={createThread}>
+            <Plus size={12} /> Quest Thread
+          </button>
+        </div>
+      </header>
+      {model.recognizedContext && (
+        <div className="recognized-scenario-context">
           <div>
-            {quest.uses[0] && (
-              <button type="button" className="btn btn-secondary btn-xs" onClick={() => onSelectEntity(selectEntityFromId(triggerSelectionId(quest.uses[0].trigger)))}>
-                Open
-              </button>
+            <strong>Known Scenario Context: {model.recognizedContext.scenarioName}</strong>
+            <small>{model.recognizedContext.summary}</small>
+          </div>
+          <span>{model.recognizedContext.confidence} confidence</span>
+        </div>
+      )}
+      <div className="quest-workbench-layout">
+        <aside className="quest-thread-column">
+          {contextPanelOpen && (
+            <PanelSection title="Context Sources" eyebrow={`${contextSources.length} linked`} density="compact">
+              <div className="quest-context-panel">
+                <small>Sources are clues only. Providence stores short snippets and terms, not full guide pages.</small>
+                <div className="quest-context-source-actions">
+                  {QUEST_CONTEXT_WEB_SOURCES.map((source) => (
+                    <button key={source.id} type="button" className="btn btn-secondary btn-xs" disabled={contextBusy != null} onClick={() => fetchContext(source.id)}>
+                      <LinkIcon size={11} /> {contextBusy === source.id ? "Fetching..." : source.title}
+                    </button>
+                  ))}
+                  <input
+                    ref={contextFileInputRef}
+                    type="file"
+                    multiple
+                    accept=".txt,.md,.htm,.html"
+                    className="visually-hidden"
+                    onChange={(event) => importContextFiles(event.currentTarget.files)}
+                  />
+                  <button type="button" className="btn btn-secondary btn-xs" disabled={contextBusy != null} onClick={() => contextFileInputRef.current?.click()}>
+                    <FileText size={11} /> Import Hint Guide
+                  </button>
+                </div>
+                <div className="quest-manual-import">
+                  <input value={manualContextTitle} onChange={(event) => setManualContextTitle(event.currentTarget.value)} placeholder="Manual source title..." />
+                  <textarea value={manualContextText} onChange={(event) => setManualContextText(event.currentTarget.value)} rows={4} placeholder="Paste walkthrough or hint-guide text..." />
+                  <button type="button" className="btn btn-secondary btn-xs" disabled={!manualContextText.trim()} onClick={addManualContext}>Add Pasted Context</button>
+                </div>
+                {contextStatus && <small className="script-tab-note">{contextStatus}</small>}
+                {contextSources.length > 0 && (
+                  <div className="quest-context-source-list">
+                    {contextSources.map((source) => (
+                      <div key={source.id} className="quest-context-source-row">
+                        <span>
+                          <b>{source.title}</b>
+                          <small>{source.sourceType.replace(/-/g, " ")} | {source.sections.length} section{source.sections.length === 1 ? "" : "s"}</small>
+                        </span>
+                        <button type="button" className="btn btn-danger btn-xs icon-only" title="Remove source" onClick={() => onApplyCommand?.({ kind: "deleteQuestContextSource", label: "Remove quest context source", sourceId: source.id })}>
+                          <X size={11} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </PanelSection>
+          )}
+          <PanelSection title="Quest Threads" eyebrow={`${model.threads.length} saved`} density="compact">
+            {model.threads.length === 0 ? (
+              <div className="script-tab-note">
+                <strong>No quest threads yet</strong>
+                <small>Create one manually, or accept a suggested thread below.</small>
+              </div>
+            ) : (
+              <div className="quest-card-list">
+                {model.threads.map((thread) => (
+                  <div key={thread.id} className={`quest-thread-card${thread.id === selectedThread?.id ? " selected" : ""}`}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedThreadId(thread.id);
+                        setSelectedQuestId(null);
+                      }}
+                    >
+                      <strong>{thread.name}</strong>
+                      <small>{thread.source === "bundled" ? "Known scenario context" : `${thread.questIds.length} flag${thread.questIds.length === 1 ? "" : "s"}`}</small>
+                    </button>
+                    {thread.source !== "bundled" && (
+                      <button type="button" className="btn btn-danger btn-xs icon-only" title="Delete thread" onClick={() => onApplyCommand?.({ kind: "deleteQuestThread", label: "Delete quest thread", threadId: thread.id })}>
+                        <Trash2 size={12} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
+          </PanelSection>
+          <PanelSection title="Suggested Threads" eyebrow={`${model.suggestions.length} possible`} density="compact">
+            {model.suggestions.length === 0 ? (
+              <small className="empty-copy compact">No conservative clusters found yet.</small>
+            ) : (
+              <div className="quest-card-list">
+                {model.suggestions.map((suggestion) => (
+                  <div key={suggestion.id} className="quest-suggestion-card">
+                    <strong>{suggestion.name}</strong>
+                    <small>{suggestion.reason} | {suggestion.questIds.map((id) => `Q${id}`).join(", ")}</small>
+                    {suggestion.evidence && suggestion.evidence.length > 0 && (
+                      <small>{suggestion.evidence.slice(0, 2).join(" | ")}</small>
+                    )}
+                    <button type="button" className="btn btn-secondary btn-xs" onClick={() => acceptSuggestion(suggestion)}>Accept</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </PanelSection>
+          <PanelSection title="Raw Quest Flags" eyebrow={`${model.quests.length} known`} density="compact" className="quest-raw-panel">
+            <div className="quest-raw-list">
+              {model.quests.map((quest) => (
+                <button
+                  key={quest.id}
+                  type="button"
+                  className={`quest-raw-row${quest.id === selectedQuest?.id ? " selected" : ""}`}
+                  onClick={() => {
+                    setSelectedThreadId(null);
+                    setSelectedQuestId(quest.id);
+                  }}
+                >
+                  <span>
+                    <b>{quest.label}</b>
+                    <small>Quest {quest.id} | {quest.uses.length} use{quest.uses.length === 1 ? "" : "s"}</small>
+                  </span>
+                  {quest.warnings.length > 0 && <AlertTriangle size={13} />}
+                </button>
+              ))}
+              {model.quests.length === 0 && <small className="empty-copy compact">No quest labels or decoded quest uses found.</small>}
+            </div>
+          </PanelSection>
+        </aside>
+        <main className="quest-detail-panel">
+          {selectedThread ? (
+            <QuestThreadDetail
+              thread={selectedThread}
+              quests={threadQuests}
+              allQuests={model.quests}
+              uses={activeUses}
+              onOpenUsage={onSelectEntity}
+              onUpdateThread={(changes) => updateThread(selectedThread, changes)}
+              onAddQuest={(questId) => addQuestToThread(selectedThread, questId)}
+              onRemoveQuest={(questId) => removeQuestFromThread(selectedThread, questId)}
+              onApplyCommand={onApplyCommand}
+            />
+          ) : selectedQuest ? (
+            <QuestFlagDetail
+              quest={selectedQuest}
+              threads={model.threads}
+              uses={activeUses}
+              onOpenUsage={onSelectEntity}
+              onAddToThread={(thread) => addQuestToThread(thread, selectedQuest.id)}
+              onApplyCommand={onApplyCommand}
+            />
+          ) : (
+            <EmptyState title="No quest selected" body="Create a quest thread, accept a suggestion, or select a raw quest flag." />
+          )}
+        </main>
+      </div>
+    </section>
+  );
+}
+
+function QuestThreadDetail({
+  thread,
+  quests,
+  allQuests,
+  uses,
+  onOpenUsage,
+  onUpdateThread,
+  onAddQuest,
+  onRemoveQuest,
+  onApplyCommand
+}: {
+  thread: QuestThread;
+  quests: QuestFlagModel[];
+  allQuests: QuestFlagModel[];
+  uses: Array<QuestUsage & { questLabel: string }>;
+  onOpenUsage: (entity: SelectedEntity) => void;
+  onUpdateThread: (changes: Partial<Pick<QuestThread, "name" | "description" | "questIds" | "contextRefs">>) => void;
+  onAddQuest: (questId: number) => void;
+  onRemoveQuest: (questId: number) => void;
+  onApplyCommand?: (command: ProjectCommand) => void;
+}) {
+  const threadIds = new Set(thread.questIds);
+  return (
+    <div className="quest-detail-grid">
+      <PanelSection title="Quest Thread" eyebrow={`${thread.questIds.length} flags`} density="compact">
+        {thread.source === "bundled" ? (
+          <div className="known-thread-summary">
+            <strong>{thread.name}</strong>
+            <small>{thread.description}</small>
+            <span>Bundled context is read-only. Create a project thread if you want editable notes.</span>
+          </div>
+        ) : (
+          <>
+            <label className="field-stack">
+              <span>Name</span>
+              <input key={`${thread.id}:name`} defaultValue={thread.name} onBlur={(event) => onUpdateThread({ name: event.currentTarget.value })} />
+            </label>
+            <label className="field-stack">
+              <span>Notes</span>
+              <textarea key={`${thread.id}:description`} defaultValue={thread.description} rows={3} onBlur={(event) => onUpdateThread({ description: event.currentTarget.value })} />
+            </label>
+          </>
+        )}
+        <div className="quest-chip-grid">
+          {quests.map((quest) => (
+            <span key={quest.id} className="quest-chip">
+              {quest.label}
+              {thread.source !== "bundled" && <button type="button" title="Remove from thread" onClick={() => onRemoveQuest(quest.id)}><X size={11} /></button>}
+            </span>
+          ))}
+          {quests.length === 0 && <small className="empty-copy compact">{thread.source === "bundled" ? "This known scenario context is story-first; matching raw flags are shown below as Providence decodes them." : "Add raw flags to build this story thread."}</small>}
+        </div>
+      </PanelSection>
+      <QuestContextRefsPanel
+        title="Story Context"
+        refs={thread.contextRefs ?? []}
+        emptyCopy="Accept a guide-assisted suggestion or attach notes to give this thread story context."
+      />
+      {thread.source !== "bundled" && (
+        <PanelSection title="Add Flag" eyebrow="raw flags" density="compact">
+          <div className="quest-add-grid">
+            {allQuests.filter((quest) => !threadIds.has(quest.id)).slice(0, 18).map((quest) => (
+              <button key={quest.id} type="button" className="btn btn-secondary btn-xs" onClick={() => onAddQuest(quest.id)}>
+                <Plus size={11} /> {quest.label}
+              </button>
+            ))}
+            {allQuests.every((quest) => threadIds.has(quest.id)) && <small className="empty-copy compact">Every known quest flag is already in this thread.</small>}
+          </div>
+        </PanelSection>
+      )}
+      <QuestUsageTimeline uses={uses} onOpenUsage={onOpenUsage} />
+      <ThreadWarnings quests={quests} onApplyCommand={onApplyCommand} />
+    </div>
+  );
+}
+
+function QuestFlagDetail({
+  quest,
+  threads,
+  uses,
+  onOpenUsage,
+  onAddToThread,
+  onApplyCommand
+}: {
+  quest: QuestFlagModel;
+  threads: QuestThread[];
+  uses: Array<QuestUsage & { questLabel: string }>;
+  onOpenUsage: (entity: SelectedEntity) => void;
+  onAddToThread: (thread: QuestThread) => void;
+  onApplyCommand?: (command: ProjectCommand) => void;
+}) {
+  return (
+    <div className="quest-detail-grid">
+      <PanelSection title={quest.label} eyebrow={`Quest ${quest.id}`} density="compact">
+        <div className="quest-usage-counts">
+          {QUEST_CATEGORIES.map((category) => quest.counts[category] > 0 && (
+            <span key={category}>{questCategoryLabel(category)} <b>{quest.counts[category]}</b></span>
+          ))}
+        </div>
+        <label className="field-stack">
+          <span>Flag Label</span>
+          <input
+            key={`${quest.id}:label`}
+            defaultValue={quest.authored ? quest.label : ""}
+            placeholder={`Quest ${quest.id}`}
+            onBlur={(event) => {
+              const label = event.currentTarget.value.trim();
+              if (label) onApplyCommand?.({ kind: "upsertQuestLabel", label: "Update quest label", quest: { id: quest.id, label, note: quest.note } });
+            }}
+          />
+        </label>
+        <label className="field-stack">
+          <span>Flag Notes</span>
+          <textarea
+            key={`${quest.id}:note`}
+            defaultValue={quest.note}
+            rows={3}
+            onBlur={(event) => {
+              if (quest.authored || event.currentTarget.value.trim()) {
+                onApplyCommand?.({ kind: "upsertQuestLabel", label: "Update quest note", quest: { id: quest.id, label: quest.label, note: event.currentTarget.value } });
+              }
+            }}
+          />
+        </label>
+        {!quest.authored && (
+          <button type="button" className="btn btn-secondary btn-xs" onClick={() => onApplyCommand?.({ kind: "upsertQuestLabel", label: "Create quest label", quest: { id: quest.id, label: `Quest ${quest.id}` } })}>
+            <Plus size={12} /> Create Label
+          </button>
+        )}
+      </PanelSection>
+      <PanelSection title="Add To Thread" eyebrow={`${threads.length} saved`} density="compact">
+        <div className="quest-add-grid">
+          {threads.filter((thread) => !thread.questIds.includes(quest.id)).map((thread) => (
+            <button key={thread.id} type="button" className="btn btn-secondary btn-xs" onClick={() => onAddToThread(thread)}>
+              <Plus size={11} /> {thread.name}
+            </button>
+          ))}
+          {threads.length === 0 && <small className="empty-copy compact">Create a quest thread first.</small>}
+        </div>
+      </PanelSection>
+      <QuestContextRefsPanel
+        title="Nearby Story Context"
+        refs={quest.contextRefs}
+        emptyCopy="No imported guide or walkthrough snippets matched this flag yet."
+      />
+      <QuestUsageTimeline uses={uses} onOpenUsage={onOpenUsage} />
+      <QuestWarnings warnings={quest.warnings} />
+    </div>
+  );
+}
+
+function QuestContextRefsPanel({ title, refs, emptyCopy }: { title: string; refs: NonNullable<QuestThread["contextRefs"]>; emptyCopy: string }) {
+  return (
+    <PanelSection title={title} eyebrow={`${refs.length} clue${refs.length === 1 ? "" : "s"}`} density="compact">
+      {refs.length === 0 ? (
+        <small className="empty-copy compact">{emptyCopy}</small>
+      ) : (
+        <div className="quest-context-ref-list">
+          {refs.map((ref, index) => (
+            <div key={`${ref.sourceId}:${ref.sectionId ?? index}`} className="quest-context-ref">
+              <strong>{ref.label}</strong>
+              {ref.snippet && <small>{ref.snippet}</small>}
+              {ref.terms && ref.terms.length > 0 && (
+                <div className="quest-context-term-row">
+                  {ref.terms.slice(0, 8).map((term) => <span key={term}>{term}</span>)}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </PanelSection>
+  );
+}
+
+function QuestUsageTimeline({ uses, onOpenUsage }: { uses: Array<QuestUsage & { questLabel: string }>; onOpenUsage: (entity: SelectedEntity) => void }) {
+  return (
+    <PanelSection title="Quest Flow" eyebrow={`${uses.length} decoded uses`} density="compact" className="quest-flow-panel">
+      {uses.length === 0 ? (
+        <small className="empty-copy compact">No decoded script uses yet.</small>
+      ) : (
+        <div className="quest-flow-list">
+          {uses.map((usage) => (
+            <div key={usage.key} className={`quest-flow-row ${usage.category}`}>
+              <span>
+                <b>{questCategoryLabel(usage.category)}</b>
+                <small>{usage.questLabel} | {usage.sourceLabel}</small>
+                <em>{usage.detail}</em>
+              </span>
+              {usage.entityId && (
+                <button type="button" className="btn btn-secondary btn-xs" onClick={() => onOpenUsage(selectEntityFromId(usage.entityId!))}>
+                  Open
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </PanelSection>
+  );
+}
+
+function QuestWarnings({ warnings }: { warnings: string[] }) {
+  if (warnings.length === 0) return null;
+  return (
+    <PanelSection title="Warnings" eyebrow={`${warnings.length}`} density="compact">
+      <div className="quest-warning-list">
+        {warnings.map((warning) => (
+          <div key={warning} className="quest-warning-row">
+            <AlertTriangle size={13} />
+            <span>{warning}</span>
+          </div>
+        ))}
+      </div>
+    </PanelSection>
+  );
+}
+
+function ThreadWarnings({ quests, onApplyCommand }: { quests: QuestFlagModel[]; onApplyCommand?: (command: ProjectCommand) => void }) {
+  const warnings = quests.flatMap((quest) => quest.warnings.map((warning) => ({ quest, warning })));
+  if (warnings.length === 0) return null;
+  return (
+    <PanelSection title="Thread Warnings" eyebrow={`${warnings.length}`} density="compact">
+      <div className="quest-warning-list">
+        {warnings.map(({ quest, warning }) => (
+          <div key={`${quest.id}:${warning}`} className="quest-warning-row">
+            <AlertTriangle size={13} />
+            <span><b>{quest.label}</b>: {warning}</span>
             {!quest.authored && (
               <button
                 type="button"
@@ -1101,10 +1588,9 @@ function QuestUsageSummary({
               </button>
             )}
           </div>
-        </div>
-      ))}
-      {quests.length > 8 && <small>{quests.length - 8} more quest flag(s); filter the list to narrow.</small>}
-    </div>
+        ))}
+      </div>
+    </PanelSection>
   );
 }
 
@@ -1200,7 +1686,7 @@ function SettingsRowsPanel({
         usage.primaryShape,
         usage.possibleShapes.join(" "),
         usage.values.join(" "),
-        usage.callers.map((caller) => `${caller.actionLabel} ${caller.triggerRecordIndex} ${caller.slot}`).join(" ")
+        usage.callers.map((caller) => `${caller.actionLabel} ${callerLabel(project, caller)} ${caller.slot}`).join(" ")
       ].join(" ").toLowerCase().includes(normalized);
     });
   }, [filter, query, usages]);
@@ -1355,6 +1841,8 @@ function SettingsRowsPanel({
 }
 
 function callerLabel(project: Project, caller: EdcdRowCaller) {
+  if (caller.contextKind === "simpleEncounter") return `Simple Encounter ${caller.triggerRecordIndex}`;
+  if (caller.contextKind === "complexEncounter") return `Complex Encounter ${caller.triggerRecordIndex}`;
   const trigger = project.triggers.find((candidate) => candidate.id === caller.triggerId);
   if (!trigger) return `Record ${caller.triggerRecordIndex}`;
   return scriptLabel(project, trigger);
@@ -1371,27 +1859,6 @@ function edcdRowIdFromSelectedEntity(entity: SelectedEntity | null) {
   if (!match) return null;
   const rowId = Number(match[1]);
   return Number.isFinite(rowId) ? Math.max(0, Math.trunc(rowId)) : null;
-}
-
-function questUsageSummary(project: Project, scripts: TriggerRecord[]) {
-  const questCodes = new Set([46, 47, 76, 77]);
-  const byId = new Map<number, { id: number; label: string; authored: boolean; uses: Array<{ trigger: TriggerRecord; slot: number }> }>();
-  for (const quest of project.questLabels ?? []) {
-    byId.set(quest.id, { id: quest.id, label: quest.label || `Quest ${quest.id}`, authored: true, uses: [] });
-  }
-  for (const trigger of scripts) {
-    for (const action of trigger.actions) {
-      if (!questCodes.has(normalizeStepOpcode(action.rawCode))) continue;
-      const id = Math.abs(action.id);
-      if (id === 0) continue;
-      const existing = byId.get(id) ?? { id, label: `Quest ${id}`, authored: false, uses: [] };
-      existing.uses.push({ trigger, slot: action.slot });
-      byId.set(id, existing);
-    }
-  }
-  return [...byId.values()]
-    .filter((quest) => quest.uses.length > 0 || quest.authored)
-    .sort((a, b) => b.uses.length - a.uses.length || a.id - b.id);
 }
 
 function SourceEvidence({
