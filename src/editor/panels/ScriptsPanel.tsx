@@ -3233,6 +3233,55 @@ function EncounterShell({
       onApplyCommand?.({ kind: "updateComplexEncounterRecord", label: "Update complex encounter", id, changes });
     }
   };
+  const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null);
+  const rogueRecord = recordKind === "complex" && thiefSuccess !== undefined
+    ? project.thiefEncounters?.find((candidate) => candidate.id === thiefSuccess)
+    : undefined;
+  const resultFlowSources = useMemo(() => buildEncounterDecisionSources({
+    recordKind,
+    texts,
+    actionResult,
+    wordResult,
+    groups,
+    spellIds,
+    spellResults,
+    itemIds,
+    itemResults,
+    choiceResults,
+    wordResults,
+    thief: Boolean(thief),
+    rogueId: thiefSuccess ?? 0,
+    rogueRecord,
+    actions
+  }), [
+    actionResult,
+    actions,
+    choiceResults,
+    groups,
+    itemIds,
+    itemResults,
+    recordKind,
+    rogueRecord,
+    spellIds,
+    spellResults,
+    texts,
+    thief,
+    thiefSuccess,
+    wordResult,
+    wordResults
+  ]);
+  const addVisibleResult = (resultIndex: number) => {
+    const messageId = nextAuthorableTargetId(project, "message");
+    onApplyCommand?.({ kind: "createTargetRecord", label: "Create encounter result message", recordType: "message", id: messageId });
+    const firstSlot = resultIndex * ENCOUNTER_RESULT_ROWS;
+    const nextActions = updateEncounterActionRow(
+      updateEncounterActionRow(actions, firstSlot, { rawCode: 1, id: messageId }),
+      firstSlot + 1,
+      { rawCode: 24, id: 0 }
+    );
+    update({ actions: nextActions });
+    setSelectedResultIndex(resultIndex);
+  };
   return (
     <div className="script-target-grid encounter-record-grid">
       <section className="encounter-setup-panel">
@@ -3282,6 +3331,7 @@ function EncounterShell({
               project={project}
               rogueId={thiefSuccess ?? 0}
               preservedFailField={thiefFail ?? 0}
+              resultActions={actions}
               onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create rogue encounter", recordType: "thiefEncounter", id: thiefSuccess ?? 0 })}
               onOpen={() => onSelectEntity?.({ type: "encounter", id: `thief:${thiefSuccess ?? 0}` })}
               onRunOnStart={() => onApplyCommand?.({ kind: "createStartupTestMacro", label: "Run encounter on scenario start", complexEncounterId: id })}
@@ -3289,6 +3339,11 @@ function EncounterShell({
           )}
         </section>
       )}
+      <EncounterResultFlowOverview
+        sources={resultFlowSources}
+        selectedResultIndex={selectedResultIndex}
+        onSelectResult={setSelectedResultIndex}
+      />
       <EncounterResultEditor
         recordKind={recordKind}
         texts={texts}
@@ -3313,6 +3368,10 @@ function EncounterShell({
           actions={actions}
           title="Result Action Columns"
           description="Simple encounters store eight CODE/ID rows for each of the four result numbers, matching the Divinity editor columns."
+          decisionSources={resultFlowSources}
+          selectedResultIndex={selectedResultIndex}
+          onSelectResult={setSelectedResultIndex}
+          onAddVisibleResult={addVisibleResult}
           onUpdate={(slot, changes) => update({ actions: updateEncounterActionRow(actions, slot, changes) })}
           onCreateTarget={(recordType, targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create encounter action target", recordType, id: targetId })}
         />
@@ -3323,6 +3382,10 @@ function EncounterShell({
           actions={actions}
           title="Result Script Columns"
           description="Complex encounters also resolve into four scriptable result columns. Each column holds eight CODE/ID rows."
+          decisionSources={resultFlowSources}
+          selectedResultIndex={selectedResultIndex}
+          onSelectResult={setSelectedResultIndex}
+          onAddVisibleResult={addVisibleResult}
           onUpdate={(slot, changes) => update({ actions: updateEncounterActionRow(actions, slot, changes) })}
           onCreateTarget={(recordType, targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create encounter action target", recordType, id: targetId })}
         />
@@ -3335,6 +3398,7 @@ function ComplexRogueSummary({
   project,
   rogueId,
   preservedFailField,
+  resultActions,
   onCreate,
   onOpen,
   onRunOnStart
@@ -3342,6 +3406,7 @@ function ComplexRogueSummary({
   project: Project;
   rogueId: number;
   preservedFailField: number;
+  resultActions: EncounterActionRow[];
   onCreate: () => void;
   onOpen: () => void;
   onRunOnStart: () => void;
@@ -3365,11 +3430,11 @@ function ComplexRogueSummary({
             </div>
             <div>
               <dt>Open Lock spell</dt>
-              <dd>{rogueSpellPathSummary(record, ROGUE_OPEN_LOCK_SPELL_PATH)}</dd>
+              <dd>{rogueSpellPathSummary(record, ROGUE_OPEN_LOCK_SPELL_PATH)} {rogueResultColumnVisibilitySummary(record, ROGUE_OPEN_LOCK_SPELL_PATH.slot, resultActions)}</dd>
             </div>
             <div>
               <dt>Disarm Trap spell</dt>
-              <dd>{rogueSpellPathSummary(record, ROGUE_DISARM_TRAP_SPELL_PATH)}</dd>
+              <dd>{rogueSpellPathSummary(record, ROGUE_DISARM_TRAP_SPELL_PATH)} {rogueResultColumnVisibilitySummary(record, ROGUE_DISARM_TRAP_SPELL_PATH.slot, resultActions)}</dd>
             </div>
             {preservedFailField !== 0 && (
               <div>
@@ -3412,6 +3477,252 @@ function rogueOutcomeSummary(record: Project["thiefEncounters"][number], slot: n
 
 function resultCodeLabel(value: number) {
   return value > 0 ? `Result ${value}` : "no result";
+}
+
+const ENCOUNTER_RESULT_COUNT = 4;
+const ENCOUNTER_RESULT_ROWS = 8;
+
+type EncounterResultStatus = "visible" | "empty" | "missing" | "out-of-range";
+
+type EncounterDecisionSource = {
+  key: string;
+  label: string;
+  detail: string;
+  result: number;
+  resultIndex: number | null;
+  status: EncounterResultStatus;
+};
+
+function resultIndexForCode(result: number) {
+  return result >= 1 && result <= ENCOUNTER_RESULT_COUNT ? result - 1 : null;
+}
+
+function resultStatusLabel(status: EncounterResultStatus) {
+  if (status === "visible") return "Visible";
+  if (status === "empty") return "Empty";
+  if (status === "out-of-range") return "Out of range";
+  return "Missing";
+}
+
+function encounterResultStatus(actions: EncounterActionRow[], result: number): EncounterResultStatus {
+  const resultIndex = resultIndexForCode(result);
+  if (resultIndex === null) return result > ENCOUNTER_RESULT_COUNT ? "out-of-range" : "missing";
+  const column = encounterResultColumnRows(actions, resultIndex);
+  if (column.some((row) => encounterActionIsPlayerObservable(row))) return "visible";
+  return "empty";
+}
+
+function encounterResultColumnRows(actions: EncounterActionRow[], resultIndex: number) {
+  return Array.from({ length: ENCOUNTER_RESULT_ROWS }, (_, rowIndex) => encounterActionAt(actions, resultIndex * ENCOUNTER_RESULT_ROWS + rowIndex));
+}
+
+function encounterActionIsPopulated(row: EncounterActionRow) {
+  return row.rawCode !== 0 || row.id !== 0;
+}
+
+function encounterActionIsPlayerObservable(row: EncounterActionRow) {
+  if (!encounterActionIsPopulated(row)) return false;
+  if (row.rawCode === 24 && row.id === 0) return false;
+  if (isDispatcherNoopOpcode(row.rawCode)) return false;
+  return true;
+}
+
+function encounterActionLabel(row: EncounterActionRow) {
+  const option = actionOptionFor(row.rawCode);
+  if (option) return option.shortLabel ?? option.label;
+  if (encounterActionIsPopulated(row)) return `Raw CODE ${row.rawCode}`;
+  return "Empty";
+}
+
+function encounterResultColumnSummary(actions: EncounterActionRow[], resultIndex: number, sources: EncounterDecisionSource[]) {
+  const rows = encounterResultColumnRows(actions, resultIndex);
+  const visible = rows.find(encounterActionIsPlayerObservable);
+  const populated = rows.find(encounterActionIsPopulated);
+  const incoming = sources.filter((source) => source.resultIndex === resultIndex).length;
+  return {
+    status: visible ? "visible" as EncounterResultStatus : "empty" as EncounterResultStatus,
+    firstAction: visible ? encounterActionLabel(visible) : populated ? `Only ${encounterActionLabel(populated)}` : "No visible actions",
+    incoming
+  };
+}
+
+function encounterDecisionSource(
+  key: string,
+  label: string,
+  detail: string,
+  result: number,
+  actions: EncounterActionRow[]
+): EncounterDecisionSource {
+  const resultIndex = resultIndexForCode(result);
+  return {
+    key,
+    label,
+    detail,
+    result,
+    resultIndex,
+    status: encounterResultStatus(actions, result)
+  };
+}
+
+function buildEncounterDecisionSources({
+  recordKind,
+  texts,
+  actionResult,
+  wordResult,
+  groups,
+  spellIds,
+  spellResults,
+  itemIds,
+  itemResults,
+  choiceResults,
+  wordResults,
+  thief,
+  rogueId,
+  rogueRecord,
+  actions
+}: {
+  recordKind: "simple" | "complex";
+  texts: string[];
+  actionResult: number;
+  wordResult: number;
+  groups: number[];
+  spellIds: number[];
+  spellResults: number[];
+  itemIds: number[];
+  itemResults: number[];
+  choiceResults: number[];
+  wordResults?: number[];
+  thief: boolean;
+  rogueId: number;
+  rogueRecord?: Project["thiefEncounters"][number];
+  actions: EncounterActionRow[];
+}) {
+  const sources: EncounterDecisionSource[] = [];
+  if (recordKind === "simple") {
+    for (let slot = 0; slot < 4; slot += 1) {
+      const text = (texts[slot] ?? "").trim();
+      sources.push(encounterDecisionSource(
+        `choice-${slot}`,
+        `Choice ${slot}`,
+        text ? `Player picks "${shortSnippet(text, 54)}"` : "Player picks this option.",
+        choiceResults[slot] ?? 0,
+        actions
+      ));
+    }
+    return sources;
+  }
+
+  const actionLabels = texts.slice(0, 8).map((text, slot) => text.trim() ? `Action ${slot}: ${shortSnippet(text, 28)}` : null).filter((label): label is string => Boolean(label));
+  const groupCount = groups.filter((value) => value !== 0).length;
+  if ((actionResult ?? 0) !== 0 || actionLabels.length > 0 || groupCount > 0) {
+    sources.push(encounterDecisionSource(
+      "action-picker",
+      "Action picker",
+      `${actionLabels.length || 8} action label${actionLabels.length === 1 ? "" : "s"}${groupCount ? `; ${groupCount} group flag${groupCount === 1 ? "" : "s"}` : ""}.`,
+      actionResult,
+      actions
+    ));
+  }
+  if ((wordResult ?? 0) !== 0 || (texts[8] ?? "").trim()) {
+    sources.push(encounterDecisionSource(
+      "word-phrase",
+      "Typed word",
+      (texts[8] ?? "").trim() ? `Player types "${shortSnippet(texts[8] ?? "", 54)}".` : "Player enters the configured word or phrase.",
+      wordResult,
+      actions
+    ));
+  }
+  spellIds.forEach((spellId, slot) => {
+    const result = spellResults[slot] ?? 0;
+    if (spellId !== 0 || result !== 0) {
+      sources.push(encounterDecisionSource(`spell-${slot}`, `Spell ${spellId || slot + 1}`, `Spell/scroll test row ${slot + 1}.`, result, actions));
+    }
+  });
+  itemIds.forEach((itemId, slot) => {
+    const result = itemResults[slot] ?? 0;
+    if (itemId !== 0 || result !== 0) {
+      sources.push(encounterDecisionSource(`item-${slot}`, `Item ${itemId || slot + 1}`, `Required item test row ${slot + 1}.`, result, actions));
+    }
+  });
+  (wordResults ?? []).forEach((result, slot) => {
+    if (result !== 0 && slot > 0) {
+      sources.push(encounterDecisionSource(`word-result-${slot}`, `Word result ${slot + 1}`, "Preserved alternate word-result field.", result, actions));
+    }
+  });
+  if (thief && rogueRecord) {
+    ROGUE_ACTION_LABELS.forEach((label, slot) => {
+      if (!rogueRecord.typeFlags?.[slot] && !rogueActionHasOutcomeData(rogueRecord, slot)) return;
+      sources.push(encounterDecisionSource(
+        `rogue-${slot}-success`,
+        `${label} success`,
+        `Rogue Encounter ${rogueId} returns this result when the action succeeds.`,
+        rogueRecord.successCodes?.[slot] ?? 0,
+        actions
+      ));
+      sources.push(encounterDecisionSource(
+        `rogue-${slot}-failure`,
+        `${label} failure`,
+        `Rogue Encounter ${rogueId} returns this result when the action fails.`,
+        rogueRecord.failureCodes?.[slot] ?? 0,
+        actions
+      ));
+    });
+  }
+  return sources;
+}
+
+function shortSnippet(text: string, maxLength: number) {
+  const trimmed = text.replace(/\s+/g, " ").trim();
+  if (trimmed.length <= maxLength) return trimmed;
+  return `${trimmed.slice(0, Math.max(0, maxLength - 1))}...`;
+}
+
+function EncounterResultFlowOverview({
+  sources,
+  selectedResultIndex,
+  onSelectResult
+}: {
+  sources: EncounterDecisionSource[];
+  selectedResultIndex: number | null;
+  onSelectResult: (resultIndex: number | null) => void;
+}) {
+  if (sources.length === 0) {
+    return (
+      <section className="encounter-result-flow-overview empty">
+        <header>
+          <strong>Result Flow</strong>
+          <span>No decision sources configured</span>
+        </header>
+        <p className="field-help">Add player options, typed words, spell/item tests, or Rogue paths to route this encounter into result columns.</p>
+      </section>
+    );
+  }
+  return (
+    <section className="encounter-result-flow-overview">
+      <header>
+        <strong>Result Flow</strong>
+        <span>{sources.length} decision source{sources.length === 1 ? "" : "s"}</span>
+      </header>
+      <div className="encounter-result-flow-list">
+        {sources.map((source) => (
+          <button
+            key={source.key}
+            type="button"
+            className={`encounter-result-flow-row ${source.status}${source.resultIndex !== null && source.resultIndex === selectedResultIndex ? " selected" : ""}`}
+            disabled={source.resultIndex === null}
+            onClick={() => onSelectResult(source.resultIndex)}
+          >
+            <span>
+              <b>{source.label}</b>
+              <small>{source.detail}</small>
+            </span>
+            <em>{source.result > 0 ? `Result ${source.result}` : "No result"}</em>
+            <i>{resultStatusLabel(source.status)}</i>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 const ROGUE_PRIMARY_ACTIONS = 5;
@@ -3498,6 +3809,12 @@ function rogueSpellPathSummary(record: Project["thiefEncounters"][number], confi
   return `Enabled (${chance}); success -> ${resultCodeLabel(record.successCodes?.[config.slot] ?? 0)}, failure -> ${resultCodeLabel(record.failureCodes?.[config.slot] ?? 0)}.`;
 }
 
+function rogueResultColumnVisibilitySummary(record: Project["thiefEncounters"][number], slot: number, actions: EncounterActionRow[]) {
+  const success = record.successCodes?.[slot] ?? 0;
+  const failure = record.failureCodes?.[slot] ?? 0;
+  return `Success ${resultStatusLabel(encounterResultStatus(actions, success)).toLowerCase()}; failure ${resultStatusLabel(encounterResultStatus(actions, failure)).toLowerCase()}.`;
+}
+
 function RogueSpellStatusStrip({ record }: { record: Project["thiefEncounters"][number] }) {
   return (
     <div className="rogue-spell-status-strip">
@@ -3521,6 +3838,10 @@ function EncounterResultActionMatrix({
   actions,
   title,
   description,
+  decisionSources,
+  selectedResultIndex,
+  onSelectResult,
+  onAddVisibleResult,
   onUpdate,
   onCreateTarget
 }: {
@@ -3529,6 +3850,10 @@ function EncounterResultActionMatrix({
   actions: EncounterActionRow[];
   title: string;
   description: string;
+  decisionSources: EncounterDecisionSource[];
+  selectedResultIndex: number | null;
+  onSelectResult: (resultIndex: number) => void;
+  onAddVisibleResult: (resultIndex: number) => void;
   onUpdate: (slot: number, changes: Partial<EncounterActionRow>) => void;
   onCreateTarget: (recordType: RealmzTargetRecordKind, targetId: number) => void;
 }) {
@@ -3543,14 +3868,24 @@ function EncounterResultActionMatrix({
         </div>
       </header>
       <div className="simple-encounter-result-columns">
-        {Array.from({ length: 4 }, (_, resultIndex) => (
-          <div key={resultIndex} className="simple-encounter-result-column">
+        {Array.from({ length: ENCOUNTER_RESULT_COUNT }, (_, resultIndex) => {
+          const summary = encounterResultColumnSummary(actions, resultIndex, decisionSources);
+          return (
+          <div key={resultIndex} className={`simple-encounter-result-column ${summary.status}${selectedResultIndex === resultIndex ? " selected" : ""}`}>
             <header>
-              <strong>Result #{resultIndex + 1}</strong>
-              <small>Code / ID</small>
+              <button type="button" className="encounter-result-column-title" onClick={() => onSelectResult(resultIndex)}>
+                <strong>Result #{resultIndex + 1}</strong>
+                <small>{summary.incoming} incoming | {resultStatusLabel(summary.status)}</small>
+              </button>
+              {summary.status === "empty" && (
+                <button type="button" className="btn btn-secondary btn-xs" onClick={() => onAddVisibleResult(resultIndex)}>
+                  Add visible result
+                </button>
+              )}
             </header>
-            {Array.from({ length: 8 }, (_, rowIndex) => {
-              const slot = resultIndex * 8 + rowIndex;
+            <p className="encounter-column-summary">{summary.firstAction}</p>
+            {Array.from({ length: ENCOUNTER_RESULT_ROWS }, (_, rowIndex) => {
+              const slot = resultIndex * ENCOUNTER_RESULT_ROWS + rowIndex;
               return (
                 <SimpleEncounterActionCell
                   key={slot}
@@ -3564,7 +3899,8 @@ function EncounterResultActionMatrix({
               );
             })}
           </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
@@ -3789,6 +4125,7 @@ function RogueActionRow({
   onCreateMessage: (targetId: number) => void;
 }) {
   const spellPath = rogueSpellPathForSlot(slot);
+  const actionWarnings = rogueActionOutcomeWarnings(record, slot);
   return (
     <>
       <div className={primary ? "rogue-action-row" : "rogue-action-row secondary"} role="row">
@@ -3848,6 +4185,7 @@ function RogueActionRow({
           onCommit={(value) => onUpdate({ failureSounds: updateArraySlot(record.failureSounds ?? [], slot, value, 8) })}
         />
       </div>
+      {actionWarnings.map((warning) => <p key={warning} className="field-warning rogue-action-warning">{warning}</p>)}
       {spellPath && (
         <RogueSpellPathPanel
           record={record}
@@ -3857,6 +4195,19 @@ function RogueActionRow({
       )}
     </>
   );
+}
+
+function rogueActionOutcomeWarnings(record: Project["thiefEncounters"][number], slot: number) {
+  if (!record.typeFlags?.[slot]) return [];
+  const label = ROGUE_ACTION_LABELS[slot] ?? `Rogue Action ${slot}`;
+  const warnings: string[] = [];
+  if (!rogueOutcomeHasVisiblePath(record, slot, "success")) {
+    warnings.push(`${label} can succeed, but success currently has no visible result. Add a result code, message, or sound.`);
+  }
+  if (!rogueOutcomeHasVisiblePath(record, slot, "failure")) {
+    warnings.push(`${label} can fail, but failure currently has no visible result. Add a result code, message, or sound.`);
+  }
+  return warnings;
 }
 
 function RogueSpellPathPanel({
@@ -3906,6 +4257,7 @@ function TimedEncounterShell({
     update({ locationKind, stuff: updateArraySlot(record.stuff ?? [], 0, locationKindValue(locationKind), 10) });
   };
   const locationValue = locationKindValue(record.locationKind);
+  const eligibilitySummary = timedEncounterEligibilitySummary(record);
   return (
     <div className="timed-encounter-editor">
       <section className="timed-encounter-form">
@@ -3918,6 +4270,7 @@ function TimedEncounterShell({
           </div>
           <span>{record.percent}% chance</span>
         </header>
+        <p className="timed-eligibility-summary">{eligibilitySummary}</p>
         <div className="timed-encounter-columns">
           <div className="timed-encounter-column">
             <TimedNumberRow label="Day" value={record.day} onCommit={(day) => update({ day })} />
@@ -4047,6 +4400,23 @@ function locationKindValue(locationKind: Project["timedEncounters"][number]["loc
   if (locationKind === "land") return 1;
   if (locationKind === "dungeon") return 2;
   return -1;
+}
+
+function timedEncounterEligibilitySummary(record: Project["timedEncounters"][number]) {
+  const timing = record.day === -1 && record.increment === -1
+    ? "Inactive until an Action Point activates it"
+    : `checked at midnight starting day ${record.day}, increment ${record.increment}`;
+  const location =
+    record.locationKind === "land" ? `on land level ${record.requiredLevel}` :
+    record.locationKind === "dungeon" ? `in dungeon level ${record.requiredLevel}` :
+    "at any location";
+  const gates: string[] = [];
+  if (record.requiredItem > 0) gates.push(`requires item ${record.requiredItem}`);
+  if (record.requiredQuest > 0) gates.push(`requires quest flag ${record.requiredQuest}`);
+  if (record.requiredRandomRect > 0) gates.push(`inside random rectangle ${record.requiredRandomRect}`);
+  if (record.requiredX > 0 || record.requiredY > 0) gates.push(`near ${record.requiredX},${record.requiredY}`);
+  const runs = record.door > 0 ? `runs Extra Action Point ${record.door}` : "has no Extra Action Point target";
+  return `${timing}; ${record.percent}% chance; ${location}${gates.length ? `; ${gates.join("; ")}` : ""}; ${runs}.`;
 }
 
 function EncounterResultEditor({

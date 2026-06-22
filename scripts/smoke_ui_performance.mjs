@@ -251,7 +251,29 @@ async function runApProbes(client, budgets, scenario) {
   `, `document.querySelector(".realmz-step-card.selected")`);
 
   await probe(client, scenario, budgets, "AP target picker open", "targetPickerOpen", `
-    (() => {
+    (async () => {
+      const directTargetLabels = [
+        "show message",
+        "sound",
+        "picture",
+        "simple encounter",
+        "complex encounter",
+        "shop",
+        "treasure",
+        "extra ap",
+        "extra action point",
+        "map item",
+        "quest",
+        "monster"
+      ];
+      const card = [...document.querySelectorAll(".realmz-step-card")]
+        .find((candidate) => {
+          const text = candidate.textContent?.toLowerCase() ?? "";
+          if (text.includes("empty")) return false;
+          return directTargetLabels.some((label) => text.includes(label));
+        });
+      card?.click();
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       const input = document.querySelector(".realmz-target-picker input");
       if (!input) return false;
       input.focus();
