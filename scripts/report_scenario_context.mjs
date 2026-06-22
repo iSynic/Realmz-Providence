@@ -46,18 +46,21 @@ function buildCastleReport(project, projectPath) {
         name: "Keto Allegiances And Gates",
         disposition: "story context",
         rationale: "Early strings repeatedly ask the player to pledge allegiance to Lord or Lady Keto and gate passage/shop access by that allegiance.",
+        questFlagIds: [2],
         messageIds: idsForTerms(messageEvidence, ["lord keto", "lady keto", "alliance", "gate"]).slice(0, 16)
       },
       {
         name: "Find The Real Ketos",
         disposition: "likely main quest chain",
         rationale: "The decoded strings distinguish impostors from the real Lord and Lady Keto; the user-reported progression issue likely belongs in this chain.",
+        questFlagIds: [4, 5],
         messageIds: [174, 175, 319, 320, 322, 325, 327, 328, 470, 881, 933, 935, 939].filter((id) => messageById(messages, id))
       },
       {
         name: "Ulmac, Ambersair, And Ketonia",
         disposition: "likely main resolution gate",
         rationale: "Several messages say Ulmac and Ambersair controlled Ketonia or must be destroyed before the royal reunion/restoration can resolve.",
+        questFlagIds: [6, 7, 8],
         messageIds: idsForTerms(messageEvidence, ["ulmac", "ambersair", "ketonia"]).slice(0, 18)
       }
     ],
@@ -69,7 +72,7 @@ function buildCastleReport(project, projectPath) {
     },
     notes: [
       "This report is a context aid, not a proof of runtime behavior.",
-      "Quest flags are not named in this imported project; follow-up work should correlate these story beats with AP/EDCD reads and writes.",
+      "Quest flags are loose Realmz state. The current Castle pass maps the Keto continuity to Q2, Q4, Q5, Q6, Q7, and Q8 as navigation context, not as proof of every runtime branch.",
       "Bundled UI context should remain humble: show likely continuity and nearby evidence, then let authors curate exact threads."
     ]
   };
@@ -115,7 +118,18 @@ function markdownReport(report) {
     ""
   ];
   for (const thread of report.threadCandidates) {
-    lines.push(`### ${thread.name}`, "", `Disposition: ${thread.disposition}`, "", thread.rationale, "", `Messages: ${thread.messageIds.join(", ") || "none"}`, "");
+    lines.push(
+      `### ${thread.name}`,
+      "",
+      `Disposition: ${thread.disposition}`,
+      "",
+      thread.rationale,
+      "",
+      `Quest flags: ${(thread.questFlagIds ?? []).map((id) => `Q${id}`).join(", ") || "none mapped yet"}`,
+      "",
+      `Messages: ${thread.messageIds.join(", ") || "none"}`,
+      ""
+    );
   }
   lines.push("## Message Evidence", "");
   for (const message of report.evidence.messages.slice(0, 120)) {

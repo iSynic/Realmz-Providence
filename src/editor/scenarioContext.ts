@@ -54,8 +54,8 @@ const CASTLE_THREADS: QuestThread[] = [
   {
     id: "bundled-thread:castle-in-the-clouds:keto-allegiances",
     name: "Keto Allegiances And Gates",
-    description: "Tracks the early Lord/Lady Keto faction choice and the guard/shop gates that react to it.",
-    questIds: [],
+    description: "Tracks the early Lord/Lady Keto faction choice and the guard/shop gates that react to those story flags.",
+    questIds: [2],
     contextRefs: [
       contextRef("keto-war", ["lord keto", "lady keto", "gate", "alliance"])
     ],
@@ -67,7 +67,7 @@ const CASTLE_THREADS: QuestThread[] = [
     id: "bundled-thread:castle-in-the-clouds:real-ketos",
     name: "Find The Real Ketos",
     description: "Connects the imprisoned real Lord Keto, the dead/revived real Lady Keto, and the warnings about impostors.",
-    questIds: [],
+    questIds: [4, 5],
     contextRefs: [
       contextRef("real-lord-keto", ["lord keto", "ulmac", "imprisoned"]),
       contextRef("real-lady-keto", ["lady keto", "dead", "revive", "impostor"])
@@ -80,7 +80,7 @@ const CASTLE_THREADS: QuestThread[] = [
     id: "bundled-thread:castle-in-the-clouds:ulmac-ambersair",
     name: "Ulmac, Ambersair, And Ketonia",
     description: "Surfaces the likely main-resolution chain around destroying Ulmac and Ambersair before Ketonia can be restored.",
-    questIds: [],
+    questIds: [6, 7, 8],
     contextRefs: [
       contextRef("ulmac-ambersair", ["ulmac", "ambersair", "ketonia"]),
       contextRef("keto-reunion", ["lord keto", "lady keto", "peace"])
@@ -96,7 +96,7 @@ const RECOGNIZED_CONTEXTS: RecognizedScenarioContext[] = [
     id: "castle-in-the-clouds",
     scenarioName: "Castle in the Clouds",
     confidence: "high",
-    summary: "Providence recognizes this as Castle in the Clouds and can show curated context for the Keto/Ulmac continuity. Treat it as a navigation aid over raw flags and scripts, not as a replacement for runtime testing.",
+    summary: "Providence recognizes this as Castle in the Clouds and can show curated context for the Keto/Ulmac continuity. Treat it as a navigation aid over raw Divinity quest flags and scripts, not as a replacement for runtime testing.",
     recognitionNotes: [
       "Matched by scenario/source name containing Castle in the Clouds.",
       "Context is based on decoded scenario strings and the bundled Castle hint-guide candidate."

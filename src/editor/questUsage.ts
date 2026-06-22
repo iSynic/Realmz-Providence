@@ -146,7 +146,7 @@ export function buildQuestPresentation(project: Project, scripts: TriggerRecord[
       questId: encounter.requiredQuest,
       category: "required",
       label: "Required by timed encounter",
-      detail: `Timed Encounter ${encounter.id} requires Quest ${encounter.requiredQuest} before it can run Extra Action Point ${encounter.door}.`,
+      detail: `Timed Encounter ${encounter.id} requires quest flag ${encounter.requiredQuest} before it can run Extra Action Point ${encounter.door}.`,
       sourceLabel: `Timed Encounter ${encounter.id}`,
       sourceKind: "Data TD3",
       entityId: `encounter:timed:${encounter.id}`,
@@ -164,7 +164,7 @@ export function buildQuestPresentation(project: Project, scripts: TriggerRecord[
       questId,
       category,
       label: link.kind === "writes_flag" ? "Semantic write" : "Semantic read",
-      detail: `${sourceLabel} ${link.kind.replace(/_/g, " ")} Quest ${questId}.`,
+      detail: `${sourceLabel} ${link.kind.replace(/_/g, " ")} quest flag ${questId}.`,
       sourceLabel,
       sourceKind: "semantic",
       entityId: link.from,
@@ -231,7 +231,7 @@ function addActionQuestUses(
       questId,
       category: action.id < 0 ? "cleared" : "set",
       label: action.id < 0 ? "Clears quest flag" : "Sets quest flag",
-      detail: `${source.sourceLabel} ${slotLabel} ${action.id < 0 ? "clears" : "sets"} Quest ${questId}.`,
+      detail: `${source.sourceLabel} ${slotLabel} ${action.id < 0 ? "clears" : "sets"} quest flag ${questId}.`,
       ...base
     });
     return;
@@ -244,7 +244,7 @@ function addActionQuestUses(
       questId,
       category: "tested",
       label: "Branch on quest",
-      detail: `${source.sourceLabel} ${slotLabel} tests Quest ${questId}.`,
+      detail: `${source.sourceLabel} ${slotLabel} tests quest flag ${questId}.`,
       ...base
     });
     addUse({
@@ -265,7 +265,7 @@ function addActionQuestUses(
       questId,
       category: "incremented",
       label: "Changes quest value",
-      detail: `${source.sourceLabel} ${slotLabel} changes Quest ${questId} by ${row[1] ?? 0}.`,
+      detail: `${source.sourceLabel} ${slotLabel} changes quest flag ${questId} by ${row[1] ?? 0}.`,
       ...base
     });
     if ((row[3] ?? 0) !== 0) {
@@ -288,7 +288,7 @@ function addActionQuestUses(
       questId,
       category: "tested",
       label: "Quest value branch",
-      detail: `${source.sourceLabel} ${slotLabel} compares Quest ${questId}.`,
+      detail: `${source.sourceLabel} ${slotLabel} compares quest flag ${questId}.`,
       ...base
     });
     addUse({

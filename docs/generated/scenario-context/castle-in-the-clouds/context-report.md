@@ -22,6 +22,8 @@ Disposition: story context
 
 Early strings repeatedly ask the player to pledge allegiance to Lord or Lady Keto and gate passage/shop access by that allegiance.
 
+Quest flags: Q2
+
 Messages: 1, 2, 11, 33, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 109
 
 ### Find The Real Ketos
@@ -30,6 +32,8 @@ Disposition: likely main quest chain
 
 The decoded strings distinguish impostors from the real Lord and Lady Keto; the user-reported progression issue likely belongs in this chain.
 
+Quest flags: Q4, Q5
+
 Messages: 174, 175, 319, 320, 322, 325, 327, 328, 470, 881, 933, 935, 939
 
 ### Ulmac, Ambersair, And Ketonia
@@ -37,6 +41,8 @@ Messages: 174, 175, 319, 320, 322, 325, 327, 328, 470, 881, 933, 935, 939
 Disposition: likely main resolution gate
 
 Several messages say Ulmac and Ambersair controlled Ketonia or must be destroyed before the royal reunion/restoration can resolve.
+
+Quest flags: Q6, Q7, Q8
 
 Messages: 137, 138, 139, 140, 158, 165, 174, 175, 176, 227, 295, 296, 319, 320, 321, 322, 323, 326
 
@@ -166,5 +172,5 @@ Messages: 137, 138, 139, 140, 158, 165, 174, 175, 176, 227, 295, 296, 319, 320, 
 ## Notes
 
 - This report is a context aid, not a proof of runtime behavior.
-- Quest flags are not named in this imported project; follow-up work should correlate these story beats with AP/EDCD reads and writes.
+- Quest flags are loose Realmz state. The current Castle pass maps the Keto continuity to Q2, Q4, Q5, Q6, Q7, and Q8 as navigation context, not as proof of every runtime branch.
 - Bundled UI context should remain humble: show likely continuity and nearby evidence, then let authors curate exact threads.
