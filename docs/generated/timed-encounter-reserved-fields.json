@@ -1,0 +1,1866 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": null,
+  "scanScope": "benchmark-projects",
+  "scanRoots": [
+    "F:\\Realmz - Providence\\tmp\\desktop-ui-harness\\wrath-assets-release-011\\WrathAssets.providence",
+    "F:\\Realmz - Providence\\tmp\\desktop-ui-harness\\wrath-assets\\WrathAssets.providence"
+  ],
+  "projectCount": 2,
+  "rawScenarioCount": 0,
+  "sourceCount": 2,
+  "recordCount": 16,
+  "findingCount": 16,
+  "summary": {
+    "sourcesWithRecords": 2,
+    "sourcesWithFindings": 2,
+    "recordsWithReservedValues": 16,
+    "reservedUsagePresent": true
+  },
+  "developerNote": "stuff[1..9] are preserved compatibility fields. The current corpus shows repeated nonzero patterns, but Realmz runtime evidence only names stuff[0] as the location-kind field. Do not promote these slots into authoring UI until source, Divinity fixture, or runtime behavior gives a slot a confirmed meaning.",
+  "activitySummary": {
+    "totalRecordsWithReservedValues": 16,
+    "activeSchedule": 16,
+    "runnableDoor": 16,
+    "plausibleRunnable": 16,
+    "inactiveTemplateLike": 0
+  },
+  "slotSummary": [
+    {
+      "slot": 1,
+      "field": "stuff[1]",
+      "recordCount": 16,
+      "scenarioCount": 2,
+      "uniqueValues": [
+        11005,
+        15927
+      ],
+      "commonValues": [
+        {
+          "value": 11005,
+          "count": 14
+        },
+        {
+          "value": 15927,
+          "count": 2
+        }
+      ]
+    },
+    {
+      "slot": 2,
+      "field": "stuff[2]",
+      "recordCount": 16,
+      "scenarioCount": 2,
+      "uniqueValues": [
+        9994,
+        13874
+      ],
+      "commonValues": [
+        {
+          "value": 9994,
+          "count": 14
+        },
+        {
+          "value": 13874,
+          "count": 2
+        }
+      ]
+    },
+    {
+      "slot": 3,
+      "field": "stuff[3]",
+      "recordCount": 16,
+      "scenarioCount": 2,
+      "uniqueValues": [
+        11308,
+        14391
+      ],
+      "commonValues": [
+        {
+          "value": 11308,
+          "count": 14
+        },
+        {
+          "value": 14391,
+          "count": 2
+        }
+      ]
+    },
+    {
+      "slot": 4,
+      "field": "stuff[4]",
+      "recordCount": 16,
+      "scenarioCount": 2,
+      "uniqueValues": [
+        10800,
+        13365
+      ],
+      "commonValues": [
+        {
+          "value": 10800,
+          "count": 14
+        },
+        {
+          "value": 13365,
+          "count": 2
+        }
+      ]
+    },
+    {
+      "slot": 5,
+      "field": "stuff[5]",
+      "recordCount": 16,
+      "scenarioCount": 2,
+      "uniqueValues": [
+        12079,
+        14905
+      ],
+      "commonValues": [
+        {
+          "value": 12079,
+          "count": 14
+        },
+        {
+          "value": 14905,
+          "count": 2
+        }
+      ]
+    },
+    {
+      "slot": 6,
+      "field": "stuff[6]",
+      "recordCount": 16,
+      "scenarioCount": 2,
+      "uniqueValues": [
+        11568,
+        13364
+      ],
+      "commonValues": [
+        {
+          "value": 11568,
+          "count": 14
+        },
+        {
+          "value": 13364,
+          "count": 2
+        }
+      ]
+    },
+    {
+      "slot": 7,
+      "field": "stuff[7]",
+      "recordCount": 16,
+      "scenarioCount": 2,
+      "uniqueValues": [
+        11046,
+        12850
+      ],
+      "commonValues": [
+        {
+          "value": 11046,
+          "count": 14
+        },
+        {
+          "value": 12850,
+          "count": 2
+        }
+      ]
+    },
+    {
+      "slot": 8,
+      "field": "stuff[8]",
+      "recordCount": 16,
+      "scenarioCount": 2,
+      "uniqueValues": [
+        9980,
+        13357
+      ],
+      "commonValues": [
+        {
+          "value": 9980,
+          "count": 14
+        },
+        {
+          "value": 13357,
+          "count": 2
+        }
+      ]
+    },
+    {
+      "slot": 9,
+      "field": "stuff[9]",
+      "recordCount": 16,
+      "scenarioCount": 2,
+      "uniqueValues": [
+        10001,
+        10279
+      ],
+      "commonValues": [
+        {
+          "value": 10001,
+          "count": 14
+        },
+        {
+          "value": 10279,
+          "count": 2
+        }
+      ]
+    }
+  ],
+  "commonPatterns": [
+    {
+      "pattern": "11005,9994,11308,10800,12079,11568,11046,9980,10001",
+      "recordCount": 14,
+      "scenarios": [
+        "Wrath Assets",
+        "Wrath Assets Harness"
+      ],
+      "examples": [
+        {
+          "scenario": "Wrath Assets",
+          "sourceKind": "project",
+          "recordId": 1,
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        },
+        {
+          "scenario": "Wrath Assets",
+          "sourceKind": "project",
+          "recordId": 2,
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        },
+        {
+          "scenario": "Wrath Assets",
+          "sourceKind": "project",
+          "recordId": 3,
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        },
+        {
+          "scenario": "Wrath Assets",
+          "sourceKind": "project",
+          "recordId": 4,
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        },
+        {
+          "scenario": "Wrath Assets",
+          "sourceKind": "project",
+          "recordId": 5,
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        },
+        {
+          "scenario": "Wrath Assets",
+          "sourceKind": "project",
+          "recordId": 6,
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        },
+        {
+          "scenario": "Wrath Assets",
+          "sourceKind": "project",
+          "recordId": 7,
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        },
+        {
+          "scenario": "Wrath Assets Harness",
+          "sourceKind": "project",
+          "recordId": 1,
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        },
+        {
+          "scenario": "Wrath Assets Harness",
+          "sourceKind": "project",
+          "recordId": 2,
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        },
+        {
+          "scenario": "Wrath Assets Harness",
+          "sourceKind": "project",
+          "recordId": 3,
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        }
+      ],
+      "scenarioCount": 2
+    },
+    {
+      "pattern": "15927,13874,14391,13365,14905,13364,12850,13357,10279",
+      "recordCount": 2,
+      "scenarios": [
+        "Wrath Assets",
+        "Wrath Assets Harness"
+      ],
+      "examples": [
+        {
+          "scenario": "Wrath Assets",
+          "sourceKind": "project",
+          "recordId": 0,
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        },
+        {
+          "scenario": "Wrath Assets Harness",
+          "sourceKind": "project",
+          "recordId": 0,
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        }
+      ],
+      "scenarioCount": 2
+    }
+  ],
+  "coOccurrence": {
+    "totalRecordsWithReservedValues": 16,
+    "withItemGate": 0,
+    "withQuestGate": 16,
+    "withLocationGate": 2,
+    "withRandomRectGate": 0,
+    "withCoordinateGate": 0,
+    "withExtraActionPoint": 16
+  },
+  "warnings": [],
+  "sources": [
+    {
+      "scenario": "Wrath Assets",
+      "sourceKind": "project",
+      "sourcePath": "F:\\Realmz - Providence\\tmp\\desktop-ui-harness\\wrath-assets-release-011\\WrathAssets.providence\\project.json",
+      "recordCount": 8,
+      "findingCount": 8,
+      "warnings": [],
+      "findings": [
+        {
+          "recordId": 0,
+          "day": 1,
+          "increment": 10,
+          "percent": 0,
+          "extraActionPoint": 84,
+          "requiredLevel": -1,
+          "requiredRandomRect": -1,
+          "requiredX": -1,
+          "requiredY": -1,
+          "requiredItem": -1,
+          "requiredQuest": 1,
+          "locationKind": "any",
+          "locationKindValue": -1,
+          "reservedValues": [
+            {
+              "slot": 1,
+              "field": "stuff[1]",
+              "value": 15927
+            },
+            {
+              "slot": 2,
+              "field": "stuff[2]",
+              "value": 13874
+            },
+            {
+              "slot": 3,
+              "field": "stuff[3]",
+              "value": 14391
+            },
+            {
+              "slot": 4,
+              "field": "stuff[4]",
+              "value": 13365
+            },
+            {
+              "slot": 5,
+              "field": "stuff[5]",
+              "value": 14905
+            },
+            {
+              "slot": 6,
+              "field": "stuff[6]",
+              "value": 13364
+            },
+            {
+              "slot": 7,
+              "field": "stuff[7]",
+              "value": 12850
+            },
+            {
+              "slot": 8,
+              "field": "stuff[8]",
+              "value": 13357
+            },
+            {
+              "slot": 9,
+              "field": "stuff[9]",
+              "value": 10279
+            }
+          ],
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "gates": {
+            "item": false,
+            "quest": true,
+            "location": false,
+            "randomRect": false,
+            "coordinate": false
+          },
+          "activity": {
+            "activeSchedule": true,
+            "runnableDoor": true,
+            "validPercent": true,
+            "plausibleRunnable": true,
+            "inactiveTemplateLike": false
+          },
+          "pattern": "15927,13874,14391,13365,14905,13364,12850,13357,10279"
+        },
+        {
+          "recordId": 1,
+          "day": 1,
+          "increment": 7,
+          "percent": 0,
+          "extraActionPoint": 52,
+          "requiredLevel": -1,
+          "requiredRandomRect": -1,
+          "requiredX": -1,
+          "requiredY": -1,
+          "requiredItem": -1,
+          "requiredQuest": 1,
+          "locationKind": "land",
+          "locationKindValue": 1,
+          "reservedValues": [
+            {
+              "slot": 1,
+              "field": "stuff[1]",
+              "value": 11005
+            },
+            {
+              "slot": 2,
+              "field": "stuff[2]",
+              "value": 9994
+            },
+            {
+              "slot": 3,
+              "field": "stuff[3]",
+              "value": 11308
+            },
+            {
+              "slot": 4,
+              "field": "stuff[4]",
+              "value": 10800
+            },
+            {
+              "slot": 5,
+              "field": "stuff[5]",
+              "value": 12079
+            },
+            {
+              "slot": 6,
+              "field": "stuff[6]",
+              "value": 11568
+            },
+            {
+              "slot": 7,
+              "field": "stuff[7]",
+              "value": 11046
+            },
+            {
+              "slot": 8,
+              "field": "stuff[8]",
+              "value": 9980
+            },
+            {
+              "slot": 9,
+              "field": "stuff[9]",
+              "value": 10001
+            }
+          ],
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "gates": {
+            "item": false,
+            "quest": true,
+            "location": true,
+            "randomRect": false,
+            "coordinate": false
+          },
+          "activity": {
+            "activeSchedule": true,
+            "runnableDoor": true,
+            "validPercent": true,
+            "plausibleRunnable": true,
+            "inactiveTemplateLike": false
+          },
+          "pattern": "11005,9994,11308,10800,12079,11568,11046,9980,10001"
+        },
+        {
+          "recordId": 2,
+          "day": 1,
+          "increment": 2,
+          "percent": 0,
+          "extraActionPoint": 71,
+          "requiredLevel": -1,
+          "requiredRandomRect": -1,
+          "requiredX": -1,
+          "requiredY": -1,
+          "requiredItem": -1,
+          "requiredQuest": 1,
+          "locationKind": "any",
+          "locationKindValue": -1,
+          "reservedValues": [
+            {
+              "slot": 1,
+              "field": "stuff[1]",
+              "value": 11005
+            },
+            {
+              "slot": 2,
+              "field": "stuff[2]",
+              "value": 9994
+            },
+            {
+              "slot": 3,
+              "field": "stuff[3]",
+              "value": 11308
+            },
+            {
+              "slot": 4,
+              "field": "stuff[4]",
+              "value": 10800
+            },
+            {
+              "slot": 5,
+              "field": "stuff[5]",
+              "value": 12079
+            },
+            {
+              "slot": 6,
+              "field": "stuff[6]",
+              "value": 11568
+            },
+            {
+              "slot": 7,
+              "field": "stuff[7]",
+              "value": 11046
+            },
+            {
+              "slot": 8,
+              "field": "stuff[8]",
+              "value": 9980
+            },
+            {
+              "slot": 9,
+              "field": "stuff[9]",
+              "value": 10001
+            }
+          ],
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "gates": {
+            "item": false,
+            "quest": true,
+            "location": false,
+            "randomRect": false,
+            "coordinate": false
+          },
+          "activity": {
+            "activeSchedule": true,
+            "runnableDoor": true,
+            "validPercent": true,
+            "plausibleRunnable": true,
+            "inactiveTemplateLike": false
+          },
+          "pattern": "11005,9994,11308,10800,12079,11568,11046,9980,10001"
+        },
+        {
+          "recordId": 3,
+          "day": 1,
+          "increment": 8,
+          "percent": 0,
+          "extraActionPoint": 89,
+          "requiredLevel": -1,
+          "requiredRandomRect": -1,
+          "requiredX": -1,
+          "requiredY": -1,
+          "requiredItem": -1,
+          "requiredQuest": 1,
+          "locationKind": "any",
+          "locationKindValue": -1,
+          "reservedValues": [
+            {
+              "slot": 1,
+              "field": "stuff[1]",
+              "value": 11005
+            },
+            {
+              "slot": 2,
+              "field": "stuff[2]",
+              "value": 9994
+            },
+            {
+              "slot": 3,
+              "field": "stuff[3]",
+              "value": 11308
+            },
+            {
+              "slot": 4,
+              "field": "stuff[4]",
+              "value": 10800
+            },
+            {
+              "slot": 5,
+              "field": "stuff[5]",
+              "value": 12079
+            },
+            {
+              "slot": 6,
+              "field": "stuff[6]",
+              "value": 11568
+            },
+            {
+              "slot": 7,
+              "field": "stuff[7]",
+              "value": 11046
+            },
+            {
+              "slot": 8,
+              "field": "stuff[8]",
+              "value": 9980
+            },
+            {
+              "slot": 9,
+              "field": "stuff[9]",
+              "value": 10001
+            }
+          ],
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "gates": {
+            "item": false,
+            "quest": true,
+            "location": false,
+            "randomRect": false,
+            "coordinate": false
+          },
+          "activity": {
+            "activeSchedule": true,
+            "runnableDoor": true,
+            "validPercent": true,
+            "plausibleRunnable": true,
+            "inactiveTemplateLike": false
+          },
+          "pattern": "11005,9994,11308,10800,12079,11568,11046,9980,10001"
+        },
+        {
+          "recordId": 4,
+          "day": 1,
+          "increment": 2,
+          "percent": 0,
+          "extraActionPoint": 214,
+          "requiredLevel": -1,
+          "requiredRandomRect": -1,
+          "requiredX": -1,
+          "requiredY": -1,
+          "requiredItem": -1,
+          "requiredQuest": 1,
+          "locationKind": "any",
+          "locationKindValue": -1,
+          "reservedValues": [
+            {
+              "slot": 1,
+              "field": "stuff[1]",
+              "value": 11005
+            },
+            {
+              "slot": 2,
+              "field": "stuff[2]",
+              "value": 9994
+            },
+            {
+              "slot": 3,
+              "field": "stuff[3]",
+              "value": 11308
+            },
+            {
+              "slot": 4,
+              "field": "stuff[4]",
+              "value": 10800
+            },
+            {
+              "slot": 5,
+              "field": "stuff[5]",
+              "value": 12079
+            },
+            {
+              "slot": 6,
+              "field": "stuff[6]",
+              "value": 11568
+            },
+            {
+              "slot": 7,
+              "field": "stuff[7]",
+              "value": 11046
+            },
+            {
+              "slot": 8,
+              "field": "stuff[8]",
+              "value": 9980
+            },
+            {
+              "slot": 9,
+              "field": "stuff[9]",
+              "value": 10001
+            }
+          ],
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "gates": {
+            "item": false,
+            "quest": true,
+            "location": false,
+            "randomRect": false,
+            "coordinate": false
+          },
+          "activity": {
+            "activeSchedule": true,
+            "runnableDoor": true,
+            "validPercent": true,
+            "plausibleRunnable": true,
+            "inactiveTemplateLike": false
+          },
+          "pattern": "11005,9994,11308,10800,12079,11568,11046,9980,10001"
+        },
+        {
+          "recordId": 5,
+          "day": 1,
+          "increment": 75,
+          "percent": 0,
+          "extraActionPoint": 527,
+          "requiredLevel": -1,
+          "requiredRandomRect": -1,
+          "requiredX": -1,
+          "requiredY": -1,
+          "requiredItem": -1,
+          "requiredQuest": 5,
+          "locationKind": "any",
+          "locationKindValue": -1,
+          "reservedValues": [
+            {
+              "slot": 1,
+              "field": "stuff[1]",
+              "value": 11005
+            },
+            {
+              "slot": 2,
+              "field": "stuff[2]",
+              "value": 9994
+            },
+            {
+              "slot": 3,
+              "field": "stuff[3]",
+              "value": 11308
+            },
+            {
+              "slot": 4,
+              "field": "stuff[4]",
+              "value": 10800
+            },
+            {
+              "slot": 5,
+              "field": "stuff[5]",
+              "value": 12079
+            },
+            {
+              "slot": 6,
+              "field": "stuff[6]",
+              "value": 11568
+            },
+            {
+              "slot": 7,
+              "field": "stuff[7]",
+              "value": 11046
+            },
+            {
+              "slot": 8,
+              "field": "stuff[8]",
+              "value": 9980
+            },
+            {
+              "slot": 9,
+              "field": "stuff[9]",
+              "value": 10001
+            }
+          ],
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "gates": {
+            "item": false,
+            "quest": true,
+            "location": false,
+            "randomRect": false,
+            "coordinate": false
+          },
+          "activity": {
+            "activeSchedule": true,
+            "runnableDoor": true,
+            "validPercent": true,
+            "plausibleRunnable": true,
+            "inactiveTemplateLike": false
+          },
+          "pattern": "11005,9994,11308,10800,12079,11568,11046,9980,10001"
+        },
+        {
+          "recordId": 6,
+          "day": 1,
+          "increment": 0,
+          "percent": 0,
+          "extraActionPoint": 1636,
+          "requiredLevel": -1,
+          "requiredRandomRect": -1,
+          "requiredX": -1,
+          "requiredY": -1,
+          "requiredItem": -1,
+          "requiredQuest": 51,
+          "locationKind": "any",
+          "locationKindValue": -1,
+          "reservedValues": [
+            {
+              "slot": 1,
+              "field": "stuff[1]",
+              "value": 11005
+            },
+            {
+              "slot": 2,
+              "field": "stuff[2]",
+              "value": 9994
+            },
+            {
+              "slot": 3,
+              "field": "stuff[3]",
+              "value": 11308
+            },
+            {
+              "slot": 4,
+              "field": "stuff[4]",
+              "value": 10800
+            },
+            {
+              "slot": 5,
+              "field": "stuff[5]",
+              "value": 12079
+            },
+            {
+              "slot": 6,
+              "field": "stuff[6]",
+              "value": 11568
+            },
+            {
+              "slot": 7,
+              "field": "stuff[7]",
+              "value": 11046
+            },
+            {
+              "slot": 8,
+              "field": "stuff[8]",
+              "value": 9980
+            },
+            {
+              "slot": 9,
+              "field": "stuff[9]",
+              "value": 10001
+            }
+          ],
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "gates": {
+            "item": false,
+            "quest": true,
+            "location": false,
+            "randomRect": false,
+            "coordinate": false
+          },
+          "activity": {
+            "activeSchedule": true,
+            "runnableDoor": true,
+            "validPercent": true,
+            "plausibleRunnable": true,
+            "inactiveTemplateLike": false
+          },
+          "pattern": "11005,9994,11308,10800,12079,11568,11046,9980,10001"
+        },
+        {
+          "recordId": 7,
+          "day": 1,
+          "increment": 0,
+          "percent": 0,
+          "extraActionPoint": 1636,
+          "requiredLevel": -1,
+          "requiredRandomRect": -1,
+          "requiredX": -1,
+          "requiredY": -1,
+          "requiredItem": -1,
+          "requiredQuest": 51,
+          "locationKind": "any",
+          "locationKindValue": -1,
+          "reservedValues": [
+            {
+              "slot": 1,
+              "field": "stuff[1]",
+              "value": 11005
+            },
+            {
+              "slot": 2,
+              "field": "stuff[2]",
+              "value": 9994
+            },
+            {
+              "slot": 3,
+              "field": "stuff[3]",
+              "value": 11308
+            },
+            {
+              "slot": 4,
+              "field": "stuff[4]",
+              "value": 10800
+            },
+            {
+              "slot": 5,
+              "field": "stuff[5]",
+              "value": 12079
+            },
+            {
+              "slot": 6,
+              "field": "stuff[6]",
+              "value": 11568
+            },
+            {
+              "slot": 7,
+              "field": "stuff[7]",
+              "value": 11046
+            },
+            {
+              "slot": 8,
+              "field": "stuff[8]",
+              "value": 9980
+            },
+            {
+              "slot": 9,
+              "field": "stuff[9]",
+              "value": 10001
+            }
+          ],
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "gates": {
+            "item": false,
+            "quest": true,
+            "location": false,
+            "randomRect": false,
+            "coordinate": false
+          },
+          "activity": {
+            "activeSchedule": true,
+            "runnableDoor": true,
+            "validPercent": true,
+            "plausibleRunnable": true,
+            "inactiveTemplateLike": false
+          },
+          "pattern": "11005,9994,11308,10800,12079,11568,11046,9980,10001"
+        }
+      ]
+    },
+    {
+      "scenario": "Wrath Assets Harness",
+      "sourceKind": "project",
+      "sourcePath": "F:\\Realmz - Providence\\tmp\\desktop-ui-harness\\wrath-assets\\WrathAssets.providence\\project.json",
+      "recordCount": 8,
+      "findingCount": 8,
+      "warnings": [],
+      "findings": [
+        {
+          "recordId": 0,
+          "day": 1,
+          "increment": 10,
+          "percent": 0,
+          "extraActionPoint": 84,
+          "requiredLevel": -1,
+          "requiredRandomRect": -1,
+          "requiredX": -1,
+          "requiredY": -1,
+          "requiredItem": -1,
+          "requiredQuest": 1,
+          "locationKind": "any",
+          "locationKindValue": -1,
+          "reservedValues": [
+            {
+              "slot": 1,
+              "field": "stuff[1]",
+              "value": 15927
+            },
+            {
+              "slot": 2,
+              "field": "stuff[2]",
+              "value": 13874
+            },
+            {
+              "slot": 3,
+              "field": "stuff[3]",
+              "value": 14391
+            },
+            {
+              "slot": 4,
+              "field": "stuff[4]",
+              "value": 13365
+            },
+            {
+              "slot": 5,
+              "field": "stuff[5]",
+              "value": 14905
+            },
+            {
+              "slot": 6,
+              "field": "stuff[6]",
+              "value": 13364
+            },
+            {
+              "slot": 7,
+              "field": "stuff[7]",
+              "value": 12850
+            },
+            {
+              "slot": 8,
+              "field": "stuff[8]",
+              "value": 13357
+            },
+            {
+              "slot": 9,
+              "field": "stuff[9]",
+              "value": 10279
+            }
+          ],
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "gates": {
+            "item": false,
+            "quest": true,
+            "location": false,
+            "randomRect": false,
+            "coordinate": false
+          },
+          "activity": {
+            "activeSchedule": true,
+            "runnableDoor": true,
+            "validPercent": true,
+            "plausibleRunnable": true,
+            "inactiveTemplateLike": false
+          },
+          "pattern": "15927,13874,14391,13365,14905,13364,12850,13357,10279"
+        },
+        {
+          "recordId": 1,
+          "day": 1,
+          "increment": 7,
+          "percent": 0,
+          "extraActionPoint": 52,
+          "requiredLevel": -1,
+          "requiredRandomRect": -1,
+          "requiredX": -1,
+          "requiredY": -1,
+          "requiredItem": -1,
+          "requiredQuest": 1,
+          "locationKind": "land",
+          "locationKindValue": 1,
+          "reservedValues": [
+            {
+              "slot": 1,
+              "field": "stuff[1]",
+              "value": 11005
+            },
+            {
+              "slot": 2,
+              "field": "stuff[2]",
+              "value": 9994
+            },
+            {
+              "slot": 3,
+              "field": "stuff[3]",
+              "value": 11308
+            },
+            {
+              "slot": 4,
+              "field": "stuff[4]",
+              "value": 10800
+            },
+            {
+              "slot": 5,
+              "field": "stuff[5]",
+              "value": 12079
+            },
+            {
+              "slot": 6,
+              "field": "stuff[6]",
+              "value": 11568
+            },
+            {
+              "slot": 7,
+              "field": "stuff[7]",
+              "value": 11046
+            },
+            {
+              "slot": 8,
+              "field": "stuff[8]",
+              "value": 9980
+            },
+            {
+              "slot": 9,
+              "field": "stuff[9]",
+              "value": 10001
+            }
+          ],
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "gates": {
+            "item": false,
+            "quest": true,
+            "location": true,
+            "randomRect": false,
+            "coordinate": false
+          },
+          "activity": {
+            "activeSchedule": true,
+            "runnableDoor": true,
+            "validPercent": true,
+            "plausibleRunnable": true,
+            "inactiveTemplateLike": false
+          },
+          "pattern": "11005,9994,11308,10800,12079,11568,11046,9980,10001"
+        },
+        {
+          "recordId": 2,
+          "day": 1,
+          "increment": 2,
+          "percent": 0,
+          "extraActionPoint": 71,
+          "requiredLevel": -1,
+          "requiredRandomRect": -1,
+          "requiredX": -1,
+          "requiredY": -1,
+          "requiredItem": -1,
+          "requiredQuest": 1,
+          "locationKind": "any",
+          "locationKindValue": -1,
+          "reservedValues": [
+            {
+              "slot": 1,
+              "field": "stuff[1]",
+              "value": 11005
+            },
+            {
+              "slot": 2,
+              "field": "stuff[2]",
+              "value": 9994
+            },
+            {
+              "slot": 3,
+              "field": "stuff[3]",
+              "value": 11308
+            },
+            {
+              "slot": 4,
+              "field": "stuff[4]",
+              "value": 10800
+            },
+            {
+              "slot": 5,
+              "field": "stuff[5]",
+              "value": 12079
+            },
+            {
+              "slot": 6,
+              "field": "stuff[6]",
+              "value": 11568
+            },
+            {
+              "slot": 7,
+              "field": "stuff[7]",
+              "value": 11046
+            },
+            {
+              "slot": 8,
+              "field": "stuff[8]",
+              "value": 9980
+            },
+            {
+              "slot": 9,
+              "field": "stuff[9]",
+              "value": 10001
+            }
+          ],
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "gates": {
+            "item": false,
+            "quest": true,
+            "location": false,
+            "randomRect": false,
+            "coordinate": false
+          },
+          "activity": {
+            "activeSchedule": true,
+            "runnableDoor": true,
+            "validPercent": true,
+            "plausibleRunnable": true,
+            "inactiveTemplateLike": false
+          },
+          "pattern": "11005,9994,11308,10800,12079,11568,11046,9980,10001"
+        },
+        {
+          "recordId": 3,
+          "day": 1,
+          "increment": 8,
+          "percent": 0,
+          "extraActionPoint": 89,
+          "requiredLevel": -1,
+          "requiredRandomRect": -1,
+          "requiredX": -1,
+          "requiredY": -1,
+          "requiredItem": -1,
+          "requiredQuest": 1,
+          "locationKind": "any",
+          "locationKindValue": -1,
+          "reservedValues": [
+            {
+              "slot": 1,
+              "field": "stuff[1]",
+              "value": 11005
+            },
+            {
+              "slot": 2,
+              "field": "stuff[2]",
+              "value": 9994
+            },
+            {
+              "slot": 3,
+              "field": "stuff[3]",
+              "value": 11308
+            },
+            {
+              "slot": 4,
+              "field": "stuff[4]",
+              "value": 10800
+            },
+            {
+              "slot": 5,
+              "field": "stuff[5]",
+              "value": 12079
+            },
+            {
+              "slot": 6,
+              "field": "stuff[6]",
+              "value": 11568
+            },
+            {
+              "slot": 7,
+              "field": "stuff[7]",
+              "value": 11046
+            },
+            {
+              "slot": 8,
+              "field": "stuff[8]",
+              "value": 9980
+            },
+            {
+              "slot": 9,
+              "field": "stuff[9]",
+              "value": 10001
+            }
+          ],
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "gates": {
+            "item": false,
+            "quest": true,
+            "location": false,
+            "randomRect": false,
+            "coordinate": false
+          },
+          "activity": {
+            "activeSchedule": true,
+            "runnableDoor": true,
+            "validPercent": true,
+            "plausibleRunnable": true,
+            "inactiveTemplateLike": false
+          },
+          "pattern": "11005,9994,11308,10800,12079,11568,11046,9980,10001"
+        },
+        {
+          "recordId": 4,
+          "day": 1,
+          "increment": 2,
+          "percent": 0,
+          "extraActionPoint": 214,
+          "requiredLevel": -1,
+          "requiredRandomRect": -1,
+          "requiredX": -1,
+          "requiredY": -1,
+          "requiredItem": -1,
+          "requiredQuest": 1,
+          "locationKind": "any",
+          "locationKindValue": -1,
+          "reservedValues": [
+            {
+              "slot": 1,
+              "field": "stuff[1]",
+              "value": 11005
+            },
+            {
+              "slot": 2,
+              "field": "stuff[2]",
+              "value": 9994
+            },
+            {
+              "slot": 3,
+              "field": "stuff[3]",
+              "value": 11308
+            },
+            {
+              "slot": 4,
+              "field": "stuff[4]",
+              "value": 10800
+            },
+            {
+              "slot": 5,
+              "field": "stuff[5]",
+              "value": 12079
+            },
+            {
+              "slot": 6,
+              "field": "stuff[6]",
+              "value": 11568
+            },
+            {
+              "slot": 7,
+              "field": "stuff[7]",
+              "value": 11046
+            },
+            {
+              "slot": 8,
+              "field": "stuff[8]",
+              "value": 9980
+            },
+            {
+              "slot": 9,
+              "field": "stuff[9]",
+              "value": 10001
+            }
+          ],
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "gates": {
+            "item": false,
+            "quest": true,
+            "location": false,
+            "randomRect": false,
+            "coordinate": false
+          },
+          "activity": {
+            "activeSchedule": true,
+            "runnableDoor": true,
+            "validPercent": true,
+            "plausibleRunnable": true,
+            "inactiveTemplateLike": false
+          },
+          "pattern": "11005,9994,11308,10800,12079,11568,11046,9980,10001"
+        },
+        {
+          "recordId": 5,
+          "day": 1,
+          "increment": 75,
+          "percent": 0,
+          "extraActionPoint": 527,
+          "requiredLevel": -1,
+          "requiredRandomRect": -1,
+          "requiredX": -1,
+          "requiredY": -1,
+          "requiredItem": -1,
+          "requiredQuest": 5,
+          "locationKind": "any",
+          "locationKindValue": -1,
+          "reservedValues": [
+            {
+              "slot": 1,
+              "field": "stuff[1]",
+              "value": 11005
+            },
+            {
+              "slot": 2,
+              "field": "stuff[2]",
+              "value": 9994
+            },
+            {
+              "slot": 3,
+              "field": "stuff[3]",
+              "value": 11308
+            },
+            {
+              "slot": 4,
+              "field": "stuff[4]",
+              "value": 10800
+            },
+            {
+              "slot": 5,
+              "field": "stuff[5]",
+              "value": 12079
+            },
+            {
+              "slot": 6,
+              "field": "stuff[6]",
+              "value": 11568
+            },
+            {
+              "slot": 7,
+              "field": "stuff[7]",
+              "value": 11046
+            },
+            {
+              "slot": 8,
+              "field": "stuff[8]",
+              "value": 9980
+            },
+            {
+              "slot": 9,
+              "field": "stuff[9]",
+              "value": 10001
+            }
+          ],
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "gates": {
+            "item": false,
+            "quest": true,
+            "location": false,
+            "randomRect": false,
+            "coordinate": false
+          },
+          "activity": {
+            "activeSchedule": true,
+            "runnableDoor": true,
+            "validPercent": true,
+            "plausibleRunnable": true,
+            "inactiveTemplateLike": false
+          },
+          "pattern": "11005,9994,11308,10800,12079,11568,11046,9980,10001"
+        },
+        {
+          "recordId": 6,
+          "day": 1,
+          "increment": 0,
+          "percent": 0,
+          "extraActionPoint": 1636,
+          "requiredLevel": -1,
+          "requiredRandomRect": -1,
+          "requiredX": -1,
+          "requiredY": -1,
+          "requiredItem": -1,
+          "requiredQuest": 51,
+          "locationKind": "any",
+          "locationKindValue": -1,
+          "reservedValues": [
+            {
+              "slot": 1,
+              "field": "stuff[1]",
+              "value": 11005
+            },
+            {
+              "slot": 2,
+              "field": "stuff[2]",
+              "value": 9994
+            },
+            {
+              "slot": 3,
+              "field": "stuff[3]",
+              "value": 11308
+            },
+            {
+              "slot": 4,
+              "field": "stuff[4]",
+              "value": 10800
+            },
+            {
+              "slot": 5,
+              "field": "stuff[5]",
+              "value": 12079
+            },
+            {
+              "slot": 6,
+              "field": "stuff[6]",
+              "value": 11568
+            },
+            {
+              "slot": 7,
+              "field": "stuff[7]",
+              "value": 11046
+            },
+            {
+              "slot": 8,
+              "field": "stuff[8]",
+              "value": 9980
+            },
+            {
+              "slot": 9,
+              "field": "stuff[9]",
+              "value": 10001
+            }
+          ],
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "gates": {
+            "item": false,
+            "quest": true,
+            "location": false,
+            "randomRect": false,
+            "coordinate": false
+          },
+          "activity": {
+            "activeSchedule": true,
+            "runnableDoor": true,
+            "validPercent": true,
+            "plausibleRunnable": true,
+            "inactiveTemplateLike": false
+          },
+          "pattern": "11005,9994,11308,10800,12079,11568,11046,9980,10001"
+        },
+        {
+          "recordId": 7,
+          "day": 1,
+          "increment": 0,
+          "percent": 0,
+          "extraActionPoint": 1636,
+          "requiredLevel": -1,
+          "requiredRandomRect": -1,
+          "requiredX": -1,
+          "requiredY": -1,
+          "requiredItem": -1,
+          "requiredQuest": 51,
+          "locationKind": "any",
+          "locationKindValue": -1,
+          "reservedValues": [
+            {
+              "slot": 1,
+              "field": "stuff[1]",
+              "value": 11005
+            },
+            {
+              "slot": 2,
+              "field": "stuff[2]",
+              "value": 9994
+            },
+            {
+              "slot": 3,
+              "field": "stuff[3]",
+              "value": 11308
+            },
+            {
+              "slot": 4,
+              "field": "stuff[4]",
+              "value": 10800
+            },
+            {
+              "slot": 5,
+              "field": "stuff[5]",
+              "value": 12079
+            },
+            {
+              "slot": 6,
+              "field": "stuff[6]",
+              "value": 11568
+            },
+            {
+              "slot": 7,
+              "field": "stuff[7]",
+              "value": 11046
+            },
+            {
+              "slot": 8,
+              "field": "stuff[8]",
+              "value": 9980
+            },
+            {
+              "slot": 9,
+              "field": "stuff[9]",
+              "value": 10001
+            }
+          ],
+          "nonzeroReservedSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "gates": {
+            "item": false,
+            "quest": true,
+            "location": false,
+            "randomRect": false,
+            "coordinate": false
+          },
+          "activity": {
+            "activeSchedule": true,
+            "runnableDoor": true,
+            "validPercent": true,
+            "plausibleRunnable": true,
+            "inactiveTemplateLike": false
+          },
+          "pattern": "11005,9994,11308,10800,12079,11568,11046,9980,10001"
+        }
+      ]
+    }
+  ]
+}

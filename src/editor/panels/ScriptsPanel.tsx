@@ -166,7 +166,7 @@ const TIMED_SCHEDULE_HELP =
 const TIMED_LOCATION_HELP =
   "Location gates restrict the timed encounter to any map, land, or dungeon, then optionally to level, random rectangle, X, and Y. Raw Position Code is preserved for source accuracy.";
 const TIMED_EXTRA_HELP =
-  "Data TD3 has nine remaining signed-number slots after the confirmed schedule, macro, item, quest, and location fields. Current Realmz/Divinity evidence does not give these slots normal authoring meanings, so Providence preserves them as compatibility fields.";
+  "Data TD3 has nine signed-number slots after the confirmed schedule, macro, item, quest, and location fields. Realmz runtime evidence currently names only the first slot as the location kind. Providence preserves the remaining values but keeps them locked until a real authoring meaning is proven.";
 
 const scriptDiagnosticCache = new WeakMap<TriggerRecord, { key: string; diagnostics: ScriptDiagnostic[] }>();
 const objectIdentity = new WeakMap<object, number>();
@@ -4301,22 +4301,20 @@ function TimedEncounterShell({
           </div>
         </div>
       </section>
-      <CollapsibleSection title="Reserved Fields" eyebrow="advanced" count={reservedNonZeroCount ? `${reservedNonZeroCount} nonzero` : "all zero"} density="compact" className="script-encounter-text-section timed-extra-section">
+      <CollapsibleSection title="Compatibility Data" eyebrow="advanced" count={reservedNonZeroCount ? `${reservedNonZeroCount} preserved value${reservedNonZeroCount === 1 ? "" : "s"}` : "all zero"} density="compact" className="script-encounter-text-section timed-extra-section">
         <p className="script-encounter-text-note">
           <TutorialTip title="Reserved Time Encounter Fields" body={TIMED_EXTRA_HELP} side="below">
-            <span>Compatibility-only Data TD3 slots. Leave these at 0 unless copying an existing timed encounter that already uses them.</span>
+            <span>Preserved Data TD3 compatibility values. Providence keeps these on save/export, but they do not have confirmed authoring meaning.</span>
           </TutorialTip>
         </p>
-        <div className="timed-extra-grid">
-          {Array.from({ length: 9 }, (_, index) => {
+        <div className="timed-compatibility-grid" aria-label="Read-only timed encounter compatibility values">
+          {reservedTimedValues.map((value, index) => {
             const slot = index + 1;
             return (
-              <TimedNumberRow
-                key={slot}
-                label={`Reserved ${slot}`}
-                value={record.stuff?.[slot] ?? 0}
-                onCommit={(value) => update({ stuff: updateArraySlot(record.stuff ?? [], slot, value, 10) })}
-              />
+              <div key={slot} className={`timed-compatibility-chip${value !== 0 ? " is-preserved" : ""}`}>
+                <span>stuff[{slot}]</span>
+                <strong>{value}</strong>
+              </div>
             );
           })}
         </div>

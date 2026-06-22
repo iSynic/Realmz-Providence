@@ -33,6 +33,7 @@
     "archaeology:opcode-crosswalk": "node scripts/generate_opcode_edcd_crosswalk.mjs",
     "archaeology:script-diagnostics": "node scripts/report_script_diagnostics.mjs",
     "archaeology:edcd-settings": "node scripts/report_edcd_settings_rows.mjs",
+    "archaeology:timed-encounter-fields": "node scripts/report_timed_encounter_reserved_fields.mjs",
     "archaeology:ap-opcode-coverage": "node scripts/report_ap_opcode_coverage.mjs",
     "archaeology:ap-action-gaps": "node scripts/report_ap_action_gaps.mjs",
     "archaeology:scenario-context": "node scripts/report_scenario_context.mjs",

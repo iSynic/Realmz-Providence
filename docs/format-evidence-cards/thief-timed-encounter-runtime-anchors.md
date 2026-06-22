@@ -129,6 +129,19 @@ Both files appear in all 44 analyzed scenarios.
 | `Data TD2` | 118 bytes | Local corpus sizes divide cleanly by 118; Hax has 117,410 bytes = 995 records. |
 | `Data TD3` | 40 bytes | Local corpus sizes divide cleanly by 40; White Dragon has 2,080 bytes = 52 records. |
 
+## Timed Reserved Field Report
+
+`scripts/report_timed_encounter_reserved_fields.mjs` scans `Data TD3` `stuff[1..9]` so Providence can decide whether the remaining nine signed fields deserve deeper archaeology before giving them normal UI labels.
+
+The generated report lives at:
+
+- `docs/generated/timed-encounter-reserved-fields.json`
+- `docs/generated/timed-encounter-reserved-fields.md`
+
+The current benchmark scan found nonzero reserved values in the Wrath timed encounter benchmark records, with two repeated nine-field patterns. Optional raw scenario-root scans also show repeated patterns across local scenario folders. That proves the bytes are not simply always zero, but the repeated pattern shape is not enough to name user-facing behavior.
+
+The cheap source pass found the classic runtime location gate reading `dotime.stuff[0]` in `textbox-time.c`; no named main-loop use of `stuff[1..9]` was found in that path. For now `stuff[1..9]` remain read-only compatibility fields in Providence. Follow-up should test named scenarios/records in Divinity or Realmz before promoting any slot into authoring UI.
+
 ## Providence Editor Implications
 
 - Keep source `Data TD2` and `Data TD3` separate from runtime `CT`, `CTD3`, and saved `Data H1`.
