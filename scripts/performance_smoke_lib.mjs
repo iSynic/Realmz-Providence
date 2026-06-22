@@ -177,12 +177,12 @@ export async function measureInteraction(client, label, budgetKey, budgets, acti
   await evalValue(client, "__providencePerf.clearLongTasks()");
   const started = await evalValue(client, "performance.now()");
   const actionResult = await evalValue(client, actionExpression);
+  const actionEnded = await evalValue(client, "performance.now()");
   if (actionResult === false) {
-    const ended = await evalValue(client, "performance.now()");
     return {
       label,
       budgetKey,
-      durationMs: Math.round(ended - started),
+      durationMs: Math.round(actionEnded - started),
       status: "pass",
       actionResult,
       longTasks: [],
@@ -191,6 +191,7 @@ export async function measureInteraction(client, label, budgetKey, budgets, acti
     };
   }
   await waitFor(async () => await evalValue(client, `Boolean(${settleExpression})`), 20_000, `Timed out settling ${label}.`);
+  const settled = await evalValue(client, "performance.now()");
   await settleFrames(client);
   const ended = await evalValue(client, "performance.now()");
   const longTasks = await evalValue(client, "__providencePerf.longTasks()");
@@ -201,6 +202,11 @@ export async function measureInteraction(client, label, budgetKey, budgets, acti
     durationMs,
     status: budgetStatus(durationMs, budgets[budgetKey]),
     actionResult,
+    phaseDurations: {
+      actionMs: Math.round(actionEnded - started),
+      settleMs: Math.round(settled - actionEnded),
+      frameSettleMs: Math.round(ended - settled)
+    },
     longTasks,
     maxLongTaskMs: Math.round(Math.max(0, ...longTasks.map((task) => task.duration))),
     longTaskStatus: budgetStatus(Math.max(0, ...longTasks.map((task) => task.duration)), budgets.longTask)

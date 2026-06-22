@@ -297,8 +297,8 @@ async function runMapProbes(client, budgets, scenario) {
       const target = window.__providencePerfPaintTarget;
       if (!canvas || !target) return false;
       window.__providencePerfPaintBefore = {
-        dirty: Boolean(document.querySelector(".dirty-pill, .dirty-indicator, .project-dirty, [data-project-dirty='true']")),
-        selected: document.body.innerText.match(/\\d+,\\d+\\s+to\\s+\\d+,\\d+|Paint tiles|Selected Paint Tile/)?.[0] ?? null
+        mapId: canvas.getAttribute("data-map-id"),
+        tileRevision: canvas.getAttribute("data-map-tiles-revision")
       };
       const paint = [...document.querySelectorAll("button")]
         .find((button) => button.textContent?.trim() === "Paint");
@@ -314,12 +314,14 @@ async function runMapProbes(client, budgets, scenario) {
   `, `
     (() => {
       const active = document.querySelector(".rail-tool.domain-maps.active");
-      const selectedText = document.body.innerText.match(/\\d+,\\d+\\s+to\\s+\\d+,\\d+|Paint tiles|Selected Paint Tile/)?.[0] ?? null;
+      const canvas = document.querySelector(".room-canvas-overlay");
+      if (!active || !canvas || !window.__providencePerfPaintBefore) return false;
       window.__providencePerfPaintAfter = {
-        dirty: Boolean(document.querySelector(".dirty-pill, .dirty-indicator, .project-dirty, [data-project-dirty='true']")),
-        selected: selectedText
+        mapId: canvas.getAttribute("data-map-id"),
+        tileRevision: canvas.getAttribute("data-map-tiles-revision")
       };
-      return Boolean(active) && JSON.stringify(window.__providencePerfPaintAfter) !== JSON.stringify(window.__providencePerfPaintBefore);
+      return window.__providencePerfPaintAfter.mapId === window.__providencePerfPaintBefore.mapId &&
+        window.__providencePerfPaintAfter.tileRevision !== window.__providencePerfPaintBefore.tileRevision;
     })()
   `);
 }

@@ -142,6 +142,12 @@ export function RealmzMapCanvas({
   const [hudPosition, setHudPosition] = useState({ left: 10, top: 10 });
   const [hudAnchor, setHudAnchor] = useState<MapHudAnchor>("bottom-left");
   const [overlaySpriteVersion, setOverlaySpriteVersion] = useState(0);
+  const tileRevisionRef = useRef(0);
+  const tileReferenceRef = useRef(map.tiles);
+  if (tileReferenceRef.current !== map.tiles) {
+    tileReferenceRef.current = map.tiles;
+    tileRevisionRef.current += 1;
+  }
   const setHudNode = useCallback((node: HTMLDivElement | null) => {
     hudRef.current = node;
   }, []);
@@ -387,6 +393,8 @@ export function RealmzMapCanvas({
         <canvas
           ref={overlayCanvasRef}
           className="room-canvas room-canvas-overlay"
+          data-map-id={map.id}
+          data-map-tiles-revision={tileRevisionRef.current}
           tabIndex={0}
           style={{
             cursor: cursorForTool(activeTool, paintMode, hoverTarget),
