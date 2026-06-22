@@ -122,7 +122,6 @@ export function findLatestProject(nameNeedles, pathNeedles, roots = defaultUiPro
 function defaultUiProjectRoots() {
   return [
     path.join(root, "tmp", "desktop-ui-harness"),
-    path.join(root, "tmp", "editor-smoke-runs"),
     path.join(root, "projects")
   ];
 }
@@ -169,7 +168,7 @@ export async function preparePage(client, url) {
   await client.send("Runtime.enable");
   await client.send("Performance.enable").catch(() => {});
   await client.send("Page.navigate", { url });
-  await waitFor(async () => await evalValue(client, "document.body.innerText.includes('Realmz Providence')"), 45_000, "Timed out waiting for Providence shell.");
+  await waitFor(async () => await evalValue(client, "Boolean(document.body?.innerText.includes('Realmz Providence'))"), 45_000, "Timed out waiting for Providence shell.");
   await evalValue(client, LONG_TASK_OBSERVER_SOURCE);
 }
 

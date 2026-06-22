@@ -277,7 +277,8 @@ async function runApProbes(client, budgets, scenario) {
       const input = document.querySelector(".realmz-target-picker input");
       if (!input) return false;
       input.focus();
-      return true;
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      return document.activeElement === input;
     })()
   `, `document.activeElement === document.querySelector(".realmz-target-picker input")`);
 }

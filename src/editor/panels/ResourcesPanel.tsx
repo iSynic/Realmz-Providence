@@ -128,6 +128,8 @@ export function ResourcesPanel({
     setQuery(searchHint.query ?? "");
     if (searchHint.section) setSectionOverride(searchHint.section);
     if (searchHint.kindFilter) setKindFilter(searchHint.kindFilter);
+    setLibraryPreviewFilter("all");
+    if (searchHint.section === "divinity") setShowUiReference(true);
     setLibraryPage(0);
   }, [searchHint?.kindFilter, searchHint?.nonce, searchHint?.query, searchHint?.section]);
   const projectAssets = useMemo(() => (project?.assets ?? []).filter((asset) =>
@@ -176,13 +178,35 @@ export function ResourcesPanel({
     const item = previewItemForEntityId(
       searchHint.selectedEntityId,
       project,
-      projectAssets,
+      project?.assets ?? [],
       allScenarioResources,
       libraryAssets,
       searchHint.section ?? section
     );
-    if (item) setSelectedAsset(item);
-  }, [allScenarioResources, libraryAssets, project, projectAssets, searchHint?.nonce, searchHint?.section, searchHint?.selectedEntityId, section]);
+    if (!item) return;
+    setSelectedAsset(item);
+    const targetSection = searchHint.section ?? section;
+    if (targetSection === "project") {
+      const itemIndex = projectGalleryItems.findIndex((galleryItem) => projectGalleryItemEntityId(galleryItem) === searchHint.selectedEntityId);
+      if (itemIndex >= 0) setLibraryPage(Math.floor(itemIndex / projectPageSize));
+    } else if (targetSection === "realmz" || targetSection === "divinity") {
+      const itemIndex = matchingLibraryAssets.findIndex((asset) => asset.id === searchHint.selectedEntityId);
+      if (itemIndex >= 0) setLibraryPage(Math.floor(itemIndex / libraryPageSize));
+    }
+  }, [
+    allScenarioResources,
+    libraryAssets,
+    libraryPageSize,
+    matchingLibraryAssets,
+    project,
+    project?.assets,
+    projectGalleryItems,
+    projectPageSize,
+    searchHint?.nonce,
+    searchHint?.section,
+    searchHint?.selectedEntityId,
+    section
+  ]);
   return (
     <section className="editor-full-panel asset-workbench">
       <header className="asset-workbench-header">
@@ -601,6 +625,10 @@ function resourcePreviewItemTitle(item: ResourcePreviewItem) {
   return item.entity.label;
 }
 
+function projectGalleryItemEntityId(item: ProjectGalleryItem) {
+  return item.type === "scenario" ? item.asset.entity.id : item.asset.id;
+}
+
 function previewItemForEntityId(
   entityId: string,
   project: Project | null,
@@ -626,21 +654,19 @@ function previewItemForEntityId(
       consumers: project ? directResourceConsumers(project, scenarioResource) : []
     };
   }
-  if (section === "realmz" || section === "divinity") {
-    const libraryAsset = libraryAssets.find((asset) => asset.id === entityId);
-    if (libraryAsset) {
-      return {
-        type: "library",
-        asset: libraryAsset,
-        preview: {
-          dataUrl: null,
-          status: estimatedPreviewStatus(libraryAsset),
-          summary: {},
-          diagnostics: []
-        },
-        usages: project ? resourceUsageLinks(project, libraryAsset.resourceType, libraryAsset.resourceId) : []
-      };
-    }
+  const libraryAsset = libraryAssets.find((asset) => asset.id === entityId);
+  if (libraryAsset && (section === "realmz" || section === "divinity")) {
+    return {
+      type: "library",
+      asset: libraryAsset,
+      preview: {
+        dataUrl: null,
+        status: estimatedPreviewStatus(libraryAsset),
+        summary: {},
+        diagnostics: []
+      },
+      usages: project ? resourceUsageLinks(project, libraryAsset.resourceType, libraryAsset.resourceId) : []
+    };
   }
   return null;
 }

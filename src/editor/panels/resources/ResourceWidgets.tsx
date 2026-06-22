@@ -791,24 +791,7 @@ export function ResourcePreviewContents({
         />
       )}
       {item.type === "library" && (
-        <>
-          {managedAssetKindForLibrary(item.asset) === "text" && libraryPreviewText(item.preview) ? (
-            <pre className="resource-detail-text" aria-label={item.asset.label}>{libraryPreviewText(item.preview)}</pre>
-          ) : (
-            <ResourcePreviewMedia kind={managedAssetKindForLibrary(item.asset)} preview={item.preview.dataUrl} label={item.asset.label} />
-          )}
-          <ResourceFactGrid rows={[
-            ["Resource", `${item.asset.resourceType ?? item.asset.type} ${item.asset.resourceId ?? ""}`.trim()],
-            ["Role", roleLabel(resourceRole(item.asset))],
-            ["Origin", resourceOriginLabel(resourceOrigin(item.asset))],
-            ["Preview", previewFilterLabel(item.preview.status === "unknown" ? estimatedPreviewStatus(item.asset) : item.preview.status)],
-            ["Bytes", formatBytes(item.asset.bytes)],
-            ["Path", item.asset.relativePath]
-          ]} />
-          {Object.keys(item.preview.summary).length > 0 && <ResourceFactGrid title="Preview Details" rows={Object.entries(item.preview.summary)} />}
-          <ResourcePreviewDiagnostics diagnostics={item.preview.diagnostics} />
-          <UsageLinks usages={item.usages} onSelectEntity={onSelectEntity} />
-        </>
+        <LibraryResourceDetail item={item} desktopRuntime={desktopRuntime} workspaceDir={workspaceDir ?? ""} onSelectEntity={onSelectEntity} />
       )}
       {item.type === "resource" && (
         <ScenarioResourceDetail
@@ -822,6 +805,47 @@ export function ResourcePreviewContents({
         />
       )}
     </div>
+  );
+}
+
+function LibraryResourceDetail({
+  item,
+  desktopRuntime,
+  workspaceDir,
+  onSelectEntity
+}: {
+  item: Extract<ResourcePreviewItem, { type: "library" }>;
+  desktopRuntime: boolean;
+  workspaceDir: string;
+  onSelectEntity: (entity: SelectedEntity) => void;
+}) {
+  const resolvedPreview = useLibraryPreview(item.asset, desktopRuntime, workspaceDir, true);
+  const preview = resolvedPreview.status === "unknown" &&
+    !resolvedPreview.dataUrl &&
+    resolvedPreview.diagnostics.length === 0 &&
+    Object.keys(resolvedPreview.summary).length === 0
+      ? item.preview
+      : resolvedPreview;
+  const kind = managedAssetKindForLibrary(item.asset);
+  return (
+    <>
+      {kind === "text" && libraryPreviewText(preview) ? (
+        <pre className="resource-detail-text" aria-label={item.asset.label}>{libraryPreviewText(preview)}</pre>
+      ) : (
+        <ResourcePreviewMedia kind={kind} preview={preview.dataUrl} label={item.asset.label} />
+      )}
+      <ResourceFactGrid rows={[
+        ["Resource", `${item.asset.resourceType ?? item.asset.type} ${item.asset.resourceId ?? ""}`.trim()],
+        ["Role", roleLabel(resourceRole(item.asset))],
+        ["Origin", resourceOriginLabel(resourceOrigin(item.asset))],
+        ["Preview", previewFilterLabel(preview.status === "unknown" ? estimatedPreviewStatus(item.asset) : preview.status)],
+        ["Bytes", formatBytes(item.asset.bytes)],
+        ["Path", item.asset.relativePath]
+      ]} />
+      {Object.keys(preview.summary).length > 0 && <ResourceFactGrid title="Preview Details" rows={Object.entries(preview.summary)} />}
+      <ResourcePreviewDiagnostics diagnostics={preview.diagnostics} />
+      <UsageLinks usages={item.usages} onSelectEntity={onSelectEntity} />
+    </>
   );
 }
 

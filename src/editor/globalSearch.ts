@@ -382,6 +382,12 @@ function catalogRows(catalog: LibraryCatalog) {
     const routeDomain = domainForLibraryEntity(entity.type);
     const routeEditor = editorForLibraryEntity(entity.type);
     const routeSearchHint = routeDomain === "assets" ? libraryEntityAssetSearchHint(entity) : "";
+    const routeAssetSection = routeDomain === "assets"
+      ? libraryAssetSearchSection({ source: entity.source, label: entity.label, type: entity.type })
+      : undefined;
+    const routeAssetKindFilter = routeDomain === "assets"
+      ? assetKindFilter(libraryEntityResourceType(entity), entity.type)
+      : undefined;
     add({
       id: entity.id,
       scope: "libraries",
@@ -391,7 +397,15 @@ function catalogRows(catalog: LibraryCatalog) {
       snippet: compactSummary(entity.summary),
       badges: ["Library", entity.type],
       selectedEntity: selectEntityFromId(entity.id),
-      route: { kind: "workbench", workbench: "library", domain: routeDomain, editor: routeEditor, searchHint: routeSearchHint || undefined },
+      route: {
+        kind: "workbench",
+        workbench: "library",
+        domain: routeDomain,
+        editor: routeEditor,
+        searchHint: routeSearchHint || undefined,
+        assetSection: routeAssetSection,
+        assetKindFilter: routeAssetKindFilter
+      },
       numericId: trailingNumber(entity.id),
       aliases: [entity.type.replace(/-/g, " ")]
     });
@@ -708,17 +722,25 @@ function libraryAssetSearchSection(asset: { source?: string; relativePath?: stri
 }
 
 function libraryEntityAssetSearchHint(entity: { id: string; label: string; summary: Record<string, unknown> }) {
-  const resourceType = typeof entity.summary.resourceType === "string"
+  const resourceType = libraryEntityResourceType(entity);
+  const resourceId = libraryEntityResourceId(entity);
+  return assetSearchHint(resourceType, Number.isFinite(resourceId) ? resourceId : null, entity.label);
+}
+
+function libraryEntityResourceType(entity: { summary: Record<string, unknown> }) {
+  return typeof entity.summary.resourceType === "string"
     ? entity.summary.resourceType
     : typeof entity.summary.type === "string"
       ? entity.summary.type
       : "";
-  const resourceId = typeof entity.summary.resourceId === "number"
+}
+
+function libraryEntityResourceId(entity: { id: string; summary: Record<string, unknown> }) {
+  return typeof entity.summary.resourceId === "number"
     ? entity.summary.resourceId
     : typeof entity.summary.resourceId === "string"
       ? Number(entity.summary.resourceId)
       : trailingNumber(entity.id);
-  return assetSearchHint(resourceType, Number.isFinite(resourceId) ? resourceId : null, entity.label);
 }
 
 function assetEditor(kind: string, resourceType: string) {
