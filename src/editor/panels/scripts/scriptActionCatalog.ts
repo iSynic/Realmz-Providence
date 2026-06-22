@@ -890,12 +890,12 @@ function buildActionDefinition(option: RealmzActionOption, forceAdvanced = false
         ? parameterRowTarget()
         : undefined;
   const storage = metadata?.storage ?? inferredStorage(code, option);
-  const preservedLabel = isDispatcherNoopOpcode(code) ? `Unknown Opcode ${code}` : `Preserved Action ${code}`;
-  const preservedShortLabel = isDispatcherNoopOpcode(code) ? "Unknown Opcode" : "Preserved Action";
+  const preservedLabel = isDispatcherNoopOpcode(code) ? `Unknown Opcode ${code}` : `Unmodeled Action ${code}`;
+  const preservedShortLabel = isDispatcherNoopOpcode(code) ? "Unknown Opcode" : "Unmodeled Action";
   const description = hasGenericOpcodeLabel
     ? isDispatcherNoopOpcode(code)
       ? "Providence keeps this opcode available for inspection, but classic Realmz does not expose a normal authoring path for it."
-      : "Providence preserves this known script row even though it does not have a complete friendly editor yet."
+      : "Providence recognizes this script row, but it does not have a complete friendly editor yet."
     : override?.description ?? option.description;
   const label = hasGenericOpcodeLabel ? preservedLabel : override?.label ?? option.shortLabel;
   const shortLabel = hasGenericOpcodeLabel ? preservedShortLabel : override?.shortLabel ?? option.shortLabel;

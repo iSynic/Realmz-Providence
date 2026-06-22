@@ -98,6 +98,10 @@ if (/label:\s*["']Opcode\s+\d+/i.test(catalog)) {
   failures.push("Action catalog contains a visible Opcode label.");
 }
 
+if (catalog.includes("Preserved Action")) {
+  failures.push("Action catalog should not expose generic Preserved Action wording.");
+}
+
 for (const snippet of [
   "Back Up Party",
   "Change Action Point Codes",

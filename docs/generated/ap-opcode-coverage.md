@@ -7,7 +7,7 @@ Generated from Providence's action catalog and the Divinity/manual opcode crossw
 - authorable-now: 48
 - edcd-backed-guided: 69
 - ignored-empty: 1
-- macro-only-authoring-backlog: 1
+- macro-only-context-gated: 1
 - manual-source-discrepancy: 1
 - not-used-no-dispatch: 10
 
@@ -138,7 +138,7 @@ Generated from Providence's action catalog and the Divinity/manual opcode crossw
 | 118 | not-used-no-dispatch | Not Used | direct-id |  | Documented not-used opcode with no normal authoring path; preserve imported values but do not present as meaningful authoring. |
 | 119 | authorable-now | Revive NPC After Combat | direct-id |  |  |
 | 120 | edcd-backed-guided | Alter NPC • Monster During Combat | Data EDCD | combat-monster-mutation |  |
-| 121 | macro-only-authoring-backlog | De-animate Lower Undead (Monster & Battle Macros Only) | Data EDCD | unused-edcd-load | Realmz source dispatches this only during combat and loads the ID as an Extra Code row; Providence keeps ordinary AP imports preserved and reserves normal authoring for macro/combat surfaces. |
+| 121 | macro-only-context-gated | De-animate Lower Undead (Monster & Battle Macros Only) | Data EDCD | unused-edcd-load | Realmz source dispatches this only during combat and loads the ID as an Extra Code row; Providence keeps ordinary AP imports preserved and treats macro/combat surfaces as the intentional authoring path. |
 | 122 | edcd-backed-guided | Cause Fumble (Monster Macro Only) | Data EDCD | fumble |  |
 | 123 | edcd-backed-guided | Cause Rout (Monster & Battle Macros Only) | Data EDCD | rout |  |
 | 124 | edcd-backed-guided | Spawn Monster (Monster & Battle Macros Only) | Data EDCD | spawn |  |

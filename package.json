@@ -51,6 +51,7 @@
     "smoke:ui:performance": "node scripts/smoke_ui_performance.mjs",
     "smoke:editor:scripts-v2": "powershell -ExecutionPolicy Bypass -File scripts/run_scripts_v2_editor_smoke.ps1",
     "smoke:editor:scripts-v2:diagnostics": "powershell -ExecutionPolicy Bypass -File scripts/run_scripts_v2_diagnostics_smoke.ps1",
+    "check:ap-action-gaps": "node scripts/report_ap_action_gaps.mjs --fail-on-authoring-gaps",
     "check:ap-actions": "node scripts/check_script_action_coverage.mjs",
     "check:registration-codes": "node scripts/check_registration_codes.mjs",
     "check:smart-terrain-profiles": "node scripts/check_smart_terrain_profiles.mjs",

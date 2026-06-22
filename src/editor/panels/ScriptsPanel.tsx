@@ -1598,19 +1598,19 @@ function humanActionValueLabel(label: string) {
 }
 
 function actionAuthoringStateLabel(definition: ScriptActionDefinition) {
-  if (definition.opcode === 121) return "Macro-only action";
+  if (definition.opcode === 121) return "Macro-only imported action";
   if (definition.opcode === 84) return "Manual/source discrepancy";
   if (definition.shortLabel === "Inert Imported Action") return "Inert imported action";
   if (definition.validationPosture === "no-effect") return "Preserve-only / no normal effect";
   if (definition.authoringLevel === "first-class") return "Friendly editor";
   if (definition.authoringLevel === "guided") return "Guided settings editor";
-  if (definition.authoringLevel === "advanced") return "Preserved action";
+  if (definition.authoringLevel === "advanced") return "Unmodeled action";
   return "Empty step";
 }
 
 function actionAuthoringStateDetail(definition: ScriptActionDefinition) {
   if (definition.opcode === 121) {
-    return "Realmz source performs this only during combat. Ordinary AP imports are preserved here; use monster or battle macro surfaces for intentional authoring.";
+    return "Realmz source performs this only during combat. Ordinary AP imports are preserved here and are not routine Action Point authoring backlog; use monster or battle macro surfaces for intentional authoring.";
   }
   if (definition.opcode === 84) {
     return "Divinity/manual material says this is not used, while Realmz Revisited contains a registration-check case. Providence preserves it until classic behavior is verified.";
@@ -1628,7 +1628,7 @@ function actionAuthoringStateDetail(definition: ScriptActionDefinition) {
     return "Providence edits the attached settings row with named fields, while keeping the original row number and file storage intact.";
   }
   if (definition.authoringLevel === "advanced") {
-    return "Providence can preserve and expose the stored values, but this action does not yet have a complete friendly authoring form.";
+    return "Providence recognizes and preserves the stored values, but this action does not yet have a complete friendly authoring form.";
   }
   return "Realmz skips empty slots.";
 }

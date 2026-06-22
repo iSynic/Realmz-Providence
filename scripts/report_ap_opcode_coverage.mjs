@@ -65,7 +65,7 @@ console.log(`Wrote ${path.relative(root, mdOut)}`);
 
 function classify(entry, state) {
   if (state.inIgnored) return "ignored-empty";
-  if (entry.opcode === 121) return "macro-only-authoring-backlog";
+  if (entry.opcode === 121) return "macro-only-context-gated";
   if (entry.opcode === 84) return "manual-source-discrepancy";
   if (entry.writerStatus === "writer-gated-not-used") return "not-used-no-dispatch";
   if (state.inAdvanced) return "preserved-but-known";
@@ -77,7 +77,7 @@ function classify(entry, state) {
 
 function coverageNote(entry, status) {
   if (entry.opcode === 121) {
-    return "Realmz source dispatches this only during combat and loads the ID as an Extra Code row; Providence keeps ordinary AP imports preserved and reserves normal authoring for macro/combat surfaces.";
+    return "Realmz source dispatches this only during combat and loads the ID as an Extra Code row; Providence keeps ordinary AP imports preserved and treats macro/combat surfaces as the intentional authoring path.";
   }
   if (entry.opcode === 84) {
     return "Divinity/manual labels this Not Used, but Realmz Revisited has a registration-check dispatcher case. Treat as a manual/source discrepancy until classic behavior and Divinity editability are verified.";

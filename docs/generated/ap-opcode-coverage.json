@@ -9,7 +9,7 @@
     "authorable-now": 48,
     "edcd-backed-guided": 69,
     "ignored-empty": 1,
-    "macro-only-authoring-backlog": 1,
+    "macro-only-context-gated": 1,
     "manual-source-discrepancy": 1,
     "not-used-no-dispatch": 10
   },
@@ -1739,8 +1739,8 @@
     {
       "opcode": 121,
       "title": "De-animate Lower Undead (Monster & Battle Macros Only)",
-      "status": "macro-only-authoring-backlog",
-      "note": "Realmz source dispatches this only during combat and loads the ID as an Extra Code row; Providence keeps ordinary AP imports preserved and reserves normal authoring for macro/combat surfaces.",
+      "status": "macro-only-context-gated",
+      "note": "Realmz source dispatches this only during combat and loads the ID as an Extra Code row; Providence keeps ordinary AP imports preserved and treats macro/combat surfaces as the intentional authoring path.",
       "edcdBacked": true,
       "shape": "unused-edcd-load",
       "writerStatus": "writer-ready-data-edcd",

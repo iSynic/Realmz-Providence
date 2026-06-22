@@ -6,6 +6,7 @@ const args = parseArgs(process.argv.slice(2));
 const outputDir = path.resolve(stringArg(args, "out") || path.join(root, "docs", "generated"));
 const crosswalk = readJson(path.join(root, "src", "editor", "generated", "opcodeEdcdCrosswalk.json")).entries ?? {};
 const NOT_USED_OPCODES = new Set([79, 80, 109, 110, 113, 114, 115, 116, 117, 118]);
+const NON_BACKLOG_KINDS = new Set(["needs-runtime-trace", "macro-only-imported", "inert-imported-action"]);
 const projectFiles = discoverProjectFiles(args);
 const projects = dedupeProjects(projectFiles).map((file) => buildProjectReport(file));
 const grouped = groupFindings(projects.flatMap((project) => project.findings.map((finding) => ({ ...finding, scenario: project.scenario, projectPath: project.projectPath }))));
@@ -13,9 +14,12 @@ const grouped = groupFindings(projects.flatMap((project) => project.findings.map
 const report = {
   schemaVersion: 1,
   generatedAt: null,
+  scanScope: scanScope(args),
+  scanRoots: projectFiles.length ? [...new Set(projectFiles.map((file) => path.dirname(file)))].sort() : [],
   projectCount: projects.length,
   projectsScanned: projects.map((project) => ({ scenario: project.scenario, projectPath: project.projectPath, findingCount: project.findings.length })),
   summary: summarize(grouped),
+  authoringRelevantCount: grouped.filter((group) => !NON_BACKLOG_KINDS.has(group.kind)).reduce((sum, group) => sum + group.count, 0),
   groups: grouped,
   projects
 };
@@ -28,22 +32,38 @@ fs.writeFileSync(mdPath, renderMarkdown(report), "utf8");
 
 console.log(JSON.stringify({ ok: true, projectCount: report.projectCount, findingCount: report.projects.reduce((sum, project) => sum + project.findings.length, 0), jsonPath, mdPath }, null, 2));
 
+if (args.get("fail-on-authoring-gaps") && report.authoringRelevantCount > 0) {
+  console.error(`AP action gap gate failed: ${report.authoringRelevantCount} authoring-relevant finding(s). See ${mdPath}`);
+  process.exit(1);
+}
+
 function discoverProjectFiles(parsed) {
   const explicit = parsed.get("project") ?? [];
   if (explicit.length) return explicit.map((file) => path.resolve(file));
-  const roots = parsed.get("root")?.map((entry) => path.resolve(entry)) ?? defaultRoots();
+  const roots = parsed.get("root")?.map((entry) => path.resolve(entry)) ?? defaultRoots(Boolean(parsed.get("include-scratch")));
   const files = [];
   for (const searchRoot of roots) collectProjectFiles(searchRoot, files);
   return files;
 }
 
-function defaultRoots() {
-  return [
+function scanScope(parsed) {
+  if (parsed.get("project")) return "explicit-projects";
+  if (parsed.get("root")) return "explicit-roots";
+  return parsed.get("include-scratch") ? "benchmark-and-scratch" : "benchmark";
+}
+
+function defaultRoots(includeScratch = false) {
+  const roots = [
     path.join(root, "tmp", "desktop-ui-harness"),
-    path.join(root, "tmp", "asset-triage"),
-    path.join(root, "tmp", "editor-script-workflow-20260521-222621"),
     path.join(root, "fixtures")
-  ].filter((candidate) => fs.existsSync(candidate));
+  ];
+  if (includeScratch) {
+    roots.push(
+      path.join(root, "tmp", "asset-triage"),
+      path.join(root, "tmp", "editor-script-workflow-20260521-222621")
+    );
+  }
+  return roots.filter((candidate) => fs.existsSync(candidate));
 }
 
 function collectProjectFiles(searchRoot, out) {
@@ -114,12 +134,12 @@ function classifyAction(project, trigger, action, code, rawCode, recordKind, ed3
   const macroContext = isCombatMacroContext(recordKind, rootType);
   if (code === 121) {
     return {
-      kind: macroContext ? "macro-only-authorable" : "macro-only-outside-context",
-      severity: macroContext ? "info" : "warning",
-      label: macroContext ? "De-animate Lower Undead" : "Macro-only action outside macro context",
+      kind: macroContext ? "macro-only-authorable" : "macro-only-imported",
+      severity: "info",
+      label: macroContext ? "De-animate Lower Undead" : "Macro-only imported action",
       detail: macroContext
         ? "Combat macro action. New authored rows should store ID 0 unless a known macro settings row is intentionally used."
-        : "Realmz only performs this action during combat. Providence preserves this imported ordinary AP/ED3 use until runtime evidence proves it is meaningful here.",
+        : "Realmz only performs this action during combat. Providence preserves this ordinary AP/ED3 import, but it is not routine Action Point authoring backlog.",
       opcode: code,
       rawCode,
       id: numberValue(action.id),
@@ -130,7 +150,7 @@ function classifyAction(project, trigger, action, code, rawCode, recordKind, ed3
       triggerId: trigger.id ?? "",
       ed3Classification,
       rootType,
-      crosswalkStatus: "macro-only-authoring-backlog",
+      crosswalkStatus: "macro-only-context-gated",
       sourceDisposition: "source-dispatched-combat-gated"
     };
   }
@@ -236,16 +256,19 @@ function renderMarkdown(report) {
   const lines = [
     "# AP Action Gaps",
     "",
-    "Generated from deduped Providence project imports. This report separates true authoring backlog from inert imported rows and runtime-residue noise.",
+    "Generated from deduped Providence project imports. This report separates true authoring backlog from inert imported rows, macro-only imports, and runtime-residue noise.",
     "",
+    `Scan scope: ${report.scanScope}`,
     `Projects scanned: ${report.projectCount}`,
+    `Authoring-relevant findings: ${report.authoringRelevantCount}`,
     "",
     "## Summary",
     ""
   ];
   for (const [kind, count] of Object.entries(report.summary).sort()) lines.push(`- ${kind}: ${count}`);
   if (!Object.keys(report.summary).length) lines.push("- no non-authorable action gaps found");
-  const detailedGroups = report.groups.filter((group) => group.kind !== "needs-runtime-trace");
+  const detailedGroups = report.groups.filter((group) => !NON_BACKLOG_KINDS.has(group.kind));
+  const nonBacklogGroups = report.groups.filter((group) => NON_BACKLOG_KINDS.has(group.kind) && group.kind !== "needs-runtime-trace");
   const traceGroups = report.groups.filter((group) => group.kind === "needs-runtime-trace");
   lines.push("", "## Authoring-Relevant Groups", "");
   if (!detailedGroups.length) lines.push("- none", "");
@@ -261,6 +284,14 @@ function renderMarkdown(report) {
     lines.push("| --- | --- | ---: | ---: | --- | --- | --- |");
     for (const example of group.examples) {
       lines.push(`| ${escapeCell(example.scenario)} | ${escapeCell(example.recordKind)} | ${example.row} | ${example.slot} | ${example.id}${example.settingsRow != null ? ` / ${example.settingsRow}` : ""} | ${example.ed3Classification ?? ""} | ${escapeCell(example.triggerId)} |`);
+    }
+    lines.push("");
+  }
+  if (nonBacklogGroups.length) {
+    lines.push("## Preserved But Not Authoring Backlog", "");
+    for (const group of nonBacklogGroups) {
+      lines.push(`- Opcode ${group.opcode}: ${group.label} (${group.count} occurrence(s), ${group.scenarios.join(", ") || "no scenario"})`);
+      lines.push(`  ${group.detail}`);
     }
     lines.push("");
   }
