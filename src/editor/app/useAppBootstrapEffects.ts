@@ -68,7 +68,7 @@ export function useAppBootstrapEffects({
       try {
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const project = await ensureBrowserReferenceTileAttributes((await response.json()) as Project);
+        const project = (await response.json()) as Project;
         if (!disposed) {
           setProjectDir(`browser-benchmark://${url}`);
           dispatch({ type: "setProject", project, selectedMapId: project.maps[0]?.id ?? null });
@@ -159,6 +159,30 @@ export function useAppBootstrapEffects({
   }, [desktopRuntime, dispatch, projectDir, state.activeTab, state.project]);
 
   useEffect(() => {
+    if (desktopRuntime || !state.project) return;
+    if (!shouldHydrateBrowserReferenceTileAttributesForTab(state.activeTab)) return;
+    if (hasBrowserReferenceTileAttributes(state.project)) return;
+    let disposed = false;
+    const project = cloneProjectForReferenceTileAttributes(state.project);
+    void ensureBrowserReferenceTileAttributes(project)
+      .then((hydrated) => {
+        if (disposed) return;
+        dispatch({
+          type: "setReferenceTileAttributes",
+          tileAttributes: hydrated.tileAttributes,
+          assetCatalog: hydrated.assetCatalog,
+          validation: hydrated.validation
+        });
+      })
+      .catch((error) => {
+        if (!disposed) dispatch({ type: "setStatus", status: `Reference tile metadata load failed: ${commandError(error)}` });
+      });
+    return () => {
+      disposed = true;
+    };
+  }, [desktopRuntime, dispatch, state.activeTab, state.project]);
+
+  useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       const target = event.target as HTMLElement | null;
       if (target && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
@@ -188,6 +212,7 @@ export function useAppBootstrapEffects({
         dispatch({ type: "setAtlases", entries: {}, status: "No atlases loaded" });
         return;
       }
+      if (!shouldLoadTileAtlasesForTab(state.activeTab)) return;
       const loadable = state.project.assetCatalog.tilesets
         .map((asset) => ({
           asset,
@@ -238,7 +263,7 @@ export function useAppBootstrapEffects({
     return () => {
       disposed = true;
     };
-  }, [atlasLoadKey, desktopRuntime, dispatch, projectDir, state.libraryCatalog]);
+  }, [atlasLoadKey, desktopRuntime, dispatch, projectDir, state.activeTab, state.libraryCatalog]);
 
   useEffect(() => {
     let disposed = false;
@@ -247,6 +272,7 @@ export function useAppBootstrapEffects({
         dispatch({ type: "setIcons", entries: {}, status: "No icon overlays loaded" });
         return;
       }
+      if (!shouldLoadIconOverlaysForTab(state.activeTab)) return;
       const projectStampAssets = (state.project.assets ?? []).filter((asset) => asset.kind === "special-land-tile" && asset.resourceType === "cicn");
       const projectCatalogIconAssets = (state.project.assetCatalog.icons ?? []).filter((asset) => asset.resourceType === "cicn");
       const libraryIconAssets = (state.libraryCatalog?.assets ?? []).filter(isPaintableSpecialLandLibraryAsset);
@@ -381,7 +407,7 @@ export function useAppBootstrapEffects({
     return () => {
       disposed = true;
     };
-  }, [desktopRuntime, dispatch, iconLoadKey, projectDir, workspaceDir]);
+  }, [desktopRuntime, dispatch, iconLoadKey, projectDir, state.activeTab, workspaceDir]);
 }
 
 function waitForBrowserPaint() {
@@ -392,6 +418,36 @@ function waitForBrowserPaint() {
 
 function shouldBuildSemanticSchemaForTab(tab: EditorState["activeTab"]) {
   return ["encounters", "combat", "economy", "rules", "assets", "records", "linter"].includes(tab);
+}
+
+function shouldHydrateBrowserReferenceTileAttributesForTab(tab: EditorState["activeTab"]) {
+  return tab === "maps" || tab === "linter";
+}
+
+function hasBrowserReferenceTileAttributes(project: Project) {
+  return (project.tileAttributes ?? []).some((profile) => profile.sourceKind === "mapstats" && profile.source === "Data P BD");
+}
+
+function cloneProjectForReferenceTileAttributes(project: Project): Project {
+  return {
+    ...project,
+    tileAttributes: [...(project.tileAttributes ?? [])],
+    assetCatalog: {
+      ...project.assetCatalog,
+      tilesets: [...(project.assetCatalog?.tilesets ?? [])],
+      pictures: [...(project.assetCatalog?.pictures ?? [])],
+      icons: [...(project.assetCatalog?.icons ?? [])],
+      sounds: [...(project.assetCatalog?.sounds ?? [])]
+    }
+  };
+}
+
+function shouldLoadTileAtlasesForTab(tab: EditorState["activeTab"]) {
+  return tab === "maps";
+}
+
+function shouldLoadIconOverlaysForTab(tab: EditorState["activeTab"]) {
+  return tab === "maps" || tab === "combat";
 }
 
 function isInlineAssetUrl(value: string) {

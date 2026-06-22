@@ -13,6 +13,7 @@ const EMPTY_TARGET_COMPATIBILITY = { blockers: [], warnings: [], notes: [] };
 const pendingBrowserSemantics = new Map<string, { files: Map<string, Uint8Array>; sourceFiles: Project["source"]["files"] }>();
 const browserScenarioPreviewSources = new Map<string, Map<string, Uint8Array>>();
 const browserScenarioResourcePreviewCache = new Map<string, string>();
+let bundledLandlookMapstatsPromise: Promise<Project["tileAttributes"]> | null = null;
 
 export function createBrowserProject(projectName: string): Project {
   const safeName = projectName.trim() || "Untitled Scenario";
@@ -450,7 +451,6 @@ export async function openBrowserProject(source: BrowserScenarioSource): Promise
   project.editorMetadata.mapStamps ??= [];
   project.semanticSchema.decoding ??= { ed3Reachability: [], dispatcherNoops: [], confidenceDebt: [] };
   backfillTilesetMetadata(project);
-  await ensureBrowserReferenceTileAttributes(project);
   project.validation = validateBrowserProject(project);
   return project;
 }
@@ -466,6 +466,11 @@ export async function ensureBrowserReferenceTileAttributes(project: Project) {
 }
 
 async function loadBundledLandlookMapstats() {
+  bundledLandlookMapstatsPromise ??= loadBundledLandlookMapstatsUncached();
+  return [...await bundledLandlookMapstatsPromise];
+}
+
+async function loadBundledLandlookMapstatsUncached() {
   const out: Project["tileAttributes"] = [];
   for (const [fileName, landlook] of [
     ["Data P BD", 0],

@@ -86,6 +86,7 @@ export type EditorAction =
   | { type: "setTutorialEnabled"; enabled: boolean }
   | { type: "togglePanelCollapsed"; panelId: string }
   | { type: "setProject"; project: Project | null; selectedMapId?: string | null }
+  | { type: "setReferenceTileAttributes"; tileAttributes: Project["tileAttributes"]; assetCatalog: Project["assetCatalog"]; validation?: ValidationReport }
   | { type: "setSemanticSchema"; schema: SemanticSchema; validation?: ValidationReport }
   | { type: "replaceProject"; project: Project }
   | { type: "markSaved"; project: Project }
@@ -245,7 +246,11 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         groupLabel: null,
         groupChangeCount: 0,
         lastCommandLabel: null,
-        focusTarget: null
+        focusTarget: null,
+        atlasEntries: {},
+        atlasStatus: action.project ? "Tile atlases will load when needed" : "No atlases loaded",
+        iconEntries: {},
+        iconStatus: action.project ? "Icon overlays will load when needed" : "No icon overlays loaded"
       };
     case "setSemanticSchema":
       return state.project
@@ -254,6 +259,18 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
             project: {
               ...state.project,
               semanticSchema: action.schema,
+              validation: action.validation ?? state.project.validation
+            }
+          }
+        : state;
+    case "setReferenceTileAttributes":
+      return state.project
+        ? {
+            ...state,
+            project: {
+              ...state.project,
+              tileAttributes: action.tileAttributes,
+              assetCatalog: action.assetCatalog,
               validation: action.validation ?? state.project.validation
             }
           }

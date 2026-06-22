@@ -109,15 +109,22 @@ async function runScenario({ baseUrl, budgets, spec }) {
   const openedAt = Date.now();
   try {
     await preparePage(client, url);
+    const shellAt = Date.now();
     await waitForProjectLoaded(client);
+    const projectReadyAt = Date.now();
+    const coldOpenMs = projectReadyAt - openedAt;
     const browserVersion = await client.send("Browser.getVersion").catch(() => null);
     scenario.browser = browserVersion?.product ?? "unknown";
     scenario.viewport = await evalValue(client, "({ width: window.innerWidth, height: window.innerHeight, devicePixelRatio: window.devicePixelRatio })");
     scenario.probes.push({
       label: "Cold project open",
       budgetKey: "coldProjectOpen",
-      durationMs: Date.now() - openedAt,
-      status: budgetStatus(Date.now() - openedAt, budgets.coldProjectOpen),
+      durationMs: coldOpenMs,
+      status: budgetStatus(coldOpenMs, budgets.coldProjectOpen),
+      phaseDurations: {
+        shellMs: shellAt - openedAt,
+        projectReadyMs: projectReadyAt - shellAt
+      },
       longTasks: [],
       maxLongTaskMs: 0,
       longTaskStatus: "pass"
