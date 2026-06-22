@@ -166,7 +166,7 @@ const TIMED_SCHEDULE_HELP =
 const TIMED_LOCATION_HELP =
   "Location gates restrict the timed encounter to any map, land, or dungeon, then optionally to level, random rectangle, X, and Y. Raw Position Code is preserved for source accuracy.";
 const TIMED_EXTRA_HELP =
-  "These reserved signed fields are preserved imported data. Edit them only when matching a known Divinity setup or source-backed fixture.";
+  "Data TD3 has nine remaining signed-number slots after the confirmed schedule, macro, item, quest, and location fields. Current Realmz/Divinity evidence does not give these slots normal authoring meanings, so Providence preserves them as compatibility fields.";
 
 const scriptDiagnosticCache = new WeakMap<TriggerRecord, { key: string; diagnostics: ScriptDiagnostic[] }>();
 const objectIdentity = new WeakMap<object, number>();
@@ -4258,6 +4258,8 @@ function TimedEncounterShell({
   };
   const locationValue = locationKindValue(record.locationKind);
   const eligibilitySummary = timedEncounterEligibilitySummary(record);
+  const reservedTimedValues = Array.from({ length: 9 }, (_, index) => record.stuff?.[index + 1] ?? 0);
+  const reservedNonZeroCount = reservedTimedValues.filter((value) => value !== 0).length;
   return (
     <div className="timed-encounter-editor">
       <section className="timed-encounter-form">
@@ -4276,16 +4278,8 @@ function TimedEncounterShell({
             <TimedNumberRow label="Day" value={record.day} onCommit={(day) => update({ day })} />
             <TimedNumberRow label="Increment" value={record.increment} onCommit={(increment) => update({ increment })} />
             <TimedNumberRow label="% Chance" value={record.percent} onCommit={(percent) => update({ percent })} />
-            <TimedReferenceRow
-              project={project}
-              catalog={catalog}
-              label="Extra AP To Activate"
-              emptyLabel="No Extra Action Point"
-              opcode={39}
-              value={record.door}
-              onCommit={(door) => update({ door })}
-            />
-            <TimedItemRow project={project} catalog={catalog} label="Required Item ID" value={record.requiredItem} onCommit={(requiredItem) => update({ requiredItem })} />
+            <TimedNumberRow label="Extra AP To Activate" value={record.door} onCommit={(door) => update({ door })} />
+            <TimedNumberRow label="Required Item ID" value={record.requiredItem} onCommit={(requiredItem) => update({ requiredItem })} />
             <TimedNumberRow label="Required Quest ID" value={record.requiredQuest} onCommit={(requiredQuest) => update({ requiredQuest })} />
           </div>
           <div className="timed-encounter-column">
@@ -4307,10 +4301,10 @@ function TimedEncounterShell({
           </div>
         </div>
       </section>
-      <CollapsibleSection title="Additional Data" eyebrow="advanced" count="9 fields" density="compact" className="script-encounter-text-section timed-extra-section">
+      <CollapsibleSection title="Reserved Fields" eyebrow="advanced" count={reservedNonZeroCount ? `${reservedNonZeroCount} nonzero` : "all zero"} density="compact" className="script-encounter-text-section timed-extra-section">
         <p className="script-encounter-text-note">
-          <TutorialTip title="Additional Time Encounter Data" body={TIMED_EXTRA_HELP} side="below">
-            <span>Realmz reserves additional signed-number fields in Time Encounters. Keep imported values unless you are matching a known Divinity setup.</span>
+          <TutorialTip title="Reserved Time Encounter Fields" body={TIMED_EXTRA_HELP} side="below">
+            <span>Compatibility-only Data TD3 slots. Leave these at 0 unless copying an existing timed encounter that already uses them.</span>
           </TutorialTip>
         </p>
         <div className="timed-extra-grid">
@@ -4319,7 +4313,7 @@ function TimedEncounterShell({
             return (
               <TimedNumberRow
                 key={slot}
-                label={`Extra ${slot}`}
+                label={`Reserved ${slot}`}
                 value={record.stuff?.[slot] ?? 0}
                 onCommit={(value) => update({ stuff: updateArraySlot(record.stuff ?? [], slot, value, 10) })}
               />
@@ -4347,52 +4341,6 @@ function TimedNumberRow({
       <span>{label}</span>
       <input type="number" value={value} readOnly={readOnly} onChange={(event) => onCommit?.(Number(event.currentTarget.value))} />
     </label>
-  );
-}
-
-function TimedReferenceRow({
-  project,
-  catalog,
-  label,
-  emptyLabel,
-  opcode,
-  value,
-  onCommit
-}: {
-  project: Project;
-  catalog?: LibraryCatalog | null;
-  label: string;
-  emptyLabel: string;
-  opcode: number;
-  value: number;
-  onCommit: (value: number) => void;
-}) {
-  return (
-    <div className="timed-form-row">
-      <span>{label}</span>
-      <ReferenceIdField project={project} catalog={catalog} label={label} emptyLabel={emptyLabel} opcode={opcode} value={value} compact onCommit={onCommit} />
-    </div>
-  );
-}
-
-function TimedItemRow({
-  project,
-  catalog,
-  label,
-  value,
-  onCommit
-}: {
-  project: Project;
-  catalog?: LibraryCatalog | null;
-  label: string;
-  value: number;
-  onCommit: (value: number) => void;
-}) {
-  return (
-    <div className="timed-form-row">
-      <span>{label}</span>
-      <ItemIdField project={project} catalog={catalog} label={label} value={value} compact onCommit={onCommit} />
-    </div>
   );
 }
 
