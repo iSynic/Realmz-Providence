@@ -1,40 +1,55 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 
 const root = process.cwd();
 const args = parseArgs(process.argv.slice(2));
-const outputDir = path.resolve(stringArg(args, "out") || path.join(root, "docs", "generated"));
 const crosswalk = readJson(path.join(root, "src", "editor", "generated", "opcodeEdcdCrosswalk.json")).entries ?? {};
+const catalogAuthoring = readCatalogAuthoring();
 const NOT_USED_OPCODES = new Set([79, 80, 109, 110, 113, 114, 115, 116, 117, 118]);
-const NON_BACKLOG_KINDS = new Set(["needs-runtime-trace", "macro-only-imported", "inert-imported-action"]);
-const projectFiles = discoverProjectFiles(args);
-const projects = dedupeProjects(projectFiles).map((file) => buildProjectReport(file));
-const grouped = groupFindings(projects.flatMap((project) => project.findings.map((finding) => ({ ...finding, scenario: project.scenario, projectPath: project.projectPath }))));
+const NON_BACKLOG_KINDS = new Set(["needs-runtime-trace", "macro-only-imported", "macro-only-authorable", "inert-imported-action", "manual-source-discrepancy"]);
+const GATE_FAIL_KINDS = new Set(["authoring-gap", "unknown-opcode"]);
 
-const report = {
-  schemaVersion: 1,
-  generatedAt: null,
-  scanScope: scanScope(args),
-  scanRoots: projectFiles.length ? [...new Set(projectFiles.map((file) => path.dirname(file)))].sort() : [],
-  projectCount: projects.length,
-  projectsScanned: projects.map((project) => ({ scenario: project.scenario, projectPath: project.projectPath, findingCount: project.findings.length })),
-  summary: summarize(grouped),
-  authoringRelevantCount: grouped.filter((group) => !NON_BACKLOG_KINDS.has(group.kind)).reduce((sum, group) => sum + group.count, 0),
-  groups: grouped,
-  projects
-};
+if (args.get("self-test")) {
+  runSelfTest();
+} else {
+  const outputDir = path.resolve(stringArg(args, "out") || path.join(root, "docs", "generated"));
+  const { report, jsonPath, mdPath } = writeReport(buildReport(args), outputDir);
 
-fs.mkdirSync(outputDir, { recursive: true });
-const jsonPath = path.join(outputDir, "ap-action-gaps.json");
-const mdPath = path.join(outputDir, "ap-action-gaps.md");
-writeJson(jsonPath, report);
-fs.writeFileSync(mdPath, renderMarkdown(report), "utf8");
+  console.log(JSON.stringify({ ok: true, projectCount: report.projectCount, findingCount: report.projects.reduce((sum, project) => sum + project.findings.length, 0), gateFailureCount: report.gateFailureCount, jsonPath, mdPath }, null, 2));
 
-console.log(JSON.stringify({ ok: true, projectCount: report.projectCount, findingCount: report.projects.reduce((sum, project) => sum + project.findings.length, 0), jsonPath, mdPath }, null, 2));
+  if (args.get("fail-on-authoring-gaps") && report.gateFailureCount > 0) {
+    console.error(formatGateFailure(report, mdPath));
+    process.exit(1);
+  }
+}
 
-if (args.get("fail-on-authoring-gaps") && report.authoringRelevantCount > 0) {
-  console.error(`AP action gap gate failed: ${report.authoringRelevantCount} authoring-relevant finding(s). See ${mdPath}`);
-  process.exit(1);
+function buildReport(parsed) {
+  const projectFiles = discoverProjectFiles(parsed);
+  const projects = dedupeProjects(projectFiles).map((file) => buildProjectReport(file));
+  const grouped = groupFindings(projects.flatMap((project) => project.findings.map((finding) => ({ ...finding, scenario: project.scenario, projectPath: project.projectPath }))));
+  return {
+    schemaVersion: 1,
+    generatedAt: null,
+    scanScope: scanScope(parsed),
+    scanRoots: projectFiles.length ? [...new Set(projectFiles.map((file) => path.dirname(file)))].sort() : [],
+    projectCount: projects.length,
+    projectsScanned: projects.map((project) => ({ scenario: project.scenario, projectPath: project.projectPath, findingCount: project.findings.length })),
+    summary: summarize(grouped),
+    gateFailureCount: grouped.filter((group) => GATE_FAIL_KINDS.has(group.kind)).reduce((sum, group) => sum + group.count, 0),
+    authoringRelevantCount: grouped.filter((group) => !NON_BACKLOG_KINDS.has(group.kind)).reduce((sum, group) => sum + group.count, 0),
+    groups: grouped,
+    projects
+  };
+}
+
+function writeReport(report, outputDir) {
+  fs.mkdirSync(outputDir, { recursive: true });
+  const jsonPath = path.join(outputDir, "ap-action-gaps.json");
+  const mdPath = path.join(outputDir, "ap-action-gaps.md");
+  writeJson(jsonPath, report);
+  fs.writeFileSync(mdPath, renderMarkdown(report), "utf8");
+  return { report, jsonPath, mdPath };
 }
 
 function discoverProjectFiles(parsed) {
@@ -112,14 +127,12 @@ function buildProjectReport(file) {
   const scenario = scenarioName(project, file);
   const ed3ByIndex = new Map((project.semanticSchema?.decoding?.ed3Reachability ?? []).map((row) => [Number(row.recordIndex), row]));
   const findings = [];
-  for (const trigger of project.triggers ?? []) {
-    const recordKind = recordKindFor(trigger);
-    const ed3 = trigger.source === "Data ED3" ? ed3ByIndex.get(Number(trigger.recordIndex)) ?? null : null;
-    for (const action of trigger.actions ?? []) {
+  for (const context of actionContextsForProject(project, ed3ByIndex)) {
+    for (const action of context.actions ?? []) {
       const rawCode = numberValue(action.rawCode ?? action.code);
       const code = normalizeOpcode(rawCode);
       if (code === 0) continue;
-      const finding = classifyAction(project, trigger, action, code, rawCode, recordKind, ed3);
+      const finding = classifyAction(project, context, action, code, rawCode);
       if (finding) findings.push(finding);
     }
   }
@@ -127,9 +140,47 @@ function buildProjectReport(file) {
   return { scenario, projectPath: file, findings };
 }
 
-function classifyAction(project, trigger, action, code, rawCode, recordKind, ed3) {
+function actionContextsForProject(project, ed3ByIndex) {
+  const contexts = [];
+  for (const trigger of project.triggers ?? []) {
+    const recordKind = recordKindFor(trigger);
+    contexts.push({
+      source: trigger.source ?? "",
+      recordKind,
+      recordIndex: numberValue(trigger.recordIndex),
+      triggerId: trigger.id ?? `${recordKind} ${numberValue(trigger.recordIndex)}`,
+      actions: trigger.actions ?? [],
+      ed3: trigger.source === "Data ED3" ? ed3ByIndex.get(Number(trigger.recordIndex)) ?? null : null
+    });
+  }
+  for (const encounter of project.simpleEncounters ?? []) {
+    contexts.push({
+      source: "Data ED",
+      recordKind: "Simple Encounter",
+      recordIndex: numberValue(encounter.id),
+      triggerId: `Simple Encounter ${numberValue(encounter.id)}`,
+      actions: encounter.actions ?? [],
+      ed3: null
+    });
+  }
+  for (const encounter of project.complexEncounters ?? []) {
+    contexts.push({
+      source: "Data ED2",
+      recordKind: "Complex Encounter",
+      recordIndex: numberValue(encounter.id),
+      triggerId: `Complex Encounter ${numberValue(encounter.id)}`,
+      actions: encounter.actions ?? [],
+      ed3: null
+    });
+  }
+  return contexts;
+}
+
+function classifyAction(project, context, action, code, rawCode) {
   const entry = crosswalk[String(code)] ?? null;
-  const ed3Classification = ed3?.reachable ? "source-backed" : ed3?.classification ?? (trigger.source === "Data ED3" ? "unknown" : null);
+  const recordKind = context.recordKind;
+  const ed3 = context.ed3;
+  const ed3Classification = ed3?.reachable ? "source-backed" : ed3?.classification ?? (context.source === "Data ED3" ? "unknown" : null);
   const rootType = ed3?.rootType ?? null;
   const macroContext = isCombatMacroContext(recordKind, rootType);
   if (code === 121) {
@@ -145,9 +196,9 @@ function classifyAction(project, trigger, action, code, rawCode, recordKind, ed3
       id: numberValue(action.id),
       settingsRow: numberValue(action.id),
       recordKind,
-      row: numberValue(trigger.recordIndex),
+      row: numberValue(context.recordIndex),
       slot: numberValue(action.slot),
-      triggerId: trigger.id ?? "",
+      triggerId: context.triggerId,
       ed3Classification,
       rootType,
       crosswalkStatus: "macro-only-context-gated",
@@ -165,9 +216,9 @@ function classifyAction(project, trigger, action, code, rawCode, recordKind, ed3
       id: numberValue(action.id),
       settingsRow: null,
       recordKind,
-      row: numberValue(trigger.recordIndex),
+      row: numberValue(context.recordIndex),
       slot: numberValue(action.slot),
-      triggerId: trigger.id ?? "",
+      triggerId: context.triggerId,
       ed3Classification,
       rootType,
       crosswalkStatus: "manual-source-discrepancy",
@@ -185,9 +236,9 @@ function classifyAction(project, trigger, action, code, rawCode, recordKind, ed3
       id: numberValue(action.id),
       settingsRow: null,
       recordKind,
-      row: numberValue(trigger.recordIndex),
+      row: numberValue(context.recordIndex),
       slot: numberValue(action.slot),
-      triggerId: trigger.id ?? "",
+      triggerId: context.triggerId,
       ed3Classification,
       rootType,
       crosswalkStatus: "not-used-no-dispatch",
@@ -195,7 +246,7 @@ function classifyAction(project, trigger, action, code, rawCode, recordKind, ed3
     };
   }
   if (!entry) {
-    const residue = trigger.source === "Data ED3" && ["runtime-mutation-candidate", "needs-runtime-trace", "probable-editor-padding", "unknown"].includes(ed3Classification ?? "");
+    const residue = context.source === "Data ED3" && ["runtime-mutation-candidate", "needs-runtime-trace", "probable-editor-padding", "unknown"].includes(ed3Classification ?? "");
     return {
       kind: residue ? "needs-runtime-trace" : "unknown-opcode",
       severity: residue ? "info" : "warning",
@@ -208,16 +259,40 @@ function classifyAction(project, trigger, action, code, rawCode, recordKind, ed3
       id: numberValue(action.id),
       settingsRow: null,
       recordKind,
-      row: numberValue(trigger.recordIndex),
+      row: numberValue(context.recordIndex),
       slot: numberValue(action.slot),
-      triggerId: trigger.id ?? "",
+      triggerId: context.triggerId,
       ed3Classification,
       rootType,
       crosswalkStatus: "truly-unknown",
       sourceDisposition: residue ? "residue-not-authoring-backlog" : "unknown"
     };
   }
+  if (isKnownButNotAuthorable(code)) {
+    return {
+      kind: "authoring-gap",
+      severity: "warning",
+      label: entry.title ?? `Opcode ${code}`,
+      detail: "Documented/source-backed action is reachable in authored script data but is not exposed as a first-class or guided Providence action.",
+      opcode: code,
+      rawCode,
+      id: numberValue(action.id),
+      settingsRow: numberValue(action.id),
+      recordKind,
+      row: numberValue(context.recordIndex),
+      slot: numberValue(action.slot),
+      triggerId: context.triggerId,
+      ed3Classification,
+      rootType,
+      crosswalkStatus: "documented-but-not-authorable",
+      sourceDisposition: "authoring-gap"
+    };
+  }
   return null;
+}
+
+function isKnownButNotAuthorable(code) {
+  return catalogAuthoring.advanced.has(code) && code !== 84 && code !== 121;
 }
 
 function groupFindings(findings) {
@@ -267,10 +342,10 @@ function renderMarkdown(report) {
   ];
   for (const [kind, count] of Object.entries(report.summary).sort()) lines.push(`- ${kind}: ${count}`);
   if (!Object.keys(report.summary).length) lines.push("- no non-authorable action gaps found");
-  const detailedGroups = report.groups.filter((group) => !NON_BACKLOG_KINDS.has(group.kind));
+  const detailedGroups = report.groups.filter((group) => GATE_FAIL_KINDS.has(group.kind));
   const nonBacklogGroups = report.groups.filter((group) => NON_BACKLOG_KINDS.has(group.kind) && group.kind !== "needs-runtime-trace");
   const traceGroups = report.groups.filter((group) => group.kind === "needs-runtime-trace");
-  lines.push("", "## Authoring-Relevant Groups", "");
+  lines.push("", "## Gate-Failing Groups", "");
   if (!detailedGroups.length) lines.push("- none", "");
   for (const group of detailedGroups) {
     lines.push(`### Opcode ${group.opcode}: ${group.label}`, "");
@@ -345,6 +420,128 @@ function severityRank(severity) {
   if (severity === "warning") return 2;
   if (severity === "info") return 1;
   return 0;
+}
+
+function readCatalogAuthoring() {
+  const source = fs.readFileSync(path.join(root, "src", "editor", "panels", "scripts", "scriptActionCatalog.ts"), "utf8");
+  return {
+    firstClass: parseNumberSet(source, "FIRST_CLASS_ACTIONS"),
+    advanced: parseNumberSet(source, "ADVANCED_ACTIONS"),
+    ignored: parseNumberSet(source, "IGNORED_ACTIONS")
+  };
+}
+
+function parseNumberSet(source, name) {
+  const match = source.match(new RegExp(`const ${name} = new Set\\(\\[([\\s\\S]*?)\\]\\);`));
+  return new Set((match?.[1].match(/-?\d+/g) ?? []).map(Number));
+}
+
+function formatGateFailure(report, mdPath) {
+  const groups = report.groups.filter((group) => GATE_FAIL_KINDS.has(group.kind));
+  const examples = [];
+  for (const group of groups) {
+    for (const example of group.examples.slice(0, 3)) {
+      examples.push(`opcode ${group.opcode} ${group.label} in ${example.scenario} (${example.recordKind} row ${example.row}, slot ${example.slot})`);
+      if (examples.length >= 6) break;
+    }
+    if (examples.length >= 6) break;
+  }
+  return [
+    `AP action gap gate failed: ${report.gateFailureCount} gate-failing finding(s).`,
+    examples.length ? `First examples: ${examples.join("; ")}.` : "",
+    `See ${mdPath}`
+  ].filter(Boolean).join("\n");
+}
+
+function runSelfTest() {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "providence-ap-action-gaps-"));
+  try {
+    const cases = [
+      {
+        name: "unknown opcode fails",
+        project: projectWithTriggers("Unknown Opcode", [{ source: "Data DD", recordIndex: 1, actions: [{ slot: 1, rawCode: 999, id: 0 }] }]),
+        expectedSummary: { "unknown-opcode": 1 },
+        expectedGateFailures: 1
+      },
+      {
+        name: "not-used opcode is inert",
+        project: projectWithTriggers("Inert Opcode", [{ source: "Data DD", recordIndex: 1, actions: [{ slot: 1, rawCode: 79, id: 55 }] }]),
+        expectedSummary: { "inert-imported-action": 1 },
+        expectedGateFailures: 0
+      },
+      {
+        name: "ordinary 121 is macro-only imported",
+        project: projectWithTriggers("Macro Only Imported", [{ source: "Data DD", recordIndex: 1, actions: [{ slot: 1, rawCode: 121, id: 88 }] }]),
+        expectedSummary: { "macro-only-imported": 1 },
+        expectedGateFailures: 0
+      },
+      {
+        name: "combat 121 is macro-only authorable",
+        project: projectWithTriggers("Macro Only Authorable", [{ source: "Battle Macro", recordIndex: 7, actions: [{ slot: 1, rawCode: 121, id: 0 }] }]),
+        expectedSummary: { "macro-only-authorable": 1 },
+        expectedGateFailures: 0
+      },
+      {
+        name: "opcode 84 is discrepancy",
+        project: projectWithTriggers("Opcode 84", [{ source: "Data DD", recordIndex: 1, actions: [{ slot: 1, rawCode: 84, id: 0 }] }]),
+        expectedSummary: { "manual-source-discrepancy": 1 },
+        expectedGateFailures: 0
+      },
+      {
+        name: "runtime residue does not fail",
+        project: {
+          ...projectWithTriggers("Runtime Residue", [{ source: "Data ED3", recordIndex: 0, actions: [{ slot: 1, rawCode: 999, id: 0 }] }]),
+          semanticSchema: { decoding: { ed3Reachability: [{ recordIndex: 0, reachable: false, classification: "needs-runtime-trace", rootType: "unknown" }] } }
+        },
+        expectedSummary: { "needs-runtime-trace": 1 },
+        expectedGateFailures: 0
+      },
+      {
+        name: "complex encounter actions are scanned",
+        project: {
+          scenario: { name: "Complex Encounter Unknown" },
+          triggers: [],
+          complexEncounters: [{ id: 4, actions: [{ slot: 2, rawCode: 999, id: 0 }] }]
+        },
+        expectedSummary: { "unknown-opcode": 1 },
+        expectedGateFailures: 1,
+        expectedRecordKind: "Complex Encounter"
+      }
+    ];
+
+    for (const testCase of cases) {
+      const projectPath = path.join(tempRoot, sanitizeFileName(testCase.name), "project.json");
+      fs.mkdirSync(path.dirname(projectPath), { recursive: true });
+      writeJson(projectPath, testCase.project);
+      const parsed = new Map([["project", [projectPath]]]);
+      const report = buildReport(parsed);
+      assertEqual(report.gateFailureCount, testCase.expectedGateFailures, `${testCase.name}: gate failure count`);
+      for (const [kind, count] of Object.entries(testCase.expectedSummary)) {
+        assertEqual(report.summary[kind] ?? 0, count, `${testCase.name}: ${kind} count`);
+      }
+      if (testCase.expectedRecordKind) {
+        const recordKind = report.projects[0]?.findings[0]?.recordKind;
+        assertEqual(recordKind, testCase.expectedRecordKind, `${testCase.name}: record kind`);
+      }
+    }
+    console.log(JSON.stringify({ ok: true, selfTestCases: cases.length }, null, 2));
+  } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  }
+}
+
+function projectWithTriggers(name, triggers) {
+  return { scenario: { name }, triggers };
+}
+
+function sanitizeFileName(value) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "case";
+}
+
+function assertEqual(actual, expected, label) {
+  if (actual !== expected) {
+    throw new Error(`${label}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
+  }
 }
 
 function parseArgs(argv) {

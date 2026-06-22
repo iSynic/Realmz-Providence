@@ -255,11 +255,9 @@ async function runApProbes(client, budgets, scenario) {
       const input = document.querySelector(".realmz-target-picker input");
       if (!input) return false;
       input.focus();
-      input.value = "";
-      input.dispatchEvent(new Event("input", { bubbles: true }));
       return true;
     })()
-  `, `document.querySelector(".realmz-target-picker input")`);
+  `, `document.activeElement === document.querySelector(".realmz-target-picker input")`);
 }
 
 async function runMapProbes(client, budgets, scenario) {
@@ -323,7 +321,7 @@ async function runMapProbes(client, budgets, scenario) {
       return window.__providencePerfPaintAfter.mapId === window.__providencePerfPaintBefore.mapId &&
         window.__providencePerfPaintAfter.tileRevision !== window.__providencePerfPaintBefore.tileRevision;
     })()
-  `);
+  `, { budgetDuration: "actionAndSettle" });
 }
 
 async function runCombatProbes(client, budgets, scenario) {
@@ -520,9 +518,9 @@ async function warmDomain(client, domain) {
   await evalValue(client, "new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))");
 }
 
-async function probe(client, scenario, budgets, label, budgetKey, actionExpression, settleExpression) {
+async function probe(client, scenario, budgets, label, budgetKey, actionExpression, settleExpression, options = {}) {
   try {
-    const result = await measureInteraction(client, label, budgetKey, budgets, actionExpression, settleExpression);
+    const result = await measureInteraction(client, label, budgetKey, budgets, actionExpression, settleExpression, options);
     if (result.actionResult === false) {
       scenario.probes.push({
         ...result,

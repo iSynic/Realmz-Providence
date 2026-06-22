@@ -173,7 +173,7 @@ export async function preparePage(client, url) {
   await evalValue(client, LONG_TASK_OBSERVER_SOURCE);
 }
 
-export async function measureInteraction(client, label, budgetKey, budgets, actionExpression, settleExpression = "true") {
+export async function measureInteraction(client, label, budgetKey, budgets, actionExpression, settleExpression = "true", options = {}) {
   await evalValue(client, "__providencePerf.clearLongTasks()");
   const started = await evalValue(client, "performance.now()");
   const actionResult = await evalValue(client, actionExpression);
@@ -196,17 +196,24 @@ export async function measureInteraction(client, label, budgetKey, budgets, acti
   const ended = await evalValue(client, "performance.now()");
   const longTasks = await evalValue(client, "__providencePerf.longTasks()");
   const durationMs = Math.round(ended - started);
+  const phaseDurations = {
+    actionMs: Math.round(actionEnded - started),
+    settleMs: Math.round(settled - actionEnded),
+    frameSettleMs: Math.round(ended - settled)
+  };
+  const budgetDurationKind = options.budgetDuration ?? "total";
+  const budgetDurationMs = budgetDurationKind === "actionAndSettle"
+    ? phaseDurations.actionMs + phaseDurations.settleMs
+    : durationMs;
   return {
     label,
     budgetKey,
     durationMs,
-    status: budgetStatus(durationMs, budgets[budgetKey]),
+    budgetDurationMs,
+    budgetDurationKind,
+    status: budgetStatus(budgetDurationMs, budgets[budgetKey]),
     actionResult,
-    phaseDurations: {
-      actionMs: Math.round(actionEnded - started),
-      settleMs: Math.round(settled - actionEnded),
-      frameSettleMs: Math.round(ended - settled)
-    },
+    phaseDurations,
     longTasks,
     maxLongTaskMs: Math.round(Math.max(0, ...longTasks.map((task) => task.duration))),
     longTaskStatus: budgetStatus(Math.max(0, ...longTasks.map((task) => task.duration)), budgets.longTask)

@@ -51,12 +51,12 @@
     "smoke:ui:performance": "node scripts/smoke_ui_performance.mjs",
     "smoke:editor:scripts-v2": "powershell -ExecutionPolicy Bypass -File scripts/run_scripts_v2_editor_smoke.ps1",
     "smoke:editor:scripts-v2:diagnostics": "powershell -ExecutionPolicy Bypass -File scripts/run_scripts_v2_diagnostics_smoke.ps1",
-    "check:ap-action-gaps": "node scripts/report_ap_action_gaps.mjs --fail-on-authoring-gaps",
+    "check:ap-action-gaps": "node scripts/report_ap_action_gaps.mjs --self-test && node scripts/report_ap_action_gaps.mjs --fail-on-authoring-gaps --out tmp/ap-action-gaps-check",
     "check:ap-actions": "node scripts/check_script_action_coverage.mjs",
     "check:registration-codes": "node scripts/check_registration_codes.mjs",
     "check:smart-terrain-profiles": "node scripts/check_smart_terrain_profiles.mjs",
     "check:script-diagnostics": "node scripts/report_script_diagnostics.mjs --self-test --out tmp/script-diagnostics-self-test",
-    "check": "npm run typecheck && npm run check:ap-actions && npm run check:registration-codes && npm run check:script-diagnostics && npm run build && npm run test:rust"
+    "check": "npm run typecheck && npm run check:ap-action-gaps && npm run check:ap-actions && npm run check:registration-codes && npm run check:script-diagnostics && npm run build && npm run test:rust"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",
