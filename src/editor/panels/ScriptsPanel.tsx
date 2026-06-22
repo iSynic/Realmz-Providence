@@ -100,7 +100,7 @@ const SCRIPT_EDITOR_TABS = [
   { id: "action-points", label: "Action Points", title: "Create and edit map Action Points." },
   { id: "macros", label: "Extra Action Points", title: "Extra Action Points and branch targets." },
   { id: "global-macros", label: "Global Events", title: "Scenario-wide event hooks and startup logic." },
-  { id: "quests", label: "Story Flags", title: "Raw Divinity quest flags, continuity threads, and script references." },
+  { id: "quests", label: "Story Flags", title: "Raw Divinity quest flags, beta continuity notes, and script references." },
   { id: "settings-rows", label: "Settings Rows", title: "Advanced browser for EDCD action settings rows." },
   { id: "ed3-evidence", label: "Unlinked Extra APs", title: "Extra Action Points not yet linked from known scenario behavior." }
 ];
@@ -1113,10 +1113,10 @@ function QuestWorkbench({
   }, [model.threads, model.quests, model.questById, selectedQuestId, selectedThreadId]);
 
   const createThread = () => {
-    onApplyCommand?.({ kind: "createQuestThread", label: "Create continuity thread", name: `Continuity Thread ${model.threads.length + 1}` });
+    onApplyCommand?.({ kind: "createQuestThread", label: "Create continuity note", name: `Continuity Note ${model.threads.length + 1}` });
   };
   const updateThread = (thread: QuestThread, changes: Partial<Pick<QuestThread, "name" | "description" | "questIds" | "contextRefs">>) => {
-    onApplyCommand?.({ kind: "updateQuestThread", label: "Update continuity thread", threadId: thread.id, changes });
+    onApplyCommand?.({ kind: "updateQuestThread", label: "Update continuity note", threadId: thread.id, changes });
   };
   const addQuestToThread = (thread: QuestThread, questId: number) => {
     updateThread(thread, { questIds: [...thread.questIds, questId] });
@@ -1127,7 +1127,7 @@ function QuestWorkbench({
   const acceptSuggestion = (suggestion: QuestThreadSuggestion) => {
     onApplyCommand?.({
       kind: "createQuestThread",
-      label: "Accept continuity thread suggestion",
+      label: "Accept possible continuity note",
       name: suggestion.name,
       description: suggestion.description,
       questIds: suggestion.questIds,
@@ -1179,25 +1179,28 @@ function QuestWorkbench({
     <section className="quest-workbench">
       <header className="settings-rows-header">
         <div>
-          <strong>Story Flags & Continuity Threads</strong>
-          <small>Realmz stores raw Divinity quest flags and branches. Providence surfaces evidence and possible continuity, then lets authors curate the story layer.</small>
+          <strong>Story Flags & Continuity Notes</strong>
+          <small>Realmz stores raw Divinity quest flags and branches. Providence can show tentative continuity notes to help authors navigate scripts.</small>
         </div>
         <div className="script-toolbar">
           <button type="button" className="btn btn-secondary btn-xs" onClick={() => setContextPanelOpen((open) => !open)}>
             <FileText size={12} /> Find Story Context
           </button>
           <button type="button" className="btn btn-secondary btn-xs" onClick={createThread}>
-            <Plus size={12} /> Continuity Thread
+            <Plus size={12} /> Continuity Note
           </button>
         </div>
       </header>
       {model.recognizedContext && (
         <div className="recognized-scenario-context">
           <div>
-            <strong>Known Scenario Context: {model.recognizedContext.scenarioName}</strong>
+            <strong>Recognized Scenario Notes: {model.recognizedContext.scenarioName}</strong>
             <small>{model.recognizedContext.summary}</small>
+            <small className="recognized-scenario-beta-copy">
+              Beta context: these notes are inferred and curated from scenario data. They are not complete walkthroughs, and may miss unresolved branches, side quests, or runtime-only behavior. Use raw flag usage as the source-backed view.
+            </small>
           </div>
-          <span>{model.recognizedContext.confidence} confidence</span>
+          <span>Curated beta notes</span>
         </div>
       )}
       <div className="quest-workbench-layout">
@@ -1248,11 +1251,11 @@ function QuestWorkbench({
               </div>
             </PanelSection>
           )}
-          <PanelSection title="Continuity Threads" eyebrow={`${model.threads.length} saved`} density="compact">
+          <PanelSection title="Continuity Notes" eyebrow={`${model.threads.length} saved`} density="compact">
             {model.threads.length === 0 ? (
               <div className="script-tab-note">
-                <strong>No continuity threads yet</strong>
-                <small>Create one manually, or accept a suggested thread below.</small>
+                <strong>No continuity notes yet</strong>
+                <small>Create one manually, or accept a possible thread below.</small>
               </div>
             ) : (
               <div className="quest-card-list">
@@ -1266,10 +1269,10 @@ function QuestWorkbench({
                       }}
                     >
                       <strong>{thread.name}</strong>
-                      <small>{thread.source === "bundled" ? "Known scenario context" : `${thread.questIds.length} flag${thread.questIds.length === 1 ? "" : "s"}`}</small>
+                      <small>{thread.source === "bundled" ? "Bundled continuity note" : `${thread.questIds.length} flag${thread.questIds.length === 1 ? "" : "s"}`}</small>
                     </button>
                     {thread.source !== "bundled" && (
-                      <button type="button" className="btn btn-danger btn-xs icon-only" title="Delete thread" onClick={() => onApplyCommand?.({ kind: "deleteQuestThread", label: "Delete continuity thread", threadId: thread.id })}>
+                      <button type="button" className="btn btn-danger btn-xs icon-only" title="Delete note" onClick={() => onApplyCommand?.({ kind: "deleteQuestThread", label: "Delete continuity note", threadId: thread.id })}>
                         <Trash2 size={12} />
                       </button>
                     )}
@@ -1278,7 +1281,7 @@ function QuestWorkbench({
               </div>
             )}
           </PanelSection>
-          <PanelSection title="Suggested Threads" eyebrow={`${model.suggestions.length} possible`} density="compact">
+          <PanelSection title="Possible Threads" eyebrow={`${model.suggestions.length} tentative`} density="compact">
             {model.suggestions.length === 0 ? (
               <small className="empty-copy compact">No conservative clusters found yet.</small>
             ) : (
@@ -1342,7 +1345,7 @@ function QuestWorkbench({
               onApplyCommand={onApplyCommand}
             />
           ) : (
-            <EmptyState title="No story flag selected" body="Create a continuity thread, accept a suggestion, or select a raw Divinity quest flag." />
+            <EmptyState title="No story flag selected" body="Create a continuity note, accept a possible thread, or select a raw Divinity quest flag." />
           )}
         </main>
       </div>
@@ -1374,12 +1377,12 @@ function QuestThreadDetail({
   const threadIds = new Set(thread.questIds);
   return (
     <div className="quest-detail-grid">
-      <PanelSection title="Continuity Thread" eyebrow={`${thread.questIds.length} flags`} density="compact">
+      <PanelSection title="Continuity Note" eyebrow={`${thread.questIds.length} flags`} density="compact">
         {thread.source === "bundled" ? (
           <div className="known-thread-summary">
             <strong>{thread.name}</strong>
             <small>{thread.description}</small>
-            <span>Bundled context is read-only. Create a project thread if you want editable notes.</span>
+            <span>Bundled beta note is read-only. Create a project continuity note if you want editable interpretation.</span>
           </div>
         ) : (
           <>
@@ -1400,7 +1403,7 @@ function QuestThreadDetail({
               {thread.source !== "bundled" && <button type="button" title="Remove from thread" onClick={() => onRemoveQuest(quest.id)}><X size={11} /></button>}
             </span>
           ))}
-          {quests.length === 0 && <small className="empty-copy compact">{thread.source === "bundled" ? "This known scenario context is story-first; matching raw flags are shown below as Providence decodes them." : "Add raw flags to build this continuity thread."}</small>}
+          {quests.length === 0 && <small className="empty-copy compact">{thread.source === "bundled" ? "This bundled note is story-first; matching raw flags are shown below as Providence decodes them." : "Add raw flags to build this continuity note."}</small>}
         </div>
       </PanelSection>
       <QuestContextRefsPanel
@@ -1480,14 +1483,14 @@ function QuestFlagDetail({
           </button>
         )}
       </PanelSection>
-      <PanelSection title="Add To Thread" eyebrow={`${threads.length} saved`} density="compact">
+      <PanelSection title="Add To Continuity Note" eyebrow={`${threads.length} saved`} density="compact">
         <div className="quest-add-grid">
           {threads.filter((thread) => !thread.questIds.includes(quest.id)).map((thread) => (
             <button key={thread.id} type="button" className="btn btn-secondary btn-xs" onClick={() => onAddToThread(thread)}>
               <Plus size={11} /> {thread.name}
             </button>
           ))}
-          {threads.length === 0 && <small className="empty-copy compact">Create a continuity thread first.</small>}
+          {threads.length === 0 && <small className="empty-copy compact">Create a continuity note first.</small>}
         </div>
       </PanelSection>
       <QuestContextRefsPanel

@@ -4179,6 +4179,12 @@
   line-height: 1.45;
 }
 
+.recognized-scenario-context .recognized-scenario-beta-copy {
+  border-top: 1px solid rgba(102, 139, 166, 0.28);
+  color: #d2c78f;
+  padding-top: 6px;
+}
+
 .recognized-scenario-context > span {
   border: 1px solid #2b5d83;
   border-radius: 999px;
