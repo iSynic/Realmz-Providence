@@ -1,8 +1,7 @@
 import { Project, QuestContextRef, QuestLabel, QuestThread, TriggerRecord } from "./types";
 import { normalizeStepOpcode } from "./realmzActions";
 import { triggerEntityId } from "./utils";
-import { contextRefsForQuest, suggestThreadsFromContext } from "./questContext";
-import { recognizedQuestContextSources, recognizedQuestThreads, recognizedScenarioContextForProject, type RecognizedScenarioContext } from "./scenarioContext";
+import { contextRefsForQuest } from "./questContext";
 
 export type QuestUsageCategory =
   | "set"
@@ -52,7 +51,6 @@ export type QuestPresentationModel = {
   questById: Map<number, QuestFlagModel>;
   threads: QuestThread[];
   suggestions: QuestThreadSuggestion[];
-  recognizedContext: RecognizedScenarioContext | null;
 };
 
 const QUEST_CATEGORIES: QuestUsageCategory[] = ["set", "cleared", "tested", "incremented", "required", "branches", "unknown"];
@@ -172,8 +170,7 @@ export function buildQuestPresentation(project: Project, scripts: TriggerRecord[
     });
   }
 
-  const recognizedContext = recognizedScenarioContextForProject(project);
-  const contextSources = mergeContextSources(recognizedQuestContextSources(project), project.editorMetadata?.questContextSources ?? []);
+  const contextSources = project.editorMetadata?.questContextSources ?? [];
   const quests = [...byId.values()].map((quest) => ({
     ...quest,
     uses: quest.uses.sort((a, b) => a.sortKey.localeCompare(b.sortKey)),
@@ -181,31 +178,17 @@ export function buildQuestPresentation(project: Project, scripts: TriggerRecord[
     contextRefs: contextRefsForQuest(quest, contextSources)
   })).sort((a, b) => b.uses.length - a.uses.length || a.id - b.id);
   const questById = new Map(quests.map((quest) => [quest.id, quest]));
-  const threads = mergeQuestThreads(recognizedQuestThreads(project), project.editorMetadata?.questThreads ?? []);
-  const derivedSuggestions = suggestQuestThreads(quests, threads);
-  const contextSuggestions = suggestThreadsFromContext(quests, threads, contextSources);
+  const threads = mergeQuestThreads(project.editorMetadata?.questThreads ?? []);
   return {
     quests,
     questById,
     threads,
-    suggestions: [...contextSuggestions, ...derivedSuggestions].slice(0, 18),
-    recognizedContext
+    suggestions: []
   };
 }
 
-function mergeContextSources(bundled: ReturnType<typeof recognizedQuestContextSources>, projectSources: ReturnType<typeof recognizedQuestContextSources>) {
-  const byId = new Map<string, (typeof bundled)[number]>();
-  for (const source of bundled) byId.set(source.id, source);
-  for (const source of projectSources) byId.set(source.id, source);
-  return [...byId.values()];
-}
-
-function mergeQuestThreads(bundled: QuestThread[], projectThreads: QuestThread[]) {
-  const projectIds = new Set(projectThreads.map((thread) => thread.id));
-  return [
-    ...bundled.filter((thread) => !projectIds.has(thread.id)),
-    ...projectThreads.map((thread) => ({ ...thread, source: thread.source ?? "user" as const }))
-  ];
+function mergeQuestThreads(projectThreads: QuestThread[]) {
+  return projectThreads.map((thread) => ({ ...thread, source: thread.source ?? "user" as const }));
 }
 
 function addActionQuestUses(
@@ -328,56 +311,6 @@ function questWarnings(quest: QuestFlagModel) {
   if (quest.counts.incremented > 0 && quest.counts.tested + quest.counts.branches > 0) warnings.push("Looks like a multi-stage quest value or counter.");
   if (!quest.authored && quest.uses.length > 0) warnings.push("No authored label yet.");
   return warnings;
-}
-
-function suggestQuestThreads(quests: QuestFlagModel[], threads: QuestThread[]) {
-  const existing = new Set(threads.map((thread) => normalizedQuestSet(thread.questIds)));
-  const suggestions: QuestThreadSuggestion[] = [];
-  const usedSuggestionKeys = new Set<string>();
-  const addSuggestion = (name: string, description: string, questIds: number[], reason: string) => {
-    const unique = [...new Set(questIds.filter((id) => id >= 0))].sort((a, b) => a - b);
-    if (unique.length < 2) return;
-    const key = normalizedQuestSet(unique);
-    if (!key || existing.has(key) || usedSuggestionKeys.has(key)) return;
-    usedSuggestionKeys.add(key);
-    suggestions.push({
-      id: `suggested:${key}`,
-      name,
-      description,
-      questIds: unique,
-      reason
-    });
-  };
-
-  const activeIds = quests.filter((quest) => quest.uses.length > 0).map((quest) => quest.id).sort((a, b) => a - b);
-  let run: number[] = [];
-  for (const questId of activeIds) {
-    if (run.length === 0 || questId === run[run.length - 1] + 1) run.push(questId);
-    else {
-      addSuggestion(`Flags ${run[0]}-${run[run.length - 1]}`, "Nearby quest ids often represent one Divinity story sequence.", run, "nearby numeric IDs");
-      run = [questId];
-    }
-  }
-  addSuggestion(`Flags ${run[0]}-${run[run.length - 1]}`, "Nearby quest ids often represent one Divinity story sequence.", run, "nearby numeric IDs");
-
-  const bySource = new Map<string, { sourceLabel: string; ids: number[] }>();
-  for (const quest of quests) {
-    for (const usage of quest.uses) {
-      const key = usage.entityId ?? usage.sourceLabel;
-      const group = bySource.get(key) ?? { sourceLabel: usage.sourceLabel, ids: [] };
-      group.ids.push(quest.id);
-      bySource.set(key, group);
-    }
-  }
-  for (const group of bySource.values()) {
-    const ids = [...new Set(group.ids)];
-    addSuggestion(`Possible thread from ${group.sourceLabel}`, `These quest flags are read or written by ${group.sourceLabel}.`, ids, "shared script or encounter");
-  }
-  return suggestions.slice(0, 12);
-}
-
-function normalizedQuestSet(questIds: number[]) {
-  return [...new Set(questIds)].sort((a, b) => a - b).join(",");
 }
 
 function triggerSourceLabel(trigger: TriggerRecord) {
