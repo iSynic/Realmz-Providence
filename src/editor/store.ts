@@ -156,7 +156,7 @@ export function initialEditorState(desktopRuntime: boolean): EditorState {
     showBattleOverlays: true,
     showTextOverlays: true,
     showUnknownOverlays: true,
-    showSecretOverlays: false,
+    showSecretOverlays: true,
     past: [],
     future: [],
     groupBaseProject: null,

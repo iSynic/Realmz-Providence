@@ -29,8 +29,9 @@ export function normalizeTile(value: number) {
 
 export function normalizeIconId(value: number) {
   if (value >= 0) {
-    const normalized = normalizeRealmzFieldState(value);
-    return normalized > 200 ? normalized : null;
+    // Positive 201-999 values are direct map icon ids. Values above 999 are
+    // Realmz land-state encodings and must not be reduced into icon ids here.
+    return value > 200 && value < 1000 ? value : null;
   }
   let iconId = value;
   while (iconId < -999) iconId += 1000;
@@ -75,15 +76,6 @@ function clearRealmzShortBit(value: number, bit: number) {
   const unsigned = value & 0xffff;
   const cleared = unsigned & ~(1 << (15 - bit));
   return cleared >= 0x8000 ? cleared - 0x10000 : cleared;
-}
-
-function normalizeRealmzFieldState(value: number) {
-  let tile = clearRealmzShortBit(value, 1);
-  tile = clearRealmzShortBit(tile, 2);
-  for (let attempt = 0; attempt < 3 && tile > 999; attempt += 1) {
-    tile -= 1000;
-  }
-  return tile;
 }
 
 function range(start: number, end: number) {

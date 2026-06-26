@@ -1433,28 +1433,15 @@ fn is_scenario_local_monster_icon_id(icon_id: i16) -> bool {
 
 fn normalize_icon_id(value: i16) -> Option<i16> {
     if value >= 0 {
-        let icon_id = normalize_realmz_field_state(value);
-        return (icon_id > 200).then_some(icon_id);
+        // Positive 201-999 values are direct map icon ids. Values above 999 are
+        // Realmz land-state encodings and must not be reduced into icon ids here.
+        return (value > 200 && value < 1000).then_some(value);
     }
     let mut icon_id = value;
     while icon_id < -999 {
         icon_id += 1000;
     }
     Some(icon_id)
-}
-
-fn normalize_realmz_field_state(value: i16) -> i16 {
-    let mut tile = clear_realmz_short_bit(value, 1);
-    tile = clear_realmz_short_bit(tile, 2);
-    while tile > 999 {
-        tile -= 1000;
-    }
-    tile
-}
-
-fn clear_realmz_short_bit(value: i16, bit: u8) -> i16 {
-    let cleared = (value as u16) & !(1u16 << (15 - bit));
-    cleared as i16
 }
 
 fn atlas_source_path(source_path: &Path, tileset: &TilesetAsset) -> Option<PathBuf> {
@@ -1710,8 +1697,8 @@ mod tests {
         assert_eq!(normalize_icon_id(378), Some(378));
         assert_eq!(normalize_icon_id(379), Some(379));
         assert_eq!(normalize_icon_id(462), Some(462));
-        assert_eq!(normalize_icon_id(1462), Some(462));
-        assert_eq!(normalize_icon_id(1224), Some(224));
+        assert_eq!(normalize_icon_id(1462), None);
+        assert_eq!(normalize_icon_id(1224), None);
         assert_eq!(normalize_icon_id(5081), None);
         assert_eq!(normalize_icon_id(969), Some(969));
         assert_eq!(normalize_icon_id(-462), Some(-462));
