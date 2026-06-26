@@ -3,6 +3,7 @@ import {
   clampCell,
   MAP_CELLS,
   numberSummary,
+  randomRectCellBounds,
   randomRectEntityId,
   tileValueAt
 } from "./geometry";
@@ -204,19 +205,16 @@ export function drawRandomRectangles(
   cell: number
 ) {
   for (const rect of randomLevel.rects) {
-    const left = clampCell(rect.left);
-    const top = clampCell(rect.top);
-    const right = clampCell(rect.right);
-    const bottom = clampCell(rect.bottom);
-    if (right < left || bottom < top) continue;
+    const { left, top, width, height } = randomRectCellBounds(rect);
+    if (width <= 0 || height <= 0) continue;
     const isSelected = selectedEntity?.id === randomRectEntityId(map, rect.rectIndex);
     if (isSelected) {
       ctx.fillStyle = "rgba(244, 190, 92, 0.14)";
-      ctx.fillRect(left * cell, top * cell, (right - left + 1) * cell, (bottom - top + 1) * cell);
+      ctx.fillRect(left * cell, top * cell, width * cell, height * cell);
     }
     ctx.strokeStyle = isSelected ? "#ffd47a" : "rgba(244, 190, 92, 0.72)";
     ctx.lineWidth = isSelected ? 3 : 2;
-    ctx.strokeRect(left * cell + 1, top * cell + 1, (right - left + 1) * cell - 2, (bottom - top + 1) * cell - 2);
+    ctx.strokeRect(left * cell + 1, top * cell + 1, width * cell - 2, height * cell - 2);
   }
 }
 

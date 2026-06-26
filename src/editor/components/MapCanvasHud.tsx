@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { EditorTool, MapEntity, MapHudAnchor, RandomLevel, SemanticEntity, TriggerRecord } from "../types";
-import { clampCell, numberSummary, tileValueAt } from "../map/geometry";
+import { numberSummary, randomRectCellBounds, randomRectContainsCell, tileValueAt } from "../map/geometry";
 import { hasSecretMarkerTile, hasSecretPathTile, isSecretWalkableTile } from "../map/secrets";
 import { triggerOverlayKind } from "../map/drawMapCanvas";
 
@@ -90,11 +90,8 @@ function hoverBoxesAt(
 ) {
   const boxes: string[] = [];
   for (const rect of randomLevel?.rects ?? []) {
-    const left = clampCell(rect.left);
-    const top = clampCell(rect.top);
-    const right = clampCell(rect.right);
-    const bottom = clampCell(rect.bottom);
-    if (hover.x >= left && hover.x <= right && hover.y >= top && hover.y <= bottom) {
+    const { left, top, right, bottom } = randomRectCellBounds(rect);
+    if (randomRectContainsCell(rect, hover.x, hover.y)) {
       boxes.push(`Random encounter area R${rect.rectIndex} @ ${left},${top} - ${right},${bottom}`);
     }
   }

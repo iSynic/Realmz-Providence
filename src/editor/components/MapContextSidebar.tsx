@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, ty
 import { TOOLS } from "../constants";
 import { EditorState } from "../store";
 import { CustomMapStamp, EditorTool, IconEntry, MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRecord, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, SmartBrushMaskCell, SmartBrushPlan, SmartBrushPreset, TileAttributeFlag, TilePaletteCategory, TilesetAsset, TriggerRecord } from "../types";
-import { mapTileIndex, randomRectEntityId, tileValueAt } from "../map/geometry";
+import { mapTileIndex, randomRectContainsCell, randomRectEntityId, tileValueAt } from "../map/geometry";
 import { allMapCells, buildReplaceChanges, dominantTiles, rectCells, regionCellCount } from "../map/regionPaint";
 import { actionSlotEntitiesForTriggerRecord } from "../semanticGraph";
 import { compactValue, linksFor, mapEntityId, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
@@ -2340,7 +2340,7 @@ function selectionSummary(
     kind: "cell",
     cell: selectedCell,
     triggers: triggers.filter((trigger) => trigger.coordinate?.x === selectedCell.x && trigger.coordinate.y === selectedCell.y),
-    rects: randomLevel?.rects.filter((rect) => selectedCell.x >= rect.left && selectedCell.x <= rect.right && selectedCell.y >= rect.top && selectedCell.y <= rect.bottom) ?? [],
+    rects: randomLevel?.rects.filter((rect) => randomRectContainsCell(rect, selectedCell.x, selectedCell.y)) ?? [],
     records: mapRecords.filter((record) => record.summary.startX === selectedCell.x && record.summary.startY === selectedCell.y)
   };
 }

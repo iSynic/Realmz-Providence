@@ -552,10 +552,11 @@ function defaultRandomRect(rectIndex: number): RandomRect {
 }
 
 function normalizeRandomRect(rect: RandomRect): RandomRect {
+  const maxRightBottom = rect.percent < 0 ? 90 : 89;
   const left = clampInt(Math.min(rect.left, rect.right), 0, 89);
-  const right = clampInt(Math.max(rect.left, rect.right), 0, 89);
+  const right = clampInt(Math.max(rect.left, rect.right), 0, maxRightBottom);
   const top = clampInt(Math.min(rect.top, rect.bottom), 0, 89);
-  const bottom = clampInt(Math.max(rect.top, rect.bottom), 0, 89);
+  const bottom = clampInt(Math.max(rect.top, rect.bottom), 0, maxRightBottom);
   return {
     rectIndex: rect.rectIndex,
     left,

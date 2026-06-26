@@ -1,6 +1,6 @@
 import { MapEntity, MapHitTarget, RandomLevel, SelectedEntity, SemanticEntity, TriggerRecord } from "../types";
 import { selectEntityFromId, triggerEntityId } from "../utils";
-import { MapCell, numberSummary, randomRectEntityId, rectArea, tileValueAt } from "./geometry";
+import { MapCell, numberSummary, randomRectContainsCell, randomRectEntityId, rectArea, tileValueAt } from "./geometry";
 
 export function hitTestMapTarget({
   map,
@@ -54,7 +54,7 @@ export function triggerAt(triggers: TriggerRecord[], x: number, y: number) {
 export function randomRectAt(randomLevel: RandomLevel, x: number, y: number) {
   return (
     randomLevel.rects
-      .filter((rect) => x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom)
+      .filter((rect) => randomRectContainsCell(rect, x, y))
       .sort((a, b) => rectArea(a) - rectArea(b))[0] ?? null
   );
 }

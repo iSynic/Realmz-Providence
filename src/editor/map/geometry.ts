@@ -48,17 +48,60 @@ export function randomRectEntityId(map: MapEntity, rectIndex: number) {
 }
 
 export function rectCenter(rect: RandomLevel["rects"][number]) {
+  const bounds = randomRectCellBounds(rect);
   return {
-    x: clampCell(Math.round((rect.left + rect.right) / 2)),
-    y: clampCell(Math.round((rect.top + rect.bottom) / 2))
+    x: clampCell(Math.round((bounds.left + bounds.right) / 2)),
+    y: clampCell(Math.round((bounds.top + bounds.bottom) / 2))
   };
 }
 
 export function rectArea(rect: RandomLevel["rects"][number]) {
-  return Math.max(1, rect.right - rect.left + 1) * Math.max(1, rect.bottom - rect.top + 1);
+  const bounds = randomRectCellBounds(rect);
+  return Math.max(1, bounds.right - bounds.left + 1) * Math.max(1, bounds.bottom - bounds.top + 1);
+}
+
+export function randomRectUsesQuickDrawBounds(rect: RandomLevel["rects"][number]) {
+  return rect.percent < 0;
+}
+
+export function randomRectCellBounds(rect: RandomLevel["rects"][number]) {
+  const left = clampCell(rect.left);
+  const top = clampCell(rect.top);
+  if (randomRectUsesQuickDrawBounds(rect)) {
+    const rightEdge = clampCellEdge(rect.right);
+    const bottomEdge = clampCellEdge(rect.bottom);
+    return {
+      left,
+      top,
+      right: clampCell(Math.max(left, rightEdge - 1)),
+      bottom: clampCell(Math.max(top, bottomEdge - 1)),
+      width: Math.max(0, rightEdge - left),
+      height: Math.max(0, bottomEdge - top)
+    };
+  }
+  const right = clampCell(rect.right);
+  const bottom = clampCell(rect.bottom);
+  return {
+    left,
+    top,
+    right,
+    bottom,
+    width: Math.max(0, right - left + 1),
+    height: Math.max(0, bottom - top + 1)
+  };
+}
+
+export function randomRectContainsCell(rect: RandomLevel["rects"][number], x: number, y: number) {
+  const bounds = randomRectCellBounds(rect);
+  if (bounds.width <= 0 || bounds.height <= 0) return false;
+  return x >= bounds.left && x <= bounds.right && y >= bounds.top && y <= bounds.bottom;
 }
 
 export function numberSummary(entity: SemanticEntity, key: string) {
   const value = entity.summary[key];
   return typeof value === "number" ? value : null;
+}
+
+function clampCellEdge(value: number) {
+  return Math.max(0, Math.min(MAP_CELLS, value));
 }

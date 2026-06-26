@@ -649,6 +649,7 @@ function ScriptAuthoringPanel({
   };
   const floatingDetail = detailSurface === "floating";
   const targetRecordType = realmzScriptStepDescriptorFor(selectedDraft.rawCode).targetType;
+  const selectedDraftTargetId = resolveSignedMessageTarget(selectedDraft.rawCode, selectedDraft.id);
   const directTargetDrawerAvailable = Boolean(targetRecordType);
   const wideTargetRecord = targetRecordType === "battle" || targetRecordType === "treasure" || targetRecordType === "shop" || targetRecordType === "simpleEncounter" || targetRecordType === "complexEncounter" || targetRecordType === "thiefEncounter" || targetRecordType === "timedEncounter";
   const detailSurfaceButton = (
@@ -735,10 +736,11 @@ function ScriptAuthoringPanel({
         </TutorialTip>
       </p>
       <TargetRecordEditor
+        key={`${targetRecordType}:${selectedDraft.rawCode}:${selectedDraftTargetId}`}
         project={project}
         catalog={catalog}
         opcode={selectedDraft.rawCode}
-        targetId={resolveSignedMessageTarget(selectedDraft.rawCode, selectedDraft.id)}
+        targetId={selectedDraftTargetId}
         desktopRuntime={desktopRuntime}
         projectDir={projectDir}
         workspaceDir={workspaceDir}
@@ -2449,6 +2451,7 @@ export function TargetRecordEditor({
           <label className="script-target-wide-field">
             <span>Text</span>
             <textarea
+              key={`message:${targetId}`}
               defaultValue={record.text}
               maxLength={255}
               onBlur={(event) => onApplyCommand?.({ kind: "updateMessageRecord", label: "Update message", id: targetId, changes: { text: event.currentTarget.value } })}
