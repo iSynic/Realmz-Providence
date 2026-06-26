@@ -61,6 +61,16 @@ const decoded = decodeSecuritySegments({ codeseg1: encoded.codeseg1, codeseg2: e
 assertEqual(decoded.segment1, "MacMade", "Segment demix segment 1");
 assertEqual(decoded.segment2, "System 6.0.1", "Segment demix segment 2");
 
+const lostCityDecoded = decodeSecuritySegments({
+  codeseg1: [0, 0, 255, 221, 211, 201, 214, 227, 211, 228, 216, 115, 0, 115, 0, 0, 0, 0, 0, 0],
+  codeseg2: [79, 48, 77, 70, 65, 46, 57, 82, 69, 84, 75, 115, 0, 115, 0, 0, 0, 0, 0, 0]
+}, {
+  codeseg1: [226, 207, 219, 221, 211, 201, 214, 227, 211, 228, 216, 115, 0, 115, 0, 0, 0, 0, 0, 0],
+  codeseg2: [79, 48, 77, 70, 65, 46, 57, 82, 69, 84, 75, 115, 0, 115, 0, 0, 0, 0, 0, 0]
+});
+assertEqual(lostCityDecoded.segment1, "unitedstates", "Lost City segment demix segment 1");
+assertEqual(lostCityDecoded.segment2, "marinecorps", "Lost City segment demix segment 2");
+
 const realmzScenarioRoot = "F:\\Realmz\\base\\Realmz\\Scenarios";
 const officialSlots = new Map([
   ["preludetopestilence", 11],

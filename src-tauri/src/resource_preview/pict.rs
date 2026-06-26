@@ -181,11 +181,20 @@ struct PictCanvas {
 
 impl PictCanvas {
     fn new(frame: Rect, fallback_width: usize, fallback_height: usize) -> Self {
-        let width = frame.width().max(fallback_width).clamp(1, MAX_CANVAS_SIDE);
-        let height = frame
-            .height()
-            .max(fallback_height)
-            .clamp(1, MAX_CANVAS_SIDE);
+        let frame_width = frame.width();
+        let frame_height = frame.height();
+        let width = if frame_width > 0 {
+            frame_width
+        } else {
+            fallback_width
+        }
+        .clamp(1, MAX_CANVAS_SIDE);
+        let height = if frame_height > 0 {
+            frame_height
+        } else {
+            fallback_height
+        }
+        .clamp(1, MAX_CANVAS_SIDE);
         Self {
             frame,
             width,
@@ -1553,6 +1562,21 @@ mod tests {
                     / 2,
             "ordered ColorTable entries should not decode as an all-black atlas"
         );
+    }
+
+    #[test]
+    fn decodes_reference_plains_atlas_to_picture_frame_size() {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .expect("src-tauri should have a repository parent")
+            .join("public/bundled-libraries/realmz-reference/The Family Jewels.rsrc");
+        let data = std::fs::read(path).expect("bundled Realmz reference library should be readable");
+        let pict = resource_data(&data, b"PICT", 300).expect("PICT 300 should exist");
+        let decoded = decode_pict(&pict).expect("PICT 300 should decode");
+
+        assert_eq!(decoded.image.width, 640);
+        assert_eq!(decoded.image.height, 320);
+        assert_eq!(decoded.row_bytes, 648);
     }
 
     #[test]

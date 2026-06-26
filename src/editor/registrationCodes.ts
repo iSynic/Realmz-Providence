@@ -594,13 +594,17 @@ export function decodeSecuritySegments(shell: SecuritySegmentShell, securityBack
   const stored2 = normalizedSecurityBytes(shell.codeseg2);
   const mask1 = normalizedSecurityBytes(securityBackup?.codeseg1);
   const decoded2 = stored2.map((byte, index) => subtractByte(byte, mask1[index]));
-  const decoded1 = stored1.map((byte, index) => subtractByte(byte, decoded2[index]));
+  const shellDecoded1 = stored1.map((byte, index) => subtractByte(byte, decoded2[index]));
   if (!securityBackup) {
     return {
       segment1: bytesToSecurityText(stored1),
       segment2: bytesToSecurityText(stored2)
     };
   }
+  const backupDecoded1 = mask1.map((byte, index) => subtractByte(byte, decoded2[index]));
+  const decoded1 = securitySegmentPlausibilityScore(backupDecoded1) > securitySegmentPlausibilityScore(shellDecoded1)
+    ? backupDecoded1
+    : shellDecoded1;
   return {
     segment1: bytesToSecurityText(decoded1),
     segment2: bytesToSecurityText(decoded2)
@@ -639,6 +643,20 @@ export function bytesToSecurityText(bytes: number[]) {
     .slice(0, end === -1 ? SECURITY_SEGMENT_LENGTH : end)
     .map((byte) => (byte >= 32 && byte <= 126 ? String.fromCharCode(byte) : ""))
     .join("");
+}
+
+function securitySegmentPlausibilityScore(bytes: number[]) {
+  const normalized = normalizedSecurityBytes(bytes);
+  let score = 0;
+  for (const byte of normalized) {
+    if (byte === 0) break;
+    if (byte >= 32 && byte <= 126) {
+      score += 3;
+    } else {
+      score -= 16;
+    }
+  }
+  return score;
 }
 
 export function cleanSecuritySegment(value: string) {

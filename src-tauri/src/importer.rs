@@ -1434,7 +1434,7 @@ fn is_scenario_local_monster_icon_id(icon_id: i16) -> bool {
 fn normalize_icon_id(value: i16) -> Option<i16> {
     if value >= 0 {
         let icon_id = normalize_realmz_field_state(value);
-        return (379..900).contains(&icon_id).then_some(icon_id);
+        return (icon_id > 200).then_some(icon_id);
     }
     let mut icon_id = value;
     while icon_id < -999 {
@@ -1706,13 +1706,14 @@ mod tests {
     #[test]
     fn map_icon_normalization_matches_realmz_positive_and_negative_specials() {
         assert_eq!(normalize_icon_id(200), None);
-        assert_eq!(normalize_icon_id(378), None);
+        assert_eq!(normalize_icon_id(204), Some(204));
+        assert_eq!(normalize_icon_id(378), Some(378));
         assert_eq!(normalize_icon_id(379), Some(379));
         assert_eq!(normalize_icon_id(462), Some(462));
         assert_eq!(normalize_icon_id(1462), Some(462));
-        assert_eq!(normalize_icon_id(1224), None);
+        assert_eq!(normalize_icon_id(1224), Some(224));
         assert_eq!(normalize_icon_id(5081), None);
-        assert_eq!(normalize_icon_id(969), None);
+        assert_eq!(normalize_icon_id(969), Some(969));
         assert_eq!(normalize_icon_id(-462), Some(-462));
         assert_eq!(normalize_icon_id(-1462), Some(-462));
     }
