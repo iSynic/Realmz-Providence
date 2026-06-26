@@ -60,7 +60,6 @@ export const TIMED_ENCOUNTER_BYTES = 40;
 const BROWSER_EAGER_PICTURE_PREVIEW_MAX_BYTES = 128 * 1024;
 const BROWSER_EAGER_PICTURE_PREVIEW_MAX_COUNT = 4;
 const BROWSER_EAGER_ICON_PREVIEW_MAX_BYTES = 24 * 1024;
-const BROWSER_EAGER_ICON_PREVIEW_MAX_COUNT = 256;
 const BROWSER_EAGER_SOUND_PREVIEW_MAX_BYTES = 96 * 1024;
 const BROWSER_EAGER_SOUND_PREVIEW_MAX_COUNT = 8;
 
@@ -1081,12 +1080,11 @@ function buildScenarioIconCatalog(
   if (referenced.size === 0) return [];
   const seen = new Set<number>();
   const icons: ResourceAsset[] = [];
-  let previewCount = 0;
   for (const match of resources) {
     const { source, resource } = match;
     if (resource.resourceType !== "cicn" || !referenced.has(resource.id) || seen.has(resource.id)) continue;
     let previewPath: string | null = null;
-    if (resource.data.byteLength <= BROWSER_EAGER_ICON_PREVIEW_MAX_BYTES && previewCount < BROWSER_EAGER_ICON_PREVIEW_MAX_COUNT) {
+    if (resource.data.byteLength <= BROWSER_EAGER_ICON_PREVIEW_MAX_BYTES) {
       const preview = inspectResourcePreview("cicn", resource.data);
       if (preview.status !== "preview-ready" || !preview.dataUrl) {
         const detail = preview.diagnostics[0]?.message ?? `Preview status was ${preview.status}.`;
@@ -1098,7 +1096,6 @@ function buildScenarioIconCatalog(
         });
       }
       previewPath = preview.status === "preview-ready" ? preview.dataUrl : null;
-      if (previewPath) previewCount += 1;
     }
     icons.push({
       id: `scenario-cicn-${resource.id}`,
@@ -1198,7 +1195,13 @@ function customAtlasPreview(
 
 function isScenarioResourceForkName(name: string) {
   const lower = name.toLowerCase();
-  return lower === "scenario" || lower === "scenario.rsrc" || lower === "scenario.rsf" || lower === "._scenario";
+  const normalized = lower.replace(/\\/g, "/");
+  const baseName = normalized.split("/").pop() ?? normalized;
+  return baseName === "scenario" ||
+    baseName === "scenario.rsrc" ||
+    baseName === "scenario.rsf" ||
+    baseName === "._scenario" ||
+    normalized.endsWith("/.rsrc/scenario");
 }
 
 function alignmentFor(source: string, buffer: Uint8Array | undefined, recordBytes: number): Alignment {

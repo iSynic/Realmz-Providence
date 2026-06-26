@@ -1221,7 +1221,7 @@ function addRenderProfiles(schema: SemanticSchema, maps: MapEntity[], assetCatal
 function addResourceEntities(schema: SemanticSchema, buffers: Map<string, Uint8Array>, files: SourceFile[]) {
   const resourceFiles = files.filter((source) => source.role === "resource-fork");
   for (const file of resourceFiles) {
-    const resources = parseResourceFork(buffers.get(file.name) ?? new Uint8Array());
+    const resources = parseResourceFork(buffers.get(file.relativePath) ?? buffers.get(file.name) ?? new Uint8Array());
     if (resources.length === 0) {
       schema.entities.push({
         id: `resource:${file.name}`,

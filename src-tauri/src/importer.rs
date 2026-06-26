@@ -1632,6 +1632,8 @@ fn scenario_resource_candidates(source_path: &Path) -> Vec<PathBuf> {
         source_path.join("Scenario.rsf"),
         source_path.join(format!("{scenario_name}.rsrc")),
         source_path.join(format!("{scenario_name}.rsf")),
+        source_path.join(".rsrc").join("Scenario"),
+        source_path.join(".rsrc").join(scenario_name),
         source_path.join("Scenario"),
     ]
 }

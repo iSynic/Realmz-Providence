@@ -173,7 +173,8 @@ function isScenarioResourceForkName(name: string) {
   return baseName === "scenario" ||
     baseName === "._scenario" ||
     baseName === "scenario.rsrc" ||
-    baseName === "scenario.rsf";
+    baseName === "scenario.rsf" ||
+    normalized.endsWith("/.rsrc/scenario");
 }
 
 export async function buildPendingBrowserSemanticSchema(project: Project): Promise<{ semanticSchema: Project["semanticSchema"]; validation: Project["validation"] } | null> {

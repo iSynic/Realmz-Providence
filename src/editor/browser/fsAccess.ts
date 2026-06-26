@@ -94,7 +94,7 @@ export async function readScenarioDirectory(handle: BrowserDirectoryHandle, trac
       editable: role === "supported-binary"
     });
     if (bytes && (tracked.has(name) || isResourceFileName(name) || name === markerName || isScenarioMarkerCandidate(name, bytes, tracked))) {
-      files.set(name, bytes);
+      storeScenarioBuffer(files, name, relativePath, bytes);
     }
   }
 
@@ -171,7 +171,7 @@ async function readScenarioFileSelection(selection: BrowserFileSelection, tracke
       editable: role === "supported-binary"
     });
     if (bytes && (tracked.has(name) || isResourceFileName(name) || name === markerName || isScenarioMarkerCandidate(name, bytes, tracked))) {
-      files.set(name, bytes);
+      storeScenarioBuffer(files, name, relativePath, bytes);
     }
   }
   sourceFiles.sort((a, b) => a.name.localeCompare(b.name));
@@ -222,6 +222,25 @@ function relativeSelectionPath(file: File) {
 
 function isResourceFileName(name: string) {
   return name === "Scenario" || name.endsWith(".rsrc") || name.endsWith(".rsf") || name.startsWith("._");
+}
+
+function storeScenarioBuffer(files: Map<string, Uint8Array>, name: string, relativePath: string, bytes: Uint8Array) {
+  const sidecarKey = resourceSidecarKey(name, relativePath);
+  if (sidecarKey && sidecarKey.toLowerCase().includes("/.rsrc/")) {
+    files.set(sidecarKey, bytes);
+    return;
+  }
+  files.set(name, bytes);
+  if (sidecarKey && sidecarKey !== name) files.set(sidecarKey, bytes);
+}
+
+function resourceSidecarKey(name: string, relativePath: string) {
+  const normalized = relativePath.replace(/\\/g, "/");
+  const lower = normalized.toLowerCase();
+  if (lower.includes("/.rsrc/") || lower.includes("/._") || name.endsWith(".rsrc") || name.endsWith(".rsf") || name.startsWith("._")) {
+    return normalized;
+  }
+  return null;
 }
 
 function isScenarioMarkerCandidate(name: string, bytes: Uint8Array, tracked: Set<string>) {
