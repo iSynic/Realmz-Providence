@@ -302,6 +302,8 @@ export function SuiteDomainPanel({
                 selectedEntity={selectedEntity}
                 previewContext={{ desktopRuntime, projectDir, workspaceDir }}
                 onSelectEntity={onSelectEntity}
+                onSelectEditor={onSelectEditor}
+                onSelectRecordType={setOverviewTargetRecordType}
                 onApplyCommand={onApplyCommand}
               />
             )
@@ -1730,6 +1732,7 @@ function TargetRecordWorkbench({
   previewContext,
   onSelectEntity,
   onSelectEditor,
+  onSelectRecordType,
   onApplyCommand
 }: {
   project: Project;
@@ -1739,6 +1742,7 @@ function TargetRecordWorkbench({
   previewContext: PreviewRuntimeContext;
   onSelectEntity: (entity: SelectedEntity) => void;
   onSelectEditor?: (editor: string) => void;
+  onSelectRecordType?: (recordType: RealmzTargetRecordKind) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const records = targetRecords(project, recordType);
@@ -1828,6 +1832,7 @@ function TargetRecordWorkbench({
               workspaceDir={previewContext.workspaceDir}
               onSelectEntity={onSelectEntity}
               onSelectEditor={onSelectEditor}
+              onSelectEncounterRecordType={onSelectRecordType}
               onApplyCommand={onApplyCommand}
             />
           ) : (
@@ -1972,10 +1977,11 @@ function targetRecordHelp(recordType: RealmzTargetRecordKind) {
 
 function nextTargetRecordId(project: Project, recordType: RealmzTargetRecordKind) {
   const used = new Set(targetRecords(project, recordType).map((record) => record.id));
-  for (let id = 1; id < 10000; id += 1) {
+  const firstId = isEncounterRecordType(recordType) ? 0 : 1;
+  for (let id = firstId; id < 10000; id += 1) {
     if (!used.has(id)) return id;
   }
-  return used.size + 1;
+  return used.size + firstId;
 }
 
 function targetRecordSummary(project: Project, recordType: RealmzTargetRecordKind, id: number) {

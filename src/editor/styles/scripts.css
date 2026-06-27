@@ -1616,6 +1616,18 @@
   padding: 2px 5px;
 }
 
+.encounter-setup-select {
+  height: 24px;
+  min-width: 0;
+  border: 1px solid #526275;
+  border-radius: 4px;
+  background: #2c2b35;
+  color: #f2f7ff;
+  font: inherit;
+  font-weight: 800;
+  padding: 2px 5px;
+}
+
 .encounter-prompt-inline-field .inline-number-field {
   width: 74px;
 }
@@ -1659,8 +1671,8 @@
   margin: 0;
 }
 
-.encounter-rogue-inline-field .inline-number-field {
-  width: 74px;
+.encounter-rogue-inline-field .encounter-setup-select {
+  width: 164px;
 }
 
 .encounter-setup-divider {
@@ -3144,6 +3156,12 @@
   justify-content: space-between;
   gap: 8px;
   align-items: end;
+}
+
+.rogue-action-matrix > header {
+  align-items: start;
+  flex-direction: column;
+  justify-content: start;
 }
 
 

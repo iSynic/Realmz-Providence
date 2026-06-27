@@ -2404,6 +2404,7 @@ export function TargetRecordEditor({
   workspaceDir = "",
   onSelectEntity,
   onSelectEditor,
+  onSelectEncounterRecordType,
   onApplyCommand
 }: {
   project: Project;
@@ -2417,6 +2418,7 @@ export function TargetRecordEditor({
   workspaceDir?: string;
   onSelectEntity?: (entity: SelectedEntity) => void;
   onSelectEditor?: (editor: string) => void;
+  onSelectEncounterRecordType?: (recordType: RealmzTargetRecordKind) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const descriptor = realmzScriptStepDescriptorFor(opcode);
@@ -2464,6 +2466,7 @@ export function TargetRecordEditor({
             actions={record.actions}
             onSelectEntity={onSelectEntity}
             onSelectEditor={onSelectEditor}
+            onSelectEncounterRecordType={onSelectEncounterRecordType}
             onApplyCommand={onApplyCommand}
           />
         )}
@@ -2507,6 +2510,7 @@ export function TargetRecordEditor({
             actions={record.actions}
             onSelectEntity={onSelectEntity}
             onSelectEditor={onSelectEditor}
+            onSelectEncounterRecordType={onSelectEncounterRecordType}
             onApplyCommand={onApplyCommand}
           />
         )}
@@ -3443,6 +3447,7 @@ function EncounterShell({
   workspaceDir = "",
   onSelectEntity,
   onSelectEditor,
+  onSelectEncounterRecordType,
   onApplyCommand
 }: {
   project: Project;
@@ -3471,6 +3476,7 @@ function EncounterShell({
   actions: EncounterActionRow[];
   onSelectEntity?: (entity: SelectedEntity) => void;
   onSelectEditor?: (editor: string) => void;
+  onSelectEncounterRecordType?: (recordType: RealmzTargetRecordKind) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const encounterRecordType: "simpleEncounter" | "complexEncounter" = recordKind === "simple" ? "simpleEncounter" : "complexEncounter";
@@ -3561,6 +3567,16 @@ function EncounterShell({
   const [copyPanelOpen, setCopyPanelOpen] = useState(false);
   const promptId = Math.abs(prompt);
   const promptRecord = promptId > 0 ? project.messages?.find((record) => record.id === promptId) ?? null : null;
+  const [rogueTargetDraft, setRogueTargetDraft] = useState(thiefSuccess ?? 0);
+  useEffect(() => {
+    setRogueTargetDraft(thiefSuccess ?? 0);
+  }, [thiefSuccess]);
+  const rogueRecords = recordKind === "complex" ? encounterRecordsForType(project, "thiefEncounter") : [];
+  const rogueTargetRecord = rogueRecords.find((candidate) => candidate.id === rogueTargetDraft);
+  const roguePickerRecords = rogueTargetRecord || rogueTargetDraft == null
+    ? rogueRecords
+    : [{ id: rogueTargetDraft }, ...rogueRecords];
+  const canOpenRogueEncounter = Boolean(thief) && Boolean(rogueTargetRecord);
   return (
     <>
       <div className="script-target-grid encounter-record-grid">
@@ -3614,20 +3630,38 @@ function EncounterShell({
                     <span className="encounter-setup-divider" aria-hidden="true" />
                     <label className="encounter-setup-inline-field encounter-rogue-inline-field">
                       <span>Rogue Encounter</span>
-                      <InlineNumberField ariaLabel="Rogue Encounter ID" value={thiefSuccess ?? 0} onCommit={(value) => update({ thiefSuccess: value })} />
+                      <select
+                        aria-label="Rogue Encounter ID"
+                        className="encounter-setup-select"
+                        value={rogueTargetDraft}
+                        onChange={(event) => {
+                          const nextId = Number(event.currentTarget.value);
+                          if (!Number.isInteger(nextId)) return;
+                          setRogueTargetDraft(nextId);
+                          update({ thiefSuccess: nextId });
+                        }}
+                      >
+                        {roguePickerRecords.map((record) => (
+                          <option key={record.id} value={record.id}>
+                            {rogueRecords.some((candidate) => candidate.id === record.id)
+                              ? `Rogue Encounter ${record.id}`
+                              : `Missing Rogue Encounter ${record.id}`}
+                          </option>
+                        ))}
+                      </select>
                     </label>
                     <button
                       type="button"
                       className="btn btn-secondary btn-xs"
-                      disabled={(thiefSuccess ?? 0) <= 0}
+                      disabled={!canOpenRogueEncounter}
                       onClick={() => {
-                        const rogueId = thiefSuccess ?? 0;
-                        if (rogueId <= 0) return;
+                        if (!canOpenRogueEncounter) return;
+                        onSelectEncounterRecordType?.("thiefEncounter");
                         onSelectEditor?.("rogue");
-                        onSelectEntity?.(selectEntityFromId(`thief:${rogueId}`));
+                        onSelectEntity?.(selectEntityFromId(`thief:${rogueTargetDraft}`));
                       }}
                     >
-                      Go to Rogue Encounters
+                      Go to Rogue Encounter
                     </button>
                   </>
                 )}
@@ -5210,8 +5244,8 @@ function ThiefEncounterShell({
             <TutorialTip title="Rogue Action Tests" body={ROGUE_ACTION_TESTS_HELP} side="below">
               <strong>Rogue Action Tests</strong>
             </TutorialTip>
-            <small>{enabledCount}/{ROGUE_PRIMARY_ACTIONS} enabled; success/fail columns return result codes, messages, and sounds.</small>
           </div>
+          <small>{enabledCount}/{ROGUE_PRIMARY_ACTIONS} enabled; success/fail columns return result codes, messages, and sounds.</small>
         </header>
         <div className="rogue-action-table" role="table" aria-label="Rogue action tests">
           <div className="rogue-action-table-header" role="row">

@@ -193,6 +193,7 @@ function WorkbenchRouterContent({
         projectDir={projectDir}
         workspaceDir={workspaceDir}
         onSelectEntity={onSelectEntity}
+        onSelectEditor={onSelectEditor}
         onApplyCommand={onApplyCommand}
         onCreateDraft={onCreateDraft}
         onUpdateDraft={onUpdateDraft}
