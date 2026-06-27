@@ -34,6 +34,10 @@ export const DIVINITY_OPCODE_HELP_SOURCE = {
   opcodeEntryCount: helpData.opcodeEntryCount
 };
 
+export function allDivinityOpcodeHelpEntries(): DivinityOpcodeHelpEntry[] {
+  return [...helpData.entries].sort((left, right) => left.primaryCode - right.primaryCode || left.resourceId - right.resourceId);
+}
+
 export function divinityHelpEntriesForOpcode(rawCode: number): DivinityOpcodeHelpEntry[] {
   const lookupCode = divinityHelpLookupCode(rawCode);
   const resourceIds = helpData.byCode[String(lookupCode)] ?? [];

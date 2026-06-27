@@ -52,6 +52,13 @@ const expectedTitles = new Map([
 for (const [code, expected] of expectedTitles) {
   const actual = displayTitleFor(code);
   if (actual !== expected) failures.push(`Opcode ${code} displays "${actual}", expected "${expected}".`);
+  const resourceId = helpData.byCode[String(code)]?.[0];
+  const entry = helpData.entries.find((candidate) => candidate.resourceId === resourceId);
+  if (!entry) {
+    failures.push(`Opcode ${code} is missing a Divinity opcode help entry.`);
+  } else if (!entry.fullText?.includes(expected)) {
+    failures.push(`Opcode ${code} help text does not include expected title "${expected}".`);
+  }
 }
 
 if (displayTitleFor(84) !== "Registration Check?") {
