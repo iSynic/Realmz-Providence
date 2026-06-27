@@ -1,7 +1,12 @@
+import { divinityHelpForOpcode } from "./divinityOpcodeHelp";
+
 export type RealmzActionOption = {
   code: number;
   label: string;
   shortLabel: string;
+  officialTitle?: string;
+  displayTitle: string;
+  aliasTitle?: string;
   category: string;
   description: string;
   edcdShape?: string;
@@ -19,6 +24,7 @@ const DOCUMENTED_OPCODE_CODES = [
 ];
 
 const NOT_USED_ACTION_CODES = new Set([79, 80, 109, 110, 113, 114, 115, 116, 117, 118]);
+const PRESERVE_CURRENT_LABEL_CODES = new Set([84]);
 
 const ACTION_DETAILS: Record<number, Partial<RealmzActionOption>> = {
   [-23]: { shortLabel: "Dungeon Random Region", category: "Encounter", description: "Mutate dungeon random encounter rectangle data.", edcdShape: "random-region-mutation" },
@@ -145,11 +151,15 @@ const ACTION_DETAILS: Record<number, Partial<RealmzActionOption>> = {
 
 export const ACTION_OPTIONS: RealmzActionOption[] = DOCUMENTED_OPCODE_CODES.map((code) => {
   const detail = ACTION_DETAILS[code];
-  const shortLabel = detail?.shortLabel ?? `Opcode ${code}`;
+  const fallbackTitle = detail?.shortLabel ?? `Opcode ${code}`;
+  const titles = actionTitleFields(code, fallbackTitle);
   return {
     code,
-    label: `${code} ${shortLabel}`,
-    shortLabel,
+    label: `${code} ${titles.displayTitle}`,
+    shortLabel: titles.displayTitle,
+    officialTitle: titles.officialTitle,
+    displayTitle: titles.displayTitle,
+    aliasTitle: titles.aliasTitle,
     category: detail?.category ?? "Advanced",
     description: detail?.description ?? "Documented Realmz opcode. Use raw CODE/ID and the details inspector for advanced fields.",
     edcdShape: detail?.edcdShape
@@ -167,6 +177,7 @@ export function actionOptionFor(rawCode: number): RealmzActionOption {
       code: normalizedCode,
       label: `${normalizedCode} Inert Imported Action`,
       shortLabel: "Inert Imported Action",
+      displayTitle: "Inert Imported Action",
       category: "Advanced",
       description: "Documented Not Used opcode. Providence preserves the stored value for compatibility, but this is not normal authoring behavior."
     };
@@ -176,6 +187,7 @@ export function actionOptionFor(rawCode: number): RealmzActionOption {
       code: normalizedCode,
       label: `${rawCode} Dispatcher No-op`,
       shortLabel: "Dispatcher No-op",
+      displayTitle: "Dispatcher No-op",
       category: "Advanced",
       description: "Realmz reads this nonzero CODE value but newland.c has no dispatcher case, so the slot is ignored at runtime."
     };
@@ -184,6 +196,7 @@ export function actionOptionFor(rawCode: number): RealmzActionOption {
     code: normalizedCode,
     label: `${rawCode} Unknown`,
     shortLabel: `Opcode ${rawCode}`,
+    displayTitle: `Opcode ${rawCode}`,
     category: "Unknown",
     description: "Unsupported or archaeology-only opcode. Keep visible and inspect raw fields."
   };
@@ -205,4 +218,13 @@ export function isDispatcherNoopOpcode(code: number) {
 
 function range(start: number, end: number) {
   return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+}
+
+function actionTitleFields(code: number, fallbackTitle: string) {
+  const officialTitle = divinityHelpForOpcode(code)?.title;
+  const displayTitle = officialTitle && !PRESERVE_CURRENT_LABEL_CODES.has(normalizeStepOpcode(code))
+    ? officialTitle
+    : fallbackTitle;
+  const aliasTitle = fallbackTitle !== displayTitle ? fallbackTitle : undefined;
+  return { officialTitle, displayTitle, aliasTitle };
 }

@@ -4169,7 +4169,6 @@ function EncounterResultActionMatrix({
                 <small>{summary.incoming} incoming | {resultStatusLabel(summary.status)}</small>
               </button>
             </header>
-            <p className="encounter-column-summary">{summary.firstAction}</p>
             {Array.from({ length: ENCOUNTER_RESULT_ROWS }, (_, rowIndex) => {
               const slot = resultIndex * ENCOUNTER_RESULT_ROWS + rowIndex;
               return (
@@ -4227,7 +4226,7 @@ function SimpleEncounterActionCell({
         onChange={(event) => onUpdate({ rawCode: Number(event.currentTarget.value) })}
       >
         {ACTION_OPTIONS.map((option) => (
-          <option key={option.code} value={option.code}>{option.code} {option.label}</option>
+          <option key={option.code} value={option.code}>{option.code} {option.shortLabel}</option>
         ))}
       </select>
       <label className="encounter-action-id-field">
@@ -4884,9 +4883,19 @@ function ComplexEncounterResponseGrid({
   onIdsCommit: (values: number[]) => void;
   onResultsCommit: (values: number[]) => void;
 }) {
+  const [activeDraftSlots, setActiveDraftSlots] = useState<Set<number>>(() => new Set());
   const hasStoredValue = (slot: number) => (ids[slot] ?? 0) !== 0 || (results[slot] ?? 0) !== 0;
+  const hasVisibleValue = (slot: number) => hasStoredValue(slot) || activeDraftSlots.has(slot);
   const isPreservedNoResult = (slot: number) => (ids[slot] ?? 0) !== 0 && (results[slot] ?? 0) === 0;
   const slots = Array.from({ length: count }, (_, slot) => slot);
+  const setDraftSlotActive = (slot: number, active: boolean) => {
+    setActiveDraftSlots((current) => {
+      const next = new Set(current);
+      if (active) next.add(slot);
+      else next.delete(slot);
+      return next;
+    });
+  };
   return (
     <section className={`complex-encounter-response-grid${className ? ` ${className}` : ""}`}>
       <header>
@@ -4902,13 +4911,14 @@ function ComplexEncounterResponseGrid({
         {slots.map((slot) => (
           <div
             key={slot}
-            className={`complex-encounter-response-row${!hasStoredValue(slot) ? " is-unused" : ""}${isPreservedNoResult(slot) ? " is-preserved-no-result" : ""}`}
+            className={`complex-encounter-response-row${!hasVisibleValue(slot) ? " is-unused" : ""}${isPreservedNoResult(slot) ? " is-preserved-no-result" : ""}`}
           >
             <b>{slot + 1}</b>
             <EncounterResultNumberField
               label={resultLabel}
               value={results[slot] ?? 0}
               actions={actions}
+              onDraftActiveChange={(active) => setDraftSlotActive(slot, active)}
               onCommit={(value) => onResultsCommit(updateArraySlot(results, slot, value, count))}
             />
             {kind === "magic" ? (
@@ -4952,10 +4962,23 @@ function ComplexEncounterResponseGrid({
   );
 }
 
-function EncounterResultNumberField({ label, value, actions, onCommit }: { label: string; value: number; actions: EncounterActionRow[]; onCommit: (value: number) => void }) {
+function EncounterResultNumberField({
+  label,
+  value,
+  actions,
+  onCommit,
+  onDraftActiveChange
+}: {
+  label: string;
+  value: number;
+  actions: EncounterActionRow[];
+  onCommit: (value: number) => void;
+  onDraftActiveChange?: (active: boolean) => void;
+}) {
   const [draft, setDraft] = useState(String(value));
   useEffect(() => {
     setDraft(String(value));
+    onDraftActiveChange?.(value !== 0);
   }, [value]);
   const commit = () => {
     const next = Number(draft);
@@ -4969,7 +4992,11 @@ function EncounterResultNumberField({ label, value, actions, onCommit }: { label
       <input
         type="number"
         value={draft}
-        onChange={(event) => setDraft(event.currentTarget.value)}
+        onChange={(event) => {
+          const nextDraft = event.currentTarget.value;
+          setDraft(nextDraft);
+          onDraftActiveChange?.(Number(nextDraft) !== 0);
+        }}
         onBlur={commit}
       />
     </label>
@@ -5080,7 +5107,7 @@ function EncounterActionRowEditor({
         <span>Opcode</span>
         <select value={row.rawCode} onChange={(event) => onUpdate({ rawCode: Number(event.currentTarget.value) })}>
           {ACTION_OPTIONS.map((option) => (
-            <option key={option.code} value={option.code}>{option.code} {option.label}</option>
+            <option key={option.code} value={option.code}>{option.code} {option.shortLabel}</option>
           ))}
         </select>
       </label>

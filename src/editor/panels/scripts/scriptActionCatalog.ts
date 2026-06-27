@@ -892,13 +892,22 @@ function buildActionDefinition(option: RealmzActionOption, forceAdvanced = false
   const storage = metadata?.storage ?? inferredStorage(code, option);
   const preservedLabel = isDispatcherNoopOpcode(code) ? `Unknown Opcode ${code}` : `Unmodeled Action ${code}`;
   const preservedShortLabel = isDispatcherNoopOpcode(code) ? "Unknown Opcode" : "Unmodeled Action";
+  const usesOfficialManualTitle = Boolean(option.officialTitle && option.displayTitle === option.officialTitle);
   const description = hasGenericOpcodeLabel
     ? isDispatcherNoopOpcode(code)
       ? "Providence keeps this opcode available for inspection, but classic Realmz does not expose a normal authoring path for it."
       : "Providence recognizes this script row, but it does not have a complete friendly editor yet."
     : override?.description ?? option.description;
-  const label = hasGenericOpcodeLabel ? preservedLabel : override?.label ?? option.shortLabel;
-  const shortLabel = hasGenericOpcodeLabel ? preservedShortLabel : override?.shortLabel ?? option.shortLabel;
+  const label = hasGenericOpcodeLabel
+    ? preservedLabel
+    : usesOfficialManualTitle
+      ? option.displayTitle
+      : override?.label ?? option.displayTitle;
+  const shortLabel = hasGenericOpcodeLabel
+    ? preservedShortLabel
+    : usesOfficialManualTitle
+      ? option.displayTitle
+      : override?.shortLabel ?? option.displayTitle;
   const formKind = formKindFor(code, category, storage, metadata?.edcdShape ?? option.edcdShape, target?.targetFamily);
   return {
     opcode: code,
@@ -914,6 +923,9 @@ function buildActionDefinition(option: RealmzActionOption, forceAdvanced = false
     searchTerms: [
       option.label,
       option.shortLabel,
+      option.displayTitle,
+      option.officialTitle,
+      option.aliasTitle,
       option.category,
       crosswalk?.title,
       crosswalk?.idMeaning,
