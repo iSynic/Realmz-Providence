@@ -102,13 +102,30 @@ export function updateGlobalMacroHook(project: Project, slot: number, door: numb
 }
 
 export function createSpellOverride(project: Project, id?: number, template?: Partial<ScenarioSpellOverride>) {
-  const nextId = id ?? nextIdFor(project.spellOverrides ?? [], 105);
-  if ((project.spellOverrides ?? []).some((record) => record.id === nextId)) return project;
+  const records = project.spellOverrides ?? [];
+  const nextId = id ?? nextSpellOverrideId(records);
   const record = { ...emptySpellOverride(nextId), ...template, id: nextId, authored: true, provenance: authoredProvenance("Data Spell", nextId, nextId * 30, 30) };
+  const existing = records.find((candidate) => candidate.id === nextId);
+  if (existing) {
+    if (!isBlankSpellOverride(existing)) return project;
+    return {
+      ...project,
+      spellOverrides: records.map((candidate) => candidate.id === nextId ? record : candidate).sort((a, b) => a.id - b.id)
+    };
+  }
   return {
     ...project,
-    spellOverrides: [...(project.spellOverrides ?? []), record].sort((a, b) => a.id - b.id)
+    spellOverrides: [...records, record].sort((a, b) => a.id - b.id)
   };
+}
+
+function nextSpellOverrideId(records: ScenarioSpellOverride[]) {
+  const used = new Set(records.map((record) => record.id));
+  for (let id = 0; id < 105; id += 1) {
+    const existing = records.find((record) => record.id === id);
+    if (!used.has(id) || (existing && isBlankSpellOverride(existing))) return id;
+  }
+  return records.length;
 }
 
 export function createRaceOverride(project: Project, id?: number, template?: Partial<ScenarioRaceOverride>) {
@@ -167,6 +184,46 @@ export function nextIdFor(records: Array<{ id: number }>, maxExclusive: number) 
     if (!used.has(id)) return id;
   }
   return records.length;
+}
+
+function isBlankSpellOverride(record: ScenarioSpellOverride) {
+  if (record.authored) return false;
+  const name = record.displayName?.trim() ?? "";
+  const genericName = !name || name === `Custom Spell ${record.id}` || /^Level \d+ Spell \d+$/.test(name);
+  if (!genericName) return false;
+  if (record.rawBytes?.length && record.rawBytes.every((value) => value === 0)) return true;
+  return (
+    record.range1 === 0 &&
+    record.range2 === 0 &&
+    record.queueIcon === 0 &&
+    record.toHitBonus === 0 &&
+    record.saveBonus === 0 &&
+    record.fixedTargetNum === 0 &&
+    record.canRotate === 0 &&
+    record.saveAdjust === 0 &&
+    record.cannot === 0 &&
+    record.resistAdjust === 0 &&
+    record.cost === 0 &&
+    record.damage1 === 0 &&
+    record.damage2 === 0 &&
+    record.powerDamage1 === 0 &&
+    record.powerDamage2 === 0 &&
+    record.duration1 === 0 &&
+    record.duration2 === 0 &&
+    record.powerDuration1 === 0 &&
+    record.powerDuration2 === 0 &&
+    record.spellLook1 === 0 &&
+    record.spellLook2 === 0 &&
+    record.sound1 === 0 &&
+    record.sound2 === 0 &&
+    record.targetType === 0 &&
+    record.size === 0 &&
+    record.special === 0 &&
+    record.damageType === 0 &&
+    (record.spellClass === 0 || record.spellClass === 4) &&
+    !record.inCombat &&
+    !record.inCamp
+  );
 }
 
 export function defaultScenarioShell(project: Project) {
@@ -298,7 +355,7 @@ export function emptyRaceOverride(id: number): ScenarioRaceOverride {
 export function emptyCasteOverride(id: number): ScenarioCasteOverride {
   return {
     id,
-    displayName: `Caste ${id + 1}`,
+    displayName: `Caste ${id}`,
     specialAbility: [new Array(14).fill(0), new Array(14).fill(0)],
     drvBonus: new Array(8).fill(0),
     attBonus: new Array(6).fill(0),

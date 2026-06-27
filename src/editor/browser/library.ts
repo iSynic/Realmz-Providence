@@ -751,7 +751,7 @@ function recordLabel(type: string, index: number, summary: Record<string, unknow
   if (typeof summary.displayName === "string" && summary.displayName) return summary.displayName;
   if (typeof summary.packedSpellId === "number") return `Spell ${summary.packedSpellId}`;
   if (type === "race") return `Race ${index}`;
-  if (type === "caste") return `Caste ${index + 1}`;
+  if (type === "caste") return `Caste ${index}`;
   return `${title(type)} ${index}`;
 }
 

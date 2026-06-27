@@ -900,7 +900,7 @@ function parseCasteOverrides(buffer: Uint8Array | undefined): ScenarioCasteOverr
     const record = buffer.slice(start, start + CASTE_BYTES);
     return {
       id,
-      displayName: `Caste ${id + 1}`,
+      displayName: `Caste ${id}`,
       specialAbility: [readI16s(record, 0, 14), readI16s(record, 28, 14)],
       drvBonus: readI16s(record, 56, 8),
       attBonus: readI16s(record, 72, 6),

@@ -26,7 +26,8 @@ export function buildSpellEntries(project: Project, catalog: LibraryCatalog | nu
       for (let slotIndex = 0; slotIndex < 12; slotIndex += 1) {
         const packedId = spellPackedId(spellcasterClass, levelIndex, slotIndex);
         const customId = spellCustomId(levelIndex, slotIndex);
-        const scenarioRecord = spellcasterClass === 4 ? scenario.get(customId) ?? null : null;
+        const scenarioSource = spellcasterClass === 4 ? scenario.get(customId) ?? null : null;
+        const scenarioRecord = scenarioSource && !isBlankCustomSpellRecord(scenarioSource) ? scenarioSource : null;
         const record = scenarioRecord ?? library.get(packedId) ?? emptySpellView(customId, packedId, spellcasterClass, levelIndex, slotIndex);
         entries.push({
           packedId,
@@ -131,6 +132,46 @@ export function spellPackedId(spellcasterClass: number, levelIndex: number, slot
   return (spellcasterClass + 1) * 1000 + (levelIndex + 1) * 100 + slotIndex + 1;
 }
 
+export function isBlankCustomSpellRecord(record: ScenarioSpellOverride | null | undefined) {
+  if (!record || record.authored) return false;
+  const name = record.displayName?.trim() ?? "";
+  const genericName = !name || name === `Custom Spell ${record.id}` || /^Level \d+ Spell \d+$/.test(name);
+  if (!genericName) return false;
+  if (record.rawBytes?.length && record.rawBytes.every((value) => value === 0)) return true;
+  return (
+    record.range1 === 0 &&
+    record.range2 === 0 &&
+    record.queueIcon === 0 &&
+    record.toHitBonus === 0 &&
+    record.saveBonus === 0 &&
+    record.fixedTargetNum === 0 &&
+    record.canRotate === 0 &&
+    record.saveAdjust === 0 &&
+    record.cannot === 0 &&
+    record.resistAdjust === 0 &&
+    record.cost === 0 &&
+    record.damage1 === 0 &&
+    record.damage2 === 0 &&
+    record.powerDamage1 === 0 &&
+    record.powerDamage2 === 0 &&
+    record.duration1 === 0 &&
+    record.duration2 === 0 &&
+    record.powerDuration1 === 0 &&
+    record.powerDuration2 === 0 &&
+    record.spellLook1 === 0 &&
+    record.spellLook2 === 0 &&
+    record.sound1 === 0 &&
+    record.sound2 === 0 &&
+    record.targetType === 0 &&
+    record.size === 0 &&
+    record.special === 0 &&
+    record.damageType === 0 &&
+    (record.spellClass === 0 || record.spellClass === 4) &&
+    !record.inCombat &&
+    !record.inCamp
+  );
+}
+
 export function spellCustomId(levelIndex: number, slotIndex: number) {
   return levelIndex * 15 + slotIndex;
 }
@@ -149,6 +190,8 @@ export function nextSpellPackedId(entry: SpellRuleEntry) {
 
 export const RACE_RECORD_LIMIT = 70;
 export const STANDARD_RACE_COUNT = REALMZ_RACES.length;
+export const CASTE_RECORD_LIMIT = 30;
+export const STANDARD_CASTE_COUNT = REALMZ_CASTES.length;
 
 export function buildRaceEntries(project: Project, catalog: LibraryCatalog | null): RaceRuleEntry[] {
   const cached = raceEntryCache.get(project);
@@ -181,10 +224,10 @@ export function buildCasteEntries(project: Project, catalog: LibraryCatalog | nu
   for (const entity of catalog?.entities ?? []) {
     if (entity.type !== "caste") continue;
     const id = num(entity.summary.index);
-    if (!Number.isInteger(id) || id < 0 || id >= 30) continue;
+    if (!Number.isInteger(id) || id < 0 || id >= CASTE_RECORD_LIMIT) continue;
     library.set(id, casteFromSummary(entity.summary, id));
   }
-  const entries = Array.from({ length: 30 }, (_, id) => {
+  const entries = Array.from({ length: CASTE_RECORD_LIMIT }, (_, id) => {
     const scenarioRecord = scenario.get(id) ?? null;
     return {
       id,
@@ -229,7 +272,7 @@ export function raceFromSummary(summary: Record<string, unknown>, id: number): S
 export function casteFromSummary(summary: Record<string, unknown>, id: number): ScenarioCasteOverride {
   return {
     id,
-    displayName: str(summary.displayName) || REALMZ_CASTES[id] || `Caste ${id + 1}`,
+    displayName: str(summary.displayName) || REALMZ_CASTES[id] || `Caste ${id}`,
     specialAbility: numMatrix(summary.specialAbility, 2, 14),
     drvBonus: numArray(summary.drvBonus, 8),
     attBonus: numArray(summary.attBonus, 6),
@@ -299,7 +342,7 @@ export function emptyRaceView(id: number): ScenarioRaceOverride {
 export function emptyCasteView(id: number): ScenarioCasteOverride {
   return {
     id,
-    displayName: REALMZ_CASTES[id] || `Caste ${id + 1}`,
+    displayName: REALMZ_CASTES[id] || `Caste ${id}`,
     specialAbility: [new Array(14).fill(0), new Array(14).fill(0)],
     drvBonus: new Array(8).fill(0),
     attBonus: new Array(6).fill(0),

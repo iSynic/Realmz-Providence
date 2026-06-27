@@ -42,6 +42,7 @@ export function RulesLayout<T extends { id: number }>({
   secondaryCreateDisabled = false,
   onSecondaryCreate,
   showGoToField = true,
+  showCreateButton = true,
   pickerLabel,
   children
 }: {
@@ -68,6 +69,7 @@ export function RulesLayout<T extends { id: number }>({
   secondaryCreateDisabled?: boolean;
   onSecondaryCreate?: () => void;
   showGoToField?: boolean;
+  showCreateButton?: boolean;
   pickerLabel?: string;
   children: ReactNode;
 }) {
@@ -125,9 +127,11 @@ export function RulesLayout<T extends { id: number }>({
               })}
             </select>
           </label>
-          <button type="button" className="btn btn-primary btn-xs" title={customizeHelp} disabled={selectedIsScenario || createDisabled} onClick={() => onCreate(selectedId)}>
-            {createLabel ?? "Customize In This Scenario"}
-          </button>
+          {showCreateButton && (
+            <button type="button" className="btn btn-primary btn-xs" title={customizeHelp} disabled={selectedIsScenario || createDisabled} onClick={() => onCreate(selectedId)}>
+              {createLabel ?? "Customize In This Scenario"}
+            </button>
+          )}
           {secondaryCreateLabel && onSecondaryCreate && (
             <button type="button" className="btn btn-secondary btn-xs" title={secondaryCreateHelp} disabled={secondaryCreateDisabled} onClick={onSecondaryCreate}>
               {secondaryCreateLabel}

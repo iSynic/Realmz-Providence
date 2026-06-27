@@ -304,6 +304,43 @@
 
 
 
+.rules-spell-record-picker {
+  grid-template-columns: 215px auto 285px auto auto auto;
+  justify-content: start;
+  align-items: center;
+}
+
+
+
+.rules-spell-record-picker .scenario-field,
+.rules-spell-record-picker > label {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+
+
+.rules-spell-record-picker .scenario-field {
+  width: 215px;
+}
+
+
+
+.rules-spell-record-picker > label {
+  width: 285px;
+}
+
+
+
+.rules-spell-record-picker .rules-step-buttons,
+.rules-spell-record-picker > .btn {
+  align-self: center;
+}
+
+
+
 .rules-step-buttons .btn {
   width: 34px;
   min-width: 34px;

@@ -440,7 +440,7 @@ function directRowsForEditor(project: Project, editor: DomainEditor): DirectReco
   }
   if (editor.id === "spells") return project.spellOverrides.map((record) => ({ id: `spell:${record.id}`, label: record.displayName || `Spell ${record.id}`, type: "spell-reference", summary: `sound ${record.sound1}/${record.sound2}` }));
   if (editor.id === "races") return project.raceOverrides.map((record) => ({ id: `race:${record.id}`, label: record.displayName || `Race ${record.id}`, type: "race", summary: `default icons ${record.defaultIconSet}` }));
-  if (editor.id === "castes") return project.casteOverrides.map((record) => ({ id: `caste:${record.id}`, label: record.displayName || `Caste ${record.id + 1}`, type: "caste", summary: `default icon ${record.defaultIcon}` }));
+  if (editor.id === "castes") return project.casteOverrides.map((record) => ({ id: `caste:${record.id}`, label: record.displayName || `Caste ${record.id}`, type: "caste", summary: `default icon ${record.defaultIcon}` }));
   if (editor.id === "pictures") {
     return [
       ...(project.assetCatalog.pictures ?? []).map((asset) => ({ id: `resource:${asset.resourceType}:${asset.resourceId}`, label: asset.name || `${asset.resourceType} ${asset.resourceId}`, type: "picture", summary: asset.source })),
