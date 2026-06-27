@@ -143,8 +143,8 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
             }
             if rect.left < 0
                 || rect.top < 0
-                || rect.right >= MAP_SIZE as i16
-                || rect.bottom >= MAP_SIZE as i16
+                || rect.right > MAP_SIZE as i16
+                || rect.bottom > MAP_SIZE as i16
             {
                 warnings.push(format!(
                     "{} random rect {} is outside the 90x90 map.",
@@ -1155,7 +1155,7 @@ fn is_custom_music_file(name: &str) -> bool {
 }
 
 fn random_rects_overlap(a: &RandomRect, b: &RandomRect) -> bool {
-    a.left <= b.right && a.right >= b.left && a.top <= b.bottom && a.bottom >= b.top
+    a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
 }
 
 fn validate_tile_attributes(project: &ProvidenceProject, warnings: &mut Vec<String>) {
@@ -2351,7 +2351,7 @@ mod tests {
                 top: 4,
                 left: 6,
                 bottom: 2,
-                right: 90,
+                right: 91,
                 percent: 10001,
                 battle_range: [0, 0],
                 random_doors: [99, 0, 0],

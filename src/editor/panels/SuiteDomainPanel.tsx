@@ -1798,6 +1798,7 @@ function TargetRecordWorkbench({
               opcode={opcode}
               targetId={selectedId}
               recordType={recordType}
+              presentation="workbench"
               desktopRuntime={previewContext.desktopRuntime}
               projectDir={previewContext.projectDir}
               workspaceDir={previewContext.workspaceDir}

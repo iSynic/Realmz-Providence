@@ -809,22 +809,20 @@ fn add_complex_encounter_support_links(schema: &mut SemanticSchema) {
         if encounter.summary.get("thief").and_then(Value::as_bool) != Some(true) {
             continue;
         }
-        for field in ["thiefSuccess", "thiefFail"] {
-            if let Some(id) = encounter.summary.get(field).and_then(Value::as_i64) {
-                if id > 0 {
-                    push_link(
-                        schema,
-                        &encounter.id,
-                        &format!("thief:{id}"),
-                        "uses_thief_encounter",
-                        Confidence::SourceBacked,
-                        vec![encounter
-                            .record_ref
-                            .clone()
-                            .unwrap_or_else(|| encounter.id.clone())],
-                        summary([("field", json!(field))]),
-                    );
-                }
+        if let Some(id) = encounter.summary.get("thiefSuccess").and_then(Value::as_i64) {
+            if id > 0 {
+                push_link(
+                    schema,
+                    &encounter.id,
+                    &format!("thief:{id}"),
+                    "uses_thief_encounter",
+                    Confidence::SourceBacked,
+                    vec![encounter
+                        .record_ref
+                        .clone()
+                        .unwrap_or_else(|| encounter.id.clone())],
+                    summary([("field", json!("thiefSuccess"))]),
+                );
             }
         }
     }

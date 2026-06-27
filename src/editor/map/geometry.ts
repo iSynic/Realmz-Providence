@@ -57,37 +57,21 @@ export function rectCenter(rect: RandomLevel["rects"][number]) {
 
 export function rectArea(rect: RandomLevel["rects"][number]) {
   const bounds = randomRectCellBounds(rect);
-  return Math.max(1, bounds.right - bounds.left + 1) * Math.max(1, bounds.bottom - bounds.top + 1);
-}
-
-export function randomRectUsesQuickDrawBounds(rect: RandomLevel["rects"][number]) {
-  return rect.percent < 0;
+  return bounds.width * bounds.height;
 }
 
 export function randomRectCellBounds(rect: RandomLevel["rects"][number]) {
   const left = clampCell(rect.left);
   const top = clampCell(rect.top);
-  if (randomRectUsesQuickDrawBounds(rect)) {
-    const rightEdge = clampCellEdge(rect.right);
-    const bottomEdge = clampCellEdge(rect.bottom);
-    return {
-      left,
-      top,
-      right: clampCell(Math.max(left, rightEdge - 1)),
-      bottom: clampCell(Math.max(top, bottomEdge - 1)),
-      width: Math.max(0, rightEdge - left),
-      height: Math.max(0, bottomEdge - top)
-    };
-  }
-  const right = clampCell(rect.right);
-  const bottom = clampCell(rect.bottom);
+  const rightEdge = clampCellEdge(rect.right);
+  const bottomEdge = clampCellEdge(rect.bottom);
   return {
     left,
     top,
-    right,
-    bottom,
-    width: Math.max(0, right - left + 1),
-    height: Math.max(0, bottom - top + 1)
+    right: clampCell(Math.max(left, rightEdge - 1)),
+    bottom: clampCell(Math.max(top, bottomEdge - 1)),
+    width: Math.max(0, rightEdge - left),
+    height: Math.max(0, bottomEdge - top)
   };
 }
 

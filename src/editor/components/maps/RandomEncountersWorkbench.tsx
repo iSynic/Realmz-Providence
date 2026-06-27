@@ -19,7 +19,7 @@ const RANDOM_SLOT_HELP =
 const SHOW_RECT_HELP =
   "Show this rectangle on the map canvas by enabling the random overlay and selecting the corresponding encounter entity.";
 const RECT_BOUNDS_HELP =
-  "Normal random encounters use inclusive 0..89 map coordinates. Negative Times in 10,000 uses Realmz's Extra AP door mode, where Right/Bottom are Classic rectangle edges and the last covered tile is one cell before them.";
+  "Random Rectangles use Classic QuickDraw-style map bounds. Left/Top are covered cells; Right/Bottom are edge coordinates, so the last covered tile is one cell before them.";
 const RECT_CHANCE_HELP =
   "Realmz stores random encounter chance as Times in 10,000. For example, 1000 is roughly ten percent before other runtime checks. -1 enables Extra AP door-mode checks instead of normal random battles.";
 const BATTLE_RANGE_HELP =
@@ -215,7 +215,6 @@ export function RandomRectangleEditor({
     randomDoorPercent[index] = value;
     update({ randomDoorPercent });
   };
-  const rightBottomMax = rect.percent < 0 ? 90 : 89;
   return (
     <div className="map-random-editor">
       <InfoGrid
@@ -229,8 +228,8 @@ export function RandomRectangleEditor({
       <div className="map-authoring-form">
         <MapNumberField label="Left" value={rect.left} min={0} max={89} help={RECT_BOUNDS_HELP} onCommit={(left) => update({ left })} />
         <MapNumberField label="Top" value={rect.top} min={0} max={89} help={RECT_BOUNDS_HELP} onCommit={(top) => update({ top })} />
-        <MapNumberField label="Right" value={rect.right} min={0} max={rightBottomMax} help={RECT_BOUNDS_HELP} onCommit={(right) => update({ right })} />
-        <MapNumberField label="Bottom" value={rect.bottom} min={0} max={rightBottomMax} help={RECT_BOUNDS_HELP} onCommit={(bottom) => update({ bottom })} />
+        <MapNumberField label="Right" value={rect.right} min={0} max={90} help={RECT_BOUNDS_HELP} onCommit={(right) => update({ right })} />
+        <MapNumberField label="Bottom" value={rect.bottom} min={0} max={90} help={RECT_BOUNDS_HELP} onCommit={(bottom) => update({ bottom })} />
         <MapNumberField label="Times in 10,000" value={rect.percent} min={-1} max={10000} help={RECT_CHANCE_HELP} onCommit={(percent) => update({ percent })} />
         <MapNumberField label="Battle Low" value={rect.battleRange[0] ?? 0} help={BATTLE_RANGE_HELP} onCommit={(value) => update({ battleRange: [value, rect.battleRange[1] ?? value] })} />
         <MapNumberField label="Battle High" value={rect.battleRange[1] ?? 0} help={BATTLE_RANGE_HELP} onCommit={(value) => update({ battleRange: [rect.battleRange[0] ?? value, value] })} />
@@ -280,9 +279,9 @@ export function RandomRectangleEditor({
 
 export function randomRectDiagnostics(rect: RandomLevel["rects"][number]) {
   const diagnostics: string[] = [];
-  const maxEdge = rect.percent < 0 ? 90 : 89;
-  if (rect.left < 0 || rect.top < 0 || rect.right > maxEdge || rect.bottom > maxEdge) diagnostics.push("Bounds are outside the 90x90 map.");
+  if (rect.left < 0 || rect.top < 0 || rect.right > 90 || rect.bottom > 90) diagnostics.push("Bounds are outside the 90x90 map.");
   if (rect.left > rect.right || rect.top > rect.bottom) diagnostics.push("Bounds are inverted.");
+  if (rect.left === rect.right || rect.top === rect.bottom) diagnostics.push("Bounds have no cell area.");
   if (rect.percent > 10000) diagnostics.push("Times in 10,000 must not exceed 10000.");
   rect.randomDoorPercent.forEach((percent, index) => {
     if (percent < -100 || percent > 100) diagnostics.push(`Door ${index + 1} percent must be between -100 and 100.`);

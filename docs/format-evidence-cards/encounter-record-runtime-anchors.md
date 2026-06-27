@@ -98,7 +98,7 @@ Runtime stride is `sizeof enc2 + 360`, which is 520 bytes in source and corpus e
 | 153 | 1 | `maxtimes` | Attempt/try count copied into runtime `enctry`. |
 | 154 | 1 | `castesuccess` | Caste success/result evidence. Divinity labels still needed. |
 | 155 | 1 | `thiefsuccess` | `Data TD2` thief encounter ID used by thief/spell paths. |
-| 156 | 1 | `thieffail` | Failure result/evidence; labels still need Divinity confirmation. |
+| 156 | 1 | `thieffail` / Rogue Reset Flag | Divinity labels this as `Rogue Reset Flag`. Realmz source names the byte `thieffail`, but no runtime read path has been identified yet. |
 | 157 | 1 | padding/evidence | Preserve. |
 | 158 | 2 | `prompt` | Central `Data SD2` prompt message ID. Runtime displays `-abs(prompt)`. |
 | 160 | 360 | text buffers | Nine 40-byte inline display buffers. Buffer 8 is the word target text. |
@@ -131,6 +131,7 @@ After any path returns a result, `newland` branches to one of the four result ac
 - Complex Encounter editor should expose action result, word result, group flags, spell tests, item tests, thief hook, prompt picker, nine 40-byte buffers, and four result action rows.
 - Existing "Encounter Text" punctuation should remain authored display text unless a Divinity binary pass proves editor annotation semantics.
 - Complex encounter UI should not label bytes 96-103 as four generic choice/word rows; the source-backed fields are one `choiceresult`, one `wordresult`, and eight `group` flags.
+- Divinity's Complex Encounter editor exposes a `Play Sound` control, but modern Realmz `encount2` and the current 520-byte `Data ED2` layout do not expose a confirmed saved sound field. Keep it out of normal Providence authoring until a Divinity before/after fixture identifies storage and runtime behavior.
 - Runtime mutation opcodes should be shown as script effects that alter `CE`/`CE2`, not static source edits.
 
 ## Validation Rules
@@ -142,13 +143,15 @@ After any path returns a result, `newland` branches to one of the four result ac
 - Complex spell IDs should resolve through the spell picker or known class IDs below 7.
 - Complex item IDs should resolve through the item library.
 - `thiefsuccess` should resolve to `Data TD2` when thief/spell-trap behavior is enabled.
+- `thieffail` should be preserved and edited as Divinity's Rogue Reset Flag, not treated as a Rogue Encounter reference.
 - Inline simple buffers must fit 80 bytes; complex buffers must fit 40 bytes.
 - Action rows must use supported CODE/ID semantics and preserve unsupported imported behavior.
 
 ## Divinity Evidence Still Needed
 
 - Simple/complex encounter editor labels, defaults, and field ordering.
-- Exact labels for `maxtimes`, `castesuccess`, `thiefsuccess`, and `thieffail`.
+- Exact runtime effect for Divinity's Rogue Reset Flag / `thieffail`.
+- Storage and runtime meaning of Divinity's Complex Encounter `Play Sound` editor control.
 - Whether Divinity exposes the hardcoded word commands or treats them as hidden runtime behavior.
 - Explanation for corpus `Data ED` trailing/packing cases.
 

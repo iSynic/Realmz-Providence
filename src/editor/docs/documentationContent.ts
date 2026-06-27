@@ -1149,7 +1149,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         points: [
           "Each random-level record can store up to twenty rectangle slots.",
           "Realmz checks slots from 19 down to 0, so higher-numbered rectangles win when active areas overlap.",
-          "Bounds are inclusive map coordinates in the 0..89 map range.",
+          "Bounds use Classic QuickDraw-style map coordinates. Left/Top are covered cells; Right/Bottom are edge coordinates, so the last covered tile is one cell before them.",
           "Times in 10,000 is the encounter chance field. A value of 1000 is roughly ten percent before other runtime checks.",
           "Battle Low and Battle High are an inclusive Data BD battle range for the random encounter.",
           "Sound and Text are numeric links, not free-form labels.",
