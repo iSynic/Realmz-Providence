@@ -2637,17 +2637,10 @@
 
 .complex-encounter-tool-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, max-content));
+  grid-template-columns: repeat(auto-fit, minmax(300px, max-content));
   gap: 8px;
   align-items: start;
   justify-content: start;
-}
-
-.complex-encounter-left-stack {
-  display: grid;
-  gap: 8px;
-  align-content: start;
-  min-width: 0;
 }
 
 
@@ -2655,13 +2648,18 @@
 .complex-encounter-tool-panel,
 .complex-encounter-response-grid {
   display: grid;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
   max-width: 640px;
   border: 1px solid #243542;
   border-radius: 6px;
   background: #0b141c;
-  padding: 7px;
+  padding: 5px;
+}
+
+.complex-encounter-response-grid {
+  gap: 2px;
+  padding-top: 2px;
 }
 
 
@@ -2681,6 +2679,7 @@
 .complex-encounter-response-grid > header strong {
   color: #e7f3ff;
   font-size: 10px;
+  line-height: 1;
 }
 
 
@@ -2703,7 +2702,7 @@
 
 .complex-encounter-response-row {
   display: grid;
-  grid-template-columns: 22px 66px minmax(210px, 340px) 28px;
+  grid-template-columns: 22px 58px minmax(170px, 250px) 28px;
   gap: 4px;
   align-items: center;
   min-width: 0;
@@ -2732,17 +2731,22 @@
 }
 
 .complex-encounter-word-panel {
-  max-width: 320px;
+  width: 300px;
+  max-width: 300px;
   border-color: #55355f;
   background: #17111d;
 }
 
 .complex-encounter-magic-panel {
+  width: 382px;
+  max-width: 382px;
   border-color: #59482a;
   background: #181610;
 }
 
 .complex-encounter-item-panel {
+  width: 382px;
+  max-width: 382px;
   border-color: #315334;
   background: #101a13;
 }

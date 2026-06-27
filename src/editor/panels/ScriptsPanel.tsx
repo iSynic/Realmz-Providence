@@ -4715,71 +4715,46 @@ function EncounterResultEditor({
           </div>
         </header>
         <div className="complex-encounter-tool-grid">
-          <div className="complex-encounter-left-stack">
-            <section className="complex-encounter-tool-panel complex-encounter-action-choice-panel">
-              <header>
-                <TutorialTip title="Action Picker Branch" body={COMPLEX_BAR_ACTIONS_HELP} side="below">
-                  <strong>Action Choices</strong>
-                </TutorialTip>
-              </header>
-              <div className="complex-encounter-action-list">
-                {Array.from({ length: 8 }, (_, slot) => {
-                  const text = texts[slot] ?? "";
-                  return (
-                    <div key={slot} className="complex-encounter-action-option">
-                      <label className="complex-encounter-action-required" title={`Require action ${slot}`}>
-                        <input
-                          type="checkbox"
-                          checked={Boolean(groups[slot] ?? 0)}
-                          onChange={(event) => onComplexCommit({ groups: updateArraySlot(groups, slot, event.currentTarget.checked ? 1 : 0, 8) })}
-                        />
-                      </label>
-                      <span className="complex-encounter-action-index">{slot}</span>
-                      <label className="script-encounter-text-field complex-encounter-inline-text">
-                        <input
-                          type="text"
-                          defaultValue={text}
-                          maxLength={maxLength}
-                          onBlur={(event) => onTextCommit(slot, event.currentTarget.value)}
-                        />
-                      </label>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="complex-encounter-result-line">
-                <EncounterResultNumberField
-                  label="Action Result"
-                  value={actionResult}
-                  actions={actions}
-                  onCommit={(value) => onComplexCommit({ actionResult: value, choiceResults: [value, 0, 0, 0] })}
-                />
-              </div>
-            </section>
-            <section className="complex-encounter-tool-panel complex-encounter-word-panel">
-              <header>
-                <TutorialTip title="Word / Phrase Branch" body={COMPLEX_WORD_HELP} side="below">
-                  <strong>Typed Reply</strong>
-                </TutorialTip>
-              </header>
-              <label className="script-encounter-text-field encounter-word-answer complex-encounter-inline-text">
-                <input
-                  type="text"
-                  defaultValue={texts[8] ?? ""}
-                  maxLength={maxLength}
-                  onBlur={(event) => onTextCommit(8, event.currentTarget.value)}
-                />
-              </label>
-              <div className="complex-encounter-result-line">
-                <EncounterResultNumberField
-                  label="Typed Reply Result"
-                  value={wordResult}
-                  actions={actions}
-                  onCommit={(value) => onComplexCommit({ wordResult: value, wordResults: [value, 0, 0, 0] })}
-                />
-              </div>
-            </section>
-          </div>
+          <section className="complex-encounter-tool-panel complex-encounter-action-choice-panel">
+            <header>
+              <TutorialTip title="Action Picker Branch" body={COMPLEX_BAR_ACTIONS_HELP} side="below">
+                <strong>Action Choices</strong>
+              </TutorialTip>
+            </header>
+            <div className="complex-encounter-action-list">
+              {Array.from({ length: 8 }, (_, slot) => {
+                const text = texts[slot] ?? "";
+                return (
+                  <div key={slot} className="complex-encounter-action-option">
+                    <label className="complex-encounter-action-required" title={`Require action ${slot}`}>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(groups[slot] ?? 0)}
+                        onChange={(event) => onComplexCommit({ groups: updateArraySlot(groups, slot, event.currentTarget.checked ? 1 : 0, 8) })}
+                      />
+                    </label>
+                    <span className="complex-encounter-action-index">{slot}</span>
+                    <label className="script-encounter-text-field complex-encounter-inline-text">
+                      <input
+                        type="text"
+                        defaultValue={text}
+                        maxLength={maxLength}
+                        onBlur={(event) => onTextCommit(slot, event.currentTarget.value)}
+                      />
+                    </label>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="complex-encounter-result-line">
+              <EncounterResultNumberField
+                label="Action Result"
+                value={actionResult}
+                actions={actions}
+                onCommit={(value) => onComplexCommit({ actionResult: value, choiceResults: [value, 0, 0, 0] })}
+              />
+            </div>
+          </section>
           <ComplexEncounterResponseGrid
             project={project}
             catalog={catalog}
@@ -4810,6 +4785,38 @@ function EncounterResultEditor({
             onIdsCommit={(next) => onComplexCommit({ itemIds: next })}
             onResultsCommit={(next) => onComplexCommit({ itemResults: next })}
           />
+          <section className="complex-encounter-tool-panel complex-encounter-word-panel">
+            <header>
+              <TutorialTip title="Word / Phrase Branch" body={COMPLEX_WORD_HELP} side="below">
+                <strong>Typed Reply</strong>
+              </TutorialTip>
+            </header>
+            <label className="script-encounter-text-field encounter-word-answer complex-encounter-inline-text">
+              <input
+                type="text"
+                defaultValue={texts[8] ?? ""}
+                maxLength={maxLength}
+                onInput={(event) => {
+                  const lowered = event.currentTarget.value.toLowerCase();
+                  if (event.currentTarget.value !== lowered) event.currentTarget.value = lowered;
+                }}
+                onBlur={(event) => {
+                  const lowered = event.currentTarget.value.toLowerCase();
+                  event.currentTarget.value = lowered;
+                  onTextCommit(8, lowered);
+                }}
+              />
+              <small>Typed replies are stored lowercase; uppercase letters are converted automatically.</small>
+            </label>
+            <div className="complex-encounter-result-line">
+              <EncounterResultNumberField
+                label="Typed Reply Result"
+                value={wordResult}
+                actions={actions}
+                onCommit={(value) => onComplexCommit({ wordResult: value, wordResults: [value, 0, 0, 0] })}
+              />
+            </div>
+          </section>
         </div>
       </section>
     );
@@ -4883,15 +4890,13 @@ function ComplexEncounterResponseGrid({
   return (
     <section className={`complex-encounter-response-grid${className ? ` ${className}` : ""}`}>
       <header>
-        <div>
-          {help ? (
-            <TutorialTip title={title} body={help} side="below">
-              <strong>{title}</strong>
-            </TutorialTip>
-          ) : (
+        {help ? (
+          <TutorialTip title={title} body={help} side="below">
             <strong>{title}</strong>
-          )}
-        </div>
+          </TutorialTip>
+        ) : (
+          <strong>{title}</strong>
+        )}
       </header>
       <div>
         {slots.map((slot) => (
