@@ -155,15 +155,13 @@ const COMPLEX_ITEM_TESTS_HELP =
 const ENCOUNTER_RESULT_ACTION_HELP =
   "Encounter result columns are compact script rows. Result 1, 2, 3, or 4 chooses one column, then Realmz executes its ordered CODE/ID rows.";
 const ROGUE_ACTION_TESTS_HELP =
-  "Rogue action rows control which thief actions are available, the skill modifier, success/failure result codes, and the text/sound feedback for each outcome. Open Lock Magic and Disarm Trap also expose their spell-special chance fields here.";
-const ROGUE_PROMPT_HELP =
-  "The rogue prompt is shown when this thief scene begins. It can also play a sound before the player chooses or attempts a rogue action.";
+  "Rogue action rows control which Divinity thief actions are available, the skill modifier, success/failure result codes, and the text/sound feedback for each outcome.";
 const ROGUE_TRAP_HELP =
-  "Trap and lock setup controls whether the record is trapped, who damage affects, tumbler count, damage range, optional trap spell, and power level. Open Lock and Disarm Trap spell paths are configured beside their rows above.";
+  "Trap and lock setup controls the trap prompt string, trap state, affected target, damage range, trap sound, optional trap spell, power level, tumbler count, and open/disarm chance fields.";
 const TIMED_SCHEDULE_HELP =
   "The midnight schedule controls when this record is considered. Day and Increment define timing, Percent gates execution, and Extra AP To Activate is the macro Realmz runs.";
 const TIMED_LOCATION_HELP =
-  "Location gates restrict the timed encounter to any map, land, or dungeon, then optionally to level, random rectangle, X, and Y. Raw Position Code is preserved for source accuracy.";
+  "Location gates restrict the timed encounter to any map, land, or dungeon, then optionally to level, random rectangle, X, and Y.";
 const TIMED_EXTRA_HELP =
   "Data TD3 has nine signed-number slots after the confirmed schedule, macro, item, quest, and location fields. Realmz runtime evidence currently names only the first slot as the location kind. Providence preserves the remaining values but keeps them locked until a real authoring meaning is proven.";
 
@@ -2405,6 +2403,7 @@ export function TargetRecordEditor({
   projectDir = "",
   workspaceDir = "",
   onSelectEntity,
+  onSelectEditor,
   onApplyCommand
 }: {
   project: Project;
@@ -2417,6 +2416,7 @@ export function TargetRecordEditor({
   projectDir?: string;
   workspaceDir?: string;
   onSelectEntity?: (entity: SelectedEntity) => void;
+  onSelectEditor?: (editor: string) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const descriptor = realmzScriptStepDescriptorFor(opcode);
@@ -2436,14 +2436,12 @@ export function TargetRecordEditor({
   if (targetId === 0 && !targetRecordExists(project, targetType, targetId)) {
     return <EmptyState compact title="No target selected" body="Choose an existing target or create a new one from the picker." />;
   }
-  const badge = descriptor.compatibility ?? "realmz-writable";
   const targetIssues = validateRealmzTargetRecord(project, targetType, targetId, catalog);
   if (presentation === "workbench" && targetType === "simpleEncounter") {
     const record = project.simpleEncounters?.find((candidate) => candidate.id === targetId);
     return (
       <InlineTargetShell
         title={`Simple Encounter ${targetId}`}
-        badge={badge}
         exists={Boolean(record)}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create simple encounter", recordType: "simpleEncounter", id: targetId })}
@@ -2465,6 +2463,7 @@ export function TargetRecordEditor({
             choiceResults={record.choiceResults}
             actions={record.actions}
             onSelectEntity={onSelectEntity}
+            onSelectEditor={onSelectEditor}
             onApplyCommand={onApplyCommand}
           />
         )}
@@ -2476,7 +2475,6 @@ export function TargetRecordEditor({
     return (
       <InlineTargetShell
         title={`Complex Encounter ${targetId}`}
-        badge={badge}
         exists={Boolean(record)}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create complex encounter", recordType: "complexEncounter", id: targetId })}
@@ -2508,6 +2506,7 @@ export function TargetRecordEditor({
             thiefSuccess={record.thiefSuccess}
             actions={record.actions}
             onSelectEntity={onSelectEntity}
+            onSelectEditor={onSelectEditor}
             onApplyCommand={onApplyCommand}
           />
         )}
@@ -2519,12 +2518,21 @@ export function TargetRecordEditor({
     return (
       <InlineTargetShell
         title={`Rogue Encounter ${targetId}`}
-        badge={badge}
         exists={Boolean(record)}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create rogue encounter", recordType: "thiefEncounter", id: targetId })}
       >
-        {record && <ThiefEncounterShell project={project} catalog={catalog} id={targetId} record={record} onApplyCommand={onApplyCommand} />}
+        {record && (
+          <ThiefEncounterShell
+            project={project}
+            catalog={catalog}
+            previewContext={{ desktopRuntime, projectDir, workspaceDir }}
+            id={targetId}
+            record={record}
+            onSelectEntity={onSelectEntity}
+            onApplyCommand={onApplyCommand}
+          />
+        )}
       </InlineTargetShell>
     );
   }
@@ -2533,12 +2541,11 @@ export function TargetRecordEditor({
     return (
       <InlineTargetShell
         title={`Time Encounter ${targetId}`}
-        badge={badge}
         exists={Boolean(record)}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create timed encounter", recordType: "timedEncounter", id: targetId })}
       >
-        {record && <TimedEncounterShell project={project} catalog={catalog} id={targetId} record={record} onApplyCommand={onApplyCommand} />}
+        {record && <TimedEncounterShell project={project} catalog={catalog} id={targetId} record={record} onSelectEntity={onSelectEntity} onApplyCommand={onApplyCommand} />}
       </InlineTargetShell>
     );
   }
@@ -2547,7 +2554,6 @@ export function TargetRecordEditor({
     return (
       <InlineTargetShell
         title={`Message ${targetId}`}
-        badge={badge}
         exists={Boolean(record)}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create message", recordType: "message", id: targetId })}
@@ -2573,7 +2579,6 @@ export function TargetRecordEditor({
     return (
       <InlineTargetShell
         title={`Battle ${targetId}`}
-        badge={badge}
         exists={Boolean(record)}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create battle", recordType: "battle", id: targetId })}
@@ -2587,7 +2592,6 @@ export function TargetRecordEditor({
     return (
       <InlineTargetShell
         title={`Monster ${targetId}`}
-        badge={badge}
         exists={Boolean(record)}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create monster", recordType: "monster", id: targetId })}
@@ -2601,7 +2605,6 @@ export function TargetRecordEditor({
     return (
       <InlineTargetShell
         title={`Treasure ${targetId}`}
-        badge={badge}
         exists={Boolean(record)}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create treasure", recordType: "treasure", id: targetId })}
@@ -2615,7 +2618,6 @@ export function TargetRecordEditor({
     return (
       <InlineTargetShell
         title={`Shop ${targetId}`}
-        badge={badge}
         exists={Boolean(record)}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create shop", recordType: "shop", id: targetId })}
@@ -2629,7 +2631,6 @@ export function TargetRecordEditor({
     return (
       <InlineTargetShell
         title={`Battle ${targetId}`}
-        badge={badge}
         exists={Boolean(record)}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create battle", recordType: "battle", id: targetId })}
@@ -2686,7 +2687,6 @@ export function TargetRecordEditor({
     return (
       <InlineTargetShell
         title={`Monster ${targetId}`}
-        badge={badge}
         exists={Boolean(record)}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create monster", recordType: "monster", id: targetId })}
@@ -2918,7 +2918,6 @@ export function TargetRecordEditor({
     return (
       <InlineTargetShell
         title={`Treasure ${targetId}`}
-        badge={badge}
         exists={Boolean(record)}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create treasure", recordType: "treasure", id: targetId })}
@@ -2955,7 +2954,6 @@ export function TargetRecordEditor({
     return (
       <InlineTargetShell
         title={`Shop ${targetId}`}
-        badge={badge}
         exists={Boolean(record)}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create shop", recordType: "shop", id: targetId })}
@@ -3011,7 +3009,6 @@ export function TargetRecordEditor({
     return (
       <InlineTargetShell
         title={`Simple Encounter ${targetId}`}
-        badge={badge}
         exists={Boolean(record)}
         issues={targetIssues}
         help={SIMPLE_ENCOUNTER_SOURCE_HELP}
@@ -3026,7 +3023,6 @@ export function TargetRecordEditor({
     return (
       <InlineTargetShell
         title={`Complex Encounter ${targetId}`}
-        badge={badge}
         exists={Boolean(record)}
         issues={targetIssues}
         help={COMPLEX_ENCOUNTER_SOURCE_HELP}
@@ -3041,7 +3037,6 @@ export function TargetRecordEditor({
     return (
       <InlineTargetShell
         title={`Time Encounter ${targetId}`}
-        badge={badge}
         exists={Boolean(record)}
         issues={targetIssues}
         help={TIMED_ENCOUNTER_SOURCE_HELP}
@@ -3056,7 +3051,6 @@ export function TargetRecordEditor({
     return (
       <InlineTargetShell
         title={`Rogue Encounter ${targetId}`}
-        badge={badge}
         exists={Boolean(record)}
         issues={targetIssues}
         help={ROGUE_ENCOUNTER_SOURCE_HELP}
@@ -3071,7 +3065,6 @@ export function TargetRecordEditor({
     return (
       <InlineTargetShell
         title={`Quest ${targetId}`}
-        badge="metadata"
         exists={Boolean(record)}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "upsertQuestLabel", label: "Create quest label", quest: { id: targetId, label: `Quest ${targetId}` } })}
@@ -3091,7 +3084,6 @@ export function TargetRecordEditor({
 
 function InlineTargetShell({
   title,
-  badge,
   exists,
   onCreate,
   onClear,
@@ -3100,7 +3092,6 @@ function InlineTargetShell({
   children
 }: {
   title: string;
-  badge: string;
   exists: boolean;
   onCreate: () => void;
   onClear?: () => void;
@@ -3118,7 +3109,6 @@ function InlineTargetShell({
         ) : (
           <strong>{title}</strong>
         )}
-        <span>{exists ? badge : "missing-target"}</span>
         <div className="script-inline-target-actions">
           {!exists && <button type="button" className="btn btn-secondary btn-xs" onClick={onCreate}>Create {title}</button>}
           {exists && onClear && (
@@ -3365,6 +3355,61 @@ function encounterEntityId(recordType: "simpleEncounter" | "complexEncounter" | 
   return `time:${id}`;
 }
 
+type EncounterRecordPickerType = "simpleEncounter" | "complexEncounter" | "thiefEncounter" | "timedEncounter";
+
+function encounterRecordsForType(project: Project, recordType: EncounterRecordPickerType): Array<{ id: number }> {
+  const records =
+    recordType === "simpleEncounter" ? project.simpleEncounters :
+    recordType === "complexEncounter" ? project.complexEncounters :
+    recordType === "thiefEncounter" ? project.thiefEncounters :
+    project.timedEncounters;
+  return [...(records ?? [])].sort((a, b) => a.id - b.id);
+}
+
+function encounterRecordLabel(recordType: EncounterRecordPickerType, id: number) {
+  if (recordType === "simpleEncounter") return `Simple Encounter ${id}`;
+  if (recordType === "complexEncounter") return `Complex Encounter ${id}`;
+  if (recordType === "thiefEncounter") return `Rogue Encounter ${id}`;
+  return `Time Encounter ${id}`;
+}
+
+function EncounterRecordPicker({
+  project,
+  recordType,
+  id,
+  onSelectEntity,
+  className = ""
+}: {
+  project: Project;
+  recordType: EncounterRecordPickerType;
+  id: number;
+  onSelectEntity?: (entity: SelectedEntity) => void;
+  className?: string;
+}) {
+  const records = encounterRecordsForType(project, recordType);
+  return (
+    <div className={`encounter-record-picker-row${className ? ` ${className}` : ""}`}>
+      <label className="encounter-record-picker">
+        <span>Encounter Record</span>
+        <select
+          aria-label={`${encounterRecordLabel(recordType, id)} picker`}
+          value={id}
+          disabled={!onSelectEntity || records.length <= 1}
+          onChange={(event) => {
+            const nextId = Number(event.currentTarget.value);
+            if (!Number.isInteger(nextId) || nextId === id) return;
+            onSelectEntity?.(selectEntityFromId(encounterEntityId(recordType, nextId)));
+          }}
+        >
+          {records.map((record) => (
+            <option key={record.id} value={record.id}>{encounterRecordLabel(recordType, record.id)}</option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
+}
+
 function messageSnippet(project: Project, id: number) {
   if (id <= 0) return "";
   const text = project.messages?.find((record) => record.id === id)?.text ?? "";
@@ -3397,6 +3442,7 @@ function EncounterShell({
   projectDir = "",
   workspaceDir = "",
   onSelectEntity,
+  onSelectEditor,
   onApplyCommand
 }: {
   project: Project;
@@ -3424,8 +3470,10 @@ function EncounterShell({
   thiefSuccess?: number;
   actions: EncounterActionRow[];
   onSelectEntity?: (entity: SelectedEntity) => void;
+  onSelectEditor?: (editor: string) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
+  const encounterRecordType: "simpleEncounter" | "complexEncounter" = recordKind === "simple" ? "simpleEncounter" : "complexEncounter";
   const update = (changes: Record<string, unknown>) => {
     if (recordKind === "simple") {
       onApplyCommand?.({ kind: "updateSimpleEncounterRecord", label: "Update simple encounter", id, changes });
@@ -3517,6 +3565,7 @@ function EncounterShell({
     <>
       <div className="script-target-grid encounter-record-grid">
         <section className="encounter-setup-panel">
+          <EncounterRecordPicker project={project} recordType={encounterRecordType} id={id} onSelectEntity={onSelectEntity} />
           <div className="encounter-setup-bar">
             <label className="encounter-setup-inline-field encounter-prompt-inline-field">
               <TutorialTip title="Prompt String" body={ENCOUNTER_SETUP_HELP} side="below">
@@ -3560,18 +3609,28 @@ function EncounterShell({
                     onChange={(event) => update({ thief: event.currentTarget.checked })}
                   />
                 </div>
-                <label className="encounter-setup-inline-field encounter-rogue-inline-field">
-                  <span>Rogue Encounter</span>
-                  <InlineNumberField ariaLabel="Rogue Encounter ID" value={thiefSuccess ?? 0} onCommit={(value) => update({ thiefSuccess: value })} />
-                </label>
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-xs"
-                  disabled={!thief || (thiefSuccess ?? 0) <= 0}
-                  onClick={() => onSelectEntity?.({ type: "encounter", id: `thief:${thiefSuccess ?? 0}` })}
-                >
-                  Edit Rogue Encounter
-                </button>
+                {thief && (
+                  <>
+                    <span className="encounter-setup-divider" aria-hidden="true" />
+                    <label className="encounter-setup-inline-field encounter-rogue-inline-field">
+                      <span>Rogue Encounter</span>
+                      <InlineNumberField ariaLabel="Rogue Encounter ID" value={thiefSuccess ?? 0} onCommit={(value) => update({ thiefSuccess: value })} />
+                    </label>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-xs"
+                      disabled={(thiefSuccess ?? 0) <= 0}
+                      onClick={() => {
+                        const rogueId = thiefSuccess ?? 0;
+                        if (rogueId <= 0) return;
+                        onSelectEditor?.("rogue");
+                        onSelectEntity?.(selectEntityFromId(`thief:${rogueId}`));
+                      }}
+                    >
+                      Go to Rogue Encounters
+                    </button>
+                  </>
+                )}
               </>
             )}
             <span className="encounter-setup-divider" aria-hidden="true" />
@@ -3581,17 +3640,6 @@ function EncounterShell({
             </label>
           </div>
         </section>
-      {recordKind === "complex" && (
-        <ComplexEncounterStatusStrip
-          actions={actions}
-          spellIds={spellIds}
-          spellResults={spellResults}
-          itemIds={itemIds}
-          itemResults={itemResults}
-          thief={Boolean(thief)}
-          rogueRecord={rogueRecord}
-        />
-      )}
       {recordKind === "simple" ? (
         <>
           <EncounterResultEditor
@@ -4178,38 +4226,6 @@ function PromptStringFloatingEditor({
   );
 }
 
-function ComplexEncounterStatusStrip({
-  actions,
-  spellIds,
-  spellResults,
-  itemIds,
-  itemResults,
-  thief,
-  rogueRecord
-}: {
-  actions: EncounterActionRow[];
-  spellIds: number[];
-  spellResults: number[];
-  itemIds: number[];
-  itemResults: number[];
-  thief: boolean;
-  rogueRecord?: Project["thiefEncounters"][number];
-}) {
-  const counts = resultStatusCounts(actions);
-  const magicCount = spellIds.filter((id, slot) => id !== 0 && (spellResults[slot] ?? 0) !== 0).length;
-  const itemCount = itemIds.filter((id, slot) => id !== 0 && (itemResults[slot] ?? 0) !== 0).length;
-  const rogueState = thief
-    ? rogueRecord ? "Has Rogue Encounter" : "Rogue Encounter missing record"
-    : "No Rogue Encounter";
-  return (
-    <div className="complex-encounter-status-strip" aria-label="Complex encounter status">
-      <span>Results: {counts.visible} visible, {counts.empty} empty</span>
-      <span>Responses: {magicCount} magic, {itemCount} item</span>
-      <span>{rogueState}</span>
-    </div>
-  );
-}
-
 function rogueOutcomeSummary(record: Project["thiefEncounters"][number], slot: number) {
   const success = record.successCodes?.[slot] ?? 0;
   const failure = record.failureCodes?.[slot] ?? 0;
@@ -4481,42 +4497,23 @@ const ROGUE_OPEN_LOCK_SLOT = 6;
 type RogueSpellPathConfig = {
   slot: number;
   chanceSlot: number;
-  title: string;
   rowLabel: string;
-  disabledWarning: string;
 };
 
 const ROGUE_OPEN_LOCK_SPELL_PATH: RogueSpellPathConfig = {
   slot: ROGUE_OPEN_LOCK_SLOT,
   chanceSlot: 1,
-  title: "Open Lock spell path",
-  rowLabel: "Open Lock Magic",
-  disabledWarning: "Open Lock spell path is disabled until Chance / level is nonzero."
+  rowLabel: "Open Lock"
 };
 
 const ROGUE_DISARM_TRAP_SPELL_PATH: RogueSpellPathConfig = {
   slot: ROGUE_DISARM_TRAP_SLOT,
   chanceSlot: 2,
-  title: "Disarm Trap spell path",
-  rowLabel: "Disarm Trap",
-  disabledWarning: "Disarm Trap spell path is disabled until Chance / level is nonzero."
+  rowLabel: "Disarm Trap"
 };
-
-const ROGUE_SPELL_PATHS: RogueSpellPathConfig[] = [
-  ROGUE_OPEN_LOCK_SPELL_PATH,
-  ROGUE_DISARM_TRAP_SPELL_PATH
-];
-
-function rogueSpellPathForSlot(slot: number) {
-  return ROGUE_SPELL_PATHS.find((path) => path.slot === slot) ?? null;
-}
 
 function rogueSpellPathChance(record: Project["thiefEncounters"][number], config: RogueSpellPathConfig) {
   return record.promptSounds?.[config.chanceSlot] ?? 0;
-}
-
-function rogueSpellPathEnabled(record: Project["thiefEncounters"][number], config: RogueSpellPathConfig) {
-  return rogueSpellPathChance(record, config) > 0;
 }
 
 function rogueActionHasOutcomeData(record: Project["thiefEncounters"][number], slot: number) {
@@ -4537,21 +4534,6 @@ function rogueOutcomeHasVisiblePath(record: Project["thiefEncounters"][number], 
   return Boolean((codes?.[slot] ?? 0) || (messages?.[slot] ?? 0) || (sounds?.[slot] ?? 0));
 }
 
-function rogueSpellPathWarnings(record: Project["thiefEncounters"][number], config: RogueSpellPathConfig) {
-  const warnings: string[] = [];
-  if (!rogueSpellPathEnabled(record, config)) {
-    if (rogueActionHasOutcomeData(record, config.slot)) warnings.push(config.disabledWarning);
-    return warnings;
-  }
-  if (!rogueOutcomeHasVisiblePath(record, config.slot, "success")) {
-    warnings.push(`${config.title} success currently has no visible result. Add a message, sound, or result code so players can tell what happened.`);
-  }
-  if (!rogueOutcomeHasVisiblePath(record, config.slot, "failure")) {
-    warnings.push(`${config.title} failure currently has no visible result. Add a message, sound, or result code so players can tell what happened.`);
-  }
-  return warnings;
-}
-
 function rogueSpellPathSummary(record: Project["thiefEncounters"][number], config: RogueSpellPathConfig) {
   const chance = rogueSpellPathChance(record, config);
   if (chance <= 0) return `Disabled; set Chance / level above 0 to use ${config.rowLabel}. ${rogueOutcomeSummary(record, config.slot)}.`;
@@ -4562,23 +4544,6 @@ function rogueResultColumnVisibilitySummary(record: Project["thiefEncounters"][n
   const success = record.successCodes?.[slot] ?? 0;
   const failure = record.failureCodes?.[slot] ?? 0;
   return `Success ${resultStatusLabel(encounterResultStatus(actions, success)).toLowerCase()}; failure ${resultStatusLabel(encounterResultStatus(actions, failure)).toLowerCase()}.`;
-}
-
-function RogueSpellStatusStrip({ record }: { record: Project["thiefEncounters"][number] }) {
-  return (
-    <div className="rogue-spell-status-strip">
-      {ROGUE_SPELL_PATHS.map((config) => {
-        const enabled = rogueSpellPathEnabled(record, config);
-        return (
-          <div key={config.slot} className={`rogue-spell-status-card ${enabled ? "enabled" : "disabled"}`}>
-            <b>{config.title}</b>
-            <em>{enabled ? "Enabled" : "Disabled"}</em>
-            <small>Chance / level {rogueSpellPathChance(record, config)}; edit beside the {config.rowLabel} row.</small>
-          </div>
-        );
-      })}
-    </div>
-  );
 }
 
 function EncounterResultActionMatrix({
@@ -5216,31 +5181,36 @@ const ROGUE_ACTION_LABELS = [
 function ThiefEncounterShell({
   project,
   catalog,
+  previewContext,
   id,
   record,
+  onSelectEntity,
   onApplyCommand
 }: {
   project: Project;
   catalog?: LibraryCatalog | null;
+  previewContext: PreviewRuntimeContext;
   id: number;
   record: Project["thiefEncounters"][number];
+  onSelectEntity?: (entity: SelectedEntity) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const update = (changes: Extract<ProjectCommand, { kind: "updateThiefEncounterRecord" }>["changes"]) => {
     onApplyCommand?.({ kind: "updateThiefEncounterRecord", label: "Update rogue encounter", id, changes });
   };
-  const enabledCount = (record.typeFlags ?? []).slice(0, 8).filter(Boolean).length;
+  const enabledCount = (record.typeFlags ?? []).slice(0, ROGUE_PRIMARY_ACTIONS).filter(Boolean).length;
   const trapped = Boolean(record.typeFlags?.[9]);
   const rogueOnly = Boolean(record.typeFlags?.[8]);
   return (
     <div className="thief-encounter-editor">
+      <EncounterRecordPicker project={project} recordType="thiefEncounter" id={id} onSelectEntity={onSelectEntity} className="encounter-record-picker-standalone" />
       <section className="rogue-action-matrix">
         <header>
           <div>
             <TutorialTip title="Rogue Action Tests" body={ROGUE_ACTION_TESTS_HELP} side="below">
               <strong>Rogue Action Tests</strong>
             </TutorialTip>
-            <small>{enabledCount}/8 enabled; success/fail columns return result codes, messages, and sounds.</small>
+            <small>{enabledCount}/{ROGUE_PRIMARY_ACTIONS} enabled; success/fail columns return result codes, messages, and sounds.</small>
           </div>
         </header>
         <div className="rogue-action-table" role="table" aria-label="Rogue action tests">
@@ -5254,14 +5224,13 @@ function ThiefEncounterShell({
             <span>Sound Success</span>
             <span>Sound Fail</span>
           </div>
-          {Array.from({ length: 8 }, (_, slot) => (
+          {Array.from({ length: ROGUE_PRIMARY_ACTIONS }, (_, slot) => (
             <RogueActionRow
               key={slot}
               slot={slot}
               record={record}
               project={project}
               catalog={catalog}
-              primary={slot < ROGUE_PRIMARY_ACTIONS}
               onUpdate={update}
               onCreateMessage={(targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create rogue message", recordType: "message", id: targetId })}
             />
@@ -5269,36 +5238,6 @@ function ThiefEncounterShell({
         </div>
       </section>
       <section className="rogue-encounter-detail-grid">
-        <div className="rogue-prompt-panel">
-          <header>
-            <TutorialTip title="Rogue Prompt" body={ROGUE_PROMPT_HELP} side="below">
-              <strong>Encounter Prompt</strong>
-            </TutorialTip>
-            <small>Shown when this rogue encounter starts.</small>
-          </header>
-          <ReferenceIdField
-            project={project}
-            catalog={catalog}
-            label="Prompt String"
-            emptyLabel="No prompt string"
-            opcode={1}
-            value={record.prompts?.[0] ?? 0}
-            createRecordType="message"
-            compact
-            onCommit={(value) => update({ prompts: updateArraySlot(record.prompts ?? [], 0, value, 3) })}
-            onCreateTarget={(targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create rogue prompt", recordType: "message", id: targetId })}
-          />
-          <ReferenceIdField
-            project={project}
-            catalog={catalog}
-            label="Prompt Sound"
-            emptyLabel="No prompt sound"
-            opcode={9}
-            value={record.promptSounds?.[0] ?? 0}
-            compact
-            onCommit={(value) => update({ promptSounds: updateArraySlot(record.promptSounds ?? [], 0, value, 3) })}
-          />
-        </div>
         <div className="rogue-trap-panel">
           <header>
             <TutorialTip title="Trap / Lock Setup" body={ROGUE_TRAP_HELP} side="below">
@@ -5306,46 +5245,273 @@ function ThiefEncounterShell({
             </TutorialTip>
             <small>{trapped ? "Trap armed" : "No armed trap"}; affects {rogueOnly ? "the acting rogue only" : "the whole party"}.</small>
           </header>
-          <div className="rogue-toggle-strip">
-            <label className="script-target-checkbox">
-              <span>Is Trapped</span>
-              <input
-                type="checkbox"
-                checked={trapped}
-                onChange={(event) => update({ typeFlags: updateArraySlot(record.typeFlags ?? [], 9, event.currentTarget.checked, 10) })}
-              />
-            </label>
-            <label className="script-target-checkbox">
-              <span>Trap Affects Rogue Only</span>
-              <input
-                type="checkbox"
-                checked={rogueOnly}
-                onChange={(event) => update({ typeFlags: updateArraySlot(record.typeFlags ?? [], 8, event.currentTarget.checked, 10) })}
-              />
-            </label>
-          </div>
           <div className="rogue-trap-fields">
-            <NumberField label="Lock Tumblers" value={record.tumblers} onCommit={(tumblers) => update({ tumblers })} compact />
-            <NumberField label="Trap Damage Low" value={record.lowDamage} onCommit={(lowDamage) => update({ lowDamage })} compact />
-            <NumberField label="Trap Damage High" value={record.highDamage} onCommit={(highDamage) => update({ highDamage })} compact />
-            <ReferenceIdField
-              project={project}
-              catalog={catalog}
-              label="Trap Sound"
-              emptyLabel="No trap sound"
-              opcode={9}
-              value={record.prompts?.[1] ?? 0}
-              compact
-              onCommit={(value) => update({ prompts: updateArraySlot(record.prompts ?? [], 1, value, 3) })}
-            />
-            <NumberField label="Trap Spell" value={record.spell} onCommit={(spell) => update({ spell })} compact />
-            <NumberField label="Power Level" value={record.prompts?.[2] ?? 0} onCommit={(value) => update({ prompts: updateArraySlot(record.prompts ?? [], 2, value, 3) })} compact />
+            <div className="rogue-trap-lock-column">
+              <strong>Traps</strong>
+              <RoguePromptStringSelect
+                project={project}
+                catalog={catalog}
+                label="Trap Prompt String"
+                emptyLabel="No trap prompt string"
+                className="rogue-trap-prompt-string-field"
+                value={record.prompts?.[0] ?? 0}
+                onCommit={(value) => update({ prompts: updateArraySlot(record.prompts ?? [], 0, value, 3) })}
+              />
+              <RoguePromptStringPreview
+                project={project}
+                label="Trap Prompt Text"
+                prompt={record.prompts?.[0] ?? 0}
+                onApplyCommand={onApplyCommand}
+              />
+              <label className="script-target-checkbox">
+                <span>Is Trapped</span>
+                <input
+                  type="checkbox"
+                  checked={trapped}
+                  onChange={(event) => update({ typeFlags: updateArraySlot(record.typeFlags ?? [], 9, event.currentTarget.checked, 10) })}
+                />
+              </label>
+              <label className="script-target-checkbox">
+                <span>Trap Affects Rogue Only</span>
+                <input
+                  type="checkbox"
+                  checked={rogueOnly}
+                  onChange={(event) => update({ typeFlags: updateArraySlot(record.typeFlags ?? [], 8, event.currentTarget.checked, 10) })}
+                />
+              </label>
+              <label className="rogue-trap-range-row">
+                <span>Trap Damage</span>
+                <div>
+                  <InlineNumberField ariaLabel="Trap Damage Low" value={record.lowDamage} onCommit={(lowDamage) => update({ lowDamage })} />
+                  <em>to</em>
+                  <InlineNumberField ariaLabel="Trap Damage High" value={record.highDamage} onCommit={(highDamage) => update({ highDamage })} />
+                </div>
+              </label>
+              <RogueSoundSelectField
+                project={project}
+                catalog={catalog}
+                previewContext={previewContext}
+                label="Trap Sound"
+                emptyLabel="No trap sound"
+                value={record.prompts?.[1] ?? 0}
+                className="rogue-trap-sound-field"
+                previewAriaLabel="Preview Trap Sound"
+                onCommit={(value) => update({ prompts: updateArraySlot(record.prompts ?? [], 1, value, 3) })}
+              />
+              <RogueTrapSpellField
+                project={project}
+                catalog={catalog}
+                value={record.spell}
+                onCommit={(spell) => update({ spell })}
+              />
+              <NumberField label="Power Level" value={record.prompts?.[2] ?? 0} onCommit={(value) => update({ prompts: updateArraySlot(record.prompts ?? [], 2, value, 3) })} compact />
+              <NumberField label="% Chance / Level to Disarm Trap" value={rogueSpellPathChance(record, ROGUE_DISARM_TRAP_SPELL_PATH)} onCommit={(value) => update({ promptSounds: updateArraySlot(record.promptSounds ?? [], ROGUE_DISARM_TRAP_SPELL_PATH.chanceSlot, value, 3) })} compact />
+            </div>
+            <div className="rogue-trap-lock-column">
+              <strong>Locks</strong>
+              <NumberField label="Number of Lock Tumblers" value={record.tumblers} onCommit={(tumblers) => update({ tumblers })} compact />
+              <NumberField label="% Chance / Level to Open" value={rogueSpellPathChance(record, ROGUE_OPEN_LOCK_SPELL_PATH)} onCommit={(value) => update({ promptSounds: updateArraySlot(record.promptSounds ?? [], ROGUE_OPEN_LOCK_SPELL_PATH.chanceSlot, value, 3) })} compact />
+            </div>
           </div>
-          <RogueSpellStatusStrip record={record} />
-          <p className="field-help">Open Lock and Disarm Trap spell-special paths are configured beside their action rows above. Trap / Lock Setup keeps the physical trap, tumbler, damage, prompt, and trap-spell fields.</p>
         </div>
       </section>
     </div>
+  );
+}
+
+function RogueSoundSelectField({
+  project,
+  catalog,
+  previewContext,
+  label,
+  emptyLabel,
+  value,
+  className,
+  previewAriaLabel,
+  onCommit
+}: {
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  previewContext: PreviewRuntimeContext;
+  label: string;
+  emptyLabel: string;
+  value: number;
+  className: string;
+  previewAriaLabel: string;
+  onCommit: (value: number) => void;
+}) {
+  const soundOptions = useMemo(() => targetOptionsForOpcode(project, 9, catalog), [catalog, project]);
+  const selected = useMemo(() => targetOptionForOpcodeValue(project, 9, value, catalog), [catalog, project, value]);
+  const selectedValue = Math.abs(value);
+  const selectedInOptions = selectedValue === 0 || soundOptions.some((option) => option.value === selectedValue);
+  const soundHelp = selected
+    ? [selected.label, selected.detail, selected.summary].filter(Boolean).join(" | ")
+    : value
+      ? `Sound ${selectedValue} has no matching loaded sound target.`
+      : `${emptyLabel} selected.`;
+  const selectedPreviewUrl = useEncounterSoundPreviewUrl(selected, value, project, previewContext);
+  return (
+    <div className={className} title={soundHelp}>
+      <TutorialTip title={label} body={soundHelp} side="below">
+        <span>{label}</span>
+      </TutorialTip>
+      <button
+        type="button"
+        className="rogue-trap-sound-preview-button"
+        disabled={!selectedPreviewUrl}
+        title={selectedPreviewUrl ? `Preview ${selected?.label ?? `sound ${selectedValue}`}` : "No playable preview is available for this sound."}
+        aria-label={previewAriaLabel}
+        onClick={() => selectedPreviewUrl && playPreviewUrl(selectedPreviewUrl)}
+      >
+        <Volume2 size={12} />
+      </button>
+      <select
+        aria-label={label}
+        title={soundHelp}
+        value={value}
+        onChange={(event) => onCommit(Number(event.currentTarget.value))}
+      >
+        <option value={0}>{emptyLabel}</option>
+        {value !== 0 && !selectedInOptions && <option value={value}>Current sound {selectedValue}</option>}
+        {soundOptions.map((option) => {
+          const optionValue = signedTargetValueForSelection(9, value, option.value);
+          return <option key={option.key} value={optionValue}>{option.label}</option>;
+        })}
+      </select>
+    </div>
+  );
+}
+
+function RoguePromptStringSelect({
+  project,
+  catalog,
+  label = "Prompt String",
+  emptyLabel = "No prompt string",
+  className = "rogue-prompt-string-field",
+  value,
+  onCommit
+}: {
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  label?: string;
+  emptyLabel?: string;
+  className?: string;
+  value: number;
+  onCommit: (value: number) => void;
+}) {
+  const selected = useMemo(() => targetOptionForOpcodeValue(project, 1, value, catalog), [catalog, project, value]);
+  const options = useMemo(() => targetOptionsForOpcode(project, 1, catalog), [catalog, project]);
+  const resolvedValue = resolveSignedMessageTarget(1, value);
+  const hasRawValue = resolvedValue !== 0 && !selected;
+  const visibleOptions = selected && !options.some((option) => option.value === selected.value) ? [selected, ...options] : options;
+  const help = selected
+    ? [selected.label, selected.detail, selected.summary, signedTargetBehaviorLabel(1, value)].filter(Boolean).join(" | ")
+    : hasRawValue
+      ? `Message ${resolvedValue} is not created yet.`
+      : `${emptyLabel} selected.`;
+
+  return (
+    <label className={className} title={help}>
+      <TutorialTip title={label} body={help} side="below">
+        <span>{label}</span>
+      </TutorialTip>
+      <span aria-hidden="true" />
+      <select
+        aria-label={label}
+        title={help}
+        value={hasRawValue ? `raw:${resolvedValue}` : selected ? String(selected.value) : ""}
+        onChange={(event) => {
+          const next = event.currentTarget.value;
+          if (!next) {
+            onCommit(0);
+            return;
+          }
+          if (next.startsWith("raw:")) return;
+          onCommit(signedTargetValueForSelection(1, value, Number(next)));
+        }}
+      >
+        <option value="">{emptyLabel}</option>
+        {hasRawValue && <option value={`raw:${resolvedValue}`}>Current message {resolvedValue}</option>}
+        {visibleOptions.map((option) => (
+          <option key={option.key} value={option.value}>{option.label}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function RoguePromptStringPreview({
+  project,
+  label = "Prompt Text",
+  prompt,
+  onApplyCommand
+}: {
+  project: Project;
+  label?: string;
+  prompt: number;
+  onApplyCommand?: (command: ProjectCommand) => void;
+}) {
+  const messageId = resolveSignedMessageTarget(1, prompt);
+  const message = messageId > 0 ? project.messages?.find((record) => record.id === messageId) : null;
+  const [draft, setDraft] = useState(message?.text ?? "");
+  useEffect(() => {
+    setDraft(message?.text ?? "");
+  }, [message?.id, message?.text]);
+  const disabled = !message;
+  return (
+    <label className="rogue-prompt-string-preview">
+      <span>{label}</span>
+      <textarea
+        value={draft}
+        rows={4}
+        disabled={disabled}
+        placeholder={messageId > 0 ? `Message ${messageId} is not created yet.` : "Choose a prompt string to preview and edit it here."}
+        onChange={(event) => setDraft(event.currentTarget.value)}
+        onBlur={() => {
+          if (!message || draft === message.text) return;
+          onApplyCommand?.({ kind: "updateMessageRecord", label: `Update Rogue Prompt String ${message.id}`, id: message.id, changes: { text: draft } });
+        }}
+      />
+    </label>
+  );
+}
+
+function RogueTrapSpellField({
+  project,
+  catalog,
+  value,
+  onCommit
+}: {
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  value: number;
+  onCommit: (value: number) => void;
+}) {
+  const options = useMemo(() => spellReferenceOptions(project, catalog), [catalog, project]);
+  const selected = options.find((option) => option.value === value);
+  const spellHelp = selected
+    ? [selected.label, selected.detail].filter(Boolean).join(" | ")
+    : value
+      ? `Spell ${value} has no matching loaded spell target.`
+      : "No trap spell selected.";
+  return (
+    <label className="rogue-trap-spell-field" title={spellHelp}>
+      <TutorialTip title="Trap Spell" body={spellHelp} side="below">
+        <span>Trap Spell</span>
+      </TutorialTip>
+      <select
+        aria-label="Trap Spell"
+        title={spellHelp}
+        value={value}
+        onChange={(event) => onCommit(Number(event.currentTarget.value))}
+      >
+        <option value={0}>No trap spell</option>
+        {value !== 0 && !selected && <option value={value}>Current spell {value}</option>}
+        {options.map((option) => (
+          <option key={option.key} value={option.value}>{option.label}</option>
+        ))}
+      </select>
+    </label>
   );
 }
 
@@ -5354,7 +5520,6 @@ function RogueActionRow({
   record,
   project,
   catalog,
-  primary,
   onUpdate,
   onCreateMessage
 }: {
@@ -5362,15 +5527,13 @@ function RogueActionRow({
   record: Project["thiefEncounters"][number];
   project: Project;
   catalog?: LibraryCatalog | null;
-  primary: boolean;
   onUpdate: (changes: Extract<ProjectCommand, { kind: "updateThiefEncounterRecord" }>["changes"]) => void;
   onCreateMessage: (targetId: number) => void;
 }) {
-  const spellPath = rogueSpellPathForSlot(slot);
   const actionWarnings = rogueActionOutcomeWarnings(record, slot);
   return (
     <>
-      <div className={primary ? "rogue-action-row" : "rogue-action-row secondary"} role="row">
+      <div className="rogue-action-row" role="row">
         <label className="rogue-action-enabled">
           <input
             type="checkbox"
@@ -5428,13 +5591,6 @@ function RogueActionRow({
         />
       </div>
       {actionWarnings.map((warning) => <p key={warning} className="field-warning rogue-action-warning">{warning}</p>)}
-      {spellPath && (
-        <RogueSpellPathPanel
-          record={record}
-          config={spellPath}
-          onUpdate={(value) => onUpdate({ promptSounds: updateArraySlot(record.promptSounds ?? [], spellPath.chanceSlot, value, 3) })}
-        />
-      )}
     </>
   );
 }
@@ -5452,44 +5608,19 @@ function rogueActionOutcomeWarnings(record: Project["thiefEncounters"][number], 
   return warnings;
 }
 
-function RogueSpellPathPanel({
-  record,
-  config,
-  onUpdate
-}: {
-  record: Project["thiefEncounters"][number];
-  config: RogueSpellPathConfig;
-  onUpdate: (value: number) => void;
-}) {
-  const enabled = rogueSpellPathEnabled(record, config);
-  const warnings = rogueSpellPathWarnings(record, config);
-  return (
-    <div className={`rogue-spell-path-panel ${enabled ? "enabled" : "disabled"}`}>
-      <header>
-        <div>
-          <strong>{config.title}</strong>
-          <small>{config.rowLabel} supplies this spell-special path's success/failure result, text, and sound.</small>
-        </div>
-        <em>{enabled ? "Enabled" : "Disabled"}</em>
-      </header>
-      <NumberField label="Chance / level" value={rogueSpellPathChance(record, config)} onCommit={onUpdate} compact />
-      <p>{rogueSpellPathSummary(record, config)}</p>
-      {warnings.map((warning) => <p key={warning} className="field-warning">{warning}</p>)}
-    </div>
-  );
-}
-
 function TimedEncounterShell({
   project,
   catalog,
   id,
   record,
+  onSelectEntity,
   onApplyCommand
 }: {
   project: Project;
   catalog?: LibraryCatalog | null;
   id: number;
   record: Project["timedEncounters"][number];
+  onSelectEntity?: (entity: SelectedEntity) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const update = (changes: Extract<ProjectCommand, { kind: "updateTimedEncounterRecord" }>["changes"]) => {
@@ -5498,12 +5629,12 @@ function TimedEncounterShell({
   const setLocationKind = (locationKind: Project["timedEncounters"][number]["locationKind"]) => {
     update({ locationKind, stuff: updateArraySlot(record.stuff ?? [], 0, locationKindValue(locationKind), 10) });
   };
-  const locationValue = locationKindValue(record.locationKind);
   const eligibilitySummary = timedEncounterEligibilitySummary(record);
   const reservedTimedValues = Array.from({ length: 9 }, (_, index) => record.stuff?.[index + 1] ?? 0);
   const reservedNonZeroCount = reservedTimedValues.filter((value) => value !== 0).length;
   return (
     <div className="timed-encounter-editor">
+      <EncounterRecordPicker project={project} recordType="timedEncounter" id={id} onSelectEntity={onSelectEntity} className="encounter-record-picker-standalone" />
       <section className="timed-encounter-form">
         <header>
           <div>
@@ -5535,7 +5666,6 @@ function TimedEncounterShell({
                 <option value="dungeon">2 Dungeon</option>
               </select>
             </label>
-            <TimedNumberRow label="Raw Position Code" value={locationValue} readOnly />
             <TimedNumberRow label="Required Level" value={record.requiredLevel} onCommit={(requiredLevel) => update({ requiredLevel })} />
             <TimedNumberRow label="Required Rect" value={record.requiredRandomRect} onCommit={(requiredRandomRect) => update({ requiredRandomRect })} />
             <TimedNumberRow label="Required X" value={record.requiredX} onCommit={(requiredX) => update({ requiredX })} />
@@ -5543,7 +5673,7 @@ function TimedEncounterShell({
           </div>
         </div>
       </section>
-      <CollapsibleSection title="Compatibility Data" eyebrow="advanced" count={reservedNonZeroCount ? `${reservedNonZeroCount} preserved value${reservedNonZeroCount === 1 ? "" : "s"}` : "all zero"} density="compact" className="script-encounter-text-section timed-extra-section">
+      <CollapsibleSection title="Compatibility Data" eyebrow="advanced" count={reservedNonZeroCount ? `${reservedNonZeroCount} preserved value${reservedNonZeroCount === 1 ? "" : "s"}` : "all zero"} density="compact" className="script-encounter-text-section timed-extra-section" defaultOpen={false}>
         <p className="script-encounter-text-note">
           <TutorialTip title="Reserved Time Encounter Fields" body={TIMED_EXTRA_HELP} side="below">
             <span>Preserved Data TD3 compatibility values. Providence keeps these on save/export, but they do not have confirmed authoring meaning.</span>
@@ -6800,7 +6930,7 @@ function NumberField({ label, value, onCommit, compact = false }: { label: strin
   );
 }
 
-function InlineNumberField({ ariaLabel, value, onCommit }: { ariaLabel: string; value: number; onCommit: (value: number) => void }) {
+function InlineNumberField({ ariaLabel, value, onCommit, title }: { ariaLabel: string; value: number; onCommit: (value: number) => void; title?: string }) {
   const [draft, setDraft] = useState(String(value));
   useEffect(() => {
     setDraft(String(value));
@@ -6814,6 +6944,7 @@ function InlineNumberField({ ariaLabel, value, onCommit }: { ariaLabel: string; 
       className="inline-number-field"
       type="number"
       aria-label={ariaLabel}
+      title={title}
       value={draft}
       onChange={(event) => setDraft(event.currentTarget.value)}
       onBlur={commit}

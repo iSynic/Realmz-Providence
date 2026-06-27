@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { ENTITY_TYPE_LABELS } from "../constants";
 import { loadBrowserBundledLibraryAssetPreview } from "../browser/library";
 import { TutorialTip } from "../components/TutorialTip";
@@ -156,6 +157,7 @@ export function SuiteDomainPanel({
   catalog,
   selectedEntity,
   onSelectEntity,
+  onSelectEditor,
   onApplyCommand,
   onCreateDraft,
   onUpdateDraft,
@@ -169,6 +171,7 @@ export function SuiteDomainPanel({
   catalog: LibraryCatalog | null;
   selectedEntity: SelectedEntity | null;
   onSelectEntity: (entity: SelectedEntity) => void;
+  onSelectEditor?: (editor: string) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
   onCreateDraft?: (spec: LibraryDraftSpec) => void;
   onUpdateDraft?: (entityId: string, changes: { label?: string; notes?: string }) => void;
@@ -1726,6 +1729,7 @@ function TargetRecordWorkbench({
   selectedEntity,
   previewContext,
   onSelectEntity,
+  onSelectEditor,
   onApplyCommand
 }: {
   project: Project;
@@ -1734,6 +1738,7 @@ function TargetRecordWorkbench({
   selectedEntity: SelectedEntity | null;
   previewContext: PreviewRuntimeContext;
   onSelectEntity: (entity: SelectedEntity) => void;
+  onSelectEditor?: (editor: string) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const records = targetRecords(project, recordType);
@@ -1742,6 +1747,9 @@ function TargetRecordWorkbench({
   const opcode = opcodeForTargetRecord(recordType);
   const nextId = nextTargetRecordId(project, recordType);
   const recordHelp = targetRecordHelp(recordType);
+  const encounterRecords = isEncounterRecordType(recordType);
+  const [recordsCollapsedByType, setRecordsCollapsedByType] = useState<Record<string, boolean>>({});
+  const recordsCollapsed = encounterRecords ? recordsCollapsedByType[recordType] ?? true : false;
   const [editorReady, setEditorReady] = useState(false);
   useEffect(() => {
     setEditorReady(false);
@@ -1761,35 +1769,51 @@ function TargetRecordWorkbench({
           )}
           <small>{records.length.toLocaleString()} editable Realmz fixed-record entr{records.length === 1 ? "y" : "ies"}</small>
         </div>
-        <button
-          type="button"
-          className="btn btn-primary btn-xs"
-          onClick={() => {
-            onApplyCommand?.({ kind: "createTargetRecord", label: `Create ${targetRecordLabel(recordType)}`, recordType, id: nextId });
-            onSelectEntity(selectEntityFromId(targetEntityId(recordType, nextId)));
-          }}
-        >
-          New {targetRecordLabel(recordType)} {nextId}
-        </button>
-      </header>
-      <div className="domain-target-layout">
-        <ScrollArea className="domain-target-list" aria-label={`${targetRecordLabel(recordType)} records`}>
-          {visibleRecords.map((record) => (
+        <div className="domain-target-header-actions">
+          {encounterRecords && (
             <button
-              key={`${recordType}:${record.id}`}
               type="button"
-              className={record.id === selectedId ? "selected" : ""}
-              onClick={() => onSelectEntity(selectEntityFromId(targetEntityId(recordType, record.id)))}
+              className="btn btn-secondary btn-xs domain-record-list-toggle"
+              title={recordsCollapsed ? "Show encounter records list" : "Hide encounter records list"}
+              aria-pressed={recordsCollapsed}
+              onClick={() => setRecordsCollapsedByType((current) => ({ ...current, [recordType]: !(current[recordType] ?? true) }))}
             >
-              <strong>{targetRecordLabel(recordType)} {record.id}</strong>
-              <small>{targetRecordSummary(project, recordType, record.id)}</small>
+              {recordsCollapsed ? <PanelLeftOpen size={12} /> : <PanelLeftClose size={12} />}
+              {recordsCollapsed ? "Show Records" : "Hide Records"}
             </button>
-          ))}
-          {records.length > visibleRecords.length && (
-            <p className="domain-list-limit">{records.length - visibleRecords.length} more {targetRecordLabel(recordType).toLowerCase()} record(s); use the focused editor or search to narrow.</p>
           )}
-          {records.length === 0 && <p>No {targetRecordLabel(recordType).toLowerCase()} records yet.</p>}
-        </ScrollArea>
+          <button
+            type="button"
+            className="btn btn-primary btn-xs"
+            onClick={() => {
+              onApplyCommand?.({ kind: "createTargetRecord", label: `Create ${targetRecordLabel(recordType)}`, recordType, id: nextId });
+              onSelectEntity(selectEntityFromId(targetEntityId(recordType, nextId)));
+            }}
+          >
+            New {targetRecordLabel(recordType)} {nextId}
+          </button>
+        </div>
+      </header>
+      <div className={`domain-target-layout${encounterRecords ? " encounter-target-layout" : ""}${recordsCollapsed ? " domain-target-records-collapsed" : ""}`}>
+        {!recordsCollapsed && (
+          <ScrollArea className="domain-target-list" aria-label={`${targetRecordLabel(recordType)} records`}>
+            {visibleRecords.map((record) => (
+              <button
+                key={`${recordType}:${record.id}`}
+                type="button"
+                className={record.id === selectedId ? "selected" : ""}
+                onClick={() => onSelectEntity(selectEntityFromId(targetEntityId(recordType, record.id)))}
+              >
+                <strong>{targetRecordLabel(recordType)} {record.id}</strong>
+                <small>{targetRecordSummary(project, recordType, record.id)}</small>
+              </button>
+            ))}
+            {records.length > visibleRecords.length && (
+              <p className="domain-list-limit">{records.length - visibleRecords.length} more {targetRecordLabel(recordType).toLowerCase()} record(s); use the focused editor or search to narrow.</p>
+            )}
+            {records.length === 0 && <p>No {targetRecordLabel(recordType).toLowerCase()} records yet.</p>}
+          </ScrollArea>
+        )}
         <div className="domain-target-editor">
           {editorReady ? (
             <TargetRecordEditor
@@ -1803,6 +1827,7 @@ function TargetRecordWorkbench({
               projectDir={previewContext.projectDir}
               workspaceDir={previewContext.workspaceDir}
               onSelectEntity={onSelectEntity}
+              onSelectEditor={onSelectEditor}
               onApplyCommand={onApplyCommand}
             />
           ) : (
@@ -1861,6 +1886,10 @@ function targetRecords(project: Project, recordType: RealmzTargetRecordKind): Ar
     recordType === "timedEncounter" ? project.timedEncounters :
     project.questLabels;
   return [...(records ?? [])].sort((a, b) => a.id - b.id);
+}
+
+function isEncounterRecordType(recordType: RealmzTargetRecordKind) {
+  return recordType === "simpleEncounter" || recordType === "complexEncounter" || recordType === "thiefEncounter" || recordType === "timedEncounter";
 }
 
 function includeSelectedRecord<T extends { id: number }>(records: T[], selectedId: number, limit: number) {

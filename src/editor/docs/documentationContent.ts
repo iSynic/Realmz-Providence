@@ -1653,8 +1653,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "Enable only the rogue actions that should appear or be tested for this scene.",
           "Use % Mod to tune difficulty relative to the party's thief skill.",
           "Use success and failure result codes to return to the expected complex encounter result columns.",
-          "For Open Lock spell tests, set the Chance / level in the Open Lock spell path panel, then configure the Open Lock Magic success/failure results.",
-          "For Disarm Trap spell tests, set the Chance / level in the Disarm Trap spell path panel, then configure the Disarm Trap success/failure results.",
+          "For Open Lock spell tests, set % Chance / Level to Open in Trap / Lock Setup.",
+          "For Disarm Trap spell tests, set % Chance / Level to Disarm Trap in Trap / Lock Setup.",
           "Confirm the linked Complex Encounter result rows visibly do something, such as showing a message, branching, giving a reward, or exiting.",
           "Resolve success/failure text fields to Data SD2 messages so the player sees useful feedback.",
           "Use trap damage, trap spell, power level, and knock/disarm percentage fields together; avoid changing reserved fields unless matching known Divinity behavior."
