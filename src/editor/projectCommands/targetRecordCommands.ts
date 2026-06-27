@@ -161,6 +161,8 @@ type TargetRecord =
   | ThiefEncounterRecord
   | TimedEncounterRecord;
 
+const MAGIC_RESPONSE_BLANK_SPELL_ID = 1100;
+
 export function updateRecord<K extends TargetCollectionName>(project: Project, collection: K, id: number, changes: Partial<Project[K][number]>) {
   const existing = (project[collection] as TargetRecord[]).find((record) => record.id === id);
   const base = existing ?? defaultRecordForCollection(collection, id);
@@ -375,7 +377,7 @@ function emptyComplexEncounter(id: number): ComplexEncounterRecord {
     actionResult: 0,
     wordResult: 0,
     groups: new Array(8).fill(0),
-    spellIds: new Array(10).fill(0),
+    spellIds: new Array(10).fill(MAGIC_RESPONSE_BLANK_SPELL_ID),
     spellResults: new Array(10).fill(0),
     itemIds: new Array(5).fill(0),
     itemResults: new Array(5).fill(0),
