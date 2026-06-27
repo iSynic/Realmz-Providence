@@ -34,6 +34,15 @@ export function RulesLayout<T extends { id: number }>({
   fallbackLabelFor,
   fallbackSummaryFor,
   recordNoun,
+  createLabel,
+  createHelp,
+  createDisabled = false,
+  secondaryCreateLabel,
+  secondaryCreateHelp,
+  secondaryCreateDisabled = false,
+  onSecondaryCreate,
+  showGoToField = true,
+  pickerLabel,
   children
 }: {
   title: string;
@@ -51,6 +60,15 @@ export function RulesLayout<T extends { id: number }>({
   fallbackLabelFor: (id: number) => string;
   fallbackSummaryFor: (id: number) => string;
   recordNoun: string;
+  createLabel?: string;
+  createHelp?: string;
+  createDisabled?: boolean;
+  secondaryCreateLabel?: string;
+  secondaryCreateHelp?: string;
+  secondaryCreateDisabled?: boolean;
+  onSecondaryCreate?: () => void;
+  showGoToField?: boolean;
+  pickerLabel?: string;
   children: ReactNode;
 }) {
   const libraryCount = catalog?.entities.filter((entity) => entity.type === fallbackEntityType).length ?? 0;
@@ -62,7 +80,7 @@ export function RulesLayout<T extends { id: number }>({
   const previousId = selectedId <= 0 ? maxRecords - 1 : selectedId - 1;
   const nextId = selectedId >= maxRecords - 1 ? 0 : selectedId + 1;
   const help = rulesFamilyHelp(recordNoun);
-  const customizeHelp = `Create or update this scenario's ${recordNoun.toLowerCase()} override. The shared Realmz ${recordNoun.toLowerCase()} table remains the reference source.`;
+  const customizeHelp = createHelp ?? `Create or update this scenario's ${recordNoun.toLowerCase()} override. The shared Realmz ${recordNoun.toLowerCase()} table remains the reference source.`;
   const clearHelp = `Remove this scenario's ${recordNoun.toLowerCase()} override and fall back to the shared Realmz ${recordNoun.toLowerCase()} definition.`;
   return (
     <div className="rules-layout rules-layout-single">
@@ -78,33 +96,43 @@ export function RulesLayout<T extends { id: number }>({
           </div>
           <small>{scenarioCount} scenario custom, {libraryCount} built-in reference(s)</small>
         </div>
-        <div className="rules-record-picker">
+        <div className={classNames("rules-record-picker", !showGoToField && "rules-record-picker-compact")}>
           <div className="rules-step-buttons" aria-label={`Step through ${recordNoun.toLowerCase()} records`}>
             <button type="button" className="btn btn-secondary btn-xs" title={`Previous ${recordNoun.toLowerCase()}`} onClick={() => onSelect(previousId)}>‹</button>
             <button type="button" className="btn btn-secondary btn-xs" title={`Next ${recordNoun.toLowerCase()}`} onClick={() => onSelect(nextId)}>›</button>
           </div>
-          <label>
-            <HelpLabel label={`Go To ${recordNoun}`} help={`Jump to a fixed ${recordNoun.toLowerCase()} table slot. Realmz keeps ${recordNoun.toLowerCase()} IDs dense, so the number is part of the scenario contract.`} />
-            <input
-              type="number"
-              min={0}
-              max={maxRecords - 1}
-              value={selectedId}
-              onChange={(event) => {
-                const next = Number(event.currentTarget.value);
-                if (Number.isInteger(next) && next >= 0 && next < maxRecords) onSelect(next);
-              }}
-            />
+          {showGoToField && (
+            <label>
+              <HelpLabel label={`Go To ${recordNoun}`} help={`Jump to a fixed ${recordNoun.toLowerCase()} table slot. Realmz keeps ${recordNoun.toLowerCase()} IDs dense, so the number is part of the scenario contract.`} />
+              <input
+                type="number"
+                min={0}
+                max={maxRecords - 1}
+                value={selectedId}
+                onChange={(event) => {
+                  const next = Number(event.currentTarget.value);
+                  if (Number.isInteger(next) && next >= 0 && next < maxRecords) onSelect(next);
+                }}
+              />
+            </label>
+          )}
+          <label className="rules-record-select-field">
+            <HelpLabel label={pickerLabel ?? recordNoun} help={`Select a ${recordNoun.toLowerCase()} record.`} />
+            <select value={selectedId} onChange={(event) => onSelect(Number(event.currentTarget.value))}>
+              {Array.from({ length: maxRecords }, (_, id) => {
+                const record = records.find((candidate) => candidate.id === id);
+                return <option key={id} value={id}>{record ? labelFor(record) : `${id}: ${fallbackLabelFor(id)}`}</option>;
+              })}
+            </select>
           </label>
-          <select value={selectedId} onChange={(event) => onSelect(Number(event.currentTarget.value))}>
-            {Array.from({ length: maxRecords }, (_, id) => {
-              const record = records.find((candidate) => candidate.id === id);
-              return <option key={id} value={id}>{id}: {record ? labelFor(record) : fallbackLabelFor(id)}</option>;
-            })}
-          </select>
-          <button type="button" className="btn btn-primary btn-xs" title={customizeHelp} disabled={selectedIsScenario} onClick={() => onCreate(selectedId)}>
-            Customize In This Scenario
+          <button type="button" className="btn btn-primary btn-xs" title={customizeHelp} disabled={selectedIsScenario || createDisabled} onClick={() => onCreate(selectedId)}>
+            {createLabel ?? "Customize In This Scenario"}
           </button>
+          {secondaryCreateLabel && onSecondaryCreate && (
+            <button type="button" className="btn btn-secondary btn-xs" title={secondaryCreateHelp} disabled={secondaryCreateDisabled} onClick={onSecondaryCreate}>
+              {secondaryCreateLabel}
+            </button>
+          )}
           <button
             type="button"
             className="btn btn-danger btn-xs"

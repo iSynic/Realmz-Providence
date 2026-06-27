@@ -222,9 +222,25 @@
 
 
 
+.rules-record-picker-compact {
+  grid-template-columns: auto max-content auto auto auto;
+  justify-content: start;
+  align-items: center;
+}
+
+
+
 .rules-record-picker label {
   display: grid;
   gap: 4px;
+}
+
+
+
+.rules-record-picker-compact .rules-record-select-field {
+  grid-template-columns: auto minmax(0, 260px);
+  gap: 8px;
+  align-items: center;
 }
 
 
@@ -238,10 +254,24 @@
 
 
 
+.rules-record-picker-compact .rules-record-select-field span {
+  color: #dce8f3;
+  font-size: 13px;
+  text-transform: none;
+}
+
+
+
 .rules-record-picker input,
 .rules-record-picker select {
   min-width: 0;
   width: 100%;
+}
+
+
+
+.rules-record-picker-compact .rules-record-select-field select {
+  width: 260px;
 }
 
 
@@ -253,11 +283,23 @@
 
 
 
+.rules-record-picker-compact > .btn {
+  align-self: center;
+}
+
+
+
 .rules-step-buttons {
   display: grid;
   grid-template-columns: repeat(2, 34px);
   gap: 5px;
   align-self: end;
+}
+
+
+
+.rules-record-picker-compact .rules-step-buttons {
+  align-self: center;
 }
 
 
@@ -316,6 +358,255 @@
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr));
   gap: 10px;
   align-items: start;
+}
+
+
+
+.rules-spell-editor-stack {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+
+
+.rules-spell-sheet {
+  display: grid;
+  grid-template-columns: minmax(260px, 350px) minmax(240px, 310px) minmax(410px, 1fr);
+  gap: 10px;
+  align-items: stretch;
+  min-width: 0;
+}
+
+
+
+.rules-spell-column {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  border: 1px solid #25313c;
+  border-radius: 6px;
+  background: #0a1118;
+}
+
+
+
+.rules-spell-column header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border-bottom: 1px solid #25313c;
+}
+
+
+
+.rules-spell-column header span {
+  color: #dce8f3;
+  font-weight: 900;
+}
+
+
+
+.rules-spell-column header b {
+  color: #7fb4e6;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+
+
+.rules-spell-field-list {
+  display: grid;
+  gap: 7px;
+  align-content: start;
+  padding: 10px;
+  min-width: 0;
+}
+
+
+
+.rules-spell-field-list .scenario-field {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(118px, 1fr) minmax(0, 96px);
+  gap: 7px;
+  align-items: center;
+}
+
+
+
+.rules-spell-field-list .scenario-field > .tutorial-tip,
+.rules-spell-field-list .scenario-field > span {
+  min-width: 0;
+}
+
+
+
+.rules-spell-field-list .scenario-field > small {
+  grid-column: 1 / -1;
+}
+
+
+
+.rules-spell-field-list .scenario-field input,
+.rules-spell-field-list .scenario-field select {
+  padding: 5px 7px;
+  min-height: 28px;
+}
+
+
+
+.rules-spell-field-list .rules-field-medium {
+  grid-template-columns: minmax(118px, 1fr) minmax(0, 148px);
+}
+
+
+
+.rules-spell-column-values .rules-field-medium,
+.rules-spell-column-context .rules-field-medium {
+  grid-template-columns: minmax(118px, 1fr) minmax(0, 160px);
+}
+
+
+
+.rules-spell-field-list .rules-checkbox-field {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  justify-content: start;
+  padding: 4px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+
+
+.rules-spell-pair {
+  display: grid;
+  grid-template-columns: minmax(118px, 1fr) 76px 76px;
+  gap: 7px;
+  align-items: center;
+  min-width: 0;
+}
+
+
+
+.rules-spell-pair > span {
+  color: #80bfff;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+
+
+.rules-spell-pair .scenario-field {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px;
+}
+
+
+
+.rules-spell-pair .scenario-field > .tutorial-tip {
+  display: none;
+}
+
+
+
+.rules-spell-pair .scenario-field input {
+  width: 100%;
+  max-width: none;
+}
+
+
+
+.rules-spell-availability {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 5px;
+  padding: 2px 0 4px;
+}
+
+
+
+.rules-spell-reference-note {
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid #203140;
+  border-radius: 5px;
+  background: #0d151d;
+  color: #9fb3c5;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+
+
+.rules-spell-reference-note strong {
+  color: #dce8f3;
+}
+
+
+
+.rules-spell-column-presentation .rules-field-span,
+.rules-spell-column-presentation .scenario-field-wide {
+  grid-column: auto;
+  grid-template-columns: 1fr;
+}
+
+
+
+.rules-spell-column-presentation .scenario-field textarea {
+  min-height: 96px;
+  padding: 8px;
+}
+
+
+
+.rules-spell-sound-row,
+.rules-spell-icon-row {
+  display: grid;
+  gap: 8px;
+}
+
+
+
+.rules-spell-sound-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+
+
+.rules-spell-icon-row {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+
+
+.rules-spell-sound-row .scenario-field,
+.rules-spell-icon-row .scenario-field {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 5px;
+  max-width: none;
+}
+
+
+
+.rules-spell-sound-row .rules-sound-number > div,
+.rules-spell-icon-row .rules-icon-number > div {
+  justify-content: start;
+}
+
+
+
+.rules-spell-sound-row .rules-sound-number input,
+.rules-spell-icon-row .rules-icon-number input {
+  width: 7ch;
 }
 
 
@@ -870,11 +1161,37 @@
     grid-column: 1 / -1;
   }
 
+  .rules-record-picker-compact {
+    grid-template-columns: auto minmax(0, 1fr);
+    justify-content: stretch;
+  }
+
+  .rules-record-picker-compact .rules-record-select-field {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .rules-record-picker-compact .rules-record-select-field select {
+    width: 100%;
+  }
+
   .rules-selected-summary {
     grid-template-columns: 1fr;
   }
 
   .rules-inventory {
     max-height: 360px;
+  }
+}
+
+
+
+@media (max-width: 1250px) {
+  .rules-spell-sheet {
+    grid-template-columns: 1fr;
+  }
+
+  .rules-spell-sound-row,
+  .rules-spell-icon-row {
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   }
 }

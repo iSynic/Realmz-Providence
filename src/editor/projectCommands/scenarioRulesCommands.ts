@@ -112,7 +112,7 @@ export function createSpellOverride(project: Project, id?: number, template?: Pa
 }
 
 export function createRaceOverride(project: Project, id?: number, template?: Partial<ScenarioRaceOverride>) {
-  const nextId = id ?? nextIdFor(project.raceOverrides ?? [], 30);
+  const nextId = id ?? nextIdFor(project.raceOverrides ?? [], 70);
   if ((project.raceOverrides ?? []).some((record) => record.id === nextId)) return project;
   const record = { ...emptyRaceOverride(nextId), ...template, id: nextId, authored: true, provenance: authoredProvenance("Data Race", nextId, nextId * 408, 408) };
   return {
@@ -268,7 +268,7 @@ export function emptySpellOverride(id: number): ScenarioSpellOverride {
 export function emptyRaceOverride(id: number): ScenarioRaceOverride {
   return {
     id,
-    displayName: `Race ${id + 1}`,
+    displayName: `Race ${id}`,
     plusMinusToHit: new Array(8).fill(0),
     specialAbility: new Array(14).fill(0),
     drvBonus: new Array(8).fill(0),

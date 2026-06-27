@@ -3,17 +3,38 @@ import { LibraryAsset, ScenarioRaceOverride } from "../../types";
 import { CONDITION_LABELS, ITEM_CATEGORY_LABELS, RACE_ATTRIBUTES, RACE_DESCRIPTOR_LABELS, REALMZ_CASTES, REALMZ_RACES, RESISTANCE_TYPES } from "../../rulesCatalog";
 import { racePortraitSetFirstIconId } from "../../resourceIds";
 import { AgeBands, ArrayFields, BitsetEditor, CheckboxMatrix, EmptyRulesState, IconNumberField, NumberField, PairGrid, RuleSection, RulesLayout, TextField } from "./RuleFields";
-import { buildRaceEntries, selectedIdFor } from "./ruleUtils";
+import { buildRaceEntries, RACE_RECORD_LIMIT, selectedIdFor, STANDARD_RACE_COUNT } from "./ruleUtils";
 import { RulesEditorProps } from "./ruleTypes";
 
 export function RaceRulesEditor({ project, catalog, selectedEntity, onSelectEntity, onApplyCommand }: RulesEditorProps) {
   const entries = useMemo(() => buildRaceEntries(project, catalog), [project, catalog]);
   const selectedId = selectedIdFor(selectedEntity?.id, "rule-race") ?? entries[0]?.id ?? 0;
   const entry = entries.find((candidate) => candidate.id === selectedId) ?? entries[0] ?? null;
+  const customRaceIds = useMemo(() => new Set((project.raceOverrides ?? []).filter((record) => record.id >= STANDARD_RACE_COUNT).map((record) => record.id)), [project.raceOverrides]);
+  const nextCustomRaceId = () => {
+    for (let id = STANDARD_RACE_COUNT; id < RACE_RECORD_LIMIT; id += 1) {
+      if (!customRaceIds.has(id)) return id;
+    }
+    return null;
+  };
+  const selectedIsStandardRace = (entry?.id ?? selectedId) < STANDARD_RACE_COUNT;
+  const hasOpenCustomRaceSlot = nextCustomRaceId() !== null;
+  const labelForRace = (race: { id: number; record: ScenarioRaceOverride }) => `${race.id}: ${raceDisplayName(race.id, race.record.displayName)}`;
+  const createBlankCustomRace = () => {
+    const targetId = nextCustomRaceId();
+    if (targetId === null) return;
+    onApplyCommand({ kind: "createRaceOverride", label: "Create custom race", id: targetId });
+    onSelectEntity({ type: "record", id: `rule-race:${targetId}` });
+  };
   const update = (changes: Partial<ScenarioRaceOverride>) => {
     if (!entry) return;
     if (entry.hasScenarioVersion) onApplyCommand({ kind: "updateRaceOverride", label: "Update race", id: entry.id, changes });
-    else onApplyCommand({ kind: "createRaceOverride", label: "Create race", id: entry.id, template: { ...entry.record, ...changes } });
+    else {
+      const targetId = entry.id < STANDARD_RACE_COUNT ? nextCustomRaceId() : entry.id;
+      if (targetId === null) return;
+      onApplyCommand({ kind: "createRaceOverride", label: "Create race", id: targetId, template: { ...entry.record, ...changes } });
+      onSelectEntity({ type: "record", id: `rule-race:${targetId}` });
+    }
   };
   return (
     <RulesLayout
@@ -26,19 +47,37 @@ export function RaceRulesEditor({ project, catalog, selectedEntity, onSelectEnti
       onSelect={(id) => onSelectEntity({ type: "record", id: `rule-race:${id}` })}
       onCreate={(id) => {
         const source = entries.find((candidate) => candidate.id === id);
-        onApplyCommand({ kind: "createRaceOverride", label: "Create race", id, template: source?.record });
+        const targetId = id < STANDARD_RACE_COUNT ? nextCustomRaceId() : id;
+        if (targetId === null) return;
+        onApplyCommand({ kind: "createRaceOverride", label: "Create race", id: targetId, template: source?.record });
+        onSelectEntity({ type: "record", id: `rule-race:${targetId}` });
       }}
       onClear={(id) => onApplyCommand({ kind: "clearRaceOverride", label: "Clear scenario race", id })}
-      maxRecords={30}
-      labelFor={(race) => `${race.id + 1}: ${race.record.displayName || REALMZ_RACES[race.id] || `Race ${race.id + 1}`}`}
+      maxRecords={RACE_RECORD_LIMIT}
+      labelFor={labelForRace}
       summaryFor={(race) => `move ${race.record.baseMove}, max age ${race.record.maxAge}, ${race.record.canCaste.filter(Boolean).length} caste(s)`}
-      fallbackLabelFor={(id) => REALMZ_RACES[id] || `Race ${id + 1}`}
-      fallbackSummaryFor={(id) => `Shared Realmz race ${id + 1}`}
+      fallbackLabelFor={(id) => REALMZ_RACES[id] || `Race ${id}`}
+      fallbackSummaryFor={(id) => `Shared Realmz race ${id}`}
       recordNoun="Race"
+      pickerLabel="Race"
+      showGoToField={false}
+      createLabel={selectedIsStandardRace ? "Copy To New Race" : "Create This Race"}
+      createHelp={selectedIsStandardRace ? "Copy this standard race into the next available custom race record." : "Create this custom race record from the current blank/default values."}
+      createDisabled={selectedIsStandardRace && !hasOpenCustomRaceSlot}
+      secondaryCreateLabel="New Custom Race"
+      secondaryCreateHelp="Create a blank/default custom race in the next available custom race record."
+      secondaryCreateDisabled={!hasOpenCustomRaceSlot}
+      onSecondaryCreate={createBlankCustomRace}
     >
-      {entry ? <RaceForm record={entry.record} hasScenarioVersion={entry.hasScenarioVersion} iconAssets={catalog?.assets ?? []} onUpdate={update} /> : <EmptyRulesState label="race" selectedLabel={REALMZ_RACES[selectedId] || `Race ${selectedId + 1}`} onCreate={() => onApplyCommand({ kind: "createRaceOverride", label: "Create race", id: selectedId })} />}
+      {entry ? <RaceForm record={entry.record} hasScenarioVersion={entry.hasScenarioVersion} iconAssets={catalog?.assets ?? []} onUpdate={update} /> : <EmptyRulesState label="race" selectedLabel={REALMZ_RACES[selectedId] || `Race ${selectedId}`} onCreate={() => onApplyCommand({ kind: "createRaceOverride", label: "Create race", id: selectedId })} />}
     </RulesLayout>
   );
+}
+
+function raceDisplayName(id: number, displayName?: string) {
+  const name = displayName?.trim();
+  if (name && name !== `Race ${id}`) return name;
+  return REALMZ_RACES[id] || `Race ${id}`;
 }
 
 function RaceForm({ record, hasScenarioVersion, iconAssets, onUpdate }: { record: ScenarioRaceOverride; hasScenarioVersion: boolean; iconAssets: LibraryAsset[]; onUpdate: (changes: Partial<ScenarioRaceOverride>) => void }) {
@@ -47,7 +86,7 @@ function RaceForm({ record, hasScenarioVersion, iconAssets, onUpdate }: { record
     <div className="rules-editor-stack">
       {!hasScenarioVersion && <div className="rules-help-callout">This is the built-in Realmz race. Changing a field creates a scenario-specific version of this race.</div>}
       <RuleSection title="Identity And Miscellaneous" badge="mixed" help="Race name, portrait set, movement, regeneration, and broad combat modifiers. Names are editor/display labels unless a scenario storage path is proven.">
-        <TextField label="Race Name" value={record.displayName || REALMZ_RACES[record.id] || ""} onCommit={(displayName) => update({ displayName })} span help="Editor/display label for this race. Realmz normally resolves race names from shared strings, so behavior changes live in Data Race while labels remain display metadata unless proven otherwise." />
+        <TextField label="Race Name" value={raceDisplayName(record.id, record.displayName)} onCommit={(displayName) => update({ displayName })} span help="Editor/display label for this race. Realmz normally resolves race names from shared strings, so behavior changes live in Data Race while labels remain display metadata unless proven otherwise." />
         <IconNumberField label="Default Portrait Set" value={record.defaultIconSet} assets={iconAssets} iconId={racePortraitSetFirstIconId} onCommit={(defaultIconSet) => update({ defaultIconSet })} help="Portrait set used by race selection and generated characters. Providence previews the first icon when the reference library can resolve it." />
         <NumberField label="Can Regenerate" value={record.canRegenerate} onCommit={(canRegenerate) => update({ canRegenerate })} compact help="Nonzero values enable natural regeneration behavior for this race." />
         <NumberField label="Base Movement Points" value={record.baseMove} onCommit={(baseMove) => update({ baseMove })} compact help="Base movement points before caste, map, and runtime modifiers." />

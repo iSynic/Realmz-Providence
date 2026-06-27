@@ -864,7 +864,7 @@ function parseRaceOverrides(buffer: Uint8Array | undefined): ScenarioRaceOverrid
     const record = buffer.slice(start, start + RACE_BYTES);
     return {
       id,
-      displayName: `Race ${id + 1}`,
+      displayName: `Race ${id}`,
       plusMinusToHit: readI16s(record, 0, 8),
       specialAbility: readI16s(record, 16, 14),
       drvBonus: readI16s(record, 44, 8),

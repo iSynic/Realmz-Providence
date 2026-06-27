@@ -147,6 +147,9 @@ export function nextSpellPackedId(entry: SpellRuleEntry) {
   return spellPackedId(entry.spellcasterClass, Math.floor(next / 12), next % 12);
 }
 
+export const RACE_RECORD_LIMIT = 70;
+export const STANDARD_RACE_COUNT = REALMZ_RACES.length;
+
 export function buildRaceEntries(project: Project, catalog: LibraryCatalog | null): RaceRuleEntry[] {
   const cached = raceEntryCache.get(project);
   if (cached && cached.catalog === catalog && cached.overrides === project.raceOverrides) return cached.entries;
@@ -155,10 +158,10 @@ export function buildRaceEntries(project: Project, catalog: LibraryCatalog | nul
   for (const entity of catalog?.entities ?? []) {
     if (entity.type !== "race") continue;
     const id = num(entity.summary.index);
-    if (!Number.isInteger(id) || id < 0 || id >= 30) continue;
+    if (!Number.isInteger(id) || id < 0 || id >= RACE_RECORD_LIMIT) continue;
     library.set(id, raceFromSummary(entity.summary, id));
   }
-  const entries = Array.from({ length: 30 }, (_, id) => {
+  const entries = Array.from({ length: RACE_RECORD_LIMIT }, (_, id) => {
     const scenarioRecord = scenario.get(id) ?? null;
     return {
       id,
@@ -196,7 +199,7 @@ export function buildCasteEntries(project: Project, catalog: LibraryCatalog | nu
 export function raceFromSummary(summary: Record<string, unknown>, id: number): ScenarioRaceOverride {
   return {
     id,
-    displayName: str(summary.displayName) || REALMZ_RACES[id] || `Race ${id + 1}`,
+    displayName: str(summary.displayName) || REALMZ_RACES[id] || `Race ${id}`,
     plusMinusToHit: numArray(summary.plusMinusToHit, 8),
     specialAbility: numArray(summary.specialAbility, 14),
     drvBonus: numArray(summary.drvBonus, 8),
@@ -266,7 +269,7 @@ export function casteFromSummary(summary: Record<string, unknown>, id: number): 
 export function emptyRaceView(id: number): ScenarioRaceOverride {
   return {
     id,
-    displayName: REALMZ_RACES[id] || `Race ${id + 1}`,
+    displayName: REALMZ_RACES[id] || `Race ${id}`,
     plusMinusToHit: new Array(8).fill(0),
     specialAbility: new Array(14).fill(0),
     drvBonus: new Array(8).fill(0),
