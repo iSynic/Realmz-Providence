@@ -1,10 +1,23 @@
 .combat-workbench {
   flex: 1;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   min-width: 0;
   overflow-x: hidden;
   overflow-y: auto;
   padding: 14px;
   background: #101113;
+}
+
+.combat-workbench > .combat-hero,
+.combat-workbench > .combat-tabs,
+.combat-workbench > .combat-record-layout {
+  width: min(100%, 1500px);
+  box-sizing: border-box;
 }
 
 .combat-hero {
@@ -78,7 +91,7 @@
   grid-template-columns: minmax(210px, 280px) minmax(0, 1fr);
   gap: 12px;
   align-items: start;
-  max-width: 1480px;
+  max-width: 1500px;
 }
 
 .combat-record-layout.monster-layout {

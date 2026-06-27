@@ -1154,6 +1154,22 @@ body.is-resizing-pane .pane-resize-handle::before {
 
 
 
+.domain-workbench.domain-workbench-no-detail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+
+
+.domain-workbench.domain-workbench-no-detail > .domain-header,
+.domain-workbench.domain-workbench-no-detail > .domain-main-layout {
+  width: min(100%, 1500px);
+  box-sizing: border-box;
+}
+
+
+
 .domain-main-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
@@ -3081,7 +3097,19 @@ button.documents-source-chip {
 
 
 .lint-workbench {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+
+
+.lint-workbench > .tab-panel,
+.lint-workbench > .semantic-right {
+  width: min(100%, 1500px);
+  box-sizing: border-box;
+  max-width: none;
 }
 
 

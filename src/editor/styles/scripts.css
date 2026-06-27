@@ -8,6 +8,22 @@
 
 
 
+.export-workbench {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+
+
+.export-workbench > .tab-panel {
+  width: min(100%, 1500px);
+  box-sizing: border-box;
+}
+
+
+
 .script-detail {
   min-height: 0;
   max-height: calc(100vh - 150px);
@@ -6702,12 +6718,20 @@
 }
 
 .scripts-workbench {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
   overflow-y: auto;
   padding: 10px;
+}
+
+.scripts-workbench > .script-editor-tabs,
+.scripts-workbench > :not(.script-editor-tabs) {
+  width: min(100%, 1500px);
+  box-sizing: border-box;
 }
 
 .script-editor-tabs {
