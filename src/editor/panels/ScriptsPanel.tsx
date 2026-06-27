@@ -3643,9 +3643,7 @@ function EncounterShell({
                       >
                         {roguePickerRecords.map((record) => (
                           <option key={record.id} value={record.id}>
-                            {rogueRecords.some((candidate) => candidate.id === record.id)
-                              ? `Rogue Encounter ${record.id}`
-                              : `Missing Rogue Encounter ${record.id}`}
+                            {record.id}
                           </option>
                         ))}
                       </select>

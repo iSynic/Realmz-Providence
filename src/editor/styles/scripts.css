@@ -1688,7 +1688,7 @@
 }
 
 .encounter-rogue-inline-field .encounter-setup-select {
-  width: 164px;
+  width: 58px;
 }
 
 .encounter-setup-divider {
@@ -2805,7 +2805,7 @@
 
 .complex-encounter-response-row {
   display: grid;
-  grid-template-columns: 22px 58px minmax(170px, 250px) 28px;
+  grid-template-columns: 22px 50px minmax(140px, 220px) 26px;
   gap: 4px;
   align-items: center;
   min-width: 0;
@@ -2826,8 +2826,8 @@
 }
 
 .complex-encounter-action-choice-panel {
-  width: min(390px, 100%);
-  max-width: 390px;
+  width: min(350px, 100%);
+  max-width: 350px;
   border-color: #5a2f3d;
   background: #1a1016;
   gap: 4px;
@@ -2842,15 +2842,15 @@
 }
 
 .complex-encounter-magic-panel {
-  width: min(382px, 100%);
-  max-width: 382px;
+  width: min(340px, 100%);
+  max-width: 340px;
   border-color: #59482a;
   background: #181610;
 }
 
 .complex-encounter-item-panel {
-  width: min(382px, 100%);
-  max-width: 382px;
+  width: min(340px, 100%);
+  max-width: 340px;
   border-color: #315334;
   background: #101a13;
 }
@@ -2863,7 +2863,7 @@
 
 .complex-encounter-action-option {
   display: grid;
-  grid-template-columns: 20px 18px minmax(250px, 320px);
+  grid-template-columns: 20px 18px minmax(0, 1fr);
   gap: 4px;
   align-items: center;
   min-width: 0;
