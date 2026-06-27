@@ -2,6 +2,7 @@ import {
   BattleRecord,
   ComplexEncounterRecord,
   MessageRecord,
+  MonsterDescriptionRecord,
   MonsterRecord,
   OptionLabelRecord,
   Project,
@@ -17,6 +18,7 @@ import {
 
 const ITEM_BYTES = 100;
 const MONSTER_BYTES = 210;
+const MONSTER_DESCRIPTION_BYTES = 256;
 const THIEF_ENCOUNTER_BYTES = 118;
 const TIMED_ENCOUNTER_BYTES = 40;
 const OPTION_LABEL_BYTES = 25;
@@ -118,6 +120,48 @@ export function updateStringSound(project: Project, messageId: number, soundId: 
   };
 }
 
+export function createMonsterFromTemplate(project: Project, id: number, template: MonsterRecord, description?: string): Project {
+  if (!Number.isInteger(id) || id < 0) return project;
+  const base = emptyMonster(id);
+  const next: MonsterRecord = {
+    ...base,
+    ...template,
+    id,
+    typeFlags: fixedArray(template.typeFlags, 8),
+    attacks: Array.from({ length: 5 }, (_, row) => fixedArray(template.attacks?.[row] ?? [], 4)),
+    saves: fixedArray(template.saves, 6),
+    spellImmunities: fixedArray(template.spellImmunities, 6),
+    money: fixedArray(template.money, 3),
+    spells: fixedArray(template.spells, 10),
+    items: fixedArray(template.items, 6),
+    underneath: fixedArray(template.underneath, 4),
+    conditions: fixedArray(template.conditions, 40),
+    rawBytes: fixedArray(template.rawBytes ?? [], MONSTER_BYTES),
+    authored: true,
+    provenance: authoredProvenance("Data MD", id, id * MONSTER_BYTES, MONSTER_BYTES)
+  };
+  const withMonster = upsertRecord(project, "monsters", next);
+  return description !== undefined ? upsertMonsterDescription(withMonster, id, description) : withMonster;
+}
+
+export function upsertMonsterDescription(project: Project, id: number, text: string): Project {
+  if (!Number.isInteger(id) || id < 0) return project;
+  const current = [...(project.monsterDescriptions ?? [])];
+  const index = current.findIndex((record) => record.id === id);
+  const base = index >= 0 ? current[index] : emptyMonsterDescription(id);
+  const next: MonsterDescriptionRecord = {
+    ...base,
+    id,
+    text,
+    authored: true,
+    provenance: authoredProvenance("Data DES", id, id * MONSTER_DESCRIPTION_BYTES, MONSTER_DESCRIPTION_BYTES)
+  };
+  if (index >= 0) current[index] = next;
+  else current.push(next);
+  current.sort((a, b) => a.id - b.id);
+  return { ...project, monsterDescriptions: current };
+}
+
 export function createOptionLabel(project: Project, requestedId?: number): Project {
   const id = requestedId ?? nextOptionLabelId(project);
   if (!Number.isInteger(id) || id < 0) return project;
@@ -216,6 +260,10 @@ function upsertOptionLabel(project: Project, record: OptionLabelRecord) {
   return { ...project, optionLabels: current };
 }
 
+function fixedArray(values: number[] | undefined, length: number, fill = 0) {
+  return Array.from({ length }, (_, index) => Number(values?.[index] ?? fill));
+}
+
 function targetIds(project: Project, recordType: RealmzTargetRecordKind) {
   const values =
     recordType === "message" ? project.messages :
@@ -304,6 +352,16 @@ function emptyMonster(id: number): MonsterRecord {
     rawBytes: new Array(MONSTER_BYTES).fill(0),
     authored: true,
     provenance: authoredProvenance("Data MD", id, id * MONSTER_BYTES, MONSTER_BYTES)
+  };
+}
+
+function emptyMonsterDescription(id: number): MonsterDescriptionRecord {
+  return {
+    id,
+    text: "",
+    rawBytes: new Array(MONSTER_DESCRIPTION_BYTES).fill(0),
+    authored: true,
+    provenance: authoredProvenance("Data DES", id, id * MONSTER_DESCRIPTION_BYTES, MONSTER_DESCRIPTION_BYTES)
   };
 }
 

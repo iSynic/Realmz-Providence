@@ -1225,7 +1225,9 @@ export type ProjectCommand =
   | { kind: "duplicateOptionLabel"; label: string; fromId: number; toId?: number }
   | { kind: "updateOptionLabel"; label: string; id: number; changes: Partial<Pick<OptionLabelRecord, "text">> }
   | { kind: "updateBattleRecord"; label: string; id: number; changes: Partial<Pick<BattleRecord, "grid" | "dist" | "messageBefore" | "messageAfter" | "battleMacro">> }
+  | { kind: "createMonsterFromTemplate"; label: string; id: number; template: MonsterRecord; description?: string }
   | { kind: "updateMonsterRecord"; label: string; id: number; changes: Partial<MonsterRecord> }
+  | { kind: "upsertMonsterDescription"; label: string; id: number; text: string }
   | { kind: "updateScenarioItemRecord"; label: string; id: number; changes: Partial<ScenarioItemRecord> }
   | { kind: "clearScenarioItemRecord"; label: string; id: number }
   | { kind: "updateTreasureRecord"; label: string; id: number; changes: Partial<Pick<TreasureRecord, "itemIds" | "exp" | "gold" | "gems" | "jewelry">> }

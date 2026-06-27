@@ -1,9 +1,11 @@
 import { memo, ReactNode, useEffect, useMemo, useState } from "react";
 import { browserReferenceIconUrl } from "../browser/atlasPaths";
-import { TargetPicker } from "../components/RealmzTargetPicker";
+import { TargetPicker, resolveSignedTargetValue } from "../components/RealmzTargetPicker";
 import { TutorialTip } from "../components/TutorialTip";
+import { itemReferenceOptions } from "../itemReferences";
 import { useResolvedPreviewUrl, type PreviewRuntimeContext } from "../previewUrls";
 import { isActorOrCreatureIconId } from "../resourceResolver";
+import { scriptActionDefinitionFor, scriptActionSummary, scriptStepFlowRoutes } from "./scripts/scriptActionCatalog";
 import { LibraryAsset, LibraryCatalog, BattleRecord, IconEntry, MonsterRecord, Project, ProjectCommand, SelectedEntity } from "../types";
 import { ScrollArea } from "../ui";
 import { selectEntityFromId } from "../utils";
@@ -52,6 +54,10 @@ type CombatLookups = {
   tabCounts: Record<CombatWorkbenchTab, number>;
 };
 
+type MonsterWorkbenchEntry =
+  | { kind: "scenario"; key: string; id: number; monster: MonsterRecord }
+  | { kind: "scrapbook"; key: string; id: number; entry: LibraryCatalog["entities"][number]; copyId: number };
+
 type CombatPanelProps = {
   activeEditor?: string;
   project: Project | null;
@@ -73,13 +79,13 @@ const TAB_LABELS: Record<CombatWorkbenchTab, string> = {
 };
 
 const TAB_HELP: Record<CombatWorkbenchTab, string> = {
-  battles: "Author Data BD battle records: a 13 x 13 signed monster grid, distance, before/after messages, and battle macro target.",
+  battles: "Author Data BD battle records: a 13 x 13 signed monster grid, distance, before/after strings, and battle macro target.",
   monsters: "Author scenario Data MD monster templates used by battles, spawn/add-ally scripts, bestiary generation, and monster death macros.",
   scrapbook: "Browse bundled read-only Monster Scrapbook records for built-in monster stats, descriptions, item/spell clues, and icon IDs.",
   mash: "Open the Assets reference view for Monster Mash cicn art. These icons are reference material unless copied or decoded into the scenario."
 };
 
-const BATTLE_RECORDS_HELP = "Data BD records are fixed 346-byte battle records. They store a 13 x 13 signed monster grid, distance, before/after message IDs, and a battle macro field.";
+const BATTLE_RECORDS_HELP = "Data BD records are fixed 346-byte battle records. They store a 13 x 13 signed monster grid, distance, before/after string IDs, and a battle macro field.";
 const BATTLE_GRID_HELP = "Each grid cell stores a signed monster ID. Zero is empty, abs(value) points at a Data MD monster, and a negative value forces the friendly/alternate side after Realmz loads it.";
 const MONSTER_PLACEMENT_HELP = "Choose a scenario monster template for the placement brush. Erase clears cells; Force Friend writes the negative grid value Realmz uses for side flipping.";
 const MONSTER_RECORDS_HELP = "Data MD records are 210-byte scenario monster templates. Realmz copies them into runtime combat state, so Providence edits the source template rather than generated bestiary cache data.";
@@ -87,6 +93,18 @@ const MONSTER_ICON_FIELD_HELP = "Monster icons are cicn resource IDs. Providence
 const MONSTER_DEATH_ACTION_HELP = "Defeat Action is the monster death macro/door target. Realmz can run this when the monster dies, so treat it as linked behavior rather than a decorative number.";
 const BATTLE_ACTION_HELP = "Battle Action is an Extra Action Point / macro reference used by combat-round logic. Runtime evidence is sign-sensitive, so imported values should keep their source evidence visible.";
 const SCRAPBOOK_HELP = "Monster Scrapbook is bundled read-only reference data. It does not replace the current scenario's editable Data MD monster records.";
+const MONSTER_RECORD_BYTES = 210;
+const RANDOM_WEAPON_OPTIONS: CombatSelectOption[] = [
+  { key: "random-weapon:-1", value: -1, label: "-1 Random swords" },
+  { key: "random-weapon:-2", value: -2, label: "-2 Random clubs" },
+  { key: "random-weapon:-3", value: -3, label: "-3 Random clubs / spears" },
+  { key: "random-weapon:-4", value: -4, label: "-4 Random axes" },
+  { key: "random-weapon:-5", value: -5, label: "-5 Random small swords / small axes" },
+  { key: "random-weapon:-6", value: -6, label: "-6 Random clubs / flails / spears" },
+  { key: "random-weapon:-7", value: -7, label: "-7 Random spears / pole weapons" },
+  { key: "random-weapon:-8", value: -8, label: "-8 Random axes / spears" },
+  { key: "random-weapon:-9", value: -9, label: "-9 Random swords / dagger / cutlass / nunchucka" }
+];
 
 export function CombatPanel({
   activeEditor = "domain",
@@ -177,6 +195,7 @@ export function CombatPanel({
           selectedEntity={selectedEntity}
           iconEntries={iconEntries}
           lookups={lookups}
+          previewContext={previewContext}
           onSelectEntity={onSelectEntity}
           onApplyCommand={onApplyCommand}
         />
@@ -319,24 +338,28 @@ function BattleEditor({
         <TargetField
           project={project}
           catalog={catalog}
-          label="Before Message"
+          label="Before String"
           opcode={1}
           value={battle.messageBefore}
-          help="Data BD before-message ID. Realmz displays this Data SD2 message before combat starts when the value is nonzero."
+          emptyLabel="No before string"
+          help="Data BD before-string ID. Realmz displays this Data SD2 string before combat starts when the value is nonzero."
           onCommit={(messageBefore) => onUpdate({ messageBefore })}
           onSelectEntity={onSelectEntity}
-          onCreate={(id) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create before battle message", recordType: "message", id })}
+          onCreate={(id) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create before battle string", recordType: "message", id })}
+          onUpdateString={(id, text) => onApplyCommand?.({ kind: "updateMessageRecord", label: `Update before battle string ${id}`, id, changes: { text } })}
         />
         <TargetField
           project={project}
           catalog={catalog}
-          label="After Message"
+          label="After String"
           opcode={1}
           value={battle.messageAfter}
-          help="Data BD after-message ID. Realmz copies this Data SD2 message for post-battle display when the value is nonzero."
+          emptyLabel="No after string"
+          help="Data BD after-string ID. Realmz copies this Data SD2 string for post-battle display when the value is nonzero."
           onCommit={(messageAfter) => onUpdate({ messageAfter })}
           onSelectEntity={onSelectEntity}
-          onCreate={(id) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create after battle message", recordType: "message", id })}
+          onCreate={(id) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create after battle string", recordType: "message", id })}
+          onUpdateString={(id, text) => onApplyCommand?.({ kind: "updateMessageRecord", label: `Update after battle string ${id}`, id, changes: { text } })}
         />
         <TargetField
           project={project}
@@ -344,6 +367,7 @@ function BattleEditor({
           label="Battle Action"
           opcode={39}
           value={battle.battleMacro}
+          emptyLabel="No battle action"
           help={BATTLE_ACTION_HELP}
           onCommit={(battleMacro) => onUpdate({ battleMacro })}
           onSelectEntity={onSelectEntity}
@@ -351,9 +375,12 @@ function BattleEditor({
       </section>
       <BattleBoard
         project={project}
+        catalog={catalog}
         iconEntries={iconEntries}
         lookups={lookups}
         battle={battle}
+        onSelectEntity={onSelectEntity}
+        onApplyCommand={onApplyCommand}
         onUpdateGrid={(grid) => onUpdate({ grid })}
       />
     </article>
@@ -362,15 +389,21 @@ function BattleEditor({
 
 function BattleBoard({
   project,
+  catalog,
   iconEntries,
   lookups,
   battle,
+  onSelectEntity,
+  onApplyCommand,
   onUpdateGrid
 }: {
   project: Project;
+  catalog: LibraryCatalog | null;
   iconEntries: Record<number, IconEntry>;
   lookups: CombatLookups;
   battle: BattleRecord;
+  onSelectEntity: (entity: SelectedEntity) => void;
+  onApplyCommand?: (command: ProjectCommand) => void;
   onUpdateGrid: (grid: number[]) => void;
 }) {
   const [selectedIndex, setSelectedIndex] = useState(() => Math.max(0, battle.grid.findIndex(Boolean)));
@@ -388,6 +421,7 @@ function BattleBoard({
   );
   const selectedCell = cells[selectedIndex] ?? cells[0];
   const selectedMonster = selectedCell?.monsterId ? lookups.monsterById.get(selectedCell.monsterId) ?? null : null;
+  const selectedMissingScrapbookEntry = selectedCell?.monsterId && !selectedMonster ? scrapbookEntryForMonsterId(catalog, selectedCell.monsterId) : null;
   const placementMonster = brush.monsterId ? lookups.monsterById.get(brush.monsterId) ?? null : null;
   const placements = useMemo<BattleGridPlacementView[]>(
     () =>
@@ -472,7 +506,11 @@ function BattleBoard({
         <div className="selected-battle-cell">
           <strong>Selected Cell {selectedIndex % 13}, {Math.floor(selectedIndex / 13)}</strong>
           <small>{selectedCell?.value ? monsterPlacementLabel(selectedMonster, selectedCell.value) : "Empty cell"}</small>
-          <MonsterSelect lookups={lookups} value={selectedCell?.monsterId ?? 0} onCommit={(monsterId) => updateSelected(monsterId)} />
+          <MonsterSelect
+            lookups={lookups}
+            value={selectedCell?.monsterId ?? 0}
+            onCommit={(monsterId) => updateSelected(monsterId === 0 ? 0 : (selectedCell?.value ?? 0) < 0 ? -Math.abs(monsterId) : Math.abs(monsterId))}
+          />
           <div className="placement-controls">
             <ToggleButton active={(selectedCell?.value ?? 0) < 0} label="Force Friend" help="Toggle the sign of this battle-grid value. The absolute value stays the same monster record." disabled={!selectedCell?.monsterId} onClick={() => selectedCell && updateSelected(selectedCell.value < 0 ? selectedCell.monsterId : -selectedCell.monsterId)} />
             <button type="button" className="btn btn-secondary btn-xs" onClick={() => updateSelected(0)}>Clear Cell</button>
@@ -483,6 +521,28 @@ function BattleBoard({
               <span>{monsterFacts(selectedMonster)}</span>
             </div>
           )}
+          {!selectedMonster && selectedCell?.monsterId ? (
+            <div className="selected-monster-preview missing-monster-reference">
+              <b>{selectedCell.monsterId}</b>
+              <span>
+                Monster {selectedCell.monsterId} is not in scenario Data MD.
+                {selectedMissingScrapbookEntry ? (
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-xs"
+                    onClick={() => {
+                      copyScrapbookMonsterToScenario(selectedMissingScrapbookEntry, selectedCell.monsterId, onApplyCommand);
+                      onSelectEntity(selectEntityFromId(`monster:${selectedCell.monsterId}`));
+                    }}
+                  >
+                    Copy Built-In Monster {selectedCell.monsterId}
+                  </button>
+                ) : (
+                  <small>No matching built-in Monster Scrapbook entry was found.</small>
+                )}
+              </span>
+            </div>
+          ) : null}
           {!selectedMonster && placementMonster && (
             <div className="selected-monster-preview">
               <MonsterIcon monster={placementMonster} iconEntries={iconEntries} project={project} lookups={lookups} />
@@ -534,6 +594,9 @@ function MonsterPalette({
       )}
       <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search monsters..." />
       <div className="monster-palette-list">
+        {lookups.monsters.length === 0 && (
+          <p className="empty-copy compact">No scenario monsters yet. Copy a built-in Monster Scrapbook entry into the scenario before placing monsters in battles.</p>
+        )}
         {filtered.slice(0, 32).map((monster) => (
           <button
             key={monster.id}
@@ -556,10 +619,11 @@ function MonsterPalette({
 
 function MonsterWorkbench({
   project,
-  catalog: _catalog,
+  catalog,
   selectedEntity,
   iconEntries,
   lookups,
+  previewContext,
   onSelectEntity,
   onApplyCommand
 }: {
@@ -568,20 +632,47 @@ function MonsterWorkbench({
   selectedEntity: SelectedEntity | null;
   iconEntries: Record<number, IconEntry>;
   lookups: CombatLookups;
+  previewContext: PreviewRuntimeContext;
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const [query, setQuery] = useState("");
+  const [selectedScrapbookKey, setSelectedScrapbookKey] = useState<string | null>(null);
   const selectedFromEntity = idFromEntity(selectedEntity?.id ?? "", "monster:");
-  const selectedId = selectedFromEntity ?? lookups.monsters[0]?.id ?? 0;
-  const selected = lookups.monsterById.get(selectedId) ?? lookups.monsters[0] ?? null;
+  useEffect(() => {
+    if (selectedFromEntity !== null) setSelectedScrapbookKey(null);
+  }, [selectedFromEntity]);
+  const scrapbookEntries = useMemo(
+    () => (catalog?.entities ?? [])
+      .filter((entity) => entity.type === "monster-scrapbook-entry")
+      .sort((a, b) => scrapbookIndex(a) - scrapbookIndex(b)),
+    [catalog?.entities]
+  );
+  const entries = useMemo<MonsterWorkbenchEntry[]>(() => [
+    ...lookups.monsters.map((monster) => ({ kind: "scenario" as const, key: `monster:${monster.id}`, id: monster.id, monster })),
+    ...scrapbookEntries.map((entry) => {
+      const id = scrapbookIndex(entry);
+      return { kind: "scrapbook" as const, key: entry.id, id, entry, copyId: monsterCopyTargetId(project, entry) };
+    })
+  ], [lookups.monsters, project, scrapbookEntries]);
   const filtered = useMemo(
-    () => filterRecords(lookups.monsters, query, (monster) => `${monster.id} ${monster.displayName} icon ${monster.iconId} hd ${monster.hitDice}`),
-    [lookups.monsters, query]
+    () => filterRecords(entries, query, monsterWorkbenchEntrySearchText),
+    [entries, query]
   );
   const nextMonsterId = nextAvailableId(lookups.monsters);
+  const selectedEntry =
+    selectedFromEntity !== null ? entries.find((entry) => entry.kind === "scenario" && entry.id === selectedFromEntity) ?? null :
+    selectedScrapbookKey ? entries.find((entry) => entry.kind === "scrapbook" && entry.key === selectedScrapbookKey) ?? null :
+    entries[0] ?? null;
+  const selected = selectedEntry?.kind === "scenario" ? selectedEntry.monster : null;
+  const selectedDescription = selected ? project.monsterDescriptions.find((description) => description.id === selected.id)?.text ?? "" : "";
   const selectMonster = (id: number) => onSelectEntity(selectEntityFromId(`monster:${id}`));
   const update = (id: number, changes: Partial<MonsterRecord>) => onApplyCommand?.({ kind: "updateMonsterRecord", label: "Update monster", id, changes });
+  const copyScrapbookMonster = (entry: LibraryCatalog["entities"][number], id = monsterCopyTargetId(project, entry)) => {
+    copyScrapbookMonsterToScenario(entry, id, onApplyCommand);
+    setSelectedScrapbookKey(null);
+    selectMonster(id);
+  };
 
   return (
     <div className="combat-record-layout monster-layout">
@@ -590,7 +681,7 @@ function MonsterWorkbench({
         query={query}
         onQuery={setQuery}
         count={filtered.length}
-        total={lookups.monsters.length}
+        total={entries.length}
         newLabel={`New Monster ${nextMonsterId}`}
         help={MONSTER_RECORDS_HELP}
         onNew={() => {
@@ -598,28 +689,51 @@ function MonsterWorkbench({
           selectMonster(nextMonsterId);
         }}
       >
-        {filtered.map((monster) => (
+        {filtered.map((entry) => (
           <button
-            key={monster.id}
+            key={entry.key}
             type="button"
-            className={selected?.id === monster.id ? "selected" : ""}
-            onClick={() => selectMonster(monster.id)}
+            className={selectedEntry?.key === entry.key ? "selected" : ""}
+            onClick={() => {
+              if (entry.kind === "scenario") {
+                setSelectedScrapbookKey(null);
+                selectMonster(entry.id);
+              } else {
+                setSelectedScrapbookKey(entry.key);
+              }
+            }}
           >
-            <MonsterIcon monster={monster} iconEntries={iconEntries} project={project} lookups={lookups} compact />
-            <span>
-              <strong>{monster.displayName || `Monster ${monster.id}`}</strong>
-              <small>{monsterFacts(monster)}</small>
-            </span>
+            {entry.kind === "scenario" ? (
+              <>
+                <MonsterIcon monster={entry.monster} iconEntries={iconEntries} project={project} lookups={lookups} compact />
+                <span>
+                  <strong>{entry.monster.displayName || `Monster ${entry.id}`}</strong>
+                  <small>{monsterFacts(entry.monster)}</small>
+                </span>
+              </>
+            ) : (
+              <>
+                <ScrapbookMonsterIcon entry={entry.entry} iconEntries={iconEntries} lookups={lookups} previewContext={previewContext} compact />
+                <span>
+                  <strong>{scrapbookName(entry.entry)}</strong>
+                  <small>Built-in | copy to Monster {entry.copyId}</small>
+                </span>
+              </>
+            )}
           </button>
         ))}
+        {filtered.length === 0 && <p className="empty-copy compact">No monsters match that search.</p>}
       </RecordList>
       {selected ? (
         <MonsterEditor
           project={project}
+          catalog={catalog}
           monster={selected}
           iconEntries={iconEntries}
           lookups={lookups}
+          description={selectedDescription}
           onUpdate={(changes) => update(selected.id, changes)}
+          onUpdateDescription={(text) => onApplyCommand?.({ kind: "upsertMonsterDescription", label: `Update monster ${selected.id} description`, id: selected.id, text })}
           onDuplicate={() => {
             const id = nextMonsterId;
             update(id, { ...selected, id, displayName: `${selected.displayName || `Monster ${selected.id}`} Copy` });
@@ -627,27 +741,98 @@ function MonsterWorkbench({
           }}
           onClear={() => onApplyCommand?.({ kind: "deleteTargetRecord", label: "Clear monster", recordType: "monster", id: selected.id })}
         />
+      ) : selectedEntry?.kind === "scrapbook" ? (
+        <ScrapbookMonsterPreview
+          entry={selectedEntry.entry}
+          iconEntries={iconEntries}
+          lookups={lookups}
+          previewContext={previewContext}
+          copyId={selectedEntry.copyId}
+          onCopy={() => copyScrapbookMonster(selectedEntry.entry, selectedEntry.copyId)}
+        />
       ) : (
-        <EmptyCombatEditor title="No monster selected" body="Create a monster record to edit its combat stats and icon." />
+        <EmptyCombatEditor title="No monster selected" body="Create a monster record or copy a built-in Monster Scrapbook entry into this scenario." />
       )}
     </div>
   );
 }
 
+function ScrapbookMonsterPreview({
+  entry,
+  iconEntries,
+  lookups,
+  previewContext,
+  copyId,
+  onCopy
+}: {
+  entry: LibraryCatalog["entities"][number];
+  iconEntries: Record<number, IconEntry>;
+  lookups: CombatLookups;
+  previewContext: PreviewRuntimeContext;
+  copyId: number;
+  onCopy: () => void;
+}) {
+  const description = scrapbookDescription(entry);
+  return (
+    <article className="combat-editor monster-editor scrapbook-monster-preview">
+      <header className="combat-editor-header">
+        <div>
+          <span>{scrapbookName(entry)}</span>
+          <small>Built-in Monster Scrapbook entry {scrapbookIndex(entry)}</small>
+        </div>
+        <div className="combat-editor-actions">
+          <button type="button" className="btn btn-primary btn-xs" onClick={onCopy}>
+            Copy To Scenario Monster {copyId}
+          </button>
+        </div>
+      </header>
+      <section className="monster-section monster-identity-section">
+        <ScrapbookMonsterIcon entry={entry} iconEntries={iconEntries} lookups={lookups} previewContext={previewContext} />
+        <div className="scrapbook-stat-grid">
+          <ScrapbookFact label="Hit Dice" value={summaryNumber(entry, "hitDice")} />
+          <ScrapbookFact label="Armor" value={summaryNumber(entry, "armor")} />
+          <ScrapbookFact label="Agility" value={summaryNumber(entry, "agility")} />
+          <ScrapbookFact label="Icon" value={summaryNumber(entry, "iconId")} />
+          <ScrapbookFact label="Spell Points" value={summaryNumber(entry, "spellPoints")} />
+          <ScrapbookFact label="Victory Points" value={summaryNumber(entry, "exp")} />
+        </div>
+      </section>
+      {description && (
+        <section className="monster-section">
+          <header><strong>Description</strong><small>Copied to Data DES when this built-in monster is copied.</small></header>
+          <p className="scrapbook-description">{description}</p>
+        </section>
+      )}
+      <section className="monster-section">
+        <header><strong>Copy Behavior</strong><small>Scenario-owned data only.</small></header>
+        <p className="empty-copy compact">
+          Battle grids can only place scenario Data MD monsters. Copy this built-in entry into the scenario before placing it in a battle.
+        </p>
+      </section>
+    </article>
+  );
+}
+
 function MonsterEditor({
   project,
+  catalog,
   monster,
   iconEntries,
   lookups,
+  description,
   onUpdate,
+  onUpdateDescription,
   onDuplicate,
   onClear
 }: {
   project: Project;
+  catalog: LibraryCatalog | null;
   monster: MonsterRecord;
   iconEntries: Record<number, IconEntry>;
   lookups: CombatLookups;
+  description: string;
   onUpdate: (changes: Partial<MonsterRecord>) => void;
+  onUpdateDescription: (text: string) => void;
   onDuplicate: () => void;
   onClear: () => void;
 }) {
@@ -668,13 +853,17 @@ function MonsterEditor({
         <div className="monster-field-grid">
           <TextField label="Monster Name" value={monster.displayName} onCommit={(displayName) => onUpdate({ displayName })} />
           <NumberField label="Name ID" value={monster.nameId} onCommit={(nameId) => onUpdate({ nameId })} />
-          <NumberField label="Icon" value={monster.iconId} help={MONSTER_ICON_FIELD_HELP} onCommit={(iconId) => onUpdate({ iconId })} />
+          <MonsterIconField project={project} catalog={catalog} lookups={lookups} value={monster.iconId} onCommit={(iconId) => onUpdate({ iconId })} />
           <label className="combat-check-field">
-            <span>Hide From Bestiary</span>
+            <span>Not On Menu</span>
             <input type="checkbox" checked={monster.notOnMenu} onChange={(event) => onUpdate({ notOnMenu: event.currentTarget.checked })} />
           </label>
-          <NumberField label="Defeat Action" value={monster.deathMacro} help={MONSTER_DEATH_ACTION_HELP} onCommit={(deathMacro) => onUpdate({ deathMacro })} />
+          <MacroReferenceField project={project} value={monster.deathMacro} onCommit={(deathMacro) => onUpdate({ deathMacro })} />
         </div>
+      </section>
+      <section className="monster-section monster-description-section">
+        <header><strong>Monster Description</strong><small>Data DES bestiary/scrapbook text.</small></header>
+        <TextAreaField label="Description" value={description} placeholder="No monster description." onCommit={onUpdateDescription} />
       </section>
       <MonsterNumberSection
         title="Combat Stats"
@@ -707,11 +896,16 @@ function MonsterEditor({
           ["Run Away %", "runPercent"],
           ["Surrender %", "surrenderPercent"],
           ["Use Missile %", "missilePercent"],
-          ["Summon Eligible", "canSummon"],
-          ["Weapon Used", "weapon"]
+          ["Summon Eligible", "canSummon"]
         ]}
         onUpdate={onUpdate}
       />
+      <section className="monster-section">
+        <header><strong>Equipment Reference</strong><small>Weapon IDs can use item IDs or Divinity's negative random weapon groups.</small></header>
+        <div className="monster-field-grid">
+          <WeaponIdField project={project} catalog={catalog} value={monster.weapon} onCommit={(weapon) => onUpdate({ weapon })} />
+        </div>
+      </section>
       <section className="monster-section">
         <header><strong>Traits</strong><small>Physical and targeting flags.</small></header>
         <div className="monster-trait-grid combat-traits">
@@ -755,9 +949,9 @@ function MonsterEditor({
       </section>
       <section className="monster-section">
         <header><strong>Spells And Loot</strong><small>Spell slots, money, and item drops.</small></header>
-        <CompactArrayFields label="Spell" values={monster.spells} length={10} onCommit={(spells) => onUpdate({ spells })} />
+        <SpellSlotGrid project={project} catalog={catalog} values={monster.spells} onCommit={(spells) => onUpdate({ spells })} />
         <CompactArrayFields label="Money" values={monster.money} length={3} onCommit={(money) => onUpdate({ money })} />
-        <CompactArrayFields label="Item" values={monster.items} length={6} onCommit={(items) => onUpdate({ items })} />
+        <ItemSlotGrid project={project} catalog={catalog} values={monster.items} onCommit={(items) => onUpdate({ items })} />
       </section>
       <section className="monster-section">
         <header><strong>Saves, Immunities, And Advanced Fields</strong><small>Combat runtime fields that remain useful for exact Realmz behavior.</small></header>
@@ -775,59 +969,147 @@ function TargetField({
   label,
   opcode,
   value,
+  emptyLabel,
   help,
   onCommit,
   onSelectEntity,
-  onCreate
+  onCreate,
+  onUpdateString
 }: {
   project: Project;
   catalog: LibraryCatalog | null;
   label: string;
   opcode: number;
   value: number;
+  emptyLabel?: string;
   help?: string;
   onCommit: (value: number) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
   onCreate?: (id: number) => void;
+  onUpdateString?: (id: number, text: string) => void;
 }) {
-  const [editing, setEditing] = useState(false);
-  const targetId = normalizedTargetValue(opcode, value);
+  const targetId = resolveSignedTargetValue(opcode, value);
   return (
     <div className="combat-target-field">
       <FieldLabel label={label} help={help} />
-      {!editing ? (
-        <div className="combat-target-summary">
-          <strong>{combatTargetSummary(project, label, opcode, value)}</strong>
-          <div>
-            <button type="button" className="btn btn-primary btn-xs" onClick={() => setEditing(true)}>Choose</button>
-            {targetId ? (
-              <button type="button" className="btn btn-secondary btn-xs" onClick={() => onSelectEntity(selectEntityFromId(targetEntityId(opcode, targetId)))}>
-                Open
-              </button>
-            ) : null}
-            {onCreate && targetId ? (
-              <button type="button" className="btn btn-secondary btn-xs" onClick={() => onCreate(targetId)}>
-                Create
-              </button>
-            ) : null}
-          </div>
-        </div>
-      ) : (
-        <TargetPicker
+      <TargetPicker
+        project={project}
+        catalog={catalog}
+        opcode={opcode}
+        value={value}
+        emptyLabel={emptyLabel}
+        showSearch={false}
+        showDetail={false}
+        showTargetCount={false}
+        onChange={onCommit}
+        onInspect={onSelectEntity}
+        onCreate={onCreate && targetId ? (_, id) => onCreate(id ?? targetId) : undefined}
+      />
+      {opcode === 1 && (
+        <BattleStringDisclosure
+          project={project}
+          stringId={targetId}
+          onUpdateString={onUpdateString}
+        />
+      )}
+      {opcode === 39 && (
+        <BattleActionFlowDisclosure
           project={project}
           catalog={catalog}
-          opcode={opcode}
-          value={value}
-          onChange={(next) => {
-            onCommit(next);
-            setEditing(false);
-          }}
-          onInspect={onSelectEntity}
-          onCreate={(_, id) => onCreate?.(id ?? targetId)}
+          actionId={targetId}
+          onSelectEntity={onSelectEntity}
         />
       )}
     </div>
   );
+}
+
+function BattleStringDisclosure({
+  project,
+  stringId,
+  onUpdateString
+}: {
+  project: Project;
+  stringId: number;
+  onUpdateString?: (id: number, text: string) => void;
+}) {
+  if (!stringId) return null;
+  const record = project.messages.find((candidate) => candidate.id === Math.abs(stringId)) ?? null;
+  return (
+    <details className="combat-target-disclosure">
+      <summary>Preview / Edit String</summary>
+      {record ? (
+        <textarea
+          key={`battle-string-${record.id}-${record.text}`}
+          defaultValue={record.text}
+          onBlur={(event) => {
+            if (event.currentTarget.value !== record.text) onUpdateString?.(record.id, event.currentTarget.value);
+          }}
+        />
+      ) : (
+        <p>String {Math.abs(stringId)} has not been created yet.</p>
+      )}
+    </details>
+  );
+}
+
+function BattleActionFlowDisclosure({
+  project,
+  catalog,
+  actionId,
+  onSelectEntity
+}: {
+  project: Project;
+  catalog: LibraryCatalog | null;
+  actionId: number;
+  onSelectEntity: (entity: SelectedEntity) => void;
+}) {
+  if (!actionId) return null;
+  const trigger = project.triggers.find((candidate) => candidate.source === "Data ED3" && candidate.recordIndex === Math.abs(actionId)) ?? null;
+  const actions = trigger?.actions.filter((action) => action.rawCode !== 0).sort((a, b) => a.slot - b.slot) ?? [];
+  return (
+    <details className="combat-target-disclosure combat-flow-disclosure">
+      <summary>Flow Preview</summary>
+      {!trigger && <p>Extra Action Point {Math.abs(actionId)} has not been created yet.</p>}
+      {trigger && actions.length === 0 && <p>No action steps.</p>}
+      {actions.map((action) => {
+        const definition = scriptActionDefinitionFor(action.rawCode);
+        const routes = scriptStepFlowRoutes(project, catalog, { rawCode: action.rawCode, id: action.id });
+        const route = routes[0] ?? null;
+        const summary = route?.target ? `${route.label}: ${route.target.label}` : route?.detail || scriptActionSummary(project, catalog, { rawCode: action.rawCode, id: action.id });
+        return (
+          <div key={`${action.slot}-${action.rawCode}-${action.id}`} className="combat-flow-step">
+            <span>{action.slot + 1}</span>
+            <p>
+              <b>{definition.shortLabel}</b>
+              <small>{summary}</small>
+            </p>
+            {route?.target && (
+              <button type="button" className="btn btn-secondary btn-xs" onClick={() => onSelectEntity(selectEntityForCombatFlowTarget(route.target!))}>
+                Open
+              </button>
+            )}
+          </div>
+        );
+      })}
+    </details>
+  );
+}
+
+function selectEntityForCombatFlowTarget(target: { targetKind: string; value: number }): SelectedEntity {
+  if (target.targetKind === "macro") return selectEntityFromId(`macro:${target.value}`);
+  if (target.targetKind === "simpleEncounter") return selectEntityFromId(`encounter:simple:${target.value}`);
+  if (target.targetKind === "complexEncounter") return selectEntityFromId(`encounter:complex:${target.value}`);
+  if (target.targetKind === "thiefEncounter") return selectEntityFromId(`thief:${target.value}`);
+  if (target.targetKind === "timedEncounter") return selectEntityFromId(`time:${target.value}`);
+  if (target.targetKind === "message" || target.targetKind === "scrollingText") return selectEntityFromId(`message:${target.value}`);
+  if (target.targetKind === "treasure") return selectEntityFromId(`treasure:${target.value}`);
+  if (target.targetKind === "shop") return selectEntityFromId(`shop:${target.value}`);
+  if (target.targetKind === "monster") return selectEntityFromId(`monster:${target.value}`);
+  if (target.targetKind === "battle") return selectEntityFromId(`battle:${target.value}`);
+  if (target.targetKind === "mapRecord") return selectEntityFromId(`map-record:${target.value}`);
+  if (target.targetKind === "item") return selectEntityFromId(`item:${target.value}`);
+  return selectEntityFromId(`${target.targetKind}:${target.value}`);
 }
 
 function RecordList({
@@ -1027,6 +1309,22 @@ function TextField({ label, value, help, onCommit }: { label: string; value: str
   );
 }
 
+function TextAreaField({ label, value, placeholder, onCommit }: { label: string; value: string; placeholder?: string; onCommit: (value: string) => void }) {
+  const [draft, setDraft] = useState(value);
+  useEffect(() => setDraft(value), [value]);
+  return (
+    <label className="combat-field combat-textarea-field">
+      <span>{label}</span>
+      <textarea
+        value={draft}
+        placeholder={placeholder}
+        onChange={(event) => setDraft(event.currentTarget.value)}
+        onBlur={() => onCommit(draft)}
+      />
+    </label>
+  );
+}
+
 function ToggleButton({ active, label, disabled, help, onClick }: { active: boolean; label: string; disabled?: boolean; help?: string; onClick: () => void }) {
   return (
     <button type="button" className={`combat-toggle${active ? " active" : ""}`} disabled={disabled} title={help} onClick={onClick}>
@@ -1066,6 +1364,125 @@ function MonsterNumberSection({
         ))}
       </div>
     </section>
+  );
+}
+
+type CombatSelectOption = { key: string; value: number; label: string; detail?: string };
+
+function MacroReferenceField({ project, value, onCommit }: { project: Project; value: number; onCommit: (value: number) => void }) {
+  const options = useMemo<CombatSelectOption[]>(
+    () => (project.triggers ?? [])
+      .filter((trigger) => trigger.source === "Data ED3")
+      .sort((a, b) => a.recordIndex - b.recordIndex)
+      .map((trigger) => ({
+        key: `macro:${trigger.recordIndex}`,
+        value: trigger.recordIndex,
+        label: `Extra Action Point ${trigger.recordIndex}`,
+        detail: `${trigger.actions.filter((action) => action.rawCode !== 0).length} action step(s)`
+      })),
+    [project.triggers]
+  );
+  return <NumberSelectField label="Monster Macro" help={MONSTER_DEATH_ACTION_HELP} value={value} options={options} emptyLabel="No monster macro" onCommit={onCommit} />;
+}
+
+function MonsterIconField({
+  project,
+  catalog,
+  lookups,
+  value,
+  onCommit
+}: {
+  project: Project;
+  catalog: LibraryCatalog | null;
+  lookups: CombatLookups;
+  value: number;
+  onCommit: (value: number) => void;
+}) {
+  const options = useMemo(() => monsterIconOptions(project, catalog, lookups), [catalog, lookups, project]);
+  return <NumberSelectField label="Icon" help={MONSTER_ICON_FIELD_HELP} value={value} options={options} emptyLabel="No icon" onCommit={onCommit} />;
+}
+
+function WeaponIdField({ project, catalog, value, onCommit }: { project: Project; catalog: LibraryCatalog | null; value: number; onCommit: (value: number) => void }) {
+  const options = useMemo<CombatSelectOption[]>(() => [
+    ...RANDOM_WEAPON_OPTIONS,
+    ...itemReferenceOptions(project, catalog).map((item) => ({
+      key: item.key,
+      value: item.value,
+      label: item.label,
+      detail: item.detail
+    }))
+  ], [catalog, project]);
+  return <NumberSelectField label="Weapon Used" value={value} options={options} emptyLabel="No weapon" onCommit={onCommit} />;
+}
+
+function SpellSlotGrid({ project, catalog, values, onCommit }: { project: Project; catalog: LibraryCatalog | null; values: number[]; onCommit: (values: number[]) => void }) {
+  const options = useMemo(() => combatSpellOptions(project, catalog), [catalog, project]);
+  return (
+    <div className="combat-compact-array monster-select-array">
+      {Array.from({ length: 10 }, (_, index) => (
+        <NumberSelectField
+          key={index}
+          label={`Spell ${index + 1}`}
+          value={values[index] ?? 0}
+          options={options}
+          emptyLabel="No spell"
+          onCommit={(value) => onCommit(updateArraySlot(values, index, value, 10))}
+        />
+      ))}
+    </div>
+  );
+}
+
+function ItemSlotGrid({ project, catalog, values, onCommit }: { project: Project; catalog: LibraryCatalog | null; values: number[]; onCommit: (values: number[]) => void }) {
+  const options = useMemo(
+    () => itemReferenceOptions(project, catalog).map((item) => ({ key: item.key, value: item.value, label: item.label, detail: item.detail })),
+    [catalog, project]
+  );
+  return (
+    <div className="combat-compact-array monster-select-array">
+      {Array.from({ length: 6 }, (_, index) => (
+        <NumberSelectField
+          key={index}
+          label={`Item ${index + 1}`}
+          value={values[index] ?? 0}
+          options={options}
+          emptyLabel="No item"
+          onCommit={(value) => onCommit(updateArraySlot(values, index, value, 6))}
+        />
+      ))}
+    </div>
+  );
+}
+
+function NumberSelectField({
+  label,
+  value,
+  options,
+  emptyLabel,
+  help,
+  onCommit
+}: {
+  label: string;
+  value: number;
+  options: CombatSelectOption[];
+  emptyLabel: string;
+  help?: string;
+  onCommit: (value: number) => void;
+}) {
+  const hasCurrentValue = value !== 0 && !options.some((option) => option.value === value);
+  return (
+    <label className="combat-field combat-select-field">
+      <FieldLabel label={label} help={help} />
+      <select value={String(value)} onChange={(event) => onCommit(Number(event.currentTarget.value))}>
+        <option value="0">{emptyLabel}</option>
+        {hasCurrentValue && <option value={String(value)}>Current value {value}</option>}
+        {options.map((option) => (
+          <option key={option.key} value={String(option.value)} title={option.detail}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
@@ -1284,6 +1701,99 @@ function scrapbookDescription(entry: LibraryCatalog["entities"][number]) {
   return typeof entry.summary.description === "string" ? entry.summary.description : "";
 }
 
+function monsterWorkbenchEntrySearchText(entry: MonsterWorkbenchEntry) {
+  if (entry.kind === "scenario") return `${entry.id} ${entry.monster.displayName} icon ${entry.monster.iconId} hd ${entry.monster.hitDice}`;
+  return `${scrapbookName(entry.entry)} ${scrapbookFacts(entry.entry)} ${scrapbookDescription(entry.entry)} built-in scrapbook copy ${entry.copyId}`;
+}
+
+function monsterCopyTargetId(project: Project, entry: LibraryCatalog["entities"][number]) {
+  const scrapbookId = scrapbookIndex(entry);
+  if (scrapbookId >= 0 && !project.monsters.some((monster) => monster.id === scrapbookId)) return scrapbookId;
+  return nextAvailableId(project.monsters);
+}
+
+function scrapbookEntryForMonsterId(catalog: LibraryCatalog | null, monsterId: number) {
+  return (catalog?.entities ?? []).find((entry) => entry.type === "monster-scrapbook-entry" && scrapbookIndex(entry) === monsterId) ?? null;
+}
+
+function copyScrapbookMonsterToScenario(
+  entry: LibraryCatalog["entities"][number],
+  id: number,
+  onApplyCommand: ((command: ProjectCommand) => void) | undefined
+) {
+  const template = monsterRecordFromScrapbookEntry(entry, id);
+  onApplyCommand?.({
+    kind: "createMonsterFromTemplate",
+    label: `Copy ${scrapbookName(entry)} to Monster ${id}`,
+    id,
+    template,
+    description: scrapbookDescription(entry)
+  });
+}
+
+function monsterRecordFromScrapbookEntry(entry: LibraryCatalog["entities"][number], id: number): MonsterRecord {
+  const rawSource = summaryNumberArray(entry, "rawBytes");
+  const hasRaw = rawSource.length >= MONSTER_RECORD_BYTES;
+  const rawBytes = fixedNumberArray(rawSource, MONSTER_RECORD_BYTES);
+  const byte = (offset: number, fallbackKey?: string) => hasRaw ? rawBytes[offset] ?? 0 : fallbackKey ? summaryNumber(entry, fallbackKey) : 0;
+  const signed = (offset: number, fallbackKey?: string) => signedByte(byte(offset, fallbackKey));
+  const short = (offset: number, fallbackKey?: string) => hasRaw ? i16At(rawBytes, offset) : fallbackKey ? summaryNumber(entry, fallbackKey) : 0;
+
+  return {
+    id,
+    hitDice: byte(0, "hitDice"),
+    staminaBonus: byte(1, "staminaBonus"),
+    agility: byte(2, "agility"),
+    nameId: byte(3),
+    movementMax: byte(4, "movementMax"),
+    armor: signed(5, "armor"),
+    magicResistance: signed(6, "magicResistance"),
+    distance: signed(7, "distance"),
+    traitor: signed(8),
+    size: signed(9, "size"),
+    typeFlags: hasRaw ? Array.from({ length: 8 }, (_, index) => signedByte(rawBytes[10 + index] ?? 0)) : new Array(8).fill(0),
+    attackCount: signed(18, "attackCount"),
+    magicAttackCount: signed(19, "magicAttackCount"),
+    attacks: hasRaw
+      ? Array.from({ length: 5 }, (_, row) => Array.from({ length: 4 }, (_, slot) => signedByte(rawBytes[20 + row * 4 + slot] ?? 0)))
+      : Array.from({ length: 5 }, (_, row) => fixedNumberArray(summaryNumberRows(entry, "attacks")[row], 4)),
+    damageBonus: signed(40, "damageBonus"),
+    castPercent: signed(41, "castPercent"),
+    runPercent: signed(42, "runPercent"),
+    surrenderPercent: signed(43, "surrenderPercent"),
+    missilePercent: signed(44, "missilePercent"),
+    canSummon: signed(45, "canSummon"),
+    saves: hasRaw ? Array.from({ length: 6 }, (_, index) => signedByte(rawBytes[46 + index] ?? 0)) : fixedNumberArray(summaryNumberArray(entry, "saves"), 6),
+    spellImmunities: hasRaw ? Array.from({ length: 6 }, (_, index) => signedByte(rawBytes[52 + index] ?? 0)) : fixedNumberArray(summaryNumberArray(entry, "spellImmunities"), 6),
+    money: hasRaw ? Array.from({ length: 3 }, (_, index) => i16At(rawBytes, 58 + index * 2)) : fixedNumberArray(summaryNumberArray(entry, "money"), 3),
+    spells: hasRaw ? Array.from({ length: 10 }, (_, index) => i16At(rawBytes, 64 + index * 2)) : fixedNumberArray(summaryNumberArray(entry, "spells"), 10),
+    items: hasRaw ? Array.from({ length: 6 }, (_, index) => i16At(rawBytes, 84 + index * 2)) : fixedNumberArray(summaryNumberArray(entry, "items"), 6),
+    weapon: short(96, "weapon"),
+    iconId: short(98, "iconId"),
+    spellPoints: short(100, "spellPoints"),
+    exp: short(102, "exp"),
+    stamina: short(104, "stamina"),
+    staminaMax: short(106, "staminaMax"),
+    underneath: hasRaw ? Array.from({ length: 4 }, (_, index) => i16At(rawBytes, 108 + index * 2)) : new Array(4).fill(0),
+    target: signed(116),
+    guarding: signed(117),
+    notOnMenu: hasRaw ? (rawBytes[118] ?? 0) !== 0 : false,
+    beenAttacked: signed(119),
+    movement: signed(120),
+    magicToHit: signed(121, "magicToHit"),
+    conditions: hasRaw ? Array.from({ length: 40 }, (_, index) => signedByte(rawBytes[122 + index] ?? 0)) : fixedNumberArray(summaryNumberArray(entry, "conditions"), 40),
+    lr: signed(162),
+    up: signed(163),
+    attackNum: signed(164),
+    bonusAttack: signed(165),
+    deathMacro: short(166, "deathMacro"),
+    maxSpellPoints: short(168, "maxSpellPoints"),
+    displayName: scrapbookName(entry),
+    rawBytes,
+    authored: true
+  };
+}
+
 function summaryNumber(entry: LibraryCatalog["entities"][number], key: string) {
   const value = entry.summary[key];
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
@@ -1300,6 +1810,89 @@ function summaryNumberRows(entry: LibraryCatalog["entities"][number], key: strin
     ? value.map((row) => Array.isArray(row) ? row.filter((item): item is number => typeof item === "number" && Number.isFinite(item)) : [])
     : [];
 }
+
+function fixedNumberArray(values: number[] | undefined, length: number) {
+  return Array.from({ length }, (_, index) => Number(values?.[index] ?? 0));
+}
+
+function signedByte(value: number) {
+  const byte = value & 0xff;
+  return byte > 0x7f ? byte - 0x100 : byte;
+}
+
+function i16At(bytes: number[], offset: number) {
+  const high = bytes[offset] ?? 0;
+  const low = bytes[offset + 1] ?? 0;
+  const value = ((high & 0xff) << 8) | (low & 0xff);
+  return value & 0x8000 ? value - 0x10000 : value;
+}
+
+function monsterIconOptions(project: Project, catalog: LibraryCatalog | null, lookups: CombatLookups): CombatSelectOption[] {
+  const options = new Map<number, CombatSelectOption>();
+  const add = (value: number | null | undefined, label: string, detail: string, key: string) => {
+    if (value == null || !Number.isFinite(value) || value === 0) return;
+    if (!options.has(value)) options.set(value, { key, value, label, detail });
+  };
+  for (const asset of project.assets ?? []) {
+    if (asset.resourceType === "cicn") add(asset.resourceId, `${asset.label} (${asset.resourceId})`, "Scenario icon asset", asset.id);
+  }
+  for (const asset of project.assetCatalog.icons ?? []) {
+    add(asset.resourceId, `${asset.name || `cicn ${asset.resourceId}`} (${asset.resourceId})`, asset.source, `project-icon:${asset.resourceId}`);
+  }
+  for (const asset of catalog?.assets ?? []) {
+    if (asset.resourceType !== "cicn" || asset.resourceId == null) continue;
+    add(asset.resourceId, `${asset.label || `cicn ${asset.resourceId}`} (${asset.resourceId})`, asset.type, asset.id);
+  }
+  for (const [id, asset] of lookups.realmzActorIconAssetsByAbsId.entries()) {
+    add(id, `${asset.label || `Realmz icon ${id}`} (${id})`, "Realmz actor/creature icon", `realmz-icon:${id}`);
+  }
+  for (const [id, asset] of lookups.monsterMashAssetsByAbsId.entries()) {
+    add(id, `${asset.label || `Monster Mash ${id}`} (${id})`, "Monster Mash reference icon", `monster-mash:${id}`);
+  }
+  return [...options.values()].sort((a, b) => a.value - b.value || a.label.localeCompare(b.label));
+}
+
+function combatSpellOptions(project: Project, catalog: LibraryCatalog | null): CombatSelectOption[] {
+  const options = new Map<number, CombatSelectOption>();
+  const add = (option: CombatSelectOption) => {
+    if (!option.value || options.has(option.value)) return;
+    options.set(option.value, option);
+  };
+  for (const spell of project.spellOverrides ?? []) {
+    const name = spell.displayName?.trim() || `Custom Spell ${spell.id}`;
+    add({ key: `project-spell:${spell.id}`, value: spell.id, label: `${name} (${spell.id})`, detail: "Scenario custom spell override" });
+  }
+  for (const entry of catalog?.records ?? []) {
+    if (entry.type !== "spell") continue;
+    const id = recordSummaryNumber(entry, "packedSpellId");
+    if (id == null) continue;
+    const displayName = recordSummaryString(entry, "displayName");
+    const level = recordSummaryNumber(entry, "spellLevel");
+    const spellClass = recordSummaryNumber(entry, "spellcasterClass");
+    add({
+      key: entry.id,
+      value: id,
+      label: `${displayName || entry.label || "Spell"} (${id})`,
+      detail: [
+        level != null ? `level ${level}` : "",
+        spellClass != null ? `class ${spellClass + 1}` : "",
+        entry.source
+      ].filter(Boolean).join(" | ")
+    });
+  }
+  return [...options.values()].sort((a, b) => a.value - b.value || a.label.localeCompare(b.label));
+}
+
+function recordSummaryNumber(record: LibraryCatalog["records"][number], key: string) {
+  const value = record.summary[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function recordSummaryString(record: LibraryCatalog["records"][number], key: string) {
+  const value = record.summary[key];
+  return typeof value === "string" ? value.trim() : "";
+}
+
 
 function EmptyCombatEditor({ title, body }: { title: string; body: string }) {
   return (
@@ -1340,26 +1933,7 @@ function battleSummary(project: Project, battle: BattleRecord) {
 function messagePreview(project: Project, id: number) {
   if (!id) return "none";
   const record = project.messages.find((message) => message.id === Math.abs(id));
-  return record?.text ? `"${record.text.slice(0, 34)}${record.text.length > 34 ? "..." : ""}"` : `Message ${Math.abs(id)}`;
-}
-
-function combatTargetSummary(project: Project, label: string, opcode: number, value: number) {
-  if (!value) return "None";
-  if (opcode === 1) return messagePreview(project, value);
-  if (opcode === 39) return `Extra Action Point ${Math.abs(value)}`;
-  return `${label} ${Math.abs(value)}`;
-}
-
-function normalizedTargetValue(opcode: number, value: number) {
-  if (!value) return 0;
-  if (opcode === 1 || opcode === 9 || opcode === 39) return Math.abs(value);
-  return value;
-}
-
-function targetEntityId(opcode: number, value: number) {
-  if (opcode === 1) return `message:${value}`;
-  if (opcode === 39) return `extra-code:${value}`;
-  return `resource:${value}`;
+  return record?.text ? `"${record.text.slice(0, 34)}${record.text.length > 34 ? "..." : ""}"` : `String ${Math.abs(id)}`;
 }
 
 function monsterFacts(monster: MonsterRecord) {
@@ -1461,7 +2035,7 @@ function useCombatLookups(project: Project | null, catalog: LibraryCatalog | nul
       monsterMashAssetsByAbsId,
       tabCounts: {
         battles: project.battles.length,
-        monsters: project.monsters.length,
+        monsters: project.monsters.length + scrapbook,
         scrapbook,
         mash
       }

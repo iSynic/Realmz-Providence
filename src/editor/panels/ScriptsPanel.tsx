@@ -1881,15 +1881,14 @@ function ScriptFlowPreview({
       definition: scriptActionDefinitionFor(action.rawCode),
       routes: scriptStepFlowRoutes(project, catalog, { rawCode: action.rawCode, id: action.id }),
       summary: scriptActionSummary(project, catalog, { rawCode: action.rawCode, id: action.id })
-    }))
-    .filter((step) => step.routes.length > 0 || step.definition.category === "Extra Action Points" || step.definition.category === "Choices" || step.definition.category === "Logic");
+    }));
   if (flowSteps.length === 0) return null;
   return (
     <div className="script-flow-preview" aria-label="Branch and Extra Action Point preview">
       <TutorialTip title="Flow Preview" body={FLOW_PREVIEW_HELP} side="below">
         <strong>Flow Preview</strong>
       </TutorialTip>
-      {flowSteps.slice(0, 5).map(({ action, definition, routes, summary }) => (
+      {flowSteps.map(({ action, definition, routes, summary }) => (
         <div key={`${action.slot}-${action.rawCode}-${action.id}`}>
           <span>{action.slot + 1}</span>
           <p>
@@ -1903,7 +1902,6 @@ function ScriptFlowPreview({
           )}
         </div>
       ))}
-      {flowSteps.length > 5 && <small>{flowSteps.length - 5} more routed step(s)</small>}
     </div>
   );
 }
@@ -3761,16 +3759,6 @@ function EncounterShell({
             onCreateTarget={(recordType, targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create encounter action target", recordType, id: targetId })}
             previewContext={{ desktopRuntime, projectDir, workspaceDir }}
           />
-          <CollapsibleSection
-            title="Result Flow Summary"
-            eyebrow="qa"
-            count={resultFlowWarningCount > 0 ? `${resultFlowWarningCount} warning${resultFlowWarningCount === 1 ? "" : "s"}` : `${resultFlowSources.length} path${resultFlowSources.length === 1 ? "" : "s"}`}
-            density="compact"
-            className="encounter-flow-summary-section"
-            defaultOpen={false}
-          >
-            <EncounterCopyRoutePreview sections={resultFlowPreviewSections} />
-          </CollapsibleSection>
         </>
       )}
       </div>
@@ -6157,12 +6145,12 @@ function spellReferenceOptions(project: Project, catalog?: LibraryCatalog | null
     if (!options.has(option.value)) options.set(option.value, option);
   };
   [
-    ["spell-class:1", 1, "Sorcerer spell class (1)", "Matches a spell class response value."],
-    ["spell-class:2", 2, "Priest spell class (2)", "Matches a spell class response value."],
-    ["spell-class:3", 3, "Enchanter spell class (3)", "Matches a spell class response value."],
-    ["spell-class:4", 4, "Special spell class (4)", "Matches a spell class response value."],
-    ["spell-class:5", 5, "Custom spell class (5)", "Matches a spell class response value."],
-    ["spell-class:6", 6, "Spell class 6", "Preserved low spell-class response value."]
+    ["spell-class:1", 1, "Heat/Fire spell class (1)", "Matches spells whose runtime spell class is Heat."],
+    ["spell-class:2", 2, "Cold spell class (2)", "Matches spells whose runtime spell class is Cold."],
+    ["spell-class:3", 3, "Electrical spell class (3)", "Matches spells whose runtime spell class is Electrical."],
+    ["spell-class:4", 4, "Chemical spell class (4)", "Matches spells whose runtime spell class is Chemical."],
+    ["spell-class:5", 5, "Mental spell class (5)", "Matches spells whose runtime spell class is Mental."],
+    ["spell-class:6", 6, "Magical spell class (6)", "Matches spells whose runtime spell class is Magical."]
   ].forEach(([key, value, label, detail]) => add({ key: String(key), value: Number(value), label: String(label), detail: String(detail) }));
   for (const spell of project.spellOverrides ?? []) {
     const name = spell.displayName?.trim() || `Custom Spell ${spell.id}`;

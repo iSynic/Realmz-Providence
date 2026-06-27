@@ -56,6 +56,7 @@ import {
 import {
   bulkUpdateMessageRecords,
   clearOptionLabel,
+  createMonsterFromTemplate,
   createOptionLabel,
   createTargetRecord,
   deleteTargetRecord,
@@ -65,6 +66,7 @@ import {
   updateOptionLabel,
   updateRecord,
   updateStringSound,
+  upsertMonsterDescription,
   upsertQuestLabel
 } from "./projectCommands/targetRecordCommands";
 import {
@@ -142,7 +144,9 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "duplicateOptionLabel") return duplicateOptionLabel(project, command.fromId, command.toId);
   if (command.kind === "updateOptionLabel") return updateOptionLabel(project, command.id, command.changes);
   if (command.kind === "updateBattleRecord") return updateRecord(project, "battles", command.id, command.changes);
+  if (command.kind === "createMonsterFromTemplate") return createMonsterFromTemplate(project, command.id, command.template, command.description);
   if (command.kind === "updateMonsterRecord") return updateRecord(project, "monsters", command.id, command.changes);
+  if (command.kind === "upsertMonsterDescription") return upsertMonsterDescription(project, command.id, command.text);
   if (command.kind === "updateScenarioItemRecord") return updateRecord(project, "scenarioItems", command.id, command.changes);
   if (command.kind === "clearScenarioItemRecord") return updateRecord(project, "scenarioItems", command.id, emptyScenarioItem(command.id));
   if (command.kind === "updateTreasureRecord") return updateRecord(project, "treasures", command.id, command.changes);

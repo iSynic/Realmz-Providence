@@ -75,6 +75,10 @@ export function TargetPicker({
   onChange,
   onInspect,
   onCreate,
+  emptyLabel,
+  showSearch = true,
+  showDetail = true,
+  showTargetCount = true,
   previewContext = {}
 }: {
   project: Project | null;
@@ -84,6 +88,10 @@ export function TargetPicker({
   onChange: (id: number) => void;
   onInspect: (entity: SelectedEntity) => void;
   onCreate?: (recordType: RealmzTargetRecordKind, id?: number) => void;
+  emptyLabel?: string;
+  showSearch?: boolean;
+  showDetail?: boolean;
+  showTargetCount?: boolean;
   previewContext?: PreviewRuntimeContext;
 }) {
   const config = targetPickerConfig(opcode);
@@ -95,11 +103,12 @@ export function TargetPicker({
   }, [opcode, project]);
   const resolvedValue = resolveSignedTargetValue(opcode, value);
   const selectedStub = useMemo(() => targetOptionForOpcodeValue(project, opcode, value, catalog), [catalog, opcode, project, value]);
+  const effectiveTargetsLoaded = !showSearch || targetsLoaded;
   const targets = useMemo(() => {
-    if (!targetsLoaded && !query.trim()) return selectedStub ? [selectedStub] : [];
+    if (!effectiveTargetsLoaded && !query.trim()) return selectedStub ? [selectedStub] : [];
     return targetOptionsForOpcode(project, opcode, catalog);
-  }, [catalog, opcode, project, query, selectedStub, targetsLoaded]);
-  const filteredTargetBase = targetsLoaded || query.trim() ? filterTargetOptions(targets, query) : selectedStub ? [selectedStub] : [];
+  }, [catalog, effectiveTargetsLoaded, opcode, project, query, selectedStub]);
+  const filteredTargetBase = effectiveTargetsLoaded || query.trim() ? filterTargetOptions(targets, query) : selectedStub ? [selectedStub] : [];
   const typedSoundTarget = soundReferenceOptionForQuery(opcode, query);
   const filteredTargets = typedSoundTarget && !filteredTargetBase.some((target) => target.value === typedSoundTarget.value)
     ? [typedSoundTarget, ...filteredTargetBase]
@@ -136,16 +145,18 @@ export function TargetPicker({
     <div className="realmz-target-picker">
       <label>
         <span>{config.label}</span>
-        <input
-          value={query}
-          onChange={(event) => {
-            const nextQuery = event.currentTarget.value;
-            setTargetsLoaded(Boolean(nextQuery.trim()));
-            setQuery(nextQuery);
-          }}
-          placeholder={`Search ${config.label.toLowerCase()}...`}
-          aria-label={`Search ${config.label}`}
-        />
+        {showSearch && (
+          <input
+            value={query}
+            onChange={(event) => {
+              const nextQuery = event.currentTarget.value;
+              setTargetsLoaded(Boolean(nextQuery.trim()));
+              setQuery(nextQuery);
+            }}
+            placeholder={`Search ${config.label.toLowerCase()}...`}
+            aria-label={`Search ${config.label}`}
+          />
+        )}
         <select
           onFocus={() => setTargetsLoaded(true)}
           onMouseDown={() => setTargetsLoaded(true)}
@@ -156,7 +167,7 @@ export function TargetPicker({
             onChange(signedTargetValueForSelection(opcode, value, Number(raw)));
           }}
         >
-          <option value="">Choose {config.label.toLowerCase()}</option>
+          <option value="">{emptyLabel ?? `Choose ${config.label.toLowerCase()}`}</option>
           {hasCurrentValue && <option value={`raw:${resolvedValue}`}>Current value {resolvedValue}</option>}
           {visibleTargets.map((target) => (
             <option key={target.key} value={target.value}>
@@ -175,7 +186,7 @@ export function TargetPicker({
           <span>Wait for sound to finish</span>
         </label>
       )}
-      <small>{detail}</small>
+      {showDetail && <small>{detail}</small>}
       {selected?.entity && (
         <button className="btn btn-secondary btn-xs" type="button" onClick={() => onInspect(selected.entity!)}>
           Open Target
@@ -211,9 +222,9 @@ export function TargetPicker({
           {createTargetButtonLabel(config.recordType!, hasCurrentValue ? resolvedValue : undefined)}
         </button>
       )}
-      {targets.length === 0 && <span className="target-picker-empty">No targets are available yet.</span>}
-      {targets.length > 0 && filteredTargets.length === 0 && <span className="target-picker-empty">No targets match this search.</span>}
-      {filteredTargets.length > visibleTargets.length && <span className="target-picker-empty">{filteredTargets.length - visibleTargets.length} more target(s); search to narrow.</span>}
+      {showTargetCount && targets.length === 0 && <span className="target-picker-empty">No targets are available yet.</span>}
+      {showTargetCount && targets.length > 0 && filteredTargets.length === 0 && <span className="target-picker-empty">No targets match this search.</span>}
+      {showTargetCount && filteredTargets.length > visibleTargets.length && <span className="target-picker-empty">{filteredTargets.length - visibleTargets.length} more target(s); search to narrow.</span>}
     </div>
   );
 }
@@ -222,7 +233,7 @@ export function targetPickerConfig(opcode: number) {
   const code = normalizeStepOpcode(opcode);
   if (actionOptionFor(code).edcdShape) return null;
   const configs: Record<number, { label: string; hint: string; recordType?: RealmzTargetRecordKind }> = {
-    1: { label: "Message Target", hint: "Select the scenario message this action displays.", recordType: "message" },
+    1: { label: "String Target", hint: "Select the scenario string this action displays.", recordType: "message" },
     4: { label: "Simple Encounter", hint: "Select a simple encounter record.", recordType: "simpleEncounter" },
     5: { label: "Complex Encounter", hint: "Select a complex encounter record.", recordType: "complexEncounter" },
     6: { label: "Shop Target", hint: "Select a shop record.", recordType: "shop" },
@@ -393,7 +404,7 @@ function optionFromTypedProjectTarget(project: Project, code: number, id: number
       ? {
           key: `message:${record.id}`,
           value: record.id,
-          label: `Message ${record.id}`,
+          label: `String ${record.id}`,
           detail: record.text || "empty",
           compatibility: "Editable",
           sourceState: record.authored ? "Authored" : "Imported",
@@ -403,7 +414,7 @@ function optionFromTypedProjectTarget(project: Project, code: number, id: number
         ? {
             key: `legacy-message:${id}`,
             value: id,
-            label: `Legacy Message Reference ${id}`,
+            label: `Legacy String Reference ${id}`,
             detail: "High Realmz text/resource reference",
             compatibility: "Legacy scenario reference",
             sourceState: "No editable string record"
@@ -418,7 +429,7 @@ function optionFromTypedProjectTarget(project: Project, code: number, id: number
           value: record.id,
           label: `Battle ${record.id}`,
           detail: `${record.grid.filter(Boolean).length} monster slot(s)`,
-          summary: `messages ${record.messageBefore}/${record.messageAfter}, battle action ${record.battleMacro}`,
+          summary: `strings ${record.messageBefore}/${record.messageAfter}, battle action ${record.battleMacro}`,
           compatibility: "Editable",
           sourceState: record.authored ? "Authored" : "Imported",
           entity: { type: "battle", id: `battle:${record.id}` }
@@ -703,13 +714,13 @@ function addTypedProjectTargets(project: Project, code: number, options: ScriptT
   if (code === 1) {
     const used = usageCounts(project, [1]);
     for (const record of project.messages ?? []) {
-      options.push({ key: `message:${record.id}`, value: record.id, label: `Message ${record.id}`, detail: record.text || "empty", summary: `${used.get(record.id) ?? 0} script use(s)`, compatibility: "Editable", sourceState: record.authored ? "Authored" : "Imported", entity: { type: "message", id: `message:${record.id}` } });
+      options.push({ key: `message:${record.id}`, value: record.id, label: `String ${record.id}`, detail: record.text || "empty", summary: `${used.get(record.id) ?? 0} script use(s)`, compatibility: "Editable", sourceState: record.authored ? "Authored" : "Imported", entity: { type: "message", id: `message:${record.id}` } });
     }
   }
   if ([2, 48, 56, 107].includes(code)) {
     const used = usageCounts(project, [2, 48, 56, 107]);
     for (const record of project.battles ?? []) {
-      options.push({ key: `battle:${record.id}`, value: record.id, label: `Battle ${record.id}`, detail: `${record.grid.filter(Boolean).length} monster slot(s)`, summary: `messages ${record.messageBefore}/${record.messageAfter}, battle action ${record.battleMacro}, ${used.get(record.id) ?? 0} script use(s)`, compatibility: "Editable", sourceState: record.authored ? "Authored" : "Imported", entity: { type: "battle", id: `battle:${record.id}` } });
+      options.push({ key: `battle:${record.id}`, value: record.id, label: `Battle ${record.id}`, detail: `${record.grid.filter(Boolean).length} monster slot(s)`, summary: `strings ${record.messageBefore}/${record.messageAfter}, battle action ${record.battleMacro}, ${used.get(record.id) ?? 0} script use(s)`, compatibility: "Editable", sourceState: record.authored ? "Authored" : "Imported", entity: { type: "battle", id: `battle:${record.id}` } });
     }
   }
   if (code === 127) {
@@ -787,7 +798,7 @@ export function filterTargetOptions(options: ScriptTargetOption[], query: string
 
 function createTargetButtonLabel(recordType: RealmzTargetRecordKind, id?: number) {
   const labels: Record<RealmzTargetRecordKind, string> = {
-    message: "Message",
+    message: "String",
     battle: "Battle",
     monster: "Monster",
     treasure: "Treasure",

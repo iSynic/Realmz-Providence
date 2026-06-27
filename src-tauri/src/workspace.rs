@@ -963,7 +963,7 @@ fn resource_mime_type(resource_type: &str) -> &'static str {
 
 fn library_record_layout(source: &LibrarySource) -> Option<(&'static str, usize)> {
     match source.name.as_str() {
-        "Monster Scrap Book" => Some(("monster-scrapbook-entry", 210)),
+        "Monster Scrap Book" => Some(("monster-scrapbook-entry", 466)),
         "Data ID" | "Data NI" => Some(("item", 100)),
         "Data Race" => Some(("race", 408)),
         "Data Caste" => Some(("caste", 576)),
@@ -989,6 +989,8 @@ fn library_record_summary(
     ]);
     if entity_type == "item" && record.len() >= 100 {
         out.extend(item_record_summary(index, record, source_name));
+    } else if entity_type == "monster-scrapbook-entry" && record.len() >= 210 {
+        out.extend(monster_record_summary(index, record));
     } else if entity_type == "spell" && record.len() >= 30 {
         out.extend(spell_record_summary(index, record));
     } else if entity_type == "race" && record.len() >= 408 {
@@ -1028,6 +1030,85 @@ fn library_record_label(
         return format!("Caste {}", index + 1);
     }
     format!("{} {}", title(entity_type), index)
+}
+
+fn monster_record_summary(index: usize, record: &[u8]) -> BTreeMap<String, Value> {
+    summary([
+        (
+            "displayName",
+            json!(decoded_fixed_text(record, 170, 40)
+                .filter(|name| !name.is_empty())
+                .unwrap_or_else(|| format!("Monster {index}"))),
+        ),
+        ("description", json!(decoded_pascal_text(record, 210, 256))),
+        ("hitDice", json!(record[0])),
+        ("staminaBonus", json!(record[1])),
+        ("agility", json!(record[2])),
+        ("movementMax", json!(record[4])),
+        ("armor", json!(signed_byte(record[5]))),
+        ("magicResistance", json!(signed_byte(record[6]))),
+        ("distance", json!(signed_byte(record[7]))),
+        ("traitor", json!(signed_byte(record[8]))),
+        ("size", json!(signed_byte(record[9]))),
+        (
+            "typeFlags",
+            json!(record[10..18].iter().map(|byte| signed_byte(*byte)).collect::<Vec<_>>()),
+        ),
+        ("attackCount", json!(signed_byte(record[18]))),
+        ("magicAttackCount", json!(signed_byte(record[19]))),
+        (
+            "attacks",
+            json!((0..5)
+                .map(|row| record[20 + row * 4..24 + row * 4]
+                    .iter()
+                    .map(|byte| signed_byte(*byte))
+                    .collect::<Vec<_>>())
+                .collect::<Vec<_>>()),
+        ),
+        ("damageBonus", json!(signed_byte(record[40]))),
+        ("castPercent", json!(signed_byte(record[41]))),
+        ("runPercent", json!(signed_byte(record[42]))),
+        ("surrenderPercent", json!(signed_byte(record[43]))),
+        ("missilePercent", json!(signed_byte(record[44]))),
+        ("canSummon", json!(signed_byte(record[45]))),
+        (
+            "saves",
+            json!(record[46..52].iter().map(|byte| signed_byte(*byte)).collect::<Vec<_>>()),
+        ),
+        (
+            "spellImmunities",
+            json!(record[52..58].iter().map(|byte| signed_byte(*byte)).collect::<Vec<_>>()),
+        ),
+        ("money", json!(read_i16s(record, 58, 3))),
+        ("spells", json!(read_i16s(record, 64, 10))),
+        ("items", json!(read_i16s(record, 84, 6))),
+        ("weapon", json!(i16_be(record, 96))),
+        ("iconId", json!(i16_be(record, 98))),
+        ("spellPoints", json!(i16_be(record, 100))),
+        ("exp", json!(i16_be(record, 102))),
+        ("stamina", json!(i16_be(record, 104))),
+        ("staminaMax", json!(i16_be(record, 106))),
+        ("underneath", json!(read_i16s(record, 108, 4))),
+        ("target", json!(signed_byte(record[116]))),
+        ("guarding", json!(signed_byte(record[117]))),
+        ("notOnMenu", json!(record[118] != 0)),
+        ("beenAttacked", json!(signed_byte(record[119]))),
+        ("movement", json!(signed_byte(record[120]))),
+        ("magicToHit", json!(signed_byte(record[121]))),
+        (
+            "conditions",
+            json!(record[122..162]
+                .iter()
+                .map(|byte| signed_byte(*byte))
+                .collect::<Vec<_>>()),
+        ),
+        ("lr", json!(signed_byte(record[162]))),
+        ("up", json!(signed_byte(record[163]))),
+        ("attackNum", json!(signed_byte(record[164]))),
+        ("bonusAttack", json!(signed_byte(record[165]))),
+        ("deathMacro", json!(i16_be(record, 166))),
+        ("maxSpellPoints", json!(i16_be(record, 168))),
+    ])
 }
 
 fn item_record_summary(index: usize, record: &[u8], source_name: &str) -> BTreeMap<String, Value> {
@@ -1258,6 +1339,35 @@ fn read_i16s(record: &[u8], offset: usize, count: usize) -> Vec<i16> {
     (0..count)
         .map(|index| i16_be(record, offset + index * 2))
         .collect()
+}
+
+fn decoded_fixed_text(record: &[u8], offset: usize, length: usize) -> Option<String> {
+    if record.len() <= offset {
+        return None;
+    }
+    let end = (offset + length).min(record.len());
+    let text = decode_classic_text(&record[offset..end])
+        .trim_matches(char::from(0))
+        .trim()
+        .to_string();
+    if text.is_empty() {
+        None
+    } else {
+        Some(text)
+    }
+}
+
+fn decoded_pascal_text(record: &[u8], offset: usize, max_length: usize) -> String {
+    if record.len() <= offset {
+        return String::new();
+    }
+    let end = (offset + max_length).min(record.len());
+    let bytes = &record[offset..end];
+    if bytes.is_empty() {
+        return String::new();
+    }
+    let length = usize::from(bytes[0]).min(bytes.len().saturating_sub(1));
+    decode_classic_text(&bytes[1..1 + length]).trim_end().to_string()
 }
 
 fn signed_byte(value: u8) -> i8 {
@@ -1685,7 +1795,7 @@ mod tests {
         let source = temp.path().join("Divinity");
         let data = source.join("Divinity Data");
         fs::create_dir_all(&data).expect("source");
-        fs::write(data.join("Monster Scrap Book"), vec![1u8; 420]).expect("monster scrapbook");
+        fs::write(data.join("Monster Scrap Book"), vec![1u8; 466]).expect("monster scrapbook");
         fs::write(data.join("Monster Mash.rsrc"), vec![0u8; 64]).expect("monster mash");
         fs::write(data.join("Vault of Arcana.rsrc"), vec![0u8; 64]).expect("vault");
         fs::write(data.join("Bag of Holding"), vec![2u8; 128]).expect("bag");
@@ -1779,7 +1889,7 @@ mod tests {
         let realmz = bundled.join("realmz-reference");
         fs::create_dir_all(&divinity).expect("divinity");
         fs::create_dir_all(&realmz).expect("realmz");
-        fs::write(divinity.join("Monster Scrap Book"), vec![1u8; 420]).expect("scrapbook");
+        fs::write(divinity.join("Monster Scrap Book"), vec![1u8; 466]).expect("scrapbook");
         fs::write(realmz.join("Data ID"), vec![2u8; 1000]).expect("items");
         let workspace_dir = temp.path().join("workspace");
 
