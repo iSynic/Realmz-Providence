@@ -8,7 +8,7 @@ import { SpellRuleEntry, SpellRulesEditorProps } from "./ruleTypes";
 
 const SPELL_EDITOR_HELP = "Browse packed Realmz spell IDs from shared Data S and create scenario-local custom spell overrides in Data Spell. Built-in spell classes are reference/copy sources.";
 const SPELL_CLASS_HELP = "Spell IDs encode class, level, and slot. The Custom class is the scenario-owned class; copying a built-in spell here creates an editable Data Spell record.";
-const SPELL_GOTO_HELP = "Select the exact packed spell ID. Realmz references spells by this packed value in scripts, encounters, castes, items, and combat logic.";
+const SPELL_PICKER_HELP = "Select the exact packed spell ID. Realmz references spells by this packed value in scripts, encounters, castes, items, and combat logic.";
 const SPELL_CREATE_HELP = "Copying a built-in spell creates or replaces the matching Custom-class Data Spell slot. The shared Data S catalog remains unchanged.";
 const SPELL_NEW_CUSTOM_HELP = "Create a blank/default custom spell in the first open Custom-class Data Spell slot.";
 const SPELL_CLEAR_HELP = "Clearing removes the scenario-local Data Spell override for this custom slot and returns it to an empty custom spell entry.";
@@ -65,8 +65,8 @@ export function SpellRulesEditor({ project, catalog, selectedEntity, queueAtlasU
             <button type="button" className="btn btn-secondary btn-xs" title="Next spell" onClick={() => selectedEntry && selectPacked(nextSpellPackedId(selectedEntry))}>›</button>
           </div>
           <label>
-            <TutorialTip title="Go To Spell" body={SPELL_GOTO_HELP} side="below">
-              <span>Go To Spell</span>
+            <TutorialTip title="Spell" body={SPELL_PICKER_HELP} side="below">
+              <span>Spell</span>
             </TutorialTip>
             <select value={selectedEntry?.packedId ?? ""} onChange={(event) => selectPacked(Number(event.currentTarget.value))}>
               {visibleEntries.map((candidate) => (
@@ -84,7 +84,7 @@ export function SpellRulesEditor({ project, catalog, selectedEntity, queueAtlasU
             disabled={selectedEntry?.spellcasterClass !== 4 || !selectedEntry.hasScenarioVersion}
             onClick={() => selectedEntry && onApplyCommand({ kind: "clearSpellOverride", label: "Remove custom spell", id: selectedEntry.customId })}
           >
-            Clear Custom Spell
+            Clear Scenario Custom
           </button>
         </div>
         {selectedEntry && (

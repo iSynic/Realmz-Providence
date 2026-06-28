@@ -117,7 +117,7 @@ const CLEAR_SCRIPT_HELP =
 const STEP_LIST_HELP =
   "Realmz scripts have eight ordered CODE/ID slots. Select a slot to edit it, then apply the draft; moving, duplicating, or clearing a step affects only that selected slot.";
 const TARGET_DRAWER_HELP =
-  "Target opens context for the record selected by this step. Small records such as messages can be edited here; larger records such as encounters, battles, shops, treasures, and monsters open in their primary workbench.";
+  "Target opens context for the record selected by this step. Small records such as strings can be edited here; larger records such as encounters, battles, shops, treasures, and monsters open in their primary workbench.";
 const FLOW_PREVIEW_HELP =
   "Flow Preview summarizes obvious branches, GOSUBs, Extra Action Point calls, choices, and logic paths. It is a navigation aid, not a full runtime interpreter.";
 const TECHNICAL_DETAILS_HELP =
@@ -131,7 +131,7 @@ const ACTION_CHOOSER_HELP =
 const SETTINGS_HELP =
   "Settings rows hold the editable options for many Realmz actions. Imported scripts keep their original row numbers; new actions get an unused row automatically, so authors should normally edit the fields instead of memorizing row IDs.";
 const SIMPLE_ENCOUNTER_SOURCE_HELP =
-  "Simple Encounters are Data ED source records. The prompt points to a Message, the four option labels live inside this record, and each option result jumps to one of four script columns.";
+  "Simple Encounters are Data ED source records. The prompt points to a String, the four option labels live inside this record, and each option result jumps to one of four script columns.";
 const COMPLEX_ENCOUNTER_SOURCE_HELP =
   "Complex Encounters are Data ED2 source records. Player choices, typed replies, magic responses, item responses, and Rogue Encounters all reduce to result numbers that run one of four script columns.";
 const ROGUE_ENCOUNTER_SOURCE_HELP =
@@ -139,11 +139,12 @@ const ROGUE_ENCOUNTER_SOURCE_HELP =
 const TIMED_ENCOUNTER_SOURCE_HELP =
   "Time Encounters are Data TD3 source records. Realmz checks schedule, chance, location, item, and quest gates, then runs the Extra Action Point target when everything matches.";
 const ENCOUNTER_SETUP_HELP =
-  "Encounter setup owns the shared source fields: prompt message, back-out behavior, max attempts, and caste-success value. The prompt is a central Message; option labels below are inline buffers.";
+  "Encounter setup owns the shared source fields: prompt string, back-out behavior, max attempts, and caste-success value. The prompt is a central String; option labels below are inline buffers.";
 const COMPLEX_THIEF_BRANCH_HELP =
   "The complex thief branch links into a Rogue Encounter. That rogue scene decides which lock, trap, and thief actions are available, then returns result numbers into this Complex Encounter's result script columns.";
 const SIMPLE_OPTIONS_HELP =
-  "Each simple option has an inline label and a Result number. Result 1-4 chooses the matching action column below; zero means no result path.";
+  "Each simple option has an inline label and a Result number. Result 1-4 chooses the matching action column below; zero means no result path. Option 1 can use -4 to skip the prompt and immediately run Result #4.";
+const SIMPLE_RESULT_AUTO_FAIL_SENTINEL = -4;
 const COMPLEX_BAR_ACTIONS_HELP =
   "Complex encounters show up to eight action labels on the encounter bar. The group flags and Action Picker result decide which result column runs when a player chooses a matching action.";
 const COMPLEX_WORD_HELP =
@@ -2427,11 +2428,11 @@ export function TargetRecordEditor({
         <EmptyState
           compact
           title="Target is stored in Settings"
-          body="This action keeps its message, battle, shop, item, or branch fields in the Settings section."
+          body="This action keeps its string, battle, shop, item, or branch fields in the Settings section."
         />
       );
     }
-    return <EmptyState compact title="No editable target" body="Choose an action with a target to edit message, battle, treasure, shop, or encounter details here." />;
+    return <EmptyState compact title="No editable target" body="Choose an action with a target to edit string, battle, treasure, shop, or encounter details here." />;
   }
   if (targetId === 0 && !targetRecordExists(project, targetType, targetId)) {
     return <EmptyState compact title="No target selected" body="Choose an existing target or create a new one from the picker." />;
@@ -2555,11 +2556,11 @@ export function TargetRecordEditor({
     const record = project.messages?.find((candidate) => candidate.id === targetId);
     return (
       <InlineTargetShell
-        title={`Message ${targetId}`}
+        title={`String ${targetId}`}
         exists={Boolean(record)}
         issues={targetIssues}
-        onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create message", recordType: "message", id: targetId })}
-        onClear={() => onApplyCommand?.({ kind: "deleteTargetRecord", label: "Clear message", recordType: "message", id: targetId })}
+        onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create string", recordType: "message", id: targetId })}
+        onClear={() => onApplyCommand?.({ kind: "deleteTargetRecord", label: "Clear string", recordType: "message", id: targetId })}
       >
         {record && (
           <label className="script-target-wide-field">
@@ -2568,7 +2569,7 @@ export function TargetRecordEditor({
               key={`message:${targetId}`}
               defaultValue={record.text}
               maxLength={255}
-              onBlur={(event) => onApplyCommand?.({ kind: "updateMessageRecord", label: "Update message", id: targetId, changes: { text: event.currentTarget.value } })}
+              onBlur={(event) => onApplyCommand?.({ kind: "updateMessageRecord", label: "Update string", id: targetId, changes: { text: event.currentTarget.value } })}
             />
             <small>{record.text.length}/255 bytes before Classic encoding</small>
           </label>
@@ -2644,24 +2645,24 @@ export function TargetRecordEditor({
             <ReferenceIdField
               project={project}
               catalog={catalog}
-              label="Before Msg"
-              emptyLabel="No before message"
+              label="Before String"
+              emptyLabel="No before string"
               opcode={1}
               value={record.messageBefore}
               createRecordType="message"
-              onCommit={(messageBefore) => onApplyCommand?.({ kind: "updateBattleRecord", label: "Update battle message", id: targetId, changes: { messageBefore } })}
-              onCreateTarget={(id) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create battle message", recordType: "message", id })}
+              onCommit={(messageBefore) => onApplyCommand?.({ kind: "updateBattleRecord", label: "Update battle string", id: targetId, changes: { messageBefore } })}
+              onCreateTarget={(id) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create battle string", recordType: "message", id })}
             />
             <ReferenceIdField
               project={project}
               catalog={catalog}
-              label="After Msg"
-              emptyLabel="No after message"
+              label="After String"
+              emptyLabel="No after string"
               opcode={1}
               value={record.messageAfter}
               createRecordType="message"
-              onCommit={(messageAfter) => onApplyCommand?.({ kind: "updateBattleRecord", label: "Update battle message", id: targetId, changes: { messageAfter } })}
-              onCreateTarget={(id) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create battle message", recordType: "message", id })}
+              onCommit={(messageAfter) => onApplyCommand?.({ kind: "updateBattleRecord", label: "Update battle string", id: targetId, changes: { messageAfter } })}
+              onCreateTarget={(id) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create battle string", recordType: "message", id })}
             />
             <ReferenceIdField
               project={project}
@@ -3161,8 +3162,8 @@ function TargetSummaryCard({
         <EncounterTargetCardHeader title={`Battle ${id}`} subtitle={`${monsterSlots} placed monster slot${monsterSlots === 1 ? "" : "s"}`} onOpen={open} buttonLabel={`Open in ${editorLabel}`} />
         <div className="encounter-target-facts">
           <span>Distance {battle.dist}</span>
-          <span>{battle.messageBefore > 0 ? `Before message ${battle.messageBefore}` : "No before message"}</span>
-          <span>{battle.messageAfter > 0 ? `After message ${battle.messageAfter}` : "No after message"}</span>
+          <span>{battle.messageBefore > 0 ? `Before string ${battle.messageBefore}` : "No before string"}</span>
+          <span>{battle.messageAfter > 0 ? `After string ${battle.messageAfter}` : "No after string"}</span>
           <span>{battle.battleMacro > 0 ? `Battle action ${battle.battleMacro}` : "No battle action"}</span>
         </div>
       </div>
@@ -3253,7 +3254,7 @@ function EncounterTargetCard({
     });
     return (
       <div className="encounter-target-card">
-        <EncounterTargetCardHeader title={`Simple Encounter ${id}`} subtitle={messageSnippet(project, simple.prompt) || "No prompt message"} onOpen={open} />
+        <EncounterTargetCardHeader title={`Simple Encounter ${id}`} subtitle={messageSnippet(project, simple.prompt) || "No prompt string"} onOpen={open} />
         <EncounterTargetStatus actions={simple.actions} sources={sources} />
       </div>
     );
@@ -3282,7 +3283,7 @@ function EncounterTargetCard({
     const configuredItems = complex.itemIds.filter((id, slot) => id !== 0 && (complex.itemResults[slot] ?? 0) !== 0).length;
     return (
       <div className="encounter-target-card">
-        <EncounterTargetCardHeader title={`Complex Encounter ${id}`} subtitle={messageSnippet(project, complex.prompt) || "No prompt message"} onOpen={open} />
+        <EncounterTargetCardHeader title={`Complex Encounter ${id}`} subtitle={messageSnippet(project, complex.prompt) || "No prompt string"} onOpen={open} />
         <EncounterTargetStatus actions={complex.actions} sources={sources} />
         <div className="encounter-target-facts">
           <span>{configuredMagic} magic response{configuredMagic === 1 ? "" : "s"}</span>
@@ -3415,7 +3416,7 @@ function EncounterRecordPicker({
 function messageSnippet(project: Project, id: number) {
   if (id <= 0) return "";
   const text = project.messages?.find((record) => record.id === id)?.text ?? "";
-  return text ? `Prompt ${id}: ${shortSnippet(text, 84)}` : `Prompt message ${id}`;
+  return text ? `Prompt ${id}: ${shortSnippet(text, 84)}` : `Prompt string ${id}`;
 }
 
 function EncounterShell({
@@ -5231,7 +5232,7 @@ function ThiefEncounterShell({
               <strong>Rogue Action Tests</strong>
             </TutorialTip>
           </div>
-          <small>{enabledCount}/{ROGUE_PRIMARY_ACTIONS} enabled; success/fail columns return result codes, messages, and sounds.</small>
+          <small>{enabledCount}/{ROGUE_PRIMARY_ACTIONS} enabled; success/fail columns return result codes, strings, and sounds.</small>
         </header>
         <div className="rogue-action-table" role="table" aria-label="Rogue action tests">
           <div className="rogue-action-table-header" role="row">
@@ -5252,7 +5253,7 @@ function ThiefEncounterShell({
               project={project}
               catalog={catalog}
               onUpdate={update}
-              onCreateMessage={(targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create rogue message", recordType: "message", id: targetId })}
+              onCreateMessage={(targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create rogue string", recordType: "message", id: targetId })}
             />
           ))}
         </div>
@@ -5427,7 +5428,7 @@ function RoguePromptStringSelect({
   const help = selected
     ? [selected.label, selected.detail, selected.summary, signedTargetBehaviorLabel(1, value)].filter(Boolean).join(" | ")
     : hasRawValue
-      ? `Message ${resolvedValue} is not created yet.`
+      ? `String ${resolvedValue} is not created yet.`
       : `${emptyLabel} selected.`;
 
   return (
@@ -5451,7 +5452,7 @@ function RoguePromptStringSelect({
         }}
       >
         <option value="">{emptyLabel}</option>
-        {hasRawValue && <option value={`raw:${resolvedValue}`}>Current message {resolvedValue}</option>}
+        {hasRawValue && <option value={`raw:${resolvedValue}`}>Current string {resolvedValue}</option>}
         {visibleOptions.map((option) => (
           <option key={option.key} value={option.value}>{option.label}</option>
         ))}
@@ -5485,7 +5486,7 @@ function RoguePromptStringPreview({
         value={draft}
         rows={4}
         disabled={disabled}
-        placeholder={messageId > 0 ? `Message ${messageId} is not created yet.` : "Choose a prompt string to preview and edit it here."}
+        placeholder={messageId > 0 ? `String ${messageId} is not created yet.` : "Choose a prompt string to preview and edit it here."}
         onChange={(event) => setDraft(event.currentTarget.value)}
         onBlur={() => {
           if (!message || draft === message.text) return;
@@ -5620,10 +5621,10 @@ function rogueActionOutcomeWarnings(record: Project["thiefEncounters"][number], 
   const label = ROGUE_ACTION_LABELS[slot] ?? `Rogue Action ${slot}`;
   const warnings: string[] = [];
   if (!rogueOutcomeHasVisiblePath(record, slot, "success")) {
-    warnings.push(`${label} can succeed, but success currently has no visible result. Add a result code, message, or sound.`);
+    warnings.push(`${label} can succeed, but success currently has no visible result. Add a result code, string, or sound.`);
   }
   if (!rogueOutcomeHasVisiblePath(record, slot, "failure")) {
-    warnings.push(`${label} can fail, but failure currently has no visible result. Add a result code, message, or sound.`);
+    warnings.push(`${label} can fail, but failure currently has no visible result. Add a result code, string, or sound.`);
   }
   return warnings;
 }
@@ -5915,6 +5916,7 @@ function EncounterResultEditor({
       </section>
     );
   }
+  const autoRunResultFour = (choiceResults[0] ?? 0) === SIMPLE_RESULT_AUTO_FAIL_SENTINEL;
   return (
     <section className="encounter-result-editor simple-encounter-options-panel">
       <header>
@@ -5925,12 +5927,15 @@ function EncounterResultEditor({
           <small>{count} classic Pascal text buffers, {maxLength} display bytes each</small>
         </div>
       </header>
+      {autoRunResultFour && (
+        <p className="simple-encounter-sentinel-note">This encounter skips the choice prompt and immediately runs Result #4.</p>
+      )}
       <div className="encounter-result-table simple-encounter-options-table">
         {Array.from({ length: 4 }, (_, slot) => {
           const text = texts[slot] ?? "";
           return (
             <div key={slot} className="encounter-result-row simple-encounter-option-row">
-              <b>{`Option ${slot}`}</b>
+              <b>{`Option ${slot + 1}`}</b>
               <label className="script-encounter-text-field">
                 <span>{encounterTextBufferLabel(recordKind, slot)}</span>
                 <textarea
@@ -5941,12 +5946,51 @@ function EncounterResultEditor({
                 />
                 <small>{text.length}/{maxLength}</small>
               </label>
-              <NumberField label="Result #" value={choiceResults[slot] ?? 0} onCommit={(value) => onChoiceCommit(slot, value)} compact />
+              <SimpleEncounterResultPicker
+                slot={slot}
+                value={choiceResults[slot] ?? 0}
+                actions={actions}
+                onCommit={(value) => onChoiceCommit(slot, value)}
+              />
             </div>
           );
         })}
       </div>
     </section>
+  );
+}
+
+function SimpleEncounterResultPicker({ slot, value, actions, onCommit }: { slot: number; value: number; actions: EncounterActionRow[]; onCommit: (value: number) => void }) {
+  const validValues = slot === 0 ? [0, 1, 2, 3, 4, SIMPLE_RESULT_AUTO_FAIL_SENTINEL] : [0, 1, 2, 3, 4];
+  const supported = validValues.includes(value);
+  const status = value === 0
+    ? "missing"
+    : value === SIMPLE_RESULT_AUTO_FAIL_SENTINEL && slot === 0
+      ? encounterResultStatus(actions, 4)
+      : supported
+        ? encounterResultStatus(actions, value)
+        : "out-of-range";
+  const statusLabel = value === 0
+    ? "No result"
+    : value === SIMPLE_RESULT_AUTO_FAIL_SENTINEL && slot === 0
+      ? "Auto-run Result #4"
+      : supported
+        ? resultStatusLabel(status)
+        : `Unsupported imported value ${value}`;
+  return (
+    <label className={`simple-encounter-result-picker is-${status}`} title={statusLabel}>
+      <span>Result #</span>
+      <select value={value} onChange={(event) => onCommit(Number(event.currentTarget.value))}>
+        <option value={0}>0 No result / unavailable</option>
+        <option value={1}>1 Result #1</option>
+        <option value={2}>2 Result #2</option>
+        <option value={3}>3 Result #3</option>
+        <option value={4}>4 Result #4</option>
+        {slot === 0 && <option value={SIMPLE_RESULT_AUTO_FAIL_SENTINEL}>-4 Auto-run Result #4</option>}
+        {!supported && <option value={value}>{`Unsupported imported value ${value}`}</option>}
+      </select>
+      <small>{statusLabel}</small>
+    </label>
   );
 }
 
@@ -6374,7 +6418,7 @@ function updateEncounterActionRow(actions: EncounterActionRow[], slot: number, c
 
 function encounterTextBufferLabel(recordKind: "simple" | "complex", slot: number) {
   if (recordKind === "simple") {
-    return ["Choice 0 Label", "Choice 1 Label", "Choice 2 Label", "Choice 3 Label"][slot] ?? `Text Buffer ${slot}`;
+    return ["Choice 1 Label", "Choice 2 Label", "Choice 3 Label", "Choice 4 Label"][slot] ?? `Text Buffer ${slot}`;
   }
   const labels = [
     "Action Option 0 Label",

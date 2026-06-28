@@ -9,6 +9,8 @@ import { scriptParameterLabelForOpcode } from "./scriptActionLabels";
 
 const ROGUE_DISARM_TRAP_SLOT = 2;
 const ROGUE_OPEN_LOCK_SLOT = 6;
+const SIMPLE_ENCOUNTER_AUTO_RESULT_FOUR = -4;
+const SIMPLE_ENCOUNTER_NORMAL_RESULTS = [0, 1, 2, 3, 4] as const;
 
 export type TargetRecordDiagnostic = {
   id: string;
@@ -24,8 +26,8 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
     if (!record) return [];
     const issues = validateRecordId(recordType, recordId);
     const bytes = asciiByteLength(record.text);
-    if (bytes > 255) issues.push(recordIssue("error", recordType, recordId, "message-too-long", "Message text is too long.", `Message ${recordId} is ${bytes} byte(s); Realmz supports 255.`));
-    if (hasNonAscii(record.text)) issues.push(recordIssue("warning", recordType, recordId, "message-non-ascii", "Message contains non-ASCII characters.", "Classic text records are byte-oriented; non-ASCII characters may export as fallback spaces or unsupported glyphs."));
+    if (bytes > 255) issues.push(recordIssue("error", recordType, recordId, "message-too-long", "String text is too long.", `String ${recordId} is ${bytes} byte(s); Realmz supports 255.`));
+    if (hasNonAscii(record.text)) issues.push(recordIssue("warning", recordType, recordId, "message-non-ascii", "String contains non-ASCII characters.", "Classic text records are byte-oriented; non-ASCII characters may export as fallback spaces or unsupported glyphs."));
     return issues;
   }
   if (recordType === "battle") {
@@ -40,8 +42,8 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
       issues.push(recordIssue("warning", recordType, recordId, "battle-distance-range", "Battle distance is outside Divinity's usual 1-30 range.", `Distance is ${record.dist}; use 1-30 for normal random placement distance.`));
     }
     issues.push(...validateI16Field(recordType, recordId, "Distance", record.dist));
-    issues.push(...validateReference(project, recordType, recordId, "Before message", 1, record.messageBefore, undefined, catalog));
-    issues.push(...validateReference(project, recordType, recordId, "After message", 1, record.messageAfter, undefined, catalog));
+    issues.push(...validateReference(project, recordType, recordId, "Before string", 1, record.messageBefore, undefined, catalog));
+    issues.push(...validateReference(project, recordType, recordId, "After string", 1, record.messageAfter, undefined, catalog));
     issues.push(...validateReference(project, recordType, recordId, "Battle macro", 8, record.battleMacro, undefined, catalog));
     for (const [slot, monster] of record.grid.entries()) {
       if (!isI16(monster)) issues.push(recordIssue("error", recordType, recordId, `battle-monster-${slot}`, "Battle monster ID is outside Realmz integer range.", `Grid slot ${slot} has ${monster}.`));
@@ -162,6 +164,24 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
     }
     if (recordType === "simpleEncounter") {
       if ((record.choiceResults ?? []).length > 4) issues.push(recordIssue("error", recordType, recordId, "choice-result-count", "Simple encounter has too many choice result rows.", "Simple encounters store four choice result bytes."));
+      for (const [slot, value] of (record.choiceResults ?? []).entries()) {
+        const allowed = slot === 0
+          ? [SIMPLE_ENCOUNTER_AUTO_RESULT_FOUR, ...SIMPLE_ENCOUNTER_NORMAL_RESULTS]
+          : [...SIMPLE_ENCOUNTER_NORMAL_RESULTS];
+        if (!allowed.includes(value)) {
+          issues.push(slotIssue(
+            "error",
+            recordType,
+            recordId,
+            slot,
+            "simple-choice-result-unsupported",
+            "Simple encounter option result is unsupported.",
+            slot === 0
+              ? `Option 1 has ${value}. Modern Realmz only supports -4 as the auto-run Result #4 sentinel, or 0..4 as normal result values.`
+              : `Option ${slot + 1} has ${value}. Modern Realmz uses this value as a direct result-row index, so only 0..4 is source-backed.`
+          ));
+        }
+      }
     } else {
       const complex = record as Project["complexEncounters"][number];
       const actionResult = complex.actionResult ?? signedByteLike((complex.choiceResults ?? [])[0] ?? 0);
@@ -193,7 +213,7 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
         }
       }
     }
-    issues.push(...validateReference(project, recordType, recordId, "Prompt message", 1, record.prompt, undefined, catalog));
+    issues.push(...validateReference(project, recordType, recordId, "Prompt string", 1, record.prompt, undefined, catalog));
     issues.push(...validateEncounterActions(project, recordType, recordId, record.actions, catalog));
     return issues;
   }
@@ -228,8 +248,8 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
       ["modifiers", record.modifiers, 8],
       ["success result codes", record.successCodes, 8],
       ["failure result codes", record.failureCodes, 8],
-      ["success messages", record.successText, 8],
-      ["failure messages", record.failureText, 8],
+      ["success strings", record.successText, 8],
+      ["failure strings", record.failureText, 8],
       ["success sounds", record.successSounds, 8],
       ["failure sounds", record.failureSounds, 8],
       ["prompt/support fields", record.prompts, 3],
@@ -240,9 +260,9 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
         if (!isI16(value)) issues.push(recordIssue("error", recordType, recordId, `rogue-${label}-${slot}`, "Rogue encounter value is outside Realmz integer range.", `${label} slot ${slot} has ${value}.`));
       }
     }
-    for (const [slot, message] of record.successText.entries()) issues.push(...validateReference(project, recordType, recordId, `Success message ${slot}`, 1, message, undefined, catalog));
-    for (const [slot, message] of record.failureText.entries()) issues.push(...validateReference(project, recordType, recordId, `Failure message ${slot}`, 1, message, undefined, catalog));
-    if (record.prompts[0]) issues.push(...validateReference(project, recordType, recordId, "Prompt message", 1, record.prompts[0], undefined, catalog));
+    for (const [slot, message] of record.successText.entries()) issues.push(...validateReference(project, recordType, recordId, `Success string ${slot}`, 1, message, undefined, catalog));
+    for (const [slot, message] of record.failureText.entries()) issues.push(...validateReference(project, recordType, recordId, `Failure string ${slot}`, 1, message, undefined, catalog));
+    if (record.prompts[0]) issues.push(...validateReference(project, recordType, recordId, "Prompt string", 1, record.prompts[0], undefined, catalog));
     for (const field of ["spell", "lowDamage", "highDamage", "tumblers"] as const) issues.push(...validateI16Field(recordType, recordId, field, record[field]));
     if (record.lowDamage !== 0 && record.highDamage !== 0 && record.lowDamage > record.highDamage) {
       issues.push(recordIssue("warning", recordType, recordId, "rogue-damage-range", "Trap damage low is greater than high.", "Swap the low/high trap damage values unless this is intentional imported data."));
@@ -279,7 +299,7 @@ function validateComplexRogueResultColumns(
           recordId,
           `complex-rogue-${check.label}-${outcome.kind}-empty-result`,
           `${check.label} ${outcome.kind} runs an empty result column.`,
-          `${check.label} ${outcome.kind} returns Result ${outcome.result}, but that Complex Encounter result column has no message, branch, reward, or exit action.`
+          `${check.label} ${outcome.kind} returns Result ${outcome.result}, but that Complex Encounter result column has no string, branch, reward, or exit action.`
         ));
       }
     }
@@ -296,10 +316,10 @@ function validateRogueVisibleOutcomes(recordType: RealmzTargetRecordKind, record
   for (const slot of Array.from({ length: 8 }, (_, index) => index)) {
     const label = ROGUE_ACTION_LABELS[slot] ?? `Rogue action ${slot}`;
     if (record.typeFlags?.[slot] && !rogueOutcomeHasVisiblePath(record, slot, "success")) {
-      issues.push(slotIssue("warning", recordType, recordId, slot, "rogue-success-no-visible-result", `${label} success has no visible result.`, `${label} can be attempted, but success currently runs no visible result. Add a message, sound, or result code so players can tell what happened.`));
+      issues.push(slotIssue("warning", recordType, recordId, slot, "rogue-success-no-visible-result", `${label} success has no visible result.`, `${label} can be attempted, but success currently runs no visible result. Add a string, sound, or result code so players can tell what happened.`));
     }
     if (record.typeFlags?.[slot] && !rogueOutcomeHasVisiblePath(record, slot, "failure")) {
-      issues.push(slotIssue("warning", recordType, recordId, slot, "rogue-failure-no-visible-result", `${label} failure has no visible result.`, `${label} can be attempted, but failure currently runs no visible result. Add a message, sound, or result code so players can tell what happened.`));
+      issues.push(slotIssue("warning", recordType, recordId, slot, "rogue-failure-no-visible-result", `${label} failure has no visible result.`, `${label} can be attempted, but failure currently runs no visible result. Add a string, sound, or result code so players can tell what happened.`));
     }
   }
   for (const check of checks) {

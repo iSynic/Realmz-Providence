@@ -162,10 +162,10 @@ const AUDIT_BY_PAGE = {
     parityKeys: ["Simple Encounter Editor"],
     registryLabels: ["Simple Encounter"],
     summary: "Manual Simple Encounter Editor covers prompt setup, action choices, result scripts, branch behavior, and text buffers.",
-    handling: "Providence authors simple encounter shells, action rows, prompt strings, result script columns, target links, and preserves imported bytes.",
-    evidence: ["docs/generated/encounter-record-evidence.json", "docs/format-evidence-cards/encounter-record-runtime-anchors.md"],
-    gaps: ["Branch-oriented workflow and every Divinity result shortcut need a field-by-field audit.", "Text buffer behavior should be checked against current UI labels."],
-    followUp: ["Compare Simple Encounter controls to manual and runtime anchors.", "Record any signed/shortcut result values as explicit picker options."]
+    handling: "Providence authors simple encounter shells, action rows, prompt strings, result script columns, target links, same-type record navigation, and preserved imported bytes. Option 1 exposes the source-backed `-4` auto-run Result #4 sentinel; other option results stay constrained to `0..4`.",
+    evidence: ["docs/encounters-manual-parity-audit.md", "docs/generated/encounter-record-evidence.json", "docs/format-evidence-cards/encounter-record-runtime-anchors.md"],
+    gaps: ["Corpus `Data ED` tail/packing debt remains preserve-and-investigate work, not a UI blocker."],
+    followUp: ["Keep `Data ED` tail bytes preserved until parser/writer archaeology closes the confidence debt."]
   }),
   17: audit({
     status: "partial",
@@ -174,10 +174,10 @@ const AUDIT_BY_PAGE = {
     parityKeys: ["Complex Encounter Editor"],
     registryLabels: ["Complex Encounter"],
     summary: "Manual Complex Encounter Editor covers prompt strings, action choices, magic/item/typed responses, rogue links, max times, and result scripts.",
-    handling: "Providence authors complex encounter shells with pickers for same-type records, prompt strings, action choices, magic/item responses, typed replies, rogue links, and result scripts.",
-    evidence: ["docs/generated/encounter-record-evidence.json", "F:/Realmz/src/realmz_orig/encounters.c:1009"],
-    gaps: ["Recent spell-class label fix shows manual/source label mismatches still need audit.", "Flow preview, result summary, and rogue-link behavior need regression checks against manual intent."],
-    followUp: ["Audit every complex response family against runtime source, not only Divinity labels.", "Add targeted follow-up items for any mislabeled low-ID response values."]
+    handling: "Providence authors complex encounter shells with pickers for same-type records, prompt strings, action choices, magic/item responses, typed replies, rogue links, and result scripts. Low spell-class shortcuts follow modern Realmz source behavior, which consumes nonzero IDs below 7 even though Divinity text says 1 through 7. Legacy unconsumed bytes such as `thieffail` are preserved, but they are not normal authoring parity requirements for modern Realmz 8+.",
+    evidence: ["docs/encounters-manual-parity-audit.md", "docs/generated/encounter-record-evidence.json", "docs/format-evidence-cards/encounter-record-runtime-anchors.md", "F:/Realmz/src/realmz_orig/encounters.c:1004"],
+    gaps: [],
+    followUp: []
   }),
   18: audit({
     status: "partial",
@@ -186,10 +186,10 @@ const AUDIT_BY_PAGE = {
     parityKeys: ["Rogue Encounter Editor"],
     registryLabels: ["Rogue Encounter"],
     summary: "Manual Rogue Encounter Editor covers thief action tests, trap/lock setup, prompt string, trap sound/spell, damage, lock tumblers, and open/disarm chances.",
-    handling: "Providence authors the core TD2 thief/rogue fields with Divinity-style trap/lock grouping, prompt text, sound/spell helpers, and action test rows.",
-    evidence: ["docs/generated/thief-timed-encounter-evidence.json", "docs/generated/encounter-record-evidence.json"],
-    gaps: ["Trap prompt string mapping was recently fixture-proven, but the whole screen still needs a field-by-field manual audit.", "Preview-only Divinity fields need explicit documentation so they are not reintroduced as authorable fields."],
-    followUp: ["Verify every Rogue Encounter visible field against TD2 offsets and Divinity fixture notes.", "Document preview-only fields as non-authoring affordances."]
+    handling: "Providence authors the core TD2 thief/rogue fields with Divinity-style trap/lock grouping, trap prompt text, Trap Sound authoring with preview, spell helpers, and action test rows. Divinity lower-left string/sound preview controls are not treated as source fields.",
+    evidence: ["docs/encounters-manual-parity-audit.md", "docs/generated/thief-timed-encounter-evidence.json", "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md"],
+    gaps: ["Divinity preview-only lower-left string/sound controls should remain documented so they are not reintroduced as authored source fields.", "Writer confidence for TD2 remains fixture-gated at the binary-layout level, even though current UI edits existing project fields."],
+    followUp: ["Keep Rogue Encounter Prompt Sound and Divinity lower-left String/Sound preview affordances out of authorable UI unless a new fixture proves scenario writes; this does not apply to the authorable Trap Sound row.", "Add writer fixtures for TD2 trap/lock edits before broadening the authoring surface."]
   }),
   19: audit({
     status: "partial",
@@ -199,9 +199,9 @@ const AUDIT_BY_PAGE = {
     registryLabels: ["Timed Encounter"],
     summary: "Manual Time Encounter Editor covers schedule, position requirements, repeat behavior, and timed mutation controls.",
     handling: "Providence exposes timed encounters with position-required picker, schedule fields, compatibility data, and record navigation.",
-    evidence: ["docs/generated/thief-timed-encounter-evidence.json", "scripts/report_timed_encounter_reserved_fields.mjs"],
-    gaps: ["Reserved/compatibility fields need manual confidence labels.", "Schedule edge cases and Divinity naming need comparison."],
-    followUp: ["Audit Timed Encounter controls against manual text and generated reserved-field report.", "Keep compatibility data collapsed unless the audit proves author-facing value."]
+    evidence: ["docs/encounters-manual-parity-audit.md", "docs/generated/thief-timed-encounter-evidence.json", "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md", "scripts/report_timed_encounter_reserved_fields.mjs"],
+    gaps: ["`stuff[1..9]` compatibility fields still lack author-facing meanings.", "Extra AP, item, quest, and map gates are numeric fields rather than full target pickers."],
+    followUp: ["Keep Timed Compatibility Data collapsed/read-only until source or fixture evidence names `stuff[1..9]`.", "Consider picker upgrades for Extra AP, item, quest, and position references without changing storage."]
   }),
   20: audit({
     status: "partial",
@@ -318,10 +318,10 @@ const AUDIT_BY_PAGE = {
     parityKeys: ["Spell Editor"],
     registryLabels: ["Spell Editor"],
     summary: "Manual Spell Editor covers built-in spell browsing, copying/creating custom spells, spell class, target, icon/sound, range, damage, duration, resistance, and text.",
-    handling: "Providence browses shared spells and authors scenario Data Spell custom overrides with many runtime byte fields and presentation helpers.",
-    evidence: ["docs/generated/rules-spell-race-caste-evidence.json", "docs/generated/core-rules-record-evidence.json"],
-    gaps: ["Resource/name packaging and richer spell validation remain incomplete.", "Manual labels for advanced fields need continued comparison."],
-    followUp: ["Audit every Spell Editor field against Data Spell and shared Data S summaries.", "Verify custom spell name/description/icon/sound export behavior with fixtures."]
+    handling: "Providence browses shared spells as read-only references and authors scenario Data Spell custom overrides for the source-backed 30-byte custom spell records. The picker/new/clear flow now matches the Race/Caste custom override model, and project validation checks custom spell slot and byte-field bounds.",
+    evidence: ["docs/rules-manual-parity-audit.md", "docs/generated/rules-spell-race-caste-evidence.json", "docs/generated/core-rules-record-evidence.json", "src/editor/browser/project.ts"],
+    gaps: ["Custom spell name/description resource packaging remains fixture-gated beyond current STR# confidence.", "Manual labels for some advanced presentation fields can continue improving without changing storage."],
+    followUp: ["Keep custom spell name/description packaging behind fixtures.", "Add semantic validation only when modern Realmz source behavior is clear."]
   }),
   30: audit({
     status: "partial",
@@ -330,10 +330,10 @@ const AUDIT_BY_PAGE = {
     parityKeys: ["Race Editor"],
     registryLabels: ["Race Editor"],
     summary: "Manual Race Editor covers browsing standard races, copying/creating scenario custom races, stats, aging, caste permissions, usability, descriptors, and conditions.",
-    handling: "Providence supports source-backed scenario race overrides and custom copy/new workflows while preserving built-in references.",
-    evidence: ["docs/generated/rules-spell-race-caste-evidence.json", "src/editor/panels/rules/RaceRulesEditor.tsx"],
-    gaps: ["Resource-fork names and some Divinity binary label/order checks are incomplete.", "Race pick-list numbering recently needed correction and should be included in the audit."],
-    followUp: ["Run Race Editor field/order comparison against manual and Divinity fixture screenshots.", "Verify standard-vs-custom copy behavior against scenario Data Race packaging."]
+    handling: "Providence browses shared races as read-only references and authors source-backed scenario Data Race override records through copy/new/clear workflows. Race picker labels are zero-based, and project validation checks Data Race record range, fixed matrix shapes, numeric bounds, and attribute min/max inversions.",
+    evidence: ["docs/rules-manual-parity-audit.md", "docs/generated/rules-spell-race-caste-evidence.json", "src/editor/panels/rules/RaceRulesEditor.tsx", "src/editor/browser/project.ts"],
+    gaps: ["Race name resource packaging remains fixture-gated.", "Some Divinity advanced row phrasing can continue improving as fixture screenshots surface."],
+    followUp: ["Keep race names as editor/display metadata unless a fixture proves resource-name writes.", "Refine labels only when manual/source evidence is stronger than the current source-backed field names."]
   }),
   31: audit({
     status: "partial",
@@ -342,10 +342,10 @@ const AUDIT_BY_PAGE = {
     parityKeys: ["Caste Editor"],
     registryLabels: ["Caste Editor"],
     summary: "Manual Caste Editor covers standard/custom caste editing, stats, spellcasting access, progression, item usability, conditions, starting items, and default icon.",
-    handling: "Providence supports source-backed scenario caste overrides, custom copy/new workflows, and editable matrices for many advanced values.",
-    evidence: ["docs/generated/rules-spell-race-caste-evidence.json", "src/editor/panels/rules/CasteRulesEditor.tsx"],
-    gaps: ["Advanced matrix labels/order still need Divinity label archaeology.", "Default icon and starting item semantics need field-by-field confirmation."],
-    followUp: ["Run Caste Editor field/order comparison against manual and fixtures.", "Record any ambiguous matrix rows as fixture-gated."]
+    handling: "Providence browses shared castes as read-only references and authors source-backed scenario Data Caste override records through copy/new/clear workflows. The editor exposes the known caste matrices and project validation checks record range, fixed matrix shapes, numeric bounds, byte arrays, and attribute min/max inversions.",
+    evidence: ["docs/rules-manual-parity-audit.md", "docs/generated/rules-spell-race-caste-evidence.json", "src/editor/panels/rules/CasteRulesEditor.tsx", "src/editor/browser/project.ts"],
+    gaps: ["Caste name resource packaging remains fixture-gated.", "Some advanced matrix labels/order remain candidates for Divinity screenshot/source refinement."],
+    followUp: ["Keep caste names as editor/display metadata unless a fixture proves resource-name writes.", "Record ambiguous matrix wording as fixture-gated rather than adding unsupported behavior."]
   }),
   32: audit({
     status: "partial",

@@ -614,6 +614,7 @@ export function validateBrowserProject(project: Project): ValidationReport {
     if (option.text.length > 24) errors.push(`Option label ${option.id} is too long for Realmz's 24-character option string slot.`);
     if (!/^[\x00-\x7F]*$/.test(option.text)) warnings.push(`Option label ${option.id} contains non-ASCII text and may not render as intended.`);
   }
+  validateRulesRecords(project, errors, warnings);
   for (const battle of project.battles ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "battle", battle.id), errors, warnings);
   for (const description of project.monsterDescriptions ?? []) {
     if (description.text.length > 255) errors.push(`Monster description ${description.id} is too long for Realmz's 255-character description slot.`);
@@ -679,6 +680,168 @@ export function validateBrowserProject(project: Project): ValidationReport {
     }
   }
   return { ok: errors.length === 0, errors, warnings, exportableFiles, passThroughFiles, targetCompatibilityIssues: [], targetCompatibility: EMPTY_TARGET_COMPATIBILITY };
+}
+
+function validateRulesRecords(project: Project, errors: string[], warnings: string[]) {
+  for (const spell of project.spellOverrides ?? []) {
+    if (spell.id < 0 || spell.id > 104) errors.push(`Custom spell ${spell.id} is outside Data Spell's 0..104 custom slot range.`);
+    for (const [field, value] of [
+      ["Fixed Range", spell.range1],
+      ["Power Range", spell.range2],
+      ["Queue Icon", spell.queueIcon],
+      ["No. of Attacks", spell.fixedTargetNum],
+      ["Can Rotate", spell.canRotate],
+      ["Cannot", spell.cannot],
+      ["Base SP Cost", spell.cost],
+      ["Fixed Damage Low", spell.damage1],
+      ["Fixed Damage High", spell.damage2],
+      ["Power Damage Low", spell.powerDamage1],
+      ["Power Damage High", spell.powerDamage2],
+      ["Fixed Duration Low", spell.duration1],
+      ["Fixed Duration High", spell.duration2],
+      ["Power Duration Low", spell.powerDuration1],
+      ["Power Duration High", spell.powerDuration2],
+      ["Cast Icon", spell.spellLook1],
+      ["Resolution Icon", spell.spellLook2],
+      ["Casting Sound", spell.sound1],
+      ["Resolution Sound", spell.sound2],
+      ["Target Type", spell.targetType],
+      ["Spell Size", spell.size],
+      ["Spell Effect", spell.special],
+      ["Damage Type", spell.damageType],
+      ["Spell Class", spell.spellClass]
+    ] as const) {
+      validateRange(errors, `Custom spell ${spell.id} ${field}`, value, 0, 255, "unsigned byte");
+    }
+    for (const [field, value] of [
+      ["+/- To Hit %", spell.toHitBonus],
+      ["+/- To DRV %", spell.saveBonus],
+      ["Resist Type", spell.saveAdjust],
+      ["+/- Resist / Level", spell.resistAdjust]
+    ] as const) {
+      validateRange(errors, `Custom spell ${spell.id} ${field}`, value, -128, 127, "signed byte");
+    }
+    if (spell.targetType < 0 || spell.targetType > 11) warnings.push(`Custom spell ${spell.id} Target Type ${spell.targetType} is outside Divinity's 0..11 target type list.`);
+    if (spell.damageType < 0 || spell.damageType > 9) warnings.push(`Custom spell ${spell.id} Damage Type ${spell.damageType} is outside the known 0..9 damage type list.`);
+  }
+
+  for (const race of project.raceOverrides ?? []) {
+    if (race.id < 0 || race.id > 69) errors.push(`Race override ${race.id} is outside Data Race's 0..69 record range.`);
+    validateLength(errors, `Race ${race.id} +/- To Hit`, race.plusMinusToHit, 8);
+    validateLength(errors, `Race ${race.id} Special Ability`, race.specialAbility, 14);
+    validateLength(errors, `Race ${race.id} DRVs`, race.drvBonus, 8);
+    validateLength(errors, `Race ${race.id} Att Bonus`, race.attBonus, 6);
+    validateLength(errors, `Race ${race.id} Attribute Min/Max`, race.minMax, 12);
+    validateLength(errors, `Race ${race.id} Conditions`, race.conditions, 40);
+    validateLength(errors, `Race ${race.id} Caste Permissions`, race.canCaste, 30);
+    validateLength(errors, `Race ${race.id} Item Type Words`, race.itemTypes, 2);
+    for (const [field, values] of [
+      ["+/- To Hit", race.plusMinusToHit],
+      ["Special Ability", race.specialAbility],
+      ["DRVs", race.drvBonus],
+      ["Att Bonus", race.attBonus],
+      ["Attribute Min/Max", race.minMax],
+      ["Conditions", race.conditions],
+      ["No. of Attacks", race.numOfAttacks]
+    ] as const) validateNumberArray(errors, `Race ${race.id} ${field}`, values, -32768, 32767, "signed 16-bit");
+    for (const [field, value] of [
+      ["Max Age", race.maxAge],
+      ["Does Not Die", race.doesNotDie],
+      ["Base Movement Points", race.baseMove],
+      ["Magic Resistance", race.magRes],
+      ["Two Handed Weapon", race.twoHand],
+      ["Missile Weapon", race.missile],
+      ["Default Portrait Set", race.defaultIconSet],
+      ["Descriptors", race.descriptors]
+    ] as const) validateRange(errors, `Race ${race.id} ${field}`, value, -32768, 32767, "signed 16-bit");
+    validateNumberArray(errors, `Race ${race.id} Caste Permissions`, race.canCaste, 0, 255, "unsigned byte");
+    validateNumberArray(errors, `Race ${race.id} Item Type Words`, race.itemTypes, -2147483648, 2147483647, "signed 32-bit");
+    validateRaceMatrices(race.id, race.ageRange, race.ageChange, errors);
+    if (race.minMax.length >= 12) validateMinMaxPairs(`Race ${race.id}`, race.minMax, warnings);
+  }
+
+  for (const caste of project.casteOverrides ?? []) {
+    if (caste.id < 0 || caste.id > 29) errors.push(`Caste override ${caste.id} is outside Data Caste's 0..29 record range.`);
+    validateMatrix(errors, `Caste ${caste.id} Special Ability`, caste.specialAbility, 2, 14, -32768, 32767, "signed 16-bit");
+    validateMatrix(errors, `Caste ${caste.id} Spellcasters`, caste.spellcasters, 4, 3, -32768, 32767, "signed 16-bit");
+    for (const [field, values, length] of [
+      ["DRVs", caste.drvBonus, 8],
+      ["Att Bonus", caste.attBonus, 6],
+      ["Attribute Min/Max", caste.minMax, 12],
+      ["Conditions", caste.conditions, 40],
+      ["Stamina", caste.stamina, 2],
+      ["Strength", caste.strength, 2],
+      ["Dodge", caste.dodge, 2],
+      ["To Hit", caste.toHit, 2],
+      ["Missile", caste.missile, 2],
+      ["Hand To Hand", caste.hand2Hand, 2],
+      ["Starting Items", caste.startItems, 20]
+    ] as const) {
+      validateLength(errors, `Caste ${caste.id} ${field}`, values, length);
+      validateNumberArray(errors, `Caste ${caste.id} ${field}`, values, -32768, 32767, "signed 16-bit");
+    }
+    validateLength(errors, `Caste ${caste.id} Victory Points`, caste.victory, 30);
+    validateNumberArray(errors, `Caste ${caste.id} Victory Points`, caste.victory, -2147483648, 2147483647, "signed 32-bit");
+    validateLength(errors, `Caste ${caste.id} Bonus Attack Rounds`, caste.attacks, 10);
+    validateNumberArray(errors, `Caste ${caste.id} Bonus Attack Rounds`, caste.attacks, 0, 255, "unsigned byte");
+    validateLength(errors, `Caste ${caste.id} Item Type Words`, caste.itemTypes, 2);
+    validateNumberArray(errors, `Caste ${caste.id} Item Type Words`, caste.itemTypes, -2147483648, 2147483647, "signed 32-bit");
+    for (const [field, value] of [
+      ["Can Use Missile Weapons", caste.canUseMissile],
+      ["Missile Bonus Damage", caste.getsMissileBonus],
+      ["Caste Class", caste.casteClass],
+      ["Minimum Age Group", caste.minimumAgeGroup],
+      ["Move Bonus", caste.moveBonus],
+      ["Magic Resistance", caste.magRes],
+      ["Two Handed Weapon", caste.twoHand],
+      ["Max Stamina Bonus", caste.maxStaminaBonus],
+      ["Bonus Attacks", caste.bonusAttacks],
+      ["Max Attacks", caste.maxAttacks],
+      ["Starting Gold", caste.startMoney],
+      ["Default Icon", caste.defaultIcon],
+      ["Max Spells Per Round", caste.maxSpellsAttacks],
+      ["Spells So Far", caste.spellsSoFar]
+    ] as const) validateRange(errors, `Caste ${caste.id} ${field}`, value, -32768, 32767, "signed 16-bit");
+    if (caste.minMax.length >= 12) validateMinMaxPairs(`Caste ${caste.id}`, caste.minMax, warnings);
+  }
+}
+
+function validateRaceMatrices(raceId: number, ageRange: number[][], ageChange: number[][], errors: string[]) {
+  validateMatrix(errors, `Race ${raceId} Age Ranges`, ageRange, 5, 2, -32768, 32767, "signed 16-bit");
+  validateMatrix(errors, `Race ${raceId} Age Changes`, ageChange, 5, 15, -128, 127, "signed byte");
+}
+
+function validateMatrix(errors: string[], label: string, values: number[][], rows: number, columns: number, min: number, max: number, rangeLabel: string) {
+  if (values.length !== rows) errors.push(`${label} must have ${rows} row(s); found ${values.length}.`);
+  for (let row = 0; row < values.length; row += 1) {
+    validateLength(errors, `${label} row ${row + 1}`, values[row] ?? [], columns);
+    validateNumberArray(errors, `${label} row ${row + 1}`, values[row] ?? [], min, max, rangeLabel);
+  }
+}
+
+function validateMinMaxPairs(label: string, values: number[], warnings: string[]) {
+  for (let index = 0; index + 1 < values.length; index += 2) {
+    const min = values[index] ?? 0;
+    const max = values[index + 1] ?? 0;
+    if (min > max) warnings.push(`${label} attribute pair ${Math.floor(index / 2) + 1} has min ${min} greater than max ${max}.`);
+  }
+}
+
+function validateLength(errors: string[], label: string, values: unknown[] | undefined, expected: number) {
+  const actual = values?.length ?? 0;
+  if (actual !== expected) errors.push(`${label} must have ${expected} value(s); found ${actual}.`);
+}
+
+function validateNumberArray(errors: string[], label: string, values: number[] | undefined, min: number, max: number, rangeLabel: string) {
+  for (const [index, value] of (values ?? []).entries()) {
+    validateRange(errors, `${label} ${index + 1}`, value, min, max, rangeLabel);
+  }
+}
+
+function validateRange(errors: string[], label: string, value: number, min: number, max: number, rangeLabel: string) {
+  if (!Number.isInteger(value) || value < min || value > max) {
+    errors.push(`${label} must fit ${rangeLabel} range ${min}..${max}; found ${value}.`);
+  }
 }
 
 function validateTileAttributes(project: Project, sourceNames: Set<string>, warnings: string[]) {
