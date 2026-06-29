@@ -994,27 +994,29 @@ Recommended follow-up:
 
 Manual claim summary:
 
-Manual Race Editor covers browsing standard races, copying/creating scenario custom races, stats, aging, caste permissions, usability, descriptors, and conditions.
+Manual Race Editor covers browsing standard races, copying/creating scenario custom races, race names, stats, aging, caste permissions, usability, descriptors, and conditions.
 
 Current Providence handling:
 
-Providence browses shared races as read-only references and authors source-backed scenario Data Race override records through copy/new/clear workflows. Race picker labels are zero-based, and project validation checks Data Race record range, fixed matrix shapes, numeric bounds, and attribute min/max inversions.
+Providence browses shared races as read-only references and authors source-backed scenario Data Race override records through copy/new/clear workflows. Race picker labels are zero-based, and project validation checks Data Race record range, fixed matrix shapes, numeric bounds, and attribute min/max inversions. A Divinity non-name fixture created scenario-local Data Race and confirms sampled fields under the current 30 x 408-byte model. Divinity custom race names are fixture-proven in external Data Files:Custom Names.rsrc STR# 129, and modern Realmz opens that support resource at startup; Providence now imports, edits, merges, and exports that support resource while keeping non-name fields in Data Race.
 
 Evidence:
 
 - docs/rules-manual-parity-audit.md
 - docs/generated/rules-spell-race-caste-evidence.json
+- F:/Divinity - Codex/docs/handoffs/custom-race-caste-authoring-to-providence.md
+- F:/Divinity - Codex/docs/handoffs/custom-race-caste-names-to-providence.md
 - src/editor/panels/rules/RaceRulesEditor.tsx
 - src/editor/browser/project.ts
 
 Gaps:
 
-- Race name resource packaging remains fixture-gated.
+- Race Base Attacks and usable-item flag bytes still need isolated fixtures.
 - Some Divinity advanced row phrasing can continue improving as fixture screenshots surface.
 
 Recommended follow-up:
 
-- Keep race names as editor/display metadata unless a fixture proves resource-name writes.
+- Run second-toggle fixtures for Race Base Attacks and usable-item flags.
 - Refine labels only when manual/source evidence is stronger than the current source-backed field names.
 
 ### 31. Caste Editor
@@ -1027,27 +1029,29 @@ Recommended follow-up:
 
 Manual claim summary:
 
-Manual Caste Editor covers standard/custom caste editing, stats, spellcasting access, progression, item usability, conditions, starting items, and default icon.
+Manual Caste Editor covers standard/custom caste editing, caste names, stats, spellcasting access, progression, item usability, conditions, starting items, and default icon.
 
 Current Providence handling:
 
-Providence browses shared castes as read-only references and authors source-backed scenario Data Caste override records through copy/new/clear workflows. The editor exposes the known caste matrices and project validation checks record range, fixed matrix shapes, numeric bounds, byte arrays, and attribute min/max inversions.
+Providence browses shared castes as read-only references and authors source-backed scenario Data Caste override records through copy/new/clear workflows. The editor exposes the known caste matrices and project validation checks record range, fixed matrix shapes, numeric bounds, byte arrays, and attribute min/max inversions. A Divinity non-name fixture created scenario-local Data Caste and confirms sampled fields under the current 30 x 576-byte model. Divinity custom caste names are fixture-proven in external Data Files:Custom Names.rsrc STR# 131, and modern Realmz opens that support resource at startup; Providence now imports, edits, merges, and exports that support resource while keeping non-name fields in Data Caste.
 
 Evidence:
 
 - docs/rules-manual-parity-audit.md
 - docs/generated/rules-spell-race-caste-evidence.json
+- F:/Divinity - Codex/docs/handoffs/custom-race-caste-authoring-to-providence.md
+- F:/Divinity - Codex/docs/handoffs/custom-race-caste-names-to-providence.md
 - src/editor/panels/rules/CasteRulesEditor.tsx
 - src/editor/browser/project.ts
 
 Gaps:
 
-- Caste name resource packaging remains fixture-gated.
+- Caste class, default icon, spellcasting rows, starting items, and victory values still need isolated fixtures.
 - Some advanced matrix labels/order remain candidates for Divinity screenshot/source refinement.
 
 Recommended follow-up:
 
-- Keep caste names as editor/display metadata unless a fixture proves resource-name writes.
+- Run targeted fixtures for remaining Caste fields called out by the handoff.
 - Record ambiguous matrix wording as fixture-gated rather than adding unsupported behavior.
 
 ### 32. Text Import • Export • Spell Checking

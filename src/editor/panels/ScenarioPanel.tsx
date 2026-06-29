@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { TutorialTip } from "../components/TutorialTip";
 import { Project, ProjectCommand, SelectedEntity } from "../types";
-import { REALMZ_CASTES, REALMZ_RACES } from "../rulesCatalog";
+import { ruleCasteOptions, ruleRaceOptions } from "../ruleNames";
 import {
   SECURITY_SEGMENT_LENGTH,
   cleanRegistrationName,
@@ -258,13 +258,13 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onSelectEn
               <div className="scenario-restriction-grid">
                 <RestrictionChecklist
                   title="Races"
-                  options={REALMZ_RACES}
+                  options={ruleRaceOptions(project)}
                   selected={restrictions.bannedRaces}
                   onChange={(bannedRaces) => updateRestrictions(onApplyCommand, { bannedRaces })}
                 />
                 <RestrictionChecklist
                   title="Castes"
-                  options={REALMZ_CASTES}
+                  options={ruleCasteOptions(project)}
                   selected={restrictions.bannedCastes}
                   onChange={(bannedCastes) => updateRestrictions(onApplyCommand, { bannedCastes })}
                 />

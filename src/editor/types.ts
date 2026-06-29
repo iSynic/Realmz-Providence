@@ -1054,6 +1054,14 @@ export type ScenarioCasteOverride = {
   provenance?: Provenance;
 };
 
+export type RuleNames = {
+  sourceFile: string;
+  raceNames: string[];
+  casteNames: string[];
+  authored: boolean;
+  provenance?: Provenance;
+};
+
 export type MapMarker = {
   iconId: number;
   x: number;
@@ -1255,9 +1263,11 @@ export type ProjectCommand =
   | { kind: "clearSpellOverride"; label: string; id: number }
   | { kind: "createRaceOverride"; label: string; id?: number; template?: Partial<ScenarioRaceOverride> }
   | { kind: "updateRaceOverride"; label: string; id: number; changes: Partial<ScenarioRaceOverride> }
+  | { kind: "updateRaceName"; label: string; id: number; displayName: string }
   | { kind: "clearRaceOverride"; label: string; id: number }
   | { kind: "createCasteOverride"; label: string; id?: number; template?: Partial<ScenarioCasteOverride> }
   | { kind: "updateCasteOverride"; label: string; id: number; changes: Partial<ScenarioCasteOverride> }
+  | { kind: "updateCasteName"; label: string; id: number; displayName: string }
   | { kind: "clearCasteOverride"; label: string; id: number }
   | {
       kind: "renameEditorEntity";
@@ -1332,6 +1342,7 @@ export type Project = {
   spellOverrides: ScenarioSpellOverride[];
   raceOverrides: ScenarioRaceOverride[];
   casteOverrides: ScenarioCasteOverride[];
+  ruleNames: RuleNames;
   assets: ManagedAsset[];
   assetCatalog: { tilesets: TilesetAsset[]; pictures?: ResourceAsset[]; icons?: ResourceAsset[]; sounds?: ResourceAsset[] };
   editorMetadata: EditorMetadata;

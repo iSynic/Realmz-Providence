@@ -1,5 +1,5 @@
 use realmz_providence_lib::exporter::export_project;
-use realmz_providence_lib::importer::{import_scenario, open_project, sha256_hex, RAW_SOURCES_DIR};
+use realmz_providence_lib::importer::{create_project, import_scenario, open_project, sha256_hex, RAW_SOURCES_DIR};
 use realmz_providence_lib::project::{
     AssetImportTarget, DitherMode, ImageFitMode, ImageMatte, ImageScaleMode, ManagedAsset,
     ManagedAssetConversion, ManagedAssetExportState, ManagedAssetKind, PaletteMode,
@@ -7,7 +7,7 @@ use realmz_providence_lib::project::{
     PROJECT_SCHEMA_VERSION, SEMANTIC_SCHEMA_VERSION,
 };
 use realmz_providence_lib::realmz::{
-    i16_be, update_custom_land_tile_attributes, update_custom_land_tile_combat_build,
+    i16_be, parse_scenario_buffers, update_custom_land_tile_attributes, update_custom_land_tile_combat_build,
     update_custom_landlook_base, update_custom_landlook_range_slot, CustomLandTileAttributePatch,
     SUPPORTED_WRITE_FILES, TRACKED_FILES,
 };
@@ -29,6 +29,17 @@ fn fixture_path(name: &str) -> Option<std::path::PathBuf> {
 fn out_fixture_path(name: &str) -> Option<std::path::PathBuf> {
     let path = Path::new("F:/Realmz/out_win_clang/Scenarios").join(name);
     path.is_dir().then_some(path)
+}
+
+fn custom_names_fixture_path() -> Option<std::path::PathBuf> {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap_or_else(|| Path::new("."))
+        .join("public")
+        .join("bundled-libraries")
+        .join("realmz-reference")
+        .join("Custom Names.rsrc");
+    path.is_file().then_some(path)
 }
 
 fn desktop_fixture_path(name: &str) -> Option<std::path::PathBuf> {
@@ -552,6 +563,139 @@ fn rules_custom_spell_name_export_updates_only_spell_str_resource() {
         reimported.spell_overrides.first().map(|record| record.display_name.as_str()),
         Some("Providence Probe")
     );
+}
+
+#[test]
+fn rules_custom_race_caste_name_export_updates_only_custom_names_str_resources() {
+    let Some(custom_names) = custom_names_fixture_path() else {
+        eprintln!("Skipping custom race/caste name fixture; bundled Custom Names.rsrc is absent.");
+        return;
+    };
+    let temp = tempdir().unwrap();
+    let source = temp.path().join("Scenario With Rule Names");
+    fs::create_dir_all(source.join("Data Files")).unwrap();
+    fs::write(source.join("Data Race"), vec![0u8; realmz_providence_lib::realmz::RACE_BYTES * 70]).unwrap();
+    fs::write(source.join("Data Caste"), vec![0u8; realmz_providence_lib::realmz::CASTE_BYTES * 30]).unwrap();
+    fs::copy(&custom_names, source.join("Data Files").join("Custom Names.rsrc")).unwrap();
+
+    let project_dir = temp.path().join("project");
+    let export_dir = temp.path().join("exported");
+    import_scenario(&source, &project_dir).unwrap();
+    let mut project = open_project(&project_dir).unwrap();
+    let original_race = fs::read(source.join("Data Race")).unwrap();
+    let original_caste = fs::read(source.join("Data Caste")).unwrap();
+    let original_resource_bytes = fs::read(&custom_names).unwrap();
+    let original_resources = resource_entries_by_key(&original_resource_bytes);
+
+    project.rule_names.race_names[19] = "Providence Race".to_string();
+    project.rule_names.caste_names[20] = "Providence Caste".to_string();
+    project.rule_names.authored = true;
+    export_project(
+        &project_dir,
+        &project,
+        &export_dir,
+        ScenarioTarget::ProvidencePortableFolder,
+    )
+    .unwrap();
+
+    assert_eq!(
+        fs::read(export_dir.join("Data Race")).unwrap(),
+        original_race,
+        "renaming a custom race should not mutate Data Race bytes"
+    );
+    assert_eq!(
+        fs::read(export_dir.join("Data Caste")).unwrap(),
+        original_caste,
+        "renaming a custom caste should not mutate Data Caste bytes"
+    );
+    let exported_resource_bytes = fs::read(export_dir.join("Data Files").join("Custom Names.rsrc")).unwrap();
+    let exported_resources = resource_entries_by_key(&exported_resource_bytes);
+    assert_eq!(original_resources.keys().collect::<Vec<_>>(), exported_resources.keys().collect::<Vec<_>>());
+    for (key, original) in &original_resources {
+        if key == &("STR#".to_string(), 129) || key == &("STR#".to_string(), 131) {
+            continue;
+        }
+        assert_eq!(
+            Some(original),
+            exported_resources.get(key),
+            "resource {key:?} should be preserved when custom race/caste names change"
+        );
+    }
+    let race_names = decode_string_list_resource(
+        &exported_resources
+            .get(&("STR#".to_string(), 129))
+            .expect("Custom Names.rsrc should keep STR# 129")
+            .data,
+    );
+    let caste_names = decode_string_list_resource(
+        &exported_resources
+            .get(&("STR#".to_string(), 131))
+            .expect("Custom Names.rsrc should keep STR# 131")
+            .data,
+    );
+    assert_eq!(race_names.get(19).map(String::as_str), Some("Providence Race"));
+    assert_eq!(caste_names.get(20).map(String::as_str), Some("Providence Caste"));
+
+    let reimport_dir = temp.path().join("reimported");
+    let reimported = import_scenario(&export_dir, &reimport_dir).unwrap();
+    assert_eq!(reimported.rule_names.race_names.get(19).map(String::as_str), Some("Providence Race"));
+    assert_eq!(reimported.rule_names.caste_names.get(20).map(String::as_str), Some("Providence Caste"));
+}
+
+#[test]
+fn rules_custom_race_caste_name_export_synthesizes_custom_names_resource() {
+    let temp = tempdir().unwrap();
+    let project_dir = temp.path().join("Blank Rule Names.providence");
+    let export_dir = temp.path().join("exported");
+    let mut project = create_project("Blank Rule Names".to_string(), &project_dir).unwrap();
+    let mut buffers = BTreeMap::new();
+    buffers.insert("Data Race".to_string(), vec![0u8; realmz_providence_lib::realmz::RACE_BYTES * 70]);
+    buffers.insert("Data Caste".to_string(), vec![0u8; realmz_providence_lib::realmz::CASTE_BYTES * 30]);
+    let parsed = parse_scenario_buffers(&buffers);
+    project.race_overrides.push(
+        parsed
+            .race_overrides
+            .into_iter()
+            .find(|record| record.id == 19)
+            .expect("zero race table should include record 19"),
+    );
+    project.caste_overrides.push(
+        parsed
+            .caste_overrides
+            .into_iter()
+            .find(|record| record.id == 20)
+            .expect("zero caste table should include record 20"),
+    );
+    project.rule_names.race_names[19] = "New Providence Race".to_string();
+    project.rule_names.caste_names[20] = "New Providence Caste".to_string();
+    project.rule_names.authored = true;
+
+    export_project(
+        &project_dir,
+        &project,
+        &export_dir,
+        ScenarioTarget::ProvidencePortableFolder,
+    )
+    .unwrap();
+
+    assert!(export_dir.join("Data Race").is_file());
+    assert!(export_dir.join("Data Caste").is_file());
+    let exported_resource_bytes = fs::read(export_dir.join("Data Files").join("Custom Names.rsrc")).unwrap();
+    let exported_resources = resource_entries_by_key(&exported_resource_bytes);
+    let race_names = decode_string_list_resource(
+        &exported_resources
+            .get(&("STR#".to_string(), 129))
+            .expect("synthesized Custom Names.rsrc should contain STR# 129")
+            .data,
+    );
+    let caste_names = decode_string_list_resource(
+        &exported_resources
+            .get(&("STR#".to_string(), 131))
+            .expect("synthesized Custom Names.rsrc should contain STR# 131")
+            .data,
+    );
+    assert_eq!(race_names.get(19).map(String::as_str), Some("New Providence Race"));
+    assert_eq!(caste_names.get(20).map(String::as_str), Some("New Providence Caste"));
 }
 
 #[test]

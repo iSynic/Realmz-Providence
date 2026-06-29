@@ -341,6 +341,14 @@ pub fn export_project(
         &raw_dir,
         &mut written_files,
     )?;
+    let mut support_resource_warnings = Vec::new();
+    write_rule_name_resources(
+        output_dir,
+        &raw_dir,
+        project,
+        &mut written_files,
+        &mut support_resource_warnings,
+    )?;
     let resource_result = write_managed_resources(project_dir, output_dir, project, target)?;
     if resource_result.resource_file_written {
         written_files.push(resource_result.resource_file_name.clone());
@@ -363,7 +371,10 @@ pub fn export_project(
         pass_through_files,
         written_resources: resource_result.written_resources,
         preserved_resources: resource_result.preserved_resources,
-        resource_warnings: resource_result.resource_warnings,
+        resource_warnings: support_resource_warnings
+            .into_iter()
+            .chain(resource_result.resource_warnings)
+            .collect(),
         blocked_assets: resource_result.blocked_assets,
         warnings,
         target_compatibility_issues,
@@ -542,6 +553,119 @@ fn data_spell_resource_fork(raw_dir: &Path) -> Result<Option<(String, Vec<u8>)>>
         }
     }
     Ok(None)
+}
+
+fn write_rule_name_resources(
+    output_dir: &Path,
+    raw_dir: &Path,
+    project: &ProvidenceProject,
+    written_files: &mut Vec<String>,
+    resource_warnings: &mut Vec<String>,
+) -> Result<()> {
+    let original = custom_names_resource_fork(raw_dir)?;
+    if !project.rule_names.authored {
+        let Some(original) = original else {
+            return Ok(());
+        };
+        write_custom_names_support_file(output_dir, &original, written_files)?;
+        resource_warnings.push(
+            "Custom Names.rsrc was exported under Data Files/; modern Realmz reads race and caste labels from the global Data Files location."
+                .to_string(),
+        );
+        return Ok(());
+    }
+    let original = original.unwrap_or_default();
+    let updates = vec![
+        ResourceForkEntry {
+            resource_type: "STR#".to_string(),
+            id: 129,
+            name: "Race".to_string(),
+            attributes: 0,
+            data: encode_string_list_resource(&normalized_rule_names(
+                &project.rule_names.race_names,
+                crate::project::default_race_names(),
+                crate::project::RACE_NAME_LIMIT,
+            )),
+        },
+        ResourceForkEntry {
+            resource_type: "STR#".to_string(),
+            id: 131,
+            name: "Caste".to_string(),
+            attributes: 0,
+            data: encode_string_list_resource(&normalized_rule_names(
+                &project.rule_names.caste_names,
+                crate::project::default_caste_names(),
+                crate::project::CASTE_NAME_LIMIT,
+            )),
+        },
+    ];
+    let (resource_bytes, _) = merge_resource_entries(&original, updates)?;
+    write_custom_names_support_file(output_dir, &resource_bytes, written_files)?;
+    resource_warnings.push(
+        "Custom Names.rsrc was exported under Data Files/; modern Realmz reads race and caste labels from the global Data Files location."
+            .to_string(),
+    );
+    Ok(())
+}
+
+fn write_custom_names_support_file(
+    output_dir: &Path,
+    bytes: &[u8],
+    written_files: &mut Vec<String>,
+) -> Result<()> {
+    let dest = output_dir.join(crate::project::CUSTOM_NAMES_SOURCE_FILE);
+    if let Some(parent) = dest.parent() {
+        fs::create_dir_all(parent).with_path(parent)?;
+    }
+    fs::write(&dest, bytes).with_path(&dest)?;
+    let name = crate::project::CUSTOM_NAMES_SOURCE_FILE.to_string();
+    if !written_files.iter().any(|existing| existing == &name) {
+        written_files.push(name);
+    }
+    Ok(())
+}
+
+fn custom_names_resource_fork(raw_dir: &Path) -> Result<Option<Vec<u8>>> {
+    for path in custom_names_resource_candidates(raw_dir) {
+        if !path.is_file() {
+            continue;
+        }
+        let bytes = fs::read(&path).with_path(&path)?;
+        if parse_resource_fork_entries(&bytes)
+            .iter()
+            .any(|entry| entry.resource_type == "STR#" && (entry.id == 129 || entry.id == 131))
+        {
+            return Ok(Some(bytes));
+        }
+    }
+    Ok(None)
+}
+
+fn custom_names_resource_candidates(raw_dir: &Path) -> Vec<std::path::PathBuf> {
+    vec![
+        raw_dir.join(crate::project::CUSTOM_NAMES_SOURCE_FILE),
+        raw_dir.join("Custom Names.rsrc"),
+        raw_dir.join("Custom Names.rsf"),
+        raw_dir.join("._Custom Names"),
+    ]
+}
+
+fn normalized_rule_names(names: &[String], defaults: Vec<String>, limit: usize) -> Vec<String> {
+    (0..limit)
+        .map(|index| {
+            names
+                .get(index)
+                .map(|name| name.trim())
+                .filter(|name| !name.is_empty())
+                .map(str::to_string)
+                .unwrap_or_else(|| {
+                    defaults
+                        .get(index)
+                        .cloned()
+                        .unwrap_or_else(|| format!("Name {index}"))
+                })
+        })
+        .collect()
 }
 
 fn default_custom_spell_name(custom_id: usize) -> String {

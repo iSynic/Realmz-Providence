@@ -182,9 +182,9 @@ const output = {
       note: "No distinct Data Spell TEXT description resources are observed in scenario Data Spell resource forks."
     },
     raceNames: {
-      status: "preserved-unknown",
-      writerStatus: "hidden",
-      note: "Scenario Data Race contains no decoded race name field and no Data Race resource forks are observed."
+      status: "external-support-resource",
+      writerStatus: "writer-safe-support-resource",
+      note: "Race names live in Data Files:Custom Names.rsrc STR# 129. Modern Realmz opens that support resource at startup; Providence imports, edits, and exports that support resource while keeping scenario Data Race for non-name fields."
     },
     raceDefaultPortraitSet: {
       status: "decoded-writable",
@@ -192,9 +192,9 @@ const output = {
       field: "Data Race offset 334"
     },
     casteNames: {
-      status: "preserved-unknown",
-      writerStatus: "hidden",
-      note: "Scenario Data Caste contains no decoded caste name field and no Data Caste resource forks are observed."
+      status: "external-support-resource",
+      writerStatus: "writer-safe-support-resource",
+      note: "Caste names live in Data Files:Custom Names.rsrc STR# 131. Modern Realmz opens that support resource at startup; Providence imports, edits, and exports that support resource while keeping scenario Data Caste for non-name fields."
     },
     casteDefaultIcon: {
       status: "decoded-writable",
@@ -213,7 +213,7 @@ const output = {
     spellResources: "spell-name-str-writer-safe-existing-resource",
     raceRecords: "writer-safe-fields-fixture-proven",
     casteRecords: "writer-safe-fields-fixture-proven",
-    raceCasteNames: "unresolved-hidden"
+    raceCasteNames: "support-resource-writer-safe"
   },
   summary: {
     scenariosWithRulesData: scenarios.length,
@@ -371,6 +371,7 @@ function buildNamePackagingOutput(rulesCoverage, rulesResourcesByScenario) {
       realmzSource: [
         "F:/Realmz/src/realmz_orig/spellselect.c GetIndString(1000 * spellcastertype + spelllevel, slot + 1)",
         "F:/Realmz/src/realmz_orig/combat.c GetIndString(1000 * (castcaste + 1) + castlevel, castnum + 1)",
+        "F:/Realmz/src/realmz_orig/main.c opens Data Files:Custom Names",
         "F:/Realmz/src/realmz_orig/age.c STR# 129 race labels",
         "F:/Realmz/src/realmz_orig/class.c STR# 131 caste labels"
       ],
@@ -394,14 +395,16 @@ function buildNamePackagingOutput(rulesCoverage, rulesResourcesByScenario) {
         reason: "No distinct scenario-local custom spell description resources are observed; Providence preserves existing record/resource bytes and keeps description text as editor metadata only."
       },
       raceNames: {
-        status: "not-scenario-data",
-        writerStatus: "hidden",
-        reason: "Realmz runtime race labels are read from shared STR# 129; no scenario-local Data Race name resource path is proven."
+        status: "external-support-resource",
+        writerStatus: "writer-safe-support-resource",
+        storage: "Data Files:Custom Names.rsrc STR# 129",
+        reason: "Modern Realmz opens Data Files:Custom Names at startup and reads race labels from STR# 129; Providence now imports, edits, merges, and exports that support resource under Data Files/Custom Names.rsrc."
       },
       casteNames: {
-        status: "not-scenario-data",
-        writerStatus: "hidden",
-        reason: "Realmz runtime caste labels are read from shared STR# 131; no scenario-local Data Caste name resource path is proven."
+        status: "external-support-resource",
+        writerStatus: "writer-safe-support-resource",
+        storage: "Data Files:Custom Names.rsrc STR# 131",
+        reason: "Modern Realmz opens Data Files:Custom Names at startup and reads caste labels from STR# 131; Providence now imports, edits, merges, and exports that support resource under Data Files/Custom Names.rsrc."
       }
     },
     summary: {

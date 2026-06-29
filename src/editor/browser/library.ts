@@ -1074,7 +1074,7 @@ function decodeClassicText(bytes: Uint8Array) {
   return output.trim();
 }
 
-function parseStringListResource(bytes: Uint8Array) {
+export function parseStringListResource(bytes: Uint8Array) {
   const count = u16At(bytes, 0);
   if (count === null) return [];
   const strings: string[] = [];

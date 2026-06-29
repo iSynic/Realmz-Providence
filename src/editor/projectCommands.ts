@@ -25,13 +25,17 @@ import {
   updateProjectAsset
 } from "./projectCommands/assetCommands";
 import {
+  clearCasteOverride,
+  clearRaceOverride,
   clearRuleOverride,
   createCasteOverride,
   createRaceOverride,
   createSpellOverride,
   renameEditorEntity,
+  updateCasteName,
   updateGlobalMacroHook,
   updateCustomSpellName,
+  updateRaceName,
   updateRuleOverride,
   updateScenarioContactInfo,
   updateScenarioRestrictions,
@@ -178,10 +182,12 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "clearSpellOverride") return clearRuleOverride(project, "spellOverrides", command.id);
   if (command.kind === "createRaceOverride") return createRaceOverride(project, command.id, command.template);
   if (command.kind === "updateRaceOverride") return updateRuleOverride(project, "raceOverrides", command.id, command.changes);
-  if (command.kind === "clearRaceOverride") return clearRuleOverride(project, "raceOverrides", command.id);
+  if (command.kind === "updateRaceName") return updateRaceName(project, command.id, command.displayName);
+  if (command.kind === "clearRaceOverride") return clearRaceOverride(project, command.id);
   if (command.kind === "createCasteOverride") return createCasteOverride(project, command.id, command.template);
   if (command.kind === "updateCasteOverride") return updateRuleOverride(project, "casteOverrides", command.id, command.changes);
-  if (command.kind === "clearCasteOverride") return clearRuleOverride(project, "casteOverrides", command.id);
+  if (command.kind === "updateCasteName") return updateCasteName(project, command.id, command.displayName);
+  if (command.kind === "clearCasteOverride") return clearCasteOverride(project, command.id);
   if (command.kind === "updateScenarioStartup") return updateScenarioStartup(project, command.fields);
   if (command.kind === "attachProjectAsset") return attachProjectAsset(project, command);
   if (command.kind === "replaceProjectAsset") return replaceProjectAsset(project, command);

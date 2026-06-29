@@ -4,6 +4,54 @@ use std::collections::BTreeMap;
 pub const PROJECT_SCHEMA_VERSION: u32 = 4;
 pub const SEMANTIC_SCHEMA_VERSION: u32 = 4;
 pub const MAP_SIZE: usize = 90;
+pub const RACE_NAME_LIMIT: usize = 70;
+pub const CASTE_NAME_LIMIT: usize = 30;
+pub const CUSTOM_NAMES_SOURCE_FILE: &str = "Data Files/Custom Names.rsrc";
+
+pub const REALMZ_RACE_NAMES: [&str; 19] = [
+    "Human",
+    "Shadow Elf",
+    "Elf",
+    "Orc",
+    "Furfoot",
+    "Gnome",
+    "Dwarf",
+    "Half Elf",
+    "Half Orc",
+    "Goblin",
+    "Hobgoblin",
+    "Kobold",
+    "Vampire",
+    "Lizard Man",
+    "Brownie",
+    "Pixie",
+    "Leprechaun",
+    "Demon",
+    "Cathoon",
+];
+
+pub const REALMZ_CASTE_NAMES: [&str; 20] = [
+    "Fighter",
+    "Monk",
+    "Crusader",
+    "Archer",
+    "Rogue",
+    "Sorcerer",
+    "Priest",
+    "Enchanter",
+    "Evoker",
+    "Cardinal",
+    "Cabalist",
+    "Berzerker",
+    "Bard",
+    "Fencer",
+    "Marksman",
+    "Assassin",
+    "Dabbler",
+    "Battle Mage",
+    "Warlock",
+    "Minstrel",
+];
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -58,6 +106,8 @@ pub struct ProvidenceProject {
     pub race_overrides: Vec<ScenarioRaceOverride>,
     #[serde(default)]
     pub caste_overrides: Vec<ScenarioCasteOverride>,
+    #[serde(default = "default_rule_names")]
+    pub rule_names: RuleNames,
     #[serde(default)]
     pub assets: Vec<ManagedAsset>,
     pub asset_catalog: AssetCatalog,
@@ -1360,6 +1410,65 @@ pub struct ScenarioCasteOverride {
     #[serde(default)]
     pub authored: bool,
     pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RuleNames {
+    #[serde(default = "default_custom_names_source_file")]
+    pub source_file: String,
+    #[serde(default = "default_race_names")]
+    pub race_names: Vec<String>,
+    #[serde(default = "default_caste_names")]
+    pub caste_names: Vec<String>,
+    #[serde(default)]
+    pub authored: bool,
+    #[serde(default)]
+    pub provenance: Option<Provenance>,
+}
+
+impl Default for RuleNames {
+    fn default() -> Self {
+        default_rule_names()
+    }
+}
+
+pub fn default_rule_names() -> RuleNames {
+    RuleNames {
+        source_file: default_custom_names_source_file(),
+        race_names: default_race_names(),
+        caste_names: default_caste_names(),
+        authored: false,
+        provenance: None,
+    }
+}
+
+pub fn default_race_names() -> Vec<String> {
+    (0..RACE_NAME_LIMIT).map(default_race_name).collect()
+}
+
+pub fn default_caste_names() -> Vec<String> {
+    (0..CASTE_NAME_LIMIT).map(default_caste_name).collect()
+}
+
+pub fn default_race_name(id: usize) -> String {
+    REALMZ_RACE_NAMES
+        .get(id)
+        .copied()
+        .map(str::to_string)
+        .unwrap_or_else(|| format!("Race {id}"))
+}
+
+pub fn default_caste_name(id: usize) -> String {
+    REALMZ_CASTE_NAMES
+        .get(id)
+        .copied()
+        .map(str::to_string)
+        .unwrap_or_else(|| format!("Caste {id}"))
+}
+
+fn default_custom_names_source_file() -> String {
+    CUSTOM_NAMES_SOURCE_FILE.to_string()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

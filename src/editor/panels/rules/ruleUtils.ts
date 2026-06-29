@@ -1,10 +1,11 @@
 import { LibraryCatalog, Project, ScenarioCasteOverride, ScenarioRaceOverride, ScenarioSpellOverride } from "../../types";
 import { REALMZ_CASTES, REALMZ_RACES, SPELL_CASTER_CLASSES } from "../../rulesCatalog";
+import { ruleCasteName, ruleRaceName } from "../../ruleNames";
 import { CasteRuleEntry, RaceRuleEntry, RulesFamily, SpellRuleEntry } from "./ruleTypes";
 
 const spellEntryCache = new WeakMap<Project, { catalog: LibraryCatalog | null; overrides: ScenarioSpellOverride[] | undefined; entries: SpellRuleEntry[] }>();
-const raceEntryCache = new WeakMap<Project, { catalog: LibraryCatalog | null; overrides: ScenarioRaceOverride[] | undefined; entries: RaceRuleEntry[] }>();
-const casteEntryCache = new WeakMap<Project, { catalog: LibraryCatalog | null; overrides: ScenarioCasteOverride[] | undefined; entries: CasteRuleEntry[] }>();
+const raceEntryCache = new WeakMap<Project, { catalog: LibraryCatalog | null; overrides: ScenarioRaceOverride[] | undefined; ruleNames: Project["ruleNames"] | undefined; entries: RaceRuleEntry[] }>();
+const casteEntryCache = new WeakMap<Project, { catalog: LibraryCatalog | null; overrides: ScenarioCasteOverride[] | undefined; ruleNames: Project["ruleNames"] | undefined; entries: CasteRuleEntry[] }>();
 
 export function buildSpellEntries(project: Project, catalog: LibraryCatalog | null): SpellRuleEntry[] {
   const cached = spellEntryCache.get(project);
@@ -195,7 +196,7 @@ export const STANDARD_CASTE_COUNT = REALMZ_CASTES.length;
 
 export function buildRaceEntries(project: Project, catalog: LibraryCatalog | null): RaceRuleEntry[] {
   const cached = raceEntryCache.get(project);
-  if (cached && cached.catalog === catalog && cached.overrides === project.raceOverrides) return cached.entries;
+  if (cached && cached.catalog === catalog && cached.overrides === project.raceOverrides && cached.ruleNames === project.ruleNames) return cached.entries;
   const scenario = new Map((project.raceOverrides ?? []).map((record) => [record.id, record]));
   const library = new Map<number, ScenarioRaceOverride>();
   for (const entity of catalog?.entities ?? []) {
@@ -205,20 +206,21 @@ export function buildRaceEntries(project: Project, catalog: LibraryCatalog | nul
     library.set(id, raceFromSummary(entity.summary, id));
   }
   const entries = Array.from({ length: RACE_RECORD_LIMIT }, (_, id) => {
-    const scenarioRecord = scenario.get(id) ?? null;
+    const scenarioRecord = id >= STANDARD_RACE_COUNT ? scenario.get(id) ?? null : null;
+    const record = scenarioRecord ?? library.get(id) ?? emptyRaceView(id);
     return {
       id,
-      record: scenarioRecord ?? library.get(id) ?? emptyRaceView(id),
+      record: { ...record, displayName: ruleRaceName(project, id, record.displayName) },
       hasScenarioVersion: Boolean(scenarioRecord)
     };
   });
-  raceEntryCache.set(project, { catalog, overrides: project.raceOverrides, entries });
+  raceEntryCache.set(project, { catalog, overrides: project.raceOverrides, ruleNames: project.ruleNames, entries });
   return entries;
 }
 
 export function buildCasteEntries(project: Project, catalog: LibraryCatalog | null): CasteRuleEntry[] {
   const cached = casteEntryCache.get(project);
-  if (cached && cached.catalog === catalog && cached.overrides === project.casteOverrides) return cached.entries;
+  if (cached && cached.catalog === catalog && cached.overrides === project.casteOverrides && cached.ruleNames === project.ruleNames) return cached.entries;
   const scenario = new Map((project.casteOverrides ?? []).map((record) => [record.id, record]));
   const library = new Map<number, ScenarioCasteOverride>();
   for (const entity of catalog?.entities ?? []) {
@@ -229,13 +231,14 @@ export function buildCasteEntries(project: Project, catalog: LibraryCatalog | nu
   }
   const entries = Array.from({ length: CASTE_RECORD_LIMIT }, (_, id) => {
     const scenarioRecord = scenario.get(id) ?? null;
+    const record = scenarioRecord ?? library.get(id) ?? emptyCasteView(id);
     return {
       id,
-      record: scenarioRecord ?? library.get(id) ?? emptyCasteView(id),
+      record: { ...record, displayName: ruleCasteName(project, id, record.displayName) },
       hasScenarioVersion: Boolean(scenarioRecord)
     };
   });
-  casteEntryCache.set(project, { catalog, overrides: project.casteOverrides, entries });
+  casteEntryCache.set(project, { catalog, overrides: project.casteOverrides, ruleNames: project.ruleNames, entries });
   return entries;
 }
 

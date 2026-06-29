@@ -35,6 +35,8 @@ Providence should label these records as library/override rules data. Scenario r
 | `F:\Realmz\src\realmz_orig\convert.h:150` | Spells are byte-only records, so no endian conversion is applied. |
 | `F:\Realmz\src\realmz_orig\main.c:1183` | Startup loads shared spell data from `:Data Files:Data S`. |
 | `F:\Realmz\src\realmz_orig\main.c:1189` | Startup calls `openrace` and reads race records to build base-move evidence. |
+| `F:\Realmz\src\realmz_orig\main.c:973` | Startup opens `:Data Files:Custom Names` as a resource file, making custom race/caste label resources available through the global resource chain. |
+| `F:\Realmz\src\ResourceManager.cpp:374` | Modern resource lookup searches the open resource chain; newer resource files shadow older entries. |
 | `F:\Realmz\src\realmz_orig\misc.c:2492` | `openrace` uses scenario `Data Race` only for third-party scenarios, otherwise shared `Data Race`, with fallback to shared if the scenario file is missing. |
 | `F:\Realmz\src\realmz_orig\misc.c:2504` | `opencaste` uses scenario `Data Caste` only for third-party scenarios, otherwise shared `Data Caste`, with fallback to shared if the scenario file is missing. |
 | `F:\Realmz\src\realmz_orig\misc.c:2752` | Scenario selection looks for scenario `Data Spell`. |
@@ -93,7 +95,7 @@ Scenario `Data Spell` is 9,016 bytes in all 17 local scenarios that include it. 
 
 ## Race Layout
 
-`Data Race` scenario override records are 408 bytes. Local scenario override files are 12,240 bytes, which is exactly 30 records.
+`Data Race` scenario override records are 408 bytes. Local scenario override files are 12,240 bytes, which is exactly 30 records. The `custom-race-non-name-fields-first-edit` Divinity fixture also produced a 12,240-byte scenario-local `Data Race` file; the intended Race 19 edits align with record 19 offsets under this model.
 
 | Offset | Size | Field | Notes |
 | ---: | ---: | --- | --- |
@@ -122,7 +124,7 @@ Scenario `Data Spell` is 9,016 bytes in all 17 local scenarios that include it. 
 
 ## Caste Layout
 
-`Data Caste` records are 576 bytes. Local shared and scenario override files are 17,280 bytes, which is exactly 30 records.
+`Data Caste` records are 576 bytes. Local shared and scenario override files are 17,280 bytes, which is exactly 30 records. The `custom-caste-non-name-fields-first-edit` Divinity fixture produced a 17,280-byte scenario-local `Data Caste` file with intended Caste 20 edits aligned to record 20 offsets.
 
 | Offset | Size | Field | Notes |
 | ---: | ---: | --- | --- |
@@ -164,8 +166,8 @@ Scenario `Data Spell` is 9,016 bytes in all 17 local scenarios that include it. 
 | File | Local Frequency | Size Evidence | Notes |
 | --- | ---: | --- | --- |
 | `Data Spell` | 17 / 44 scenarios | all observed scenario files are 9,016 bytes | Runtime reads 105 byte-only spell records into custom class slot, plus resource evidence. |
-| `Data Race` | 7 / 44 scenarios | all observed scenario override files are 12,240 bytes = 30 x 408 | Scenario override behavior is source-backed for third-party scenarios. |
-| `Data Caste` | 4 / 44 scenarios | all observed files are 17,280 bytes = 30 x 576 | Scenario override behavior is source-backed for third-party scenarios. |
+| `Data Race` | 7 / 44 scenarios plus Divinity fixture | all observed scenario override files are 12,240 bytes = 30 x 408 | Scenario override behavior is source-backed for third-party scenarios; sampled Divinity edits hit the same offsets. |
+| `Data Caste` | 4 / 44 scenarios plus Divinity fixture | all observed files are 17,280 bytes = 30 x 576 | Scenario override behavior is source-backed for third-party scenarios; sampled Divinity edits hit the same offsets. |
 | Shared `Data S` | bundled output | 15,750 bytes = 525 x 30 | Five classes, seven levels, fifteen slots. |
 | Shared `Data Race` | bundled output | 28,800 bytes | Shared file includes extra packaging or variant data; treat as library evidence until split is decoded. |
 | Shared `Data Caste` | bundled output | 17,280 bytes = 30 x 576 | Matches scenario override size. |
@@ -196,8 +198,8 @@ Scenario `Data Spell` is 9,016 bytes in all 17 local scenarios that include it. 
 
 - `Data Spell` owns the first `105 x 30` bytes as custom spell records for packed IDs `5101..5715`; the remaining bytes are preserved as packaging/tail evidence.
 - `Data Spell.rsrc` / `Data Spell.rsf` contains seven `STR#` resources, IDs `5000..5006`, named for the Custom 1st through Custom 7th spell levels. Realmz source proves these are custom spell name lists, and fixture tests prove Providence can update one custom spell name by replacing only the intended `STR#` resource payload while preserving `Data Spell` record/tail bytes.
-- Scenario `Data Race` and `Data Caste` override files are complete fixed-row tables: `30 x 408` and `30 x 576` respectively. No scenario `Data Race.rsrc` or `Data Caste.rsrc` packaging has been observed in the corpus.
-- Race names and caste names are not decoded from the scenario override records yet. Normal UI should keep those generated/fallback-only until Divinity evidence proves a writable storage path.
+- Scenario `Data Race` and `Data Caste` override files are complete fixed-row tables: `30 x 408` and `30 x 576` respectively. Divinity non-name creation fixtures wrote the sampled custom race/caste edits to scenario-local files while leaving global `Data Files:Data Race` and `Data Files:Data Caste` unchanged. No scenario `Data Race.rsrc` or `Data Caste.rsrc` packaging has been observed in the corpus.
+- Race names and caste names are not stored in the scenario override records. The `custom-race-caste-name-first-edit` Divinity fixture wrote custom names to `World of Realmz:Data Files:Custom Names.rsrc`: `STR# 129` named `Race` and `STR# 131` named `Caste`, while the scenario folder diff remained empty. Modern Realmz source opens `:Data Files:Custom Names` at startup and displayed race/caste labels come from `GetIndString(129, ...)` / `GetIndString(131, ...)`, so Providence now treats the names as an imported/edited/exported support resource rather than fixed-record bytes.
 
 Fixture tests now prove that current record writers mutate only owned spell, race, and caste byte ranges, preserve the `Data Spell` tail during export, and roundtrip custom spell names through `STR# 5000..5006`.
 
@@ -226,7 +228,7 @@ The May 2026 Scenario screenshots show Divinity's Scenario area as a hub for sta
 | Family | Writable now | Preserve-first |
 | --- | --- | --- |
 | `Data Spell` | 105 runtime-read 30-byte spell records | Tail/resource fork names, descriptions, and packaging evidence |
-| `Data Race` | 30 x 408-byte scenario override fields mapped in `struct race` | Resource-fork names and any unknown spacer bytes |
+| `Data Race` | 30 x 408-byte scenario override fields mapped in `struct race` | Any unknown spacer bytes |
 | `Data Caste` | 30 x 576-byte scenario override fields mapped in `struct caste` | Unknown spacer bytes and labels requiring Divinity binary evidence |
 | `Global` | Seven Divinity-visible hook doors, with source-backed labels on known consumers | Unlabeled/reserved hook slots |
 | Scenario pictures | Managed `PICT` range `30000..30128` when resource writing is available | Unrecognized resource metadata and non-picture fork content |

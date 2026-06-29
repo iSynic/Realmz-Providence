@@ -1,13 +1,14 @@
 import { BenchmarkReport, Project, ScenarioShell, ValidationReport } from "../types";
 import { BrowserScenarioSource, readProjectJson, readScenarioSource } from "./fsAccess";
 import { browserReferenceAtlasUrl, browserTilesetAtlasUrl, hasBrowserReferenceAtlas } from "./atlasPaths";
-import { parseResourceFork } from "./library";
+import { parseResourceFork, parseStringListResource } from "./library";
 import { buildBrowserSemanticSchema } from "./semantic";
 import { landlookBaseTile, landlookName, landlookPictId, parseLandlookMapstats, parseScenarioBuffers, TRACKED_FILES } from "./realmzParser";
 import { inspectResourcePreview } from "./resourcePreview";
 import { assetFallbacks, blockedSemanticObjects, generatedRuntimeCaches, resourceGaps, unresolvedLinks } from "../semanticGraph";
 import { validateRealmzTargetRecord } from "../targetValidation";
 import { tileIconCandidates } from "../map/renderValues";
+import { classicTextByteLength, defaultRuleNames, ruleCasteName, ruleRaceName } from "../ruleNames";
 
 const EMPTY_TARGET_COMPATIBILITY = { blockers: [], warnings: [], notes: [] };
 const pendingBrowserSemantics = new Map<string, { files: Map<string, Uint8Array>; sourceFiles: Project["source"]["files"] }>();
@@ -61,6 +62,7 @@ export function createBrowserProject(projectName: string): Project {
     spellOverrides: [],
     raceOverrides: [],
     casteOverrides: [],
+    ruleNames: defaultRuleNames(),
     assets: [],
     assetCatalog: { tilesets: [] },
     editorMetadata: { displayNames: {}, tilePalettes: [], mapStamps: [], questThreads: [], questContextSources: [] },
@@ -124,6 +126,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
     spellOverrides: parsed.spellOverrides,
     raceOverrides: parsed.raceOverrides,
     casteOverrides: parsed.casteOverrides,
+    ruleNames: parseBrowserRuleNames(files),
     assets: [],
     assetCatalog: parsed.assetCatalog,
     editorMetadata: { displayNames: {}, tilePalettes: [], mapStamps: [], questThreads: [], questContextSources: [] },
@@ -446,6 +449,7 @@ export async function openBrowserProject(source: BrowserScenarioSource): Promise
   project.spellOverrides ??= [];
   project.raceOverrides ??= [];
   project.casteOverrides ??= [];
+  project.ruleNames = defaultRuleNames(project.ruleNames);
   project.editorMetadata ??= { displayNames: {}, tilePalettes: [], mapStamps: [], questThreads: [], questContextSources: [] };
   project.editorMetadata.displayNames ??= {};
   project.editorMetadata.tilePalettes ??= [];
@@ -542,6 +546,39 @@ function backfillTilesetMetadata(project: Project) {
       tileset.source = "Browser project hydration: bundled Realmz reference PICT";
     }
   }
+}
+
+function parseBrowserRuleNames(files: Map<string, Uint8Array>) {
+  let ruleNames = defaultRuleNames();
+  for (const [name, bytes] of files) {
+    const normalized = name.replace(/\\/g, "/").toLowerCase();
+    const baseName = normalized.split("/").pop() ?? normalized;
+    if (baseName !== "custom names.rsrc" && baseName !== "custom names.rsf" && baseName !== "._custom names") continue;
+    let found = false;
+    for (const resource of parseResourceFork(bytes)) {
+      if (resource.resourceType !== "STR#") continue;
+      if (resource.id === 129) {
+        ruleNames = { ...ruleNames, raceNames: mergeRuleNameStrings(ruleNames.raceNames, parseStringListResource(resource.data)) };
+        found = true;
+      } else if (resource.id === 131) {
+        ruleNames = { ...ruleNames, casteNames: mergeRuleNameStrings(ruleNames.casteNames, parseStringListResource(resource.data)) };
+        found = true;
+      }
+    }
+    if (found) {
+      return {
+        ...ruleNames,
+        sourceFile: name.includes("/") || name.includes("\\") ? name : "Data Files/Custom Names.rsrc",
+        authored: false,
+        provenance: { sourceFile: name, recordIndex: 0, byteOffset: 0, byteLength: bytes.byteLength, confidence: "source-backed" }
+      };
+    }
+  }
+  return ruleNames;
+}
+
+function mergeRuleNameStrings(defaults: string[], decoded: string[]) {
+  return defaults.map((fallback, index) => decoded[index]?.trim() || fallback);
 }
 
 function browserReferenceTileset(landlook: number) {
@@ -683,6 +720,17 @@ export function validateBrowserProject(project: Project): ValidationReport {
 }
 
 function validateRulesRecords(project: Project, errors: string[], warnings: string[]) {
+  project.ruleNames = defaultRuleNames(project.ruleNames);
+  for (const race of project.raceOverrides ?? []) {
+    const name = ruleRaceName(project, race.id);
+    const bytes = classicTextByteLength(name);
+    if (bytes > 255) errors.push(`Race ${race.id} name is ${bytes} byte(s); Custom Names STR# entries support at most 255.`);
+  }
+  for (const caste of project.casteOverrides ?? []) {
+    const name = ruleCasteName(project, caste.id);
+    const bytes = classicTextByteLength(name);
+    if (bytes > 255) errors.push(`Caste ${caste.id} name is ${bytes} byte(s); Custom Names STR# entries support at most 255.`);
+  }
   for (const spell of project.spellOverrides ?? []) {
     if (spell.id < 0 || spell.id > 104) errors.push(`Custom spell ${spell.id} is outside Data Spell's 0..104 custom slot range.`);
     for (const [field, value] of [

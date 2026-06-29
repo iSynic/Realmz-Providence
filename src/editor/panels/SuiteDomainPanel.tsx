@@ -12,6 +12,7 @@ import { renderListKey } from "../renderKeys";
 import { TargetRecordEditor } from "./ScriptsPanel";
 import { directRecordsForTool, labelForSelectedId, type DirectRecordRow } from "../directRecordIndex";
 import { ITEM_REFERENCE_CATEGORIES, itemReferenceOptions, type ItemReferenceCategory, type ItemReferenceOption } from "../itemReferences";
+import { ruleCasteName, ruleRaceName } from "../ruleNames";
 
 const DOMAIN_CONFIG: Record<EditorTab, { title: string; subtitle: string; editors: DomainEditor[] }> = {
   maps: {
@@ -439,8 +440,8 @@ function directRowsForEditor(project: Project, editor: DomainEditor): DirectReco
     return project.scenario.securityBackup ? [{ id: "scenario:security", label: "Security / Registration", type: "registration-security", summary: "Divinity code segments" }] : [];
   }
   if (editor.id === "spells") return project.spellOverrides.map((record) => ({ id: `spell:${record.id}`, label: record.displayName || `Spell ${record.id}`, type: "spell-reference", summary: `sound ${record.sound1}/${record.sound2}` }));
-  if (editor.id === "races") return project.raceOverrides.map((record) => ({ id: `race:${record.id}`, label: record.displayName || `Race ${record.id}`, type: "race", summary: `default icons ${record.defaultIconSet}` }));
-  if (editor.id === "castes") return project.casteOverrides.map((record) => ({ id: `caste:${record.id}`, label: record.displayName || `Caste ${record.id}`, type: "caste", summary: `default icon ${record.defaultIcon}` }));
+  if (editor.id === "races") return project.raceOverrides.map((record) => ({ id: `race:${record.id}`, label: ruleRaceName(project, record.id, record.displayName), type: "race", summary: `default icons ${record.defaultIconSet}` }));
+  if (editor.id === "castes") return project.casteOverrides.map((record) => ({ id: `caste:${record.id}`, label: ruleCasteName(project, record.id, record.displayName), type: "caste", summary: `default icon ${record.defaultIcon}` }));
   if (editor.id === "pictures") {
     return [
       ...(project.assetCatalog.pictures ?? []).map((asset) => ({ id: `resource:${asset.resourceType}:${asset.resourceId}`, label: asset.name || `${asset.resourceType} ${asset.resourceId}`, type: "picture", summary: asset.source })),

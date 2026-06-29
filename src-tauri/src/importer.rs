@@ -81,6 +81,7 @@ pub fn create_project(
         spell_overrides: Vec::new(),
         race_overrides: Vec::new(),
         caste_overrides: Vec::new(),
+        rule_names: default_rule_names(),
         assets: Vec::new(),
         asset_catalog: AssetCatalog::default(),
         editor_metadata: EditorMetadata::default(),
@@ -262,6 +263,7 @@ fn import_scenario_with_name(
         spell_overrides: parsed.spell_overrides,
         race_overrides: parsed.race_overrides,
         caste_overrides: parsed.caste_overrides,
+        rule_names: default_rule_names(),
         assets: Vec::new(),
         asset_catalog: parsed.asset_catalog,
         editor_metadata: EditorMetadata::default(),
@@ -271,6 +273,7 @@ fn import_scenario_with_name(
         validation: ValidationReport::default(),
     };
     hydrate_custom_spell_names(&source_path, &mut project)?;
+    hydrate_rule_names(&source_path, Some(&raw_dir), &mut project)?;
     import_picture_assets(&source_path, &assets_dir, &mut project)?;
     import_tile_atlases(&source_path, &assets_dir, &mut project)?;
     import_icon_overlays(&source_path, &assets_dir, &mut project)?;
@@ -305,6 +308,7 @@ pub fn open_project(project_dir: impl AsRef<Path>) -> Result<ProvidenceProject> 
         project.source.raw_sources_dir.as_str()
     });
     hydrate_custom_spell_names(&raw_dir, &mut project)?;
+    hydrate_rule_names(&raw_dir, None, &mut project)?;
     import_picture_assets(&raw_dir, &project_dir.join(ASSETS_DIR), &mut project)?;
     refresh_custom_tile_atlases(project_dir, &mut project)?;
     import_icon_overlays(&raw_dir, &project_dir.join(ASSETS_DIR), &mut project)?;
@@ -354,6 +358,7 @@ struct ProjectFile<'a> {
     spell_overrides: &'a [ScenarioSpellOverride],
     race_overrides: &'a [ScenarioRaceOverride],
     caste_overrides: &'a [ScenarioCasteOverride],
+    rule_names: &'a RuleNames,
     assets: &'a [ManagedAsset],
     asset_catalog: &'a AssetCatalog,
     editor_metadata: &'a EditorMetadata,
@@ -394,6 +399,7 @@ impl<'a> From<&'a ProvidenceProject> for ProjectFile<'a> {
             spell_overrides: &project.spell_overrides,
             race_overrides: &project.race_overrides,
             caste_overrides: &project.caste_overrides,
+            rule_names: &project.rule_names,
             assets: &project.assets,
             asset_catalog: &project.asset_catalog,
             editor_metadata: &project.editor_metadata,
@@ -1153,6 +1159,111 @@ fn hydrate_custom_spell_names(source_path: &Path, project: &mut ProvidenceProjec
     Ok(())
 }
 
+fn hydrate_rule_names(
+    source_path: &Path,
+    raw_dir: Option<&Path>,
+    project: &mut ProvidenceProject,
+) -> Result<()> {
+    normalize_rule_names(project);
+    for resource_path in custom_names_resource_candidates(source_path) {
+        if !resource_path.is_file() {
+            continue;
+        }
+        let bytes = fs::read(&resource_path).with_path(&resource_path)?;
+        let entries = crate::resource_fork::parse_resource_fork_entries(&bytes);
+        let mut found = false;
+        let mut rule_names = default_rule_names();
+        rule_names.source_file = CUSTOM_NAMES_SOURCE_FILE.to_string();
+        rule_names.provenance = Some(Provenance {
+            source_file: resource_path.to_string_lossy().to_string(),
+            record_index: 0,
+            byte_offset: 0,
+            byte_length: bytes.len(),
+            confidence: Confidence::SourceBacked,
+        });
+        for entry in entries {
+            if entry.resource_type != "STR#" {
+                continue;
+            }
+            if entry.id == 129 {
+                merge_rule_name_list(
+                    &mut rule_names.race_names,
+                    crate::resource_fork::decode_string_list_resource(&entry.data),
+                );
+                found = true;
+            } else if entry.id == 131 {
+                merge_rule_name_list(
+                    &mut rule_names.caste_names,
+                    crate::resource_fork::decode_string_list_resource(&entry.data),
+                );
+                found = true;
+            }
+        }
+        if !found {
+            continue;
+        }
+        if let Some(raw_dir) = raw_dir {
+            let dest = raw_dir.join(CUSTOM_NAMES_SOURCE_FILE);
+            if !same_path(&resource_path, &dest) {
+                if let Some(parent) = dest.parent() {
+                    fs::create_dir_all(parent).with_path(parent)?;
+                }
+                fs::copy(&resource_path, &dest).with_path(&dest)?;
+            }
+        }
+        project.rule_names = rule_names;
+        apply_rule_names_to_records(project);
+        return Ok(());
+    }
+    apply_rule_names_to_records(project);
+    Ok(())
+}
+
+fn normalize_rule_names(project: &mut ProvidenceProject) {
+    let defaults = default_rule_names();
+    if project.rule_names.source_file.trim().is_empty() {
+        project.rule_names.source_file = CUSTOM_NAMES_SOURCE_FILE.to_string();
+    }
+    merge_rule_name_list(&mut project.rule_names.race_names, defaults.race_names);
+    merge_rule_name_list(&mut project.rule_names.caste_names, defaults.caste_names);
+}
+
+fn merge_rule_name_list(target: &mut Vec<String>, source: Vec<String>) {
+    if target.len() < source.len() {
+        target.resize(source.len(), String::new());
+    }
+    for (index, value) in source.into_iter().enumerate() {
+        let value = value.trim();
+        if !value.is_empty() {
+            target[index] = value.to_string();
+        }
+    }
+}
+
+fn apply_rule_names_to_records(project: &mut ProvidenceProject) {
+    for record in &mut project.race_overrides {
+        if let Some(name) = project.rule_names.race_names.get(record.id) {
+            if !name.trim().is_empty() {
+                record.display_name = name.clone();
+            }
+        }
+    }
+    for record in &mut project.caste_overrides {
+        if let Some(name) = project.rule_names.caste_names.get(record.id) {
+            if !name.trim().is_empty() {
+                record.display_name = name.clone();
+            }
+        }
+    }
+}
+
+fn same_path(left: &Path, right: &Path) -> bool {
+    match (left.canonicalize(), right.canonicalize()) {
+        (Ok(left), Ok(right)) => left == right,
+        _ => left == right,
+    }
+}
+
 fn upsert_scenario_icon_asset(
     project: &mut ProvidenceProject,
     icon_id: i16,
@@ -1632,6 +1743,32 @@ fn data_spell_resource_candidates(source_path: &Path) -> Vec<PathBuf> {
         source_path.join("._Data Spell"),
         source_path.join("Data Spell"),
     ]
+}
+
+fn custom_names_resource_candidates(source_path: &Path) -> Vec<PathBuf> {
+    let mut candidates = vec![
+        source_path.join(CUSTOM_NAMES_SOURCE_FILE),
+        source_path.join("Custom Names.rsrc"),
+        source_path.join("Custom Names.rsf"),
+        source_path.join("._Custom Names"),
+    ];
+    if let Some(parent) = source_path.parent() {
+        candidates.push(parent.join("Data Files").join("Custom Names.rsrc"));
+        candidates.push(parent.join("Data Files").join("Custom Names.rsf"));
+        if let Some(grandparent) = parent.parent() {
+            candidates.push(grandparent.join("Data Files").join("Custom Names.rsrc"));
+            candidates.push(grandparent.join("Data Files").join("Custom Names.rsf"));
+        }
+    }
+    dedupe_paths(candidates)
+}
+
+fn dedupe_paths(paths: Vec<PathBuf>) -> Vec<PathBuf> {
+    let mut seen = BTreeSet::new();
+    paths
+        .into_iter()
+        .filter(|path| seen.insert(path.to_string_lossy().to_string()))
+        .collect()
 }
 
 fn png_bytes_from_data_url(data_url: &str) -> Option<Vec<u8>> {

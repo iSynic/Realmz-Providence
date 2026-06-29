@@ -204,9 +204,9 @@
       "note": "No distinct Data Spell TEXT description resources are observed in scenario Data Spell resource forks."
     },
     "raceNames": {
-      "status": "preserved-unknown",
-      "writerStatus": "hidden",
-      "note": "Scenario Data Race contains no decoded race name field and no Data Race resource forks are observed."
+      "status": "external-support-resource",
+      "writerStatus": "writer-safe-support-resource",
+      "note": "Race names live in Data Files:Custom Names.rsrc STR# 129. Modern Realmz opens that support resource at startup; Providence imports, edits, and exports that support resource while keeping scenario Data Race for non-name fields."
     },
     "raceDefaultPortraitSet": {
       "status": "decoded-writable",
@@ -214,9 +214,9 @@
       "field": "Data Race offset 334"
     },
     "casteNames": {
-      "status": "preserved-unknown",
-      "writerStatus": "hidden",
-      "note": "Scenario Data Caste contains no decoded caste name field and no Data Caste resource forks are observed."
+      "status": "external-support-resource",
+      "writerStatus": "writer-safe-support-resource",
+      "note": "Caste names live in Data Files:Custom Names.rsrc STR# 131. Modern Realmz opens that support resource at startup; Providence imports, edits, and exports that support resource while keeping scenario Data Caste for non-name fields."
     },
     "casteDefaultIcon": {
       "status": "decoded-writable",
@@ -238,7 +238,7 @@
     "spellResources": "spell-name-str-writer-safe-existing-resource",
     "raceRecords": "writer-safe-fields-fixture-proven",
     "casteRecords": "writer-safe-fields-fixture-proven",
-    "raceCasteNames": "unresolved-hidden"
+    "raceCasteNames": "support-resource-writer-safe"
   },
   "summary": {
     "scenariosWithRulesData": 59,

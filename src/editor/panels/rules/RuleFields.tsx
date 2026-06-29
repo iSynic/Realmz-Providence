@@ -170,9 +170,9 @@ function rulesFamilyHelp(recordNoun: string) {
   return "Rules data is shared by default and scenario-local only when an override exists.";
 }
 
-export function RuleSection({ title, badge, help, children }: { title: string; badge: string; help?: string; children: ReactNode }) {
+export function RuleSection({ title, badge, help, wide = false, children }: { title: string; badge: string; help?: string; wide?: boolean; children: ReactNode }) {
   return (
-    <section className="rules-section">
+    <section className={classNames("rules-section", wide && "rules-section-wide")}>
       <header title={help}>
         {help ? (
           <TutorialTip title={title} body={help} side="right">
@@ -204,6 +204,7 @@ export function TextField({
   wide = false,
   span = false,
   disabled = false,
+  maxLength,
   help
 }: {
   label: string;
@@ -212,6 +213,7 @@ export function TextField({
   wide?: boolean;
   span?: boolean;
   disabled?: boolean;
+  maxLength?: number;
   help?: string;
 }) {
   const commit = (next: string) => {
@@ -225,6 +227,7 @@ export function TextField({
           key={value}
           defaultValue={value}
           disabled={disabled}
+          maxLength={maxLength}
           rows={3}
           onBlur={(event) => commit(event.currentTarget.value)}
         />
@@ -234,6 +237,7 @@ export function TextField({
           type="text"
           defaultValue={value}
           disabled={disabled}
+          maxLength={maxLength}
           onBlur={(event) => commit(event.currentTarget.value)}
         />
       )}
@@ -527,7 +531,34 @@ export function useAnimatedPreview(previews: string[]) {
   return previews[index] ?? null;
 }
 
-export function PairGrid({ labels, values, leftLabel, rightLabel, onChange }: { labels: string[]; values: number[]; leftLabel: string; rightLabel: string; onChange: (values: number[]) => void }) {
+export function PairGrid({ labels, values, leftLabel, rightLabel, columns = 1, onChange }: { labels: string[]; values: number[]; leftLabel: string; rightLabel: string; columns?: number; onChange: (values: number[]) => void }) {
+  if (columns > 1) {
+    const rowsPerColumn = Math.ceil(labels.length / columns);
+    return (
+      <div className="rules-pair-grid rules-pair-grid-split" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
+        {Array.from({ length: columns }, (_, columnIndex) => {
+          const start = columnIndex * rowsPerColumn;
+          const columnLabels = labels.slice(start, start + rowsPerColumn);
+          return (
+            <div className="rules-pair-column" key={columnIndex}>
+              <b></b><b>{leftLabel}</b><b>{rightLabel}</b>
+              {columnLabels.map((label, index) => {
+                const valueIndex = start + index;
+                return (
+                  <RowPair key={label} label={label} left={values[valueIndex * 2] ?? 0} right={values[valueIndex * 2 + 1] ?? 0} onChange={(left, right) => {
+                    const next = [...values];
+                    next[valueIndex * 2] = left;
+                    next[valueIndex * 2 + 1] = right;
+                    onChange(next);
+                  }} />
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
   return (
     <div className="rules-pair-grid">
       <b></b><b>{leftLabel}</b><b>{rightLabel}</b>
