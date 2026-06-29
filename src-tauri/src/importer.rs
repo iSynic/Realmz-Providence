@@ -602,11 +602,11 @@ fn hydrate_scenario_metadata(project_dir: &Path, project: &mut ProvidenceProject
 
 fn read_scenario_shell(source_path: &Path, scenario_name: &str) -> Result<Option<ScenarioShell>> {
     let path = source_path.join(scenario_name);
-    if !path.is_file() {
-        return Ok(None);
+    if path.is_file() {
+        let bytes = fs::read(&path).with_path(&path)?;
+        return crate::realmz::parse_scenario_shell(scenario_name, &bytes).map(Some);
     }
-    let bytes = fs::read(&path).with_path(&path)?;
-    crate::realmz::parse_scenario_shell(scenario_name, &bytes).map(Some)
+    read_scenario_shell_candidate_from_dir(source_path)
 }
 
 fn read_scenario_shell_from_raw(
@@ -620,15 +620,6 @@ fn read_scenario_shell_from_raw(
             .as_ref()
             .map(|shell| shell.source_file.as_str()),
         Some(project.scenario.name.as_str()),
-        project
-            .source
-            .files
-            .iter()
-            .find(|file| {
-                !is_resource_file_name(&file.name)
-                    && !TRACKED_FILES.iter().any(|tracked| *tracked == file.name)
-            })
-            .map(|file| file.name.as_str()),
     ];
     for candidate in candidates.into_iter().flatten() {
         let path = raw_dir.join(candidate);
@@ -637,7 +628,36 @@ fn read_scenario_shell_from_raw(
             return crate::realmz::parse_scenario_shell(candidate, &bytes).map(Some);
         }
     }
-    Ok(None)
+    read_scenario_shell_candidate_from_dir(raw_dir)
+}
+
+fn read_scenario_shell_candidate_from_dir(dir: &Path) -> Result<Option<ScenarioShell>> {
+    let mut candidates: Vec<(usize, String, PathBuf)> = Vec::new();
+    for entry in fs::read_dir(dir).with_path(dir)? {
+        let entry = entry.map_err(|error| ProvidenceError::message(error.to_string()))?;
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+        let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
+            continue;
+        };
+        if !is_scenario_marker_candidate_name(name) {
+            continue;
+        }
+        let bytes = fs::read(&path).with_path(&path)?;
+        if bytes.len() < 316 || crate::realmz::parse_scenario_shell(name, &bytes).is_err() {
+            continue;
+        }
+        let size_rank = if bytes.len() == 316 { 0 } else { 1 };
+        candidates.push((size_rank, name.to_string(), path));
+    }
+    candidates.sort_by(|left, right| left.0.cmp(&right.0).then_with(|| left.1.cmp(&right.1)));
+    let Some((_, name, path)) = candidates.into_iter().next() else {
+        return Ok(None);
+    };
+    let bytes = fs::read(&path).with_path(&path)?;
+    crate::realmz::parse_scenario_shell(&name, &bytes).map(Some)
 }
 
 fn default_scenario_shell(source_file: &str) -> ScenarioShell {
@@ -900,6 +920,13 @@ fn is_scenario_marker_source(source_path: &Path, name: &str, bytes: &[u8]) -> bo
     };
     name.eq_ignore_ascii_case(scenario_dir_name)
         && crate::realmz::parse_scenario_shell(name, bytes).is_ok()
+}
+
+fn is_scenario_marker_candidate_name(name: &str) -> bool {
+    !is_resource_file_name(name)
+        && !TRACKED_FILES.iter().any(|tracked| *tracked == name)
+        && !name.starts_with("Data ")
+        && !name.starts_with("._")
 }
 
 fn is_resource_file_name(name: &str) -> bool {
@@ -1877,6 +1904,25 @@ mod tests {
             .join(PROJECT_FILE_NAME)
             .is_file());
         assert_ne!(first.scenario.project_path, second.scenario.project_path);
+    }
+
+    #[test]
+    fn read_scenario_shell_falls_back_to_mismatched_marker_names() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        fs::write(temp.path().join("Scenario"), vec![0; 600]).expect("write support file");
+        fs::write(temp.path().join("Custom 1 Music"), vec![0; 60_224]).expect("write custom music");
+
+        let mut marker = vec![0; 316];
+        marker[0..4].copy_from_slice(&70_i32.to_be_bytes());
+        marker[4..8].copy_from_slice(&55_i32.to_be_bytes());
+        fs::write(temp.path().join("Prince of Darkness"), marker).expect("write marker");
+
+        let shell = read_scenario_shell(temp.path(), "Prince Of Darkness v1.6")
+            .expect("read shell")
+            .expect("fallback shell");
+        assert_eq!(shell.source_file, "Prince of Darkness");
+        assert_eq!(shell.rec_level, 70);
+        assert_eq!(shell.max_level, 55);
     }
 
     #[test]
