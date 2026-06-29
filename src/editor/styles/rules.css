@@ -302,15 +302,14 @@
 
 
 .rules-spell-record-picker {
-  grid-template-columns: 215px auto 285px auto auto auto;
+  grid-template-columns: max-content auto minmax(220px, 300px) auto auto;
   justify-content: start;
   align-items: center;
 }
 
 
 
-.rules-spell-record-picker .scenario-field,
-.rules-spell-record-picker > label {
+.rules-spell-record-picker .rules-record-select-field {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
   gap: 8px;
@@ -319,14 +318,20 @@
 
 
 
-.rules-spell-record-picker .scenario-field {
-  width: 215px;
+.rules-spell-record-picker .rules-spell-class-select-field {
+  grid-template-columns: max-content 185px;
 }
 
 
 
-.rules-spell-record-picker > label {
-  width: 285px;
+.rules-spell-record-picker .rules-spell-select-field {
+  grid-template-columns: 42px minmax(175px, 258px);
+}
+
+
+
+.rules-spell-record-picker .rules-record-select-field select {
+  width: 100%;
 }
 
 
@@ -688,11 +693,31 @@
 
 .rules-spell-sheet {
   display: grid;
-  grid-template-columns: minmax(250px, 315px) minmax(230px, 285px) minmax(470px, 1fr);
+  grid-template-columns: minmax(370px, 1fr) minmax(315px, 350px) minmax(350px, 390px);
   gap: 12px;
   align-items: stretch;
   min-width: 0;
+  width: min(100%, 1320px);
   max-width: 1320px;
+  margin-inline: auto;
+}
+
+
+
+.rules-spell-column-presentation {
+  order: 1;
+}
+
+
+
+.rules-spell-column-values {
+  order: 2;
+}
+
+
+
+.rules-spell-column-context {
+  order: 3;
 }
 
 
@@ -799,9 +824,14 @@
 
 
 
-.rules-spell-column-values .rules-field-medium,
+.rules-spell-column-values .rules-field-medium {
+  grid-template-columns: minmax(112px, 1fr) minmax(0, 190px);
+}
+
+
+
 .rules-spell-column-context .rules-field-medium {
-  grid-template-columns: minmax(112px, 1fr) minmax(0, 150px);
+  grid-template-columns: minmax(92px, 1fr) minmax(0, 235px);
 }
 
 
@@ -809,12 +839,33 @@
 .rules-spell-field-list .rules-checkbox-field {
   width: 100%;
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
-  justify-content: start;
+  grid-template-columns: minmax(112px, 1fr) 18px;
+  justify-self: stretch;
+  justify-content: stretch;
+  align-items: center;
   padding: 4px 0;
   border: 0;
   border-radius: 0;
   background: transparent;
+}
+
+
+
+.rules-spell-field-list .rules-checkbox-field input {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+  margin: 0;
+}
+
+
+
+.rules-spell-field-list .rules-checkbox-field .tutorial-tip,
+.rules-spell-field-list .rules-checkbox-field span {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: start;
+  text-align: left;
 }
 
 
@@ -863,6 +914,7 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 5px;
+  justify-items: stretch;
   padding: 2px 0 4px;
 }
 
@@ -912,14 +964,14 @@
 
 
 .rules-spell-sound-row {
-  grid-template-columns: repeat(2, minmax(150px, 180px));
+  grid-template-columns: repeat(2, minmax(160px, 195px));
   justify-content: start;
 }
 
 
 
 .rules-spell-icon-row {
-  grid-template-columns: repeat(3, minmax(130px, 160px));
+  grid-template-columns: repeat(3, minmax(145px, 180px));
   justify-content: start;
 }
 
@@ -944,7 +996,7 @@
 
 .rules-spell-sound-row .rules-sound-number input,
 .rules-spell-icon-row .rules-icon-number input {
-  width: 7ch;
+  width: 9ch;
 }
 
 
@@ -1639,7 +1691,7 @@
 
 
 
-@media (max-width: 1250px) {
+@media (max-width: 1120px) {
   .rules-spell-sheet {
     grid-template-columns: 1fr;
   }

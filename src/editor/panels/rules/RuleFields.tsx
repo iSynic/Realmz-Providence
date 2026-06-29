@@ -301,12 +301,19 @@ export function SpellAnimationIconField({
   zeroMode: SpellAnimationZeroMode;
   help?: string;
 }) {
-  const range = spellAnimationIconRange(value, zeroMode);
+  const [draft, setDraft] = useState(String(value));
+  useEffect(() => {
+    setDraft(String(value));
+  }, [value]);
+  const draftNumber = Number(draft);
+  const previewValue = draft.trim() !== "" && Number.isFinite(draftNumber) ? draftNumber : value;
+  const range = spellAnimationIconRange(previewValue, zeroMode);
   const frameAssets = range.frameIconIds.map((iconId) => findLibraryResourceAsset(assets, "cicn", iconId, "icon"));
   const previews = useRuleIconPreviews(frameAssets);
   const preview = useAnimatedPreview(previews);
+  const title = [help, range.hint].filter(Boolean).join("\n");
   return (
-    <label className="scenario-field rules-icon-number" title={help}>
+    <label className="scenario-field rules-icon-number" title={title}>
       <HelpLabel label={label} help={help} />
       <div>
         {preview ? (
@@ -315,17 +322,17 @@ export function SpellAnimationIconField({
           </span>
         ) : range.blank ? <span className="rules-blank-icon-preview" aria-hidden="true" /> : <b>{value || "-"}</b>}
         <input
-          key={value}
           type="number"
-          defaultValue={value}
+          value={draft}
           disabled={disabled}
+          onChange={(event) => setDraft(event.currentTarget.value)}
           onBlur={(event) => {
             const next = Number(event.currentTarget.value);
             if (!disabled && Number.isFinite(next) && next !== value) onCommit(next);
+            else setDraft(String(value));
           }}
         />
       </div>
-      <small>{range.hint}</small>
     </label>
   );
 }
@@ -345,30 +352,37 @@ export function FastplotTileNumberField({
   disabled?: boolean;
   help?: string;
 }) {
-  const tile = fastplotTileId(value);
+  const [draft, setDraft] = useState(String(value));
+  useEffect(() => {
+    setDraft(String(value));
+  }, [value]);
+  const draftNumber = Number(draft);
+  const previewValue = draft.trim() !== "" && Number.isFinite(draftNumber) ? draftNumber : value;
+  const tile = fastplotTileId(previewValue);
   const rect = tile === null ? null : fastplotTileRect(tile);
+  const hint = tile ? `Combat tile ${tile}` : "No queued spell icon";
   const style = atlasUrl && rect ? {
     backgroundImage: `url(${atlasUrl})`,
     backgroundSize: "2000% 2000%",
     backgroundPosition: `${(rect.column / 19) * 100}% ${(rect.row / 19) * 100}%`
   } : undefined;
   return (
-    <label className="scenario-field rules-icon-number" title={help}>
+    <label className="scenario-field rules-icon-number" title={[help, hint].filter(Boolean).join("\n")}>
       <HelpLabel label={label} help={help} />
       <div>
         {style ? <span className="rules-fastplot-preview" style={style} aria-hidden="true" /> : <b>{value || "-"}</b>}
         <input
-          key={value}
           type="number"
-          defaultValue={value}
+          value={draft}
           disabled={disabled}
+          onChange={(event) => setDraft(event.currentTarget.value)}
           onBlur={(event) => {
             const next = Number(event.currentTarget.value);
             if (!disabled && Number.isFinite(next) && next !== value) onCommit(next);
+            else setDraft(String(value));
           }}
         />
       </div>
-      <small>{tile ? `Combat tile ${tile}` : "No queued spell icon"}</small>
     </label>
   );
 }
@@ -422,6 +436,7 @@ export function SoundNumberField({ label, value, assets, onCommit, disabled = fa
   const soundId = spellSoundResourceId(value);
   const asset = soundId !== null ? findLibraryResourceAsset(assets, "snd", soundId, "sound") : null;
   const [status, setStatus] = useState<string | null>(null);
+  const resolvedHint = soundId !== null ? `snd ${soundId}` : "No sound";
   const play = async () => {
     if (!asset) {
       setStatus(soundId !== null ? `snd ${soundId} unavailable` : "No sound");
@@ -436,7 +451,7 @@ export function SoundNumberField({ label, value, assets, onCommit, disabled = fa
     audio.play().then(() => setStatus(`Playing snd ${soundId}`)).catch(() => setStatus(`Could not play snd ${soundId}`));
   };
   return (
-    <label className="scenario-field rules-sound-number" title={help}>
+    <label className="scenario-field rules-sound-number" title={[help, status ?? resolvedHint].filter(Boolean).join("\n")}>
       <HelpLabel label={label} help={help} />
       <div>
         <input
@@ -451,7 +466,7 @@ export function SoundNumberField({ label, value, assets, onCommit, disabled = fa
         />
         <button type="button" className="btn btn-secondary btn-xs" onClick={play} disabled={!asset}>Play</button>
       </div>
-      <small>{status ?? (soundId !== null ? `snd ${soundId}` : "No sound")}</small>
+      {status ? <small>{status}</small> : null}
     </label>
   );
 }
@@ -495,9 +510,10 @@ export function useRuleIconPreview(asset: LibraryAsset | null) {
 
 export function useRuleIconPreviews(assets: Array<LibraryAsset | null>) {
   const [previews, setPreviews] = useState<string[]>([]);
-  const key = assets.map((asset) => asset?.relativePath ?? "none").join("|");
+  const key = assets.map((asset) => asset ? `${asset.resourceType}:${asset.resourceId}:${asset.relativePath ?? ""}` : "none").join("|");
   useEffect(() => {
     let disposed = false;
+    setPreviews([]);
     const load = async () => {
       const urls = await Promise.all(assets.map(async (asset) => {
         if (!asset) return null;
