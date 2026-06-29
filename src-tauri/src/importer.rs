@@ -1165,6 +1165,10 @@ fn hydrate_rule_names(
     project: &mut ProvidenceProject,
 ) -> Result<()> {
     normalize_rule_names(project);
+    if project.rule_names.authored {
+        apply_rule_names_to_records(project);
+        return Ok(());
+    }
     for resource_path in custom_names_resource_candidates(source_path) {
         if !resource_path.is_file() {
             continue;
@@ -1224,8 +1228,19 @@ fn normalize_rule_names(project: &mut ProvidenceProject) {
     if project.rule_names.source_file.trim().is_empty() {
         project.rule_names.source_file = CUSTOM_NAMES_SOURCE_FILE.to_string();
     }
-    merge_rule_name_list(&mut project.rule_names.race_names, defaults.race_names);
-    merge_rule_name_list(&mut project.rule_names.caste_names, defaults.caste_names);
+    fill_rule_name_defaults(&mut project.rule_names.race_names, defaults.race_names);
+    fill_rule_name_defaults(&mut project.rule_names.caste_names, defaults.caste_names);
+}
+
+fn fill_rule_name_defaults(target: &mut Vec<String>, defaults: Vec<String>) {
+    if target.len() < defaults.len() {
+        target.resize(defaults.len(), String::new());
+    }
+    for (index, value) in defaults.into_iter().enumerate() {
+        if target[index].trim().is_empty() {
+            target[index] = value;
+        }
+    }
 }
 
 fn merge_rule_name_list(target: &mut Vec<String>, source: Vec<String>) {

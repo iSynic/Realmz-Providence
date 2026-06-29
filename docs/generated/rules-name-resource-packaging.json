@@ -30,16 +30,16 @@
       "reason": "No distinct scenario-local custom spell description resources are observed; Providence preserves existing record/resource bytes and keeps description text as editor metadata only."
     },
     "raceNames": {
-      "status": "external-support-resource",
-      "writerStatus": "writer-safe-support-resource",
+      "status": "external-global-resource",
+      "writerStatus": "project-label-no-export",
       "storage": "Data Files:Custom Names.rsrc STR# 129",
-      "reason": "Modern Realmz opens Data Files:Custom Names at startup and reads race labels from STR# 129; Providence now imports, edits, merges, and exports that support resource under Data Files/Custom Names.rsrc."
+      "reason": "Modern Realmz opens Data Files:Custom Names at startup and reads race labels from STR# 129, but Divinity Format does not package that global resource into the scenario. Providence imports labels for context and saves edits in the project only."
     },
     "casteNames": {
-      "status": "external-support-resource",
-      "writerStatus": "writer-safe-support-resource",
+      "status": "external-global-resource",
+      "writerStatus": "project-label-no-export",
       "storage": "Data Files:Custom Names.rsrc STR# 131",
-      "reason": "Modern Realmz opens Data Files:Custom Names at startup and reads caste labels from STR# 131; Providence now imports, edits, merges, and exports that support resource under Data Files/Custom Names.rsrc."
+      "reason": "Modern Realmz opens Data Files:Custom Names at startup and reads caste labels from STR# 131, but Divinity Format does not package that global resource into the scenario. Providence imports labels for context and saves edits in the project only."
     }
   },
   "summary": {

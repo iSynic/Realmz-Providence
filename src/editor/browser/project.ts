@@ -8,7 +8,7 @@ import { inspectResourcePreview } from "./resourcePreview";
 import { assetFallbacks, blockedSemanticObjects, generatedRuntimeCaches, resourceGaps, unresolvedLinks } from "../semanticGraph";
 import { validateRealmzTargetRecord } from "../targetValidation";
 import { tileIconCandidates } from "../map/renderValues";
-import { classicTextByteLength, defaultRuleNames, ruleCasteName, ruleRaceName } from "../ruleNames";
+import { defaultRuleNames } from "../ruleNames";
 
 const EMPTY_TARGET_COMPATIBILITY = { blockers: [], warnings: [], notes: [] };
 const pendingBrowserSemantics = new Map<string, { files: Map<string, Uint8Array>; sourceFiles: Project["source"]["files"] }>();
@@ -721,16 +721,6 @@ export function validateBrowserProject(project: Project): ValidationReport {
 
 function validateRulesRecords(project: Project, errors: string[], warnings: string[]) {
   project.ruleNames = defaultRuleNames(project.ruleNames);
-  for (const race of project.raceOverrides ?? []) {
-    const name = ruleRaceName(project, race.id);
-    const bytes = classicTextByteLength(name);
-    if (bytes > 255) errors.push(`Race ${race.id} name is ${bytes} byte(s); Custom Names STR# entries support at most 255.`);
-  }
-  for (const caste of project.casteOverrides ?? []) {
-    const name = ruleCasteName(project, caste.id);
-    const bytes = classicTextByteLength(name);
-    if (bytes > 255) errors.push(`Caste ${caste.id} name is ${bytes} byte(s); Custom Names STR# entries support at most 255.`);
-  }
   for (const spell of project.spellOverrides ?? []) {
     if (spell.id < 0 || spell.id > 104) errors.push(`Custom spell ${spell.id} is outside Data Spell's 0..104 custom slot range.`);
     for (const [field, value] of [

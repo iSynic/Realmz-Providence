@@ -182,9 +182,9 @@ const output = {
       note: "No distinct Data Spell TEXT description resources are observed in scenario Data Spell resource forks."
     },
     raceNames: {
-      status: "external-support-resource",
-      writerStatus: "writer-safe-support-resource",
-      note: "Race names live in Data Files:Custom Names.rsrc STR# 129. Modern Realmz opens that support resource at startup; Providence imports, edits, and exports that support resource while keeping scenario Data Race for non-name fields."
+      status: "external-global-resource",
+      writerStatus: "project-label-no-export",
+      note: "Race names live in global Data Files:Custom Names.rsrc STR# 129, not in the scenario folder or Data Race. Providence imports initial labels and keeps project edits for editor display, but does not export this global support resource with a scenario."
     },
     raceDefaultPortraitSet: {
       status: "decoded-writable",
@@ -192,9 +192,9 @@ const output = {
       field: "Data Race offset 334"
     },
     casteNames: {
-      status: "external-support-resource",
-      writerStatus: "writer-safe-support-resource",
-      note: "Caste names live in Data Files:Custom Names.rsrc STR# 131. Modern Realmz opens that support resource at startup; Providence imports, edits, and exports that support resource while keeping scenario Data Caste for non-name fields."
+      status: "external-global-resource",
+      writerStatus: "project-label-no-export",
+      note: "Caste names live in global Data Files:Custom Names.rsrc STR# 131, not in the scenario folder or Data Caste. Providence imports initial labels and keeps project edits for editor display, but does not export this global support resource with a scenario."
     },
     casteDefaultIcon: {
       status: "decoded-writable",
@@ -213,7 +213,7 @@ const output = {
     spellResources: "spell-name-str-writer-safe-existing-resource",
     raceRecords: "writer-safe-fields-fixture-proven",
     casteRecords: "writer-safe-fields-fixture-proven",
-    raceCasteNames: "support-resource-writer-safe"
+    raceCasteNames: "project-label-no-export"
   },
   summary: {
     scenariosWithRulesData: scenarios.length,
@@ -396,16 +396,16 @@ function buildNamePackagingOutput(rulesCoverage, rulesResourcesByScenario) {
         reason: "No distinct scenario-local custom spell description resources are observed; Providence preserves existing record/resource bytes and keeps description text as editor metadata only."
       },
       raceNames: {
-        status: "external-support-resource",
-        writerStatus: "writer-safe-support-resource",
+        status: "external-global-resource",
+        writerStatus: "project-label-no-export",
         storage: "Data Files:Custom Names.rsrc STR# 129",
-        reason: "Modern Realmz opens Data Files:Custom Names at startup and reads race labels from STR# 129; Providence now imports, edits, merges, and exports that support resource under Data Files/Custom Names.rsrc."
+        reason: "Modern Realmz opens Data Files:Custom Names at startup and reads race labels from STR# 129, but Divinity Format does not package that global resource into the scenario. Providence imports labels for context and saves edits in the project only."
       },
       casteNames: {
-        status: "external-support-resource",
-        writerStatus: "writer-safe-support-resource",
+        status: "external-global-resource",
+        writerStatus: "project-label-no-export",
         storage: "Data Files:Custom Names.rsrc STR# 131",
-        reason: "Modern Realmz opens Data Files:Custom Names at startup and reads caste labels from STR# 131; Providence now imports, edits, merges, and exports that support resource under Data Files/Custom Names.rsrc."
+        reason: "Modern Realmz opens Data Files:Custom Names at startup and reads caste labels from STR# 131, but Divinity Format does not package that global resource into the scenario. Providence imports labels for context and saves edits in the project only."
       }
     },
     summary: {

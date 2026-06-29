@@ -250,48 +250,6 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
             ));
         }
     }
-    for race in &project.race_overrides {
-        let name = project
-            .rule_names
-            .race_names
-            .get(race.id)
-            .filter(|name| !name.trim().is_empty())
-            .cloned()
-            .unwrap_or_else(|| default_race_name(race.id));
-        let bytes = classic_text_len(&name);
-        if bytes > 255 {
-            errors.push(format!(
-                "Race {} name is {} byte(s); Custom Names STR# entries support at most 255.",
-                race.id, bytes
-            ));
-        }
-    }
-    for caste in &project.caste_overrides {
-        let name = project
-            .rule_names
-            .caste_names
-            .get(caste.id)
-            .filter(|name| !name.trim().is_empty())
-            .cloned()
-            .unwrap_or_else(|| default_caste_name(caste.id));
-        let bytes = classic_text_len(&name);
-        if bytes > 255 {
-            errors.push(format!(
-                "Caste {} name is {} byte(s); Custom Names STR# entries support at most 255.",
-                caste.id, bytes
-            ));
-        }
-    }
-    if project.rule_names.provenance.is_none()
-        && !project.rule_names.authored
-        && (project.race_overrides.iter().any(|record| record.id >= REALMZ_RACE_NAMES.len())
-            || project.caste_overrides.iter().any(|record| record.id >= REALMZ_CASTE_NAMES.len()))
-    {
-        warnings.push(
-            "Custom Race/Caste records are present, but no imported Custom Names.rsrc support resource is attached; edit a custom name to synthesize one on export."
-                .to_string(),
-        );
-    }
     for battle in &project.battles {
         if battle.grid.len() != 13 * 13 {
             errors.push(format!(

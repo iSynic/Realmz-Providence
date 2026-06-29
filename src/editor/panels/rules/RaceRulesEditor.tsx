@@ -120,15 +120,14 @@ function RaceForm({
         </div>
       )}
       <div className="rules-section-group rules-race-core-group">
-        <RuleSection title="Identity And Miscellaneous" badge="mixed" help="Race label, portrait set, movement, regeneration, and broad combat modifiers. Realmz reads race labels from Data Files:Custom Names.rsrc STR# 129, not from scenario Data Race.">
+        <RuleSection title="Identity And Miscellaneous" badge="mixed" help="Race label, portrait set, movement, regeneration, and broad combat modifiers. Realmz reads race labels from the global Data Files:Custom Names resource, not from exported scenario Data Race.">
           <TextField
             label="Race Name"
             value={record.displayName ?? ""}
             onCommit={onUpdateName}
             span
             disabled={isStandardRecord || !hasScenarioVersion}
-            maxLength={255}
-            help={isStandardRecord || !hasScenarioVersion ? "Read-only until this race is copied or created as a custom Data Race record." : "Exports through Data Files/Custom Names.rsrc STR# 129; non-name fields remain in Data Race."}
+            help={isStandardRecord || !hasScenarioVersion ? "Read-only until this race is copied or created as a custom Data Race record." : "Providence project label only; scenario export writes the non-name fields to Data Race."}
           />
           <IconNumberField label="Default Portrait Set" value={record.defaultIconSet} assets={iconAssets} iconId={racePortraitSetFirstIconId} onCommit={(defaultIconSet) => update({ defaultIconSet })} help="Portrait set used by race selection and generated characters. Providence previews the first icon when the reference library can resolve it." />
           <NumberField label="Can Regenerate" value={record.canRegenerate} onCommit={(canRegenerate) => update({ canRegenerate })} compact help="Nonzero values enable natural regeneration behavior for this race." />

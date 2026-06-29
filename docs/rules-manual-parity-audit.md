@@ -9,7 +9,7 @@ Status vocabulary:
 - `ui-gap`: Parsed/exported data exists, but the authoring affordance still needs improvement.
 - `validation-gap`: Authoring exists, but warnings or bounds checks need improvement.
 - `resource-gated`: The field depends on resource-fork/name packaging that should stay deferred until fixture-backed. If Providence currently shows an ordinary authoring control for this field, that control is not proven exported scenario authoring.
-- `support-resource-covered`: The field is authored through a support resource outside the fixed record file, with import/edit/export support.
+- `project-label`: Providence keeps an editable project label for authoring clarity, but it is not exported as scenario data.
 - `fixture-gated`: Likely authorable, but needs Divinity before/after or source confirmation.
 - `defer`: Not part of the current low-risk pass.
 
@@ -29,7 +29,7 @@ Primary evidence:
 - Custom spell names are source-backed enough to author: imported scenario `Data Spell` resource forks contain `STR# 5000..5006`, and fixture tests prove Providence can update those custom spell name resources while preserving the spell record/tail bytes.
 - Custom race and caste records are source-backed enough to author: scenario `Data Race` and `Data Caste` files are complete fixed-row override tables consumed by modern Realmz. The `custom-race-non-name-fields-first-edit` fixture created scenario-local `Data Race` while leaving global `Data Files:Data Race` unchanged; the edited values reconcile to current Providence record 19 under the 30 x 408-byte model. The `custom-caste-non-name-fields-first-edit` fixture created scenario-local `Data Caste` while leaving global `Data Files:Data Caste` unchanged; edited values map cleanly to record 20 under the 30 x 576-byte model.
 - Custom race and caste names are fixture-proven in Divinity, but not as scenario-folder `Data Race` / `Data Caste` data. The `custom-race-caste-name-first-edit` fixture wrote edited names to `World of Realmz:Data Files:Custom Names.rsrc`: race names in `STR# 129` named `Race`, and caste names in `STR# 131` named `Caste`. Modern Realmz source opens `:Data Files:Custom Names` at startup, and race/caste screens resolve labels through `GetIndString(129, ...)` / `GetIndString(131, ...)`.
-- Therefore `Race Name` and `Caste Name` are authored through a support resource, not ordinary scenario fixed-record fields. Providence now imports, edits, and exports `Custom Names.rsrc` intentionally while keeping `Data Race` and `Data Caste` as the source for non-name fields.
+- Therefore `Race Name` and `Caste Name` are not ordinary scenario fixed-record fields. Providence imports labels for context and keeps user edits as project labels, but scenario export does not write or package `Custom Names.rsrc`; `Data Race` and `Data Caste` remain the source for exported non-name fields.
 
 ## Spell Editor
 
@@ -80,7 +80,7 @@ Divinity prevents editing standard races directly; authors copy or create custom
 | Copy standard race | helper callout `Copy To New Race` | creates next open custom `Data Race` slot from template | project command and UI | covered | Keep copy action in helper callout. |
 | New custom race | `New Custom Race` | creates next open custom `Data Race` slot | project command and UI | covered | No change. |
 | Clear custom race | `Clear Scenario Custom` | removes `raceOverrides[id]` | project command and UI | covered | No change. |
-| Race Name | editable `Race Name` for custom records | custom names live in `Data Files:Custom Names.rsrc` `STR# 129`, not scenario `Data Race` | Divinity fixture `custom-race-caste-name-first-edit`; `main.c` opens Custom Names; race UI uses `GetIndString(129, ...)`; fixture roundtrip tests | support-resource-covered | Keep built-ins read-only; export `Custom Names.rsrc` under `Data Files/` and preserve non-name `Data Race` bytes. |
+| Race Name | editable `Race Name` for custom records | project label; Divinity writes global `Data Files:Custom Names.rsrc` `STR# 129`, not scenario `Data Race` | Divinity fixture `custom-race-caste-name-first-edit`; `main.c` opens Custom Names; race UI uses `GetIndString(129, ...)`; export regression tests | project-label | Keep built-ins read-only; save labels in the Providence project, but do not export `Custom Names.rsrc` with the scenario. |
 | Default icon/portrait set | `Default Portrait Set` | `defaultIconSet`, Data Race +334 | rules evidence | covered | Signed-16 validation added. Not changed in the current Divinity fixture. |
 | Can Regenerate | same | `canRegenerate`, Data Race +333 | rules evidence | covered | Byte validation added. |
 | Base movement | `Base Movement Points` | `baseMove`, Data Race +196 | rules evidence, Divinity fixture | covered | Fixture changed Race 19 value from 12 to 13 at absolute 7948, which is record 19 +196. |
@@ -101,7 +101,7 @@ Current pass notes:
 - The picker stays narrow and does not need a separate Go To field.
 - Project validation now checks Data Race record IDs, shapes, signed ranges, and attribute min/max inversions.
 - Divinity non-name race fixture backs the current 408-byte parser for the sampled fields. The handoff's 612-byte-stride reduction is not used by Providence because the same absolute bytes align exactly with record 19 and known `struct race` offsets under the modern Realmz 30 x 408-byte model.
-- `Race Name` is now modeled as a support-resource field: modern Realmz consumes `Data Files:Custom Names.rsrc`, and Providence imports/exports `STR# 129` without treating the name as part of `Data Race`.
+- `Race Name` is now modeled as a Providence project label: modern Realmz consumes global `Data Files:Custom Names.rsrc`, and Divinity does not package that resource into scenario exports. Providence imports labels when available but does not export `STR# 129`.
 
 ## Caste Editor
 
@@ -115,7 +115,7 @@ Divinity prevents editing standard castes directly; authors copy or create custo
 | Copy standard caste | helper callout `Copy To New Caste` | creates next open custom `Data Caste` slot from template | project command and UI | covered | Keep copy action in helper callout. |
 | New custom caste | `New Custom Caste` | creates next open custom `Data Caste` slot | project command and UI | covered | No change. |
 | Clear custom caste | `Clear Scenario Custom` | removes `casteOverrides[id]` | project command and UI | covered | No change. |
-| Caste Name | editable `Caste Name` for custom records | custom names live in `Data Files:Custom Names.rsrc` `STR# 131`, not scenario `Data Caste` | Divinity fixture `custom-race-caste-name-first-edit`; `main.c` opens Custom Names; caste UI uses `GetIndString(131, ...)`; fixture roundtrip tests | support-resource-covered | Keep built-ins read-only; export `Custom Names.rsrc` under `Data Files/` and preserve non-name `Data Caste` bytes. |
+| Caste Name | editable `Caste Name` for custom records | project label; Divinity writes global `Data Files:Custom Names.rsrc` `STR# 131`, not scenario `Data Caste` | Divinity fixture `custom-race-caste-name-first-edit`; `main.c` opens Custom Names; caste UI uses `GetIndString(131, ...)`; export regression tests | project-label | Keep built-ins read-only; save labels in the Providence project, but do not export `Custom Names.rsrc` with the scenario. |
 | Caste Class / Minimum Age / Default Icon | same | `casteClass`, `minimumAgeGroup`, `defaultIcon`, Data Caste +248/+250/+444 | rules evidence | covered | Signed-16 validation added. |
 | Missile flags | checkboxes | `canUseMissile`, `getsMissileBonus`, Data Caste +212/+214 | rules evidence | covered | Signed-16 validation added. |
 | Attribute min/max | `Stats And Movement` pair grid | `minMax[12]`, Data Caste +108 | rules evidence, Divinity fixture | covered | Fixture changed Caste 20 Brawn min/max at record 20 +108/+110; shape/range validation and min<=max warnings added. |
@@ -135,7 +135,7 @@ Current pass notes:
 - Advanced matrices remain source-backed, but exact Divinity row phrasing can continue improving as fixtures/screenshots surface.
 - Project validation now checks Data Caste record IDs, shapes, signed ranges, byte ranges, and attribute min/max inversions.
 - Divinity non-name caste fixture backs the current 576-byte parser for sampled fields: Brawn min/max, Running condition, movement, magic resistance, bonus attacks, and max spells per round.
-- `Caste Name` is now modeled as a support-resource field: modern Realmz consumes `Data Files:Custom Names.rsrc`, and Providence imports/exports `STR# 131` without treating the name as part of `Data Caste`.
+- `Caste Name` is now modeled as a Providence project label: modern Realmz consumes global `Data Files:Custom Names.rsrc`, and Divinity does not package that resource into scenario exports. Providence imports labels when available but does not export `STR# 131`.
 
 ## Cross-Rules Behavior
 
@@ -151,7 +151,7 @@ Current pass notes:
 ## Deferred Or Fixture-Gated Items
 
 - Spell custom name/description resource packaging beyond the existing STR# fixture confidence.
-- Race and caste names are now covered through `Data Files:Custom Names.rsrc`; remaining work is limited to broader packaging/install guidance if users need help placing that support file into a live Realmz `Data Files` folder.
+- Race and caste names are project labels only for Providence scenario work; exporting or installing global `Data Files:Custom Names.rsrc` is intentionally outside scenario export.
 - Divinity row-label refinements for advanced Race/Caste matrices where screenshots/manual wording are not enough to prove runtime meaning.
 - Race second-toggle fixtures for Base Attacks and usable-item flags, because the first race creation fixture included those operator changes but did not isolate corresponding byte changes.
 - Caste second-toggle fixtures for caste class, default icon, spellcasting rows, starting gold/items, and victory values.

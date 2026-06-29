@@ -998,7 +998,7 @@ Manual Race Editor covers browsing standard races, copying/creating scenario cus
 
 Current Providence handling:
 
-Providence browses shared races as read-only references and authors source-backed scenario Data Race override records through copy/new/clear workflows. Race picker labels are zero-based, and project validation checks Data Race record range, fixed matrix shapes, numeric bounds, and attribute min/max inversions. A Divinity non-name fixture created scenario-local Data Race and confirms sampled fields under the current 30 x 408-byte model. Divinity custom race names are fixture-proven in external Data Files:Custom Names.rsrc STR# 129, and modern Realmz opens that support resource at startup; Providence now imports, edits, merges, and exports that support resource while keeping non-name fields in Data Race.
+Providence browses shared races as read-only references and authors source-backed scenario Data Race override records through copy/new/clear workflows. Race picker labels are zero-based, and project validation checks Data Race record range, fixed matrix shapes, numeric bounds, and attribute min/max inversions. A Divinity non-name fixture created scenario-local Data Race and confirms sampled fields under the current 30 x 408-byte model. Divinity custom race names are fixture-proven in external Data Files:Custom Names.rsrc STR# 129, and modern Realmz opens that support resource at startup, but Divinity Format does not package that global resource into the scenario. Providence imports labels for context and saves edits in the project only; scenario export writes Data Race non-name fields and does not export Custom Names.
 
 Evidence:
 
@@ -1033,7 +1033,7 @@ Manual Caste Editor covers standard/custom caste editing, caste names, stats, sp
 
 Current Providence handling:
 
-Providence browses shared castes as read-only references and authors source-backed scenario Data Caste override records through copy/new/clear workflows. The editor exposes the known caste matrices and project validation checks record range, fixed matrix shapes, numeric bounds, byte arrays, and attribute min/max inversions. A Divinity non-name fixture created scenario-local Data Caste and confirms sampled fields under the current 30 x 576-byte model. Divinity custom caste names are fixture-proven in external Data Files:Custom Names.rsrc STR# 131, and modern Realmz opens that support resource at startup; Providence now imports, edits, merges, and exports that support resource while keeping non-name fields in Data Caste.
+Providence browses shared castes as read-only references and authors source-backed scenario Data Caste override records through copy/new/clear workflows. The editor exposes the known caste matrices and project validation checks record range, fixed matrix shapes, numeric bounds, byte arrays, and attribute min/max inversions. A Divinity non-name fixture created scenario-local Data Caste and confirms sampled fields under the current 30 x 576-byte model. Divinity custom caste names are fixture-proven in external Data Files:Custom Names.rsrc STR# 131, and modern Realmz opens that support resource at startup, but Divinity Format does not package that global resource into the scenario. Providence imports labels for context and saves edits in the project only; scenario export writes Data Caste non-name fields and does not export Custom Names.
 
 Evidence:
 

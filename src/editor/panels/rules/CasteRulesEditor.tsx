@@ -119,15 +119,14 @@ function CasteForm({
         </div>
       )}
       <div className="rules-section-group">
-        <RuleSection title="Identity And Class" badge="mixed" help="Caste label, class category, icon, and broad weapon flags. Realmz reads caste labels from Data Files:Custom Names.rsrc STR# 131, not from scenario Data Caste.">
+        <RuleSection title="Identity And Class" badge="mixed" help="Caste label, class category, icon, and broad weapon flags. Realmz reads caste labels from the global Data Files:Custom Names resource, not from exported scenario Data Caste.">
           <TextField
             label="Caste Name"
             value={record.displayName ?? ""}
             onCommit={onUpdateName}
             span
             disabled={isStandardRecord || !hasScenarioVersion}
-            maxLength={255}
-            help={isStandardRecord || !hasScenarioVersion ? "Read-only until this caste is copied or created as a custom Data Caste record." : "Exports through Data Files/Custom Names.rsrc STR# 131; non-name fields remain in Data Caste."}
+            help={isStandardRecord || !hasScenarioVersion ? "Read-only until this caste is copied or created as a custom Data Caste record." : "Providence project label only; scenario export writes the non-name fields to Data Caste."}
           />
           <NumberField label="Caste Class" value={record.casteClass} onCommit={(casteClass) => update({ casteClass })} compact help="Realmz caste category code used by item restrictions and class-like runtime checks." />
           <NumberField label="Minimum Age Group" value={record.minimumAgeGroup} onCommit={(minimumAgeGroup) => update({ minimumAgeGroup })} compact help="Minimum race age band allowed for this caste." />
