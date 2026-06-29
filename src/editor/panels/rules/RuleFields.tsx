@@ -394,6 +394,7 @@ export function IconNumberField({
   onCommit,
   disabled = false,
   iconId,
+  assetPreference,
   hint,
   compact = false,
   help
@@ -404,30 +405,38 @@ export function IconNumberField({
   onCommit: (value: number) => void;
   disabled?: boolean;
   iconId?: ((value: number) => number) | null;
+  assetPreference?: (asset: LibraryAsset) => boolean;
   hint?: (value: number) => string;
   compact?: boolean;
   help?: string;
 }) {
-  const resolvedIconId = iconId === null ? null : iconId ? iconId(value) : value;
-  const asset = resolvedIconId === null ? null : findLibraryResourceAsset(assets, "cicn", resolvedIconId, "icon");
+  const [draft, setDraft] = useState(String(value));
+  useEffect(() => {
+    setDraft(String(value));
+  }, [value]);
+  const parsedDraft = Number(draft);
+  const previewValue = Number.isFinite(parsedDraft) ? parsedDraft : value;
+  const resolvedIconId = iconId === null ? null : iconId ? iconId(previewValue) : previewValue;
+  const asset = resolvedIconId === null ? null : findLibraryResourceAsset(assets, "cicn", resolvedIconId, "icon", assetPreference);
   const preview = useRuleIconPreview(asset);
   return (
     <label className={classNames("scenario-field", "rules-icon-number", compact && "rules-icon-number-compact")} title={help}>
       <HelpLabel label={label} help={help} />
       <div>
-        {preview ? <img src={preview} alt={`${label} ${resolvedIconId}`} /> : <b>{value || "-"}</b>}
+        {preview ? <img src={preview} alt={`${label} ${resolvedIconId}`} /> : <b>{previewValue || "-"}</b>}
         <input
-          key={value}
           type="number"
-          defaultValue={value}
+          value={draft}
           disabled={disabled}
+          onChange={(event) => setDraft(event.currentTarget.value)}
           onBlur={(event) => {
             const next = Number(event.currentTarget.value);
             if (!disabled && Number.isFinite(next) && next !== value) onCommit(next);
+            else setDraft(String(value));
           }}
         />
       </div>
-      <small>{hint ? hint(value) : resolvedIconId !== null ? `cicn ${resolvedIconId}` : "Combat tile preview pending"}</small>
+      <small>{hint ? hint(previewValue) : resolvedIconId !== null ? `cicn ${resolvedIconId}` : "Combat tile preview pending"}</small>
     </label>
   );
 }

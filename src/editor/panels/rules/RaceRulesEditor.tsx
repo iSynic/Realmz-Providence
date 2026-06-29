@@ -3,6 +3,7 @@ import { LibraryAsset, ScenarioRaceOverride } from "../../types";
 import { CONDITION_LABELS, ITEM_CATEGORY_LABELS, RACE_ATTRIBUTES, RACE_DESCRIPTOR_LABELS, REALMZ_CASTES, RESISTANCE_TYPES } from "../../rulesCatalog";
 import { ruleRaceName } from "../../ruleNames";
 import { racePortraitSetFirstIconId } from "../../resourceIds";
+import { isPortraitIconAsset } from "../../resourceResolver";
 import { AgeBands, ArrayFields, BitsetEditor, CheckboxMatrix, EmptyRulesState, IconNumberField, NumberField, PairGrid, RuleSection, RulesLayout, TextField } from "./RuleFields";
 import { buildRaceEntries, RACE_RECORD_LIMIT, selectedIdFor, STANDARD_RACE_COUNT } from "./ruleUtils";
 import { RulesEditorProps } from "./ruleTypes";
@@ -127,9 +128,9 @@ function RaceForm({
             onCommit={onUpdateName}
             span
             disabled={isStandardRecord || !hasScenarioVersion}
-            help={isStandardRecord || !hasScenarioVersion ? "Read-only until this race is copied or created as a custom Data Race record." : "Providence project label only; scenario export writes the non-name fields to Data Race."}
+            help={isStandardRecord || !hasScenarioVersion ? "Read-only until this race is copied or created as a custom Data Race record." : "Providence project label only. Divinity writes custom race names to the global Custom Names resource, not the portable scenario export; Providence exports only the non-name Data Race fields."}
           />
-          <IconNumberField label="Default Portrait Set" value={record.defaultIconSet} assets={iconAssets} iconId={racePortraitSetFirstIconId} onCommit={(defaultIconSet) => update({ defaultIconSet })} help="Portrait set used by race selection and generated characters. Providence previews the first icon when the reference library can resolve it." />
+          <IconNumberField label="Default Portrait Set" value={record.defaultIconSet} assets={iconAssets} iconId={racePortraitSetFirstIconId} assetPreference={isPortraitIconAsset} onCommit={(defaultIconSet) => update({ defaultIconSet })} help="Portrait set used by race selection and generated characters. Providence previews the first portrait icon when the reference library can resolve it." />
           <NumberField label="Can Regenerate" value={record.canRegenerate} onCommit={(canRegenerate) => update({ canRegenerate })} compact help="Nonzero values enable natural regeneration behavior for this race." />
           <NumberField label="Base Movement Points" value={record.baseMove} onCommit={(baseMove) => update({ baseMove })} compact help="Base movement points before caste, map, and runtime modifiers." />
           <NumberField label="Magic Resistance +/-" value={record.magRes} onCommit={(magRes) => update({ magRes })} compact help="Race-level magic resistance modifier applied before other runtime effects." />

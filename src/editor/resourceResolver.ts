@@ -139,18 +139,24 @@ export function isActorOrCreatureIconId(resourceId: number) {
   );
 }
 
+export function isPortraitIconAsset(asset: LibraryAsset) {
+  return asset.resourceType === "cicn" && asset.relativePath.toLowerCase().includes("portraits");
+}
+
 export function findLibraryResourceAsset(
   libraryAssets: LibraryAsset[],
   resourceType: string,
   resourceId: number,
-  kind?: ManagedAssetKind
+  kind?: ManagedAssetKind,
+  prefer?: (asset: LibraryAsset) => boolean
 ) {
   const normalizedType = resourceType.trim().toLowerCase();
-  return libraryAssets.find((asset) => {
+  const matches = libraryAssets.filter((asset) => {
     if (asset.resourceId !== resourceId) return false;
     if ((asset.resourceType ?? "").trim().toLowerCase() !== normalizedType) return false;
     return kind == null || managedAssetKindForLibrary(asset) === kind;
-  }) ?? null;
+  });
+  return (prefer ? matches.find(prefer) : null) ?? matches[0] ?? null;
 }
 
 export function resolveResource(

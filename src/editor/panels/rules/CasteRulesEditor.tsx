@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { LibraryAsset, ScenarioCasteOverride } from "../../types";
 import { CONDITION_LABELS, ITEM_CATEGORY_LABELS, RACE_ATTRIBUTES, RESISTANCE_TYPES } from "../../rulesCatalog";
 import { ruleCasteName } from "../../ruleNames";
+import { isPortraitIconAsset } from "../../resourceResolver";
 import { ArrayFields, BitsetEditor, CheckboxField, EmptyRulesState, IconNumberField, MatrixFields, NumberField, PairGrid, RuleSection, RulesLayout, TextField, CasteProgressionGrid, VictoryPointsGrid } from "./RuleFields";
 import { buildCasteEntries, CASTE_RECORD_LIMIT, selectedIdFor, STANDARD_CASTE_COUNT } from "./ruleUtils";
 import { RulesEditorProps } from "./ruleTypes";
@@ -126,11 +127,11 @@ function CasteForm({
             onCommit={onUpdateName}
             span
             disabled={isStandardRecord || !hasScenarioVersion}
-            help={isStandardRecord || !hasScenarioVersion ? "Read-only until this caste is copied or created as a custom Data Caste record." : "Providence project label only; scenario export writes the non-name fields to Data Caste."}
+            help={isStandardRecord || !hasScenarioVersion ? "Read-only until this caste is copied or created as a custom Data Caste record." : "Providence project label only. Divinity writes custom caste names to the global Custom Names resource, not the portable scenario export; Providence exports only the non-name Data Caste fields."}
           />
           <NumberField label="Caste Class" value={record.casteClass} onCommit={(casteClass) => update({ casteClass })} compact help="Realmz caste category code used by item restrictions and class-like runtime checks." />
           <NumberField label="Minimum Age Group" value={record.minimumAgeGroup} onCommit={(minimumAgeGroup) => update({ minimumAgeGroup })} compact help="Minimum race age band allowed for this caste." />
-          <IconNumberField label="Default Icon" value={record.defaultIcon} assets={iconAssets} onCommit={(defaultIcon) => update({ defaultIcon })} compact help="Icon shown for this caste in selection menus when the reference library can resolve it." />
+          <IconNumberField label="Default Icon" value={record.defaultIcon} assets={iconAssets} assetPreference={isPortraitIconAsset} onCommit={(defaultIcon) => update({ defaultIcon })} compact help="Portrait icon shown for this caste in selection menus when the reference library can resolve it." />
           <div className="rules-field-subrow rules-checkbox-row rules-checkbox-row-compact">
             <CheckboxField label="Can Use Missile Weapons" checked={record.canUseMissile !== 0} onCommit={(canUseMissile) => update({ canUseMissile: canUseMissile ? 1 : 0 })} help="Allows this caste to use missile weapons." />
             <CheckboxField label="Missile Bonus Damage" checked={record.getsMissileBonus !== 0} onCommit={(getsMissileBonus) => update({ getsMissileBonus: getsMissileBonus ? 1 : 0 })} help="Allows missile weapon bonus damage." />

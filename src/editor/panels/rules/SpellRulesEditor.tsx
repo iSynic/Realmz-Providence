@@ -229,9 +229,9 @@ function SpellForm({
               }}
               span
               disabled={!editable}
-              help="The scenario-local spell name stored in the custom spell name resource."
+              help="Custom spell names export only when the scenario includes a Data Spell resource with STR# 5000..5006. Otherwise Providence keeps the name as project metadata."
             />
-            <TextField label="Description / Note" value={record.description ?? ""} onCommit={(description) => update({ description })} wide disabled={!editable} help="Reference text shown by the editor for this spell." />
+            <TextField label="Description / Note" value={record.description ?? ""} onCommit={(description) => update({ description })} wide disabled={!editable} help="Editor note only. Known Divinity scenarios do not provide a portable custom spell description field in exported scenario data." />
             <div className="rules-spell-sound-row">
               <SoundNumberField label="Casting Sound" value={record.sound1} assets={iconAssets} onCommit={(sound1) => update({ sound1 })} disabled={!editable} help="Sound played when casting begins." />
               <SoundNumberField label="Resolution Sound" value={record.sound2} assets={iconAssets} onCommit={(sound2) => update({ sound2 })} disabled={!editable} help="Sound played when the spell resolves." />
