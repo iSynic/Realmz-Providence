@@ -286,6 +286,7 @@ function indexRulesResources(resourceInventory) {
   if (!resourceInventory?.forks) return index;
   for (const fork of resourceInventory.forks) {
     if (!["Data Spell.rsrc", "Data Spell.rsf", "Data Spell"].includes(fork.fileName)) continue;
+    if (!fork.fullPath || !fs.existsSync(fork.fullPath)) continue;
     const key = `${fork.sourceRoot}\u0000${fork.scenario}`;
     const resources = index.get(key) ?? [];
     for (const resource of fork.resources ?? []) {
