@@ -1,5 +1,8 @@
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 use realmz_providence_lib::exporter::export_project;
-use realmz_providence_lib::importer::{import_scenario, open_project, sha256_hex, RAW_SOURCES_DIR};
+use realmz_providence_lib::importer::{
+    create_project, import_scenario, open_project, save_project, sha256_hex, RAW_SOURCES_DIR,
+};
 use realmz_providence_lib::project::{
     AssetImportTarget, DitherMode, ImageFitMode, ImageMatte, ImageScaleMode, ManagedAsset,
     ManagedAssetConversion, ManagedAssetExportState, ManagedAssetKind, PaletteMode,
@@ -7,14 +10,15 @@ use realmz_providence_lib::project::{
     PROJECT_SCHEMA_VERSION, SEMANTIC_SCHEMA_VERSION,
 };
 use realmz_providence_lib::realmz::{
-    i16_be, update_custom_land_tile_attributes, update_custom_land_tile_combat_build,
-    update_custom_landlook_base, update_custom_landlook_range_slot, CustomLandTileAttributePatch,
-    SUPPORTED_WRITE_FILES, TRACKED_FILES,
+    i16_be, parse_scenario_buffers, update_custom_land_tile_attributes,
+    update_custom_land_tile_combat_build, update_custom_landlook_base,
+    update_custom_landlook_range_slot, CustomLandTileAttributePatch, SUPPORTED_WRITE_FILES,
+    TRACKED_FILES,
 };
 use realmz_providence_lib::resource_fork::{
-    decode_string_list_resource, encode_pict_resource, parse_resource_fork_entries, ResourceForkEntry, RgbaImagePayload,
+    decode_string_list_resource, encode_pict_resource, parse_resource_fork_entries,
+    ResourceForkEntry, RgbaImagePayload,
 };
-use base64::{engine::general_purpose::STANDARD, Engine as _};
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -29,6 +33,17 @@ fn fixture_path(name: &str) -> Option<std::path::PathBuf> {
 fn out_fixture_path(name: &str) -> Option<std::path::PathBuf> {
     let path = Path::new("F:/Realmz/out_win_clang/Scenarios").join(name);
     path.is_dir().then_some(path)
+}
+
+fn custom_names_fixture_path() -> Option<std::path::PathBuf> {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap_or_else(|| Path::new("."))
+        .join("public")
+        .join("bundled-libraries")
+        .join("realmz-reference")
+        .join("Custom Names.rsrc");
+    path.is_file().then_some(path)
 }
 
 fn desktop_fixture_path(name: &str) -> Option<std::path::PathBuf> {
@@ -333,7 +348,9 @@ fn data_solids_export_mutates_only_selected_special_tile_solidity() {
 #[test]
 fn custom_landlook_atlas_export_preserves_resource_payloads_without_edits() {
     let Some(source) = out_fixture_path("Kalypso's Island") else {
-        eprintln!("Skipping custom landlook atlas preservation fixture; Kalypso's Island is absent.");
+        eprintln!(
+            "Skipping custom landlook atlas preservation fixture; Kalypso's Island is absent."
+        );
         return;
     };
     let (_temp, project, export_dir, _report) =
@@ -346,15 +363,26 @@ fn custom_landlook_atlas_export_preserves_resource_payloads_without_edits() {
         .expect("Kalypso source should contain PICT 306 for custom landlook 6");
     let exported_entry = resource_entry(&exported_resource, "PICT", 306)
         .expect("Kalypso export should contain PICT 306 for custom landlook 6");
-    assert_eq!(source_entry.data, exported_entry.data, "no-edit export should preserve PICT 306 payload");
-    assert_eq!(source_entry.name, exported_entry.name, "no-edit export should preserve PICT 306 name");
-    assert_eq!(source_entry.attributes, exported_entry.attributes, "no-edit export should preserve PICT 306 attributes");
+    assert_eq!(
+        source_entry.data, exported_entry.data,
+        "no-edit export should preserve PICT 306 payload"
+    );
+    assert_eq!(
+        source_entry.name, exported_entry.name,
+        "no-edit export should preserve PICT 306 name"
+    );
+    assert_eq!(
+        source_entry.attributes, exported_entry.attributes,
+        "no-edit export should preserve PICT 306 attributes"
+    );
 }
 
 #[test]
 fn custom_landlook_atlas_replacement_changes_only_target_pict_resource() {
     let Some(source) = out_fixture_path("Kalypso's Island") else {
-        eprintln!("Skipping custom landlook atlas replacement fixture; Kalypso's Island is absent.");
+        eprintln!(
+            "Skipping custom landlook atlas replacement fixture; Kalypso's Island is absent."
+        );
         return;
     };
     let temp = tempdir().unwrap();
@@ -366,14 +394,23 @@ fn custom_landlook_atlas_replacement_changes_only_target_pict_resource() {
         .expect("Kalypso should import a scenario resource fork with PICT 306");
     let original_entries = parse_resource_fork_entries(&fs::read(&source_resource).unwrap());
     assert!(
-        original_entries.iter().any(|entry| entry.resource_type == "PICT" && entry.id == 306),
+        original_entries
+            .iter()
+            .any(|entry| entry.resource_type == "PICT" && entry.id == 306),
         "Kalypso should provide the original PICT 306 atlas"
     );
 
-    let asset_dir = project_dir.join("assets").join("media").join("custom_landlook_6_atlas");
+    let asset_dir = project_dir
+        .join("assets")
+        .join("media")
+        .join("custom_landlook_6_atlas");
     fs::create_dir_all(&asset_dir).unwrap();
     let replacement_resource = replacement_landlook_pict_resource();
-    fs::write(asset_dir.join("resource_PICT_306.bin"), &replacement_resource).unwrap();
+    fs::write(
+        asset_dir.join("resource_PICT_306.bin"),
+        &replacement_resource,
+    )
+    .unwrap();
     fs::write(asset_dir.join("original.png"), [0x89, b'P', b'N', b'G']).unwrap();
     fs::write(asset_dir.join("preview.png"), [0x89, b'P', b'N', b'G']).unwrap();
     project.assets.push(ManagedAsset {
@@ -423,7 +460,10 @@ fn custom_landlook_atlas_replacement_changes_only_target_pict_resource() {
     )
     .unwrap();
     assert!(
-        report.written_resources.iter().any(|entry| entry.contains("PICT 306")),
+        report
+            .written_resources
+            .iter()
+            .any(|entry| entry.contains("PICT 306")),
         "custom landlook atlas replacement should be reported as a written resource"
     );
     let exported_resource = resource_path_with_entry(&project, &export_dir, "PICT", 306)
@@ -433,13 +473,33 @@ fn custom_landlook_atlas_replacement_changes_only_target_pict_resource() {
         let exported = exported_entries
             .iter()
             .find(|entry| entry.resource_type == original.resource_type && entry.id == original.id)
-            .unwrap_or_else(|| panic!("export should preserve resource {} {}", original.resource_type, original.id));
+            .unwrap_or_else(|| {
+                panic!(
+                    "export should preserve resource {} {}",
+                    original.resource_type, original.id
+                )
+            });
         if original.resource_type == "PICT" && original.id == 306 {
-            assert_eq!(exported.data, replacement_resource, "PICT 306 should be replaced by managed atlas bytes");
+            assert_eq!(
+                exported.data, replacement_resource,
+                "PICT 306 should be replaced by managed atlas bytes"
+            );
         } else {
-            assert_eq!(exported.data, original.data, "resource {} {} payload should be unchanged", original.resource_type, original.id);
-            assert_eq!(exported.name, original.name, "resource {} {} name should be unchanged", original.resource_type, original.id);
-            assert_eq!(exported.attributes, original.attributes, "resource {} {} attributes should be unchanged", original.resource_type, original.id);
+            assert_eq!(
+                exported.data, original.data,
+                "resource {} {} payload should be unchanged",
+                original.resource_type, original.id
+            );
+            assert_eq!(
+                exported.name, original.name,
+                "resource {} {} name should be unchanged",
+                original.resource_type, original.id
+            );
+            assert_eq!(
+                exported.attributes, original.attributes,
+                "resource {} {} attributes should be unchanged",
+                original.resource_type, original.id
+            );
         }
     }
 
@@ -451,7 +511,10 @@ fn custom_landlook_atlas_replacement_changes_only_target_pict_resource() {
         .iter()
         .find(|tileset| tileset.id == "landlook-6")
         .expect("reimported custom landlook 6 tileset should exist");
-    assert!(tileset.available, "replaced custom landlook atlas should be previewable after reimport");
+    assert!(
+        tileset.available,
+        "replaced custom landlook atlas should be previewable after reimport"
+    );
     assert_eq!(tileset.pict_id, Some(306));
 }
 
@@ -481,7 +544,11 @@ fn rules_spell_export_mutates_only_owned_record_byte_and_preserves_tail() {
     )
     .unwrap();
     let exported = fs::read(export_dir.join("Data Spell")).unwrap();
-    assert_eq!(exported.len(), original.len(), "Data Spell tail should remain present");
+    assert_eq!(
+        exported.len(),
+        original.len(),
+        "Data Spell tail should remain present"
+    );
     assert_eq!(
         changed_offsets(&original, &exported),
         vec![10],
@@ -529,7 +596,10 @@ fn rules_custom_spell_name_export_updates_only_spell_str_resource() {
 
     let exported_resource_bytes = fs::read(export_dir.join("Data Spell.rsrc")).unwrap();
     let exported_resources = resource_entries_by_key(&exported_resource_bytes);
-    assert_eq!(original_resources.keys().collect::<Vec<_>>(), exported_resources.keys().collect::<Vec<_>>());
+    assert_eq!(
+        original_resources.keys().collect::<Vec<_>>(),
+        exported_resources.keys().collect::<Vec<_>>()
+    );
     for (key, original) in &original_resources {
         if key == &("STR#".to_string(), 5000) {
             continue;
@@ -549,8 +619,137 @@ fn rules_custom_spell_name_export_updates_only_spell_str_resource() {
     let reimport_dir = temp.path().join("reimported");
     let reimported = import_scenario(&export_dir, &reimport_dir).unwrap();
     assert_eq!(
-        reimported.spell_overrides.first().map(|record| record.display_name.as_str()),
+        reimported
+            .spell_overrides
+            .first()
+            .map(|record| record.display_name.as_str()),
         Some("Providence Probe")
+    );
+}
+
+#[test]
+fn rules_custom_race_caste_names_are_project_only_and_do_not_export() {
+    let Some(custom_names) = custom_names_fixture_path() else {
+        eprintln!("Skipping custom race/caste name fixture; bundled Custom Names.rsrc is absent.");
+        return;
+    };
+    let temp = tempdir().unwrap();
+    let source = temp.path().join("Scenario With Rule Names");
+    fs::create_dir_all(source.join("Data Files")).unwrap();
+    fs::write(
+        source.join("Data Race"),
+        vec![0u8; realmz_providence_lib::realmz::RACE_BYTES * 70],
+    )
+    .unwrap();
+    fs::write(
+        source.join("Data Caste"),
+        vec![0u8; realmz_providence_lib::realmz::CASTE_BYTES * 30],
+    )
+    .unwrap();
+    fs::copy(
+        &custom_names,
+        source.join("Data Files").join("Custom Names.rsrc"),
+    )
+    .unwrap();
+    fs::copy(&custom_names, source.join("Custom Names.rsrc")).unwrap();
+
+    let project_dir = temp.path().join("project");
+    let export_dir = temp.path().join("exported");
+    import_scenario(&source, &project_dir).unwrap();
+    let mut project = open_project(&project_dir).unwrap();
+    let original_race = fs::read(source.join("Data Race")).unwrap();
+    let original_caste = fs::read(source.join("Data Caste")).unwrap();
+
+    project.rule_names.race_names[19] = "Providence Race".to_string();
+    project.rule_names.caste_names[20] = "Providence Caste".to_string();
+    project.rule_names.authored = true;
+    save_project(&project_dir, &project).unwrap();
+
+    let reopened = open_project(&project_dir).unwrap();
+    assert_eq!(
+        reopened.rule_names.race_names.get(19).map(String::as_str),
+        Some("Providence Race")
+    );
+    assert_eq!(
+        reopened.rule_names.caste_names.get(20).map(String::as_str),
+        Some("Providence Caste")
+    );
+
+    export_project(
+        &project_dir,
+        &reopened,
+        &export_dir,
+        ScenarioTarget::ProvidencePortableFolder,
+    )
+    .unwrap();
+
+    assert_eq!(
+        fs::read(export_dir.join("Data Race")).unwrap(),
+        original_race,
+        "renaming a custom race should not mutate Data Race bytes"
+    );
+    assert_eq!(
+        fs::read(export_dir.join("Data Caste")).unwrap(),
+        original_caste,
+        "renaming a custom caste should not mutate Data Caste bytes"
+    );
+    assert!(
+        !export_dir.join("Custom Names.rsrc").exists(),
+        "top-level Custom Names resource should not pass through scenario export"
+    );
+    assert!(
+        !export_dir.join("Data Files").join("Custom Names.rsrc").exists(),
+        "Custom race/caste names are Providence project labels and should not export as support resources"
+    );
+}
+
+#[test]
+fn rules_custom_race_caste_name_export_does_not_synthesize_custom_names_resource() {
+    let temp = tempdir().unwrap();
+    let project_dir = temp.path().join("Blank Rule Names.providence");
+    let export_dir = temp.path().join("exported");
+    let mut project = create_project("Blank Rule Names".to_string(), &project_dir).unwrap();
+    let mut buffers = BTreeMap::new();
+    buffers.insert(
+        "Data Race".to_string(),
+        vec![0u8; realmz_providence_lib::realmz::RACE_BYTES * 70],
+    );
+    buffers.insert(
+        "Data Caste".to_string(),
+        vec![0u8; realmz_providence_lib::realmz::CASTE_BYTES * 30],
+    );
+    let parsed = parse_scenario_buffers(&buffers);
+    project.race_overrides.push(
+        parsed
+            .race_overrides
+            .into_iter()
+            .find(|record| record.id == 19)
+            .expect("zero race table should include record 19"),
+    );
+    project.caste_overrides.push(
+        parsed
+            .caste_overrides
+            .into_iter()
+            .find(|record| record.id == 20)
+            .expect("zero caste table should include record 20"),
+    );
+    project.rule_names.race_names[19] = "New Providence Race".to_string();
+    project.rule_names.caste_names[20] = "New Providence Caste".to_string();
+    project.rule_names.authored = true;
+
+    export_project(
+        &project_dir,
+        &project,
+        &export_dir,
+        ScenarioTarget::ProvidencePortableFolder,
+    )
+    .unwrap();
+
+    assert!(export_dir.join("Data Race").is_file());
+    assert!(export_dir.join("Data Caste").is_file());
+    assert!(
+        !export_dir.join("Data Files").join("Custom Names.rsrc").exists(),
+        "Custom race/caste names are Providence project labels and should not synthesize a support resource"
     );
 }
 
@@ -587,9 +786,14 @@ fn rules_race_export_mutates_only_owned_record_fields() {
     let exported = fs::read(export_dir.join("Data Race")).unwrap();
     assert_eq!(exported.len(), original.len());
     let changed = changed_offsets(&original, &exported);
-    assert!(!changed.is_empty(), "fixture mutation should change race bytes");
     assert!(
-        changed.iter().all(|offset| matches!(*offset, 196..=197 | 209 | 336..=339)),
+        !changed.is_empty(),
+        "fixture mutation should change race bytes"
+    );
+    assert!(
+        changed
+            .iter()
+            .all(|offset| matches!(*offset, 196..=197 | 209 | 336..=339)),
         "unexpected race byte mutation(s): {changed:?}"
     );
 }
@@ -611,7 +815,8 @@ fn rules_caste_export_mutates_only_owned_record_fields() {
     );
     let original = fs::read(source.join("Data Caste")).unwrap();
     project.caste_overrides[0].victory[0] = project.caste_overrides[0].victory[0].wrapping_add(1);
-    project.caste_overrides[0].start_items[0] = project.caste_overrides[0].start_items[0].wrapping_add(1);
+    project.caste_overrides[0].start_items[0] =
+        project.caste_overrides[0].start_items[0].wrapping_add(1);
     project.caste_overrides[0].attacks[0] ^= 1;
     if let Some(mask) = project.caste_overrides[0].item_types.first_mut() {
         *mask ^= 1;
@@ -626,7 +831,10 @@ fn rules_caste_export_mutates_only_owned_record_fields() {
     let exported = fs::read(export_dir.join("Data Caste")).unwrap();
     assert_eq!(exported.len(), original.len());
     let changed = changed_offsets(&original, &exported);
-    assert!(!changed.is_empty(), "fixture mutation should change caste bytes");
+    assert!(
+        !changed.is_empty(),
+        "fixture mutation should change caste bytes"
+    );
     assert!(
         changed
             .iter()
@@ -2016,17 +2224,28 @@ fn target_exports_match_package_contracts() {
     }
 
     if let Some(portable_source) = fixture_path("War in the Sword Lands") {
-        let (_temp, project, export_dir, report) = export_fixture_with_target(
-            &portable_source,
-            ScenarioTarget::ProvidencePortableFolder,
-        );
+        let (_temp, project, export_dir, report) =
+            export_fixture_with_target(&portable_source, ScenarioTarget::ProvidencePortableFolder);
         assert_eq!(report.target, ScenarioTarget::ProvidencePortableFolder);
-        assert_package_contract("War in the Sword Lands portable target", &project, &export_dir);
+        assert_package_contract(
+            "War in the Sword Lands portable target",
+            &project,
+            &export_dir,
+        );
         assert!(
-            project.source.files.iter().any(|file| is_custom_music_name(&file.name)),
+            project
+                .source
+                .files
+                .iter()
+                .any(|file| is_custom_music_name(&file.name)),
             "War in the Sword Lands should include custom music fixture files"
         );
-        for file in project.source.files.iter().filter(|file| is_custom_music_name(&file.name)) {
+        for file in project
+            .source
+            .files
+            .iter()
+            .filter(|file| is_custom_music_name(&file.name))
+        {
             assert!(
                 export_dir.join(&file.relative_path).is_file(),
                 "portable export should preserve custom music file {}",
@@ -2038,7 +2257,9 @@ fn target_exports_match_package_contracts() {
             "portable export should report preservation notes for custom media/package baggage"
         );
     } else {
-        eprintln!("Skipping portable custom music contract; War in the Sword Lands fixture is absent.");
+        eprintln!(
+            "Skipping portable custom music contract; War in the Sword Lands fixture is absent."
+        );
     }
 }
 
@@ -2062,7 +2283,11 @@ fn target_export_excludes_ignored_os_metadata() {
     let (_export_temp, project, export_dir, report) =
         export_fixture_with_target(&copied_source, ScenarioTarget::ProvidencePortableFolder);
     assert!(
-        !project.source.files.iter().any(|file| file.name == ".DS_Store"),
+        !project
+            .source
+            .files
+            .iter()
+            .any(|file| file.name == ".DS_Store"),
         "importer should ignore .DS_Store as non-scenario metadata"
     );
     assert!(
@@ -2070,8 +2295,63 @@ fn target_export_excludes_ignored_os_metadata() {
         "export should not write ignored OS metadata"
     );
     assert!(
-        !report.pass_through_files.iter().any(|file| file == ".DS_Store"),
+        !report
+            .pass_through_files
+            .iter()
+            .any(|file| file == ".DS_Store"),
         "ignored OS metadata should not appear as pass-through"
+    );
+}
+
+#[test]
+fn target_export_omits_generated_data_menu_cache() {
+    let Some(source) = fixture_path("City of Bywater") else {
+        eprintln!("Skipping Data MENU export test; City of Bywater fixture is absent.");
+        return;
+    };
+    let (_export_temp, project, export_dir, report) =
+        export_fixture_with_target(&source, ScenarioTarget::ProvidencePortableFolder);
+
+    assert!(
+        has_source_file(&project, "Data MENU"),
+        "fixture should import Data MENU as generated bestiary evidence"
+    );
+    assert!(
+        project
+            .records
+            .counts
+            .get("Data MENU")
+            .copied()
+            .unwrap_or(0)
+            > 0,
+        "import should keep Data MENU record inventory evidence"
+    );
+    assert!(
+        project
+            .validation
+            .warnings
+            .iter()
+            .any(|warning| warning.contains("Data MENU looks like a generated runtime cache")),
+        "validation should identify Data MENU as generated cache evidence"
+    );
+    assert!(
+        !export_dir.join("Data MENU").exists(),
+        "export should omit Data MENU so Realmz rebuilds it from Data MD"
+    );
+    assert!(
+        !report
+            .pass_through_files
+            .iter()
+            .any(|file| file == "Data MENU"),
+        "Data MENU should not be reported as pass-through"
+    );
+    assert!(
+        export_dir.join("Data MD").is_file(),
+        "export should keep authored scenario monster records"
+    );
+    assert!(
+        export_dir.join("Data DES").is_file(),
+        "export should keep authored monster descriptions"
     );
 }
 
@@ -2126,7 +2406,8 @@ fn windows_export_promotes_macosx_scenario_resource_fork() {
         exported_resource_path.is_file(),
         "Windows export should include promoted Scenario.rsrc"
     );
-    let exported_resources = parse_resource_fork_entries(&fs::read(&exported_resource_path).unwrap());
+    let exported_resources =
+        parse_resource_fork_entries(&fs::read(&exported_resource_path).unwrap());
     assert!(
         exported_resources
             .iter()
@@ -2168,6 +2449,9 @@ fn exports_hardened_fixtures_byte_identically_without_edits() {
         .unwrap();
 
         for file_name in supported.iter().chain(tracked.difference(&supported)) {
+            if is_generated_export_cache_name(file_name) {
+                continue;
+            }
             let source_file = source.join(file_name);
             if !source_file.is_file() {
                 continue;
@@ -2186,7 +2470,10 @@ fn exports_hardened_fixtures_byte_identically_without_edits() {
 
         for source_file in &project.source.files {
             let file_name = source_file.name.as_str();
-            if supported.contains(file_name) || tracked.contains(file_name) {
+            if supported.contains(file_name)
+                || tracked.contains(file_name)
+                || is_generated_export_cache_name(file_name)
+            {
                 continue;
             }
             let source_path = source.join(&source_file.relative_path);
@@ -2234,7 +2521,10 @@ fn export_fixture_with_target(
 
 fn assert_target_export_contract(label: &str, source: &Path, target: ScenarioTarget) {
     let (_temp, project, export_dir, report) = export_fixture_with_target(source, target);
-    assert_eq!(report.target, target, "{label} should report selected target");
+    assert_eq!(
+        report.target, target,
+        "{label} should report selected target"
+    );
     assert_package_contract(label, &project, &export_dir);
     assert!(
         report.target_compatibility_issues.iter().all(|issue| {
@@ -2251,7 +2541,12 @@ fn assert_target_export_contract(label: &str, source: &Path, target: ScenarioTar
             + report.target_compatibility.notes.len(),
         "{label} should bucket every target compatibility issue"
     );
-    if project.source.files.iter().any(|file| file.name.starts_with("._")) {
+    if project
+        .source
+        .files
+        .iter()
+        .any(|file| file.name.starts_with("._"))
+    {
         match target {
             ScenarioTarget::MacClassicFolder => assert!(
                 report
@@ -2283,7 +2578,16 @@ fn assert_package_contract(label: &str, project: &ProvidenceProject, export_dir:
         .source
         .files
         .iter()
-        .filter(|file| matches!(file.role, SourceFileRole::SupportedBinary | SourceFileRole::ResourceFork | SourceFileRole::PassThrough | SourceFileRole::Unknown))
+        .filter(|file| {
+            matches!(
+                file.role,
+                SourceFileRole::SupportedBinary
+                    | SourceFileRole::ResourceFork
+                    | SourceFileRole::PassThrough
+                    | SourceFileRole::Unknown
+            )
+        })
+        .filter(|file| !is_generated_export_cache_name(&file.name))
     {
         assert!(
             export_dir.join(&file.relative_path).is_file(),
@@ -2297,6 +2601,10 @@ fn assert_package_contract(label: &str, project: &ProvidenceProject, export_dir:
             "{label} should exclude ignored metadata {name}"
         );
     }
+}
+
+fn is_generated_export_cache_name(name: &str) -> bool {
+    matches!(name, "Data MENU")
 }
 
 fn resource_path_with_entry(

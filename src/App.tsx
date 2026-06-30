@@ -254,6 +254,7 @@ export function App() {
     openProjectWorkbench,
     createDraftEntry,
     updateDraftEntry,
+    updateLibraryCatalog,
     saveProject,
     exportProject,
     validateProject,
@@ -576,6 +577,7 @@ export function App() {
         onCancelPaintStroke={() => dispatch({ type: "cancelCommandGroup" })}
         onCreateDraft={createDraftEntry}
         onUpdateDraft={updateDraftEntry}
+        onUpdateLibraryCatalog={updateLibraryCatalog}
         onImportAssets={importMediaAssets}
         onReplaceAsset={replaceManagedAsset}
         onUpdateAsset={updateManagedAsset}

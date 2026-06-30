@@ -116,13 +116,12 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     id: "combat",
     label: "Combat",
     shortLabel: "Combat",
-    description: "Battles, monsters, Monster Scrapbook, and Monster Mash.",
+    description: "Battles, scenario monsters, and Monster Library.",
     help: "Library material is usable reference data; project records remain editable where supported.",
     tools: [
-      t({ id: "battles", label: "Battle Editor", iconLabel: "B", workbench: "project", description: "Battle records, monster links, reusable actions, and messages.", entityTypes: ["battle"], defaultInspector: "semantic" }),
-      t({ id: "monsters", label: "Monster Editor", iconLabel: "M", workbench: "both", description: "Monster records and cicn/icon links.", entityTypes: ["monster"], defaultInspector: "semantic" }),
-      t({ id: "scrapbook", label: "Monster Scrapbook", iconLabel: "SB", workbench: "library", description: "Shared monster entries.", entityTypes: ["monster-scrapbook-entry"], defaultInspector: "resource" }),
-      t({ id: "mash", label: "Monster Mash", iconLabel: "MM", workbench: "library", description: "Shared monster icon material.", entityTypes: ["monster-mash-icon"], defaultInspector: "resource" })
+      t({ id: "battles", label: "Battle Editor", iconLabel: "B", workbench: "project", description: "Battle records, monster links, reusable actions, and strings.", entityTypes: ["battle"], defaultInspector: "semantic" }),
+      t({ id: "monsters", label: "Monster Editor", iconLabel: "M", workbench: "both", description: "Scenario monsters, editable Providence library entries, and cicn/icon links.", entityTypes: ["monster"], defaultInspector: "semantic" }),
+      t({ id: "scrapbook", label: "Monster Library", iconLabel: "ML", workbench: "library", description: "Protected built-in templates and editable Providence monster variants for copying into scenarios.", entityTypes: ["monster-scrapbook-entry"], defaultInspector: "resource" })
     ]
   },
   economy: {
@@ -234,7 +233,7 @@ export function domainCount(
     project.scenario.securityBackup
   ].filter(Boolean).length : 0;
   if (domain === "encounters") return (project?.simpleEncounters.length ?? 0) + (project?.complexEncounters.length ?? 0) + (project?.thiefEncounters.length ?? 0) + (project?.timedEncounters.length ?? 0);
-  if (domain === "combat") return (project?.battles.length ?? 0) + (project?.monsters.length ?? 0) + (activeWorkbench === "library" ? catalog?.entities.filter((entity) => ["monster-scrapbook-entry", "monster-mash-icon"].includes(entity.type)).length ?? 0 : 0);
+  if (domain === "combat") return (project?.battles.length ?? 0) + (project?.monsters.length ?? 0) + (activeWorkbench === "library" ? catalog?.entities.filter((entity) => entity.type === "monster-scrapbook-entry").length ?? 0 : 0);
   if (domain === "economy") return (project?.treasures.length ?? 0) + (project?.shops.length ?? 0) + (project?.scenarioItems.length ?? 0) + (activeWorkbench === "library" ? catalog?.entities.filter((entity) => ["item", "bag-item", "vault-icon"].includes(entity.type)).length ?? 0 : 0);
   if (domain === "rules") return (project?.spellOverrides.length ?? 0) + (project?.raceOverrides.length ?? 0) + (project?.casteOverrides.length ?? 0) + (activeWorkbench === "library" ? catalog?.entities.filter((entity) => ["spell", "race", "caste"].includes(entity.type)).length ?? 0 : 0);
   if (domain === "assets") return (project?.assets.length ?? 0) + (project?.assetCatalog.tilesets.length ?? 0) + (project?.assetCatalog.pictures?.length ?? 0) + (project?.assetCatalog.icons?.length ?? 0) + (project?.assetCatalog.sounds?.length ?? 0) + (activeWorkbench === "library" ? catalog?.assets.length ?? 0 : 0);

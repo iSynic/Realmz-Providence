@@ -81,6 +81,7 @@ pub fn create_project(
         spell_overrides: Vec::new(),
         race_overrides: Vec::new(),
         caste_overrides: Vec::new(),
+        rule_names: default_rule_names(),
         assets: Vec::new(),
         asset_catalog: AssetCatalog::default(),
         editor_metadata: EditorMetadata::default(),
@@ -262,6 +263,7 @@ fn import_scenario_with_name(
         spell_overrides: parsed.spell_overrides,
         race_overrides: parsed.race_overrides,
         caste_overrides: parsed.caste_overrides,
+        rule_names: default_rule_names(),
         assets: Vec::new(),
         asset_catalog: parsed.asset_catalog,
         editor_metadata: EditorMetadata::default(),
@@ -271,6 +273,7 @@ fn import_scenario_with_name(
         validation: ValidationReport::default(),
     };
     hydrate_custom_spell_names(&source_path, &mut project)?;
+    hydrate_rule_names(&source_path, Some(&raw_dir), &mut project)?;
     import_picture_assets(&source_path, &assets_dir, &mut project)?;
     import_tile_atlases(&source_path, &assets_dir, &mut project)?;
     import_icon_overlays(&source_path, &assets_dir, &mut project)?;
@@ -305,6 +308,7 @@ pub fn open_project(project_dir: impl AsRef<Path>) -> Result<ProvidenceProject> 
         project.source.raw_sources_dir.as_str()
     });
     hydrate_custom_spell_names(&raw_dir, &mut project)?;
+    hydrate_rule_names(&raw_dir, None, &mut project)?;
     import_picture_assets(&raw_dir, &project_dir.join(ASSETS_DIR), &mut project)?;
     refresh_custom_tile_atlases(project_dir, &mut project)?;
     import_icon_overlays(&raw_dir, &project_dir.join(ASSETS_DIR), &mut project)?;
@@ -354,6 +358,7 @@ struct ProjectFile<'a> {
     spell_overrides: &'a [ScenarioSpellOverride],
     race_overrides: &'a [ScenarioRaceOverride],
     caste_overrides: &'a [ScenarioCasteOverride],
+    rule_names: &'a RuleNames,
     assets: &'a [ManagedAsset],
     asset_catalog: &'a AssetCatalog,
     editor_metadata: &'a EditorMetadata,
@@ -394,6 +399,7 @@ impl<'a> From<&'a ProvidenceProject> for ProjectFile<'a> {
             spell_overrides: &project.spell_overrides,
             race_overrides: &project.race_overrides,
             caste_overrides: &project.caste_overrides,
+            rule_names: &project.rule_names,
             assets: &project.assets,
             asset_catalog: &project.asset_catalog,
             editor_metadata: &project.editor_metadata,
@@ -442,10 +448,7 @@ fn build_semantic_schema_from_raw_sources(
     Ok(())
 }
 
-fn build_semantic_schema(
-    project: &mut ProvidenceProject,
-    buffers: &BTreeMap<String, Vec<u8>>,
-) {
+fn build_semantic_schema(project: &mut ProvidenceProject, buffers: &BTreeMap<String, Vec<u8>>) {
     let semantic_parsed = ParsedScenario {
         maps: project.maps.clone(),
         land_layout: project.land_layout.clone(),
@@ -596,11 +599,11 @@ fn hydrate_scenario_metadata(project_dir: &Path, project: &mut ProvidenceProject
 
 fn read_scenario_shell(source_path: &Path, scenario_name: &str) -> Result<Option<ScenarioShell>> {
     let path = source_path.join(scenario_name);
-    if !path.is_file() {
-        return Ok(None);
+    if path.is_file() {
+        let bytes = fs::read(&path).with_path(&path)?;
+        return crate::realmz::parse_scenario_shell(scenario_name, &bytes).map(Some);
     }
-    let bytes = fs::read(&path).with_path(&path)?;
-    crate::realmz::parse_scenario_shell(scenario_name, &bytes).map(Some)
+    read_scenario_shell_candidate_from_dir(source_path)
 }
 
 fn read_scenario_shell_from_raw(
@@ -614,15 +617,6 @@ fn read_scenario_shell_from_raw(
             .as_ref()
             .map(|shell| shell.source_file.as_str()),
         Some(project.scenario.name.as_str()),
-        project
-            .source
-            .files
-            .iter()
-            .find(|file| {
-                !is_resource_file_name(&file.name)
-                    && !TRACKED_FILES.iter().any(|tracked| *tracked == file.name)
-            })
-            .map(|file| file.name.as_str()),
     ];
     for candidate in candidates.into_iter().flatten() {
         let path = raw_dir.join(candidate);
@@ -631,7 +625,36 @@ fn read_scenario_shell_from_raw(
             return crate::realmz::parse_scenario_shell(candidate, &bytes).map(Some);
         }
     }
-    Ok(None)
+    read_scenario_shell_candidate_from_dir(raw_dir)
+}
+
+fn read_scenario_shell_candidate_from_dir(dir: &Path) -> Result<Option<ScenarioShell>> {
+    let mut candidates: Vec<(usize, String, PathBuf)> = Vec::new();
+    for entry in fs::read_dir(dir).with_path(dir)? {
+        let entry = entry.map_err(|error| ProvidenceError::message(error.to_string()))?;
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+        let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
+            continue;
+        };
+        if !is_scenario_marker_candidate_name(name) {
+            continue;
+        }
+        let bytes = fs::read(&path).with_path(&path)?;
+        if bytes.len() < 316 || crate::realmz::parse_scenario_shell(name, &bytes).is_err() {
+            continue;
+        }
+        let size_rank = if bytes.len() == 316 { 0 } else { 1 };
+        candidates.push((size_rank, name.to_string(), path));
+    }
+    candidates.sort_by(|left, right| left.0.cmp(&right.0).then_with(|| left.1.cmp(&right.1)));
+    let Some((_, name, path)) = candidates.into_iter().next() else {
+        return Ok(None);
+    };
+    let bytes = fs::read(&path).with_path(&path)?;
+    crate::realmz::parse_scenario_shell(&name, &bytes).map(Some)
 }
 
 fn default_scenario_shell(source_file: &str) -> ScenarioShell {
@@ -871,7 +894,9 @@ fn snapshot_macosx_resource_sidecars(
         } else {
             format!("{data_name}.rsrc")
         };
-        if existing_names.contains(&resource_name) || files.iter().any(|file| file.name == resource_name) {
+        if existing_names.contains(&resource_name)
+            || files.iter().any(|file| file.name == resource_name)
+        {
             continue;
         }
         let dest = raw_dir.join(&resource_name);
@@ -894,6 +919,13 @@ fn is_scenario_marker_source(source_path: &Path, name: &str, bytes: &[u8]) -> bo
     };
     name.eq_ignore_ascii_case(scenario_dir_name)
         && crate::realmz::parse_scenario_shell(name, bytes).is_ok()
+}
+
+fn is_scenario_marker_candidate_name(name: &str) -> bool {
+    !is_resource_file_name(name)
+        && !TRACKED_FILES.iter().any(|tracked| *tracked == name)
+        && !name.starts_with("Data ")
+        && !name.starts_with("._")
 }
 
 fn is_resource_file_name(name: &str) -> bool {
@@ -1153,6 +1185,126 @@ fn hydrate_custom_spell_names(source_path: &Path, project: &mut ProvidenceProjec
     Ok(())
 }
 
+fn hydrate_rule_names(
+    source_path: &Path,
+    raw_dir: Option<&Path>,
+    project: &mut ProvidenceProject,
+) -> Result<()> {
+    normalize_rule_names(project);
+    if project.rule_names.authored {
+        apply_rule_names_to_records(project);
+        return Ok(());
+    }
+    for resource_path in custom_names_resource_candidates(source_path) {
+        if !resource_path.is_file() {
+            continue;
+        }
+        let bytes = fs::read(&resource_path).with_path(&resource_path)?;
+        let entries = crate::resource_fork::parse_resource_fork_entries(&bytes);
+        let mut found = false;
+        let mut rule_names = default_rule_names();
+        rule_names.source_file = CUSTOM_NAMES_SOURCE_FILE.to_string();
+        rule_names.provenance = Some(Provenance {
+            source_file: resource_path.to_string_lossy().to_string(),
+            record_index: 0,
+            byte_offset: 0,
+            byte_length: bytes.len(),
+            confidence: Confidence::SourceBacked,
+        });
+        for entry in entries {
+            if entry.resource_type != "STR#" {
+                continue;
+            }
+            if entry.id == 129 {
+                merge_rule_name_list(
+                    &mut rule_names.race_names,
+                    crate::resource_fork::decode_string_list_resource(&entry.data),
+                );
+                found = true;
+            } else if entry.id == 131 {
+                merge_rule_name_list(
+                    &mut rule_names.caste_names,
+                    crate::resource_fork::decode_string_list_resource(&entry.data),
+                );
+                found = true;
+            }
+        }
+        if !found {
+            continue;
+        }
+        if let Some(raw_dir) = raw_dir {
+            let dest = raw_dir.join(CUSTOM_NAMES_SOURCE_FILE);
+            if !same_path(&resource_path, &dest) {
+                if let Some(parent) = dest.parent() {
+                    fs::create_dir_all(parent).with_path(parent)?;
+                }
+                fs::copy(&resource_path, &dest).with_path(&dest)?;
+            }
+        }
+        project.rule_names = rule_names;
+        apply_rule_names_to_records(project);
+        return Ok(());
+    }
+    apply_rule_names_to_records(project);
+    Ok(())
+}
+
+fn normalize_rule_names(project: &mut ProvidenceProject) {
+    let defaults = default_rule_names();
+    if project.rule_names.source_file.trim().is_empty() {
+        project.rule_names.source_file = CUSTOM_NAMES_SOURCE_FILE.to_string();
+    }
+    fill_rule_name_defaults(&mut project.rule_names.race_names, defaults.race_names);
+    fill_rule_name_defaults(&mut project.rule_names.caste_names, defaults.caste_names);
+}
+
+fn fill_rule_name_defaults(target: &mut Vec<String>, defaults: Vec<String>) {
+    if target.len() < defaults.len() {
+        target.resize(defaults.len(), String::new());
+    }
+    for (index, value) in defaults.into_iter().enumerate() {
+        if target[index].trim().is_empty() {
+            target[index] = value;
+        }
+    }
+}
+
+fn merge_rule_name_list(target: &mut Vec<String>, source: Vec<String>) {
+    if target.len() < source.len() {
+        target.resize(source.len(), String::new());
+    }
+    for (index, value) in source.into_iter().enumerate() {
+        let value = value.trim();
+        if !value.is_empty() {
+            target[index] = value.to_string();
+        }
+    }
+}
+
+fn apply_rule_names_to_records(project: &mut ProvidenceProject) {
+    for record in &mut project.race_overrides {
+        if let Some(name) = project.rule_names.race_names.get(record.id) {
+            if !name.trim().is_empty() {
+                record.display_name = name.clone();
+            }
+        }
+    }
+    for record in &mut project.caste_overrides {
+        if let Some(name) = project.rule_names.caste_names.get(record.id) {
+            if !name.trim().is_empty() {
+                record.display_name = name.clone();
+            }
+        }
+    }
+}
+
+fn same_path(left: &Path, right: &Path) -> bool {
+    match (left.canonicalize(), right.canonicalize()) {
+        (Ok(left), Ok(right)) => left == right,
+        _ => left == right,
+    }
+}
+
 fn upsert_scenario_icon_asset(
     project: &mut ProvidenceProject,
     icon_id: i16,
@@ -1203,10 +1355,8 @@ fn import_picture_assets(
             let preview_path = match preview_path {
                 Some(path) => Some(path),
                 None => {
-                    let preview = crate::resource_preview::inspect_resource_preview(
-                        "PICT",
-                        &entry.data,
-                    )?;
+                    let preview =
+                        crate::resource_preview::inspect_resource_preview("PICT", &entry.data)?;
                     if let Some(data_url) = preview.data_url {
                         if let Some(png_bytes) = png_bytes_from_data_url(&data_url) {
                             let file_name = format!("picture_{}.png", entry.id);
@@ -1223,7 +1373,9 @@ fn import_picture_assets(
                             .map(|diagnostic| diagnostic.message.clone())
                             .unwrap_or_else(|| format!("preview status was {:?}", preview.status));
                         project.diagnostics.push(Diagnostic {
-                            severity: if preview.status == crate::resource_preview::ResourcePreviewStatus::Malformed {
+                            severity: if preview.status
+                                == crate::resource_preview::ResourcePreviewStatus::Malformed
+                            {
                                 DiagnosticSeverity::Error
                             } else {
                                 DiagnosticSeverity::Warning
@@ -1276,7 +1428,10 @@ fn existing_picture_preview_path(
         .strip_prefix(&format!("{ASSETS_DIR}/"))
         .or_else(|| preview_path.strip_prefix(&format!("{ASSETS_DIR}\\")))
         .unwrap_or(preview_path);
-    assets_dir.join(relative).is_file().then(|| preview_path.to_string())
+    assets_dir
+        .join(relative)
+        .is_file()
+        .then(|| preview_path.to_string())
 }
 
 fn upsert_scenario_picture_asset(
@@ -1286,11 +1441,10 @@ fn upsert_scenario_picture_asset(
     source_file: &str,
     preview_path: Option<String>,
 ) {
-    if let Some(asset) = project
-        .asset_catalog
-        .pictures
-        .iter_mut()
-        .find(|asset| asset.resource_type == "PICT" && asset.resource_id == i32::from(picture_id))
+    if let Some(asset) =
+        project.asset_catalog.pictures.iter_mut().find(|asset| {
+            asset.resource_type == "PICT" && asset.resource_id == i32::from(picture_id)
+        })
     {
         if asset.name.is_none() && !name.is_empty() {
             asset.name = Some(name);
@@ -1634,6 +1788,32 @@ fn data_spell_resource_candidates(source_path: &Path) -> Vec<PathBuf> {
     ]
 }
 
+fn custom_names_resource_candidates(source_path: &Path) -> Vec<PathBuf> {
+    let mut candidates = vec![
+        source_path.join(CUSTOM_NAMES_SOURCE_FILE),
+        source_path.join("Custom Names.rsrc"),
+        source_path.join("Custom Names.rsf"),
+        source_path.join("._Custom Names"),
+    ];
+    if let Some(parent) = source_path.parent() {
+        candidates.push(parent.join("Data Files").join("Custom Names.rsrc"));
+        candidates.push(parent.join("Data Files").join("Custom Names.rsf"));
+        if let Some(grandparent) = parent.parent() {
+            candidates.push(grandparent.join("Data Files").join("Custom Names.rsrc"));
+            candidates.push(grandparent.join("Data Files").join("Custom Names.rsf"));
+        }
+    }
+    dedupe_paths(candidates)
+}
+
+fn dedupe_paths(paths: Vec<PathBuf>) -> Vec<PathBuf> {
+    let mut seen = BTreeSet::new();
+    paths
+        .into_iter()
+        .filter(|path| seen.insert(path.to_string_lossy().to_string()))
+        .collect()
+}
+
 fn png_bytes_from_data_url(data_url: &str) -> Option<Vec<u8>> {
     let base64 = data_url.strip_prefix("data:image/png;base64,")?;
     STANDARD.decode(base64).ok()
@@ -1708,9 +1888,7 @@ mod tests {
     #[test]
     fn create_project_iterates_colliding_default_package_names() {
         let temp = tempfile::tempdir().expect("tempdir");
-        let requested = temp
-            .path()
-            .join("Untitled Scenario 2026-06-01.providence");
+        let requested = temp.path().join("Untitled Scenario 2026-06-01.providence");
         let first = create_project("Untitled Scenario 2026-06-01".to_string(), &requested)
             .expect("first project");
         let second = create_project("Untitled Scenario 2026-06-01".to_string(), &requested)
@@ -1725,6 +1903,25 @@ mod tests {
             .join(PROJECT_FILE_NAME)
             .is_file());
         assert_ne!(first.scenario.project_path, second.scenario.project_path);
+    }
+
+    #[test]
+    fn read_scenario_shell_falls_back_to_mismatched_marker_names() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        fs::write(temp.path().join("Scenario"), vec![0; 600]).expect("write support file");
+        fs::write(temp.path().join("Custom 1 Music"), vec![0; 60_224]).expect("write custom music");
+
+        let mut marker = vec![0; 316];
+        marker[0..4].copy_from_slice(&70_i32.to_be_bytes());
+        marker[4..8].copy_from_slice(&55_i32.to_be_bytes());
+        fs::write(temp.path().join("Prince of Darkness"), marker).expect("write marker");
+
+        let shell = read_scenario_shell(temp.path(), "Prince Of Darkness v1.6")
+            .expect("read shell")
+            .expect("fallback shell");
+        assert_eq!(shell.source_file, "Prince of Darkness");
+        assert_eq!(shell.rec_level, 70);
+        assert_eq!(shell.max_level, 55);
     }
 
     #[test]

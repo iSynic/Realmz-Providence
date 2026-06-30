@@ -182,9 +182,9 @@ const output = {
       note: "No distinct Data Spell TEXT description resources are observed in scenario Data Spell resource forks."
     },
     raceNames: {
-      status: "preserved-unknown",
-      writerStatus: "hidden",
-      note: "Scenario Data Race contains no decoded race name field and no Data Race resource forks are observed."
+      status: "external-global-resource",
+      writerStatus: "project-label-no-export",
+      note: "Race names live in global Data Files:Custom Names.rsrc STR# 129, not in the scenario folder or Data Race. Providence imports initial labels and keeps project edits for editor display, but does not export this global support resource with a scenario."
     },
     raceDefaultPortraitSet: {
       status: "decoded-writable",
@@ -192,9 +192,9 @@ const output = {
       field: "Data Race offset 334"
     },
     casteNames: {
-      status: "preserved-unknown",
-      writerStatus: "hidden",
-      note: "Scenario Data Caste contains no decoded caste name field and no Data Caste resource forks are observed."
+      status: "external-global-resource",
+      writerStatus: "project-label-no-export",
+      note: "Caste names live in global Data Files:Custom Names.rsrc STR# 131, not in the scenario folder or Data Caste. Providence imports initial labels and keeps project edits for editor display, but does not export this global support resource with a scenario."
     },
     casteDefaultIcon: {
       status: "decoded-writable",
@@ -213,7 +213,7 @@ const output = {
     spellResources: "spell-name-str-writer-safe-existing-resource",
     raceRecords: "writer-safe-fields-fixture-proven",
     casteRecords: "writer-safe-fields-fixture-proven",
-    raceCasteNames: "unresolved-hidden"
+    raceCasteNames: "project-label-no-export"
   },
   summary: {
     scenariosWithRulesData: scenarios.length,
@@ -286,6 +286,7 @@ function indexRulesResources(resourceInventory) {
   if (!resourceInventory?.forks) return index;
   for (const fork of resourceInventory.forks) {
     if (!["Data Spell.rsrc", "Data Spell.rsf", "Data Spell"].includes(fork.fileName)) continue;
+    if (!fork.fullPath || !fs.existsSync(fork.fullPath)) continue;
     const key = `${fork.sourceRoot}\u0000${fork.scenario}`;
     const resources = index.get(key) ?? [];
     for (const resource of fork.resources ?? []) {
@@ -371,6 +372,7 @@ function buildNamePackagingOutput(rulesCoverage, rulesResourcesByScenario) {
       realmzSource: [
         "F:/Realmz/src/realmz_orig/spellselect.c GetIndString(1000 * spellcastertype + spelllevel, slot + 1)",
         "F:/Realmz/src/realmz_orig/combat.c GetIndString(1000 * (castcaste + 1) + castlevel, castnum + 1)",
+        "F:/Realmz/src/realmz_orig/main.c opens Data Files:Custom Names",
         "F:/Realmz/src/realmz_orig/age.c STR# 129 race labels",
         "F:/Realmz/src/realmz_orig/class.c STR# 131 caste labels"
       ],
@@ -394,14 +396,16 @@ function buildNamePackagingOutput(rulesCoverage, rulesResourcesByScenario) {
         reason: "No distinct scenario-local custom spell description resources are observed; Providence preserves existing record/resource bytes and keeps description text as editor metadata only."
       },
       raceNames: {
-        status: "not-scenario-data",
-        writerStatus: "hidden",
-        reason: "Realmz runtime race labels are read from shared STR# 129; no scenario-local Data Race name resource path is proven."
+        status: "external-global-resource",
+        writerStatus: "project-label-no-export",
+        storage: "Data Files:Custom Names.rsrc STR# 129",
+        reason: "Modern Realmz opens Data Files:Custom Names at startup and reads race labels from STR# 129, but Divinity Format does not package that global resource into the scenario. Providence imports labels for context and saves edits in the project only."
       },
       casteNames: {
-        status: "not-scenario-data",
-        writerStatus: "hidden",
-        reason: "Realmz runtime caste labels are read from shared STR# 131; no scenario-local Data Caste name resource path is proven."
+        status: "external-global-resource",
+        writerStatus: "project-label-no-export",
+        storage: "Data Files:Custom Names.rsrc STR# 131",
+        reason: "Modern Realmz opens Data Files:Custom Names at startup and reads caste labels from STR# 131, but Divinity Format does not package that global resource into the scenario. Providence imports labels for context and saves edits in the project only."
       }
     },
     summary: {

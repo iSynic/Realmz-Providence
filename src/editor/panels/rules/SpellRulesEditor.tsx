@@ -3,13 +3,13 @@ import { TutorialTip } from "../../components/TutorialTip";
 import { LibraryAsset, ProjectCommand, ScenarioSpellOverride } from "../../types";
 import { SPELL_CASTER_CLASSES, SPELL_DAMAGE_TYPES, SPELL_RESIST_CLASSES, SPELL_TARGET_TYPES } from "../../rulesCatalog";
 import { NumberField, SelectField, SoundNumberField, SpellAnimationIconField, FastplotTileNumberField, TextField, CheckboxField } from "./RuleFields";
-import { buildSpellEntries, previousSpellPackedId, nextSpellPackedId, selectedIdFor, spellCustomId, spellPackedId } from "./ruleUtils";
+import { buildSpellEntries, previousSpellPackedId, nextSpellPackedId, selectedIdFor, spellPackedId } from "./ruleUtils";
 import { SpellRuleEntry, SpellRulesEditorProps } from "./ruleTypes";
 
 const SPELL_EDITOR_HELP = "Browse packed Realmz spell IDs from shared Data S and create scenario-local custom spell overrides in Data Spell. Built-in spell classes are reference/copy sources.";
 const SPELL_CLASS_HELP = "Spell IDs encode class, level, and slot. The Custom class is the scenario-owned class; copying a built-in spell here creates an editable Data Spell record.";
 const SPELL_PICKER_HELP = "Select the exact packed spell ID. Realmz references spells by this packed value in scripts, encounters, castes, items, and combat logic.";
-const SPELL_CREATE_HELP = "Copying a built-in spell creates or replaces the matching Custom-class Data Spell slot. The shared Data S catalog remains unchanged.";
+const SPELL_CREATE_HELP = "Copying a built-in spell creates the next open Custom-class Data Spell slot. The shared Data S catalog remains unchanged.";
 const SPELL_NEW_CUSTOM_HELP = "Create a blank/default custom spell in the first open Custom-class Data Spell slot.";
 const SPELL_CLEAR_HELP = "Clearing removes the scenario-local Data Spell override for this custom slot and returns it to an empty custom spell entry.";
 
@@ -27,14 +27,16 @@ export function SpellRulesEditor({ project, catalog, selectedEntity, queueAtlasU
   const customSpellCount = entries.filter((candidate) => candidate.spellcasterClass === 4 && candidate.hasScenarioVersion).length;
   const selectPacked = (packedId: number) => onSelectEntity({ type: "record", id: `rule-spell:${packedId}` });
   const createCustomFrom = (source: SpellRuleEntry) => {
-    const customId = spellCustomId(source.levelIndex, source.slotIndex);
+    const target = source.spellcasterClass === 4 ? source : nextEmptyCustomEntry;
+    if (!target) return;
+    const customId = target.customId;
     onApplyCommand({
       kind: "createSpellOverride",
       label: "Create custom spell",
       id: customId,
       template: { ...source.record, id: customId, displayName: source.record.displayName || `Custom Spell ${source.levelIndex + 1}-${source.slotIndex + 1}` }
     });
-    selectPacked(spellPackedId(4, source.levelIndex, source.slotIndex));
+    selectPacked(target.packedId);
   };
   const createBlankCustomSpell = () => {
     if (!nextEmptyCustomEntry) return;
@@ -55,16 +57,24 @@ export function SpellRulesEditor({ project, catalog, selectedEntity, queueAtlasU
           </div>
           <small>{customSpellCount} custom spell(s)</small>
         </div>
-        <div className="rules-record-picker rules-spell-record-picker">
-          <SelectField label="Spellcaster Class" value={spellcasterClass} options={SPELL_CASTER_CLASSES} help={SPELL_CLASS_HELP} onCommit={(value) => {
-            setSpellcasterClass(value);
-            selectPacked(spellPackedId(value, 0, 0));
-          }} />
+        <div className="rules-record-picker rules-record-picker-compact rules-spell-record-picker">
+          <label className="rules-record-select-field rules-spell-class-select-field" title={SPELL_CLASS_HELP}>
+            <TutorialTip title="Spellcaster Class" body={SPELL_CLASS_HELP} side="below">
+              <span>Spellcaster Class</span>
+            </TutorialTip>
+            <select value={spellcasterClass} onChange={(event) => {
+              const value = Number(event.currentTarget.value);
+              setSpellcasterClass(value);
+              selectPacked(spellPackedId(value, 0, 0));
+            }}>
+              {SPELL_CASTER_CLASSES.map((option, index) => <option key={option} value={index}>{index} - {option}</option>)}
+            </select>
+          </label>
           <div className="rules-step-buttons" aria-label="Step through spells">
             <button type="button" className="btn btn-secondary btn-xs" title="Previous spell" onClick={() => selectedEntry && selectPacked(previousSpellPackedId(selectedEntry))}>‹</button>
             <button type="button" className="btn btn-secondary btn-xs" title="Next spell" onClick={() => selectedEntry && selectPacked(nextSpellPackedId(selectedEntry))}>›</button>
           </div>
-          <label>
+          <label className="rules-record-select-field rules-spell-select-field">
             <TutorialTip title="Spell" body={SPELL_PICKER_HELP} side="below">
               <span>Spell</span>
             </TutorialTip>
@@ -102,6 +112,7 @@ export function SpellRulesEditor({ project, catalog, selectedEntity, queueAtlasU
             iconAssets={catalog?.assets ?? []}
             queueAtlasUrl={queueAtlasUrl}
             onCreateCustom={() => createCustomFrom(selectedEntry)}
+            canCreateCustom={selectedEntry.spellcasterClass === 4 || Boolean(nextEmptyCustomEntry)}
             onApplyCommand={onApplyCommand}
           />
         )}
@@ -115,12 +126,14 @@ function SpellForm({
   iconAssets,
   queueAtlasUrl,
   onCreateCustom,
+  canCreateCustom,
   onApplyCommand
 }: {
   entry: SpellRuleEntry;
   iconAssets: LibraryAsset[];
   queueAtlasUrl: string | null;
   onCreateCustom: () => void;
+  canCreateCustom: boolean;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
   const record = entry.record;
@@ -134,7 +147,7 @@ function SpellForm({
       {!editable && (
         <div className="rules-help-callout">
           {entry.spellcasterClass === 4 ? "This custom slot is empty. Create it to edit this scenario's Data Spell table." : "Realmz loads this as a built-in spell from shared Data S. Copy it into a Custom slot to make a scenario-local editable version."}
-          <button type="button" className="btn btn-primary btn-xs" title={SPELL_CREATE_HELP} onClick={onCreateCustom}>{entry.spellcasterClass === 4 ? "Create Custom Spell" : "Copy To Custom Spell"}</button>
+          <button type="button" className="btn btn-primary btn-xs" title={SPELL_CREATE_HELP} disabled={!canCreateCustom} onClick={onCreateCustom}>{entry.spellcasterClass === 4 ? "Create Custom Spell" : "Copy To Custom Spell"}</button>
         </div>
       )}
       <section className="rules-spell-sheet">
@@ -144,12 +157,12 @@ function SpellForm({
             <b>source fields</b>
           </header>
           <div className="rules-spell-field-list">
+            <CheckboxField label="Can Rotate" checked={Boolean(record.canRotate)} onCommit={(canRotate) => update({ canRotate: canRotate ? 1 : 0 })} disabled={!editable} help="Whether the spell target shape can rotate." />
             <NumberField label="Fixed Range" value={record.range1} onCommit={(range1) => update({ range1 })} disabled={!editable} compact help="Base range value." />
             <NumberField label="Power Range" value={record.range2} onCommit={(range2) => update({ range2 })} disabled={!editable} compact help="Range value scaled by spell power when applicable." />
             <NumberField label="+/- To Hit %" value={record.toHitBonus} onCommit={(toHitBonus) => update({ toHitBonus })} disabled={!editable} compact help="Hit chance adjustment." />
             <NumberField label="+/- To DRV %" value={record.saveBonus} onCommit={(saveBonus) => update({ saveBonus })} disabled={!editable} compact help="Defense/resistance roll adjustment." />
             <NumberField label="No. of Attacks" value={record.fixedTargetNum} onCommit={(fixedTargetNum) => update({ fixedTargetNum })} disabled={!editable} compact help="Fixed number of targets when the spell uses fixed targeting." />
-            <CheckboxField label="Can Rotate" checked={Boolean(record.canRotate)} onCommit={(canRotate) => update({ canRotate: canRotate ? 1 : 0 })} disabled={!editable} help="Whether the spell target shape can rotate." />
             <NumberField label="+/- Resist / Level" value={record.resistAdjust} onCommit={(resistAdjust) => update({ resistAdjust })} disabled={!editable} compact help="Resistance adjustment per level." />
             <SelectField label="Resist Type" value={record.saveAdjust} options={["No Resist", "No DRVs", "Neither", ...SPELL_RESIST_CLASSES]} onCommit={(saveAdjust) => update({ saveAdjust })} disabled={!editable} help="Resistance behavior used by this spell." />
             <NumberField label="Base SP Cost" value={record.cost} onCommit={(cost) => update({ cost })} disabled={!editable} compact help="Spell point cost." />
@@ -184,14 +197,13 @@ function SpellForm({
             <b>{entry.hasScenarioVersion ? "custom" : "reference"}</b>
           </header>
           <div className="rules-spell-field-list">
-            <SelectField label="Spell Catalog" value={entry.spellcasterClass} options={SPELL_CASTER_CLASSES} onCommit={() => {}} disabled help="The Realmz spell catalog this entry belongs to." />
-            <NumberField label="Packed Spell ID" value={entry.packedId} disabled compact help="Packed Realmz spell ID, such as 1101 for Sorcerer level 1 slot 1." />
-            <NumberField label="Level" value={entry.levelIndex + 1} disabled compact help="Spell level within the selected catalog." />
-            <NumberField label="Spell No." value={entry.slotIndex + 1} disabled compact help="Slot number within this spell level." />
             <div className="rules-field-subrow rules-checkbox-row rules-spell-availability">
               <CheckboxField label="Can Cast In Combat" checked={record.inCombat} onCommit={(inCombat) => update({ inCombat })} disabled={!editable} help="Allows this spell during combat." />
               <CheckboxField label="Can Cast In Camp" checked={record.inCamp} onCommit={(inCamp) => update({ inCamp })} disabled={!editable} help="Allows this spell from the camp/adventure spell interface." />
             </div>
+            <NumberField label="Packed Spell ID" value={entry.packedId} disabled compact help="Packed Realmz spell ID, such as 1101 for Sorcerer level 1 slot 1." />
+            <NumberField label="Level" value={entry.levelIndex + 1} disabled compact help="Spell level within the selected catalog." />
+            <NumberField label="Spell No." value={entry.slotIndex + 1} disabled compact help="Slot number within this spell level." />
             <SelectField label="Target Type" value={record.targetType} options={SPELL_TARGET_TYPES} onCommit={(targetType) => update({ targetType })} disabled={!editable} help="How Realmz interprets the spell's target area." />
             <NumberField label="Spell Size" value={record.size} onCommit={(size) => update({ size })} disabled={!editable} compact help="Target area size used by fixed-size and area spells." />
             <NumberField label="Spell Effect" value={record.special} onCommit={(special) => update({ special })} disabled={!editable} compact help="Realmz effect handler identifier for this spell." />
@@ -217,9 +229,9 @@ function SpellForm({
               }}
               span
               disabled={!editable}
-              help="The scenario-local spell name stored in the custom spell name resource."
+              help="Custom spell names export only when the scenario includes a Data Spell resource with STR# 5000..5006. Otherwise Providence keeps the name as project metadata."
             />
-            <TextField label="Description / Note" value={record.description ?? ""} onCommit={(description) => update({ description })} wide disabled={!editable} help="Reference text shown by the editor for this spell." />
+            <TextField label="Description / Note" value={record.description ?? ""} onCommit={(description) => update({ description })} wide disabled={!editable} help="Editor note only. Known Divinity scenarios do not provide a portable custom spell description field in exported scenario data." />
             <div className="rules-spell-sound-row">
               <SoundNumberField label="Casting Sound" value={record.sound1} assets={iconAssets} onCommit={(sound1) => update({ sound1 })} disabled={!editable} help="Sound played when casting begins." />
               <SoundNumberField label="Resolution Sound" value={record.sound2} assets={iconAssets} onCommit={(sound2) => update({ sound2 })} disabled={!editable} help="Sound played when the spell resolves." />

@@ -366,22 +366,25 @@ Manual Battle Editor covers battle records, before/after strings, distance, batt
 
 Current Providence handling:
 
-Providence authors Data BD battle shells with grid placement, signed friendly behavior, before/after string pickers, and battle action links.
+Providence authors Data BD battle shells with grid placement, signed Force Friends behavior, before/after string pickers, distance guidance, and Battle Macro links that write the runnable end-of-round Extra Action Point form. The placement palette exposes scenario Data MD monsters plus Monster Library templates that are copied into Scenario Monsters before the grid is written; Monster 0 and the observed non-authorable 218+ placeholders are excluded from painting. Source-backed UI guardrails keep zero-valued Monster and Battle Macro records out of controls where `0` means empty/inactive.
 
 Evidence:
 
 - docs/generated/battle-record-evidence.json
+- docs/combat-battle-editor-parity-audit.md
+- docs/format-evidence-cards/bestiary-source-alignment.md
 - F:/Realmz/src/realmz_orig/combatsetup.c
+- F:/Realmz/src/realmz_orig/getup.c
 
 Gaps:
 
-- Placement limit feedback, lower-right erase anchor behavior, distance range, and battle macro sign labels need manual-level audit.
-- Battle grid missing-monster repair is present but needs fixture-backed examples.
+- Missing-monster repair is source-backed by matching Monster Scrapbook IDs, but still needs imported-scenario fixture examples.
+- Imported positive Battle Macro values are preserved and warned, but no fixture currently proves a scenario depends on that compatibility state.
 
 Recommended follow-up:
 
-- Audit Battle Editor UI against every manual field and note.
-- Add validation/report rows for placement count and distance semantics if absent.
+- Add fixture examples for battle-grid missing-monster repair.
+- Keep Battle Macro field behavior aligned with the manual/source end-of-round execution model.
 
 ### 11. Monster Editor
 
@@ -397,12 +400,13 @@ Manual Monster Editor covers Data MD monster templates, description text, combat
 
 Current Providence handling:
 
-Providence edits scenario monsters, descriptions, icons, macro references, weapon/item/spell references, and many source-backed numeric fields.
+Providence edits scenario Data MD monsters, Data DES descriptions, icons, macro references, weapon/item/spell references, and many source-backed numeric fields. Imported Data MENU is treated as generated bestiary cache evidence and is omitted from export so Realmz rebuilds it from Data MD.
 
 Evidence:
 
 - docs/generated/monster-record-evidence.json
 - docs/generated/monster-description-set-evidence.json
+- docs/format-evidence-cards/bestiary-source-alignment.md
 - F:/Realmz/src/realmz_orig/structs.h
 
 Gaps:
@@ -421,31 +425,34 @@ Recommended follow-up:
 - Providence domain: Combat / Library
 - Providence tools: Monster Scrapbook, Monster Editor
 - Existing parity map: Monster Scrapbook -> Combat/Library
-- Registry tools: Combat/Monster Editor; Combat/Monster Scrapbook
+- Registry tools: Combat/Monster Editor
 
 Manual claim summary:
 
-Manual Monster Scrapbook provides built-in monster templates/reference material for copying or comparison.
+Manual Monster Scrapbook provides reusable editor/library monster templates for copying, comparison, and basic scrapbook-side editing.
 
 Current Providence handling:
 
-Providence browses bundled scrapbook records, previews stats/descriptions/icons, and can copy built-ins into scenario Data MD records.
+Providence treats bundled Realmz/Divinity Monster Scrapbook entries as protected built-in templates, then adds an editable workspace-scoped Providence Monster Library for copied entries and variants. Any built-in or Providence library entry can be copied into scenario Data MD/Data DES; Scenario Monsters remains the runtime/export layer and counts only scenario-owned Data MD records.
 
 Evidence:
 
 - src/editor/panels/CombatPanel.tsx
+- src/editor/monsterLibrary.ts
 - src-tauri/src/workspace.rs
 - src/editor/browser/library.ts
 
 Gaps:
 
 - Copy behavior needs export fixture proof for Data MD and Data DES.
+- Providence-native library entries intentionally exceed Divinity's 1000-entry scrapbook model and do not export as a Realmz Monster Scrap Book file.
 - Any Divinity-specific scrapbook filtering or copy target rules are not fully compared.
 
 Recommended follow-up:
 
 - Add before/after fixtures for copying scrapbook monsters into a scenario.
-- Compare scrapbook UI affordances against manual text and screenshots.
+- Add fixture-backed copy/export checks for library entry -> Data MD/Data DES.
+- Keep Realmz-compatible Monster Scrap Book export deferred unless there is a separate product need.
 
 ### 13. Treasure Editor
 
@@ -767,7 +774,7 @@ Recommended follow-up:
 - Providence domain: Combat / Library
 - Providence tools: Monster Mash, Scenario Icons
 - Existing parity map: Monster Mash -> Combat/Library
-- Registry tools: Combat/Monster Mash; Assets/Scenario Icons
+- Registry tools: Assets/Scenario Icons
 
 Manual claim summary:
 
@@ -994,27 +1001,29 @@ Recommended follow-up:
 
 Manual claim summary:
 
-Manual Race Editor covers browsing standard races, copying/creating scenario custom races, stats, aging, caste permissions, usability, descriptors, and conditions.
+Manual Race Editor covers browsing standard races, copying/creating scenario custom races, race names, stats, aging, caste permissions, usability, descriptors, and conditions.
 
 Current Providence handling:
 
-Providence browses shared races as read-only references and authors source-backed scenario Data Race override records through copy/new/clear workflows. Race picker labels are zero-based, and project validation checks Data Race record range, fixed matrix shapes, numeric bounds, and attribute min/max inversions.
+Providence browses shared races as read-only references and authors source-backed scenario Data Race override records through copy/new/clear workflows. Race picker labels are zero-based, and project validation checks Data Race record range, fixed matrix shapes, numeric bounds, and attribute min/max inversions. A Divinity non-name fixture created scenario-local Data Race and confirms sampled fields under the current 30 x 408-byte model. Divinity custom race names are fixture-proven in external Data Files:Custom Names.rsrc STR# 129, and modern Realmz opens that support resource at startup, but Divinity Format does not package that global resource into the scenario. Providence imports labels for context and saves edits in the project only; scenario export writes Data Race non-name fields and does not export Custom Names.
 
 Evidence:
 
 - docs/rules-manual-parity-audit.md
 - docs/generated/rules-spell-race-caste-evidence.json
+- F:/Divinity - Codex/docs/handoffs/custom-race-caste-authoring-to-providence.md
+- F:/Divinity - Codex/docs/handoffs/custom-race-caste-names-to-providence.md
 - src/editor/panels/rules/RaceRulesEditor.tsx
 - src/editor/browser/project.ts
 
 Gaps:
 
-- Race name resource packaging remains fixture-gated.
+- Race Base Attacks and usable-item flag bytes still need isolated fixtures.
 - Some Divinity advanced row phrasing can continue improving as fixture screenshots surface.
 
 Recommended follow-up:
 
-- Keep race names as editor/display metadata unless a fixture proves resource-name writes.
+- Run second-toggle fixtures for Race Base Attacks and usable-item flags.
 - Refine labels only when manual/source evidence is stronger than the current source-backed field names.
 
 ### 31. Caste Editor
@@ -1027,27 +1036,29 @@ Recommended follow-up:
 
 Manual claim summary:
 
-Manual Caste Editor covers standard/custom caste editing, stats, spellcasting access, progression, item usability, conditions, starting items, and default icon.
+Manual Caste Editor covers standard/custom caste editing, caste names, stats, spellcasting access, progression, item usability, conditions, starting items, and default icon.
 
 Current Providence handling:
 
-Providence browses shared castes as read-only references and authors source-backed scenario Data Caste override records through copy/new/clear workflows. The editor exposes the known caste matrices and project validation checks record range, fixed matrix shapes, numeric bounds, byte arrays, and attribute min/max inversions.
+Providence browses shared castes as read-only references and authors source-backed scenario Data Caste override records through copy/new/clear workflows. The editor exposes the known caste matrices and project validation checks record range, fixed matrix shapes, numeric bounds, byte arrays, and attribute min/max inversions. A Divinity non-name fixture created scenario-local Data Caste and confirms sampled fields under the current 30 x 576-byte model. Divinity custom caste names are fixture-proven in external Data Files:Custom Names.rsrc STR# 131, and modern Realmz opens that support resource at startup, but Divinity Format does not package that global resource into the scenario. Providence imports labels for context and saves edits in the project only; scenario export writes Data Caste non-name fields and does not export Custom Names.
 
 Evidence:
 
 - docs/rules-manual-parity-audit.md
 - docs/generated/rules-spell-race-caste-evidence.json
+- F:/Divinity - Codex/docs/handoffs/custom-race-caste-authoring-to-providence.md
+- F:/Divinity - Codex/docs/handoffs/custom-race-caste-names-to-providence.md
 - src/editor/panels/rules/CasteRulesEditor.tsx
 - src/editor/browser/project.ts
 
 Gaps:
 
-- Caste name resource packaging remains fixture-gated.
+- Caste class, default icon, spellcasting rows, starting items, and victory values still need isolated fixtures.
 - Some advanced matrix labels/order remain candidates for Divinity screenshot/source refinement.
 
 Recommended follow-up:
 
-- Keep caste names as editor/display metadata unless a fixture proves resource-name writes.
+- Run targeted fixtures for remaining Caste fields called out by the handoff.
 - Record ambiguous matrix wording as fixture-gated rather than adding unsupported behavior.
 
 ### 32. Text Import • Export • Spell Checking

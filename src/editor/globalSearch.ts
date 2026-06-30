@@ -5,6 +5,7 @@ import { AssetWorkbenchSection, EditorTab, LibraryCatalog, ManagedAssetKind, Pro
 import { selectEntityFromId, triggerEntityId } from "./utils";
 import { ed3DiagnosticForTrigger } from "./scriptDiagnostics";
 import { buildEdcdRowUsages } from "./edcdRows";
+import { ruleCasteName, ruleRaceName } from "./ruleNames";
 
 export type GlobalSearchScope = "scenario" | "assets" | "libraries" | "docs" | "diagnostics";
 
@@ -343,10 +344,10 @@ function projectRows(project: Project, catalog?: LibraryCatalog | null) {
     });
   }
   for (const race of project.raceOverrides ?? []) {
-    add(ruleRow(`race:${race.id}`, "Race", race.displayName || `Race ${race.id}`, race.id, `default icon set ${race.defaultIconSet}`));
+    add(ruleRow(`race:${race.id}`, "Race", ruleRaceName(project, race.id, race.displayName), race.id, `default icon set ${race.defaultIconSet}`));
   }
   for (const caste of project.casteOverrides ?? []) {
-    add(ruleRow(`caste:${caste.id}`, "Caste", caste.displayName || `Caste ${caste.id}`, caste.id, `default icon ${caste.defaultIcon}`));
+    add(ruleRow(`caste:${caste.id}`, "Caste", ruleCasteName(project, caste.id, caste.displayName), caste.id, `default icon ${caste.defaultIcon}`));
   }
   for (const quest of project.questLabels ?? []) {
     add({

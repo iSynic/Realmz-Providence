@@ -1,6 +1,8 @@
 use crate::error::{ProvidenceError, Result};
 use crate::project::DiagnosticSeverity;
-use crate::realmz::{parse_scenario_buffers, parse_scenario_shell, SUPPORTED_WRITE_FILES, TRACKED_FILES};
+use crate::realmz::{
+    parse_scenario_buffers, parse_scenario_shell, SUPPORTED_WRITE_FILES, TRACKED_FILES,
+};
 use crate::resource_fork::{parse_resource_fork_entries, resource_fork_payload};
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use serde::{Deserialize, Serialize};
@@ -170,7 +172,10 @@ pub struct ResourceDiff {
     pub after_sha256: String,
 }
 
-pub fn snapshot_scenario_dir(source_path: &Path, source_label: Option<&str>) -> Result<ScenarioSnapshot> {
+pub fn snapshot_scenario_dir(
+    source_path: &Path,
+    source_label: Option<&str>,
+) -> Result<ScenarioSnapshot> {
     if !source_path.is_dir() {
         return Err(ProvidenceError::message(format!(
             "Scenario source '{}' is not a directory",
@@ -184,7 +189,12 @@ pub fn snapshot_scenario_dir(source_path: &Path, source_label: Option<&str>) -> 
         tool_version: env!("CARGO_PKG_VERSION").to_string(),
         source_label: source_label
             .map(str::to_string)
-            .or_else(|| source_path.file_name().and_then(|name| name.to_str()).map(str::to_string))
+            .or_else(|| {
+                source_path
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    .map(str::to_string)
+            })
             .unwrap_or_else(|| "scenario".to_string()),
         source_path: source_path.to_string_lossy().to_string(),
         files,
@@ -192,7 +202,10 @@ pub fn snapshot_scenario_dir(source_path: &Path, source_label: Option<&str>) -> 
     })
 }
 
-pub fn diff_snapshots(before: &ScenarioSnapshot, after: &ScenarioSnapshot) -> Result<ScenarioSnapshotDiff> {
+pub fn diff_snapshots(
+    before: &ScenarioSnapshot,
+    after: &ScenarioSnapshot,
+) -> Result<ScenarioSnapshotDiff> {
     if before.snapshot_version != SNAPSHOT_VERSION || after.snapshot_version != SNAPSHOT_VERSION {
         return Err(ProvidenceError::message(format!(
             "Unsupported snapshot version(s): before {}, after {}",
@@ -200,10 +213,16 @@ pub fn diff_snapshots(before: &ScenarioSnapshot, after: &ScenarioSnapshot) -> Re
         )));
     }
 
-    let before_files: BTreeMap<&str, &SnapshotFile> =
-        before.files.iter().map(|file| (file.name.as_str(), file)).collect();
-    let after_files: BTreeMap<&str, &SnapshotFile> =
-        after.files.iter().map(|file| (file.name.as_str(), file)).collect();
+    let before_files: BTreeMap<&str, &SnapshotFile> = before
+        .files
+        .iter()
+        .map(|file| (file.name.as_str(), file))
+        .collect();
+    let after_files: BTreeMap<&str, &SnapshotFile> = after
+        .files
+        .iter()
+        .map(|file| (file.name.as_str(), file))
+        .collect();
     let mut names = BTreeSet::new();
     names.extend(before_files.keys().copied());
     names.extend(after_files.keys().copied());
@@ -258,25 +277,45 @@ pub fn diff_snapshots(before: &ScenarioSnapshot, after: &ScenarioSnapshot) -> Re
 
 pub fn diff_to_markdown(diff: &ScenarioSnapshotDiff) -> String {
     let mut out = String::new();
-    out.push_str(&format!("# Scenario Snapshot Diff: {} -> {}\n\n", diff.before_label, diff.after_label));
+    out.push_str(&format!(
+        "# Scenario Snapshot Diff: {} -> {}\n\n",
+        diff.before_label, diff.after_label
+    ));
     out.push_str("## Summary\n\n");
     out.push_str(&format!("- Added files: {}\n", diff.summary.added_files));
-    out.push_str(&format!("- Removed files: {}\n", diff.summary.removed_files));
-    out.push_str(&format!("- Changed files: {}\n", diff.summary.changed_files));
+    out.push_str(&format!(
+        "- Removed files: {}\n",
+        diff.summary.removed_files
+    ));
+    out.push_str(&format!(
+        "- Changed files: {}\n",
+        diff.summary.changed_files
+    ));
     out.push_str(&format!("- Byte ranges: {}\n", diff.summary.byte_ranges));
-    out.push_str(&format!("- Resource changes: +{} / -{} / ~{}\n\n", diff.summary.resources_added, diff.summary.resources_removed, diff.summary.resources_changed));
+    out.push_str(&format!(
+        "- Resource changes: +{} / -{} / ~{}\n\n",
+        diff.summary.resources_added,
+        diff.summary.resources_removed,
+        diff.summary.resources_changed
+    ));
 
     if !diff.files_added.is_empty() {
         out.push_str("## Added Files\n\n");
         for file in &diff.files_added {
-            out.push_str(&format!("- `{}` ({:?}, {} bytes)\n", file.name, file.role, file.size));
+            out.push_str(&format!(
+                "- `{}` ({:?}, {} bytes)\n",
+                file.name, file.role, file.size
+            ));
         }
         out.push('\n');
     }
     if !diff.files_removed.is_empty() {
         out.push_str("## Removed Files\n\n");
         for file in &diff.files_removed {
-            out.push_str(&format!("- `{}` ({:?}, {} bytes)\n", file.name, file.role, file.size));
+            out.push_str(&format!(
+                "- `{}` ({:?}, {} bytes)\n",
+                file.name, file.role, file.size
+            ));
         }
         out.push('\n');
     }
@@ -297,7 +336,10 @@ pub fn diff_to_markdown(diff: &ScenarioSnapshotDiff) -> String {
             if let Some(family) = &file.decoded_family {
                 out.push_str(&format!("- Decoded family: `{family}`\n"));
             }
-            if !file.resources_added.is_empty() || !file.resources_removed.is_empty() || !file.resources_changed.is_empty() {
+            if !file.resources_added.is_empty()
+                || !file.resources_removed.is_empty()
+                || !file.resources_changed.is_empty()
+            {
                 out.push_str(&format!(
                     "- Resource changes: +{} / -{} / ~{}\n",
                     file.resources_added.len(),
@@ -382,7 +424,10 @@ fn snapshot_macosx_sidecars(source_path: &Path, files: &mut Vec<SnapshotFile>) -
             continue;
         };
         let bytes = fs::read(entry.path()).map_err(|error| {
-            ProvidenceError::message(format!("Failed to read '{}': {error}", entry.path().display()))
+            ProvidenceError::message(format!(
+                "Failed to read '{}': {error}",
+                entry.path().display()
+            ))
         })?;
         let resource_bytes = resource_fork_payload(&bytes).to_vec();
         if parse_resource_fork_entries(&resource_bytes).is_empty() {
@@ -405,7 +450,12 @@ fn snapshot_macosx_sidecars(source_path: &Path, files: &mut Vec<SnapshotFile>) -
     Ok(())
 }
 
-fn snapshot_file(name: &str, relative_path: &str, role: SnapshotFileRole, bytes: Vec<u8>) -> SnapshotFile {
+fn snapshot_file(
+    name: &str,
+    relative_path: &str,
+    role: SnapshotFileRole,
+    bytes: Vec<u8>,
+) -> SnapshotFile {
     let resources = snapshot_resources(&bytes);
     let (resource_fork_sha256, resource_fork_base64) = if resources.is_empty() {
         (None, None)
@@ -511,16 +561,26 @@ fn diff_file(before: &SnapshotFile, after: &SnapshotFile) -> Result<FileDiff> {
     let after_bytes = decode_base64(&after.data_fork_base64, &after.name)?;
     let (resources_added, resources_removed, resources_changed) =
         diff_resources(&before.resources, &after.resources);
-    let explanation = if !resources_added.is_empty() || !resources_removed.is_empty() || !resources_changed.is_empty() {
+    let explanation = if !resources_added.is_empty()
+        || !resources_removed.is_empty()
+        || !resources_changed.is_empty()
+    {
         "resource-fork-change"
-    } else if matches!(before.role, SnapshotFileRole::SupportedWrite | SnapshotFileRole::ScenarioShell) {
+    } else if matches!(
+        before.role,
+        SnapshotFileRole::SupportedWrite | SnapshotFileRole::ScenarioShell
+    ) {
         "known-scenario-file-change"
     } else {
         "raw-byte-change"
     };
     Ok(FileDiff {
         name: before.name.clone(),
-        role: if before.role == after.role { before.role } else { after.role },
+        role: if before.role == after.role {
+            before.role
+        } else {
+            after.role
+        },
         before_size: before.size,
         after_size: after.size,
         before_sha256: before.sha256.clone(),
@@ -537,12 +597,20 @@ fn diff_file(before: &SnapshotFile, after: &SnapshotFile) -> Result<FileDiff> {
 fn diff_resources(
     before: &[SnapshotResource],
     after: &[SnapshotResource],
-) -> (Vec<SnapshotResourceRef>, Vec<SnapshotResourceRef>, Vec<ResourceDiff>) {
+) -> (
+    Vec<SnapshotResourceRef>,
+    Vec<SnapshotResourceRef>,
+    Vec<ResourceDiff>,
+) {
     let before_map: BTreeMap<(&str, i16, &str), &SnapshotResource> = before
         .iter()
         .map(|resource| {
             (
-                (resource.resource_type.as_str(), resource.id, resource.name.as_str()),
+                (
+                    resource.resource_type.as_str(),
+                    resource.id,
+                    resource.name.as_str(),
+                ),
                 resource,
             )
         })
@@ -551,7 +619,11 @@ fn diff_resources(
         .iter()
         .map(|resource| {
             (
-                (resource.resource_type.as_str(), resource.id, resource.name.as_str()),
+                (
+                    resource.resource_type.as_str(),
+                    resource.id,
+                    resource.name.as_str(),
+                ),
                 resource,
             )
         })
@@ -566,7 +638,9 @@ fn diff_resources(
         match (before_map.get(&key), after_map.get(&key)) {
             (None, Some(resource)) => added.push(resource_ref(resource)),
             (Some(resource), None) => removed.push(resource_ref(resource)),
-            (Some(before), Some(after)) if before.sha256 != after.sha256 || before.attributes != after.attributes => {
+            (Some(before), Some(after))
+                if before.sha256 != after.sha256 || before.attributes != after.attributes =>
+            {
                 changed.push(ResourceDiff {
                     resource_type: before.resource_type.clone(),
                     id: before.id,
@@ -596,7 +670,11 @@ fn byte_ranges(before: &[u8], after: &[u8]) -> Vec<ByteRangeDiff> {
         while index < shared && before[index] != after[index] {
             index += 1;
         }
-        ranges.push(byte_range(start, &before[start..index], &after[start..index]));
+        ranges.push(byte_range(
+            start,
+            &before[start..index],
+            &after[start..index],
+        ));
     }
     if before.len() != after.len() {
         let start = shared;
@@ -640,7 +718,9 @@ fn resource_ref(resource: &SnapshotResource) -> SnapshotResourceRef {
 
 fn decode_base64(value: &str, name: &str) -> Result<Vec<u8>> {
     STANDARD.decode(value).map_err(|error| {
-        ProvidenceError::message(format!("Snapshot file '{name}' contains invalid base64: {error}"))
+        ProvidenceError::message(format!(
+            "Snapshot file '{name}' contains invalid base64: {error}"
+        ))
     })
 }
 
@@ -709,7 +789,10 @@ pub fn read_snapshot_file(path: &Path) -> Result<ScenarioSnapshot> {
         ProvidenceError::message(format!("Failed to read '{}': {error}", path.display()))
     })?;
     serde_json::from_slice(&bytes).map_err(|error| {
-        ProvidenceError::message(format!("Failed to parse snapshot '{}': {error}", path.display()))
+        ProvidenceError::message(format!(
+            "Failed to parse snapshot '{}': {error}",
+            path.display()
+        ))
     })
 }
 
@@ -736,17 +819,26 @@ pub fn copy_dir_contents(source: &Path, dest: &Path) -> Result<()> {
     for entry in WalkDir::new(source).min_depth(1) {
         let entry = entry.map_err(|error| ProvidenceError::message(error.to_string()))?;
         let relative = entry.path().strip_prefix(source).map_err(|error| {
-            ProvidenceError::message(format!("Failed to relativize '{}': {error}", entry.path().display()))
+            ProvidenceError::message(format!(
+                "Failed to relativize '{}': {error}",
+                entry.path().display()
+            ))
         })?;
         let out_path: PathBuf = dest.join(relative);
         if entry.file_type().is_dir() {
             fs::create_dir_all(&out_path).map_err(|error| {
-                ProvidenceError::message(format!("Failed to create '{}': {error}", out_path.display()))
+                ProvidenceError::message(format!(
+                    "Failed to create '{}': {error}",
+                    out_path.display()
+                ))
             })?;
         } else if entry.file_type().is_file() {
             if let Some(parent) = out_path.parent() {
                 fs::create_dir_all(parent).map_err(|error| {
-                    ProvidenceError::message(format!("Failed to create '{}': {error}", parent.display()))
+                    ProvidenceError::message(format!(
+                        "Failed to create '{}': {error}",
+                        parent.display()
+                    ))
                 })?;
             }
             fs::copy(entry.path(), &out_path).map_err(|error| {
@@ -844,8 +936,18 @@ mod tests {
             },
         ])
         .unwrap();
-        let before = snapshot_file("Scenario.rsrc", "Scenario.rsrc", SnapshotFileRole::ResourceFork, before_fork);
-        let after = snapshot_file("Scenario.rsrc", "Scenario.rsrc", SnapshotFileRole::ResourceFork, after_fork);
+        let before = snapshot_file(
+            "Scenario.rsrc",
+            "Scenario.rsrc",
+            SnapshotFileRole::ResourceFork,
+            before_fork,
+        );
+        let after = snapshot_file(
+            "Scenario.rsrc",
+            "Scenario.rsrc",
+            SnapshotFileRole::ResourceFork,
+            after_fork,
+        );
         assert_eq!(before.resources[0].resource_type, "cicn");
         assert_eq!(before.resources[1].resource_type, "snd ");
 

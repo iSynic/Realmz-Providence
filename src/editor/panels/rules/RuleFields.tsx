@@ -170,9 +170,9 @@ function rulesFamilyHelp(recordNoun: string) {
   return "Rules data is shared by default and scenario-local only when an override exists.";
 }
 
-export function RuleSection({ title, badge, help, children }: { title: string; badge: string; help?: string; children: ReactNode }) {
+export function RuleSection({ title, badge, help, wide = false, children }: { title: string; badge: string; help?: string; wide?: boolean; children: ReactNode }) {
   return (
-    <section className="rules-section">
+    <section className={classNames("rules-section", wide && "rules-section-wide")}>
       <header title={help}>
         {help ? (
           <TutorialTip title={title} body={help} side="right">
@@ -204,6 +204,7 @@ export function TextField({
   wide = false,
   span = false,
   disabled = false,
+  maxLength,
   help
 }: {
   label: string;
@@ -212,6 +213,7 @@ export function TextField({
   wide?: boolean;
   span?: boolean;
   disabled?: boolean;
+  maxLength?: number;
   help?: string;
 }) {
   const commit = (next: string) => {
@@ -225,6 +227,7 @@ export function TextField({
           key={value}
           defaultValue={value}
           disabled={disabled}
+          maxLength={maxLength}
           rows={3}
           onBlur={(event) => commit(event.currentTarget.value)}
         />
@@ -234,6 +237,7 @@ export function TextField({
           type="text"
           defaultValue={value}
           disabled={disabled}
+          maxLength={maxLength}
           onBlur={(event) => commit(event.currentTarget.value)}
         />
       )}
@@ -297,12 +301,19 @@ export function SpellAnimationIconField({
   zeroMode: SpellAnimationZeroMode;
   help?: string;
 }) {
-  const range = spellAnimationIconRange(value, zeroMode);
+  const [draft, setDraft] = useState(String(value));
+  useEffect(() => {
+    setDraft(String(value));
+  }, [value]);
+  const draftNumber = Number(draft);
+  const previewValue = draft.trim() !== "" && Number.isFinite(draftNumber) ? draftNumber : value;
+  const range = spellAnimationIconRange(previewValue, zeroMode);
   const frameAssets = range.frameIconIds.map((iconId) => findLibraryResourceAsset(assets, "cicn", iconId, "icon"));
   const previews = useRuleIconPreviews(frameAssets);
   const preview = useAnimatedPreview(previews);
+  const title = [help, range.hint].filter(Boolean).join("\n");
   return (
-    <label className="scenario-field rules-icon-number" title={help}>
+    <label className="scenario-field rules-icon-number" title={title}>
       <HelpLabel label={label} help={help} />
       <div>
         {preview ? (
@@ -311,17 +322,17 @@ export function SpellAnimationIconField({
           </span>
         ) : range.blank ? <span className="rules-blank-icon-preview" aria-hidden="true" /> : <b>{value || "-"}</b>}
         <input
-          key={value}
           type="number"
-          defaultValue={value}
+          value={draft}
           disabled={disabled}
+          onChange={(event) => setDraft(event.currentTarget.value)}
           onBlur={(event) => {
             const next = Number(event.currentTarget.value);
             if (!disabled && Number.isFinite(next) && next !== value) onCommit(next);
+            else setDraft(String(value));
           }}
         />
       </div>
-      <small>{range.hint}</small>
     </label>
   );
 }
@@ -341,30 +352,37 @@ export function FastplotTileNumberField({
   disabled?: boolean;
   help?: string;
 }) {
-  const tile = fastplotTileId(value);
+  const [draft, setDraft] = useState(String(value));
+  useEffect(() => {
+    setDraft(String(value));
+  }, [value]);
+  const draftNumber = Number(draft);
+  const previewValue = draft.trim() !== "" && Number.isFinite(draftNumber) ? draftNumber : value;
+  const tile = fastplotTileId(previewValue);
   const rect = tile === null ? null : fastplotTileRect(tile);
+  const hint = tile ? `Combat tile ${tile}` : "No queued spell icon";
   const style = atlasUrl && rect ? {
     backgroundImage: `url(${atlasUrl})`,
     backgroundSize: "2000% 2000%",
     backgroundPosition: `${(rect.column / 19) * 100}% ${(rect.row / 19) * 100}%`
   } : undefined;
   return (
-    <label className="scenario-field rules-icon-number" title={help}>
+    <label className="scenario-field rules-icon-number" title={[help, hint].filter(Boolean).join("\n")}>
       <HelpLabel label={label} help={help} />
       <div>
         {style ? <span className="rules-fastplot-preview" style={style} aria-hidden="true" /> : <b>{value || "-"}</b>}
         <input
-          key={value}
           type="number"
-          defaultValue={value}
+          value={draft}
           disabled={disabled}
+          onChange={(event) => setDraft(event.currentTarget.value)}
           onBlur={(event) => {
             const next = Number(event.currentTarget.value);
             if (!disabled && Number.isFinite(next) && next !== value) onCommit(next);
+            else setDraft(String(value));
           }}
         />
       </div>
-      <small>{tile ? `Combat tile ${tile}` : "No queued spell icon"}</small>
     </label>
   );
 }
@@ -376,6 +394,7 @@ export function IconNumberField({
   onCommit,
   disabled = false,
   iconId,
+  assetPreference,
   hint,
   compact = false,
   help
@@ -386,30 +405,38 @@ export function IconNumberField({
   onCommit: (value: number) => void;
   disabled?: boolean;
   iconId?: ((value: number) => number) | null;
+  assetPreference?: (asset: LibraryAsset) => boolean;
   hint?: (value: number) => string;
   compact?: boolean;
   help?: string;
 }) {
-  const resolvedIconId = iconId === null ? null : iconId ? iconId(value) : value;
-  const asset = resolvedIconId === null ? null : findLibraryResourceAsset(assets, "cicn", resolvedIconId, "icon");
+  const [draft, setDraft] = useState(String(value));
+  useEffect(() => {
+    setDraft(String(value));
+  }, [value]);
+  const parsedDraft = Number(draft);
+  const previewValue = Number.isFinite(parsedDraft) ? parsedDraft : value;
+  const resolvedIconId = iconId === null ? null : iconId ? iconId(previewValue) : previewValue;
+  const asset = resolvedIconId === null ? null : findLibraryResourceAsset(assets, "cicn", resolvedIconId, "icon", assetPreference);
   const preview = useRuleIconPreview(asset);
   return (
     <label className={classNames("scenario-field", "rules-icon-number", compact && "rules-icon-number-compact")} title={help}>
       <HelpLabel label={label} help={help} />
       <div>
-        {preview ? <img src={preview} alt={`${label} ${resolvedIconId}`} /> : <b>{value || "-"}</b>}
+        {preview ? <img src={preview} alt={`${label} ${resolvedIconId}`} /> : <b>{previewValue || "-"}</b>}
         <input
-          key={value}
           type="number"
-          defaultValue={value}
+          value={draft}
           disabled={disabled}
+          onChange={(event) => setDraft(event.currentTarget.value)}
           onBlur={(event) => {
             const next = Number(event.currentTarget.value);
             if (!disabled && Number.isFinite(next) && next !== value) onCommit(next);
+            else setDraft(String(value));
           }}
         />
       </div>
-      <small>{hint ? hint(value) : resolvedIconId !== null ? `cicn ${resolvedIconId}` : "Combat tile preview pending"}</small>
+      <small>{hint ? hint(previewValue) : resolvedIconId !== null ? `cicn ${resolvedIconId}` : "Combat tile preview pending"}</small>
     </label>
   );
 }
@@ -418,6 +445,7 @@ export function SoundNumberField({ label, value, assets, onCommit, disabled = fa
   const soundId = spellSoundResourceId(value);
   const asset = soundId !== null ? findLibraryResourceAsset(assets, "snd", soundId, "sound") : null;
   const [status, setStatus] = useState<string | null>(null);
+  const resolvedHint = soundId !== null ? `snd ${soundId}` : "No sound";
   const play = async () => {
     if (!asset) {
       setStatus(soundId !== null ? `snd ${soundId} unavailable` : "No sound");
@@ -432,7 +460,7 @@ export function SoundNumberField({ label, value, assets, onCommit, disabled = fa
     audio.play().then(() => setStatus(`Playing snd ${soundId}`)).catch(() => setStatus(`Could not play snd ${soundId}`));
   };
   return (
-    <label className="scenario-field rules-sound-number" title={help}>
+    <label className="scenario-field rules-sound-number" title={[help, status ?? resolvedHint].filter(Boolean).join("\n")}>
       <HelpLabel label={label} help={help} />
       <div>
         <input
@@ -447,7 +475,7 @@ export function SoundNumberField({ label, value, assets, onCommit, disabled = fa
         />
         <button type="button" className="btn btn-secondary btn-xs" onClick={play} disabled={!asset}>Play</button>
       </div>
-      <small>{status ?? (soundId !== null ? `snd ${soundId}` : "No sound")}</small>
+      {status ? <small>{status}</small> : null}
     </label>
   );
 }
@@ -491,9 +519,10 @@ export function useRuleIconPreview(asset: LibraryAsset | null) {
 
 export function useRuleIconPreviews(assets: Array<LibraryAsset | null>) {
   const [previews, setPreviews] = useState<string[]>([]);
-  const key = assets.map((asset) => asset?.relativePath ?? "none").join("|");
+  const key = assets.map((asset) => asset ? `${asset.resourceType}:${asset.resourceId}:${asset.relativePath ?? ""}` : "none").join("|");
   useEffect(() => {
     let disposed = false;
+    setPreviews([]);
     const load = async () => {
       const urls = await Promise.all(assets.map(async (asset) => {
         if (!asset) return null;
@@ -527,7 +556,34 @@ export function useAnimatedPreview(previews: string[]) {
   return previews[index] ?? null;
 }
 
-export function PairGrid({ labels, values, leftLabel, rightLabel, onChange }: { labels: string[]; values: number[]; leftLabel: string; rightLabel: string; onChange: (values: number[]) => void }) {
+export function PairGrid({ labels, values, leftLabel, rightLabel, columns = 1, onChange }: { labels: string[]; values: number[]; leftLabel: string; rightLabel: string; columns?: number; onChange: (values: number[]) => void }) {
+  if (columns > 1) {
+    const rowsPerColumn = Math.ceil(labels.length / columns);
+    return (
+      <div className="rules-pair-grid rules-pair-grid-split" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
+        {Array.from({ length: columns }, (_, columnIndex) => {
+          const start = columnIndex * rowsPerColumn;
+          const columnLabels = labels.slice(start, start + rowsPerColumn);
+          return (
+            <div className="rules-pair-column" key={columnIndex}>
+              <b></b><b>{leftLabel}</b><b>{rightLabel}</b>
+              {columnLabels.map((label, index) => {
+                const valueIndex = start + index;
+                return (
+                  <RowPair key={label} label={label} left={values[valueIndex * 2] ?? 0} right={values[valueIndex * 2 + 1] ?? 0} onChange={(left, right) => {
+                    const next = [...values];
+                    next[valueIndex * 2] = left;
+                    next[valueIndex * 2 + 1] = right;
+                    onChange(next);
+                  }} />
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
   return (
     <div className="rules-pair-grid">
       <b></b><b>{leftLabel}</b><b>{rightLabel}</b>

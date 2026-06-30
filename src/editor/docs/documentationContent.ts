@@ -757,7 +757,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         ],
         points: [
           "Maps uses library landlook atlases, official marker/icon references, paintable special land tiles, and fallback previews for negative tile resources.",
-          "Combat uses library actor/creature icons, Monster Scrapbook entries, and Monster Mash art while keeping scenario Data MD and Data BD records editable in Project Workbench.",
+          "Combat uses library actor/creature icons, Monster Scrapbook templates, and Monster Mash art while keeping scenario Data MD and Data BD records editable in Project Workbench.",
           "Economy uses Bag of Holding, Vault of Arcana, and shared item records to label treasure, shops, and custom item copy workflows.",
           "Rules uses shared spell, race, and caste data as reference/copy sources while scenario overrides remain source-backed project records.",
           "Assets uses Library to distinguish Realmz built-ins, Divinity reference art, UI-only evidence, scenario-owned media, and unresolved resource fallbacks.",
@@ -2057,13 +2057,13 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "What Combat Owns",
         paragraphs: [
-          "Combat is the Providence workbench for scenario battle records, scenario monster templates, built-in Monster Scrapbook reference monsters, and Monster Mash icon reference material.",
+          "Combat is the Providence workbench for scenario battle records, scenario monster templates, protected built-in Monster Scrapbook templates, editable Providence monster-library entries, and Monster Mash icon reference material.",
           "Realmz keeps battle setup and monster templates in separate source files. Battles place monsters by ID; monsters define the stats, icon, attacks, spells, loot, flags, and death behavior used when combat builds a runtime monster."
         ],
         cards: [
           {
             title: "Battle Editor",
-            body: "Authors Data BD records with a 13 x 13 signed monster grid, combat distance, before/after message links, and battle macro field.",
+            body: "Authors Data BD records with a 13 x 13 signed monster grid, combat distance, before/after string links, and battle macro field.",
             facts: ["Data BD", "346 bytes"]
           },
           {
@@ -2073,8 +2073,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           },
           {
             title: "Library Tabs",
-            body: "Monster Scrapbook and Monster Mash are read-only reference material. They help authors inspect built-in monsters and icon art without implying those records ship with the scenario.",
-            facts: ["reference", "read-only"]
+            body: "Built-in Monster Scrapbook and Monster Mash material remains protected reference data. Providence monster-library entries are editable workspace templates that must be copied into scenario Data MD before runtime use.",
+            facts: ["reference", "workspace library"]
           }
         ]
       },
@@ -2086,7 +2086,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         ],
         points: [
           "Distance controls runtime initial spread. Realmz randomizes setup from this value, so imported zero-distance records should be reviewed rather than silently normalized.",
-          "Before Message and After Message target Data SD2 message records.",
+          "Before String and After String target Data SD2 string records.",
           "Battle Action points at Extra Action Point / macro behavior used by combat-round logic. Runtime evidence is sign-sensitive, so diagnostics and source evidence should stay visible.",
           "Create and Duplicate preserve the dense battle record model; Clear Battle resets supported fields while keeping the record slot reusable."
         ],
@@ -2107,7 +2107,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "Combat Stats covers stamina template values, armor, agility, movement, magic resistance, hit requirements, experience, and spell points.",
           "Behavior covers side, size, distance, attack counts, spell-cast chance, run/surrender chance, missile chance, summon eligibility, and weapon selection.",
           "Attacks are five Realmz attack rows. Spells, money, items, saves, immunities, and conditions remain fixed-width arrays because the source file stores them that way.",
-          "Hide From Bestiary is source-backed. Data MENU is generated/effective menu evidence and should not be treated as the source of monster identity when Data MD exists."
+          "Hide From Bestiary is source-backed. Data MENU is generated/effective menu evidence, not source identity; Providence omits it on export so Realmz rebuilds it from Data MD."
         ]
       },
       {
@@ -2129,15 +2129,15 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         }
       },
       {
-        title: "Monster Scrapbook and Monster Mash",
+        title: "Monster Library and Monster Mash",
         paragraphs: [
-          "Monster Scrapbook is a read-only library browser for built-in monster-like records. It is useful for stats, descriptions, spell/item clues, and comparing icon IDs against scenario monsters.",
+          "Monster Library combines protected built-in Monster Scrapbook records with editable Providence workspace entries and variants. Built-ins can be inspected or copied forward, but they cannot be overwritten.",
           "Monster Mash is a reference icon library. The Combat tab links to the Assets reference view because the art is resource material rather than an editable scenario monster record."
         ],
         points: [
-          "Use scrapbook entries as design reference; copying/adapting them into scenario Data MD records is a future workflow.",
+          "Use built-ins as design reference, copy them into the Providence library for editing, or copy any library entry into a scenario Data MD record before using it in battles or scripts.",
           "Use Monster Mash and Reference Libraries to understand icon IDs, but import or decode scenario-owned cicn resources when a scenario needs custom art.",
-          "Scrapbook/Mash counts in the Combat tab come from bundled library data and may differ from the current scenario's editable record counts."
+          "Scenario Monsters are the runtime/export layer. Providence monster-library entries are not exported as scenario data unless copied into Scenario Monsters."
         ]
       },
       {
@@ -2158,7 +2158,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         points: [
           "Do not remap scenario-local monster icon IDs to nearby built-in icons just because the preview is blank. Fix the icon resource import or catalog first.",
           "Do not treat Monster Scrapbook as the current scenario's monster file. Scenario monsters come from Data MD.",
-          "Do not treat Data MENU as source identity. Realmz can rebuild bestiary menu evidence from active Data MD records.",
+          "Do not treat Data MENU as source identity or export source. Realmz can rebuild bestiary menu evidence from active Data MD records.",
           "Large monster art can cover multiple battle grid cells. Providence derives an approximate footprint from the icon dimensions when available.",
           "Clearing a battle or monster record should keep fixed record-file constraints in mind, because scripts and encounters may still target that ID."
         ]

@@ -1,5 +1,6 @@
 import { actionOptionFor, normalizeStepOpcode } from "./realmzActions";
 import { racePortraitSetFirstIconId, spellAnimationFrameIds, spellSoundResourceId } from "./resourceIds";
+import { ruleCasteName, ruleRaceName } from "./ruleNames";
 import { LibraryAsset, ManagedAsset, Project, SelectedEntity } from "./types";
 
 export type ContentUsageLink = {
@@ -196,12 +197,12 @@ export function resourceUsageLinks(project: Project, resourceType: string | null
     for (const race of project.raceOverrides ?? []) {
       const firstIcon = racePortraitSetFirstIconId(race.defaultIconSet);
       if (resourceId >= firstIcon && resourceId < firstIcon + 6) {
-        links.push({ key: `icon-race:${race.id}`, label: race.displayName ?? `Race ${race.id}`, detail: "Race portrait set", entity: { type: "record", id: `race:${race.id}` } });
+        links.push({ key: `icon-race:${race.id}`, label: ruleRaceName(project, race.id, race.displayName), detail: "Race portrait set", entity: { type: "record", id: `race:${race.id}` } });
       }
     }
     for (const caste of project.casteOverrides ?? []) {
       if (caste.defaultIcon === resourceId) {
-        links.push({ key: `icon-caste:${caste.id}`, label: caste.displayName ?? `Caste ${caste.id}`, detail: "Caste icon", entity: { type: "record", id: `caste:${caste.id}` } });
+        links.push({ key: `icon-caste:${caste.id}`, label: ruleCasteName(project, caste.id, caste.displayName), detail: "Caste icon", entity: { type: "record", id: `caste:${caste.id}` } });
       }
     }
   }

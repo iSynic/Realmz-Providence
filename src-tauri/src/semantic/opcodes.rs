@@ -304,7 +304,12 @@ fn add_edcd_targets(
     match code {
         2 => {
             add_battle_range_targets(&mut semantics.targets, values, counts);
-            add_sound_target(&mut semantics.targets, values[2], Some(values), "plays_sound");
+            add_sound_target(
+                &mut semantics.targets,
+                values[2],
+                Some(values),
+                "plays_sound",
+            );
             if values[4] == 10 && values[2] >= 0 {
                 add_macro_target_allow_zero(
                     &mut semantics.targets,
@@ -317,9 +322,20 @@ fn add_edcd_targets(
         }
         48 => {
             add_battle_range_targets(&mut semantics.targets, values, counts);
-            add_sound_target(&mut semantics.targets, values[2], Some(values), "plays_sound");
+            add_sound_target(
+                &mut semantics.targets,
+                values[2],
+                Some(values),
+                "plays_sound",
+            );
             add_message_target(&mut semantics.targets, values[3], counts, "shows_message");
-            add_treasure_target(&mut semantics.targets, values[4], Some(values), counts, "gives_treasure");
+            add_treasure_target(
+                &mut semantics.targets,
+                values[4],
+                Some(values),
+                counts,
+                "gives_treasure",
+            );
         }
         56 => {
             add_battle_range_targets(&mut semantics.targets, values, counts);
@@ -329,12 +345,22 @@ fn add_edcd_targets(
                 Some(values),
                 "branches_on_coward",
             );
-            add_sound_target(&mut semantics.targets, values[3], Some(values), "plays_sound");
+            add_sound_target(
+                &mut semantics.targets,
+                values[3],
+                Some(values),
+                "plays_sound",
+            );
             add_message_target(&mut semantics.targets, values[4], counts, "shows_message");
         }
         107 => {
             add_battle_range_targets(&mut semantics.targets, values, counts);
-            add_sound_target(&mut semantics.targets, values[2], Some(values), "plays_sound");
+            add_sound_target(
+                &mut semantics.targets,
+                values[2],
+                Some(values),
+                "plays_sound",
+            );
             add_message_target(&mut semantics.targets, values[3], counts, "shows_message");
             add_macro_target_allow_zero(
                 &mut semantics.targets,
@@ -435,7 +461,12 @@ fn add_edcd_targets(
                 true,
                 values,
             ));
-            add_sound_target(&mut semantics.targets, values[3], Some(values), "plays_sound");
+            add_sound_target(
+                &mut semantics.targets,
+                values[3],
+                Some(values),
+                "plays_sound",
+            );
             add_message_target(
                 &mut semantics.targets,
                 values[4].abs(),
@@ -475,7 +506,12 @@ fn add_edcd_targets(
                 true,
                 values,
             ));
-            add_sound_target(&mut semantics.targets, values[3], Some(values), "plays_sound");
+            add_sound_target(
+                &mut semantics.targets,
+                values[3],
+                Some(values),
+                "plays_sound",
+            );
             add_message_target(&mut semantics.targets, values[4], counts, "shows_message");
         }
         21 => {
@@ -617,7 +653,12 @@ fn add_edcd_targets(
                 true,
                 values,
             ));
-            add_sound_target(&mut semantics.targets, values[3], Some(values), "plays_sound");
+            add_sound_target(
+                &mut semantics.targets,
+                values[3],
+                Some(values),
+                "plays_sound",
+            );
         }
         46 => {
             semantics.targets.push(target_with_edcd(
@@ -812,7 +853,12 @@ fn add_edcd_targets(
                 values,
             ));
             if values[3] != 0 {
-                add_sound_target(&mut semantics.targets, values[1], Some(values), "plays_sound");
+                add_sound_target(
+                    &mut semantics.targets,
+                    values[1],
+                    Some(values),
+                    "plays_sound",
+                );
             }
             add_message_target(&mut semantics.targets, values[4], counts, "shows_message");
         }
@@ -907,7 +953,12 @@ fn add_edcd_targets(
                 "branches_to",
                 action,
             );
-            add_sound_target(&mut semantics.targets, values[3], Some(values), "plays_sound");
+            add_sound_target(
+                &mut semantics.targets,
+                values[3],
+                Some(values),
+                "plays_sound",
+            );
             add_message_target(&mut semantics.targets, values[4], counts, "shows_message");
         }
         86 => {
@@ -999,7 +1050,12 @@ fn add_edcd_targets(
         )),
         122 => {
             add_message_target(&mut semantics.targets, values[0], counts, "shows_message");
-            add_sound_target(&mut semantics.targets, values[1], Some(values), "plays_sound");
+            add_sound_target(
+                &mut semantics.targets,
+                values[1],
+                Some(values),
+                "plays_sound",
+            );
         }
         123 => {
             for value in values {
@@ -1020,7 +1076,12 @@ fn add_edcd_targets(
                 counts,
                 "uses_monster",
             );
-            add_sound_target(&mut semantics.targets, values[3], Some(values), "plays_sound");
+            add_sound_target(
+                &mut semantics.targets,
+                values[3],
+                Some(values),
+                "plays_sound",
+            );
             semantics.targets.push(target_with_edcd(
                 "runtime-cache:CE".to_string(),
                 "runtime cache",
@@ -1197,18 +1258,12 @@ fn add_same_map_action_point_target(
     if id < 0 {
         return;
     }
-    let target_id = if let (Some(level_type), Some(level_index)) =
-        (trigger.level_type, trigger.level_index)
-    {
-        format!(
-            "trigger:{}:{}:{}",
-            level_type.as_str(),
-            level_index,
-            id
-        )
-    } else {
-        format!("trigger:current-map:{id}")
-    };
+    let target_id =
+        if let (Some(level_type), Some(level_index)) = (trigger.level_type, trigger.level_index) {
+            format!("trigger:{}:{}:{}", level_type.as_str(), level_index, id)
+        } else {
+            format!("trigger:current-map:{id}")
+        };
     targets.push(target_with_optional_edcd(
         target_id,
         "action point",
@@ -1745,7 +1800,13 @@ fn edcd_shape(code: i16) -> Option<EdcdShapeSpec> {
         },
         33 => EdcdShapeSpec {
             name: "gold",
-            fields: ["signedAmount", "failureMarker", "unused", "unused", "unused"],
+            fields: [
+                "signedAmount",
+                "failureMarker",
+                "unused",
+                "unused",
+                "unused",
+            ],
         },
         37 => EdcdShapeSpec {
             name: "dungeon-move",
@@ -1851,7 +1912,13 @@ fn edcd_shape(code: i16) -> Option<EdcdShapeSpec> {
         },
         63 => EdcdShapeSpec {
             name: "time-mutation",
-            fields: ["mode", "dayOrDelta", "hourOrDelta", "minuteOrDelta", "unused"],
+            fields: [
+                "mode",
+                "dayOrDelta",
+                "hourOrDelta",
+                "minuteOrDelta",
+                "unused",
+            ],
         },
         64 => EdcdShapeSpec {
             name: "game-time-branch",
@@ -1865,7 +1932,13 @@ fn edcd_shape(code: i16) -> Option<EdcdShapeSpec> {
         },
         65 => EdcdShapeSpec {
             name: "random-items",
-            fields: ["countOrRandomLimit", "itemLow", "itemHigh", "unused", "unused"],
+            fields: [
+                "countOrRandomLimit",
+                "itemLow",
+                "itemHigh",
+                "unused",
+                "unused",
+            ],
         },
         67 => EdcdShapeSpec {
             name: "item-charge-branch",
@@ -1905,7 +1978,13 @@ fn edcd_shape(code: i16) -> Option<EdcdShapeSpec> {
         },
         74 => EdcdShapeSpec {
             name: "spell-points",
-            fields: ["signedRollCount", "lowOrSound", "high", "playSound", "message"],
+            fields: [
+                "signedRollCount",
+                "lowOrSound",
+                "high",
+                "playSound",
+                "message",
+            ],
         },
         76 => EdcdShapeSpec {
             name: "quest-value",
@@ -2524,9 +2603,10 @@ mod tests {
             &rows,
             ReferenceCounts::default(),
         );
-        assert!(condition.targets.iter().any(|target| {
-            target.id == "resource:snd :609" && target.role == "plays_sound"
-        }));
+        assert!(condition
+            .targets
+            .iter()
+            .any(|target| { target.id == "resource:snd :609" && target.role == "plays_sound" }));
 
         rows.clear();
         rows.insert(124, [0, 17, 2, 610, -1]);
@@ -2569,10 +2649,7 @@ mod tests {
             .targets
             .iter()
             .any(|target| target.id == "message:44" && target.role == "shows_message"));
-        assert!(!battle
-            .targets
-            .iter()
-            .any(|target| target.id == "macro:605"));
+        assert!(!battle.targets.iter().any(|target| target.id == "macro:605"));
 
         rows.clear();
         rows.insert(2, [1, 3, 17, 44, 10]);
@@ -2580,8 +2657,7 @@ mod tests {
         assert!(revive_battle
             .targets
             .iter()
-            .any(|target| target.id == "macro:17"
-                && target.role == "branches_on_revived_loss"));
+            .any(|target| target.id == "macro:17" && target.role == "branches_on_revived_loss"));
 
         rows.clear();
         rows.insert(48, [2, 4, 606, 45, 7]);

@@ -1570,7 +1570,8 @@ mod tests {
             .parent()
             .expect("src-tauri should have a repository parent")
             .join("public/bundled-libraries/realmz-reference/The Family Jewels.rsrc");
-        let data = std::fs::read(path).expect("bundled Realmz reference library should be readable");
+        let data =
+            std::fs::read(path).expect("bundled Realmz reference library should be readable");
         let pict = resource_data(&data, b"PICT", 300).expect("PICT 300 should exist");
         let decoded = decode_pict(&pict).expect("PICT 300 should decode");
 

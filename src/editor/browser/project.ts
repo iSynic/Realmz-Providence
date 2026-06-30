@@ -1,18 +1,19 @@
 import { BenchmarkReport, Project, ScenarioShell, ValidationReport } from "../types";
 import { BrowserScenarioSource, readProjectJson, readScenarioSource } from "./fsAccess";
 import { browserReferenceAtlasUrl, browserTilesetAtlasUrl, hasBrowserReferenceAtlas } from "./atlasPaths";
-import { parseResourceFork } from "./library";
+import { parseResourceFork, parseStringListResource } from "./library";
 import { buildBrowserSemanticSchema } from "./semantic";
 import { landlookBaseTile, landlookName, landlookPictId, parseLandlookMapstats, parseScenarioBuffers, TRACKED_FILES } from "./realmzParser";
 import { inspectResourcePreview } from "./resourcePreview";
 import { assetFallbacks, blockedSemanticObjects, generatedRuntimeCaches, resourceGaps, unresolvedLinks } from "../semanticGraph";
 import { validateRealmzTargetRecord } from "../targetValidation";
 import { tileIconCandidates } from "../map/renderValues";
+import { defaultRuleNames } from "../ruleNames";
 
 const EMPTY_TARGET_COMPATIBILITY = { blockers: [], warnings: [], notes: [] };
 const pendingBrowserSemantics = new Map<string, { files: Map<string, Uint8Array>; sourceFiles: Project["source"]["files"] }>();
 const browserScenarioPreviewSources = new Map<string, Map<string, Uint8Array>>();
-const browserScenarioResourcePreviewCache = new Map<string, string>();
+const browserScenarioResourcePreviewCache = new Map<string, string | null>();
 let bundledLandlookMapstatsPromise: Promise<Project["tileAttributes"]> | null = null;
 
 export function createBrowserProject(projectName: string): Project {
@@ -61,6 +62,7 @@ export function createBrowserProject(projectName: string): Project {
     spellOverrides: [],
     raceOverrides: [],
     casteOverrides: [],
+    ruleNames: defaultRuleNames(),
     assets: [],
     assetCatalog: { tilesets: [] },
     editorMetadata: { displayNames: {}, tilePalettes: [], mapStamps: [], questThreads: [], questContextSources: [] },
@@ -124,6 +126,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
     spellOverrides: parsed.spellOverrides,
     raceOverrides: parsed.raceOverrides,
     casteOverrides: parsed.casteOverrides,
+    ruleNames: parseBrowserRuleNames(files),
     assets: [],
     assetCatalog: parsed.assetCatalog,
     editorMetadata: { displayNames: {}, tilePalettes: [], mapStamps: [], questThreads: [], questContextSources: [] },
@@ -141,8 +144,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
 export function loadBrowserScenarioResourcePreview(project: Project | null | undefined, resourceType: string, resourceId: number) {
   if (!project || !Number.isFinite(resourceId)) return null;
   const cacheKey = `${browserSemanticCacheKey(project)}\n${normalizeResourceType(resourceType)}\n${resourceId}`;
-  const cachedPreview = browserScenarioResourcePreviewCache.get(cacheKey);
-  if (cachedPreview) return cachedPreview;
+  if (browserScenarioResourcePreviewCache.has(cacheKey)) return browserScenarioResourcePreviewCache.get(cacheKey) ?? null;
   const files = browserScenarioPreviewSources.get(browserSemanticCacheKey(project));
   if (!files) return null;
   const wantedType = normalizeResourceType(resourceType);
@@ -151,10 +153,11 @@ export function loadBrowserScenarioResourcePreview(project: Project | null | und
     for (const resource of parseResourceFork(bytes)) {
       if (normalizeResourceType(resource.resourceType) !== wantedType || !resourceIdsMatch(wantedType, resource.id, resourceId)) continue;
       const preview = inspectResourcePreview(resource.resourceType, resource.data);
-      if (preview.dataUrl) browserScenarioResourcePreviewCache.set(cacheKey, preview.dataUrl);
+      browserScenarioResourcePreviewCache.set(cacheKey, preview.dataUrl ?? null);
       return preview.dataUrl ?? null;
     }
   }
+  browserScenarioResourcePreviewCache.set(cacheKey, null);
   return null;
 }
 
@@ -446,6 +449,7 @@ export async function openBrowserProject(source: BrowserScenarioSource): Promise
   project.spellOverrides ??= [];
   project.raceOverrides ??= [];
   project.casteOverrides ??= [];
+  project.ruleNames = defaultRuleNames(project.ruleNames);
   project.editorMetadata ??= { displayNames: {}, tilePalettes: [], mapStamps: [], questThreads: [], questContextSources: [] };
   project.editorMetadata.displayNames ??= {};
   project.editorMetadata.tilePalettes ??= [];
@@ -542,6 +546,39 @@ function backfillTilesetMetadata(project: Project) {
       tileset.source = "Browser project hydration: bundled Realmz reference PICT";
     }
   }
+}
+
+function parseBrowserRuleNames(files: Map<string, Uint8Array>) {
+  let ruleNames = defaultRuleNames();
+  for (const [name, bytes] of files) {
+    const normalized = name.replace(/\\/g, "/").toLowerCase();
+    const baseName = normalized.split("/").pop() ?? normalized;
+    if (baseName !== "custom names.rsrc" && baseName !== "custom names.rsf" && baseName !== "._custom names") continue;
+    let found = false;
+    for (const resource of parseResourceFork(bytes)) {
+      if (resource.resourceType !== "STR#") continue;
+      if (resource.id === 129) {
+        ruleNames = { ...ruleNames, raceNames: mergeRuleNameStrings(ruleNames.raceNames, parseStringListResource(resource.data)) };
+        found = true;
+      } else if (resource.id === 131) {
+        ruleNames = { ...ruleNames, casteNames: mergeRuleNameStrings(ruleNames.casteNames, parseStringListResource(resource.data)) };
+        found = true;
+      }
+    }
+    if (found) {
+      return {
+        ...ruleNames,
+        sourceFile: name.includes("/") || name.includes("\\") ? name : "Data Files/Custom Names.rsrc",
+        authored: false,
+        provenance: { sourceFile: name, recordIndex: 0, byteOffset: 0, byteLength: bytes.byteLength, confidence: "source-backed" }
+      };
+    }
+  }
+  return ruleNames;
+}
+
+function mergeRuleNameStrings(defaults: string[], decoded: string[]) {
+  return defaults.map((fallback, index) => decoded[index]?.trim() || fallback);
 }
 
 function browserReferenceTileset(landlook: number) {
@@ -670,19 +707,26 @@ export function validateBrowserProject(project: Project): ValidationReport {
   const exportableFiles = ["Data LD", "Data DL", "Data DD", "Data DDD", "Data RD", "Data RDD", "Layout", "Data ED3", "Data EDCD", "Data ED", "Data ED2", "Data TD2", "Data TD3", "Data MD", "Data MD1", "Data MD-1", "Data DES", "Data BD", "Data SD", "Data SD2", "Data OD", "Data MD2", "Data TD"].filter((name) =>
     sourceNames.has(name) || (name === "Layout" && project.landLayout)
   );
-  const passThroughFiles = project.source.files.filter((file) => !file.editable).map((file) => file.name);
+  const passThroughFiles = project.source.files
+    .filter((file) => !file.editable && !isGeneratedRuntimeCacheFile(file.name))
+    .map((file) => file.name);
   if (passThroughFiles.length > 0) {
     warnings.push(`${passThroughFiles.length.toLocaleString()} unsupported source file(s) will pass through unchanged: ${passThroughFiles.slice(0, 10).join(", ")}.`);
   }
   for (const source of project.source.files) {
-    if (["CL", "CD", "CE", "CE2", "CS", "CT", "CTD3"].includes(source.name)) {
-      warnings.push(`${source.name} looks like a generated runtime cache and is treated as evidence/pass-through, not authored data.`);
+    if (isGeneratedRuntimeCacheFile(source.name)) {
+      warnings.push(`${source.name} looks like a generated runtime cache and is treated as evidence, not authored data.`);
     }
   }
   return { ok: errors.length === 0, errors, warnings, exportableFiles, passThroughFiles, targetCompatibilityIssues: [], targetCompatibility: EMPTY_TARGET_COMPATIBILITY };
 }
 
+function isGeneratedRuntimeCacheFile(name: string) {
+  return ["CL", "CD", "CE", "CE2", "CS", "CT", "CTD3", "Data MENU"].includes(name);
+}
+
 function validateRulesRecords(project: Project, errors: string[], warnings: string[]) {
+  project.ruleNames = defaultRuleNames(project.ruleNames);
   for (const spell of project.spellOverrides ?? []) {
     if (spell.id < 0 || spell.id > 104) errors.push(`Custom spell ${spell.id} is outside Data Spell's 0..104 custom slot range.`);
     for (const [field, value] of [

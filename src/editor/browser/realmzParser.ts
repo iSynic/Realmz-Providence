@@ -228,7 +228,7 @@ export function parseScenarioBuffers(buffers: Map<string, Uint8Array>): ParsedBr
   const spellOverrides = parseSpellOverrides(buffers.get("Data Spell"));
   const raceOverrides = parseRaceOverrides(buffers.get("Data Race"));
   const casteOverrides = parseCasteOverrides(buffers.get("Data Caste"));
-  const assetCatalog = buildAssetCatalog(maps, randomLevels, buffers, diagnostics);
+  const assetCatalog = buildAssetCatalog(maps, randomLevels, monsters, monsterSets, buffers, diagnostics);
   return { maps, landLayout, mapRecords, tileAttributes, triggers, randomLevels, extracodes, messages, optionLabels, battles, monsters, monsterSets, monsterDescriptions, scenarioItems, treasures, shops, simpleEncounters, complexEncounters, thiefEncounters, timedEncounters, spellOverrides, raceOverrides, casteOverrides, assetCatalog, records, diagnostics };
 }
 
@@ -977,6 +977,8 @@ function decodeFixedText(bytes: Uint8Array) {
 function buildAssetCatalog(
   maps: MapEntity[],
   randomLevels: RandomLevel[],
+  monsters: MonsterRecord[],
+  monsterSets: MonsterSet[],
   buffers: Map<string, Uint8Array>,
   diagnostics: Diagnostic[]
 ) {
@@ -1028,7 +1030,7 @@ function buildAssetCatalog(
   return {
     tilesets,
     pictures: buildScenarioPictureCatalog(scenarioResources, diagnostics),
-    icons: buildScenarioIconCatalog(maps, scenarioResources, diagnostics),
+    icons: buildScenarioIconCatalog(maps, monsters, monsterSets, scenarioResources, diagnostics),
     sounds: buildScenarioSoundCatalog(scenarioResources, diagnostics)
   };
 }
@@ -1073,10 +1075,16 @@ function buildScenarioPictureCatalog(
 
 function buildScenarioIconCatalog(
   maps: MapEntity[],
+  monsters: MonsterRecord[],
+  monsterSets: MonsterSet[],
   resources: Array<{ source: string; resource: ResourceEntry }>,
   diagnostics: Diagnostic[]
 ): ResourceAsset[] {
-  const referenced = new Set(maps.flatMap((map) => referencedMapIconIds(map.tiles)));
+  const referenced = new Set([
+    ...maps.flatMap((map) => referencedMapIconIds(map.tiles)),
+    ...monsterIconIds(monsters),
+    ...monsterSets.flatMap((set) => monsterIconIds(set.monsters))
+  ]);
   if (referenced.size === 0) return [];
   const seen = new Set<number>();
   const icons: ResourceAsset[] = [];
@@ -1090,8 +1098,8 @@ function buildScenarioIconCatalog(
         const detail = preview.diagnostics[0]?.message ?? `Preview status was ${preview.status}.`;
         diagnostics.push({
           severity: preview.status === "malformed" ? "error" : "warning",
-          code: "unsupported-map-icon-overlay",
-          message: `Scenario cicn ${resource.id} in ${source} could not be decoded as a map icon overlay: ${detail}`,
+          code: "unsupported-scenario-icon-preview",
+          message: `Scenario cicn ${resource.id} in ${source} could not be decoded as an icon preview: ${detail}`,
           source
         });
       }
@@ -1108,6 +1116,17 @@ function buildScenarioIconCatalog(
     seen.add(resource.id);
   }
   return icons.sort((a, b) => a.resourceId - b.resourceId);
+}
+
+function monsterIconIds(monsters: MonsterRecord[]) {
+  const ids = new Set<number>();
+  for (const monster of monsters) {
+    const iconId = monster.iconId;
+    if (!Number.isInteger(iconId) || iconId === 0) continue;
+    ids.add(iconId);
+    ids.add(Math.abs(iconId));
+  }
+  return [...ids];
 }
 
 function buildScenarioSoundCatalog(

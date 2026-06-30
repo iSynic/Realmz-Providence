@@ -2636,11 +2636,19 @@ pub fn write_complex_encounters(records: &[ComplexEncounterRecord]) -> Result<Ve
         buffer[97] = fallback_i8(record.word_result, &record.word_results, 0) as u8;
         write_i8_array(buffer, 98, &record.groups, 8);
         for slot in 0..10 {
-            write_i16_be(buffer, 106 + slot * 2, record.spell_ids.get(slot).copied().unwrap_or(0));
+            write_i16_be(
+                buffer,
+                106 + slot * 2,
+                record.spell_ids.get(slot).copied().unwrap_or(0),
+            );
         }
         write_i8_array(buffer, 126, &record.spell_results, 10);
         for slot in 0..5 {
-            write_i16_be(buffer, 136 + slot * 2, record.item_ids.get(slot).copied().unwrap_or(0));
+            write_i16_be(
+                buffer,
+                136 + slot * 2,
+                record.item_ids.get(slot).copied().unwrap_or(0),
+            );
         }
         write_i8_array(buffer, 146, &record.item_results, 5);
         buffer[151] = u8::from(record.can_back_out);

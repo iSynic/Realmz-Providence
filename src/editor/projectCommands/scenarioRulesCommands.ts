@@ -1,4 +1,5 @@
 import { Project, ProjectCommand, ScenarioCasteOverride, ScenarioRaceOverride, ScenarioSpellOverride } from "../types";
+import { defaultCasteName, defaultRaceName, defaultRuleNames } from "../ruleNames";
 import { normalizedEditorMetadata } from "./tilePaletteCommands";
 
 export function renameEditorEntity(project: Project, entityId: string, displayName: string) {
@@ -131,20 +132,24 @@ function nextSpellOverrideId(records: ScenarioSpellOverride[]) {
 export function createRaceOverride(project: Project, id?: number, template?: Partial<ScenarioRaceOverride>) {
   const nextId = id ?? nextIdFor(project.raceOverrides ?? [], 70);
   if ((project.raceOverrides ?? []).some((record) => record.id === nextId)) return project;
-  const record = { ...emptyRaceOverride(nextId), ...template, id: nextId, authored: true, provenance: authoredProvenance("Data Race", nextId, nextId * 408, 408) };
+  const displayName = template?.displayName?.trim() || defaultRaceName(nextId);
+  const record = { ...emptyRaceOverride(nextId), ...template, displayName, id: nextId, authored: true, provenance: authoredProvenance("Data Race", nextId, nextId * 408, 408) };
+  const withName = setRuleName(project, "race", nextId, displayName, true);
   return {
-    ...project,
-    raceOverrides: [...(project.raceOverrides ?? []), record].sort((a, b) => a.id - b.id)
+    ...withName,
+    raceOverrides: [...(withName.raceOverrides ?? []), record].sort((a, b) => a.id - b.id)
   };
 }
 
 export function createCasteOverride(project: Project, id?: number, template?: Partial<ScenarioCasteOverride>) {
   const nextId = id ?? nextIdFor(project.casteOverrides ?? [], 30);
   if ((project.casteOverrides ?? []).some((record) => record.id === nextId)) return project;
-  const record = { ...emptyCasteOverride(nextId), ...template, id: nextId, authored: true, provenance: authoredProvenance("Data Caste", nextId, nextId * 576, 576) };
+  const displayName = template?.displayName?.trim() || defaultCasteName(nextId);
+  const record = { ...emptyCasteOverride(nextId), ...template, displayName, id: nextId, authored: true, provenance: authoredProvenance("Data Caste", nextId, nextId * 576, 576) };
+  const withName = setRuleName(project, "caste", nextId, displayName, true);
   return {
-    ...project,
-    casteOverrides: [...(project.casteOverrides ?? []), record].sort((a, b) => a.id - b.id)
+    ...withName,
+    casteOverrides: [...(withName.casteOverrides ?? []), record].sort((a, b) => a.id - b.id)
   };
 }
 
@@ -165,6 +170,45 @@ export function updateRuleOverride<T extends { id: number; authored?: boolean }>
 
 export function updateCustomSpellName(project: Project, id: number, displayName: string) {
   return updateRuleOverride<ScenarioSpellOverride>(project, "spellOverrides", id, { displayName });
+}
+
+export function updateRaceName(project: Project, id: number, displayName: string) {
+  return setRuleName(project, "race", id, displayName, true);
+}
+
+export function updateCasteName(project: Project, id: number, displayName: string) {
+  return setRuleName(project, "caste", id, displayName, true);
+}
+
+export function clearRaceOverride(project: Project, id: number) {
+  const withRecords = clearRuleOverride(project, "raceOverrides", id);
+  return setRuleName(withRecords, "race", id, defaultRaceName(id), true);
+}
+
+export function clearCasteOverride(project: Project, id: number) {
+  const withRecords = clearRuleOverride(project, "casteOverrides", id);
+  return setRuleName(withRecords, "caste", id, defaultCasteName(id), true);
+}
+
+function setRuleName(project: Project, family: "race" | "caste", id: number, displayName: string, authored: boolean) {
+  const label = displayName.trim() || (family === "race" ? defaultRaceName(id) : defaultCasteName(id));
+  const ruleNames = defaultRuleNames(project.ruleNames);
+  if (family === "race") {
+    const raceNames = [...ruleNames.raceNames];
+    raceNames[id] = label;
+    return {
+      ...project,
+      ruleNames: { ...ruleNames, raceNames, authored: ruleNames.authored || authored },
+      raceOverrides: (project.raceOverrides ?? []).map((record) => record.id === id ? { ...record, displayName: label } : record)
+    };
+  }
+  const casteNames = [...ruleNames.casteNames];
+  casteNames[id] = label;
+  return {
+    ...project,
+    ruleNames: { ...ruleNames, casteNames, authored: ruleNames.authored || authored },
+    casteOverrides: (project.casteOverrides ?? []).map((record) => record.id === id ? { ...record, displayName: label } : record)
+  };
 }
 
 export function clearRuleOverride(
