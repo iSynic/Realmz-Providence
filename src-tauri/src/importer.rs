@@ -448,10 +448,7 @@ fn build_semantic_schema_from_raw_sources(
     Ok(())
 }
 
-fn build_semantic_schema(
-    project: &mut ProvidenceProject,
-    buffers: &BTreeMap<String, Vec<u8>>,
-) {
+fn build_semantic_schema(project: &mut ProvidenceProject, buffers: &BTreeMap<String, Vec<u8>>) {
     let semantic_parsed = ParsedScenario {
         maps: project.maps.clone(),
         land_layout: project.land_layout.clone(),
@@ -897,7 +894,9 @@ fn snapshot_macosx_resource_sidecars(
         } else {
             format!("{data_name}.rsrc")
         };
-        if existing_names.contains(&resource_name) || files.iter().any(|file| file.name == resource_name) {
+        if existing_names.contains(&resource_name)
+            || files.iter().any(|file| file.name == resource_name)
+        {
             continue;
         }
         let dest = raw_dir.join(&resource_name);
@@ -1356,10 +1355,8 @@ fn import_picture_assets(
             let preview_path = match preview_path {
                 Some(path) => Some(path),
                 None => {
-                    let preview = crate::resource_preview::inspect_resource_preview(
-                        "PICT",
-                        &entry.data,
-                    )?;
+                    let preview =
+                        crate::resource_preview::inspect_resource_preview("PICT", &entry.data)?;
                     if let Some(data_url) = preview.data_url {
                         if let Some(png_bytes) = png_bytes_from_data_url(&data_url) {
                             let file_name = format!("picture_{}.png", entry.id);
@@ -1376,7 +1373,9 @@ fn import_picture_assets(
                             .map(|diagnostic| diagnostic.message.clone())
                             .unwrap_or_else(|| format!("preview status was {:?}", preview.status));
                         project.diagnostics.push(Diagnostic {
-                            severity: if preview.status == crate::resource_preview::ResourcePreviewStatus::Malformed {
+                            severity: if preview.status
+                                == crate::resource_preview::ResourcePreviewStatus::Malformed
+                            {
                                 DiagnosticSeverity::Error
                             } else {
                                 DiagnosticSeverity::Warning
@@ -1429,7 +1428,10 @@ fn existing_picture_preview_path(
         .strip_prefix(&format!("{ASSETS_DIR}/"))
         .or_else(|| preview_path.strip_prefix(&format!("{ASSETS_DIR}\\")))
         .unwrap_or(preview_path);
-    assets_dir.join(relative).is_file().then(|| preview_path.to_string())
+    assets_dir
+        .join(relative)
+        .is_file()
+        .then(|| preview_path.to_string())
 }
 
 fn upsert_scenario_picture_asset(
@@ -1439,11 +1441,10 @@ fn upsert_scenario_picture_asset(
     source_file: &str,
     preview_path: Option<String>,
 ) {
-    if let Some(asset) = project
-        .asset_catalog
-        .pictures
-        .iter_mut()
-        .find(|asset| asset.resource_type == "PICT" && asset.resource_id == i32::from(picture_id))
+    if let Some(asset) =
+        project.asset_catalog.pictures.iter_mut().find(|asset| {
+            asset.resource_type == "PICT" && asset.resource_id == i32::from(picture_id)
+        })
     {
         if asset.name.is_none() && !name.is_empty() {
             asset.name = Some(name);
@@ -1887,9 +1888,7 @@ mod tests {
     #[test]
     fn create_project_iterates_colliding_default_package_names() {
         let temp = tempfile::tempdir().expect("tempdir");
-        let requested = temp
-            .path()
-            .join("Untitled Scenario 2026-06-01.providence");
+        let requested = temp.path().join("Untitled Scenario 2026-06-01.providence");
         let first = create_project("Untitled Scenario 2026-06-01".to_string(), &requested)
             .expect("first project");
         let second = create_project("Untitled Scenario 2026-06-01".to_string(), &requested)

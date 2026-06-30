@@ -126,7 +126,8 @@ pub(super) fn classify_ed3_reachability(schema: &mut SemanticSchema, triggers: &
                 )
         };
         let is_reachable = root.is_some();
-        let author_label = extra_action_classification(root_type.as_deref(), &classification, is_reachable);
+        let author_label =
+            extra_action_classification(root_type.as_deref(), &classification, is_reachable);
 
         if let Some(entity) = schema
             .entities
@@ -188,7 +189,11 @@ pub(super) fn classify_ed3_reachability(schema: &mut SemanticSchema, triggers: &
     }
 }
 
-fn extra_action_classification(root_type: Option<&str>, classification: &str, reachable: bool) -> &'static str {
+fn extra_action_classification(
+    root_type: Option<&str>,
+    classification: &str,
+    reachable: bool,
+) -> &'static str {
     if !reachable {
         if classification == "probable-editor-padding" {
             return "Imported Empty Slot";
@@ -202,7 +207,10 @@ fn extra_action_classification(root_type: Option<&str>, classification: &str, re
         "Random Encounter Action"
     } else if root_type.contains("time") {
         "Timed Encounter Action"
-    } else if root_type.contains("battle") || root_type.contains("monster") || root_type.contains("item") {
+    } else if root_type.contains("battle")
+        || root_type.contains("monster")
+        || root_type.contains("item")
+    {
         "Battle / Monster / Item Action"
     } else {
         "Callable Extra Action Point"
@@ -598,12 +606,9 @@ mod tests {
         );
         let mut schema = SemanticSchema::default();
         schema.entities.push(macro_entity(5));
-        schema.links.push(macro_link(
-            "link:item:door",
-            "item:923",
-            5,
-            "calls_macro",
-        ));
+        schema
+            .links
+            .push(macro_link("link:item:door", "item:923", 5, "calls_macro"));
 
         classify_ed3_reachability(&mut schema, &[trigger]);
 

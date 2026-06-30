@@ -1052,7 +1052,10 @@ fn monster_record_summary(index: usize, record: &[u8]) -> BTreeMap<String, Value
         ("size", json!(signed_byte(record[9]))),
         (
             "typeFlags",
-            json!(record[10..18].iter().map(|byte| signed_byte(*byte)).collect::<Vec<_>>()),
+            json!(record[10..18]
+                .iter()
+                .map(|byte| signed_byte(*byte))
+                .collect::<Vec<_>>()),
         ),
         ("attackCount", json!(signed_byte(record[18]))),
         ("magicAttackCount", json!(signed_byte(record[19]))),
@@ -1073,11 +1076,17 @@ fn monster_record_summary(index: usize, record: &[u8]) -> BTreeMap<String, Value
         ("canSummon", json!(signed_byte(record[45]))),
         (
             "saves",
-            json!(record[46..52].iter().map(|byte| signed_byte(*byte)).collect::<Vec<_>>()),
+            json!(record[46..52]
+                .iter()
+                .map(|byte| signed_byte(*byte))
+                .collect::<Vec<_>>()),
         ),
         (
             "spellImmunities",
-            json!(record[52..58].iter().map(|byte| signed_byte(*byte)).collect::<Vec<_>>()),
+            json!(record[52..58]
+                .iter()
+                .map(|byte| signed_byte(*byte))
+                .collect::<Vec<_>>()),
         ),
         ("money", json!(read_i16s(record, 58, 3))),
         ("spells", json!(read_i16s(record, 64, 10))),
@@ -1367,7 +1376,9 @@ fn decoded_pascal_text(record: &[u8], offset: usize, max_length: usize) -> Strin
         return String::new();
     }
     let length = usize::from(bytes[0]).min(bytes.len().saturating_sub(1));
-    decode_classic_text(&bytes[1..1 + length]).trim_end().to_string()
+    decode_classic_text(&bytes[1..1 + length])
+        .trim_end()
+        .to_string()
 }
 
 fn signed_byte(value: u8) -> i8 {

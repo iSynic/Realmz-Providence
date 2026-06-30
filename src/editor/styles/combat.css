@@ -94,6 +94,14 @@
   max-width: 1500px;
 }
 
+.combat-record-layout.battle-layout {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 1500px;
+  flex: 1 1 auto;
+  min-height: 0;
+  align-items: stretch;
+}
+
 .combat-record-layout.monster-layout {
   grid-template-columns: minmax(250px, 310px) minmax(0, 1fr);
 }
@@ -131,6 +139,13 @@
   gap: 10px;
 }
 
+.battle-editor > .combat-editor-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+}
+
 .combat-record-list strong,
 .combat-editor-header span,
 .battle-board-card strong,
@@ -155,6 +170,8 @@
 .combat-record-list input,
 .combat-field input,
 .combat-field select,
+.combat-target-field > select,
+.combat-pager-row input,
 .monster-palette input {
   width: 100%;
   min-height: 30px;
@@ -164,6 +181,17 @@
   color: #f3f8ff;
   padding: 5px 8px;
   font: inherit;
+}
+
+.combat-editor-title {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+  justify-items: center;
+}
+
+.combat-record-pager {
+  width: fit-content;
 }
 
 .combat-record-scroll {
@@ -229,6 +257,12 @@
   padding: 10px;
 }
 
+.battle-editor {
+  min-height: 0;
+  height: 100%;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
 .monster-editor {
   max-width: 1180px;
 }
@@ -246,15 +280,69 @@
   gap: 6px;
 }
 
-.battle-summary-strip {
+.placement-mode-controls {
   display: grid;
-  grid-template-columns: minmax(76px, 100px) repeat(3, minmax(190px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(3, 124px);
+  justify-content: center;
+  gap: 6px;
+}
+
+.placement-mode-controls .combat-toggle {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 7px 8px;
+  border-color: #2c333e;
+  border-radius: 5px;
+  background: #15191f;
+  color: #9ba7b4;
+  text-align: center;
+  font-size: 11px;
+}
+
+.placement-mode-controls .combat-toggle:hover:not(:disabled),
+.placement-mode-controls .combat-toggle.active {
+  border-color: #3c78b2;
+  background: #172d48;
+  color: #b9ddff;
+}
+
+.placement-mode-controls .combat-toggle svg {
+  width: 15px;
+  height: 15px;
+}
+
+.battle-header-fields {
+  display: grid;
+  grid-template-columns: 124px minmax(235px, 1fr) minmax(235px, 1fr) minmax(280px, 1.15fr);
+  column-gap: 12px;
   align-items: start;
-  padding: 8px;
-  border: 1px solid #24323e;
-  border-radius: 6px;
-  background: #0d141b;
+  min-width: 0;
+}
+
+.battle-header-fields > * {
+  box-sizing: border-box;
+  min-width: 0;
+  height: 100%;
+  align-content: start;
+  justify-items: center;
+  border-left: 1px solid #263a49;
+  padding-left: 14px;
+  padding-right: 0;
+}
+
+.battle-header-actions {
+  box-sizing: border-box;
+  min-width: 0;
+  height: 100%;
+  display: grid;
+  gap: 7px;
+  align-content: start;
+  justify-items: center;
+  border-left: 1px solid #263a49;
+  padding-left: 14px;
 }
 
 .combat-target-field,
@@ -264,7 +352,135 @@
   min-width: 0;
 }
 
+.combat-paged-field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.combat-pager-row {
+  display: grid;
+  grid-template-columns: 30px 96px 30px;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+}
+
+.combat-pager-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.battle-macro-field .combat-pager-row {
+  grid-template-columns: 30px 96px 30px;
+}
+
+.combat-record-pager .combat-pager-row {
+  grid-template-columns: 30px 82px 30px;
+}
+
+.combat-pager-row button {
+  min-width: 0;
+  min-height: 30px;
+  padding: 4px 0;
+}
+
+.battle-header-fields .combat-pager-row {
+  grid-template-columns: 26px 72px 26px;
+}
+
+.battle-header-fields .combat-pager-row button {
+  min-height: 28px;
+}
+
+.battle-header-fields .battle-target-actions {
+  grid-template-columns: 88px 28px;
+}
+
+.battle-header-fields .battle-macro-field .battle-target-actions {
+  grid-template-columns: 122px 28px;
+}
+
+.battle-header-fields .battle-target-actions > .btn,
+.battle-header-fields .battle-target-action-placeholder {
+  min-height: 28px;
+  font-size: 10px;
+}
+
+.battle-header-fields .battle-icon-button {
+  width: 28px;
+  min-width: 28px;
+}
+
+.combat-distance-field {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  justify-items: center;
+}
+
+.battle-header-fields .combat-target-field {
+  gap: 7px;
+  justify-items: center;
+}
+
+.battle-header-fields .combat-field {
+  width: 100px;
+  justify-items: center;
+}
+
+.battle-header-fields .combat-paged-field {
+  width: min(100%, 330px);
+  justify-items: center;
+}
+
+.battle-header-fields .combat-field input {
+  width: 96px;
+  justify-self: center;
+  text-align: center;
+}
+
+.battle-header-fields .combat-field > span,
+.battle-header-fields .combat-paged-field > span,
+.battle-header-actions > span,
+.combat-editor-title .combat-paged-field > span {
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #2c3f4f;
+  color: #9bd2ff;
+  font-size: 10px;
+  font-weight: 950;
+  text-align: center;
+}
+
+.battle-header-actions > span {
+  text-transform: uppercase;
+}
+
+.battle-header-actions .combat-editor-actions {
+  justify-content: center;
+  flex-wrap: nowrap;
+}
+
+.battle-header-actions .btn-danger {
+  border-color: #8a2f2a;
+  background: #351310;
+  color: #ffd0c9;
+}
+
+.battle-header-actions .btn-danger:hover:not(:disabled) {
+  border-color: #c24b41;
+  background: #521d18;
+  color: #fff3f0;
+}
+
 .combat-target-field > span,
+.combat-paged-field > span,
 .combat-field > span {
   color: #86c7ff;
   font-size: 9px;
@@ -295,6 +511,47 @@
   min-height: 26px;
 }
 
+.combat-distance-field > small,
+.combat-target-field > small,
+.battle-anchor-note {
+  color: #8da9bd;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.combat-field-warning,
+.combat-inline-warning,
+.battle-placement-limit.warning {
+  color: #ffd77a;
+}
+
+.combat-inline-warning,
+.battle-placement-limit {
+  margin: 0;
+  padding: 6px 8px;
+  border: 1px solid #5f4815;
+  border-radius: 5px;
+  background: #181207;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.battle-placement-limit.error {
+  border-color: #703029;
+  background: #1b0908;
+  color: #ffb2a8;
+}
+
+.combat-checkbox-line {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 24px;
+  color: #d8e9f7;
+  font-size: 11px;
+  font-weight: 800;
+}
+
 .combat-target-disclosure {
   border: 1px solid #263543;
   border-radius: 5px;
@@ -306,11 +563,95 @@
   display: flex;
   align-items: center;
   min-height: 26px;
-  padding: 5px 8px;
+  padding: 4px 8px;
   color: #dcecff;
   font-size: 10px;
   font-weight: 900;
   cursor: pointer;
+}
+
+.battle-header-fields .combat-target-field > small {
+  max-width: 280px;
+  text-align: center;
+}
+
+.battle-target-actions {
+  display: grid;
+  grid-template-columns: 104px 30px;
+  gap: 4px;
+  align-items: center;
+  min-width: 0;
+}
+
+.battle-macro-field .battle-target-actions {
+  grid-template-columns: 138px 30px;
+}
+
+.battle-target-actions > .btn {
+  min-height: 28px;
+}
+
+.battle-open-target-button {
+  border-color: #286f7e;
+  background: #0b2a31;
+  color: #c7f6ff;
+}
+
+.battle-open-target-button:hover:not(:disabled) {
+  border-color: #3b9aad;
+  background: #123c47;
+  color: #f1fdff;
+}
+
+.battle-preview-button {
+  border-color: #2d5d78;
+  background: #0b2230;
+  color: #ccecff;
+}
+
+.battle-preview-button:hover:not(:disabled) {
+  border-color: #4483a3;
+  background: #123247;
+  color: #effaff;
+}
+
+.battle-icon-button {
+  width: 30px;
+  min-width: 30px;
+  padding: 0;
+}
+
+.battle-icon-button.active {
+  border-color: #49b3d1;
+  background: #143c4a;
+  color: #effbff;
+}
+
+.battle-target-action-placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  border: 1px solid #314351;
+  border-radius: 4px;
+  background: #0b1219;
+  color: #8da9bd;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.battle-header-fields .battle-target-panel {
+  width: min(100%, 320px);
+  justify-self: center;
+}
+
+.battle-target-panel textarea {
+  border-top: 0;
+}
+
+.battle-target-panel > p,
+.battle-target-panel .combat-flow-step:first-child {
+  border-top: 0;
 }
 
 .combat-target-disclosure textarea {
@@ -333,6 +674,23 @@
   padding: 8px;
   color: #8ea5b7;
   font-size: 10px;
+}
+
+.combat-disclosure-empty {
+  display: grid;
+  gap: 7px;
+  border-top: 1px solid #263543;
+  padding: 8px;
+}
+
+.combat-disclosure-empty p {
+  margin: 0;
+  color: #8ea5b7;
+  font-size: 10px;
+}
+
+.combat-disclosure-empty .btn {
+  justify-self: start;
 }
 
 .combat-flow-step {
@@ -398,13 +756,16 @@
 
 .battle-board-workbench {
   display: grid;
-  grid-template-columns: minmax(420px, 720px) minmax(240px, 320px);
+  grid-template-columns: minmax(260px, 1fr) minmax(420px, 690px) minmax(230px, 300px);
   gap: 10px;
-  align-items: start;
+  align-items: stretch;
+  min-height: 0;
+  height: 100%;
 }
 
 .battle-board-card,
 .monster-placement-card,
+.battle-selection-card,
 .monster-section {
   display: grid;
   gap: 9px;
@@ -412,6 +773,38 @@
   border: 1px solid #26333f;
   border-radius: 7px;
   background: #0d141b;
+  min-height: 0;
+}
+
+.battle-board-card {
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.battle-board-card > header {
+  align-items: baseline;
+}
+
+.battle-board-card > header strong,
+.battle-board-card > header b {
+  font-size: 15px;
+  line-height: 1.1;
+}
+
+.battle-board-card > header b {
+  font-weight: 900;
+}
+
+.battle-board-card b.limit-safe {
+  color: #8fe0a0;
+}
+
+.battle-board-card b.limit-warning {
+  color: #ffd77a;
+}
+
+.battle-board-card b.limit-error {
+  color: #ff9a8c;
 }
 
 .scrapbook-summary {
@@ -522,8 +915,29 @@
   display: grid;
   grid-template-columns: repeat(13, minmax(0, 1fr));
   width: min(100%, 690px);
+  justify-self: center;
   border: 2px solid #0b0f12;
   background: #ffffff;
+}
+
+.battle-board-body {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 9px;
+}
+
+.battle-board-scroll {
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  justify-items: center;
+  align-items: start;
+  padding-bottom: 2px;
+}
+
+.battle-board-body > .battle-board-scroll:only-child {
+  grid-row: 1 / -1;
 }
 
 .battle-board button {
@@ -555,11 +969,7 @@
 }
 
 .battle-board button.alternate-side::after {
-  content: "";
-  position: absolute;
-  inset: 3px;
-  border: 2px solid #8b2fd8;
-  pointer-events: none;
+  content: none;
 }
 
 .battle-board button.selected {
@@ -579,8 +989,51 @@
   font-weight: 900;
 }
 
+.battle-monster-overlay.erasable {
+  pointer-events: auto;
+  cursor: cell;
+}
+
+.battle-monster-overlay.selectable {
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.battle-monster-overlay.selectable:active {
+  cursor: grabbing;
+}
+
+.battle-monster-overlay.erasable:hover,
+.battle-monster-overlay.erasable:focus-visible,
+.battle-monster-overlay.selectable:hover,
+.battle-monster-overlay.selectable:focus-visible {
+  outline: 3px solid #ff9d8f;
+  outline-offset: -3px;
+}
+
+.battle-monster-overlay.selectable:hover,
+.battle-monster-overlay.selectable:focus-visible {
+  outline-color: #f2cb70;
+}
+
+.battle-monster-overlay.selected-anchor {
+  box-shadow: inset 0 0 0 2px #f2cb70;
+}
+
+.battle-monster-overlay.dragging {
+  opacity: 0.55;
+}
+
 .battle-monster-overlay.alternate-side {
-  filter: drop-shadow(0 0 0 #8b2fd8) drop-shadow(0 0 3px #8b2fd8);
+  filter: drop-shadow(0 0 0 #2fa85f) drop-shadow(0 0 3px #2fa85f);
+}
+
+.battle-monster-overlay.alternate-side::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 2px solid #2fa85f;
+  pointer-events: none;
 }
 
 .battle-monster-overlay .monster-icon-preview {
@@ -628,54 +1081,118 @@
 }
 
 .monster-placement-card {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  align-content: stretch;
+}
+
+.battle-selection-card {
   align-content: start;
 }
 
 .monster-palette {
-  display: grid;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   gap: 7px;
 }
 
-.monster-to-place-preview {
+.monster-palette > header {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  gap: 9px;
-  padding: 8px;
-  border: 1px solid #28465c;
-  border-radius: 6px;
-  background: #07131c;
 }
 
-.monster-to-place-preview span {
-  min-width: 0;
-  display: grid;
-  gap: 3px;
+.monster-palette > header > span,
+.monster-palette > header > strong {
+  grid-column: 2;
+  justify-self: center;
+  text-align: center;
 }
 
-.monster-palette-list {
-  max-height: 360px;
+.monster-palette > header > small {
+  grid-column: 3;
+  justify-self: end;
+}
+
+.monster-brush-palette {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
   overflow-y: auto;
   display: grid;
-  gap: 4px;
+  grid-template-columns: repeat(auto-fit, 72px);
+  justify-content: center;
+  align-content: start;
+  align-items: start;
+  gap: 8px;
+  padding: 2px 1px 4px;
 }
 
-.monster-palette-list button {
+.monster-brush-palette button {
+  position: relative;
+  width: 72px;
+  min-height: 72px;
+  aspect-ratio: 1 / 1;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 7px;
-  align-items: center;
-  text-align: left;
+  place-items: center;
   border: 1px solid #263846;
   border-radius: 5px;
-  background: #0a1218;
+  background: #081118;
   color: #dff1ff;
   padding: 5px;
 }
 
-.monster-palette-list button.selected {
+.monster-brush-palette button:hover,
+.monster-brush-palette button:focus-visible {
+  border-color: #4a87ae;
+  background: #0d1d28;
+}
+
+.monster-brush-palette button.selected {
   border-color: #2b8fd8;
   background: #10283d;
+  box-shadow: inset 0 0 0 1px #6db8f0;
+}
+
+.monster-brush-palette button.built-in {
+  border-color: #3f4c2e;
+}
+
+.monster-brush-palette button.built-in:hover,
+.monster-brush-palette button.built-in:focus-visible {
+  border-color: #7e9a40;
+}
+
+.monster-brush-art {
+  display: grid;
+  place-items: center;
+  max-width: 64px;
+  max-height: 64px;
+}
+
+.monster-brush-art .monster-icon-preview {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+}
+
+.monster-brush-id {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  min-width: 16px;
+  height: 14px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0 3px;
+  border: 1px solid #38556a;
+  border-radius: 999px;
+  background: rgba(5, 13, 20, 0.92);
+  color: #eaf6ff;
+  font-size: 9px;
+  line-height: 1;
+  font-weight: 900;
 }
 
 .combat-list-overflow-note {
@@ -683,11 +1200,16 @@
   color: #88b5d8;
 }
 
-.monster-palette-list span,
+.monster-brush-palette > .combat-list-overflow-note,
 .selected-monster-preview {
   min-width: 0;
   display: grid;
   gap: 2px;
+}
+
+.monster-brush-palette > .combat-list-overflow-note,
+.monster-brush-palette > .empty-copy {
+  grid-column: 1 / -1;
 }
 
 .selected-battle-cell {
@@ -697,11 +1219,122 @@
   border-top: 1px solid #24323e;
 }
 
+.battle-selection-card .selected-battle-cell {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.battle-brush-inspector {
+  display: grid;
+  gap: 9px;
+  align-content: start;
+}
+
+.battle-brush-inspector > strong,
+.selected-battle-cell > strong {
+  color: #eef7ff;
+  font-size: 15px;
+}
+
+.battle-brush-inspector > small {
+  color: #dceeff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
 .selected-monster-preview {
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   color: #b5cede;
   font-size: 10px;
+}
+
+.selected-monster-preview-large {
+  gap: 9px;
+  padding: 8px;
+  border: 1px solid #28465c;
+  border-radius: 6px;
+  background: #07131c;
+}
+
+.selected-monster-preview-large b {
+  color: #f3f9ff;
+  font-size: 12px;
+}
+
+.selected-monster-preview-large span {
+  display: grid;
+  gap: 3px;
+}
+
+.monster-battle-detail-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 8px;
+  border: 1px solid #28465c;
+  border-radius: 6px;
+  background: #07131c;
+}
+
+.monster-battle-detail-body {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.monster-battle-detail-body > b {
+  color: #f3f9ff;
+  font-size: 12px;
+}
+
+.monster-battle-detail-body > small {
+  color: #9fb8c8;
+  font-size: 10px;
+}
+
+.monster-battle-stat-grid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 1px solid #263846;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.monster-battle-stat-grid > div {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 6px;
+  border-right: 1px solid #1e2b36;
+  border-bottom: 1px solid #1e2b36;
+  background: rgba(8, 17, 24, 0.7);
+}
+
+.monster-battle-stat-grid > div:nth-child(2n) {
+  border-right: 0;
+}
+
+.monster-battle-stat-grid > div:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+
+.monster-battle-stat-grid dt {
+  min-width: 0;
+  color: #a7cde8;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.monster-battle-stat-grid dd {
+  margin: 0;
+  color: #f3f8ff;
+  font-size: 10px;
+  font-weight: 900;
 }
 
 .selected-monster-preview.missing-monster-reference {
@@ -738,6 +1371,10 @@
   font: inherit;
   font-size: 10px;
   font-weight: 900;
+}
+
+.combat-toggle span {
+  min-width: 0;
 }
 
 .combat-toggle.active {
@@ -834,18 +1471,16 @@
 
 @media (max-width: 1360px) {
   .battle-board-workbench {
-    grid-template-columns: minmax(390px, 1fr);
+    grid-template-columns: minmax(210px, 270px) minmax(390px, 1fr);
   }
 
-  .monster-placement-card {
-    grid-template-columns: minmax(260px, 1fr) minmax(220px, 280px);
+  .battle-selection-card {
+    grid-column: 1 / -1;
   }
 
   .selected-battle-cell {
-    border-top: 0;
-    border-left: 1px solid #24323e;
-    padding-top: 0;
-    padding-left: 10px;
+    grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr);
+    align-items: start;
   }
 }
 
@@ -854,21 +1489,28 @@
     grid-template-columns: 1fr;
   }
 
+  .combat-record-layout.battle-layout {
+    grid-template-columns: 1fr;
+  }
+
   .combat-record-list {
     position: static;
     grid-template-rows: auto auto minmax(180px, 260px);
   }
 
-  .battle-summary-strip,
+  .battle-editor > .combat-editor-header,
+  .battle-header-fields,
   .monster-placement-card,
+  .battle-selection-card,
   .monster-identity-section {
     grid-template-columns: 1fr;
   }
 
+  .battle-board-workbench {
+    grid-template-columns: 1fr;
+  }
+
   .selected-battle-cell {
-    border-left: 0;
-    border-top: 1px solid #24323e;
-    padding-left: 0;
-    padding-top: 8px;
+    grid-template-columns: 1fr;
   }
 }

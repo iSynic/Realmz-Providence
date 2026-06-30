@@ -366,22 +366,25 @@ Manual Battle Editor covers battle records, before/after strings, distance, batt
 
 Current Providence handling:
 
-Providence authors Data BD battle shells with grid placement, signed friendly behavior, before/after string pickers, and battle action links.
+Providence authors Data BD battle shells with grid placement, signed Force Friends behavior, before/after string pickers, distance guidance, and Battle Macro links that write the runnable end-of-round Extra Action Point form. The placement palette exposes scenario Data MD monsters only, with Monster 0 and the observed non-authorable 218+ placeholders excluded from painting; Monster Scrapbook templates must be copied into Scenario Monsters before use. Source-backed UI guardrails keep zero-valued Monster and Battle Macro records out of controls where `0` means empty/inactive.
 
 Evidence:
 
 - docs/generated/battle-record-evidence.json
+- docs/combat-battle-editor-parity-audit.md
+- docs/format-evidence-cards/bestiary-source-alignment.md
 - F:/Realmz/src/realmz_orig/combatsetup.c
+- F:/Realmz/src/realmz_orig/getup.c
 
 Gaps:
 
-- Placement limit feedback, lower-right erase anchor behavior, distance range, and battle macro sign labels need manual-level audit.
-- Battle grid missing-monster repair is present but needs fixture-backed examples.
+- Missing-monster repair is source-backed by matching Monster Scrapbook IDs, but still needs imported-scenario fixture examples.
+- Imported positive Battle Macro values are preserved and warned, but no fixture currently proves a scenario depends on that compatibility state.
 
 Recommended follow-up:
 
-- Audit Battle Editor UI against every manual field and note.
-- Add validation/report rows for placement count and distance semantics if absent.
+- Add fixture examples for battle-grid missing-monster repair.
+- Keep Battle Macro field behavior aligned with the manual/source end-of-round execution model.
 
 ### 11. Monster Editor
 
@@ -397,12 +400,13 @@ Manual Monster Editor covers Data MD monster templates, description text, combat
 
 Current Providence handling:
 
-Providence edits scenario monsters, descriptions, icons, macro references, weapon/item/spell references, and many source-backed numeric fields.
+Providence edits scenario Data MD monsters, Data DES descriptions, icons, macro references, weapon/item/spell references, and many source-backed numeric fields. Imported Data MENU is treated as generated bestiary cache evidence and is omitted from export so Realmz rebuilds it from Data MD.
 
 Evidence:
 
 - docs/generated/monster-record-evidence.json
 - docs/generated/monster-description-set-evidence.json
+- docs/format-evidence-cards/bestiary-source-alignment.md
 - F:/Realmz/src/realmz_orig/structs.h
 
 Gaps:
@@ -425,11 +429,11 @@ Recommended follow-up:
 
 Manual claim summary:
 
-Manual Monster Scrapbook provides built-in monster templates/reference material for copying or comparison.
+Manual Monster Scrapbook provides reusable editor/library monster templates for copying or comparison.
 
 Current Providence handling:
 
-Providence browses bundled scrapbook records, previews stats/descriptions/icons, and can copy built-ins into scenario Data MD records.
+Providence browses bundled scrapbook records, previews stats/descriptions/icons, and can copy built-ins into scenario Data MD records. The editable Scenario Monsters tab counts only scenario-owned Data MD records; Monster Scrapbook entries are templates, not runtime scenario monsters.
 
 Evidence:
 
@@ -767,7 +771,7 @@ Recommended follow-up:
 - Providence domain: Combat / Library
 - Providence tools: Monster Mash, Scenario Icons
 - Existing parity map: Monster Mash -> Combat/Library
-- Registry tools: Combat/Monster Mash; Assets/Scenario Icons
+- Registry tools: Assets/Scenario Icons
 
 Manual claim summary:
 

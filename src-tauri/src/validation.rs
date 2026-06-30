@@ -654,14 +654,13 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                     asset.label, asset.resource_type
                 ));
             }
-            let custom_landlook_atlas = asset
-                .conversion
-                .as_ref()
-                .is_some_and(|conversion| matches!(conversion.target, AssetImportTarget::CustomLandlookAtlas));
+            let custom_landlook_atlas = asset.conversion.as_ref().is_some_and(|conversion| {
+                matches!(conversion.target, AssetImportTarget::CustomLandlookAtlas)
+            });
             if !custom_landlook_atlas
                 && (asset.resource_id < SCENARIO_PICTURE_MIN_ID
-                || asset.resource_id > SCENARIO_PICTURE_MAX_ID
-            ) {
+                    || asset.resource_id > SCENARIO_PICTURE_MAX_ID)
+            {
                 warnings.push(format!(
                     "{} uses PICT id {}; scenario pictures normally use {}-{}.",
                     asset.label,
@@ -813,6 +812,9 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
     }
     validate_rules_overrides(project, &mut errors, &mut warnings);
     for file in &project.source.files {
+        if is_generated_cache_name(&file.name) {
+            continue;
+        }
         if matches!(file.role, SourceFileRole::SupportedBinary) {
             exportable_files.push(file.name.clone());
         } else {
@@ -861,7 +863,11 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
     }
 }
 
-fn validate_dense_map_indices(project: &ProvidenceProject, level_type: LevelType, errors: &mut Vec<String>) {
+fn validate_dense_map_indices(
+    project: &ProvidenceProject,
+    level_type: LevelType,
+    errors: &mut Vec<String>,
+) {
     let mut maps = project
         .maps
         .iter()
@@ -1038,7 +1044,8 @@ pub fn validate_target_compatibility(project: &ProvidenceProject) -> Vec<TargetC
                     code: "custom-landlook-metadata-missing".to_string(),
                     message: format!(
                         "Landlook {landlook} is used by a land map, but {} is missing.",
-                        custom_landlook_metadata_file(landlook).unwrap_or("custom landlook metadata")
+                        custom_landlook_metadata_file(landlook)
+                            .unwrap_or("custom landlook metadata")
                     ),
                     source: Some(format!("landlook-{landlook}")),
                 });
@@ -1063,7 +1070,11 @@ pub fn validate_target_compatibility(project: &ProvidenceProject) -> Vec<TargetC
             }
         }
     }
-    for landlook in project.custom_landlooks.iter().map(|metadata| metadata.landlook) {
+    for landlook in project
+        .custom_landlooks
+        .iter()
+        .map(|metadata| metadata.landlook)
+    {
         if !used_custom_landlooks(project).contains(&landlook) {
             issues.push(TargetCompatibilityIssue {
                 target: ScenarioTarget::ProvidencePortableFolder,
@@ -1117,7 +1128,9 @@ fn custom_landlook_art_available(project: &ProvidenceProject, landlook: i8) -> b
         return false;
     };
     project.asset_catalog.tilesets.iter().any(|tileset| {
-        tileset.landlook == landlook && tileset.pict_id == Some(i32::from(pict_id)) && tileset.available
+        tileset.landlook == landlook
+            && tileset.pict_id == Some(i32::from(pict_id))
+            && tileset.available
     }) || project.assets.iter().any(|asset| {
         asset.resource_type == "PICT"
             && asset.resource_id == pict_id
@@ -1189,7 +1202,11 @@ fn validate_tile_attributes(project: &ProvidenceProject, warnings: &mut Vec<Stri
             ));
         }
         if (6..=8).contains(&landlook) {
-            if !project.custom_landlooks.iter().any(|custom| custom.landlook == landlook) {
+            if !project
+                .custom_landlooks
+                .iter()
+                .any(|custom| custom.landlook == landlook)
+            {
                 warnings.push(format!(
                     "Custom land tiles for landlook {landlook} are missing metadata; this scenario can be preserved, but tile definitions cannot be edited safely."
                 ));
@@ -1920,7 +1937,7 @@ fn validate_semantic_schema(
     for source in &project.source.files {
         if is_generated_cache_name(&source.name) {
             warnings.push(format!(
-                "{} looks like a generated runtime cache; Providence will treat it as pass-through evidence, not authored scenario data.",
+                "{} looks like a generated runtime cache; Providence keeps it as evidence and does not author it on export.",
                 source.name
             ));
         }
@@ -2196,8 +2213,12 @@ mod tests {
 
         validate_trigger_actions(&trigger, &refs, &mut errors, &mut warnings);
 
-        assert!(!warnings.iter().any(|message| message.contains("Data ED3 macro")));
-        assert!(!warnings.iter().any(|message| message.contains("parameter row")));
+        assert!(!warnings
+            .iter()
+            .any(|message| message.contains("Data ED3 macro")));
+        assert!(!warnings
+            .iter()
+            .any(|message| message.contains("parameter row")));
     }
 
     #[test]
@@ -2436,8 +2457,8 @@ mod tests {
     fn authored_map_fields_roundtrip_through_realmz_writer() {
         let map = test_map(LevelType::Land, 0, 7);
 
-        let output = crate::realmz::write_fields(&[map], LevelType::Land)
-            .expect("write authored map");
+        let output =
+            crate::realmz::write_fields(&[map], LevelType::Land).expect("write authored map");
         let parsed = crate::realmz::parse_fields(&output, LevelType::Land, "Data LD");
 
         assert_eq!(parsed.len(), 1);
@@ -2714,7 +2735,7 @@ fn validate_runtime_cache_entities(
         .collect();
     if !caches.is_empty() {
         warnings.push(format!(
-            "{} generated runtime cache model(s) are present for relationship tracing only; export will not author CL/CD/CE/CE2/CS/CT/CTD3 cache files.",
+            "{} generated runtime cache model(s) are present for relationship tracing only; export will not author CL/CD/CE/CE2/CS/CT/CTD3/Data MENU cache files.",
             caches.len()
         ));
     }
@@ -2737,7 +2758,10 @@ fn links_by_target(links: &[SemanticLink]) -> BTreeMap<String, Vec<&SemanticLink
 }
 
 fn is_generated_cache_name(name: &str) -> bool {
-    matches!(name, "CL" | "CD" | "CE" | "CE2" | "CS" | "CT" | "CTD3")
+    matches!(
+        name,
+        "CL" | "CD" | "CE" | "CE2" | "CS" | "CT" | "CTD3" | "Data MENU"
+    )
 }
 
 fn is_semantic_edited(summary: &BTreeMap<String, Value>) -> bool {

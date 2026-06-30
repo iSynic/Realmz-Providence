@@ -123,7 +123,7 @@ If `todoondeath` is nonzero, monster death queues or immediately runs a macro/do
 
 - Add a `Monster` project collection decoded from `Data MD`, preserving the 210-byte raw record.
 - Treat stamina, max stamina, movement, target, guard, direction, attack number, and similar runtime state fields as advanced/template evidence unless Divinity proves authoring semantics.
-- Show `Data MENU` as generated menu evidence; do not write it as source unless a later compatibility fixture proves it is needed.
+- Show `Data MENU` as generated menu evidence and omit it from export so Realmz rebuilds the cache from `Data MD`.
 - Monster pickers should be available to battle grids, spawn/add-ally script opcodes, encounter forms, and bestiary inspection.
 - The Battle editor should label negative grid values as "flip side/friendly flag" rather than separate records.
 - The Monster editor should use pickers for icon, items, spells, and death macro once those target registries are available.

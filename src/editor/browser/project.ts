@@ -13,7 +13,7 @@ import { defaultRuleNames } from "../ruleNames";
 const EMPTY_TARGET_COMPATIBILITY = { blockers: [], warnings: [], notes: [] };
 const pendingBrowserSemantics = new Map<string, { files: Map<string, Uint8Array>; sourceFiles: Project["source"]["files"] }>();
 const browserScenarioPreviewSources = new Map<string, Map<string, Uint8Array>>();
-const browserScenarioResourcePreviewCache = new Map<string, string>();
+const browserScenarioResourcePreviewCache = new Map<string, string | null>();
 let bundledLandlookMapstatsPromise: Promise<Project["tileAttributes"]> | null = null;
 
 export function createBrowserProject(projectName: string): Project {
@@ -144,8 +144,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
 export function loadBrowserScenarioResourcePreview(project: Project | null | undefined, resourceType: string, resourceId: number) {
   if (!project || !Number.isFinite(resourceId)) return null;
   const cacheKey = `${browserSemanticCacheKey(project)}\n${normalizeResourceType(resourceType)}\n${resourceId}`;
-  const cachedPreview = browserScenarioResourcePreviewCache.get(cacheKey);
-  if (cachedPreview) return cachedPreview;
+  if (browserScenarioResourcePreviewCache.has(cacheKey)) return browserScenarioResourcePreviewCache.get(cacheKey) ?? null;
   const files = browserScenarioPreviewSources.get(browserSemanticCacheKey(project));
   if (!files) return null;
   const wantedType = normalizeResourceType(resourceType);
@@ -154,10 +153,11 @@ export function loadBrowserScenarioResourcePreview(project: Project | null | und
     for (const resource of parseResourceFork(bytes)) {
       if (normalizeResourceType(resource.resourceType) !== wantedType || !resourceIdsMatch(wantedType, resource.id, resourceId)) continue;
       const preview = inspectResourcePreview(resource.resourceType, resource.data);
-      if (preview.dataUrl) browserScenarioResourcePreviewCache.set(cacheKey, preview.dataUrl);
+      browserScenarioResourcePreviewCache.set(cacheKey, preview.dataUrl ?? null);
       return preview.dataUrl ?? null;
     }
   }
+  browserScenarioResourcePreviewCache.set(cacheKey, null);
   return null;
 }
 
@@ -707,16 +707,22 @@ export function validateBrowserProject(project: Project): ValidationReport {
   const exportableFiles = ["Data LD", "Data DL", "Data DD", "Data DDD", "Data RD", "Data RDD", "Layout", "Data ED3", "Data EDCD", "Data ED", "Data ED2", "Data TD2", "Data TD3", "Data MD", "Data MD1", "Data MD-1", "Data DES", "Data BD", "Data SD", "Data SD2", "Data OD", "Data MD2", "Data TD"].filter((name) =>
     sourceNames.has(name) || (name === "Layout" && project.landLayout)
   );
-  const passThroughFiles = project.source.files.filter((file) => !file.editable).map((file) => file.name);
+  const passThroughFiles = project.source.files
+    .filter((file) => !file.editable && !isGeneratedRuntimeCacheFile(file.name))
+    .map((file) => file.name);
   if (passThroughFiles.length > 0) {
     warnings.push(`${passThroughFiles.length.toLocaleString()} unsupported source file(s) will pass through unchanged: ${passThroughFiles.slice(0, 10).join(", ")}.`);
   }
   for (const source of project.source.files) {
-    if (["CL", "CD", "CE", "CE2", "CS", "CT", "CTD3"].includes(source.name)) {
-      warnings.push(`${source.name} looks like a generated runtime cache and is treated as evidence/pass-through, not authored data.`);
+    if (isGeneratedRuntimeCacheFile(source.name)) {
+      warnings.push(`${source.name} looks like a generated runtime cache and is treated as evidence, not authored data.`);
     }
   }
   return { ok: errors.length === 0, errors, warnings, exportableFiles, passThroughFiles, targetCompatibilityIssues: [], targetCompatibility: EMPTY_TARGET_COMPATIBILITY };
+}
+
+function isGeneratedRuntimeCacheFile(name: string) {
+  return ["CL", "CD", "CE", "CE2", "CS", "CT", "CTD3", "Data MENU"].includes(name);
 }
 
 function validateRulesRecords(project: Project, errors: string[], warnings: string[]) {

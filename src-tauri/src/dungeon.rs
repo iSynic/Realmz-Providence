@@ -74,7 +74,9 @@ impl DungeonPrimitive {
             | Self::AllowMoveSouth
             | Self::AllowMoveWest => DungeonPrimitiveWriterStatus::WriterSafePrimitive,
             Self::NoteMarker => DungeonPrimitiveWriterStatus::RouteThroughNoteWorkflow,
-            Self::ActionPointMarker => DungeonPrimitiveWriterStatus::RouteThroughActionPointWorkflow,
+            Self::ActionPointMarker => {
+                DungeonPrimitiveWriterStatus::RouteThroughActionPointWorkflow
+            }
             Self::RevealedSecret | Self::VisibleArch => {
                 DungeonPrimitiveWriterStatus::ReadOnlyPreserve
             }

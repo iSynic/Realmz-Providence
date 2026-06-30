@@ -63,7 +63,7 @@ pub fn export_project(
             continue;
         }
         let name = entry.file_name().to_string_lossy().to_string();
-        if is_custom_names_support_file(&name) {
+        if is_custom_names_support_file(&name) || is_generated_runtime_cache_file(&name) {
             continue;
         }
         let dest = output_dir.join(&name);
@@ -548,7 +548,14 @@ fn data_spell_resource_fork(raw_dir: &Path) -> Result<Option<(String, Vec<u8>)>>
 }
 
 fn is_custom_names_support_file(name: &str) -> bool {
-    matches!(name, "Custom Names.rsrc" | "Custom Names.rsf" | "._Custom Names")
+    matches!(
+        name,
+        "Custom Names.rsrc" | "Custom Names.rsf" | "._Custom Names"
+    )
+}
+
+fn is_generated_runtime_cache_file(name: &str) -> bool {
+    matches!(name, "Data MENU")
 }
 
 fn default_custom_spell_name(custom_id: usize) -> String {

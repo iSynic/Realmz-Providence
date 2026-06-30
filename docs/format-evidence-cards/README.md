@@ -18,6 +18,7 @@ These cards are the working archaeology backlog for Providence editor coverage. 
 - `core-rules-record-runtime-anchors.md`: scenario-authored records vs shared/override rules-library records and editor dependency order.
 - `rules-spell-race-caste-runtime-anchors.md`: source-backed spell/race/caste layouts, shared-vs-scenario override behavior, packed spell IDs, and Rules tool parser debt.
 - `monster-record-runtime-anchors.md`: source-backed `Data MD` monster template layout, bestiary cache generation, battle placement, spawn/add-ally use, and death macro hooks.
+- `bestiary-source-alignment.md`: source-backed split between scenario `Data MD`/`Data DES`, generated `Data MENU`, and Monster Scrapbook template/reference material.
 - `battle-record-runtime-anchors.md`: source-backed `Data BD` 13x13 monster grid, before/after messages, combat distance, and battle macro behavior.
 - `map-record-runtime-anchors.md`: source-backed `Data MD2` map records, map notes, preview starts, picture-backed views, and embedded icon markers.
 - `item-treasure-shop-runtime-anchors.md`: shared item-library ID families, source-backed `Data TD` treasure records, source-backed `Data SD` shop records, and runtime `CS` shop-cache mutation.

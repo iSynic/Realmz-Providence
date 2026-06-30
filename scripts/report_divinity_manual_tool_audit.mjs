@@ -90,10 +90,10 @@ const AUDIT_BY_PAGE = {
     parityKeys: ["Battle Editor"],
     registryLabels: ["Battle Editor"],
     summary: "Manual Battle Editor covers battle records, before/after strings, distance, battle macro, monster placement, erase mode, and Force Friends.",
-    handling: "Providence authors Data BD battle shells with grid placement, signed friendly behavior, before/after string pickers, and battle action links.",
-    evidence: ["docs/generated/battle-record-evidence.json", "F:/Realmz/src/realmz_orig/combatsetup.c"],
-    gaps: ["Placement limit feedback, lower-right erase anchor behavior, distance range, and battle macro sign labels need manual-level audit.", "Battle grid missing-monster repair is present but needs fixture-backed examples."],
-    followUp: ["Audit Battle Editor UI against every manual field and note.", "Add validation/report rows for placement count and distance semantics if absent."]
+    handling: "Providence authors Data BD battle shells with grid placement, signed Force Friends behavior, before/after string pickers, distance guidance, and Battle Macro links that write the runnable end-of-round Extra Action Point form. The placement palette exposes scenario Data MD monsters only, with Monster 0 and the observed non-authorable 218+ placeholders excluded from painting; Monster Scrapbook templates must be copied into Scenario Monsters before use. Source-backed UI guardrails keep zero-valued Monster and Battle Macro records out of controls where `0` means empty/inactive.",
+    evidence: ["docs/generated/battle-record-evidence.json", "docs/combat-battle-editor-parity-audit.md", "docs/format-evidence-cards/bestiary-source-alignment.md", "F:/Realmz/src/realmz_orig/combatsetup.c", "F:/Realmz/src/realmz_orig/getup.c"],
+    gaps: ["Missing-monster repair is source-backed by matching Monster Scrapbook IDs, but still needs imported-scenario fixture examples.", "Imported positive Battle Macro values are preserved and warned, but no fixture currently proves a scenario depends on that compatibility state."],
+    followUp: ["Add fixture examples for battle-grid missing-monster repair.", "Keep Battle Macro field behavior aligned with the manual/source end-of-round execution model."]
   }),
   11: audit({
     status: "partial",
@@ -102,8 +102,8 @@ const AUDIT_BY_PAGE = {
     parityKeys: ["Monster Editor"],
     registryLabels: ["Monster Editor"],
     summary: "Manual Monster Editor covers Data MD monster templates, description text, combat stats, behavior, attacks, spells/items, icon, traitor, menu visibility, and monster macro.",
-    handling: "Providence edits scenario monsters, descriptions, icons, macro references, weapon/item/spell references, and many source-backed numeric fields.",
-    evidence: ["docs/generated/monster-record-evidence.json", "docs/generated/monster-description-set-evidence.json", "F:/Realmz/src/realmz_orig/structs.h"],
+    handling: "Providence edits scenario Data MD monsters, Data DES descriptions, icons, macro references, weapon/item/spell references, and many source-backed numeric fields. Imported Data MENU is treated as generated bestiary cache evidence and is omitted from export so Realmz rebuilds it from Data MD.",
+    evidence: ["docs/generated/monster-record-evidence.json", "docs/generated/monster-description-set-evidence.json", "docs/format-evidence-cards/bestiary-source-alignment.md", "F:/Realmz/src/realmz_orig/structs.h"],
     gaps: ["Several manual labels and meanings remain uncertain: Req Weapon versus Weapon Used, attack row semantics, type flags, summon options, and runtime-looking fields.", "Alternate monster sets are not authorable."],
     followUp: ["Run a Monster Editor field-by-field label audit with Divinity screenshots/fixtures.", "Keep alternate Data MD sets and ambiguous Req Weapon behavior fixture-gated."]
   }),
@@ -113,8 +113,8 @@ const AUDIT_BY_PAGE = {
     tools: ["Monster Scrapbook", "Monster Editor"],
     parityKeys: ["Monster Scrapbook"],
     registryLabels: ["Monster Scrapbook", "Monster Editor"],
-    summary: "Manual Monster Scrapbook provides built-in monster templates/reference material for copying or comparison.",
-    handling: "Providence browses bundled scrapbook records, previews stats/descriptions/icons, and can copy built-ins into scenario Data MD records.",
+    summary: "Manual Monster Scrapbook provides reusable editor/library monster templates for copying or comparison.",
+    handling: "Providence browses bundled scrapbook records, previews stats/descriptions/icons, and can copy built-ins into scenario Data MD records. The editable Scenario Monsters tab counts only scenario-owned Data MD records; Monster Scrapbook entries are templates, not runtime scenario monsters.",
     evidence: ["src/editor/panels/CombatPanel.tsx", "src-tauri/src/workspace.rs", "src/editor/browser/library.ts"],
     gaps: ["Copy behavior needs export fixture proof for Data MD and Data DES.", "Any Divinity-specific scrapbook filtering or copy target rules are not fully compared."],
     followUp: ["Add before/after fixtures for copying scrapbook monsters into a scenario.", "Compare scrapbook UI affordances against manual text and screenshots."]
