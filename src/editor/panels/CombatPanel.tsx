@@ -374,7 +374,11 @@ function BattleEditor({
           />
         </div>
         <div className="battle-header-actions">
-          <span>Record Tools</span>
+          <span>
+            <TutorialTip title="Record Tools" body="Create, duplicate, or clear the current Data BD battle record." side="right">
+              <span>RECORD TOOLS</span>
+            </TutorialTip>
+          </span>
           <div className="combat-editor-actions">
             <button type="button" className="btn btn-primary btn-xs" onClick={onNew}>New Battle {nextBattleId}</button>
             <button type="button" className="btn btn-secondary btn-xs" onClick={onDuplicate}>Duplicate</button>
@@ -646,7 +650,7 @@ function BattleBoard({
                   previewContext={previewContext}
                 />
                 <div className="placement-controls">
-                  <ToggleButton active={brush.forceFriend} label="Force Friends" help="Write a negative monster ID so Realmz flips the loaded monster to the friendly/alternate side." onClick={() => setBrush((current) => ({ ...current, forceFriend: !current.forceFriend }))} />
+                  <ToggleButton active={brush.forceFriend} label="Force Friends" help="Write a negative monster ID so Realmz flips the loaded monster to the friendly/alternate side." helpSide="left" onClick={() => setBrush((current) => ({ ...current, forceFriend: !current.forceFriend }))} />
                 </div>
               </>
             ) : (
@@ -664,7 +668,7 @@ function BattleBoard({
               onCommit={(monsterId) => updateSelected(monsterId === 0 ? 0 : (selectedCell?.value ?? 0) < 0 ? -Math.abs(monsterId) : Math.abs(monsterId))}
             />
             <div className="placement-controls">
-              <ToggleButton active={(selectedCell?.value ?? 0) < 0} label="Force Friends" help="Toggle the sign of this battle-grid value. The absolute value stays the same monster record; Realmz flips the loaded monster's traiter flag." disabled={!selectedCell?.monsterId} onClick={() => selectedCell && updateSelected(selectedCell.value < 0 ? selectedCell.monsterId : -selectedCell.monsterId)} />
+              <ToggleButton active={(selectedCell?.value ?? 0) < 0} label="Force Friends" help="Toggle the sign of this battle-grid value. The absolute value stays the same monster record; Realmz flips the loaded monster's traiter flag." helpSide="left" disabled={!selectedCell?.monsterId} onClick={() => selectedCell && updateSelected(selectedCell.value < 0 ? selectedCell.monsterId : -selectedCell.monsterId)} />
               <button type="button" className="btn btn-secondary btn-xs" onClick={() => updateSelected(0)}>Clear Cell</button>
             </div>
             {selectedMonster ? (
@@ -764,19 +768,19 @@ function MonsterPalette({
           const footprint = monsterBattleFootprintLabel(monster, iconEntries, project, lookups);
           const paintNote = "Scenario monster.";
           return (
-            <button
-              key={entry.key}
-              type="button"
-              className={selectedKey === entry.key ? "selected" : ""}
-              title={`${name}\n${facts}\n${footprint}\n${paintNote}`}
-              aria-label={`${name}. ${facts}. ${footprint}. ${paintNote}`}
-              onClick={() => onSelect(entry)}
-            >
-              <span className="monster-brush-art" style={{ width: `${artSize.width}px`, height: `${artSize.height}px` }}>
-                <MonsterIcon monster={monster} iconEntries={iconEntries} project={project} lookups={lookups} previewContext={previewContext} />
-              </span>
-              <span className="monster-brush-id">{entry.id}</span>
-            </button>
+            <TutorialTip key={entry.key} title={`${name} (${entry.id})`} body={`${facts}. ${footprint}. ${paintNote}`} side="right">
+              <button
+                type="button"
+                className={selectedKey === entry.key ? "selected" : ""}
+                aria-label={`${name}. ${facts}. ${footprint}. ${paintNote}`}
+                onClick={() => onSelect(entry)}
+              >
+                <span className="monster-brush-art" style={{ width: `${artSize.width}px`, height: `${artSize.height}px` }}>
+                  <MonsterIcon monster={monster} iconEntries={iconEntries} project={project} lookups={lookups} previewContext={previewContext} />
+                </span>
+                <span className="monster-brush-id">{entry.id}</span>
+              </button>
+            </TutorialTip>
           );
         })}
         {filtered.length === 0 && entries.length > 0 ? <small className="combat-list-overflow-note">No matching placeable monster.</small> : null}
@@ -1520,9 +1524,19 @@ function MonsterBattleDetail({
         <b>{monster.displayName || `Monster ${monster.id}`}</b>
         <small>Monster {monster.id} | icon {monster.iconId} | {monsterBattleFootprintLabel(monster, iconEntries, project, lookups)}</small>
         <dl className="monster-battle-stat-grid">
-          {monsterBattleStats(monster, forcedFriendly).map(([label, value]) => (
+          {monsterBattleStats(monster).map(([label, value]) => (
             <div key={label}>
-              <dt>{label}</dt>
+              <dt>
+                {forcedFriendly && label === "Alliance" ? (
+                  <TutorialTip
+                    title="Forced Friend"
+                    body={`This placed battle monster stores a negative monster ID. The source monster's Alliance value remains ${monster.traitor}; Realmz treats this placement as friendly during combat.`}
+                    side="left"
+                  >
+                    <span>Alliance</span>
+                  </TutorialTip>
+                ) : label}
+              </dt>
               <dd>{value}</dd>
             </div>
           ))}
@@ -1564,8 +1578,14 @@ const BattleMonsterOverlay = memo(function BattleMonsterOverlay({
   const leftCell = clamp(placement.col + 1 - colSpan, 0, 13 - colSpan);
   const topCell = clamp(placement.row + 1 - rowSpan, 0, 13 - rowSpan);
   const label = `${monsterPlacementLabel(placement.monster, placement.value)}; anchor cell ${placement.col},${placement.row}`;
+  const name = placement.monster?.displayName || `Monster ${placement.monsterId}`;
+  const facts = placement.monster ? monsterFacts(placement.monster) : `ID ${placement.monsterId}`;
+  const footprint = placement.monster ? monsterBattleFootprintLabel(placement.monster, iconEntries, project, lookups) : "Missing scenario monster record.";
+  const sideNote = placement.alternateSide
+    ? `Forced Friend: grid value ${placement.value}; source Alliance ${placement.monster?.traitor ?? "unknown"}; Realmz treats this placement as friendly.`
+    : `Normal side: grid value ${placement.value}.`;
+  const anchorNote = `Anchor cell ${placement.col}, ${placement.row}.`;
   const interactive = mode === "select" || mode === "erase";
-  const title = mode === "erase" ? `Erase ${label}` : mode === "select" ? `Select or drag ${label}` : label;
   const ariaLabel = mode === "erase" ? `Erase ${label}` : mode === "select" ? `Select or drag ${label}` : undefined;
   const handleActivate = () => {
     if (mode === "erase") {
@@ -1585,7 +1605,6 @@ const BattleMonsterOverlay = memo(function BattleMonsterOverlay({
       }}
       role={interactive ? "button" : undefined}
       tabIndex={interactive ? 0 : undefined}
-      title={title}
       aria-hidden={interactive ? undefined : "true"}
       aria-label={ariaLabel}
       draggable={mode === "select"}
@@ -1610,10 +1629,24 @@ const BattleMonsterOverlay = memo(function BattleMonsterOverlay({
         }
       } : undefined}
     >
-      {placement.monster ? (
-        <MonsterIcon monster={placement.monster} iconEntries={iconEntries} project={project} lookups={lookups} previewContext={previewContext} />
+      {interactive ? (
+        <TutorialTip title={`${name} (${placement.monsterId})`} body={`${facts}. ${footprint}. ${anchorNote} ${sideNote}`} side="right">
+          <span className="battle-monster-overlay-art">
+            {placement.monster ? (
+              <MonsterIcon monster={placement.monster} iconEntries={iconEntries} project={project} lookups={lookups} previewContext={previewContext} />
+            ) : (
+              <b>{placement.monsterId}</b>
+            )}
+          </span>
+        </TutorialTip>
       ) : (
-        <b>{placement.monsterId}</b>
+        <span className="battle-monster-overlay-art">
+          {placement.monster ? (
+            <MonsterIcon monster={placement.monster} iconEntries={iconEntries} project={project} lookups={lookups} previewContext={previewContext} />
+          ) : (
+            <b>{placement.monsterId}</b>
+          )}
+        </span>
       )}
     </span>
   );
@@ -1713,12 +1746,34 @@ function TextAreaField({ label, value, placeholder, onCommit }: { label: string;
   );
 }
 
-function ToggleButton({ active, label, icon, disabled, help, onClick }: { active: boolean; label: string; icon?: ReactNode; disabled?: boolean; help?: string; onClick: () => void }) {
-  return (
-    <button type="button" className={`combat-toggle${active ? " active" : ""}`} disabled={disabled} title={help} onClick={onClick}>
+function ToggleButton({
+  active,
+  label,
+  icon,
+  disabled,
+  help,
+  helpSide = "right",
+  onClick
+}: {
+  active: boolean;
+  label: string;
+  icon?: ReactNode;
+  disabled?: boolean;
+  help?: string;
+  helpSide?: "right" | "left" | "below" | "above";
+  onClick: () => void;
+}) {
+  const button = (
+    <button type="button" className={`combat-toggle${active ? " active" : ""}`} disabled={disabled} onClick={onClick}>
       {icon}
       <span>{label}</span>
     </button>
+  );
+  if (!help) return button;
+  return (
+    <TutorialTip title={label} body={help} side={helpSide}>
+      {button}
+    </TutorialTip>
   );
 }
 
@@ -2381,14 +2436,14 @@ function monsterFacts(monster: MonsterRecord) {
   return `ID ${monster.id}, HD ${monster.hitDice}, armor ${monster.armor}, agility ${monster.agility}, icon ${monster.iconId}`;
 }
 
-function monsterBattleStats(monster: MonsterRecord, forcedFriendly = false): Array<[string, string | number]> {
+function monsterBattleStats(monster: MonsterRecord): Array<[string, string | number]> {
   return [
     ["Stamina", monster.hitDice],
     ["Spell Points", monster.spellPoints],
     ["Armor Cat", monster.armor],
     ["Magic Resist", monster.magicResistance],
     ["Movement", monster.movementMax],
-    ["Alliance", forcedFriendly ? `${monster.traitor} -> friendly` : monster.traitor],
+    ["Alliance", monster.traitor],
     ["Experience", monster.exp],
     ["# Att", monster.attackCount]
   ];
