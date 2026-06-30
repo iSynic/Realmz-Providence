@@ -1,6 +1,7 @@
 import { DecodedResourcePreview, LibraryCatalog, LibraryEntity, LibraryRecord, LibrarySource, ProvidenceWorkspace } from "../types";
 import { BrowserDirectoryHandle, BrowserFileSelection, BrowserScenarioSource } from "./fsAccess";
 import { inspectResourcePreview } from "./resourcePreview";
+import { mergeBrowserMonsterLibraryEntries } from "../monsterLibrary";
 
 export const BROWSER_WORKSPACE_PATH = "browser://workspace";
 const LIBRARY_SCHEMA_VERSION = 4;
@@ -64,12 +65,12 @@ export async function loadBundledLibraryCatalog() {
     }
     catalogs.push(await buildLibraryCatalogFromFiles(`bundled://${folder}`, files, sourceKind, "browser-bundled://library", "source-backed"));
   }
-  return mergeCatalogs(catalogs);
+  return mergeBrowserMonsterLibraryEntries(mergeCatalogs(catalogs));
 }
 
 export async function importBrowserLibrary(source: BrowserScenarioSource, sourceKind: BrowserLibrarySourceKind) {
   const files = await readAllFiles(source);
-  return buildLibraryCatalogFromFiles(source.name, files, sourceKind, "browser-memory://library", "browser-fallback");
+  return mergeBrowserMonsterLibraryEntries(await buildLibraryCatalogFromFiles(source.name, files, sourceKind, "browser-memory://library", "browser-fallback"));
 }
 
 export async function loadBrowserBundledLibraryAssetPreview(asset: LibraryCatalog["assets"][number]) {

@@ -5,6 +5,7 @@ import { isBrowserPickerAbort, pickBrowserProjectSource, pickBrowserScenarioSour
 import { createBrowserWorkspace, importBrowserLibrary } from "../browser/library";
 import { benchmarkBrowserProject, createBrowserProject, ensureBrowserReferenceTileAttributes, importBrowserScenario, openBrowserProject, validateBrowserProject } from "../browser/project";
 import { LibraryDraftSpec, createLibraryDraft, updateLibraryDraft } from "../libraryDrafts";
+import { persistBrowserMonsterLibraryEntries } from "../monsterLibrary";
 import { BROWSER_PREVIEW_STATUS, EditorAction, EditorState } from "../store";
 import { BenchmarkReport, ExportReport, LibraryCatalog, Project, ScenarioTarget, ValidationReport } from "../types";
 import { commandError } from "../utils";
@@ -276,7 +277,10 @@ export function useProjectLifecycleActions({
     dispatch({ type: "setWorkspace", workspace });
     dispatch({ type: "setLibraryCatalog", catalog });
     dispatch({ type: "setStatus", status });
-    if (!desktopRuntime) return;
+    if (!desktopRuntime) {
+      persistBrowserMonsterLibraryEntries(catalog);
+      return;
+    }
     try {
       await invoke("save_workspace", { workspaceDir, workspace });
     } catch (error) {
@@ -399,6 +403,7 @@ export function useProjectLifecycleActions({
     importRealmzReferenceData: () => importLibraryCatalog("realmz-reference"),
     createDraftEntry,
     updateDraftEntry,
+    updateLibraryCatalog: commitLibraryCatalog,
     saveProject,
     exportProject,
     validateProject,

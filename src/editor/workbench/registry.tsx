@@ -116,12 +116,12 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     id: "combat",
     label: "Combat",
     shortLabel: "Combat",
-    description: "Battles, scenario monsters, and Monster Scrapbook.",
+    description: "Battles, scenario monsters, and Monster Library.",
     help: "Library material is usable reference data; project records remain editable where supported.",
     tools: [
       t({ id: "battles", label: "Battle Editor", iconLabel: "B", workbench: "project", description: "Battle records, monster links, reusable actions, and strings.", entityTypes: ["battle"], defaultInspector: "semantic" }),
-      t({ id: "monsters", label: "Monster Editor", iconLabel: "M", workbench: "both", description: "Scenario monster records and cicn/icon links.", entityTypes: ["monster"], defaultInspector: "semantic" }),
-      t({ id: "scrapbook", label: "Monster Scrapbook", iconLabel: "SB", workbench: "library", description: "Shared monster templates for copying into scenarios.", entityTypes: ["monster-scrapbook-entry"], defaultInspector: "resource" })
+      t({ id: "monsters", label: "Monster Editor", iconLabel: "M", workbench: "both", description: "Scenario monsters, editable Providence library entries, and cicn/icon links.", entityTypes: ["monster"], defaultInspector: "semantic" }),
+      t({ id: "scrapbook", label: "Monster Library", iconLabel: "ML", workbench: "library", description: "Protected built-in templates and editable Providence monster variants for copying into scenarios.", entityTypes: ["monster-scrapbook-entry"], defaultInspector: "resource" })
     ]
   },
   economy: {

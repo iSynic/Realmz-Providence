@@ -106,8 +106,60 @@
   grid-template-columns: minmax(250px, 310px) minmax(0, 1fr);
 }
 
+.combat-record-layout.monster-combined-layout {
+  grid-template-columns: minmax(540px, 660px) minmax(0, 1fr);
+  flex: 1 1 auto;
+  height: calc(100dvh - 182px);
+  max-height: calc(100dvh - 182px);
+  min-height: 0;
+  align-items: stretch;
+  overflow: hidden;
+}
+
 .combat-record-layout.scrapbook-layout {
   grid-template-columns: minmax(250px, 320px) minmax(0, 980px);
+}
+
+.monster-source-lists {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.monster-source-lists .combat-record-list {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  box-sizing: border-box;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.monster-combined-layout > .combat-editor {
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.combined-scrapbook-list {
+  order: 1;
+}
+
+.scenario-monster-list {
+  order: 2;
+}
+
+.scenario-monster-list.drop-active,
+.combined-scrapbook-list.drop-active {
+  border-color: #2b8fd8;
+  box-shadow: 0 0 0 1px rgba(43, 143, 216, 0.9), inset 0 0 0 1px rgba(94, 194, 255, 0.35);
 }
 
 .combat-record-list,
@@ -144,6 +196,72 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: start;
   gap: 10px;
+}
+
+.monster-list-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 7px;
+  justify-items: center;
+}
+
+.monster-list-header .combat-pane-title {
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #2c3f4f;
+  color: #eef7ff;
+  font-size: 12px;
+  font-weight: 950;
+  line-height: 1.1;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.monster-editor-title-header {
+  align-items: center;
+  padding-bottom: 0;
+}
+
+.monster-editor-title-header .combat-pane-title {
+  min-width: 0;
+  color: #eef7ff;
+  font-size: 13px;
+  font-weight: 950;
+  line-height: 1.1;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.monster-list-actions,
+.monster-editor-title-header .combat-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  justify-content: flex-end;
+}
+
+.monster-editor-title-header .btn-danger {
+  border-color: #8a2f2a;
+  background: #351310;
+  color: #ffd0c9;
+}
+
+.monster-editor-title-header .btn-danger:hover:not(:disabled) {
+  border-color: #c24b41;
+  background: #521d18;
+  color: #fff3f0;
+}
+
+.monster-list-actions .btn {
+  min-width: 86px;
+  white-space: normal;
+  line-height: 1.05;
+}
+
+.scenario-monster-list .monster-list-actions .btn {
+  min-width: 112px;
 }
 
 .combat-record-list strong,
@@ -224,6 +342,14 @@
   align-items: center;
 }
 
+.monster-combined-layout .combat-record-scroll button {
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  min-height: 58px;
+  max-height: 58px;
+}
+
 .scrapbook-layout .combat-record-scroll button {
   grid-template-columns: 34px minmax(0, 1fr);
   gap: 8px;
@@ -236,10 +362,35 @@
   gap: 3px;
 }
 
+.monster-combined-layout .combat-record-scroll button > span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  align-content: center;
+}
+
+.monster-combined-layout .combat-record-scroll strong,
+.monster-combined-layout .combat-record-scroll small {
+  display: block;
+  white-space: nowrap;
+}
+
+.monster-combined-layout .combat-record-scroll .monster-icon-preview {
+  align-self: center;
+}
+
 .scrapbook-layout .combat-record-scroll button > span {
   min-width: 0;
   display: grid;
   gap: 3px;
+}
+
+.combined-scrapbook-list .combat-record-scroll button {
+  cursor: grab;
+}
+
+.combined-scrapbook-list .combat-record-scroll button:active {
+  cursor: grabbing;
 }
 
 .combat-record-scroll button.selected {
@@ -269,6 +420,35 @@
 
 .monster-editor {
   max-width: 1180px;
+}
+
+.monster-combined-layout .monster-editor {
+  align-content: start;
+}
+
+.scenario-monster-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.scenario-monster-editor > .monster-section {
+  flex: 0 0 auto;
+}
+
+.scenario-monster-editor .monster-identity-section {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+}
+
+.scenario-monster-editor .monster-field-grid {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  align-items: start;
+}
+
+.scenario-monster-editor .monster-identity-section .combat-field,
+.scenario-monster-editor .monster-identity-section .combat-check-field {
+  min-height: 54px;
 }
 
 .scrapbook-editor {
@@ -857,10 +1037,70 @@
   height: 82px;
 }
 
+.scrapbook-description-summary {
+  align-items: stretch;
+}
+
+.scrapbook-description-card {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 6px;
+}
+
+.scrapbook-description-card > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.scrapbook-description-card strong {
+  color: #eef7ff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.scrapbook-description-card small {
+  color: #9fb8ca;
+  font-size: 10px;
+  text-align: right;
+}
+
+.scrapbook-stat-attack-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
 .scrapbook-stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(116px, 1fr));
   gap: 8px;
+}
+
+.scrapbook-stat-section .scrapbook-stat-grid {
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+.scrapbook-stat-section,
+.scrapbook-attack-section {
+  grid-template-rows: auto auto;
+  align-content: start;
+}
+
+.scrapbook-stat-section .scrapbook-fact {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+}
+
+.scrapbook-stat-section .scrapbook-fact strong {
+  font-size: 14px;
 }
 
 .scrapbook-fact,
@@ -893,6 +1133,66 @@
   gap: 8px;
 }
 
+.scrapbook-attack-table {
+  display: grid;
+  gap: 0;
+  min-width: 0;
+  border: 1px solid #22313f;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #101821;
+}
+
+.scrapbook-attack-table-head,
+.scrapbook-attack-table-row {
+  display: grid;
+  grid-template-columns: minmax(86px, 1.2fr) 74px 58px 70px;
+  align-items: center;
+}
+
+.scrapbook-attack-table-head {
+  background: #122231;
+}
+
+.scrapbook-attack-table-head span,
+.scrapbook-attack-table-row strong,
+.scrapbook-attack-table-row span {
+  min-width: 0;
+  padding: 7px 8px;
+  border-right: 1px solid #22313f;
+  border-bottom: 1px solid #22313f;
+}
+
+.scrapbook-attack-table-head span:last-child,
+.scrapbook-attack-table-row span:last-child {
+  border-right: 0;
+}
+
+.scrapbook-attack-table-row:last-child strong,
+.scrapbook-attack-table-row:last-child span {
+  border-bottom: 0;
+}
+
+.scrapbook-attack-table-head span {
+  color: #86c7ff;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.scrapbook-attack-table-row strong {
+  color: #f5fbff;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.scrapbook-attack-table-row span {
+  color: #d9efff;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: right;
+}
+
 .scrapbook-attack-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -915,19 +1215,61 @@
 
 .scrapbook-pill-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  align-items: start;
   gap: 8px;
 }
 
-.scrapbook-array div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
+.scrapbook-loot-section {
+  overflow: hidden;
 }
 
-.scrapbook-array b {
-  min-width: 28px;
-  min-height: 22px;
+.scrapbook-loot-section .scrapbook-array {
+  align-self: start;
+}
+
+.scrapbook-loot-section .scrapbook-reference-list {
+  max-height: min(360px, 34dvh);
+  overflow-y: auto;
+  padding-right: 3px;
+  scrollbar-gutter: stable;
+}
+
+.scrapbook-money-array > div {
+  align-self: start;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+
+.scrapbook-money-row {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) 38px;
+  align-items: center;
+  gap: 7px;
+  padding: 4px;
+  border: 1px solid #243746;
+  border-radius: 5px;
+  background: #0b131b;
+  min-width: 0;
+}
+
+.scrapbook-money-row .scrapbook-reference-icon {
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+}
+
+.scrapbook-money-row strong {
+  color: #d7e9f5;
+  font-size: 10px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.scrapbook-money-value {
+  width: 38px;
+  height: 28px;
   display: inline-grid;
   place-items: center;
   border: 1px solid #29445d;
@@ -935,6 +1277,75 @@
   background: #0b1219;
   color: #d9efff;
   font-size: 10px;
+}
+
+.scrapbook-money-array small,
+.scrapbook-empty-value {
+  color: #8ea9bb;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.scrapbook-reference-list {
+  display: grid;
+  gap: 6px;
+}
+
+.scrapbook-reference-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid #263846;
+  border-radius: 5px;
+  background: #0b131b;
+}
+
+.scrapbook-reference-icon {
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid #33526a;
+  border-radius: 4px;
+  background: #061018;
+  color: #d9efff;
+  overflow: hidden;
+}
+
+.scrapbook-reference-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.scrapbook-reference-icon b {
+  font-size: 10px;
+}
+
+.scrapbook-reference-row > span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.scrapbook-reference-row strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #f3f9ff;
+  font-size: 11px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scrapbook-reference-row small {
+  color: #9fb8ca;
+  font-size: 9px;
+  line-height: 1.25;
 }
 
 .scrapbook-description {
@@ -1557,11 +1968,22 @@
     grid-template-rows: auto auto minmax(180px, 260px);
   }
 
+  .monster-source-lists {
+    grid-template-columns: 1fr;
+  }
+
+  .monster-source-lists .combat-record-list {
+    position: static;
+    grid-template-rows: auto auto minmax(180px, 260px);
+  }
+
   .battle-editor > .combat-editor-header,
   .battle-header-fields,
   .monster-placement-card,
   .battle-selection-card,
-  .monster-identity-section {
+  .monster-identity-section,
+  .scrapbook-description-summary,
+  .scrapbook-stat-attack-row {
     grid-template-columns: 1fr;
   }
 

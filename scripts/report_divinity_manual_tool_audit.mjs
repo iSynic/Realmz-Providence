@@ -90,7 +90,7 @@ const AUDIT_BY_PAGE = {
     parityKeys: ["Battle Editor"],
     registryLabels: ["Battle Editor"],
     summary: "Manual Battle Editor covers battle records, before/after strings, distance, battle macro, monster placement, erase mode, and Force Friends.",
-    handling: "Providence authors Data BD battle shells with grid placement, signed Force Friends behavior, before/after string pickers, distance guidance, and Battle Macro links that write the runnable end-of-round Extra Action Point form. The placement palette exposes scenario Data MD monsters only, with Monster 0 and the observed non-authorable 218+ placeholders excluded from painting; Monster Scrapbook templates must be copied into Scenario Monsters before use. Source-backed UI guardrails keep zero-valued Monster and Battle Macro records out of controls where `0` means empty/inactive.",
+    handling: "Providence authors Data BD battle shells with grid placement, signed Force Friends behavior, before/after string pickers, distance guidance, and Battle Macro links that write the runnable end-of-round Extra Action Point form. The placement palette exposes scenario Data MD monsters plus Monster Library templates that are copied into Scenario Monsters before the grid is written; Monster 0 and the observed non-authorable 218+ placeholders are excluded from painting. Source-backed UI guardrails keep zero-valued Monster and Battle Macro records out of controls where `0` means empty/inactive.",
     evidence: ["docs/generated/battle-record-evidence.json", "docs/combat-battle-editor-parity-audit.md", "docs/format-evidence-cards/bestiary-source-alignment.md", "F:/Realmz/src/realmz_orig/combatsetup.c", "F:/Realmz/src/realmz_orig/getup.c"],
     gaps: ["Missing-monster repair is source-backed by matching Monster Scrapbook IDs, but still needs imported-scenario fixture examples.", "Imported positive Battle Macro values are preserved and warned, but no fixture currently proves a scenario depends on that compatibility state."],
     followUp: ["Add fixture examples for battle-grid missing-monster repair.", "Keep Battle Macro field behavior aligned with the manual/source end-of-round execution model."]
@@ -113,11 +113,11 @@ const AUDIT_BY_PAGE = {
     tools: ["Monster Scrapbook", "Monster Editor"],
     parityKeys: ["Monster Scrapbook"],
     registryLabels: ["Monster Scrapbook", "Monster Editor"],
-    summary: "Manual Monster Scrapbook provides reusable editor/library monster templates for copying or comparison.",
-    handling: "Providence browses bundled scrapbook records, previews stats/descriptions/icons, and can copy built-ins into scenario Data MD records. The editable Scenario Monsters tab counts only scenario-owned Data MD records; Monster Scrapbook entries are templates, not runtime scenario monsters.",
-    evidence: ["src/editor/panels/CombatPanel.tsx", "src-tauri/src/workspace.rs", "src/editor/browser/library.ts"],
-    gaps: ["Copy behavior needs export fixture proof for Data MD and Data DES.", "Any Divinity-specific scrapbook filtering or copy target rules are not fully compared."],
-    followUp: ["Add before/after fixtures for copying scrapbook monsters into a scenario.", "Compare scrapbook UI affordances against manual text and screenshots."]
+    summary: "Manual Monster Scrapbook provides reusable editor/library monster templates for copying, comparison, and basic scrapbook-side editing.",
+    handling: "Providence treats bundled Realmz/Divinity Monster Scrapbook entries as protected built-in templates, then adds an editable workspace-scoped Providence Monster Library for copied entries and variants. Any built-in or Providence library entry can be copied into scenario Data MD/Data DES; Scenario Monsters remains the runtime/export layer and counts only scenario-owned Data MD records.",
+    evidence: ["src/editor/panels/CombatPanel.tsx", "src/editor/monsterLibrary.ts", "src-tauri/src/workspace.rs", "src/editor/browser/library.ts"],
+    gaps: ["Copy behavior needs export fixture proof for Data MD and Data DES.", "Providence-native library entries intentionally exceed Divinity's 1000-entry scrapbook model and do not export as a Realmz Monster Scrap Book file.", "Any Divinity-specific scrapbook filtering or copy target rules are not fully compared."],
+    followUp: ["Add before/after fixtures for copying scrapbook monsters into a scenario.", "Add fixture-backed copy/export checks for library entry -> Data MD/Data DES.", "Keep Realmz-compatible Monster Scrap Book export deferred unless there is a separate product need."]
   }),
   13: audit({
     status: "partial",

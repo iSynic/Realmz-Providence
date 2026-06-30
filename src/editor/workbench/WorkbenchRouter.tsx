@@ -1,6 +1,6 @@
 import { ReactNode, Suspense } from "react";
 import { EditorState } from "../store";
-import { AssetSearchHint, BenchmarkReport, ExportReport, ManagedAssetKind, MapEntity, MapViewFlag, ProjectCommand, RandomLevel, ScenarioTarget, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
+import { AssetSearchHint, BenchmarkReport, ExportReport, LibraryCatalog, ManagedAssetKind, MapEntity, MapViewFlag, ProjectCommand, RandomLevel, ScenarioTarget, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
 import { MediaAssetImportOptions } from "../mediaAssets";
 import { LibraryDraftSpec } from "../libraryDrafts";
 import { Issue } from "../types";
@@ -66,6 +66,7 @@ function WorkbenchRouterContent({
   onCancelPaintStroke,
   onCreateDraft,
   onUpdateDraft,
+  onUpdateLibraryCatalog,
   onImportAssets,
   onReplaceAsset,
   onUpdateAsset,
@@ -165,6 +166,7 @@ function WorkbenchRouterContent({
         onSelectEditor={onSelectEditor}
         onOpenTool={onOpenTool}
         onApplyCommand={onApplyCommand}
+        onUpdateLibraryCatalog={onUpdateLibraryCatalog}
       />
     );
   }
@@ -356,6 +358,7 @@ type WorkbenchRouterProps = {
   onCancelPaintStroke: () => void;
   onCreateDraft: (spec: LibraryDraftSpec) => void;
   onUpdateDraft: (entityId: string, changes: { label?: string; notes?: string }) => void;
+  onUpdateLibraryCatalog: (catalog: LibraryCatalog, status: string) => void;
   onImportAssets: (files: File[], kind: ManagedAssetKind, options?: MediaAssetImportOptions) => void;
   onReplaceAsset: (assetId: string, file: File) => void;
   onUpdateAsset: (assetId: string, changes: { label?: string; resourceId?: number }) => void;

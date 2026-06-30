@@ -2057,7 +2057,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "What Combat Owns",
         paragraphs: [
-          "Combat is the Providence workbench for scenario battle records, scenario monster templates, built-in Monster Scrapbook reference monsters, and Monster Mash icon reference material.",
+          "Combat is the Providence workbench for scenario battle records, scenario monster templates, protected built-in Monster Scrapbook templates, editable Providence monster-library entries, and Monster Mash icon reference material.",
           "Realmz keeps battle setup and monster templates in separate source files. Battles place monsters by ID; monsters define the stats, icon, attacks, spells, loot, flags, and death behavior used when combat builds a runtime monster."
         ],
         cards: [
@@ -2073,8 +2073,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           },
           {
             title: "Library Tabs",
-            body: "Monster Scrapbook and Monster Mash are read-only reference material. They help authors inspect built-in monsters and icon art without implying those records ship with the scenario.",
-            facts: ["reference", "read-only"]
+            body: "Built-in Monster Scrapbook and Monster Mash material remains protected reference data. Providence monster-library entries are editable workspace templates that must be copied into scenario Data MD before runtime use.",
+            facts: ["reference", "workspace library"]
           }
         ]
       },
@@ -2129,15 +2129,15 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         }
       },
       {
-        title: "Monster Scrapbook and Monster Mash",
+        title: "Monster Library and Monster Mash",
         paragraphs: [
-          "Monster Scrapbook is a read-only library browser for built-in monster-like records. It is useful for stats, descriptions, spell/item clues, and comparing icon IDs against scenario monsters.",
+          "Monster Library combines protected built-in Monster Scrapbook records with editable Providence workspace entries and variants. Built-ins can be inspected or copied forward, but they cannot be overwritten.",
           "Monster Mash is a reference icon library. The Combat tab links to the Assets reference view because the art is resource material rather than an editable scenario monster record."
         ],
         points: [
-          "Use scrapbook entries as design reference or copy one into a scenario Data MD record before using it in battles or scripts.",
+          "Use built-ins as design reference, copy them into the Providence library for editing, or copy any library entry into a scenario Data MD record before using it in battles or scripts.",
           "Use Monster Mash and Reference Libraries to understand icon IDs, but import or decode scenario-owned cicn resources when a scenario needs custom art.",
-          "The Scenario Monsters tab counts only current scenario Data MD records. Scrapbook/Mash counts come from bundled library data and are not runtime scenario monster counts."
+          "Scenario Monsters are the runtime/export layer. Providence monster-library entries are not exported as scenario data unless copied into Scenario Monsters."
         ]
       },
       {
