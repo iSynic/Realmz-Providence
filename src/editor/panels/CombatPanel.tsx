@@ -80,6 +80,23 @@ const MONSTER_SET_OPTIONS: Array<{ id: MonsterSetId; label: string; file: string
   { id: 1, label: "Monster", file: "Data MD1" },
   { id: -1, label: "Mega", file: "Data MD-1" }
 ];
+const MONSTER_VARIANT_SCALE: Record<Exclude<MonsterSetId, 0>, {
+  hitDice: number;
+  staminaBonus: number;
+  agility: number;
+  movementMax: number;
+  armor: number;
+  magicResistance: number;
+  damageBonus: number;
+  saves: number;
+  spellPointsNumerator: number;
+  spellPointsDenominator: number;
+  expNumerator: number;
+  expDenominator: number;
+}> = {
+  1: { hitDice: 6, staminaBonus: 6, agility: 1, movementMax: 2, armor: 10, magicResistance: 10, damageBonus: 2, saves: 10, spellPointsNumerator: 133, spellPointsDenominator: 100, expNumerator: 5, expDenominator: 4 },
+  [-1]: { hitDice: 15, staminaBonus: 15, agility: 3, movementMax: 4, armor: 30, magicResistance: 25, damageBonus: 5, saves: 25, spellPointsNumerator: 2, spellPointsDenominator: 1, expNumerator: 25, expDenominator: 16 }
+};
 
 type BattleMonsterPaintEntry = { kind: "scenario"; key: string; id: number; monster: MonsterRecord };
 
@@ -916,7 +933,7 @@ function MonsterWorkbench({
       setSelectedLibraryId(filteredLibrary[0].id);
     }
   }, [filteredLibrary, selectedLibraryId]);
-  const nextMonsterId = nextAvailableId(scenarioIds.map((id) => ({ id })));
+  const nextMonsterId = nextAvailableMonsterRecordId(scenarioIds.map((id) => ({ id })));
   const selectedId = selectedFromEntity ?? scenarioEntries[0]?.id ?? null;
   const selectedEntry = selectedId !== null ? scenarioEntries.find((entry) => entry.id === selectedId) ?? null : null;
   const selected = selectedId !== null ? monsterForSet(lookups, activeSetId, selectedId) : null;
@@ -962,6 +979,20 @@ function MonsterWorkbench({
     setActiveSetId(0);
     setActivePreview("scenario");
     selectMonster(copyId);
+  };
+  const replaceScenarioMonsterFromLibraryEntry = (entry: LibraryCatalog["entities"][number], id: number) => {
+    if (!Number.isInteger(id) || id < 0) return;
+    onApplyCommand?.({
+      kind: "createMonsterFromTemplate",
+      label: `Replace Scenario Monster ${id} from ${scrapbookName(entry)}`,
+      id,
+      template: monsterRecordFromLibraryEntry(entry, id),
+      description: scrapbookDescription(entry),
+      setId: 0
+    });
+    setActiveSetId(0);
+    setActivePreview("scenario");
+    selectMonster(id);
   };
   const copyLibraryEntryToLibrary = (entry: LibraryCatalog["entities"][number], variant = false) => {
     if (!onUpdateLibraryCatalog) return;
@@ -1087,6 +1118,7 @@ function MonsterWorkbench({
     }
   };
   const activeSetIds = useMemo(() => new Set(monstersForSet(lookups, activeSetId).map((monster) => monster.id)), [activeSetId, lookups]);
+  const replaceScenarioId = selectedId !== null && scenarioEntries.some((entry) => entry.id === selectedId) ? selectedId : null;
   const selectedSetTools = selectedId !== null ? (
     <MonsterSetToolbar
       activeSetId={activeSetId}
@@ -1233,6 +1265,8 @@ function MonsterWorkbench({
           clearLabel={monsterLibraryOrigin(selectedLibrary).kind === "built-in-override" ? "Restore Scrapbook Default" : "Delete Library Entry"}
           onUpdate={(changes) => updateLibraryMonster(selectedLibrary, changes)}
           onUpdateDescription={(text) => updateLibraryMonster(selectedLibrary, {}, text)}
+          onReplaceScenario={replaceScenarioId !== null ? () => replaceScenarioMonsterFromLibraryEntry(selectedLibrary, replaceScenarioId) : undefined}
+          replaceLabel={replaceScenarioId !== null ? `Replace Scenario ${replaceScenarioId}` : undefined}
           onDuplicate={() => duplicateLibraryMonster(selectedLibrary)}
           onClear={() => deleteLibraryMonster(selectedLibrary)}
         />
@@ -1248,6 +1282,8 @@ function MonsterWorkbench({
           onCopy={() => copyLibraryEntryToScenario(selectedLibrary)}
           onCopyAll={() => copyLibraryEntryToScenario(selectedLibrary, "all")}
           onCopyGenerated={() => copyLibraryEntryToScenario(selectedLibrary, "generated")}
+          onReplaceScenario={replaceScenarioId !== null ? () => replaceScenarioMonsterFromLibraryEntry(selectedLibrary, replaceScenarioId) : undefined}
+          replaceId={replaceScenarioId}
           onCustomize={() => copyLibraryEntryToLibrary(selectedLibrary)}
           onCopyVariant={() => copyLibraryEntryToLibrary(selectedLibrary, true)}
         />
@@ -1337,6 +1373,7 @@ function MonsterSetToolbar({
   const [generatePreviewOpen, setGeneratePreviewOpen] = useState(false);
   const targetId = Number(draft);
   const canSwitch = Number.isInteger(targetId) && targetId >= 0 && targetId !== selectedId && availableIds.has(targetId);
+  const generateRows = normalRecord ? monsterGeneratePreviewRows(normalRecord) : [];
   useEffect(() => {
     setDraft("");
     setGeneratePreviewOpen(false);
@@ -1375,6 +1412,22 @@ function MonsterSetToolbar({
           <small>
             This replaces Monster and Mega variants for ID {selectedId}. Semantic fields stay copied from Normal; Providence scales strength fields and clamps values instead of emulating Divinity overflow.
           </small>
+          <div className="monster-generate-preview-table" role="table" aria-label="Generate variant field preview">
+            <div role="row" className="monster-generate-preview-row head">
+              <span role="columnheader">Field</span>
+              <span role="columnheader">Normal</span>
+              <span role="columnheader">Monster</span>
+              <span role="columnheader">Mega</span>
+            </div>
+            {generateRows.map((row) => (
+              <div role="row" className="monster-generate-preview-row" key={row.label}>
+                <span role="cell">{row.label}</span>
+                <span role="cell">{row.normal}</span>
+                <span role="cell" className={row.monsterChanged ? "changed" : ""}>{row.monster}</span>
+                <span role="cell" className={row.megaChanged ? "changed" : ""}>{row.mega}</span>
+              </div>
+            ))}
+          </div>
           <button type="button" className="btn btn-primary btn-xs" onClick={onGenerate}>Apply Generate Variants</button>
         </div>
       ) : null}
@@ -1429,6 +1482,8 @@ function ScrapbookMonsterPreview({
   onCopy,
   onCopyAll,
   onCopyGenerated,
+  onReplaceScenario,
+  replaceId,
   onCustomize,
   onCopyVariant
 }: {
@@ -1442,6 +1497,8 @@ function ScrapbookMonsterPreview({
   onCopy: () => void;
   onCopyAll?: () => void;
   onCopyGenerated?: () => void;
+  onReplaceScenario?: () => void;
+  replaceId?: number | null;
   onCustomize?: () => void;
   onCopyVariant?: () => void;
 }) {
@@ -1464,6 +1521,11 @@ function ScrapbookMonsterPreview({
           <button type="button" className="btn btn-primary btn-xs" title={`Copy to Scenario Monster ${copyId}`} onClick={onCopy}>
             Copy To Scenario
           </button>
+          {onReplaceScenario && replaceId != null ? (
+            <button type="button" className="btn btn-danger btn-xs" title={`Explicitly replace occupied Scenario Monster ${replaceId}`} onClick={onReplaceScenario}>
+              Replace Scenario {replaceId}
+            </button>
+          ) : null}
           {onCopyAll ? <button type="button" className="btn btn-primary btn-xs" title="Copy exact records to Normal, Monster, and Mega scenario sets" onClick={onCopyAll}>Copy To All Sets</button> : null}
           {onCopyGenerated ? <button type="button" className="btn btn-primary btn-xs" title="Copy Normal, then generate Monster and Mega variants with Providence scaling" onClick={onCopyGenerated}>Copy And Generate Variants</button> : null}
         </div>
@@ -1553,9 +1615,11 @@ function MonsterEditor({
   onUpdate,
   onUpdateDescription,
   onCopyToLibrary,
+  onReplaceScenario,
   onDuplicate,
   onClear,
   duplicateLabel = "Duplicate",
+  replaceLabel = "Replace Scenario",
   clearLabel = "Clear To Defaults"
 }: {
   project: Project;
@@ -1569,9 +1633,11 @@ function MonsterEditor({
   onUpdate: (changes: Partial<MonsterRecord>) => void;
   onUpdateDescription: (text: string) => void;
   onCopyToLibrary?: () => void;
+  onReplaceScenario?: () => void;
   onDuplicate: () => void;
   onClear?: () => void;
   duplicateLabel?: string;
+  replaceLabel?: string;
   clearLabel?: string;
 }) {
   return (
@@ -1581,6 +1647,7 @@ function MonsterEditor({
         {headerMeta ? <div className="monster-editor-header-meta">{headerMeta}</div> : null}
         <div className="combat-editor-actions">
           {onCopyToLibrary ? <button type="button" className="btn btn-secondary btn-xs" onClick={onCopyToLibrary}>Copy To Library</button> : null}
+          {onReplaceScenario ? <button type="button" className="btn btn-danger btn-xs" title="Explicitly replace the selected Normal scenario monster slot" onClick={onReplaceScenario}>{replaceLabel}</button> : null}
           <button type="button" className="btn btn-secondary btn-xs" onClick={onDuplicate}>{duplicateLabel}</button>
           {onClear ? <button type="button" className="btn btn-danger btn-xs" onClick={onClear}>{clearLabel}</button> : null}
         </div>
@@ -2546,8 +2613,8 @@ function NumberSelectField({
       <select value={String(value)} onChange={(event) => onCommit(Number(event.currentTarget.value))}>
         <option value="0">{emptyLabel}</option>
         {hasCurrentValue && <option value={String(value)}>Current value {value}</option>}
-        {options.map((option) => (
-          <option key={option.key} value={String(option.value)} title={option.detail}>
+        {options.map((option, index) => (
+          <option key={`${option.key}:${option.value}:${index}`} value={String(option.value)} title={option.detail}>
             {option.label}
           </option>
         ))}
@@ -3022,8 +3089,8 @@ function battleMonsterPaintEntrySearchText(entry: BattleMonsterPaintEntry) {
 function monsterCopyTargetId(project: Project, entry: LibraryCatalog["entities"][number]) {
   const scrapbookId = preferredMonsterCopyId(project, entry);
   const used = new Set(monsterScenarioIds(project));
-  if (scrapbookId >= 0 && !used.has(scrapbookId)) return scrapbookId;
-  return nextAvailableId([...used].map((id) => ({ id })));
+  if (scrapbookId > 0 && !used.has(scrapbookId)) return scrapbookId;
+  return nextAvailableMonsterRecordId([...used].map((id) => ({ id })));
 }
 
 function battleMonsterCopyTargetId(project: Project, entry: LibraryCatalog["entities"][number]) {
@@ -3035,8 +3102,16 @@ function battleMonsterCopyTargetId(project: Project, entry: LibraryCatalog["enti
 
 function preferredMonsterCopyId(project: Project, entry: LibraryCatalog["entities"][number]) {
   const preferred = typeof entry.summary.preferredScenarioMonsterId === "number" ? Math.trunc(entry.summary.preferredScenarioMonsterId) : scrapbookIndex(entry);
-  if (preferred >= 0) return preferred;
-  return nextAvailableId(monsterScenarioIds(project).map((id) => ({ id })));
+  if (preferred > 0) return preferred;
+  return nextAvailableMonsterRecordId(monsterScenarioIds(project).map((id) => ({ id })));
+}
+
+function nextAvailableMonsterRecordId(records: Array<{ id: number }>) {
+  const used = new Set(records.map((record) => record.id));
+  for (let id = 1; id < 10000; id += 1) {
+    if (!used.has(id)) return id;
+  }
+  return Math.max(1, used.size + 1);
 }
 
 function nextAvailablePlaceableMonsterId(records: Array<{ id: number }>) {
@@ -3383,6 +3458,59 @@ function monsterSetFile(setId: MonsterSetId) {
 
 function monsterFacts(monster: MonsterRecord) {
   return `ID ${monster.id}, HD ${monster.hitDice}, armor ${monster.armor}, agility ${monster.agility}, icon ${monster.iconId}`;
+}
+
+function monsterGeneratePreviewRows(source: MonsterRecord) {
+  const monster = previewGeneratedMonsterVariant(source, 1);
+  const mega = previewGeneratedMonsterVariant(source, -1);
+  const rows = [
+    ["Hit Dice", source.hitDice, monster.hitDice, mega.hitDice],
+    ["Bonus Stamina", source.staminaBonus, monster.staminaBonus, mega.staminaBonus],
+    ["Armor", source.armor, monster.armor, mega.armor],
+    ["Magic Resist", source.magicResistance, monster.magicResistance, mega.magicResistance],
+    ["Agility", source.agility, monster.agility, mega.agility],
+    ["Movement", source.movementMax, monster.movementMax, mega.movementMax],
+    ["Damage Bonus", source.damageBonus, monster.damageBonus, mega.damageBonus],
+    ["Spell Points", source.spellPoints, monster.spellPoints, mega.spellPoints],
+    ["Max Spell Points", source.maxSpellPoints, monster.maxSpellPoints, mega.maxSpellPoints],
+    ["Experience", source.exp, monster.exp, mega.exp],
+    ["Saves 1-6", formatPreviewArray(source.saves), formatPreviewArray(monster.saves), formatPreviewArray(mega.saves)]
+  ];
+  return rows.map(([label, normal, monsterValue, megaValue]) => ({
+    label: String(label),
+    normal: String(normal),
+    monster: String(monsterValue),
+    mega: String(megaValue),
+    monsterChanged: String(monsterValue) !== String(normal),
+    megaChanged: String(megaValue) !== String(normal)
+  }));
+}
+
+function previewGeneratedMonsterVariant(source: MonsterRecord, setId: Exclude<MonsterSetId, 0>) {
+  const scale = MONSTER_VARIANT_SCALE[setId];
+  const scaledSpellPoints = clampInteger(Math.floor(source.spellPoints * scale.spellPointsNumerator / scale.spellPointsDenominator), 0, 999);
+  return {
+    hitDice: clampInteger(source.hitDice + scale.hitDice, 0, 255),
+    staminaBonus: clampInteger(source.staminaBonus + scale.staminaBonus, -128, 127),
+    agility: clampInteger(source.agility + scale.agility, -128, 127),
+    movementMax: clampInteger(source.movementMax + scale.movementMax, -128, 127),
+    armor: clampInteger(source.armor + scale.armor, -128, 127),
+    magicResistance: clampInteger(source.magicResistance + scale.magicResistance, -128, 127),
+    damageBonus: clampInteger(source.damageBonus + scale.damageBonus, -128, 127),
+    saves: source.saves.map((value) => clampInteger(value + scale.saves, -128, 127)),
+    spellPoints: scaledSpellPoints,
+    maxSpellPoints: clampInteger(Math.max(source.maxSpellPoints, scaledSpellPoints), 0, 999),
+    exp: clampInteger(Math.floor(source.exp * scale.expNumerator / scale.expDenominator), 0, 32767)
+  };
+}
+
+function formatPreviewArray(values: number[]) {
+  return values.join(", ");
+}
+
+function clampInteger(value: number, min: number, max: number) {
+  if (!Number.isFinite(value)) return min;
+  return Math.min(max, Math.max(min, Math.trunc(value)));
 }
 
 function monsterBattleStats(monster: MonsterRecord): Array<[string, string | number]> {

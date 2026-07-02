@@ -1355,7 +1355,9 @@ fn decoded_fixed_text(record: &[u8], offset: usize, length: usize) -> Option<Str
         return None;
     }
     let end = (offset + length).min(record.len());
-    let text = decode_classic_text(&record[offset..end])
+    let bytes = &record[offset..end];
+    let nul = bytes.iter().position(|byte| *byte == 0).unwrap_or(bytes.len());
+    let text = decode_classic_text(&bytes[..nul])
         .trim_matches(char::from(0))
         .trim()
         .to_string();

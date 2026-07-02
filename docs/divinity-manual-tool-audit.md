@@ -366,7 +366,7 @@ Manual Battle Editor covers battle records, before/after strings, distance, batt
 
 Current Providence handling:
 
-Providence authors Data BD battle shells with grid placement, signed Force Friends behavior, before/after string pickers, distance guidance, and Battle Macro links that write the runnable end-of-round Extra Action Point form. Battle records still store only signed monster IDs, but the editor can preview the battle against Normal, Monster, or Mega scenario monster sets. The placement palette exposes scenario monsters plus Monster Library templates that are copied into Scenario Monsters before the grid is written; Monster 0 and the observed non-authorable 218+ placeholders are excluded from painting. Source-backed UI guardrails keep zero-valued Monster and Battle Macro records out of controls where `0` means empty/inactive.
+Providence authors Data BD battle shells with grid placement, signed Force Friends behavior, before/after string pickers, distance guidance, and Battle Macro links that write the runnable end-of-round Extra Action Point form. Battle records still store only signed monster IDs, but the editor can preview the battle against Normal, Monster, or Mega scenario monster sets. The placement palette exposes scenario monsters only; Monster Library templates must be copied into Scenario Monsters before they can be painted into a battle. Monster 0 and the observed non-authorable 218+ placeholders are excluded from painting. Source-backed UI guardrails keep zero-valued Monster and Battle Macro records out of controls where `0` means empty/inactive.
 
 Evidence:
 
