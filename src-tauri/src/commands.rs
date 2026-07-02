@@ -153,6 +153,41 @@ pub fn load_library_asset_preview(
 }
 
 #[tauri::command]
+pub fn load_library_resource_data(
+    workspace_dir: String,
+    source: String,
+    relative_path: String,
+) -> Result<String> {
+    let (file_path, fragment) = split_resource_fragment(&relative_path);
+    let Some((resource_type, resource_id)) = fragment else {
+        return Err(ProvidenceError::message(format!(
+            "{} is not a resource-fork member",
+            relative_path
+        )));
+    };
+    let folder = if source.contains(":divinity:") {
+        "divinity"
+    } else if source.contains(":realmz:") {
+        "realmz-reference"
+    } else {
+        "providence"
+    };
+    let relative = Path::new("raw").join(folder).join(file_path);
+    let bytes = load_library_asset_impl(&workspace_dir, relative)?;
+    let entries = parse_resource_fork_entries(&bytes);
+    if let Some(entry) = entries
+        .iter()
+        .find(|entry| entry.resource_type == resource_type && entry.id == resource_id)
+    {
+        return Ok(STANDARD.encode(&entry.data));
+    }
+    Err(ProvidenceError::message(format!(
+        "{} {} was not found in {}",
+        resource_type, resource_id, relative_path
+    )))
+}
+
+#[tauri::command]
 pub fn inspect_library_asset_preview(
     workspace_dir: String,
     source: String,

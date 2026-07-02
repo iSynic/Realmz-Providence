@@ -1,4 +1,6 @@
-import { DragEvent, memo, ReactNode, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, DragEvent, memo, MouseEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { loadBrowserBundledLibraryResourceData } from "../browser/library";
 import { Brush, Eraser, Eye, MousePointer2 } from "lucide-react";
 import { browserReferenceIconUrl } from "../browser/atlasPaths";
 import { TutorialTip } from "../components/TutorialTip";
@@ -7,7 +9,18 @@ import { useResolvedPreviewUrl, type PreviewRuntimeContext } from "../previewUrl
 import { spellAnimationFrameIds } from "../resourceIds";
 import { findLibraryResourceAsset, isActorOrCreatureIconId } from "../resourceResolver";
 import { scriptActionDefinitionFor, scriptActionSummary, scriptStepFlowRoutes } from "./scripts/scriptActionCatalog";
-import { LibraryAsset, LibraryCatalog, BattleRecord, IconEntry, MonsterRecord, MonsterSetId, Project, ProjectCommand, SelectedEntity } from "../types";
+import { LibraryAsset, LibraryCatalog, BattleRecord, IconEntry, MonsterIconOverride, MonsterRecord, MonsterSetId, Project, ProjectCommand, SelectedEntity } from "../types";
+import { encodeCicnResource, mirrorRgbaHorizontally } from "../cicnEncoder";
+import {
+  IconLibraryCanvas,
+  IconLibraryFacingMode,
+  createIconLibraryEntry,
+  deleteIconLibraryEntry,
+  iconLibraryMonsterPairMetadata,
+  iconLibraryEntryKind,
+  isProvidenceIconLibraryEntry,
+  iconLibraryAssetResourceBase64
+} from "../iconLibrary";
 import {
   createMonsterLibraryEntry,
   deleteMonsterLibraryEntry,
@@ -21,7 +34,7 @@ import {
 import { ScrollArea } from "../ui";
 import { selectEntityFromId } from "../utils";
 
-export type CombatWorkbenchTab = "battles" | "monsters";
+export type CombatWorkbenchTab = "battles" | "monsters" | "iconSet";
 
 type BattleGridCellView = {
   index: number;
@@ -64,6 +77,19 @@ type CombatIconAsset = {
   resourceId?: number | null;
 };
 
+type MonsterIconPairOption = {
+  key: string;
+  baseId: number;
+  asset: LibraryAsset | null;
+  pairedAsset: LibraryAsset | null;
+  referenced?: boolean;
+  sourceKind?: "monster-mash" | "providence-library";
+  sourceLabel?: string;
+  override?: MonsterIconOverride | null;
+  facingMode?: IconLibraryFacingMode;
+  canvas?: IconLibraryCanvas | null;
+};
+
 type CombatLookups = {
   monsters: MonsterRecord[];
   monsterById: Map<number, MonsterRecord>;
@@ -72,6 +98,7 @@ type CombatLookups = {
   iconAssetsByAbsId: Map<number, CombatIconAsset>;
   realmzActorIconAssetsByAbsId: Map<number, LibraryAsset>;
   monsterMashAssetsByAbsId: Map<number, LibraryAsset>;
+  monsterIconOverridesByTarget: Map<number, MonsterIconOverride>;
   tabCounts: Record<CombatWorkbenchTab, number>;
 };
 
@@ -80,6 +107,13 @@ const MONSTER_SET_OPTIONS: Array<{ id: MonsterSetId; label: string; file: string
   { id: 1, label: "Monster", file: "Data MD1" },
   { id: -1, label: "Mega", file: "Data MD-1" }
 ];
+const MONSTER_ICON_CANVAS_PRESETS = [
+  { key: "32x32", label: "32 x 32", width: 32, height: 32 },
+  { key: "32x64", label: "32 x 64", width: 32, height: 64 },
+  { key: "64x32", label: "64 x 32", width: 64, height: 32 },
+  { key: "64x64", label: "64 x 64", width: 64, height: 64 }
+] as const;
+const IMPORTED_MONSTER_ICON_BASE_START = 601;
 const MONSTER_VARIANT_SCALE: Record<Exclude<MonsterSetId, 0>, {
   hitDice: number;
   staminaBonus: number;
@@ -116,12 +150,14 @@ type CombatPanelProps = {
 
 const TAB_LABELS: Record<CombatWorkbenchTab, string> = {
   battles: "Battles",
-  monsters: "Monsters"
+  monsters: "Monsters",
+  iconSet: "Icon Set"
 };
 
 const TAB_HELP: Record<CombatWorkbenchTab, string> = {
   battles: "Author Data BD battle records: a 13 x 13 signed monster grid, distance, before/after strings, and battle macro target.",
-  monsters: "Manage protected built-in templates, editable Providence library monsters, and scenario Data MD monster records."
+  monsters: "Manage protected built-in templates, editable Providence library monsters, and scenario Data MD monster records.",
+  iconSet: "Build scenario-local Monster Mash icon overrides without changing monster records."
 };
 
 const BATTLE_GRID_HELP = "Each grid cell stores a signed monster ID. Zero is empty, abs(value) points at a Data MD monster, and a negative value forces the friendly/alternate side after Realmz loads it. Large, tall, and wide monsters use their lower-right grid square as the anchor cell for placement; erase mode clears the top visible monster on the clicked tile.";
@@ -131,6 +167,8 @@ const MONSTER_ICON_FIELD_HELP = "Monster icons are cicn resource IDs. Providence
 const MONSTER_DEATH_ACTION_HELP = "Defeat Action is the monster death macro/door target. Realmz can run this when the monster dies, so treat it as linked behavior rather than a decorative number.";
 const BATTLE_MACRO_HELP = "Battle Macro is an Extra Action Point reference that Realmz checks at the end of each combat round. Providence writes selected macros in the runnable form; positive imports are preserved but warned until edited.";
 const SCRAPBOOK_HELP = "Monster Library combines protected built-in Realmz scrapbook templates with editable Providence entries. Copy entries into Scenario Monsters before using them in runtime battles.";
+const MONSTER_ICON_PAIR_OFFSET = 308;
+const MONSTER_ICON_SET_LIMIT = 127;
 const MONSTER_MONEY_REWARDS = [
   { label: "Gold", iconId: 2002 },
   { label: "Gems", iconId: 2014 },
@@ -253,6 +291,17 @@ export function CombatPanel({
           onUpdateLibraryCatalog={onUpdateLibraryCatalog}
         />
       )}
+      {tab === "iconSet" && (
+        <MonsterIconSetWorkbench
+          project={project}
+          catalog={catalog}
+          iconEntries={iconEntries}
+          lookups={lookups}
+          previewContext={previewContext}
+          onApplyCommand={onApplyCommand}
+          onUpdateLibraryCatalog={onUpdateLibraryCatalog}
+        />
+      )}
     </section>
   );
 }
@@ -322,8 +371,8 @@ function BattleWorkbench({
       ) : (
         <article className="combat-editor battle-editor empty">
           <h2>No battle records</h2>
+          <button type="button" className="btn btn-primary btn-sm battle-empty-action" onClick={createBattle}>New Battle {nextBattleId}</button>
           <p>Create a battle record to begin placing monsters.</p>
-          <button type="button" className="btn btn-primary btn-sm" onClick={createBattle}>New Battle {nextBattleId}</button>
         </article>
       )}
     </div>
@@ -455,6 +504,453 @@ function BattleMonsterSetPreviewField({ value, onCommit }: { value: MonsterSetId
         ))}
       </div>
     </div>
+  );
+}
+
+function MonsterIconSetWorkbench({
+  project,
+  catalog,
+  iconEntries,
+  lookups,
+  previewContext,
+  onApplyCommand,
+  onUpdateLibraryCatalog
+}: {
+  project: Project;
+  catalog: LibraryCatalog | null;
+  iconEntries: Record<number, IconEntry>;
+  lookups: CombatLookups;
+  previewContext: PreviewRuntimeContext;
+  onApplyCommand?: (command: ProjectCommand) => void;
+  onUpdateLibraryCatalog?: (catalog: LibraryCatalog, status: string) => void;
+}) {
+  const targets = useMemo(() => monsterIconTargetPairs(project, lookups), [lookups, project]);
+  const sources = useMemo(() => monsterIconSourcePairs(catalog, lookups), [catalog, lookups]);
+  const [targetQuery, setTargetQuery] = useState("");
+  const [sourceQuery, setSourceQuery] = useState("");
+  const [selectedTargetId, setSelectedTargetId] = useState(() => targets[0]?.baseId ?? 0);
+  const [selectedSourceKey, setSelectedSourceKey] = useState(() => sources[0]?.key ?? "");
+  const [activeIconSetPane, setActiveIconSetPane] = useState<"target" | "source">("source");
+  const [status, setStatus] = useState("");
+  const [iconImportOpen, setIconImportOpen] = useState(false);
+  const [iconImportCanvasKey, setIconImportCanvasKey] = useState<(typeof MONSTER_ICON_CANVAS_PRESETS)[number]["key"]>("32x32");
+  const [iconImportAdvanced, setIconImportAdvanced] = useState(false);
+  const [iconImportBaseFile, setIconImportBaseFile] = useState<File | null>(null);
+  const [iconImportPairedFile, setIconImportPairedFile] = useState<File | null>(null);
+  const baseImportInputRef = useRef<HTMLInputElement | null>(null);
+  const pairedImportInputRef = useRef<HTMLInputElement | null>(null);
+  useEffect(() => {
+    if (selectedTargetId <= 0 && targets[0]) setSelectedTargetId(targets[0].baseId);
+  }, [selectedTargetId, targets]);
+  useEffect(() => {
+    if (!sources.some((source) => source.key === selectedSourceKey)) setSelectedSourceKey(sources[0]?.key ?? "");
+  }, [selectedSourceKey, sources]);
+  const filteredTargets = useMemo(
+    () => filterRecords(targets, targetQuery, (target) => `${target.baseId} ${target.asset?.label ?? ""} ${target.override?.sourceLabel ?? ""}`),
+    [targetQuery, targets]
+  );
+  const filteredSources = useMemo(
+    () => filterRecords(sources, sourceQuery, (source) => `${source.baseId} ${source.sourceLabel ?? ""} ${source.asset?.label ?? ""}`),
+    [sourceQuery, sources]
+  );
+  const selectedTarget = targets.find((target) => target.baseId === selectedTargetId) ?? null;
+  const selectedSource = sources.find((source) => source.key === selectedSourceKey) ?? sources[0] ?? null;
+  const selectedTargetBaseId = selectedTarget?.baseId ?? selectedTargetId;
+  const selectedTargetOverrideSource = selectedTarget?.override
+    ? sources.find((source) => source.baseId === selectedTarget.override?.sourceBaseIconId && source.sourceKind === selectedTarget.override?.sourceKind)
+      ?? sources.find((source) => source.baseId === selectedTarget.override?.sourceBaseIconId)
+      ?? null
+    : null;
+  const selectSourceByBaseId = (sourceBaseIconId: number) => {
+    setSelectedSourceKey(sources.find((source) => source.baseId === sourceBaseIconId)?.key ?? sources[0]?.key ?? "");
+    setActiveIconSetPane("source");
+  };
+  const selectTargetByBaseId = (targetBaseIconId: number) => {
+    setSelectedTargetId(Math.max(0, Math.trunc(Math.abs(targetBaseIconId))));
+    setActiveIconSetPane("target");
+  };
+  const applyOverride = async (targetBaseIconId = selectedTargetBaseId, sourceKey = selectedSource?.key ?? "") => {
+    const source = sources.find((candidate) => candidate.key === sourceKey);
+    const sourceBaseIconId = source?.baseId ?? 0;
+    if (!source?.asset || !source.pairedAsset || !targetBaseIconId) {
+      setStatus("Choose a target icon and a complete source icon pair before applying an override.");
+      return;
+    }
+    try {
+      const [sourceBaseResourceBase64, sourcePairedResourceBase64] = await Promise.all([
+        loadLibraryResourceBase64(source.asset, previewContext, catalog),
+        loadLibraryResourceBase64(source.pairedAsset, previewContext, catalog)
+      ]);
+      if (!sourceBaseResourceBase64 || !sourcePairedResourceBase64) {
+        setStatus(`${source.sourceLabel ?? `Source ${sourceBaseIconId}`} is missing one facing resource.`);
+        return;
+      }
+      onApplyCommand?.({
+        kind: "upsertMonsterIconOverride",
+        label: `Override monster icon ${targetBaseIconId} from ${source.sourceLabel ?? `Source ${sourceBaseIconId}`}`,
+        override: {
+          targetBaseIconId,
+          sourceBaseIconId,
+          sourceKind: source.sourceKind ?? "monster-mash",
+          sourceLabel: source.asset.label || source.sourceLabel,
+          sourceBaseResourceBase64,
+          sourcePairedResourceBase64
+        }
+      });
+      setSelectedTargetId(targetBaseIconId);
+      setSelectedSourceKey(source.key);
+      setStatus(`Monster icon ${targetBaseIconId} will export from ${source.sourceLabel ?? `Source ${sourceBaseIconId}`}.`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Unable to load source icon resource data.");
+    }
+  };
+  const restoreDefault = (targetBaseIconId = selectedTargetBaseId) => {
+    if (!targetBaseIconId) return;
+    onApplyCommand?.({ kind: "deleteMonsterIconOverride", label: `Restore default monster icon ${targetBaseIconId}`, targetBaseIconId });
+    setStatus(`Monster icon ${targetBaseIconId} will use the Family Jewels default.`);
+  };
+  const deleteScenarioIconSet = (targetBaseIconId = selectedTargetBaseId) => {
+    if (!targetBaseIconId || !selectedTarget?.override) return;
+    onApplyCommand?.({ kind: "deleteMonsterIconOverride", label: `Delete scenario monster icon set ${targetBaseIconId}`, targetBaseIconId });
+    setStatus(`Deleted scenario monster icon set ${targetBaseIconId}.`);
+  };
+  const allowTargetDrop = (event: DragEvent<HTMLElement>) => {
+    if (!event.dataTransfer.types.includes("application/x-realmz-monster-icon-source")) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  };
+  const copyTargetToIconLibrary = async () => {
+    if (!selectedTarget || !onUpdateLibraryCatalog) return;
+    try {
+      const [base64, pairedBase64] = selectedTarget.override
+        ? [selectedTarget.override.sourceBaseResourceBase64, selectedTarget.override.sourcePairedResourceBase64]
+        : selectedTarget.asset && selectedTarget.pairedAsset
+          ? await Promise.all([
+              loadLibraryResourceBase64(selectedTarget.asset, previewContext, catalog),
+              loadLibraryResourceBase64(selectedTarget.pairedAsset, previewContext, catalog)
+            ])
+          : [null, null];
+      if (!base64 || !pairedBase64) {
+        setStatus(`Scenario icon ${selectedTarget.baseId} is missing one facing resource.`);
+        return;
+      }
+      const label = selectedTarget.override
+        ? `Scenario Icon ${selectedTarget.baseId} Override`
+        : selectedTarget.asset?.label || `Scenario Icon ${selectedTarget.baseId}`;
+      const targetMetadata = selectedTargetOverrideSource
+        ? { facingMode: selectedTargetOverrideSource.facingMode, canvas: selectedTargetOverrideSource.canvas }
+        : { facingMode: "custom" as IconLibraryFacingMode, canvas: null };
+      const { catalog: nextCatalog, entity } = createIconLibraryEntry(catalog, catalog?.managedPath ?? "browser://workspace/library", {
+        kind: "monster-pair",
+        label,
+        origin: {
+          kind: "external-resource",
+          sourceId: `scenario-monster-icon:${selectedTarget.baseId}`,
+          sourceLabel: label
+        },
+        ...targetMetadata,
+        resources: [
+          {
+            role: "base",
+            resourceType: "cicn",
+            resourceId: selectedTarget.baseId,
+            label: selectedTarget.asset?.label || `${label} left`,
+            resourceBase64: base64,
+            previewPath: selectedTarget.asset?.previewPath ?? null,
+            bytes: selectedTarget.asset?.bytes,
+            sha256: selectedTarget.asset?.sha256
+          },
+          {
+            role: "paired",
+            resourceType: "cicn",
+            resourceId: selectedTarget.baseId + MONSTER_ICON_PAIR_OFFSET,
+            label: selectedTarget.pairedAsset?.label || `${label} right`,
+            resourceBase64: pairedBase64,
+            previewPath: selectedTarget.pairedAsset?.previewPath ?? null,
+            bytes: selectedTarget.pairedAsset?.bytes,
+            sha256: selectedTarget.pairedAsset?.sha256
+          }
+        ]
+      });
+      onUpdateLibraryCatalog(nextCatalog, entity ? `Added ${entity.label} to Icon Library` : "Updated Icon Library");
+      setStatus(entity ? `Added ${entity.label} to the Providence Icon Library.` : "Updated the Providence Icon Library.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Unable to copy scenario icons into the Providence Icon Library.");
+    }
+  };
+  const deleteSelectedIconVariant = () => {
+    if (!catalog || !selectedSource || selectedSource.sourceKind !== "providence-library" || !onUpdateLibraryCatalog) return;
+    const nextCatalog = deleteIconLibraryEntry(catalog, selectedSource.key);
+    const nextSourceKey = sources.find((source) => source.key !== selectedSource.key)?.key ?? "";
+    onUpdateLibraryCatalog(nextCatalog, `Deleted ${selectedSource.sourceLabel ?? "Icon Variant"}`);
+    setSelectedSourceKey(nextSourceKey);
+    setActiveIconSetPane("source");
+    setStatus(`Deleted ${selectedSource.sourceLabel ?? "Icon Variant"} from the Providence Icon Library.`);
+  };
+  const createImportedIconSet = async () => {
+    if (!onUpdateLibraryCatalog) return;
+    if (!iconImportBaseFile) {
+      setStatus("Choose a source image before importing a monster icon set.");
+      return;
+    }
+    try {
+      const canvas = monsterIconCanvasPreset(iconImportCanvasKey);
+      const baseImage = await loadImageFileToRgba(iconImportBaseFile, canvas.width, canvas.height);
+      const pairedImage = iconImportAdvanced && iconImportPairedFile
+        ? await loadImageFileToRgba(iconImportPairedFile, canvas.width, canvas.height)
+        : { width: canvas.width, height: canvas.height, rgba: mirrorRgbaHorizontally(baseImage) };
+      const baseBytes = encodeCicnResource(baseImage);
+      const pairedBytes = encodeCicnResource(pairedImage);
+      const baseId = nextImportedMonsterIconBaseId(sources);
+      const label = `${stripFileExtension(iconImportBaseFile.name) || "Imported Monster"} Icon Set`;
+      const facingMode: IconLibraryFacingMode = iconImportAdvanced && iconImportPairedFile ? "custom" : "mirrored";
+      const { catalog: nextCatalog, entity } = createIconLibraryEntry(catalog, catalog?.managedPath ?? "browser://workspace/library", {
+        kind: "monster-pair",
+        label,
+        origin: { kind: "external-resource", sourceLabel: iconImportBaseFile.name },
+        facingMode,
+        canvas,
+        resources: [
+          {
+            role: "base",
+            resourceType: "cicn",
+            resourceId: baseId,
+            label: `${label} base`,
+            resourceBase64: bytesToBase64(baseBytes),
+            previewPath: rgbaToDataUrl(baseImage),
+            bytes: baseBytes.length,
+            width: canvas.width,
+            height: canvas.height
+          },
+          {
+            role: "paired",
+            resourceType: "cicn",
+            resourceId: baseId + MONSTER_ICON_PAIR_OFFSET,
+            label: `${label} paired`,
+            resourceBase64: bytesToBase64(pairedBytes),
+            previewPath: rgbaToDataUrl(pairedImage),
+            bytes: pairedBytes.length,
+            width: canvas.width,
+            height: canvas.height
+          }
+        ]
+      });
+      onUpdateLibraryCatalog(nextCatalog, entity ? `Imported ${entity.label}` : "Updated Icon Library");
+      if (entity) {
+        setSelectedSourceKey(entity.id);
+        setActiveIconSetPane("source");
+      }
+      setIconImportBaseFile(null);
+      setIconImportPairedFile(null);
+      if (baseImportInputRef.current) baseImportInputRef.current.value = "";
+      if (pairedImportInputRef.current) pairedImportInputRef.current.value = "";
+      setStatus(entity ? `Imported ${entity.label} as ${facingMode === "mirrored" ? "mirrored" : "custom"} facing art.` : "Updated the Providence Icon Library.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Unable to import monster icon set.");
+    }
+  };
+  const hasSelectedSourcePair = Boolean(selectedSource?.asset && selectedSource.pairedAsset);
+  const hasSelectedTargetPair = Boolean(selectedTarget?.override || (selectedTarget?.asset && selectedTarget.pairedAsset));
+  const contextCopiesToScenario = activeIconSetPane === "source";
+  const contextActionLabel = contextCopiesToScenario ? "Copy To Scenario Icons" : "Copy To Icon Library";
+  const contextActionDisabled =
+    contextCopiesToScenario
+      ? !hasSelectedSourcePair
+      : !hasSelectedTargetPair || !onUpdateLibraryCatalog;
+  const handleContextAction = () => {
+    if (contextCopiesToScenario) {
+      const targetBaseId = selectedTargetBaseId > 0 ? selectedTargetBaseId : selectedSource?.baseId ?? 0;
+      void applyOverride(targetBaseId, selectedSource?.key ?? "");
+      return;
+    }
+    void copyTargetToIconLibrary();
+  };
+  return (
+    <article className="combat-editor icon-set-workbench">
+      <header className="combat-editor-header icon-set-header">
+        <div>
+          <h2>Build Icon Set</h2>
+          <p>Copy paired Monster Mash or Providence Icon Library cicn resources into the scenario as overrides or supplements for standard monster icon IDs.</p>
+        </div>
+        <span
+          className={(project.monsterIconOverrides ?? []).length >= MONSTER_ICON_SET_LIMIT ? "icon-set-limit warning" : "icon-set-limit"}
+          title="The Divinity manual describes Realmz as capable of holding around 127 monster icon sets per scenario. Modern Realmz source resolves cicn resources dynamically, so Providence treats this as a compatibility warning rather than a hard runtime cap."
+        >
+          {(project.monsterIconOverrides ?? []).length} / ~{MONSTER_ICON_SET_LIMIT} overrides
+        </span>
+      </header>
+      <section className="icon-set-controls">
+        <NumberField label="Target Icon" value={selectedTargetBaseId} onCommit={selectTargetByBaseId} />
+        <NumberField label="Source Icon" value={selectedSource?.baseId ?? 0} onCommit={selectSourceByBaseId} />
+        <div className="icon-set-action-group">
+          {activeIconSetPane === "source" ? (
+            <>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm icon-set-context-action"
+                disabled={contextActionDisabled}
+                onClick={handleContextAction}
+              >
+                {contextActionLabel}
+              </button>
+              {selectedSource?.sourceKind === "providence-library" ? (
+                <button type="button" className="btn btn-danger btn-sm" disabled={!catalog || !onUpdateLibraryCatalog} onClick={deleteSelectedIconVariant}>
+                  Delete Icon Variant
+                </button>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm icon-set-context-action"
+                disabled={contextActionDisabled}
+                onClick={handleContextAction}
+              >
+                {contextActionLabel}
+              </button>
+              <button type="button" className="btn btn-warning btn-sm" disabled={!selectedTarget?.override} onClick={() => restoreDefault()}>
+                Restore Default
+              </button>
+              <button type="button" className="btn btn-danger btn-sm" disabled={!selectedTarget?.override} onClick={() => deleteScenarioIconSet()}>
+                Delete Icon Set
+              </button>
+            </>
+          )}
+        </div>
+        <button
+          type="button"
+          className="btn btn-secondary btn-sm icon-set-import-toggle"
+          disabled={!onUpdateLibraryCatalog}
+          onClick={() => setIconImportOpen((open) => !open)}
+        >
+          Import Image Set
+        </button>
+        {status ? <small>{status}</small> : null}
+      </section>
+      {iconImportOpen ? (
+        <section className="icon-set-import-panel">
+          <header>
+            <strong>Import Monster Icon Set</strong>
+            <small>One image creates a mirrored pair; advanced import can supply separate facing art.</small>
+          </header>
+          <label>
+            <span>Canvas</span>
+            <select value={iconImportCanvasKey} onChange={(event) => setIconImportCanvasKey(event.currentTarget.value as (typeof MONSTER_ICON_CANVAS_PRESETS)[number]["key"])}>
+              {MONSTER_ICON_CANVAS_PRESETS.map((preset) => (
+                <option key={preset.key} value={preset.key}>{preset.label}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Source Image</span>
+            <input
+              ref={baseImportInputRef}
+              type="file"
+              accept="image/png,image/gif,image/jpeg,image/webp"
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setIconImportBaseFile(event.currentTarget.files?.[0] ?? null)}
+            />
+          </label>
+          <label className="checkbox-row">
+            <span>Custom paired image</span>
+            <input type="checkbox" checked={iconImportAdvanced} onChange={(event) => setIconImportAdvanced(event.currentTarget.checked)} />
+          </label>
+          {iconImportAdvanced ? (
+            <label>
+              <span>Paired Image</span>
+              <input
+                ref={pairedImportInputRef}
+                type="file"
+                accept="image/png,image/gif,image/jpeg,image/webp"
+                onChange={(event: ChangeEvent<HTMLInputElement>) => setIconImportPairedFile(event.currentTarget.files?.[0] ?? null)}
+              />
+            </label>
+          ) : null}
+          <button type="button" className="btn btn-primary btn-sm" disabled={!onUpdateLibraryCatalog || !iconImportBaseFile} onClick={() => void createImportedIconSet()}>
+            Create Library Icon Set
+          </button>
+        </section>
+      ) : null}
+      <div className="icon-set-layout">
+        <section className="icon-set-pane">
+          <header>
+            <strong className="combat-pane-title">Scenario Monster Icon Sets</strong>
+            <small>{targets.length} target pairs</small>
+          </header>
+          <input value={targetQuery} onChange={(event) => setTargetQuery(event.currentTarget.value)} placeholder="Search scenario monster icon sets..." />
+          <div className="icon-set-scroll">
+            {filteredTargets.map((target) => {
+              const overrideSource = target.override
+                ? sources.find((source) => source.baseId === target.override?.sourceBaseIconId && source.sourceKind === target.override.sourceKind)
+                  ?? sources.find((source) => source.baseId === target.override?.sourceBaseIconId)
+                : null;
+              const previewBaseAsset = overrideSource?.asset ?? target.asset;
+              const previewPairedAsset = overrideSource?.pairedAsset ?? target.pairedAsset;
+              return (
+                <button
+                  key={target.baseId}
+                  type="button"
+                  className={`icon-set-row${selectedTargetId === target.baseId ? " selected" : ""}${target.override ? " overridden" : ""}`}
+                  onClick={() => {
+                    setSelectedTargetId(target.baseId);
+                    setActiveIconSetPane("target");
+                  }}
+                  onDragOver={allowTargetDrop}
+                  onDragEnter={allowTargetDrop}
+                  onDrop={(event) => {
+                    const sourceKey = event.dataTransfer.getData("application/x-realmz-monster-icon-source");
+                    if (!sourceKey) return;
+                    event.preventDefault();
+                    void applyOverride(target.baseId, sourceKey);
+                  }}
+                >
+                  <IconPairPreview baseAsset={previewBaseAsset} pairedAsset={previewPairedAsset} previewContext={previewContext} />
+                  <span>
+                    <strong>Icon {target.baseId}</strong>
+                    <small>{target.override?.sourceLabel ?? target.asset?.label ?? (target.referenced ? "Referenced scenario icon target" : "Available scenario icon target")}</small>
+                    {target.override ? <small className="override-badge">Override: {target.override.sourceLabel ?? `Source ${target.override.sourceBaseIconId}`}</small> : null}
+                  </span>
+                </button>
+              );
+            })}
+            {filteredTargets.length === 0 ? <p className="empty-copy compact">No scenario monster icon sets match that search.</p> : null}
+          </div>
+        </section>
+        <section className="icon-set-pane">
+          <header>
+            <strong className="combat-pane-title">Library Monster Icon Sets</strong>
+            <small>{sources.length} source pairs</small>
+          </header>
+          <input value={sourceQuery} onChange={(event) => setSourceQuery(event.currentTarget.value)} placeholder="Search library monster icon sets..." />
+          <div className="icon-set-scroll">
+            {filteredSources.map((source) => (
+              <button
+                key={source.key}
+                type="button"
+                draggable
+                className={`icon-set-row${selectedSourceKey === source.key ? " selected" : ""}`}
+                onClick={() => {
+                  setSelectedSourceKey(source.key);
+                  setActiveIconSetPane("source");
+                }}
+                onDragStart={(event) => {
+                  event.dataTransfer.effectAllowed = "copy";
+                  event.dataTransfer.setData("application/x-realmz-monster-icon-source", source.key);
+                  event.dataTransfer.setData("text/plain", source.sourceLabel ?? `Source ${source.baseId}`);
+                }}
+              >
+                <IconPairPreview baseAsset={source.asset} pairedAsset={source.pairedAsset} previewContext={previewContext} />
+                <span>
+                  <strong>{source.sourceLabel ?? `Source ${source.baseId}`}</strong>
+                  <small>{source.sourceKind === "providence-library" ? "Providence Icon Library" : "Monster Mash"} | pair {source.baseId + MONSTER_ICON_PAIR_OFFSET}</small>
+                </span>
+              </button>
+            ))}
+            {filteredSources.length === 0 ? <p className="empty-copy compact">No library monster icon sets match that search.</p> : null}
+          </div>
+        </section>
+      </div>
+    </article>
   );
 }
 
@@ -878,6 +1374,9 @@ function MonsterWorkbench({
   const [query, setQuery] = useState("");
   const [libraryQuery, setLibraryQuery] = useState("");
   const [selectedLibraryId, setSelectedLibraryId] = useState<string | null>(null);
+  const [selectedLibraryIds, setSelectedLibraryIds] = useState<string[]>([]);
+  const [libraryRangeAnchorId, setLibraryRangeAnchorId] = useState<string | null>(null);
+  const [populateMenuOpen, setPopulateMenuOpen] = useState(false);
   const [activePreview, setActivePreview] = useState<"scenario" | "library">("scenario");
   const [activeSetId, setActiveSetId] = useState<MonsterSetId>(0);
   const [scenarioDropActive, setScenarioDropActive] = useState(false);
@@ -895,16 +1394,19 @@ function MonsterWorkbench({
     }),
     [activeSetId, lookups, scenarioIds]
   );
+  const displayScenarioEntries = useMemo(
+    () => scenarioEntries.filter((entry) => !isBlankScenarioMonsterZeroEntry(entry, project)),
+    [project.monsterDescriptions, scenarioEntries]
+  );
   const filtered = useMemo(
-    () => filterRecords(scenarioEntries, query, (entry) => {
+    () => filterRecords(displayScenarioEntries, query, (entry) => {
       const record = entry.fallback;
       return `${entry.id} ${record?.displayName ?? ""} icon ${record?.iconId ?? ""} hd ${record?.hitDice ?? ""} normal ${Boolean(entry.normal)} monster ${Boolean(entry.monster)} mega ${Boolean(entry.mega)}`;
     }),
-    [scenarioEntries, query]
+    [displayScenarioEntries, query]
   );
   const libraryEntries = useMemo(() => {
-    const entries = (catalog?.entities ?? [])
-      .filter((entity) => entity.type === "monster-scrapbook-entry")
+    const entries = visibleMonsterLibraryEntries(catalog)
       .filter((entry) => {
         if (isProvidenceMonsterLibraryEntry(entry)) return true;
         return !(catalog?.entities ?? []).some((candidate) => {
@@ -927,14 +1429,26 @@ function MonsterWorkbench({
   useEffect(() => {
     if (filteredLibrary.length === 0) {
       setSelectedLibraryId(null);
+      setSelectedLibraryIds([]);
       return;
     }
     if (selectedLibraryId === null || !filteredLibrary.some((entry) => entry.id === selectedLibraryId)) {
-      setSelectedLibraryId(filteredLibrary[0].id);
+      const nextId = filteredLibrary[0].id;
+      setSelectedLibraryId(nextId);
+      setSelectedLibraryIds((ids) => ids.length > 1 ? ids.filter((id) => libraryEntries.some((entry) => entry.id === id)) : [nextId]);
     }
-  }, [filteredLibrary, selectedLibraryId]);
+  }, [filteredLibrary, libraryEntries, selectedLibraryId]);
+  useEffect(() => {
+    if (selectedLibraryIds.length < 2) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setSelectedLibraryIds(selectedLibraryId ? [selectedLibraryId] : []);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedLibraryId, selectedLibraryIds.length]);
   const nextMonsterId = nextAvailableMonsterRecordId(scenarioIds.map((id) => ({ id })));
-  const selectedId = selectedFromEntity ?? scenarioEntries[0]?.id ?? null;
+  const selectedId = selectedFromEntity ?? displayScenarioEntries[0]?.id ?? null;
   const selectedEntry = selectedId !== null ? scenarioEntries.find((entry) => entry.id === selectedId) ?? null : null;
   const selected = selectedId !== null ? monsterForSet(lookups, activeSetId, selectedId) : null;
   const selectedNormal = selectedId !== null ? monsterForSet(lookups, 0, selectedId) : null;
@@ -942,6 +1456,10 @@ function MonsterWorkbench({
     selectedLibraryId !== null ? filteredLibrary.find((entry) => entry.id === selectedLibraryId) ?? null :
     filteredLibrary[0] ?? null;
   const selectedLibraryTemplate = selectedLibrary ? monsterLibraryEntryTemplate(selectedLibrary) : null;
+  const selectedLibraryEntries = selectedLibraryIds
+    .map((id) => libraryEntries.find((entry) => entry.id === id) ?? null)
+    .filter((entry): entry is LibraryCatalog["entities"][number] => Boolean(entry));
+  const multiSelectedLibraryEntries = selectedLibraryEntries.length > 1 ? selectedLibraryEntries : [];
   const selectedDescription = selectedId !== null ? project.monsterDescriptions.find((description) => description.id === selectedId)?.text ?? "" : "";
   const selectMonster = (id: number) => onSelectEntity(selectEntityFromId(`monster:${id}`));
   const update = (id: number, changes: Partial<MonsterRecord>, setId: MonsterSetId = activeSetId) => onApplyCommand?.({ kind: "updateMonsterRecord", label: `Update ${monsterSetLabel(setId)} monster`, id, changes, setId });
@@ -949,11 +1467,88 @@ function MonsterWorkbench({
   const commitCatalog = (nextCatalog: LibraryCatalog, status: string) => onUpdateLibraryCatalog?.(nextCatalog, status);
   const selectScenarioMonster = (id: number) => {
     setActivePreview("scenario");
+    setPopulateMenuOpen(false);
     selectMonster(id);
   };
-  const selectLibraryMonster = (entry: LibraryCatalog["entities"][number]) => {
+  const selectLibraryMonster = (entry: LibraryCatalog["entities"][number], event?: MouseEvent<HTMLButtonElement>) => {
     setActivePreview("library");
+    setPopulateMenuOpen(false);
     setSelectedLibraryId(entry.id);
+    if (event?.shiftKey && libraryRangeAnchorId) {
+      const anchorIndex = filteredLibrary.findIndex((candidate) => candidate.id === libraryRangeAnchorId);
+      const targetIndex = filteredLibrary.findIndex((candidate) => candidate.id === entry.id);
+      if (anchorIndex >= 0 && targetIndex >= 0) {
+        const start = Math.min(anchorIndex, targetIndex);
+        const end = Math.max(anchorIndex, targetIndex);
+        setSelectedLibraryIds(filteredLibrary.slice(start, end + 1).map((candidate) => candidate.id));
+        return;
+      }
+    }
+    if (event?.ctrlKey || event?.metaKey) {
+      const exists = selectedLibraryIds.includes(entry.id);
+      const nextIds = exists ? selectedLibraryIds.filter((id) => id !== entry.id) : [...selectedLibraryIds, entry.id];
+      setSelectedLibraryIds(nextIds.length > 0 ? nextIds : [entry.id]);
+      setLibraryRangeAnchorId(entry.id);
+      if (exists && selectedLibraryId === entry.id && nextIds.length > 0) setSelectedLibraryId(nextIds[nextIds.length - 1]);
+      return;
+    }
+    setSelectedLibraryIds([entry.id]);
+    setLibraryRangeAnchorId(entry.id);
+  };
+  const clearLibraryMultiSelection = () => {
+    setSelectedLibraryIds(selectedLibraryId ? [selectedLibraryId] : []);
+    setLibraryRangeAnchorId(selectedLibraryId);
+  };
+  const applyMonsterCopyEntries = (
+    entries: Array<{ id: number; template: MonsterRecord; description?: string; setId?: MonsterSetId }>,
+    label: string
+  ) => {
+    if (entries.length === 0) return;
+    onApplyCommand?.({ kind: "createMonstersFromTemplates", label, entries });
+    const first = entries[0];
+    setActiveSetId(first.setId ?? 0);
+    setActivePreview("scenario");
+    selectMonster(first.id);
+  };
+  const buildSequentialLibraryCopyEntries = (entries: LibraryCatalog["entities"][number][]) => {
+    const used = new Set(monsterScenarioIds(project));
+    const copies: Array<{ id: number; template: MonsterRecord; description?: string }> = [];
+    for (const entry of entries) {
+      const preferred = preferredMonsterCopyId(project, entry);
+      const id = preferred > 0 && !used.has(preferred)
+        ? preferred
+        : nextAvailableMonsterRecordId([...used].map((candidate) => ({ id: candidate })));
+      if (!Number.isInteger(id) || id < 0) continue;
+      used.add(id);
+      copies.push({ id, template: monsterRecordFromLibraryEntry(entry, id), description: scrapbookDescription(entry) });
+    }
+    return copies;
+  };
+  const buildStockLibraryCopyEntries = () => {
+    const used = new Set(monsterScenarioIds(project));
+    return libraryEntries
+      .filter((entry) => !isProvidenceMonsterLibraryEntry(entry))
+      .map((entry) => ({ entry, id: scrapbookIndex(entry) }))
+      .filter(({ id }) => id > 0 && id <= MAX_DIVINITY_BATTLE_MONSTER_ID && !used.has(id))
+      .map(({ entry, id }) => {
+        used.add(id);
+        return { id, template: monsterRecordFromLibraryEntry(entry, id), description: scrapbookDescription(entry) };
+      });
+  };
+  const copyLibraryEntriesToScenario = (entries: LibraryCatalog["entities"][number][], label: string) => {
+    applyMonsterCopyEntries(buildSequentialLibraryCopyEntries(entries), label);
+  };
+  const populateStockMonsters = () => {
+    setPopulateMenuOpen(false);
+    applyMonsterCopyEntries(buildStockLibraryCopyEntries(), "Copy stock monsters to scenario");
+  };
+  const populateVisibleLibrary = () => {
+    setPopulateMenuOpen(false);
+    copyLibraryEntriesToScenario(filteredLibrary, "Copy visible library monsters to scenario");
+  };
+  const populateCustomLibrary = () => {
+    setPopulateMenuOpen(false);
+    copyLibraryEntriesToScenario(libraryEntries.filter(isProvidenceMonsterLibraryEntry), "Copy custom library monsters to scenario");
   };
   const copyLibraryEntryToScenario = (entry: LibraryCatalog["entities"][number], mode: "normal" | "all" | "generated" = "normal") => {
     const copyId = monsterCopyTargetId(project, entry);
@@ -1159,29 +1754,48 @@ function MonsterWorkbench({
           onDrop={dropMonsterToLibrary}
         >
           <header className="monster-list-header">
-            <strong className="combat-pane-title">Monster Library</strong>
-            <div className="monster-list-actions">
-              <button
-                type="button"
-                className="btn btn-primary btn-xs"
-                disabled={!selectedLibrary}
-                onClick={() => selectedLibrary && copyLibraryEntryToScenario(selectedLibrary)}
-              >
-                Copy To Scenario
-              </button>
+            <div className="monster-list-heading-row">
+              <strong className="combat-pane-title">Monster Library</strong>
+              <div className="monster-list-actions">
+                <button
+                  type="button"
+                  className="btn btn-primary btn-xs"
+                  onClick={() => setPopulateMenuOpen((open) => !open)}
+                >
+                  Populate Scenario...
+                </button>
+              </div>
             </div>
+            {populateMenuOpen ? (
+              <div className="monster-populate-menu" role="menu" aria-label="Populate scenario from monster library">
+                <button type="button" className="btn btn-secondary btn-xs" onClick={populateStockMonsters}>
+                  Copy Stock Monsters
+                  <small>Fill missing built-in IDs.</small>
+                </button>
+                <button type="button" className="btn btn-secondary btn-xs" onClick={populateVisibleLibrary} disabled={filteredLibrary.length === 0}>
+                  Copy Visible Library
+                  <small>{filteredLibrary.length} visible entr{filteredLibrary.length === 1 ? "y" : "ies"}.</small>
+                </button>
+                <button type="button" className="btn btn-secondary btn-xs" onClick={populateCustomLibrary} disabled={!libraryEntries.some(isProvidenceMonsterLibraryEntry)}>
+                  Copy Custom Library
+                  <small>Providence entries only.</small>
+                </button>
+              </div>
+            ) : null}
           </header>
           <input value={libraryQuery} onChange={(event) => setLibraryQuery(event.currentTarget.value)} placeholder="Search monster library..." />
           <div className="combat-record-scroll">
             {filteredLibrary.map((entry) => {
               const custom = isProvidenceMonsterLibraryEntry(entry);
+              const selectedForCopy = selectedLibraryIds.includes(entry.id);
               return (
                 <button
                   key={entry.id}
                   type="button"
                   draggable
-                  className={entry.id === selectedLibrary?.id ? "selected" : ""}
-                  onClick={() => selectLibraryMonster(entry)}
+                  className={`${entry.id === selectedLibrary?.id ? "selected" : ""}${selectedForCopy ? " multi-selected" : ""}`}
+                  aria-selected={selectedForCopy}
+                  onClick={(event) => selectLibraryMonster(entry, event)}
                   onDragStart={(event) => startLibraryDrag(entry, event)}
                   onDragEnd={() => {
                     setScenarioDropActive(false);
@@ -1192,6 +1806,7 @@ function MonsterWorkbench({
                   <span>
                     <strong>{scrapbookName(entry)}</strong>
                     <small>{custom ? "Providence library" : "Built-in"} | {scrapbookFacts(entry)}</small>
+                    {selectedForCopy && selectedLibraryIds.length > 1 ? <small className="monster-selected-badge">Selected for copy</small> : null}
                   </span>
                 </button>
               );
@@ -1209,18 +1824,20 @@ function MonsterWorkbench({
           onDrop={dropLibraryMonsterToScenario}
         >
           <header className="monster-list-header">
-            <strong className="combat-pane-title">Scenario Monsters</strong>
-            <div className="monster-list-actions">
-              <button
-                type="button"
-                className="btn btn-primary btn-xs"
-                onClick={() => {
-                  onApplyCommand?.({ kind: "createTargetRecord", label: "Create monster", recordType: "monster", id: nextMonsterId });
-                  selectScenarioMonster(nextMonsterId);
-                }}
-              >
-                New Monster {nextMonsterId}
-              </button>
+            <div className="monster-list-heading-row">
+              <strong className="combat-pane-title">Scenario Monsters</strong>
+              <div className="monster-list-actions">
+                <button
+                  type="button"
+                  className="btn btn-primary btn-xs"
+                  onClick={() => {
+                    onApplyCommand?.({ kind: "createTargetRecord", label: "Create monster", recordType: "monster", id: nextMonsterId });
+                    selectScenarioMonster(nextMonsterId);
+                  }}
+                >
+                  New Monster {nextMonsterId}
+                </button>
+              </div>
             </div>
           </header>
           <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search scenario monsters..." />
@@ -1252,7 +1869,14 @@ function MonsterWorkbench({
         </aside>
       </div>
 
-      {activePreview === "library" && selectedLibrary && selectedLibraryTemplate ? (
+      {activePreview === "library" && multiSelectedLibraryEntries.length > 1 ? (
+        <MonsterLibraryMultiSelection
+          entries={multiSelectedLibraryEntries}
+          project={project}
+          onCopy={() => copyLibraryEntriesToScenario(multiSelectedLibraryEntries, `Copy ${multiSelectedLibraryEntries.length} selected library monsters to scenario`)}
+          onClear={clearLibraryMultiSelection}
+        />
+      ) : activePreview === "library" && selectedLibrary && selectedLibraryTemplate ? (
         <MonsterEditor
           project={project}
           catalog={catalog}
@@ -1322,6 +1946,55 @@ function MonsterWorkbench({
         <EmptyCombatEditor title="No monster selected" body="Create a scenario monster, select a scenario monster to edit, or select a Monster Library entry to preview and copy." />
       )}
     </div>
+  );
+}
+
+function MonsterLibraryMultiSelection({
+  entries,
+  project,
+  onCopy,
+  onClear
+}: {
+  entries: LibraryCatalog["entities"][number][];
+  project: Project;
+  onCopy: () => void;
+  onClear: () => void;
+}) {
+  const used = new Set(monsterScenarioIds(project));
+  const plans = entries.map((entry) => {
+    const preferred = preferredMonsterCopyId(project, entry);
+    const occupied = preferred > 0 && used.has(preferred);
+    const id = preferred > 0 && !occupied
+      ? preferred
+      : nextAvailableMonsterRecordId([...used].map((candidate) => ({ id: candidate })));
+    used.add(id);
+    return { entry, id, occupied };
+  });
+  return (
+    <section className="combat-editor monster-multi-selection">
+      <header className="combat-editor-header monster-editor-title-header">
+        <span className="combat-pane-title">Selected Monsters</span>
+        <div className="combat-editor-actions">
+          <button type="button" className="btn btn-primary btn-xs" onClick={onCopy}>Copy Selected To Scenario</button>
+          <button type="button" className="btn btn-secondary btn-xs" onClick={onClear}>Clear Selection</button>
+        </div>
+      </header>
+      <p className="empty-copy compact">{entries.length} monster library entries selected. Copying uses preferred IDs when empty, then the next open scenario monster slot.</p>
+      <div className="monster-selection-list">
+        {plans.map(({ entry, id, occupied }) => (
+          <div key={entry.id} className="monster-selection-row">
+            <span>
+              <strong>{scrapbookName(entry)}</strong>
+              <small>{isProvidenceMonsterLibraryEntry(entry) ? "Providence library" : "Built-in"} | {scrapbookFacts(entry)}</small>
+            </span>
+            <span className={occupied ? "copy-target shifted" : "copy-target"}>
+              Monster {id}
+              {occupied ? <small>preferred occupied</small> : <small>preferred slot</small>}
+            </span>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -1642,15 +2315,14 @@ function MonsterEditor({
 }) {
   return (
     <article className="combat-editor monster-editor scenario-monster-editor">
-      <header className="combat-editor-header monster-editor-title-header">
-        <span className="combat-pane-title">{monster.displayName || `Monster ${monster.id}`}</span>
-        {headerMeta ? <div className="monster-editor-header-meta">{headerMeta}</div> : null}
-        <div className="combat-editor-actions">
+      <header className="combat-editor-header monster-editor-title-header monster-record-editor-header">
+        <div className="combat-editor-actions monster-editor-record-actions">
           {onCopyToLibrary ? <button type="button" className="btn btn-secondary btn-xs" onClick={onCopyToLibrary}>Copy To Library</button> : null}
           {onReplaceScenario ? <button type="button" className="btn btn-danger btn-xs" title="Explicitly replace the selected Normal scenario monster slot" onClick={onReplaceScenario}>{replaceLabel}</button> : null}
           <button type="button" className="btn btn-secondary btn-xs" onClick={onDuplicate}>{duplicateLabel}</button>
           {onClear ? <button type="button" className="btn btn-danger btn-xs" onClick={onClear}>{clearLabel}</button> : null}
         </div>
+        {headerMeta ? <div className="monster-editor-header-meta">{headerMeta}</div> : null}
       </header>
       <section className="monster-section monster-identity-section">
         <MonsterIcon monster={monster} iconEntries={iconEntries} project={project} lookups={lookups} previewContext={previewContext} large />
@@ -2335,6 +3007,29 @@ const BattleMonsterOverlay = memo(function BattleMonsterOverlay({
 
 function resolveMonsterIcon(monster: MonsterRecord, iconEntries: Record<number, IconEntry>, project: Project, lookups: CombatLookups): MonsterIconResolution {
   const iconId = Math.abs(monster.iconId);
+  const override = lookups.monsterIconOverridesByTarget.get(iconId) ?? null;
+  if (override) {
+    const sourceIconId = Math.abs(override.sourceBaseIconId);
+    const sourceEntry = iconEntries[sourceIconId] ?? iconEntries[-sourceIconId];
+    if (sourceEntry?.url) {
+      return {
+        url: sourceEntry.url,
+        label: `cicn ${monster.iconId} overridden by ${override.sourceLabel ?? `Monster Mash ${sourceIconId}`}`,
+        width: sourceEntry.image.naturalWidth || sourceEntry.image.width || null,
+        height: sourceEntry.image.naturalHeight || sourceEntry.image.height || null
+      };
+    }
+    const sourceAsset = lookups.monsterMashAssetsByAbsId.get(sourceIconId) ?? null;
+    if (sourceAsset) {
+      return {
+        url: null,
+        libraryAsset: sourceAsset,
+        label: `cicn ${monster.iconId} overridden by ${override.sourceLabel ?? sourceAsset.label}`,
+        width: null,
+        height: null
+      };
+    }
+  }
   const entry = iconEntries[monster.iconId] ?? iconEntries[iconId] ?? iconEntries[-iconId];
   if (entry?.url) {
     return {
@@ -2350,8 +3045,6 @@ function resolveMonsterIcon(monster: MonsterRecord, iconEntries: Record<number, 
   if (projectAsset?.previewPath) return { url: projectAsset.previewPath, label: `cicn ${monster.iconId}`, width: null, height: null };
   const realmzActorAsset = lookups.realmzActorIconAssetsByAbsId.get(iconId) ?? null;
   if (realmzActorAsset) return { url: null, libraryAsset: realmzActorAsset, label: realmzActorAsset.label || `cicn ${monster.iconId}`, width: null, height: null };
-  const mashAsset = lookups.monsterMashAssetsByAbsId.get(iconId) ?? null;
-  if (mashAsset) return { url: null, libraryAsset: mashAsset, label: mashAsset.label || `cicn ${monster.iconId}`, width: null, height: null };
   if (isActorOrCreatureIconId(iconId)) {
     const referenceUrl = browserReferenceIconUrl(iconId);
     if (referenceUrl) return { url: referenceUrl, label: `cicn ${monster.iconId}`, width: null, height: null };
@@ -2673,8 +3366,7 @@ function MonsterScrapbookWorkbench({
 }) {
   const [query, setQuery] = useState("");
   const entries = useMemo(
-    () => (catalog?.entities ?? [])
-      .filter((entity) => entity.type === "monster-scrapbook-entry")
+    () => visibleMonsterLibraryEntries(catalog)
       .sort((a, b) => scrapbookIndex(a) - scrapbookIndex(b)),
     [catalog?.entities]
   );
@@ -3082,6 +3774,123 @@ function scrapbookDescription(entry: LibraryCatalog["entities"][number]) {
   return typeof entry.summary.description === "string" ? entry.summary.description : "";
 }
 
+function visibleMonsterLibraryEntries(catalog: LibraryCatalog | null) {
+  return (catalog?.entities ?? []).filter((entry) => {
+    if (entry.type !== "monster-scrapbook-entry") return false;
+    return isProvidenceMonsterLibraryEntry(entry) || !isBlankBuiltInScrapbookPlaceholder(entry);
+  });
+}
+
+function isBlankScenarioMonsterZeroEntry(
+  entry: { id: number; normal: MonsterRecord | null; monster: MonsterRecord | null; mega: MonsterRecord | null },
+  project: Project
+) {
+  if (entry.id !== 0) return false;
+  const description = project.monsterDescriptions.find((candidate) => candidate.id === 0)?.text ?? "";
+  if (description.trim()) return false;
+  const records = [entry.normal, entry.monster, entry.mega].filter((record): record is MonsterRecord => Boolean(record));
+  return records.length > 0 && records.every(isBlankScenarioMonsterZeroRecord);
+}
+
+function isBlankScenarioMonsterZeroRecord(record: MonsterRecord) {
+  if (record.id !== 0) return false;
+  const name = record.displayName.trim();
+  if (name && name !== "Monster 0") return false;
+  if (record.rawBytes?.some((value) => value !== 0)) return false;
+
+  const scalarValues = [
+    record.hitDice,
+    record.staminaBonus,
+    record.agility,
+    record.nameId,
+    record.movementMax,
+    record.armor,
+    record.magicResistance,
+    record.distance,
+    record.traitor,
+    record.size,
+    record.attackCount,
+    record.magicAttackCount,
+    record.damageBonus,
+    record.castPercent,
+    record.runPercent,
+    record.surrenderPercent,
+    record.missilePercent,
+    record.canSummon,
+    record.weapon,
+    record.iconId,
+    record.spellPoints,
+    record.exp,
+    record.stamina,
+    record.staminaMax,
+    record.target,
+    record.guarding,
+    record.beenAttacked,
+    record.movement,
+    record.magicToHit,
+    record.lr,
+    record.up,
+    record.attackNum,
+    record.bonusAttack,
+    record.deathMacro,
+    record.maxSpellPoints
+  ];
+  if (scalarValues.some((value) => value !== 0)) return false;
+  if (record.notOnMenu) return false;
+
+  const arrays = [
+    record.typeFlags,
+    record.saves,
+    record.spellImmunities,
+    record.money,
+    record.spells,
+    record.items,
+    record.underneath,
+    record.conditions
+  ];
+  if (arrays.some((values) => values.some((value) => value !== 0))) return false;
+  if (record.attacks.some((row) => row.some((value) => value !== 0))) return false;
+
+  return true;
+}
+
+function isBlankBuiltInScrapbookPlaceholder(entry: LibraryCatalog["entities"][number]) {
+  if (isProvidenceMonsterLibraryEntry(entry)) return false;
+  const index = scrapbookIndex(entry);
+  const name = scrapbookName(entry).trim();
+  if (name !== `Monster ${index}`) return false;
+  if (scrapbookDescription(entry).trim()) return false;
+
+  const scalarKeys = [
+    "hitDice",
+    "staminaBonus",
+    "agility",
+    "movementMax",
+    "armor",
+    "magicResistance",
+    "distance",
+    "size",
+    "attackCount",
+    "magicAttackCount",
+    "damageBonus",
+    "castPercent",
+    "runPercent",
+    "surrenderPercent",
+    "missilePercent",
+    "weapon",
+    "iconId",
+    "spellPoints",
+    "exp"
+  ];
+  if (scalarKeys.some((key) => summaryNumber(entry, key) !== 0)) return false;
+
+  const arrayKeys = ["money", "spells", "items", "saves", "spellImmunities"];
+  if (arrayKeys.some((key) => summaryNumberArray(entry, key).some((value) => value !== 0))) return false;
+  if (summaryNumberRows(entry, "attacks").some((row) => row.some((value) => value !== 0))) return false;
+
+  return true;
+}
+
 function battleMonsterPaintEntrySearchText(entry: BattleMonsterPaintEntry) {
   return `${entry.id} ${entry.monster.displayName} icon ${entry.monster.iconId} hd ${entry.monster.hitDice} scenario`;
 }
@@ -3379,6 +4188,198 @@ function filterRecords<T>(records: T[], query: string, text: (record: T) => stri
   return records.filter((record) => text(record).toLowerCase().includes(needle));
 }
 
+function monsterIconTargetPairs(project: Project, lookups: CombatLookups): MonsterIconPairOption[] {
+  const referencedIconIds = uniqueSortedNumbers([
+    ...(project.monsters ?? []).map((monster) => Math.abs(monster.iconId)),
+    ...(project.monsterSets ?? []).flatMap((set) => set.monsters.map((monster) => Math.abs(monster.iconId)))
+  ]).filter((id) => id > 0);
+  const referenced = new Set(referencedIconIds);
+  const candidates = new Set<number>(referencedIconIds);
+  for (const id of lookups.realmzActorIconAssetsByAbsId.keys()) {
+    if (isMonsterIconPairBase(id, lookups.realmzActorIconAssetsByAbsId)) candidates.add(id);
+  }
+  for (const override of project.monsterIconOverrides ?? []) {
+    candidates.add(Math.abs(override.targetBaseIconId));
+  }
+  return [...candidates]
+    .filter((baseId) => baseId > 0 && baseId + MONSTER_ICON_PAIR_OFFSET <= 32767)
+    .sort((left, right) => left - right)
+    .map((baseId) => ({
+      key: `target:${baseId}`,
+      baseId,
+      asset: lookups.realmzActorIconAssetsByAbsId.get(baseId) ?? null,
+      pairedAsset: lookups.realmzActorIconAssetsByAbsId.get(baseId + MONSTER_ICON_PAIR_OFFSET) ?? null,
+      referenced: referenced.has(baseId),
+      override: lookups.monsterIconOverridesByTarget.get(baseId) ?? null
+    }))
+    .filter(
+      (target) =>
+        target.override ||
+        referenced.has(target.baseId) ||
+        Boolean(target.asset?.previewPath || target.pairedAsset?.previewPath)
+    );
+}
+
+function monsterIconSourcePairs(catalog: LibraryCatalog | null, lookups: CombatLookups): MonsterIconPairOption[] {
+  const monsterMashPairs = [...lookups.monsterMashAssetsByAbsId.keys()]
+    .filter((baseId) => isMonsterIconPairBase(baseId, lookups.monsterMashAssetsByAbsId))
+    .sort((left, right) => left - right)
+    .map((baseId) => ({
+      key: `monster-mash:${baseId}`,
+      baseId,
+      asset: lookups.monsterMashAssetsByAbsId.get(baseId) ?? null,
+      pairedAsset: lookups.monsterMashAssetsByAbsId.get(baseId + MONSTER_ICON_PAIR_OFFSET) ?? null,
+      sourceKind: "monster-mash" as const,
+      sourceLabel: `Monster Mash ${baseId}`,
+      facingMode: "custom" as const
+    }));
+  const providencePairs = (catalog?.entities ?? [])
+    .filter((entity) => isProvidenceIconLibraryEntry(entity) && iconLibraryEntryKind(entity) === "monster-pair")
+    .map((entity) => {
+      const number = iconLibraryEntityNumber(entity);
+      const asset = catalog?.assets.find((candidate) => candidate.id === `library-asset:providence:icon-library:${number}:base`) ?? null;
+      const pairedAsset = catalog?.assets.find((candidate) => candidate.id === `library-asset:providence:icon-library:${number}:paired`) ?? null;
+      const baseId = Math.abs(asset?.resourceId ?? 0);
+      const metadata = iconLibraryMonsterPairMetadata(entity);
+      return {
+        key: entity.id,
+        baseId,
+        asset,
+        pairedAsset,
+        sourceKind: "providence-library" as const,
+        sourceLabel: entity.label || asset?.label || `Providence Icon ${baseId}`,
+        facingMode: metadata.facingMode,
+        canvas: metadata.canvas
+      };
+    })
+    .filter((source) => source.baseId > 0 && source.pairedAsset);
+  return [...monsterMashPairs, ...providencePairs];
+}
+
+function iconLibraryEntityNumber(entity: LibraryCatalog["entities"][number]) {
+  const value = entity.summary.libraryNumber;
+  return typeof value === "number" && Number.isFinite(value) ? Math.trunc(value) : 0;
+}
+
+function isMonsterIconPairBase(baseId: number, assets: Map<number, LibraryAsset>) {
+  if (!Number.isInteger(baseId) || baseId <= 0) return false;
+  if (!assets.has(baseId) || !assets.has(baseId + MONSTER_ICON_PAIR_OFFSET)) return false;
+  return !assets.has(baseId - MONSTER_ICON_PAIR_OFFSET);
+}
+
+function IconPairPreview({
+  baseAsset,
+  pairedAsset,
+  previewContext
+}: {
+  baseAsset: LibraryAsset | null;
+  pairedAsset: LibraryAsset | null;
+  previewContext: PreviewRuntimeContext;
+}) {
+  return (
+    <span className="icon-pair-preview" aria-hidden="true">
+      <LibraryIconSwatch asset={baseAsset} previewContext={previewContext} />
+      <LibraryIconSwatch asset={pairedAsset} previewContext={previewContext} />
+    </span>
+  );
+}
+
+function LibraryIconSwatch({
+  asset,
+  previewContext
+}: {
+  asset: LibraryAsset | null;
+  previewContext: PreviewRuntimeContext;
+}) {
+  const resourceId = asset?.resourceId ?? 0;
+  const url = useResolvedPreviewUrl(asset?.previewPath ?? null, null, asset, previewContext);
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  useEffect(() => setFailedUrl(null), [url]);
+  const usableUrl = url && url !== failedUrl ? url : null;
+  return (
+    <span className="icon-pair-swatch" title={asset?.label ?? (resourceId ? `cicn ${resourceId}` : "Missing paired icon")}>
+      {usableUrl ? <img src={usableUrl} alt="" loading="lazy" decoding="async" onError={() => setFailedUrl(usableUrl)} /> : <b>{resourceId || "?"}</b>}
+    </span>
+  );
+}
+
+async function loadLibraryResourceBase64(asset: LibraryAsset, previewContext: PreviewRuntimeContext, catalog?: LibraryCatalog | null) {
+  const providenceBase64 = iconLibraryAssetResourceBase64(catalog, asset);
+  if (providenceBase64) return providenceBase64;
+  if (previewContext.desktopRuntime) {
+    if (!previewContext.workspaceDir) throw new Error("Workspace directory is required to load Monster Mash resource data.");
+    return invoke<string>("load_library_resource_data", {
+      workspaceDir: previewContext.workspaceDir,
+      source: asset.source,
+      relativePath: asset.relativePath
+    });
+  }
+  const data = await loadBrowserBundledLibraryResourceData(asset);
+  return data ? bytesToBase64(data) : null;
+}
+
+function bytesToBase64(bytes: Uint8Array) {
+  let binary = "";
+  for (let index = 0; index < bytes.length; index += 1) {
+    binary += String.fromCharCode(bytes[index]);
+  }
+  return btoa(binary);
+}
+
+function monsterIconCanvasPreset(key: (typeof MONSTER_ICON_CANVAS_PRESETS)[number]["key"]) {
+  return MONSTER_ICON_CANVAS_PRESETS.find((preset) => preset.key === key) ?? MONSTER_ICON_CANVAS_PRESETS[0];
+}
+
+function nextImportedMonsterIconBaseId(sources: MonsterIconPairOption[]) {
+  const used = new Set(sources.map((source) => Math.abs(source.baseId)));
+  for (let baseId = IMPORTED_MONSTER_ICON_BASE_START; baseId + MONSTER_ICON_PAIR_OFFSET <= 32767; baseId += 1) {
+    if (!used.has(baseId) && !used.has(baseId + MONSTER_ICON_PAIR_OFFSET)) return baseId;
+  }
+  return IMPORTED_MONSTER_ICON_BASE_START + used.size;
+}
+
+function stripFileExtension(name: string) {
+  return name.replace(/\.[^.]+$/, "").trim();
+}
+
+async function loadImageFileToRgba(file: File, width: number, height: number) {
+  const url = URL.createObjectURL(file);
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const element = new Image();
+      element.onload = () => resolve(element);
+      element.onerror = () => reject(new Error(`Unable to load ${file.name}.`));
+      element.src = url;
+    });
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (!context) throw new Error("Canvas rendering is unavailable.");
+    context.imageSmoothingEnabled = false;
+    context.clearRect(0, 0, width, height);
+    const scale = Math.min(width / image.naturalWidth, height / image.naturalHeight);
+    const drawWidth = Math.max(1, Math.round(image.naturalWidth * scale));
+    const drawHeight = Math.max(1, Math.round(image.naturalHeight * scale));
+    const left = Math.floor((width - drawWidth) / 2);
+    const top = Math.floor((height - drawHeight) / 2);
+    context.drawImage(image, left, top, drawWidth, drawHeight);
+    return { width, height, rgba: context.getImageData(0, 0, width, height).data };
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function rgbaToDataUrl(image: { width: number; height: number; rgba: Uint8Array | Uint8ClampedArray }) {
+  const canvas = document.createElement("canvas");
+  canvas.width = image.width;
+  canvas.height = image.height;
+  const context = canvas.getContext("2d");
+  if (!context) return null;
+  context.putImageData(new ImageData(new Uint8ClampedArray(image.rgba), image.width, image.height), 0, 0);
+  return canvas.toDataURL("image/png");
+}
+
 function uniqueSortedNumbers(values: number[]) {
   return [...new Set(values.filter((value) => Number.isFinite(value)).map((value) => Math.trunc(value)))]
     .sort((left, right) => left - right);
@@ -3584,6 +4585,7 @@ function clamp(value: number, min: number, max: number) {
 function tabFromEditor(editor: string): CombatWorkbenchTab {
   if (editor === "monsters") return "monsters";
   if (editor === "scrapbook") return "monsters";
+  if (editor === "iconSet" || editor === "icon-set") return "iconSet";
   return "battles";
 }
 
@@ -3605,7 +4607,8 @@ function useCombatLookups(project: Project | null, catalog: LibraryCatalog | nul
         iconAssetsByAbsId: new Map(),
         realmzActorIconAssetsByAbsId: new Map(),
         monsterMashAssetsByAbsId: new Map(),
-        tabCounts: { battles: 0, monsters: 0 }
+        monsterIconOverridesByTarget: new Map(),
+        tabCounts: { battles: 0, monsters: 0, iconSet: 0 }
       };
     }
     const monsters = [...(project.monsters ?? [])].sort((a, b) => a.id - b.id);
@@ -3622,6 +4625,12 @@ function useCombatLookups(project: Project | null, catalog: LibraryCatalog | nul
     const iconAssetsByAbsId = new Map<number, CombatIconAsset>();
     const realmzActorIconAssetsByAbsId = new Map<number, LibraryAsset>();
     const monsterMashAssetsByAbsId = new Map<number, LibraryAsset>();
+    const monsterIconOverridesByTarget = new Map<number, MonsterIconOverride>();
+    for (const override of project.monsterIconOverrides ?? []) {
+      if (Number.isInteger(override.targetBaseIconId)) {
+        monsterIconOverridesByTarget.set(Math.abs(override.targetBaseIconId), override);
+      }
+    }
     const addIconAsset = (asset: CombatIconAsset | null | undefined) => {
       if (!asset?.previewPath || asset.resourceId == null) return;
       const key = Math.abs(asset.resourceId);
@@ -3650,9 +4659,11 @@ function useCombatLookups(project: Project | null, catalog: LibraryCatalog | nul
       iconAssetsByAbsId,
       realmzActorIconAssetsByAbsId,
       monsterMashAssetsByAbsId,
+      monsterIconOverridesByTarget,
       tabCounts: {
         battles: project.battles.length,
-        monsters: monsterScenarioIds(project).length
+        monsters: monsterScenarioIds(project).length,
+        iconSet: (project.monsterIconOverrides ?? []).length
       }
     };
   }, [catalog?.assets, catalog?.entities, project]);

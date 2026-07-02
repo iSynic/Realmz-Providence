@@ -3,12 +3,14 @@ import {
   ComplexEncounterRecord,
   MessageRecord,
   MonsterDescriptionRecord,
+  MonsterIconOverride,
   MonsterRecord,
   MonsterSetId,
   OptionLabelRecord,
   Project,
   Provenance,
   RealmzTargetRecordKind,
+  ScenarioIconResource,
   ScenarioItemRecord,
   ShopRecord,
   SimpleEncounterRecord,
@@ -131,6 +133,16 @@ export function createMonsterFromTemplate(project: Project, id: number, template
   return description !== undefined ? upsertMonsterDescription(withMonster, id, description) : withMonster;
 }
 
+export function createMonstersFromTemplates(
+  project: Project,
+  entries: Array<{ id: number; template: MonsterRecord; description?: string; setId?: MonsterSetId }>
+): Project {
+  return entries.reduce(
+    (nextProject, entry) => createMonsterFromTemplate(nextProject, entry.id, entry.template, entry.description, entry.setId),
+    project
+  );
+}
+
 export function updateMonsterRecord(project: Project, id: number, changes: Partial<MonsterRecord>, setId: MonsterSetId = 0): Project {
   if (!Number.isInteger(id) || id < 0) return project;
   const existing = monsterRecordForSet(project, id, setId);
@@ -168,6 +180,62 @@ export function generateMonsterVariants(project: Project, id: number): Project {
   return next;
 }
 
+export function upsertMonsterIconOverride(project: Project, override: MonsterIconOverride): Project {
+  if (!validMonsterIconOverride(override)) return project;
+  const next = [...(project.monsterIconOverrides ?? [])];
+  const normalized: MonsterIconOverride = {
+    ...override,
+    targetBaseIconId: Math.trunc(Math.abs(override.targetBaseIconId)),
+    sourceBaseIconId: Math.trunc(Math.abs(override.sourceBaseIconId))
+  };
+  const index = next.findIndex((candidate) => Math.abs(candidate.targetBaseIconId) === normalized.targetBaseIconId);
+  if (index >= 0) next[index] = normalized;
+  else next.push(normalized);
+  next.sort((a, b) => Math.abs(a.targetBaseIconId) - Math.abs(b.targetBaseIconId));
+  return { ...project, monsterIconOverrides: next };
+}
+
+export function deleteMonsterIconOverride(project: Project, targetBaseIconId: number): Project {
+  const target = Math.trunc(Math.abs(targetBaseIconId));
+  return {
+    ...project,
+    monsterIconOverrides: (project.monsterIconOverrides ?? []).filter((override) => Math.abs(override.targetBaseIconId) !== target)
+  };
+}
+
+export function upsertScenarioIconResource(project: Project, resource: ScenarioIconResource): Project {
+  if (!validScenarioIconResource(resource)) return project;
+  const resourceId = Math.trunc(Math.abs(resource.resourceId));
+  const normalized: ScenarioIconResource = {
+    ...resource,
+    resourceId,
+    label: resource.label?.trim() || `cicn ${resourceId}`,
+    previewPath: resource.previewPath ?? null
+  };
+  const resources = [...(project.scenarioIconResources ?? [])];
+  const index = resources.findIndex((candidate) => Math.abs(candidate.resourceId) === resourceId);
+  if (index >= 0) resources[index] = normalized;
+  else resources.push(normalized);
+  resources.sort((a, b) => Math.abs(a.resourceId) - Math.abs(b.resourceId));
+  return {
+    ...project,
+    scenarioIconResources: resources,
+    assetCatalog: upsertScenarioIconAsset(project.assetCatalog, normalized)
+  };
+}
+
+export function deleteScenarioIconResource(project: Project, resourceId: number): Project {
+  const target = Math.trunc(Math.abs(resourceId));
+  return {
+    ...project,
+    scenarioIconResources: (project.scenarioIconResources ?? []).filter((resource) => Math.abs(resource.resourceId) !== target),
+    assetCatalog: {
+      ...project.assetCatalog,
+      icons: (project.assetCatalog.icons ?? []).filter((asset) => Math.abs(asset.resourceId) !== target || !String(asset.id).startsWith("scenario-icon-resource-"))
+    }
+  };
+}
+
 export function upsertMonsterDescription(project: Project, id: number, text: string): Project {
   if (!Number.isInteger(id) || id < 0) return project;
   const current = [...(project.monsterDescriptions ?? [])];
@@ -184,6 +252,39 @@ export function upsertMonsterDescription(project: Project, id: number, text: str
   else current.push(next);
   current.sort((a, b) => a.id - b.id);
   return { ...project, monsterDescriptions: current };
+}
+
+function validMonsterIconOverride(override: MonsterIconOverride) {
+  return Number.isInteger(override.targetBaseIconId) &&
+    Number.isInteger(override.sourceBaseIconId) &&
+    override.targetBaseIconId !== 0 &&
+    override.sourceBaseIconId !== 0 &&
+    Boolean(override.sourceBaseResourceBase64) &&
+    Boolean(override.sourcePairedResourceBase64);
+}
+
+function validScenarioIconResource(resource: ScenarioIconResource) {
+  return Number.isInteger(resource.resourceId) &&
+    resource.resourceId !== 0 &&
+    Boolean(resource.resourceBase64);
+}
+
+function upsertScenarioIconAsset(assetCatalog: Project["assetCatalog"], resource: ScenarioIconResource): Project["assetCatalog"] {
+  const resourceId = Math.trunc(Math.abs(resource.resourceId));
+  const icons = [...(assetCatalog.icons ?? [])];
+  const nextAsset = {
+    id: `scenario-icon-resource-${resourceId}`,
+    resourceType: "cicn",
+    resourceId,
+    name: resource.label,
+    source: `Scenario custom icon: ${resource.sourceKind}`,
+    previewPath: resource.previewPath ?? null
+  };
+  const index = icons.findIndex((asset) => Math.abs(asset.resourceId) === resourceId && String(asset.id).startsWith("scenario-icon-resource-"));
+  if (index >= 0) icons[index] = nextAsset;
+  else icons.push(nextAsset);
+  icons.sort((a, b) => a.resourceId - b.resourceId);
+  return { ...assetCatalog, icons };
 }
 
 function monsterRecordForSet(project: Project, id: number, setId: MonsterSetId) {

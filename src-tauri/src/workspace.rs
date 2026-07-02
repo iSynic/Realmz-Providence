@@ -1356,7 +1356,10 @@ fn decoded_fixed_text(record: &[u8], offset: usize, length: usize) -> Option<Str
     }
     let end = (offset + length).min(record.len());
     let bytes = &record[offset..end];
-    let nul = bytes.iter().position(|byte| *byte == 0).unwrap_or(bytes.len());
+    let nul = bytes
+        .iter()
+        .position(|byte| *byte == 0)
+        .unwrap_or(bytes.len());
     let text = decode_classic_text(&bytes[..nul])
         .trim_matches(char::from(0))
         .trim()

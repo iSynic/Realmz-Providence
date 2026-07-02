@@ -282,13 +282,29 @@ export function useAppBootstrapEffects({
         ...(state.project.assetCatalog.icons ?? [])
           .filter((asset) => asset.resourceType === "cicn")
           .flatMap((asset) => iconCandidateIdsForResource(asset.resourceId)),
+        ...(state.project.scenarioIconResources ?? []).flatMap((resource) => iconCandidateIdsForResource(resource.resourceId)),
         ...projectStampAssets.flatMap((asset) => tileIconCandidates(asset.resourceId))
       ];
       const specialReferenceIconIds = !desktopRuntime ? PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES.flatMap(tileIconCandidates) : [];
       const specialLibraryIconIds = libraryIconAssets
         .filter((asset) => asset.resourceId != null && !isActorOrCreatureIconId(Math.abs(asset.resourceId)))
         .flatMap((asset) => asset.resourceId == null ? [] : iconCandidateIdsForResource(asset.resourceId));
-      const monsterIconIds = (state.project.monsters ?? []).flatMap((monster) => iconCandidateIdsForResource(monster.iconId));
+      const monsterIconIds = [
+        ...(state.project.monsters ?? []).flatMap((monster) => iconCandidateIdsForResource(monster.iconId)),
+        ...(state.project.monsterSets ?? []).flatMap((set) => set.monsters.flatMap((monster) => iconCandidateIdsForResource(monster.iconId)))
+      ];
+      const monsterOverrideSourceIds = new Set(
+        (state.project.monsterIconOverrides ?? []).flatMap((override) => [
+          ...iconCandidateIdsForResource(override.sourceBaseIconId),
+          ...iconCandidateIdsForResource(override.sourceBaseIconId + 308)
+        ])
+      );
+      const monsterOverrideIconIds = (state.project.monsterIconOverrides ?? []).flatMap((override) => [
+        ...iconCandidateIdsForResource(override.targetBaseIconId),
+        ...iconCandidateIdsForResource(override.targetBaseIconId + 308),
+        ...iconCandidateIdsForResource(override.sourceBaseIconId),
+        ...iconCandidateIdsForResource(override.sourceBaseIconId + 308)
+      ]);
       const actorIconIds = [
         ...realmzActorIconAssets.flatMap((asset) => asset.resourceId == null ? [] : iconCandidateIdsForResource(asset.resourceId)),
         ...libraryIconAssets
@@ -301,6 +317,7 @@ export function useAppBootstrapEffects({
         ...specialReferenceIconIds,
         ...specialLibraryIconIds,
         ...monsterIconIds,
+        ...monsterOverrideIconIds,
         ...actorIconIds
       ]);
       const ids = desktopRuntime ? rawIds : rawIds.slice(0, BROWSER_ICON_OVERLAY_PRELOAD_LIMIT);
@@ -322,7 +339,7 @@ export function useAppBootstrapEffects({
             });
             const libraryAsset = libraryIconAssets.find((asset) => {
               if (asset.resourceId == null) return false;
-              if (isMonsterMashLibraryAsset(asset)) return false;
+              if (isMonsterMashLibraryAsset(asset) && !monsterOverrideSourceIds.has(Math.abs(asset.resourceId))) return false;
               return iconCandidateIdsForResource(asset.resourceId).includes(id);
             });
             const realmzActorIconAsset = realmzActorIconAssets.find((asset) => {

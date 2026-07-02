@@ -1236,11 +1236,16 @@ export type ProjectCommand =
   | { kind: "updateOptionLabel"; label: string; id: number; changes: Partial<Pick<OptionLabelRecord, "text">> }
   | { kind: "updateBattleRecord"; label: string; id: number; changes: Partial<Pick<BattleRecord, "grid" | "dist" | "messageBefore" | "messageAfter" | "battleMacro">> }
   | { kind: "createMonsterFromTemplate"; label: string; id: number; template: MonsterRecord; description?: string; setId?: MonsterSetId }
+  | { kind: "createMonstersFromTemplates"; label: string; entries: Array<{ id: number; template: MonsterRecord; description?: string; setId?: MonsterSetId }> }
   | { kind: "updateMonsterRecord"; label: string; id: number; changes: Partial<MonsterRecord>; setId?: MonsterSetId }
   | { kind: "createMonsterVariantFromNormal"; label: string; id: number; setId: Exclude<MonsterSetId, 0> }
   | { kind: "copyCurrentMonsterToAllSets"; label: string; id: number; sourceSetId: MonsterSetId }
   | { kind: "switchMonsterRecords"; label: string; setId: MonsterSetId; fromId: number; toId: number }
   | { kind: "generateMonsterVariants"; label: string; id: number }
+  | { kind: "upsertMonsterIconOverride"; label: string; override: MonsterIconOverride }
+  | { kind: "deleteMonsterIconOverride"; label: string; targetBaseIconId: number }
+  | { kind: "upsertScenarioIconResource"; label: string; resource: ScenarioIconResource }
+  | { kind: "deleteScenarioIconResource"; label: string; resourceId: number }
   | { kind: "upsertMonsterDescription"; label: string; id: number; text: string }
   | { kind: "updateScenarioItemRecord"; label: string; id: number; changes: Partial<ScenarioItemRecord> }
   | { kind: "clearScenarioItemRecord"; label: string; id: number }
@@ -1337,6 +1342,8 @@ export type Project = {
   monsters: MonsterRecord[];
   monsterSets: MonsterSet[];
   monsterDescriptions: MonsterDescriptionRecord[];
+  monsterIconOverrides: MonsterIconOverride[];
+  scenarioIconResources: ScenarioIconResource[];
   scenarioItems: ScenarioItemRecord[];
   treasures: TreasureRecord[];
   shops: ShopRecord[];
@@ -1356,6 +1363,25 @@ export type Project = {
   diagnostics: Diagnostic[];
   semanticSchema: SemanticSchema;
   validation: ValidationReport;
+};
+
+export type MonsterIconOverride = {
+  targetBaseIconId: number;
+  sourceBaseIconId: number;
+  sourceLabel?: string;
+  sourceKind: "monster-mash" | "scenario-resource" | "providence-library";
+  sourceBaseResourceBase64: string;
+  sourcePairedResourceBase64: string;
+  imported?: boolean;
+};
+
+export type ScenarioIconResource = {
+  resourceId: number;
+  label: string;
+  sourceKind: "vault-of-arcana" | "providence-library" | "scenario-resource";
+  resourceBase64: string;
+  previewPath?: string | null;
+  imported?: boolean;
 };
 
 export type SemanticEditState = "editable" | "inspect-only" | "blocked";

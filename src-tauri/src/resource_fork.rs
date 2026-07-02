@@ -327,6 +327,20 @@ pub fn encode_pict_resource_with_dither(
 }
 
 pub fn encode_cicn_resource(payload: &RgbaImagePayload) -> Result<Vec<u8>> {
+    encode_cicn_resource_with_dimensions(payload, 32, 32)
+}
+
+pub fn encode_cicn_resource_with_dimensions(
+    payload: &RgbaImagePayload,
+    target_width: u32,
+    target_height: u32,
+) -> Result<Vec<u8>> {
+    if target_width == 0 || target_height == 0 || target_width > 512 || target_height > 512 {
+        return Err(ProvidenceError::message(format!(
+            "Invalid cicn target size {}x{}",
+            target_width, target_height
+        )));
+    }
     let rgba = STANDARD
         .decode(&payload.rgba_base64)
         .map_err(|error| ProvidenceError::message(error.to_string()))?;
@@ -335,14 +349,14 @@ pub fn encode_cicn_resource(payload: &RgbaImagePayload) -> Result<Vec<u8>> {
         &rgba,
         payload.width as usize,
         payload.height as usize,
-        32,
-        32,
+        target_width as usize,
+        target_height as usize,
     );
-    let (indices, palette) = quantize_rgba_to_palette(&resized, 32, false);
-    let width = 32usize;
-    let height = 32usize;
+    let (indices, palette) = quantize_rgba_to_palette(&resized, target_width as usize, false);
+    let width = target_width as usize;
+    let height = target_height as usize;
     let row_bytes = width;
-    let mask_row_bytes = width / 8;
+    let mask_row_bytes = width.div_ceil(8);
     let bitmap_row_bytes = mask_row_bytes;
     let mask_offset = 82usize;
     let bitmap_offset = mask_offset + mask_row_bytes * height;
@@ -1491,6 +1505,37 @@ mod tests {
             .expect("cicn preview")
             .expect("cicn data url")
             .starts_with("data:image/png;base64,"));
+    }
+
+    #[test]
+    fn cicn_encoder_preserves_requested_monster_icon_dimensions() {
+        for (width, height) in [(32u32, 32u32), (32, 64), (64, 32), (64, 64)] {
+            let mut rgba = Vec::new();
+            for y in 0..height {
+                for x in 0..width {
+                    rgba.extend_from_slice(&[
+                        (x * 5).min(255) as u8,
+                        (y * 3).min(255) as u8,
+                        ((x + y) * 2).min(255) as u8,
+                        255,
+                    ]);
+                }
+            }
+            let payload = RgbaImagePayload {
+                width,
+                height,
+                rgba_base64: STANDARD.encode(&rgba),
+            };
+            let cicn = encode_cicn_resource_with_dimensions(&payload, width, height)
+                .expect("dimensioned cicn");
+            let decoded = decode_cicn(&cicn).expect("decoded cicn");
+            assert_eq!(decoded.width, width);
+            assert_eq!(decoded.height, height);
+            assert!(preview_data_url_for_resource("cicn", &cicn)
+                .expect("cicn preview")
+                .expect("cicn data url")
+                .starts_with("data:image/png;base64,"));
+        }
     }
 
     #[test]

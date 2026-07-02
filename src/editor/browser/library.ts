@@ -1,6 +1,7 @@
 import { DecodedResourcePreview, LibraryCatalog, LibraryEntity, LibraryRecord, LibrarySource, ProvidenceWorkspace } from "../types";
 import { BrowserDirectoryHandle, BrowserFileSelection, BrowserScenarioSource } from "./fsAccess";
 import { inspectResourcePreview } from "./resourcePreview";
+import { mergeBrowserIconLibraryEntries } from "../iconLibrary";
 import { mergeBrowserMonsterLibraryEntries } from "../monsterLibrary";
 
 export const BROWSER_WORKSPACE_PATH = "browser://workspace";
@@ -65,16 +66,34 @@ export async function loadBundledLibraryCatalog() {
     }
     catalogs.push(await buildLibraryCatalogFromFiles(`bundled://${folder}`, files, sourceKind, "browser-bundled://library", "source-backed"));
   }
-  return mergeBrowserMonsterLibraryEntries(mergeCatalogs(catalogs));
+  return mergeBrowserIconLibraryEntries(mergeBrowserMonsterLibraryEntries(mergeCatalogs(catalogs)));
 }
 
 export async function importBrowserLibrary(source: BrowserScenarioSource, sourceKind: BrowserLibrarySourceKind) {
   const files = await readAllFiles(source);
-  return mergeBrowserMonsterLibraryEntries(await buildLibraryCatalogFromFiles(source.name, files, sourceKind, "browser-memory://library", "browser-fallback"));
+  return mergeBrowserIconLibraryEntries(mergeBrowserMonsterLibraryEntries(await buildLibraryCatalogFromFiles(source.name, files, sourceKind, "browser-memory://library", "browser-fallback")));
 }
 
 export async function loadBrowserBundledLibraryAssetPreview(asset: LibraryCatalog["assets"][number]) {
   return (await inspectBrowserBundledLibraryAssetPreview(asset)).dataUrl;
+}
+
+export async function loadBrowserBundledLibraryResourceData(asset: LibraryCatalog["assets"][number]) {
+  const folder = bundledFolderForSource(asset.source);
+  if (!folder) return null;
+  const [filePath, fragment] = splitResourceFragment(asset.relativePath);
+  if (!fragment) return null;
+  const url = `/bundled-libraries/${folder}/${encodePath(filePath.replace(/\\/g, "/"))}`;
+  if (!bundledResourceCache.has(url)) {
+    bundledResourceCache.set(url, fetch(url)
+      .then((response) => {
+        if (!response.ok) throw new Error(`Bundled library file missing: ${filePath}`);
+        return response.arrayBuffer();
+      })
+      .then((buffer) => parseResourceFork(new Uint8Array(buffer))));
+  }
+  const resources = await bundledResourceCache.get(url);
+  return resources?.find((entry) => entry.resourceType === fragment.resourceType && entry.id === fragment.resourceId)?.data ?? null;
 }
 
 export async function inspectBrowserBundledLibraryAssetPreview(asset: LibraryCatalog["assets"][number]): Promise<DecodedResourcePreview> {

@@ -12,6 +12,7 @@ import {
   MapRecord,
   MessageRecord,
   MonsterDescriptionRecord,
+  MonsterIconOverride,
   MonsterRecord,
   MonsterSet,
   MonsterSetId,
@@ -154,6 +155,7 @@ export type ParsedBrowserScenario = {
   monsters: MonsterRecord[];
   monsterSets: MonsterSet[];
   monsterDescriptions: MonsterDescriptionRecord[];
+  monsterIconOverrides: MonsterIconOverride[];
   scenarioItems: ScenarioItemRecord[];
   treasures: TreasureRecord[];
   shops: ShopRecord[];
@@ -230,7 +232,8 @@ export function parseScenarioBuffers(buffers: Map<string, Uint8Array>): ParsedBr
   const raceOverrides = parseRaceOverrides(buffers.get("Data Race"));
   const casteOverrides = parseCasteOverrides(buffers.get("Data Caste"));
   const assetCatalog = buildAssetCatalog(maps, randomLevels, monsters, monsterSets, buffers, diagnostics);
-  return { maps, landLayout, mapRecords, tileAttributes, triggers, randomLevels, extracodes, messages, optionLabels, battles, monsters, monsterSets, monsterDescriptions, scenarioItems, treasures, shops, simpleEncounters, complexEncounters, thiefEncounters, timedEncounters, spellOverrides, raceOverrides, casteOverrides, assetCatalog, records, diagnostics };
+  const monsterIconOverrides = parseScenarioMonsterIconOverrides(monsters, monsterSets, buffers, diagnostics);
+  return { maps, landLayout, mapRecords, tileAttributes, triggers, randomLevels, extracodes, messages, optionLabels, battles, monsters, monsterSets, monsterDescriptions, monsterIconOverrides, scenarioItems, treasures, shops, simpleEncounters, complexEncounters, thiefEncounters, timedEncounters, spellOverrides, raceOverrides, casteOverrides, assetCatalog, records, diagnostics };
 }
 
 function parseLandLayout(buffer: Uint8Array | undefined): LandLayout | null {
@@ -1119,6 +1122,51 @@ function buildScenarioIconCatalog(
   return icons.sort((a, b) => a.resourceId - b.resourceId);
 }
 
+function parseScenarioMonsterIconOverrides(
+  monsters: MonsterRecord[],
+  monsterSets: MonsterSet[],
+  buffers: Map<string, Uint8Array>,
+  diagnostics: Diagnostic[]
+): MonsterIconOverride[] {
+  const referenced = new Set([
+    ...monsterIconIds(monsters).map(Math.abs),
+    ...monsterSets.flatMap((set) => monsterIconIds(set.monsters).map(Math.abs))
+  ]);
+  if (referenced.size === 0) return [];
+  const resourcesById = new Map<number, ResourceEntry>();
+  for (const match of scenarioResourceEntries(buffers)) {
+    const { resource } = match;
+    if (resource.resourceType !== "cicn") continue;
+    const id = Math.abs(resource.id);
+    if (!resourcesById.has(id)) resourcesById.set(id, resource);
+  }
+  const overrides: MonsterIconOverride[] = [];
+  for (const targetBaseIconId of [...referenced].sort((a, b) => a - b)) {
+    const base = resourcesById.get(targetBaseIconId);
+    const paired = resourcesById.get(targetBaseIconId + 308);
+    if (!base && !paired) continue;
+    if (!base || !paired) {
+      diagnostics.push({
+        severity: "warning",
+        code: "incomplete-monster-icon-override",
+        message: `Scenario contains only one facing resource for monster icon override ${targetBaseIconId}. Both cicn ${targetBaseIconId} and ${targetBaseIconId + 308} are needed for a preserved override.`,
+        source: "Scenario resource fork"
+      });
+      continue;
+    }
+    overrides.push({
+      targetBaseIconId,
+      sourceBaseIconId: targetBaseIconId,
+      sourceKind: "scenario-resource",
+      sourceLabel: `Imported scenario override ${targetBaseIconId}`,
+      sourceBaseResourceBase64: bytesToBase64(base.data),
+      sourcePairedResourceBase64: bytesToBase64(paired.data),
+      imported: true
+    });
+  }
+  return overrides;
+}
+
 function monsterIconIds(monsters: MonsterRecord[]) {
   const ids = new Set<number>();
   for (const monster of monsters) {
@@ -1128,6 +1176,15 @@ function monsterIconIds(monsters: MonsterRecord[]) {
     ids.add(Math.abs(iconId));
   }
   return [...ids];
+}
+
+function bytesToBase64(bytes: Uint8Array) {
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+  }
+  return btoa(binary);
 }
 
 function buildScenarioSoundCatalog(

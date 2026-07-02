@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { ENTITY_TYPE_LABELS } from "../constants";
-import { loadBrowserBundledLibraryAssetPreview } from "../browser/library";
+import { loadBrowserBundledLibraryAssetPreview, loadBrowserBundledLibraryResourceData } from "../browser/library";
+import { createIconLibraryEntry, iconLibraryAssetResourceBase64, providenceIconLibraryAssets } from "../iconLibrary";
 import { TutorialTip } from "../components/TutorialTip";
 import { useIconPreviewUrl, type PreviewRuntimeContext } from "../previewUrls";
 import { isDraftEntity, LibraryDraftSpec } from "../libraryDrafts";
-import { EditorTab, LibraryAsset, LibraryCatalog, LibraryEntity, ManagedAssetKind, Project, ProjectCommand, RealmzTargetRecordKind, ScenarioItemRecord, SemanticEntity, SelectedEntity } from "../types";
+import { EditorTab, LibraryAsset, LibraryCatalog, LibraryEntity, ManagedAssetKind, Project, ProjectCommand, RealmzTargetRecordKind, ScenarioIconResource, ScenarioItemRecord, SemanticEntity, SelectedEntity } from "../types";
 import { selectEntityFromId } from "../utils";
 import { ScrollArea } from "../ui";
 import { renderListKey } from "../renderKeys";
@@ -162,6 +164,7 @@ export function SuiteDomainPanel({
   onApplyCommand,
   onCreateDraft,
   onUpdateDraft,
+  onUpdateLibraryCatalog,
   desktopRuntime = false,
   projectDir = "",
   workspaceDir = ""
@@ -176,6 +179,7 @@ export function SuiteDomainPanel({
   onApplyCommand?: (command: ProjectCommand) => void;
   onCreateDraft?: (spec: LibraryDraftSpec) => void;
   onUpdateDraft?: (entityId: string, changes: { label?: string; notes?: string }) => void;
+  onUpdateLibraryCatalog?: (catalog: LibraryCatalog, status: string) => void;
   desktopRuntime?: boolean;
   projectDir?: string;
   workspaceDir?: string;
@@ -271,6 +275,7 @@ export function SuiteDomainPanel({
           previewContext={{ desktopRuntime, projectDir, workspaceDir }}
           onSelectEntity={onSelectEntity}
           onApplyCommand={onApplyCommand}
+          onUpdateLibraryCatalog={onUpdateLibraryCatalog}
         />
       )}
       {project && targetRecordTypes.length > 0 && (
@@ -575,7 +580,8 @@ function ItemCatalogWorkbench({
   selectedEntity,
   previewContext,
   onSelectEntity,
-  onApplyCommand
+  onApplyCommand,
+  onUpdateLibraryCatalog
 }: {
   project: Project;
   catalog?: LibraryCatalog | null;
@@ -583,6 +589,7 @@ function ItemCatalogWorkbench({
   previewContext: PreviewRuntimeContext;
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
+  onUpdateLibraryCatalog?: (catalog: LibraryCatalog, status: string) => void;
 }) {
   const deferredOptions = useDeferredItemReferenceOptions(project, catalog);
   const options = deferredOptions ?? [];
@@ -678,8 +685,11 @@ function ItemCatalogWorkbench({
           option={selectedOption}
           entity={selectedEntityDetail}
           project={project}
+          catalog={catalog}
+          previewContext={previewContext}
           onSelectEntity={onSelectEntity}
           onApplyCommand={onApplyCommand}
+          onUpdateLibraryCatalog={onUpdateLibraryCatalog}
         />
       </div>
     </article>
@@ -738,14 +748,20 @@ function ItemDetailPanel({
   option,
   entity,
   project,
+  catalog,
+  previewContext,
   onSelectEntity,
-  onApplyCommand
+  onApplyCommand,
+  onUpdateLibraryCatalog
 }: {
   option: ItemReferenceOption | null;
   entity: SemanticEntity | LibraryEntity | null;
   project: Project;
+  catalog?: LibraryCatalog | null;
+  previewContext: PreviewRuntimeContext;
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
+  onUpdateLibraryCatalog?: (catalog: LibraryCatalog, status: string) => void;
 }) {
   if (!option) {
     return (
@@ -868,6 +884,11 @@ function ItemDetailPanel({
         <ScenarioItemEditor
           record={scenarioItem ?? emptyScenarioItemForUi(customRecordId)}
           itemId={option.value}
+          project={project}
+          catalog={catalog}
+          previewContext={previewContext}
+          onApplyCommand={onApplyCommand}
+          onUpdateLibraryCatalog={onUpdateLibraryCatalog}
           onChange={(field, value) => {
             onApplyCommand?.({
               kind: "updateScenarioItemRecord",
@@ -1028,10 +1049,20 @@ const SCENARIO_ITEM_EDIT_GROUPS: Array<{
 function ScenarioItemEditor({
   record,
   itemId,
+  project,
+  catalog,
+  previewContext,
+  onApplyCommand,
+  onUpdateLibraryCatalog,
   onChange
 }: {
   record: ScenarioItemRecord;
   itemId: number;
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  previewContext: PreviewRuntimeContext;
+  onApplyCommand?: (command: ProjectCommand) => void;
+  onUpdateLibraryCatalog?: (catalog: LibraryCatalog, status: string) => void;
   onChange: (field: ScenarioItemNumberKey, value: number) => void;
 }) {
   return (
@@ -1050,7 +1081,18 @@ function ScenarioItemEditor({
       <div className="scenario-item-editor-grid">
         {SCENARIO_ITEM_EDIT_GROUPS.map((group) => (
           <ItemFieldGroup key={group.title} title={group.title}>
-            {group.fields.map((field) => (
+            {group.fields.map((field) => field.key === "iconId" ? (
+              <ItemIconField
+                key={field.key}
+                value={Number(record.iconId ?? 0)}
+                project={project}
+                catalog={catalog}
+                previewContext={previewContext}
+                onApplyCommand={onApplyCommand}
+                onUpdateLibraryCatalog={onUpdateLibraryCatalog}
+                onChange={(value) => onChange("iconId", value)}
+              />
+            ) : (
               <ItemNumberInput
                 key={field.key}
                 label={field.label}
@@ -1064,6 +1106,227 @@ function ScenarioItemEditor({
       </div>
     </section>
   );
+}
+
+type ItemIconOption = {
+  key: string;
+  resourceId: number;
+  label: string;
+  detail: string;
+  sourceKind: ScenarioIconResource["sourceKind"] | "raw";
+  asset?: LibraryAsset;
+  resourceBase64?: string | null;
+  previewPath?: string | null;
+};
+
+function ItemIconField({
+  value,
+  project,
+  catalog,
+  previewContext,
+  onApplyCommand,
+  onUpdateLibraryCatalog,
+  onChange
+}: {
+  value: number;
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  previewContext: PreviewRuntimeContext;
+  onApplyCommand?: (command: ProjectCommand) => void;
+  onUpdateLibraryCatalog?: (catalog: LibraryCatalog, status: string) => void;
+  onChange: (value: number) => void;
+}) {
+  const options = useMemo(() => itemIconOptions(project, catalog, value), [catalog, project, value]);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  useEffect(() => {
+    if (!selectedKey) return;
+    const selectedOption = options.find((option) => option.key === selectedKey);
+    if (!selectedOption || Math.abs(selectedOption.resourceId) !== Math.abs(value)) setSelectedKey(null);
+  }, [options, selectedKey, value]);
+  const selected = (selectedKey ? options.find((option) => option.key === selectedKey) : null) ??
+    options.find((option) => Math.abs(option.resourceId) === Math.abs(value)) ??
+    options[0] ??
+    null;
+  const previewUrl = useIconPreviewUrl(value, project, catalog, previewContext);
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  useEffect(() => setFailedUrl(null), [previewUrl]);
+  const usableUrl = previewUrl && previewUrl !== failedUrl ? previewUrl : null;
+  const canCopyToLibrary = Boolean(selected && selected.sourceKind !== "raw" && onUpdateLibraryCatalog);
+  const packageScenarioResource = async (option: ItemIconOption) => {
+    if (option.sourceKind !== "providence-library") return;
+    const resourceBase64 = await loadItemIconResourceBase64(option, previewContext, catalog);
+    if (!resourceBase64) return;
+    onApplyCommand?.({
+      kind: "upsertScenarioIconResource",
+      label: `Package item icon ${option.resourceId}`,
+      resource: {
+        resourceId: option.resourceId,
+        label: option.label,
+        sourceKind: "providence-library",
+        resourceBase64,
+        previewPath: option.previewPath ?? option.asset?.previewPath ?? null
+      }
+    });
+  };
+  const copyToLibrary = async () => {
+    if (!selected || !onUpdateLibraryCatalog) return;
+    const resourceBase64 = await loadItemIconResourceBase64(selected, previewContext, catalog);
+    if (!resourceBase64) return;
+    const sourceLabel = selected.label || `cicn ${selected.resourceId}`;
+    const { catalog: nextCatalog, entity } = createIconLibraryEntry(catalog ?? null, catalog?.managedPath ?? "browser://workspace/library", {
+      kind: "item-icon",
+      label: `${sourceLabel} Variant`,
+      origin: {
+        kind: selected.sourceKind === "providence-library" ? "library-variant" : selected.sourceKind === "vault-of-arcana" ? "vault-of-arcana" : "external-resource",
+        sourceId: selected.key,
+        sourceLabel
+      },
+      resources: [{
+        role: "item",
+        resourceId: Math.abs(selected.resourceId),
+        resourceType: "cicn",
+        label: sourceLabel,
+        resourceBase64,
+        previewPath: selected.previewPath ?? selected.asset?.previewPath ?? null,
+        bytes: selected.asset?.bytes,
+        sha256: selected.asset?.sha256
+      }]
+    });
+    onUpdateLibraryCatalog(nextCatalog, entity ? `Added ${entity.label} to Icon Library` : "Updated Icon Library");
+  };
+  return (
+    <div className="item-icon-field">
+      <label className="item-number-input" title="Icon drawn for this item in Realmz lists and menus. Providence item-library icons are packaged only when a scenario item references them.">
+        <span>Icon</span>
+        <span className="item-icon-field-control">
+          <span className="item-icon-preview" title={value ? `cicn ${value}` : "No icon"}>
+            {usableUrl ? <img src={usableUrl} alt="" onError={() => setFailedUrl(usableUrl)} /> : <i>{value || "-"}</i>}
+          </span>
+          <input
+            type="number"
+            value={value}
+            onChange={(event) => {
+              const next = Number(event.currentTarget.value);
+              if (Number.isFinite(next)) onChange(Math.trunc(next));
+            }}
+          />
+        </span>
+      </label>
+      <select
+        className="item-icon-source-select"
+        value={selected?.key ?? ""}
+        onChange={(event) => {
+          const option = options.find((candidate) => candidate.key === event.currentTarget.value);
+          if (!option) return;
+          setSelectedKey(option.key);
+          onChange(option.resourceId);
+          void packageScenarioResource(option);
+        }}
+      >
+        {options.map((option) => (
+          <option key={option.key} value={option.key}>{option.label}</option>
+        ))}
+      </select>
+      {selected && <small>{selected.detail}</small>}
+      <button type="button" className="btn btn-secondary btn-xs" disabled={!canCopyToLibrary} onClick={() => void copyToLibrary()}>
+        {selected?.sourceKind === "providence-library" ? "Duplicate Icon Variant" : "Copy To Icon Library"}
+      </button>
+    </div>
+  );
+}
+
+function itemIconOptions(project: Project, catalog: LibraryCatalog | null | undefined, currentIconId: number): ItemIconOption[] {
+  const options: ItemIconOption[] = [];
+  const seen = new Set<string>();
+  const add = (option: ItemIconOption) => {
+    if (!Number.isFinite(option.resourceId)) return;
+    if (seen.has(option.key)) return;
+    seen.add(option.key);
+    options.push(option);
+  };
+  if (currentIconId) {
+    add({
+      key: `raw:${Math.abs(currentIconId)}`,
+      resourceId: Math.abs(currentIconId),
+      label: `Current icon ${Math.abs(currentIconId)}`,
+      detail: "Raw icon ID; preserved until changed.",
+      sourceKind: "raw"
+    });
+  }
+  for (const resource of project.scenarioIconResources ?? []) {
+    add({
+      key: `scenario-resource:${Math.abs(resource.resourceId)}`,
+      resourceId: Math.abs(resource.resourceId),
+      label: `${resource.label || "Scenario icon"} (${Math.abs(resource.resourceId)})`,
+      detail: "Packaged with this scenario when referenced by a custom item.",
+      sourceKind: resource.sourceKind,
+      resourceBase64: resource.resourceBase64,
+      previewPath: resource.previewPath ?? null
+    });
+  }
+  for (const asset of catalog?.assets ?? []) {
+    if (!isVaultIconAsset(asset)) continue;
+    add({
+      key: `vault:${asset.id}`,
+      resourceId: Math.abs(asset.resourceId ?? 0),
+      label: `${asset.label || "Vault icon"} (${Math.abs(asset.resourceId ?? 0)})`,
+      detail: "Protected Vault of Arcana icon; copy to the Providence Icon Library before editing.",
+      sourceKind: "vault-of-arcana",
+      asset,
+      previewPath: asset.previewPath ?? null
+    });
+  }
+  for (const asset of providenceIconLibraryAssets(catalog, "item-icon")) {
+    add({
+      key: `providence:${asset.id}`,
+      resourceId: Math.abs(asset.resourceId ?? 0),
+      label: `${asset.label || "Providence item icon"} (${Math.abs(asset.resourceId ?? 0)})`,
+      detail: "Editable Providence Icon Library entry; selecting it packages this icon with the scenario.",
+      sourceKind: "providence-library",
+      asset,
+      previewPath: asset.previewPath ?? null
+    });
+  }
+  return options.sort((left, right) => {
+    const currentLeft = Math.abs(left.resourceId) === Math.abs(currentIconId) ? -1 : 0;
+    const currentRight = Math.abs(right.resourceId) === Math.abs(currentIconId) ? -1 : 0;
+    return currentLeft - currentRight || left.resourceId - right.resourceId || left.label.localeCompare(right.label);
+  });
+}
+
+function isVaultIconAsset(asset: LibraryAsset) {
+  if (asset.resourceType !== "cicn" || asset.resourceId == null) return false;
+  const sourceText = `${asset.type} ${asset.source} ${asset.relativePath} ${asset.label}`.toLowerCase();
+  return asset.type === "vault-icon" || sourceText.includes("vault of arcana") || sourceText.includes("vault-of-arcana");
+}
+
+async function loadItemIconResourceBase64(
+  option: ItemIconOption,
+  previewContext: PreviewRuntimeContext,
+  catalog: LibraryCatalog | null | undefined
+) {
+  if (option.resourceBase64) return option.resourceBase64;
+  if (!option.asset) return null;
+  const providenceBase64 = iconLibraryAssetResourceBase64(catalog, option.asset);
+  if (providenceBase64) return providenceBase64;
+  if (previewContext.desktopRuntime) {
+    if (!previewContext.workspaceDir) throw new Error("Workspace directory is required to load icon resource data.");
+    return invoke<string>("load_library_resource_data", {
+      workspaceDir: previewContext.workspaceDir,
+      source: option.asset.source,
+      relativePath: option.asset.relativePath
+    });
+  }
+  const data = await loadBrowserBundledLibraryResourceData(option.asset);
+  return data ? bytesToBase64(data) : null;
+}
+
+function bytesToBase64(bytes: Uint8Array) {
+  let binary = "";
+  for (let index = 0; index < bytes.length; index += 1) {
+    binary += String.fromCharCode(bytes[index]);
+  }
+  return btoa(binary);
 }
 
 function ItemNumberInput({

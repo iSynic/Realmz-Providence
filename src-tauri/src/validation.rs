@@ -2538,6 +2538,8 @@ mod tests {
             monsters: Vec::new(),
             monster_sets: Vec::new(),
             monster_descriptions: Vec::new(),
+            monster_icon_overrides: Vec::new(),
+            scenario_icon_resources: Vec::new(),
             scenario_items: Vec::new(),
             treasures: Vec::new(),
             shops: Vec::new(),

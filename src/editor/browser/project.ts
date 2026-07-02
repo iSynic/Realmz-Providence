@@ -51,6 +51,8 @@ export function createBrowserProject(projectName: string): Project {
     monsters: [],
     monsterSets: [],
     monsterDescriptions: [],
+    monsterIconOverrides: [],
+    scenarioIconResources: [],
     scenarioItems: [],
     treasures: [],
     shops: [],
@@ -115,6 +117,8 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
     monsters: parsed.monsters,
     monsterSets: parsed.monsterSets,
     monsterDescriptions: parsed.monsterDescriptions,
+    monsterIconOverrides: parsed.monsterIconOverrides,
+    scenarioIconResources: [],
     scenarioItems: parsed.scenarioItems,
     treasures: parsed.treasures,
     shops: parsed.shops,
@@ -438,6 +442,8 @@ export async function openBrowserProject(source: BrowserScenarioSource): Promise
   project.monsters ??= [];
   project.monsterSets ??= [];
   project.monsterDescriptions ??= [];
+  project.monsterIconOverrides ??= [];
+  project.scenarioIconResources ??= [];
   project.scenarioItems ??= [];
   project.treasures ??= [];
   project.shops ??= [];
@@ -925,6 +931,7 @@ function knownIconIds(project: Project) {
     if (asset.resourceType === "cicn") insertIconId(ids, asset.resourceId);
   }
   for (const asset of project.assetCatalog.icons ?? []) insertIconId(ids, asset.resourceId);
+  for (const resource of project.scenarioIconResources ?? []) insertIconId(ids, resource.resourceId);
   for (const entity of project.semanticSchema.entities) {
     if (entity.type !== "resource" && entity.type !== "icon-resource" && entity.type !== "special-land-tile") continue;
     const resourceId = typeof entity.summary.resourceId === "number" ? entity.summary.resourceId : Number(entity.summary.resourceId);

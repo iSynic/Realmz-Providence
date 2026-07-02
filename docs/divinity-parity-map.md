@@ -42,10 +42,10 @@ See `docs/archaeology-priorities.md` for the editor-first reverse-engineering ba
 | Map Editor | Maps | Author map tiles, APs, random rectangles, map flags, special/icon tiles, and source-backed map-record fields | Map note/start authoring beyond decoded MD2 fields |
 | Dungeon Editor | Maps | Inspect dungeon levels, render profiles, LOS/darkness evidence | Dungeon geometry and flag authoring |
 | Macros / Quests | Scripts | Author macros and quest flag script links; validate missing targets | Dedicated quest registry and macro graph view |
-| Monster Mash | Combat/Library | Inspect shared monster icon material | Scenario icon import/copy workflow |
-| Vault of Arcana | Economy/Library | Inspect shared item/icon material | Copy/adapt vault entries into scenario records |
+| Monster Mash | Combat/Library | Inspect protected Monster Mash art, import or copy editable Providence Icon Library variants, and author scenario-local Build Icon Set overrides for paired monster `cicn` resources | Editing/exporting a global Monster Mash-compatible file remains deferred |
+| Vault of Arcana | Economy/Library | Inspect protected item/icon material and copy Vault `cicn` art into editable Providence Icon Library entries for scenario item use | Full Vault item-definition copy/adapt workflow remains partial |
 | Item Editor | Economy | Browse built-in item families and imported scenario `Data NI` special items; item pickers now distinguish scenario items from Realmz library items | Full 900-999 custom item editor, including names/descriptions/icons |
-| Adding Monster & Item Icons | Assets | Import managed picture/icon/sound assets; preview resource forks | Icon assignment to monster/item records |
+| Adding Monster & Item Icons | Assets / Combat / Economy | Import managed picture/icon/sound assets; import Providence monster icon sets as paired `cicn` resources; preview resource forks | Item icon image import and global Monster Mash/Vault-compatible export files |
 | Creating Special Land Tiles | Assets/Maps | Import, preview, place, validate, and preserve special land/icon tiles as negative Realmz field values | Special tile asset creation/editing |
 | Pictures & Sounds | Assets/Strings/Action Point Hub | Managed scenario assets, Realmz library resources, Divinity/UI reference assets, target picker for PICT/snd actions | Resource ID conflict resolution and richer previews |
 | Standard Land Tile Editor | Assets/Maps | Full current-landlook atlas browser, per-tile property inspector, paint-from-inspector action, and decoded attribute grouping from landlook `mapstats`; `Data Solids` remains special/icon solidity evidence | Tile-attribute writing remains future work |

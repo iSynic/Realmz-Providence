@@ -118,6 +118,7 @@ function WorkbenchRouterContent({
         onApplyCommand={onApplyCommand}
         onCreateDraft={onCreateDraft}
         onUpdateDraft={onUpdateDraft}
+        onUpdateLibraryCatalog={onUpdateLibraryCatalog}
       />
     );
   }
@@ -199,6 +200,7 @@ function WorkbenchRouterContent({
         onApplyCommand={onApplyCommand}
         onCreateDraft={onCreateDraft}
         onUpdateDraft={onUpdateDraft}
+        onUpdateLibraryCatalog={onUpdateLibraryCatalog}
       />
     );
   }
@@ -246,6 +248,7 @@ function WorkbenchRouterContent({
         onSelectEditor={onSelectEditor}
         onOpenTool={onOpenTool}
         onApplyCommand={onApplyCommand}
+        onUpdateLibraryCatalog={onUpdateLibraryCatalog}
       />
     );
   }
@@ -265,6 +268,7 @@ function WorkbenchRouterContent({
         onApplyCommand={onApplyCommand}
         onCreateDraft={onCreateDraft}
         onUpdateDraft={onUpdateDraft}
+        onUpdateLibraryCatalog={onUpdateLibraryCatalog}
       />
     );
   }

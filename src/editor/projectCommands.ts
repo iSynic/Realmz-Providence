@@ -61,22 +61,27 @@ import {
   bulkUpdateMessageRecords,
   clearOptionLabel,
   createMonsterFromTemplate,
+  createMonstersFromTemplates,
   copyCurrentMonsterToAllSets,
   createMonsterVariantFromNormal,
   createOptionLabel,
   createTargetRecord,
+  deleteMonsterIconOverride,
+  deleteScenarioIconResource,
   deleteTargetRecord,
   duplicateMessageRecord,
   duplicateOptionLabel,
   emptyScenarioItem,
   generateMonsterVariants,
   switchMonsterRecords,
+  upsertMonsterIconOverride,
   updateMonsterRecord,
   updateOptionLabel,
   updateRecord,
   updateStringSound,
   upsertMonsterDescription,
-  upsertQuestLabel
+  upsertQuestLabel,
+  upsertScenarioIconResource
 } from "./projectCommands/targetRecordCommands";
 import {
   addTileToPalette,
@@ -154,11 +159,16 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "updateOptionLabel") return updateOptionLabel(project, command.id, command.changes);
   if (command.kind === "updateBattleRecord") return updateRecord(project, "battles", command.id, command.changes);
   if (command.kind === "createMonsterFromTemplate") return createMonsterFromTemplate(project, command.id, command.template, command.description, command.setId);
+  if (command.kind === "createMonstersFromTemplates") return createMonstersFromTemplates(project, command.entries);
   if (command.kind === "updateMonsterRecord") return updateMonsterRecord(project, command.id, command.changes, command.setId);
   if (command.kind === "createMonsterVariantFromNormal") return createMonsterVariantFromNormal(project, command.id, command.setId);
   if (command.kind === "copyCurrentMonsterToAllSets") return copyCurrentMonsterToAllSets(project, command.id, command.sourceSetId);
   if (command.kind === "switchMonsterRecords") return switchMonsterRecords(project, command.setId, command.fromId, command.toId);
   if (command.kind === "generateMonsterVariants") return generateMonsterVariants(project, command.id);
+  if (command.kind === "upsertMonsterIconOverride") return upsertMonsterIconOverride(project, command.override);
+  if (command.kind === "deleteMonsterIconOverride") return deleteMonsterIconOverride(project, command.targetBaseIconId);
+  if (command.kind === "upsertScenarioIconResource") return upsertScenarioIconResource(project, command.resource);
+  if (command.kind === "deleteScenarioIconResource") return deleteScenarioIconResource(project, command.resourceId);
   if (command.kind === "upsertMonsterDescription") return upsertMonsterDescription(project, command.id, command.text);
   if (command.kind === "updateScenarioItemRecord") return updateRecord(project, "scenarioItems", command.id, command.changes);
   if (command.kind === "clearScenarioItemRecord") return updateRecord(project, "scenarioItems", command.id, emptyScenarioItem(command.id));
@@ -214,5 +224,6 @@ export function projectCommandLabel(command: ProjectCommand) {
 export function projectCommandChangeCount(command: ProjectCommand) {
   if (command.kind === "paintTiles") return command.cells.length;
   if (command.kind === "bulkUpdateMessageRecords") return command.updates.length;
+  if (command.kind === "createMonstersFromTemplates") return command.entries.length;
   return 1;
 }

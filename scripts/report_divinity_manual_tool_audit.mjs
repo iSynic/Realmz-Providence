@@ -138,10 +138,10 @@ const AUDIT_BY_PAGE = {
     parityKeys: ["Item Editor", "Vault of Arcana"],
     registryLabels: ["Items", "Bag of Holding", "Vault of Arcana"],
     summary: "Manual Item Editor and shared item libraries cover standard items, scenario custom items, icons, descriptions, and item behavior values.",
-    handling: "Providence browses built-in item families and imported scenario items, and supports custom item workflows where source-backed.",
+    handling: "Providence browses built-in item families and imported scenario items, supports custom item workflows where source-backed, and lets custom scenario items choose protected Vault icons or editable Providence item-icon library entries. Providence-owned item icons are exported as scenario `cicn` resources only when a scenario item references them.",
     evidence: ["docs/generated/item-treasure-shop-evidence.json", "docs/generated/resource-icon-evidence.json"],
-    gaps: ["Full 900-999 custom item editor, names/descriptions/icons, and all behavior labels remain incomplete.", "Vault copy/adapt workflow is not full parity."],
-    followUp: ["Run a separate Item Editor field audit against Data NI and library item summaries.", "Keep item icon/resource writing tied to asset authoring evidence."]
+    gaps: ["Full 900-999 custom item names/descriptions and all behavior labels remain incomplete.", "Vault copy/adapt workflow is not full item parity beyond icon-library copying."],
+    followUp: ["Run a separate Item Editor field audit against Data NI and library item summaries.", "Keep item icon resource writes explicit and reference-driven; unused Providence icon-library entries should remain workspace/catalog data only."]
   }),
   15: audit({
     status: "partial",
@@ -240,28 +240,28 @@ const AUDIT_BY_PAGE = {
     followUp: ["Audit battle/monster macro examples against current AP flow and target pickers.", "Add quest registry requirements from manual examples if needed."]
   }),
   23: audit({
-    status: "inspect-only",
+    status: "partial",
     domain: "Combat / Library",
-    tools: ["Monster Mash", "Scenario Icons"],
+    tools: ["Combat / Icon Set", "Monster Library", "Scenario Icons"],
     parityKeys: ["Monster Mash"],
     registryLabels: ["Monster Mash", "Scenario Icons"],
     summary: "Manual Monster Mash provides shared monster icon material and icon-set workflows.",
-    handling: "Providence browses Monster Mash icon reference material and links it from Combat/Assets, but treats it as reference unless scenario-owned.",
-    evidence: ["src/editor/panels/CombatPanel.tsx", "docs/generated/resource-icon-evidence.json"],
-    gaps: ["Build Icon Set and Monster Mash override writing are not implemented.", "Scenario-owned icon copy/export behavior needs fixture proof."],
-    followUp: ["Capture a Divinity before/after fixture for Build Icon Set or equivalent icon override writing.", "Keep Monster Mash as reference until scenario-owned resource behavior is proven."]
+    handling: "Providence keeps Monster Mash as protected reference material and adds a Combat Build Icon Set workflow for scenario-owned monster icon overrides. The editor stores override intent as standard target icon -> Monster Mash or Providence Icon Library source icon, exports both facing `cicn` resources at the target IDs, and restores defaults by removing the override so Realmz falls back to Family Jewels. Protected Monster Mash sources can be copied into the editable Providence Icon Library as variants, and Providence-owned monster icon sets can be imported from image files as mirrored or custom-facing paired `cicn` resources.",
+    evidence: ["src/editor/panels/CombatPanel.tsx", "src/editor/iconLibrary.ts", "src/editor/projectCommands/targetRecordCommands.ts", "src-tauri/src/exporter.rs", "docs/generated/resource-icon-evidence.json"],
+    gaps: ["Editing global Monster Mash itself is intentionally not implemented; Providence edits workspace-scoped icon-library copies instead.", "Classic Realmz documents an approximate per-scenario monster icon-set limit; Providence warns near that boundary but does not yet enforce a hard cap.", "Existing scenario-owned override import is best-effort and depends on complete paired `cicn` resources.", "Image import creates Providence icon-library entries only; it does not mutate Monster Mash or Family Jewels."],
+    followUp: ["Add a focused imported-scenario regression fixture for existing icon-set overrides.", "Consider a later explicit Monster Mash-compatible export file, separate from scenario export."]
   }),
   24: audit({
-    status: "inspect-only",
+    status: "partial",
     domain: "Economy / Library",
-    tools: ["Vault of Arcana", "Items"],
+    tools: ["Vault of Arcana", "Items", "Providence Icon Library"],
     parityKeys: ["Vault of Arcana"],
     registryLabels: ["Vault of Arcana", "Items"],
     summary: "Manual Vault of Arcana is shared item/icon reference material for item authoring.",
-    handling: "Providence imports and browses Vault/library item material as reference data.",
-    evidence: ["src/editor/workbench/registry.tsx", "docs/generated/resource-icon-evidence.json", "docs/generated/item-treasure-shop-evidence.json"],
-    gaps: ["Copy/adapt vault entries into scenario custom item records is not full parity.", "Item icon/name/description packaging still needs stronger evidence."],
-    followUp: ["Audit Vault workflows together with Item Editor custom item work.", "Do not silently treat library items as scenario-owned custom items."]
+    handling: "Providence imports and browses Vault/library item material as protected reference data. Vault `cicn` icons can be copied into editable Providence Icon Library entries, and custom scenario items can reference Providence item-icon entries; referenced custom item icons are packaged into the scenario resource fork on export.",
+    evidence: ["src/editor/workbench/registry.tsx", "src/editor/panels/SuiteDomainPanel.tsx", "src/editor/iconLibrary.ts", "src-tauri/src/exporter.rs", "docs/generated/resource-icon-evidence.json", "docs/generated/item-treasure-shop-evidence.json"],
+    gaps: ["Editing global Vault of Arcana itself is intentionally not implemented; Providence edits workspace-scoped icon-library copies instead.", "Copy/adapt vault item definitions into scenario custom item records is not full parity beyond icon copying."],
+    followUp: ["Audit Vault item workflows together with Item Editor custom item work.", "Consider a later explicit Vault-compatible export file, separate from scenario export."]
   }),
   25: audit({
     status: "partial",
@@ -270,10 +270,10 @@ const AUDIT_BY_PAGE = {
     parityKeys: ["Adding Monster & Item Icons"],
     registryLabels: ["Scenario Icons", "Monster Editor", "Items"],
     summary: "Manual icon chapter covers adding custom monster and item icons into scenario resources and assigning them.",
-    handling: "Providence manages scenario icon resources and now exposes monster icon assignment, with broader asset previews.",
-    evidence: ["docs/generated/resource-icon-evidence.json", "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"],
-    gaps: ["Item icon assignment and full custom icon export workflow are incomplete.", "Monster Mash and item icon resource ID conflict rules need fixture-backed policy."],
-    followUp: ["Audit icon import, assignment, and export behavior for both monsters and items.", "Add fixtures for custom cicn resource writes before claiming full parity."]
+    handling: "Providence manages scenario icon resources through explicit use sites: Combat Build Icon Set exports paired monster override `cicn` resources, and Economy custom items can package referenced Providence item-icon resources. Protected Monster Mash and Vault files remain immutable defaults, while user additions live in the workspace-scoped Providence Icon Library. Monster icon-set import supports 32x32, 32x64, 64x32, and 64x64 paired `cicn` resources.",
+    evidence: ["docs/generated/resource-icon-evidence.json", "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md", "src/editor/iconLibrary.ts", "src-tauri/src/exporter.rs"],
+    gaps: ["Monster Mash and item icon resource ID conflict rules need fixture-backed policy.", "Item icon image import and Vault-compatible export files remain deferred beyond the current monster icon-set import flow."],
+    followUp: ["Add fixtures for custom cicn resource writes before claiming full icon-authoring parity.", "Add a later Vault-compatible item icon image import workflow."]
   }),
   26: audit({
     status: "partial",

@@ -712,6 +712,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "Divinity's monster and item reference material maps to Combat, Economy, Rules, Assets, and Records library views.",
           "Divinity's icon, special land tile, picture, and sound chapters map to the Assets reference library and map paint pickers.",
           "Standard Realmz landlooks, monster icons, and shared rules can be displayed from Library even when the scenario does not carry those resources.",
+          "Providence-owned library entries, including monster templates and icon-library variants, are reusable workspace data. They become scenario data only when copied into scenario records or explicitly packaged through a supported scenario resource workflow.",
           "Scenario-local custom records, Scenario.rsrc entries, custom landlooks, and imported assets remain project-owned and exportable when Providence has writer support."
         ],
         callout: {
@@ -757,8 +758,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         ],
         points: [
           "Maps uses library landlook atlases, official marker/icon references, paintable special land tiles, and fallback previews for negative tile resources.",
-          "Combat uses library actor/creature icons, Monster Scrapbook templates, and Monster Mash art while keeping scenario Data MD and Data BD records editable in Project Workbench.",
-          "Economy uses Bag of Holding, Vault of Arcana, and shared item records to label treasure, shops, and custom item copy workflows.",
+          "Combat uses library actor/creature icons, Monster Scrapbook templates, protected Monster Mash art, and Providence Icon Library pairs while keeping scenario Data MD and Data BD records editable in Project Workbench.",
+          "Economy uses Bag of Holding, Vault of Arcana, shared item records, and Providence item-icon library entries to label treasure, shops, and custom item copy workflows.",
           "Rules uses shared spell, race, and caste data as reference/copy sources while scenario overrides remain source-backed project records.",
           "Assets uses Library to distinguish Realmz built-ins, Divinity reference art, UI-only evidence, scenario-owned media, and unresolved resource fallbacks.",
           "Global Search indexes Library entries so a known icon, item, monster, spell, or resource can be found even before the current scenario references it."
@@ -2115,11 +2116,15 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "Monster Icons",
         paragraphs: [
           "Monster icon IDs resolve through cicn resources. Providence prefers project-local decoded scenario icons, then imported asset catalog entries, then bundled Realmz actor/creature reference art when the ID is known to be built into Realmz.",
-          "Scenario-local monster icons can be high-numbered cicn resources, especially in imported third-party scenarios. Those must be decoded into the project so desktop Battles and Monsters can preview the same art Realmz uses."
+          "Scenario-local monster icons can be high-numbered cicn resources, especially in imported third-party scenarios. Those must be decoded into the project so desktop Battles and Monsters can preview the same art Realmz uses.",
+          "Build Icon Set copies paired Monster Mash or Providence Icon Library cicn resources into the scenario at standard Family Jewels target IDs. Monster records keep their normal icon IDs; Realmz sees the replacement art because the scenario resource fork shadows the default icon pair."
         ],
         points: [
           "A blank preview means the monster record still has an icon ID, but Providence cannot currently resolve usable art for that ID.",
-          "Monster Mash is useful icon reference material, but it is not automatically a scenario-owned asset.",
+          "Monster Mash and Providence monster-icon library art are only used after an explicit Build Icon Set override; Providence does not silently substitute those previews for Family Jewels defaults.",
+          "Facing art is stored as a real paired resource at base icon + 308. Providence exports both resources for each override.",
+          "Protected Monster Mash source pairs can be copied into editable Providence Icon Library variants without mutating the global Monster Mash support file.",
+          "Providence monster icon sets can also be imported from image files. One-image imports generate the paired facing by mirroring; advanced imports can supply distinct paired facing art.",
           "Actor and creature library icons are built into Realmz and can be shown as reference-only previews.",
           "Project-local cicn previews should win over reference libraries when a scenario provides its own icon with the same ID."
         ],
@@ -2133,12 +2138,12 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "Monster Library",
         paragraphs: [
           "Monster Library combines protected built-in Monster Scrapbook records with editable Providence workspace entries, overrides, and variants. Built-ins can be inspected, customized through an override, restored to their protected default, or copied forward, but they cannot be overwritten in place.",
-          "Monster Mash remains resource reference material rather than an editable scenario monster record."
+          "Monster Mash remains protected icon source material rather than an editable scenario monster record. Copy Monster Mash pairs into the Providence Icon Library when you want an editable reusable art variant, then use Build Icon Set when the scenario should override standard monster art."
         ],
         points: [
           "Use built-ins as design reference, customize them into the Providence library for editing, or copy any library entry into Scenario Monsters before using it in battles or scripts.",
           "Library copies can create Normal only, exact records in all monster sets, or Normal plus Providence-generated Monster/Mega variants.",
-          "Use Monster Mash and Reference Libraries to understand icon IDs, but import or decode scenario-owned cicn resources when a scenario needs custom art.",
+          "Use Monster Mash or Providence Icon Library source pairs through Build Icon Set for monster art overrides; use Assets for broader imported resource inspection.",
           "Scenario Monsters are the runtime/export layer. Providence monster-library entries are not exported as scenario data unless copied into Scenario Monsters."
         ]
       },
@@ -2504,12 +2509,14 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "Custom Items",
         paragraphs: [
           "The Item Editor can copy a built-in item into the next available custom slot, then edit scenario-backed fields for the custom item.",
-          "Scenario item fields remain numeric where Divinity/Realmz labels are still being verified, but the editor groups them by identity, equipping, damage, restrictions, and special behavior so authors do not have to read a raw 100-byte record."
+          "Scenario item fields remain numeric where Divinity/Realmz labels are still being verified, but the editor groups them by identity, equipping, damage, restrictions, and special behavior so authors do not have to read a raw 100-byte record.",
+          "Item icon pickers can browse protected Vault art and editable Providence item-icon library entries. Providence packages a custom item cicn into the scenario only when a scenario item record references that custom icon ID."
         ],
         points: [
           "Custom item slots use item IDs 900-999.",
           "Negative cost marks a unique item in Realmz evidence.",
           "Door-like items can call Extra Action Points through special fields, so item edits can affect Scripts as well as Economy.",
+          "Protected Vault icon art can be copied into the Providence Icon Library for reusable custom item art without mutating Vault of Arcana.",
           "Use Used By links to find treasure, shop, and script references before changing an existing item ID."
         ]
       },
@@ -2519,7 +2526,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "Do not edit a built-in item and expect it to export as scenario data. Copy it into a custom slot first.",
           "Do not confuse Data SD source shop records with runtime shop cache stock.",
           "Do not erase unknown imported item IDs just because the current library cannot name them; preserve raw IDs until the source is understood.",
-          "Do not assume an item icon preview means the item itself is scenario-owned. The art may come from a reference library.",
+          "Do not assume an item icon preview means the item itself is scenario-owned. The art may come from a protected Vault reference or a Providence Icon Library entry that is exported only when referenced.",
           "Treasure and shop item pickers should prefer known item families, but raw numeric entry remains necessary for compatibility."
         ]
       }

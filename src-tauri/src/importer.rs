@@ -70,6 +70,8 @@ pub fn create_project(
         monsters: Vec::new(),
         monster_sets: Vec::new(),
         monster_descriptions: Vec::new(),
+        monster_icon_overrides: Vec::new(),
+        scenario_icon_resources: Vec::new(),
         scenario_items: Vec::new(),
         treasures: Vec::new(),
         shops: Vec::new(),
@@ -252,6 +254,8 @@ fn import_scenario_with_name(
         monsters: parsed.monsters,
         monster_sets: parsed.monster_sets,
         monster_descriptions: parsed.monster_descriptions,
+        monster_icon_overrides: Vec::new(),
+        scenario_icon_resources: Vec::new(),
         scenario_items: parsed.scenario_items,
         treasures: parsed.treasures,
         shops: parsed.shops,
@@ -1006,7 +1010,12 @@ fn import_icon_overlays(
     let icon_dir = assets_dir.join(ICONS_DIR);
     fs::create_dir_all(&icon_dir).with_path(&icon_dir)?;
     let map_icon_ids = map_icon_ids(&project.maps);
-    let monster_icon_ids = monster_icon_ids(&project.monsters);
+    let monster_icon_ids = project
+        .monster_sets
+        .iter()
+        .flat_map(|set| monster_icon_ids(&set.monsters))
+        .chain(monster_icon_ids(&project.monsters))
+        .collect::<BTreeSet<_>>();
     let referenced_icon_ids = map_icon_ids
         .union(&monster_icon_ids)
         .copied()
@@ -1139,12 +1148,68 @@ fn import_scenario_icon_overlays(
             );
             imported.insert(entry.id);
         }
+        import_monster_icon_override_pairs(project, icon_ids, &bytes);
     }
     project
         .asset_catalog
         .icons
         .sort_by_key(|asset| asset.resource_id);
     Ok(())
+}
+
+fn import_monster_icon_override_pairs(
+    project: &mut ProvidenceProject,
+    icon_ids: &BTreeSet<i16>,
+    resource_bytes: &[u8],
+) {
+    let entries = crate::resource_fork::parse_resource_fork_entries(resource_bytes);
+    if entries.is_empty() {
+        return;
+    }
+    let by_id = entries
+        .iter()
+        .filter(|entry| entry.resource_type == "cicn")
+        .map(|entry| (entry.id.abs(), entry))
+        .collect::<BTreeMap<_, _>>();
+    let targets = icon_ids.iter().map(|id| id.abs()).collect::<BTreeSet<_>>();
+    for target in targets {
+        let Some(base) = by_id.get(&target) else {
+            continue;
+        };
+        let paired_id = target.saturating_add(308);
+        let Some(paired) = by_id.get(&paired_id) else {
+            if by_id.contains_key(&target) {
+                project.diagnostics.push(Diagnostic {
+                    severity: DiagnosticSeverity::Warning,
+                    code: "incomplete-monster-icon-override".to_string(),
+                    message: format!(
+                        "Scenario contains cicn {target} but not paired monster icon cicn {paired_id}; Providence preserved the preview but not an icon-set override."
+                    ),
+                    source: Some("Scenario resource fork".to_string()),
+                });
+            }
+            continue;
+        };
+        if project
+            .monster_icon_overrides
+            .iter()
+            .any(|override_entry| override_entry.target_base_icon_id == i32::from(target))
+        {
+            continue;
+        }
+        project.monster_icon_overrides.push(MonsterIconOverride {
+            target_base_icon_id: i32::from(target),
+            source_base_icon_id: i32::from(target),
+            source_label: Some(format!("Imported scenario override {target}")),
+            source_kind: MonsterIconOverrideSource::ScenarioResource,
+            source_base_resource_base64: STANDARD.encode(&base.data),
+            source_paired_resource_base64: STANDARD.encode(&paired.data),
+            imported: true,
+        });
+    }
+    project
+        .monster_icon_overrides
+        .sort_by_key(|override_entry| override_entry.target_base_icon_id);
 }
 
 fn hydrate_custom_spell_names(source_path: &Path, project: &mut ProvidenceProject) -> Result<()> {

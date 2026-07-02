@@ -1,7 +1,7 @@
 use crate::error::{IoPath, ProvidenceError, Result};
 use crate::importer::RAW_SOURCES_DIR;
 use crate::project::{
-    LevelType, ProvidenceProject, ScenarioTarget, TargetCompatibilityBuckets,
+    LevelType, MonsterIconOverride, ProvidenceProject, ScenarioTarget, TargetCompatibilityBuckets,
     TargetCompatibilityIssue,
 };
 use crate::realmz::{
@@ -18,6 +18,7 @@ use crate::resource_fork::{
     decode_string_list_resource, encode_string_list_resource, merge_resource_entries,
     parse_resource_fork_entries, ResourceForkEntry,
 };
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
@@ -600,6 +601,15 @@ fn write_managed_resources(
     };
     result.preserved_resources = parse_resource_fork_entries(&original).len();
     let mut updates = map_name_resource_updates(project, &original);
+    updates.extend(monster_icon_override_updates(
+        &project.monster_icon_overrides,
+        &mut result,
+    ));
+    updates.extend(scenario_icon_resource_updates(
+        &project.scenario_items,
+        &project.scenario_icon_resources,
+        &mut result,
+    ));
     for asset in &project.assets {
         if !matches!(
             asset.export_state,
@@ -649,6 +659,126 @@ fn write_managed_resources(
     fs::write(&dest, resource_bytes).with_path(&dest)?;
     result.resource_file_written = true;
     Ok(result)
+}
+
+fn monster_icon_override_updates(
+    overrides: &[MonsterIconOverride],
+    result: &mut ResourceExportResult,
+) -> Vec<ResourceForkEntry> {
+    let mut updates = Vec::new();
+    for override_entry in overrides {
+        let target = override_entry.target_base_icon_id;
+        if target <= 0 || target > i32::from(i16::MAX) - 308 {
+            result.resource_warnings.push(format!(
+                "Monster icon override target {} is outside the exportable cicn ID range.",
+                override_entry.target_base_icon_id
+            ));
+            continue;
+        }
+        let source = override_entry.source_base_icon_id;
+        let base_data = match STANDARD.decode(&override_entry.source_base_resource_base64) {
+            Ok(data) => data,
+            Err(error) => {
+                result.resource_warnings.push(format!(
+                    "Monster icon override {} -> {} has invalid base cicn data: {error}",
+                    source, target
+                ));
+                continue;
+            }
+        };
+        let paired_data = match STANDARD.decode(&override_entry.source_paired_resource_base64) {
+            Ok(data) => data,
+            Err(error) => {
+                result.resource_warnings.push(format!(
+                    "Monster icon override {} -> {} has invalid paired cicn data: {error}",
+                    source, target
+                ));
+                continue;
+            }
+        };
+        let label = override_entry
+            .source_label
+            .clone()
+            .unwrap_or_else(|| format!("Monster Mash {}", source));
+        updates.push(ResourceForkEntry {
+            resource_type: "cicn".to_string(),
+            id: target as i16,
+            name: format!("Monster icon override from {label}"),
+            attributes: 0,
+            data: base_data,
+        });
+        updates.push(ResourceForkEntry {
+            resource_type: "cicn".to_string(),
+            id: (target + 308) as i16,
+            name: format!("Monster icon override from {label} facing"),
+            attributes: 0,
+            data: paired_data,
+        });
+        result.written_resources.push(format!(
+            "cicn {} and {}: monster icon override from {}",
+            target,
+            target + 308,
+            label
+        ));
+    }
+    if overrides.len() > 120 {
+        result.resource_warnings.push(format!(
+            "{} monster icon override(s) are authored; classic Realmz scenarios were documented around 127 monster icon sets.",
+            overrides.len()
+        ));
+    }
+    updates
+}
+
+fn scenario_icon_resource_updates(
+    scenario_items: &[crate::project::ScenarioItemRecord],
+    scenario_icon_resources: &[crate::project::ScenarioIconResource],
+    result: &mut ResourceExportResult,
+) -> Vec<ResourceForkEntry> {
+    let referenced_item_icons = scenario_items
+        .iter()
+        .filter(|item| item.icon_id != 0)
+        .map(|item| i32::from(item.icon_id).abs())
+        .collect::<std::collections::BTreeSet<_>>();
+    if referenced_item_icons.is_empty() {
+        return Vec::new();
+    }
+    let mut updates = Vec::new();
+    for resource in scenario_icon_resources {
+        let resource_id = resource.resource_id.abs();
+        if !referenced_item_icons.contains(&resource_id) {
+            continue;
+        }
+        if resource_id <= 0 || resource_id > i32::from(i16::MAX) {
+            result.resource_warnings.push(format!(
+                "Scenario icon resource {} is outside the exportable cicn ID range.",
+                resource.resource_id
+            ));
+            continue;
+        }
+        let data = match STANDARD.decode(&resource.resource_base64) {
+            Ok(data) => data,
+            Err(error) => {
+                result.resource_warnings.push(format!(
+                    "Scenario icon resource {} has invalid cicn data: {error}",
+                    resource.resource_id
+                ));
+                continue;
+            }
+        };
+        updates.push(ResourceForkEntry {
+            resource_type: "cicn".to_string(),
+            id: resource_id as i16,
+            name: resource.label.clone(),
+            attributes: 0,
+            data,
+        });
+        result.written_resources.push(format!(
+            "cicn {}: custom item icon {}",
+            resource_id, resource.label
+        ));
+    }
+    updates
 }
 
 fn source_resource_bytes(
@@ -825,8 +955,83 @@ fn scenario_shell_file_name(project: &ProvidenceProject) -> &str {
 
 #[cfg(test)]
 mod tests {
-    use super::preserve_imported_fixed_length;
+    use super::{
+        monster_icon_override_updates, preserve_imported_fixed_length,
+        scenario_icon_resource_updates, ResourceExportResult,
+    };
+    use crate::project::{
+        Confidence, MonsterIconOverride, MonsterIconOverrideSource, Provenance,
+        ScenarioIconResource, ScenarioIconResourceSource, ScenarioItemRecord,
+    };
+    use base64::{engine::general_purpose::STANDARD, Engine as _};
     use std::fs;
+
+    #[test]
+    fn monster_icon_override_exports_paired_target_resources() {
+        let overrides = vec![MonsterIconOverride {
+            target_base_icon_id: 387,
+            source_base_icon_id: 409,
+            source_label: Some("Tall spear giant".to_string()),
+            source_kind: MonsterIconOverrideSource::MonsterMash,
+            source_base_resource_base64: STANDARD.encode([1u8, 2, 3]),
+            source_paired_resource_base64: STANDARD.encode([4u8, 5, 6]),
+            imported: false,
+        }];
+        let mut result = ResourceExportResult::default();
+
+        let entries = monster_icon_override_updates(&overrides, &mut result);
+
+        assert_eq!(entries.len(), 2);
+        let base = entries
+            .iter()
+            .find(|entry| entry.resource_type == "cicn" && entry.id == 387)
+            .expect("base target cicn");
+        let paired = entries
+            .iter()
+            .find(|entry| entry.resource_type == "cicn" && entry.id == 695)
+            .expect("paired target cicn");
+        assert_eq!(base.data, vec![1u8, 2, 3]);
+        assert_eq!(paired.data, vec![4u8, 5, 6]);
+        assert!(result
+            .written_resources
+            .iter()
+            .any(|entry| entry.contains("cicn 387 and 695")));
+    }
+
+    #[test]
+    fn scenario_icon_resource_exports_only_referenced_custom_item_icons() {
+        let items = vec![scenario_item_with_icon(0, 30126)];
+        let resources = vec![
+            ScenarioIconResource {
+                resource_id: 30126,
+                label: "Custom item icon".to_string(),
+                source_kind: ScenarioIconResourceSource::ProvidenceLibrary,
+                resource_base64: STANDARD.encode([9u8, 8, 7]),
+                preview_path: None,
+                imported: false,
+            },
+            ScenarioIconResource {
+                resource_id: 30127,
+                label: "Unused item icon".to_string(),
+                source_kind: ScenarioIconResourceSource::ProvidenceLibrary,
+                resource_base64: STANDARD.encode([6u8, 5, 4]),
+                preview_path: None,
+                imported: false,
+            },
+        ];
+        let mut result = ResourceExportResult::default();
+
+        let entries = scenario_icon_resource_updates(&items, &resources, &mut result);
+
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].resource_type, "cicn");
+        assert_eq!(entries[0].id, 30126);
+        assert_eq!(entries[0].data, vec![9u8, 8, 7]);
+        assert!(result
+            .written_resources
+            .iter()
+            .any(|entry| entry.contains("cicn 30126")));
+    }
 
     #[test]
     fn preserves_imported_fixed_row_file_length_when_export_model_shrinks() {
@@ -851,5 +1056,62 @@ mod tests {
         let bytes = preserve_imported_fixed_length("Data EDCD", vec![1u8, 2], 10, raw_dir).unwrap();
 
         assert_eq!(bytes, vec![1u8, 2, 7, 6, 5]);
+    }
+
+    fn scenario_item_with_icon(id: usize, icon_id: i16) -> ScenarioItemRecord {
+        ScenarioItemRecord {
+            id,
+            item_id: 900 + id as i16,
+            icon_id,
+            item_type: 0,
+            st: 0,
+            blunt: 0,
+            hands: 0,
+            lu: 0,
+            movement: 0,
+            ac: 0,
+            magic_resistance: 0,
+            damage: 0,
+            spell_points: 0,
+            sound: 0,
+            weight: 0,
+            cost: 0,
+            charge: 0,
+            cursed_item_id: 0,
+            magical: 0,
+            item_cat0: 0,
+            item_cat1: 0,
+            race_restrictions: 0,
+            caste_restrictions: 0,
+            specific_race: 0,
+            specific_caste: 0,
+            race_class_only: 0,
+            caste_class_only: 0,
+            spare2: Vec::new(),
+            v_small: 0,
+            v_large: 0,
+            heat: 0,
+            cold: 0,
+            electric: 0,
+            vs_undead: 0,
+            vs_demon_devil: 0,
+            vs_evil: 0,
+            special1: 0,
+            special2: 0,
+            special3: 0,
+            special4: 0,
+            special5: 0,
+            weight_per_charge: 0,
+            drop_on_empty: 0,
+            raw_bytes: Vec::new(),
+            authored: true,
+            provenance: Provenance {
+                source_file: "Data NI".to_string(),
+                record_index: id,
+                byte_offset: id * 100,
+                byte_length: 100,
+                confidence: Confidence::Confirmed,
+            },
+        }
     }
 }

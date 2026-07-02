@@ -4,6 +4,7 @@ import { Dispatch } from "react";
 import { isBrowserPickerAbort, pickBrowserProjectSource, pickBrowserScenarioSource } from "../browser/fsAccess";
 import { createBrowserWorkspace, importBrowserLibrary } from "../browser/library";
 import { benchmarkBrowserProject, createBrowserProject, ensureBrowserReferenceTileAttributes, importBrowserScenario, openBrowserProject, validateBrowserProject } from "../browser/project";
+import { persistBrowserIconLibraryEntries } from "../iconLibrary";
 import { LibraryDraftSpec, createLibraryDraft, updateLibraryDraft } from "../libraryDrafts";
 import { persistBrowserMonsterLibraryEntries } from "../monsterLibrary";
 import { BROWSER_PREVIEW_STATUS, EditorAction, EditorState } from "../store";
@@ -278,6 +279,7 @@ export function useProjectLifecycleActions({
     dispatch({ type: "setLibraryCatalog", catalog });
     dispatch({ type: "setStatus", status });
     if (!desktopRuntime) {
+      persistBrowserIconLibraryEntries(catalog);
       persistBrowserMonsterLibraryEntries(catalog);
       return;
     }

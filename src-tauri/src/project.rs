@@ -85,6 +85,10 @@ pub struct ProvidenceProject {
     #[serde(default)]
     pub monster_descriptions: Vec<MonsterDescriptionRecord>,
     #[serde(default)]
+    pub monster_icon_overrides: Vec<MonsterIconOverride>,
+    #[serde(default)]
+    pub scenario_icon_resources: Vec<ScenarioIconResource>,
+    #[serde(default)]
     pub scenario_items: Vec<ScenarioItemRecord>,
     #[serde(default)]
     pub treasures: Vec<TreasureRecord>,
@@ -118,6 +122,49 @@ pub struct ProvidenceProject {
     #[serde(default, skip_deserializing)]
     pub semantic_schema: SemanticSchema,
     pub validation: ValidationReport,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MonsterIconOverride {
+    pub target_base_icon_id: i32,
+    pub source_base_icon_id: i32,
+    #[serde(default)]
+    pub source_label: Option<String>,
+    pub source_kind: MonsterIconOverrideSource,
+    pub source_base_resource_base64: String,
+    pub source_paired_resource_base64: String,
+    #[serde(default)]
+    pub imported: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum MonsterIconOverrideSource {
+    MonsterMash,
+    ScenarioResource,
+    ProvidenceLibrary,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScenarioIconResource {
+    pub resource_id: i32,
+    pub label: String,
+    pub source_kind: ScenarioIconResourceSource,
+    pub resource_base64: String,
+    #[serde(default)]
+    pub preview_path: Option<String>,
+    #[serde(default)]
+    pub imported: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ScenarioIconResourceSource {
+    VaultOfArcana,
+    ProvidenceLibrary,
+    ScenarioResource,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

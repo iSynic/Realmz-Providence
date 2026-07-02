@@ -27,6 +27,7 @@ pub fn run() {
             commands::import_realmz_reference_data,
             commands::load_library_asset,
             commands::load_library_asset_preview,
+            commands::load_library_resource_data,
             commands::inspect_library_asset_preview,
             commands::import_scenario,
             commands::import_scenario_into_project,
