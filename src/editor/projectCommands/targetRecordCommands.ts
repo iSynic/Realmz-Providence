@@ -4,6 +4,7 @@ import {
   MessageRecord,
   MonsterDescriptionRecord,
   MonsterRecord,
+  MonsterSetId,
   OptionLabelRecord,
   Project,
   Provenance,
@@ -22,6 +23,10 @@ const MONSTER_DESCRIPTION_BYTES = 256;
 const THIEF_ENCOUNTER_BYTES = 118;
 const TIMED_ENCOUNTER_BYTES = 40;
 const OPTION_LABEL_BYTES = 25;
+const MONSTER_SET_SOURCE_FILES: Record<Exclude<MonsterSetId, 0>, string> = {
+  1: "Data MD1",
+  [-1]: "Data MD-1"
+};
 
 export function createTargetRecord(project: Project, recordType: RealmzTargetRecordKind, requestedId?: number): Project {
   const id = requestedId ?? nextTargetId(project, recordType);
@@ -120,28 +125,47 @@ export function updateStringSound(project: Project, messageId: number, soundId: 
   };
 }
 
-export function createMonsterFromTemplate(project: Project, id: number, template: MonsterRecord, description?: string): Project {
+export function createMonsterFromTemplate(project: Project, id: number, template: MonsterRecord, description?: string, setId: MonsterSetId = 0): Project {
   if (!Number.isInteger(id) || id < 0) return project;
-  const base = emptyMonster(id);
-  const next: MonsterRecord = {
-    ...base,
-    ...template,
-    id,
-    typeFlags: fixedArray(template.typeFlags, 8),
-    attacks: Array.from({ length: 5 }, (_, row) => fixedArray(template.attacks?.[row] ?? [], 4)),
-    saves: fixedArray(template.saves, 6),
-    spellImmunities: fixedArray(template.spellImmunities, 6),
-    money: fixedArray(template.money, 3),
-    spells: fixedArray(template.spells, 10),
-    items: fixedArray(template.items, 6),
-    underneath: fixedArray(template.underneath, 4),
-    conditions: fixedArray(template.conditions, 40),
-    rawBytes: fixedArray(template.rawBytes ?? [], MONSTER_BYTES),
-    authored: true,
-    provenance: authoredProvenance("Data MD", id, id * MONSTER_BYTES, MONSTER_BYTES)
-  };
-  const withMonster = upsertRecord(project, "monsters", next);
+  const withMonster = upsertMonsterRecord(project, monsterForSet(id, template, setId), setId);
   return description !== undefined ? upsertMonsterDescription(withMonster, id, description) : withMonster;
+}
+
+export function updateMonsterRecord(project: Project, id: number, changes: Partial<MonsterRecord>, setId: MonsterSetId = 0): Project {
+  if (!Number.isInteger(id) || id < 0) return project;
+  const existing = monsterRecordForSet(project, id, setId);
+  const base = existing ?? emptyMonsterForSet(id, setId);
+  return upsertMonsterRecord(project, monsterForSet(id, { ...base, ...changes }, setId), setId);
+}
+
+export function createMonsterVariantFromNormal(project: Project, id: number, setId: Exclude<MonsterSetId, 0>): Project {
+  const source = monsterRecordForSet(project, id, 0);
+  if (!source) return project;
+  return upsertMonsterRecord(project, monsterForSet(id, source, setId), setId);
+}
+
+export function copyCurrentMonsterToAllSets(project: Project, id: number, sourceSetId: MonsterSetId): Project {
+  const source = monsterRecordForSet(project, id, sourceSetId);
+  if (!source) return project;
+  return ([0, 1, -1] as MonsterSetId[]).reduce((nextProject, setId) => upsertMonsterRecord(nextProject, monsterForSet(id, source, setId), setId), project);
+}
+
+export function switchMonsterRecords(project: Project, setId: MonsterSetId, fromId: number, toId: number): Project {
+  if (!Number.isInteger(fromId) || !Number.isInteger(toId) || fromId < 0 || toId < 0 || fromId === toId) return project;
+  const from = monsterRecordForSet(project, fromId, setId);
+  const to = monsterRecordForSet(project, toId, setId);
+  if (!from || !to) return project;
+  let next = upsertMonsterRecord(project, monsterForSet(fromId, to, setId), setId);
+  next = upsertMonsterRecord(next, monsterForSet(toId, from, setId), setId);
+  return switchMonsterDescriptions(next, fromId, toId);
+}
+
+export function generateMonsterVariants(project: Project, id: number): Project {
+  const source = monsterRecordForSet(project, id, 0);
+  if (!source) return project;
+  let next = upsertMonsterRecord(project, generateMonsterVariant(source, 1), 1);
+  next = upsertMonsterRecord(next, generateMonsterVariant(source, -1), -1);
+  return next;
 }
 
 export function upsertMonsterDescription(project: Project, id: number, text: string): Project {
@@ -160,6 +184,109 @@ export function upsertMonsterDescription(project: Project, id: number, text: str
   else current.push(next);
   current.sort((a, b) => a.id - b.id);
   return { ...project, monsterDescriptions: current };
+}
+
+function monsterRecordForSet(project: Project, id: number, setId: MonsterSetId) {
+  if (setId === 0) return (project.monsters ?? []).find((record) => record.id === id) ?? null;
+  return (project.monsterSets ?? []).find((set) => set.setId === setId)?.monsters.find((record) => record.id === id) ?? null;
+}
+
+function upsertMonsterRecord(project: Project, record: MonsterRecord, setId: MonsterSetId): Project {
+  if (setId === 0) return upsertRecord(project, "monsters", record);
+  const sourceFile = monsterSetSourceFile(setId);
+  const monsterSets = [...(project.monsterSets ?? [])];
+  const setIndex = monsterSets.findIndex((set) => set.setId === setId);
+  const baseSet = setIndex >= 0 ? monsterSets[setIndex] : { sourceFile, setId, monsters: [] };
+  const monsters = [...baseSet.monsters];
+  const index = monsters.findIndex((candidate) => candidate.id === record.id);
+  if (index >= 0) monsters[index] = { ...monsters[index], ...record };
+  else monsters.push(record);
+  monsters.sort((a, b) => a.id - b.id);
+  const nextSet = { ...baseSet, sourceFile, setId, monsters };
+  if (setIndex >= 0) monsterSets[setIndex] = nextSet;
+  else monsterSets.push(nextSet);
+  monsterSets.sort((a, b) => a.setId - b.setId);
+  return { ...project, monsterSets };
+}
+
+function monsterForSet(id: number, template: Partial<MonsterRecord>, setId: MonsterSetId): MonsterRecord {
+  const base = emptyMonsterForSet(id, setId);
+  const sourceFile = monsterSetSourceFile(setId);
+  return {
+    ...base,
+    ...template,
+    id,
+    typeFlags: fixedArray(template.typeFlags, 8),
+    attacks: Array.from({ length: 5 }, (_, row) => fixedArray(template.attacks?.[row] ?? [], 4)),
+    saves: fixedArray(template.saves, 6),
+    spellImmunities: fixedArray(template.spellImmunities, 6),
+    money: fixedArray(template.money, 3),
+    spells: fixedArray(template.spells, 10),
+    items: fixedArray(template.items, 6),
+    underneath: fixedArray(template.underneath, 4),
+    conditions: fixedArray(template.conditions, 40),
+    rawBytes: fixedArray(template.rawBytes ?? [], MONSTER_BYTES),
+    authored: true,
+    provenance: authoredProvenance(sourceFile, id, id * MONSTER_BYTES, MONSTER_BYTES)
+  };
+}
+
+function emptyMonsterForSet(id: number, setId: MonsterSetId): MonsterRecord {
+  return {
+    ...emptyMonster(id),
+    provenance: authoredProvenance(monsterSetSourceFile(setId), id, id * MONSTER_BYTES, MONSTER_BYTES)
+  };
+}
+
+function monsterSetSourceFile(setId: MonsterSetId) {
+  return setId === 0 ? "Data MD" : MONSTER_SET_SOURCE_FILES[setId];
+}
+
+function switchMonsterDescriptions(project: Project, fromId: number, toId: number): Project {
+  const descriptions = [...(project.monsterDescriptions ?? [])];
+  const from = descriptions.find((description) => description.id === fromId) ?? emptyMonsterDescription(fromId);
+  const to = descriptions.find((description) => description.id === toId) ?? emptyMonsterDescription(toId);
+  const next = descriptions.filter((description) => description.id !== fromId && description.id !== toId);
+  next.push({
+    ...to,
+    id: fromId,
+    authored: true,
+    provenance: authoredProvenance("Data DES", fromId, fromId * MONSTER_DESCRIPTION_BYTES, MONSTER_DESCRIPTION_BYTES)
+  });
+  next.push({
+    ...from,
+    id: toId,
+    authored: true,
+    provenance: authoredProvenance("Data DES", toId, toId * MONSTER_DESCRIPTION_BYTES, MONSTER_DESCRIPTION_BYTES)
+  });
+  next.sort((a, b) => a.id - b.id);
+  return { ...project, monsterDescriptions: next };
+}
+
+function generateMonsterVariant(source: MonsterRecord, setId: Exclude<MonsterSetId, 0>) {
+  const scale = setId === 1
+    ? { hitDice: 6, staminaBonus: 6, agility: 1, movementMax: 2, armor: 10, magicResistance: 10, damageBonus: 2, saves: 10, spellPointsNumerator: 133, spellPointsDenominator: 100, expNumerator: 5, expDenominator: 4 }
+    : { hitDice: 15, staminaBonus: 15, agility: 3, movementMax: 4, armor: 30, magicResistance: 25, damageBonus: 5, saves: 25, spellPointsNumerator: 2, spellPointsDenominator: 1, expNumerator: 25, expDenominator: 16 };
+  const scaledSpellPoints = clampInteger(Math.floor(source.spellPoints * scale.spellPointsNumerator / scale.spellPointsDenominator), 0, 999);
+  return monsterForSet(source.id, {
+    ...source,
+    hitDice: clampInteger(source.hitDice + scale.hitDice, 0, 255),
+    staminaBonus: clampInteger(source.staminaBonus + scale.staminaBonus, -128, 127),
+    agility: clampInteger(source.agility + scale.agility, -128, 127),
+    movementMax: clampInteger(source.movementMax + scale.movementMax, -128, 127),
+    armor: clampInteger(source.armor + scale.armor, -128, 127),
+    magicResistance: clampInteger(source.magicResistance + scale.magicResistance, -128, 127),
+    damageBonus: clampInteger(source.damageBonus + scale.damageBonus, -128, 127),
+    saves: source.saves.map((value) => clampInteger(value + scale.saves, -128, 127)),
+    spellPoints: scaledSpellPoints,
+    maxSpellPoints: clampInteger(Math.max(source.maxSpellPoints, scaledSpellPoints), 0, 999),
+    exp: clampInteger(Math.floor(source.exp * scale.expNumerator / scale.expDenominator), 0, 32767)
+  }, setId);
+}
+
+function clampInteger(value: number, min: number, max: number) {
+  if (!Number.isFinite(value)) return min;
+  return Math.min(max, Math.max(min, Math.trunc(value)));
 }
 
 export function createOptionLabel(project: Project, requestedId?: number): Project {

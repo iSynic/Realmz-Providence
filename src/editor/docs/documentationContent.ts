@@ -2041,8 +2041,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     groupId: "authoring",
     label: "Combat",
     title: "Battles, Monsters, and Combat Libraries",
-    summary: "Author battle grids and monster records while keeping Realmz Data BD/Data MD semantics, icon resolution, and library reference material visible.",
-    tags: ["combat", "battle", "monster", "Data BD", "Data MD", "Monster Scrapbook", "Monster Mash", "cicn"],
+    summary: "Author battle grids, scenario monster sets, and reusable monster templates while keeping Realmz Data BD/Data MD semantics, icon resolution, and library reference material visible.",
+    tags: ["combat", "battle", "monster", "Data BD", "Data MD", "Data MD1", "Data MD-1", "Monster Scrapbook", "Monster Library", "cicn"],
     badges: ["writer-backed", "icon-aware"],
     references: [
       DIVINITY_CHAPTERS.battle,
@@ -2057,8 +2057,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "What Combat Owns",
         paragraphs: [
-          "Combat is the Providence workbench for scenario battle records, scenario monster templates, protected built-in Monster Scrapbook templates, editable Providence monster-library entries, and Monster Mash icon reference material.",
-          "Realmz keeps battle setup and monster templates in separate source files. Battles place monsters by ID; monsters define the stats, icon, attacks, spells, loot, flags, and death behavior used when combat builds a runtime monster."
+          "Combat is the Providence workbench for scenario battle records, scenario monster sets, protected built-in Monster Scrapbook templates, editable Providence monster-library entries, and monster icon reference material.",
+          "Realmz keeps battle setup and monster templates in separate source files. Battles place monsters by ID; Normal, Monster, and Mega monster sets define the stats, icon, attacks, spells, loot, flags, and death behavior used when combat builds a runtime monster."
         ],
         cards: [
           {
@@ -2068,21 +2068,21 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           },
           {
             title: "Monster Editor",
-            body: "Authors Data MD records with identity, icon, combat stats, behavior, attacks, spells, loot, saves, conditions, bestiary visibility, and death macro links.",
-            facts: ["Data MD", "210 bytes"]
+            body: "Authors scenario monster records across Normal, Monster, and Mega runtime sets with identity, icon, combat stats, behavior, attacks, spells, loot, saves, conditions, bestiary visibility, and death macro links.",
+            facts: ["Data MD", "Data MD1", "Data MD-1", "210 bytes"]
           },
           {
             title: "Library Tabs",
-            body: "Built-in Monster Scrapbook and Monster Mash material remains protected reference data. Providence monster-library entries are editable workspace templates that must be copied into scenario Data MD before runtime use.",
-            facts: ["reference", "workspace library"]
+            body: "Built-in Monster Scrapbook material remains protected reference data. Providence monster-library entries are editable workspace templates that must be copied into Scenario Monsters before runtime use.",
+            facts: ["protected built-ins", "workspace library"]
           }
         ]
       },
       {
         title: "Battle Editor",
         paragraphs: [
-          "A battle grid cell stores a signed monster ID. Zero is empty, the absolute value points at a Data MD monster record, and a negative value flips the side/friendly state after Realmz loads the monster.",
-          "The grid is 13 x 13 because that is the source-backed Realmz battle record shape. Providence shows monster art on top of the grid, but the saved value remains the signed short Realmz expects."
+          "A battle grid cell stores a signed monster ID. Zero is empty, the absolute value points at a scenario monster ID, and a negative value flips the side/friendly state after Realmz loads the monster.",
+          "The grid is 13 x 13 because that is the source-backed Realmz battle record shape. Providence can preview the grid against Normal, Monster, or Mega monster sets, but the saved value remains the signed short Realmz expects."
         ],
         points: [
           "Distance controls runtime initial spread. Realmz randomizes setup from this value, so imported zero-distance records should be reviewed rather than silently normalized.",
@@ -2099,14 +2099,15 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "Monster Editor",
         paragraphs: [
-          "Scenario monsters are Data MD templates. Realmz copies a template into mutable combat state, then applies difficulty, randomization, side changes, stamina rolls, and other runtime adjustments during combat setup.",
-          "Providence edits the source template fields that are writer-backed and keeps advanced arrays visible where exact Realmz behavior matters."
+          "Scenario monsters are runtime templates. Normal writes Data MD, Monster writes Data MD1, and Mega writes Data MD-1. Realmz chooses the active table globally through its monster-set setting, then copies the selected template into mutable combat state.",
+          "Providence edits writer-backed source template fields for the selected set, keeps Data DES descriptions shared by monster ID, and keeps advanced arrays visible where exact Realmz behavior matters."
         ],
         points: [
           "Identity fields include display name, name ID, icon ID, bestiary visibility, and defeat/death action.",
           "Combat Stats covers stamina template values, armor, agility, movement, magic resistance, hit requirements, experience, and spell points.",
           "Behavior covers side, size, distance, attack counts, spell-cast chance, run/surrender chance, missile chance, summon eligibility, and weapon selection.",
           "Attacks are five Realmz attack rows. Spells, money, items, saves, immunities, and conditions remain fixed-width arrays because the source file stores them that way.",
+          "Copy Current To All Sets performs an exact record copy across Normal, Monster, and Mega. Generate Variants is a Providence-safe generator, not an exact clone of Divinity's lossy Create Sets behavior.",
           "Hide From Bestiary is source-backed. Data MENU is generated/effective menu evidence, not source identity; Providence omits it on export so Realmz rebuilds it from Data MD."
         ]
       },
@@ -2129,13 +2130,14 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         }
       },
       {
-        title: "Monster Library and Monster Mash",
+        title: "Monster Library",
         paragraphs: [
-          "Monster Library combines protected built-in Monster Scrapbook records with editable Providence workspace entries and variants. Built-ins can be inspected or copied forward, but they cannot be overwritten.",
-          "Monster Mash is a reference icon library. The Combat tab links to the Assets reference view because the art is resource material rather than an editable scenario monster record."
+          "Monster Library combines protected built-in Monster Scrapbook records with editable Providence workspace entries, overrides, and variants. Built-ins can be inspected, customized through an override, restored to their protected default, or copied forward, but they cannot be overwritten in place.",
+          "Monster Mash remains resource reference material rather than an editable scenario monster record."
         ],
         points: [
-          "Use built-ins as design reference, copy them into the Providence library for editing, or copy any library entry into a scenario Data MD record before using it in battles or scripts.",
+          "Use built-ins as design reference, customize them into the Providence library for editing, or copy any library entry into Scenario Monsters before using it in battles or scripts.",
+          "Library copies can create Normal only, exact records in all monster sets, or Normal plus Providence-generated Monster/Mega variants.",
           "Use Monster Mash and Reference Libraries to understand icon IDs, but import or decode scenario-owned cicn resources when a scenario needs custom art.",
           "Scenario Monsters are the runtime/export layer. Providence monster-library entries are not exported as scenario data unless copied into Scenario Monsters."
         ]
@@ -2148,7 +2150,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         ],
         points: [
           "Battle target pickers create Data BD records when needed.",
-          "Monster target links should resolve to Data MD record IDs, not generated menu positions.",
+          "Monster target links should resolve to shared Scenario Monster IDs, not generated menu positions.",
           "Death Action / defeat action fields should be treated as macro targets rather than anonymous numbers when the link can be resolved.",
           "Before/after battle messages should resolve to editable Text records before export."
         ]
@@ -2157,7 +2159,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "Common Pitfalls",
         points: [
           "Do not remap scenario-local monster icon IDs to nearby built-in icons just because the preview is blank. Fix the icon resource import or catalog first.",
-          "Do not treat Monster Scrapbook as the current scenario's monster file. Scenario monsters come from Data MD.",
+          "Do not treat Monster Scrapbook as the current scenario's monster file. Scenario monsters come from Data MD, Data MD1, and Data MD-1.",
           "Do not treat Data MENU as source identity or export source. Realmz can rebuild bestiary menu evidence from active Data MD records.",
           "Large monster art can cover multiple battle grid cells. Providence derives an approximate footprint from the icon dimensions when available.",
           "Clearing a battle or monster record should keep fixed record-file constraints in mind, because scripts and encounters may still target that ID."

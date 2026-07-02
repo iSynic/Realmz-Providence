@@ -366,7 +366,7 @@ Manual Battle Editor covers battle records, before/after strings, distance, batt
 
 Current Providence handling:
 
-Providence authors Data BD battle shells with grid placement, signed Force Friends behavior, before/after string pickers, distance guidance, and Battle Macro links that write the runnable end-of-round Extra Action Point form. The placement palette exposes scenario Data MD monsters plus Monster Library templates that are copied into Scenario Monsters before the grid is written; Monster 0 and the observed non-authorable 218+ placeholders are excluded from painting. Source-backed UI guardrails keep zero-valued Monster and Battle Macro records out of controls where `0` means empty/inactive.
+Providence authors Data BD battle shells with grid placement, signed Force Friends behavior, before/after string pickers, distance guidance, and Battle Macro links that write the runnable end-of-round Extra Action Point form. Battle records still store only signed monster IDs, but the editor can preview the battle against Normal, Monster, or Mega scenario monster sets. The placement palette exposes scenario monsters plus Monster Library templates that are copied into Scenario Monsters before the grid is written; Monster 0 and the observed non-authorable 218+ placeholders are excluded from painting. Source-backed UI guardrails keep zero-valued Monster and Battle Macro records out of controls where `0` means empty/inactive.
 
 Evidence:
 
@@ -400,24 +400,27 @@ Manual Monster Editor covers Data MD monster templates, description text, combat
 
 Current Providence handling:
 
-Providence edits scenario Data MD monsters, Data DES descriptions, icons, macro references, weapon/item/spell references, and many source-backed numeric fields. Imported Data MENU is treated as generated bestiary cache evidence and is omitted from export so Realmz rebuilds it from Data MD.
+Providence edits scenario Data MD monsters, Data DES descriptions, icons, macro references, weapon/item/spell references, and many source-backed numeric fields. Scenario Monsters is set-aware: Normal edits Data MD, Monster edits Data MD1, and Mega edits Data MD-1, with descriptions shared by monster ID. Imported Data MENU is treated as generated bestiary cache evidence and is omitted from export so Realmz rebuilds it from Data MD. Direct selected-set editing, exact Copy Current To All Sets, selected-set Switch With, and Providence Generate Variants are supported. Divinity Create Sets remains intentionally superseded rather than cloned exactly.
 
 Evidence:
 
 - docs/generated/monster-record-evidence.json
 - docs/generated/monster-description-set-evidence.json
 - docs/format-evidence-cards/bestiary-source-alignment.md
+- docs/format-evidence-cards/monster-descriptions-and-sets-runtime-anchors.md
 - F:/Realmz/src/realmz_orig/structs.h
 
 Gaps:
 
 - Several manual labels and meanings remain uncertain: Req Weapon versus Weapon Used, attack row semantics, type flags, summon options, and runtime-looking fields.
-- Alternate monster sets are not authorable.
+- Providence Generate Variants needs broader authored-scenario smoke testing against exported Data MD1/Data MD-1.
+- Exact Divinity Create Sets quirks remain intentionally deferred because Mega spell-point rounding, overflow/clamp behavior, and rel 7 / rel 45 persistence are not confidence-complete.
 
 Recommended follow-up:
 
 - Run a Monster Editor field-by-field label audit with Divinity screenshots/fixtures.
-- Keep alternate Data MD sets and ambiguous Req Weapon behavior fixture-gated.
+- Add regression tests for set-aware editing, Copy Current To All Sets, Switch With, and Generate Variants.
+- Keep exact Divinity Create Sets and ambiguous Req Weapon behavior fixture-gated unless a separate compatibility need appears.
 
 ### 12. Monster Scrapbook
 
@@ -433,7 +436,7 @@ Manual Monster Scrapbook provides reusable editor/library monster templates for 
 
 Current Providence handling:
 
-Providence treats bundled Realmz/Divinity Monster Scrapbook entries as protected built-in templates, then adds an editable workspace-scoped Providence Monster Library for copied entries and variants. Any built-in or Providence library entry can be copied into scenario Data MD/Data DES; Scenario Monsters remains the runtime/export layer and counts only scenario-owned Data MD records.
+Providence treats bundled Realmz/Divinity Monster Scrapbook entries as protected built-in templates, then adds an editable workspace-scoped Providence Monster Library for overrides and variants. Built-ins can be customized by creating an override, restored by deleting that override, or copied into Scenario Monsters as Normal only, exact all-set records, or generated variants. Scenario Monsters remains the runtime/export layer; Providence library data itself is not emitted as a Realmz Monster Scrap Book file.
 
 Evidence:
 

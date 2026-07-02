@@ -771,9 +771,11 @@ export type MonsterRecord = {
   provenance?: Provenance;
 };
 
+export type MonsterSetId = 0 | 1 | -1;
+
 export type MonsterSet = {
   sourceFile: string;
-  setId: number;
+  setId: MonsterSetId;
   monsters: MonsterRecord[];
 };
 
@@ -1233,8 +1235,12 @@ export type ProjectCommand =
   | { kind: "duplicateOptionLabel"; label: string; fromId: number; toId?: number }
   | { kind: "updateOptionLabel"; label: string; id: number; changes: Partial<Pick<OptionLabelRecord, "text">> }
   | { kind: "updateBattleRecord"; label: string; id: number; changes: Partial<Pick<BattleRecord, "grid" | "dist" | "messageBefore" | "messageAfter" | "battleMacro">> }
-  | { kind: "createMonsterFromTemplate"; label: string; id: number; template: MonsterRecord; description?: string }
-  | { kind: "updateMonsterRecord"; label: string; id: number; changes: Partial<MonsterRecord> }
+  | { kind: "createMonsterFromTemplate"; label: string; id: number; template: MonsterRecord; description?: string; setId?: MonsterSetId }
+  | { kind: "updateMonsterRecord"; label: string; id: number; changes: Partial<MonsterRecord>; setId?: MonsterSetId }
+  | { kind: "createMonsterVariantFromNormal"; label: string; id: number; setId: Exclude<MonsterSetId, 0> }
+  | { kind: "copyCurrentMonsterToAllSets"; label: string; id: number; sourceSetId: MonsterSetId }
+  | { kind: "switchMonsterRecords"; label: string; setId: MonsterSetId; fromId: number; toId: number }
+  | { kind: "generateMonsterVariants"; label: string; id: number }
   | { kind: "upsertMonsterDescription"; label: string; id: number; text: string }
   | { kind: "updateScenarioItemRecord"; label: string; id: number; changes: Partial<ScenarioItemRecord> }
   | { kind: "clearScenarioItemRecord"; label: string; id: number }

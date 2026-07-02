@@ -7,13 +7,14 @@ import { useResolvedPreviewUrl, type PreviewRuntimeContext } from "../previewUrl
 import { spellAnimationFrameIds } from "../resourceIds";
 import { findLibraryResourceAsset, isActorOrCreatureIconId } from "../resourceResolver";
 import { scriptActionDefinitionFor, scriptActionSummary, scriptStepFlowRoutes } from "./scripts/scriptActionCatalog";
-import { LibraryAsset, LibraryCatalog, BattleRecord, IconEntry, MonsterRecord, Project, ProjectCommand, SelectedEntity } from "../types";
+import { LibraryAsset, LibraryCatalog, BattleRecord, IconEntry, MonsterRecord, MonsterSetId, Project, ProjectCommand, SelectedEntity } from "../types";
 import {
   createMonsterLibraryEntry,
   deleteMonsterLibraryEntry,
   duplicateMonsterLibraryEntry,
   isProvidenceMonsterLibraryEntry,
   monsterLibraryEntryDescription,
+  monsterLibraryOrigin,
   monsterLibraryEntryTemplate,
   updateMonsterLibraryEntry
 } from "../monsterLibrary";
@@ -43,10 +44,9 @@ type BattleBrushMode = "select" | "paint" | "erase";
 
 type MonsterPlacementBrush = {
   mode: BattleBrushMode;
-  source: "scenario" | "scrapbook" | null;
+  source: "scenario" | null;
   key: string | null;
   monsterId: number | null;
-  scrapbookEntry?: LibraryCatalog["entities"][number] | null;
   forceFriend: boolean;
 };
 
@@ -67,15 +67,21 @@ type CombatIconAsset = {
 type CombatLookups = {
   monsters: MonsterRecord[];
   monsterById: Map<number, MonsterRecord>;
+  monsterSetsById: Map<MonsterSetId, MonsterRecord[]>;
+  monsterBySetAndId: Map<MonsterSetId, Map<number, MonsterRecord>>;
   iconAssetsByAbsId: Map<number, CombatIconAsset>;
   realmzActorIconAssetsByAbsId: Map<number, LibraryAsset>;
   monsterMashAssetsByAbsId: Map<number, LibraryAsset>;
   tabCounts: Record<CombatWorkbenchTab, number>;
 };
 
-type BattleMonsterPaintEntry =
-  | { kind: "scenario"; key: string; id: number; monster: MonsterRecord }
-  | { kind: "library"; key: string; id: number; entry: LibraryCatalog["entities"][number]; monster: MonsterRecord };
+const MONSTER_SET_OPTIONS: Array<{ id: MonsterSetId; label: string; file: string }> = [
+  { id: 0, label: "Normal", file: "Data MD" },
+  { id: 1, label: "Monster", file: "Data MD1" },
+  { id: -1, label: "Mega", file: "Data MD-1" }
+];
+
+type BattleMonsterPaintEntry = { kind: "scenario"; key: string; id: number; monster: MonsterRecord };
 
 type CombatPanelProps = {
   activeEditor?: string;
@@ -340,6 +346,7 @@ function BattleEditor({
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
+  const [monsterSetPreview, setMonsterSetPreview] = useState<MonsterSetId>(0);
   return (
     <article className="combat-editor battle-editor">
       <header className="combat-editor-header">
@@ -383,6 +390,7 @@ function BattleEditor({
             onCommit={(battleMacro) => onUpdate({ battleMacro })}
             onSelectEntity={onSelectEntity}
           />
+          <BattleMonsterSetPreviewField value={monsterSetPreview} onCommit={setMonsterSetPreview} />
         </div>
         <div className="battle-header-actions">
           <span>
@@ -403,6 +411,7 @@ function BattleEditor({
         iconEntries={iconEntries}
         lookups={lookups}
         previewContext={previewContext}
+        monsterSetPreview={monsterSetPreview}
         battle={battle}
         onSelectEntity={onSelectEntity}
         onApplyCommand={onApplyCommand}
@@ -412,12 +421,33 @@ function BattleEditor({
   );
 }
 
+function BattleMonsterSetPreviewField({ value, onCommit }: { value: MonsterSetId; onCommit: (value: MonsterSetId) => void }) {
+  return (
+    <div className="combat-field battle-monster-set-preview">
+      <FieldLabel label="Monster Set Preview" help="Preview this battle against Normal, Monster, or Mega scenario monster tables. Data BD still stores only monster IDs; this does not write battle data." />
+      <div className="monster-set-segmented" role="group" aria-label="Monster set preview">
+        {MONSTER_SET_OPTIONS.map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            className={`combat-toggle${value === option.id ? " active" : ""}`}
+            onClick={() => onCommit(option.id)}
+          >
+            <span>{option.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function BattleBoard({
   project,
   catalog,
   iconEntries,
   lookups,
   previewContext,
+  monsterSetPreview,
   battle,
   onSelectEntity,
   onApplyCommand,
@@ -428,11 +458,14 @@ function BattleBoard({
   iconEntries: Record<number, IconEntry>;
   lookups: CombatLookups;
   previewContext: PreviewRuntimeContext;
+  monsterSetPreview: MonsterSetId;
   battle: BattleRecord;
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
   onUpdateGrid: (grid: number[]) => void;
 }) {
+  const activeMonsterById = monsterMapForSet(lookups, monsterSetPreview);
+  const activeMonsters = monstersForSet(lookups, monsterSetPreview);
   const [selectedIndex, setSelectedIndex] = useState(() => Math.max(0, battle.grid.findIndex(Boolean)));
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
   const [brush, setBrush] = useState<MonsterPlacementBrush>(() => ({
@@ -440,7 +473,6 @@ function BattleBoard({
     source: battle.grid.find(Boolean) ? "scenario" : null,
     key: battle.grid.find(Boolean) ? `scenario:${Math.abs(battle.grid.find(Boolean) ?? 0)}` : null,
     monsterId: battle.grid.find(Boolean) ? Math.abs(battle.grid.find(Boolean) ?? 0) : null,
-    scrapbookEntry: null,
     forceFriend: false
   }));
   const cells = useMemo<BattleGridCellView[]>(
@@ -453,13 +485,10 @@ function BattleBoard({
     [battle.grid]
   );
   const selectedCell = cells.find((cell) => cell.index === selectedIndex) ?? cells[0];
-  const selectedMonster = selectedCell?.monsterId ? lookups.monsterById.get(selectedCell.monsterId) ?? null : null;
-  const selectedMissingScrapbookEntry = selectedCell?.monsterId && !selectedMonster ? scrapbookEntryForMonsterId(catalog, selectedCell.monsterId) : null;
-  const brushMonster = brush.monsterId
-    ? brush.source === "scrapbook" && brush.scrapbookEntry
-      ? monsterRecordFromLibraryEntry(brush.scrapbookEntry, brush.monsterId)
-      : lookups.monsterById.get(brush.monsterId) ?? null
-    : null;
+  const selectedMonster = selectedCell?.monsterId ? activeMonsterById.get(selectedCell.monsterId) ?? null : null;
+  const selectedNormalMonster = selectedCell?.monsterId ? lookups.monsterById.get(selectedCell.monsterId) ?? null : null;
+  const selectedMissingScrapbookEntry = selectedCell?.monsterId && !selectedNormalMonster ? scrapbookEntryForMonsterId(catalog, selectedCell.monsterId) : null;
+  const brushMonster = brush.monsterId ? activeMonsterById.get(brush.monsterId) ?? null : null;
   const placedCount = cells.filter((cell) => cell.value !== 0).length;
   const placementWarning = placedCount > BATTLE_RUNTIME_MONSTER_LIMIT
     ? `Realmz loads only ${BATTLE_RUNTIME_MONSTER_LIMIT} monsters; ${placedCount - BATTLE_RUNTIME_MONSTER_LIMIT} placed slot(s) will be omitted at runtime.`
@@ -471,7 +500,7 @@ function BattleBoard({
       cells
         .filter((cell) => cell.monsterId)
         .map((cell) => {
-          const monster = lookups.monsterById.get(cell.monsterId) ?? null;
+          const monster = activeMonsterById.get(cell.monsterId) ?? null;
           return {
             ...cell,
             monster,
@@ -480,7 +509,7 @@ function BattleBoard({
             footprint: monster ? monsterBattleFootprint(monster, iconEntries, project, lookups) : { width: 1, height: 1 }
           };
         }),
-    [cells, iconEntries, lookups, project]
+    [activeMonsterById, cells, iconEntries, lookups, project]
   );
   const eraseCell = (index: number) => {
     setSelectedIndex(index);
@@ -500,19 +529,7 @@ function BattleBoard({
     const next = [...battle.grid];
     while (next.length < 169) next.push(0);
     let monsterId = brush.monsterId;
-    if (brush.source === "scrapbook" && brush.scrapbookEntry) {
-      if (!onApplyCommand) return;
-      if (lookups.monsterById.has(monsterId)) {
-        monsterId = battleMonsterCopyTargetId(project, brush.scrapbookEntry);
-      }
-      if (monsterId <= 0 || monsterId > MAX_DIVINITY_BATTLE_MONSTER_ID) return;
-      copyScrapbookMonsterToScenario(brush.scrapbookEntry, monsterId, onApplyCommand);
-      setBrush((current) =>
-        current.source === "scrapbook" && current.key === brush.key
-          ? { ...current, source: "scenario", key: `scenario:${monsterId}`, monsterId, scrapbookEntry: null }
-          : current
-      );
-    }
+    if (!activeMonsterById.has(monsterId)) return;
     next[index] = brush.forceFriend ? -Math.abs(monsterId) : Math.abs(monsterId);
     onUpdateGrid(next.slice(0, 169));
   };
@@ -569,7 +586,6 @@ function BattleBoard({
         </div>
         <MonsterPalette
           project={project}
-          catalog={catalog}
           iconEntries={iconEntries}
           lookups={lookups}
           previewContext={previewContext}
@@ -577,13 +593,14 @@ function BattleBoard({
           onSelect={(entry) =>
             setBrush((current) => ({
               ...current,
-              source: entry.kind === "library" ? "scrapbook" : "scenario",
+              source: "scenario",
               key: entry.key,
               monsterId: entry.id,
-              scrapbookEntry: entry.kind === "library" ? entry.entry : null,
               mode: "paint"
             }))
           }
+          monsterSetPreview={monsterSetPreview}
+          activeMonsters={activeMonsters}
         />
       </aside>
       <div className="battle-board-card">
@@ -609,7 +626,7 @@ function BattleBoard({
                   type="button"
                   role="gridcell"
                   className={`${brush.mode === "select" && cell.index === selectedIndex ? "selected" : ""}${cell.value ? " filled" : ""}${cell.alternateSide ? " alternate-side" : ""}`}
-                  title={cell.value ? monsterPlacementLabel(lookups.monsterById.get(cell.monsterId), cell.value) : `Empty cell ${cell.displayCol},${cell.displayRow}`}
+                  title={cell.value ? monsterPlacementLabel(activeMonsterById.get(cell.monsterId), cell.value, monsterSetPreview) : `Empty cell ${cell.displayCol},${cell.displayRow}`}
                   onClick={() => handleCellClick(cell.index)}
                   onDragOver={(event) => {
                     if (brush.mode !== "select") return;
@@ -625,7 +642,7 @@ function BattleBoard({
                     event.preventDefault();
                     moveCell(fromIndex, cell.index);
                   }}
-                  aria-label={cell.value ? monsterPlacementLabel(lookups.monsterById.get(cell.monsterId), cell.value) : `Empty cell ${cell.displayCol},${cell.displayRow}`}
+                  aria-label={cell.value ? monsterPlacementLabel(activeMonsterById.get(cell.monsterId), cell.value, monsterSetPreview) : `Empty cell ${cell.displayCol},${cell.displayRow}`}
                 />
               ))}
               {placements.map((placement) => (
@@ -677,13 +694,23 @@ function BattleBoard({
         ) : (
           <div className="selected-battle-cell">
             <strong>Anchor Cell {selectedCell?.displayCol ?? 0}, {selectedCell?.displayRow ?? 0}</strong>
-            <small>{selectedCell?.value ? monsterPlacementTitle(selectedMonster, selectedCell.value) : "Empty anchor cell"}</small>
+            <small>{selectedCell?.value ? monsterPlacementTitle(selectedMonster, selectedCell.value, monsterSetPreview) : "Empty anchor cell"}</small>
             <small className="battle-anchor-note">Large, tall, and wide monsters are placed by their lower-right anchor cell. Erase mode clears the top visible monster on the clicked tile.</small>
-            <MonsterSelect
-              lookups={lookups}
-              value={selectedCell?.monsterId ?? 0}
-              onCommit={(monsterId) => updateSelected(monsterId === 0 ? 0 : (selectedCell?.value ?? 0) < 0 ? -Math.abs(monsterId) : Math.abs(monsterId))}
-            />
+              <MonsterSelect
+                monsters={activeMonsters}
+                setId={monsterSetPreview}
+                value={selectedCell?.monsterId ?? 0}
+                onCommit={(monsterId) => updateSelected(monsterId === 0 ? 0 : (selectedCell?.value ?? 0) < 0 ? -Math.abs(monsterId) : Math.abs(monsterId))}
+              />
+            {selectedCell?.monsterId && monsterSetPreview !== 0 && !selectedMonster && selectedNormalMonster ? (
+              <button
+                type="button"
+                className="btn btn-primary btn-xs"
+                onClick={() => onApplyCommand?.({ kind: "createMonsterVariantFromNormal", label: `Create ${monsterSetLabel(monsterSetPreview)} monster ${selectedCell.monsterId} from Normal`, id: selectedCell.monsterId, setId: monsterSetPreview })}
+              >
+                Create {monsterSetLabel(monsterSetPreview)} From Normal
+              </button>
+            ) : null}
             <div className="placement-controls">
               <ToggleButton active={(selectedCell?.value ?? 0) < 0} label="Force Friends" help="Toggle the sign of this battle-grid value. The absolute value stays the same monster record; Realmz flips the loaded monster's traiter flag." helpSide="left" disabled={!selectedCell?.monsterId} onClick={() => selectedCell && updateSelected(selectedCell.value < 0 ? selectedCell.monsterId : -selectedCell.monsterId)} />
               <button type="button" className="btn btn-secondary btn-xs" onClick={() => updateSelected(0)}>Clear Cell</button>
@@ -702,7 +729,7 @@ function BattleBoard({
               <div className="selected-monster-preview missing-monster-reference">
                 <b>{selectedCell.monsterId}</b>
                 <span>
-                  Monster {selectedCell.monsterId} is not in scenario Data MD.
+                  Monster {selectedCell.monsterId} is not in {monsterSetFile(monsterSetPreview)}.
                   {selectedMissingScrapbookEntry ? (
                     <button
                       type="button"
@@ -729,55 +756,38 @@ function BattleBoard({
 
 function MonsterPalette({
   project,
-  catalog,
   iconEntries,
   lookups,
   previewContext,
   selectedKey,
-  onSelect
+  onSelect,
+  monsterSetPreview,
+  activeMonsters
 }: {
   project: Project;
-  catalog: LibraryCatalog | null;
   iconEntries: Record<number, IconEntry>;
   lookups: CombatLookups;
   previewContext: PreviewRuntimeContext;
   selectedKey: string | null;
   onSelect: (entry: BattleMonsterPaintEntry) => void;
+  monsterSetPreview: MonsterSetId;
+  activeMonsters: MonsterRecord[];
 }) {
   const [query, setQuery] = useState("");
   const placeableMonsters = useMemo(
-    () => lookups.monsters.filter((monster) => monster.id > 0 && monster.id <= MAX_DIVINITY_BATTLE_MONSTER_ID),
-    [lookups.monsters]
-  );
-  const libraryEntries = useMemo<Extract<BattleMonsterPaintEntry, { kind: "library" }>[]>(
-    () => (catalog?.entities ?? [])
-      .filter((entry) => entry.type === "monster-scrapbook-entry")
-      .flatMap((entry) => {
-        const id = preferredMonsterCopyId(project, entry);
-        if (id <= 0 || id > MAX_DIVINITY_BATTLE_MONSTER_ID) return [];
-        return [{
-          kind: "library" as const,
-          key: `library:${entry.id}`,
-          id,
-          entry,
-          monster: monsterRecordFromLibraryEntry(entry, id)
-        }];
-      }),
-    [catalog?.entities, project]
+    () => activeMonsters.filter((monster) => monster.id > 0 && monster.id <= MAX_DIVINITY_BATTLE_MONSTER_ID),
+    [activeMonsters]
   );
   const entries = useMemo<BattleMonsterPaintEntry[]>(
-    () => [
-      ...placeableMonsters.map((monster) => ({ kind: "scenario" as const, key: `scenario:${monster.id}`, id: monster.id, monster })),
-      ...libraryEntries.filter((entry) => !lookups.monsterById.has(entry.id))
-    ],
-    [libraryEntries, lookups.monsterById, placeableMonsters]
+    () => placeableMonsters.map((monster) => ({ kind: "scenario" as const, key: `scenario:${monster.id}`, id: monster.id, monster })),
+    [placeableMonsters]
   );
   const filtered = useMemo(
     () => filterRecords(entries, query, battleMonsterPaintEntrySearchText),
     [entries, query]
   );
-  const hasScenarioMonsters = lookups.monsters.some((monster) => monster.id > 0);
-  const hasOnlyUnplaceableMonsterZero = lookups.monsters.length > 0 && !hasScenarioMonsters;
+  const hasScenarioMonsters = activeMonsters.some((monster) => monster.id > 0);
+  const hasOnlyUnplaceableMonsterZero = activeMonsters.length > 0 && !hasScenarioMonsters;
   const hasOnlyOutOfRangeMonsters = hasScenarioMonsters && placeableMonsters.length === 0;
   return (
     <div className="monster-palette">
@@ -785,15 +795,15 @@ function MonsterPalette({
         <TutorialTip title="Monster Placement Brush" body={MONSTER_PLACEMENT_HELP} side="right">
           <strong>Monster Palette</strong>
         </TutorialTip>
-        <small>{entries.length} placeable</small>
+        <small>{monsterSetLabel(monsterSetPreview)} | {entries.length} placeable</small>
       </header>
       <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search monsters..." />
       <div className="monster-brush-palette" aria-label="Paintable monsters">
         {entries.length === 0 && !hasOnlyUnplaceableMonsterZero && !hasOnlyOutOfRangeMonsters && (
-          <p className="empty-copy compact">No scenario or library monsters are available for battle placement.</p>
+          <p className="empty-copy compact">No {monsterSetLabel(monsterSetPreview)} scenario monsters are available for battle placement. Copy from Monster Library into Scenario Monsters first.</p>
         )}
         {hasOnlyUnplaceableMonsterZero && (
-          <p className="empty-copy compact">Monster 0 exists, but Data BD uses 0 for empty battle cells. Create or copy a monster into slot 1 or higher before placing battle monsters.</p>
+          <p className="empty-copy compact">Monster 0 exists in {monsterSetFile(monsterSetPreview)}, but Data BD uses 0 for empty battle cells. Create or copy a monster into slot 1 or higher before placing battle monsters.</p>
         )}
         {hasOnlyOutOfRangeMonsters && (
           <p className="empty-copy compact">This scenario only has monster IDs outside Divinity's battle-authorable range. Use Scenario Monsters 1-{MAX_DIVINITY_BATTLE_MONSTER_ID} for battle placement.</p>
@@ -804,7 +814,7 @@ function MonsterPalette({
           const facts = monsterFacts(monster);
           const artSize = monsterPaletteArtSize(monster, iconEntries, project, lookups);
           const footprint = monsterBattleFootprintLabel(monster, iconEntries, project, lookups);
-          const paintNote = entry.kind === "library" ? "Copies to Scenario Monsters when painted." : "Scenario monster.";
+          const paintNote = "Scenario monster.";
           return (
             <TutorialTip key={entry.key} title={`${name} (${entry.id})`} body={`${facts}. ${footprint}. ${paintNote}`} side="right">
               <button
@@ -814,11 +824,7 @@ function MonsterPalette({
                 onClick={() => onSelect(entry)}
               >
                 <span className="monster-brush-art" style={{ width: `${artSize.width}px`, height: `${artSize.height}px` }}>
-                  {entry.kind === "library" ? (
-                    <ScrapbookMonsterIcon entry={entry.entry} iconEntries={iconEntries} lookups={lookups} previewContext={previewContext} compact />
-                  ) : (
-                    <MonsterIcon monster={monster} iconEntries={iconEntries} project={project} lookups={lookups} previewContext={previewContext} />
-                  )}
+                  <MonsterIcon monster={monster} iconEntries={iconEntries} project={project} lookups={lookups} previewContext={previewContext} />
                 </span>
                 <span className="monster-brush-id">{entry.id}</span>
               </button>
@@ -856,24 +862,47 @@ function MonsterWorkbench({
   const [libraryQuery, setLibraryQuery] = useState("");
   const [selectedLibraryId, setSelectedLibraryId] = useState<string | null>(null);
   const [activePreview, setActivePreview] = useState<"scenario" | "library">("scenario");
+  const [activeSetId, setActiveSetId] = useState<MonsterSetId>(0);
   const [scenarioDropActive, setScenarioDropActive] = useState(false);
   const [libraryDropActive, setLibraryDropActive] = useState(false);
   const selectedFromEntity = idFromEntity(selectedEntity?.id ?? "", "monster:");
+  const scenarioIds = useMemo(() => monsterScenarioIds(project), [project]);
+  const scenarioEntries = useMemo(
+    () => scenarioIds.map((id) => {
+      const normal = monsterForSet(lookups, 0, id);
+      const monster = monsterForSet(lookups, 1, id);
+      const mega = monsterForSet(lookups, -1, id);
+      const active = monsterForSet(lookups, activeSetId, id);
+      const fallback = active ?? normal ?? monster ?? mega;
+      return { id, normal, monster, mega, active, fallback };
+    }),
+    [activeSetId, lookups, scenarioIds]
+  );
   const filtered = useMemo(
-    () => filterRecords(lookups.monsters, query, (monster) => `${monster.id} ${monster.displayName} icon ${monster.iconId} hd ${monster.hitDice}`),
-    [lookups.monsters, query]
+    () => filterRecords(scenarioEntries, query, (entry) => {
+      const record = entry.fallback;
+      return `${entry.id} ${record?.displayName ?? ""} icon ${record?.iconId ?? ""} hd ${record?.hitDice ?? ""} normal ${Boolean(entry.normal)} monster ${Boolean(entry.monster)} mega ${Boolean(entry.mega)}`;
+    }),
+    [scenarioEntries, query]
   );
-  const libraryEntries = useMemo(
-    () => (catalog?.entities ?? [])
+  const libraryEntries = useMemo(() => {
+    const entries = (catalog?.entities ?? [])
       .filter((entity) => entity.type === "monster-scrapbook-entry")
-      .sort((a, b) => {
-        const aCustom = isProvidenceMonsterLibraryEntry(a);
-        const bCustom = isProvidenceMonsterLibraryEntry(b);
-        if (aCustom !== bCustom) return aCustom ? 1 : -1;
-        return scrapbookIndex(a) - scrapbookIndex(b);
-      }),
-    [catalog?.entities]
-  );
+      .filter((entry) => {
+        if (isProvidenceMonsterLibraryEntry(entry)) return true;
+        return !(catalog?.entities ?? []).some((candidate) => {
+          if (!isProvidenceMonsterLibraryEntry(candidate)) return false;
+          const origin = monsterLibraryOrigin(candidate);
+          return origin.kind === "built-in-override" && origin.sourceId === entry.id;
+        });
+      });
+    return entries.sort((a, b) => {
+      const aCustom = isProvidenceMonsterLibraryEntry(a);
+      const bCustom = isProvidenceMonsterLibraryEntry(b);
+      if (aCustom !== bCustom) return aCustom ? 1 : -1;
+      return scrapbookIndex(a) - scrapbookIndex(b);
+    });
+  }, [catalog?.entities]);
   const filteredLibrary = useMemo(
     () => filterRecords(libraryEntries, libraryQuery, scrapbookSearchText),
     [libraryEntries, libraryQuery]
@@ -887,17 +916,18 @@ function MonsterWorkbench({
       setSelectedLibraryId(filteredLibrary[0].id);
     }
   }, [filteredLibrary, selectedLibraryId]);
-  const nextMonsterId = nextAvailableId(lookups.monsters);
-  const selected =
-    selectedFromEntity !== null ? lookups.monsters.find((monster) => monster.id === selectedFromEntity) ?? null :
-    lookups.monsters[0] ?? null;
+  const nextMonsterId = nextAvailableId(scenarioIds.map((id) => ({ id })));
+  const selectedId = selectedFromEntity ?? scenarioEntries[0]?.id ?? null;
+  const selectedEntry = selectedId !== null ? scenarioEntries.find((entry) => entry.id === selectedId) ?? null : null;
+  const selected = selectedId !== null ? monsterForSet(lookups, activeSetId, selectedId) : null;
+  const selectedNormal = selectedId !== null ? monsterForSet(lookups, 0, selectedId) : null;
   const selectedLibrary =
     selectedLibraryId !== null ? filteredLibrary.find((entry) => entry.id === selectedLibraryId) ?? null :
     filteredLibrary[0] ?? null;
   const selectedLibraryTemplate = selectedLibrary ? monsterLibraryEntryTemplate(selectedLibrary) : null;
-  const selectedDescription = selected ? project.monsterDescriptions.find((description) => description.id === selected.id)?.text ?? "" : "";
+  const selectedDescription = selectedId !== null ? project.monsterDescriptions.find((description) => description.id === selectedId)?.text ?? "" : "";
   const selectMonster = (id: number) => onSelectEntity(selectEntityFromId(`monster:${id}`));
-  const update = (id: number, changes: Partial<MonsterRecord>) => onApplyCommand?.({ kind: "updateMonsterRecord", label: "Update monster", id, changes });
+  const update = (id: number, changes: Partial<MonsterRecord>, setId: MonsterSetId = activeSetId) => onApplyCommand?.({ kind: "updateMonsterRecord", label: `Update ${monsterSetLabel(setId)} monster`, id, changes, setId });
   const managedLibraryPath = catalog?.managedPath ?? "browser://workspace/library";
   const commitCatalog = (nextCatalog: LibraryCatalog, status: string) => onUpdateLibraryCatalog?.(nextCatalog, status);
   const selectScenarioMonster = (id: number) => {
@@ -908,9 +938,28 @@ function MonsterWorkbench({
     setActivePreview("library");
     setSelectedLibraryId(entry.id);
   };
-  const copyLibraryEntryToScenario = (entry: LibraryCatalog["entities"][number]) => {
+  const copyLibraryEntryToScenario = (entry: LibraryCatalog["entities"][number], mode: "normal" | "all" | "generated" = "normal") => {
     const copyId = monsterCopyTargetId(project, entry);
-    copyMonsterLibraryEntryToScenario(entry, copyId, onApplyCommand);
+    const template = monsterRecordFromLibraryEntry(entry, copyId);
+    const description = scrapbookDescription(entry);
+    if (mode === "all") {
+      for (const option of MONSTER_SET_OPTIONS) {
+        onApplyCommand?.({
+          kind: "createMonsterFromTemplate",
+          label: `Copy ${scrapbookName(entry)} to ${option.label} Monster ${copyId}`,
+          id: copyId,
+          template,
+          description: option.id === 0 ? description : undefined,
+          setId: option.id
+        });
+      }
+    } else {
+      copyMonsterLibraryEntryToScenario(entry, copyId, onApplyCommand);
+      if (mode === "generated") {
+        onApplyCommand?.({ kind: "generateMonsterVariants", label: `Generate variants for monster ${copyId}`, id: copyId });
+      }
+    }
+    setActiveSetId(0);
     setActivePreview("scenario");
     selectMonster(copyId);
   };
@@ -918,10 +967,11 @@ function MonsterWorkbench({
     if (!onUpdateLibraryCatalog) return;
     const template = monsterRecordFromLibraryEntry(entry, preferredMonsterCopyId(project, entry));
     const label = variant ? `${scrapbookName(entry)} Variant` : scrapbookName(entry);
+    const originKind = variant ? "library-variant" : isProvidenceMonsterLibraryEntry(entry) ? "library-variant" : "built-in-override";
     const { catalog: nextCatalog, entity } = createMonsterLibraryEntry(catalog, managedLibraryPath, { ...template, displayName: label }, scrapbookDescription(entry), {
       label,
       origin: {
-        kind: isProvidenceMonsterLibraryEntry(entry) ? "library-variant" : "built-in-scrapbook",
+        kind: originKind,
         sourceId: entry.id,
         sourceLabel: scrapbookName(entry)
       },
@@ -958,7 +1008,7 @@ function MonsterWorkbench({
       ? duplicateMonsterLibraryEntry(catalog, entry.id)
       : createMonsterLibraryEntry(catalog, managedLibraryPath, monsterRecordFromLibraryEntry(entry, preferredMonsterCopyId(project, entry)), scrapbookDescription(entry), {
         label: `${scrapbookName(entry)} Variant`,
-        origin: { kind: "built-in-scrapbook", sourceId: entry.id, sourceLabel: scrapbookName(entry) },
+        origin: { kind: "library-variant", sourceId: entry.id, sourceLabel: scrapbookName(entry) },
         preferredScenarioMonsterId: preferredMonsterCopyId(project, entry)
       });
     if (result.entity) {
@@ -1018,7 +1068,11 @@ function MonsterWorkbench({
     setLibraryDropActive(false);
     const scenarioId = Number(event.dataTransfer.getData(SCENARIO_MONSTER_DRAG_MIME));
     if (Number.isInteger(scenarioId)) {
-      const monster = lookups.monsters.find((candidate) => candidate.id === scenarioId);
+      const monster =
+        monsterForSet(lookups, activeSetId, scenarioId)
+        ?? monsterForSet(lookups, 0, scenarioId)
+        ?? monsterForSet(lookups, 1, scenarioId)
+        ?? monsterForSet(lookups, -1, scenarioId);
       if (monster) {
         event.preventDefault();
         copyScenarioMonsterToLibrary(monster);
@@ -1032,6 +1086,34 @@ function MonsterWorkbench({
       duplicateLibraryMonster(entry);
     }
   };
+  const activeSetIds = useMemo(() => new Set(monstersForSet(lookups, activeSetId).map((monster) => monster.id)), [activeSetId, lookups]);
+  const selectedSetTools = selectedId !== null ? (
+    <MonsterSetToolbar
+      activeSetId={activeSetId}
+      selectedId={selectedId}
+      selectedRecord={selected}
+      normalRecord={selectedNormal}
+      availableIds={activeSetIds}
+      onSetIdChange={setActiveSetId}
+      onCreateFromNormal={() => {
+        if (selectedId === null || activeSetId === 0) return;
+        onApplyCommand?.({ kind: "createMonsterVariantFromNormal", label: `Create ${monsterSetLabel(activeSetId)} monster ${selectedId} from Normal`, id: selectedId, setId: activeSetId });
+      }}
+      onCopyToAll={() => {
+        if (selectedId === null || !selected) return;
+        onApplyCommand?.({ kind: "copyCurrentMonsterToAllSets", label: `Copy ${monsterSetLabel(activeSetId)} monster ${selectedId} to all sets`, id: selectedId, sourceSetId: activeSetId });
+      }}
+      onGenerate={() => {
+        if (selectedId === null || !selectedNormal) return;
+        onApplyCommand?.({ kind: "generateMonsterVariants", label: `Generate monster variants for ${selectedId}`, id: selectedId });
+      }}
+      onSwitch={(toId) => {
+        if (selectedId === null) return;
+        onApplyCommand?.({ kind: "switchMonsterRecords", label: `Switch ${monsterSetLabel(activeSetId)} monster ${selectedId} with ${toId}`, setId: activeSetId, fromId: selectedId, toId });
+        selectMonster(toId);
+      }}
+    />
+  ) : null;
 
   return (
     <div className="combat-record-layout monster-combined-layout">
@@ -1111,23 +1193,28 @@ function MonsterWorkbench({
           </header>
           <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search scenario monsters..." />
           <div className="combat-record-scroll">
-            {filtered.map((monster) => (
+            {filtered.map((entry) => {
+              const monster = entry.fallback;
+              if (!monster) return null;
+              return (
               <button
-                key={monster.id}
+                key={entry.id}
                 type="button"
                 draggable
-                className={activePreview === "scenario" && selected?.id === monster.id ? "selected" : ""}
-                onClick={() => selectScenarioMonster(monster.id)}
+                className={activePreview === "scenario" && selectedId === entry.id ? "selected" : ""}
+                onClick={() => selectScenarioMonster(entry.id)}
                 onDragStart={(event) => startScenarioDrag(monster, event)}
                 onDragEnd={() => setLibraryDropActive(false)}
               >
                 <MonsterIcon monster={monster} iconEntries={iconEntries} project={project} lookups={lookups} previewContext={previewContext} compact />
                 <span>
-                  <strong>{monster.displayName || `Monster ${monster.id}`}</strong>
+                  <strong>{monster.displayName || `Monster ${entry.id}`}</strong>
                   <small>{monsterFacts(monster)}</small>
+                  <MonsterSetBadges entry={entry} activeSetId={activeSetId} />
                 </span>
               </button>
-            ))}
+            );
+            })}
             {filtered.length === 0 && <p className="empty-copy compact">No scenario monsters match that search.</p>}
           </div>
         </aside>
@@ -1143,7 +1230,7 @@ function MonsterWorkbench({
           previewContext={previewContext}
           description={monsterLibraryEntryDescription(selectedLibrary)}
           duplicateLabel="New Variant"
-          clearLabel="Delete Library Entry"
+          clearLabel={monsterLibraryOrigin(selectedLibrary).kind === "built-in-override" ? "Restore Scrapbook Default" : "Delete Library Entry"}
           onUpdate={(changes) => updateLibraryMonster(selectedLibrary, changes)}
           onUpdateDescription={(text) => updateLibraryMonster(selectedLibrary, {}, text)}
           onDuplicate={() => duplicateLibraryMonster(selectedLibrary)}
@@ -1159,7 +1246,10 @@ function MonsterWorkbench({
           previewContext={previewContext}
           copyId={monsterCopyTargetId(project, selectedLibrary)}
           onCopy={() => copyLibraryEntryToScenario(selectedLibrary)}
-          onCopyToLibrary={() => copyLibraryEntryToLibrary(selectedLibrary)}
+          onCopyAll={() => copyLibraryEntryToScenario(selectedLibrary, "all")}
+          onCopyGenerated={() => copyLibraryEntryToScenario(selectedLibrary, "generated")}
+          onCustomize={() => copyLibraryEntryToLibrary(selectedLibrary)}
+          onCopyVariant={() => copyLibraryEntryToLibrary(selectedLibrary, true)}
         />
       ) : selected ? (
         <MonsterEditor
@@ -1170,20 +1260,161 @@ function MonsterWorkbench({
           lookups={lookups}
           previewContext={previewContext}
           description={selectedDescription}
-          onUpdate={(changes) => update(selected.id, changes)}
+          headerMeta={selectedSetTools}
+          onUpdate={(changes) => update(selected.id, changes, activeSetId)}
           onUpdateDescription={(text) => onApplyCommand?.({ kind: "upsertMonsterDescription", label: `Update monster ${selected.id} description`, id: selected.id, text })}
           onCopyToLibrary={() => copyScenarioMonsterToLibrary(selected)}
           onDuplicate={() => {
             const id = nextMonsterId;
-            update(id, { ...selected, id, displayName: `${selected.displayName || `Monster ${selected.id}`} Copy` });
+            update(id, { ...selected, id, displayName: `${selected.displayName || `Monster ${selected.id}`} Copy` }, activeSetId);
             selectMonster(id);
           }}
-          onClear={() => onApplyCommand?.({ kind: "deleteTargetRecord", label: "Clear monster", recordType: "monster", id: selected.id })}
+          onClear={activeSetId === 0 ? () => onApplyCommand?.({ kind: "deleteTargetRecord", label: "Clear monster", recordType: "monster", id: selected.id }) : undefined}
+        />
+      ) : activePreview === "scenario" && selectedId !== null ? (
+        <MissingMonsterSetEditor
+          id={selectedId}
+          setId={activeSetId}
+          normalRecord={selectedNormal}
+          headerMeta={selectedSetTools}
+          onCreate={() => {
+            if (activeSetId === 0) return;
+            onApplyCommand?.({ kind: "createMonsterVariantFromNormal", label: `Create ${monsterSetLabel(activeSetId)} monster ${selectedId} from Normal`, id: selectedId, setId: activeSetId });
+          }}
         />
       ) : (
         <EmptyCombatEditor title="No monster selected" body="Create a scenario monster, select a scenario monster to edit, or select a Monster Library entry to preview and copy." />
       )}
     </div>
+  );
+}
+
+function MonsterSetBadges({
+  entry,
+  activeSetId
+}: {
+  entry: { normal: MonsterRecord | null; monster: MonsterRecord | null; mega: MonsterRecord | null };
+  activeSetId: MonsterSetId;
+}) {
+  return (
+    <span className="monster-set-badges" aria-label="Monster set availability">
+      {MONSTER_SET_OPTIONS.map((option) => {
+        const available = option.id === 0 ? Boolean(entry.normal) : option.id === 1 ? Boolean(entry.monster) : Boolean(entry.mega);
+        return (
+          <span key={option.id} className={`${available ? "available" : "missing"}${activeSetId === option.id ? " active" : ""}`}>
+            {option.label}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
+function MonsterSetToolbar({
+  activeSetId,
+  selectedId,
+  selectedRecord,
+  normalRecord,
+  availableIds,
+  onSetIdChange,
+  onCreateFromNormal,
+  onCopyToAll,
+  onGenerate,
+  onSwitch
+}: {
+  activeSetId: MonsterSetId;
+  selectedId: number;
+  selectedRecord: MonsterRecord | null;
+  normalRecord: MonsterRecord | null;
+  availableIds: Set<number>;
+  onSetIdChange: (setId: MonsterSetId) => void;
+  onCreateFromNormal: () => void;
+  onCopyToAll: () => void;
+  onGenerate: () => void;
+  onSwitch: (toId: number) => void;
+}) {
+  const [draft, setDraft] = useState("");
+  const [generatePreviewOpen, setGeneratePreviewOpen] = useState(false);
+  const targetId = Number(draft);
+  const canSwitch = Number.isInteger(targetId) && targetId >= 0 && targetId !== selectedId && availableIds.has(targetId);
+  useEffect(() => {
+    setDraft("");
+    setGeneratePreviewOpen(false);
+  }, [activeSetId, selectedId]);
+  return (
+    <div className="monster-set-toolbar">
+      <div className="monster-set-segmented" role="group" aria-label="Scenario monster set">
+        {MONSTER_SET_OPTIONS.map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            className={`combat-toggle${activeSetId === option.id ? " active" : ""}`}
+            onClick={() => onSetIdChange(option.id)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+      <small>{monsterSetFile(activeSetId)} {selectedRecord ? "available" : "missing"}</small>
+      <div className="monster-set-actions">
+        {activeSetId !== 0 && !selectedRecord && normalRecord ? (
+          <button type="button" className="btn btn-primary btn-xs" onClick={onCreateFromNormal}>Create From Normal</button>
+        ) : null}
+        {selectedRecord ? <button type="button" className="btn btn-secondary btn-xs" onClick={onCopyToAll}>Copy Current To All Sets</button> : null}
+        {normalRecord ? <button type="button" className="btn btn-secondary btn-xs" onClick={() => setGeneratePreviewOpen((open) => !open)}>Preview Generate Variants</button> : null}
+        <label className="monster-switch-with">
+          <span>Switch With</span>
+          <input type="number" value={draft} onChange={(event) => setDraft(event.currentTarget.value)} />
+          <button type="button" className="btn btn-secondary btn-xs" disabled={!canSwitch} onClick={() => canSwitch && onSwitch(targetId)}>
+            Switch
+          </button>
+        </label>
+      </div>
+      {generatePreviewOpen ? (
+        <div className="monster-generate-preview">
+          <small>
+            This replaces Monster and Mega variants for ID {selectedId}. Semantic fields stay copied from Normal; Providence scales strength fields and clamps values instead of emulating Divinity overflow.
+          </small>
+          <button type="button" className="btn btn-primary btn-xs" onClick={onGenerate}>Apply Generate Variants</button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function MissingMonsterSetEditor({
+  id,
+  setId,
+  normalRecord,
+  headerMeta,
+  onCreate
+}: {
+  id: number;
+  setId: MonsterSetId;
+  normalRecord: MonsterRecord | null;
+  headerMeta?: ReactNode;
+  onCreate: () => void;
+}) {
+  return (
+    <article className="combat-editor monster-editor scenario-monster-editor missing-monster-set-editor">
+      <header className="combat-editor-header monster-editor-title-header">
+        <span className="combat-pane-title">{monsterSetLabel(setId)} Monster {id}</span>
+        {headerMeta ? <div className="monster-editor-header-meta">{headerMeta}</div> : null}
+      </header>
+      <section className="monster-section">
+        <header><strong>Missing {monsterSetLabel(setId)} Variant</strong><small>{monsterSetFile(setId)} has no record for monster ID {id}.</small></header>
+        {setId === 0 ? (
+          <p className="empty-copy compact">Create or copy a Normal scenario monster before editing this runtime ID.</p>
+        ) : normalRecord ? (
+          <div className="empty-copy compact">
+            <p>This set can be created from Normal Monster {id}. Descriptions remain shared by monster ID across all monster sets.</p>
+            <button type="button" className="btn btn-primary btn-sm" onClick={onCreate}>Create {monsterSetLabel(setId)} From Normal</button>
+          </div>
+        ) : (
+          <p className="empty-copy compact">Normal Monster {id} is also missing, so Providence cannot seed this variant safely.</p>
+        )}
+      </section>
+    </article>
   );
 }
 
@@ -1196,7 +1427,10 @@ function ScrapbookMonsterPreview({
   previewContext,
   copyId,
   onCopy,
-  onCopyToLibrary
+  onCopyAll,
+  onCopyGenerated,
+  onCustomize,
+  onCopyVariant
 }: {
   entry: LibraryCatalog["entities"][number];
   project: Project;
@@ -1206,7 +1440,10 @@ function ScrapbookMonsterPreview({
   previewContext: PreviewRuntimeContext;
   copyId: number;
   onCopy: () => void;
-  onCopyToLibrary?: () => void;
+  onCopyAll?: () => void;
+  onCopyGenerated?: () => void;
+  onCustomize?: () => void;
+  onCopyVariant?: () => void;
 }) {
   const description = scrapbookDescription(entry);
   return (
@@ -1214,14 +1451,21 @@ function ScrapbookMonsterPreview({
       <header className="combat-editor-header monster-editor-title-header">
         <span className="combat-pane-title">{scrapbookName(entry)}</span>
         <div className="combat-editor-actions">
-          {onCopyToLibrary ? (
-            <button type="button" className="btn btn-secondary btn-xs" title="Create an editable Providence library copy" onClick={onCopyToLibrary}>
-              Copy To Library
+          {onCustomize ? (
+            <button type="button" className="btn btn-secondary btn-xs" title="Create an editable override for this protected built-in template" onClick={onCustomize}>
+              Customize
+            </button>
+          ) : null}
+          {onCopyVariant ? (
+            <button type="button" className="btn btn-secondary btn-xs" title="Create an editable Providence library variant" onClick={onCopyVariant}>
+              Copy To Library Variant
             </button>
           ) : null}
           <button type="button" className="btn btn-primary btn-xs" title={`Copy to Scenario Monster ${copyId}`} onClick={onCopy}>
             Copy To Scenario
           </button>
+          {onCopyAll ? <button type="button" className="btn btn-primary btn-xs" title="Copy exact records to Normal, Monster, and Mega scenario sets" onClick={onCopyAll}>Copy To All Sets</button> : null}
+          {onCopyGenerated ? <button type="button" className="btn btn-primary btn-xs" title="Copy Normal, then generate Monster and Mega variants with Providence scaling" onClick={onCopyGenerated}>Copy And Generate Variants</button> : null}
         </div>
       </header>
       <section className="scrapbook-summary scrapbook-description-summary">
@@ -1305,6 +1549,7 @@ function MonsterEditor({
   lookups,
   previewContext,
   description,
+  headerMeta,
   onUpdate,
   onUpdateDescription,
   onCopyToLibrary,
@@ -1320,11 +1565,12 @@ function MonsterEditor({
   lookups: CombatLookups;
   previewContext: PreviewRuntimeContext;
   description: string;
+  headerMeta?: ReactNode;
   onUpdate: (changes: Partial<MonsterRecord>) => void;
   onUpdateDescription: (text: string) => void;
   onCopyToLibrary?: () => void;
   onDuplicate: () => void;
-  onClear: () => void;
+  onClear?: () => void;
   duplicateLabel?: string;
   clearLabel?: string;
 }) {
@@ -1332,10 +1578,11 @@ function MonsterEditor({
     <article className="combat-editor monster-editor scenario-monster-editor">
       <header className="combat-editor-header monster-editor-title-header">
         <span className="combat-pane-title">{monster.displayName || `Monster ${monster.id}`}</span>
+        {headerMeta ? <div className="monster-editor-header-meta">{headerMeta}</div> : null}
         <div className="combat-editor-actions">
           {onCopyToLibrary ? <button type="button" className="btn btn-secondary btn-xs" onClick={onCopyToLibrary}>Copy To Library</button> : null}
           <button type="button" className="btn btn-secondary btn-xs" onClick={onDuplicate}>{duplicateLabel}</button>
-          <button type="button" className="btn btn-danger btn-xs" onClick={onClear}>{clearLabel}</button>
+          {onClear ? <button type="button" className="btn btn-danger btn-xs" onClick={onClear}>{clearLabel}</button> : null}
         </div>
       </header>
       <section className="monster-section monster-identity-section">
@@ -2045,13 +2292,25 @@ function resolveMonsterIcon(monster: MonsterRecord, iconEntries: Record<number, 
   return { url: null, label: `No icon preview for cicn ${monster.iconId}`, width: null, height: null };
 }
 
-function MonsterSelect({ lookups, value, onCommit }: { lookups: CombatLookups; value: number; onCommit: (value: number) => void }) {
-  const placeableMonsters = lookups.monsters.filter((monster) => monster.id !== 0);
+function MonsterSelect({
+  monsters,
+  setId,
+  value,
+  onCommit
+}: {
+  monsters: MonsterRecord[];
+  setId: MonsterSetId;
+  value: number;
+  onCommit: (value: number) => void;
+}) {
+  const placeableMonsters = monsters.filter((monster) => monster.id !== 0);
+  const hasValue = value === 0 || placeableMonsters.some((monster) => monster.id === value);
   return (
     <label className="combat-field">
       <FieldLabel label="Anchor Cell Monster" help="This writes the absolute monster ID for the selected anchor cell. Data BD uses 0 for empty cells, so Monster 0 cannot be selected here. Use Force Friends to preserve Realmz's negative side-flip encoding." />
       <select value={value} onChange={(event) => onCommit(Number(event.currentTarget.value))}>
         <option value={0}>Empty</option>
+        {!hasValue ? <option value={value}>{monsterSetLabel(setId)} Monster {value} missing</option> : null}
         {placeableMonsters.map((monster) => (
           <option key={monster.id} value={monster.id}>{monster.displayName || `Monster ${monster.id}`} ({monster.id})</option>
         ))}
@@ -2762,20 +3021,22 @@ function battleMonsterPaintEntrySearchText(entry: BattleMonsterPaintEntry) {
 
 function monsterCopyTargetId(project: Project, entry: LibraryCatalog["entities"][number]) {
   const scrapbookId = preferredMonsterCopyId(project, entry);
-  if (scrapbookId >= 0 && !project.monsters.some((monster) => monster.id === scrapbookId)) return scrapbookId;
-  return nextAvailableId(project.monsters);
+  const used = new Set(monsterScenarioIds(project));
+  if (scrapbookId >= 0 && !used.has(scrapbookId)) return scrapbookId;
+  return nextAvailableId([...used].map((id) => ({ id })));
 }
 
 function battleMonsterCopyTargetId(project: Project, entry: LibraryCatalog["entities"][number]) {
   const scrapbookId = preferredMonsterCopyId(project, entry);
-  if (scrapbookId > 0 && !project.monsters.some((monster) => monster.id === scrapbookId)) return scrapbookId;
-  return nextAvailablePlaceableMonsterId(project.monsters);
+  const used = new Set(monsterScenarioIds(project));
+  if (scrapbookId > 0 && !used.has(scrapbookId)) return scrapbookId;
+  return nextAvailablePlaceableMonsterId([...used].map((id) => ({ id })));
 }
 
 function preferredMonsterCopyId(project: Project, entry: LibraryCatalog["entities"][number]) {
   const preferred = typeof entry.summary.preferredScenarioMonsterId === "number" ? Math.trunc(entry.summary.preferredScenarioMonsterId) : scrapbookIndex(entry);
   if (preferred >= 0) return preferred;
-  return nextAvailableId(project.monsters);
+  return nextAvailableId(monsterScenarioIds(project).map((id) => ({ id })));
 }
 
 function nextAvailablePlaceableMonsterId(records: Array<{ id: number }>) {
@@ -3093,6 +3354,33 @@ function nextAvailableId(records: Array<{ id: number }>) {
   return used.size;
 }
 
+function monsterScenarioIds(project: Project) {
+  return uniqueSortedNumbers([
+    ...(project.monsters ?? []).map((monster) => monster.id),
+    ...(project.monsterSets ?? []).flatMap((set) => set.monsters.map((monster) => monster.id))
+  ]);
+}
+
+function monstersForSet(lookups: CombatLookups, setId: MonsterSetId) {
+  return lookups.monsterSetsById.get(setId) ?? [];
+}
+
+function monsterMapForSet(lookups: CombatLookups, setId: MonsterSetId) {
+  return lookups.monsterBySetAndId.get(setId) ?? new Map<number, MonsterRecord>();
+}
+
+function monsterForSet(lookups: CombatLookups, setId: MonsterSetId, id: number) {
+  return monsterMapForSet(lookups, setId).get(id) ?? null;
+}
+
+function monsterSetLabel(setId: MonsterSetId) {
+  return MONSTER_SET_OPTIONS.find((option) => option.id === setId)?.label ?? "Normal";
+}
+
+function monsterSetFile(setId: MonsterSetId) {
+  return MONSTER_SET_OPTIONS.find((option) => option.id === setId)?.file ?? "Data MD";
+}
+
 function monsterFacts(monster: MonsterRecord) {
   return `ID ${monster.id}, HD ${monster.hitDice}, armor ${monster.armor}, agility ${monster.agility}, icon ${monster.iconId}`;
 }
@@ -3110,16 +3398,16 @@ function monsterBattleStats(monster: MonsterRecord): Array<[string, string | num
   ];
 }
 
-function monsterPlacementTitle(monster: MonsterRecord | null | undefined, rawValue: number) {
+function monsterPlacementTitle(monster: MonsterRecord | null | undefined, rawValue: number, setId: MonsterSetId = 0) {
   const id = Math.abs(rawValue);
   const side = rawValue < 0 ? " (force friend)" : "";
-  return monster ? `${monster.displayName || `Monster ${monster.id}`} | Monster ${monster.id}${side}` : `Monster ${id}${side}`;
+  return monster ? `${monster.displayName || `Monster ${monster.id}`} | Monster ${monster.id}${side}` : `${monsterSetLabel(setId)} Monster ${id} missing${side}`;
 }
 
-function monsterPlacementLabel(monster: MonsterRecord | null | undefined, rawValue: number) {
+function monsterPlacementLabel(monster: MonsterRecord | null | undefined, rawValue: number, setId: MonsterSetId = 0) {
   const id = Math.abs(rawValue);
   const side = rawValue < 0 ? " (force friend)" : "";
-  return monster ? `${monster.displayName || `Monster ${monster.id}`} | ${monsterFacts(monster)}${side}` : `Monster ${id}${side}`;
+  return monster ? `${monster.displayName || `Monster ${monster.id}`} | ${monsterFacts(monster)}${side}` : `${monsterSetLabel(setId)} Monster ${id} missing in ${monsterSetFile(setId)}${side}`;
 }
 
 function monsterBattleFootprint(monster: MonsterRecord, iconEntries: Record<number, IconEntry>, project: Project, lookups: CombatLookups) {
@@ -3184,6 +3472,8 @@ function useCombatLookups(project: Project | null, catalog: LibraryCatalog | nul
       return {
         monsters: [],
         monsterById: new Map(),
+        monsterSetsById: new Map([[0, []]]),
+        monsterBySetAndId: new Map([[0, new Map()]]),
         iconAssetsByAbsId: new Map(),
         realmzActorIconAssetsByAbsId: new Map(),
         monsterMashAssetsByAbsId: new Map(),
@@ -3192,6 +3482,15 @@ function useCombatLookups(project: Project | null, catalog: LibraryCatalog | nul
     }
     const monsters = [...(project.monsters ?? [])].sort((a, b) => a.id - b.id);
     const monsterById = new Map(monsters.map((monster) => [monster.id, monster]));
+    const monsterSetsById = new Map<MonsterSetId, MonsterRecord[]>([[0, monsters]]);
+    const monsterBySetAndId = new Map<MonsterSetId, Map<number, MonsterRecord>>([[0, monsterById]]);
+    for (const option of MONSTER_SET_OPTIONS) {
+      if (option.id === 0) continue;
+      const set = (project.monsterSets ?? []).find((candidate) => candidate.setId === option.id);
+      const setMonsters = [...(set?.monsters ?? [])].sort((a, b) => a.id - b.id);
+      monsterSetsById.set(option.id, setMonsters);
+      monsterBySetAndId.set(option.id, new Map(setMonsters.map((monster) => [monster.id, monster])));
+    }
     const iconAssetsByAbsId = new Map<number, CombatIconAsset>();
     const realmzActorIconAssetsByAbsId = new Map<number, LibraryAsset>();
     const monsterMashAssetsByAbsId = new Map<number, LibraryAsset>();
@@ -3218,12 +3517,14 @@ function useCombatLookups(project: Project | null, catalog: LibraryCatalog | nul
     return {
       monsters,
       monsterById,
+      monsterSetsById,
+      monsterBySetAndId,
       iconAssetsByAbsId,
       realmzActorIconAssetsByAbsId,
       monsterMashAssetsByAbsId,
       tabCounts: {
         battles: project.battles.length,
-        monsters: project.monsters.length
+        monsters: monsterScenarioIds(project).length
       }
     };
   }, [catalog?.assets, catalog?.entities, project]);

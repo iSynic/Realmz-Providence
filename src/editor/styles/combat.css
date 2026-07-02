@@ -242,6 +242,106 @@
   justify-content: flex-end;
 }
 
+.monster-editor-header-meta {
+  min-width: min(100%, 480px);
+  flex: 1 1 420px;
+}
+
+.monster-set-toolbar {
+  display: grid;
+  gap: 7px;
+  justify-items: center;
+  padding: 7px;
+  border: 1px solid #213240;
+  border-radius: 6px;
+  background: #0b1219;
+}
+
+.monster-set-toolbar small {
+  color: #9db6ca;
+}
+
+.monster-set-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.monster-switch-with {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #8bd0ff;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.monster-switch-with input {
+  width: 58px;
+  min-height: 26px;
+  border: 1px solid #2a3a48;
+  border-radius: 5px;
+  background: #0b1219;
+  color: #f3f8ff;
+  text-align: center;
+  font: inherit;
+}
+
+.monster-generate-preview {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  max-width: 520px;
+  padding: 7px;
+  border: 1px solid #70551b;
+  border-radius: 6px;
+  background: #1d1708;
+  color: #ffe7a8;
+  text-align: center;
+}
+
+.monster-generate-preview small {
+  color: #ffe7a8;
+}
+
+.monster-set-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.monster-set-badges span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 15px;
+  padding: 0 5px;
+  border: 1px solid #263847;
+  border-radius: 999px;
+  color: #7f92a3;
+  font-size: 8px;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.monster-set-badges span.available {
+  border-color: #225a3b;
+  color: #9af1be;
+}
+
+.monster-set-badges span.missing {
+  opacity: 0.5;
+}
+
+.monster-set-badges span.active {
+  border-color: #2b8fd8;
+  color: #d9f0ff;
+  box-shadow: 0 0 0 1px rgba(43, 143, 216, 0.2);
+}
+
 .monster-editor-title-header .btn-danger {
   border-color: #8a2f2a;
   background: #351310;
@@ -514,7 +614,7 @@
 
 .battle-header-fields {
   display: grid;
-  grid-template-columns: 124px minmax(235px, 1fr) minmax(235px, 1fr) minmax(280px, 1.15fr);
+  grid-template-columns: 124px minmax(220px, 1fr) minmax(220px, 1fr) minmax(250px, 1.05fr) minmax(174px, 0.75fr);
   column-gap: 12px;
   align-items: start;
   min-width: 0;
@@ -613,6 +713,43 @@
 .battle-header-fields .battle-icon-button {
   width: 28px;
   min-width: 28px;
+}
+
+.battle-monster-set-preview {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+
+.battle-monster-set-preview .monster-set-segmented {
+  width: 100%;
+}
+
+.monster-set-segmented {
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 4px;
+  width: fit-content;
+}
+
+.monster-set-segmented .combat-toggle {
+  min-height: 27px;
+  padding: 4px 7px;
+  border: 1px solid #2a3a48;
+  border-radius: 5px;
+  background: #0f1821;
+  color: #9db6ca;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.monster-set-segmented .combat-toggle.active {
+  border-color: #2b8fd8;
+  background: #10283d;
+  color: #f3fbff;
 }
 
 .combat-distance-field {

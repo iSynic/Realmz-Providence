@@ -7,7 +7,7 @@ const MONSTER_LIBRARY_ENTITY_PREFIX = "library-entity:providence:monster-library
 const MONSTER_LIBRARY_RECORD_PREFIX = "library-record:providence:monster-library:";
 
 export type MonsterLibraryOrigin = {
-  kind: "built-in-scrapbook" | "scenario-monster" | "library-variant" | "blank";
+  kind: "built-in-scrapbook" | "built-in-override" | "scenario-monster" | "library-variant" | "blank";
   sourceId?: string;
   sourceLabel?: string;
 };
@@ -240,7 +240,7 @@ function monsterLibrarySummary(
   };
 }
 
-function monsterLibraryOrigin(entry: LibraryEntity): MonsterLibraryOrigin {
+export function monsterLibraryOrigin(entry: LibraryEntity): MonsterLibraryOrigin {
   const value = entry.summary.origin;
   if (!value || typeof value !== "object") return { kind: "blank" };
   const candidate = value as Partial<MonsterLibraryOrigin>;

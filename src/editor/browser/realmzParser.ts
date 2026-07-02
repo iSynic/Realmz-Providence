@@ -14,6 +14,7 @@ import {
   MonsterDescriptionRecord,
   MonsterRecord,
   MonsterSet,
+  MonsterSetId,
   OptionLabelRecord,
   RandomLevel,
   ScenarioItemRecord,
@@ -573,7 +574,7 @@ function parseMonsterDescriptions(buffer: Uint8Array | undefined): MonsterDescri
   }));
 }
 
-function parseMonsterSet(buffer: Uint8Array | undefined, sourceFile: string, setId: number): MonsterSet | null {
+function parseMonsterSet(buffer: Uint8Array | undefined, sourceFile: string, setId: MonsterSetId): MonsterSet | null {
   if (!buffer) return null;
   return { sourceFile, setId, monsters: parseMonsters(buffer, sourceFile) };
 }

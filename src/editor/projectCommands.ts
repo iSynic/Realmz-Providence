@@ -61,12 +61,17 @@ import {
   bulkUpdateMessageRecords,
   clearOptionLabel,
   createMonsterFromTemplate,
+  copyCurrentMonsterToAllSets,
+  createMonsterVariantFromNormal,
   createOptionLabel,
   createTargetRecord,
   deleteTargetRecord,
   duplicateMessageRecord,
   duplicateOptionLabel,
   emptyScenarioItem,
+  generateMonsterVariants,
+  switchMonsterRecords,
+  updateMonsterRecord,
   updateOptionLabel,
   updateRecord,
   updateStringSound,
@@ -148,8 +153,12 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "duplicateOptionLabel") return duplicateOptionLabel(project, command.fromId, command.toId);
   if (command.kind === "updateOptionLabel") return updateOptionLabel(project, command.id, command.changes);
   if (command.kind === "updateBattleRecord") return updateRecord(project, "battles", command.id, command.changes);
-  if (command.kind === "createMonsterFromTemplate") return createMonsterFromTemplate(project, command.id, command.template, command.description);
-  if (command.kind === "updateMonsterRecord") return updateRecord(project, "monsters", command.id, command.changes);
+  if (command.kind === "createMonsterFromTemplate") return createMonsterFromTemplate(project, command.id, command.template, command.description, command.setId);
+  if (command.kind === "updateMonsterRecord") return updateMonsterRecord(project, command.id, command.changes, command.setId);
+  if (command.kind === "createMonsterVariantFromNormal") return createMonsterVariantFromNormal(project, command.id, command.setId);
+  if (command.kind === "copyCurrentMonsterToAllSets") return copyCurrentMonsterToAllSets(project, command.id, command.sourceSetId);
+  if (command.kind === "switchMonsterRecords") return switchMonsterRecords(project, command.setId, command.fromId, command.toId);
+  if (command.kind === "generateMonsterVariants") return generateMonsterVariants(project, command.id);
   if (command.kind === "upsertMonsterDescription") return upsertMonsterDescription(project, command.id, command.text);
   if (command.kind === "updateScenarioItemRecord") return updateRecord(project, "scenarioItems", command.id, command.changes);
   if (command.kind === "clearScenarioItemRecord") return updateRecord(project, "scenarioItems", command.id, emptyScenarioItem(command.id));
