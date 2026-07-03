@@ -32,11 +32,19 @@ try {
   const baseUrl = await resolveBaseUrl(baseUrlCandidates, processes);
   const budgets = loadBudgets(args.get("budget") || path.join(root, "docs", "performance-budgets.json"));
   let explicitProjects = splitProjects(args.get("project") || process.env.PROVIDENCE_UI_PROJECT || "");
-  if (args.has("combat-benchmark")) {
+  const importedCombatBenchmark = args.has("combat-imported-benchmark");
+  if (importedCombatBenchmark) {
+    const sourceProject = explicitProjects[0] || findImportedCombatBenchmarkSourceProject() || findCombatBenchmarkSourceProject();
+    explicitProjects = [prepareCombatImportedBenchmarkProject(sourceProject)];
+  } else if (args.has("combat-benchmark")) {
     const sourceProject = explicitProjects[0] || findCombatBenchmarkSourceProject();
     explicitProjects = [prepareCombatBenchmarkProject(sourceProject)];
   }
-  const projectSpecs = defaultProjectSpecs(explicitProjects);
+  const projectSpecs = defaultProjectSpecs(explicitProjects).map((spec) => ({
+    ...spec,
+    combatOnly: importedCombatBenchmark,
+    importedCombatBenchmark
+  }));
   const runRoot = createRunRoot("ui");
   const report = {
     version: 1,
@@ -135,12 +143,16 @@ async function runScenario({ baseUrl, budgets, spec }) {
       longTaskStatus: "pass"
     });
 
-    await runToolSwitches(client, budgets, scenario);
-    await runAssetsProbes(client, budgets, scenario);
-    await runApProbes(client, budgets, scenario);
-    await runMapProbes(client, budgets, scenario);
-    await runCombatProbes(client, budgets, scenario);
-    await runSearchProbes(client, budgets, scenario);
+    if (spec.combatOnly) {
+      await runCombatProbes(client, budgets, scenario, { importedHeavy: Boolean(spec.importedCombatBenchmark) });
+    } else {
+      await runToolSwitches(client, budgets, scenario);
+      await runAssetsProbes(client, budgets, scenario);
+      await runApProbes(client, budgets, scenario);
+      await runMapProbes(client, budgets, scenario);
+      await runCombatProbes(client, budgets, scenario);
+      await runSearchProbes(client, budgets, scenario);
+    }
     scenario.combatPerf = await combatPerfDiagnostics(client).catch(() => []);
   } catch (error) {
     const diagnostics = await pageDiagnostics(client).catch(() => ({}));
@@ -370,7 +382,7 @@ async function runMapProbes(client, budgets, scenario) {
   `, { budgetDuration: "actionAndSettle" });
 }
 
-async function runCombatProbes(client, budgets, scenario) {
+async function runCombatProbes(client, budgets, scenario, { importedHeavy = false } = {}) {
   await warmDomain(client, "combat");
   await evalValue(client, "new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))");
   await probe(client, scenario, budgets, "Combat Battles tab open", "toolSwitch", `
@@ -429,7 +441,114 @@ async function runCombatProbes(client, budgets, scenario) {
     })()
   `, `document.querySelector(".battle-header-fields .combat-distance-field input")?.value === window.__combatHeaderInputValue`);
 
-  await probe(client, scenario, budgets, "Combat dense grid paint", "combatGridEdit", `
+  if (importedHeavy) {
+    await probe(client, scenario, budgets, "Combat monster palette scroll", "recordSelection", `
+      (() => {
+        const palette = document.querySelector(".monster-brush-palette");
+        if (!palette) return false;
+        window.__combatPaletteScrollBefore = palette.scrollTop;
+        palette.scrollTop = Math.min(palette.scrollHeight, palette.scrollTop + 480);
+        palette.dispatchEvent(new Event("scroll", { bubbles: true }));
+        return true;
+      })()
+    `, `document.querySelector(".monster-brush-palette") && document.querySelectorAll(".monster-brush-palette button").length > 0`);
+
+    await probe(client, scenario, budgets, "Combat battle hover and select", "combatGridEdit", `
+      (() => {
+        const select = [...document.querySelectorAll(".placement-mode-controls button")]
+          .find((button) => button.textContent?.includes("Select"));
+        select?.click();
+        const board = document.querySelector("[data-battle-board-canvas='true']");
+        if (!board) return false;
+        const rect = board.getBoundingClientRect();
+        const point = (col, row) => ({
+          clientX: rect.left + ((col + 0.5) / 13) * rect.width,
+          clientY: rect.top + ((row + 0.5) / 13) * rect.height
+        });
+        const coords = point(0, 0);
+        board.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 93, pointerType: "mouse", buttons: 0, ...coords }));
+        board.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true, pointerId: 93, pointerType: "mouse", buttons: 1, ...coords }));
+        board.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 93, pointerType: "mouse", buttons: 0, ...coords }));
+        window.__combatHoverSelectDone = true;
+        return true;
+      })()
+    `, `window.__combatHoverSelectDone === true && document.querySelector(".selected-battle-cell")`);
+
+    await probe(client, scenario, budgets, "Combat dense grid single paint", "combatGridEdit", `
+      (() => {
+        const before = window.__combatPlacedCount?.() ?? 0;
+        window.__combatGridSingleBefore = before;
+        if (before >= 100) return false;
+        const palette = document.querySelector(".monster-brush-palette");
+        const board = document.querySelector("[data-battle-board-canvas='true']");
+        if (!palette || !board) return false;
+        palette.scrollTop = 0;
+        palette.dispatchEvent(new Event("scroll", { bubbles: true }));
+        window.setTimeout(() => {
+          const brush = document.querySelector(".monster-brush-palette [data-monster-brush-id='1']") ??
+            document.querySelector(".monster-brush-palette button");
+          if (!brush) return;
+          brush.click();
+          const paint = [...document.querySelectorAll(".placement-mode-controls button")]
+            .find((button) => button.textContent?.includes("Paint"));
+          paint?.click();
+          window.requestAnimationFrame(() => {
+            const rect = board.getBoundingClientRect();
+            const coords = {
+              clientX: rect.left + ((12.5) / 13) * rect.width,
+              clientY: rect.top + ((12.5) / 13) * rect.height
+            };
+            board.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true, pointerId: 94, pointerType: "mouse", buttons: 1, ...coords }));
+            board.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 94, pointerType: "mouse", buttons: 0, ...coords }));
+          });
+        }, 0);
+        return true;
+      })()
+    `, `(window.__combatPlacedCount?.() ?? 0) > (window.__combatGridSingleBefore ?? 0)`);
+
+    await probe(client, scenario, budgets, "Combat dense grid drag paint", "combatGridEdit", `
+      (() => {
+        const before = window.__combatPlacedCount?.() ?? 0;
+        window.__combatGridDragBefore = before;
+        if (before >= 99) return false;
+        const palette = document.querySelector(".monster-brush-palette");
+        if (palette) {
+          palette.scrollTop = 0;
+          palette.dispatchEvent(new Event("scroll", { bubbles: true }));
+        }
+        const brush = document.querySelector(".monster-brush-palette [data-monster-brush-id='1']") ??
+          document.querySelector(".monster-brush-palette button");
+        brush?.click();
+        const paint = [...document.querySelectorAll(".placement-mode-controls button")]
+          .find((button) => button.textContent?.includes("Paint"));
+        paint?.click();
+        const board = document.querySelector("[data-battle-board-canvas='true']");
+        if (!brush || !board) return false;
+        const rect = board.getBoundingClientRect();
+        const point = (col, row) => ({
+          clientX: rect.left + ((col + 0.5) / 13) * rect.width,
+          clientY: rect.top + ((row + 0.5) / 13) * rect.height
+        });
+        const fire = (type, col, row, buttons) => {
+          board.dispatchEvent(new PointerEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            pointerId: 95,
+            pointerType: "mouse",
+            buttons,
+            ...point(col, row)
+          }));
+        };
+        window.requestAnimationFrame(() => {
+          fire("pointerdown", 11, 12, 1);
+          fire("pointermove", 10, 12, 1);
+          fire("pointerup", 10, 12, 0);
+        });
+        return true;
+      })()
+    `, `(window.__combatPlacedCount?.() ?? 0) > (window.__combatGridDragBefore ?? 0)`);
+  } else {
+    await probe(client, scenario, budgets, "Combat dense grid paint", "combatGridEdit", `
     (() => {
       const before = window.__combatPlacedCount?.() ?? 0;
       window.__combatGridBefore = before;
@@ -462,6 +581,7 @@ async function runCombatProbes(client, budgets, scenario) {
       return true;
     })()
   `, `(window.__combatPlacedCount?.() ?? 0) > (window.__combatGridBefore ?? 0)`);
+  }
 
   await probe(client, scenario, budgets, "Combat Monsters tab open", "toolSwitch", `
     (() => {
@@ -687,6 +807,41 @@ function prepareCombatBenchmarkProject(sourceProject) {
   return outputPath;
 }
 
+function prepareCombatImportedBenchmarkProject(sourceProject) {
+  if (!sourceProject) throw new Error("No source project found for imported-heavy Combat benchmark generation. Pass --project or create a benchmark project first.");
+  const sourcePath = path.resolve(sourceProject);
+  const project = JSON.parse(fs.readFileSync(sourcePath, "utf8"));
+  const outputDir = path.join(root, "tmp", "performance-smoke", "combat-imported-benchmark-project");
+  fs.mkdirSync(outputDir, { recursive: true });
+  project.scenario = {
+    ...project.scenario,
+    name: "Combat Imported Performance Benchmark",
+    projectPath: outputDir
+  };
+  project.monsters = ensureCombatBenchmarkMonsters(project.monsters ?? []);
+  project.monsterSets = ensureCombatBenchmarkMonsterSets(project.monsterSets ?? [], project.monsters);
+  project.battles = ensureCombatBenchmarkBattles(project.battles ?? []);
+  project.triggers = ensureImportedBenchmarkTriggers(project.triggers ?? [], 6_000);
+  project.extracodes = ensureImportedBenchmarkExtracodes(project.extracodes ?? [], 64_000);
+  project.messages = ensureImportedBenchmarkMessages(project.messages ?? [], 1_000);
+  if (project.records?.counts) {
+    project.records = {
+      ...project.records,
+      counts: {
+        ...project.records.counts,
+        battles: Math.max(project.records.counts.battles ?? 0, project.battles.length),
+        monsters: Math.max(project.records.counts.monsters ?? 0, project.monsters.length),
+        triggers: Math.max(project.records.counts.triggers ?? 0, project.triggers.length),
+        extracodes: Math.max(project.records.counts.extracodes ?? 0, project.extracodes.length)
+      }
+    };
+  }
+  project.validation = normalizeBenchmarkValidation(project.validation);
+  const outputPath = path.join(outputDir, "project.json");
+  fs.writeFileSync(outputPath, `${JSON.stringify(project, null, 2)}\n`, "utf8");
+  return outputPath;
+}
+
 function normalizeBenchmarkValidation(validation) {
   return {
     ok: Boolean(validation?.ok ?? true),
@@ -701,6 +856,17 @@ function normalizeBenchmarkValidation(validation) {
       notes: Array.isArray(validation?.targetCompatibility?.notes) ? validation.targetCompatibility.notes : []
     }
   };
+}
+
+function findImportedCombatBenchmarkSourceProject() {
+  const matches = [];
+  visitProjectTree(path.join(root, "tmp"), matches, { preferProvidence: true });
+  matches.sort((left, right) => {
+    const leftProvidence = left.file.includes(".providence") ? 1 : 0;
+    const rightProvidence = right.file.includes(".providence") ? 1 : 0;
+    return rightProvidence - leftProvidence || right.size - left.size || right.mtimeMs - left.mtimeMs;
+  });
+  return matches[0]?.file ?? null;
 }
 
 function findCombatBenchmarkSourceProject() {
@@ -721,16 +887,17 @@ function findCombatBenchmarkSourceProject() {
   return null;
 }
 
-function visitProjectTree(dir, matches) {
+function visitProjectTree(dir, matches, { preferProvidence = false } = {}) {
   if (!fs.existsSync(dir)) return;
   if (dir.includes(`${path.sep}performance-smoke${path.sep}`)) return;
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      visitProjectTree(full, matches);
+      visitProjectTree(full, matches, { preferProvidence });
       continue;
     }
     if (entry.name !== "project.json") continue;
+    if (preferProvidence && !full.includes(".providence")) continue;
     if (!combatBenchmarkSourceLooksUsable(full)) continue;
     const stats = fs.statSync(full);
     matches.push({ file: full, mtimeMs: stats.mtimeMs, size: stats.size });
@@ -766,6 +933,130 @@ function ensureCombatBenchmarkBattles(existingBattles) {
     }
   };
   return [denseBattle, ...existingBattles.filter((battle) => battle.id !== 0)];
+}
+
+function ensureCombatBenchmarkMonsterSets(existingSets, normalMonsters) {
+  const byId = new Map((existingSets ?? []).map((set) => [set.setId, set]));
+  return [1, -1].map((setId) => {
+    const existing = byId.get(setId);
+    const scale = setId === 1 ? 1.35 : 1.7;
+    return {
+      ...(existing ?? {}),
+      setId,
+      monsters: normalMonsters.map((monster) => benchmarkMonsterForId({
+        ...monster,
+        hitDice: Math.max(1, Math.round((Number(monster.hitDice) || 1) * scale)),
+        staminaBonus: Math.max(1, Math.round((Number(monster.staminaBonus) || 1) * scale)),
+        displayName: `${setId === 1 ? "Monster" : "Mega"} Perf Monster ${monster.id}`
+      }, monster.id))
+    };
+  });
+}
+
+function ensureImportedBenchmarkTriggers(existingTriggers, targetLength) {
+  const source = existingTriggers.find(Boolean) ?? defaultImportedBenchmarkTrigger(0);
+  const triggers = existingTriggers.slice(0, targetLength).map((trigger, index) => importedBenchmarkTriggerForId(trigger, index));
+  for (let index = triggers.length; index < targetLength; index += 1) {
+    triggers.push(importedBenchmarkTriggerForId(source, index));
+  }
+  return triggers;
+}
+
+function importedBenchmarkTriggerForId(source, id) {
+  return {
+    ...defaultImportedBenchmarkTrigger(id),
+    ...JSON.parse(JSON.stringify(source ?? {})),
+    id,
+    recordIndex: id,
+    active: Boolean(source?.active ?? false),
+    provenance: benchmarkProvenance("Data EDCD", id, id * 12, 12)
+  };
+}
+
+function defaultImportedBenchmarkTrigger(id) {
+  return {
+    id,
+    source: "Data EDCD",
+    levelType: "land",
+    levelIndex: id % 24,
+    recordIndex: id,
+    active: false,
+    doorid: 0,
+    landid: 0,
+    targetX: 0,
+    targetY: 0,
+    percent: 0,
+    coordinate: { x: id % 48, y: Math.floor(id / 48) % 48 },
+    actions: [],
+    provenance: benchmarkProvenance("Data EDCD", id, id * 12, 12)
+  };
+}
+
+function ensureImportedBenchmarkExtracodes(existingRows, targetLength) {
+  const source = existingRows.find(Boolean) ?? defaultImportedBenchmarkExtracode(0);
+  const rows = existingRows.slice(0, targetLength).map((row, index) => importedBenchmarkExtracodeForId(row, index));
+  for (let index = rows.length; index < targetLength; index += 1) {
+    rows.push(importedBenchmarkExtracodeForId(source, index));
+  }
+  return rows;
+}
+
+function importedBenchmarkExtracodeForId(source, id) {
+  return {
+    ...defaultImportedBenchmarkExtracode(id),
+    ...JSON.parse(JSON.stringify(source ?? {})),
+    id,
+    values: normalizeNumberArray(source?.values, 8),
+    provenance: benchmarkProvenance("Data ED3", id, id * 16, 16)
+  };
+}
+
+function defaultImportedBenchmarkExtracode(id) {
+  return {
+    id,
+    values: [0, 0, 0, 0, 0, 0, 0, 0],
+    provenance: benchmarkProvenance("Data ED3", id, id * 16, 16)
+  };
+}
+
+function ensureImportedBenchmarkMessages(existingMessages, targetLength) {
+  const source = existingMessages.find(Boolean) ?? defaultImportedBenchmarkMessage(0);
+  const messages = existingMessages.slice(0, targetLength).map((message, index) => importedBenchmarkMessageForId(message, index));
+  for (let index = messages.length; index < targetLength; index += 1) {
+    messages.push(importedBenchmarkMessageForId(source, index));
+  }
+  return messages;
+}
+
+function importedBenchmarkMessageForId(source, id) {
+  return {
+    ...defaultImportedBenchmarkMessage(id),
+    ...JSON.parse(JSON.stringify(source ?? {})),
+    id,
+    text: `Imported benchmark message ${id}`,
+    rawBytes: normalizeNumberArray(source?.rawBytes, 256),
+    provenance: benchmarkProvenance("Data SD2", id, id * 256, 256)
+  };
+}
+
+function defaultImportedBenchmarkMessage(id) {
+  return {
+    id,
+    text: `Imported benchmark message ${id}`,
+    rawBytes: Array(256).fill(0),
+    authored: false,
+    provenance: benchmarkProvenance("Data SD2", id, id * 256, 256)
+  };
+}
+
+function benchmarkProvenance(sourceFile, recordIndex, byteOffset, byteLength) {
+  return {
+    sourceFile,
+    recordIndex,
+    byteOffset,
+    byteLength,
+    confidence: "authored"
+  };
 }
 
 function ensureCombatBenchmarkMonsters(existingMonsters) {

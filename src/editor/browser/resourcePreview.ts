@@ -10,6 +10,27 @@ export function previewResourceDataUrl(resourceType: string, data: Uint8Array): 
   return inspectResourcePreview(resourceType, data).dataUrl;
 }
 
+export async function inspectResourcePreviewAsync(resourceType: string, data: Uint8Array): Promise<DecodedResourcePreview> {
+  const summary: Record<string, string> = {
+    resourceType: resourceType.trim(),
+    bytes: String(data.byteLength)
+  };
+  try {
+    if (resourceType === "PICT") {
+      const image = decodePictPackBits(data, summary);
+      return previewReady("image/png", await imageToObjectUrl(image), summary);
+    }
+    if (resourceType === "cicn") {
+      const image = decodeCicn(data);
+      return previewReady("image/png", await imageToObjectUrl(image), summary);
+    }
+    return inspectResourcePreview(resourceType, data);
+  } catch (error) {
+    const failure = normalizePreviewError(error, resourceType);
+    return metadata(failure.status, fallbackMime(resourceType), summary, failure.diagnostic);
+  }
+}
+
 export function inspectResourcePreview(resourceType: string, data: Uint8Array): DecodedResourcePreview {
   const summary: Record<string, string> = {
     resourceType: resourceType.trim(),
@@ -51,6 +72,22 @@ function imageToDataUrl(image: DecodedImage) {
   data.set(image.rgba);
   context.putImageData(new ImageData(data as ImageDataArray, image.width, image.height), 0, 0);
   return canvas.toDataURL("image/png");
+}
+
+function imageToObjectUrl(image: DecodedImage) {
+  const canvas = document.createElement("canvas");
+  canvas.width = image.width;
+  canvas.height = image.height;
+  const context = canvas.getContext("2d");
+  if (!context) return Promise.resolve(null);
+  const data = new Uint8ClampedArray(image.rgba.length);
+  data.set(image.rgba);
+  context.putImageData(new ImageData(data as ImageDataArray, image.width, image.height), 0, 0);
+  return new Promise<string | null>((resolve) => {
+    canvas.toBlob((blob) => {
+      resolve(blob ? URL.createObjectURL(blob) : null);
+    }, "image/png");
+  });
 }
 
 function decodePictPackBits(pict: Uint8Array, summary: Record<string, string>): DecodedImage {

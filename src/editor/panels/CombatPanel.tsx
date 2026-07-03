@@ -56,6 +56,13 @@ type BattleGridPlacementView = BattleGridCellView & {
   footprint: { width: number; height: number };
 };
 
+type ResolvedBattleMonsterIcon = MonsterIconResolution & {
+  resolvedUrl: string | null;
+  cacheKey: string;
+};
+
+type BattleCanvasImage = HTMLImageElement | ImageBitmap;
+
 type BattleBrushMode = "select" | "paint" | "erase";
 
 type MonsterPlacementBrush = {
@@ -269,6 +276,10 @@ const MAX_DIVINITY_BATTLE_MONSTER_ID = 217;
 const MONSTER_GRID_ART_SIZE = 32;
 const MONSTER_PALETTE_TILE_SPAN = 2;
 const MONSTER_PALETTE_TILE_SIZE = MONSTER_GRID_ART_SIZE * MONSTER_PALETTE_TILE_SPAN;
+const MONSTER_BRUSH_TILE_SIZE = 72;
+const MONSTER_BRUSH_TILE_GAP = 8;
+const MONSTER_BRUSH_TILE_STRIDE = MONSTER_BRUSH_TILE_SIZE + MONSTER_BRUSH_TILE_GAP;
+const MONSTER_BRUSH_WINDOW_OVERSCAN_ROWS = 2;
 const RANDOM_WEAPON_OPTIONS: CombatSelectOption[] = [
   { key: "random-weapon:-1", value: -1, label: "-1 Random swords" },
   { key: "random-weapon:-2", value: -2, label: "-2 Random clubs" },
@@ -1106,6 +1117,7 @@ function BattleBoard({
   const projectCatalogIcons = project.assetCatalog.icons;
   const projectMonsterIconOverrides = project.monsterIconOverrides;
   const projectScenarioIconResources = project.scenarioIconResources;
+  const battleIconSourceKey = useBattleIconSourceKey(project, iconEntries, lookups, previewContext);
   const [draftGrid, setDraftGrid] = useState(() => normalizeBattleGridForEditor(battle.grid));
   const draftGridRef = useRef(draftGrid);
   const committedGridRef = useRef(normalizeBattleGridForEditor(battle.grid));
@@ -1163,11 +1175,16 @@ function BattleBoard({
             monster,
             col: cell.displayCol,
             row: cell.displayRow,
-            footprint: monster ? monsterBattleFootprint(monster, iconEntries, project, lookups) : { width: 1, height: 1 }
+            footprint: monster ? monsterBattleFootprintCached(monster, iconEntries, project, lookups, battleIconSourceKey) : { width: 1, height: 1 }
           };
         })),
-    [activeMonsterById, cells, iconEntries, lookups, projectAssets, projectCatalogIcons, projectMonsterIconOverrides, projectScenarioIconResources]
+    [activeMonsterById, battleIconSourceKey, cells, iconEntries, lookups, projectAssets, projectCatalogIcons, projectMonsterIconOverrides, projectScenarioIconResources]
   );
+  const placementMonsters = useMemo(
+    () => placements.map((placement) => placement.monster).filter((monster): monster is MonsterRecord => Boolean(monster)),
+    [placements]
+  );
+  const placementIconUrls = useResolvedBattleMonsterIcons(placementMonsters, iconEntries, project, lookups, previewContext, battleIconSourceKey);
   const setDraftGridValue = (index: number, value: number) => {
     if (!Number.isInteger(index) || index < 0 || index >= BATTLE_GRID_CELL_COUNT) return false;
     const current = draftGridRef.current;
@@ -1399,13 +1416,10 @@ function BattleBoard({
               <BattleBoardCanvas
                 cells={cells}
                 placements={placements}
+                iconUrls={placementIconUrls}
                 selectedIndex={selectedIndex}
                 hoverIndex={hoverIndex}
                 draggingIndex={draggingIndex}
-                iconEntries={iconEntries}
-                project={project}
-                lookups={lookups}
-                previewContext={previewContext}
               />
             </div>
           </div>
@@ -1499,49 +1513,193 @@ function BattleBoard({
 type BattleBoardCanvasProps = {
   cells: BattleGridCellView[];
   placements: BattleGridPlacementView[];
+  iconUrls: Record<string, ResolvedBattleMonsterIcon>;
   selectedIndex: number;
   hoverIndex: number | null;
   draggingIndex: number | null;
-  iconEntries: Record<number, IconEntry>;
-  project: Project;
-  lookups: CombatLookups;
-  previewContext: PreviewRuntimeContext;
 };
 
-const battleCanvasImageCache = new Map<string, Promise<HTMLImageElement | null>>();
+const battleCanvasImageCache = new Map<string, Promise<BattleCanvasImage | null>>();
+const battleCanvasResolvedImageCache = new Map<string, BattleCanvasImage | null>();
+const battleMonsterIconUrlCache = new Map<string, Promise<ResolvedBattleMonsterIcon>>();
+const battleMonsterFootprintCache = new Map<string, { width: number; height: number }>();
+const battleMonsterPaletteMetricCache = new Map<string, { artSize: { width: number; height: number }; footprintLabel: string }>();
+
+function useBattleIconSourceKey(
+  project: Project,
+  iconEntries: Record<number, IconEntry>,
+  lookups: CombatLookups,
+  previewContext: PreviewRuntimeContext
+) {
+  const projectAssets = project.assets;
+  const projectCatalogIcons = project.assetCatalog.icons;
+  const projectMonsterIconOverrides = project.monsterIconOverrides;
+  const projectScenarioIconResources = project.scenarioIconResources;
+  const realmzActorIconAssets = lookups.realmzActorIconAssetsByAbsId;
+  return useMemo(() => battleIconSourceKey(project, iconEntries, realmzActorIconAssets, previewContext), [
+    iconEntries,
+    previewContext.desktopRuntime,
+    previewContext.projectDir,
+    previewContext.workspaceDir,
+    project.scenario.name,
+    project.source.sourcePath,
+    projectAssets,
+    projectCatalogIcons,
+    projectMonsterIconOverrides,
+    projectScenarioIconResources,
+    realmzActorIconAssets
+  ]);
+}
+
+function useResolvedBattleMonsterIcons(
+  monsters: MonsterRecord[],
+  iconEntries: Record<number, IconEntry>,
+  project: Project,
+  lookups: CombatLookups,
+  previewContext: PreviewRuntimeContext,
+  sourceKey: string
+) {
+  const monsterKey = useMemo(() => uniqueBattleMonsterIconMonsters(monsters).map(battleMonsterIconLookupKey).join("|"), [monsters]);
+  const [icons, setIcons] = useState<Record<string, ResolvedBattleMonsterIcon>>({});
+  useEffect(() => {
+    let disposed = false;
+    const uniqueMonsters = uniqueBattleMonsterIconMonsters(monsters);
+    if (uniqueMonsters.length === 0) {
+      setIcons({});
+      return () => {
+        disposed = true;
+      };
+    }
+    const started = performance.now();
+    Promise.all(uniqueMonsters.map((monster) => resolveCachedBattleMonsterIcon(monster, iconEntries, project, lookups, previewContext, sourceKey)))
+      .then((resolved) => {
+        if (disposed) return;
+        setIcons(Object.fromEntries(resolved.map((icon) => [icon.cacheKey, icon])));
+        recordCombatPerf("battleIconUrlResolve", performance.now() - started);
+      })
+      .catch(() => {
+        if (!disposed) setIcons({});
+      });
+    return () => {
+      disposed = true;
+    };
+  }, [monsterKey, sourceKey]);
+  return icons;
+}
+
+function uniqueBattleMonsterIconMonsters(monsters: MonsterRecord[]) {
+  const byKey = new Map<string, MonsterRecord>();
+  for (const monster of monsters) byKey.set(battleMonsterIconLookupKey(monster), monster);
+  return [...byKey.values()];
+}
+
+function battleMonsterIconLookupKey(monster: MonsterRecord) {
+  return `${monster.id}:${monster.iconId}`;
+}
+
+function battleIconSourceKey(
+  project: Project,
+  iconEntries: Record<number, IconEntry>,
+  realmzActorIconAssetsByAbsId: Map<number, LibraryAsset>,
+  previewContext: PreviewRuntimeContext
+) {
+  const iconEntryKey = Object.entries(iconEntries)
+    .map(([id, entry]) => `${id}:${entry.url ?? ""}:${entry.image?.naturalWidth || entry.image?.width || 0}x${entry.image?.naturalHeight || entry.image?.height || 0}`)
+    .sort()
+    .join(",");
+  const projectIconKey = [
+    ...(project.assets ?? [])
+      .filter((asset) => asset.resourceType === "cicn")
+      .map((asset) => `${asset.id}:${asset.resourceId ?? ""}:${asset.previewPath ?? ""}`),
+    ...(project.assetCatalog.icons ?? []).map((asset) => `${asset.resourceId}:${asset.previewPath ?? ""}:${asset.name ?? ""}`),
+    ...(project.scenarioIconResources ?? []).map((resource) => `${resource.resourceId}:${resource.previewPath ?? ""}:${resource.resourceBase64?.length ?? 0}`),
+    ...(project.monsterIconOverrides ?? []).map((override) => `${override.targetBaseIconId}:${override.sourceKind}:${override.sourceBaseIconId}:${override.sourceBaseResourceBase64?.length ?? 0}:${override.sourcePairedResourceBase64?.length ?? 0}`),
+    ...[...realmzActorIconAssetsByAbsId.entries()].map(([id, asset]) => `${id}:${asset.source}:${asset.relativePath}:${asset.previewPath ?? ""}`)
+  ].sort().join("|");
+  return [
+    previewContext.desktopRuntime ? "desktop" : "browser",
+    previewContext.projectDir ?? "",
+    previewContext.workspaceDir ?? "",
+    project.scenario.name,
+    project.source.sourcePath,
+    iconEntryKey,
+    projectIconKey
+  ].join("\n");
+}
+
+function resolveCachedBattleMonsterIcon(
+  monster: MonsterRecord,
+  iconEntries: Record<number, IconEntry>,
+  project: Project,
+  lookups: CombatLookups,
+  previewContext: PreviewRuntimeContext,
+  sourceKey: string
+) {
+  const cacheKey = `${sourceKey}\n${battleMonsterIconLookupKey(monster)}`;
+  const cached = battleMonsterIconUrlCache.get(cacheKey);
+  if (cached) return cached;
+  const request = resolveBattleMonsterIcon(monster, iconEntries, project, lookups, previewContext);
+  battleMonsterIconUrlCache.set(cacheKey, request);
+  return request;
+}
+
+async function resolveBattleMonsterIcon(
+  monster: MonsterRecord,
+  iconEntries: Record<number, IconEntry>,
+  project: Project,
+  lookups: CombatLookups,
+  previewContext: PreviewRuntimeContext
+): Promise<ResolvedBattleMonsterIcon> {
+  const resolution = resolveMonsterIcon(monster, iconEntries, project, lookups);
+  const directUrl = await resolvePreviewUrl(resolution.url, null, resolution.libraryAsset ?? null, previewContext);
+  const iconResourceId = monster.iconId ? Math.abs(monster.iconId) : null;
+  const fallbackUrl = directUrl || !iconResourceId
+    ? null
+    : await resolvePreviewUrl(null, null, null, {
+      ...previewContext,
+      project,
+      resourceType: "cicn",
+      resourceId: iconResourceId
+    });
+  return {
+    ...resolution,
+    resolvedUrl: directUrl ?? fallbackUrl,
+    cacheKey: battleMonsterIconLookupKey(monster)
+  };
+}
 
 function BattleBoardCanvas({
   cells,
   placements,
+  iconUrls,
   selectedIndex,
   hoverIndex,
-  draggingIndex,
-  iconEntries,
-  project,
-  lookups,
-  previewContext
+  draggingIndex
 }: BattleBoardCanvasProps) {
   const gridCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const monsterCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const interactionCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [imagesByPlacement, setImagesByPlacement] = useState<Record<string, HTMLImageElement | null>>({});
+  const [imagesByPlacement, setImagesByPlacement] = useState<Record<string, BattleCanvasImage | null>>({});
 
   useEffect(() => {
     let disposed = false;
-    Promise.all(placements.map(async (placement) => {
-      if (!placement.monster) return [battlePlacementCanvasKey(placement), null] as const;
-      const url = await resolveBattleMonsterIconUrl(placement.monster, iconEntries, project, lookups, previewContext);
-      const image = url ? await loadBattleCanvasImage(url) : null;
-      return [battlePlacementCanvasKey(placement), image] as const;
-    })).then((entries) => {
-      if (!disposed) setImagesByPlacement(Object.fromEntries(entries));
-    }).catch(() => {
-      if (!disposed) setImagesByPlacement({});
-    });
+    const loadTimer = window.setTimeout(() => {
+      Promise.all(placements.map(async (placement) => {
+        if (!placement.monster) return [battlePlacementCanvasKey(placement), null] as const;
+        const resolved = iconUrls[battleMonsterIconLookupKey(placement.monster)] ?? null;
+        const image = resolved?.resolvedUrl ? await loadBattleCanvasImage(resolved.resolvedUrl) : null;
+        return [battlePlacementCanvasKey(placement), image] as const;
+      })).then((entries) => {
+        if (!disposed) setImagesByPlacement(Object.fromEntries(entries));
+      }).catch(() => {
+        if (!disposed) setImagesByPlacement({});
+      });
+    }, 180);
     return () => {
       disposed = true;
+      window.clearTimeout(loadTimer);
     };
-  }, [iconEntries, lookups, placements, previewContext, project]);
+  }, [iconUrls, placements]);
 
   useEffect(() => {
     const canvas = gridCanvasRef.current;
@@ -1597,6 +1755,8 @@ function MonsterPalette({
 }) {
   useCombatRenderTiming("MonsterWorkbench");
   const [query, setQuery] = useState("");
+  const paletteRef = useRef<HTMLDivElement | null>(null);
+  const [paletteViewport, setPaletteViewport] = useState({ width: 0, height: 0, scrollTop: 0 });
   const placeableMonsters = useMemo(
     () => activeMonsters.filter((monster) => monster.id > 0 && monster.id <= MAX_DIVINITY_BATTLE_MONSTER_ID),
     [activeMonsters]
@@ -1608,6 +1768,42 @@ function MonsterPalette({
   const filtered = useMemo(
     () => filterRecords(entries, query, battleMonsterPaintEntrySearchText),
     [entries, query]
+  );
+  useEffect(() => {
+    const element = paletteRef.current;
+    if (!element) return;
+    const update = () => setPaletteViewport({
+      width: element.clientWidth,
+      height: element.clientHeight,
+      scrollTop: element.scrollTop
+    });
+    update();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    const element = paletteRef.current;
+    if (element) element.scrollTop = 0;
+    setPaletteViewport((current) => ({ ...current, scrollTop: 0 }));
+  }, [monsterSetPreview, query]);
+  const paletteWindow = useMemo(
+    () => monsterBrushPaletteWindow(filtered.length, paletteViewport.width, paletteViewport.height, paletteViewport.scrollTop),
+    [filtered.length, paletteViewport.height, paletteViewport.scrollTop, paletteViewport.width]
+  );
+  const visibleEntries = useMemo(
+    () => filtered.slice(paletteWindow.startIndex, paletteWindow.endIndex),
+    [filtered, paletteWindow.endIndex, paletteWindow.startIndex]
+  );
+  const battleIconSourceKey = useBattleIconSourceKey(project, iconEntries, lookups, previewContext);
+  const visibleIconUrls = useResolvedBattleMonsterIcons(
+    visibleEntries.map((entry) => entry.monster),
+    iconEntries,
+    project,
+    lookups,
+    previewContext,
+    battleIconSourceKey
   );
   const hasScenarioMonsters = activeMonsters.some((monster) => monster.id > 0);
   const hasOnlyUnplaceableMonsterZero = activeMonsters.length > 0 && !hasScenarioMonsters;
@@ -1621,7 +1817,15 @@ function MonsterPalette({
         <small>{monsterSetLabel(monsterSetPreview)} | {entries.length} placeable</small>
       </header>
       <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search monsters..." />
-      <div className="monster-brush-palette" aria-label="Paintable monsters">
+      <div
+        ref={paletteRef}
+        className="monster-brush-palette"
+        aria-label="Paintable monsters"
+        onScroll={(event) => {
+          const element = event.currentTarget;
+          setPaletteViewport((current) => ({ ...current, scrollTop: element.scrollTop, width: element.clientWidth, height: element.clientHeight }));
+        }}
+      >
         {entries.length === 0 && !hasOnlyUnplaceableMonsterZero && !hasOnlyOutOfRangeMonsters && (
           <p className="empty-copy compact">No {monsterSetLabel(monsterSetPreview)} scenario monsters are available for battle placement. Copy from Monster Library into Scenario Monsters first.</p>
         )}
@@ -1631,33 +1835,101 @@ function MonsterPalette({
         {hasOnlyOutOfRangeMonsters && (
           <p className="empty-copy compact">This scenario only has monster IDs outside Divinity's battle-authorable range. Use Scenario Monsters 1-{MAX_DIVINITY_BATTLE_MONSTER_ID} for battle placement.</p>
         )}
-        {filtered.map((entry) => {
-          const monster = entry.monster;
-          const name = monster.displayName || `Monster ${monster.id}`;
-          const facts = monsterFacts(monster);
-          const artSize = monsterPaletteArtSize(monster, iconEntries, project, lookups);
-          const footprint = monsterBattleFootprintLabel(monster, iconEntries, project, lookups);
-          const paintNote = "Scenario monster.";
-          return (
-            <TutorialTip key={entry.key} title={`${name} (${entry.id})`} body={`${facts}. ${footprint}. ${paintNote}`} side="right">
-              <button
-                type="button"
-                className={selectedKey === entry.key ? "selected" : ""}
-                aria-label={`${name}. ${facts}. ${footprint}. ${paintNote}`}
-                onClick={() => onSelect(entry)}
-              >
-                <span className="monster-brush-art" style={{ width: `${artSize.width}px`, height: `${artSize.height}px` }}>
-                  <MonsterIcon monster={monster} iconEntries={iconEntries} project={project} lookups={lookups} previewContext={previewContext} />
-                </span>
-                <span className="monster-brush-id">{entry.id}</span>
-              </button>
-            </TutorialTip>
-          );
-        })}
+        {paletteWindow.topSpacer > 0 ? <div className="monster-brush-palette-spacer" style={{ height: paletteWindow.topSpacer }} /> : null}
+        {visibleEntries.map((entry) => (
+          <MonsterBrushTile
+            key={entry.key}
+            entry={entry}
+            selected={selectedKey === entry.key}
+            iconEntries={iconEntries}
+            project={project}
+            lookups={lookups}
+            previewContext={previewContext}
+            iconSourceKey={battleIconSourceKey}
+            resolvedIcon={visibleIconUrls[battleMonsterIconLookupKey(entry.monster)] ?? null}
+            onSelect={onSelect}
+          />
+        ))}
+        {paletteWindow.bottomSpacer > 0 ? <div className="monster-brush-palette-spacer" style={{ height: paletteWindow.bottomSpacer }} /> : null}
         {filtered.length === 0 && entries.length > 0 ? <small className="combat-list-overflow-note">No matching placeable monster.</small> : null}
       </div>
     </div>
   );
+}
+
+type MonsterBrushTileProps = {
+  entry: BattleMonsterPaintEntry;
+  selected: boolean;
+  iconEntries: Record<number, IconEntry>;
+  project: Project;
+  lookups: CombatLookups;
+  previewContext: PreviewRuntimeContext;
+  iconSourceKey: string;
+  resolvedIcon: ResolvedBattleMonsterIcon | null;
+  onSelect: (entry: BattleMonsterPaintEntry) => void;
+};
+
+const MonsterBrushTile = memo(function MonsterBrushTile({
+  entry,
+  selected,
+  iconEntries,
+  project,
+  lookups,
+  previewContext,
+  iconSourceKey,
+  resolvedIcon,
+  onSelect
+}: MonsterBrushTileProps) {
+  const monster = entry.monster;
+  const name = monster.displayName || `Monster ${monster.id}`;
+  const facts = monsterFacts(monster);
+  const metrics = monsterPaletteMetricsCached(monster, iconEntries, project, lookups, iconSourceKey);
+  const artSize = metrics.artSize;
+  return (
+    <TutorialTip
+      title={`${name} (${entry.id})`}
+      body={`${facts}. ${metrics.footprintLabel}. Scenario monster.`}
+      side="right"
+    >
+      <button
+        type="button"
+        className={`monster-brush${selected ? " selected" : ""}`}
+        data-monster-brush-id={entry.id}
+        onClick={() => onSelect(entry)}
+      >
+        <span
+          className="monster-brush-icon"
+          style={{
+            width: artSize.width,
+            height: artSize.height,
+            maxWidth: "100%",
+            maxHeight: "100%"
+          }}
+        >
+          <MonsterIcon
+            monster={monster}
+            iconEntries={iconEntries}
+            project={project}
+            lookups={lookups}
+            previewContext={previewContext}
+            resolvedIcon={resolvedIcon}
+          />
+        </span>
+        <span className="monster-brush-id">{entry.id}</span>
+      </button>
+    </TutorialTip>
+  );
+}, areMonsterBrushTilePropsEqual);
+
+function areMonsterBrushTilePropsEqual(previous: MonsterBrushTileProps, next: MonsterBrushTileProps) {
+  return previous.entry === next.entry
+    && previous.selected === next.selected
+    && previous.iconEntries === next.iconEntries
+    && previous.lookups === next.lookups
+    && previous.iconSourceKey === next.iconSourceKey
+    && previous.resolvedIcon === next.resolvedIcon
+    && samePreviewContextInputs(previous.previewContext, next.previewContext)
+    && sameProjectIconInputs(previous.project, next.project);
 }
 
 function MonsterWorkbench({
@@ -3440,11 +3712,38 @@ type MonsterIconProps = {
   project: Project;
   lookups: CombatLookups;
   previewContext: PreviewRuntimeContext;
+  resolvedIcon?: ResolvedBattleMonsterIcon | null;
   compact?: boolean;
   large?: boolean;
 };
 
 const MonsterIcon = memo(function MonsterIcon({
+  monster,
+  iconEntries,
+  project,
+  lookups,
+  previewContext,
+  resolvedIcon = null,
+  compact = false,
+  large = false
+}: MonsterIconProps) {
+  if (resolvedIcon) {
+    return <MonsterIconDisplay resolution={resolvedIcon} primaryUrl={resolvedIcon.resolvedUrl} fallbackText={String(monster.id)} compact={compact} large={large} />;
+  }
+  return (
+    <MonsterIconResolved
+      monster={monster}
+      iconEntries={iconEntries}
+      project={project}
+      lookups={lookups}
+      previewContext={previewContext}
+      compact={compact}
+      large={large}
+    />
+  );
+}, areMonsterIconPropsEqual);
+
+function MonsterIconResolved({
   monster,
   iconEntries,
   project,
@@ -3463,18 +3762,36 @@ const MonsterIcon = memo(function MonsterIcon({
     resourceId: scenarioResourceId
   });
   const fallbackUrl = useResolvedPreviewUrl(resolution.url, null, resolution.libraryAsset ?? null, previewContext);
+  return <MonsterIconDisplay resolution={resolution} primaryUrl={fallbackUrl} fallbackUrl={scenarioUrl} fallbackText={String(monster.id)} compact={compact} large={large} />;
+}
+
+function MonsterIconDisplay({
+  resolution,
+  primaryUrl,
+  fallbackUrl,
+  fallbackText,
+  compact,
+  large
+}: {
+  resolution: Pick<MonsterIconResolution, "label">;
+  primaryUrl: string | null;
+  fallbackUrl?: string | null;
+  fallbackText: string;
+  compact: boolean;
+  large: boolean;
+}) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
   useEffect(() => {
     setFailedUrl(null);
     setLoadedUrl(null);
-  }, [fallbackUrl, scenarioUrl]);
-  const usableUrl = fallbackUrl && fallbackUrl !== failedUrl
-    ? fallbackUrl
-    : scenarioUrl && scenarioUrl !== failedUrl
-      ? scenarioUrl
+  }, [fallbackUrl, primaryUrl]);
+  const displayUrl = primaryUrl && primaryUrl !== failedUrl
+    ? primaryUrl
+    : fallbackUrl && fallbackUrl !== failedUrl
+      ? fallbackUrl
       : null;
-  const ready = !usableUrl || loadedUrl === usableUrl;
+  const ready = !displayUrl || loadedUrl === displayUrl;
   return (
     <span
       className={`monster-icon-preview${compact ? " compact" : ""}${large ? " large" : ""}`}
@@ -3482,26 +3799,27 @@ const MonsterIcon = memo(function MonsterIcon({
       data-combat-preview="monster-icon"
       data-combat-preview-ready={ready ? "true" : "false"}
     >
-      {usableUrl ? (
+      {displayUrl ? (
         <img
-          src={usableUrl}
+          src={displayUrl}
           alt=""
           loading="lazy"
           decoding="async"
-          onLoad={() => setLoadedUrl(usableUrl)}
-          onError={() => setFailedUrl(usableUrl)}
+          onLoad={() => setLoadedUrl(displayUrl)}
+          onError={() => setFailedUrl(displayUrl)}
         />
       ) : (
-        <b>{monster.id}</b>
+        <b>{fallbackText}</b>
       )}
     </span>
   );
-}, areMonsterIconPropsEqual);
+}
 
 function areMonsterIconPropsEqual(previous: MonsterIconProps, next: MonsterIconProps) {
   return previous.monster === next.monster
     && previous.iconEntries === next.iconEntries
     && previous.lookups === next.lookups
+    && previous.resolvedIcon === next.resolvedIcon
     && previous.compact === next.compact
     && previous.large === next.large
     && samePreviewContextInputs(previous.previewContext, next.previewContext)
@@ -4179,14 +4497,26 @@ function NumberSelectField({
   help?: string;
   onCommit: (value: number) => void;
 }) {
-  const hasCurrentValue = value !== 0 && !options.some((option) => option.value === value);
+  const [expanded, setExpanded] = useState(false);
+  const selectedOption = value !== 0 ? options.find((option) => option.value === value) ?? null : null;
+  const hasCurrentValue = value !== 0 && !selectedOption;
+  const renderedOptions = expanded ? options : selectedOption ? [selectedOption] : [];
   return (
     <label className="combat-field combat-select-field">
       <FieldLabel label={label} help={help} />
-      <select value={String(value)} onChange={(event) => onCommit(Number(event.currentTarget.value))}>
+      <select
+        value={String(value)}
+        onFocus={() => setExpanded(true)}
+        onMouseDown={() => setExpanded(true)}
+        onBlur={() => setExpanded(false)}
+        onChange={(event) => {
+          onCommit(Number(event.currentTarget.value));
+          setExpanded(false);
+        }}
+      >
         <option value="0">{emptyLabel}</option>
         {hasCurrentValue && <option value={String(value)}>Current value {value}</option>}
-        {options.map((option, index) => (
+        {renderedOptions.map((option, index) => (
           <option key={`${option.key}:${option.value}:${index}`} value={String(option.value)} title={option.detail}>
             {option.label}
           </option>
@@ -5711,7 +6041,7 @@ function drawBattleMonsterLayer(
   ctx: CanvasRenderingContext2D,
   size: number,
   placements: BattleGridPlacementView[],
-  imagesByPlacement: Record<string, HTMLImageElement | null>,
+  imagesByPlacement: Record<string, BattleCanvasImage | null>,
   draggingIndex: number | null
 ) {
   ctx.clearRect(0, 0, size, size);
@@ -5780,9 +6110,9 @@ function battlePlacementRect(placement: BattleGridPlacementView, cellSize: numbe
   };
 }
 
-function drawImageContained(ctx: CanvasRenderingContext2D, image: HTMLImageElement, x: number, y: number, width: number, height: number) {
-  const imageWidth = image.naturalWidth || image.width || 1;
-  const imageHeight = image.naturalHeight || image.height || 1;
+function drawImageContained(ctx: CanvasRenderingContext2D, image: BattleCanvasImage, x: number, y: number, width: number, height: number) {
+  const imageWidth = "naturalWidth" in image ? image.naturalWidth || image.width || 1 : image.width || 1;
+  const imageHeight = "naturalHeight" in image ? image.naturalHeight || image.height || 1 : image.height || 1;
   const scale = Math.min(width / imageWidth, height / imageHeight);
   const drawWidth = Math.max(1, imageWidth * scale);
   const drawHeight = Math.max(1, imageHeight * scale);
@@ -5803,38 +6133,37 @@ function battlePlacementCanvasKey(placement: BattleGridPlacementView) {
   return `${placement.index}:${placement.value}:${placement.monster?.iconId ?? 0}`;
 }
 
-async function resolveBattleMonsterIconUrl(
-  monster: MonsterRecord,
-  iconEntries: Record<number, IconEntry>,
-  project: Project,
-  lookups: CombatLookups,
-  previewContext: PreviewRuntimeContext
-) {
-  const resolution = resolveMonsterIcon(monster, iconEntries, project, lookups);
-  const directUrl = await resolvePreviewUrl(resolution.url, null, resolution.libraryAsset ?? null, previewContext);
-  if (directUrl) return directUrl;
-  const iconResourceId = monster.iconId ? Math.abs(monster.iconId) : null;
-  if (!iconResourceId) return null;
-  return resolvePreviewUrl(null, null, null, {
-    ...previewContext,
-    project,
-    resourceType: "cicn",
-    resourceId: iconResourceId
-  });
-}
-
 function loadBattleCanvasImage(url: string) {
+  if (battleCanvasResolvedImageCache.has(url)) {
+    return Promise.resolve(battleCanvasResolvedImageCache.get(url) ?? null);
+  }
   const cached = battleCanvasImageCache.get(url);
   if (cached) return cached;
-  const request = new Promise<HTMLImageElement | null>((resolve) => {
+  const request = loadBattleCanvasImageUncached(url).then((image) => {
+    battleCanvasResolvedImageCache.set(url, image);
+    return image;
+  });
+  battleCanvasImageCache.set(url, request);
+  return request;
+}
+
+async function loadBattleCanvasImageUncached(url: string): Promise<BattleCanvasImage | null> {
+  if (typeof window.createImageBitmap === "function") {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      return await window.createImageBitmap(blob);
+    } catch {
+      // Fall back to an HTML image below for URLs the browser cannot fetch as a blob.
+    }
+  }
+  return new Promise<BattleCanvasImage | null>((resolve) => {
     const image = new Image();
     image.decoding = "async";
     image.onload = () => resolve(image);
     image.onerror = () => resolve(null);
     image.src = url;
   });
-  battleCanvasImageCache.set(url, request);
-  return request;
 }
 
 function battleBoardHoverTitle(
@@ -5990,19 +6319,45 @@ function monsterBattleFootprint(monster: MonsterRecord, iconEntries: Record<numb
   return { width: 1, height: 1 };
 }
 
-function monsterPaletteArtSize(monster: MonsterRecord, iconEntries: Record<number, IconEntry>, project: Project, lookups: CombatLookups) {
+function monsterBattleFootprintCached(monster: MonsterRecord, iconEntries: Record<number, IconEntry>, project: Project, lookups: CombatLookups, sourceKey: string) {
+  const cacheKey = [
+    sourceKey,
+    monster.id,
+    monster.iconId,
+    monster.size,
+    monster.typeFlags?.[6] ?? 0
+  ].join(":");
+  const cached = battleMonsterFootprintCache.get(cacheKey);
+  if (cached) return cached;
+  const footprint = monsterBattleFootprint(monster, iconEntries, project, lookups);
+  battleMonsterFootprintCache.set(cacheKey, footprint);
+  return footprint;
+}
+
+function monsterPaletteMetricsCached(monster: MonsterRecord, iconEntries: Record<number, IconEntry>, project: Project, lookups: CombatLookups, sourceKey: string) {
+  const cacheKey = [
+    sourceKey,
+    monster.id,
+    monster.iconId,
+    monster.size,
+    monster.typeFlags?.[6] ?? 0
+  ].join(":");
+  const cached = battleMonsterPaletteMetricCache.get(cacheKey);
+  if (cached) return cached;
+  const footprint = monsterBattleFootprintCached(monster, iconEntries, project, lookups, sourceKey);
   const resolution = resolveMonsterIcon(monster, iconEntries, project, lookups);
-  if (resolution.width && resolution.height) {
-    return {
+  const artSize = resolution.width && resolution.height
+    ? {
       width: Math.max(1, Math.min(MONSTER_PALETTE_TILE_SIZE, resolution.width)),
       height: Math.max(1, Math.min(MONSTER_PALETTE_TILE_SIZE, resolution.height))
+    }
+    : {
+      width: Math.max(1, Math.min(MONSTER_PALETTE_TILE_SIZE, footprint.width * MONSTER_GRID_ART_SIZE)),
+      height: Math.max(1, Math.min(MONSTER_PALETTE_TILE_SIZE, footprint.height * MONSTER_GRID_ART_SIZE))
     };
-  }
-  const footprint = monsterBattleFootprint(monster, iconEntries, project, lookups);
-  return {
-    width: Math.max(1, Math.min(MONSTER_PALETTE_TILE_SIZE, footprint.width * MONSTER_GRID_ART_SIZE)),
-    height: Math.max(1, Math.min(MONSTER_PALETTE_TILE_SIZE, footprint.height * MONSTER_GRID_ART_SIZE))
-  };
+  const metrics = { artSize, footprintLabel: `${formatGridSpan(footprint.width)} x ${formatGridSpan(footprint.height)} grid tile art` };
+  battleMonsterPaletteMetricCache.set(cacheKey, metrics);
+  return metrics;
 }
 
 function monsterBattleFootprintLabel(monster: MonsterRecord, iconEntries: Record<number, IconEntry>, project: Project, lookups: CombatLookups) {
@@ -6012,6 +6367,21 @@ function monsterBattleFootprintLabel(monster: MonsterRecord, iconEntries: Record
 
 function formatGridSpan(value: number) {
   return Number.isInteger(value) ? String(value) : value.toFixed(1).replace(/\.0$/, "");
+}
+
+function monsterBrushPaletteWindow(total: number, width: number, height: number, scrollTop: number) {
+  if (total <= 0) return { startIndex: 0, endIndex: 0, topSpacer: 0, bottomSpacer: 0 };
+  const columns = Math.max(1, Math.floor((Math.max(width, MONSTER_BRUSH_TILE_SIZE) + MONSTER_BRUSH_TILE_GAP) / MONSTER_BRUSH_TILE_STRIDE));
+  const totalRows = Math.ceil(total / columns);
+  const visibleRows = Math.max(1, Math.ceil(Math.max(height, MONSTER_BRUSH_TILE_STRIDE) / MONSTER_BRUSH_TILE_STRIDE));
+  const startRow = clamp(Math.floor(scrollTop / MONSTER_BRUSH_TILE_STRIDE) - MONSTER_BRUSH_WINDOW_OVERSCAN_ROWS, 0, totalRows);
+  const endRow = clamp(startRow + visibleRows + MONSTER_BRUSH_WINDOW_OVERSCAN_ROWS * 2, startRow, totalRows);
+  return {
+    startIndex: startRow * columns,
+    endIndex: Math.min(total, endRow * columns),
+    topSpacer: startRow * MONSTER_BRUSH_TILE_STRIDE,
+    bottomSpacer: Math.max(0, (totalRows - endRow) * MONSTER_BRUSH_TILE_STRIDE)
+  };
 }
 
 function clamp(value: number, min: number, max: number) {

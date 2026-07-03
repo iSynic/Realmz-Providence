@@ -1,12 +1,13 @@
 import { DecodedResourcePreview, LibraryCatalog, LibraryEntity, LibraryRecord, LibrarySource, ProvidenceWorkspace } from "../types";
 import { BrowserDirectoryHandle, BrowserFileSelection, BrowserScenarioSource } from "./fsAccess";
-import { inspectResourcePreview } from "./resourcePreview";
+import { inspectResourcePreview, inspectResourcePreviewAsync } from "./resourcePreview";
 import { mergeBrowserIconLibraryEntries } from "../iconLibrary";
 import { mergeBrowserMonsterLibraryEntries } from "../monsterLibrary";
 
 export const BROWSER_WORKSPACE_PATH = "browser://workspace";
 const LIBRARY_SCHEMA_VERSION = 4;
 const bundledResourceCache = new Map<string, Promise<ResourceEntry[]>>();
+const bundledResourcePreviewCache = new Map<string, Promise<DecodedResourcePreview>>();
 type BrowserLibraryFile = { name: string; relativePath: string; bytes: Uint8Array };
 type BrowserLibrarySourceKind = "divinity-import" | "realmz-reference";
 export type ResourceEntry = {
@@ -144,6 +145,15 @@ function missingFallbackPreview(asset: LibraryCatalog["assets"][number], message
 
 async function loadBrowserBundledResourcePreview(folder: string, filePath: string, fragment: { resourceType: string; resourceId: number }): Promise<DecodedResourcePreview> {
   const url = `/bundled-libraries/${folder}/${encodePath(filePath.replace(/\\/g, "/"))}`;
+  const previewKey = `${url}\n${fragment.resourceType}\n${fragment.resourceId}`;
+  const cachedPreview = bundledResourcePreviewCache.get(previewKey);
+  if (cachedPreview) return cachedPreview;
+  const request = loadBrowserBundledResourcePreviewUncached(url, filePath, fragment);
+  bundledResourcePreviewCache.set(previewKey, request);
+  return request;
+}
+
+async function loadBrowserBundledResourcePreviewUncached(url: string, filePath: string, fragment: { resourceType: string; resourceId: number }): Promise<DecodedResourcePreview> {
   if (!bundledResourceCache.has(url)) {
     bundledResourceCache.set(url, fetch(url)
       .then((response) => {
@@ -154,7 +164,7 @@ async function loadBrowserBundledResourcePreview(folder: string, filePath: strin
   }
   const resources = await bundledResourceCache.get(url);
   const resource = resources?.find((entry) => entry.resourceType === fragment.resourceType && entry.id === fragment.resourceId);
-  return resource ? inspectResourcePreview(fragment.resourceType, resource.data) : {
+  return resource ? inspectResourcePreviewAsync(fragment.resourceType, resource.data) : {
     status: "missing-fallback",
     mimeType: "application/octet-stream",
     dataUrl: null,

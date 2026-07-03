@@ -2818,6 +2818,13 @@
   height: 100%;
 }
 
+.monster-brush-palette-spacer {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-height: 0;
+  pointer-events: none;
+}
+
 .monster-brush-palette button:hover,
 .monster-brush-palette button:focus-visible {
   border-color: #4a87ae;
@@ -2839,14 +2846,14 @@
   border-color: #7e9a40;
 }
 
-.monster-brush-art {
+.monster-brush-icon {
   display: grid;
   place-items: center;
   max-width: 64px;
   max-height: 64px;
 }
 
-.monster-brush-art .monster-icon-preview {
+.monster-brush-icon .monster-icon-preview {
   width: 100%;
   height: 100%;
   border: 0;
