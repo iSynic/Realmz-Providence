@@ -400,7 +400,7 @@ Manual Monster Editor covers Data MD monster templates, description text, combat
 
 Current Providence handling:
 
-Providence edits scenario Data MD monsters, Data DES descriptions, icons, macro references, weapon/item/spell references, and many source-backed numeric fields. Scenario Monsters is set-aware: Normal edits Data MD, Monster edits Data MD1, and Mega edits Data MD-1, with descriptions shared by monster ID. Imported Data MENU is treated as generated bestiary cache evidence and is omitted from export so Realmz rebuilds it from Data MD. Direct selected-set editing, exact Copy Current To All Sets, selected-set Switch With, and Providence Generate Variants are supported. Divinity Create Sets remains intentionally superseded rather than cloned exactly.
+Providence edits scenario Data MD monsters, Data DES descriptions, icons, macro references, required-weapon restrictions, weapon/item/spell references, and many source-backed numeric fields. Scenario Monsters is set-aware: Normal edits Data MD, Monster edits Data MD1, and Mega edits Data MD-1, with descriptions shared by monster ID. Imported Data MENU is treated as generated bestiary cache evidence and is omitted from export so Realmz rebuilds it from Data MD. Direct selected-set editing, exact Copy Current To All Sets, selected-set Switch With, and Providence Generate Variants are supported. Divinity Create Sets remains intentionally superseded rather than cloned exactly.
 
 Evidence:
 
@@ -408,19 +408,21 @@ Evidence:
 - docs/generated/monster-description-set-evidence.json
 - docs/format-evidence-cards/bestiary-source-alignment.md
 - docs/format-evidence-cards/monster-descriptions-and-sets-runtime-anchors.md
+- F:/Divinity - Codex/docs/handoffs/monster-required-weapon-rel7-to-providence.md
 - F:/Realmz/src/realmz_orig/structs.h
+- F:/Realmz/src/realmz_orig/attack.c
 
 Gaps:
 
-- Several manual labels and meanings remain uncertain: Req Weapon versus Weapon Used, attack row semantics, type flags, summon options, and runtime-looking fields.
+- Several manual labels and meanings remain uncertain: attack row semantics, type flags, summon options, and runtime-looking fields.
 - Providence Generate Variants needs broader authored-scenario smoke testing against exported Data MD1/Data MD-1.
-- Exact Divinity Create Sets quirks remain intentionally deferred because Mega spell-point rounding, overflow/clamp behavior, and rel 7 / rel 45 persistence are not confidence-complete.
+- Exact Divinity Create Sets quirks remain intentionally deferred because Mega spell-point rounding, overflow/clamp behavior, and rel 45 persistence are not confidence-complete; rel 7 direct-save authoring is fixture-proven.
 
 Recommended follow-up:
 
-- Run a Monster Editor field-by-field label audit with Divinity screenshots/fixtures.
+- Run remaining Monster Editor field-by-field label audits with Divinity screenshots/fixtures.
 - Add regression tests for set-aware editing, Copy Current To All Sets, Switch With, and Generate Variants.
-- Keep exact Divinity Create Sets and ambiguous Req Weapon behavior fixture-gated unless a separate compatibility need appears.
+- Keep exact Divinity Create Sets behavior fixture-gated unless a separate compatibility need appears.
 
 ### 12. Monster Scrapbook
 
@@ -785,21 +787,24 @@ Manual Monster Mash provides shared monster icon material and icon-set workflows
 
 Current Providence handling:
 
-Providence keeps Monster Mash as protected reference material and adds a Combat Build Icon Set workflow for scenario-owned monster icon overrides. The editor stores override intent as standard target icon -> Monster Mash or Providence Icon Library source icon, exports both facing `cicn` resources at the target IDs, and restores defaults by removing the override so Realmz falls back to Family Jewels. Protected Monster Mash sources can be copied into the editable Providence Icon Library as variants, and Providence-owned monster icon sets can be imported from image files as mirrored or custom-facing paired `cicn` resources.
+Providence keeps Monster Mash as protected reference material and adds a Combat Build Icon Set workflow for scenario-owned monster icon overrides. The editor stores override intent as standard target icon -> Monster Mash, imported scenario-resource, or Providence Icon Library source icon, exports both facing `cicn` resources at the target IDs, and restores defaults by removing the override so Realmz falls back to Family Jewels. Protected Monster Mash sources can be copied into the editable Providence Icon Library as variants, and Providence-owned monster icon sets can be imported from image files as mirrored or custom-facing paired `cicn` resources. Realmz source draws monster art through direct `GetCIcon(iconid)` / `GetCIcon(iconid + 308)` resource lookup; no runtime icon-set count array has been found.
 
 Evidence:
 
 - src/editor/panels/CombatPanel.tsx
 - src/editor/iconLibrary.ts
+- src/editor/browser/realmzParser.ts
 - src/editor/projectCommands/targetRecordCommands.ts
 - src-tauri/src/exporter.rs
+- F:/Realmz/src/realmz_orig/drawbody.c
+- F:/Realmz/src/realmz_orig/combatupdate-2.c
 - docs/generated/resource-icon-evidence.json
 
 Gaps:
 
 - Editing global Monster Mash itself is intentionally not implemented; Providence edits workspace-scoped icon-library copies instead.
-- Classic Realmz documents an approximate per-scenario monster icon-set limit; Providence warns near that boundary but does not yet enforce a hard cap.
-- Existing scenario-owned override import is best-effort and depends on complete paired `cicn` resources.
+- Classic Realmz documents an approximate per-scenario monster icon-set limit; Providence treats it as a compatibility warning, not a source-proven hard runtime cap.
+- Imported scenario-owned overrides require complete paired `cicn` resources.
 - Image import creates Providence icon-library entries only; it does not mutate Monster Mash or Family Jewels.
 
 Recommended follow-up:

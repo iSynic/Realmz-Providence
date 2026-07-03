@@ -60,8 +60,9 @@ This unlocks a safer Monster workbench plan: parse all monster sets, show descri
 - `fixture-proven`: broad-field fixture scaled saves, spell points, and experience for alternate sets.
 - `fixture-proven`: the spell-points/experience grid gives enough points to implement experience scaling for normal-range values.
 - `fixture-proven with caveat`: spell points follow a repeatable scaling/cap pattern for normal-range values, but high value `30000` exposes overflow/clamp inconsistency.
-- `fixture-proven`: visible `Req Weap = -2 Sharp Only` did not persist into record rel `7`; visible `Can Be = 1 Yes` did not persist into record rel `45`.
-- `unknown`: exact Mega spell-point rounding, some high-value clamp behavior, and the persistence path for the visible required-weapon / can-summon dropdowns remain unresolved.
+- `fixture-proven`: changing only the visible `Req Weap = -2 Sharp Only` picker did not persist into record rel `7`, but direct-save fixtures prove the adjacent `Req Weap` value field writes rel `7`.
+- `fixture-proven`: visible `Can Be = 1 Yes` did not persist into record rel `45`.
+- `unknown`: exact Mega spell-point rounding, some high-value clamp behavior, Create Sets handling of rel `7`, and the persistence path for the visible can-summon dropdown remain unresolved.
 
 The binary follow-up refreshed Capstone/crossref indexes and successfully imported `CODE_1_Mac_Libraries.bin` into Ghidra, but raw CODE segmentation did not recover a complete or reliable `Create Sets` routine. DATA string anchors prove filename presence, not write ownership or formulas. The fixture handoff is therefore the current source of truth for the generator.
 
@@ -129,7 +130,7 @@ Evidence interpretation:
 - `correlated`: Monster Monsters spell points match `floor(normal * 133 / 100)` for uncapped values, with observed cap at `999` for the `999` case and signed overflow for `30000`.
 - `correlated`: Mega Monsters spell points are roughly doubled for low values and capped at `999` for high values, but exact rounding is not proven from the available points.
 - `fixture-proven`: negative damage bonus, negative run percent, high surrender percent, and signed-byte boundary saves were accepted by Divinity and then generated using stored signed-byte values.
-- `fixture-proven`: visible `Req Weap = -2 Sharp Only` did not persist to rel `7`.
+- `fixture-proven`: visible `Req Weap = -2 Sharp Only` picker-only edits did not persist to rel `7`; later direct-save fixtures prove the adjacent value field writes rel `7`.
 - `fixture-proven`: visible `Can Be = 1 Yes` did not persist to rel `45`.
 
 ## Corpus Evidence
@@ -167,5 +168,5 @@ Representative observed sizes:
 
 - exact Mega spell-point rounding proof or a stronger Ghidra segmentation pass that recovers the formula;
 - high-value clamp/overflow policy for spell points and experience;
-- a persistence path for required-weapon/distance rel `7` and can-summon/NPC rel `45`, if those visible Divinity controls are real authored fields;
+- Create Sets behavior for required-weapon rel `7`, and a persistence path for can-summon/NPC rel `45`, if that visible Divinity control is a real authored field;
 - validation for description slots that have no matching active monster template before bulk set operations touch descriptions.

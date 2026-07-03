@@ -64,6 +64,7 @@ const BROWSER_EAGER_PICTURE_PREVIEW_MAX_COUNT = 4;
 const BROWSER_EAGER_ICON_PREVIEW_MAX_BYTES = 24 * 1024;
 const BROWSER_EAGER_SOUND_PREVIEW_MAX_BYTES = 96 * 1024;
 const BROWSER_EAGER_SOUND_PREVIEW_MAX_COUNT = 8;
+const MONSTER_ICON_PAIR_OFFSET = 308;
 
 export const TRACKED_FILES = [
   "Scenario",
@@ -1128,13 +1129,22 @@ function parseScenarioMonsterIconOverrides(
   buffers: Map<string, Uint8Array>,
   diagnostics: Diagnostic[]
 ): MonsterIconOverride[] {
-  const referenced = new Set([
+  const referenced = [
     ...monsterIconIds(monsters).map(Math.abs),
     ...monsterSets.flatMap((set) => monsterIconIds(set.monsters).map(Math.abs))
-  ]);
+  ];
+  return scenarioMonsterIconOverridesFromResources(referenced, scenarioResourceEntries(buffers), diagnostics);
+}
+
+export function scenarioMonsterIconOverridesFromResources(
+  referencedIconIds: number[],
+  resources: Array<{ source: string; resource: Pick<ResourceEntry, "resourceType" | "id" | "data"> }>,
+  diagnostics: Diagnostic[]
+): MonsterIconOverride[] {
+  const referenced = new Set(referencedIconIds.map((id) => Math.abs(id)).filter((id) => id > 0));
   if (referenced.size === 0) return [];
-  const resourcesById = new Map<number, ResourceEntry>();
-  for (const match of scenarioResourceEntries(buffers)) {
+  const resourcesById = new Map<number, Pick<ResourceEntry, "resourceType" | "id" | "data">>();
+  for (const match of resources) {
     const { resource } = match;
     if (resource.resourceType !== "cicn") continue;
     const id = Math.abs(resource.id);
@@ -1143,13 +1153,13 @@ function parseScenarioMonsterIconOverrides(
   const overrides: MonsterIconOverride[] = [];
   for (const targetBaseIconId of [...referenced].sort((a, b) => a - b)) {
     const base = resourcesById.get(targetBaseIconId);
-    const paired = resourcesById.get(targetBaseIconId + 308);
+    const paired = resourcesById.get(targetBaseIconId + MONSTER_ICON_PAIR_OFFSET);
     if (!base && !paired) continue;
     if (!base || !paired) {
       diagnostics.push({
         severity: "warning",
         code: "incomplete-monster-icon-override",
-        message: `Scenario contains only one facing resource for monster icon override ${targetBaseIconId}. Both cicn ${targetBaseIconId} and ${targetBaseIconId + 308} are needed for a preserved override.`,
+        message: `Scenario contains only one facing resource for monster icon override ${targetBaseIconId}. Both cicn ${targetBaseIconId} and ${targetBaseIconId + MONSTER_ICON_PAIR_OFFSET} are needed for a preserved override.`,
         source: "Scenario resource fork"
       });
       continue;

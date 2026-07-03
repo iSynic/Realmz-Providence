@@ -46,7 +46,7 @@ The source struct and corpus file sizes agree on a 210-byte record. Offsets belo
 | 4 | 1 | `movementmax` | Movement allowance/template. |
 | 5 | 1 | `ac` | Armor class; randomized/difficulty-adjusted at combat build time. |
 | 6 | 1 | `magres` | Magic resistance; difficulty-adjusted. |
-| 7 | 1 | `dist` | Distance/range behavior evidence. |
+| 7 | 1 | `dist` | Required weapon gate. Realmz treats `0` as all weapons, `-1` as blunt only, `-2` as sharp only, and other byte values as a specific weapon code compared to `item.itemid - 1024`. Divinity direct-save fixtures prove the adjacent `Req Weap` value writes this byte. |
 | 8 | 1 | `traiter` | Side/friendly flag; can be flipped by negative battle-grid entries. |
 | 9 | 1 | `size` | Placement footprint and summon-size matching. |
 | 10 | 8 | `type[8]` | Monster type flags; undead/demonic behavior uses indexes 1 and 2. |

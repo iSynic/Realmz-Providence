@@ -94,7 +94,7 @@ function previewCacheKey(
   context: PreviewRuntimeContext
 ) {
   if (directPath && isDirectPreviewUrl(directPath)) return null;
-  const projectKey = context.project ? `${context.project.scenario.name}:${context.project.source.sourcePath}` : "";
+  const projectKey = projectPreviewCacheKey(context.project);
   return [
     context.desktopRuntime ? "desktop" : "browser",
     context.projectDir ?? "",
@@ -107,6 +107,24 @@ function previewCacheKey(
     libraryAsset?.id ?? "",
     libraryAsset?.relativePath ?? "",
     directPath ?? ""
+  ].join("\n");
+}
+
+function projectPreviewCacheKey(project: Project | null | undefined) {
+  return project ? `${project.scenario.name}:${project.source.sourcePath}` : "";
+}
+
+function previewContextDependencyKey(context: PreviewRuntimeContext) {
+  const projectKey = !context.desktopRuntime && context.project && context.resourceType && context.resourceId != null
+    ? projectPreviewCacheKey(context.project)
+    : "";
+  return [
+    context.desktopRuntime ? "desktop" : "browser",
+    context.projectDir ?? "",
+    context.workspaceDir ?? "",
+    projectKey,
+    context.resourceType ?? "",
+    context.resourceId ?? ""
   ].join("\n");
 }
 
@@ -130,6 +148,7 @@ export function useIconPreviewUrl(
   context: PreviewRuntimeContext
 ) {
   const [url, setUrl] = useState<string | null>(null);
+  const contextKey = previewContextDependencyKey(context);
   useEffect(() => {
     let disposed = false;
     setUrl(null);
@@ -144,7 +163,7 @@ export function useIconPreviewUrl(
     return () => {
       disposed = true;
     };
-  }, [catalog, context.desktopRuntime, context.projectDir, context.workspaceDir, iconId, project]);
+  }, [catalog, contextKey, iconId, project]);
   return url;
 }
 
@@ -155,6 +174,7 @@ export function useResolvedPreviewUrl(
   context: PreviewRuntimeContext
 ) {
   const [url, setUrl] = useState<string | null>(null);
+  const contextKey = previewContextDependencyKey(context);
   useEffect(() => {
     let disposed = false;
     setUrl(null);
@@ -168,7 +188,7 @@ export function useResolvedPreviewUrl(
     return () => {
       disposed = true;
     };
-  }, [context.desktopRuntime, context.project, context.projectDir, context.resourceId, context.resourceType, context.workspaceDir, directPath, libraryAsset, managedAsset]);
+  }, [contextKey, directPath, libraryAsset, managedAsset]);
   return url;
 }
 

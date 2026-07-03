@@ -16,6 +16,7 @@ pub const SIMPLE_ENCOUNTER_BYTES: usize = 426;
 pub const COMPLEX_ENCOUNTER_BYTES: usize = 520;
 pub const TIMED_ENCOUNTER_BYTES: usize = 40;
 pub const BATTLE_BYTES: usize = 346;
+const BATTLE_RUNTIME_MONSTER_LIMIT: usize = 100;
 pub const MONSTER_BYTES: usize = 210;
 pub const MONSTER_DESCRIPTION_BYTES: usize = 256;
 pub const SHOP_BYTES: usize = 3002;
@@ -2173,6 +2174,13 @@ pub fn write_battles(records: &[BattleRecord]) -> Result<Vec<u8>> {
             return Err(ProvidenceError::message(format!(
                 "Battle {} must have a 13 x 13 monster grid",
                 record.id
+            )));
+        }
+        let placed_monsters = record.grid.iter().filter(|value| **value != 0).count();
+        if placed_monsters > BATTLE_RUNTIME_MONSTER_LIMIT {
+            return Err(ProvidenceError::message(format!(
+                "Battle {} places {} monsters; Realmz runtime supports at most {} loaded monsters",
+                record.id, placed_monsters, BATTLE_RUNTIME_MONSTER_LIMIT
             )));
         }
         for (slot, value) in record.grid.iter().enumerate() {
@@ -4834,6 +4842,20 @@ mod tests {
         assert_eq!(i16_be(&battle_bytes, 24), 77);
         assert_eq!(battle_bytes[338] as i8, -2);
         assert_eq!(i16_be(&battle_bytes, 344), 5);
+
+        let over_cap_battle = BattleRecord {
+            id: 1,
+            grid: (0..13 * 13).map(|slot| if slot < 101 { 1 } else { 0 }).collect(),
+            dist: 1,
+            message_before: 0,
+            message_after: 0,
+            battle_macro: 0,
+            raw_bytes: vec![0; BATTLE_BYTES],
+            authored: true,
+            provenance: provenance("Data BD", 1, BATTLE_BYTES, BATTLE_BYTES),
+        };
+        let error = write_battles(&[over_cap_battle]).expect_err("over-cap authored battles must fail");
+        assert!(error.to_string().contains("at most 100 loaded monsters"));
 
         let monster = MonsterRecord {
             id: 0,

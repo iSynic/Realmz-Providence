@@ -127,6 +127,7 @@ export type MapViewFlag =
 export type MapViewOptions = Record<MapViewFlag, boolean>;
 
 export type PaintCellChange = { x: number; y: number; index: number; from: number; to: number };
+export type BattleGridCellChange = { index: number; from: number; to: number };
 export type ManagedAssetKind = "picture" | "icon" | "special-land-tile" | "sound" | "text" | "other";
 export type ManagedAssetExportState = "ready" | "blocked" | "preview-only";
 export type AssetImportTarget = "scenario-picture" | "custom-landlook-atlas" | "icon" | "special-land-tile" | "sound";
@@ -1093,6 +1094,7 @@ export type MapRecord = {
 
 export type ProjectCommand =
   | { kind: "paintTiles"; mapId: string; label: string; cells: PaintCellChange[] }
+  | { kind: "paintBattleGridCells"; battleId: number; label: string; cells: BattleGridCellChange[] }
   | { kind: "createMap"; label: string; levelType: LevelType }
   | { kind: "duplicateMap"; label: string; mapId: string }
   | { kind: "createMacro"; label: string; displayName?: string }
@@ -1238,10 +1240,13 @@ export type ProjectCommand =
   | { kind: "createMonsterFromTemplate"; label: string; id: number; template: MonsterRecord; description?: string; setId?: MonsterSetId }
   | { kind: "createMonstersFromTemplates"; label: string; entries: Array<{ id: number; template: MonsterRecord; description?: string; setId?: MonsterSetId }> }
   | { kind: "updateMonsterRecord"; label: string; id: number; changes: Partial<MonsterRecord>; setId?: MonsterSetId }
+  | { kind: "clearMonsterRecord"; label: string; id: number; setId: MonsterSetId }
   | { kind: "createMonsterVariantFromNormal"; label: string; id: number; setId: Exclude<MonsterSetId, 0> }
   | { kind: "copyCurrentMonsterToAllSets"; label: string; id: number; sourceSetId: MonsterSetId }
   | { kind: "switchMonsterRecords"; label: string; setId: MonsterSetId; fromId: number; toId: number }
   | { kind: "generateMonsterVariants"; label: string; id: number }
+  | { kind: "generateMonsterVariantsForAll"; label: string; ids: number[] }
+  | { kind: "rewriteBattleMonsterReferences"; label: string; rewrite: { mode: "clear"; monsterId: number } | { mode: "replace"; fromId: number; toId: number } | { mode: "swap"; fromId: number; toId: number } }
   | { kind: "upsertMonsterIconOverride"; label: string; override: MonsterIconOverride }
   | { kind: "deleteMonsterIconOverride"; label: string; targetBaseIconId: number }
   | { kind: "upsertScenarioIconResource"; label: string; resource: ScenarioIconResource }

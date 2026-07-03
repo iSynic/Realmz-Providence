@@ -26,6 +26,11 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         .iter()
         .filter_map(|record| i16::try_from(record.id).ok())
         .collect::<BTreeSet<_>>();
+    let monster_records_by_id = project
+        .monsters
+        .iter()
+        .filter_map(|record| i16::try_from(record.id).ok().map(|id| (id, record)))
+        .collect::<BTreeMap<_, _>>();
     let treasure_ids = project
         .treasures
         .iter()
@@ -294,12 +299,25 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         );
         validate_battle_macro_reference(battle.id, battle.battle_macro, &macro_ids, &mut warnings);
         for (slot, monster) in battle.grid.iter().enumerate() {
-            if *monster != 0 && !monster_ids.contains(&monster.abs()) {
+            let monster_id = monster.abs();
+            if *monster != 0 && !monster_ids.contains(&monster_id) {
                 warnings.push(format!(
                     "Battle {} grid slot {} references monster {}, but no matching Data MD monster record is present.",
                     battle.id,
                     slot,
-                    monster.abs()
+                    monster_id
+                ));
+            } else if *monster != 0
+                && monster_records_by_id
+                    .get(&monster_id)
+                    .map(|record| record.hit_dice == 0)
+                    .unwrap_or(false)
+            {
+                warnings.push(format!(
+                    "Battle {} grid slot {} references blank monster {}; Realmz skips Data MD records with Stamina Level 0 during battle setup.",
+                    battle.id,
+                    slot,
+                    monster_id
                 ));
             }
         }
@@ -2422,6 +2440,23 @@ mod tests {
     }
 
     #[test]
+    fn validates_battle_grid_references_blank_monster_slots() {
+        let mut project = empty_project();
+        project.maps.push(test_map(LevelType::Land, 0, 1));
+        project.monsters.push(test_monster(2, 0));
+        let mut grid = vec![0; 13 * 13];
+        grid[0] = 2;
+        project.battles.push(test_battle(1, grid));
+
+        let report = validate_project(&project);
+
+        assert!(report
+            .warnings
+            .iter()
+            .any(|warning| warning.contains("references blank monster 2")));
+    }
+
+    #[test]
     fn validates_authored_land_map_satisfies_map_presence() {
         let mut project = empty_project();
         project.maps.push(test_map(LevelType::Land, 0, 1));
@@ -2617,6 +2652,89 @@ mod tests {
                 index,
                 index * crate::realmz::RANDLEVEL_BYTES,
                 crate::realmz::RANDLEVEL_BYTES,
+            ),
+        }
+    }
+
+    fn test_battle(id: usize, grid: Vec<i16>) -> BattleRecord {
+        BattleRecord {
+            id,
+            grid,
+            dist: 1,
+            message_before: 0,
+            message_after: 0,
+            battle_macro: 0,
+            raw_bytes: vec![0; crate::realmz::BATTLE_BYTES],
+            authored: true,
+            provenance: test_provenance(
+                "Data BD",
+                id,
+                id * crate::realmz::BATTLE_BYTES,
+                crate::realmz::BATTLE_BYTES,
+            ),
+        }
+    }
+
+    fn test_monster(id: usize, hit_dice: u8) -> MonsterRecord {
+        MonsterRecord {
+            id,
+            hit_dice,
+            stamina_bonus: 0,
+            agility: if hit_dice == 0 { 0 } else { 10 },
+            name_id: 0,
+            movement_max: if hit_dice == 0 { 0 } else { 10 },
+            armor: 0,
+            magic_resistance: 0,
+            distance: 0,
+            traitor: 0,
+            size: 0,
+            type_flags: vec![0; 8],
+            attack_count: if hit_dice == 0 { 0 } else { 1 },
+            magic_attack_count: 0,
+            attacks: vec![vec![0; 4]; 5],
+            damage_bonus: 0,
+            cast_percent: 0,
+            run_percent: 0,
+            surrender_percent: 0,
+            missile_percent: 0,
+            can_summon: 0,
+            saves: vec![0; 6],
+            spell_immunities: vec![0; 6],
+            money: vec![0; 3],
+            spells: vec![0; 10],
+            items: vec![0; 6],
+            weapon: 0,
+            icon_id: 0,
+            spell_points: 0,
+            exp: 0,
+            stamina: 0,
+            stamina_max: 0,
+            underneath: vec![0; 4],
+            target: 0,
+            guarding: 0,
+            not_on_menu: false,
+            been_attacked: 0,
+            movement: 0,
+            magic_to_hit: 0,
+            conditions: vec![0; 40],
+            lr: 0,
+            up: 0,
+            attack_num: 0,
+            bonus_attack: 0,
+            death_macro: 0,
+            max_spell_points: 0,
+            display_name: if hit_dice == 0 {
+                String::new()
+            } else {
+                format!("Monster {id}")
+            },
+            raw_bytes: vec![0; crate::realmz::MONSTER_BYTES],
+            authored: true,
+            provenance: test_provenance(
+                "Data MD",
+                id,
+                id * crate::realmz::MONSTER_BYTES,
+                crate::realmz::MONSTER_BYTES,
             ),
         }
     }

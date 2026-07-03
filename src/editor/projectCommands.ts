@@ -59,6 +59,7 @@ import {
 } from "./projectCommands/scriptCommands";
 import {
   bulkUpdateMessageRecords,
+  clearMonsterRecord,
   clearOptionLabel,
   createMonsterFromTemplate,
   createMonstersFromTemplates,
@@ -72,7 +73,10 @@ import {
   duplicateMessageRecord,
   duplicateOptionLabel,
   emptyScenarioItem,
+  generateMonsterVariantsForAll,
   generateMonsterVariants,
+  paintBattleGridCells,
+  rewriteBattleMonsterReferences,
   switchMonsterRecords,
   upsertMonsterIconOverride,
   updateMonsterRecord,
@@ -108,6 +112,7 @@ import {
 
 export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "paintTiles") return paintTiles(project, command.mapId, command.cells);
+  if (command.kind === "paintBattleGridCells") return paintBattleGridCells(project, command.battleId, command.cells);
   if (command.kind === "createMap") return createMap(project, command);
   if (command.kind === "duplicateMap") return duplicateMap(project, command);
   if (command.kind === "createMacro") return createMacro(project, command.displayName);
@@ -161,10 +166,13 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "createMonsterFromTemplate") return createMonsterFromTemplate(project, command.id, command.template, command.description, command.setId);
   if (command.kind === "createMonstersFromTemplates") return createMonstersFromTemplates(project, command.entries);
   if (command.kind === "updateMonsterRecord") return updateMonsterRecord(project, command.id, command.changes, command.setId);
+  if (command.kind === "clearMonsterRecord") return clearMonsterRecord(project, command.id, command.setId);
   if (command.kind === "createMonsterVariantFromNormal") return createMonsterVariantFromNormal(project, command.id, command.setId);
   if (command.kind === "copyCurrentMonsterToAllSets") return copyCurrentMonsterToAllSets(project, command.id, command.sourceSetId);
   if (command.kind === "switchMonsterRecords") return switchMonsterRecords(project, command.setId, command.fromId, command.toId);
   if (command.kind === "generateMonsterVariants") return generateMonsterVariants(project, command.id);
+  if (command.kind === "generateMonsterVariantsForAll") return generateMonsterVariantsForAll(project, command.ids);
+  if (command.kind === "rewriteBattleMonsterReferences") return rewriteBattleMonsterReferences(project, command.rewrite);
   if (command.kind === "upsertMonsterIconOverride") return upsertMonsterIconOverride(project, command.override);
   if (command.kind === "deleteMonsterIconOverride") return deleteMonsterIconOverride(project, command.targetBaseIconId);
   if (command.kind === "upsertScenarioIconResource") return upsertScenarioIconResource(project, command.resource);
@@ -218,12 +226,15 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
 
 export function projectCommandLabel(command: ProjectCommand) {
   if (command.kind === "paintTiles") return command.cells.length === 1 ? "Paint tile" : `Paint ${command.cells.length} tiles`;
+  if (command.kind === "paintBattleGridCells") return command.cells.length === 1 ? "Paint battle cell" : `Paint ${command.cells.length} battle cells`;
   return command.label;
 }
 
 export function projectCommandChangeCount(command: ProjectCommand) {
   if (command.kind === "paintTiles") return command.cells.length;
+  if (command.kind === "paintBattleGridCells") return command.cells.length;
   if (command.kind === "bulkUpdateMessageRecords") return command.updates.length;
   if (command.kind === "createMonstersFromTemplates") return command.entries.length;
+  if (command.kind === "generateMonsterVariantsForAll") return command.ids.length;
   return 1;
 }

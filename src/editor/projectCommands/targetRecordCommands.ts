@@ -1,5 +1,10 @@
 import {
+  BattleMonsterReferenceRewrite,
+  rewriteBattleMonsterReferences as rewriteBattleMonsterReferencesInProject
+} from "../battleReferences";
+import {
   BattleRecord,
+  BattleGridCellChange,
   ComplexEncounterRecord,
   MessageRecord,
   MonsterDescriptionRecord,
@@ -29,6 +34,7 @@ const MONSTER_SET_SOURCE_FILES: Record<Exclude<MonsterSetId, 0>, string> = {
   1: "Data MD1",
   [-1]: "Data MD-1"
 };
+const BATTLE_GRID_CELL_COUNT = 13 * 13;
 
 export function createTargetRecord(project: Project, recordType: RealmzTargetRecordKind, requestedId?: number): Project {
   const id = requestedId ?? nextTargetId(project, recordType);
@@ -39,7 +45,7 @@ export function createTargetRecord(project: Project, recordType: RealmzTargetRec
     case "battle":
       return upsertRecord(project, "battles", emptyBattle(id));
     case "monster":
-      return upsertRecord(project, "monsters", emptyMonster(id));
+      return clearMonsterRecord(project, id, 0);
     case "treasure":
       return upsertRecord(project, "treasures", emptyTreasure(id));
     case "shop":
@@ -129,7 +135,7 @@ export function updateStringSound(project: Project, messageId: number, soundId: 
 
 export function createMonsterFromTemplate(project: Project, id: number, template: MonsterRecord, description?: string, setId: MonsterSetId = 0): Project {
   if (!Number.isInteger(id) || id < 0) return project;
-  const withMonster = upsertMonsterRecord(project, monsterForSet(id, template, setId), setId);
+  const withMonster = upsertMonsterRecord(project, monsterForSet(id, { ...template, nameId: id & 0xff }, setId), setId);
   return description !== undefined ? upsertMonsterDescription(withMonster, id, description) : withMonster;
 }
 
@@ -148,6 +154,18 @@ export function updateMonsterRecord(project: Project, id: number, changes: Parti
   const existing = monsterRecordForSet(project, id, setId);
   const base = existing ?? emptyMonsterForSet(id, setId);
   return upsertMonsterRecord(project, monsterForSet(id, { ...base, ...changes }, setId), setId);
+}
+
+export function clearMonsterRecord(project: Project, id: number, setId: MonsterSetId = 0): Project {
+  if (!Number.isInteger(id) || id < 0) return project;
+  let next = upsertMonsterRecord(project, blankMonsterForSet(id, setId), setId);
+  if (!monsterHasActiveRecordInAnySet(next, id)) {
+    next = {
+      ...next,
+      monsterDescriptions: (next.monsterDescriptions ?? []).filter((description) => description.id !== id)
+    };
+  }
+  return next;
 }
 
 export function createMonsterVariantFromNormal(project: Project, id: number, setId: Exclude<MonsterSetId, 0>): Project {
@@ -178,6 +196,35 @@ export function generateMonsterVariants(project: Project, id: number): Project {
   let next = upsertMonsterRecord(project, generateMonsterVariant(source, 1), 1);
   next = upsertMonsterRecord(next, generateMonsterVariant(source, -1), -1);
   return next;
+}
+
+export function generateMonsterVariantsForAll(project: Project, ids: number[]): Project {
+  const uniqueIds = [...new Set(ids.map((id) => Math.trunc(id)).filter((id) => id > 0))].sort((a, b) => a - b);
+  return uniqueIds.reduce((nextProject, id) => {
+    const source = monsterRecordForSet(nextProject, id, 0);
+    return source && monsterRecordIsActive(source) ? generateMonsterVariants(nextProject, id) : nextProject;
+  }, project);
+}
+
+export function rewriteBattleMonsterReferences(project: Project, rewrite: BattleMonsterReferenceRewrite): Project {
+  return rewriteBattleMonsterReferencesInProject(project, rewrite);
+}
+
+export function paintBattleGridCells(project: Project, battleId: number, cells: BattleGridCellChange[]): Project {
+  if (!Number.isInteger(battleId) || cells.length === 0) return project;
+  const battle = (project.battles ?? []).find((record) => record.id === battleId);
+  const base = battle ?? emptyBattle(battleId);
+  const grid = normalizeBattleGrid(base.grid);
+  let changed = false;
+  for (const cell of cells) {
+    if (!Number.isInteger(cell.index) || cell.index < 0 || cell.index >= BATTLE_GRID_CELL_COUNT) continue;
+    const next = Number.isFinite(cell.to) ? Math.trunc(cell.to) : 0;
+    if (grid[cell.index] === next) continue;
+    grid[cell.index] = next;
+    changed = true;
+  }
+  if (!changed) return project;
+  return upsertRecord(project, "battles", { ...base, grid, authored: true });
 }
 
 export function upsertMonsterIconOverride(project: Project, override: MonsterIconOverride): Project {
@@ -310,6 +357,15 @@ function upsertMonsterRecord(project: Project, record: MonsterRecord, setId: Mon
   return { ...project, monsterSets };
 }
 
+function monsterHasActiveRecordInAnySet(project: Project, id: number) {
+  return (project.monsters ?? []).some((record) => record.id === id && monsterRecordIsActive(record))
+    || (project.monsterSets ?? []).some((set) => set.monsters.some((record) => record.id === id && monsterRecordIsActive(record)));
+}
+
+function monsterRecordIsActive(record: MonsterRecord) {
+  return record.hitDice !== 0;
+}
+
 function monsterForSet(id: number, template: Partial<MonsterRecord>, setId: MonsterSetId): MonsterRecord {
   const base = emptyMonsterForSet(id, setId);
   const sourceFile = monsterSetSourceFile(setId);
@@ -336,6 +392,19 @@ function emptyMonsterForSet(id: number, setId: MonsterSetId): MonsterRecord {
   return {
     ...emptyMonster(id),
     provenance: authoredProvenance(monsterSetSourceFile(setId), id, id * MONSTER_BYTES, MONSTER_BYTES)
+  };
+}
+
+function blankMonsterForSet(id: number, setId: MonsterSetId): MonsterRecord {
+  return {
+    ...emptyMonsterForSet(id, setId),
+    hitDice: 0,
+    agility: 0,
+    movementMax: 0,
+    size: 0,
+    attackCount: 0,
+    displayName: "",
+    rawBytes: new Array(MONSTER_BYTES).fill(0)
   };
 }
 
@@ -492,6 +561,13 @@ function fixedArray(values: number[] | undefined, length: number, fill = 0) {
   return Array.from({ length }, (_, index) => Number(values?.[index] ?? fill));
 }
 
+function normalizeBattleGrid(grid: number[] | undefined) {
+  return Array.from({ length: BATTLE_GRID_CELL_COUNT }, (_, index) => {
+    const value = grid?.[index] ?? 0;
+    return Number.isFinite(value) ? Math.trunc(value) : 0;
+  });
+}
+
 function targetIds(project: Project, recordType: RealmzTargetRecordKind) {
   const values =
     recordType === "message" ? project.messages :
@@ -534,7 +610,7 @@ function emptyMonster(id: number): MonsterRecord {
     hitDice: 1,
     staminaBonus: 0,
     agility: 10,
-    nameId: 0,
+    nameId: id & 0xff,
     movementMax: 10,
     armor: 0,
     magicResistance: 0,

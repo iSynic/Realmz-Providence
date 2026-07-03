@@ -50,7 +50,7 @@
     { "offset": 4, "size": 1, "field": "movementmax", "kind": "u8", "editorMeaning": "movement allowance" },
     { "offset": 5, "size": 1, "field": "ac", "kind": "i8", "editorMeaning": "armor class" },
     { "offset": 6, "size": 1, "field": "magres", "kind": "i8", "editorMeaning": "magic resistance" },
-    { "offset": 7, "size": 1, "field": "dist", "kind": "i8", "editorMeaning": "distance / range behavior evidence" },
+    { "offset": 7, "size": 1, "field": "dist", "kind": "i8", "editorMeaning": "required weapon gate; 0 all, -1 blunt only, -2 sharp only, other byte values are specific weapon codes" },
     { "offset": 8, "size": 1, "field": "traiter", "kind": "i8", "editorMeaning": "side/friendly flag" },
     { "offset": 9, "size": 1, "field": "size", "kind": "i8", "editorMeaning": "placement footprint / summon-size matching" },
     { "offset": 10, "size": 8, "field": "type", "kind": "i8[8]", "editorMeaning": "monster type flags" },

@@ -68,6 +68,7 @@ const MONSTER_TRAIT_LABELS = [
 ];
 
 const MONSTER_MONEY_LABELS = ["Gold", "Gems", "Jewelry"];
+const REQUIRED_WEAPON_MAX_SPECIFIC_CODE = 253;
 
 function includeSelectedTrigger(records: TriggerRecord[], selected: TriggerRecord | null, limit: number) {
   const cappedLimit = Math.max(0, limit);
@@ -2757,7 +2758,7 @@ export function TargetRecordEditor({
               <div className="monster-editor-grid">
                 <NumberField label="Traitor / Side" value={record.traitor} onCommit={(traitor) => update({ traitor })} compact />
                 <NumberField label="Size" value={record.size} onCommit={(size) => update({ size })} compact />
-                <NumberField label="Distance" value={record.distance} onCommit={(distance) => update({ distance })} compact />
+                <RequiredWeaponField project={project} catalog={catalog} value={record.distance} onCommit={(distance) => update({ distance })} compact />
                 <NumberField label="No. Of Attacks" value={record.attackCount} onCommit={(attackCount) => update({ attackCount })} compact />
                 <NumberField label="Magical Attacks" value={record.magicAttackCount} onCommit={(magicAttackCount) => update({ magicAttackCount })} compact />
                 <NumberField label="Damage Plus" value={record.damageBonus} onCommit={(damageBonus) => update({ damageBonus })} compact />
@@ -6868,6 +6869,56 @@ function ItemIdField({ project, catalog, label, value, onCommit, compact = false
       <small>{selected ? [selected.detail, selected.sourceState].filter(Boolean).join(" | ") : filteredOptions.length === 0 && query.trim() ? "No items match this search." : itemReferenceDetail(project, value, catalog)}</small>
     </label>
   );
+}
+
+function RequiredWeaponField({ project, catalog, value, onCommit, compact = false }: { project: Project; catalog?: LibraryCatalog | null; value: number; onCommit: (value: number) => void; compact?: boolean }) {
+  const displayValue = monsterRequiredWeaponDisplayCode(value);
+  const weaponOptions = useMemo(() => {
+    const byCode = new Map(
+      itemReferenceOptions(project, catalog)
+        .filter((item) => item.category === "weapon" && item.value > 0 && item.value <= REQUIRED_WEAPON_MAX_SPECIFIC_CODE)
+        .map((item) => [item.value, item])
+    );
+    return Array.from({ length: REQUIRED_WEAPON_MAX_SPECIFIC_CODE }, (_, index) => {
+      const code = index + 1;
+      const item = byCode.get(code);
+      return {
+        value: code,
+        label: item?.label ?? `Weapon ${code}`
+      };
+    });
+  }, [catalog, project]);
+  return (
+    <label className={compact ? "script-number-field compact" : "script-number-field"}>
+      <span>Required Weapon</span>
+      <select value={displayValue} onChange={(event) => onCommit(monsterRequiredWeaponStoredCode(Number(event.currentTarget.value)))}>
+        <option value={0}>All weapons</option>
+        <option value={-1}>Blunt only</option>
+        <option value={-2}>Sharp only</option>
+        {weaponOptions.map((option) => (
+          <option key={option.value} value={option.value}>{option.label}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function monsterRequiredWeaponDisplayCode(storedValue: number) {
+  const byte = normalizedByte(storedValue);
+  if (byte === 0xff) return -1;
+  if (byte === 0xfe) return -2;
+  return byte;
+}
+
+function monsterRequiredWeaponStoredCode(displayCode: number) {
+  const code = Math.trunc(Number.isFinite(displayCode) ? displayCode : 0);
+  if (code === -1 || code === -2) return code;
+  const byte = Math.max(0, Math.min(REQUIRED_WEAPON_MAX_SPECIFIC_CODE, code));
+  return byte > 127 ? byte - 256 : byte;
+}
+
+function normalizedByte(value: number) {
+  return ((Math.trunc(Number.isFinite(value) ? value : 0) % 256) + 256) % 256;
 }
 
 function filterScriptTargetOptions(options: ReturnType<typeof targetOptionsForOpcode>, query: string) {

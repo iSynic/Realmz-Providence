@@ -6,6 +6,7 @@ import { missingEdcdTargetReferences } from "./edcdTargets";
 import { edcdFieldNamesForShape } from "./realmzEdcd";
 import { parameterLabelsForOpcode } from "./opcodeCrosswalk";
 import { scriptParameterLabelForOpcode } from "./scriptActionLabels";
+import { BATTLE_RUNTIME_MONSTER_LIMIT, countBattleRuntimeMonsterSlots } from "./battleReferences";
 
 const ROGUE_DISARM_TRAP_SLOT = 2;
 const ROGUE_OPEN_LOCK_SLOT = 6;
@@ -34,10 +35,11 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
     const record = project.battles?.find((candidate) => candidate.id === recordId);
     if (!record) return [];
     const issues = validateRecordId(recordType, recordId);
+    const monstersById = new Map((project.monsters ?? []).map((monster) => [monster.id, monster]));
     if (record.grid.length !== 13 * 13) issues.push(recordIssue("error", recordType, recordId, "battle-grid-shape", "Battle grid is malformed.", `Battle ${recordId} has ${record.grid.length} cells; Realmz requires 169.`));
-    const placedMonsters = record.grid.filter((monster) => monster !== 0).length;
+    const placedMonsters = countBattleRuntimeMonsterSlots(record.grid);
     if (placedMonsters === 0) issues.push(recordIssue("warning", recordType, recordId, "battle-empty", "Battle has no monsters placed.", "Place at least one monster unless this is an intentionally empty battle shell."));
-    if (placedMonsters > 100) issues.push(recordIssue("warning", recordType, recordId, "battle-monster-cap", "Battle places more than 100 monsters.", `Divinity's Battle Editor documents a 100-monster practical limit; this battle places ${placedMonsters}.`));
+    if (placedMonsters > BATTLE_RUNTIME_MONSTER_LIMIT) issues.push(recordIssue("error", recordType, recordId, "battle-monster-cap", "Battle places more than 100 monsters.", `Realmz stores runtime monsters in a fixed ${BATTLE_RUNTIME_MONSTER_LIMIT}-entry array; this battle places ${placedMonsters}.`));
     if (record.authored && (record.dist < 1 || record.dist > 30)) {
       issues.push(recordIssue("warning", recordType, recordId, "battle-distance-range", "Battle distance is outside Divinity's usual 1-30 range.", `Distance is ${record.dist}; use 1-30 for normal random placement distance.`));
     }
@@ -46,9 +48,13 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
     issues.push(...validateReference(project, recordType, recordId, "After string", 1, record.messageAfter, undefined, catalog));
     issues.push(...validateReference(project, recordType, recordId, "Battle macro", 8, record.battleMacro, undefined, catalog));
     for (const [slot, monster] of record.grid.entries()) {
+      const monsterId = Math.abs(monster);
+      const monsterRecord = monstersById.get(monsterId);
       if (!isI16(monster)) issues.push(recordIssue("error", recordType, recordId, `battle-monster-${slot}`, "Battle monster ID is outside Realmz integer range.", `Grid slot ${slot} has ${monster}.`));
-      else if (monster !== 0 && !(project.monsters ?? []).some((candidate) => candidate.id === Math.abs(monster))) {
-        issues.push(recordIssue("warning", recordType, recordId, `battle-monster-missing-${slot}`, "Battle grid points at a missing monster.", `Grid slot ${slot} uses monster ${Math.abs(monster)}, but no matching monster record is editable in this project.`));
+      else if (monster !== 0 && !monsterRecord) {
+        issues.push(recordIssue("warning", recordType, recordId, `battle-monster-missing-${slot}`, "Battle grid points at a missing monster.", `Grid slot ${slot} uses monster ${monsterId}, but no matching monster record is editable in this project.`));
+      } else if (monster !== 0 && monsterRecord?.hitDice === 0) {
+        issues.push(recordIssue("warning", recordType, recordId, `battle-monster-blank-${slot}`, "Battle grid points at a blank monster slot.", `Grid slot ${slot} uses monster ${monsterId}, but that Data MD record has Stamina Level 0 and Realmz skips it during battle setup.`));
       }
     }
     return issues;

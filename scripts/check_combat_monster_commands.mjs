@@ -1,4 +1,5 @@
 import { createServer } from "vite";
+import fs from "node:fs";
 
 const server = await createServer({
   appType: "custom",
@@ -12,17 +13,31 @@ try {
   const commands = await server.ssrLoadModule("/src/editor/projectCommands/targetRecordCommands.ts");
   const iconLibrary = await server.ssrLoadModule("/src/editor/iconLibrary.ts");
   const cicnEncoder = await server.ssrLoadModule("/src/editor/cicnEncoder.ts");
+  const combatPanel = await server.ssrLoadModule("/src/editor/panels/CombatPanel.tsx");
+  const battleReferences = await server.ssrLoadModule("/src/editor/battleReferences.ts");
+  const realmzParser = await server.ssrLoadModule("/src/editor/browser/realmzParser.ts");
 
   checkUpdateMonsterRecord(commands);
   checkCreateMonsterVariantFromNormal(commands);
   checkCopyCurrentMonsterToAllSets(commands);
+  checkClearMonsterRecord(commands);
   checkCreateMonstersFromTemplates(commands);
   checkSwitchMonsterRecords(commands);
   checkGenerateMonsterVariants(commands);
+  checkGenerateMonsterVariantsForAll(commands);
+  checkBattleReferenceCommands(commands, battleReferences);
+  checkPaintBattleGridCells(commands);
+  checkBattleRuntimeMonsterLimit(battleReferences);
   checkMonsterIconOverrideCommands(commands);
   checkScenarioIconResourceCommands(commands);
+  checkScenarioMonsterIconOverrideImport(realmzParser, combatPanel);
   checkIconLibraryMonsterPairMetadata(iconLibrary);
   checkCicnEncoder(cicnEncoder);
+  checkScenarioMonsterIconTargetAllocation(combatPanel);
+  checkMonsterRequiredWeaponEncoding(combatPanel);
+  await checkScenarioMonsterIconTargetFiltering(combatPanel);
+  await checkMonsterIconPickerOptions(combatPanel);
+  await checkMonsterLibraryIconOverrideMaterialization(combatPanel, commands);
 
   if (failures.length > 0) {
     console.error("Combat monster command checks failed:");
@@ -70,6 +85,40 @@ function checkCopyCurrentMonsterToAllSets({ copyCurrentMonsterToAllSets }) {
   assert(monsterSemanticEqual(findSet(next, -1, 3), source), "copyCurrentMonsterToAllSets did not copy source into Mega");
 }
 
+function checkClearMonsterRecord({ clearMonsterRecord }) {
+  const project = projectWith({
+    monsters: [monster(3, { displayName: "Normal Three" }), monster(4, { displayName: "Normal Four" })],
+    monsterSets: [
+      monsterSet(1, [monster(3, { displayName: "Monster Three" }), monster(5, { displayName: "Monster Five" })]),
+      monsterSet(-1, [monster(3, { displayName: "Mega Three" })])
+    ],
+    monsterDescriptions: [
+      { id: 3, text: "Three description", authored: true },
+      { id: 5, text: "Five description", authored: true }
+    ]
+  });
+  let next = clearMonsterRecord(project, 3, 1);
+  assert(isBlankMonster(findSet(next, 1, 3)), "clearMonsterRecord did not blank the selected Monster-set slot");
+  assert(findNormal(next, 3)?.displayName === "Normal Three", "clearMonsterRecord changed Normal while clearing Monster set");
+  assert(findSet(next, -1, 3)?.displayName === "Mega Three", "clearMonsterRecord changed Mega while clearing Monster set");
+  assert(description(next, 3) === "Three description", "clearMonsterRecord removed shared description while other set records remain active");
+
+  next = clearMonsterRecord(next, 3, 0);
+  assert(isBlankMonster(findNormal(next, 3)), "clearMonsterRecord did not blank the Normal slot");
+  assert(findNormal(next, 4)?.displayName === "Normal Four", "clearMonsterRecord shifted or changed an unrelated Normal monster");
+  assert(findSet(next, -1, 3)?.displayName === "Mega Three", "clearMonsterRecord changed Mega while clearing Normal");
+  assert(description(next, 3) === "Three description", "clearMonsterRecord removed description before the last active set record was cleared");
+
+  next = clearMonsterRecord(next, 3, -1);
+  assert(isBlankMonster(findSet(next, -1, 3)), "clearMonsterRecord did not blank the selected Mega-set slot");
+  assert(description(next, 3) === undefined, "clearMonsterRecord left orphan Data DES text after clearing the last active set record");
+
+  next = clearMonsterRecord(next, 5, 1);
+  assert(isBlankMonster(findSet(next, 1, 5)), "clearMonsterRecord did not keep the alternate-set blank slot");
+  assert(next.monsterSets.some((set) => set.setId === 1), "clearMonsterRecord removed the alternate monster set instead of keeping blank slots");
+  assert(description(next, 5) === undefined, "clearMonsterRecord left orphan alternate-set description");
+}
+
 function checkCreateMonstersFromTemplates({ createMonstersFromTemplates }) {
   const project = projectWith({
     monsters: [
@@ -85,7 +134,9 @@ function checkCreateMonstersFromTemplates({ createMonstersFromTemplates }) {
 
   assert(findNormal(next, 1).displayName === "Existing One", "createMonstersFromTemplates changed an unrelated existing monster");
   assert(findNormal(next, 2).displayName === "Copied Two", "createMonstersFromTemplates did not create the first copied monster");
+  assert(findNormal(next, 2).nameId === 2, "createMonstersFromTemplates did not normalize hidden monster nameId to the scenario slot");
   assert(findNormal(next, 5).armor === 55, "createMonstersFromTemplates did not create the second copied monster");
+  assert(findNormal(next, 5).nameId === 5, "createMonstersFromTemplates did not normalize copied monster nameId to the scenario slot");
   assert(findNormal(next, 9).armor === 99, "createMonstersFromTemplates changed an unrelated later monster");
   assert(description(next, 1) === "Existing description", "createMonstersFromTemplates changed an unrelated description");
   assert(description(next, 2) === "Two description", "createMonstersFromTemplates did not write copied description");
@@ -153,6 +204,83 @@ function checkGenerateMonsterVariants({ generateMonsterVariants }) {
   assert(megaVariant.iconId === source.iconId && megaVariant.weapon === source.weapon && megaVariant.deathMacro === source.deathMacro, "generateMonsterVariants changed semantic references");
 }
 
+function checkGenerateMonsterVariantsForAll({ generateMonsterVariantsForAll }) {
+  const blank = blankMonster(2);
+  const project = projectWith({
+    monsters: [
+      monster(1, { displayName: "Normal One", hitDice: 5, armor: 10, spellPoints: 30, exp: 100 }),
+      blank,
+      monster(3, { displayName: "Normal Three", hitDice: 8, armor: 30, spellPoints: 60, exp: 200 })
+    ],
+    monsterSets: [
+      monsterSet(1, [
+        monster(1, { displayName: "Old Monster One", armor: 1 }),
+        monster(2, { displayName: "Keep Blank Source Variant", armor: 55 })
+      ]),
+      monsterSet(-1, [monster(3, { displayName: "Old Mega Three", armor: 3 })])
+    ]
+  });
+  const next = generateMonsterVariantsForAll(project, [3, 2, 1, 3, 999]);
+  assert(findNormal(next, 1).armor === 10 && findNormal(next, 3).armor === 30, "generateMonsterVariantsForAll changed Normal records");
+  assert(findSet(next, 1, 1).armor === 20, "generateMonsterVariantsForAll did not generate Monster variant for the first active Normal record");
+  assert(findSet(next, -1, 1).armor === 40, "generateMonsterVariantsForAll did not generate Mega variant for the first active Normal record");
+  assert(findSet(next, 1, 3).armor === 40, "generateMonsterVariantsForAll did not generate Monster variant for the later active Normal record");
+  assert(findSet(next, -1, 3).armor === 60, "generateMonsterVariantsForAll did not overwrite Mega variant for the later active Normal record");
+  assert(findSet(next, 1, 2).displayName === "Keep Blank Source Variant", "generateMonsterVariantsForAll generated variants from a blank Normal slot");
+}
+
+function checkBattleReferenceCommands({ rewriteBattleMonsterReferences }, { battleReferencesForMonster }) {
+  const project = projectWith({
+    battles: [
+      battle(1, [7, -7, 8, -8, 9, -9]),
+      battle(2, [0, 7])
+    ]
+  });
+  const references = battleReferencesForMonster(project, 7);
+  assert(references.length === 3, "battleReferencesForMonster did not index every matching battle cell");
+  assert(references.some((reference) => reference.rawValue === -7 && reference.forcedFriendly), "battleReferencesForMonster did not preserve Force Friends sign state");
+
+  const replaced = rewriteBattleMonsterReferences(project, { mode: "replace", fromId: 7, toId: 12 });
+  assert(replaced.battles[0].grid[0] === 12 && replaced.battles[0].grid[1] === -12 && replaced.battles[1].grid[1] === 12, "rewriteBattleMonsterReferences replace did not preserve signed references");
+
+  const cleared = rewriteBattleMonsterReferences(replaced, { mode: "clear", monsterId: 12 });
+  assert(cleared.battles[0].grid[0] === 0 && cleared.battles[0].grid[1] === 0 && cleared.battles[1].grid[1] === 0, "rewriteBattleMonsterReferences clear did not erase all matching cells");
+
+  const swapped = rewriteBattleMonsterReferences(project, { mode: "swap", fromId: 8, toId: 9 });
+  assert(swapped.battles[0].grid[2] === 9 && swapped.battles[0].grid[3] === -9, "rewriteBattleMonsterReferences swap did not move source IDs with sign preserved");
+  assert(swapped.battles[0].grid[4] === 8 && swapped.battles[0].grid[5] === -8, "rewriteBattleMonsterReferences swap did not move target IDs with sign preserved");
+}
+
+function checkPaintBattleGridCells({ paintBattleGridCells }) {
+  const project = projectWith({
+    battles: [battle(1, [7, -7, 0, 8])]
+  });
+  const next = paintBattleGridCells(project, 1, [
+    { index: 0, from: 7, to: 12 },
+    { index: 1, from: -7, to: -12 },
+    { index: 2, from: 0, to: -9 },
+    { index: 200, from: 0, to: 99 }
+  ]);
+  assert(next !== project, "paintBattleGridCells did not update a changed battle grid");
+  assert(next.battles[0].grid.length === 169, "paintBattleGridCells did not normalize Data BD grid length");
+  assert(next.battles[0].grid[0] === 12, "paintBattleGridCells did not replace a positive monster placement");
+  assert(next.battles[0].grid[1] === -12, "paintBattleGridCells did not preserve negative Force Friends placement values");
+  assert(next.battles[0].grid[2] === -9, "paintBattleGridCells did not apply a new signed monster placement");
+  assert(next.battles[0].grid[3] === 8, "paintBattleGridCells changed an untouched battle cell");
+  const unchanged = paintBattleGridCells(next, 1, [{ index: 3, from: 8, to: 8 }]);
+  assert(unchanged === next, "paintBattleGridCells returned a new project for unchanged cells");
+}
+
+function checkBattleRuntimeMonsterLimit({ BATTLE_RUNTIME_MONSTER_LIMIT, countBattleRuntimeMonsterSlots }) {
+  const atLimitGrid = Array.from({ length: 13 * 13 }, (_, index) => index < BATTLE_RUNTIME_MONSTER_LIMIT ? 1 : 0);
+  const overLimitGrid = Array.from({ length: 13 * 13 }, (_, index) => index <= BATTLE_RUNTIME_MONSTER_LIMIT ? 1 : 0);
+  assert(countBattleRuntimeMonsterSlots(atLimitGrid) === BATTLE_RUNTIME_MONSTER_LIMIT, "countBattleRuntimeMonsterSlots did not count the exact Realmz runtime cap");
+  assert(countBattleRuntimeMonsterSlots(overLimitGrid) === BATTLE_RUNTIME_MONSTER_LIMIT + 1, "countBattleRuntimeMonsterSlots did not count over-cap battle placements");
+  const validationSource = fs.readFileSync("src/editor/targetValidation.ts", "utf8");
+  assert(validationSource.includes("countBattleRuntimeMonsterSlots(record.grid)"), "battle validation does not use the shared runtime monster slot counter");
+  assert(validationSource.includes('recordIssue("error", recordType, recordId, "battle-monster-cap"'), "battle validation does not hard-error above the 100 placed monster cap");
+}
+
 function checkMonsterIconOverrideCommands({ upsertMonsterIconOverride, deleteMonsterIconOverride }) {
   const project = projectWith();
   const override = {
@@ -203,6 +331,391 @@ function checkScenarioIconResourceCommands({ upsertScenarioIconResource, deleteS
   const deleted = deleteScenarioIconResource(replaced, 30126);
   assert(deleted.scenarioIconResources.length === 0, "deleteScenarioIconResource did not remove the resource");
   assert(!(deleted.assetCatalog.icons ?? []).some((asset) => asset.id === "scenario-icon-resource-30126"), "deleteScenarioIconResource did not remove the icon catalog entry");
+}
+
+function checkScenarioMonsterIconOverrideImport({ scenarioMonsterIconOverridesFromResources }, { monsterIconTargetPairs }) {
+  const diagnostics = [];
+  const overrides = scenarioMonsterIconOverridesFromResources(
+    [500, 501, 502],
+    [
+      scenarioCicnResource(500, [1, 2, 3]),
+      scenarioCicnResource(808, [4, 5, 6]),
+      scenarioCicnResource(501, [7, 8, 9])
+    ],
+    diagnostics
+  );
+  assert(overrides.length === 1, "scenarioMonsterIconOverridesFromResources created overrides for incomplete or unreferenced pairs");
+  assert(overrides[0].targetBaseIconId === 500, "scenarioMonsterIconOverridesFromResources used the wrong target base icon id");
+  assert(overrides[0].sourceKind === "scenario-resource", "scenarioMonsterIconOverridesFromResources did not mark imported overrides as scenario-resource");
+  assert(overrides[0].sourceBaseResourceBase64 === "AQID", "scenarioMonsterIconOverridesFromResources did not preserve base cicn bytes");
+  assert(overrides[0].sourcePairedResourceBase64 === "BAUG", "scenarioMonsterIconOverridesFromResources did not preserve paired cicn bytes");
+  assert(diagnostics.some((diagnostic) => diagnostic.code === "incomplete-monster-icon-override"), "scenarioMonsterIconOverridesFromResources did not report incomplete pairs");
+
+  const project = projectWith({
+    monsters: [monster(1, { iconId: 500 }), monster(2, { iconId: 501 })],
+    monsterIconOverrides: overrides
+  });
+  const targets = monsterIconTargetPairs(project, {
+    iconAssetsByAbsId: new Map(),
+    realmzActorIconAssetsByAbsId: new Map(),
+    monsterMashAssetsByAbsId: new Map(),
+    monsterIconOverridesByTarget: new Map(overrides.map((override) => [override.targetBaseIconId, override]))
+  });
+  const ids = targets.map((target) => target.baseId);
+  assert(ids.includes(500), "imported complete scenario-owned icon override did not become a visible target pair");
+  assert(!ids.includes(501), "incomplete scenario-owned icon pair created a blank target row");
+}
+
+function checkScenarioMonsterIconTargetAllocation({ nextScenarioMonsterIconTargetBaseId }) {
+  const overrideAt = (baseId) => ({ baseId, override: { targetBaseIconId: baseId } });
+  assert(nextScenarioMonsterIconTargetBaseId(409, []) === 409, "source-side scenario icon copy did not prefer the selected source id");
+  assert(
+    nextScenarioMonsterIconTargetBaseId(409, [overrideAt(409)]) === 410,
+    "source-side scenario icon copy reused an existing override target"
+  );
+  assert(
+    nextScenarioMonsterIconTargetBaseId(409, [overrideAt(101)]) === 410,
+    "source-side scenario icon copy reused an existing override's paired resource id"
+  );
+}
+
+function checkMonsterRequiredWeaponEncoding({ monsterRequiredWeaponDisplayCode, monsterRequiredWeaponStoredCode }) {
+  assert(monsterRequiredWeaponDisplayCode(0) === 0, "required weapon all sentinel did not display as 0");
+  assert(monsterRequiredWeaponDisplayCode(-1) === -1, "required weapon blunt sentinel did not display as -1");
+  assert(monsterRequiredWeaponDisplayCode(-2) === -2, "required weapon sharp sentinel did not display as -2");
+  assert(monsterRequiredWeaponDisplayCode(-109) === 147, "required weapon imported byte 147 displayed as signed -109");
+  assert(monsterRequiredWeaponStoredCode(147) === -109, "required weapon code 147 did not store as byte-compatible signed value");
+  assert(monsterRequiredWeaponStoredCode(-1) === -1, "required weapon blunt sentinel did not preserve -1");
+  assert(monsterRequiredWeaponStoredCode(-2) === -2, "required weapon sharp sentinel did not preserve -2");
+  assert(monsterRequiredWeaponDisplayCode(monsterRequiredWeaponStoredCode(253)) === 253, "required weapon max specific code did not round-trip");
+}
+
+async function checkScenarioMonsterIconTargetFiltering({ monsterIconTargetPairs, monsterIconSetTabCount }) {
+  const project = projectWith({
+    monsters: [
+      monster(1, { iconId: 471 }),
+      monster(2, { iconId: 473 }),
+      monster(3, { iconId: 475 }),
+      monster(4, { iconId: 477 }),
+      monster(5, { iconId: 479 }),
+      monster(6, { iconId: 481 })
+    ],
+    scenarioIconResources: [
+      scenarioIconResource(477, "Scenario base 477", "AQID"),
+      scenarioIconResource(785, "Scenario paired 785", "BAUG")
+    ],
+    assetCatalog: {
+      icons: [
+        projectIconAsset(479),
+        projectIconAsset(787)
+      ]
+    },
+    monsterIconOverrides: [{
+      targetBaseIconId: 475,
+      sourceBaseIconId: 409,
+      sourceKind: "scenario-resource",
+      sourceBaseResourceBase64: "AQID",
+      sourcePairedResourceBase64: "BAUG"
+    }]
+  });
+  const actorAssets = new Map([
+    [473, libraryIconAsset(473)],
+    [781, libraryIconAsset(781)]
+  ]);
+  const projectAssets = new Map([
+    [479, projectIconAsset(479)],
+    [787, projectIconAsset(787)]
+  ]);
+  const monsterMashAssets = new Map([
+    [481, monsterMashIconAsset(481)],
+    [789, monsterMashIconAsset(789)]
+  ]);
+  const overridesByTarget = new Map(project.monsterIconOverrides.map((override) => [override.targetBaseIconId, override]));
+  const targets = monsterIconTargetPairs(project, {
+    iconAssetsByAbsId: projectAssets,
+    realmzActorIconAssetsByAbsId: actorAssets,
+    monsterMashAssetsByAbsId: monsterMashAssets,
+    monsterIconOverridesByTarget: overridesByTarget
+  });
+  const ids = targets.map((target) => target.baseId);
+  assert(!ids.includes(471), "monsterIconTargetPairs included an unresolved referenced icon target");
+  assert(ids.includes(473), "monsterIconTargetPairs omitted a displayable default icon pair");
+  assert(ids.includes(475), "monsterIconTargetPairs omitted an authored override with no default icon pair");
+  assert(ids.includes(477), "monsterIconTargetPairs omitted a scenario resource icon pair");
+  assert(ids.includes(479), "monsterIconTargetPairs omitted a project assetCatalog icon pair");
+  assert(!ids.includes(481), "monsterIconTargetPairs treated Monster Mash-only source art as scenario target art");
+  assert(targets.find((target) => target.baseId === 475)?.resourceBase64 === "AQID", "override target row did not keep scenario-resource bytes");
+  assert(targets.find((target) => target.baseId === 477)?.pairedResourceBase64 === "BAUG", "scenario-resource target row did not keep paired bytes");
+  assert(monsterIconSetTabCount(project, {
+    iconAssetsByAbsId: projectAssets,
+    realmzActorIconAssetsByAbsId: actorAssets,
+    monsterIconOverridesByTarget: overridesByTarget
+  }) === targets.length, "Icon Set tab count did not match visible target pairs");
+}
+
+async function checkMonsterIconPickerOptions({ monsterIconPickerOptions, monsterIconSourceStatusLabel }) {
+  const project = projectWith({
+    monsters: [
+      monster(1, { iconId: 471 }),
+      monster(2, { iconId: 473 }),
+      monster(3, { iconId: 475 }),
+      monster(4, { iconId: 477 }),
+      monster(5, { iconId: 479 }),
+      monster(6, { iconId: 481 })
+    ],
+    scenarioIconResources: [
+      scenarioIconResource(477, "Scenario base 477", "AQID"),
+      scenarioIconResource(785, "Scenario paired 785", "BAUG")
+    ],
+    assetCatalog: {
+      icons: [
+        projectIconAsset(479),
+        projectIconAsset(787)
+      ]
+    },
+    monsterIconOverrides: [{
+      targetBaseIconId: 475,
+      sourceBaseIconId: 409,
+      sourceKind: "scenario-resource",
+      sourceBaseResourceBase64: "AQID",
+      sourcePairedResourceBase64: "BAUG"
+    }]
+  });
+  const actorAssets = new Map([
+    [473, libraryIconAsset(473)],
+    [781, libraryIconAsset(781)]
+  ]);
+  const projectAssets = new Map([
+    [479, projectIconAsset(479)],
+    [787, projectIconAsset(787)]
+  ]);
+  const monsterMashAssets = new Map([
+    [481, monsterMashIconAsset(481)],
+    [789, monsterMashIconAsset(789)]
+  ]);
+  const overridesByTarget = new Map(project.monsterIconOverrides.map((override) => [override.targetBaseIconId, override]));
+  const options = monsterIconPickerOptions(project, {
+    iconAssetsByAbsId: projectAssets,
+    realmzActorIconAssetsByAbsId: actorAssets,
+    monsterMashAssetsByAbsId: monsterMashAssets,
+    monsterIconOverridesByTarget: overridesByTarget
+  });
+  const ids = options.map((option) => option.baseId);
+  assert(!ids.includes(471), "monster icon picker included an unresolved referenced target");
+  assert(ids.includes(473), "monster icon picker omitted Family Jewels/default target art");
+  assert(ids.includes(475), "monster icon picker omitted scenario override target art");
+  assert(ids.includes(477), "monster icon picker omitted scenario-resource target art");
+  assert(ids.includes(479), "monster icon picker omitted assetCatalog target art");
+  assert(!ids.includes(481), "monster icon picker included Monster Mash-only source art");
+  assert(monsterIconSourceStatusLabel(options.find((option) => option.baseId === 475)?.sourceStatus) === "Scenario override", "monster icon picker mislabeled scenario override art");
+  assert(monsterIconSourceStatusLabel(options.find((option) => option.baseId === 477)?.sourceStatus) === "Scenario resource", "monster icon picker mislabeled scenario resource art");
+  assert(monsterIconSourceStatusLabel(options.find((option) => option.baseId === 473)?.sourceStatus) === "Default art", "monster icon picker mislabeled default art");
+
+  const onlyRecordsProject = projectWith({
+    monsters: [monster(12, { iconId: 481 })]
+  });
+  const sourceOnlyOptions = monsterIconPickerOptions(onlyRecordsProject, {
+    iconAssetsByAbsId: new Map(),
+    realmzActorIconAssetsByAbsId: new Map(),
+    monsterMashAssetsByAbsId: monsterMashAssets,
+    monsterIconOverridesByTarget: new Map()
+  });
+  assert(!sourceOnlyOptions.some((option) => option.baseId === 481), "monster icon picker showed source-side Monster Mash art without materialized target art");
+
+  const materializedProject = projectWith({
+    monsters: [monster(12, { iconId: 481 })],
+    monsterIconOverrides: [{
+      targetBaseIconId: 481,
+      sourceBaseIconId: 481,
+      sourceKind: "monster-mash",
+      sourceBaseResourceBase64: "AQID",
+      sourcePairedResourceBase64: "BAUG"
+    }]
+  });
+  const materializedOptions = monsterIconPickerOptions(materializedProject, {
+    iconAssetsByAbsId: new Map(),
+    realmzActorIconAssetsByAbsId: new Map(),
+    monsterMashAssetsByAbsId: monsterMashAssets,
+    monsterIconOverridesByTarget: new Map(materializedProject.monsterIconOverrides.map((override) => [override.targetBaseIconId, override]))
+  });
+  assert(materializedOptions.some((option) => option.baseId === 481), "monster icon picker omitted materialized Monster Mash target override art");
+}
+
+async function checkMonsterLibraryIconOverrideMaterialization(
+  { materializeMonsterLibraryIconOverrides, monsterIconTargetPairs },
+  { createMonstersFromTemplates, upsertMonsterIconOverride }
+) {
+  const entry = monsterLibraryEntry("library-monster:481", "Providence Beast", 481);
+  const copyEntry = { entry, id: 12, template: monster(12, { displayName: "Providence Beast", iconId: 481 }), description: "copied" };
+  const catalog = iconLibraryCatalog(481, 789);
+  const lookups = {
+    iconAssetsByAbsId: new Map(),
+    realmzActorIconAssetsByAbsId: new Map(),
+    monsterMashAssetsByAbsId: new Map(),
+    monsterIconOverridesByTarget: new Map()
+  };
+  const emitted = [];
+  const overrides = await materializeMonsterLibraryIconOverrides(
+    [copyEntry, copyEntry],
+    projectWith(),
+    catalog,
+    lookups,
+    {},
+    { desktopRuntime: false },
+    (command) => emitted.push(command)
+  );
+  assert(overrides.length === 1 && emitted.length === 1, "bulk library copy did not dedupe materialized icon overrides");
+  assert(emitted[0].kind === "upsertMonsterIconOverride", "bulk library copy did not emit an icon override command");
+  assert(emitted[0].override.targetBaseIconId === 481, "materialized icon override used the wrong target icon id");
+  assert(emitted[0].override.sourceKind === "providence-library", "materialized icon override did not preserve Providence library source kind");
+  assert(emitted[0].override.sourceBaseResourceBase64 === "AQID", "materialized icon override did not carry base cicn bytes");
+
+  let project = createMonstersFromTemplates(projectWith(), [copyEntry]);
+  project = upsertMonsterIconOverride(project, emitted[0].override);
+  assert(findNormal(project, 12).iconId === 481, "bulk library copy test did not create the monster record");
+  assert(project.monsterIconOverrides.some((override) => override.targetBaseIconId === 481), "bulk library copy test did not persist the matching icon override");
+  const targets = monsterIconTargetPairs(project, {
+    iconAssetsByAbsId: new Map(),
+    realmzActorIconAssetsByAbsId: new Map(),
+    monsterMashAssetsByAbsId: new Map(),
+    monsterIconOverridesByTarget: new Map(project.monsterIconOverrides.map((override) => [override.targetBaseIconId, override]))
+  });
+  assert(targets.some((target) => target.baseId === 481), "materialized override did not make Monster Mash/library art visible as scenario target art");
+}
+
+function libraryIconAsset(resourceId) {
+  return {
+    id: `asset:${resourceId}`,
+    type: "monster-icon",
+    label: `Icon ${resourceId}`,
+    source: "library-source:realmz-reference",
+    relativePath: `The Family Jewels.rsrc/cicn/${resourceId}`,
+    resourceType: "cicn",
+    resourceId,
+    previewPath: `data:image/png;base64,${resourceId}`
+  };
+}
+
+function projectIconAsset(resourceId) {
+  return {
+    id: `project-icon:${resourceId}`,
+    type: "scenario-monster-icon",
+    label: `Scenario Icon ${resourceId}`,
+    source: "scenario",
+    relativePath: `Scenario/cicn/${resourceId}.png`,
+    bytes: 10,
+    sha256: `project:${resourceId}`,
+    resourceType: "cicn",
+    resourceId,
+    previewPath: `data:image/png;base64,project${resourceId}`,
+    mimeType: "image/png"
+  };
+}
+
+function monsterMashIconAsset(resourceId) {
+  return {
+    id: `monster-mash:${resourceId}`,
+    type: "monster-icon",
+    label: `Monster Mash ${resourceId}`,
+    source: "library-source:monster-mash",
+    relativePath: `Monster Mash.rsrc/cicn/${resourceId}`,
+    bytes: 10,
+    sha256: `mash:${resourceId}`,
+    resourceType: "cicn",
+    resourceId,
+    previewPath: `data:image/png;base64,mash${resourceId}`,
+    mimeType: "image/png"
+  };
+}
+
+function scenarioIconResource(resourceId, label, resourceBase64) {
+  return {
+    resourceId,
+    label,
+    sourceKind: "scenario-resource",
+    resourceBase64,
+    previewPath: `data:image/png;base64,scenario${resourceId}`
+  };
+}
+
+function scenarioCicnResource(resourceId, bytes) {
+  return {
+    source: "Scenario",
+    resource: {
+      resourceType: "cicn",
+      id: resourceId,
+      data: new Uint8Array(bytes)
+    }
+  };
+}
+
+function monsterLibraryEntry(id, label, iconId) {
+  return {
+    id,
+    type: "monster-scrapbook-entry",
+    label,
+    source: "library-source:providence:monster-library",
+    recordRef: null,
+    editState: "editable",
+    confidence: "confirmed",
+    summary: {
+      index: iconId,
+      displayName: label,
+      iconId
+    }
+  };
+}
+
+function iconLibraryCatalog(baseId, pairedId) {
+  const source = "library-source:providence:icon-library";
+  const resources = [
+    { role: "base", resourceType: "cicn", resourceId: baseId, label: `Providence Icon ${baseId}`, resourceBase64: "AQID", previewPath: "data:image/png;base64,AAA=" },
+    { role: "paired", resourceType: "cicn", resourceId: pairedId, label: `Providence Icon ${pairedId}`, resourceBase64: "BAUG", previewPath: "data:image/png;base64,BBB=" }
+  ];
+  return {
+    schemaVersion: 1,
+    importedAt: "2026-07-02T00:00:00.000Z",
+    managedPath: "browser://workspace/library",
+    sources: [],
+    records: [],
+    entities: [{
+      id: "library-entity:providence:icon-library:1",
+      type: "monster-icon-pair",
+      label: "Providence Monster Icon",
+      source,
+      recordRef: null,
+      editState: "editable",
+      confidence: "confirmed",
+      summary: {
+        providenceIconLibraryEntry: true,
+        iconLibraryKind: "monster-pair",
+        libraryNumber: 1,
+        resources
+      }
+    }],
+    assets: [
+      iconLibraryAsset(1, "base", baseId, resources[0].label),
+      iconLibraryAsset(1, "paired", pairedId, resources[1].label)
+    ],
+    diagnostics: [],
+    summary: { sourceCount: 0, recordCount: 0, entityCount: 1, assetCount: 2, diagnosticCount: 0 }
+  };
+}
+
+function iconLibraryAsset(number, role, resourceId, label) {
+  return {
+    id: `library-asset:providence:icon-library:${number}:${role}`,
+    type: "monster-icon-pair",
+    label,
+    source: "library-source:providence:icon-library",
+    relativePath: `providence-library://icon-library/${number}/${role}`,
+    bytes: 10,
+    sha256: `icon-library:${number}:${role}`,
+    resourceType: "cicn",
+    resourceId,
+    previewPath: `data:image/png;base64,iconLibrary${resourceId}`,
+    mimeType: "image/png"
+  };
 }
 
 function checkIconLibraryMonsterPairMetadata({
@@ -279,12 +792,29 @@ function checkCicnEncoder({ encodeCicnResource, mirrorRgbaHorizontally }) {
 
 function projectWith(overrides = {}) {
   return {
+    battles: [],
     monsters: [],
     monsterSets: [],
     monsterDescriptions: [],
     monsterIconOverrides: [],
     scenarioIconResources: [],
     assetCatalog: { icons: [] },
+    ...overrides
+  };
+}
+
+function battle(id, gridValues = [], overrides = {}) {
+  const grid = Array(13 * 13).fill(0);
+  for (const [index, value] of gridValues.entries()) grid[index] = value;
+  return {
+    id,
+    grid,
+    dist: 1,
+    messageBefore: 0,
+    messageAfter: 0,
+    battleMacro: 0,
+    rawBytes: Array(346).fill(0),
+    authored: true,
     ...overrides
   };
 }
@@ -352,6 +882,24 @@ function monster(id, overrides = {}) {
   };
 }
 
+function blankMonster(id) {
+  return monster(id, {
+    hitDice: 0,
+    staminaBonus: 0,
+    agility: 0,
+    movementMax: 0,
+    armor: 0,
+    magicResistance: 0,
+    attackCount: 0,
+    attacks: Array.from({ length: 5 }, () => [0, 0, 0, 0]),
+    spellPoints: 0,
+    maxSpellPoints: 0,
+    exp: 0,
+    displayName: "",
+    rawBytes: Array(210).fill(0)
+  });
+}
+
 function findNormal(project, id) {
   return project.monsters.find((record) => record.id === id);
 }
@@ -362,6 +910,19 @@ function findSet(project, setId, id) {
 
 function description(project, id) {
   return project.monsterDescriptions.find((record) => record.id === id)?.text;
+}
+
+function isBlankMonster(record) {
+  if (!record) return false;
+  return record.hitDice === 0
+    && record.agility === 0
+    && record.movementMax === 0
+    && record.size === 0
+    && record.attackCount === 0
+    && record.displayName === ""
+    && Array.isArray(record.rawBytes)
+    && record.rawBytes.length === 210
+    && record.rawBytes.every((value) => value === 0);
 }
 
 function monsterSemanticEqual(actual, expected) {

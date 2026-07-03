@@ -2502,7 +2502,8 @@
 
 
 
-.script-number-field input {
+.script-number-field input,
+.script-number-field select {
   min-width: 0;
   min-height: 26px;
   width: 100%;
@@ -2524,7 +2525,8 @@
 
 
 
-.script-number-field.compact input {
+.script-number-field.compact input,
+.script-number-field.compact select {
   min-width: 0;
   min-height: 24px;
   padding: 3px 4px;
