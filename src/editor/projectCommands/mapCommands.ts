@@ -142,7 +142,8 @@ export function updateCustomLandTileAttributes(
   project: Project,
   command: Extract<ProjectCommand, { kind: "updateCustomLandTileAttributes" }>
 ) {
-  return updateCustomLandlook(project, command.landlook, (landlook) => {
+  let updatedLandlook: CustomLandlookMetadata | null = null;
+  const nextProject = updateCustomLandlook(project, command.landlook, (landlook) => {
     const records = [...landlook.records];
     const record = records[command.tile];
     if (!record) return landlook;
@@ -155,8 +156,10 @@ export function updateCustomLandTileAttributes(
       ...record,
       ...changes
     };
-    return { ...landlook, records, authored: true };
+    updatedLandlook = { ...landlook, records, authored: true };
+    return updatedLandlook;
   });
+  return updatedLandlook ? syncCustomLandlookTileAttribute(nextProject, updatedLandlook, command.tile) : nextProject;
 }
 
 export function updateSpecialTileSolidity(
@@ -232,27 +235,35 @@ export function updateCustomLandTileCombatBuild(
   command: Extract<ProjectCommand, { kind: "updateCustomLandTileCombatBuild" }>
 ) {
   if (command.row < 0 || command.row > 2 || command.col < 0 || command.col > 2) return project;
-  return updateCustomLandlook(project, command.landlook, (landlook) => {
+  let updatedLandlook: CustomLandlookMetadata | null = null;
+  const nextProject = updateCustomLandlook(project, command.landlook, (landlook) => {
     const records = [...landlook.records];
     const record = records[command.tile];
     if (!record) return landlook;
     const combatBuild = [0, 1, 2].map((row) => [0, 1, 2].map((col) => record.combatBuild?.[row]?.[col] ?? 0));
     combatBuild[command.row][command.col] = clampSignedShort(command.value);
     records[command.tile] = { ...record, combatBuild };
-    return { ...landlook, records, authored: true };
+    updatedLandlook = { ...landlook, records, authored: true };
+    return updatedLandlook;
   });
+  return updatedLandlook ? syncCustomLandlookTileAttribute(nextProject, updatedLandlook, command.tile) : nextProject;
 }
 
 export function updateCustomLandlookBase(
   project: Project,
   command: Extract<ProjectCommand, { kind: "updateCustomLandlookBase" }>
 ) {
-  return updateCustomLandlook(project, command.landlook, (landlook) => ({
-    ...landlook,
-    baseTile: command.baseTile == null ? landlook.baseTile : clampSignedShort(command.baseTile),
-    baseScale: command.baseScale == null ? landlook.baseScale : clampSignedShort(command.baseScale),
-    authored: true
-  }));
+  let updatedLandlook: CustomLandlookMetadata | null = null;
+  const nextProject = updateCustomLandlook(project, command.landlook, (landlook) => {
+    updatedLandlook = {
+      ...landlook,
+      baseTile: command.baseTile == null ? landlook.baseTile : clampSignedShort(command.baseTile),
+      baseScale: command.baseScale == null ? landlook.baseScale : clampSignedShort(command.baseScale),
+      authored: true
+    };
+    return updatedLandlook;
+  });
+  return updatedLandlook ? syncCustomLandlookTileAttributes(nextProject, updatedLandlook) : nextProject;
 }
 
 export function updateCustomLandlookRangeSlot(
@@ -272,7 +283,9 @@ export function updateCustomLandlookRangeSlot(
   });
 }
 
-function updateCustomLandlook(project: Project, landlook: number, update: (landlook: NonNullable<Project["customLandlooks"]>[number]) => NonNullable<Project["customLandlooks"]>[number]) {
+type CustomLandlookMetadata = NonNullable<Project["customLandlooks"]>[number];
+
+function updateCustomLandlook(project: Project, landlook: number, update: (landlook: CustomLandlookMetadata) => CustomLandlookMetadata) {
   const customLandlooks = project.customLandlooks ?? [];
   let changed = false;
   const next = customLandlooks.map((candidate) => {
@@ -282,6 +295,69 @@ function updateCustomLandlook(project: Project, landlook: number, update: (landl
     return updated;
   });
   return changed ? { ...project, customLandlooks: next } : project;
+}
+
+function syncCustomLandlookTileAttribute(project: Project, landlook: CustomLandlookMetadata, tile: number): Project {
+  const record = landlook.records[tile];
+  if (!record) return project;
+  return syncTileAttribute(project, customMapstatsAttributeProfile(landlook, record));
+}
+
+function syncCustomLandlookTileAttributes(project: Project, landlook: CustomLandlookMetadata): Project {
+  return landlook.records.reduce((current, record) => syncTileAttribute(current, customMapstatsAttributeProfile(landlook, record)), project);
+}
+
+function syncTileAttribute(project: Project, profile: TileAttributeProfile): Project {
+  const tileAttributes = [...(project.tileAttributes ?? [])];
+  const existingIndex = tileAttributes.findIndex((candidate) =>
+    candidate.sourceKind === "mapstats" &&
+    candidate.landlook === profile.landlook &&
+    candidate.tile === profile.tile
+  );
+  if (existingIndex >= 0) {
+    tileAttributes[existingIndex] = profile;
+  } else {
+    tileAttributes.push(profile);
+  }
+  return { ...project, tileAttributes };
+}
+
+function customMapstatsAttributeProfile(landlook: CustomLandlookMetadata, record: CustomLandlookMetadata["records"][number]): TileAttributeProfile {
+  const solid = record.solid;
+  const needBoat = record.needBoat;
+  const flyFloat = record.flyFloat;
+  const flags: TileAttributeFlag[] = [solid === 0 && needBoat === 0 && flyFloat === 0 ? "walkable" : "solid"];
+  if (record.shore !== 0) flags.push("shore");
+  if (needBoat !== 0) flags.push("boat-required");
+  if (record.isPath !== 0) flags.push("path");
+  if (record.los !== 0) flags.push("blocks-los");
+  if (flyFloat !== 0) flags.push("fly-float-required");
+  if (record.forest !== 0) flags.push("forest");
+  if ((record.combatBuild ?? []).flat().some((value) => value !== 0)) flags.push("combat-build");
+  return {
+    tile: record.tile,
+    landlook: landlook.landlook,
+    solidType: solid,
+    movementSoundId: record.sound,
+    movementCost: record.time,
+    shore: record.shore !== 0,
+    boatRequirement: needBoat,
+    pathFlag: record.isPath !== 0,
+    blocksLos: record.los !== 0,
+    flyFloatRequired: flyFloat !== 0,
+    forestType: record.forest,
+    spare: record.spare,
+    combatBuild: (record.combatBuild ?? []).map((row) => [...row]),
+    clearLandId: record.clearLandId,
+    baseTile: landlook.baseTile,
+    baseScale: landlook.baseScale,
+    editableScope: "scenario-custom",
+    flags,
+    confidence: "source-backed",
+    sourceKind: "mapstats",
+    source: landlook.sourceFile,
+    rawByte: null
+  };
 }
 
 export function createRandomRect(project: Project, command: Extract<ProjectCommand, { kind: "createRandomRect" }>) {
