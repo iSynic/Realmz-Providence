@@ -3,13 +3,17 @@ import { REALMZ_CASTES, REALMZ_RACES, SPELL_CASTER_CLASSES } from "../../rulesCa
 import { ruleCasteName, ruleRaceName } from "../../ruleNames";
 import { CasteRuleEntry, RaceRuleEntry, RulesFamily, SpellRuleEntry } from "./ruleTypes";
 
-const spellEntryCache = new WeakMap<Project, { catalog: LibraryCatalog | null; overrides: ScenarioSpellOverride[] | undefined; entries: SpellRuleEntry[] }>();
-const raceEntryCache = new WeakMap<Project, { catalog: LibraryCatalog | null; overrides: ScenarioRaceOverride[] | undefined; ruleNames: Project["ruleNames"] | undefined; entries: RaceRuleEntry[] }>();
-const casteEntryCache = new WeakMap<Project, { catalog: LibraryCatalog | null; overrides: ScenarioCasteOverride[] | undefined; ruleNames: Project["ruleNames"] | undefined; entries: CasteRuleEntry[] }>();
+const spellEntryCache = new Map<string, SpellRuleEntry[]>();
+const raceEntryCache = new Map<string, RaceRuleEntry[]>();
+const casteEntryCache = new Map<string, CasteRuleEntry[]>();
+const objectIds = new WeakMap<object, number>();
+let nextObjectId = 1;
+const MAX_RULE_ENTRY_CACHE_ENTRIES = 48;
 
 export function buildSpellEntries(project: Project, catalog: LibraryCatalog | null): SpellRuleEntry[] {
-  const cached = spellEntryCache.get(project);
-  if (cached && cached.catalog === catalog && cached.overrides === project.spellOverrides) return cached.entries;
+  const cacheKey = `spell:${objectCacheKey(project.spellOverrides)}:${objectCacheKey(catalog?.entities)}`;
+  const cached = spellEntryCache.get(cacheKey);
+  if (cached) return cached;
   const scenario = new Map((project.spellOverrides ?? []).map((record) => [record.id, record]));
   const library = new Map<number, ScenarioSpellOverride>();
   for (const entity of catalog?.entities ?? []) {
@@ -43,7 +47,7 @@ export function buildSpellEntries(project: Project, catalog: LibraryCatalog | nu
       }
     }
   }
-  spellEntryCache.set(project, { catalog, overrides: project.spellOverrides, entries });
+  writeRuleEntryCache(spellEntryCache, cacheKey, entries);
   return entries;
 }
 
@@ -195,8 +199,9 @@ export const CASTE_RECORD_LIMIT = 30;
 export const STANDARD_CASTE_COUNT = REALMZ_CASTES.length;
 
 export function buildRaceEntries(project: Project, catalog: LibraryCatalog | null): RaceRuleEntry[] {
-  const cached = raceEntryCache.get(project);
-  if (cached && cached.catalog === catalog && cached.overrides === project.raceOverrides && cached.ruleNames === project.ruleNames) return cached.entries;
+  const cacheKey = `race:${objectCacheKey(project.raceOverrides)}:${objectCacheKey(project.ruleNames)}:${objectCacheKey(catalog?.entities)}`;
+  const cached = raceEntryCache.get(cacheKey);
+  if (cached) return cached;
   const scenario = new Map((project.raceOverrides ?? []).map((record) => [record.id, record]));
   const library = new Map<number, ScenarioRaceOverride>();
   for (const entity of catalog?.entities ?? []) {
@@ -214,13 +219,14 @@ export function buildRaceEntries(project: Project, catalog: LibraryCatalog | nul
       hasScenarioVersion: Boolean(scenarioRecord)
     };
   });
-  raceEntryCache.set(project, { catalog, overrides: project.raceOverrides, ruleNames: project.ruleNames, entries });
+  writeRuleEntryCache(raceEntryCache, cacheKey, entries);
   return entries;
 }
 
 export function buildCasteEntries(project: Project, catalog: LibraryCatalog | null): CasteRuleEntry[] {
-  const cached = casteEntryCache.get(project);
-  if (cached && cached.catalog === catalog && cached.overrides === project.casteOverrides && cached.ruleNames === project.ruleNames) return cached.entries;
+  const cacheKey = `caste:${objectCacheKey(project.casteOverrides)}:${objectCacheKey(project.ruleNames)}:${objectCacheKey(catalog?.entities)}`;
+  const cached = casteEntryCache.get(cacheKey);
+  if (cached) return cached;
   const scenario = new Map((project.casteOverrides ?? []).map((record) => [record.id, record]));
   const library = new Map<number, ScenarioCasteOverride>();
   for (const entity of catalog?.entities ?? []) {
@@ -238,8 +244,25 @@ export function buildCasteEntries(project: Project, catalog: LibraryCatalog | nu
       hasScenarioVersion: Boolean(scenarioRecord)
     };
   });
-  casteEntryCache.set(project, { catalog, overrides: project.casteOverrides, ruleNames: project.ruleNames, entries });
+  writeRuleEntryCache(casteEntryCache, cacheKey, entries);
   return entries;
+}
+
+function objectCacheKey(value: object | null | undefined) {
+  if (!value) return "none";
+  const existing = objectIds.get(value);
+  if (existing) return existing;
+  const next = nextObjectId++;
+  objectIds.set(value, next);
+  return next;
+}
+
+function writeRuleEntryCache<T>(cache: Map<string, T>, key: string, value: T) {
+  cache.set(key, value);
+  if (cache.size > MAX_RULE_ENTRY_CACHE_ENTRIES) {
+    const oldest = cache.keys().next().value;
+    if (oldest) cache.delete(oldest);
+  }
 }
 
 export function raceFromSummary(summary: Record<string, unknown>, id: number): ScenarioRaceOverride {
