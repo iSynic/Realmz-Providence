@@ -222,23 +222,23 @@ export function domainCount(
   issueCount: number
 ) {
   if (domain === "linter") return issueCount;
-  if (domain === "maps") return project?.maps.length ?? 0;
-  if (domain === "scripts") return (project?.triggers.length ?? 0) + (project?.extracodes.length ?? 0);
-  if (domain === "text") return (project?.messages.length ?? 0) + (project?.optionLabels.length ?? 0);
+  if (domain === "maps") return listCount(project?.maps);
+  if (domain === "scripts") return listCount(project?.triggers) + listCount(project?.extracodes);
+  if (domain === "text") return listCount(project?.messages) + listCount(project?.optionLabels);
   if (domain === "scenario") return project ? [
-    project.scenario.shell,
-    project.scenario.contactInfo,
-    project.scenario.restrictions,
-    project.scenario.globalMacroHooks,
-    project.scenario.securityBackup
+    project.scenario?.shell,
+    project.scenario?.contactInfo,
+    project.scenario?.restrictions,
+    project.scenario?.globalMacroHooks,
+    project.scenario?.securityBackup
   ].filter(Boolean).length : 0;
-  if (domain === "encounters") return (project?.simpleEncounters.length ?? 0) + (project?.complexEncounters.length ?? 0) + (project?.thiefEncounters.length ?? 0) + (project?.timedEncounters.length ?? 0);
-  if (domain === "combat") return (project?.battles.length ?? 0) + (project?.monsters.length ?? 0) + (activeWorkbench === "library" ? catalog?.entities.filter((entity) => entity.type === "monster-scrapbook-entry").length ?? 0 : 0);
-  if (domain === "economy") return (project?.treasures.length ?? 0) + (project?.shops.length ?? 0) + (project?.scenarioItems.length ?? 0) + (activeWorkbench === "library" ? catalog?.entities.filter((entity) => ["item", "bag-item", "vault-icon"].includes(entity.type)).length ?? 0 : 0);
-  if (domain === "rules") return (project?.spellOverrides.length ?? 0) + (project?.raceOverrides.length ?? 0) + (project?.casteOverrides.length ?? 0) + (activeWorkbench === "library" ? catalog?.entities.filter((entity) => ["spell", "race", "caste"].includes(entity.type)).length ?? 0 : 0);
-  if (domain === "assets") return (project?.assets.length ?? 0) + (project?.assetCatalog.tilesets.length ?? 0) + (project?.assetCatalog.pictures?.length ?? 0) + (project?.assetCatalog.icons?.length ?? 0) + (project?.assetCatalog.sounds?.length ?? 0) + (activeWorkbench === "library" ? catalog?.assets.length ?? 0 : 0);
-  if (domain === "records") return Object.values(project?.records.counts ?? {}).reduce((total, count) => total + count, 0) + (activeWorkbench === "library" ? catalog?.records.length ?? 0 : 0);
-  if (domain === "export") return project ? project.validation.exportableFiles.length + project.validation.passThroughFiles.length : 0;
+  if (domain === "encounters") return listCount(project?.simpleEncounters) + listCount(project?.complexEncounters) + listCount(project?.thiefEncounters) + listCount(project?.timedEncounters);
+  if (domain === "combat") return listCount(project?.battles) + listCount(project?.monsters) + (activeWorkbench === "library" ? filteredListCount(catalog?.entities, (entity) => entity.type === "monster-scrapbook-entry") : 0);
+  if (domain === "economy") return listCount(project?.treasures) + listCount(project?.shops) + listCount(project?.scenarioItems) + (activeWorkbench === "library" ? filteredListCount(catalog?.entities, (entity) => ["item", "bag-item", "vault-icon"].includes(entity.type)) : 0);
+  if (domain === "rules") return listCount(project?.spellOverrides) + listCount(project?.raceOverrides) + listCount(project?.casteOverrides) + (activeWorkbench === "library" ? filteredListCount(catalog?.entities, (entity) => ["spell", "race", "caste"].includes(entity.type)) : 0);
+  if (domain === "assets") return listCount(project?.assets) + listCount(project?.assetCatalog?.tilesets) + listCount(project?.assetCatalog?.pictures) + listCount(project?.assetCatalog?.icons) + listCount(project?.assetCatalog?.sounds) + (activeWorkbench === "library" ? listCount(catalog?.assets) : 0);
+  if (domain === "records") return objectNumberTotal(project?.records?.counts) + (activeWorkbench === "library" ? listCount(catalog?.records) : 0);
+  if (domain === "export") return project ? listCount(project.validation?.exportableFiles) + listCount(project.validation?.passThroughFiles) : 0;
   return 0;
 }
 
@@ -263,35 +263,48 @@ export function toolCount(
 
 function directProjectToolCount(toolId: string, project: Project | null) {
   if (!project) return 0;
-  if (toolId === "land") return project.maps.filter((map) => map.levelType === "land").length;
-  if (toolId === "dungeon") return project.maps.filter((map) => map.levelType === "dungeon").length;
-  if (toolId === "layout") return project.mapRecords.length + (project.landLayout ? 1 : 0);
-  if (toolId === "action-points") return project.triggers.filter((trigger) => trigger.source !== "Data ED3").length;
-  if (toolId === "macros" || toolId === "ed3-evidence") return project.triggers.filter((trigger) => trigger.source === "Data ED3").length;
-  if (toolId === "global-macros") return project.scenario.globalMacroHooks ? 1 : 0;
-  if (toolId === "quests") return project.questLabels.length;
-  if (toolId === "startup") return project.scenario.shell ? 1 : 0;
-  if (toolId === "restrictions") return project.scenario.restrictions ? 1 : 0;
-  if (toolId === "contact") return project.scenario.contactInfo ? 1 : 0;
-  if (toolId === "registration") return project.scenario.securityBackup ? 1 : 0;
-  if (toolId === "simple") return project.simpleEncounters.length;
-  if (toolId === "complex") return project.complexEncounters.length;
-  if (toolId === "rogue") return project.thiefEncounters.length;
-  if (toolId === "timed") return project.timedEncounters.length;
-  if (toolId === "battles") return project.battles.length;
-  if (toolId === "monsters") return project.monsters.length;
-  if (toolId === "treasure") return project.treasures.length;
-  if (toolId === "items") return project.scenarioItems.length;
-  if (toolId === "shops") return project.shops.length;
-  if (toolId === "spells") return project.spellOverrides.length;
-  if (toolId === "races") return project.raceOverrides.length;
-  if (toolId === "castes") return project.casteOverrides.length;
-  if (toolId === "messages" || toolId === "spell-check") return project.messages.length;
-  if (toolId === "text-resources") return project.assets.filter((asset) => asset.kind === "text" || ["TEXT", "STR#", "styl"].includes(asset.resourceType.trim())).length;
-  if (toolId === "project-assets") return project.assets.length;
-  if (toolId === "pictures") return project.assetCatalog.pictures?.length ?? 0;
-  if (toolId === "sounds") return project.assets.filter((asset) => asset.resourceType.trim() === "snd").length + (project.assetCatalog.sounds?.length ?? 0);
-  if (toolId === "icons" || toolId === "special-land") return project.assetCatalog.icons?.length ?? 0;
-  if (toolId === "decoded-records") return Object.values(project.records.counts).reduce((total, value) => total + value, 0);
+  if (toolId === "land") return filteredListCount(project.maps, (map) => map.levelType === "land");
+  if (toolId === "dungeon") return filteredListCount(project.maps, (map) => map.levelType === "dungeon");
+  if (toolId === "layout") return listCount(project.mapRecords) + (project.landLayout ? 1 : 0);
+  if (toolId === "action-points") return filteredListCount(project.triggers, (trigger) => trigger.source !== "Data ED3");
+  if (toolId === "macros" || toolId === "ed3-evidence") return filteredListCount(project.triggers, (trigger) => trigger.source === "Data ED3");
+  if (toolId === "global-macros") return project.scenario?.globalMacroHooks ? 1 : 0;
+  if (toolId === "quests") return listCount(project.questLabels);
+  if (toolId === "startup") return project.scenario?.shell ? 1 : 0;
+  if (toolId === "restrictions") return project.scenario?.restrictions ? 1 : 0;
+  if (toolId === "contact") return project.scenario?.contactInfo ? 1 : 0;
+  if (toolId === "registration") return project.scenario?.securityBackup ? 1 : 0;
+  if (toolId === "simple") return listCount(project.simpleEncounters);
+  if (toolId === "complex") return listCount(project.complexEncounters);
+  if (toolId === "rogue") return listCount(project.thiefEncounters);
+  if (toolId === "timed") return listCount(project.timedEncounters);
+  if (toolId === "battles") return listCount(project.battles);
+  if (toolId === "monsters") return listCount(project.monsters);
+  if (toolId === "treasure") return listCount(project.treasures);
+  if (toolId === "items") return listCount(project.scenarioItems);
+  if (toolId === "shops") return listCount(project.shops);
+  if (toolId === "spells") return listCount(project.spellOverrides);
+  if (toolId === "races") return listCount(project.raceOverrides);
+  if (toolId === "castes") return listCount(project.casteOverrides);
+  if (toolId === "messages" || toolId === "spell-check") return listCount(project.messages);
+  if (toolId === "text-resources") return filteredListCount(project.assets, (asset) => asset.kind === "text" || ["TEXT", "STR#", "styl"].includes((asset.resourceType ?? "").trim()));
+  if (toolId === "project-assets") return listCount(project.assets);
+  if (toolId === "pictures") return listCount(project.assetCatalog?.pictures);
+  if (toolId === "sounds") return filteredListCount(project.assets, (asset) => (asset.resourceType ?? "").trim() === "snd") + listCount(project.assetCatalog?.sounds);
+  if (toolId === "icons" || toolId === "special-land") return listCount(project.assetCatalog?.icons);
+  if (toolId === "decoded-records") return objectNumberTotal(project.records?.counts);
   return null;
+}
+
+function listCount<T>(items: T[] | null | undefined) {
+  return Array.isArray(items) ? items.length : 0;
+}
+
+function filteredListCount<T>(items: T[] | null | undefined, predicate: (item: T) => boolean) {
+  return Array.isArray(items) ? items.filter(predicate).length : 0;
+}
+
+function objectNumberTotal(values: Record<string, number> | null | undefined) {
+  if (!values) return 0;
+  return Object.values(values).reduce((total, value) => total + (typeof value === "number" ? value : 0), 0);
 }

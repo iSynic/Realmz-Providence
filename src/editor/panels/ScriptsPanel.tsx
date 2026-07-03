@@ -4,7 +4,7 @@ import { Action, ComplexEncounterRecord, Ed3ReachabilityRow, EncounterActionRow,
 import { linksFor, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
 import { actionSlotEntitiesForTriggerRecord, ed3ReachabilityFor, extraActionEvidenceSummary, extraActionPointClassification } from "../semanticGraph";
 import { EdcdRowEditor } from "../components/EdcdRowEditor";
-import { buildEdcdRowUsages, edcdUsageMatchesFilter, edcdUsageStatusTone, edcdUsageToEditorUsage, nextUnusedEdcdRowId, normalizeEdcdValues, type EdcdRowFilter, type EdcdRowUsage, type EdcdRowCaller } from "../edcdRows";
+import { buildEdcdRowUsages, edcdUsageForAction, edcdUsageMatchesFilter, edcdUsageStatusTone, edcdUsageToEditorUsage, nextUnusedEdcdRowId, normalizeEdcdValues, type EdcdRowFilter, type EdcdRowUsage, type EdcdRowCaller } from "../edcdRows";
 import { TargetPicker, resolveSignedMessageTarget, signedTargetBehaviorLabel, signedTargetValueForSelection, soundReferenceOptionForQuery, targetOptionForOpcodeValue, targetOptionsForOpcode, targetPickerConfig, type ScriptTargetOption } from "../components/RealmzTargetPicker";
 import { TutorialTip } from "../components/TutorialTip";
 import { playPreviewUrl, useIconPreviewUrl, useResolvedPreviewUrl, type PreviewRuntimeContext } from "../previewUrls";
@@ -325,7 +325,6 @@ function ScriptAuthoringPanel({
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const activeTabKind = scriptTabKind(activeEditor);
-  const edcdUsages = useMemo(() => project ? buildEdcdRowUsages(project, catalog) : [], [project, catalog]);
   const scripts = useMemo(
     () => project?.triggers.filter((trigger) => triggerVisibleForEditor(project, trigger, activeEditor)) ?? [],
     [project, activeEditor]
@@ -341,6 +340,7 @@ function ScriptAuthoringPanel({
   const [targetDrawerOpen, setTargetDrawerOpen] = usePersistentBoolean("scripts.targetDrawer.v2.open", false);
   const [newActionPoint, setNewActionPoint] = useState({ mapId: projectMaps[0]?.id ?? "", x: 1, y: 1 });
   const [warningScanReady, setWarningScanReady] = useState(false);
+  const [selectedDiagnosticsReady, setSelectedDiagnosticsReady] = useState(false);
   const selectedScriptButtonRef = useRef<HTMLButtonElement | null>(null);
   const benchmarkStartedRef = useRef(false);
   const selectedMap = projectMaps.find((map) => map.id === newActionPoint.mapId) ?? projectMaps[0] ?? null;
@@ -526,14 +526,20 @@ function ScriptAuthoringPanel({
     [filteredScripts, selectedTrigger, visibleScriptLimit]
   );
   const hiddenScriptCount = Math.max(0, filteredScripts.length - Math.min(filteredScripts.length, visibleScriptLimit));
+  useEffect(() => {
+    setSelectedDiagnosticsReady(false);
+    if (!selectedTrigger || !project) return;
+    const handle = window.setTimeout(() => setSelectedDiagnosticsReady(true), 120);
+    return () => window.clearTimeout(handle);
+  }, [project, selectedTrigger?.id, diagnosticDependencyKey]);
   const visibleDiagnosticsById = useMemo(() => {
     const map = new Map(fullWarningDiagnosticsById);
     if (!project) return map;
-    if (selectedTrigger && !map.has(selectedTrigger.id)) {
+    if (selectedDiagnosticsReady && selectedTrigger && !map.has(selectedTrigger.id)) {
       map.set(selectedTrigger.id, cachedValidateScriptTrigger(project, selectedTrigger, catalog, diagnosticDependencyKey));
     }
     return map;
-  }, [project, selectedTrigger, catalog, diagnosticDependencyKey, fullWarningDiagnosticsById]);
+  }, [project, selectedTrigger, selectedDiagnosticsReady, catalog, diagnosticDependencyKey, fullWarningDiagnosticsById]);
   if (!project) return null;
   const selectedMapCapacity = selectedMap ? actionPointCapacity(project.triggers, selectedMap.levelType, selectedMap.index) : null;
   const slotDraft = (slot: number, action?: Action) => draft[`${selectedTrigger?.id}:${slot}`] ?? { rawCode: action?.rawCode ?? 0, id: action?.id ?? 0 };
@@ -545,10 +551,16 @@ function ScriptAuthoringPanel({
     : selectedDraft.rawCode !== 0 || selectedDraft.id !== 0;
   const selectedOption = actionOptionFor(selectedDraft.rawCode);
   const selectedDefinition = scriptActionDefinitionFor(selectedDraft.rawCode);
+  const edcdUsages = useMemo(
+    () => project && activeTabKind === "settings-rows" ? buildEdcdRowUsages(project, catalog) : [],
+    [project, catalog, activeTabKind]
+  );
   const filteredDefinitions = actionDefinitionsForCategory(categoryFilter, opcodeQuery);
   const selectedSlotEntity: SemanticEntity | undefined = undefined;
-  const edcdUsageByRow = new Map(edcdUsages.map((usage) => [usage.rowId, usage]));
-  const selectedEdcdUsageModel = selectedOption.edcdShape ? edcdUsageByRow.get(Math.max(0, selectedDraft.id)) ?? null : null;
+  const selectedEdcdUsageModel = useMemo(
+    () => selectedOption.edcdShape ? edcdUsageForAction(project, catalog, selectedDraft.rawCode, Math.max(0, selectedDraft.id)) : null,
+    [catalog, project, selectedDraft.id, selectedDraft.rawCode, selectedOption.edcdShape]
+  );
   const selectedEdcdUsage: SelectedEdcdUsage | undefined = selectedEdcdUsageModel
     ? edcdUsageToEditorUsage(selectedEdcdUsageModel, selectedOption.edcdShape)
     : undefined;

@@ -166,7 +166,9 @@ export async function launchBrowser(processes, windowSize = "1500,1050") {
 export async function preparePage(client, url) {
   await client.send("Page.enable");
   await client.send("Runtime.enable");
+  await client.send("Log.enable").catch(() => {});
   await client.send("Performance.enable").catch(() => {});
+  client.clearEvents?.();
   await client.send("Page.navigate", { url });
   await waitFor(async () => await evalValue(client, "Boolean(document.body?.innerText.includes('Realmz Providence'))"), 45_000, "Timed out waiting for Providence shell.");
   await evalValue(client, LONG_TASK_OBSERVER_SOURCE);
@@ -204,18 +206,23 @@ export async function measureInteraction(client, label, budgetKey, budgets, acti
   const budgetDurationMs = budgetDurationKind === "actionAndSettle"
     ? phaseDurations.actionMs + phaseDurations.settleMs
     : durationMs;
+  const durationStatus = budgetStatus(budgetDurationMs, budgets[budgetKey]);
+  const maxLongTaskMs = Math.round(Math.max(0, ...longTasks.map((task) => task.duration)));
+  const longTaskStatus = budgetStatus(maxLongTaskMs, budgets.longTask);
+  const status = worstBudgetStatus(durationStatus, longTaskStatus);
   return {
     label,
     budgetKey,
     durationMs,
     budgetDurationMs,
     budgetDurationKind,
-    status: budgetStatus(budgetDurationMs, budgets[budgetKey]),
+    status,
+    durationStatus,
     actionResult,
     phaseDurations,
     longTasks,
-    maxLongTaskMs: Math.round(Math.max(0, ...longTasks.map((task) => task.duration))),
-    longTaskStatus: budgetStatus(Math.max(0, ...longTasks.map((task) => task.duration)), budgets.longTask)
+    maxLongTaskMs,
+    longTaskStatus
   };
 }
 
@@ -248,11 +255,18 @@ export function budgetStatus(durationMs, budget) {
   return "pass";
 }
 
+function worstBudgetStatus(...statuses) {
+  if (statuses.includes("fail")) return "fail";
+  if (statuses.includes("warn")) return "warn";
+  return "pass";
+}
+
 export function summarizeReport(report) {
   const probes = report.scenarios.flatMap((scenario) => scenario.probes ?? []);
   const measured = probes.filter((probe) => !probe.skipped);
   const failed = measured.filter((probe) => probe.status === "fail" || probe.longTaskStatus === "fail");
-  const warned = measured.filter((probe) => probe.status === "warn" || probe.longTaskStatus === "warn");
+  const failedSet = new Set(failed);
+  const warned = measured.filter((probe) => !failedSet.has(probe) && (probe.status === "warn" || probe.longTaskStatus === "warn"));
   const classified = (classification) => measured.filter((probe) => probe.classification === classification).length;
   const summarizeDebug = (debug) => {
     if (!debug) return null;
@@ -272,6 +286,11 @@ export function summarizeReport(report) {
       label: probe.label,
       budgetKey: probe.budgetKey,
       classification: probe.classification ?? "unclassified",
+      durationMs: probe.durationMs,
+      budgetDurationMs: probe.budgetDurationMs ?? null,
+      durationStatus: probe.durationStatus ?? probe.status,
+      maxLongTaskMs: probe.maxLongTaskMs ?? 0,
+      longTaskStatus: probe.longTaskStatus ?? "pass",
       error: probe.error ?? null,
       debug: summarizeDebug(probe.debug)
     })),
@@ -281,7 +300,9 @@ export function summarizeReport(report) {
       classification: probe.classification ?? "unclassified",
       durationMs: probe.durationMs,
       budgetDurationMs: probe.budgetDurationMs ?? null,
+      durationStatus: probe.durationStatus ?? probe.status,
       maxLongTaskMs: probe.maxLongTaskMs ?? 0,
+      longTaskStatus: probe.longTaskStatus ?? "pass",
       debug: summarizeDebug(probe.debug)
     }))
   };
@@ -313,7 +334,9 @@ export function connectCdp(wsUrl) {
     const ws = new WebSocket(wsUrl);
     let id = 0;
     const pending = new Map();
-    ws.onopen = () => resolve({
+    const events = [];
+    const handlers = new Map();
+    const client = {
       send(method, params = {}) {
         return new Promise((res, rej) => {
           const message = { id: ++id, method, params };
@@ -321,14 +344,39 @@ export function connectCdp(wsUrl) {
           ws.send(JSON.stringify(message));
         });
       },
+      on(method, handler) {
+        const current = handlers.get(method) ?? [];
+        current.push(handler);
+        handlers.set(method, current);
+      },
+      events(methods = null) {
+        if (!methods) return events.slice();
+        const wanted = new Set(Array.isArray(methods) ? methods : [methods]);
+        return events.filter((entry) => wanted.has(entry.method));
+      },
+      clearEvents() {
+        events.length = 0;
+      },
       close() {
         ws.close();
       }
-    });
+    };
+    ws.onopen = () => resolve(client);
     ws.onerror = reject;
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data);
-      if (!message.id || !pending.has(message.id)) return;
+      if (!message.id) {
+        const entry = {
+          method: message.method,
+          params: message.params,
+          receivedAt: new Date().toISOString()
+        };
+        events.push(entry);
+        if (events.length > 300) events.shift();
+        for (const handler of handlers.get(message.method) ?? []) handler(message.params, entry);
+        return;
+      }
+      if (!pending.has(message.id)) return;
       const { res, rej } = pending.get(message.id);
       pending.delete(message.id);
       if (message.error) rej(new Error(message.error.message));

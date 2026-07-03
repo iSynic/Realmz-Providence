@@ -421,7 +421,7 @@ function directRowsForEditor(project: Project, editor: DomainEditor): DirectReco
       ...project.assets
         .filter((asset) => asset.kind === "special-land-tile")
         .map((asset) => ({ id: asset.id, label: asset.label, type: "special-land-tile", summary: `cicn ${asset.resourceId}` })),
-      ...(project.assetCatalog.icons ?? [])
+      ...(project.assetCatalog?.icons ?? [])
         .filter((asset) => asset.resourceId < 0)
         .map((asset) => ({ id: `resource:${asset.resourceType}:${asset.resourceId}`, label: asset.name || `${asset.resourceType} ${asset.resourceId}`, type: "special-land-tile", summary: asset.source }))
     ];
@@ -430,7 +430,7 @@ function directRowsForEditor(project: Project, editor: DomainEditor): DirectReco
     return project.scenario.globalMacroHooks ? [{ id: "scenario:global-macros", label: "Global Events", type: "global-macro", summary: "Scenario global hooks" }] : [];
   }
   if (editor.id === "quests") {
-    return project.questLabels.map((record) => ({ id: `quest-flag:${record.id}`, label: record.label || `Quest ${record.id}`, type: "quest flag", summary: record.note ?? "" }));
+    return (project.questLabels ?? []).map((record) => ({ id: `quest-flag:${record.id}`, label: record.label || `Quest ${record.id}`, type: "quest flag", summary: record.note ?? "" }));
   }
   if (editor.id === "startup") {
     const rows: DirectRecordRow[] = [];
@@ -449,28 +449,28 @@ function directRowsForEditor(project: Project, editor: DomainEditor): DirectReco
   if (editor.id === "castes") return project.casteOverrides.map((record) => ({ id: `caste:${record.id}`, label: ruleCasteName(project, record.id, record.displayName), type: "caste", summary: `default icon ${record.defaultIcon}` }));
   if (editor.id === "pictures") {
     return [
-      ...(project.assetCatalog.pictures ?? []).map((asset) => ({ id: `resource:${asset.resourceType}:${asset.resourceId}`, label: asset.name || `${asset.resourceType} ${asset.resourceId}`, type: "picture", summary: asset.source })),
-      ...project.assetCatalog.tilesets.filter((asset) => asset.pictId != null).map((asset) => ({ id: `resource:PICT:${asset.pictId}`, label: asset.name, type: "tile atlas", summary: asset.source }))
+      ...(project.assetCatalog?.pictures ?? []).map((asset) => ({ id: `resource:${asset.resourceType}:${asset.resourceId}`, label: asset.name || `${asset.resourceType} ${asset.resourceId}`, type: "picture", summary: asset.source })),
+      ...(project.assetCatalog?.tilesets ?? []).filter((asset) => asset.pictId != null).map((asset) => ({ id: `resource:PICT:${asset.pictId}`, label: asset.name, type: "tile atlas", summary: asset.source }))
     ];
   }
   if (editor.id === "sounds") {
     return [
       ...project.assets.filter((asset) => asset.resourceType.trim() === "snd").map((asset) => ({ id: asset.id, label: asset.label, type: "sound", summary: `snd ${asset.resourceId}` })),
-      ...(project.assetCatalog.sounds ?? []).map((asset) => ({ id: `resource:${asset.resourceType}:${asset.resourceId}`, label: asset.name || `${asset.resourceType} ${asset.resourceId}`, type: "sound", summary: asset.source }))
+      ...(project.assetCatalog?.sounds ?? []).map((asset) => ({ id: `resource:${asset.resourceType}:${asset.resourceId}`, label: asset.name || `${asset.resourceType} ${asset.resourceId}`, type: "sound", summary: asset.source }))
     ];
   }
   if (editor.id === "resource-inventory") {
     return [
       ...project.assets.map((asset) => ({ id: asset.id, label: asset.label, type: asset.kind, summary: `${asset.resourceType} ${asset.resourceId}` })),
-      ...(project.assetCatalog.icons ?? []).map((asset) => ({ id: `resource:${asset.resourceType}:${asset.resourceId}`, label: asset.name || `${asset.resourceType} ${asset.resourceId}`, type: "icon-resource", summary: asset.source })),
-      ...(project.assetCatalog.pictures ?? []).map((asset) => ({ id: `resource:${asset.resourceType}:${asset.resourceId}`, label: asset.name || `${asset.resourceType} ${asset.resourceId}`, type: "picture", summary: asset.source })),
-      ...(project.assetCatalog.sounds ?? []).map((asset) => ({ id: `resource:${asset.resourceType}:${asset.resourceId}`, label: asset.name || `${asset.resourceType} ${asset.resourceId}`, type: "sound", summary: asset.source }))
+      ...(project.assetCatalog?.icons ?? []).map((asset) => ({ id: `resource:${asset.resourceType}:${asset.resourceId}`, label: asset.name || `${asset.resourceType} ${asset.resourceId}`, type: "icon-resource", summary: asset.source })),
+      ...(project.assetCatalog?.pictures ?? []).map((asset) => ({ id: `resource:${asset.resourceType}:${asset.resourceId}`, label: asset.name || `${asset.resourceType} ${asset.resourceId}`, type: "picture", summary: asset.source })),
+      ...(project.assetCatalog?.sounds ?? []).map((asset) => ({ id: `resource:${asset.resourceType}:${asset.resourceId}`, label: asset.name || `${asset.resourceType} ${asset.resourceId}`, type: "sound", summary: asset.source }))
     ];
   }
   if (editor.id === "text-import") {
     return [
-      ...project.messages.map((record) => ({ id: `message:${record.id}`, label: `Message ${record.id}`, type: "message", summary: record.text.slice(0, 80) })),
-      ...project.optionLabels.map((record) => ({ id: `option-label:${record.id}`, label: `Option Label ${record.id}`, type: "option-label", summary: record.text.slice(0, 80) }))
+      ...(project.messages ?? []).map((record) => ({ id: `message:${record.id}`, label: `Message ${record.id}`, type: "message", summary: record.text.slice(0, 80) })),
+      ...(project.optionLabels ?? []).map((record) => ({ id: `option-label:${record.id}`, label: `Option Label ${record.id}`, type: "option-label", summary: record.text.slice(0, 80) }))
     ];
   }
   return [];
@@ -546,9 +546,9 @@ function EconomySectionSwitcher({
 }) {
   const itemCount = useMemo(() => economyItemReferenceCount(project), [project]);
   const sections: Array<{ id: EconomySection; label: string; count: number; help: string }> = [
-    { id: "treasure", label: "Treasure", count: project.treasures.length, help: ECONOMY_SECTION_HELP.treasure },
+    { id: "treasure", label: "Treasure", count: project.treasures?.length ?? 0, help: ECONOMY_SECTION_HELP.treasure },
     { id: "items", label: "Items", count: itemCount, help: ECONOMY_SECTION_HELP.items },
-    { id: "shops", label: "Shops", count: project.shops.length, help: ECONOMY_SECTION_HELP.shops }
+    { id: "shops", label: "Shops", count: project.shops?.length ?? 0, help: ECONOMY_SECTION_HELP.shops }
   ];
   return (
     <div className="domain-target-switcher economy-section-switcher" role="tablist" aria-label="Economy sections">
@@ -1597,7 +1597,7 @@ function TreasureWorkbench({
   const records = targetRecords(project, "treasure");
   const selectedId = targetIdFromSelection(selectedEntity?.id ?? "", "treasure") ?? records[0]?.id ?? 1;
   const visibleRecords = useMemo(() => includeSelectedRecord(records, selectedId, 140), [records, selectedId]);
-  const record = project.treasures.find((candidate) => candidate.id === selectedId) ?? null;
+  const record = (project.treasures ?? []).find((candidate) => candidate.id === selectedId) ?? null;
   const deferredOptions = useDeferredItemReferenceOptions(project, catalog);
   const options = deferredOptions ?? [];
   const optionsByValue = useMemo(() => new Map(options.map((option) => [option.value, option])), [options]);
@@ -1636,7 +1636,7 @@ function TreasureWorkbench({
           </header>
           <ScrollArea className="treasure-record-list" aria-label="Treasure records">
             {visibleRecords.map((entry) => {
-              const candidate = project.treasures.find((treasure) => treasure.id === entry.id) ?? null;
+              const candidate = (project.treasures ?? []).find((treasure) => treasure.id === entry.id) ?? null;
               const itemIds = candidate?.itemIds.filter(Boolean).slice(0, 5) ?? [];
               return (
                 <button
@@ -1935,7 +1935,7 @@ function updateTreasureSlot(itemIds: number[], slot: number, value: number) {
 }
 
 function treasureFilledItems(project: Project, id: number) {
-  return project.treasures.find((record) => record.id === id)?.itemIds.filter(Boolean).length ?? 0;
+  return (project.treasures ?? []).find((record) => record.id === id)?.itemIds.filter(Boolean).length ?? 0;
 }
 
 function treasureRewardTotal(record: Project["treasures"][number]) {
@@ -2249,37 +2249,37 @@ function nextTargetRecordId(project: Project, recordType: RealmzTargetRecordKind
 }
 
 function targetRecordSummary(project: Project, recordType: RealmzTargetRecordKind, id: number) {
-  if (recordType === "message") return project.messages.find((record) => record.id === id)?.text.slice(0, 80) || "empty message";
+  if (recordType === "message") return (project.messages ?? []).find((record) => record.id === id)?.text.slice(0, 80) || "empty message";
   if (recordType === "battle") {
-    const record = project.battles.find((candidate) => candidate.id === id);
+    const record = (project.battles ?? []).find((candidate) => candidate.id === id);
     return record ? `${record.grid.filter(Boolean).length} monster slot(s), messages ${record.messageBefore}/${record.messageAfter}` : "missing battle";
   }
   if (recordType === "monster") {
-    const record = project.monsters.find((candidate) => candidate.id === id);
+    const record = (project.monsters ?? []).find((candidate) => candidate.id === id);
     return record ? `${record.displayName || `Monster ${id}`}, HD ${record.hitDice}, icon ${record.iconId}` : "missing monster";
   }
   if (recordType === "treasure") {
-    const record = project.treasures.find((candidate) => candidate.id === id);
+    const record = (project.treasures ?? []).find((candidate) => candidate.id === id);
     return record ? `${record.itemIds.filter(Boolean).length} item(s), ${record.gold} gold, ${record.exp} exp` : "missing treasure";
   }
   if (recordType === "shop") {
-    const record = project.shops.find((candidate) => candidate.id === id);
+    const record = (project.shops ?? []).find((candidate) => candidate.id === id);
     return record ? `${record.itemIds.filter(Boolean).length} stocked slot(s), ${record.inflation}% inflation` : "missing shop";
   }
   if (recordType === "simpleEncounter") {
-    const record = project.simpleEncounters.find((candidate) => candidate.id === id);
+    const record = (project.simpleEncounters ?? []).find((candidate) => candidate.id === id);
     return record ? `${record.actions.length} action row(s), prompt ${record.prompt}` : "missing simple encounter";
   }
   if (recordType === "complexEncounter") {
-    const record = project.complexEncounters.find((candidate) => candidate.id === id);
+    const record = (project.complexEncounters ?? []).find((candidate) => candidate.id === id);
     return record ? `${record.actions.length} action row(s), prompt ${record.prompt}` : "missing complex encounter";
   }
   if (recordType === "thiefEncounter") {
-    const record = project.thiefEncounters.find((candidate) => candidate.id === id);
+    const record = (project.thiefEncounters ?? []).find((candidate) => candidate.id === id);
     return record ? `${record.typeFlags.filter(Boolean).length} enabled action(s), trap ${record.lowDamage}-${record.highDamage}, spell ${record.spell}` : "missing rogue encounter";
   }
   if (recordType === "timedEncounter") {
-    const record = project.timedEncounters.find((candidate) => candidate.id === id);
+    const record = (project.timedEncounters ?? []).find((candidate) => candidate.id === id);
     if (!record) return "missing time encounter";
     const location =
       record.locationKind === "land" ? "land" :

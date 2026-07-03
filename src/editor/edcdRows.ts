@@ -40,11 +40,12 @@ export type EdcdRowUsage = {
 export type EdcdRowFilter = "all" | EdcdRowStatus;
 
 export function nextUnusedEdcdRowId(project: Project) {
-  const used = new Set(project.extracodes.map((row) => row.id));
+  const extracodes = project.extracodes ?? [];
+  const used = new Set(extracodes.map((row) => row.id));
   for (let id = 0; id < 32767; id += 1) {
     if (!used.has(id)) return id;
   }
-  return project.extracodes.length;
+  return extracodes.length;
 }
 
 export function normalizeEdcdValues(values?: readonly number[]): [number, number, number, number, number] {
@@ -56,10 +57,10 @@ export function edcdRowIdForAction(action: Pick<Action, "id">) {
 }
 
 export function buildEdcdRowUsages(project: Project, catalog?: LibraryCatalog | null): EdcdRowUsage[] {
-  const rows = new Map(project.extracodes.map((row) => [row.id, row]));
+  const rows = new Map((project.extracodes ?? []).map((row) => [row.id, row]));
   const callersByRow = new Map<number, EdcdRowCaller[]>();
 
-  for (const trigger of project.triggers) {
+  for (const trigger of project.triggers ?? []) {
     for (const action of trigger.actions) {
       addCaller(callersByRow, action, {
         contextKind: "trigger",
@@ -73,7 +74,7 @@ export function buildEdcdRowUsages(project: Project, catalog?: LibraryCatalog | 
     }
   }
 
-  for (const encounter of project.simpleEncounters) {
+  for (const encounter of project.simpleEncounters ?? []) {
     for (const action of encounter.actions) {
       addCaller(callersByRow, action, {
         contextKind: "simpleEncounter",
@@ -87,7 +88,7 @@ export function buildEdcdRowUsages(project: Project, catalog?: LibraryCatalog | 
     }
   }
 
-  for (const encounter of project.complexEncounters) {
+  for (const encounter of project.complexEncounters ?? []) {
     for (const action of encounter.actions) {
       addCaller(callersByRow, action, {
         contextKind: "complexEncounter",
@@ -130,6 +131,30 @@ function addCaller(
 
 export function edcdUsageForRow(project: Project, catalog: LibraryCatalog | null | undefined, rowId: number) {
   return buildEdcdRowUsages(project, catalog).find((usage) => usage.rowId === rowId) ?? null;
+}
+
+export function edcdUsageForAction(project: Project, catalog: LibraryCatalog | null | undefined, rawCode: number, rowId: number): EdcdRowUsage | null {
+  const option = actionOptionFor(rawCode);
+  if (!option.edcdShape) return null;
+  const row = (project.extracodes ?? []).find((candidate) => candidate.id === rowId) ?? null;
+  const definition = scriptActionDefinitionFor(rawCode);
+  const values = normalizeEdcdValues(row?.values ?? definition.defaultDraft.parameters);
+  const status: EdcdRowStatus = row ? "in-use" : "missing";
+  return {
+    rowId,
+    row,
+    exists: Boolean(row),
+    values,
+    callers: [],
+    possibleShapes: [option.edcdShape],
+    primaryShape: option.edcdShape,
+    primaryOpcode: rawCode,
+    primaryActionLabel: definition.label,
+    status,
+    statusLabel: labelForStatus(status),
+    summary: scriptActionSummary(project, catalog, { rawCode, id: rowId, parameters: values }, ""),
+    warnings: row ? [] : [`An action points at settings row ${rowId}, but the row is missing.`]
+  };
 }
 
 export function edcdUsageMatchesFilter(usage: EdcdRowUsage, filter: EdcdRowFilter) {

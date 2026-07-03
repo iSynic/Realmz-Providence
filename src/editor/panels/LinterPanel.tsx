@@ -43,8 +43,16 @@ export function LinterPanel({
     }
     return [...map.entries()];
   }, [issues]);
-  const semanticGroups = useMemo(() => semanticLintGroups(project), [project]);
+  const [semanticGroupsReady, setSemanticGroupsReady] = useState(false);
+  const semanticGroups = useMemo(() => semanticGroupsReady ? semanticLintGroups(project) : [], [project, semanticGroupsReady]);
   const [coverage, setCoverage] = useState<ScenarioCoverageManifest | null>(null);
+
+  useEffect(() => {
+    setSemanticGroupsReady(false);
+    if (!project) return;
+    const handle = window.setTimeout(() => setSemanticGroupsReady(true), 120);
+    return () => window.clearTimeout(handle);
+  }, [project]);
 
   useEffect(() => {
     let cancelled = false;

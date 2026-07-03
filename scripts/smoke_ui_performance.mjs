@@ -161,7 +161,10 @@ async function runScenario({ baseUrl, budgets, spec, projectServers }) {
     }
     scenario.combatPerf = await combatPerfDiagnostics(client).catch(() => []);
   } catch (error) {
-    const diagnostics = await pageDiagnostics(client).catch(() => ({}));
+    const diagnostics = {
+      ...(await pageDiagnostics(client).catch(() => ({}))),
+      browserEvents: browserEventDiagnostics(client)
+    };
     await pushProbe(client, scenario, {
       label: "Scenario run",
       budgetKey: "coldProjectOpen",
@@ -451,6 +454,46 @@ async function runMapProbes(client, budgets, scenario) {
 async function runCombatProbes(client, budgets, scenario, { importedHeavy = false } = {}) {
   await warmDomain(client, "combat");
   await evalValue(client, "new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))");
+  const combatAvailability = await evalValue(client, `
+    (() => {
+      const countFor = (label) => {
+        const button = [...document.querySelectorAll(".combat-tabs button")]
+          .find((candidate) => candidate.textContent?.includes(label));
+        const text = button?.textContent ?? "";
+        return Number(text.match(/(\\d+)/)?.[1] ?? 0);
+      };
+      return {
+        battles: countFor("Battles"),
+        monsters: countFor("Monsters"),
+        iconSet: countFor("Icon Set")
+      };
+    })()
+  `);
+  const skipCombatProbe = async (label, budgetKey, reason) => pushProbe(client, scenario, {
+    label,
+    budgetKey,
+    durationMs: 0,
+    status: "skip",
+    skipped: true,
+    reason,
+    longTasks: [],
+    maxLongTaskMs: 0,
+    longTaskStatus: "pass"
+  });
+  const hasBattles = Number(combatAvailability?.battles ?? 0) > 0;
+  const hasScenarioMonsters = Number(combatAvailability?.monsters ?? 0) > 0;
+
+  if (!hasBattles) {
+    await skipCombatProbe("Combat Battles tab open", "toolSwitch", "Project has no battle records to open.");
+    await skipCombatProbe("Combat dense battle readiness", "recordSelection", "Project has no battle records to benchmark.");
+    await skipCombatProbe("Combat battle header input", "recordSelection", "Project has no battle records to edit.");
+    await skipCombatProbe(importedHeavy ? "Combat battle hover and select" : "Combat dense grid paint", "combatGridEdit", "Project has no battle records to paint.");
+    if (importedHeavy) {
+      await skipCombatProbe("Combat monster palette scroll", "recordSelection", "Project has no battle records for the imported-heavy battle palette probe.");
+      await skipCombatProbe("Combat dense grid single paint", "combatGridEdit", "Project has no battle records to paint.");
+      await skipCombatProbe("Combat dense grid drag paint", "combatGridEdit", "Project has no battle records to paint.");
+    }
+  } else {
   await probe(client, scenario, budgets, "Combat Battles tab open", "toolSwitch", `
     (() => {
       const battleTab = [...document.querySelectorAll(".combat-tabs button")]
@@ -647,7 +690,15 @@ async function runCombatProbes(client, budgets, scenario, { importedHeavy = fals
     })()
   `, `(window.__combatPlacedCount?.() ?? 0) > (window.__combatGridBefore ?? 0)`);
   }
+  }
 
+  if (!hasScenarioMonsters) {
+    await skipCombatProbe("Combat Monsters tab open", "toolSwitch", "Project has no scenario monster records to open.");
+    for (const probeIndex of [1, 2, 3]) {
+      await skipCombatProbe(`Combat scenario monster selection ${probeIndex}`, "recordSelection", "Project has no scenario monster records to select.");
+    }
+    return;
+  }
   await probe(client, scenario, budgets, "Combat Monsters tab open", "toolSwitch", `
     (() => {
       const monsterTab = [...document.querySelectorAll(".combat-tabs button")]
@@ -830,7 +881,7 @@ async function probe(client, scenario, budgets, label, budgetKey, actionExpressi
 async function pushProbe(client, scenario, probe) {
   const classification = classifyProbe(probe);
   const enriched = { ...probe, classification };
-  if (classification !== "pass" && !enriched.debug) {
+  if ((classification === "functional-failure" || classification === "performance-failure") && !enriched.debug) {
     enriched.debug = await smokeDebug(client, scenario).catch(() => null);
   }
   scenario.probes.push(enriched);
@@ -903,8 +954,88 @@ async function smokeDebug(client, scenario) {
     scenarioName: scenario?.name ?? null,
     projectPath: scenario?.project ?? null,
     projectUrl: scenario?.projectUrl ?? null,
+    browserEvents: browserEventDiagnostics(client),
     ...debug
   };
+}
+
+function browserEventDiagnostics(client) {
+  const events = client.events?.([
+    "Runtime.consoleAPICalled",
+    "Runtime.exceptionThrown",
+    "Log.entryAdded"
+  ]) ?? [];
+  return events
+    .map((event) => summarizeBrowserEvent(event))
+    .filter(Boolean)
+    .filter(isRelevantBrowserEvent)
+    .slice(-40);
+}
+
+function summarizeBrowserEvent(event) {
+  if (event.method === "Runtime.exceptionThrown") {
+    const details = event.params?.exceptionDetails ?? {};
+    return {
+      method: event.method,
+      receivedAt: event.receivedAt,
+      text: details.text ?? null,
+      message: stringifyRemoteValue(details.exception),
+      url: details.url ?? null,
+      lineNumber: details.lineNumber ?? null,
+      columnNumber: details.columnNumber ?? null,
+      frame: summarizeStackFrame(details.stackTrace)
+    };
+  }
+  if (event.method === "Runtime.consoleAPICalled") {
+    const params = event.params ?? {};
+    if (!["error", "warning", "assert"].includes(params.type)) return null;
+    return {
+      method: event.method,
+      receivedAt: event.receivedAt,
+      type: params.type,
+      message: (params.args ?? []).map((arg) => stringifyRemoteValue(arg)).filter(Boolean).join(" "),
+      frame: summarizeStackFrame(params.stackTrace)
+    };
+  }
+  if (event.method === "Log.entryAdded") {
+    const entry = event.params?.entry ?? {};
+    if (!["error", "warning"].includes(entry.level)) return null;
+    return {
+      method: event.method,
+      receivedAt: event.receivedAt,
+      level: entry.level,
+      source: entry.source ?? null,
+      message: String(entry.text ?? "").slice(0, 500),
+      url: entry.url ?? null,
+      lineNumber: entry.lineNumber ?? null
+    };
+  }
+  return null;
+}
+
+function stringifyRemoteValue(value) {
+  if (!value) return "";
+  if (value.value != null) return String(value.value).slice(0, 500);
+  if (value.unserializableValue != null) return String(value.unserializableValue).slice(0, 500);
+  if (value.description != null) return String(value.description).slice(0, 500);
+  return "";
+}
+
+function summarizeStackFrame(stackTrace) {
+  const frame = stackTrace?.callFrames?.[0];
+  if (!frame) return null;
+  return {
+    functionName: frame.functionName || null,
+    url: frame.url || null,
+    lineNumber: frame.lineNumber ?? null,
+    columnNumber: frame.columnNumber ?? null
+  };
+}
+
+function isRelevantBrowserEvent(event) {
+  const url = event.url ?? event.frame?.url ?? "";
+  if (!url) return true;
+  return url.includes("127.0.0.1") || url.includes("localhost");
 }
 
 function prepareCombatBenchmarkProject(sourceProject) {

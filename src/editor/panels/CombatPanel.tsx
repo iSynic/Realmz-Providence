@@ -1135,7 +1135,7 @@ function BattleBoard({
   const activeMonsterById = monsterMapForSet(lookups, monsterSetPreview);
   const activeMonsters = monstersForSet(lookups, monsterSetPreview);
   const projectAssets = project.assets;
-  const projectCatalogIcons = project.assetCatalog.icons;
+  const projectCatalogIcons = project.assetCatalog?.icons;
   const projectMonsterIconOverrides = project.monsterIconOverrides;
   const projectScenarioIconResources = project.scenarioIconResources;
   const battleIconSourceKey = useBattleIconSourceKey(project, iconEntries, lookups, previewContext);
@@ -1567,7 +1567,7 @@ function useBattleIconSourceKey(
   previewContext: PreviewRuntimeContext
 ) {
   const projectAssets = project.assets;
-  const projectCatalogIcons = project.assetCatalog.icons;
+  const projectCatalogIcons = project.assetCatalog?.icons;
   const projectMonsterIconOverrides = project.monsterIconOverrides;
   const projectScenarioIconResources = project.scenarioIconResources;
   const realmzActorIconAssets = lookups.realmzActorIconAssetsByAbsId;
@@ -1646,7 +1646,7 @@ function battleIconSourceKey(
     ...(project.assets ?? [])
       .filter((asset) => asset.resourceType === "cicn")
       .map((asset) => `${asset.id}:${asset.resourceId ?? ""}:${asset.previewPath ?? ""}`),
-    ...(project.assetCatalog.icons ?? []).map((asset) => `${asset.resourceId}:${asset.previewPath ?? ""}:${asset.name ?? ""}`),
+    ...(project.assetCatalog?.icons ?? []).map((asset) => `${asset.resourceId}:${asset.previewPath ?? ""}:${asset.name ?? ""}`),
     ...(project.scenarioIconResources ?? []).map((resource) => `${resource.resourceId}:${resource.previewPath ?? ""}:${resource.resourceBase64?.length ?? 0}`),
     ...(project.monsterIconOverrides ?? []).map((override) => `${override.targetBaseIconId}:${override.sourceKind}:${override.sourceBaseIconId}:${override.sourceBaseResourceBase64?.length ?? 0}:${override.sourcePairedResourceBase64?.length ?? 0}`),
     ...[...realmzActorIconAssetsByAbsId.entries()].map(([id, asset]) => `${id}:${asset.source}:${asset.relativePath}:${asset.previewPath ?? ""}`)
@@ -3480,7 +3480,7 @@ function BattleStringField({
   const [previewOpen, setPreviewOpen] = useState(false);
   const targetId = Math.abs(value);
   const options = useMemo(
-    () => uniqueSortedNumbers([0, targetId, ...project.messages.map((message) => message.id)]),
+    () => uniqueSortedNumbers([0, targetId, ...(project.messages ?? []).map((message) => message.id)]),
     [project.messages, targetId]
   );
   return (
@@ -3550,7 +3550,7 @@ function BattleMacroField({
   const macroId = Math.abs(value);
   const options = useMemo(
     () =>
-      project.triggers
+      (project.triggers ?? [])
         .filter((trigger) => trigger.source === "Data ED3" && trigger.recordIndex > 0)
         .slice()
         .sort((a, b) => a.recordIndex - b.recordIndex),
@@ -3622,7 +3622,7 @@ function BattleStringPreviewPanel({
   onUpdateString?: (id: number, text: string) => void;
 }) {
   if (!stringId) return null;
-  const record = project.messages.find((candidate) => candidate.id === Math.abs(stringId)) ?? null;
+  const record = (project.messages ?? []).find((candidate) => candidate.id === Math.abs(stringId)) ?? null;
   return (
     <div className="combat-target-disclosure battle-target-panel">
       {record ? (
@@ -3659,7 +3659,7 @@ function BattleActionFlowPanel({
   onSelectEntity: (entity: SelectedEntity) => void;
 }) {
   if (!actionId) return null;
-  const trigger = project.triggers.find((candidate) => candidate.source === "Data ED3" && candidate.recordIndex === Math.abs(actionId)) ?? null;
+  const trigger = (project.triggers ?? []).find((candidate) => candidate.source === "Data ED3" && candidate.recordIndex === Math.abs(actionId)) ?? null;
   const actions = trigger?.actions.filter((action) => action.rawCode !== 0).sort((a, b) => a.slot - b.slot) ?? [];
   return (
     <div className="combat-target-disclosure combat-flow-disclosure battle-target-panel">
@@ -3961,7 +3961,7 @@ function resolveMonsterIcon(monster: MonsterRecord, iconEntries: Record<number, 
   }
   const asset = lookups.iconAssetsByAbsId.get(iconId);
   if (asset?.previewPath) return { url: asset.previewPath, label: asset.label ?? `cicn ${monster.iconId}`, sourceStatus: "scenario-resource", width: null, height: null };
-  const projectAsset = project.assetCatalog.icons?.find((candidate) => Math.abs(candidate.resourceId) === iconId && candidate.previewPath) ?? null;
+  const projectAsset = project.assetCatalog?.icons?.find((candidate) => Math.abs(candidate.resourceId) === iconId && candidate.previewPath) ?? null;
   if (projectAsset?.previewPath) return { url: projectAsset.previewPath, label: `cicn ${monster.iconId}`, sourceStatus: "scenario-resource", width: null, height: null };
   const realmzActorAsset = lookups.realmzActorIconAssetsByAbsId.get(iconId) ?? null;
   if (realmzActorAsset) return { url: null, libraryAsset: realmzActorAsset, label: realmzActorAsset.label || `cicn ${monster.iconId}`, sourceStatus: "default-art", width: null, height: null };
@@ -5752,7 +5752,7 @@ function hasProjectIconReference(project: Project, resourceId: number) {
 
 function projectIconReferenceSet(project: Project) {
   return new Set([
-    ...(project.assetCatalog.icons ?? []).map((asset) => Math.abs(asset.resourceId)),
+    ...(project.assetCatalog?.icons ?? []).map((asset) => Math.abs(asset.resourceId)),
     ...(project.scenarioIconResources ?? []).map((resource) => Math.abs(resource.resourceId)),
     ...(project.assets ?? [])
       .filter((asset) => asset.resourceType === "cicn")
@@ -6494,11 +6494,11 @@ function updateArraySlot(values: number[] = [], index: number, value: number, le
 }
 
 function useCombatLookups(project: Project | null, catalog: LibraryCatalog | null): CombatLookups {
-  const projectBattlesLength = project?.battles.length ?? 0;
+  const projectBattlesLength = project?.battles?.length ?? 0;
   const projectMonsters = project?.monsters;
   const projectMonsterSets = project?.monsterSets;
   const projectAssets = project?.assets;
-  const projectCatalogIcons = project?.assetCatalog.icons;
+  const projectCatalogIcons = project?.assetCatalog?.icons;
   const projectMonsterIconOverrides = project?.monsterIconOverrides;
   const projectScenarioIconResources = project?.scenarioIconResources;
   const catalogAssets = catalog?.assets;
@@ -6544,7 +6544,7 @@ function useCombatLookups(project: Project | null, catalog: LibraryCatalog | nul
     for (const asset of project.assets ?? []) {
       if (asset.resourceType === "cicn") addIconAsset(asset);
     }
-    for (const asset of project.assetCatalog.icons ?? []) {
+    for (const asset of project.assetCatalog?.icons ?? []) {
       if (asset.resourceType === "cicn") addIconAsset(asset);
     }
     for (const asset of catalog?.assets ?? []) {
@@ -6571,7 +6571,7 @@ function useCombatLookups(project: Project | null, catalog: LibraryCatalog | nul
       monsterMashAssetsByAbsId,
       monsterIconOverridesByTarget,
       tabCounts: {
-        battles: project.battles.length,
+        battles: project.battles?.length ?? 0,
         monsters: monsterScenarioIds(project).length,
         iconSet: iconSetTargetCount
       }
