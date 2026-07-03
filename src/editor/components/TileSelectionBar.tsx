@@ -623,13 +623,14 @@ function StampLibrary({
       <div className="stamp-palette-grid" aria-label="Map stamp brushes">
         {visibleStamps.map((stamp) => {
           const bounds = stampBounds(stamp);
+          const previewCells = stampPreviewCells(stamp, bounds);
           return (
             <button
               key={stamp.id}
               type="button"
               className={`stamp-palette-card${stamp.id === selectedStampId ? " selected" : ""}`}
               onClick={() => onSelectStamp(stamp)}
-              title={`${stamp.description} Places ${stamp.cells.length} tiles.`}
+              title={`${stamp.description} Footprint ${bounds.width} x ${bounds.height}; ${stamp.cells.length} painted tile${stamp.cells.length === 1 ? "" : "s"}.`}
             >
               <span
                 className="stamp-palette-preview"
@@ -640,17 +641,18 @@ function StampLibrary({
                   height: `${bounds.height * 24 + 2}px`
                 }}
               >
-                {stamp.cells.map((cell) => (
+                {previewCells.map((cell) => (
                   <span
-                    key={`${cell.dx}:${cell.dy}:${cell.tile}`}
-                    style={{ gridColumn: cell.dx - bounds.left + 1, gridRow: cell.dy - bounds.top + 1, background: tileColor(cell.tile) }}
+                    key={`${cell.x}:${cell.y}`}
+                    className={cell.tile == null ? "transparent" : ""}
+                    style={cell.tile == null ? undefined : { background: tileColor(cell.tile) }}
                   >
-                    <TileSwatch atlas={atlas} icons={icons} tile={cell.tile} tileset={tileset} showBadge={false} />
+                    {cell.tile != null && <TileSwatch atlas={atlas} icons={icons} tile={cell.tile} tileset={tileset} showBadge={false} />}
                   </span>
                 ))}
               </span>
               <span className="stamp-palette-label">{stamp.label}</span>
-              <small>{stampSourceLabel(stamp.source)} | {stamp.cells.length} tiles</small>
+              <small>{stampSourceLabel(stamp.source)} | {bounds.width}x{bounds.height} | {stamp.cells.length} painted</small>
             </button>
           );
         })}
@@ -778,6 +780,17 @@ function stampBounds(stamp: MapStamp) {
   const top = Math.min(...stamp.cells.map((cell) => cell.dy));
   const bottom = Math.max(...stamp.cells.map((cell) => cell.dy));
   return { left, top, width: right - left + 1, height: bottom - top + 1 };
+}
+
+function stampPreviewCells(stamp: MapStamp, bounds: ReturnType<typeof stampBounds>) {
+  const occupied = new Map(stamp.cells.map((cell) => [`${cell.dx}:${cell.dy}`, cell.tile]));
+  return Array.from({ length: bounds.width * bounds.height }, (_, index) => {
+    const localX = index % bounds.width;
+    const localY = Math.floor(index / bounds.width);
+    const x = bounds.left + localX;
+    const y = bounds.top + localY;
+    return { x, y, tile: occupied.get(`${x}:${y}`) ?? null };
+  });
 }
 
 function customStampFromMapStamp(stamp: MapStamp, project: Project | null, globalMapStamps: CustomMapStamp[]) {

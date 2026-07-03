@@ -4460,6 +4460,16 @@
   width: 24px;
   height: 24px;
   overflow: hidden;
+  border: 1px solid rgba(157, 207, 255, 0.11);
+  background:
+    linear-gradient(45deg, rgba(255,255,255,0.04) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(255,255,255,0.04) 25%, transparent 25%),
+    #0d141b;
+  background-size: 8px 8px;
+}
+
+.stamp-palette-preview > span.transparent {
+  opacity: 0.72;
 }
 
 .stamp-palette-preview .tile-swatch,
