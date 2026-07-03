@@ -22,9 +22,13 @@ const browserProject = fs.readFileSync(browserProjectPath, "utf8");
 const targetPickerPath = path.join(root, "src/editor/components/RealmzTargetPicker.tsx");
 const inventoryPath = path.join(root, "src/editor/panels/scripts/scriptInventory.tsx");
 const validationPath = path.join(root, "src/editor/scriptValidation.ts");
+const scriptDiagnosticsPath = path.join(root, "src/editor/scriptDiagnostics.ts");
+const reportScriptDiagnosticsPath = path.join(root, "scripts/report_script_diagnostics.mjs");
 const targetPicker = fs.readFileSync(targetPickerPath, "utf8");
 const inventory = fs.readFileSync(inventoryPath, "utf8");
 const validation = fs.readFileSync(validationPath, "utf8");
+const scriptDiagnostics = fs.readFileSync(scriptDiagnosticsPath, "utf8");
+const reportScriptDiagnostics = fs.readFileSync(reportScriptDiagnosticsPath, "utf8");
 
 const requiredCatalogExports = [
   "ScriptActionAuthoringLevel",
@@ -81,14 +85,25 @@ for (const snippet of [
 if (!validation.includes("resolveSignedMessageTarget(code, id)")) {
   failures.push("Script validation does not normalize signed message targets.");
 }
+for (const snippet of [
+  "const ed3Summary = trigger.source === \"Data ED3\" ? ed3DiagnosticForTrigger(project, trigger) : null",
+  "ed3Summary?.linterSeverity",
+  "`ed3-${ed3Summary.classification}`",
+  "ed3Summary.searchTitle"
+]) {
+  if (!validation.includes(snippet)) failures.push(`Script validation is missing selected ED3 reachability warning support: ${snippet}`);
+}
 
 for (const snippet of [
   "extraActionTabClassification",
   "scriptTabKind",
   "global-events",
-  "advanced-imports",
+  "EXTRA_ACTION_INVENTORY_FILTERS",
+  "ed3-unlinked",
+  "ed3-battle",
+  "ed3-monster",
   "isCallableMacro(project, trigger)",
-  "return extraActionTabClassification(project, trigger) === \"reusable-actions\"",
+  "return trigger.source === \"Data ED3\"",
   "Random Encounter Action",
   "Timed Encounter Action",
   "Source-Linked Extra Action"
@@ -125,6 +140,33 @@ if (
 }
 
 for (const snippet of [
+  "function rebuildEd3ReachabilityRows(project: Project)",
+  "const rows = rebuildEd3ReachabilityRows(project)",
+  "!link.from.startsWith(\"action-slot:macro:\")",
+  "for (const battle of project.battles ?? [])",
+  "battle:${battle.id}:battleMacro",
+  "const addMonsterRoots = (records: Project[\"monsters\"], sourceFile: string)",
+  "monster:${sourceFile}:${monster.id}",
+  "isNegativeBattleMacroLink(link)",
+  "effective-ed3-reachability"
+]) {
+  if (!scriptDiagnostics.includes(snippet)) failures.push(`Script diagnostics are missing stale ED3 reachability fallback support: ${snippet}`);
+}
+
+for (const snippet of [
+  "function effectiveEd3ReachabilityRows(project)",
+  "function rebuildEd3ReachabilityRows(project)",
+  "return rebuildEd3ReachabilityRows(project)",
+  "for (const battle of project.battles ?? [])",
+  "battle:${battle.id}:battleMacro",
+  "const addMonsterRoots = (records, sourceFile)",
+  "monster:${sourceFile}:${monster.id}",
+  "effective-ed3-reachability"
+]) {
+  if (!reportScriptDiagnostics.includes(snippet)) failures.push(`Script diagnostics report is missing stale ED3 reachability fallback support: ${snippet}`);
+}
+
+for (const snippet of [
   "battles: project.battles",
   "monsters: project.monsters",
   "monsterSets: project.monsterSets",
@@ -145,8 +187,8 @@ for (const snippet of [
   "QuestUsageTimeline",
   "Story Flags",
   "Decoded Story Flags",
-  "recognizedScenarioContextForProject",
-  "Bundled beta note | read-only"
+  "Context Notes",
+  "Author Note"
 ]) {
   if (!panel.includes(snippet)) failures.push(`Scripts panel is missing story flag usage UI: ${snippet}`);
 }

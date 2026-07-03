@@ -19,20 +19,20 @@ import { actionPointCapacity, isReusableDoorPlaceholder, nextActionPointRecordIn
 import { realmzScriptStepDescriptorFor } from "../realmzScriptDescriptors";
 import { validateRealmzTargetRecord } from "../targetValidation";
 import { buildQuestPresentation, questCategoryLabel, QUEST_CATEGORIES, type QuestFlagModel, type QuestUsage } from "../questUsage";
-import { recognizedScenarioContextForProject } from "../scenarioContext";
 import { ITEM_REFERENCE_CATEGORIES, itemReferenceDetail, itemReferenceOptions, type ItemReferenceCategory, type ItemReferenceOption } from "../itemReferences";
 import { monsterReferenceDetail, monsterReferenceOptions } from "../monsterReferences";
 import { CONDITION_LABELS, RESISTANCE_TYPES } from "../rulesCatalog";
 import {
   ED3_EVIDENCE_FILTERS,
+  EXTRA_ACTION_INVENTORY_FILTERS,
   SCRIPT_INVENTORY_FILTERS,
   ScriptListItem,
   actionBelongsTo,
   actionSummary,
-  ed3Classification,
   filterScriptsByInventory,
   hasScriptWarning,
   issueCountsBySlot,
+  scriptMatchesInventoryFilter,
   scriptLabel,
   scriptMatchesQuery,
   scriptPanelTitle,
@@ -119,8 +119,7 @@ const SCRIPT_EDITOR_TABS = [
   { id: "macros", label: "Extra Action Points", title: "Extra Action Points and branch targets." },
   { id: "global-macros", label: "Global Events", title: "Scenario-wide event hooks and startup logic." },
   { id: "quests", label: "Story Flags", title: "Beta story-flag labels, decoded usage, and optional author notes." },
-  { id: "settings-rows", label: "Action Settings", title: "Advanced browser for shared or imported action settings." },
-  { id: "ed3-evidence", label: "Unlinked Extra APs", title: "Extra Action Points not yet linked from known scenario behavior." }
+  { id: "settings-rows", label: "Action Settings", title: "Advanced browser for shared or imported action settings." }
 ];
 
 const SCRIPT_WORKBENCH_HELP =
@@ -361,7 +360,11 @@ export function ScriptsPanel({
   activeEditor?: string;
 }) {
   const [, startScriptTransition] = useTransition();
-  const effectiveEditor = activeEditor === "domain" ? "action-points" : activeEditor;
+  const effectiveEditor = activeEditor === "domain"
+    ? "action-points"
+    : activeEditor === "ed3-evidence"
+      ? "macros"
+      : activeEditor;
   const handleSelectEntity = useCallback((entity: SelectedEntity) => {
     startScriptTransition(() => onSelectEntity(entity));
   }, [onSelectEntity]);
@@ -466,11 +469,7 @@ function ScriptAuthoringPanel({
   const canScopeToMap = Boolean(selectedMap && activeTabKind === "action-points");
   const visibleInventoryFilters = useMemo(() => {
     if (activeTabKind === "action-points") return SCRIPT_INVENTORY_FILTERS.filter((filter) => filter.id !== "macros");
-    if (activeTabKind === "advanced-imports") return [
-      ...SCRIPT_INVENTORY_FILTERS.filter((filter) => filter.id === "all"),
-      ...ED3_EVIDENCE_FILTERS,
-      ...SCRIPT_INVENTORY_FILTERS.filter((filter) => filter.id === "warnings")
-    ];
+    if (activeTabKind === "reusable-actions") return EXTRA_ACTION_INVENTORY_FILTERS;
     return SCRIPT_INVENTORY_FILTERS.filter((filter) => filter.id === "all" || filter.id === "warnings");
   }, [activeTabKind]);
   useEffect(() => {
@@ -504,41 +503,19 @@ function ScriptAuthoringPanel({
     return map;
   }, [project, scripts, catalog, diagnosticDependencyKey, inventoryFilter, warningScanReady]);
   const inventoryCounts = useMemo(() => {
-    const counts = new Map<ScriptInventoryFilter, number | null>([
-      ["current-map", 0],
-      ["all", 0],
-      ["active", 0],
-      ["reusable", 0],
-      ["warnings", inventoryFilter === "warnings" && warningScanReady ? 0 : null],
-      ["macros", 0],
-      ["ed3-padding", 0],
-      ["ed3-runtime", 0],
-      ["ed3-orphan", 0],
-      ["ed3-needs-trace", 0]
-    ]);
+    const counts = new Map<ScriptInventoryFilter, number | null>();
+    for (const filter of visibleInventoryFilters) {
+      counts.set(filter.id, filter.id === "warnings" && !(inventoryFilter === "warnings" && warningScanReady) ? null : 0);
+    }
     for (const trigger of scripts) {
-      counts.set("all", (counts.get("all") ?? 0) + 1);
-      if (selectedMap && canScopeToMap && trigger.source !== "Data ED3" && trigger.levelType === selectedMap.levelType && trigger.levelIndex === selectedMap.index) {
-        counts.set("current-map", (counts.get("current-map") ?? 0) + 1);
-      }
-      if (trigger.source !== "Data ED3" && !isReusableDoorPlaceholder(trigger)) {
-        counts.set("active", (counts.get("active") ?? 0) + 1);
-      }
-      if (isReusableDoorPlaceholder(trigger)) {
-        counts.set("reusable", (counts.get("reusable") ?? 0) + 1);
-      }
-      if (trigger.source === "Data ED3") {
-        counts.set("macros", (counts.get("macros") ?? 0) + 1);
-        const classification = ed3Classification(project, trigger);
-        const filter = ED3_EVIDENCE_FILTERS.find((candidate) => candidate.classification === classification);
-        if (filter) counts.set(filter.id, (counts.get(filter.id) ?? 0) + 1);
-      }
-      if (inventoryFilter === "warnings" && warningScanReady && hasScriptWarning(fullWarningDiagnosticsById.get(trigger.id) ?? [])) {
-        counts.set("warnings", (counts.get("warnings") ?? 0) + 1);
+      for (const filter of visibleInventoryFilters) {
+        if (filter.id === "warnings" && !(inventoryFilter === "warnings" && warningScanReady)) continue;
+        if (!scriptMatchesInventoryFilter(project, trigger, filter.id, selectedMap, canScopeToMap, fullWarningDiagnosticsById)) continue;
+        counts.set(filter.id, (counts.get(filter.id) ?? 0) + 1);
       }
     }
     return counts;
-  }, [project, scripts, selectedMap, canScopeToMap, fullWarningDiagnosticsById, inventoryFilter, warningScanReady]);
+  }, [project, scripts, selectedMap, canScopeToMap, fullWarningDiagnosticsById, inventoryFilter, warningScanReady, visibleInventoryFilters]);
   const scopedScripts = useMemo(
     () => filterScriptsByInventory(project, scripts, inventoryFilter, selectedMap, canScopeToMap, fullWarningDiagnosticsById),
     [project, scripts, inventoryFilter, selectedMap, canScopeToMap, fullWarningDiagnosticsById]
@@ -674,6 +651,27 @@ function ScriptAuthoringPanel({
   }, [project, selectedTrigger, selectedDiagnosticsReady, catalog, diagnosticDependencyKey, fullWarningDiagnosticsById]);
   if (!project) return null;
   const selectedMapCapacity = selectedMap ? actionPointCapacity(project.triggers, selectedMap.levelType, selectedMap.index) : null;
+  const createSelectedMapActionPoint = () => {
+    if (!selectedMap || !selectedMapCapacity?.canCreate) return;
+    const recordIndex = nextActionPointRecordIndex(project.triggers, selectedMap.levelType, selectedMap.index);
+    onApplyCommand?.({
+      kind: "createActionPoint",
+      label: `Create Action Point ${newActionPoint.x},${newActionPoint.y}`,
+      levelType: selectedMap.levelType,
+      levelIndex: selectedMap.index,
+      x: clampRealmzCoordinate(newActionPoint.x),
+      y: clampRealmzCoordinate(newActionPoint.y)
+    });
+    if (recordIndex != null) {
+      const source = selectedMap.levelType === "land" ? "Data DD" : "Data DDD";
+      onSelectEntity(selectEntityFromId(triggerEntityId(selectedMap.levelType, selectedMap.index, recordIndex, source)));
+    }
+  };
+  const actionPointCreateTitle = !selectedMap
+    ? "Create a map before adding map Action Points."
+    : selectedMapCapacity?.canCreate
+      ? "Create an Action Point on the selected map, reusing the first empty slot when possible."
+      : "This map has no reusable Action Point slots. Clear an existing Action Point to reuse its fixed Realmz record.";
   const slotDraft = (slot: number, action?: Action) => draft[`${selectedTrigger?.id}:${slot}`] ?? { rawCode: action?.rawCode ?? 0, id: action?.id ?? 0 };
   const selectedAction = selectedTrigger?.actions.find((candidate) => candidate.slot === selectedSlot);
   const selectedKey = `${selectedTrigger?.id}:${selectedSlot}`;
@@ -905,6 +903,10 @@ function ScriptAuthoringPanel({
     return current.rawCode === 0 && current.id === 0;
   }) : null;
   const extraActionEvidenceOpen = triggerDiagnostics.some((issue) => issue.severity === "error");
+  const extraActionEvidenceFilterActive = activeTabKind === "reusable-actions" && (
+    inventoryFilter === "ed3-unlinked" ||
+    ED3_EVIDENCE_FILTERS.some((filter) => filter.id === inventoryFilter)
+  );
   return (
     <section className="realmz-script-editor">
       <header className="settings-rows-header">
@@ -915,7 +917,18 @@ function ScriptAuthoringPanel({
           <small>Build scenario behavior from clear steps, targets, choices, and Extra Action Points.</small>
         </div>
         <div className="script-toolbar">
-          {(activeTabKind === "action-points" || activeTabKind === "reusable-actions") && (
+          {activeTabKind === "action-points" && (
+            <button
+              type="button"
+              className="btn btn-primary btn-xs script-create-primary"
+              disabled={!selectedMap || !selectedMapCapacity?.canCreate}
+              title={actionPointCreateTitle}
+              onClick={createSelectedMapActionPoint}
+            >
+              <Plus size={12} /> Action Point
+            </button>
+          )}
+          {activeTabKind === "reusable-actions" && (
             <button type="button" className="btn btn-secondary btn-xs" onClick={() => onApplyCommand?.({ kind: "createMacro", label: "Create Extra Action Point" })}>
               <Plus size={12} /> Extra Action Point
             </button>
@@ -927,6 +940,17 @@ function ScriptAuthoringPanel({
           )}
         </div>
       </header>
+      {!selectedMap && activeTabKind === "action-points" && (
+        <div className="script-create-strip script-create-empty">
+          <div>
+            <strong>Create a map before adding Action Points</strong>
+            <small>Map Action Points live on fixed land or dungeon records. Start with Land Level 0, then place the first Action Point at a cell.</small>
+          </div>
+          <button type="button" className="btn btn-primary btn-xs script-create-primary" onClick={() => onApplyCommand?.({ kind: "createMap", label: "Create Land Level 0", levelType: "land" })}>
+            <Plus size={12} /> New Land Level 0
+          </button>
+        </div>
+      )}
       {selectedMap && activeTabKind === "action-points" && (
         <div className="script-create-strip">
           <label>
@@ -943,24 +967,10 @@ function ScriptAuthoringPanel({
           <NumberField label="Y" value={newActionPoint.y} onCommit={(y) => setNewActionPoint({ ...newActionPoint, y: clampRealmzCoordinate(y) })} compact />
           <button
             type="button"
-            className="btn btn-primary btn-xs"
+            className="btn btn-primary btn-xs script-create-primary"
             disabled={!selectedMapCapacity?.canCreate}
-            title={selectedMapCapacity?.canCreate ? "Create an Action Point on the selected map, reusing the first empty slot when possible." : "This map has no reusable Action Point slots. Clear an existing Action Point to reuse its fixed Realmz record."}
-            onClick={() => {
-              const recordIndex = nextActionPointRecordIndex(project.triggers, selectedMap.levelType, selectedMap.index);
-              onApplyCommand?.({
-                kind: "createActionPoint",
-                label: `Create Action Point ${newActionPoint.x},${newActionPoint.y}`,
-                levelType: selectedMap.levelType,
-                levelIndex: selectedMap.index,
-                x: clampRealmzCoordinate(newActionPoint.x),
-                y: clampRealmzCoordinate(newActionPoint.y)
-              });
-              if (recordIndex != null) {
-                const source = selectedMap.levelType === "land" ? "Data DD" : "Data DDD";
-                onSelectEntity(selectEntityFromId(triggerEntityId(selectedMap.levelType, selectedMap.index, recordIndex, source)));
-              }
-            }}
+            title={actionPointCreateTitle}
+            onClick={createSelectedMapActionPoint}
           >
             <Plus size={12} /> Action Point
           </button>
@@ -1002,10 +1012,10 @@ function ScriptAuthoringPanel({
                 </button>
               ))}
             </div>
-          {activeTabKind === "advanced-imports" && (
+          {extraActionEvidenceFilterActive && (
             <div className="script-tab-note">
-              <strong>{scripts.length.toLocaleString()} unlinked Extra Action Point(s)</strong>
-              <small>These Extra Action Points are preserved with the scenario, but Providence has not identified a normal call path for them yet. Use the evidence filters to separate likely padding, runtime residue, orphan authored-looking entries, and entries that need runtime tracing.</small>
+              <strong>{(inventoryCounts.get(inventoryFilter) ?? 0).toLocaleString()} Extra Action Point row(s) in this filter</strong>
+              <small>These rows are preserved with the scenario. The unlinked and evidence filters separate imported ED3 rows without source-backed callers from callable Extra Action Points.</small>
             </div>
           )}
           </div>
@@ -1254,29 +1264,27 @@ function QuestWorkbench({
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const model = useMemo(() => buildQuestPresentation(project, scripts), [project, scripts]);
-  const recognizedContext = useMemo(() => recognizedScenarioContextForProject(project), [project]);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [selectedQuestId, setSelectedQuestId] = useState<number | null>(null);
-  const selectedThread = model.threads.find((thread) => thread.id === selectedThreadId) ?? null;
+  const userThreads = useMemo(() => model.threads.filter((thread) => thread.source !== "bundled"), [model.threads]);
+  const selectedThread = userThreads.find((thread) => thread.id === selectedThreadId) ?? null;
   const selectedQuest = selectedQuestId == null ? null : model.questById.get(selectedQuestId) ?? null;
-  const userThreads = model.threads.filter((thread) => thread.source !== "bundled");
-  const bundledThreadCount = model.threads.length - userThreads.length;
   const threadQuests = selectedThread ? selectedThread.questIds.map((id) => model.questById.get(id)).filter(Boolean) as QuestFlagModel[] : [];
   const activeUses = selectedThread
     ? threadQuests.flatMap((quest) => quest.uses.map((usage) => ({ ...usage, questLabel: quest.label }))).sort((a, b) => a.sortKey.localeCompare(b.sortKey))
     : selectedQuest?.uses.map((usage) => ({ ...usage, questLabel: selectedQuest.label })) ?? [];
 
   useEffect(() => {
-    if (selectedThreadId && !model.threads.some((thread) => thread.id === selectedThreadId)) setSelectedThreadId(null);
+    if (selectedThreadId && !userThreads.some((thread) => thread.id === selectedThreadId)) setSelectedThreadId(null);
     if (selectedQuestId != null && !model.questById.has(selectedQuestId)) setSelectedQuestId(null);
     if (!selectedThreadId && selectedQuestId == null) {
       if (model.quests[0]) setSelectedQuestId(model.quests[0].id);
-      else if (model.threads[0]) setSelectedThreadId(model.threads[0].id);
+      else if (userThreads[0]) setSelectedThreadId(userThreads[0].id);
     }
-  }, [model.threads, model.quests, model.questById, selectedQuestId, selectedThreadId]);
+  }, [model.quests, model.questById, selectedQuestId, selectedThreadId, userThreads]);
 
   const createThread = () => {
-    onApplyCommand?.({ kind: "createQuestThread", label: "Create author note", name: `Author Note ${model.threads.length + 1}` });
+    onApplyCommand?.({ kind: "createQuestThread", label: "Create author note", name: `Author Note ${userThreads.length + 1}` });
   };
   const updateThread = (thread: QuestThread, changes: Partial<Pick<QuestThread, "name" | "description" | "questIds" | "contextRefs">>) => {
     onApplyCommand?.({ kind: "updateQuestThread", label: "Update author note", threadId: thread.id, changes });
@@ -1300,16 +1308,6 @@ function QuestWorkbench({
           </button>
         </div>
       </header>
-      {recognizedContext && (
-        <div className="recognized-scenario-context">
-          <div>
-            <strong>{recognizedContext.scenarioName} Context</strong>
-            <small>{recognizedContext.summary}</small>
-            <small className="recognized-scenario-beta-copy">{recognizedContext.coverageCriteria[0]}</small>
-          </div>
-          <span>{recognizedContext.confidence} confidence</span>
-        </div>
-      )}
       <div className="quest-workbench-layout">
         <aside className="quest-thread-column">
           <PanelSection title="Decoded Story Flags" eyebrow={`${model.quests.length} known`} density="compact" className="quest-raw-panel">
@@ -1334,15 +1332,15 @@ function QuestWorkbench({
               {model.quests.length === 0 && <small className="empty-copy compact">No flag labels or decoded quest-flag uses found.</small>}
             </div>
           </PanelSection>
-          <PanelSection title="Context Notes" eyebrow={`${userThreads.length} author / ${bundledThreadCount} bundled`} density="compact">
-            {model.threads.length === 0 ? (
+          <PanelSection title="Context Notes" eyebrow={`${userThreads.length} author`} density="compact">
+            {userThreads.length === 0 ? (
               <div className="script-tab-note">
                 <strong>No author notes yet</strong>
                 <small>Create a note if you want to group raw flags or document story meaning for this project.</small>
               </div>
             ) : (
               <div className="quest-card-list">
-                {model.threads.map((thread) => (
+                {userThreads.map((thread) => (
                   <div key={thread.id} className={`quest-thread-card${thread.id === selectedThread?.id ? " selected" : ""}`}>
                     <button
                       type="button"
@@ -1352,13 +1350,11 @@ function QuestWorkbench({
                       }}
                     >
                       <strong>{thread.name}</strong>
-                      <small>{thread.source === "bundled" ? "Bundled beta note | read-only" : `${thread.questIds.length} flag${thread.questIds.length === 1 ? "" : "s"}`}</small>
+                      <small>{thread.questIds.length} flag{thread.questIds.length === 1 ? "" : "s"}</small>
                     </button>
-                    {thread.source !== "bundled" && (
-                      <button type="button" className="btn btn-danger btn-xs icon-only" title="Delete note" onClick={() => onApplyCommand?.({ kind: "deleteQuestThread", label: "Delete author note", threadId: thread.id })}>
-                        <Trash2 size={12} />
-                      </button>
-                    )}
+                    <button type="button" className="btn btn-danger btn-xs icon-only" title="Delete note" onClick={() => onApplyCommand?.({ kind: "deleteQuestThread", label: "Delete author note", threadId: thread.id })}>
+                      <Trash2 size={12} />
+                    </button>
                   </div>
                 ))}
               </div>

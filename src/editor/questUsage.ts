@@ -2,7 +2,6 @@ import { Project, QuestContextRef, QuestContextSource, QuestLabel, QuestThread, 
 import { normalizeStepOpcode } from "./realmzActions";
 import { triggerEntityId } from "./utils";
 import { contextRefsForQuest } from "./questContext";
-import { recognizedQuestContextSources, recognizedQuestThreads } from "./scenarioContext";
 
 export type QuestUsageCategory =
   | "set"
@@ -171,10 +170,7 @@ export function buildQuestPresentation(project: Project, scripts: TriggerRecord[
     });
   }
 
-  const contextSources = mergeQuestContextSources([
-    ...recognizedQuestContextSources(project),
-    ...(project.editorMetadata?.questContextSources ?? [])
-  ]);
+  const contextSources = mergeQuestContextSources(project.editorMetadata?.questContextSources ?? []);
   const quests = [...byId.values()].map((quest) => ({
     ...quest,
     uses: quest.uses.sort((a, b) => a.sortKey.localeCompare(b.sortKey)),
@@ -182,10 +178,7 @@ export function buildQuestPresentation(project: Project, scripts: TriggerRecord[
     contextRefs: contextRefsForQuest(quest, contextSources)
   })).sort((a, b) => b.uses.length - a.uses.length || a.id - b.id);
   const questById = new Map(quests.map((quest) => [quest.id, quest]));
-  const threads = mergeQuestThreads([
-    ...recognizedQuestThreads(project),
-    ...(project.editorMetadata?.questThreads ?? [])
-  ]);
+  const threads = mergeQuestThreads(project.editorMetadata?.questThreads ?? []);
   return {
     quests,
     questById,

@@ -21,6 +21,16 @@ export type ScriptDiagnostic = {
 export function validateScriptTrigger(project: Project, trigger: TriggerRecord, catalog?: LibraryCatalog | null): ScriptDiagnostic[] {
   const diagnostics: ScriptDiagnostic[] = [];
   if (trigger.source !== "Data ED3" && !trigger.active) return diagnostics;
+  const ed3Summary = trigger.source === "Data ED3" ? ed3DiagnosticForTrigger(project, trigger) : null;
+  if (ed3Summary?.linterSeverity) {
+    diagnostics.push(issue(
+      ed3Summary.linterSeverity,
+      trigger.id,
+      `ed3-${ed3Summary.classification}`,
+      ed3Summary.searchTitle,
+      `${ed3Summary.detail} ${ed3Summary.promotionRule}`
+    ));
+  }
   if (trigger.source !== "Data ED3" && trigger.active) {
     const coordinate = trigger.coordinate;
     if (!coordinate) {

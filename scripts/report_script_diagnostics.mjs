@@ -5,6 +5,16 @@ const root = process.cwd();
 const args = parseArgs(process.argv.slice(2));
 const outputDir = path.resolve(args.get("out") || path.join(root, "docs", "generated"));
 const projectFiles = args.get("self-test") != null ? [writeSyntheticProject()] : args.get("project") ?? [];
+const MACRO_REACHABILITY_LINK_KINDS = new Set([
+  "calls_macro",
+  "branches_to",
+  "branches_true",
+  "branches_false",
+  "branches_keep",
+  "branches_drop",
+  "branches_on_coward",
+  "branches_on_revived_loss"
+]);
 
 if (!projectFiles.length) {
   fail("Usage: npm run archaeology:script-diagnostics -- --project <project.json>[,<project.json>] [--out docs/generated]");
@@ -36,9 +46,10 @@ console.log(JSON.stringify({
 
 function buildProjectReport(file, crosswalk) {
   const project = readJson(file);
+  const reachabilityRows = effectiveEd3ReachabilityRows(project);
   const rows = (project.triggers ?? [])
     .filter((trigger) => trigger.source === "Data ED3")
-    .map((trigger) => ed3ReportRow(project, trigger));
+    .map((trigger) => ed3ReportRow(project, trigger, reachabilityRows));
   const counts = {};
   for (const row of rows) counts[row.classification] = (counts[row.classification] ?? 0) + 1;
   const riskyRows = rows.filter((row) => row.linterSeverity === "warning");
@@ -52,8 +63,8 @@ function buildProjectReport(file, crosswalk) {
   };
 }
 
-function ed3ReportRow(project, trigger) {
-  const row = (project.semanticSchema?.decoding?.ed3Reachability ?? []).find((candidate) => candidate.recordIndex === trigger.recordIndex);
+function ed3ReportRow(project, trigger, reachabilityRows = effectiveEd3ReachabilityRows(project)) {
+  const row = reachabilityRows.get(trigger.recordIndex);
   const actionCount = row?.actionCount ?? (trigger.actions ?? []).filter((action) => action.rawCode !== 0 || action.id !== 0).length;
   const rawSignature = row?.rawSignature ?? (trigger.actions ?? [])
     .filter((action) => action.rawCode !== 0 || action.id !== 0)
@@ -75,6 +86,125 @@ function ed3ReportRow(project, trigger) {
     detail: meta.detail(actionCount),
     linterSeverity: meta.linterSeverity
   };
+}
+
+function effectiveEd3ReachabilityRows(project) {
+  return rebuildEd3ReachabilityRows(project);
+}
+
+function rebuildEd3ReachabilityRows(project) {
+  const ed3Triggers = (project.triggers ?? []).filter((trigger) => trigger.source === "Data ED3" && trigger.active !== false);
+  const ed3Ids = new Set(ed3Triggers.map((trigger) => `macro:${trigger.recordIndex}`));
+  const semanticLinks = project.semanticSchema?.links ?? [];
+  const incoming = new Map();
+  for (const link of semanticLinks) {
+    if (!ed3Ids.has(link.to)) continue;
+    const links = incoming.get(link.to) ?? [];
+    links.push(link);
+    incoming.set(link.to, links);
+  }
+  const reachable = new Map();
+  const directIncoming = new Map();
+  const addDirectIncoming = (target) => directIncoming.set(target, (directIncoming.get(target) ?? 0) + 1);
+  const setReachableRoot = (target, rootType, evidence) => {
+    if (!ed3Ids.has(target) || reachable.has(target)) return;
+    reachable.set(target, { rootType, evidence });
+  };
+  for (const [target, links] of incoming) {
+    const root = links.find((link) =>
+      (isMacroReachabilityLink(link) && !link.from.startsWith("action-slot:macro:")) ||
+      (link.kind === "calls_battle_macro" && isNegativeBattleMacroLink(link))
+    );
+    if (!root) continue;
+    setReachableRoot(
+      target,
+      root.kind === "calls_battle_macro" ? "negative-battle-macro" : ed3RootTypeForLinkSource(root.from),
+      [root.id]
+    );
+  }
+  for (const battle of project.battles ?? []) {
+    if (!battle.battleMacro || battle.battleMacro >= 0) continue;
+    const target = `macro:${Math.abs(battle.battleMacro)}`;
+    if (!ed3Ids.has(target)) continue;
+    const hasSemanticLink = (incoming.get(target) ?? []).some((link) => link.kind === "calls_battle_macro" && link.from === `battle:${battle.id}`);
+    if (!hasSemanticLink) addDirectIncoming(target);
+    setReachableRoot(target, "negative-battle-macro", [`battle:${battle.id}:battleMacro`]);
+  }
+  const addMonsterRoots = (records, sourceFile) => {
+    for (const monster of records ?? []) {
+      if (!monster.deathMacro || monster.deathMacro <= 0) continue;
+      const target = `macro:${monster.deathMacro}`;
+      if (!ed3Ids.has(target)) continue;
+      const entityId = sourceFile === "Data MD" ? `monster:${monster.id}` : `monster:${sourceFile}:${monster.id}`;
+      const hasSemanticLink = (incoming.get(target) ?? []).some((link) => link.kind === "calls_macro" && link.from === entityId && link.metadata?.field === "deathMacro");
+      if (!hasSemanticLink) addDirectIncoming(target);
+      setReachableRoot(target, "monster-death-hook", [`${entityId}:deathMacro`]);
+    }
+  };
+  addMonsterRoots(project.monsters ?? [], "Data MD");
+  for (const set of project.monsterSets ?? []) {
+    addMonsterRoots(set.monsters ?? [], set.sourceFile || (set.setId === 1 ? "Data MD1" : set.setId === -1 ? "Data MD-1" : "Data MD"));
+  }
+  const queue = Array.from(reachable.keys());
+  while (queue.length > 0) {
+    const current = queue.shift();
+    const [, recordIndex] = current.split(":");
+    const prefix = `action-slot:macro:${recordIndex}:`;
+    for (const link of semanticLinks.filter((candidate) => isMacroReachabilityLink(candidate) && candidate.from.startsWith(prefix))) {
+      if (!ed3Ids.has(link.to) || reachable.has(link.to)) continue;
+      reachable.set(link.to, { rootType: "recursive-macro-call", evidence: [...(reachable.get(current)?.evidence ?? []), link.id] });
+      queue.push(link.to);
+    }
+  }
+  return new Map(ed3Triggers.map((trigger) => {
+    const entityId = `macro:${trigger.recordIndex}`;
+    const root = reachable.get(entityId);
+    const actionCount = (trigger.actions ?? []).filter((action) => action.rawCode !== 0 || action.id !== 0).length;
+    const row = {
+      recordIndex: trigger.recordIndex,
+      entityId,
+      classification: root ? "reachable-macro" : nonreachableClassification(trigger, actionCount),
+      reachable: Boolean(root),
+      pathStatus: root ? "source-backed-root" : "not-source-reachable",
+      rootType: root?.rootType ?? null,
+      incomingRefs: (incoming.get(entityId)?.length ?? 0) + (directIncoming.get(entityId) ?? 0),
+      actionCount,
+      rawSignature: (trigger.actions ?? []).flatMap((action) => [action.rawCode, action.id]),
+      evidence: root?.evidence ?? ["effective-ed3-reachability"],
+      promotionRule: root
+        ? "Promoted from Data ED3 because a source-backed root reaches this record."
+        : "Preserved as Data ED3 evidence until source-backed reachability or explicit authoring exists."
+    };
+    return [trigger.recordIndex, row];
+  }));
+}
+
+function isMacroReachabilityLink(link) {
+  return MACRO_REACHABILITY_LINK_KINDS.has(link.kind);
+}
+
+function isNegativeBattleMacroLink(link) {
+  return typeof link.metadata?.rawValue === "number" && link.metadata.rawValue < 0;
+}
+
+function ed3RootTypeForLinkSource(from) {
+  if (from.startsWith("action-slot:trigger:")) return "map-trigger-call";
+  if (from.startsWith("random:")) return "random-region-door";
+  if (from.startsWith("time:")) return "timed-encounter-door";
+  if (from.startsWith("item:")) return "door-item-macro";
+  if (from.startsWith("monster:")) return "monster-death-hook";
+  if (from.startsWith("global:")) return "global-macro-slot";
+  return "source-backed-root";
+}
+
+function nonreachableClassification(trigger, actionCount) {
+  if (actionCount === 0) return "probable-editor-padding";
+  if ((trigger.actions ?? []).some((action) => {
+    const code = Math.abs(Number(action.code || action.rawCode || 0));
+    return code === 7 || code === 13;
+  })) return "runtime-mutation-candidate";
+  if (actionCount >= 2) return "needs-runtime-trace";
+  return "orphan-authored-content";
 }
 
 function suspiciousEdcdReferences(project, crosswalk) {
@@ -195,14 +325,15 @@ function writeSyntheticProject() {
     scenario: { name: "Script Diagnostics Self Test" },
     triggers: [
       ed3Trigger(0, []),
-      ed3Trigger(1, [{ slot: 0, rawCode: 1, id: 2 }]),
+      ed3Trigger(1, [{ slot: 0, rawCode: 13, id: 2 }]),
       ed3Trigger(2, [{ slot: 0, rawCode: 1, id: 5 }]),
       ed3Trigger(3, [{ slot: 0, rawCode: 1, id: 5 }, { slot: 1, rawCode: 1, id: 7 }]),
       ed3Trigger(4, [{ slot: 0, rawCode: 1, id: 5 }]),
       { id: "trigger:land:0:0", source: "Data DD", recordIndex: 0, actions: [{ slot: 0, rawCode: 40, id: 99 }] }
     ],
-    extracodes: [{ id: 1, values: [0, 0, 0, 0, 0] }],
+    extracodes: [{ id: 1, values: [0, 0, 0, 0, 0] }, { id: 2, values: [0, 0, 0, 0, 0] }],
     semanticSchema: {
+      schemaVersion: 5,
       decoding: {
         ed3Reachability: [
           row(0, "probable-editor-padding", false, 0, []),
@@ -211,7 +342,10 @@ function writeSyntheticProject() {
           row(3, "needs-runtime-trace", false, 2, [1, 5, 2, 7]),
           { ...row(4, "source-backed", true, 1, [1, 5]), rootType: "global-hook", incomingRefs: 1 }
         ]
-      }
+      },
+      links: [
+        { id: "link:self-test:global:4", from: "global:0", to: "macro:4", kind: "calls_macro", confidence: "source-backed", evidence: ["self-test"], metadata: {} }
+      ]
     }
   };
   writeJson(file, project);

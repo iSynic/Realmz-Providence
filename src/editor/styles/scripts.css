@@ -185,11 +185,48 @@
   justify-content: start;
 }
 
+.script-create-strip.script-create-empty {
+  grid-template-columns: minmax(220px, 1fr) max-content;
+  align-items: center;
+}
+
+.script-create-strip.script-create-empty > div {
+  display: grid;
+  gap: 3px;
+}
+
+.script-create-strip.script-create-empty strong {
+  color: #ffe2a0;
+  font-size: 12px;
+}
+
+.script-create-strip.script-create-empty small {
+  color: #9fb1c2;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
 .script-create-strip > .btn {
   justify-self: start;
   min-width: 0;
   white-space: nowrap;
   justify-content: center;
+}
+
+.script-create-primary {
+  border-color: #9f751d !important;
+  background: #2f2108 !important;
+  color: #ffe7a8 !important;
+  box-shadow: 0 0 0 1px rgba(255, 202, 97, 0.08), 0 0 12px rgba(255, 196, 86, 0.12);
+}
+
+.script-create-primary:hover:not(:disabled) {
+  border-color: #d59c2f !important;
+  background: #3a2809 !important;
+}
+
+.script-create-primary:disabled {
+  box-shadow: none;
 }
 
 .script-create-strip .script-number-field {
@@ -5320,52 +5357,22 @@
   min-height: 0;
 }
 
-.recognized-scenario-context {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: center;
-  border: 1px solid rgba(45, 138, 208, 0.55);
-  border-radius: 6px;
-  background: #0b1a27;
-  padding: 10px;
-}
-
-.recognized-scenario-context div,
 .known-thread-summary {
   display: grid;
   gap: 4px;
   min-width: 0;
 }
 
-.recognized-scenario-context strong,
 .known-thread-summary strong {
   color: #f1f7fb;
   font-size: 12px;
 }
 
-.recognized-scenario-context small,
 .known-thread-summary small,
 .known-thread-summary span {
   color: #a8bfd3;
   font-size: 10px;
   line-height: 1.45;
-}
-
-.recognized-scenario-context .recognized-scenario-beta-copy {
-  border-top: 1px solid rgba(102, 139, 166, 0.28);
-  color: #d2c78f;
-  padding-top: 6px;
-}
-
-.recognized-scenario-context > span {
-  border: 1px solid #2b5d83;
-  border-radius: 999px;
-  color: #a9d8ff;
-  padding: 4px 8px;
-  font-size: 10px;
-  font-weight: 900;
-  text-transform: uppercase;
 }
 
 .visually-hidden {

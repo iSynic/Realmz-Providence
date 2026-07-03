@@ -1364,7 +1364,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "Imported Extra AP Triage",
         paragraphs: [
           "Imported Extra Action Points are preserved exactly, but not every occupied entry is a callable authoring macro. Realmz scenarios can contain fixed-slot padding, old editor leftovers, runtime-cache residue, and authored-looking entries whose caller has not been proven yet.",
-          "Providence separates those entries in Unlinked Extra APs so authors can decide what to keep, promote, duplicate, or ignore without losing source bytes."
+          "Providence keeps those entries in Extra Action Points under the Unlinked and evidence filters so authors can decide what to keep, promote, duplicate, or ignore without losing source bytes."
         ],
         points: [
           "Likely Padding means an empty or fixed-shape entry that looks like editor/storage slack rather than script behavior.",
@@ -1382,7 +1382,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "Authoring Workflow",
         points: [
-          "Choose the right tab: Action Points for map-cell scripts, Extra Action Points for reusable behavior, Global Events for scenario hooks, Quests for flag usage, and Unlinked Extra APs for preserved imported entries without proven callers.",
+          "Choose the right tab: Action Points for map-cell scripts, Extra Action Points for reusable behavior and preserved imported ED3 rows, Global Events for scenario hooks, and Quests for flag usage.",
           "Filter the inventory before editing. Current Map is fastest while map authoring; Warnings is best before release; Reusable shows empty fixed slots that can be repurposed safely.",
           "Create or select an Action Point, then edit its map cell, chance, and goto fields only when those fields are meaningful for map triggers.",
           "Choose a step, pick an action, inspect the Divinity help, set a target or Settings fields, then Apply Step. Dirty step changes are draft-only until applied.",
@@ -1426,7 +1426,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "Positive and negative values can have different meanings. Examples include one-shot vs repeat random rectangles, signed battle macro behavior, negative sound sequencing, and branch/backstep sentinels.",
           "Global Events are source-backed hooks such as new game, party death, quit/end game, before shop, and before temple. Start hook row 0 means no startup macro, so smoke-test macros should use a nonzero Extra Action Point row.",
           "Other Global slots remain preserved evidence until a source-backed consumer is known.",
-          "Unlinked Extra APs are preserved imported script rows. Duplicate or promote them into authored behavior before relying on them as callable scenario logic."
+          "Unlinked Extra APs are preserved imported script rows inside the Extra Action Points filters. Duplicate or promote them into authored behavior before relying on them as callable scenario logic."
         ],
         callout: {
           tone: "warning",

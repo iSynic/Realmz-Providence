@@ -12,7 +12,7 @@ import {
 } from "./types";
 import { mapEntityId, triggerEntityId } from "./utils";
 import { semanticEntityById, semanticLinkById, semanticLinksForId, semanticRecordById } from "./semanticIndex";
-import { ed3DiagnosticForTrigger } from "./scriptDiagnostics";
+import { ed3DiagnosticForTrigger, ed3ReachabilityFor as effectiveEd3ReachabilityFor } from "./scriptDiagnostics";
 
 const MAP_LINK_KINDS = new Set(["located_on", "contains_region", "describes_map", "configures_map", "names_map_level"]);
 const TEXT_LINK_KINDS = new Set(["shows_message", "uses_resource", "has_text_resource", "has_style_resource", "has_name_evidence"]);
@@ -53,8 +53,6 @@ type Ed3ReachabilityRow = NonNullable<Project["semanticSchema"]["decoding"]>["ed
 
 const objectIds = new WeakMap<object, number>();
 let nextObjectId = 1;
-const MAX_ED3_REACHABILITY_CACHE_ENTRIES = 48;
-const ed3ReachabilityCache = new Map<string, Map<number, Ed3ReachabilityRow>>();
 
 export type SemanticRecordGroup = {
   source: SemanticSource;
@@ -230,14 +228,7 @@ export function triggerEntityForRecord(project: Project | null, trigger: Trigger
 }
 
 export function ed3ReachabilityFor(project: Project | null, recordIndex: number) {
-  if (!project) return null;
-  const cacheKey = objectCacheKey(project.semanticSchema?.decoding?.ed3Reachability);
-  let cache = ed3ReachabilityCache.get(cacheKey);
-  if (!cache) {
-    cache = new Map((project.semanticSchema?.decoding?.ed3Reachability ?? []).map((row) => [row.recordIndex, row]));
-    writeEd3ReachabilityCache(cacheKey, cache);
-  }
-  return cache.get(recordIndex) ?? null;
+  return effectiveEd3ReachabilityFor(project, recordIndex);
 }
 
 function objectCacheKey(value: object | null | undefined) {
@@ -247,13 +238,6 @@ function objectCacheKey(value: object | null | undefined) {
   const next = nextObjectId++;
   objectIds.set(value, next);
   return String(next);
-}
-
-function writeEd3ReachabilityCache(key: string, rows: Map<number, Ed3ReachabilityRow>) {
-  ed3ReachabilityCache.set(key, rows);
-  if (ed3ReachabilityCache.size <= MAX_ED3_REACHABILITY_CACHE_ENTRIES) return;
-  const firstKey = ed3ReachabilityCache.keys().next().value;
-  if (firstKey) ed3ReachabilityCache.delete(firstKey);
 }
 
 export function extraActionPointClassification(project: Project | null, trigger: TriggerRecord) {

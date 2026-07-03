@@ -1,7 +1,7 @@
 import { memo, type RefObject, useEffect, useState } from "react";
 import { Action, Project, ScriptInventoryFilter, SemanticEntity, TriggerRecord } from "../../types";
 import { triggerEntityId } from "../../utils";
-import { extraActionEvidenceSummary, extraActionPointClassification, isCallableMacro } from "../../semanticGraph";
+import { ed3ReachabilityFor, extraActionEvidenceSummary, extraActionPointClassification, isCallableMacro } from "../../semanticGraph";
 import { isReusableDoorPlaceholder } from "../../actionPointCapacity";
 import { ScriptDiagnostic } from "../../scriptValidation";
 import { ed3DiagnosticForTrigger } from "../../scriptDiagnostics";
@@ -90,12 +90,22 @@ export const ED3_EVIDENCE_FILTERS: Array<{ id: ScriptInventoryFilter; label: str
   { id: "ed3-needs-trace", label: "Needs Trace", classification: "needs-runtime-trace" }
 ];
 
+export const EXTRA_ACTION_INVENTORY_FILTERS: Array<{ id: ScriptInventoryFilter; label: string }> = [
+  { id: "all", label: "All" },
+  { id: "macros", label: "Macros" },
+  { id: "ed3-battle", label: "Battle" },
+  { id: "ed3-monster", label: "Monster" },
+  { id: "ed3-unlinked", label: "Unlinked" },
+  ...ED3_EVIDENCE_FILTERS.map((filter) => ({ id: filter.id, label: filter.label })),
+  { id: "warnings", label: "Warnings" }
+];
+
 export function scriptTabKind(activeEditor: string) {
   if (activeEditor === "macros") return "reusable-actions";
   if (activeEditor === "global-macros") return "global-events";
   if (activeEditor === "quests") return "quests";
   if (activeEditor === "settings-rows") return "settings-rows";
-  if (activeEditor === "ed3-evidence") return "advanced-imports";
+  if (activeEditor === "ed3-evidence") return "reusable-actions";
   return "action-points";
 }
 
@@ -103,8 +113,7 @@ export function extraActionTabClassification(project: Project | null, trigger: T
   if (trigger.source !== "Data ED3") return "map-action-point";
   const classification = extraActionPointClassification(project, trigger);
   if (classification === "Global Macro") return "global-events";
-  if (isCallableMacro(project, trigger)) return "reusable-actions";
-  return "advanced-imports";
+  return "reusable-actions";
 }
 
 export function filterScriptsByInventory(
@@ -115,27 +124,31 @@ export function filterScriptsByInventory(
   canScopeToMap: boolean,
   triggerDiagnosticsById: Map<string, ScriptDiagnostic[]>
 ) {
+  return scripts.filter((trigger) => scriptMatchesInventoryFilter(project, trigger, filter, selectedMap, canScopeToMap, triggerDiagnosticsById));
+}
+
+export function scriptMatchesInventoryFilter(
+  project: Project | null,
+  trigger: TriggerRecord,
+  filter: ScriptInventoryFilter,
+  selectedMap: Project["maps"][number] | null,
+  canScopeToMap: boolean,
+  triggerDiagnosticsById: Map<string, ScriptDiagnostic[]>
+) {
+  if (filter === "all") return true;
   if (filter === "current-map" && selectedMap && canScopeToMap) {
-    return scripts.filter((trigger) => trigger.source !== "Data ED3" && trigger.levelType === selectedMap.levelType && trigger.levelIndex === selectedMap.index);
+    return trigger.source !== "Data ED3" && trigger.levelType === selectedMap.levelType && trigger.levelIndex === selectedMap.index;
   }
-  if (filter === "active") {
-    return scripts.filter((trigger) => trigger.source !== "Data ED3" && !isReusableActionPoint(trigger));
-  }
-  if (filter === "reusable") {
-    return scripts.filter(isReusableActionPoint);
-  }
-  if (filter === "warnings") {
-    if (!project) return [];
-    return scripts.filter((trigger) => hasScriptWarning(triggerDiagnosticsById.get(trigger.id) ?? []));
-  }
+  if (filter === "active") return trigger.source !== "Data ED3" && !isReusableActionPoint(trigger);
+  if (filter === "reusable") return isReusableActionPoint(trigger);
+  if (filter === "warnings") return Boolean(project) && hasScriptWarning(triggerDiagnosticsById.get(trigger.id) ?? []);
+  if (filter === "macros") return trigger.source === "Data ED3" && isCallableMacro(project, trigger);
+  if (filter === "ed3-battle") return ed3RootTypeIncludes(project, trigger, "battle");
+  if (filter === "ed3-monster") return ed3RootTypeIncludes(project, trigger, "monster");
+  if (filter === "ed3-unlinked") return trigger.source === "Data ED3" && !ed3DiagnosticForTrigger(project, trigger)?.reachable;
   const ed3Filter = ED3_EVIDENCE_FILTERS.find((candidate) => candidate.id === filter);
-  if (ed3Filter) {
-    return scripts.filter((trigger) => ed3Classification(project, trigger) === ed3Filter.classification);
-  }
-  if (filter === "macros") {
-    return scripts.filter((trigger) => trigger.source === "Data ED3");
-  }
-  return scripts;
+  if (ed3Filter) return ed3Classification(project, trigger) === ed3Filter.classification;
+  return true;
 }
 
 export function ed3Classification(project: Project | null, trigger: TriggerRecord) {
@@ -149,9 +162,8 @@ export function isReusableActionPoint(trigger: TriggerRecord) {
 
 export function triggerVisibleForEditor(project: Project | null, trigger: TriggerRecord, activeEditor: string) {
   const tabKind = scriptTabKind(activeEditor);
-  if (tabKind === "reusable-actions") return extraActionTabClassification(project, trigger) === "reusable-actions";
+  if (tabKind === "reusable-actions") return trigger.source === "Data ED3";
   if (tabKind === "global-events") return extraActionTabClassification(project, trigger) === "global-events";
-  if (tabKind === "advanced-imports") return extraActionTabClassification(project, trigger) === "advanced-imports";
   if (activeEditor === "action-points") return trigger.source !== "Data ED3" && trigger.levelType != null && trigger.levelIndex != null;
   if (activeEditor === "quests") return trigger.actions.some((action) => [46, 47, 76, 77].includes(action.code));
   if (activeEditor === "settings-rows") return false;
@@ -161,11 +173,16 @@ export function triggerVisibleForEditor(project: Project | null, trigger: Trigge
 export function scriptPanelTitle(activeEditor: string) {
   if (activeEditor === "action-points") return "Action Points";
   if (activeEditor === "macros") return "Extra Action Points";
-  if (activeEditor === "ed3-evidence") return "Unlinked Extra Actions";
+  if (activeEditor === "ed3-evidence") return "Extra Action Points";
   if (activeEditor === "global-macros") return "Global Events";
   if (activeEditor === "quests") return "Quests";
   if (activeEditor === "settings-rows") return "Action Settings";
   return "Action Points";
+}
+
+function ed3RootTypeIncludes(project: Project | null, trigger: TriggerRecord, needle: string) {
+  if (trigger.source !== "Data ED3") return false;
+  return String(ed3ReachabilityFor(project, trigger.recordIndex)?.rootType ?? "").includes(needle);
 }
 
 export function scriptLabel(project: Project, trigger: TriggerRecord) {
