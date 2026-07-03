@@ -69,6 +69,10 @@ type ResolvedBattleMonsterIcon = MonsterIconResolution & {
 };
 
 type BattleCanvasImage = HTMLImageElement | ImageBitmap;
+type BattleCanvasImageEntry = {
+  url: string | null;
+  image: BattleCanvasImage | null;
+};
 
 type BattleBrushMode = "select" | "paint" | "erase";
 
@@ -1715,25 +1719,65 @@ function BattleBoardCanvas({
   const gridCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const monsterCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const interactionCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [imagesByPlacement, setImagesByPlacement] = useState<Record<string, BattleCanvasImage | null>>({});
+  const [imagesByPlacement, setImagesByPlacement] = useState<Record<string, BattleCanvasImageEntry>>({});
 
   useEffect(() => {
     let disposed = false;
-    const loadTimer = window.setTimeout(() => {
-      Promise.all(placements.map(async (placement) => {
-        if (!placement.monster) return [battlePlacementCanvasKey(placement), null] as const;
-        const resolved = iconUrls[battleMonsterIconLookupKey(placement.monster)] ?? null;
-        const image = resolved?.resolvedUrl ? await loadBattleCanvasImage(resolved.resolvedUrl) : null;
-        return [battlePlacementCanvasKey(placement), image] as const;
-      })).then((entries) => {
-        if (!disposed) setImagesByPlacement(Object.fromEntries(entries));
-      }).catch(() => {
-        if (!disposed) setImagesByPlacement({});
+    const nextImages: Record<string, BattleCanvasImageEntry> = {};
+    const missing: Array<{ key: string; url: string | null }> = [];
+    for (const placement of placements) {
+      const key = battlePlacementCanvasKey(placement);
+      if (!placement.monster) {
+        nextImages[key] = { url: null, image: null };
+        continue;
+      }
+      const resolved = iconUrls[battleMonsterIconLookupKey(placement.monster)] ?? null;
+      const url = resolved?.resolvedUrl ?? null;
+      const cached = imagesByPlacement[key];
+      if (cached && cached.url === url) {
+        nextImages[key] = cached;
+      } else {
+        nextImages[key] = { url, image: url ? battleCanvasResolvedImageCache.get(url) ?? null : null };
+      }
+      if (url && !nextImages[key].image) missing.push({ key, url });
+    }
+    setImagesByPlacement(nextImages);
+    if (missing.length === 0) {
+      return () => {
+        disposed = true;
+      };
+    }
+    Promise.all(missing.map(async ({ key, url }) => {
+      const image = url ? await loadBattleCanvasImage(url) : null;
+      return [key, { url, image }] as const;
+    })).then((entries) => {
+      if (disposed) return;
+      setImagesByPlacement((current) => {
+        let changed = false;
+        const next = { ...current };
+        for (const [key, entry] of entries) {
+          if (next[key]?.url !== entry.url) continue;
+          if (next[key].image === entry.image) continue;
+          next[key] = entry;
+          changed = true;
+        }
+        return changed ? next : current;
       });
-    }, 180);
+    }).catch(() => {
+      if (disposed) return;
+      setImagesByPlacement((current) => {
+        let changed = false;
+        const next = { ...current };
+        for (const { key, url } of missing) {
+          if (next[key]?.url !== url || next[key].image === null) continue;
+          next[key] = { url, image: null };
+          changed = true;
+        }
+        return changed ? next : current;
+      });
+    });
     return () => {
       disposed = true;
-      window.clearTimeout(loadTimer);
     };
   }, [iconUrls, placements]);
 
@@ -6089,7 +6133,7 @@ function drawBattleMonsterLayer(
   ctx: CanvasRenderingContext2D,
   size: number,
   placements: BattleGridPlacementView[],
-  imagesByPlacement: Record<string, BattleCanvasImage | null>,
+  imagesByPlacement: Record<string, BattleCanvasImageEntry>,
   draggingIndex: number | null
 ) {
   ctx.clearRect(0, 0, size, size);
@@ -6098,7 +6142,7 @@ function drawBattleMonsterLayer(
     const rect = battlePlacementRect(placement, cellSize);
     ctx.save();
     if (draggingIndex === placement.index) ctx.globalAlpha = 0.55;
-    const image = imagesByPlacement[battlePlacementCanvasKey(placement)] ?? null;
+    const image = imagesByPlacement[battlePlacementCanvasKey(placement)]?.image ?? null;
     if (image) drawImageContained(ctx, image, rect.x, rect.y, rect.width, rect.height);
     else drawMissingBattleMonster(ctx, placement, rect);
     if (placement.alternateSide) {
