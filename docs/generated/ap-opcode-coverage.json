@@ -6,11 +6,10 @@
     "actions": "src/editor/realmzActions.ts"
   },
   "counts": {
-    "authorable-now": 48,
+    "authorable-now": 49,
     "edcd-backed-guided": 69,
     "ignored-empty": 1,
     "macro-only-context-gated": 1,
-    "manual-source-discrepancy": 1,
     "not-used-no-dispatch": 10
   },
   "entries": [
@@ -1220,15 +1219,15 @@
     },
     {
       "opcode": 84,
-      "title": "Not Used",
-      "status": "manual-source-discrepancy",
-      "note": "Divinity/manual labels this Not Used, but Realmz Revisited has a registration-check dispatcher case. Treat as a manual/source discrepancy until classic behavior and Divinity editability are verified.",
+      "title": "Legacy Registration Check",
+      "status": "authorable-now",
+      "note": "Realmz source has a legacy registration-check dispatcher case. Classic Realmz could enforce scenario registration here; modern open-source builds keep the dispatcher but comment out enforcement.",
       "edcdBacked": false,
       "shape": null,
       "writerStatus": "writer-gated-direct-target-family",
       "namedInCatalog": true,
-      "firstClass": false,
-      "advanced": true,
+      "firstClass": true,
+      "advanced": false,
       "targetFamily": "direct-id",
       "idMeaning": "ID"
     },

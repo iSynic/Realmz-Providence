@@ -39,7 +39,7 @@ if (!firstClassMatch) {
   failures.push("Missing FIRST_CLASS_ACTIONS set.");
 } else {
   const firstClass = new Set((firstClassMatch[1].match(/-?\d+/g) ?? []).map(Number));
-  for (const opcode of [1, 2, 3, 8, 11, 14, 19, 20, 24, 25, 26, 29, 39, 45, 48, 56, 82, 83, 98, 99, 101, 112, 119, 122, 127]) {
+  for (const opcode of [1, 2, 3, 8, 11, 14, 19, 20, 24, 25, 26, 29, 39, 45, 48, 56, 82, 83, 84, 98, 99, 101, 112, 119, 122, 127]) {
     if (!firstClass.has(opcode)) failures.push(`Common action ${opcode} is not marked first-class.`);
   }
 }
@@ -49,7 +49,7 @@ if (!advancedMatch) {
   failures.push("Missing ADVANCED_ACTIONS set.");
 } else {
   const advanced = new Set((advancedMatch[1].match(/-?\d+/g) ?? []).map(Number));
-  for (const opcode of [7, 98, 99, 101, 112]) {
+  for (const opcode of [7, 84, 98, 99, 101, 112]) {
     if (advanced.has(opcode)) failures.push(`Known authorable action ${opcode} is still forced into the preserved/advanced bucket.`);
   }
 }

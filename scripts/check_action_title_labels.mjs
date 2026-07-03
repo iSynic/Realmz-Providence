@@ -61,8 +61,8 @@ for (const [code, expected] of expectedTitles) {
   }
 }
 
-if (displayTitleFor(84) !== "Registration Check?") {
-  failures.push("Opcode 84 should keep the discrepancy label instead of becoming the manual Not Used title.");
+if (displayTitleFor(84) !== "Registration Check") {
+  failures.push("Opcode 84 should keep Providence's registration-check label instead of becoming the manual Not Used title.");
 }
 
 if (failures.length > 0) {

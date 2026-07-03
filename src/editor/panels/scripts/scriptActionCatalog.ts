@@ -152,11 +152,11 @@ const FIRST_CLASS_ACTIONS = new Set([
   1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 14, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34,
   35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 60,
   61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 81, 82, 83, 85, 86,
-  87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107,
+  84, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107,
   108, 111, 112, 119, 120, 122, 123, 124, 125, 126, 127, -14, -23
 ]);
 
-const ADVANCED_ACTIONS = new Set([84, 121]);
+const ADVANCED_ACTIONS = new Set([121]);
 
 const IGNORED_ACTIONS = new Set([0, ...NOT_USED_ACTION_CODES]);
 
@@ -246,11 +246,11 @@ const ACTION_OVERRIDES: Record<number, Partial<Pick<ScriptActionDefinition, "lab
   82: { label: "Turn Cleric Turning Off", shortLabel: "Turning Off", category: "Rules", description: "Disable cleric turning behavior." },
   83: { label: "Turn Cleric Turning On", shortLabel: "Turning On", category: "Rules", description: "Enable cleric turning behavior." },
   84: {
-    label: "Registration Check Discrepancy",
-    shortLabel: "Registration Check?",
-    category: "Advanced",
-    description: "Manual/Divinity material labels this not used, but Realmz Revisited contains a registration-check dispatcher case. Providence preserves existing values until classic behavior is verified.",
-    searchTerms: ["not used", "registration", "discrepancy", "preserve"]
+    label: "Legacy Registration Check",
+    shortLabel: "Registration Check",
+    category: "Logic",
+    description: "Legacy scenario registration gate. Classic Realmz could stop unregistered custom scenarios here; modern open-source builds keep the dispatcher but comment out enforcement.",
+    searchTerms: ["not used", "registration", "security", "legacy", "registered scenario"]
   },
   85: { label: "Branch Randomly", shortLabel: "Random Branch", category: "Logic", description: "Branch to a random target in a range." },
   86: { label: "Branch On Party State", shortLabel: "Party Branch", category: "Logic", description: "Branch based on party, race, caste, gender, boat, camp, or level tests." },

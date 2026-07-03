@@ -29,7 +29,7 @@ Current named blocker candidates:
 
 | Blocker | Behavior to prove | Scenario/tool | Providence decision unlocked |
 | --- | --- | --- | --- |
-| Opcode 84 manual/source discrepancy | Whether Divinity's manual wording maps to actual Realmz runtime behavior or an editor-only/imported state | Realmz source plus AP action-gap report, with a fixture only if source stays ambiguous | Keep opcode 84 preserve-only, relabel it, or promote a first-class action form |
+| Opcode 84 legacy registration compatibility | Whether classic Realmz/Divinity should expose additional editor behavior beyond the source-backed no-settings registration gate | Realmz source plus AP action coverage report; fixture only if classic Divinity editor behavior becomes relevant | Keep opcode 84 as a named legacy registration action unless future evidence proves a richer authoring form |
 | Opcode 7 action-code replacement | Whether Divinity rewrites opcode 7 into another action code or uses it directly in saved scenarios | Divinity before/after fixture against a synthetic AP row | Decide whether Providence should expose opcode 7 authoring or only preserve/import it |
 | Timed Encounter `Data TD3` reserved fields | Whether `stuff[1..9]` affect runtime beyond preserved compatibility data | Realmz source, `report_timed_encounter_reserved_fields`, and fixtures only for a named nonzero pattern | Keep compatibility data collapsed/read-only or promote named authoring fields |
 | Recognized scenario continuity facts | Whether a story-flow claim is strong enough to become curated context | Decoded scenario strings/scripts, developer reports, or cited walkthrough-derived notes | Add or withhold read-only curated Story Flags context |

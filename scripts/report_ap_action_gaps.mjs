@@ -7,7 +7,7 @@ const args = parseArgs(process.argv.slice(2));
 const crosswalk = readJson(path.join(root, "src", "editor", "generated", "opcodeEdcdCrosswalk.json")).entries ?? {};
 const catalogAuthoring = readCatalogAuthoring();
 const NOT_USED_OPCODES = new Set([79, 80, 109, 110, 113, 114, 115, 116, 117, 118]);
-const NON_BACKLOG_KINDS = new Set(["needs-runtime-trace", "macro-only-imported", "macro-only-authorable", "inert-imported-action", "manual-source-discrepancy"]);
+const NON_BACKLOG_KINDS = new Set(["needs-runtime-trace", "macro-only-imported", "macro-only-authorable", "inert-imported-action"]);
 const GATE_FAIL_KINDS = new Set(["authoring-gap", "unknown-opcode"]);
 
 if (args.get("self-test")) {
@@ -203,26 +203,6 @@ function classifyAction(project, context, action, code, rawCode) {
       rootType,
       crosswalkStatus: "macro-only-context-gated",
       sourceDisposition: "source-dispatched-combat-gated"
-    };
-  }
-  if (code === 84) {
-    return {
-      kind: "manual-source-discrepancy",
-      severity: "warning",
-      label: "Registration-check discrepancy",
-      detail: "Divinity/manual material calls opcode 84 Not Used, but Realmz Revisited contains a registration-check case. Preserve imports until classic behavior and Divinity editability are verified.",
-      opcode: code,
-      rawCode,
-      id: numberValue(action.id),
-      settingsRow: null,
-      recordKind,
-      row: numberValue(context.recordIndex),
-      slot: numberValue(action.slot),
-      triggerId: context.triggerId,
-      ed3Classification,
-      rootType,
-      crosswalkStatus: "manual-source-discrepancy",
-      sourceDisposition: "manual-source-disagreement"
     };
   }
   if (NOT_USED_OPCODES.has(code)) {
@@ -482,10 +462,11 @@ function runSelfTest() {
         expectedGateFailures: 0
       },
       {
-        name: "opcode 84 is discrepancy",
+        name: "opcode 84 is legacy registration authoring",
         project: projectWithTriggers("Opcode 84", [{ source: "Data DD", recordIndex: 1, actions: [{ slot: 1, rawCode: 84, id: 0 }] }]),
-        expectedSummary: { "manual-source-discrepancy": 1 },
-        expectedGateFailures: 0
+        expectedSummary: {},
+        expectedGateFailures: 0,
+        expectedFindingCount: 0
       },
       {
         name: "runtime residue does not fail",
@@ -518,6 +499,10 @@ function runSelfTest() {
       assertEqual(report.gateFailureCount, testCase.expectedGateFailures, `${testCase.name}: gate failure count`);
       for (const [kind, count] of Object.entries(testCase.expectedSummary)) {
         assertEqual(report.summary[kind] ?? 0, count, `${testCase.name}: ${kind} count`);
+      }
+      if (testCase.expectedFindingCount != null) {
+        const findingCount = report.projects.reduce((sum, project) => sum + project.findings.length, 0);
+        assertEqual(findingCount, testCase.expectedFindingCount, `${testCase.name}: finding count`);
       }
       if (testCase.expectedRecordKind) {
         const recordKind = report.projects[0]?.findings[0]?.recordKind;

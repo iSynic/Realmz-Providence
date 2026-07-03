@@ -14,7 +14,7 @@ for (const snippet of [
   "Scenario or tool used",
   "Providence decision unlocked",
   "Evidence confidence target",
-  "Opcode 84 manual/source discrepancy",
+  "Opcode 84 legacy registration compatibility",
   "Opcode 7 action-code replacement",
   "Timed Encounter `Data TD3` reserved fields",
   "Recognized scenario continuity facts",

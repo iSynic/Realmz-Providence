@@ -4,11 +4,10 @@ Generated from Providence's action catalog and the Divinity/manual opcode crossw
 
 ## Summary
 
-- authorable-now: 48
+- authorable-now: 49
 - edcd-backed-guided: 69
 - ignored-empty: 1
 - macro-only-context-gated: 1
-- manual-source-discrepancy: 1
 - not-used-no-dispatch: 10
 
 ## Coverage
@@ -101,7 +100,7 @@ Generated from Providence's action catalog and the Divinity/manual opcode crossw
 | 81 | edcd-backed-guided | Branch on Character Condition | Data EDCD | condition-branch |  |
 | 82 | authorable-now | Turn Cleric Turning OFF. | direct-id |  |  |
 | 83 | authorable-now | Turn Cleric Turning ON. | direct-id |  |  |
-| 84 | manual-source-discrepancy | Not Used | direct-id |  | Divinity/manual labels this Not Used, but Realmz Revisited has a registration-check dispatcher case. Treat as a manual/source discrepancy until classic behavior and Divinity editability are verified. |
+| 84 | authorable-now | Legacy Registration Check | direct-id |  | Realmz source has a legacy registration-check dispatcher case. Classic Realmz could enforce scenario registration here; modern open-source builds keep the dispatcher but comment out enforcement. |
 | 85 | edcd-backed-guided | Branch on Random | Data EDCD | random-branch |  |
 | 86 | edcd-backed-guided | Branch on Miscellaneous | Data EDCD | misc-conditional-branch |  |
 | 87 | edcd-backed-guided | Branch on Special Character (NPC) Present | Data EDCD | conditional-branch |  |
@@ -146,9 +145,9 @@ Generated from Providence's action catalog and the Divinity/manual opcode crossw
 | 126 | edcd-backed-guided | Battle Macro Criteria | Data EDCD | battle-macro |  |
 | 127 | authorable-now | Continue If Monster Present (Monster & Battle Macros Only) | direct-id |  |  |
 
-## Discrepancy Notes
+## Special Opcode Notes
 
-- Opcode 84: Divinity/manual says Not Used, while Realmz Revisited contains a registration-check case. Keep preserve-only until verified against classic behavior and Divinity editing.
+- Opcode 84: Realmz source has a legacy registration-check dispatcher case. Providence supports authoring it for old-school Realmz compatibility; modern open-source builds keep the dispatcher but comment out enforcement.
 - Opcode 121: De-animate Lower Undead is useful, but source behavior is combat-gated. Ordinary Action Point imports are preserved; macro/combat authoring remains the intended surface.
 
 ## Wrath Crosscheck Note

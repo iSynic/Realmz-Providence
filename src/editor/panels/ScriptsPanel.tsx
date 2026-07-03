@@ -2126,7 +2126,7 @@ function humanActionValueLabel(label: string) {
 function actionAuthoringStateLabel(definition: ScriptActionDefinition, combatMacroContext?: CombatMacroContext | null) {
   if (definition.opcode === 121 && combatMacroContext) return "Combat macro action";
   if (definition.opcode === 121) return "Macro-only imported action";
-  if (definition.opcode === 84) return "Manual/source discrepancy";
+  if (definition.opcode === 84) return "Legacy registration action";
   if (definition.shortLabel === "Inert Imported Action") return "Inert imported action";
   if (definition.validationPosture === "no-effect") return "Preserve-only / no normal effect";
   if (definition.authoringLevel === "first-class") return "Friendly editor";
@@ -2141,7 +2141,7 @@ function actionAuthoringStateDetail(definition: ScriptActionDefinition, combatMa
     return "Realmz source performs this only during combat. Ordinary AP imports are preserved here and are not routine Action Point authoring backlog; use monster or battle macro surfaces for intentional authoring.";
   }
   if (definition.opcode === 84) {
-    return "Divinity/manual material says this is not used, while Realmz Revisited contains a registration-check case. Providence preserves it until classic behavior is verified.";
+    return "Classic Realmz used this as a scenario registration gate. Modern open-source Realmz keeps the dispatcher but comments out enforcement, so this is legacy compatibility authoring.";
   }
   if (definition.shortLabel === "Inert Imported Action") {
     return "This is a documented Not Used opcode. Providence keeps the imported CODE/ID value, but it is not normal authoring behavior.";

@@ -111,7 +111,7 @@ const ACTION_DETAILS: Record<number, Partial<RealmzActionOption>> = {
   81: { shortLabel: "Condition Branch", category: "Branch", description: "Branch to macros based on condition state.", edcdShape: "condition-branch" },
   82: { shortLabel: "Turning Off", category: "Rules", description: "Disable cleric turning behavior." },
   83: { shortLabel: "Turning On", category: "Rules", description: "Enable cleric turning behavior." },
-  84: { shortLabel: "Registration Check?", category: "Advanced", description: "Manual/Divinity material labels this not used, but Realmz Revisited contains a registration-check dispatcher case. Preserve imports until classic behavior is verified." },
+  84: { shortLabel: "Registration Check", category: "Scenario", description: "Legacy scenario registration gate. Classic Realmz could stop unregistered custom scenarios here; modern open-source builds keep the dispatcher but comment out enforcement." },
   85: { shortLabel: "Random Branch", category: "Branch", description: "Branch to a random target in range.", edcdShape: "random-branch" },
   86: { shortLabel: "Misc Branch", category: "Branch", description: "Branch based on party, race, caste, gender, boat, camp, or level tests.", edcdShape: "misc-conditional-branch" },
   87: { shortLabel: "Conditional Branch", category: "Branch", description: "Branch based on conditional EDCD tests, with message behavior in some cases.", edcdShape: "conditional-branch" },

@@ -27,7 +27,7 @@ const entries = Object.values(crosswalk)
     const status = classify(entry, { inFirstClass, inAdvanced, inIgnored, hasCatalogName });
     return {
       opcode: code,
-      title: entry.title,
+      title: coverageTitle(entry),
       status,
       note: coverageNote(entry, status),
       edcdBacked: Boolean(entry.edcdBacked),
@@ -66,7 +66,6 @@ console.log(`Wrote ${path.relative(root, mdOut)}`);
 function classify(entry, state) {
   if (state.inIgnored) return "ignored-empty";
   if (entry.opcode === 121) return "macro-only-context-gated";
-  if (entry.opcode === 84) return "manual-source-discrepancy";
   if (entry.writerStatus === "writer-gated-not-used") return "not-used-no-dispatch";
   if (state.inAdvanced) return "preserved-but-known";
   if (entry.edcdBacked) return state.hasCatalogName ? "edcd-backed-guided" : "edcd-backed-needs-form";
@@ -80,10 +79,15 @@ function coverageNote(entry, status) {
     return "Realmz source dispatches this only during combat and loads the ID as an Extra Code row; Providence keeps ordinary AP imports preserved and treats macro/combat surfaces as the intentional authoring path.";
   }
   if (entry.opcode === 84) {
-    return "Divinity/manual labels this Not Used, but Realmz Revisited has a registration-check dispatcher case. Treat as a manual/source discrepancy until classic behavior and Divinity editability are verified.";
+    return "Realmz source has a legacy registration-check dispatcher case. Classic Realmz could enforce scenario registration here; modern open-source builds keep the dispatcher but comment out enforcement.";
   }
   if (status === "not-used-no-dispatch") return "Documented not-used opcode with no normal authoring path; preserve imported values but do not present as meaningful authoring.";
   return "";
+}
+
+function coverageTitle(entry) {
+  if (entry.opcode === 84) return "Legacy Registration Check";
+  return entry.title;
 }
 
 function renderMarkdown(report) {
@@ -106,9 +110,9 @@ function renderMarkdown(report) {
   }
   lines.push(
     "",
-    "## Discrepancy Notes",
+    "## Special Opcode Notes",
     "",
-    "- Opcode 84: Divinity/manual says Not Used, while Realmz Revisited contains a registration-check case. Keep preserve-only until verified against classic behavior and Divinity editing.",
+    "- Opcode 84: Realmz source has a legacy registration-check dispatcher case. Providence supports authoring it for old-school Realmz compatibility; modern open-source builds keep the dispatcher but comment out enforcement.",
     "- Opcode 121: De-animate Lower Undead is useful, but source behavior is combat-gated. Ordinary Action Point imports are preserved; macro/combat authoring remains the intended surface.",
     "",
     "## Wrath Crosscheck Note",
