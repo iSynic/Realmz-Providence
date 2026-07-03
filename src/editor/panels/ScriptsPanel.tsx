@@ -456,6 +456,7 @@ function ScriptAuthoringPanel({
   const [inventoryFilter, setInventoryFilter] = usePersistentValue<ScriptInventoryFilter>("scripts.inventory.filter", "current-map");
   const [detailSurface, setDetailSurface] = usePersistentValue<ScriptDetailSurface>("scripts.detailSurface", "docked");
   const [targetDrawerOpen, setTargetDrawerOpen] = usePersistentBoolean("scripts.targetDrawer.v2.open", false);
+  const [selectedScriptId, setSelectedScriptId] = useState<string | null>(null);
   const [newActionPoint, setNewActionPoint] = useState({ mapId: projectMaps[0]?.id ?? "", x: 1, y: 1 });
   const [warningScanReady, setWarningScanReady] = useState(false);
   const [selectedDiagnosticsReady, setSelectedDiagnosticsReady] = useState(false);
@@ -626,14 +627,27 @@ function ScriptAuthoringPanel({
     };
   }, [filteredScripts, onSelectEntity, setDetailSurface]);
   const selectedTriggerFromSelection = useMemo(
-    () => project?.triggers.find((trigger) => triggerMatchesSelection(trigger, selectedEntity?.id ?? "")) ?? null,
-    [project, selectedEntity?.id]
+    () => scripts.find((trigger) => triggerMatchesSelection(trigger, selectedEntity?.id ?? "")) ?? null,
+    [scripts, selectedEntity?.id]
+  );
+  const selectedTriggerFromLocal = useMemo(
+    () => scripts.find((trigger) => trigger.id === selectedScriptId) ?? null,
+    [scripts, selectedScriptId]
   );
   const selectedTrigger =
     selectedTriggerFromSelection ??
+    selectedTriggerFromLocal ??
     filteredScripts[0] ??
     scripts[0] ??
     null;
+  useEffect(() => {
+    if (!selectedTriggerFromSelection) return;
+    setSelectedScriptId(selectedTriggerFromSelection.id);
+  }, [selectedTriggerFromSelection?.id, selectedTriggerFromSelection]);
+  const handleSelectTrigger = useCallback((trigger: TriggerRecord) => {
+    setSelectedScriptId(trigger.id);
+    onSelectEntity(selectEntityFromId(triggerSelectionId(trigger)));
+  }, [onSelectEntity]);
   useEffect(() => {
     if (!selectedTrigger) return;
     if (selectedTrigger.actions.some((action) => action.slot === selectedSlot)) return;
@@ -864,7 +878,7 @@ function ScriptAuthoringPanel({
     />
   ) : null;
   const targetEditorPanel = selectedTrigger && targetDrawerOpen && directTargetDrawerAvailable ? (
-    <PanelSection title="Target Record" eyebrow="selected step" density="compact" className={`script-target-drawer${wideTargetRecord ? " wide-target" : ""}`} actions={<button type="button" className="btn btn-secondary btn-xs icon-only" title="Hide target record context" onClick={() => setTargetDrawerOpen(false)}><X size={12} /></button>}>
+    <PanelSection title="Target Record" eyebrow="selected step" density="compact" scroll className={`script-target-drawer${wideTargetRecord ? " wide-target" : ""}`} actions={<button type="button" className="btn btn-secondary btn-xs icon-only" title="Hide target record context" onClick={() => setTargetDrawerOpen(false)}><X size={12} /></button>}>
       <p className="field-help">
         <TutorialTip title="Target Record" body={TARGET_DRAWER_HELP} side="below">
           <span>Inspect or open the record selected by this step.</span>
@@ -890,6 +904,7 @@ function ScriptAuthoringPanel({
     const current = slotDraft(slot, action);
     return current.rawCode === 0 && current.id === 0;
   }) : null;
+  const extraActionEvidenceOpen = triggerDiagnostics.some((issue) => issue.severity === "error");
   return (
     <section className="realmz-script-editor">
       <header className="settings-rows-header">
@@ -1003,7 +1018,7 @@ function ScriptAuthoringPanel({
                 selected={trigger.id === selectedTrigger?.id}
                 buttonRef={trigger.id === selectedTrigger?.id ? selectedScriptButtonRef : undefined}
                 issues={visibleDiagnosticsById.get(trigger.id) ?? []}
-                onSelectEntity={onSelectEntity}
+                onSelectTrigger={handleSelectTrigger}
               />
             ))}
             {filteredScripts.length === 0 && (
@@ -1055,19 +1070,9 @@ function ScriptAuthoringPanel({
               <ScriptDiagnostics issues={triggerDiagnostics.filter((issue) => issue.slot == null)} />
               {isMacro ? (
                 <>
-                  <div className="script-record-note">
-                    <strong>{selectedExtraActionClassification}</strong>
-                    {selectedExtraActionEvidence && (
-                      <span className={`script-evidence-pill ${selectedExtraActionEvidence.tone}`}>
-                        {selectedExtraActionEvidence.label}
-                      </span>
-                    )}
-                    <small>{selectedExtraActionEvidence?.detail ?? "Extra Action Points store only the eight script steps. Map trigger fields like chance, location, and goto target do not apply until another script calls them."}</small>
-                  </div>
                   {selectedCombatMacroContext && (
                     <CombatMacroContextCard context={selectedCombatMacroContext} onSelectEntity={onSelectEntity} />
                   )}
-                  <Ed3EvidenceDetails row={selectedEd3Reachability} />
                 </>
               ) : (
                 <div className="script-header-grid">
@@ -1124,6 +1129,8 @@ function ScriptAuthoringPanel({
                     eyebrow={`${usedStepCount} of 8 used`}
                     count="8 max"
                     density="compact"
+                    scroll
+                    className="script-steps-panel"
                     actions={firstEmptyStep != null ? (
                       <button type="button" className="btn btn-primary btn-xs" onClick={() => setSelectedSlot(firstEmptyStep)}>
                         <Plus size={12} /> Add Step
@@ -1170,7 +1177,7 @@ function ScriptAuthoringPanel({
                     <ScriptFlowPreview project={project} catalog={catalog} trigger={selectedTrigger} onSelectEntity={onSelectEntity} />
                   </PanelSection>
                   {!floatingDetail && (
-                    <PanelSection title="Current Step" eyebrow={`slot ${selectedSlot + 1} | ${selectedDefinition.category}`} actions={stepDetailActions}>
+                    <PanelSection title="Current Step" eyebrow={`slot ${selectedSlot + 1} | ${selectedDefinition.category}`} scroll className="script-current-step-panel" actions={stepDetailActions}>
                       {stepDetailBody}
                     </PanelSection>
                   )}
@@ -1204,6 +1211,27 @@ function ScriptAuthoringPanel({
                 selectedEdcdRowId={selectedEdcdRowId}
                 onSelectEntity={onSelectEntity}
               />
+              {isMacro && (
+                <CollapsibleSection
+                  title="Extra AP Evidence"
+                  eyebrow="audit"
+                  density="compact"
+                  storageKey="scripts.extraActionEvidence.open"
+                  defaultOpen={extraActionEvidenceOpen}
+                  className="extra-ap-evidence-section"
+                >
+                  <div className="script-record-note">
+                    <strong>{selectedExtraActionClassification}</strong>
+                    {selectedExtraActionEvidence && (
+                      <span className={`script-evidence-pill ${selectedExtraActionEvidence.tone}`}>
+                        {selectedExtraActionEvidence.label}
+                      </span>
+                    )}
+                    <small>{selectedExtraActionEvidence?.detail ?? "Extra Action Points store only the eight script steps. Map trigger fields like chance, location, and goto target do not apply until another script calls them."}</small>
+                  </div>
+                  <Ed3EvidenceDetails row={selectedEd3Reachability} />
+                </CollapsibleSection>
+              )}
             </>
           ) : (
             <p className="empty-copy compact">Create or select an Action Point to build its script steps.</p>

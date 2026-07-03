@@ -1,6 +1,6 @@
 import { memo, type RefObject, useEffect, useState } from "react";
-import { Action, Project, ScriptInventoryFilter, SelectedEntity, SemanticEntity, TriggerRecord } from "../../types";
-import { selectEntityFromId, triggerEntityId } from "../../utils";
+import { Action, Project, ScriptInventoryFilter, SemanticEntity, TriggerRecord } from "../../types";
+import { triggerEntityId } from "../../utils";
 import { extraActionEvidenceSummary, extraActionPointClassification, isCallableMacro } from "../../semanticGraph";
 import { isReusableDoorPlaceholder } from "../../actionPointCapacity";
 import { ScriptDiagnostic } from "../../scriptValidation";
@@ -12,14 +12,14 @@ export const ScriptListItem = memo(function ScriptListItem({
   selected,
   buttonRef,
   issues,
-  onSelectEntity
+  onSelectTrigger
 }: {
   project: Project;
   trigger: TriggerRecord;
   selected: boolean;
   buttonRef?: RefObject<HTMLButtonElement>;
   issues: ScriptDiagnostic[];
-  onSelectEntity: (entity: SelectedEntity) => void;
+  onSelectTrigger: (trigger: TriggerRecord) => void;
 }) {
   const ed3Evidence = trigger.source === "Data ED3" ? extraActionEvidenceSummary(project, trigger) : null;
   return (
@@ -27,7 +27,7 @@ export const ScriptListItem = memo(function ScriptListItem({
       type="button"
       ref={buttonRef}
       className={`${selected ? "selected" : ""}${isReusableActionPoint(trigger) ? " reusable" : ""}`}
-      onClick={() => onSelectEntity(selectEntityFromId(triggerSelectionId(trigger)))}
+      onClick={() => onSelectTrigger(trigger)}
     >
       <strong>{scriptLabel(project, trigger)}</strong>
       <small>{scriptSubtitle(project, trigger)}</small>

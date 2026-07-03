@@ -1,8 +1,26 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
+function blockWorkspaceScratchRequests() {
+  const blockedPrefixes = ["/.git/", "/dist/", "/tmp/"];
+  return {
+    name: "providence-block-workspace-scratch-requests",
+    configureServer(server) {
+      server.middlewares.use((request, response, next) => {
+        const url = request.url ?? "";
+        if (blockedPrefixes.some((prefix) => url === prefix.slice(0, -1) || url.startsWith(prefix))) {
+          response.statusCode = 404;
+          response.end("Not found");
+          return;
+        }
+        next();
+      });
+    }
+  };
+}
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [blockWorkspaceScratchRequests(), react()],
   clearScreen: false,
   build: {
     rollupOptions: {
@@ -41,7 +59,7 @@ export default defineConfig({
       ]
     },
     watch: {
-      ignored: ["**/src-tauri/**"]
+      ignored: ["**/.git/**", "**/dist/**", "**/src-tauri/**", "**/tmp/**"]
     }
   }
 });

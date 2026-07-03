@@ -6019,11 +6019,16 @@
 
 
 .realmz-script-editor {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: calc(100vh - 118px);
   border: 1px solid #26333f;
   border-radius: 7px;
   background: #0e141b;
   margin-bottom: 12px;
   padding: 10px;
+  overflow: hidden;
 }
 
 
@@ -6031,6 +6036,7 @@
 
 
 .realmz-script-editor > header {
+  flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 10px;
@@ -6061,8 +6067,11 @@
 
 
 .realmz-script-layout {
-  min-height: min(700px, calc(100vh - 260px));
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: calc(100vh - 246px);
   align-items: stretch;
+  overflow: hidden;
 }
 
 
@@ -6072,8 +6081,8 @@
 .realmz-script-list {
   width: 100%;
   flex: 1 1 auto;
-  min-height: 520px;
-  max-height: min(760px, calc(100vh - 340px));
+  min-height: 0;
+  max-height: none;
   overflow-y: scroll;
   padding-right: 2px;
 }
@@ -6134,18 +6143,22 @@
 
 .realmz-script-form {
   flex: 1;
+  min-height: 0;
   min-width: 0;
   max-width: 100%;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
   padding-right: 8px;
 }
 
 .realmz-visual-script-scroll {
+  flex: 1 1 auto;
   max-width: 100%;
+  min-height: 0;
   min-width: 0;
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: hidden;
   padding-bottom: 6px;
   scrollbar-gutter: stable;
 }
@@ -6181,13 +6194,45 @@
   gap: 10px;
   align-items: stretch;
   margin-top: 10px;
-  min-height: min(720px, max(520px, calc(100vh - 500px)));
+  height: 100%;
+  min-height: 0;
   min-width: 1130px;
   width: max(100%, 1130px);
   max-width: none;
 }
 
 .realmz-visual-script > * {
+  min-height: 0;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.realmz-visual-script > .workbench-panel-section {
+  height: 100%;
+  min-height: 0;
+}
+
+.realmz-visual-script > .workbench-panel-section.is-scrollable > .workbench-panel-section-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.realmz-visual-script > .script-steps-panel > .workbench-panel-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.script-steps-panel .realmz-step-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+}
+
+.script-current-step-panel .selected-step-detail,
+.script-target-drawer .workbench-panel-section-body > * {
   min-width: 0;
   max-width: 100%;
 }
