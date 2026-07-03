@@ -702,12 +702,22 @@ function ScenarioResourceAssetCard({
 }) {
   const { previewRef, preview } = useScenarioResourcePreview<HTMLElement>(project, catalog, asset, desktopRuntime, projectDir, workspaceDir, selected);
   return (
-    <article ref={previewRef} className={`managed-asset-card scenario-resource compact-gallery-card${selected ? " selected" : ""}`} tabIndex={0} onClick={onSelect} onKeyDown={(event) => {
+    <article
+      ref={previewRef}
+      className={`managed-asset-card scenario-resource compact-gallery-card${selected ? " selected" : ""}`}
+      tabIndex={0}
+      data-asset-scope="scenario-resource"
+      data-asset-kind={asset.kind}
+      data-resource-type={asset.resourceType}
+      data-resource-id={asset.resourceId}
+      onClick={onSelect}
+      onKeyDown={(event) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
         onSelect();
       }
-    }}>
+    }}
+    >
       <AssetPreview
         kind={asset.kind}
         label={asset.entity.label}

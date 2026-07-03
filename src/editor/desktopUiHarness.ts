@@ -21,6 +21,7 @@ type AssetPerformanceHarnessScript = {
   projectName: string;
   projectDir: string;
   detailClicks?: number;
+  resourceProbes?: AssetResourceProbeRequest[];
 };
 
 type AssetPerformanceHarnessResult = {
@@ -33,6 +34,16 @@ type AssetPerformanceHarnessResult = {
   counts: Record<string, number>;
   probes: Array<{ label: string; durationMs: number; ok: boolean; detail?: string | null }>;
   error: string | null;
+};
+
+type AssetResourceProbeRequest = {
+  label: string;
+  section: "project" | "realmz";
+  kind: "picture" | "icon" | "sound" | "text" | "special-land-tile" | "all";
+  resourceType?: string;
+  expectedPreview?: "image" | "audio" | "text" | "any";
+  searchByResourceId?: boolean;
+  optional?: boolean;
 };
 
 type PrimaryWorkflowHarnessScript = {
@@ -173,6 +184,13 @@ export async function runDesktopUiHarness({
     const clicks = Math.max(0, Math.min(10, script.detailClicks ?? 3));
     for (let index = 0; index < clicks; index += 1) {
       const probe = await clickAssetDetail(index);
+      result.probes.push(probe);
+      await closeAssetDetail();
+    }
+
+    const resourceProbes = script.resourceProbes?.length ? script.resourceProbes : defaultAssetResourceProbes();
+    for (const request of resourceProbes) {
+      const probe = await probeAssetResource(request);
       result.probes.push(probe);
       await closeAssetDetail();
     }
@@ -721,6 +739,126 @@ function captureAssetCounts(result: AssetPerformanceHarnessResult) {
   result.counts.openDetailButtons = openDetailButtons().length;
 }
 
+function defaultAssetResourceProbes(): AssetResourceProbeRequest[] {
+  return [
+    { label: "Scenario picture selected preview", section: "project", kind: "picture", resourceType: "PICT", expectedPreview: "image", searchByResourceId: true },
+    { label: "Scenario icon selected preview", section: "project", kind: "icon", resourceType: "cicn", expectedPreview: "image", searchByResourceId: true },
+    { label: "Scenario sound selected preview", section: "project", kind: "sound", resourceType: "snd", expectedPreview: "audio", searchByResourceId: true },
+    { label: "Reference picture selected preview", section: "realmz", kind: "picture", resourceType: "PICT", expectedPreview: "image", searchByResourceId: true },
+    { label: "Reference icon selected preview", section: "realmz", kind: "icon", resourceType: "cicn", expectedPreview: "image", searchByResourceId: true },
+    { label: "Reference sound selected preview", section: "realmz", kind: "sound", resourceType: "snd", expectedPreview: "audio", searchByResourceId: true }
+  ];
+}
+
+async function probeAssetResource(request: AssetResourceProbeRequest) {
+  const started = performance.now();
+  try {
+    await selectAssetSection(request.section);
+    await setAssetKindFilter(request.kind);
+    await setAssetSearch("");
+    const initialCard = await waitForAssetCard(request, 10_000);
+    const resourceId = initialCard.dataset.resourceId ?? "";
+    if (request.searchByResourceId && resourceId) {
+      await setAssetSearch(resourceId);
+    }
+    const card = await waitForAssetCard(request, 10_000);
+    const label = card.querySelector("strong")?.textContent?.trim() || request.label;
+    const resourceType = card.dataset.resourceType?.trim() || "";
+    const resolvedResourceId = card.dataset.resourceId ?? "";
+    card.scrollIntoView({ block: "center", inline: "nearest" });
+    await settleFrames(2);
+    card.click();
+    await waitForElement(".asset-selection-inspector .resource-detail-view", 10_000);
+    await waitFor(() => assetPreviewReady(".asset-selection-inspector", request.expectedPreview ?? "any"), 10_000, `Timed out waiting for ${request.label} inspector preview.`);
+    const detailButton = inspectorOpenDetailButton();
+    if (!detailButton) throw new Error("No inspector Open Detail button found.");
+    detailButton.click();
+    await waitForElement(".asset-resource-preview-window", 10_000);
+    await waitFor(() => assetPreviewReady(".asset-resource-preview-window", request.expectedPreview ?? "any"), 10_000, `Timed out waiting for ${request.label} detail preview.`);
+    await settleFrames(2);
+    return {
+      label: request.label,
+      durationMs: elapsed(started),
+      ok: true,
+      detail: `${label} | ${resourceType} ${resolvedResourceId} | ${request.section}`
+    };
+  } catch (error) {
+    const missing = errorText(error);
+    return {
+      label: request.label,
+      durationMs: elapsed(started),
+      ok: request.optional === true,
+      detail: request.optional ? `Skipped optional probe: ${missing}` : missing
+    };
+  }
+}
+
+async function selectAssetSection(section: AssetResourceProbeRequest["section"]) {
+  const label = section === "realmz" ? "Reference Libraries" : "Scenario Assets";
+  const tab = [...document.querySelectorAll<HTMLButtonElement>(".asset-section-tabs button")]
+    .find((button) => button.textContent?.includes(label));
+  if (!tab) throw new Error(`No Assets section tab found for ${label}.`);
+  if (tab.getAttribute("aria-selected") !== "true") {
+    tab.click();
+    await waitFor(() => tab.getAttribute("aria-selected") === "true", 5_000, `Timed out switching to ${label}.`);
+  }
+  await settleFrames(2);
+}
+
+async function setAssetKindFilter(kind: AssetResourceProbeRequest["kind"]) {
+  const select = document.querySelector<HTMLSelectElement>('select[aria-label="Asset kind filter"]');
+  if (!select) throw new Error("No asset kind filter found.");
+  if (select.value !== kind) {
+    select.value = kind;
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    await waitFor(() => select.value === kind, 5_000, `Timed out setting asset kind filter to ${kind}.`);
+  }
+  await settleFrames(2);
+}
+
+async function setAssetSearch(query: string) {
+  const input = document.querySelector<HTMLInputElement>(".asset-filter-row input");
+  if (!input) throw new Error("No asset search input found.");
+  if (input.value !== query) {
+    input.focus();
+    input.value = query;
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+  await settleFrames(2);
+}
+
+async function waitForAssetCard(request: AssetResourceProbeRequest, timeoutMs: number) {
+  const card = await waitForValue(
+    () => findAssetCard(request),
+    timeoutMs,
+    `Timed out waiting for ${request.label} card.`
+  );
+  return card;
+}
+
+function findAssetCard(request: AssetResourceProbeRequest) {
+  const root = request.section === "realmz" ? ".library-asset-strip" : ".asset-gallery";
+  const wantedType = request.resourceType?.trim().toLowerCase() ?? "";
+  return [...document.querySelectorAll<HTMLElement>(`${root} .managed-asset-card`)]
+    .find((card) => {
+      if (request.kind !== "all" && card.dataset.assetKind !== request.kind) return false;
+      if (wantedType && (card.dataset.resourceType ?? "").trim().toLowerCase() !== wantedType) return false;
+      return true;
+    }) ?? null;
+}
+
+function assetPreviewReady(rootSelector: string, expected: NonNullable<AssetResourceProbeRequest["expectedPreview"]>) {
+  const root = document.querySelector(rootSelector);
+  if (!root) return false;
+  if (expected === "audio") return Boolean(root.querySelector("audio[src]"));
+  if (expected === "text") return Boolean(root.querySelector(".resource-detail-text, .asset-text-preview-card"));
+  if (expected === "image") {
+    const image = root.querySelector<HTMLImageElement>(".asset-image-preview, .resource-detail-media img");
+    return Boolean(image?.complete && image.naturalWidth > 0);
+  }
+  return Boolean(root.querySelector("audio[src], .asset-image-preview, .resource-detail-media img, .resource-detail-text, .asset-text-preview-card, .resource-fact-grid"));
+}
+
 async function clickAssetDetail(index: number) {
   const cards = [...document.querySelectorAll<HTMLElement>(".managed-asset-card")];
   const card = cards[index] ?? cards[0] ?? null;
@@ -776,6 +914,16 @@ async function waitFor(predicate: () => boolean, timeoutMs: number, message: str
   const started = performance.now();
   while (performance.now() - started < timeoutMs) {
     if (predicate()) return;
+    await settleFrames(1);
+  }
+  throw new Error(message);
+}
+
+async function waitForValue<T>(predicate: () => T | null | undefined, timeoutMs: number, message: string) {
+  const started = performance.now();
+  while (performance.now() - started < timeoutMs) {
+    const value = predicate();
+    if (value) return value;
     await settleFrames(1);
   }
   throw new Error(message);

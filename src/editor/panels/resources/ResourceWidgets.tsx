@@ -225,12 +225,22 @@ export function SpecialLandAssetCard({
   }, [onSelect, preview, selected, selectedPreviewKey]);
   if (compact) {
     return (
-      <article ref={previewRef} className={cardClass} tabIndex={0} onClick={() => onSelect?.(preview)} onKeyDown={(event) => {
+      <article
+        ref={previewRef}
+        className={cardClass}
+        tabIndex={0}
+        data-asset-scope="managed"
+        data-asset-kind={asset.kind}
+        data-resource-type={asset.resourceType}
+        data-resource-id={asset.resourceId}
+        onClick={() => onSelect?.(preview)}
+        onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           onSelect?.(preview);
         }
-      }}>
+      }}
+      >
         <AssetPreview kind={asset.kind} label={asset.label} preview={preview} onOpen={() => onSelect?.(preview)} />
         <strong>{asset.label}</strong>
         <small>{asset.resourceType} {asset.resourceId}</small>
@@ -238,7 +248,14 @@ export function SpecialLandAssetCard({
     );
   }
   return (
-    <article ref={previewRef} className={cardClass}>
+    <article
+      ref={previewRef}
+      className={cardClass}
+      data-asset-scope="managed"
+      data-asset-kind={asset.kind}
+      data-resource-type={asset.resourceType}
+      data-resource-id={asset.resourceId}
+    >
       <AssetPreview kind={asset.kind} label={asset.label} preview={preview} onOpen={() => onOpenPreview?.(preview)} />
       <strong>{asset.label}</strong>
       <ResourceScopeBadge scope={resourceExportScope(asset)} />
@@ -328,12 +345,22 @@ export function ManagedAssetCard({
   }, [onSelect, preview, selected, selectedPreviewKey]);
   if (compact) {
     return (
-      <article ref={previewRef} className={cardClass} tabIndex={0} onClick={() => onSelect?.(preview)} onKeyDown={(event) => {
+      <article
+        ref={previewRef}
+        className={cardClass}
+        tabIndex={0}
+        data-asset-scope="managed"
+        data-asset-kind={asset.kind}
+        data-resource-type={asset.resourceType}
+        data-resource-id={asset.resourceId}
+        onClick={() => onSelect?.(preview)}
+        onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           onSelect?.(preview);
         }
-      }}>
+      }}
+      >
         <AssetPreview kind={asset.kind} label={asset.label} preview={preview} onOpen={() => onSelect?.(preview)} />
         <strong>{asset.label}</strong>
         <small>{asset.resourceType} {asset.resourceId}</small>
@@ -341,7 +368,14 @@ export function ManagedAssetCard({
     );
   }
   return (
-    <article ref={previewRef} className={cardClass}>
+    <article
+      ref={previewRef}
+      className={cardClass}
+      data-asset-scope="managed"
+      data-asset-kind={asset.kind}
+      data-resource-type={asset.resourceType}
+      data-resource-id={asset.resourceId}
+    >
       <AssetPreview kind={asset.kind} label={asset.label} preview={preview} onOpen={() => onOpenPreview?.(preview)} />
       <ResourceScopeBadge scope={resourceExportScope(asset)} />
       <label className="domain-field">
@@ -526,12 +560,23 @@ export function LibraryAssetCard({
   const cardClass = `managed-asset-card library${compact ? " compact-gallery-card" : ""}${selected ? " selected" : ""}`;
   if (compact) {
     return (
-      <article ref={previewRef} className={cardClass} tabIndex={0} onClick={() => onSelect?.(preview)} onKeyDown={(event) => {
+      <article
+        ref={previewRef}
+        className={cardClass}
+        tabIndex={0}
+        data-asset-scope="library"
+        data-asset-kind={managedAssetKindForLibrary(asset)}
+        data-resource-type={asset.resourceType ?? asset.type}
+        data-resource-id={asset.resourceId ?? ""}
+        data-preview-status={preview.status === "unknown" ? estimatedPreviewStatus(asset) : preview.status}
+        onClick={() => onSelect?.(preview)}
+        onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           onSelect?.(preview);
         }
-      }}>
+      }}
+      >
         <AssetPreview
           kind={assetKind(asset.type)}
           label={asset.label}

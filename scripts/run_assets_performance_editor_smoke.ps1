@@ -65,6 +65,20 @@ if ($assetCards -le 0) {
 if ($DetailClicks -gt 0 -and @($result.probes).Count -le 0) {
   $budgetFailures += "Assets detail probes did not run"
 }
+$requiredResourceProbes = @(
+  "Scenario picture selected preview",
+  "Scenario icon selected preview",
+  "Scenario sound selected preview",
+  "Reference picture selected preview",
+  "Reference icon selected preview",
+  "Reference sound selected preview"
+)
+$probeLabels = @($result.probes | ForEach-Object { [string]$_.label })
+foreach ($requiredProbe in $requiredResourceProbes) {
+  if (-not ($probeLabels -contains $requiredProbe)) {
+    $budgetFailures += "Assets resource probe did not run: $requiredProbe"
+  }
+}
 if ($MaxAssetsOpenMs -gt 0 -and $assetsOpenMs -gt $MaxAssetsOpenMs) {
   $budgetFailures += "Assets open took ${assetsOpenMs}ms > ${MaxAssetsOpenMs}ms"
 }
