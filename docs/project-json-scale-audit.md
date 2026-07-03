@@ -27,6 +27,12 @@ Measured on July 3, 2026 from existing `tmp/` projects.
 - Current persisted size pressure in representative imported-heavy projects is mostly repeated provenance objects, raw byte arrays, `values` arrays, and tile arrays. These are real schema questions, unlike pretty-print overhead.
 - Non-mutating estimates on `tmp/performance-smoke/combat-imported-benchmark-project/project.json` show that dropping all per-record `provenance` fields would save about 8.29 MB, dropping all `rawBytes` fields would save about 2.37 MB, and dropping both would reduce the compact file from 21.37 MB to about 10.71 MB. This is a diagnostic estimate only; it does not prove those fields are safe to remove.
 
+## Consumption Map
+
+- `rawBytes` is export-critical today. `src-tauri/src/realmz.rs` copies preserved raw records before writing authored fields for maps, messages, battles, monsters, items, shops, encounters, spells, races, castes, scenario shell/support/metadata, and other target records. Removing persisted `rawBytes` requires an alternate source-snapshot/byte-slice model that can reconstruct those preserved bytes during export.
+- Browser tooling also reads `rawBytes` for map marker extraction, browser semantic/resource parsing, monster-library decoding, blank-record checks, and exact byte counts in editor panels. Some of those uses could move to helpers that fetch from source slices, but they cannot simply disappear.
+- `provenance` is mostly regular source/file/record/offset metadata. It feeds semantic byte ranges, validation/source diagnostics, authored record allocation, and UI source context. It looks more suitable for table compression or load-time rehydration, but authored records and inferred/custom sources need sparse exceptions.
+
 ## Repeatable Report
 
 Run:
@@ -43,3 +49,4 @@ It also prints non-mutating what-if reductions for derived diagnostics and high-
 - Decide whether per-record `provenance` can be represented as shared source/file/stride metadata plus sparse exceptions.
 - Decide whether unchanged `rawBytes` arrays should remain embedded in every semantic record or move to a compact source snapshot/byte-slice model.
 - Keep `semanticSchema` derived and non-persisted in desktop saves; for browser benchmark projects, keep an empty current-version schema unless the benchmark explicitly needs semantic-link stress.
+- Prefer provenance compression before raw-byte removal: it has a larger measured payoff and lower direct export risk.
