@@ -1,7 +1,8 @@
-import { Project, QuestContextRef, QuestLabel, QuestThread, TriggerRecord } from "./types";
+import { Project, QuestContextRef, QuestContextSource, QuestLabel, QuestThread, TriggerRecord } from "./types";
 import { normalizeStepOpcode } from "./realmzActions";
 import { triggerEntityId } from "./utils";
 import { contextRefsForQuest } from "./questContext";
+import { recognizedQuestContextSources, recognizedQuestThreads } from "./scenarioContext";
 
 export type QuestUsageCategory =
   | "set"
@@ -170,7 +171,10 @@ export function buildQuestPresentation(project: Project, scripts: TriggerRecord[
     });
   }
 
-  const contextSources = project.editorMetadata?.questContextSources ?? [];
+  const contextSources = mergeQuestContextSources([
+    ...recognizedQuestContextSources(project),
+    ...(project.editorMetadata?.questContextSources ?? [])
+  ]);
   const quests = [...byId.values()].map((quest) => ({
     ...quest,
     uses: quest.uses.sort((a, b) => a.sortKey.localeCompare(b.sortKey)),
@@ -178,7 +182,10 @@ export function buildQuestPresentation(project: Project, scripts: TriggerRecord[
     contextRefs: contextRefsForQuest(quest, contextSources)
   })).sort((a, b) => b.uses.length - a.uses.length || a.id - b.id);
   const questById = new Map(quests.map((quest) => [quest.id, quest]));
-  const threads = mergeQuestThreads(project.editorMetadata?.questThreads ?? []);
+  const threads = mergeQuestThreads([
+    ...recognizedQuestThreads(project),
+    ...(project.editorMetadata?.questThreads ?? [])
+  ]);
   return {
     quests,
     questById,
@@ -187,8 +194,39 @@ export function buildQuestPresentation(project: Project, scripts: TriggerRecord[
   };
 }
 
+function mergeQuestContextSources(sources: QuestContextSource[]) {
+  const out: QuestContextSource[] = [];
+  const seen = new Set<string>();
+  for (const source of sources) {
+    const key = source.id || source.contentHash;
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    if (source.contentHash) seen.add(source.contentHash);
+    out.push({
+      ...source,
+      sections: (source.sections ?? []).map((section) => ({ ...section, terms: [...(section.terms ?? [])] }))
+    });
+  }
+  return out;
+}
+
 function mergeQuestThreads(projectThreads: QuestThread[]) {
-  return projectThreads.map((thread) => ({ ...thread, source: thread.source ?? "user" as const }));
+  const out: QuestThread[] = [];
+  const seen = new Set<string>();
+  for (const thread of projectThreads) {
+    if (!thread.id || seen.has(thread.id)) continue;
+    seen.add(thread.id);
+    out.push({
+      ...thread,
+      questIds: [...(thread.questIds ?? [])],
+      contextRefs: (thread.contextRefs ?? []).map((ref) => ({
+        ...ref,
+        terms: ref.terms ? [...ref.terms] : undefined
+      })),
+      source: thread.source ?? ("user" as const)
+    });
+  }
+  return out;
 }
 
 function addActionQuestUses(

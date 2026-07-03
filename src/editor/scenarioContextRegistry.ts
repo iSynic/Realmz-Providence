@@ -3,9 +3,11 @@ import type { QuestContextSourceType } from "./types";
 export type RecognizedScenarioContextRegistryEntry = {
   id: string;
   scenarioName: string;
+  aliases: string[];
   confidence: "high" | "medium" | "low";
   summary: string;
   recognitionNotes: string[];
+  coverageCriteria: string[];
   matchers: RegExp[];
   source: {
     id: string;
@@ -36,11 +38,18 @@ export const RECOGNIZED_SCENARIO_CONTEXT_REGISTRY: RecognizedScenarioContextRegi
   {
     id: "castle-in-the-clouds",
     scenarioName: "Castle in the Clouds",
+    aliases: ["Castle", "Castle in the Clouds"],
     confidence: "high",
-    summary: "Providence recognizes this as Castle in the Clouds and can show curated context for the Keto/Ulmac continuity. Treat it as a navigation aid over raw Divinity quest flags and scripts, not as a replacement for runtime testing.",
+    summary: "Providence recognizes this as Castle in the Clouds and can show curated beta context for the Keto/Ulmac continuity. Treat it as a navigation aid over raw Divinity quest flags and scripts, not as a replacement for runtime testing.",
     recognitionNotes: [
       "Matched by scenario/source name containing Castle in the Clouds.",
       "Context is based on decoded scenario strings and the bundled Castle hint-guide candidate."
+    ],
+    coverageCriteria: [
+      "Recognition must come from scenario/source metadata or an exact known scenario alias.",
+      "Curated notes must stay read-only and separate from project-authored flag labels.",
+      "Story Flags must still expose decoded set/test/clear/increment/branch uses for the raw flag IDs.",
+      "Stronger Castle continuity claims require cited developer reports, fixtures, or decoded runtime evidence."
     ],
     matchers: [/\bcastle\s+in\s+the\s+clouds\b/i],
     source: {
@@ -79,6 +88,12 @@ export const RECOGNIZED_SCENARIO_CONTEXT_REGISTRY: RecognizedScenarioContextRegi
           title: "Keto Reunion",
           snippet: "The happy path appears to reunite Lord Keto and Lady Keto after the impostors and controlling villains are handled.",
           terms: ["lord keto", "lady keto", "reunion", "peace", "ketonia"]
+        },
+        {
+          id: "coverage-criteria",
+          title: "Curated Beta Coverage Criteria",
+          snippet: "Castle support is currently a curated beta note set. Providence should not claim complete scenario continuity until decoded runtime evidence, fixtures, or cited developer reports cover the relevant story paths.",
+          terms: ["coverage", "beta", "runtime evidence", "fixtures", "developer reports", "continuity"]
         }
       ]
     },

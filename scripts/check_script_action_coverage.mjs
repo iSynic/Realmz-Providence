@@ -86,7 +86,9 @@ for (const snippet of [
 for (const snippet of [
   "QuestUsageTimeline",
   "Story Flags",
-  "Raw Divinity Quest Flags"
+  "Decoded Story Flags",
+  "recognizedScenarioContextForProject",
+  "Bundled beta note | read-only"
 ]) {
   if (!panel.includes(snippet)) failures.push(`Scripts panel is missing story flag usage UI: ${snippet}`);
 }

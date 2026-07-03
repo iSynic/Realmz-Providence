@@ -5,7 +5,11 @@ import ts from "typescript";
 
 const repoRoot = process.cwd();
 const registryPath = path.join(repoRoot, "src", "editor", "scenarioContextRegistry.ts");
+const questUsagePath = path.join(repoRoot, "src", "editor", "questUsage.ts");
+const scriptsPanelPath = path.join(repoRoot, "src", "editor", "panels", "ScriptsPanel.tsx");
 const source = fs.readFileSync(registryPath, "utf8");
+const questUsage = fs.readFileSync(questUsagePath, "utf8");
+const scriptsPanel = fs.readFileSync(scriptsPanelPath, "utf8");
 const compiled = ts.transpileModule(source, {
   compilerOptions: {
     module: ts.ModuleKind.CommonJS,
@@ -33,6 +37,10 @@ assert(castle, "Castle in the Clouds registry entry is missing");
 
 if (castle) {
   assert(castle.matchers?.some((matcher) => matcher.test("Castle in the Clouds")), "Castle matcher does not recognize the scenario name");
+  assert(castle.aliases?.includes("Castle in the Clouds"), "Castle registry entry should keep data-driven aliases");
+  assert((castle.coverageCriteria ?? []).length >= 4, "Castle registry entry should document curated beta coverage criteria");
+  assert((castle.coverageCriteria ?? []).some((line) => /set\/test\/clear\/increment\/branch/i.test(line)), "Castle coverage criteria should require raw flag-flow visibility");
+  assert((castle.source?.sections ?? []).some((section) => section.id === "coverage-criteria"), "Castle context source should expose coverage criteria as a curated section");
   assert(castle.source?.sections?.length >= 5, "Castle context source should keep the Keto evidence sections");
   assertThreads(castle.threads, [
     ["Keto Allegiances And Gates", [2]],
@@ -40,6 +48,11 @@ if (castle) {
     ["Ulmac, Ambersair, And Ketonia", [6, 7, 8]]
   ]);
 }
+
+assert(questUsage.includes("recognizedQuestContextSources(project)"), "Quest presentation should merge recognized bundled context sources");
+assert(questUsage.includes("recognizedQuestThreads(project)"), "Quest presentation should merge recognized bundled context threads");
+assert(scriptsPanel.includes("Bundled beta note | read-only"), "Story Flags UI should label bundled context as read-only beta notes");
+assert(scriptsPanel.includes("userThreads.filter"), "Story Flags UI should keep bundled notes out of editable author-note actions");
 
 if (failures.length > 0) {
   console.error("Scenario context registry check failed:");

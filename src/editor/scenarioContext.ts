@@ -4,9 +4,11 @@ import { RECOGNIZED_SCENARIO_CONTEXT_REGISTRY, type RecognizedScenarioContextReg
 export type RecognizedScenarioContext = {
   id: string;
   scenarioName: string;
+  aliases: string[];
   confidence: "high" | "medium" | "low";
   summary: string;
   recognitionNotes: string[];
+  coverageCriteria: string[];
   sources: QuestContextSource[];
   threads: QuestThread[];
 };
@@ -43,9 +45,11 @@ function materializeRecognizedContext(entry: RecognizedScenarioContextRegistryEn
   return {
     id: entry.id,
     scenarioName: entry.scenarioName,
+    aliases: [...entry.aliases],
     confidence: entry.confidence,
     summary: entry.summary,
     recognitionNotes: [...entry.recognitionNotes],
+    coverageCriteria: [...entry.coverageCriteria],
     sources: [source],
     threads: entry.threads.map((thread) => ({
       id: thread.id,

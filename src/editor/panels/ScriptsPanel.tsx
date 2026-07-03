@@ -19,6 +19,7 @@ import { actionPointCapacity, isReusableDoorPlaceholder, nextActionPointRecordIn
 import { realmzScriptStepDescriptorFor } from "../realmzScriptDescriptors";
 import { validateRealmzTargetRecord } from "../targetValidation";
 import { buildQuestPresentation, questCategoryLabel, QUEST_CATEGORIES, type QuestFlagModel, type QuestUsage } from "../questUsage";
+import { recognizedScenarioContextForProject } from "../scenarioContext";
 import { ITEM_REFERENCE_CATEGORIES, itemReferenceDetail, itemReferenceOptions, type ItemReferenceCategory, type ItemReferenceOption } from "../itemReferences";
 import { monsterReferenceDetail, monsterReferenceOptions } from "../monsterReferences";
 import { CONDITION_LABELS, RESISTANCE_TYPES } from "../rulesCatalog";
@@ -1223,10 +1224,13 @@ function QuestWorkbench({
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const model = useMemo(() => buildQuestPresentation(project, scripts), [project, scripts]);
+  const recognizedContext = useMemo(() => recognizedScenarioContextForProject(project), [project]);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [selectedQuestId, setSelectedQuestId] = useState<number | null>(null);
   const selectedThread = model.threads.find((thread) => thread.id === selectedThreadId) ?? null;
   const selectedQuest = selectedQuestId == null ? null : model.questById.get(selectedQuestId) ?? null;
+  const userThreads = model.threads.filter((thread) => thread.source !== "bundled");
+  const bundledThreadCount = model.threads.length - userThreads.length;
   const threadQuests = selectedThread ? selectedThread.questIds.map((id) => model.questById.get(id)).filter(Boolean) as QuestFlagModel[] : [];
   const activeUses = selectedThread
     ? threadQuests.flatMap((quest) => quest.uses.map((usage) => ({ ...usage, questLabel: quest.label }))).sort((a, b) => a.sortKey.localeCompare(b.sortKey))
@@ -1266,6 +1270,16 @@ function QuestWorkbench({
           </button>
         </div>
       </header>
+      {recognizedContext && (
+        <div className="recognized-scenario-context">
+          <div>
+            <strong>{recognizedContext.scenarioName} Context</strong>
+            <small>{recognizedContext.summary}</small>
+            <small className="recognized-scenario-beta-copy">{recognizedContext.coverageCriteria[0]}</small>
+          </div>
+          <span>{recognizedContext.confidence} confidence</span>
+        </div>
+      )}
       <div className="quest-workbench-layout">
         <aside className="quest-thread-column">
           <PanelSection title="Decoded Story Flags" eyebrow={`${model.quests.length} known`} density="compact" className="quest-raw-panel">
@@ -1290,7 +1304,7 @@ function QuestWorkbench({
               {model.quests.length === 0 && <small className="empty-copy compact">No flag labels or decoded quest-flag uses found.</small>}
             </div>
           </PanelSection>
-          <PanelSection title="Optional Author Notes" eyebrow={`${model.threads.length} saved`} density="compact">
+          <PanelSection title="Context Notes" eyebrow={`${userThreads.length} author / ${bundledThreadCount} bundled`} density="compact">
             {model.threads.length === 0 ? (
               <div className="script-tab-note">
                 <strong>No author notes yet</strong>
@@ -1308,7 +1322,7 @@ function QuestWorkbench({
                       }}
                     >
                       <strong>{thread.name}</strong>
-                      <small>{thread.source === "bundled" ? "Read-only imported note" : `${thread.questIds.length} flag${thread.questIds.length === 1 ? "" : "s"}`}</small>
+                      <small>{thread.source === "bundled" ? "Bundled beta note | read-only" : `${thread.questIds.length} flag${thread.questIds.length === 1 ? "" : "s"}`}</small>
                     </button>
                     {thread.source !== "bundled" && (
                       <button type="button" className="btn btn-danger btn-xs icon-only" title="Delete note" onClick={() => onApplyCommand?.({ kind: "deleteQuestThread", label: "Delete author note", threadId: thread.id })}>
@@ -1342,6 +1356,7 @@ function QuestWorkbench({
               onOpenUsage={onSelectEntity}
               onAddToThread={(thread) => addQuestToThread(thread, selectedQuest.id)}
               onApplyCommand={onApplyCommand}
+              userThreads={userThreads}
             />
           ) : (
             <EmptyState title="No story flag selected" body="Select a raw Divinity quest flag or create an optional author note." />
@@ -1376,12 +1391,12 @@ function QuestThreadDetail({
   const threadIds = new Set(thread.questIds);
   return (
     <div className="quest-detail-grid">
-      <PanelSection title="Author Note" eyebrow={`${thread.questIds.length} flags`} density="compact">
+      <PanelSection title={thread.source === "bundled" ? "Curated Note" : "Author Note"} eyebrow={`${thread.questIds.length} flags`} density="compact">
         {thread.source === "bundled" ? (
           <div className="known-thread-summary">
             <strong>{thread.name}</strong>
             <small>{thread.description}</small>
-            <span>This imported note is read-only. Create a project author note if you want editable interpretation.</span>
+            <span>This bundled beta note is read-only. Create a project author note if you want editable interpretation.</span>
           </div>
         ) : (
           <>
@@ -1434,7 +1449,8 @@ function QuestFlagDetail({
   uses,
   onOpenUsage,
   onAddToThread,
-  onApplyCommand
+  onApplyCommand,
+  userThreads
 }: {
   quest: QuestFlagModel;
   threads: QuestThread[];
@@ -1442,6 +1458,7 @@ function QuestFlagDetail({
   onOpenUsage: (entity: SelectedEntity) => void;
   onAddToThread: (thread: QuestThread) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
+  userThreads: QuestThread[];
 }) {
   return (
     <div className="quest-detail-grid">
@@ -1482,14 +1499,14 @@ function QuestFlagDetail({
           </button>
         )}
       </PanelSection>
-      <PanelSection title="Add To Author Note" eyebrow={`${threads.length} saved`} density="compact">
+      <PanelSection title="Add To Author Note" eyebrow={`${userThreads.length} saved`} density="compact">
         <div className="quest-add-grid">
-          {threads.filter((thread) => !thread.questIds.includes(quest.id)).map((thread) => (
+          {userThreads.filter((thread) => !thread.questIds.includes(quest.id)).map((thread) => (
             <button key={thread.id} type="button" className="btn btn-secondary btn-xs" onClick={() => onAddToThread(thread)}>
               <Plus size={11} /> {thread.name}
             </button>
           ))}
-          {threads.length === 0 && <small className="empty-copy compact">Create an author note first.</small>}
+          {userThreads.length === 0 && <small className="empty-copy compact">Create an author note first.</small>}
         </div>
       </PanelSection>
       <QuestContextRefsPanel
