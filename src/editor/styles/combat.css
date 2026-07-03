@@ -697,7 +697,7 @@
 
 .icon-set-controls {
   display: grid;
-  grid-template-columns: repeat(2, minmax(130px, 160px)) auto auto minmax(220px, 1fr);
+  grid-template-columns: repeat(2, minmax(130px, 160px)) minmax(0, 1fr) auto minmax(180px, 1fr);
   gap: 8px;
   align-items: end;
   padding: 9px;
@@ -780,6 +780,29 @@
   padding: 5px 8px;
   font: inherit;
   text-transform: none;
+}
+
+.icon-set-import-panel input[type="file"].icon-set-file-input {
+  display: none;
+}
+
+.icon-set-file-control {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.icon-set-file-control small {
+  min-width: 0;
+  overflow: hidden;
+  color: #b7c9d8;
+  font-size: 10px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
 }
 
 .icon-set-import-panel .checkbox-row {
@@ -888,7 +911,8 @@
   white-space: nowrap;
 }
 
-.override-badge {
+.override-badge,
+.icon-target-source-badge {
   width: fit-content;
   max-width: 100%;
   padding: 2px 6px;
@@ -897,6 +921,26 @@
   color: #9af1be !important;
   font-size: 9px !important;
   font-weight: 900;
+}
+
+.icon-target-source-badge.scenario-override {
+  border-color: #2d7a4e;
+  color: #9af1be !important;
+}
+
+.icon-target-source-badge.scenario-resource {
+  border-color: #2b7fa7;
+  color: #a4ddff !important;
+}
+
+.icon-target-source-badge.default-art {
+  border-color: #8a6a1e;
+  color: #ffe18d !important;
+}
+
+.icon-target-source-badge.missing-art {
+  border-color: #7c3131;
+  color: #ffb6b6 !important;
 }
 
 .icon-pair-preview {
@@ -1772,8 +1816,8 @@
 
 .battle-header-fields {
   display: grid;
-  grid-template-columns: 124px minmax(220px, 1fr) minmax(220px, 1fr) minmax(250px, 1.05fr) minmax(174px, 0.75fr);
-  column-gap: 12px;
+  grid-template-columns: 104px minmax(184px, 0.95fr) minmax(184px, 0.95fr) minmax(272px, 1.2fr);
+  column-gap: 10px;
   align-items: start;
   min-width: 0;
 }
@@ -1785,7 +1829,7 @@
   align-content: start;
   justify-items: center;
   border-left: 1px solid #263a49;
-  padding-left: 14px;
+  padding-left: 12px;
   padding-right: 0;
 }
 
@@ -1847,7 +1891,8 @@
 }
 
 .battle-header-fields .combat-pager-row {
-  grid-template-columns: 26px 72px 26px;
+  grid-template-columns: 24px 52px 24px;
+  gap: 5px;
 }
 
 .battle-header-fields .combat-pager-row button {
@@ -1855,11 +1900,11 @@
 }
 
 .battle-header-fields .battle-target-actions {
-  grid-template-columns: 88px 28px;
+  grid-template-columns: minmax(78px, 1fr) 28px;
 }
 
 .battle-header-fields .battle-macro-field .battle-target-actions {
-  grid-template-columns: 122px 28px;
+  grid-template-columns: minmax(132px, 1fr) 28px;
 }
 
 .battle-header-fields .battle-target-actions > .btn,
@@ -1879,8 +1924,26 @@
   justify-items: center;
 }
 
-.battle-header-fields .combat-field.battle-scenario-monster-set {
-  width: 150px;
+.battle-scenario-monster-set.compact {
+  gap: 3px;
+  justify-items: end;
+}
+
+.battle-scenario-monster-set.compact > span {
+  width: auto;
+  display: inline-grid;
+  justify-items: end;
+  padding-bottom: 2px;
+  border-bottom: 1px solid #2c3f4f;
+  color: #9bd2ff;
+  font-size: 9px;
+  font-weight: 950;
+}
+
+.battle-scenario-monster-set.compact select {
+  width: 142px;
+  min-height: 28px;
+  font-size: 10px;
 }
 
 .battle-scenario-monster-set select {
@@ -1932,7 +1995,7 @@
 }
 
 .battle-header-fields .combat-field {
-  width: 100px;
+  width: 70px;
   justify-items: center;
 }
 
@@ -1942,7 +2005,7 @@
 }
 
 .battle-header-fields .combat-field input {
-  width: 96px;
+  width: 52px;
   justify-self: center;
   text-align: center;
 }
@@ -2763,20 +2826,19 @@
 
 .monster-palette > header {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
   align-items: center;
 }
 
-.monster-palette > header > span,
-.monster-palette > header > strong {
-  grid-column: 2;
-  justify-self: center;
-  text-align: center;
+.monster-palette > header > div:first-child {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
 }
 
-.monster-palette > header > small {
-  grid-column: 3;
-  justify-self: end;
+.monster-palette > header strong {
+  display: block;
 }
 
 .monster-brush-palette {

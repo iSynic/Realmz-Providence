@@ -29,6 +29,7 @@ try {
   checkPaintBattleGridCells(commands);
   checkBattleRuntimeMonsterLimit(battleReferences);
   checkMonsterIconOverrideCommands(commands);
+  checkMonsterIconTargetOverrideResolution(commands, combatPanel);
   checkScenarioIconResourceCommands(commands);
   checkScenarioMonsterIconOverrideImport(realmzParser, combatPanel);
   checkIconLibraryMonsterPairMetadata(iconLibrary);
@@ -305,6 +306,52 @@ function checkMonsterIconOverrideCommands({ upsertMonsterIconOverride, deleteMon
 
   const deleted = deleteMonsterIconOverride(replaced, 387);
   assert(deleted.monsterIconOverrides.length === 0, "deleteMonsterIconOverride did not remove the target override");
+}
+
+function checkMonsterIconTargetOverrideResolution({ upsertMonsterIconOverride, deleteMonsterIconOverride }, { monsterIconTargetPairs }) {
+  const actorAssets = new Map([
+    [473, libraryIconAsset(473)],
+    [781, libraryIconAsset(781)]
+  ]);
+  const lookupsFor = (project) => ({
+    iconAssetsByAbsId: new Map(),
+    realmzActorIconAssetsByAbsId: actorAssets,
+    monsterMashAssetsByAbsId: new Map([
+      [481, monsterMashIconAsset(481)],
+      [789, monsterMashIconAsset(789)]
+    ]),
+    monsterIconOverridesByTarget: new Map((project.monsterIconOverrides ?? []).map((override) => [override.targetBaseIconId, override]))
+  });
+  let project = projectWith({ monsters: [monster(2, { iconId: 473 }), monster(6, { iconId: 481 })] });
+  let targets = monsterIconTargetPairs(project, lookupsFor(project));
+  assert(targets.some((target) => target.baseId === 473 && !target.override), "default target art was not visible without a scenario override");
+  assert(project.monsterIconOverrides.length === 0, "default target art was counted as scenario-owned override data");
+  assert(!targets.some((target) => target.baseId === 481), "Monster Mash-only source art appeared as target art before materialization");
+
+  project = upsertMonsterIconOverride(project, {
+    targetBaseIconId: 473,
+    sourceBaseIconId: 409,
+    sourceKind: "monster-mash",
+    sourceLabel: "Monster Mash 409",
+    sourceBaseResourceBase64: "AQID",
+    sourcePairedResourceBase64: "BAUG"
+  });
+  targets = monsterIconTargetPairs(project, lookupsFor(project));
+  assert(project.monsterIconOverrides.length === 1, "replacing a default target did not create exactly one scenario override");
+  assert(targets.find((target) => target.baseId === 473)?.override?.sourceBaseIconId === 409, "replacement override did not shadow default target art");
+
+  project = upsertMonsterIconOverride(project, {
+    ...project.monsterIconOverrides[0],
+    sourceBaseIconId: 410,
+    sourceLabel: "Monster Mash 410"
+  });
+  assert(project.monsterIconOverrides.length === 1, "replacing an existing target override duplicated scenario override data");
+  assert(project.monsterIconOverrides[0].sourceBaseIconId === 410, "replacing an existing target override did not update the source art");
+
+  project = deleteMonsterIconOverride(project, 473);
+  targets = monsterIconTargetPairs(project, lookupsFor(project));
+  assert(project.monsterIconOverrides.length === 0, "deleting a target override left scenario-owned override data behind");
+  assert(targets.some((target) => target.baseId === 473 && !target.override), "deleting an override did not restore visible default target art");
 }
 
 function checkScenarioIconResourceCommands({ upsertScenarioIconResource, deleteScenarioIconResource }) {

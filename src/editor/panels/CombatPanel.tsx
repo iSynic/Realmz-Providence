@@ -56,6 +56,13 @@ type BattleGridPlacementView = BattleGridCellView & {
   footprint: { width: number; height: number };
 };
 
+type BattleGridPaintPreview = {
+  anchorIndex: number;
+  col: number;
+  row: number;
+  footprint: { width: number; height: number };
+};
+
 type ResolvedBattleMonsterIcon = MonsterIconResolution & {
   resolvedUrl: string | null;
   cacheKey: string;
@@ -592,7 +599,6 @@ function BattleEditor({
             onCommit={(battleMacro) => onUpdate({ battleMacro })}
             onSelectEntity={onSelectEntity}
           />
-          <BattleScenarioMonsterSetField value={scenarioMonsterSet} onCommit={setScenarioMonsterSet} />
         </div>
         <div className="battle-header-actions">
           <span>
@@ -614,6 +620,7 @@ function BattleEditor({
         lookups={lookups}
         previewContext={previewContext}
         monsterSetPreview={scenarioMonsterSet}
+        onMonsterSetPreviewChange={setScenarioMonsterSet}
         battle={battle}
         onSelectEntity={onSelectEntity}
         onApplyCommand={onApplyCommand}
@@ -623,9 +630,9 @@ function BattleEditor({
   );
 }
 
-function BattleScenarioMonsterSetField({ value, onCommit }: { value: MonsterSetId; onCommit: (value: MonsterSetId) => void }) {
+function BattleScenarioMonsterSetField({ value, onCommit, compact = false }: { value: MonsterSetId; onCommit: (value: MonsterSetId) => void; compact?: boolean }) {
   return (
-    <div className="combat-field battle-scenario-monster-set">
+    <div className={`combat-field battle-scenario-monster-set${compact ? " compact" : ""}`}>
       <FieldLabel label="Monster Set" help="Chooses which scenario monster table the Battles tool uses for placement and validation. It applies across the Battles tab; Data BD stores monster IDs only, so this does not write a value into the selected battle record." />
       <select value={String(value)} onChange={(event) => onCommit(Number(event.currentTarget.value) as MonsterSetId)} aria-label="Scenario monster set">
         {MONSTER_SET_OPTIONS.map((option) => (
@@ -675,7 +682,7 @@ function MonsterIconSetWorkbench({
     if (!sources.some((source) => source.key === selectedSourceKey)) setSelectedSourceKey(sources[0]?.key ?? "");
   }, [selectedSourceKey, sources]);
   const filteredTargets = useMemo(
-    () => filterRecords(targets, targetQuery, (target) => `${target.baseId} ${target.asset?.label ?? ""} ${target.override?.sourceLabel ?? ""}`),
+    () => filterRecords(targets, targetQuery, (target) => `${target.baseId} ${target.asset?.label ?? ""} ${target.override?.sourceLabel ?? ""} ${monsterIconSourceStatusLabel(monsterIconTargetSourceStatus(target))}`),
     [targetQuery, targets]
   );
   const filteredSources = useMemo(
@@ -733,15 +740,10 @@ function MonsterIconSetWorkbench({
       setStatus(error instanceof Error ? error.message : "Unable to load source icon resource data.");
     }
   };
-  const restoreDefault = (targetBaseIconId = selectedTargetBaseId) => {
-    if (!targetBaseIconId) return;
-    onApplyCommand?.({ kind: "deleteMonsterIconOverride", label: `Restore default monster icon ${targetBaseIconId}`, targetBaseIconId });
-    setStatus(`Monster icon ${targetBaseIconId} will use the Family Jewels default.`);
-  };
-  const deleteScenarioIconSet = (targetBaseIconId = selectedTargetBaseId) => {
+  const deleteTargetOverride = (targetBaseIconId = selectedTargetBaseId) => {
     if (!targetBaseIconId || !selectedTarget?.override) return;
-    onApplyCommand?.({ kind: "deleteMonsterIconOverride", label: `Delete scenario monster icon set ${targetBaseIconId}`, targetBaseIconId });
-    setStatus(`Deleted scenario monster icon set ${targetBaseIconId}.`);
+    onApplyCommand?.({ kind: "deleteMonsterIconOverride", label: `Delete monster icon override ${targetBaseIconId}`, targetBaseIconId });
+    setStatus(`Deleted override for monster icon ${targetBaseIconId}; default art will be used when available.`);
   };
   const allowTargetDrop = (event: DragEvent<HTMLElement>) => {
     if (!event.dataTransfer.types.includes("application/x-realmz-monster-icon-source")) return;
@@ -888,19 +890,15 @@ function MonsterIconSetWorkbench({
     (selectedTarget?.resourceBase64 && selectedTarget.pairedResourceBase64) ||
     (selectedTarget?.asset && selectedTarget.pairedAsset)
   );
-  const contextCopiesToScenario = activeIconSetPane === "source";
-  const contextActionLabel = contextCopiesToScenario ? "Copy To Scenario Icons" : "Copy To Icon Library";
-  const contextActionDisabled =
-    contextCopiesToScenario
-      ? !hasSelectedSourcePair
-      : !hasSelectedTargetPair || !onUpdateLibraryCatalog;
-  const handleContextAction = () => {
-    if (contextCopiesToScenario) {
-      const targetBaseId = nextScenarioMonsterIconTargetBaseId(selectedSource?.baseId ?? 0, targets);
-      void applyOverride(targetBaseId, selectedSource?.key ?? "");
-      return;
-    }
-    void copyTargetToIconLibrary();
+  const addSourceToScenarioIcons = () => {
+    const targetBaseId = nextScenarioMonsterIconTargetBaseId(selectedSource?.baseId ?? 0, targets);
+    setActiveIconSetPane("target");
+    void applyOverride(targetBaseId, selectedSource?.key ?? "");
+  };
+  const replaceSelectedTargetArt = () => {
+    if (!selectedTargetBaseId) return;
+    setActiveIconSetPane("target");
+    void applyOverride(selectedTargetBaseId, selectedSource?.key ?? "");
   };
   return (
     <article className="combat-editor icon-set-workbench">
@@ -920,40 +918,40 @@ function MonsterIconSetWorkbench({
         <NumberField label="Target Icon" value={selectedTargetBaseId} onCommit={selectTargetByBaseId} />
         <NumberField label="Source Icon" value={selectedSource?.baseId ?? 0} onCommit={selectSourceByBaseId} />
         <div className="icon-set-action-group">
-          {activeIconSetPane === "source" ? (
-            <>
-              <button
-                type="button"
-                className="btn btn-primary btn-sm icon-set-context-action"
-                disabled={contextActionDisabled}
-                onClick={handleContextAction}
-              >
-                {contextActionLabel}
-              </button>
-              {selectedSource?.sourceKind === "providence-library" ? (
-                <button type="button" className="btn btn-danger btn-sm" disabled={!catalog || !onUpdateLibraryCatalog} onClick={deleteSelectedIconVariant}>
-                  Delete Icon Variant
-                </button>
-              ) : null}
-            </>
-          ) : (
-            <>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm icon-set-context-action"
-                disabled={contextActionDisabled}
-                onClick={handleContextAction}
-              >
-                {contextActionLabel}
-              </button>
-              <button type="button" className="btn btn-warning btn-sm" disabled={!selectedTarget?.override} onClick={() => restoreDefault()}>
-                Restore Default
-              </button>
-              <button type="button" className="btn btn-danger btn-sm" disabled={!selectedTarget?.override} onClick={() => deleteScenarioIconSet()}>
-                Delete Icon Set
-              </button>
-            </>
-          )}
+          <button
+            type="button"
+            className="btn btn-primary btn-sm icon-set-context-action"
+            disabled={!hasSelectedSourcePair}
+            onClick={addSourceToScenarioIcons}
+            title="Copy the selected library/source icon pair into the next available scenario override target."
+          >
+            Copy To Scenario Icons
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm icon-set-context-action"
+            disabled={!hasSelectedSourcePair || !selectedTargetBaseId}
+            onClick={replaceSelectedTargetArt}
+            title="Replace the selected target icon art with the selected library/source icon pair."
+          >
+            Replace Target Art
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm icon-set-context-action"
+            disabled={!hasSelectedTargetPair || !onUpdateLibraryCatalog}
+            onClick={() => void copyTargetToIconLibrary()}
+          >
+            Copy To Icon Library
+          </button>
+          <button type="button" className="btn btn-danger btn-sm" disabled={!selectedTarget?.override} onClick={() => deleteTargetOverride()}>
+            Delete Override
+          </button>
+          {selectedSource?.sourceKind === "providence-library" ? (
+            <button type="button" className="btn btn-danger btn-sm" disabled={!catalog || !onUpdateLibraryCatalog} onClick={deleteSelectedIconVariant}>
+              Delete Icon Variant
+            </button>
+          ) : null}
         </div>
         <button
           type="button"
@@ -981,12 +979,20 @@ function MonsterIconSetWorkbench({
           </label>
           <label>
             <span>Source Image</span>
-            <input
-              ref={baseImportInputRef}
-              type="file"
-              accept="image/png,image/gif,image/jpeg,image/webp"
-              onChange={(event: ChangeEvent<HTMLInputElement>) => setIconImportBaseFile(event.currentTarget.files?.[0] ?? null)}
-            />
+            <span className="icon-set-file-control">
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => baseImportInputRef.current?.click()}>
+                Choose Image
+              </button>
+              <small>{iconImportBaseFile?.name ?? "No file selected."}</small>
+              <input
+                ref={baseImportInputRef}
+                className="icon-set-file-input"
+                type="file"
+                accept="image/png,image/gif,image/jpeg,image/webp"
+                aria-label="Source image"
+                onChange={(event: ChangeEvent<HTMLInputElement>) => setIconImportBaseFile(event.currentTarget.files?.[0] ?? null)}
+              />
+            </span>
           </label>
           <label className="checkbox-row">
             <span>Custom paired image</span>
@@ -995,12 +1001,20 @@ function MonsterIconSetWorkbench({
           {iconImportAdvanced ? (
             <label>
               <span>Paired Image</span>
-              <input
-                ref={pairedImportInputRef}
-                type="file"
-                accept="image/png,image/gif,image/jpeg,image/webp"
-                onChange={(event: ChangeEvent<HTMLInputElement>) => setIconImportPairedFile(event.currentTarget.files?.[0] ?? null)}
-              />
+              <span className="icon-set-file-control">
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => pairedImportInputRef.current?.click()}>
+                  Choose Paired Image
+                </button>
+                <small>{iconImportPairedFile?.name ?? "No file selected."}</small>
+                <input
+                  ref={pairedImportInputRef}
+                  className="icon-set-file-input"
+                  type="file"
+                  accept="image/png,image/gif,image/jpeg,image/webp"
+                  aria-label="Paired image"
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setIconImportPairedFile(event.currentTarget.files?.[0] ?? null)}
+                />
+              </span>
             </label>
           ) : null}
           <button type="button" className="btn btn-primary btn-sm" disabled={!onUpdateLibraryCatalog || !iconImportBaseFile} onClick={() => void createImportedIconSet()}>
@@ -1021,7 +1035,7 @@ function MonsterIconSetWorkbench({
                 key={source.key}
                 type="button"
                 draggable
-                className={`icon-set-row${selectedSourceKey === source.key ? " selected" : ""}`}
+                className={`icon-set-row${activeIconSetPane === "source" && selectedSourceKey === source.key ? " selected" : ""}`}
                 onClick={() => {
                   setSelectedSourceKey(source.key);
                   setActiveIconSetPane("source");
@@ -1044,19 +1058,21 @@ function MonsterIconSetWorkbench({
         </section>
         <section className="icon-set-pane">
           <header>
-            <strong className="combat-pane-title">Scenario Monster Icon Sets</strong>
+            <strong className="combat-pane-title">Monster Icon Targets</strong>
             <small>{targets.length} target pairs</small>
           </header>
-          <input value={targetQuery} onChange={(event) => setTargetQuery(event.currentTarget.value)} placeholder="Search scenario monster icon sets..." />
+          <input value={targetQuery} onChange={(event) => setTargetQuery(event.currentTarget.value)} placeholder="Search monster icon targets..." />
           <div className="icon-set-scroll">
             {filteredTargets.map((target) => {
               const previewBaseAsset = target.asset;
               const previewPairedAsset = target.pairedAsset;
+              const sourceStatus = monsterIconTargetSourceStatus(target);
+              const statusLabel = monsterIconSourceStatusLabel(sourceStatus);
               return (
                 <button
                   key={target.baseId}
                   type="button"
-                  className={`icon-set-row${selectedTargetId === target.baseId ? " selected" : ""}${target.override ? " overridden" : ""}`}
+                  className={`icon-set-row${activeIconSetPane === "target" && selectedTargetId === target.baseId ? " selected" : ""}${target.override ? " overridden" : ""}`}
                   onClick={() => {
                     setSelectedTargetId(target.baseId);
                     setActiveIconSetPane("target");
@@ -1067,6 +1083,7 @@ function MonsterIconSetWorkbench({
                     const sourceKey = event.dataTransfer.getData("application/x-realmz-monster-icon-source");
                     if (!sourceKey) return;
                     event.preventDefault();
+                    setActiveIconSetPane("target");
                     void applyOverride(target.baseId, sourceKey);
                   }}
                 >
@@ -1074,12 +1091,14 @@ function MonsterIconSetWorkbench({
                   <span>
                     <strong>Icon {target.baseId}</strong>
                     <small>{target.override?.sourceLabel ?? target.sourceLabel ?? target.asset?.label ?? (target.referenced ? "Referenced scenario icon target" : "Available scenario icon target")}</small>
-                    {target.override ? <small className="override-badge">Override: {target.override.sourceLabel ?? `Source ${target.override.sourceBaseIconId}`}</small> : null}
+                    <small className={`icon-target-source-badge ${sourceStatus}`} title={monsterIconTargetStatusTitle(sourceStatus)}>
+                      {statusLabel}{target.override ? `: ${target.override.sourceLabel ?? `Source ${target.override.sourceBaseIconId}`}` : ""}
+                    </small>
                   </span>
                 </button>
               );
             })}
-            {filteredTargets.length === 0 ? <p className="empty-copy compact">No scenario monster icon sets match that search.</p> : null}
+            {filteredTargets.length === 0 ? <p className="empty-copy compact">No monster icon targets match that search.</p> : null}
           </div>
         </section>
       </div>
@@ -1094,6 +1113,7 @@ function BattleBoard({
   lookups,
   previewContext,
   monsterSetPreview,
+  onMonsterSetPreviewChange,
   battle,
   onSelectEntity,
   onApplyCommand,
@@ -1105,6 +1125,7 @@ function BattleBoard({
   lookups: CombatLookups;
   previewContext: PreviewRuntimeContext;
   monsterSetPreview: MonsterSetId;
+  onMonsterSetPreviewChange: (value: MonsterSetId) => void;
   battle: BattleRecord;
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
@@ -1185,6 +1206,17 @@ function BattleBoard({
     [placements]
   );
   const placementIconUrls = useResolvedBattleMonsterIcons(placementMonsters, iconEntries, project, lookups, previewContext, battleIconSourceKey);
+  const paintPreview = useMemo<BattleGridPaintPreview | null>(() => {
+    if (brush.mode !== "paint" || hoverIndex === null || !brushMonster) return null;
+    const hover = cells.find((cell) => cell.index === hoverIndex);
+    if (!hover) return null;
+    return {
+      anchorIndex: hover.index,
+      col: hover.displayCol,
+      row: hover.displayRow,
+      footprint: monsterBattleFootprintCached(brushMonster, iconEntries, project, lookups, battleIconSourceKey)
+    };
+  }, [battleIconSourceKey, brush.mode, brushMonster, cells, hoverIndex, iconEntries, lookups, project]);
   const setDraftGridValue = (index: number, value: number) => {
     if (!Number.isInteger(index) || index < 0 || index >= BATTLE_GRID_CELL_COUNT) return false;
     const current = draftGridRef.current;
@@ -1380,6 +1412,7 @@ function BattleBoard({
             }))
           }
           monsterSetPreview={monsterSetPreview}
+          onMonsterSetPreviewChange={onMonsterSetPreviewChange}
           activeMonsters={activeMonsters}
         />
       </aside>
@@ -1417,6 +1450,7 @@ function BattleBoard({
                 cells={cells}
                 placements={placements}
                 iconUrls={placementIconUrls}
+                paintPreview={paintPreview}
                 selectedIndex={selectedIndex}
                 hoverIndex={hoverIndex}
                 draggingIndex={draggingIndex}
@@ -1514,6 +1548,7 @@ type BattleBoardCanvasProps = {
   cells: BattleGridCellView[];
   placements: BattleGridPlacementView[];
   iconUrls: Record<string, ResolvedBattleMonsterIcon>;
+  paintPreview: BattleGridPaintPreview | null;
   selectedIndex: number;
   hoverIndex: number | null;
   draggingIndex: number | null;
@@ -1672,6 +1707,7 @@ function BattleBoardCanvas({
   cells,
   placements,
   iconUrls,
+  paintPreview,
   selectedIndex,
   hoverIndex,
   draggingIndex
@@ -1722,8 +1758,8 @@ function BattleBoardCanvas({
     if (!canvas) return;
     const { ctx, size } = syncBattleCanvas(canvas);
     if (!ctx) return;
-    drawBattleInteractionLayer(ctx, size, cells, placements, selectedIndex, hoverIndex);
-  }, [cells, hoverIndex, placements, selectedIndex]);
+    drawBattleInteractionLayer(ctx, size, cells, placements, paintPreview, selectedIndex, hoverIndex);
+  }, [cells, hoverIndex, paintPreview, placements, selectedIndex]);
 
   return (
     <>
@@ -1742,6 +1778,7 @@ function MonsterPalette({
   selectedKey,
   onSelect,
   monsterSetPreview,
+  onMonsterSetPreviewChange,
   activeMonsters
 }: {
   project: Project;
@@ -1751,6 +1788,7 @@ function MonsterPalette({
   selectedKey: string | null;
   onSelect: (entry: BattleMonsterPaintEntry) => void;
   monsterSetPreview: MonsterSetId;
+  onMonsterSetPreviewChange: (value: MonsterSetId) => void;
   activeMonsters: MonsterRecord[];
 }) {
   useCombatRenderTiming("MonsterWorkbench");
@@ -1811,10 +1849,13 @@ function MonsterPalette({
   return (
     <div className="monster-palette">
       <header>
-        <TutorialTip title="Monster Placement Brush" body={MONSTER_PLACEMENT_HELP} side="right">
-          <strong>Monster Palette</strong>
-        </TutorialTip>
-        <small>{monsterSetLabel(monsterSetPreview)} | {entries.length} placeable</small>
+        <div>
+          <TutorialTip title="Monster Placement Brush" body={MONSTER_PLACEMENT_HELP} side="right">
+            <strong>Monster Palette</strong>
+          </TutorialTip>
+          <small>{entries.length} placeable</small>
+        </div>
+        <BattleScenarioMonsterSetField value={monsterSetPreview} onCommit={onMonsterSetPreviewChange} compact />
       </header>
       <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search monsters..." />
       <div
@@ -2356,8 +2397,8 @@ function MonsterWorkbench({
       generateAllCount={normalVariantSourceIds.length}
       onSetIdChange={setActiveSetId}
       onToggleNotOnMenu={(notOnMenu) => {
-        if (selectedId === null || !selected) return;
-        update(selectedId, { notOnMenu }, activeSetId);
+        if (selectedId === null || !selectedNormal) return;
+        update(selectedId, { notOnMenu }, 0);
       }}
       onCreateFromNormal={() => {
         if (selectedId === null || activeSetId === 0) return;
@@ -2913,11 +2954,11 @@ function MonsterSetToolbar({
           ))}
         </div>
         <label className="combat-check-field monster-bestiary-check">
-          <FieldLabel label="Hide From Bestiary" help="Realmz skips this monster when rebuilding its bestiary/monster menu. Battles still place this scenario monster by Data BD monster ID." />
+          <FieldLabel label="Hide From Bestiary" help="Realmz rebuilds the player bestiary from Normal/Data MD only. Battles still place this scenario monster by Data BD monster ID." />
           <input
             type="checkbox"
-            checked={Boolean(selectedRecord?.notOnMenu)}
-            disabled={!selectedRecord}
+            checked={Boolean(normalRecord?.notOnMenu)}
+            disabled={!normalRecord}
             onChange={(event) => onToggleNotOnMenu(event.currentTarget.checked)}
           />
         </label>
@@ -5512,6 +5553,13 @@ export function monsterIconSourceStatusLabel(status: MonsterIconSourceStatus) {
   return "Missing art";
 }
 
+function monsterIconTargetStatusTitle(status: MonsterIconSourceStatus) {
+  if (status === "scenario-override") return "Scenario-owned override art. Providence exports this paired cicn set for the target ID.";
+  if (status === "scenario-resource") return "Scenario-owned paired cicn resources imported from this project.";
+  if (status === "default-art") return "Default Realmz art resolved at runtime. This row is not exported as scenario-owned art unless replaced with an override.";
+  return "This target ID has no complete paired art.";
+}
+
 function monsterIconTargetSourceStatus(target: MonsterIconPairOption): Exclude<MonsterIconSourceStatus, "missing-art"> {
   if (target.override) return "scenario-override";
   if (target.asset?.source === "Scenario icon resources" || target.sourceLabel?.toLowerCase().startsWith("scenario")) return "scenario-resource";
@@ -6070,11 +6118,13 @@ function drawBattleInteractionLayer(
   size: number,
   cells: BattleGridCellView[],
   placements: BattleGridPlacementView[],
+  paintPreview: BattleGridPaintPreview | null,
   selectedIndex: number,
   hoverIndex: number | null
 ) {
   ctx.clearRect(0, 0, size, size);
   const cellSize = size / BATTLE_GRID_SIZE;
+  if (paintPreview) drawBattlePaintPreview(ctx, paintPreview, cellSize);
   if (hoverIndex != null) {
     const hover = cells.find((cell) => cell.index === hoverIndex);
     if (hover) drawBattleCellOutline(ctx, hover.displayCol, hover.displayRow, cellSize, "#ff9d8f", 2);
@@ -6088,6 +6138,47 @@ function drawBattleInteractionLayer(
     ctx.lineWidth = 2;
     ctx.strokeRect(rect.x + 2, rect.y + 2, Math.max(1, rect.width - 4), Math.max(1, rect.height - 4));
   }
+}
+
+function drawBattlePaintPreview(ctx: CanvasRenderingContext2D, preview: BattleGridPaintPreview, cellSize: number) {
+  const coveredCells = battlePlacementCoveredDisplayCells(preview);
+  ctx.save();
+  for (const cell of coveredCells) {
+    if (cell.index === preview.anchorIndex) continue;
+    drawBattleCellFill(ctx, cell.col, cell.row, cellSize, "rgba(42, 158, 234, 0.24)", "rgba(42, 158, 234, 0.78)", 1.5);
+  }
+  const anchor = battleGridDisplayCoordsFromStorageIndex(preview.anchorIndex);
+  drawBattleCellFill(ctx, anchor.col, anchor.row, cellSize, "rgba(242, 203, 112, 0.38)", "rgba(255, 184, 71, 0.95)", 2.5);
+  ctx.restore();
+}
+
+function battlePlacementCoveredDisplayCells(preview: BattleGridPaintPreview) {
+  const colSpan = Math.max(0.5, Math.min(preview.footprint.width, BATTLE_GRID_SIZE));
+  const rowSpan = Math.max(0.5, Math.min(preview.footprint.height, BATTLE_GRID_SIZE));
+  const leftCell = clamp(preview.col + 1 - colSpan, 0, BATTLE_GRID_SIZE - colSpan);
+  const topCell = clamp(preview.row + 1 - rowSpan, 0, BATTLE_GRID_SIZE - rowSpan);
+  const left = Math.floor(leftCell);
+  const top = Math.floor(topCell);
+  const right = Math.min(BATTLE_GRID_SIZE, Math.ceil(leftCell + colSpan));
+  const bottom = Math.min(BATTLE_GRID_SIZE, Math.ceil(topCell + rowSpan));
+  const cells: Array<{ col: number; row: number; index: number }> = [];
+  for (let row = top; row < bottom; row += 1) {
+    for (let col = left; col < right; col += 1) {
+      cells.push({ col, row, index: battleGridStorageIndexFromDisplayCoords(col, row) });
+    }
+  }
+  return cells;
+}
+
+function drawBattleCellFill(ctx: CanvasRenderingContext2D, col: number, row: number, cellSize: number, fill: string, stroke: string, width: number) {
+  const inset = width / 2;
+  const x = col * cellSize;
+  const y = row * cellSize;
+  ctx.fillStyle = fill;
+  ctx.fillRect(x + 1, y + 1, Math.max(1, cellSize - 2), Math.max(1, cellSize - 2));
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = width;
+  ctx.strokeRect(x + inset, y + inset, cellSize - width, cellSize - width);
 }
 
 function drawBattleCellOutline(ctx: CanvasRenderingContext2D, col: number, row: number, cellSize: number, color: string, width: number) {
