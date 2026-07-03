@@ -105,6 +105,14 @@ for (const snippet of [
   if (!panel.includes(snippet)) failures.push(`Scripts panel is missing context-aware combat macro authoring support: ${snippet}`);
 }
 
+for (const snippet of [
+  "NOT_USED_ACTION_CODES",
+  "const IGNORED_ACTIONS = new Set([0, ...NOT_USED_ACTION_CODES])",
+  "definition.authoringLevel === \"ignored\") return false"
+]) {
+  if (!catalog.includes(snippet)) failures.push(`Action catalog is missing preserve-only chooser filtering support: ${snippet}`);
+}
+
 const normalUiSources = [
   ["ScriptsPanel.tsx", panel],
   ["EdcdRowEditor.tsx", edcd]

@@ -23,7 +23,7 @@ const DOCUMENTED_OPCODE_CODES = [
   ...range(119, 127)
 ];
 
-const NOT_USED_ACTION_CODES = new Set([79, 80, 109, 110, 113, 114, 115, 116, 117, 118]);
+export const NOT_USED_ACTION_CODES = new Set([79, 80, 109, 110, 113, 114, 115, 116, 117, 118]);
 const PRESERVE_CURRENT_LABEL_CODES = new Set([84]);
 
 const ACTION_DETAILS: Record<number, Partial<RealmzActionOption>> = {

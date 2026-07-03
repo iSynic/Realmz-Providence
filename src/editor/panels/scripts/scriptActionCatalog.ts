@@ -1,4 +1,4 @@
-import { ACTION_OPTIONS, actionOptionFor, isDispatcherNoopOpcode, normalizeStepOpcode, type RealmzActionOption } from "../../realmzActions";
+import { ACTION_OPTIONS, NOT_USED_ACTION_CODES, actionOptionFor, isDispatcherNoopOpcode, normalizeStepOpcode, type RealmzActionOption } from "../../realmzActions";
 import { crosswalkForOpcode, parameterLabelsForOpcode } from "../../opcodeCrosswalk";
 import { signedTargetBehaviorLabel, targetOptionForOpcodeValue, targetPickerConfig } from "../../components/RealmzTargetPicker";
 import { choiceBranchModeLabel, choiceBranchTargetKind, parseChoicePromptValue } from "../../choiceDialogs";
@@ -158,7 +158,7 @@ const FIRST_CLASS_ACTIONS = new Set([
 
 const ADVANCED_ACTIONS = new Set([84, 121]);
 
-const IGNORED_ACTIONS = new Set([0]);
+const IGNORED_ACTIONS = new Set([0, ...NOT_USED_ACTION_CODES]);
 
 const ACTION_OVERRIDES: Record<number, Partial<Pick<ScriptActionDefinition, "label" | "shortLabel" | "category" | "description" | "searchTerms">>> = {
   [-23]: { label: "Change Random Encounter Area", shortLabel: "Random Area", category: "Encounters", description: "Adjust a dungeon random encounter area." },
@@ -592,6 +592,7 @@ export function scriptActionDefinitionFor(rawCode: number): ScriptActionDefiniti
 export function actionDefinitionsForCategory(category: ScriptActionCategory, query = "") {
   const normalizedQuery = query.trim().toLowerCase();
   return SCRIPT_ACTION_DEFINITIONS.filter((definition) => {
+    if (definition.authoringLevel === "ignored") return false;
     if (definition.category !== category) return false;
     if (!normalizedQuery) return true;
     return actionDefinitionSearchText(definition).includes(normalizedQuery);
