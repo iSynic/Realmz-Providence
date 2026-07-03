@@ -20,6 +20,14 @@ export type MapStamp = {
   cells: SuperTileStampCell[];
 };
 
+export type MapStampPreviewCell = {
+  x: number;
+  y: number;
+  tile: number | null;
+  occupied: boolean;
+  anchor: boolean;
+};
+
 export type SuperTileStamp = {
   id: string;
   label: string;
@@ -236,8 +244,31 @@ export function buildSuperTileStampChanges(
   return changes;
 }
 
-export function superTileStampPreviewCells(map: MapEntity, stamp: MapStamp, origin: { x: number; y: number }) {
-  return stamp.cells
-    .map((cell) => ({ x: origin.x + cell.dx, y: origin.y + cell.dy, tile: cell.tile }))
-    .filter((cell) => cell.x >= 0 && cell.y >= 0 && cell.x < map.width && cell.y < map.height);
+export function superTileStampPreviewCells(map: MapEntity, stamp: MapStamp, origin: { x: number; y: number }): MapStampPreviewCell[] {
+  const bounds = stampPreviewBounds(stamp);
+  const occupied = new Map(stamp.cells.map((cell) => [`${cell.dx}:${cell.dy}`, cell.tile]));
+  const preview: MapStampPreviewCell[] = [];
+  for (let dy = bounds.top; dy <= bounds.bottom; dy += 1) {
+    for (let dx = bounds.left; dx <= bounds.right; dx += 1) {
+      const x = origin.x + dx;
+      const y = origin.y + dy;
+      if (x < 0 || y < 0 || x >= map.width || y >= map.height) continue;
+      const tile = occupied.get(`${dx}:${dy}`) ?? null;
+      preview.push({ x, y, tile, occupied: tile != null, anchor: dx === 0 && dy === 0 });
+    }
+  }
+  return preview;
+}
+
+function stampPreviewBounds(stamp: MapStamp) {
+  if (stamp.width && stamp.height) {
+    return { left: 0, top: 0, right: stamp.width - 1, bottom: stamp.height - 1 };
+  }
+  if (stamp.cells.length === 0) return { left: 0, top: 0, right: 0, bottom: 0 };
+  return {
+    left: Math.min(...stamp.cells.map((cell) => cell.dx)),
+    top: Math.min(...stamp.cells.map((cell) => cell.dy)),
+    right: Math.max(...stamp.cells.map((cell) => cell.dx)),
+    bottom: Math.max(...stamp.cells.map((cell) => cell.dy))
+  };
 }

@@ -12,6 +12,7 @@ import { triggerEntityId } from "../utils";
 import { drawTileSprite, tileColor } from "../components/TileSprite";
 import { classifyTileValue } from "./tileMetadata";
 import { mapOverlaySprite } from "./mapOverlaySprites";
+import type { MapStampPreviewCell } from "./superTileStamps";
 
 export function drawBaseMap(
   ctx: CanvasRenderingContext2D,
@@ -501,7 +502,7 @@ export function drawStampCursor(
     viewOptions,
     cell
   }: {
-    cursor: Array<{ x: number; y: number; tile: number }>;
+    cursor: MapStampPreviewCell[];
     atlas: AtlasEntry | null;
     icons: Record<number, IconEntry>;
     viewOptions: MapViewOptions;
@@ -514,11 +515,32 @@ export function drawStampCursor(
   const right = (Math.max(...cursor.map((preview) => preview.x)) + 1) * cell;
   const bottom = (Math.max(...cursor.map((preview) => preview.y)) + 1) * cell;
   ctx.save();
+  const transparentCells = cursor.filter((preview) => !preview.occupied);
+  if (transparentCells.length > 0) {
+    ctx.fillStyle = "rgba(111, 211, 255, 0.12)";
+    ctx.strokeStyle = "rgba(111, 211, 255, 0.36)";
+    ctx.lineWidth = Math.max(1, Math.min(2, cell * 0.05));
+    for (const preview of transparentCells) {
+      const x = preview.x * cell;
+      const y = preview.y * cell;
+      ctx.fillRect(x, y, cell, cell);
+      ctx.strokeRect(x + 1, y + 1, Math.max(1, cell - 2), Math.max(1, cell - 2));
+    }
+  }
   ctx.globalAlpha = 0.88;
   for (const preview of cursor) {
+    if (preview.tile == null) continue;
     drawTileValueCell(ctx, { tile: preview.tile, x: preview.x, y: preview.y, atlas, icons, viewOptions, cell });
   }
   ctx.globalAlpha = 1;
+  const anchor = cursor.find((preview) => preview.anchor);
+  if (anchor) {
+    ctx.fillStyle = "rgba(248, 250, 252, 0.12)";
+    ctx.fillRect(anchor.x * cell, anchor.y * cell, cell, cell);
+    ctx.strokeStyle = "#ffd47a";
+    ctx.lineWidth = Math.max(2, Math.min(4, cell * 0.11));
+    ctx.strokeRect(anchor.x * cell + 2, anchor.y * cell + 2, Math.max(1, cell - 4), Math.max(1, cell - 4));
+  }
   ctx.strokeStyle = "#f8fafc";
   ctx.lineWidth = Math.max(2, Math.min(5, cell * 0.14));
   ctx.strokeRect(left + 1, top + 1, Math.max(1, right - left - 2), Math.max(1, bottom - top - 2));

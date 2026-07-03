@@ -23,7 +23,7 @@ import { makePaintTileResolver, paintSeed } from "./paintResolver";
 import { clearTileForMap } from "./tileClear";
 import { nextActionPointRecordIndex } from "../actionPointCapacity";
 import { selectEntityFromId, triggerEntityId } from "../utils";
-import { buildSuperTileStampChanges, MapStamp, superTileStampPreviewCells } from "./superTileStamps";
+import { buildSuperTileStampChanges, MapStamp, MapStampPreviewCell, superTileStampPreviewCells } from "./superTileStamps";
 
 export function useMapInteractions({
   map,
@@ -117,7 +117,7 @@ export function useMapInteractions({
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
   const [hoverTarget, setHoverTarget] = useState<MapHitTarget | null>(null);
   const [paintCursor, setPaintCursor] = useState<{ x: number; y: number; tile: number } | null>(null);
-  const [stampCursor, setStampCursor] = useState<Array<{ x: number; y: number; tile: number }> | null>(null);
+  const [stampCursor, setStampCursor] = useState<MapStampPreviewCell[] | null>(null);
   const [regionPreview, setRegionPreview] = useState<MapRegionSelection | null>(null);
 
   useEffect(() => {
