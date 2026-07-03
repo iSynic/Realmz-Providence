@@ -66,7 +66,7 @@ export function isProjectEmpty(project: Project) {
 
 export function isSemanticMappingPending(project: Project | null) {
   if (!project) return false;
-  if ((project.semanticSchema?.schemaVersion ?? 0) !== 4) return true;
+  if ((project.semanticSchema?.schemaVersion ?? 0) !== 5) return true;
   const activeExtraActions = project.triggers.filter((trigger) => trigger.source === "Data ED3" && trigger.active !== false).length;
   if (activeExtraActions === 0) return false;
   return (project.semanticSchema?.decoding?.ed3Reachability ?? []).length < activeExtraActions;

@@ -203,6 +203,9 @@ export async function buildBrowserSemanticSchemaForProject(project: Project): Pr
     randomLevels: project.randomLevels,
     triggers: project.triggers,
     extracodes: project.extracodes,
+    battles: project.battles,
+    monsters: project.monsters,
+    monsterSets: project.monsterSets,
     assetCatalog: project.assetCatalog,
     records: project.records
   };
@@ -238,7 +241,7 @@ function buildBrowserSemanticSchemaAsync(request: Parameters<typeof buildBrowser
   });
 }
 
-function emptySemanticSchema(schemaVersion = 4): Project["semanticSchema"] {
+function emptySemanticSchema(schemaVersion = 5): Project["semanticSchema"] {
   return {
     schemaVersion,
     sources: [],
@@ -679,7 +682,7 @@ export function validateBrowserProject(project: Project): ValidationReport {
   if ((project.assets ?? []).length > 0) {
     warnings.push(`${project.assets.length.toLocaleString()} managed media asset(s) are present; desktop export writes them to the Scenario resource fork.`);
   }
-  if (project.semanticSchema.schemaVersion !== 4) {
+  if (project.semanticSchema.schemaVersion !== 5) {
     warnings.push(`Semantic schema version ${project.semanticSchema.schemaVersion} is stale; re-import this scenario to refresh archaeology data.`);
   }
   for (const diagnostic of project.semanticSchema.diagnostics) {

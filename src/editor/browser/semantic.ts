@@ -1,8 +1,11 @@
 import {
   Action,
+  BattleRecord,
   ExtraCodeRow,
   MapEntity,
   MapRecord,
+  MonsterRecord,
+  MonsterSet,
   Project,
   RandomLevel,
   SemanticEntity,
@@ -24,11 +27,14 @@ export function buildBrowserSemanticSchema(projectParts: {
   randomLevels: RandomLevel[];
   triggers: TriggerRecord[];
   extracodes: ExtraCodeRow[];
+  battles: BattleRecord[];
+  monsters: MonsterRecord[];
+  monsterSets: MonsterSet[];
   assetCatalog: Project["assetCatalog"];
   records: Project["records"];
 }): SemanticSchema {
   const schema: SemanticSchema = {
-    schemaVersion: 4,
+    schemaVersion: 5,
     sources: [],
     records: [],
     entities: [],
@@ -56,6 +62,8 @@ export function buildBrowserSemanticSchema(projectParts: {
   addRandomLevels(schema, projectParts.randomLevels);
   addExtracodes(schema, projectParts.extracodes);
   addTriggers(schema, projectParts.triggers, projectParts.extracodes);
+  addBattles(schema, projectParts.battles);
+  addMonsters(schema, projectParts.monsters, projectParts.monsterSets);
   addTileAssets(schema, projectParts.assetCatalog);
   addRenderProfiles(schema, projectParts.maps, projectParts.assetCatalog);
   addResourceEntities(schema, projectParts.buffers, projectParts.sourceFiles);
@@ -585,6 +593,39 @@ function addMapRecords(schema: SemanticSchema, mapRecords: MapRecord[], maps: Ma
     for (const icon of iconSlots) {
       pushLink(schema, entityId, `resource:cicn:${icon.iconId}`, "uses_resource", "source-backed", { field: "icon", slot: icon.slot });
     }
+  }
+}
+
+function addBattles(schema: SemanticSchema, battles: BattleRecord[]) {
+  for (const battle of battles) {
+    if (battle.battleMacro === 0) continue;
+    pushLink(schema, `battle:${battle.id}`, `macro:${Math.abs(battle.battleMacro)}`, "calls_battle_macro", "source-backed", {
+      field: "battleMacro",
+      rawValue: battle.battleMacro,
+      runnable: battle.battleMacro < 0
+    });
+  }
+}
+
+function addMonsters(schema: SemanticSchema, monsters: MonsterRecord[], monsterSets: MonsterSet[]) {
+  addMonsterSetRecords(schema, monsters, "Data MD", "Normal", "monster");
+  for (const set of monsterSets ?? []) {
+    const source = set.sourceFile || (set.setId === 1 ? "Data MD1" : set.setId === -1 ? "Data MD-1" : "Data MD");
+    const label = set.setId === 1 ? "Monster" : set.setId === -1 ? "Mega" : "Normal";
+    addMonsterSetRecords(schema, set.monsters ?? [], source, label, "alternate monster");
+  }
+}
+
+function addMonsterSetRecords(schema: SemanticSchema, monsters: MonsterRecord[], source: string, setLabel: string, entityType: string) {
+  for (const monster of monsters ?? []) {
+    if (monster.deathMacro <= 0) continue;
+    const entityId = source === "Data MD" ? `monster:${monster.id}` : `monster:${source}:${monster.id}`;
+    pushLink(schema, entityId, `macro:${monster.deathMacro}`, "calls_macro", "source-backed", {
+      field: "deathMacro",
+      sourceFile: source,
+      setLabel,
+      entityType
+    });
   }
 }
 

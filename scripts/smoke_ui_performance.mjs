@@ -1111,7 +1111,7 @@ function writeBenchmarkProject(outputPath, project) {
 
 function emptyBenchmarkSemanticSchema() {
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     sources: [],
     records: [],
     entities: [],

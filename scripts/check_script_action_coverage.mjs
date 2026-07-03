@@ -8,6 +8,8 @@ const edcdPath = path.join(root, "src/editor/components/EdcdRowEditor.tsx");
 const edcdRowsPath = path.join(root, "src/editor/edcdRows.ts");
 const appUtilsPath = path.join(root, "src/editor/app/appUtils.ts");
 const appBootstrapPath = path.join(root, "src/editor/app/useAppBootstrapEffects.ts");
+const semanticPath = path.join(root, "src/editor/browser/semantic.ts");
+const browserProjectPath = path.join(root, "src/editor/browser/project.ts");
 
 const catalog = fs.readFileSync(catalogPath, "utf8");
 const panel = fs.readFileSync(panelPath, "utf8");
@@ -15,6 +17,8 @@ const edcd = fs.readFileSync(edcdPath, "utf8");
 const edcdRows = fs.readFileSync(edcdRowsPath, "utf8");
 const appUtils = fs.readFileSync(appUtilsPath, "utf8");
 const appBootstrap = fs.readFileSync(appBootstrapPath, "utf8");
+const semantic = fs.readFileSync(semanticPath, "utf8");
+const browserProject = fs.readFileSync(browserProjectPath, "utf8");
 const targetPickerPath = path.join(root, "src/editor/components/RealmzTargetPicker.tsx");
 const inventoryPath = path.join(root, "src/editor/panels/scripts/scriptInventory.tsx");
 const validationPath = path.join(root, "src/editor/scriptValidation.ts");
@@ -98,6 +102,35 @@ for (const snippet of [
   "return (project.semanticSchema?.decoding?.ed3Reachability ?? []).length < activeExtraActions"
 ]) {
   if (!appUtils.includes(snippet)) failures.push(`Semantic mapping stale check is missing ED3 reachability coverage: ${snippet}`);
+}
+
+for (const snippet of [
+  "schemaVersion: 5",
+  "addBattles(schema, projectParts.battles)",
+  "addMonsters(schema, projectParts.monsters, projectParts.monsterSets)",
+  "\"calls_battle_macro\"",
+  "rawValue: battle.battleMacro",
+  "runnable: battle.battleMacro < 0",
+  "field: \"deathMacro\"",
+  "root.kind === \"calls_battle_macro\" ? \"negative-battle-macro\"",
+  "isNegativeBattleMacroLink(link)"
+]) {
+  if (!semantic.includes(snippet)) failures.push(`Browser semantic schema is missing combat macro reachability support: ${snippet}`);
+}
+if (
+  semantic.indexOf("addBattles(schema, projectParts.battles)") > semantic.indexOf("classifyEd3Reachability(schema, projectParts.triggers)") ||
+  semantic.indexOf("addMonsters(schema, projectParts.monsters, projectParts.monsterSets)") > semantic.indexOf("classifyEd3Reachability(schema, projectParts.triggers)")
+) {
+  failures.push("Browser semantic combat macro links must be built before ED3 reachability classification.");
+}
+
+for (const snippet of [
+  "battles: project.battles",
+  "monsters: project.monsters",
+  "monsterSets: project.monsterSets",
+  "function emptySemanticSchema(schemaVersion = 5)"
+]) {
+  if (!browserProject.includes(snippet)) failures.push(`Browser semantic project request is missing combat macro input/version support: ${snippet}`);
 }
 
 for (const snippet of [
