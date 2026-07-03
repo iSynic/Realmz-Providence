@@ -155,7 +155,7 @@ function semanticGroupHelp(title: string) {
     return "Link Integrity shows semantic references with unresolved endpoints, such as scripts pointing at missing messages, maps, monsters, resources, or macros.";
   }
   if (title === "Script Source Triage") {
-    return "Script Source Triage separates callable Extra Action Points from imported rows that may be unused, runtime leftovers, or behavior Providence has not proven yet.";
+    return "Script Source Triage separates callable Extra Action Points from imported entries that may be unused, runtime leftovers, or behavior Providence has not proven yet.";
   }
   return "This linter group collects related release-readiness diagnostics. Open a row to inspect the target record or evidence.";
 }
@@ -175,7 +175,7 @@ function issueSourceHelp(source: string) {
     return "Map issues usually affect Realmz level data, Action Point placement, random areas, special/icon tiles, map records, or tile metadata.";
   }
   if (lower.includes("script") || lower.includes("action")) {
-    return "Script issues usually mean an Action Point row, EDCD parameter, or macro target needs a valid linked record before export.";
+    return "Script issues usually mean an Action Point, Action Settings entry, or macro target needs a valid linked record before export.";
   }
   return "These validation issues come from the named project area. Open the row to inspect the linked target when available.";
 }
@@ -484,21 +484,21 @@ function semanticLintGroups(project: Project | null) {
         ...ed3Risky.slice(0, 8).map((summary): LintInsight => ({
           id: `ed3-risk:${summary.recordIndex}`,
           severity: summary.linterSeverity ?? "warning",
-          message: `Review Extra Action row ${summary.recordIndex}.`,
+          message: `Review Extra Action Point #${summary.recordIndex}.`,
           detail: humanScriptTriageDetail(summary.classification),
           target: summary.entityId
         })),
         ed3Risky.length > 8 ? {
           id: "ed3-risk-more",
           severity: "info" as const,
-          message: `${(ed3Risky.length - 8).toLocaleString()} more imported action row${ed3Risky.length - 8 === 1 ? "" : "s"} need review.`,
-          detail: "Use Scripts filters or the developer report when you need row-by-row evidence."
+          message: `${(ed3Risky.length - 8).toLocaleString()} more imported Extra Action Point${ed3Risky.length - 8 === 1 ? "" : "s"} need review.`,
+          detail: "Use Scripts filters or the developer report when you need entry-by-entry evidence."
         } : null
       ]
         .filter((row): row is LintInsight => Boolean(row))
     },
     {
-      title: "Action Settings Rows",
+      title: "Action Settings",
       defaultOpen: edcdRisky.length > 0 && edcdRisky.length <= 6,
       summary: edcdSettingsSummary(edcdUsages, edcdRisky),
       rows: [
@@ -524,8 +524,8 @@ function semanticLintGroups(project: Project | null) {
         edcdRisky.length > 8 ? {
           id: "edcd-risk-more",
           severity: "info" as const,
-          message: `${(edcdRisky.length - 8).toLocaleString()} more settings row${edcdRisky.length - 8 === 1 ? "" : "s"} need review.`,
-          detail: "Use Scripts > Settings Rows to filter, inspect, duplicate, or repair settings rows."
+          message: `${(edcdRisky.length - 8).toLocaleString()} more Action Settings entr${edcdRisky.length - 8 === 1 ? "y" : "ies"} need review.`,
+          detail: "Use Scripts > Action Settings to filter, inspect, duplicate, or repair settings."
         } : null
       ].filter((row): row is LintInsight => Boolean(row))
     },
@@ -553,9 +553,9 @@ function resourceCoverageSummary(gapCount: number, fallbackCount: number) {
 }
 
 function scriptTriageSummary(total: number, risky: number) {
-  if (total === 0) return "No unlinked Extra Action rows were found.";
-  if (risky === 0) return "Extra Action rows are either callable, likely padding, or not currently actionable.";
-  return `${risky.toLocaleString()} unlinked Extra Action row${risky === 1 ? "" : "s"} may need review before you treat them as intentional scenario behavior.`;
+  if (total === 0) return "No unlinked Extra Action Points were found.";
+  if (risky === 0) return "Extra Action Points are either callable, likely padding, or not currently actionable.";
+  return `${risky.toLocaleString()} unlinked Extra Action Point${risky === 1 ? "" : "s"} may need review before you treat them as intentional scenario behavior.`;
 }
 
 function edcdStatusCounts(usages: EdcdRowUsage[]) {
@@ -565,57 +565,57 @@ function edcdStatusCounts(usages: EdcdRowUsage[]) {
 }
 
 function edcdSettingsSummary(usages: EdcdRowUsage[], risky: EdcdRowUsage[]) {
-  if (usages.length === 0) return "No action settings rows are present.";
-  if (risky.length === 0) return `${usages.length.toLocaleString()} action settings row${usages.length === 1 ? "" : "s"} found with no missing, shared, or conflicting row usage.`;
-  return `${risky.length.toLocaleString()} of ${usages.length.toLocaleString()} action settings row${usages.length === 1 ? "" : "s"} need author review.`;
+  if (usages.length === 0) return "No Action Settings are present.";
+  if (risky.length === 0) return `${usages.length.toLocaleString()} Action Settings entr${usages.length === 1 ? "y" : "ies"} found with no missing, shared, or conflicting usage.`;
+  return `${risky.length.toLocaleString()} of ${usages.length.toLocaleString()} Action Settings entr${usages.length === 1 ? "y" : "ies"} need author review.`;
 }
 
 function edcdStatusMessage(status: EdcdRowStatus, count: number) {
-  if (status === "missing") return `${count.toLocaleString()} referenced settings row${count === 1 ? "" : "s"} missing.`;
-  if (status === "conflict") return `${count.toLocaleString()} settings row${count === 1 ? "" : "s"} used by conflicting action shapes.`;
-  if (status === "shared") return `${count.toLocaleString()} settings row${count === 1 ? "" : "s"} shared by multiple steps.`;
-  if (status === "unused") return `${count.toLocaleString()} imported settings row${count === 1 ? "" : "s"} currently unused.`;
-  return `${count.toLocaleString()} settings row${count === 1 ? "" : "s"} used by one step.`;
+  if (status === "missing") return `${count.toLocaleString()} referenced Settings ID${count === 1 ? "" : "s"} missing.`;
+  if (status === "conflict") return `${count.toLocaleString()} Settings ID${count === 1 ? "" : "s"} used by conflicting action types.`;
+  if (status === "shared") return `${count.toLocaleString()} Settings ID${count === 1 ? "" : "s"} shared by multiple steps.`;
+  if (status === "unused") return `${count.toLocaleString()} imported Action Settings entr${count === 1 ? "y" : "ies"} currently unused.`;
+  return `${count.toLocaleString()} Settings ID${count === 1 ? "" : "s"} used by one step.`;
 }
 
 function edcdStatusDetail(status: EdcdRowStatus) {
-  if (status === "missing") return "Create the row or choose a different settings row before relying on that step.";
-  if (status === "conflict") return "Different action types are reading the same five values differently; duplicate or repair the row before editing.";
-  if (status === "shared") return "Shared rows are valid, but step-specific edits should duplicate the row first.";
-  if (status === "unused") return "Unused imported rows are preserved, but they are not currently linked from known script flow.";
-  return "These rows have one known caller and can be edited from the selected step or Settings Rows tab.";
+  if (status === "missing") return "Create the settings or choose a different Settings ID before relying on that step.";
+  if (status === "conflict") return "Different action types are reading the same five values differently; duplicate or repair the settings before editing.";
+  if (status === "shared") return "Shared settings are valid, but step-specific edits should duplicate them first.";
+  if (status === "unused") return "Unused imported settings are preserved, but they are not currently linked from known script flow.";
+  return "These settings have one known caller and can be edited from the selected step or Action Settings tab.";
 }
 
 function edcdRiskMessage(usage: EdcdRowUsage) {
-  if (usage.status === "missing") return `Settings row ${usage.rowId} is referenced but missing.`;
-  if (usage.status === "conflict") return `Settings row ${usage.rowId} has conflicting callers.`;
-  if (usage.status === "shared") return `Settings row ${usage.rowId} is shared by ${usage.callers.length} steps.`;
-  return `Review settings row ${usage.rowId}.`;
+  if (usage.status === "missing") return `Settings #${usage.rowId} are referenced but missing.`;
+  if (usage.status === "conflict") return `Settings #${usage.rowId} have conflicting callers.`;
+  if (usage.status === "shared") return `Settings #${usage.rowId} are shared by ${usage.callers.length} steps.`;
+  return `Review Settings #${usage.rowId}.`;
 }
 
 function ed3SummaryMessage(classification: string, count: number, label: string) {
-  if (classification === "source-backed") return `${count.toLocaleString()} callable Extra Action row${count === 1 ? "" : "s"}.`;
-  if (classification === "probable-editor-padding") return `${count.toLocaleString()} likely empty imported row${count === 1 ? "" : "s"}.`;
-  if (classification === "runtime-mutation-candidate") return `${count.toLocaleString()} possible runtime leftover row${count === 1 ? "" : "s"}.`;
-  if (classification === "orphan-authored-content") return `${count.toLocaleString()} possible orphan authored row${count === 1 ? "" : "s"}.`;
-  if (classification === "needs-runtime-trace") return `${count.toLocaleString()} row${count === 1 ? "" : "s"} need runtime confirmation.`;
-  return `${count.toLocaleString()} ${label.toLowerCase()} row${count === 1 ? "" : "s"}.`;
+  if (classification === "source-backed") return `${count.toLocaleString()} callable Extra Action Point${count === 1 ? "" : "s"}.`;
+  if (classification === "probable-editor-padding") return `${count.toLocaleString()} likely empty imported Extra Action Point${count === 1 ? "" : "s"}.`;
+  if (classification === "runtime-mutation-candidate") return `${count.toLocaleString()} possible runtime leftover Extra Action Point${count === 1 ? "" : "s"}.`;
+  if (classification === "orphan-authored-content") return `${count.toLocaleString()} possible orphan authored Extra Action Point${count === 1 ? "" : "s"}.`;
+  if (classification === "needs-runtime-trace") return `${count.toLocaleString()} Extra Action Point${count === 1 ? "" : "s"} need runtime confirmation.`;
+  return `${count.toLocaleString()} ${label.toLowerCase()} entr${count === 1 ? "y" : "ies"}.`;
 }
 
 function ed3SummaryDetail(classification: string, fallback?: string) {
   if (classification === "source-backed") return "These are linked from known scenario flow and can be inspected normally in Scripts.";
-  if (classification === "probable-editor-padding") return "These look empty or unused, so Providence counts them but does not list every row.";
+  if (classification === "probable-editor-padding") return "These look empty or unused, so Providence counts them but does not list every entry.";
   if (classification === "runtime-mutation-candidate") return "These may be leftover state that Realmz mutates while running a scenario.";
   if (classification === "orphan-authored-content") return "These contain action-like content but no caller Providence can prove yet.";
   if (classification === "needs-runtime-trace") return "These may be real behavior, but need playtesting or deeper tracing before editing confidently.";
-  return fallback ?? "Providence preserved these rows but cannot explain them yet.";
+  return fallback ?? "Providence preserved these entries but cannot explain them yet.";
 }
 
 function humanScriptTriageDetail(classification: string) {
   if (classification === "runtime-mutation-candidate") return "May be runtime state rather than author-authored behavior. Open it before editing.";
   if (classification === "orphan-authored-content") return "Looks authored, but Providence has not found what calls it yet.";
   if (classification === "needs-runtime-trace") return "Could be reachable through behavior Providence has not decoded. Verify before relying on it.";
-  return "Imported row needs review before editing.";
+  return "Imported entry needs review before editing.";
 }
 
 function LintIssueRow({ issue, onSelectEntity }: { issue: Issue; onSelectEntity: (entity: SelectedEntity) => void }) {

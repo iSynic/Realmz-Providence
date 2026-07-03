@@ -284,7 +284,7 @@ const ACTION_OVERRIDES: Record<number, Partial<Pick<ScriptActionDefinition, "lab
     label: "De-animate Lower Undead",
     shortLabel: "De-animate Undead",
     category: "Encounters",
-    description: "Combat macro action. Outside monster or battle macro contexts, Providence preserves imported rows instead of presenting this as routine AP authoring.",
+    description: "Combat macro action. Outside monster or battle macro contexts, Providence preserves imported entries instead of presenting this as routine AP authoring.",
     searchTerms: ["destroy undead", "lower undead", "deanimate", "de-animate", "macro only", "combat macro"]
   },
   122: { label: "Show Fumble Result", shortLabel: "Fumble", category: "Encounters", description: "Show combat fumble message or sound behavior." },
@@ -489,7 +489,7 @@ const ACTION_METADATA_OVERRIDES: Record<number, ScriptActionMetadataOverride> = 
       1: { label: "Rectangle", targetFamily: "random-encounter-rectangle" },
       2: { label: "Map Kind", help: "0 targets land data; 1 targets dungeon data." },
       3: { label: "Encounter Percent Delta", help: "Signed encounter-percent delta using Realmz's base-10000 scale." },
-      4: { label: "Shape Mode", help: "-1 keeps shape, 0 sets coordinates, 1 offsets the rectangle, 2 warps using the following settings row." }
+      4: { label: "Shape Mode", help: "-1 keeps shape, 0 sets coordinates, 1 offsets the rectangle, 2 warps using the following Settings ID." }
     }
   },
   106: {
@@ -647,7 +647,7 @@ export function scriptActionSummary(
     if (draft.id === 0) return `${definition.shortLabel}: choose ${definition.target.label.toLowerCase()}`;
     return `${definition.shortLabel}: ${definition.target.label} ${draft.id}`;
   }
-  if (definition.parameters.length > 0) return `${definition.shortLabel}: settings ${draft.id}`;
+  if (definition.parameters.length > 0) return `${definition.shortLabel}: Settings #${draft.id}`;
   return definition.shortLabel;
 }
 
@@ -719,7 +719,7 @@ function summarizeSettingsBackedAction(
   const code = normalizeStepOpcode(draft.rawCode);
   const values = settingsValues(project, draft);
   if (!values && definition.target?.targetFamily === "parameter-row") {
-    return draft.id === 0 ? `${definition.shortLabel}: choose settings` : `${definition.shortLabel}: settings ${draft.id}`;
+    return draft.id === 0 ? `${definition.shortLabel}: choose settings` : `${definition.shortLabel}: Settings #${draft.id}`;
   }
   if (!values) return "";
   if (code === 3) {

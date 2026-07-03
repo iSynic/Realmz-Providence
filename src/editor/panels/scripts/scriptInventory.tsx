@@ -67,6 +67,9 @@ export function issueCountsBySlot(issues: ScriptDiagnostic[]) {
 function authorFacingExtraActionKind(classification: string) {
   if (classification === "Callable Extra Action Point") return "Extra Action Point";
   if (classification === "Global Macro") return "Global Event";
+  if (classification === "Random Encounter Action") return "Random Encounter Action";
+  if (classification === "Timed Encounter Action") return "Timed Encounter Action";
+  if (classification === "Battle / Monster / Item Action") return "Source-Linked Extra Action";
   if (classification === "Likely Padding" || classification === "Imported Empty Slot") return "Likely Padding";
   if (classification === "Runtime Residue" || classification === "Imported Runtime Mutation") return "Runtime Residue";
   return "Unlinked Extra Action";
@@ -99,8 +102,8 @@ export function scriptTabKind(activeEditor: string) {
 export function extraActionTabClassification(project: Project | null, trigger: TriggerRecord) {
   if (trigger.source !== "Data ED3") return "map-action-point";
   const classification = extraActionPointClassification(project, trigger);
-  if (classification === "Callable Extra Action Point") return "reusable-actions";
   if (classification === "Global Macro") return "global-events";
+  if (isCallableMacro(project, trigger)) return "reusable-actions";
   return "advanced-imports";
 }
 
@@ -146,7 +149,7 @@ export function isReusableActionPoint(trigger: TriggerRecord) {
 
 export function triggerVisibleForEditor(project: Project | null, trigger: TriggerRecord, activeEditor: string) {
   const tabKind = scriptTabKind(activeEditor);
-  if (tabKind === "reusable-actions") return trigger.source === "Data ED3";
+  if (tabKind === "reusable-actions") return extraActionTabClassification(project, trigger) === "reusable-actions";
   if (tabKind === "global-events") return extraActionTabClassification(project, trigger) === "global-events";
   if (tabKind === "advanced-imports") return extraActionTabClassification(project, trigger) === "advanced-imports";
   if (activeEditor === "action-points") return trigger.source !== "Data ED3" && trigger.levelType != null && trigger.levelIndex != null;
@@ -161,7 +164,7 @@ export function scriptPanelTitle(activeEditor: string) {
   if (activeEditor === "ed3-evidence") return "Unlinked Extra Actions";
   if (activeEditor === "global-macros") return "Global Events";
   if (activeEditor === "quests") return "Quests";
-  if (activeEditor === "settings-rows") return "Settings Rows";
+  if (activeEditor === "settings-rows") return "Action Settings";
   return "Action Points";
 }
 

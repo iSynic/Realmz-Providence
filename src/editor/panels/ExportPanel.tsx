@@ -18,7 +18,7 @@ import {
 const EXPORT_WORKBENCH_HELP = "Export writes a Realmz-compatible scenario folder from the current project and reports what was written, preserved, passed through, blocked, or warned.";
 const EXPORT_TARGET_HELP = "Choose the package shape to write. Portable Providence is useful for internal roundtrips; Mac Classic and Windows Realmz match the target runtime folder conventions.";
 const EXPORT_ACTION_HELP = "Export Scenario Folder runs the writer for the selected target. Run validation first, then inspect the export report for blocked assets, resource warnings, and target compatibility notes.";
-const BENCHMARK_HELP = "Benchmark Project measures large-scenario UI and validation scale so release candidates do not regress on dense maps, triggers, or EDCD rows.";
+const BENCHMARK_HELP = "Benchmark Project measures large-scenario UI and validation scale so release candidates do not regress on dense maps, triggers, or Action Settings.";
 const EXPORT_REPORT_HELP = "The export report is the release ledger for this session: output folder, target, source files, pass-through files, resource writes, preserved resources, blocked assets, and warnings.";
 const EXPORT_PLAN_HELP = "Export Plan previews the current project boundary before writing: writer-supported records, pass-through files, resource gaps, runtime caches, unresolved links, and blocked objects.";
 const RESOURCE_NOTES_HELP = "Resource Export Notes explain resource fork entries that were preserved, skipped, blocked, or written with caution. Review used resource warnings before release.";

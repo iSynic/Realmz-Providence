@@ -87,7 +87,7 @@ function buildMessageUsageLinks(project: Project) {
       const code = normalizeStepOpcode(action.rawCode);
       const targetMessageId = code === 1 ? Math.abs(action.id) : action.id;
       if ([1, 62, 71].includes(code)) {
-        add(targetMessageId, { key: `simple:${encounter.id}:action:${action.slot}`, label: `Simple Encounter ${encounter.id}`, detail: `Action row ${action.slot} message`, entity: { type: "encounter", id: `encounter:simple:${encounter.id}` } });
+        add(targetMessageId, { key: `simple:${encounter.id}:action:${action.slot}`, label: `Simple Encounter ${encounter.id}`, detail: `Action step ${action.slot} message`, entity: { type: "encounter", id: `encounter:simple:${encounter.id}` } });
       }
     }
   }
@@ -97,7 +97,7 @@ function buildMessageUsageLinks(project: Project) {
       const code = normalizeStepOpcode(action.rawCode);
       const targetMessageId = code === 1 ? Math.abs(action.id) : action.id;
       if ([1, 62, 71].includes(code)) {
-        add(targetMessageId, { key: `complex:${encounter.id}:action:${action.slot}`, label: `Complex Encounter ${encounter.id}`, detail: `Action row ${action.slot} message`, entity: { type: "encounter", id: `encounter:complex:${encounter.id}` } });
+        add(targetMessageId, { key: `complex:${encounter.id}:action:${action.slot}`, label: `Complex Encounter ${encounter.id}`, detail: `Action step ${action.slot} message`, entity: { type: "encounter", id: `encounter:complex:${encounter.id}` } });
       }
     }
   }
@@ -412,7 +412,7 @@ function forEachScriptAction(project: Project, visit: (action: ScriptActionLike,
       visit(action, {
         key: `simple:${encounter.id}:action:${action.slot}`,
         label: `Simple Encounter ${encounter.id}`,
-        actionLabel: `Action row ${action.slot}`,
+        actionLabel: `Action step ${action.slot}`,
         entity: { type: "encounter", id: `encounter:simple:${encounter.id}` }
       });
     }
@@ -422,7 +422,7 @@ function forEachScriptAction(project: Project, visit: (action: ScriptActionLike,
       visit(action, {
         key: `complex:${encounter.id}:action:${action.slot}`,
         label: `Complex Encounter ${encounter.id}`,
-        actionLabel: `Action row ${action.slot}`,
+        actionLabel: `Action step ${action.slot}`,
         entity: { type: "encounter", id: `encounter:complex:${encounter.id}` }
       });
     }
@@ -527,6 +527,9 @@ function importedExtraActionLabel(classification: string | null | undefined) {
 function authorFacingExtraActionKind(classification: string) {
   if (classification === "Callable Extra Action Point") return "Extra Action Point";
   if (classification === "Global Macro") return "Global Event";
+  if (classification === "Random Encounter Action") return "Random Encounter Action";
+  if (classification === "Timed Encounter Action") return "Timed Encounter Action";
+  if (classification === "Battle / Monster / Item Action") return "Source-Linked Extra Action";
   if (classification === "Likely Padding" || classification === "Imported Empty Slot") return "Likely Padding";
   if (classification === "Runtime Residue" || classification === "Imported Runtime Mutation") return "Runtime Residue";
   return "Unlinked Extra Action";

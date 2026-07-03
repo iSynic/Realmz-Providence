@@ -153,7 +153,7 @@ export function edcdUsageForAction(project: Project, catalog: LibraryCatalog | n
     status,
     statusLabel: labelForStatus(status),
     summary: scriptActionSummary(project, catalog, { rawCode, id: rowId, parameters: values }, ""),
-    warnings: row ? [] : [`An action points at settings row ${rowId}, but the row is missing.`]
+    warnings: row ? [] : [`An action step uses Settings #${rowId}, but those settings are missing.`]
   };
 }
 
@@ -229,17 +229,17 @@ function summaryForUsage(
   if (primaryOpcode != null) {
     return scriptActionSummary(project, catalog, { rawCode: primaryOpcode, id: rowId, parameters: values }, "");
   }
-  if (status === "unused" && row) return `Unused settings row: ${values.join(", ")}`;
-  if (status === "missing") return "Referenced by an action, but this settings row does not exist yet.";
-  if (callers.length > 0) return `${callers[0].actionShortLabel}: settings ${rowId}`;
-  return `Settings row ${rowId}`;
+  if (status === "unused" && row) return `Unused Settings #${rowId}: ${values.join(", ")}`;
+  if (status === "missing") return `Referenced by an action step, but Settings #${rowId} do not exist yet.`;
+  if (callers.length > 0) return `${callers[0].actionShortLabel}: Settings #${rowId}`;
+  return `Settings #${rowId}`;
 }
 
 function warningsFor(status: EdcdRowStatus, rowId: number, callers: EdcdRowCaller[], possibleShapes: string[]) {
-  if (status === "missing") return [`An action points at settings row ${rowId}, but the row is missing.`];
-  if (status === "conflict") return [`Settings row ${rowId} is used by different action shapes: ${possibleShapes.join(", ")}.`];
-  if (status === "shared") return [`Settings row ${rowId} is shared by ${callers.length} steps. Editing it changes every caller.`];
-  if (status === "unused") return [`Settings row ${rowId} is not used by any current script step.`];
+  if (status === "missing") return [`An action step uses Settings #${rowId}, but those settings are missing.`];
+  if (status === "conflict") return [`Settings #${rowId} are used by different action types: ${possibleShapes.join(", ")}.`];
+  if (status === "shared") return [`Settings #${rowId} are shared by ${callers.length} steps. Editing them changes every caller.`];
+  if (status === "unused") return [`Settings #${rowId} are not used by any current script step.`];
   return [];
 }
 

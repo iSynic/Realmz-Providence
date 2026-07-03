@@ -228,6 +228,9 @@ function importedExtraActionLabel(classification: string | null | undefined) {
 function authorFacingExtraActionKind(classification: string) {
   if (classification === "Callable Extra Action Point") return "Extra Action Point";
   if (classification === "Global Macro") return "Global Event";
+  if (classification === "Random Encounter Action") return "Random Encounter Action";
+  if (classification === "Timed Encounter Action") return "Timed Encounter Action";
+  if (classification === "Battle / Monster / Item Action") return "Source-Linked Extra Action";
   if (classification === "Likely Padding" || classification === "Imported Empty Slot") return "Likely Padding";
   if (classification === "Runtime Residue" || classification === "Imported Runtime Mutation") return "Runtime Residue";
   return "Unlinked Extra Action";

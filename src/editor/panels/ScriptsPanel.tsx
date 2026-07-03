@@ -119,7 +119,7 @@ const SCRIPT_EDITOR_TABS = [
   { id: "macros", label: "Extra Action Points", title: "Extra Action Points and branch targets." },
   { id: "global-macros", label: "Global Events", title: "Scenario-wide event hooks and startup logic." },
   { id: "quests", label: "Story Flags", title: "Beta story-flag labels, decoded usage, and optional author notes." },
-  { id: "settings-rows", label: "Settings Rows", title: "Advanced browser for EDCD action settings rows." },
+  { id: "settings-rows", label: "Action Settings", title: "Advanced browser for shared or imported action settings." },
   { id: "ed3-evidence", label: "Unlinked Extra APs", title: "Extra Action Points not yet linked from known scenario behavior." }
 ];
 
@@ -140,7 +140,7 @@ const TARGET_DRAWER_HELP =
 const FLOW_PREVIEW_HELP =
   "Flow Preview summarizes obvious branches, GOSUBs, Extra Action Point calls, choices, and logic paths. It is a navigation aid, not a full runtime interpreter.";
 const TECHNICAL_DETAILS_HELP =
-  "Technical Details shows the raw Realmz storage: source file, record index, door ID, selected slot, applied and draft CODE/ID, EDCD row, dispatcher status, and semantic links.";
+  "Technical Details shows the raw Realmz storage: source file, record index, door ID, selected slot, applied and draft CODE/ID, EDCD settings ID, dispatcher status, and semantic links.";
 const STEP_REFERENCE_HELP =
   "Step Reference keeps the opcode notes, Divinity wording, and raw CODE/ID storage available without making them the main authoring surface.";
 const TARGET_PICKER_HELP =
@@ -148,7 +148,7 @@ const TARGET_PICKER_HELP =
 const ACTION_CHOOSER_HELP =
   "Choose Action changes only the selected step draft. Apply Step is still required before the script record is updated.";
 const SETTINGS_HELP =
-  "Settings rows hold the extra fields for actions whose CODE/ID slot is too small. Pick the row from its caller when possible; Providence names the fields for the selected action and keeps row IDs stable.";
+  "Action Settings hold the extra fields for actions whose CODE/ID slot is too small. Pick the Settings ID from its caller when possible; Providence names the fields for the selected action and keeps settings IDs stable.";
 const SIMPLE_ENCOUNTER_SOURCE_HELP =
   "Simple Encounters are Data ED source records. The prompt points to a String, the four option labels live inside this record, and each option result jumps to one of four script columns.";
 const COMPLEX_ENCOUNTER_SOURCE_HELP =
@@ -173,7 +173,7 @@ const COMPLEX_SPELL_TESTS_HELP =
 const COMPLEX_ITEM_TESTS_HELP =
   "Item responses match Realmz item IDs from Economy or the reference item library. When the party uses a matching item, Realmz runs the selected result script column.";
 const ENCOUNTER_RESULT_ACTION_HELP =
-  "Encounter result columns are the outcome scripts. Branch fields choose Result 1, 2, 3, or 4; Realmz then runs that column's ordered CODE/ID rows.";
+  "Encounter result columns are the outcome scripts. Branch fields choose Result 1, 2, 3, or 4; Realmz then runs that column's ordered CODE/ID steps.";
 const ROGUE_ACTION_TESTS_HELP =
   "Rogue action rows control which Divinity thief actions are available, the skill modifier, success/failure result codes, and the text/sound feedback for each outcome.";
 const ROGUE_TRAP_HELP =
@@ -233,6 +233,8 @@ function authorFacingExtraActionKind(classification: string, combatMacroContext?
   if (combatMacroContext?.kind === "mixed") return "Combat Macro";
   if (classification === "Callable Extra Action Point") return "Extra Action Point";
   if (classification === "Global Macro") return "Global Event";
+  if (classification === "Random Encounter Action") return "Random Encounter Action";
+  if (classification === "Timed Encounter Action") return "Timed Encounter Action";
   if (classification === "Battle / Monster / Item Action") return "Source-Linked Extra Action";
   if (classification === "Likely Padding" || classification === "Imported Empty Slot") return "Likely Padding";
   if (classification === "Runtime Residue" || classification === "Imported Runtime Mutation") return "Runtime Residue";
@@ -286,9 +288,9 @@ function combatMacroContextFor(project: Project, trigger: TriggerRecord, reachab
 }
 
 function combatMacroContextTitle(context: CombatMacroContext) {
-  if (context.kind === "battle") return "Battle Macro Context";
-  if (context.kind === "monster") return "Monster Macro Context";
-  return "Combat Macro Context";
+  if (context.kind === "battle") return "Battle Macro";
+  if (context.kind === "monster") return "Monster Macro";
+  return "Combat Macro";
 }
 
 function combatMacroContextBody(context: CombatMacroContext) {
@@ -988,7 +990,7 @@ function ScriptAuthoringPanel({
           {activeTabKind === "advanced-imports" && (
             <div className="script-tab-note">
               <strong>{scripts.length.toLocaleString()} unlinked Extra Action Point(s)</strong>
-              <small>These Extra Action Points are preserved with the scenario, but Providence has not identified a normal call path for them yet. Use the ED3 filters to separate likely padding, runtime residue, orphan authored-looking rows, and rows that need runtime tracing.</small>
+              <small>These Extra Action Points are preserved with the scenario, but Providence has not identified a normal call path for them yet. Use the evidence filters to separate likely padding, runtime residue, orphan authored-looking entries, and entries that need runtime tracing.</small>
             </div>
           )}
           </div>
@@ -1617,7 +1619,7 @@ function Ed3EvidenceDetails({ row }: { row: Ed3ReachabilityRow | null }) {
   if (!row) {
     return (
       <div className="ed3-evidence-details">
-        <strong>ED3 Evidence</strong>
+        <strong>Extra AP Evidence</strong>
         <small>No semantic reachability row is available for this imported Extra Action Point.</small>
       </div>
     );
@@ -1627,7 +1629,7 @@ function Ed3EvidenceDetails({ row }: { row: Ed3ReachabilityRow | null }) {
   return (
     <div className="ed3-evidence-details">
       <header>
-        <strong>ED3 Evidence</strong>
+        <strong>Extra AP Evidence</strong>
         <span>{row.reachable ? "source-backed" : "not source-reachable"}</span>
       </header>
       <div className="ed3-evidence-grid">
@@ -1721,13 +1723,13 @@ function SettingsRowsPanel({
   const duplicateRow = () => {
     if (!selectedUsage) return;
     const nextId = nextUnusedEdcdRowId(project);
-    onApplyCommand?.({ kind: "updateEdcdRow", label: `Duplicate settings ${selectedUsage.rowId}`, rowId: nextId, values: selectedUsage.values });
+    onApplyCommand?.({ kind: "updateEdcdRow", label: `Duplicate Settings #${selectedUsage.rowId}`, rowId: nextId, values: selectedUsage.values });
     setSelectedRowId(nextId);
   };
   const createRow = () => {
     const nextId = selectedUsage && !selectedUsage.exists ? selectedUsage.rowId : nextUnusedEdcdRowId(project);
     const values = normalizeEdcdValues(selectedUsage?.exists ? selectedUsage.values : selectedTemplate.defaultDraft.parameters);
-    onApplyCommand?.({ kind: "updateEdcdRow", label: `Create settings ${nextId}`, rowId: nextId, values });
+    onApplyCommand?.({ kind: "updateEdcdRow", label: `Create Settings #${nextId}`, rowId: nextId, values });
     setSelectedRowId(nextId);
   };
 
@@ -1735,14 +1737,14 @@ function SettingsRowsPanel({
     <section className="settings-rows-workbench">
       <header>
         <div>
-          <TutorialTip title="Settings Rows" body={SETTINGS_HELP} side="below">
-            <strong>Settings Rows</strong>
+          <TutorialTip title="Action Settings" body={SETTINGS_HELP} side="below">
+            <strong>Action Settings</strong>
           </TutorialTip>
           <small>Inspect and repair the extra fields used by settings-backed actions.</small>
         </div>
         <div className="script-toolbar">
           <button type="button" className="btn btn-secondary btn-xs" onClick={createRow}>
-            <Plus size={12} /> Create Row From Template
+            <Plus size={12} /> Create From Template
           </button>
         </div>
       </header>
@@ -1753,9 +1755,9 @@ function SettingsRowsPanel({
               className="script-list-filter"
               value={query}
               onChange={(event) => setQuery(event.currentTarget.value)}
-              placeholder="Filter settings rows..."
+              placeholder="Filter action settings..."
             />
-            <div className="script-list-scope script-filter-chips" role="group" aria-label="Settings row filter">
+            <div className="script-list-scope script-filter-chips" role="group" aria-label="Action settings filter">
               {EDCD_ROW_FILTERS.map((entry) => (
                 <button
                   key={entry.id}
@@ -1769,7 +1771,7 @@ function SettingsRowsPanel({
               ))}
             </div>
           </div>
-          <ScrollArea className="settings-row-list" aria-label="Settings rows">
+          <ScrollArea className="settings-row-list" aria-label="Action settings">
             {filteredUsages.map((usage) => (
               <button
                 key={usage.rowId}
@@ -1778,29 +1780,29 @@ function SettingsRowsPanel({
                 onClick={() => setSelectedRowId(usage.rowId)}
               >
                 <span>
-                  <strong>Settings Row {usage.rowId}</strong>
+                  <strong>Settings #{usage.rowId}</strong>
                   <small>{usage.summary}</small>
                 </span>
                 <b>{usage.statusLabel}</b>
                 <small>{usage.callers.length} caller{usage.callers.length === 1 ? "" : "s"}{usage.primaryShape ? ` | ${usage.primaryShape}` : ""}</small>
               </button>
             ))}
-            {filteredUsages.length === 0 && <EmptyState compact title="No settings rows" body="No rows match this filter." />}
+            {filteredUsages.length === 0 && <EmptyState compact title="No action settings" body="No settings match this filter." />}
           </ScrollArea>
         </aside>
         <main className="settings-row-detail">
           {selectedUsage ? (
             <PanelSection
-              title={`Settings Row ${selectedUsage.rowId}`}
+              title={`Settings #${selectedUsage.rowId}`}
               eyebrow={selectedUsage.statusLabel}
               density="compact"
               actions={
                 <>
                   <button type="button" className="btn btn-secondary btn-xs" onClick={duplicateRow} disabled={!selectedUsage.exists}>
-                    <Copy size={12} /> Duplicate Row
+                    <Copy size={12} /> Duplicate Settings
                   </button>
-                  <button type="button" className="btn btn-danger btn-xs" disabled={!canDelete} title={canDelete ? "Delete this unused settings row." : "Only unused rows can be deleted here."} onClick={() => onApplyCommand?.({ kind: "deleteEdcdRow", label: `Delete settings ${selectedUsage.rowId}`, rowId: selectedUsage.rowId })}>
-                    <Trash2 size={12} /> Delete Unused Row
+                  <button type="button" className="btn btn-danger btn-xs" disabled={!canDelete} title={canDelete ? "Delete these unused settings." : "Only unused settings can be deleted here."} onClick={() => onApplyCommand?.({ kind: "deleteEdcdRow", label: `Delete Settings #${selectedUsage.rowId}`, rowId: selectedUsage.rowId })}>
+                    <Trash2 size={12} /> Delete Unused Settings
                   </button>
                 </>
               }
@@ -1808,7 +1810,7 @@ function SettingsRowsPanel({
               <div className="settings-row-overview">
                 <div className={`settings-row-status ${edcdUsageStatusTone(selectedUsage.status)}`}>
                   <strong>{selectedUsage.statusLabel}</strong>
-                  <span>{selectedUsage.exists ? "Stored in project settings rows." : "Referenced by a script but not created yet."}</span>
+                  <span>{selectedUsage.exists ? "Stored in project action settings." : "Referenced by a script but not created yet."}</span>
                 </div>
                 {selectedUsage.warnings.map((warning) => <p key={warning} className="field-warning">{warning}</p>)}
                 {selectedUsage.callers.length > 0 && (
@@ -1844,14 +1846,14 @@ function SettingsRowsPanel({
                 fallbackInitialValues={selectedUsage.exists ? selectedUsage.values : selectedTemplate.defaultDraft.parameters}
                 fallbackOpcode={selectedOpcode}
                 parameterLabels={selectedOpcode != null ? scriptActionDefinitionFor(selectedOpcode).parameters : undefined}
-                selectedSlotLabel="settings row"
+                selectedSlotLabel="settings"
                 onSelectEntity={onSelectEntity}
                 onOpenText={(editor) => onOpenTool?.("text", editor)}
                 onApplyCommand={onApplyCommand}
               />
             </PanelSection>
           ) : (
-            <EmptyState title="No settings rows yet" body="Create a settings row from a template or add an EDCD-backed action to a script." />
+            <EmptyState title="No action settings yet" body="Create settings from a template or add a settings-backed action to a script." />
           )}
         </main>
       </div>
@@ -1912,7 +1914,7 @@ function SourceEvidence({
     <CollapsibleSection title="Technical Details" eyebrow="advanced" count={String(count)} density="compact" storageKey="scripts.sourceEvidence.open" defaultOpen={false}>
       <p className="field-help">
         <TutorialTip title="Technical Details" body={TECHNICAL_DETAILS_HELP} side="below">
-          <span>Raw storage, CODE/ID, EDCD row, dispatcher status, and semantic links.</span>
+          <span>Raw storage, CODE/ID, EDCD settings ID, dispatcher status, and semantic links.</span>
         </TutorialTip>
       </p>
       <SourceEvidenceDetails
@@ -1980,7 +1982,7 @@ function SourceEvidenceDetails({
         <FieldRow label="Draft CODE/ID" value={`${selectedDraft.rawCode} / ${selectedDraft.id}`} />
         <FieldRow label="Opcode" value={selectedOption.label} />
         <FieldRow label="Dispatcher" value={isDispatcherNoopOpcode(selectedDraft.rawCode) ? "dispatcher no-op; Realmz ignores this CODE" : "has documented dispatcher behavior"} />
-        <FieldRow label="Settings Row" value={selectedEdcdRowId != null ? `row ${selectedEdcdRowId}${resolvedEdcdUsage?.shape ? ` (${resolvedEdcdUsage.shape})` : ""}` : "none"} />
+        <FieldRow label="Settings ID" value={selectedEdcdRowId != null ? `#${selectedEdcdRowId}${resolvedEdcdUsage?.shape ? ` (${resolvedEdcdUsage.shape})` : ""}` : "none"} />
         <FieldRow label="Edit State" value={resolvedSlotEntity?.editState ?? "authored/draft"} />
       </div>
       {resolvedEdcdUsage?.summary && <p className="field-help">{resolvedEdcdUsage.summary}</p>}
@@ -2137,7 +2139,7 @@ function actionAuthoringStateLabel(definition: ScriptActionDefinition, combatMac
 
 function actionAuthoringStateDetail(definition: ScriptActionDefinition, combatMacroContext?: CombatMacroContext | null) {
   if (definition.opcode === 121) {
-    if (combatMacroContext) return "This action is meaningful in the selected battle or monster macro context. Providence edits the same CODE/ID and settings rows while keeping Extra AP storage unchanged.";
+    if (combatMacroContext) return "This action is meaningful in the selected battle or monster macro. Providence edits the same CODE/ID and Action Settings while keeping Extra Action Point storage unchanged.";
     return "Realmz source performs this only during combat. Ordinary AP imports are preserved here and are not routine Action Point authoring backlog; use monster or battle macro surfaces for intentional authoring.";
   }
   if (definition.opcode === 84) {
@@ -2153,7 +2155,7 @@ function actionAuthoringStateDetail(definition: ScriptActionDefinition, combatMa
     return "Providence knows the target type and can edit this as normal scenario behavior.";
   }
   if (definition.authoringLevel === "guided") {
-    return "Providence edits the attached settings row with named fields, while keeping the original row number and file storage intact.";
+    return "Providence edits the attached Action Settings with named fields, while keeping the original settings ID and file storage intact.";
   }
   if (definition.authoringLevel === "advanced") {
     return "Providence recognizes and preserves the stored values, but this action does not yet have a complete friendly authoring form.";
@@ -2163,8 +2165,8 @@ function actionAuthoringStateDetail(definition: ScriptActionDefinition, combatMa
 
 function actionStorageLabel(definition: ScriptActionDefinition) {
   if (definition.storage === "direct-code-id") return "Direct CODE / ID";
-  if (definition.storage === "data-edcd-parameter-row") return "Settings row";
-  if (definition.storage === "data-ed3-direct") return "Extra Action Point row";
+  if (definition.storage === "data-edcd-parameter-row") return "Action Settings";
+  if (definition.storage === "data-ed3-direct") return "Extra Action Point";
   if (definition.storage === "same-map-action-point-copy") return "Same-map Action Point copy";
   return definition.storage;
 }
@@ -2321,12 +2323,12 @@ function SelectedStepDetail({
     if (!isEdcdBackedStep) return;
     const nextId = nextUnusedEdcdRowId(project);
     const values = normalizeEdcdValues(selectedRowUsage?.values ?? selectedDefaultEdcdValues);
-    onApplyCommand?.({ kind: "updateEdcdRow", label: `Duplicate settings ${selectedDraft.id}`, rowId: nextId, values });
+    onApplyCommand?.({ kind: "updateEdcdRow", label: `Duplicate Settings #${selectedDraft.id}`, rowId: nextId, values });
     onSetSelectedDraft({ ...selectedDraft, id: nextId });
     if (selectedSlotApplied) {
       onApplyCommand?.({
         kind: "updateActionSlot",
-        label: `Use settings ${nextId}`,
+        label: `Use Settings #${nextId}`,
         triggerId: selectedTriggerId,
         slot: selectedSlot,
         rawCode: selectedDraft.rawCode,
@@ -2445,20 +2447,20 @@ function SelectedStepDetail({
           <div className="script-required-field realmz-step-id-field settings-row-field">
             <span>{selectedDefinition.target?.label ?? selectedIdLabel}</span>
             <div className={`settings-row-current ${selectedRowUsage ? edcdUsageStatusTone(selectedRowUsage.status) : "warning"}`}>
-              <strong>Settings row {selectedDraft.id}</strong>
-              <small>{selectedRowUsage?.summary ?? "Will create this settings row when values are applied."}</small>
+              <strong>Settings #{selectedDraft.id}</strong>
+              <small>{selectedRowUsage?.summary ?? "Will create these settings when values are applied."}</small>
             </div>
             <details className="settings-row-selector">
-              <summary>Advanced Row</summary>
+              <summary>Advanced Settings ID</summary>
               <div className="settings-row-selector-body">
                 <select
                   value={selectedDraft.id}
                   onChange={(event) => onSetSelectedDraft({ ...selectedDraft, id: Number(event.currentTarget.value) })}
                 >
-                  {!edcdRowOptions.some((usage) => usage.rowId === selectedDraft.id) && <option value={selectedDraft.id}>Settings row {selectedDraft.id}</option>}
+                  {!edcdRowOptions.some((usage) => usage.rowId === selectedDraft.id) && <option value={selectedDraft.id}>Settings #{selectedDraft.id}</option>}
                   {edcdRowOptions.map((usage) => (
                     <option key={usage.rowId} value={usage.rowId}>
-                      Row {usage.rowId} - {usage.statusLabel} - {usage.primaryActionLabel ?? usage.primaryShape ?? "raw settings"}
+                      Settings #{usage.rowId} - {usage.statusLabel} - {usage.primaryActionLabel ?? usage.primaryShape ?? "raw settings"}
                     </option>
                   ))}
                 </select>
@@ -2466,10 +2468,10 @@ function SelectedStepDetail({
                   type="number"
                   value={selectedDraft.id}
                   onChange={(event) => onSetSelectedDraft({ ...selectedDraft, id: Number(event.currentTarget.value) })}
-                  aria-label={`Slot ${selectedSlot} settings row`}
+                  aria-label={`Slot ${selectedSlot} settings ID`}
                 />
               </div>
-              <small>Existing imports keep their row number. New actions start on an unused row automatically.</small>
+              <small>Existing imports keep their settings ID. New actions start on an unused ID automatically.</small>
             </details>
           </div>
         ) : hasInlineTargetPicker ? null : (
@@ -2606,7 +2608,7 @@ function SelectedStepDetail({
           {settingLabels.length > 0 && (
             <FieldRow label="Settings Fields" value={settingLabels.join("; ")} />
           )}
-          {selectedEdcdRowId != null && <FieldRow label="Settings Row" value={selectedEdcdRowId} />}
+          {selectedEdcdRowId != null && <FieldRow label="Settings ID" value={`#${selectedEdcdRowId}`} />}
           {selectedDivinityHelp?.use && <FieldRow label="Divinity Use" value={selectedDivinityHelp.use} />}
           {selectedDivinityHelp?.options && selectedDivinityHelp.options.toLowerCase() !== "none" && (
             <FieldRow label="Divinity Options" value={selectedDivinityHelp.options} />
@@ -3930,7 +3932,7 @@ function EncounterShell({
             catalog={catalog}
             actions={actions}
             title="Result Action Columns"
-            description="Simple encounters store eight CODE/ID rows for each of the four result numbers, matching the Divinity editor columns."
+            description="Simple encounters store eight CODE/ID steps for each of the four result numbers, matching the Divinity editor columns."
             decisionSources={resultFlowSources}
             selectedResultIndex={selectedResultIndex}
             onSelectResult={setSelectedResultIndex}

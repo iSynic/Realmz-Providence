@@ -178,7 +178,7 @@ export function EdcdRowEditor({
             ))}
           </div>
         ) : (
-          <EmptyState compact title="No editable settings" body="This imported settings row does not have normal editable fields." />
+          <EmptyState compact title="No editable settings" body="These imported settings do not have normal editable fields." />
         )}
         {edcdUsage?.secondaryRowId != null && (
           <div className="edcd-secondary-row">
@@ -194,7 +194,7 @@ export function EdcdRowEditor({
         <CollapsibleSection title="Technical Details" eyebrow="advanced" density="compact" storageKey={`scripts.parameterRow.${rowId}.advanced.open`} defaultOpen={false}>
           <div className="realmz-raw-preview">
             {edcdUsage?.summary && <FieldRow label="Summary" value={edcdUsage.summary} />}
-            <FieldRow label="Settings Row" value={rowId} />
+            <FieldRow label="Settings ID" value={`#${rowId}`} />
             <FieldRow label="Internal Shape" value={shapeId} />
             <FieldRow label="Internal Fields" value={fieldNames.join(", ")} />
             <FieldRow label="Raw Values" value={numericDraft.join(", ")} />
@@ -545,7 +545,7 @@ function guidedModeOptionsForField(shape: string, name: string, opcode?: number)
       { value: -1, label: "Keep current shape" },
       { value: 0, label: "Set coordinates" },
       { value: 1, label: "Offset rectangle" },
-      { value: 2, label: "Use next settings row" }
+      { value: 2, label: "Use next Settings ID" }
     ];
   }
   if (normalizedName === "revivepartyflag") {
@@ -913,7 +913,7 @@ function ChoiceDialogEditor({
         ))}
         <CollapsibleSection title="Technical Details" eyebrow="advanced" density="compact" storageKey={`scripts.choiceDialog.${rowId}.advanced.open`} defaultOpen={false}>
           <div className="realmz-raw-preview">
-            <FieldRow label="Settings Row" value={rowId} />
+            <FieldRow label="Settings ID" value={`#${rowId}`} />
             <FieldRow label="Internal Shape" value="choice" />
             <FieldRow label="Internal Fields" value="replyPolarity, branchMode, branchTarget, promptA, promptB" />
             <FieldRow label="Raw Values" value={numericDraft.join(", ")} />

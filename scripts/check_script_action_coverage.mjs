@@ -6,11 +6,15 @@ const catalogPath = path.join(root, "src/editor/panels/scripts/scriptActionCatal
 const panelPath = path.join(root, "src/editor/panels/ScriptsPanel.tsx");
 const edcdPath = path.join(root, "src/editor/components/EdcdRowEditor.tsx");
 const edcdRowsPath = path.join(root, "src/editor/edcdRows.ts");
+const appUtilsPath = path.join(root, "src/editor/app/appUtils.ts");
+const appBootstrapPath = path.join(root, "src/editor/app/useAppBootstrapEffects.ts");
 
 const catalog = fs.readFileSync(catalogPath, "utf8");
 const panel = fs.readFileSync(panelPath, "utf8");
 const edcd = fs.readFileSync(edcdPath, "utf8");
 const edcdRows = fs.readFileSync(edcdRowsPath, "utf8");
+const appUtils = fs.readFileSync(appUtilsPath, "utf8");
+const appBootstrap = fs.readFileSync(appBootstrapPath, "utf8");
 const targetPickerPath = path.join(root, "src/editor/components/RealmzTargetPicker.tsx");
 const inventoryPath = path.join(root, "src/editor/panels/scripts/scriptInventory.tsx");
 const validationPath = path.join(root, "src/editor/scriptValidation.ts");
@@ -78,9 +82,30 @@ for (const snippet of [
   "extraActionTabClassification",
   "scriptTabKind",
   "global-events",
-  "advanced-imports"
+  "advanced-imports",
+  "isCallableMacro(project, trigger)",
+  "return extraActionTabClassification(project, trigger) === \"reusable-actions\"",
+  "Random Encounter Action",
+  "Timed Encounter Action",
+  "Source-Linked Extra Action"
 ]) {
   if (!inventory.includes(snippet)) failures.push(`Script inventory is missing tab classification support: ${snippet}`);
+}
+
+for (const snippet of [
+  "project.triggers.filter((trigger) => trigger.source === \"Data ED3\"",
+  "project.semanticSchema?.decoding?.ed3Reachability",
+  "return (project.semanticSchema?.decoding?.ed3Reachability ?? []).length < activeExtraActions"
+]) {
+  if (!appUtils.includes(snippet)) failures.push(`Semantic mapping stale check is missing ED3 reachability coverage: ${snippet}`);
+}
+
+for (const snippet of [
+  "isSemanticMappingPending(state.project)",
+  "\"scripts\"",
+  "buildBrowserSemanticSchemaForProject(project)"
+]) {
+  if (!appBootstrap.includes(snippet)) failures.push(`App bootstrap is missing Scripts semantic mapping support: ${snippet}`);
 }
 
 for (const snippet of [
@@ -96,8 +121,8 @@ if (!panel.includes("moveSelectedStep")) failures.push("Scripts panel does not p
 
 for (const snippet of [
   "combatMacroContextFor",
-  "Battle Macro Context",
-  "Monster Macro Context",
+  "Battle Macro",
+  "Monster Macro",
   "Combat Macro Actions",
   "Positive battle macro imports are preserved",
   "definition.opcode === 121 && combatMacroContext",
@@ -139,14 +164,14 @@ for (const snippet of [
   "contextKind: \"simpleEncounter\"",
   "contextKind: \"complexEncounter\""
 ]) {
-  if (!edcdRows.includes(snippet)) failures.push(`EDCD row usage is missing encounter caller coverage: ${snippet}`);
+  if (!edcdRows.includes(snippet)) failures.push(`Action Settings usage is missing encounter caller coverage: ${snippet}`);
 }
 
 for (const snippet of [
   "Simple Encounter ${caller.triggerRecordIndex}",
   "Complex Encounter ${caller.triggerRecordIndex}"
 ]) {
-  if (!panel.includes(snippet)) failures.push(`Settings Rows caller labels do not cover encounter scripts: ${snippet}`);
+  if (!panel.includes(snippet)) failures.push(`Action Settings caller labels do not cover encounter scripts: ${snippet}`);
 }
 
 for (const snippet of [

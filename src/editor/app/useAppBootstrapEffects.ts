@@ -6,9 +6,8 @@ import {
   loadBrowserBundledLibraryAssetPreview,
   loadBundledLibraryCatalog
 } from "../browser/library";
-import { ensureBrowserReferenceTileAttributes } from "../browser/project";
+import { buildBrowserSemanticSchemaForProject, ensureBrowserReferenceTileAttributes } from "../browser/project";
 import { loadImage } from "../components/TileSprite";
-import { buildPendingBrowserSemanticSchema } from "../browser/project";
 import {
   PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES,
   referencedMapIconIds,
@@ -20,7 +19,7 @@ import { isActorOrCreatureIconId } from "../resourceResolver";
 import { BROWSER_PREVIEW_STATUS, EditorAction, EditorState } from "../store";
 import { AtlasEntry, IconEntry, Project, ProvidenceWorkspace, TilesetAsset } from "../types";
 import { commandError } from "../utils";
-import { isPaintableSpecialLandLibraryAsset } from "./appUtils";
+import { isPaintableSpecialLandLibraryAsset, isSemanticMappingPending } from "./appUtils";
 
 const BROWSER_ICON_OVERLAY_PRELOAD_LIMIT = 180;
 
@@ -130,7 +129,7 @@ export function useAppBootstrapEffects({
 
   useEffect(() => {
     if (!state.project || !projectDir) return;
-    if ((state.project.semanticSchema?.schemaVersion ?? 0) > 0) return;
+    if (!isSemanticMappingPending(state.project)) return;
     if (!shouldBuildSemanticSchemaForTab(state.activeTab)) return;
     let disposed = false;
     const project = state.project;
@@ -138,7 +137,7 @@ export function useAppBootstrapEffects({
     const mapping = desktopRuntime
       ? invoke<{ semanticSchema: Project["semanticSchema"]; validation: Project["validation"] }>("build_project_semantic_schema", { projectDir, project })
       : waitForBrowserPaint().then(async () => {
-          const result = await buildPendingBrowserSemanticSchema(project);
+          const result = await buildBrowserSemanticSchemaForProject(project);
           if (!result) throw new Error("No browser scenario buffers are available for mapping.");
           return result;
         });
@@ -459,7 +458,7 @@ function waitForBrowserPaint() {
 }
 
 function shouldBuildSemanticSchemaForTab(tab: EditorState["activeTab"]) {
-  return ["encounters", "combat", "economy", "rules", "assets", "records", "linter"].includes(tab);
+  return ["scripts", "encounters", "combat", "economy", "rules", "assets", "records", "linter"].includes(tab);
 }
 
 function shouldHydrateBrowserReferenceTileAttributesForTab(tab: EditorState["activeTab"]) {

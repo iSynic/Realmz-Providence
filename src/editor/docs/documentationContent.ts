@@ -1183,7 +1183,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "Action Points On Maps",
         paragraphs: [
           "Action Points are script entry records placed at map coordinates. They can show text, branch on state, teleport, mutate map tiles, start encounters, trigger battles, play media, call macros, and perform many other Realmz actions.",
-          "Map placement and script body editing are intentionally split. Maps answers where the Action Point sits and what overlay category it belongs to; Scripts answers what its CODE, ID, and EDCD rows do."
+          "Map placement and script body editing are intentionally split. Maps answers where the Action Point sits and what overlay category it belongs to; Scripts answers what its CODE, ID, and Action Settings do."
         ],
         points: [
           "Use the Action Point tool for placement and the Scripts tool for deeper opcode editing.",
@@ -1298,7 +1298,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "What Scripts Owns",
         paragraphs: [
           "Scripts is Providence's Action Point hub. It owns map and dungeon Action Points, reusable Extra Action Points, Global Event hooks, quest-flag usage, opcode settings, target links, and the source evidence needed to understand how Realmz will execute a selected step.",
-          "The workbench borrows a modern visual-scripting shape, but it does not compile a new runtime. Every authored step still becomes Realmz CODE, ID, and sometimes Data EDCD rows that Classic already understands."
+          "The workbench borrows a modern visual-scripting shape, but it does not compile a new runtime. Every authored step still becomes Realmz CODE, ID, and sometimes Action Settings that Classic already understands."
         ],
         cards: [
           {
@@ -1314,7 +1314,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           {
             title: "Action Settings",
             body: "Extra fields used when a CODE/ID step needs more than one target, range, branch, or option. Providence names those fields from the selected action.",
-            facts: ["settings row", "typed fields"]
+            facts: ["Action Settings", "typed fields"]
           }
         ]
       },
@@ -1322,13 +1322,13 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "Divinity Crosswalk",
         paragraphs: [
           "Divinity treats Action Points as the scenario behavior hub because they connect maps, encounters, battles, treasures, shops, text, sounds, pictures, quest flags, random areas, and macro/GOSUB flow. Providence keeps that hub model, but adds source-backed diagnostics and typed target pickers.",
-          "Divinity's scripting code chapters are available directly in the selected-step help. Providence pairs that manual text with Realmz source anchors so authors can see whether a value is a direct ID, an Extra Action Point target, or an EDCD row."
+          "Divinity's scripting code chapters are available directly in the selected-step help. Providence pairs that manual text with Realmz source anchors so authors can see whether a value is a direct ID, an Extra Action Point target, or Action Settings."
         ],
         points: [
           "Action Points/GOSUBs map to the Scripts workbench inventory, eight-step editor, flow preview, and Clear/Reuse controls.",
           "Scripting Codes 1-127 map to the Action catalog, selected opcode help card, target picker, and Settings section.",
           "Macros/Quests map to Extra Action Points, Global Events, quest usage summaries, and branch/action diagnostics.",
-          "Random Rectangles, battles, monster death actions, timed encounters, and door items can all call Extra Action Points; those incoming paths affect whether imported Data ED3 rows are shown as callable."
+          "Random Rectangles, battles, monster death actions, timed encounters, and door items can all call Extra Action Points; those incoming paths affect whether imported Extra Action Points are shown as callable."
         ],
         callout: {
           tone: "info",
@@ -1340,7 +1340,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "Record Model",
         paragraphs: [
           "Action Point, dungeon Action Point, and Extra Action Point records all share Realmz's fixed 40-byte door/script record shape. The eight CODE values and eight ID values are the script steps. Clearing one of these records should make a slot reusable; it should not silently compact fixed Realmz files.",
-          "Data EDCD is separate sidecar storage. When an opcode uses EDCD, the step ID is usually the EDCD row number and the real author-facing targets live inside the Settings fields."
+          "Action Settings are separate sidecar storage. When an opcode uses them, the step ID is usually the Settings ID and the real author-facing targets live inside the Settings fields."
         ],
         cards: [
           {
@@ -1349,71 +1349,71 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
             facts: ["source"]
           },
           {
-            title: "Data ED3",
-            body: "Extra Action Point rows. Callable rows are promoted when source-backed incoming links prove Realmz can reach them.",
+            title: "Extra Action Points",
+            body: "Reusable script entries stored in Data ED3. Callable entries are promoted when source-backed incoming links prove Realmz can reach them.",
             facts: ["source", "macro"]
           },
           {
-            title: "Data EDCD",
-            body: "Five signed shorts per settings row. The selected opcode determines how those five values should be labeled.",
+            title: "Action Settings",
+            body: "Five signed shorts per Data EDCD settings entry. The selected opcode determines how those five values should be labeled.",
             facts: ["settings"]
           }
         ]
       },
       {
-        title: "Imported ED3 Triage",
+        title: "Imported Extra AP Triage",
         paragraphs: [
-          "Imported Data ED3 rows are preserved exactly, but not every occupied row is a callable authoring macro. Realmz scenarios can contain fixed-row padding, old editor leftovers, runtime-cache residue, and authored-looking rows whose caller has not been proven yet.",
-          "Providence separates those rows in Unlinked Extra APs so authors can decide what to keep, promote, duplicate, or ignore without losing source bytes."
+          "Imported Extra Action Points are preserved exactly, but not every occupied entry is a callable authoring macro. Realmz scenarios can contain fixed-slot padding, old editor leftovers, runtime-cache residue, and authored-looking entries whose caller has not been proven yet.",
+          "Providence separates those entries in Unlinked Extra APs so authors can decide what to keep, promote, duplicate, or ignore without losing source bytes."
         ],
         points: [
-          "Likely Padding means an empty or fixed-shape row that looks like editor/storage slack rather than script behavior.",
-          "Runtime Residue means the row resembles state mutated during play or generated runtime storage more than authored scenario logic.",
-          "Orphan Authored means the row has a small authored-looking script body, but Providence has not found an incoming GOSUB, hook, random rectangle, battle, monster, or item path.",
-          "Needs Trace means the row has enough content that it should be checked against Realmz runtime behavior before it is treated as disposable or promoted to normal authoring.",
-          "The selected-row ED3 details show incoming reference count, root type, occupied steps, raw signature, and the rule Providence used for the classification."
+          "Likely Padding means an empty or fixed-shape entry that looks like editor/storage slack rather than script behavior.",
+          "Runtime Residue means the entry resembles state mutated during play or generated runtime storage more than authored scenario logic.",
+          "Orphan Authored means the entry has a small authored-looking script body, but Providence has not found an incoming GOSUB, hook, random rectangle, battle, monster, or item path.",
+          "Needs Trace means the entry has enough content that it should be checked against Realmz runtime behavior before it is treated as disposable or promoted to normal authoring.",
+          "The selected Extra AP evidence details show incoming reference count, root type, occupied steps, raw signature, and the rule Providence used for the classification."
         ],
         callout: {
           tone: "warning",
           title: "Unlinked does not mean safe to delete",
-          body: "A row can be source-preserved and still lack a decoded caller. Use the ED3 filters to triage, then duplicate or promote rows only after checking the surrounding scenario behavior."
+          body: "An Extra Action Point can be source-preserved and still lack a decoded caller. Use the evidence filters to triage, then duplicate or promote entries only after checking the surrounding scenario behavior."
         }
       },
       {
         title: "Authoring Workflow",
         points: [
-          "Choose the right tab: Action Points for map-cell scripts, Extra Action Points for reusable behavior, Global Events for scenario hooks, Quests for flag usage, and Unlinked Extra APs for preserved imported rows without proven callers.",
+          "Choose the right tab: Action Points for map-cell scripts, Extra Action Points for reusable behavior, Global Events for scenario hooks, Quests for flag usage, and Unlinked Extra APs for preserved imported entries without proven callers.",
           "Filter the inventory before editing. Current Map is fastest while map authoring; Warnings is best before release; Reusable shows empty fixed slots that can be repurposed safely.",
           "Create or select an Action Point, then edit its map cell, chance, and goto fields only when those fields are meaningful for map triggers.",
           "Choose a step, pick an action, inspect the Divinity help, set a target or Settings fields, then Apply Step. Dirty step changes are draft-only until applied.",
           "Use Target Details when a direct target has an inline editor. Use Settings when the step needs named options such as branch mode, message, sound, battle, map, range, or secondary target fields.",
-          "Open Settings Rows when you need to find orphaned rows, repair missing rows, duplicate a known row, or understand why two steps share the same settings."
+          "Open Action Settings when you need to find orphaned settings, repair missing settings, duplicate a known Settings ID, or understand why two steps share the same settings."
         ]
       },
       {
         title: "CODE, ID, and EDCD",
         paragraphs: [
-          "A Realmz step is small but dense: CODE says what to do, ID either points directly at a target or selects a settings row, and the settings row optionally supplies five additional signed-short fields. The same number can mean very different things depending on the opcode.",
+          "A Realmz step is small but dense: CODE says what to do, ID either points directly at a target or selects Action Settings, which can supply five additional signed-short fields. The same number can mean very different things depending on the opcode.",
           "Providence keeps CODE, ID, and Data EDCD visible for evidence, but normal authoring should follow the action name, target picker, Settings labels, and diagnostics derived from the opcode crosswalk."
         ],
         points: [
           "Direct-target opcodes use ID as the target record number, such as a message, sound, picture, battle, shop, encounter, treasure, monster, or Extra Action Point.",
-          "Settings-backed opcodes use ID as a settings-row pointer. Missing targets inside the row should be fixed in Settings, not by changing the raw ID blindly.",
+          "Settings-backed opcodes use ID as a Settings ID. Missing targets inside those settings should be fixed in Settings, not by changing the raw ID blindly.",
           "Opcode 39 directly runs an Extra Action Point. Opcode 8 copies an Action Point from the current map. They are intentionally not the same authoring operation.",
           "Dispatcher no-op or Not Used codes are preserved and labeled, but they should not be treated as active unknown behavior unless evidence says Realmz executes them."
         ]
       },
       {
-        title: "Settings Rows In Practice",
+        title: "Action Settings In Practice",
         paragraphs: [
-          "Settings Rows is the advanced list behind the per-step Settings editor. It is useful when imported scenarios contain shared rows, missing rows, or rows that are no longer called by any visible script step.",
-          "For ordinary authoring, start from the script step that calls the row. The selected action gives the row its field names, so editing from the caller is safer than navigating by row number alone."
+          "Action Settings is the advanced list behind the per-step Settings editor. It is useful when imported scenarios contain shared settings, missing settings, or settings that are no longer called by any visible script step.",
+          "For ordinary authoring, start from the script step that calls the settings. The selected action gives the settings their field names, so editing from the caller is safer than navigating by ID alone."
         ],
         points: [
-          "Shared rows can intentionally feed more than one step; duplicate before changing a shared row when only one caller should change.",
-          "Missing rows block the action that points at them and should be repaired or retargeted before release.",
-          "Unused rows are fixed-slot leftovers or imported evidence until an author reuses, duplicates, or clears them.",
-          "Row IDs stay stable because scripts, encounters, and imported records can store direct references to them."
+          "Shared settings can intentionally feed more than one step; duplicate before changing shared settings when only one caller should change.",
+          "Missing settings block the action that points at them and should be repaired or retargeted before release.",
+          "Unused settings are fixed-slot leftovers or imported evidence until an author reuses, duplicates, or clears them.",
+          "Settings IDs stay stable because scripts, encounters, and imported records can store direct references to them."
         ]
       },
       {
@@ -1457,8 +1457,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         points: [
           "Target pickers resolve messages, sounds, pictures, encounters, shops, treasure, maps, monsters, quest flags, and macros where decoded targets exist.",
           "Create Target buttons build safe source-backed shells for common Realmz record families, but unsupported imported byte ranges are still preserved until Providence owns them.",
-          "Slot diagnostics distinguish missing targets, missing EDCD rows, writer-gated target families, dispatcher no-ops, and preserve-only imported behavior.",
-          "Technical Details shows raw storage, record index, door ID, CODE/ID, EDCD row, edit state, incoming links, and outgoing links for forensic checks."
+          "Slot diagnostics distinguish missing targets, missing Action Settings, writer-gated target families, dispatcher no-ops, and preserve-only imported behavior.",
+          "Technical Details shows raw storage, record index, door ID, CODE/ID, EDCD settings ID, edit state, incoming links, and outgoing links for forensic checks."
         ]
       },
       {
@@ -1477,8 +1477,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "Common Pitfalls",
         points: [
-          "Do not treat an EDCD row number as the final target when the Settings section names actual message, battle, shop, item, or branch fields.",
-          "Do not assume every imported Data ED3 row is callable. Check its classification and incoming links first.",
+          "Do not treat a Settings ID as the final target when the Settings section names actual message, battle, shop, item, or branch fields.",
+          "Do not assume every imported Extra Action Point is callable. Check its classification and incoming links first.",
           "Do not clear a script just to hide a warning unless you have checked who calls it.",
           "Do not ignore sign-sensitive fields. Realmz often uses negative values as behavior flags, branch modes, one-shot/repeat switches, or alternate target forms.",
           "Do not edit runtime-cache records as though they were authored source; export should write source-backed scenario files and preserve/pass through the rest."
@@ -1565,7 +1565,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "Authoring Workflow",
         paragraphs: [
           "Build encounters from the outside inward. First create or pick the prompt message, then decide which branch paths the player can take, then map each branch to a result number, and finally fill the result action columns.",
-          "This mirrors Divinity's editor model: encounter screens describe player-facing choices and tests, while the result columns are compact script-like CODE/ID rows."
+          "This mirrors Divinity's editor model: encounter screens describe player-facing choices and tests, while the result columns are compact script-like CODE/ID steps."
         ],
         points: [
           "Create central Data SD2 messages in Text before wiring prompt, success, and failure fields.",
@@ -1598,7 +1598,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "Result Numbers and Action Columns",
         paragraphs: [
           "Simple and complex encounters both reduce player choices and tests to a result number. Providence shows four result columns because Realmz stores four compact outcome scripts inside each encounter record.",
-          "Each result column contains ordered CODE/ID rows. These rows use the same action vocabulary as Scripts, but they are local to the encounter unless they call an Extra Action Point."
+          "Each result column contains ordered CODE/ID steps. These steps use the same action vocabulary as Scripts, but they are local to the encounter unless they call an Extra Action Point."
         ],
         points: [
           "Result 1 runs the first column; Result 2 runs the second column; Result 3 and Result 4 run their matching columns.",

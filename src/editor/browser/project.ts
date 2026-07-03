@@ -188,10 +188,16 @@ export async function buildPendingBrowserSemanticSchema(project: Project): Promi
   const key = browserSemanticCacheKey(project);
   const pending = pendingBrowserSemantics.get(key);
   if (!pending) return null;
+  return buildBrowserSemanticSchemaForProject(project);
+}
+
+export async function buildBrowserSemanticSchemaForProject(project: Project): Promise<{ semanticSchema: Project["semanticSchema"]; validation: Project["validation"] }> {
+  const key = browserSemanticCacheKey(project);
+  const pending = pendingBrowserSemantics.get(key);
   const request = {
     scenario: project.scenario,
-    buffers: pending.files,
-    sourceFiles: pending.sourceFiles,
+    buffers: pending?.files ?? new Map<string, Uint8Array>(),
+    sourceFiles: pending?.sourceFiles ?? project.source.files ?? [],
     maps: project.maps,
     mapRecords: project.mapRecords,
     randomLevels: project.randomLevels,
@@ -201,7 +207,7 @@ export async function buildPendingBrowserSemanticSchema(project: Project): Promi
     records: project.records
   };
   const semanticSchema = await buildBrowserSemanticSchemaAsync(request);
-  pendingBrowserSemantics.delete(key);
+  if (pending) pendingBrowserSemantics.delete(key);
   return {
     semanticSchema,
     validation: validateBrowserProject({ ...project, semanticSchema })
