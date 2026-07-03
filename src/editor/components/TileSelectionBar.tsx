@@ -21,7 +21,7 @@ const TILE_DRAG_THRESHOLD = 6;
 const PALETTE_MODE_HELP: Record<TilePaletteCategory, string> = {
   landlook: "Standard Realmz landlook or dungeon atlas tiles for the selected map renderer.",
   special: "Negative special land cicn tiles and icon-backed map values, including large structures and landmarks.",
-  super: "Stamp Library: built-in, project, and global multi-cell brushes for structures, tree pairs, landmarks, and custom assemblies.",
+  super: "Stamp Library: built-in super tiles, project stamps, and global stamps for multi-cell map brushes.",
   custom: "Project-saved named tile buckets. Drag tiles from any palette tab into the reveal dock to collect them.",
   used: "Every raw tile value already present on the current map, including values outside the visible atlas range.",
   attributes: "Tiles grouped by decoded behavior such as solid, walkable, shore/water, path, boat, LOS, forest, and combat evidence.",
@@ -281,7 +281,7 @@ export function PaintPalettePanel({
         <div className="paint-palette-tabs" role="tablist" aria-label="Tile palette mode">
           <button type="button" className={mode === "landlook" ? "active" : ""} onClick={() => onSetMode("landlook")} title={PALETTE_MODE_HELP.landlook}>Landlook</button>
           <button type="button" className={mode === "special" ? "active" : ""} onClick={() => onSetMode("special")} title={PALETTE_MODE_HELP.special}>Special / Icons</button>
-          <button type="button" className={mode === "super" ? "active" : ""} onClick={() => onSetMode("super")} title={PALETTE_MODE_HELP.super}>Super Tiles</button>
+          <button type="button" className={mode === "super" ? "active" : ""} onClick={() => onSetMode("super")} title={PALETTE_MODE_HELP.super}>Stamps</button>
           <button type="button" className={mode === "custom" ? "active" : ""} onClick={() => onSetMode("custom")} title={PALETTE_MODE_HELP.custom}>Custom</button>
           <button type="button" className={mode === "used" ? "active" : ""} onClick={() => onSetMode("used")} title={PALETTE_MODE_HELP.used}>Used</button>
           <button type="button" className={mode === "attributes" ? "active" : ""} onClick={() => onSetMode("attributes")} title={PALETTE_MODE_HELP.attributes}>Attributes</button>
@@ -389,8 +389,8 @@ export function PaintPalettePanel({
           className="paint-palette-search"
           value={query}
           onChange={(event) => setQuery(event.currentTarget.value)}
-          placeholder="Search tile id..."
-          aria-label="Search tile id"
+          placeholder={mode === "super" ? "Search stamps or tile id..." : "Search tile id..."}
+          aria-label={mode === "super" ? "Search stamps or tile id" : "Search tile id"}
         />
       )}
       {variant === "sidebar" && mode === "super" ? (
@@ -586,7 +586,8 @@ function StampLibrary({
         <div className="stamp-scope-tabs" role="toolbar" aria-label="Stamp library filter">
           {STAMP_SCOPES.map((item) => (
             <button key={item.id} type="button" className={scope === item.id ? "active" : ""} onClick={() => setScope(item.id)}>
-              {item.label}
+              <span>{item.label}</span>
+              <b>{stampScopeCount(stamps, item.id)}</b>
             </button>
           ))}
         </div>
@@ -796,9 +797,14 @@ function cloneStamp(stamp: CustomMapStamp): CustomMapStamp {
 }
 
 function stampSourceLabel(source: MapStamp["source"]) {
-  if (source === "built-in") return "Built-in";
-  if (source === "project") return "Project";
-  return "Global";
+  if (source === "built-in") return "Built-in super tile";
+  if (source === "project") return "Project stamp";
+  return "Global stamp";
+}
+
+function stampScopeCount(stamps: MapStamp[], scope: StampLibraryScope) {
+  if (scope === "all") return stamps.length;
+  return stamps.filter((stamp) => stamp.source === scope).length;
 }
 
 const PaletteButtons = memo(function PaletteButtons({

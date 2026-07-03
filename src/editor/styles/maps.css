@@ -4284,6 +4284,10 @@
 
 .stamp-scope-tabs button,
 .stamp-editor-tools button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   min-height: 26px;
   border: 1px solid #26394c;
   border-radius: 5px;
@@ -4295,6 +4299,17 @@
   padding: 0 10px;
   white-space: nowrap;
   cursor: pointer;
+}
+
+.stamp-scope-tabs button b {
+  min-width: 18px;
+  padding: 2px 5px;
+  border: 1px solid rgba(126, 178, 224, 0.28);
+  border-radius: 999px;
+  background: rgba(26, 48, 69, 0.72);
+  color: #d8ebff;
+  font-size: 10px;
+  line-height: 1;
 }
 
 .stamp-scope-tabs button.active,
