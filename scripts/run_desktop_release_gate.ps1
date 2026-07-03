@@ -1,6 +1,10 @@
 param(
   [switch]$SkipLinux,
-  [switch]$SkipWindows
+  [switch]$SkipWindows,
+  [switch]$RunEditorSmokes,
+  [switch]$KeepSmokeArtifacts,
+  [string]$SmokeSourceScenarioDir = "F:\Realmz\base\Realmz\Scenarios\Tutorial",
+  [string]$SmokeLargeScenarioDir = "F:\Realmz\base\Realmz\Scenarios\Wrath of the Mind Lords"
 )
 
 $ErrorActionPreference = "Stop"
@@ -78,6 +82,22 @@ if (-not $SkipWindows) {
     Assert-FreshArtifact -Path "src-tauri\target\release\bundle\nsis\Realmz Providence_${version}_x64-setup.exe" -StartedAt $startedAt
     Assert-FreshArtifact -Path "src-tauri\target\release\bundle\msi\Realmz Providence_${version}_x64_en-US.msi" -StartedAt $startedAt
   }
+
+  if ($RunEditorSmokes) {
+    Invoke-Step "Windows editor smoke matrix" {
+      $args = @(
+        "-ExecutionPolicy", "Bypass",
+        "-File", "scripts\run_editor_smoke_matrix.ps1",
+        "-SourceScenarioDir", $SmokeSourceScenarioDir,
+        "-LargeSourceScenarioDir", $SmokeLargeScenarioDir,
+        "-ExePath", "src-tauri\target\release\realmz-providence.exe"
+      )
+      if ($KeepSmokeArtifacts) {
+        $args += "-KeepArtifacts"
+      }
+      powershell @args
+    }
+  }
 }
 
 if (-not $SkipLinux) {
@@ -98,4 +118,7 @@ if (-not $SkipLinux) {
 
 Write-Host ""
 Write-Host "Desktop release gate passed for v$version." -ForegroundColor Green
-Write-Host "Do a manual desktop smoke test before publishing: install a fresh desktop artifact, import/open a scenario, then visit Maps, Strings, Encounters, Combat, Economy, and Assets."
+if (-not $RunEditorSmokes) {
+  Write-Host "For desktop smoke coverage, rerun with -RunEditorSmokes or run npm run smoke:editor against the freshly built release exe."
+}
+Write-Host "Do a final manual desktop pass before publishing: install a fresh artifact, import/open a scenario, then spot-check Combat, Economy, Linter, and Export."

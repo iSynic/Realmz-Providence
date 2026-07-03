@@ -3,7 +3,8 @@ import { Dispatch } from "react";
 import { tileAtlasRect } from "./components/TileSprite";
 import { MAP_CELLS, tileValueAt } from "./map/geometry";
 import { EditorAction } from "./store";
-import { MapEntity, Project } from "./types";
+import { EditorTab, MapEntity, Project } from "./types";
+import { selectEntityFromId, triggerEntityId } from "./utils";
 
 type ProvidenceHarnessConfig = {
   enabled: boolean;
@@ -25,6 +26,28 @@ type AssetPerformanceHarnessScript = {
 type AssetPerformanceHarnessResult = {
   ok: boolean;
   mode: "asset-performance";
+  name: string;
+  projectDir: string;
+  sourceScenarioDir: string;
+  timings: Record<string, number>;
+  counts: Record<string, number>;
+  probes: Array<{ label: string; durationMs: number; ok: boolean; detail?: string | null }>;
+  error: string | null;
+};
+
+type PrimaryWorkflowHarnessScript = {
+  version: number;
+  mode: "primary-workflow";
+  name: string;
+  sourceScenarioDir: string;
+  projectName: string;
+  projectDir: string;
+  tabs?: EditorTab[];
+};
+
+type PrimaryWorkflowHarnessResult = {
+  ok: boolean;
+  mode: "primary-workflow";
   name: string;
   projectDir: string;
   sourceScenarioDir: string;
@@ -98,9 +121,12 @@ export async function runDesktopUiHarness({
   if (config.batchPath || !config.scriptPath || !config.resultPath) return false;
 
   const started = performance.now();
-  const script = await invoke<Partial<AssetPerformanceHarnessScript | MapVisualHarnessScript>>("read_harness_script");
+  const script = await invoke<Partial<AssetPerformanceHarnessScript | PrimaryWorkflowHarnessScript | MapVisualHarnessScript>>("read_harness_script");
   if (script.mode === "map-visual") {
     return runMapVisualHarness({ dispatch, setProjectDir, onStatus, started, script });
+  }
+  if (script.mode === "primary-workflow") {
+    return runPrimaryWorkflowHarness({ dispatch, setProjectDir, onStatus, started, script });
   }
   if (script.mode !== "asset-performance") return false;
 
@@ -165,6 +191,183 @@ export async function runDesktopUiHarness({
     }, 250);
   }
   return true;
+}
+
+async function runPrimaryWorkflowHarness({
+  dispatch,
+  setProjectDir,
+  onStatus,
+  started,
+  script
+}: {
+  dispatch: Dispatch<EditorAction>;
+  setProjectDir: (value: string) => void;
+  onStatus?: (status: string) => void;
+  started: number;
+  script: Partial<PrimaryWorkflowHarnessScript>;
+}) {
+  const result: PrimaryWorkflowHarnessResult = {
+    ok: false,
+    mode: "primary-workflow",
+    name: script.name ?? "Primary workflow harness",
+    projectDir: script.projectDir ?? "",
+    sourceScenarioDir: script.sourceScenarioDir ?? "",
+    timings: {},
+    counts: {},
+    probes: [],
+    error: null
+  };
+
+  try {
+    requirePrimaryWorkflowScript(script);
+    onStatus?.(`Primary workflow harness: importing ${script.sourceScenarioDir}...`);
+    const importStart = performance.now();
+    const project = await invoke<Project>("import_scenario_into_project", {
+      sourcePath: script.sourceScenarioDir,
+      projectDir: script.projectDir,
+      projectName: script.projectName
+    });
+    result.timings.importMs = elapsed(importStart);
+    result.counts.maps = project.maps.length;
+    result.counts.triggers = project.triggers.length;
+    result.counts.messages = project.messages.length;
+    result.counts.encounters =
+      project.simpleEncounters.length +
+      project.complexEncounters.length +
+      project.thiefEncounters.length +
+      project.timedEncounters.length;
+    result.counts.battles = project.battles.length;
+    result.counts.monsters = project.monsters.length;
+    result.counts.treasures = project.treasures.length;
+    result.counts.shops = project.shops.length;
+    result.counts.assets =
+      project.assets.length +
+      (project.assetCatalog.icons?.length ?? 0) +
+      (project.assetCatalog.pictures?.length ?? 0) +
+      (project.assetCatalog.sounds?.length ?? 0) +
+      (project.assetCatalog.tilesets?.length ?? 0);
+
+    setProjectDir(script.projectDir);
+    dispatch({ type: "setProject", project, selectedMapId: project.maps[0]?.id ?? null });
+    dispatch({ type: "setActiveEditor", editor: "domain" });
+    dispatch({ type: "setActiveDomain", domain: "maps" });
+    await waitForPrimaryWorkflowTab("maps", 20_000);
+    await settleFrames(3);
+
+    const tabs = normalizePrimaryWorkflowTabs(script.tabs);
+    for (const tab of tabs) {
+      onStatus?.(`Primary workflow harness: opening ${tab}...`);
+      const tabStart = performance.now();
+      dispatch({ type: "setActiveEditor", editor: "domain" });
+      dispatch({ type: "setTab", tab });
+      try {
+        await waitForPrimaryWorkflowTab(tab, 20_000);
+        await settleFrames(tab === "maps" || tab === "combat" ? 6 : 3);
+        result.probes.push({
+          label: `Open ${tab}`,
+          durationMs: elapsed(tabStart),
+          ok: true,
+          detail: primaryWorkflowTabDetail(tab)
+        });
+      } catch (error) {
+        result.probes.push({
+          label: `Open ${tab}`,
+          durationMs: elapsed(tabStart),
+          ok: false,
+          detail: errorText(error)
+        });
+      }
+    }
+    await runPrimaryWorkflowRecordProbes({ project, dispatch, result, onStatus });
+
+    result.timings.totalMs = elapsed(started);
+    result.ok = result.probes.length > 0 && result.probes.every((probe) => probe.ok);
+  } catch (error) {
+    result.error = errorText(error);
+  }
+
+  try {
+    await invoke("write_harness_result", { result });
+  } finally {
+    window.setTimeout(() => {
+      void invoke("harness_exit", { code: result.ok ? 0 : 1 });
+    }, 250);
+  }
+  return true;
+}
+
+async function runPrimaryWorkflowRecordProbes({
+  project,
+  dispatch,
+  result,
+  onStatus
+}: {
+  project: Project;
+  dispatch: Dispatch<EditorAction>;
+  result: PrimaryWorkflowHarnessResult;
+  onStatus?: (status: string) => void;
+}) {
+  const actionPoint = project.triggers.find((trigger) => trigger.source !== "Data ED3" && trigger.levelType) ?? null;
+  if (actionPoint) {
+    const entityId = triggerEntityId(actionPoint.levelType, actionPoint.levelIndex, actionPoint.recordIndex, actionPoint.source);
+    await runPrimaryWorkflowProbe(result, "Open selected Action Point", async () => {
+      onStatus?.("Primary workflow harness: opening selected Action Point...");
+      dispatch({ type: "setActiveEditor", editor: "action-points" });
+      dispatch({ type: "setTab", tab: "scripts" });
+      dispatch({ type: "selectEntity", entity: selectEntityFromId(entityId) });
+      await waitForElement(".scripts-workbench .script-record-header", 20_000);
+      await settleFrames(3);
+      return entityId;
+    });
+  } else {
+    result.probes.push({ label: "Open selected Action Point", durationMs: 0, ok: true, detail: "skipped: no map Action Point records" });
+  }
+
+  const simpleEncounter = project.simpleEncounters[0] ?? null;
+  if (simpleEncounter) {
+    const entityId = `encounter:simple:${simpleEncounter.id}`;
+    await runPrimaryWorkflowProbe(result, "Open selected Simple Encounter", async () => {
+      onStatus?.("Primary workflow harness: opening selected Simple Encounter...");
+      dispatch({ type: "setActiveEditor", editor: "simple" });
+      dispatch({ type: "setTab", tab: "encounters" });
+      dispatch({ type: "selectEntity", entity: selectEntityFromId(entityId) });
+      await waitForElement(".simple-encounter-options-panel", 20_000);
+      await settleFrames(3);
+      return entityId;
+    });
+  } else {
+    result.probes.push({ label: "Open selected Simple Encounter", durationMs: 0, ok: true, detail: "skipped: no Simple Encounter records" });
+  }
+
+  const complexEncounter = project.complexEncounters[0] ?? null;
+  if (complexEncounter) {
+    const entityId = `encounter:complex:${complexEncounter.id}`;
+    await runPrimaryWorkflowProbe(result, "Open selected Complex Encounter", async () => {
+      onStatus?.("Primary workflow harness: opening selected Complex Encounter...");
+      dispatch({ type: "setActiveEditor", editor: "complex" });
+      dispatch({ type: "setTab", tab: "encounters" });
+      dispatch({ type: "selectEntity", entity: selectEntityFromId(entityId) });
+      await waitForElement(".complex-encounter-authoring", 20_000);
+      await settleFrames(3);
+      return entityId;
+    });
+  } else {
+    result.probes.push({ label: "Open selected Complex Encounter", durationMs: 0, ok: true, detail: "skipped: no Complex Encounter records" });
+  }
+}
+
+async function runPrimaryWorkflowProbe(
+  result: PrimaryWorkflowHarnessResult,
+  label: string,
+  action: () => Promise<string | null>
+) {
+  const probeStart = performance.now();
+  try {
+    const detail = await action();
+    result.probes.push({ label, durationMs: elapsed(probeStart), ok: true, detail });
+  } catch (error) {
+    result.probes.push({ label, durationMs: elapsed(probeStart), ok: false, detail: errorText(error) });
+  }
 }
 
 async function runMapVisualHarness({
@@ -286,6 +489,14 @@ function requireAssetPerformanceScript(script: Partial<AssetPerformanceHarnessSc
   }
 }
 
+function requirePrimaryWorkflowScript(script: Partial<PrimaryWorkflowHarnessScript>): asserts script is PrimaryWorkflowHarnessScript {
+  for (const key of ["sourceScenarioDir", "projectName", "projectDir"] as const) {
+    if (!script[key] || typeof script[key] !== "string") {
+      throw new Error(`Primary workflow harness script is missing ${key}.`);
+    }
+  }
+}
+
 function requireMapVisualScript(script: Partial<MapVisualHarnessScript>): asserts script is MapVisualHarnessScript {
   if (script.openProjectDir) {
     if (typeof script.openProjectDir !== "string") {
@@ -298,6 +509,55 @@ function requireMapVisualScript(script: Partial<MapVisualHarnessScript>): assert
       throw new Error(`Map visual harness script is missing ${key}.`);
     }
   }
+}
+
+const PRIMARY_WORKFLOW_TABS: EditorTab[] = ["maps", "scripts", "text", "encounters", "combat", "economy", "assets", "linter", "export"];
+
+function normalizePrimaryWorkflowTabs(tabs: PrimaryWorkflowHarnessScript["tabs"]): EditorTab[] {
+  if (!Array.isArray(tabs) || tabs.length === 0) return PRIMARY_WORKFLOW_TABS;
+  return tabs.filter((tab): tab is EditorTab => PRIMARY_WORKFLOW_TABS.includes(tab as EditorTab));
+}
+
+function waitForPrimaryWorkflowTab(tab: EditorTab, timeoutMs: number) {
+  return waitFor(() => primaryWorkflowTabReady(tab), timeoutMs, `Timed out waiting for ${tab} workbench.`);
+}
+
+function primaryWorkflowTabReady(tab: EditorTab) {
+  if (tab === "maps") return Boolean(document.querySelector(".room-canvas-base"));
+  if (tab === "scripts") return Boolean(document.querySelector(".scripts-workbench"));
+  if (tab === "text") return Boolean(document.querySelector(".text-workbench"));
+  if (tab === "scenario") return Boolean(document.querySelector(".scenario-workbench"));
+  if (tab === "rules") return Boolean(document.querySelector(".rules-workbench"));
+  if (tab === "encounters") return domainWorkbenchTitleIncludes("Encounters");
+  if (tab === "combat") return Boolean(document.querySelector(".combat-workbench"));
+  if (tab === "economy") return domainWorkbenchTitleIncludes("Economy");
+  if (tab === "assets") return Boolean(document.querySelector(".asset-workbench"));
+  if (tab === "records") return domainWorkbenchTitleIncludes("Records");
+  if (tab === "linter") return Boolean(document.querySelector(".lint-workbench"));
+  if (tab === "export") return Boolean(document.querySelector(".export-workbench"));
+  return false;
+}
+
+function domainWorkbenchTitleIncludes(value: string) {
+  const title = document.querySelector(".domain-workbench h1")?.textContent ?? "";
+  return title.toLowerCase().includes(value.toLowerCase());
+}
+
+function primaryWorkflowTabDetail(tab: EditorTab) {
+  if (tab === "maps") return document.querySelector(".room-canvas-base") ? "map canvas mounted" : null;
+  if (tab === "scripts") return textContent(".scripts-workbench .script-editor-tabs") ?? "scripts mounted";
+  if (tab === "text") return textContent(".text-workbench-header h1") ?? "text mounted";
+  if (tab === "encounters" || tab === "economy" || tab === "records") return textContent(".domain-workbench h1") ?? `${tab} mounted`;
+  if (tab === "combat") return textContent(".combat-workbench h1") ?? "combat mounted";
+  if (tab === "assets") return textContent(".asset-workbench-header h1") ?? "assets mounted";
+  if (tab === "linter") return textContent(".lint-workbench .panel-header") ?? "linter mounted";
+  if (tab === "export") return textContent(".export-workbench .panel-header") ?? "export mounted";
+  return `${tab} mounted`;
+}
+
+function textContent(selector: string) {
+  const value = document.querySelector(selector)?.textContent?.trim() ?? "";
+  return value || null;
 }
 
 function selectHarnessMap(project: Project, script: Partial<MapVisualHarnessScript>) {

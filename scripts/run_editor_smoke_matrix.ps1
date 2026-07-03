@@ -1,5 +1,6 @@
 param(
   [string]$SourceScenarioDir = "F:\Realmz\base\Realmz\Scenarios\Tutorial",
+  [string]$LargeSourceScenarioDir = "F:\Realmz\base\Realmz\Scenarios\Wrath of the Mind Lords",
   [string]$ExePath = "F:\Realmz - Providence\src-tauri\target\release\realmz-providence.exe",
   [string]$RunRoot = "",
   [switch]$KeepArtifacts
@@ -9,6 +10,9 @@ $ErrorActionPreference = "Stop"
 
 if (-not (Test-Path -LiteralPath $SourceScenarioDir)) {
   throw "Source scenario not found: $SourceScenarioDir"
+}
+if (-not (Test-Path -LiteralPath $LargeSourceScenarioDir)) {
+  throw "Large source scenario not found: $LargeSourceScenarioDir"
 }
 if (-not (Test-Path -LiteralPath $ExePath)) {
   throw "Providence release exe not found: $ExePath"
@@ -22,24 +26,40 @@ New-Item -ItemType Directory -Force -Path $RunRoot | Out-Null
 
 $fixtures = @(
   @{
+    name = "primary-workflow"
+    script = Join-Path $PSScriptRoot "run_primary_workflow_editor_smoke.ps1"
+    sourceScenarioDir = $SourceScenarioDir
+    runRoot = Join-Path $RunRoot "primary-workflow"
+  },
+  @{
     name = "maps-authoring"
     script = Join-Path $PSScriptRoot "run_maps_authoring_editor_smoke.ps1"
+    sourceScenarioDir = $SourceScenarioDir
     runRoot = Join-Path $RunRoot "maps-authoring"
   },
   @{
     name = "scripts-v2"
     script = Join-Path $PSScriptRoot "run_scripts_v2_editor_smoke.ps1"
+    sourceScenarioDir = $SourceScenarioDir
     runRoot = Join-Path $RunRoot "scripts-v2"
   },
   @{
     name = "scripts-v2-diagnostics"
     script = Join-Path $PSScriptRoot "run_scripts_v2_diagnostics_smoke.ps1"
+    sourceScenarioDir = $SourceScenarioDir
     runRoot = Join-Path $RunRoot "scripts-v2-diagnostics"
   },
   @{
     name = "text-assets"
     script = Join-Path $PSScriptRoot "run_text_assets_editor_smoke.ps1"
+    sourceScenarioDir = $SourceScenarioDir
     runRoot = Join-Path $RunRoot "text-assets"
+  },
+  @{
+    name = "assets-performance"
+    script = Join-Path $PSScriptRoot "run_assets_performance_editor_smoke.ps1"
+    sourceScenarioDir = $LargeSourceScenarioDir
+    runRoot = Join-Path $RunRoot "assets-performance"
   }
 )
 
@@ -53,7 +73,7 @@ foreach ($fixture in $fixtures) {
     "-NoProfile",
     "-ExecutionPolicy", "Bypass",
     "-File", $fixture.script,
-    "-SourceScenarioDir", $SourceScenarioDir,
+    "-SourceScenarioDir", $fixture.sourceScenarioDir,
     "-ExePath", $ExePath,
     "-RunRoot", $fixture.runRoot,
     "-KeepArtifacts"
