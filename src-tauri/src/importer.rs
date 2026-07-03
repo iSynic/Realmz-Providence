@@ -351,6 +351,8 @@ struct ProjectFile<'a> {
     monsters: &'a [MonsterRecord],
     monster_sets: &'a [MonsterSet],
     monster_descriptions: &'a [MonsterDescriptionRecord],
+    monster_icon_overrides: &'a [MonsterIconOverride],
+    scenario_icon_resources: &'a [ScenarioIconResource],
     scenario_items: &'a [ScenarioItemRecord],
     treasures: &'a [TreasureRecord],
     shops: &'a [ShopRecord],
@@ -392,6 +394,8 @@ impl<'a> From<&'a ProvidenceProject> for ProjectFile<'a> {
             monsters: &project.monsters,
             monster_sets: &project.monster_sets,
             monster_descriptions: &project.monster_descriptions,
+            monster_icon_overrides: &project.monster_icon_overrides,
+            scenario_icon_resources: &project.scenario_icon_resources,
             scenario_items: &project.scenario_items,
             treasures: &project.treasures,
             shops: &project.shops,
@@ -1995,6 +1999,23 @@ mod tests {
         let project_dir = temp.path().join("Semantic Omit.providence");
         let mut project =
             create_project("Semantic Omit".to_string(), &project_dir).expect("create project");
+        project.monster_icon_overrides.push(MonsterIconOverride {
+            target_base_icon_id: 385,
+            source_base_icon_id: 371,
+            source_label: Some("Test Monster Mash Pair".to_string()),
+            source_kind: MonsterIconOverrideSource::ProvidenceLibrary,
+            source_base_resource_base64: "AAAA".to_string(),
+            source_paired_resource_base64: "BBBB".to_string(),
+            imported: true,
+        });
+        project.scenario_icon_resources.push(ScenarioIconResource {
+            resource_id: 501,
+            label: "Test scenario icon".to_string(),
+            source_kind: ScenarioIconResourceSource::ProvidenceLibrary,
+            resource_base64: "CCCC".to_string(),
+            preview_path: None,
+            imported: true,
+        });
         project.semantic_schema.schema_version = 999;
         project.semantic_schema.entities.push(SemanticEntity {
             id: "derived:test".to_string(),
@@ -2021,5 +2042,17 @@ mod tests {
             !text.contains("semanticSchema"),
             "project.json should not persist derived semantic schema"
         );
+        assert!(
+            text.contains("monsterIconOverrides") && text.contains("scenarioIconResources"),
+            "project.json should persist authored icon override/resource intent"
+        );
+        let reopened = open_project(&project_dir).expect("open project");
+        assert_eq!(reopened.monster_icon_overrides.len(), 1);
+        assert_eq!(
+            reopened.monster_icon_overrides[0].source_base_resource_base64,
+            "AAAA"
+        );
+        assert_eq!(reopened.scenario_icon_resources.len(), 1);
+        assert_eq!(reopened.scenario_icon_resources[0].resource_base64, "CCCC");
     }
 }
