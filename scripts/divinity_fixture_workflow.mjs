@@ -53,6 +53,9 @@ function prepareFixture(fixtureId, opts) {
     id: fixtureId,
     title: opts.title ?? existing.title ?? titleFromId(fixtureId),
     status: baseline ? "prepared" : "planned",
+    behaviorToProve: opts.behavior ?? existing.behaviorToProve ?? "Name the exact behavior this fixture must prove.",
+    scenarioOrTool: opts["scenario-tool"] ?? opts.scenarioTool ?? existing.scenarioOrTool ?? "Name the scenario, synthetic fixture, Divinity screen, or report used.",
+    providenceDecision: opts.decision ?? existing.providenceDecision ?? "Name the Providence authoring, validation, export, UI, or preserve-only decision this unlocks.",
     divinityAction: opts.action ?? existing.divinityAction ?? "Describe the exact Divinity edit before capture.",
     source: {
       before: baseline ? "before/" : null,
@@ -180,6 +183,12 @@ function writeFixtureReadme(fixtureDir, metadata) {
     "",
     `Status: \`${metadata.status}\``,
     "",
+    "## Evidence Gate",
+    "",
+    `- Behavior to prove: ${metadata.behaviorToProve ?? "Name the exact behavior this fixture must prove."}`,
+    `- Scenario/tool used: ${metadata.scenarioOrTool ?? "Name the scenario, synthetic fixture, Divinity screen, or report used."}`,
+    `- Providence decision unlocked: ${metadata.providenceDecision ?? "Name the Providence decision this unlocks."}`,
+    "",
     "## Divinity Action",
     "",
     metadata.divinityAction ?? "Describe the exact Divinity edit before capture.",
@@ -208,6 +217,12 @@ function writeEvidenceCard(fixtureId, fixtureDir, output) {
     `Fixture: \`${fixtureId}\``,
     "",
     `Status: \`${metadata.status ?? "observed"}\``,
+    "",
+    "## Evidence Gate",
+    "",
+    `- Behavior to prove: ${metadata.behaviorToProve ?? "Not recorded."}`,
+    `- Scenario/tool used: ${metadata.scenarioOrTool ?? "Not recorded."}`,
+    `- Providence decision unlocked: ${metadata.providenceDecision ?? "Not recorded."}`,
     "",
     "## Divinity Action",
     "",
@@ -304,8 +319,8 @@ function fail(message) {
 
 function printHelp() {
   console.log(`Usage:
-  node scripts/divinity_fixture_workflow.mjs prepare <id> --baseline <scenario-dir> [--title "..."] [--action "..."] [--force]
-  node scripts/divinity_fixture_workflow.mjs prepare <id> --placeholder [--title "..."] [--action "..."]
+  node scripts/divinity_fixture_workflow.mjs prepare <id> --baseline <scenario-dir> [--title "..."] [--action "..."] [--behavior "..."] [--scenario-tool "..."] [--decision "..."] [--force]
+  node scripts/divinity_fixture_workflow.mjs prepare <id> --placeholder [--title "..."] [--action "..."] [--behavior "..."] [--scenario-tool "..."] [--decision "..."]
   node scripts/divinity_fixture_workflow.mjs capture <id> --after <scenario-dir> [--force]
   node scripts/divinity_fixture_workflow.mjs diff <id>`);
 }

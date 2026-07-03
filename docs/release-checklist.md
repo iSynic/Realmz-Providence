@@ -38,6 +38,7 @@ The patch gate is the following sequence:
 | Combat command audit | `node scripts\check_combat_monster_commands.mjs` | Combat battle/monster/icon command checks pass. |
 | Script diagnostics | `npm run check:script-diagnostics` | Script diagnostic self-test writes its report and exits cleanly. |
 | Scenario context | `npm run check:scenario-context` | Scenario context registry checks pass. |
+| Evidence Lab policy | `npm run check:evidence-lab` | Evidence Lab remains scoped to named compatibility blockers. |
 | Web production build | `npm run build` | Vite completes and writes `dist/`. |
 | Rust tests | `cargo test --manifest-path src-tauri\Cargo.toml --lib` | Tauri/Rust library tests pass. |
 | Desktop artifacts | `npm run release:desktop-gate` | Windows and Linux desktop artifacts rebuild for the current package version. |
@@ -140,6 +141,7 @@ Use this shape for patch release notes:
 - node scripts\check_combat_monster_commands.mjs
 - npm run check:script-diagnostics
 - npm run check:scenario-context
+- npm run check:evidence-lab
 - npm run build
 - cargo test --manifest-path src-tauri\Cargo.toml --lib
 - npm run release:desktop-gate:smoke

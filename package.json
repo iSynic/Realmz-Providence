@@ -70,7 +70,8 @@
     "check:combat-monsters": "node scripts/check_combat_monster_commands.mjs",
     "check:script-diagnostics": "node scripts/report_script_diagnostics.mjs --self-test --out tmp/script-diagnostics-self-test",
     "check:scenario-context": "node scripts/check_scenario_context_registry.mjs",
-    "check": "npm run typecheck && npm run check:ap-action-gaps && npm run check:ap-actions && npm run check:registration-codes && npm run check:map-tile-metadata && npm run check:combat-monsters && npm run check:script-diagnostics && npm run check:scenario-context && npm run build && npm run test:rust"
+    "check:evidence-lab": "node scripts/check_evidence_lab_policy.mjs",
+    "check": "npm run typecheck && npm run check:ap-action-gaps && npm run check:ap-actions && npm run check:registration-codes && npm run check:map-tile-metadata && npm run check:combat-monsters && npm run check:script-diagnostics && npm run check:scenario-context && npm run check:evidence-lab && npm run build && npm run test:rust"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",
