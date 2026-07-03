@@ -25,6 +25,7 @@ Measured on July 3, 2026 from existing `tmp/` projects.
 - The smoke performance benchmark builder was still writing pretty JSON and could carry stale derived semantic data from a source project. It now writes compact JSON and replaces benchmark `semanticSchema` with an empty current-version schema.
 - After the benchmark writer change, `npm run smoke:ui:performance -- --combat-benchmark` passes with no warnings. `--combat-imported-benchmark` passes with four warnings: cold open 1738 ms, Combat Monsters tab open 414 ms, monster selection 2 at 150 ms, and monster selection 3 at 216 ms.
 - Current persisted size pressure in representative imported-heavy projects is mostly repeated provenance objects, raw byte arrays, `values` arrays, and tile arrays. These are real schema questions, unlike pretty-print overhead.
+- Non-mutating estimates on `tmp/performance-smoke/combat-imported-benchmark-project/project.json` show that dropping all per-record `provenance` fields would save about 8.29 MB, dropping all `rawBytes` fields would save about 2.37 MB, and dropping both would reduce the compact file from 21.37 MB to about 10.71 MB. This is a diagnostic estimate only; it does not prove those fields are safe to remove.
 
 ## Repeatable Report
 
@@ -35,6 +36,7 @@ node scripts\report_project_json_scale.mjs --project tmp\performance-smoke\comba
 ```
 
 Pass comma-separated `--project` paths to compare multiple project files. The report shows pretty/minified size, top-level owners, and repeated hot fields such as `provenance`, `rawBytes`, `values`, and `semanticSchema`.
+It also prints non-mutating what-if reductions for derived diagnostics and high-volume provenance/raw byte fields so schema proposals can be compared before any migration work.
 
 ## Candidate Next Steps
 

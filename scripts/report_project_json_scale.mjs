@@ -38,6 +38,11 @@ function reportProject(projectPath, topCount) {
   for (const [key, row] of [...aggregate.entries()].sort((a, b) => b[1].bytes - a[1].bytes).slice(0, topCount)) {
     console.log(`  ${formatBytes(row.bytes)} x${row.count} ${key}`);
   }
+
+  console.log("What-if reductions:");
+  for (const row of estimateReductions(project)) {
+    console.log(`  ${row.label.padEnd(42)} ${formatBytes(row.bytes)} saved -> ${formatBytes(row.remaining)} minified`);
+  }
 }
 
 function aggregateHotFields(project) {
@@ -87,6 +92,59 @@ function aggregateHotFields(project) {
 
 function byteSize(value) {
   return Buffer.byteLength(JSON.stringify(value), "utf8");
+}
+
+function estimateReductions(project) {
+  const baseline = byteSize(project);
+  return [
+    estimate("drop top-level semanticSchema", project, (clone) => {
+      delete clone.semanticSchema;
+    }),
+    estimate("drop validation + diagnostics", project, (clone) => {
+      delete clone.validation;
+      delete clone.diagnostics;
+      deleteKeysRecursive(clone, new Set(["diagnostics"]));
+    }),
+    estimate("drop all provenance fields", project, (clone) => {
+      deleteKeysRecursive(clone, new Set(["provenance"]));
+    }),
+    estimate("drop all rawBytes fields", project, (clone) => {
+      deleteKeysRecursive(clone, new Set(["rawBytes"]));
+    }),
+    estimate("drop provenance + rawBytes", project, (clone) => {
+      deleteKeysRecursive(clone, new Set(["provenance", "rawBytes"]));
+    }),
+    estimate("drop derived + provenance + rawBytes", project, (clone) => {
+      delete clone.semanticSchema;
+      delete clone.validation;
+      delete clone.diagnostics;
+      deleteKeysRecursive(clone, new Set(["diagnostics", "provenance", "rawBytes"]));
+    })
+  ].map((row) => ({
+    ...row,
+    bytes: Math.max(0, baseline - row.remaining)
+  }));
+}
+
+function estimate(label, project, mutate) {
+  const clone = structuredClone(project);
+  mutate(clone);
+  return { label, remaining: byteSize(clone) };
+}
+
+function deleteKeysRecursive(value, keys) {
+  if (value == null || typeof value !== "object") return;
+  if (Array.isArray(value)) {
+    for (const child of value) deleteKeysRecursive(child, keys);
+    return;
+  }
+  for (const key of Object.keys(value)) {
+    if (keys.has(key)) {
+      delete value[key];
+      continue;
+    }
+    deleteKeysRecursive(value[key], keys);
+  }
 }
 
 function parseArgs(argv) {
