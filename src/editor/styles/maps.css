@@ -2773,6 +2773,11 @@
   background: #15334a;
 }
 
+.palette-drop-dock button.already-has-tile {
+  border-color: rgba(121, 213, 151, 0.52);
+  background: #102619;
+}
+
 .palette-drop-dock button span {
   min-width: 0;
   overflow: hidden;

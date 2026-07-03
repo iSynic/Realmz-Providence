@@ -248,6 +248,8 @@ export function PaintPalettePanel({
     }
     const palette = customPalettes.find((candidate) => candidate.id === targetId);
     if (!palette) return;
+    onSetActiveCustomPaletteId(palette.id);
+    if (palette.tiles.includes(tile)) return;
     onApplyCommand({ kind: "addTileToPalette", label: `Add tile ${tile} to ${palette.name}`, paletteId: palette.id, tile });
   };
   const createPaletteWithTile = (tile: number) => {
@@ -448,7 +450,7 @@ export function PaintPalettePanel({
       )}
       {dragDockVisible && (
         <>
-          <PaletteDropDock palettes={customPalettes} style={dropDockStyle} />
+          <PaletteDropDock palettes={customPalettes} tile={tileDrag!.tile} style={dropDockStyle} />
           <div className="palette-drag-ghost" style={{ left: tileDrag!.x, top: tileDrag!.y }}>
             <TileSwatch atlas={atlas} icons={icons} tile={tileDrag!.tile} tileset={tileset} />
             <span>{tileDrag!.tile}</span>
@@ -899,16 +901,25 @@ function paletteDropDockStyle(tileDrag: TileDragState): CSSProperties {
   return { left, top, width, maxHeight };
 }
 
-function PaletteDropDock({ palettes, style }: { palettes: Project["editorMetadata"]["tilePalettes"]; style?: CSSProperties }) {
+function PaletteDropDock({ palettes, tile, style }: { palettes: Project["editorMetadata"]["tilePalettes"]; tile: number; style?: CSSProperties }) {
   return (
     <div className="palette-drop-dock" style={style} aria-label="Custom palette drop targets">
       <strong>Drop to palette</strong>
-      {palettes.map((palette) => (
-        <button key={palette.id} type="button" data-palette-drop-target={palette.id}>
-          <span>{palette.name}</span>
-          <b>{palette.tiles.length}</b>
-        </button>
-      ))}
+      {palettes.map((palette) => {
+        const hasTile = palette.tiles.includes(tile);
+        return (
+          <button
+            key={palette.id}
+            type="button"
+            className={hasTile ? "already-has-tile" : ""}
+            data-palette-drop-target={palette.id}
+            title={hasTile ? `Tile ${tile} is already in ${palette.name}.` : `Add tile ${tile} to ${palette.name}.`}
+          >
+            <span>{palette.name}</span>
+            <b>{hasTile ? "In" : palette.tiles.length}</b>
+          </button>
+        );
+      })}
       <button type="button" data-palette-drop-target="new">
         <span>New Palette</span>
         <b>+</b>
@@ -957,8 +968,10 @@ function CustomPaletteControls({
       createPalette(selectedTile);
       return;
     }
+    if (activePalette.tiles.includes(selectedTile)) return;
     onApplyCommand({ kind: "addTileToPalette", label: `Add tile ${selectedTile} to ${activePalette.name}`, paletteId: activePalette.id, tile: selectedTile });
   };
+  const selectedAlreadyInPalette = Boolean(activePalette?.tiles.includes(selectedTile));
   return (
     <div className="custom-palette-controls">
       <div className="custom-palette-row">
@@ -985,8 +998,8 @@ function CustomPaletteControls({
         </button>
       </div>
       <div className="custom-palette-row">
-        <button type="button" className="btn btn-primary btn-xs" onClick={addSelected}>
-          Add Selected {selectedTile}
+        <button type="button" className="btn btn-primary btn-xs" disabled={selectedAlreadyInPalette} onClick={addSelected}>
+          {selectedAlreadyInPalette ? `Already Added ${selectedTile}` : `Add Selected ${selectedTile}`}
         </button>
         <span>{activePalette ? `${activePalette.tiles.length} tile${activePalette.tiles.length === 1 ? "" : "s"}` : "Create a palette to collect reusable map tiles."}</span>
       </div>
