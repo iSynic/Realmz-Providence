@@ -92,6 +92,19 @@ for (const snippet of [
 }
 if (!panel.includes("moveSelectedStep")) failures.push("Scripts panel does not preserve selected step during move.");
 
+for (const snippet of [
+  "combatMacroContextFor",
+  "Battle Macro Context",
+  "Monster Macro Context",
+  "Combat Macro Actions",
+  "Positive battle macro imports are preserved",
+  "definition.opcode === 121 && combatMacroContext",
+  "combatMacroContext?.kind === \"battle\") return \"Battle Macro\"",
+  "Battle / Monster / Item Action\") return \"Source-Linked Extra Action\""
+]) {
+  if (!panel.includes(snippet)) failures.push(`Scripts panel is missing context-aware combat macro authoring support: ${snippet}`);
+}
+
 const normalUiSources = [
   ["ScriptsPanel.tsx", panel],
   ["EdcdRowEditor.tsx", edcd]

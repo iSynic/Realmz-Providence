@@ -96,6 +96,23 @@ type SelectedEdcdUsage = {
   summary?: string;
 };
 
+type CombatMacroContextKind = "battle" | "monster" | "mixed";
+
+type CombatMacroReference = {
+  kind: "battle" | "monster";
+  key: string;
+  label: string;
+  detail: string;
+  entity?: SelectedEntity;
+  runnable?: boolean;
+};
+
+type CombatMacroContext = {
+  kind: CombatMacroContextKind;
+  references: CombatMacroReference[];
+  rootType: string | null;
+};
+
 const SCRIPT_EDITOR_TABS = [
   { id: "action-points", label: "Action Points", title: "Create and edit map Action Points." },
   { id: "macros", label: "Extra Action Points", title: "Extra Action Points and branch targets." },
@@ -209,12 +226,110 @@ function cachedValidateScriptTrigger(project: Project, trigger: TriggerRecord, c
   return diagnostics;
 }
 
-function authorFacingExtraActionKind(classification: string) {
+function authorFacingExtraActionKind(classification: string, combatMacroContext?: CombatMacroContext | null) {
+  if (combatMacroContext?.kind === "battle") return "Battle Macro";
+  if (combatMacroContext?.kind === "monster") return "Monster Macro";
+  if (combatMacroContext?.kind === "mixed") return "Combat Macro";
   if (classification === "Callable Extra Action Point") return "Extra Action Point";
   if (classification === "Global Macro") return "Global Event";
+  if (classification === "Battle / Monster / Item Action") return "Source-Linked Extra Action";
   if (classification === "Likely Padding" || classification === "Imported Empty Slot") return "Likely Padding";
   if (classification === "Runtime Residue" || classification === "Imported Runtime Mutation") return "Runtime Residue";
   return "Unlinked Extra Action";
+}
+
+function combatMacroContextFor(project: Project, trigger: TriggerRecord, reachability: Ed3ReachabilityRow | null): CombatMacroContext | null {
+  if (trigger.source !== "Data ED3") return null;
+  const macroId = trigger.recordIndex;
+  const references: CombatMacroReference[] = [];
+  for (const battle of project.battles ?? []) {
+    if (!battle.battleMacro || Math.abs(battle.battleMacro) !== macroId) continue;
+    const placed = battle.grid.filter((cell) => cell !== 0).length;
+    references.push({
+      kind: "battle",
+      key: `battle:${battle.id}`,
+      label: `Battle ${battle.id}`,
+      detail: `${battle.battleMacro < 0 ? "Runnable negative battle macro" : "Imported positive value, preserved but not the normal runnable path"}; ${placed} placed monster slot(s).`,
+      entity: selectEntityFromId(`battle:${battle.id}`),
+      runnable: battle.battleMacro < 0
+    });
+  }
+  const addMonsterRefs = (records: Project["monsters"], setLabel: string, setFile: string) => {
+    for (const monster of records ?? []) {
+      if (!monster.deathMacro || Math.abs(monster.deathMacro) !== macroId) continue;
+      references.push({
+        kind: "monster",
+        key: `monster:${setFile}:${monster.id}`,
+        label: `${setLabel} Monster ${monster.id}`,
+        detail: `${monster.displayName || `Monster ${monster.id}`} defeat macro from ${setFile}.`,
+        entity: selectEntityFromId(`monster:${monster.id}`),
+        runnable: true
+      });
+    }
+  };
+  addMonsterRefs(project.monsters ?? [], "Normal", "Data MD");
+  for (const set of project.monsterSets ?? []) {
+    const setLabel = set.setId === 1 ? "Monster" : set.setId === -1 ? "Mega" : "Normal";
+    addMonsterRefs(set.monsters, setLabel, set.sourceFile || (set.setId === 1 ? "Data MD1" : set.setId === -1 ? "Data MD-1" : "Data MD"));
+  }
+  const uniqueReferences = Array.from(new Map(references.map((reference) => [reference.key, reference])).values());
+  const hasBattle = uniqueReferences.some((reference) => reference.kind === "battle");
+  const hasMonster = uniqueReferences.some((reference) => reference.kind === "monster");
+  const rootType = reachability?.rootType ?? null;
+  if (!hasBattle && !hasMonster && !rootType?.includes("battle") && !rootType?.includes("monster")) return null;
+  return {
+    kind: hasBattle && hasMonster ? "mixed" : hasBattle || rootType?.includes("battle") ? "battle" : "monster",
+    references: uniqueReferences,
+    rootType
+  };
+}
+
+function combatMacroContextTitle(context: CombatMacroContext) {
+  if (context.kind === "battle") return "Battle Macro Context";
+  if (context.kind === "monster") return "Monster Macro Context";
+  return "Combat Macro Context";
+}
+
+function combatMacroContextBody(context: CombatMacroContext) {
+  if (context.kind === "battle") {
+    return "Realmz checks an assigned battle macro after each combat round. Code 126 is the battle criteria gate and is often the first step; if its criteria pass, the remaining steps execute in battle context.";
+  }
+  if (context.kind === "monster") {
+    return "Realmz runs an assigned monster macro when that monster dies. Monster macro actions can target the dead monster position, the killer, or related active combat monsters depending on the opcode.";
+  }
+  return "This Extra Action Point is referenced from both battle and monster combat paths. Keep battle-round criteria and monster-death effects explicit when mixing those flows.";
+}
+
+function combatMacroContextLabel(context: CombatMacroContext) {
+  const battleCount = context.references.filter((reference) => reference.kind === "battle").length;
+  const monsterCount = context.references.filter((reference) => reference.kind === "monster").length;
+  if (battleCount && monsterCount) return `${battleCount} battle / ${monsterCount} monster reference(s)`;
+  if (battleCount) return `${battleCount} battle reference(s)`;
+  if (monsterCount) return `${monsterCount} monster reference(s)`;
+  return context.rootType ? `Reachability: ${context.rootType}` : "Combat reachability";
+}
+
+function combatMacroActionOpcodes(context: CombatMacroContext | null) {
+  if (!context) return [];
+  if (context.kind === "battle") return [126, 127, 121, 123, 124, 125, 120];
+  if (context.kind === "monster") return [119, 122, 127, 121, 123, 124, 125, 120, 17];
+  return [126, 119, 122, 127, 121, 123, 124, 125, 120, 17];
+}
+
+function combatMacroActionNote(opcode: number, context: CombatMacroContext | null) {
+  if (!context) return null;
+  const code = normalizeStepOpcode(opcode);
+  if (code === 126) return "Battle macro criteria: Realmz checks this after each combat round before continuing the rest of the macro.";
+  if (code === 119) return "Monster macro revive: an NPC killed in combat returns after combat with 1 stamina.";
+  if (code === 122) return "Monster macro fumble: affects the creature that killed this monster.";
+  if (code === 17 && context.kind !== "battle") return "In a monster death macro, Realmz uses the destroyed monster's position for the spell target.";
+  if (code === 121) return "Combat macro action: de-animates lower unintelligent undead in monster or battle macro context.";
+  if (code === 123) return "Combat macro action: routes matching active monsters away from the fight.";
+  if (code === 124) return "Combat macro action: spawns replacement monsters from the macro's combat context.";
+  if (code === 125) return "Combat macro action: destroys related active monsters.";
+  if (code === 127) return "Combat macro condition: continue only while the selected monster is still present.";
+  if (code === 120) return "Combat mutation: changes an active monster or NPC icon/traitor value during combat.";
+  return null;
 }
 
 export function ScriptsPanel({
@@ -613,9 +728,13 @@ function ScriptAuthoringPanel({
     );
   }
   const isMacro = selectedTrigger?.source === "Data ED3";
-  const selectedExtraActionClassification = selectedTrigger && isMacro ? authorFacingExtraActionKind(extraActionPointClassification(project, selectedTrigger)) : "Action Point";
   const selectedExtraActionEvidence = selectedTrigger && isMacro ? extraActionEvidenceSummary(project, selectedTrigger) : null;
   const selectedEd3Reachability = selectedTrigger && isMacro ? ed3ReachabilityFor(project, selectedTrigger.recordIndex) ?? null : null;
+  const selectedCombatMacroContext = useMemo(
+    () => selectedTrigger && isMacro ? combatMacroContextFor(project, selectedTrigger, selectedEd3Reachability) : null,
+    [project, selectedTrigger, isMacro, selectedEd3Reachability]
+  );
+  const selectedExtraActionClassification = selectedTrigger && isMacro ? authorFacingExtraActionKind(extraActionPointClassification(project, selectedTrigger), selectedCombatMacroContext) : "Action Point";
   const deleteMacroLabel = selectedExtraActionClassification === "Global Event" ? "Delete Global Event" : "Delete Extra Action Point";
   const moveMapKey = selectedTrigger && !isMacro && selectedTrigger.levelType && selectedTrigger.levelIndex != null
     ? `${selectedTrigger.levelType}:${selectedTrigger.levelIndex}`
@@ -726,6 +845,7 @@ function ScriptAuthoringPanel({
       selectedEdcdRowId={selectedEdcdRowId}
       selectedSlotEntity={selectedSlotEntity}
       selectedSlotDiagnostics={selectedSlotDiagnostics}
+      combatMacroContext={selectedCombatMacroContext}
       categoryFilter={categoryFilter}
       opcodeQuery={opcodeQuery}
       filteredDefinitions={filteredDefinitions}
@@ -941,6 +1061,9 @@ function ScriptAuthoringPanel({
                     )}
                     <small>{selectedExtraActionEvidence?.detail ?? "Extra Action Points store only the eight script steps. Map trigger fields like chance, location, and goto target do not apply until another script calls them."}</small>
                   </div>
+                  {selectedCombatMacroContext && (
+                    <CombatMacroContextCard context={selectedCombatMacroContext} onSelectEntity={onSelectEntity} />
+                  )}
                   <Ed3EvidenceDetails row={selectedEd3Reachability} />
                 </>
               ) : (
@@ -1876,6 +1999,48 @@ function EvidenceLinkGroup({
   );
 }
 
+function CombatMacroContextCard({
+  context,
+  onSelectEntity
+}: {
+  context: CombatMacroContext;
+  onSelectEntity: (entity: SelectedEntity) => void;
+}) {
+  const positiveBattleRefs = context.references.filter((reference) => reference.kind === "battle" && reference.runnable === false);
+  return (
+    <div className={`combat-macro-context-card ${context.kind}`}>
+      <header>
+        <div>
+          <strong>{combatMacroContextTitle(context)}</strong>
+          <small>{combatMacroContextLabel(context)}</small>
+        </div>
+        <span>{context.kind === "mixed" ? "battle + monster" : context.kind}</span>
+      </header>
+      <p>{combatMacroContextBody(context)}</p>
+      {context.references.length > 0 && (
+        <div className="combat-macro-reference-list">
+          {context.references.slice(0, 12).map((reference) => (
+            <button
+              key={reference.key}
+              type="button"
+              className={reference.runnable === false ? "warning" : ""}
+              title={reference.detail}
+              disabled={!reference.entity}
+              onClick={() => reference.entity && onSelectEntity(reference.entity)}
+            >
+              <strong>{reference.label}</strong>
+              <small>{reference.detail}</small>
+            </button>
+          ))}
+        </div>
+      )}
+      {positiveBattleRefs.length > 0 && (
+        <small className="field-warning">Positive battle macro imports are preserved, but Realmz's normal battle macro path uses negative Data BD values.</small>
+      )}
+    </div>
+  );
+}
+
 function ScriptFlowPreview({
   project,
   catalog,
@@ -1941,7 +2106,8 @@ function humanActionValueLabel(label: string) {
   return clean && clean !== "Value" ? clean : "Value";
 }
 
-function actionAuthoringStateLabel(definition: ScriptActionDefinition) {
+function actionAuthoringStateLabel(definition: ScriptActionDefinition, combatMacroContext?: CombatMacroContext | null) {
+  if (definition.opcode === 121 && combatMacroContext) return "Combat macro action";
   if (definition.opcode === 121) return "Macro-only imported action";
   if (definition.opcode === 84) return "Manual/source discrepancy";
   if (definition.shortLabel === "Inert Imported Action") return "Inert imported action";
@@ -1952,8 +2118,9 @@ function actionAuthoringStateLabel(definition: ScriptActionDefinition) {
   return "Empty step";
 }
 
-function actionAuthoringStateDetail(definition: ScriptActionDefinition) {
+function actionAuthoringStateDetail(definition: ScriptActionDefinition, combatMacroContext?: CombatMacroContext | null) {
   if (definition.opcode === 121) {
+    if (combatMacroContext) return "This action is meaningful in the selected battle or monster macro context. Providence edits the same CODE/ID and settings rows while keeping Extra AP storage unchanged.";
     return "Realmz source performs this only during combat. Ordinary AP imports are preserved here and are not routine Action Point authoring backlog; use monster or battle macro surfaces for intentional authoring.";
   }
   if (definition.opcode === 84) {
@@ -2022,6 +2189,7 @@ function SelectedStepDetail({
   selectedEdcdRowId,
   selectedSlotEntity,
   selectedSlotDiagnostics,
+  combatMacroContext,
   categoryFilter,
   opcodeQuery,
   filteredDefinitions,
@@ -2059,6 +2227,7 @@ function SelectedStepDetail({
   selectedEdcdRowId: number | null;
   selectedSlotEntity?: SemanticEntity;
   selectedSlotDiagnostics: ScriptDiagnostic[];
+  combatMacroContext?: CombatMacroContext | null;
   categoryFilter: ScriptActionCategory;
   opcodeQuery: string;
   filteredDefinitions: ScriptActionDefinition[];
@@ -2108,6 +2277,11 @@ function SelectedStepDetail({
     setActionChooserOpen(false);
   }, [selectedSlot]);
   const selectedFlowRoutes = useMemo(() => scriptStepFlowRoutes(project, catalog, selectedDraft), [catalog, project, selectedDraft]);
+  const selectedCombatMacroActionNote = combatMacroActionNote(selectedDefinition.opcode, combatMacroContext ?? null);
+  const combatMacroActionDefinitions = useMemo(
+    () => combatMacroActionOpcodes(combatMacroContext ?? null).map((opcode) => scriptActionDefinitionFor(opcode)),
+    [combatMacroContext]
+  );
   const settingLabels = visibleParameters.map((parameter) => `${parameter.index + 1}. ${parameter.label}`);
   const previewBehavior = signedTargetBehaviorLabel(selectedDraft.rawCode, selectedDraft.id);
   const previewCanExpand = Boolean(
@@ -2177,6 +2351,12 @@ function SelectedStepDetail({
           <span>{selectedDefinition.categoryLabel}</span>
         </div>
         <p>{selectedDefinition.summary}</p>
+        {selectedCombatMacroActionNote && combatMacroContext && (
+          <div className="combat-macro-action-note">
+            <span>{combatMacroContextTitle(combatMacroContext)}</span>
+            <small>{selectedCombatMacroActionNote}</small>
+          </div>
+        )}
         {selectedTargetPreview && (
           <div className="realmz-selected-target-preview">
             <span>{selectedDefinition.target?.label ?? "Target"}</span>
@@ -2321,6 +2501,28 @@ function SelectedStepDetail({
               placeholder="Search actions, targets, and settings..."
               aria-label="Search script actions"
             />
+            {combatMacroContext && combatMacroActionDefinitions.length > 0 && (
+              <div className="combat-macro-action-strip">
+                <header>
+                  <strong>Combat Macro Actions</strong>
+                  <small>{combatMacroContextTitle(combatMacroContext)}</small>
+                </header>
+                <div>
+                  {combatMacroActionDefinitions.map((definition) => (
+                    <button
+                      key={definition.opcode}
+                      type="button"
+                      className={selectedDraft.rawCode === definition.opcode ? "selected" : ""}
+                      title={combatMacroActionNote(definition.opcode, combatMacroContext) ?? definition.description}
+                      onClick={() => useActionDefinition(definition)}
+                    >
+                      <strong>{definition.shortLabel}</strong>
+                      <span>{definition.opcode}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="realmz-step-picker-grid action-chooser-grid">
               {filteredDefinitions.map((definition) => (
                 <button
@@ -2379,7 +2581,7 @@ function SelectedStepDetail({
         </p>
         <div className="realmz-raw-preview">
           <FieldRow label="Opcode" value={selectedDefinition.label} />
-          <FieldRow label="Authoring State" value={`${actionAuthoringStateLabel(selectedDefinition)} - ${actionAuthoringStateDetail(selectedDefinition)}`} />
+          <FieldRow label="Authoring State" value={`${actionAuthoringStateLabel(selectedDefinition, combatMacroContext)} - ${actionAuthoringStateDetail(selectedDefinition, combatMacroContext)}`} />
           <FieldRow label="Storage" value={actionStorageLabel(selectedDefinition)} />
           <FieldRow label="Export Behavior" value="Unchanged values are preserved on export. Edits update the same classic Realmz fields Providence already imports." />
           <FieldRow label="CODE / ID" value={`${selectedDraft.rawCode} / ${selectedDraft.id}`} />
