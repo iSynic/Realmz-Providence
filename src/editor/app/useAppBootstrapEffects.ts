@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { Dispatch, useEffect } from "react";
+import { Dispatch, useEffect, useRef } from "react";
 import { browserReferenceIconUrl, browserTilesetAtlasUrl } from "../browser/atlasPaths";
 import {
   createBrowserWorkspace,
@@ -43,6 +43,8 @@ export function useAppBootstrapEffects({
   atlasLoadKey: string;
   iconLoadKey: string;
 }) {
+  const loadedIconOverlayKeyRef = useRef("");
+  const loadingIconOverlayKeyRef = useRef("");
   useEffect(() => {
     if (!desktopRuntime) return;
     let disposed = false;
@@ -269,10 +271,21 @@ export function useAppBootstrapEffects({
     let disposed = false;
     async function loadIcons() {
       if (!state.project) {
+        loadedIconOverlayKeyRef.current = "";
+        loadingIconOverlayKeyRef.current = "";
         dispatch({ type: "setIcons", entries: {}, status: "No icon overlays loaded" });
         return;
       }
       if (!shouldLoadIconOverlaysForTab(state.activeTab)) return;
+      const requestedIconOverlayKey = [
+        desktopRuntime ? "desktop" : "browser",
+        projectDir,
+        workspaceDir,
+        iconLoadKey
+      ].join("\n");
+      if (loadedIconOverlayKeyRef.current === requestedIconOverlayKey) return;
+      if (loadingIconOverlayKeyRef.current === requestedIconOverlayKey) return;
+      loadingIconOverlayKeyRef.current = requestedIconOverlayKey;
       const projectStampAssets = (state.project.assets ?? []).filter((asset) => asset.kind === "special-land-tile" && asset.resourceType === "cicn");
       const projectCatalogIconAssets = (state.project.assetCatalog.icons ?? []).filter((asset) => asset.resourceType === "cicn");
       const libraryIconAssets = (state.libraryCatalog?.assets ?? []).filter(isPaintableSpecialLandLibraryAsset);
@@ -322,6 +335,8 @@ export function useAppBootstrapEffects({
       ]);
       const ids = desktopRuntime ? rawIds : rawIds.slice(0, BROWSER_ICON_OVERLAY_PRELOAD_LIMIT);
       if (ids.length === 0) {
+        loadedIconOverlayKeyRef.current = requestedIconOverlayKey;
+        loadingIconOverlayKeyRef.current = "";
         dispatch({ type: "setIcons", entries: {}, status: "No icon overlays in maps" });
         return;
       }
@@ -414,6 +429,8 @@ export function useAppBootstrapEffects({
       for (const pair of pairs) {
         if (pair) entries[pair[0]] = pair[1];
       }
+      loadedIconOverlayKeyRef.current = requestedIconOverlayKey;
+      loadingIconOverlayKeyRef.current = "";
       dispatch({
         type: "setIcons",
         entries,
@@ -423,6 +440,14 @@ export function useAppBootstrapEffects({
     loadIcons();
     return () => {
       disposed = true;
+      if (loadingIconOverlayKeyRef.current === [
+        desktopRuntime ? "desktop" : "browser",
+        projectDir,
+        workspaceDir,
+        iconLoadKey
+      ].join("\n")) {
+        loadingIconOverlayKeyRef.current = "";
+      }
     };
   }, [desktopRuntime, dispatch, iconLoadKey, projectDir, state.activeTab, workspaceDir]);
 }

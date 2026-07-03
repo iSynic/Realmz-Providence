@@ -1,4 +1,4 @@
-import { ChangeEvent, DragEvent, memo, MouseEvent, PointerEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, DragEvent, memo, MouseEvent, PointerEvent, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { loadBrowserBundledLibraryResourceData } from "../browser/library";
 import { inspectResourcePreview } from "../browser/resourcePreview";
@@ -1561,8 +1561,11 @@ type BattleBoardCanvasProps = {
 const battleCanvasImageCache = new Map<string, Promise<BattleCanvasImage | null>>();
 const battleCanvasResolvedImageCache = new Map<string, BattleCanvasImage | null>();
 const battleMonsterIconUrlCache = new Map<string, Promise<ResolvedBattleMonsterIcon>>();
+const battleMonsterResolvedIconUrlCache = new Map<string, ResolvedBattleMonsterIcon>();
 const battleMonsterFootprintCache = new Map<string, { width: number; height: number }>();
 const battleMonsterPaletteMetricCache = new Map<string, { artSize: { width: number; height: number }; footprintLabel: string }>();
+const battleIconSourceKeyTokens = new Map<string, string>();
+let battleIconSourceKeyTokenSequence = 0;
 
 function useBattleIconSourceKey(
   project: Project,
@@ -1599,31 +1602,59 @@ function useResolvedBattleMonsterIcons(
   sourceKey: string
 ) {
   const monsterKey = useMemo(() => uniqueBattleMonsterIconMonsters(monsters).map(battleMonsterIconLookupKey).join("|"), [monsters]);
-  const [icons, setIcons] = useState<Record<string, ResolvedBattleMonsterIcon>>({});
+  const syncCachedIcons = useMemo(() => {
+    const cachedIcons: Record<string, ResolvedBattleMonsterIcon> = {};
+    for (const monster of uniqueBattleMonsterIconMonsters(monsters)) {
+      const cached = battleMonsterResolvedIconUrlCache.get(battleMonsterIconCacheKey(sourceKey, monster));
+      if (cached) cachedIcons[battleMonsterIconLookupKey(monster)] = cached;
+    }
+    return cachedIcons;
+  }, [monsterKey, sourceKey]);
+  const [resolvedState, setResolvedState] = useState<{ sourceKey: string; icons: Record<string, ResolvedBattleMonsterIcon> }>({ sourceKey: "", icons: {} });
   useEffect(() => {
     let disposed = false;
     const uniqueMonsters = uniqueBattleMonsterIconMonsters(monsters);
     if (uniqueMonsters.length === 0) {
-      setIcons({});
+      setResolvedState({ sourceKey, icons: {} });
+      return () => {
+        disposed = true;
+      };
+    }
+    const cachedIcons: Record<string, ResolvedBattleMonsterIcon> = {};
+    const missingMonsters: MonsterRecord[] = [];
+    for (const monster of uniqueMonsters) {
+      const cached = battleMonsterResolvedIconUrlCache.get(battleMonsterIconCacheKey(sourceKey, monster));
+      if (cached) {
+        cachedIcons[battleMonsterIconLookupKey(monster)] = cached;
+      } else {
+        missingMonsters.push(monster);
+      }
+    }
+    setResolvedState({ sourceKey, icons: cachedIcons });
+    if (missingMonsters.length === 0) {
       return () => {
         disposed = true;
       };
     }
     const started = performance.now();
-    Promise.all(uniqueMonsters.map((monster) => resolveCachedBattleMonsterIcon(monster, iconEntries, project, lookups, previewContext, sourceKey)))
+    Promise.all(missingMonsters.map((monster) => resolveCachedBattleMonsterIcon(monster, iconEntries, project, lookups, previewContext, sourceKey)))
       .then((resolved) => {
         if (disposed) return;
-        setIcons(Object.fromEntries(resolved.map((icon) => [icon.cacheKey, icon])));
+        setResolvedState((current) => {
+          if (current.sourceKey !== sourceKey) return current;
+          return { sourceKey, icons: { ...current.icons, ...Object.fromEntries(resolved.map((icon) => [icon.cacheKey, icon])) } };
+        });
         recordCombatPerf("battleIconUrlResolve", performance.now() - started);
       })
       .catch(() => {
-        if (!disposed) setIcons({});
+        if (!disposed) setResolvedState((current) => current.sourceKey === sourceKey ? { sourceKey, icons: cachedIcons } : current);
       });
     return () => {
       disposed = true;
     };
   }, [monsterKey, sourceKey]);
-  return icons;
+  const resolvedIcons = resolvedState.sourceKey === sourceKey ? resolvedState.icons : {};
+  return useMemo(() => ({ ...resolvedIcons, ...syncCachedIcons }), [resolvedIcons, syncCachedIcons]);
 }
 
 function uniqueBattleMonsterIconMonsters(monsters: MonsterRecord[]) {
@@ -1655,7 +1686,7 @@ function battleIconSourceKey(
     ...(project.monsterIconOverrides ?? []).map((override) => `${override.targetBaseIconId}:${override.sourceKind}:${override.sourceBaseIconId}:${override.sourceBaseResourceBase64?.length ?? 0}:${override.sourcePairedResourceBase64?.length ?? 0}`),
     ...[...realmzActorIconAssetsByAbsId.entries()].map(([id, asset]) => `${id}:${asset.source}:${asset.relativePath}:${asset.previewPath ?? ""}`)
   ].sort().join("|");
-  return [
+  return compactBattleIconSourceKey([
     previewContext.desktopRuntime ? "desktop" : "browser",
     previewContext.projectDir ?? "",
     previewContext.workspaceDir ?? "",
@@ -1663,7 +1694,15 @@ function battleIconSourceKey(
     project.source.sourcePath,
     iconEntryKey,
     projectIconKey
-  ].join("\n");
+  ].join("\n"));
+}
+
+function compactBattleIconSourceKey(sourceKey: string) {
+  const cached = battleIconSourceKeyTokens.get(sourceKey);
+  if (cached) return cached;
+  const next = `battle-icons:${++battleIconSourceKeyTokenSequence}`;
+  battleIconSourceKeyTokens.set(sourceKey, next);
+  return next;
 }
 
 function resolveCachedBattleMonsterIcon(
@@ -1674,12 +1713,21 @@ function resolveCachedBattleMonsterIcon(
   previewContext: PreviewRuntimeContext,
   sourceKey: string
 ) {
-  const cacheKey = `${sourceKey}\n${battleMonsterIconLookupKey(monster)}`;
+  const cacheKey = battleMonsterIconCacheKey(sourceKey, monster);
+  const resolved = battleMonsterResolvedIconUrlCache.get(cacheKey);
+  if (resolved) return Promise.resolve(resolved);
   const cached = battleMonsterIconUrlCache.get(cacheKey);
   if (cached) return cached;
-  const request = resolveBattleMonsterIcon(monster, iconEntries, project, lookups, previewContext);
+  const request = resolveBattleMonsterIcon(monster, iconEntries, project, lookups, previewContext).then((icon) => {
+    battleMonsterResolvedIconUrlCache.set(cacheKey, icon);
+    return icon;
+  });
   battleMonsterIconUrlCache.set(cacheKey, request);
   return request;
+}
+
+function battleMonsterIconCacheKey(sourceKey: string, monster: MonsterRecord) {
+  return `${sourceKey}\n${battleMonsterIconLookupKey(monster)}`;
 }
 
 async function resolveBattleMonsterIcon(
@@ -1839,6 +1887,31 @@ function MonsterPalette({
   const [query, setQuery] = useState("");
   const paletteRef = useRef<HTMLDivElement | null>(null);
   const [paletteViewport, setPaletteViewport] = useState({ width: 0, height: 0, scrollTop: 0 });
+  const pendingPaletteViewportRef = useRef(paletteViewport);
+  const paletteViewportFrameRef = useRef<number | null>(null);
+  const schedulePaletteViewportUpdate = useCallback((element: HTMLDivElement) => {
+    const next = {
+      width: element.clientWidth,
+      height: element.clientHeight,
+      scrollTop: element.scrollTop
+    };
+    pendingPaletteViewportRef.current = next;
+    if (paletteViewportFrameRef.current != null) return;
+    paletteViewportFrameRef.current = window.requestAnimationFrame(() => {
+      paletteViewportFrameRef.current = null;
+      const pending = pendingPaletteViewportRef.current;
+      setPaletteViewport((current) =>
+        current.width === pending.width && current.height === pending.height && current.scrollTop === pending.scrollTop
+          ? current
+          : pending
+      );
+    });
+  }, []);
+  useEffect(() => {
+    return () => {
+      if (paletteViewportFrameRef.current != null) window.cancelAnimationFrame(paletteViewportFrameRef.current);
+    };
+  }, []);
   const placeableMonsters = useMemo(
     () => activeMonsters.filter((monster) => monster.id > 0 && monster.id <= MAX_DIVINITY_BATTLE_MONSTER_ID),
     [activeMonsters]
@@ -1854,17 +1927,13 @@ function MonsterPalette({
   useEffect(() => {
     const element = paletteRef.current;
     if (!element) return;
-    const update = () => setPaletteViewport({
-      width: element.clientWidth,
-      height: element.clientHeight,
-      scrollTop: element.scrollTop
-    });
+    const update = () => schedulePaletteViewportUpdate(element);
     update();
     if (typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(update);
     observer.observe(element);
     return () => observer.disconnect();
-  }, []);
+  }, [schedulePaletteViewportUpdate]);
   useEffect(() => {
     const element = paletteRef.current;
     if (element) element.scrollTop = 0;
@@ -1906,10 +1975,7 @@ function MonsterPalette({
         ref={paletteRef}
         className="monster-brush-palette"
         aria-label="Paintable monsters"
-        onScroll={(event) => {
-          const element = event.currentTarget;
-          setPaletteViewport((current) => ({ ...current, scrollTop: element.scrollTop, width: element.clientWidth, height: element.clientHeight }));
-        }}
+        onScroll={(event) => schedulePaletteViewportUpdate(event.currentTarget)}
       >
         {entries.length === 0 && !hasOnlyUnplaceableMonsterZero && !hasOnlyOutOfRangeMonsters && (
           <p className="empty-copy compact">No {monsterSetLabel(monsterSetPreview)} scenario monsters are available for battle placement. Copy from Monster Library into Scenario Monsters first.</p>
@@ -1991,14 +2057,24 @@ const MonsterBrushTile = memo(function MonsterBrushTile({
             maxHeight: "100%"
           }}
         >
-          <MonsterIcon
-            monster={monster}
-            iconEntries={iconEntries}
-            project={project}
-            lookups={lookups}
-            previewContext={previewContext}
-            resolvedIcon={resolvedIcon}
-          />
+          {resolvedIcon ? (
+            <MonsterIconDisplay
+              resolution={resolvedIcon}
+              primaryUrl={resolvedIcon.resolvedUrl}
+              fallbackText={String(monster.id)}
+              compact={false}
+              large={false}
+            />
+          ) : (
+            <span
+              className="monster-icon-preview"
+              title="Loading monster icon"
+              data-combat-preview="monster-icon"
+              data-combat-preview-ready="false"
+            >
+              <b>{monster.id}</b>
+            </span>
+          )}
         </span>
         <span className="monster-brush-id">{entry.id}</span>
       </button>
@@ -6537,6 +6613,19 @@ function updateArraySlot(values: number[] = [], index: number, value: number, le
   return next.slice(0, length);
 }
 
+type CombatLookupDeps = {
+  catalogAssets: LibraryCatalog["assets"] | undefined;
+  projectAssets: Project["assets"] | undefined;
+  projectBattlesLength: number;
+  projectCatalogIcons: Project["assetCatalog"]["icons"] | undefined;
+  projectMonsterIconOverrides: Project["monsterIconOverrides"] | undefined;
+  projectMonsters: Project["monsters"] | undefined;
+  projectMonsterSets: Project["monsterSets"] | undefined;
+  projectScenarioIconResources: Project["scenarioIconResources"] | undefined;
+};
+
+let combatLookupsCache: { deps: CombatLookupDeps; value: CombatLookups } | null = null;
+
 function useCombatLookups(project: Project | null, catalog: LibraryCatalog | null): CombatLookups {
   const projectBattlesLength = project?.battles?.length ?? 0;
   const projectMonsters = project?.monsters;
@@ -6546,80 +6635,15 @@ function useCombatLookups(project: Project | null, catalog: LibraryCatalog | nul
   const projectMonsterIconOverrides = project?.monsterIconOverrides;
   const projectScenarioIconResources = project?.scenarioIconResources;
   const catalogAssets = catalog?.assets;
-  return useMemo(() => measureCombatWork("useCombatLookups", () => {
-    if (!project) {
-      return {
-        monsters: [],
-        monsterById: new Map(),
-        monsterSetsById: new Map([[0, []]]),
-        monsterBySetAndId: new Map([[0, new Map()]]),
-        iconAssetsByAbsId: new Map(),
-        realmzActorIconAssetsByAbsId: new Map(),
-        monsterMashAssetsByAbsId: new Map(),
-        monsterIconOverridesByTarget: new Map(),
-        tabCounts: { battles: 0, monsters: 0, iconSet: 0 }
-      };
-    }
-    const monsters = [...(project.monsters ?? [])].sort((a, b) => a.id - b.id);
-    const monsterById = new Map(monsters.map((monster) => [monster.id, monster]));
-    const monsterSetsById = new Map<MonsterSetId, MonsterRecord[]>([[0, monsters]]);
-    const monsterBySetAndId = new Map<MonsterSetId, Map<number, MonsterRecord>>([[0, monsterById]]);
-    for (const option of MONSTER_SET_OPTIONS) {
-      if (option.id === 0) continue;
-      const set = (project.monsterSets ?? []).find((candidate) => candidate.setId === option.id);
-      const setMonsters = [...(set?.monsters ?? [])].sort((a, b) => a.id - b.id);
-      monsterSetsById.set(option.id, setMonsters);
-      monsterBySetAndId.set(option.id, new Map(setMonsters.map((monster) => [monster.id, monster])));
-    }
-    const iconAssetsByAbsId = new Map<number, CombatIconAsset>();
-    const realmzActorIconAssetsByAbsId = new Map<number, LibraryAsset>();
-    const monsterMashAssetsByAbsId = new Map<number, LibraryAsset>();
-    const monsterIconOverridesByTarget = new Map<number, MonsterIconOverride>();
-    for (const override of project.monsterIconOverrides ?? []) {
-      if (Number.isInteger(override.targetBaseIconId)) {
-        monsterIconOverridesByTarget.set(Math.abs(override.targetBaseIconId), override);
-      }
-    }
-    const addIconAsset = (asset: CombatIconAsset | null | undefined) => {
-      if (!asset?.previewPath || asset.resourceId == null) return;
-      const key = Math.abs(asset.resourceId);
-      if (!iconAssetsByAbsId.has(key)) iconAssetsByAbsId.set(key, asset);
-    };
-    for (const asset of project.assets ?? []) {
-      if (asset.resourceType === "cicn") addIconAsset(asset);
-    }
-    for (const asset of project.assetCatalog?.icons ?? []) {
-      if (asset.resourceType === "cicn") addIconAsset(asset);
-    }
-    for (const asset of catalog?.assets ?? []) {
-      if (isRealmzActorOrCreatureIconLibraryAsset(asset)) {
-        const key = Math.abs(asset.resourceId);
-        if (!realmzActorIconAssetsByAbsId.has(key)) realmzActorIconAssetsByAbsId.set(key, asset);
-      }
-      if (!isMonsterMashLibraryAsset(asset)) continue;
-      const key = Math.abs(asset.resourceId);
-      if (!monsterMashAssetsByAbsId.has(key)) monsterMashAssetsByAbsId.set(key, asset);
-    }
-    const iconSetTargetCount = monsterIconSetTabCount(project, {
-      iconAssetsByAbsId,
-      realmzActorIconAssetsByAbsId,
-      monsterIconOverridesByTarget
-    });
-    return {
-      monsters,
-      monsterById,
-      monsterSetsById,
-      monsterBySetAndId,
-      iconAssetsByAbsId,
-      realmzActorIconAssetsByAbsId,
-      monsterMashAssetsByAbsId,
-      monsterIconOverridesByTarget,
-      tabCounts: {
-        battles: project.battles?.length ?? 0,
-        monsters: monsterScenarioIds(project).length,
-        iconSet: iconSetTargetCount
-      }
-    };
+  return useMemo(() => cachedCombatLookups(project, catalog, {
+    catalogAssets,
+    projectAssets,
+    projectBattlesLength,
+    projectCatalogIcons,
+    projectMonsterIconOverrides,
+    projectMonsters,
+    projectMonsterSets,
+    projectScenarioIconResources
   }), [
     catalogAssets,
     projectAssets,
@@ -6630,6 +6654,100 @@ function useCombatLookups(project: Project | null, catalog: LibraryCatalog | nul
     projectMonsterSets,
     projectScenarioIconResources
   ]);
+}
+
+function cachedCombatLookups(project: Project | null, catalog: LibraryCatalog | null, deps: CombatLookupDeps) {
+  if (combatLookupsCache && sameCombatLookupDeps(combatLookupsCache.deps, deps)) return combatLookupsCache.value;
+  const value = measureCombatWork("useCombatLookups", () => buildCombatLookups(project, catalog));
+  combatLookupsCache = { deps, value };
+  return value;
+}
+
+function sameCombatLookupDeps(left: CombatLookupDeps, right: CombatLookupDeps) {
+  return left.catalogAssets === right.catalogAssets
+    && left.projectAssets === right.projectAssets
+    && left.projectBattlesLength === right.projectBattlesLength
+    && left.projectCatalogIcons === right.projectCatalogIcons
+    && left.projectMonsterIconOverrides === right.projectMonsterIconOverrides
+    && left.projectMonsters === right.projectMonsters
+    && left.projectMonsterSets === right.projectMonsterSets
+    && left.projectScenarioIconResources === right.projectScenarioIconResources;
+}
+
+function buildCombatLookups(project: Project | null, catalog: LibraryCatalog | null): CombatLookups {
+  if (!project) {
+    return {
+      monsters: [],
+      monsterById: new Map(),
+      monsterSetsById: new Map([[0, []]]),
+      monsterBySetAndId: new Map([[0, new Map()]]),
+      iconAssetsByAbsId: new Map(),
+      realmzActorIconAssetsByAbsId: new Map(),
+      monsterMashAssetsByAbsId: new Map(),
+      monsterIconOverridesByTarget: new Map(),
+      tabCounts: { battles: 0, monsters: 0, iconSet: 0 }
+    };
+  }
+  const monsters = [...(project.monsters ?? [])].sort((a, b) => a.id - b.id);
+  const monsterById = new Map(monsters.map((monster) => [monster.id, monster]));
+  const monsterSetsById = new Map<MonsterSetId, MonsterRecord[]>([[0, monsters]]);
+  const monsterBySetAndId = new Map<MonsterSetId, Map<number, MonsterRecord>>([[0, monsterById]]);
+  for (const option of MONSTER_SET_OPTIONS) {
+    if (option.id === 0) continue;
+    const set = (project.monsterSets ?? []).find((candidate) => candidate.setId === option.id);
+    const setMonsters = [...(set?.monsters ?? [])].sort((a, b) => a.id - b.id);
+    monsterSetsById.set(option.id, setMonsters);
+    monsterBySetAndId.set(option.id, new Map(setMonsters.map((monster) => [monster.id, monster])));
+  }
+  const iconAssetsByAbsId = new Map<number, CombatIconAsset>();
+  const realmzActorIconAssetsByAbsId = new Map<number, LibraryAsset>();
+  const monsterMashAssetsByAbsId = new Map<number, LibraryAsset>();
+  const monsterIconOverridesByTarget = new Map<number, MonsterIconOverride>();
+  for (const override of project.monsterIconOverrides ?? []) {
+    if (Number.isInteger(override.targetBaseIconId)) {
+      monsterIconOverridesByTarget.set(Math.abs(override.targetBaseIconId), override);
+    }
+  }
+  const addIconAsset = (asset: CombatIconAsset | null | undefined) => {
+    if (!asset?.previewPath || asset.resourceId == null) return;
+    const key = Math.abs(asset.resourceId);
+    if (!iconAssetsByAbsId.has(key)) iconAssetsByAbsId.set(key, asset);
+  };
+  for (const asset of project.assets ?? []) {
+    if (asset.resourceType === "cicn") addIconAsset(asset);
+  }
+  for (const asset of project.assetCatalog?.icons ?? []) {
+    if (asset.resourceType === "cicn") addIconAsset(asset);
+  }
+  for (const asset of catalog?.assets ?? []) {
+    if (isRealmzActorOrCreatureIconLibraryAsset(asset)) {
+      const key = Math.abs(asset.resourceId);
+      if (!realmzActorIconAssetsByAbsId.has(key)) realmzActorIconAssetsByAbsId.set(key, asset);
+    }
+    if (!isMonsterMashLibraryAsset(asset)) continue;
+    const key = Math.abs(asset.resourceId);
+    if (!monsterMashAssetsByAbsId.has(key)) monsterMashAssetsByAbsId.set(key, asset);
+  }
+  const iconSetTargetCount = monsterIconSetTabCount(project, {
+    iconAssetsByAbsId,
+    realmzActorIconAssetsByAbsId,
+    monsterIconOverridesByTarget
+  });
+  return {
+    monsters,
+    monsterById,
+    monsterSetsById,
+    monsterBySetAndId,
+    iconAssetsByAbsId,
+    realmzActorIconAssetsByAbsId,
+    monsterMashAssetsByAbsId,
+    monsterIconOverridesByTarget,
+    tabCounts: {
+      battles: project.battles?.length ?? 0,
+      monsters: monsterScenarioIds(project).length,
+      iconSet: iconSetTargetCount
+    }
+  };
 }
 
 function isRealmzActorOrCreatureIconLibraryAsset(asset: LibraryAsset): asset is LibraryAsset & { resourceId: number } {
