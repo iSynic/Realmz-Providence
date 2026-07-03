@@ -366,7 +366,7 @@ Manual Battle Editor covers battle records, before/after strings, distance, batt
 
 Current Providence handling:
 
-Providence authors Data BD battle shells with grid placement, signed Force Friends behavior, before/after string pickers, distance guidance, and Battle Macro links that write the runnable end-of-round Extra Action Point form. Battle records still store only signed monster IDs, but the editor can preview the battle against Normal, Monster, or Mega scenario monster sets. The placement palette exposes scenario monsters only; Monster Library templates must be copied into Scenario Monsters before they can be painted into a battle. Monster 0 and the observed non-authorable 218+ placeholders are excluded from painting. Source-backed UI guardrails keep zero-valued Monster and Battle Macro records out of controls where `0` means empty/inactive.
+Providence authors Data BD battle shells with grid placement, signed Force Friends behavior, before/after string pickers, distance guidance, and Battle Macro links that write the runnable end-of-round Extra Action Point form. Battle records still store only signed monster IDs, but the editor can preview the battle against Normal, Monster, or Mega scenario monster sets. The placement palette exposes scenario monsters only; Monster Library templates must be copied into Scenario Monsters before they can be painted into a battle. Monster 0 and the observed non-authorable 218+ placeholders are excluded from painting. Source-backed UI guardrails keep zero-valued Monster and Battle Macro records out of controls where `0` means empty/inactive. The 100 loaded-monster cap is treated as nonzero Data BD cells, not footprint tiles; UI validation hard-errors above 100 and the Rust writer rejects authored over-cap battles. Battle-reference repair can clear, replace, or swap signed grid IDs while preserving Force Friends sign state. Command regression coverage now exercises active, blank, and missing imported-style battle references, plus positive imported Battle Macro preservation and diagnostics.
 
 Evidence:
 
@@ -378,12 +378,12 @@ Evidence:
 
 Gaps:
 
-- Missing-monster repair is source-backed by matching Monster Scrapbook IDs, but still needs imported-scenario fixture examples.
-- Imported positive Battle Macro values are preserved and warned, but no fixture currently proves a scenario depends on that compatibility state.
+- Real imported-scenario fixture examples for battle-grid missing-monster repair would still improve regression confidence beyond the synthetic command fixture.
+- Imported positive Battle Macro values are preserved and warned, but no real scenario fixture currently proves a scenario depends on that compatibility state.
 
 Recommended follow-up:
 
-- Add fixture examples for battle-grid missing-monster repair.
+- Add real imported fixture examples for battle-grid missing-monster repair if a representative scenario surfaces.
 - Keep Battle Macro field behavior aligned with the manual/source end-of-round execution model.
 
 ### 11. Monster Editor
@@ -421,7 +421,7 @@ Gaps:
 Recommended follow-up:
 
 - Run remaining Monster Editor field-by-field label audits with Divinity screenshots/fixtures.
-- Add regression tests for set-aware editing, Copy Current To All Sets, Switch With, and Generate Variants.
+- Keep command-level regression coverage for set-aware editing, Copy Current To All Sets, Switch With, and Generate Variants current as fields are added.
 - Keep exact Divinity Create Sets behavior fixture-gated unless a separate compatibility need appears.
 
 ### 12. Monster Scrapbook
@@ -804,12 +804,12 @@ Gaps:
 
 - Editing global Monster Mash itself is intentionally not implemented; Providence edits workspace-scoped icon-library copies instead.
 - Classic Realmz documents an approximate per-scenario monster icon-set limit; Providence treats it as a compatibility warning, not a source-proven hard runtime cap.
-- Imported scenario-owned overrides require complete paired `cicn` resources.
+- Incomplete imported scenario-owned icon pairs are diagnostic-only and do not create target rows.
 - Image import creates Providence icon-library entries only; it does not mutate Monster Mash or Family Jewels.
 
 Recommended follow-up:
 
-- Add a focused imported-scenario regression fixture for existing icon-set overrides.
+- Add a focused imported-scenario fixture for existing icon-set overrides beyond the current command-level parser/export checks.
 - Consider a later explicit Monster Mash-compatible export file, separate from scenario export.
 
 ### 24. Vault of Arcana

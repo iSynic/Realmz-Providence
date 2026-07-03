@@ -15,6 +15,7 @@ try {
   const cicnEncoder = await server.ssrLoadModule("/src/editor/cicnEncoder.ts");
   const combatPanel = await server.ssrLoadModule("/src/editor/panels/CombatPanel.tsx");
   const battleReferences = await server.ssrLoadModule("/src/editor/battleReferences.ts");
+  const targetValidation = await server.ssrLoadModule("/src/editor/targetValidation.ts");
   const realmzParser = await server.ssrLoadModule("/src/editor/browser/realmzParser.ts");
 
   checkUpdateMonsterRecord(commands);
@@ -26,6 +27,7 @@ try {
   checkGenerateMonsterVariants(commands);
   checkGenerateMonsterVariantsForAll(commands);
   checkBattleReferenceCommands(commands, battleReferences);
+  checkImportedBattleReferenceDiagnostics(commands, targetValidation);
   checkPaintBattleGridCells(commands);
   checkBattleRuntimeMonsterLimit(battleReferences);
   checkMonsterIconOverrideCommands(commands);
@@ -233,7 +235,7 @@ function checkGenerateMonsterVariantsForAll({ generateMonsterVariantsForAll }) {
 function checkBattleReferenceCommands({ rewriteBattleMonsterReferences }, { battleReferencesForMonster }) {
   const project = projectWith({
     battles: [
-      battle(1, [7, -7, 8, -8, 9, -9]),
+      battle(1, [7, -7, 8, -8, 9, -9], { battleMacro: 12 }),
       battle(2, [0, 7])
     ]
   });
@@ -243,13 +245,38 @@ function checkBattleReferenceCommands({ rewriteBattleMonsterReferences }, { batt
 
   const replaced = rewriteBattleMonsterReferences(project, { mode: "replace", fromId: 7, toId: 12 });
   assert(replaced.battles[0].grid[0] === 12 && replaced.battles[0].grid[1] === -12 && replaced.battles[1].grid[1] === 12, "rewriteBattleMonsterReferences replace did not preserve signed references");
+  assert(replaced.battles[0].battleMacro === 12, "rewriteBattleMonsterReferences changed an imported positive battle macro");
 
   const cleared = rewriteBattleMonsterReferences(replaced, { mode: "clear", monsterId: 12 });
   assert(cleared.battles[0].grid[0] === 0 && cleared.battles[0].grid[1] === 0 && cleared.battles[1].grid[1] === 0, "rewriteBattleMonsterReferences clear did not erase all matching cells");
+  assert(cleared.battles[0].battleMacro === 12, "rewriteBattleMonsterReferences clear changed battle macro state");
 
   const swapped = rewriteBattleMonsterReferences(project, { mode: "swap", fromId: 8, toId: 9 });
   assert(swapped.battles[0].grid[2] === 9 && swapped.battles[0].grid[3] === -9, "rewriteBattleMonsterReferences swap did not move source IDs with sign preserved");
   assert(swapped.battles[0].grid[4] === 8 && swapped.battles[0].grid[5] === -8, "rewriteBattleMonsterReferences swap did not move target IDs with sign preserved");
+  assert(swapped.battles[0].battleMacro === 12, "rewriteBattleMonsterReferences swap changed battle macro state");
+}
+
+function checkImportedBattleReferenceDiagnostics({ rewriteBattleMonsterReferences }, { validateRealmzTargetRecord }) {
+  const project = projectWith({
+    monsters: [
+      monster(5, { displayName: "Active Reference", hitDice: 4 }),
+      blankMonster(6)
+    ],
+    battles: [
+      battle(4, [5, -6, 7], { authored: false, battleMacro: 12 })
+    ]
+  });
+  const issues = validateRealmzTargetRecord(project, "battle", 4);
+  assert(!issues.some((issue) => issue.id.includes("battle-monster-missing-0")), "active imported battle monster reference was flagged as missing");
+  assert(issues.some((issue) => issue.id.includes("battle-monster-blank-1") && issue.severity === "warning"), "imported battle blank monster reference did not produce a warning");
+  assert(issues.some((issue) => issue.id.includes("battle-monster-missing-2") && issue.severity === "warning"), "imported battle missing monster reference did not produce a warning");
+  assert(issues.some((issue) => issue.id.includes("Battle macro:unresolved-target") && issue.severity === "warning"), "imported positive battle macro without a target did not stay diagnostic-visible");
+
+  const repaired = rewriteBattleMonsterReferences(project, { mode: "replace", fromId: 7, toId: 5 });
+  assert(repaired.battles[0].grid[2] === 5, "imported missing battle monster repair did not replace the missing reference");
+  assert(repaired.battles[0].grid[1] === -6, "imported missing battle monster repair changed unrelated Force Friends state");
+  assert(repaired.battles[0].battleMacro === 12, "imported missing battle monster repair changed positive battle macro state");
 }
 
 function checkPaintBattleGridCells({ paintBattleGridCells }) {
@@ -280,6 +307,10 @@ function checkBattleRuntimeMonsterLimit({ BATTLE_RUNTIME_MONSTER_LIMIT, countBat
   const validationSource = fs.readFileSync("src/editor/targetValidation.ts", "utf8");
   assert(validationSource.includes("countBattleRuntimeMonsterSlots(record.grid)"), "battle validation does not use the shared runtime monster slot counter");
   assert(validationSource.includes('recordIssue("error", recordType, recordId, "battle-monster-cap"'), "battle validation does not hard-error above the 100 placed monster cap");
+  const rustWriterSource = fs.readFileSync("src-tauri/src/realmz.rs", "utf8");
+  assert(rustWriterSource.includes("BATTLE_RUNTIME_MONSTER_LIMIT: usize = 100"), "Rust Realmz writer does not keep the runtime battle monster cap source-backed");
+  assert(rustWriterSource.includes("placed_monsters > BATTLE_RUNTIME_MONSTER_LIMIT"), "Rust battle writer does not reject authored over-cap battles");
+  assert(rustWriterSource.includes("at most {} loaded monsters"), "Rust battle writer error does not describe the loaded-monster cap");
 }
 
 function checkMonsterIconOverrideCommands({ upsertMonsterIconOverride, deleteMonsterIconOverride }) {
@@ -383,23 +414,29 @@ function checkScenarioIconResourceCommands({ upsertScenarioIconResource, deleteS
 function checkScenarioMonsterIconOverrideImport({ scenarioMonsterIconOverridesFromResources }, { monsterIconTargetPairs }) {
   const diagnostics = [];
   const overrides = scenarioMonsterIconOverridesFromResources(
-    [500, 501, 502],
+    [500, 501, 502, 600],
     [
       scenarioCicnResource(500, [1, 2, 3]),
       scenarioCicnResource(808, [4, 5, 6]),
-      scenarioCicnResource(501, [7, 8, 9])
+      scenarioCicnResource(501, [7, 8, 9]),
+      scenarioCicnResource(600, [10, 11, 12]),
+      scenarioCicnResource(908, [13, 14, 15])
     ],
     diagnostics
   );
-  assert(overrides.length === 1, "scenarioMonsterIconOverridesFromResources created overrides for incomplete or unreferenced pairs");
-  assert(overrides[0].targetBaseIconId === 500, "scenarioMonsterIconOverridesFromResources used the wrong target base icon id");
+  assert(overrides.length === 2, "scenarioMonsterIconOverridesFromResources did not create only complete referenced pairs");
+  assert(overrides[0].targetBaseIconId === 500, "scenarioMonsterIconOverridesFromResources used the wrong first target base icon id");
   assert(overrides[0].sourceKind === "scenario-resource", "scenarioMonsterIconOverridesFromResources did not mark imported overrides as scenario-resource");
   assert(overrides[0].sourceBaseResourceBase64 === "AQID", "scenarioMonsterIconOverridesFromResources did not preserve base cicn bytes");
   assert(overrides[0].sourcePairedResourceBase64 === "BAUG", "scenarioMonsterIconOverridesFromResources did not preserve paired cicn bytes");
+  assert(overrides[1].targetBaseIconId === 600, "scenarioMonsterIconOverridesFromResources omitted an alternate-set referenced icon pair");
+  assert(overrides[1].sourceBaseResourceBase64 === "CgsM", "scenarioMonsterIconOverridesFromResources did not preserve alternate-set base cicn bytes");
+  assert(overrides[1].sourcePairedResourceBase64 === "DQ4P", "scenarioMonsterIconOverridesFromResources did not preserve alternate-set paired cicn bytes");
   assert(diagnostics.some((diagnostic) => diagnostic.code === "incomplete-monster-icon-override"), "scenarioMonsterIconOverridesFromResources did not report incomplete pairs");
 
   const project = projectWith({
     monsters: [monster(1, { iconId: 500 }), monster(2, { iconId: 501 })],
+    monsterSets: [monsterSet(1, [monster(3, { iconId: 600 })])],
     monsterIconOverrides: overrides
   });
   const targets = monsterIconTargetPairs(project, {
@@ -410,6 +447,7 @@ function checkScenarioMonsterIconOverrideImport({ scenarioMonsterIconOverridesFr
   });
   const ids = targets.map((target) => target.baseId);
   assert(ids.includes(500), "imported complete scenario-owned icon override did not become a visible target pair");
+  assert(ids.includes(600), "imported alternate-set scenario-owned icon override did not become a visible target pair");
   assert(!ids.includes(501), "incomplete scenario-owned icon pair created a blank target row");
 }
 
@@ -845,6 +883,11 @@ function projectWith(overrides = {}) {
     monsterDescriptions: [],
     monsterIconOverrides: [],
     scenarioIconResources: [],
+    messages: [],
+    triggers: [],
+    extracodes: [],
+    maps: [],
+    assets: [],
     assetCatalog: { icons: [] },
     ...overrides
   };

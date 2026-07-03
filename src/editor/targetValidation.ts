@@ -46,7 +46,7 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
     issues.push(...validateI16Field(recordType, recordId, "Distance", record.dist));
     issues.push(...validateReference(project, recordType, recordId, "Before string", 1, record.messageBefore, undefined, catalog));
     issues.push(...validateReference(project, recordType, recordId, "After string", 1, record.messageAfter, undefined, catalog));
-    issues.push(...validateReference(project, recordType, recordId, "Battle macro", 8, record.battleMacro, undefined, catalog));
+    issues.push(...validateReference(project, recordType, recordId, "Battle macro", 39, record.battleMacro, undefined, catalog));
     for (const [slot, monster] of record.grid.entries()) {
       const monsterId = Math.abs(monster);
       const monsterRecord = monstersById.get(monsterId);

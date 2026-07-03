@@ -1,5 +1,6 @@
 import os from "node:os";
 import fs from "node:fs";
+import http from "node:http";
 import path from "node:path";
 import {
   createRunRoot,
@@ -9,7 +10,6 @@ import {
   loadBudgets,
   measureInteraction,
   preparePage,
-  projectUrl,
   resolveBaseUrl,
   root,
   summarizeReport,
@@ -19,6 +19,7 @@ import {
 
 const args = parseArgs(process.argv.slice(2));
 const processes = [];
+const projectServers = [];
 const keepBrowser = args.has("keep-browser");
 const baseUrlCandidates = [
   args.get("base-url"),
@@ -64,7 +65,7 @@ try {
       });
       continue;
     }
-    const scenario = await runScenario({ baseUrl, budgets, spec });
+    const scenario = await runScenario({ baseUrl, budgets, spec, projectServers });
     report.scenarios.push(scenario);
   }
 
@@ -82,6 +83,9 @@ try {
     } catch {
       // Process may already have exited.
     }
+  }
+  for (const server of projectServers) {
+    await new Promise((resolve) => server.close(resolve));
   }
 }
 
@@ -110,17 +114,19 @@ function splitProjects(value) {
     .filter(Boolean);
 }
 
-async function runScenario({ baseUrl, budgets, spec }) {
+async function runScenario({ baseUrl, budgets, spec, projectServers }) {
   const client = await launchBrowser(processes);
+  const benchmarkProjectUrl = await servedBenchmarkProjectUrl(spec.file, projectServers);
   const scenario = {
     name: spec.name,
     project: spec.file,
-    projectUrl: projectUrl(baseUrl, spec.file),
+    projectUrl: benchmarkProjectUrl,
     probes: []
   };
   const url = `${baseUrl}/?benchmarkProject=${encodeURIComponent(scenario.projectUrl)}&benchmarkScripts=1&benchmarkCombat=1&_perf=${Date.now()}`;
   const openedAt = Date.now();
   try {
+    await assertProjectUrlServesJson(scenario.projectUrl);
     await preparePage(client, url);
     const shellAt = Date.now();
     await waitForProjectLoaded(client);
@@ -173,6 +179,41 @@ async function runScenario({ baseUrl, budgets, spec }) {
   return scenario;
 }
 
+async function servedBenchmarkProjectUrl(projectFile, servers) {
+  if (projectFile.startsWith("http://") || projectFile.startsWith("https://")) {
+    return projectFile;
+  }
+  const full = path.resolve(projectFile);
+  const server = http.createServer((request, response) => {
+    const url = new URL(request.url ?? "/", "http://127.0.0.1");
+    response.setHeader("Access-Control-Allow-Origin", "*");
+    response.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    response.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    if (request.method === "OPTIONS") {
+      response.writeHead(204);
+      response.end();
+      return;
+    }
+    if (request.method !== "GET" || url.pathname !== "/project.json") {
+      response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+      response.end("Not found");
+      return;
+    }
+    response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    fs.createReadStream(full).pipe(response);
+  });
+  await new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolve);
+  });
+  servers.push(server);
+  const address = server.address();
+  if (!address || typeof address === "string") {
+    throw new Error("Could not allocate benchmark project server port.");
+  }
+  return `http://127.0.0.1:${address.port}/project.json`;
+}
+
 async function pageDiagnostics(client) {
   return evalValue(client, `
     (() => ({
@@ -189,19 +230,43 @@ async function combatPerfDiagnostics(client) {
 }
 
 async function waitForProjectLoaded(client) {
-  await waitFor(async () => evalValue(client, `
+  await waitFor(async () => {
+    const state = await evalValue(client, `
     (() => {
       const text = document.body.innerText;
-      return Boolean(document.querySelector(".domain-rail"))
-        && !text.includes("Benchmark project load failed")
-        && (
-          text.includes("Action Points")
-          || text.includes("Scenario Maps")
-          || text.includes("Combat")
-          || text.includes("Scenario")
-        );
+      return {
+        failed: text.includes("Benchmark project load failed"),
+        failureText: (text.match(/Benchmark project load failed:[^\\n]+/) ?? [])[0] ?? "",
+        loaded: Boolean(document.querySelector(".domain-rail"))
+          && Boolean(document.querySelector(".rail-tool.domain-combat"))
+          && !text.includes("No project loaded")
+          && !text.includes("Awaiting project")
+      };
     })()
-  `), 60_000, "Timed out waiting for benchmark project.");
+  `);
+    if (state.failed) throw new Error(state.failureText || "Benchmark project load failed.");
+    return state.loaded;
+  }, 60_000, "Timed out waiting for benchmark project.");
+}
+
+async function assertProjectUrlServesJson(url) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 60_000);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    const text = await response.text();
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    try {
+      JSON.parse(text);
+    } catch {
+      const preview = text.slice(0, 80).replace(/\s+/g, " ").trim();
+      throw new Error(`Benchmark project URL did not return JSON: ${preview}`);
+    }
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function runToolSwitches(client, budgets, scenario) {
@@ -803,7 +868,7 @@ function prepareCombatBenchmarkProject(sourceProject) {
   }
   project.validation = normalizeBenchmarkValidation(project.validation);
   const outputPath = path.join(outputDir, "project.json");
-  fs.writeFileSync(outputPath, `${JSON.stringify(project, null, 2)}\n`, "utf8");
+  writeBenchmarkProject(outputPath, project);
   return outputPath;
 }
 
@@ -838,8 +903,28 @@ function prepareCombatImportedBenchmarkProject(sourceProject) {
   }
   project.validation = normalizeBenchmarkValidation(project.validation);
   const outputPath = path.join(outputDir, "project.json");
-  fs.writeFileSync(outputPath, `${JSON.stringify(project, null, 2)}\n`, "utf8");
+  writeBenchmarkProject(outputPath, project);
   return outputPath;
+}
+
+function writeBenchmarkProject(outputPath, project) {
+  project.semanticSchema = emptyBenchmarkSemanticSchema();
+  fs.writeFileSync(outputPath, `${JSON.stringify(project)}\n`, "utf8");
+}
+
+function emptyBenchmarkSemanticSchema() {
+  return {
+    schemaVersion: 4,
+    sources: [],
+    records: [],
+    entities: [],
+    links: [],
+    reverseLinks: {},
+    evidence: [],
+    diagnostics: [],
+    decoding: { ed3Reachability: [], dispatcherNoops: [], confidenceDebt: [] },
+    summary: { sourceCount: 0, recordCount: 0, entityCount: 0, linkCount: 0, diagnosticCount: 0 }
+  };
 }
 
 function normalizeBenchmarkValidation(validation) {
