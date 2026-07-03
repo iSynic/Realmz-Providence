@@ -1173,9 +1173,12 @@ fn import_monster_icon_override_pairs(
     let by_id = entries
         .iter()
         .filter(|entry| entry.resource_type == "cicn")
-        .map(|entry| (entry.id.abs(), entry))
+        .map(|entry| (absolute_i16_as_i32(entry.id), entry))
         .collect::<BTreeMap<_, _>>();
-    let targets = icon_ids.iter().map(|id| id.abs()).collect::<BTreeSet<_>>();
+    let targets = icon_ids
+        .iter()
+        .filter_map(|id| monster_icon_target_id(*id))
+        .collect::<BTreeSet<_>>();
     for target in targets {
         let Some(base) = by_id.get(&target) else {
             continue;
@@ -1197,13 +1200,13 @@ fn import_monster_icon_override_pairs(
         if project
             .monster_icon_overrides
             .iter()
-            .any(|override_entry| override_entry.target_base_icon_id == i32::from(target))
+            .any(|override_entry| override_entry.target_base_icon_id == target)
         {
             continue;
         }
         project.monster_icon_overrides.push(MonsterIconOverride {
-            target_base_icon_id: i32::from(target),
-            source_base_icon_id: i32::from(target),
+            target_base_icon_id: target,
+            source_base_icon_id: target,
             source_label: Some(format!("Imported scenario override {target}")),
             source_kind: MonsterIconOverrideSource::ScenarioResource,
             source_base_resource_base64: STANDARD.encode(&base.data),
@@ -1214,6 +1217,15 @@ fn import_monster_icon_override_pairs(
     project
         .monster_icon_overrides
         .sort_by_key(|override_entry| override_entry.target_base_icon_id);
+}
+
+fn absolute_i16_as_i32(value: i16) -> i32 {
+    i32::from(value).abs()
+}
+
+fn monster_icon_target_id(value: i16) -> Option<i32> {
+    let target = absolute_i16_as_i32(value);
+    (target <= i32::from(i16::MAX)).then_some(target)
 }
 
 fn hydrate_custom_spell_names(source_path: &Path, project: &mut ProvidenceProject) -> Result<()> {
@@ -1952,6 +1964,14 @@ mod tests {
         assert_eq!(normalize_icon_id(969), Some(969));
         assert_eq!(normalize_icon_id(-462), Some(-462));
         assert_eq!(normalize_icon_id(-1462), Some(-462));
+    }
+
+    #[test]
+    fn monster_icon_target_normalization_does_not_overflow_i16_min() {
+        assert_eq!(monster_icon_target_id(385), Some(385));
+        assert_eq!(monster_icon_target_id(-385), Some(385));
+        assert_eq!(monster_icon_target_id(i16::MIN), None);
+        assert_eq!(absolute_i16_as_i32(i16::MIN), 32768);
     }
 
     #[test]
