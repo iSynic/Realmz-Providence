@@ -21,9 +21,10 @@ export type ScriptTargetOption = {
   libraryAsset?: LibraryCatalog["assets"][number];
 };
 
-const targetOptionsCache = new WeakMap<Project, Map<string, ScriptTargetOption[]>>();
-const catalogIds = new WeakMap<LibraryCatalog, number>();
-let nextCatalogId = 1;
+const targetOptionsCache = new Map<string, ScriptTargetOption[]>();
+const objectIds = new WeakMap<object, number>();
+let nextObjectId = 1;
+const MAX_TARGET_OPTIONS_CACHE_ENTRIES = 96;
 
 const SIGNED_DIRECT_TARGET_BEHAVIOR: Record<number, string> = {
   1: "no wait",
@@ -97,17 +98,19 @@ export function TargetPicker({
   const config = targetPickerConfig(opcode);
   const [query, setQuery] = useState("");
   const [targetsLoaded, setTargetsLoaded] = useState(false);
+  const projectLoadKey = project ? `${project.scenario.projectPath || project.source?.sourcePath || project.scenario.name}` : "none";
+  const targetDependencyKey = targetOptionsDependencyKey(project, opcode, catalog);
   useEffect(() => {
     setQuery("");
     setTargetsLoaded(false);
-  }, [opcode, project]);
+  }, [opcode, projectLoadKey]);
   const resolvedValue = resolveSignedTargetValue(opcode, value);
-  const selectedStub = useMemo(() => targetOptionForOpcodeValue(project, opcode, value, catalog), [catalog, opcode, project, value]);
+  const selectedStub = useMemo(() => targetOptionForOpcodeValue(project, opcode, value, catalog), [opcode, projectLoadKey, targetDependencyKey, value]);
   const effectiveTargetsLoaded = !showSearch || targetsLoaded;
   const targets = useMemo(() => {
     if (!effectiveTargetsLoaded && !query.trim()) return selectedStub ? [selectedStub] : [];
     return targetOptionsForOpcode(project, opcode, catalog);
-  }, [catalog, effectiveTargetsLoaded, opcode, project, query, selectedStub]);
+  }, [effectiveTargetsLoaded, opcode, projectLoadKey, query, selectedStub, targetDependencyKey]);
   const filteredTargetBase = effectiveTargetsLoaded || query.trim() ? filterTargetOptions(targets, query) : selectedStub ? [selectedStub] : [];
   const typedSoundTarget = soundReferenceOptionForQuery(opcode, query);
   const filteredTargets = typedSoundTarget && !filteredTargetBase.some((target) => target.value === typedSoundTarget.value)
@@ -256,13 +259,8 @@ export function targetPickerConfig(opcode: number) {
 export function targetOptionsForOpcode(project: Project | null, opcode: number, catalog?: LibraryCatalog | null): ScriptTargetOption[] {
   if (!project) return [];
   const code = normalizeStepOpcode(opcode);
-  const cacheKey = `${catalogCacheKey(catalog)}:${code}`;
-  let projectCache = targetOptionsCache.get(project);
-  if (!projectCache) {
-    projectCache = new Map();
-    targetOptionsCache.set(project, projectCache);
-  }
-  const cached = projectCache.get(cacheKey);
+  const cacheKey = targetOptionsDependencyKey(project, code, catalog);
+  const cached = targetOptionsCache.get(cacheKey);
   if (cached) return cached;
   const options: ScriptTargetOption[] = [];
   addTypedProjectTargets(project, code, options, catalog);
@@ -374,7 +372,11 @@ export function targetOptionsForOpcode(project: Project | null, opcode: number, 
     }
   }
   const result = dedupeTargetOptions(options).sort((a, b) => a.value - b.value || a.label.localeCompare(b.label));
-  projectCache.set(cacheKey, result);
+  targetOptionsCache.set(cacheKey, result);
+  if (targetOptionsCache.size > MAX_TARGET_OPTIONS_CACHE_ENTRIES) {
+    const oldest = targetOptionsCache.keys().next().value;
+    if (oldest) targetOptionsCache.delete(oldest);
+  }
   return result;
 }
 
@@ -388,13 +390,35 @@ export function targetOptionForOpcodeValue(project: Project | null, opcode: numb
   return selected;
 }
 
-function catalogCacheKey(catalog?: LibraryCatalog | null) {
-  if (!catalog) return "none";
-  const existing = catalogIds.get(catalog);
+function objectCacheKey(value: object | null | undefined) {
+  if (!value) return "none";
+  const existing = objectIds.get(value);
   if (existing) return existing;
-  const next = nextCatalogId++;
-  catalogIds.set(catalog, next);
+  const next = nextObjectId++;
+  objectIds.set(value, next);
   return next;
+}
+
+function targetOptionsDependencyKey(project: Project | null, opcode: number, catalog?: LibraryCatalog | null) {
+  if (!project) return `none:${normalizeStepOpcode(opcode)}:${objectCacheKey(catalog?.assets)}`;
+  const code = normalizeStepOpcode(opcode);
+  const catalogAssets = objectCacheKey(catalog?.assets);
+  const assetCatalog = project.assetCatalog;
+  const parts: Array<string | number> = [code];
+  if (code === 1) parts.push("messages", objectCacheKey(project.messages), "triggers", objectCacheKey(project.triggers));
+  else if ([2, 48, 56, 107].includes(code)) parts.push("battles", objectCacheKey(project.battles), "triggers", objectCacheKey(project.triggers));
+  else if (code === 127) parts.push("monsters", objectCacheKey(project.monsters), "triggers", objectCacheKey(project.triggers));
+  else if (code === 10) parts.push("treasures", objectCacheKey(project.treasures), "triggers", objectCacheKey(project.triggers));
+  else if ([6, 49, 51].includes(code)) parts.push("shops", objectCacheKey(project.shops), "triggers", objectCacheKey(project.triggers));
+  else if ([4, 35, 104].includes(code)) parts.push("simple", objectCacheKey(project.simpleEncounters), "triggers", objectCacheKey(project.triggers));
+  else if ([5, 44].includes(code)) parts.push("complex", objectCacheKey(project.complexEncounters), "triggers", objectCacheKey(project.triggers));
+  else if (code === 47) parts.push("quests", objectCacheKey(project.questLabels));
+  else if (code === 9) parts.push("assets", objectCacheKey(project.assets), "sounds", objectCacheKey(assetCatalog?.sounds), "catalog", catalogAssets);
+  else if (code === 27) parts.push("assets", objectCacheKey(project.assets), "pictures", objectCacheKey(assetCatalog?.pictures), "icons", objectCacheKey(assetCatalog?.icons), "catalog", catalogAssets);
+  else if (code === 97 || code === 106) parts.push("maps", objectCacheKey(project.maps));
+  else if (isDirectMacroOpcode(code)) parts.push("triggers", objectCacheKey(project.triggers));
+  else parts.push("project", objectCacheKey(project));
+  return parts.join(":");
 }
 
 function optionFromTypedProjectTarget(project: Project, code: number, id: number, catalog?: LibraryCatalog | null): ScriptTargetOption | null {

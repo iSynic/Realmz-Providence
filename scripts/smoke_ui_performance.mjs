@@ -329,12 +329,14 @@ async function runApProbes(client, budgets, scenario) {
   `, `document.querySelector(".script-list-filter")?.value === "Action Point 1"`);
 
   await probe(client, scenario, budgets, "AP record selection", "recordSelection", `
-    (() => {
+    (async () => {
       const input = document.querySelector(".script-list-filter");
       if (input) {
-        input.value = "";
+        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+        setter?.call(input, "");
         input.dispatchEvent(new Event("input", { bubbles: true }));
       }
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       const button = [...document.querySelectorAll(".realmz-script-list button")]
         .find((candidate) => !candidate.classList.contains("selected"));
       button?.click();
