@@ -41,7 +41,10 @@ type SearchableRow = GlobalSearchResult & {
   aliases?: string[];
 };
 
-const projectIndexCache = new WeakMap<Project, { noCatalog: SearchableRow[] | null; catalogs: WeakMap<LibraryCatalog, SearchableRow[]> }>();
+const objectIds = new WeakMap<object, number>();
+let nextObjectId = 1;
+const MAX_GLOBAL_SEARCH_PROJECT_CACHE_ENTRIES = 48;
+const projectIndexCache = new Map<string, SearchableRow[]>();
 const catalogIndexCache = new WeakMap<LibraryCatalog, SearchableRow[]>();
 const docsRows = buildDocsRows();
 const scopeOrder: GlobalSearchScope[] = ["scenario", "assets", "libraries", "docs", "diagnostics"];
@@ -75,13 +78,9 @@ export function searchGlobalIndex(index: GlobalSearchIndex, query: string, filte
 }
 
 function projectRows(project: Project, catalog?: LibraryCatalog | null) {
-  const cached = projectIndexCache.get(project);
-  if (catalog) {
-    const catalogRows = cached?.catalogs.get(catalog);
-    if (catalogRows) return catalogRows;
-  } else if (cached?.noCatalog) {
-    return cached.noCatalog;
-  }
+  const cacheKey = projectRowsDependencyKey(project, catalog);
+  const cached = projectIndexCache.get(cacheKey);
+  if (cached) return cached;
   const rows: SearchableRow[] = [];
   const add = (row: SearchableRow) => rows.push(withSearchText(row));
 
@@ -367,11 +366,60 @@ function projectRows(project: Project, catalog?: LibraryCatalog | null) {
   addAssetRows(project, add);
   addDiagnosticRows(project, add);
 
-  const nextCache = cached ?? { noCatalog: null, catalogs: new WeakMap<LibraryCatalog, SearchableRow[]>() };
-  if (catalog) nextCache.catalogs.set(catalog, rows);
-  else nextCache.noCatalog = rows;
-  projectIndexCache.set(project, nextCache);
+  writeProjectRowsCache(cacheKey, rows);
   return rows;
+}
+
+function projectRowsDependencyKey(project: Project, catalog?: LibraryCatalog | null) {
+  return [
+    "scenario", objectCacheKey(project.scenario),
+    "source", objectCacheKey(project.source),
+    "maps", objectCacheKey(project.maps),
+    "mapRecords", objectCacheKey(project.mapRecords),
+    "triggers", objectCacheKey(project.triggers),
+    "ed3Reachability", objectCacheKey(project.semanticSchema?.decoding?.ed3Reachability),
+    "extracodes", objectCacheKey(project.extracodes),
+    "messages", objectCacheKey(project.messages),
+    "optionLabels", objectCacheKey(project.optionLabels),
+    "simple", objectCacheKey(project.simpleEncounters),
+    "complex", objectCacheKey(project.complexEncounters),
+    "thief", objectCacheKey(project.thiefEncounters),
+    "timed", objectCacheKey(project.timedEncounters),
+    "battles", objectCacheKey(project.battles),
+    "monsters", objectCacheKey(project.monsters),
+    "treasures", objectCacheKey(project.treasures),
+    "shops", objectCacheKey(project.shops),
+    "scenarioItems", objectCacheKey(project.scenarioItems),
+    "spellOverrides", objectCacheKey(project.spellOverrides),
+    "raceOverrides", objectCacheKey(project.raceOverrides),
+    "casteOverrides", objectCacheKey(project.casteOverrides),
+    "ruleNames", objectCacheKey(project.ruleNames),
+    "questLabels", objectCacheKey(project.questLabels),
+    "assets", objectCacheKey(project.assets),
+    "pictures", objectCacheKey(project.assetCatalog.pictures),
+    "icons", objectCacheKey(project.assetCatalog.icons),
+    "sounds", objectCacheKey(project.assetCatalog.sounds),
+    "tilesets", objectCacheKey(project.assetCatalog.tilesets),
+    "validation", objectCacheKey(project.validation),
+    "diagnostics", objectCacheKey(project.diagnostics),
+    "catalog", objectCacheKey(catalog)
+  ].join(":");
+}
+
+function objectCacheKey(value: object | null | undefined) {
+  if (!value) return "none";
+  const existing = objectIds.get(value);
+  if (existing) return String(existing);
+  const next = nextObjectId++;
+  objectIds.set(value, next);
+  return String(next);
+}
+
+function writeProjectRowsCache(key: string, rows: SearchableRow[]) {
+  projectIndexCache.set(key, rows);
+  if (projectIndexCache.size <= MAX_GLOBAL_SEARCH_PROJECT_CACHE_ENTRIES) return;
+  const firstKey = projectIndexCache.keys().next().value;
+  if (firstKey) projectIndexCache.delete(firstKey);
 }
 
 function catalogRows(catalog: LibraryCatalog) {

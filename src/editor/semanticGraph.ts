@@ -49,7 +49,12 @@ const MUTATION_LINK_KINDS = new Set([
   "copied_to_cache"
 ]);
 
-const ed3ReachabilityCache = new WeakMap<Project, Map<number, NonNullable<Project["semanticSchema"]["decoding"]>["ed3Reachability"][number]>>();
+type Ed3ReachabilityRow = NonNullable<Project["semanticSchema"]["decoding"]>["ed3Reachability"][number];
+
+const objectIds = new WeakMap<object, number>();
+let nextObjectId = 1;
+const MAX_ED3_REACHABILITY_CACHE_ENTRIES = 48;
+const ed3ReachabilityCache = new Map<string, Map<number, Ed3ReachabilityRow>>();
 
 export type SemanticRecordGroup = {
   source: SemanticSource;
@@ -226,12 +231,29 @@ export function triggerEntityForRecord(project: Project | null, trigger: Trigger
 
 export function ed3ReachabilityFor(project: Project | null, recordIndex: number) {
   if (!project) return null;
-  let cache = ed3ReachabilityCache.get(project);
+  const cacheKey = objectCacheKey(project.semanticSchema?.decoding?.ed3Reachability);
+  let cache = ed3ReachabilityCache.get(cacheKey);
   if (!cache) {
     cache = new Map((project.semanticSchema?.decoding?.ed3Reachability ?? []).map((row) => [row.recordIndex, row]));
-    ed3ReachabilityCache.set(project, cache);
+    writeEd3ReachabilityCache(cacheKey, cache);
   }
   return cache.get(recordIndex) ?? null;
+}
+
+function objectCacheKey(value: object | null | undefined) {
+  if (!value) return "none";
+  const existing = objectIds.get(value);
+  if (existing) return String(existing);
+  const next = nextObjectId++;
+  objectIds.set(value, next);
+  return String(next);
+}
+
+function writeEd3ReachabilityCache(key: string, rows: Map<number, Ed3ReachabilityRow>) {
+  ed3ReachabilityCache.set(key, rows);
+  if (ed3ReachabilityCache.size <= MAX_ED3_REACHABILITY_CACHE_ENTRIES) return;
+  const firstKey = ed3ReachabilityCache.keys().next().value;
+  if (firstKey) ed3ReachabilityCache.delete(firstKey);
 }
 
 export function extraActionPointClassification(project: Project | null, trigger: TriggerRecord) {

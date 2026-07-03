@@ -30,10 +30,14 @@ type ItemUsage = {
 
 type ItemEntity = SemanticEntity | LibraryEntity;
 
-const itemReferenceOptionCache = new WeakMap<Project, { noCatalog: ItemReferenceOption[] | null; catalogs: WeakMap<LibraryCatalog, ItemReferenceOption[]> }>();
+const objectIds = new WeakMap<object, number>();
+let nextObjectId = 1;
+const MAX_ITEM_REFERENCE_CACHE_ENTRIES = 64;
+const itemReferenceOptionCache = new Map<string, ItemReferenceOption[]>();
 
 export function itemReferenceOptions(project: Project, catalog?: LibraryCatalog | null): ItemReferenceOption[] {
-  const cached = readCachedItemReferenceOptions(project, catalog);
+  const cacheKey = itemReferenceDependencyKey(project, catalog);
+  const cached = itemReferenceOptionCache.get(cacheKey);
   if (cached) return cached;
   const entities = [
     ...(catalog?.entities.filter((entity) => entity.type === "item" || entity.type === "item-reference") ?? [])
@@ -94,7 +98,7 @@ export function itemReferenceOptions(project: Project, catalog?: LibraryCatalog 
       };
     })
     .sort((a, b) => a.value - b.value || a.label.localeCompare(b.label));
-  writeCachedItemReferenceOptions(project, catalog, options);
+  writeItemReferenceCache(cacheKey, options);
   return options;
 }
 
@@ -240,24 +244,29 @@ function emptyItemUsage(): ItemUsage {
   return { treasureSlots: 0, shopSlots: 0, semanticRefs: 0 };
 }
 
-function readCachedItemReferenceOptions(project: Project, catalog?: LibraryCatalog | null) {
-  const entry = itemReferenceOptionCache.get(project);
-  if (!entry) return null;
-  if (!catalog) return entry.noCatalog;
-  return entry.catalogs.get(catalog) ?? null;
+function itemReferenceDependencyKey(project: Project, catalog?: LibraryCatalog | null) {
+  return [
+    "scenarioItems", objectCacheKey(project.scenarioItems),
+    "treasures", objectCacheKey(project.treasures),
+    "shops", objectCacheKey(project.shops),
+    "catalogEntities", objectCacheKey(catalog?.entities)
+  ].join(":");
 }
 
-function writeCachedItemReferenceOptions(project: Project, catalog: LibraryCatalog | null | undefined, options: ItemReferenceOption[]) {
-  let entry = itemReferenceOptionCache.get(project);
-  if (!entry) {
-    entry = { noCatalog: null, catalogs: new WeakMap<LibraryCatalog, ItemReferenceOption[]>() };
-    itemReferenceOptionCache.set(project, entry);
-  }
-  if (catalog) {
-    entry.catalogs.set(catalog, options);
-  } else {
-    entry.noCatalog = options;
-  }
+function objectCacheKey(value: object | null | undefined) {
+  if (!value) return "none";
+  const existing = objectIds.get(value);
+  if (existing) return String(existing);
+  const next = nextObjectId++;
+  objectIds.set(value, next);
+  return String(next);
+}
+
+function writeItemReferenceCache(key: string, options: ItemReferenceOption[]) {
+  itemReferenceOptionCache.set(key, options);
+  if (itemReferenceOptionCache.size <= MAX_ITEM_REFERENCE_CACHE_ENTRIES) return;
+  const firstKey = itemReferenceOptionCache.keys().next().value;
+  if (firstKey) itemReferenceOptionCache.delete(firstKey);
 }
 
 function formatItemUsage(usage: ItemUsage) {
