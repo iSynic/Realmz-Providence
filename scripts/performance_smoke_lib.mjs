@@ -253,12 +253,37 @@ export function summarizeReport(report) {
   const measured = probes.filter((probe) => !probe.skipped);
   const failed = measured.filter((probe) => probe.status === "fail" || probe.longTaskStatus === "fail");
   const warned = measured.filter((probe) => probe.status === "warn" || probe.longTaskStatus === "warn");
+  const classified = (classification) => measured.filter((probe) => probe.classification === classification).length;
+  const summarizeDebug = (debug) => {
+    if (!debug) return null;
+    const { bodyPreview: _bodyPreview, ...summary } = debug;
+    return summary;
+  };
   return {
     ok: failed.length === 0,
     failed: failed.length,
     warned: warned.length,
+    functionalFailures: classified("functional-failure"),
+    performanceFailures: classified("performance-failure"),
+    performanceWarnings: classified("performance-warning"),
     measured: measured.length,
-    skipped: probes.length - measured.length + report.scenarios.filter((scenario) => scenario.skipped).length
+    skipped: probes.length - measured.length + report.scenarios.filter((scenario) => scenario.skipped).length,
+    failedProbes: failed.map((probe) => ({
+      label: probe.label,
+      budgetKey: probe.budgetKey,
+      classification: probe.classification ?? "unclassified",
+      error: probe.error ?? null,
+      debug: summarizeDebug(probe.debug)
+    })),
+    warnedProbes: warned.map((probe) => ({
+      label: probe.label,
+      budgetKey: probe.budgetKey,
+      classification: probe.classification ?? "unclassified",
+      durationMs: probe.durationMs,
+      budgetDurationMs: probe.budgetDurationMs ?? null,
+      maxLongTaskMs: probe.maxLongTaskMs ?? 0,
+      debug: summarizeDebug(probe.debug)
+    }))
   };
 }
 

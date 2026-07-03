@@ -135,7 +135,7 @@ async function runScenario({ baseUrl, budgets, spec, projectServers }) {
     const browserVersion = await client.send("Browser.getVersion").catch(() => null);
     scenario.browser = browserVersion?.product ?? "unknown";
     scenario.viewport = await evalValue(client, "({ width: window.innerWidth, height: window.innerHeight, devicePixelRatio: window.devicePixelRatio })");
-    scenario.probes.push({
+    await pushProbe(client, scenario, {
       label: "Cold project open",
       budgetKey: "coldProjectOpen",
       durationMs: coldOpenMs,
@@ -162,11 +162,12 @@ async function runScenario({ baseUrl, budgets, spec, projectServers }) {
     scenario.combatPerf = await combatPerfDiagnostics(client).catch(() => []);
   } catch (error) {
     const diagnostics = await pageDiagnostics(client).catch(() => ({}));
-    scenario.probes.push({
+    await pushProbe(client, scenario, {
       label: "Scenario run",
       budgetKey: "coldProjectOpen",
       durationMs: 0,
       status: "fail",
+      failureKind: "functional",
       error: String(error?.message ?? error),
       diagnostics,
       longTasks: [],
@@ -471,7 +472,7 @@ async function runCombatProbes(client, budgets, scenario, { importedHeavy = fals
   `);
   const warmedBattleImages = await waitForCombatPreviews(client, "Timed out waiting for warmed battle images.", { strict: false, timeoutMs: 5_000 });
   if (!warmedBattleImages) {
-    scenario.probes.push({
+    await pushProbe(client, scenario, {
       label: "Combat warmed image readiness",
       budgetKey: "recordSelection",
       durationMs: 0,
@@ -480,8 +481,7 @@ async function runCombatProbes(client, budgets, scenario, { importedHeavy = fals
       reason: "Visible lazy battle previews did not all report ready during warm-up.",
       longTasks: [],
       maxLongTaskMs: 0,
-      longTaskStatus: "pass",
-      debug: await smokeDebug(client).catch(() => null)
+      longTaskStatus: "pass"
     });
   }
   await evalValue(client, "new Promise((resolve) => setTimeout(resolve, 350))");
@@ -803,44 +803,108 @@ async function probe(client, scenario, budgets, label, budgetKey, actionExpressi
   try {
     const result = await measureInteraction(client, label, budgetKey, budgets, actionExpression, settleExpression, options);
     if (result.actionResult === false) {
-      scenario.probes.push({
+      await pushProbe(client, scenario, {
         ...result,
         status: "skip",
         skipped: true,
-        reason: "Target control was not available in this scenario state.",
-        debug: await smokeDebug(client)
+        reason: "Target control was not available in this scenario state."
       });
     } else {
-      scenario.probes.push(result);
+      await pushProbe(client, scenario, result);
     }
   } catch (error) {
-    scenario.probes.push({
+    await pushProbe(client, scenario, {
       label,
       budgetKey,
       durationMs: 0,
       status: "fail",
+      failureKind: "functional",
       error: String(error?.message ?? error),
       longTasks: [],
       maxLongTaskMs: 0,
-      longTaskStatus: "pass",
-      debug: await smokeDebug(client).catch(() => null)
+      longTaskStatus: "pass"
     });
   }
 }
 
-async function smokeDebug(client) {
-  return evalValue(client, `
-    (() => ({
-      activeDomain: document.querySelector(".rail-tool.active")?.className ?? null,
-      activeEditor: document.querySelector("[data-active-editor]")?.getAttribute("data-active-editor") ?? null,
-      loading: document.body.innerText.includes("Loading editor section"),
-      visibleButtons: document.querySelectorAll("button").length,
-      assetCards: document.querySelectorAll(".managed-asset-card").length,
-      combatPreviews: document.querySelectorAll("[data-combat-preview='monster-icon']").length,
-      mapCanvas: Boolean(document.querySelector(".room-canvas-overlay")),
-      targetPickers: document.querySelectorAll(".realmz-target-picker").length
-    }))()
+async function pushProbe(client, scenario, probe) {
+  const classification = classifyProbe(probe);
+  const enriched = { ...probe, classification };
+  if (classification !== "pass" && !enriched.debug) {
+    enriched.debug = await smokeDebug(client, scenario).catch(() => null);
+  }
+  scenario.probes.push(enriched);
+}
+
+function classifyProbe(probe) {
+  if (probe.skipped || probe.status === "skip") return "skipped";
+  if (probe.failureKind === "functional" || probe.error) return "functional-failure";
+  if (probe.status === "fail" || probe.longTaskStatus === "fail") return "performance-failure";
+  if (probe.status === "warn" || probe.longTaskStatus === "warn") return "performance-warning";
+  return "pass";
+}
+
+async function smokeDebug(client, scenario) {
+  const debug = await evalValue(client, `
+    (() => {
+      const textOf = (selector) => document.querySelector(selector)?.textContent?.trim() ?? null;
+      const selectedText = (selector) => {
+        const element = document.querySelector(selector);
+        return element?.textContent?.replace(/\\s+/g, " ").trim().slice(0, 240) ?? null;
+      };
+      const count = (selector) => document.querySelectorAll(selector).length;
+      const activeRail = document.querySelector(".rail-tool.active");
+      const activeDomainClass = activeRail ? [...activeRail.classList].find((entry) => entry.startsWith("domain-")) : null;
+      const activeCombatTab = [...document.querySelectorAll(".combat-tabs button")]
+        .find((button) => button.classList.contains("active") || button.getAttribute("aria-selected") === "true");
+      const activeAssetTab = [...document.querySelectorAll(".asset-section-tabs button")]
+        .find((button) => button.classList.contains("active") || button.getAttribute("aria-selected") === "true");
+      return {
+        href: location.href,
+        title: document.title,
+        activeDomain: activeDomainClass?.replace("domain-", "") ?? null,
+        activeToolText: activeRail?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+        activeEditor: document.querySelector("[data-active-editor]")?.getAttribute("data-active-editor") ?? null,
+        activeCombatTab: activeCombatTab?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+        activeAssetTab: activeAssetTab?.textContent?.replace(/\\s+/g, " ").trim() ?? null,
+        loading: document.body.innerText.includes("Loading editor section"),
+        selectedRecords: {
+          map: selectedText(".map-list button.selected, .map-list button.active"),
+          actionPoint: selectedText(".realmz-script-list button.selected"),
+          encounter: selectedText(".encounter-list button.selected, .encounter-record-list button.selected"),
+          battle: textOf(".battle-header-fields input"),
+          scenarioMonster: selectedText(".scenario-monster-list .combat-record-scroll button.selected"),
+          libraryMonster: selectedText(".monster-library-list .combat-record-scroll button.selected"),
+          asset: selectedText(".managed-asset-card.selected, .asset-selection-inspector strong"),
+          textRecord: selectedText(".text-record-list button.selected")
+        },
+        selectorCounts: {
+          buttons: count("button"),
+          inputs: count("input"),
+          selects: count("select"),
+          railTools: count(".rail-tool"),
+          activeRailTools: count(".rail-tool.active"),
+          scriptRecords: count(".realmz-script-list button"),
+          encounterRecords: count(".encounter-list button, .encounter-record-list button"),
+          scenarioMonsterRows: count(".scenario-monster-list .combat-record-scroll button"),
+          libraryMonsterRows: count(".monster-library-list .combat-record-scroll button"),
+          battleCanvases: count("[data-battle-board-canvas='true']"),
+          mapCanvases: count(".room-canvas-overlay"),
+          assetCards: count(".managed-asset-card"),
+          combatPreviews: count("[data-combat-preview='monster-icon']"),
+          targetPickers: count(".realmz-target-picker")
+        },
+        statusText: document.querySelector(".status-bar, [role='status']")?.textContent?.replace(/\\s+/g, " ").trim().slice(0, 500) ?? null,
+        bodyPreview: document.body.innerText.replace(/\\s+/g, " ").trim().slice(0, 1000)
+      };
+    })()
   `);
+  return {
+    scenarioName: scenario?.name ?? null,
+    projectPath: scenario?.project ?? null,
+    projectUrl: scenario?.projectUrl ?? null,
+    ...debug
+  };
 }
 
 function prepareCombatBenchmarkProject(sourceProject) {
