@@ -11,13 +11,19 @@ export type ContentUsageLink = {
 };
 
 const emptyUsageLinks: ContentUsageLink[] = [];
-const textUsageIndexes = new WeakMap<Project, {
+type TextUsageIndex = {
   messageLinks: Map<number, ContentUsageLink[]>;
   optionLabelLinks: Map<number, ContentUsageLink[]>;
-}>();
-const resourceUsageIndexes = new WeakMap<Project, {
+};
+type ResourceUsageIndex = {
   mapCicnLinks: Map<number, ContentUsageLink[]>;
-}>();
+};
+
+const objectIds = new WeakMap<object, number>();
+let nextObjectId = 1;
+const MAX_CONTENT_USAGE_CACHE_ENTRIES = 96;
+const textUsageIndexes = new Map<string, TextUsageIndex>();
+const resourceUsageIndexes = new Map<string, ResourceUsageIndex>();
 
 export function classicTextByteLength(text: string) {
   return Array.from(text ?? "").length;
@@ -36,13 +42,14 @@ export function optionLabelUsageLinks(project: Project, optionLabelId: number): 
 }
 
 function textUsageIndex(project: Project) {
-  const cached = textUsageIndexes.get(project);
+  const cacheKey = textUsageDependencyKey(project);
+  const cached = textUsageIndexes.get(cacheKey);
   if (cached) return cached;
   const index = {
     messageLinks: buildMessageUsageLinks(project),
     optionLabelLinks: buildOptionLabelUsageLinks(project)
   };
-  textUsageIndexes.set(project, index);
+  writeLimitedCache(textUsageIndexes, cacheKey, index);
   return index;
 }
 
@@ -210,13 +217,46 @@ export function resourceUsageLinks(project: Project, resourceType: string | null
 }
 
 function resourceUsageIndex(project: Project) {
-  const cached = resourceUsageIndexes.get(project);
+  const cacheKey = resourceUsageDependencyKey(project);
+  const cached = resourceUsageIndexes.get(cacheKey);
   if (cached) return cached;
   const index = {
     mapCicnLinks: buildMapCicnUsageLinks(project)
   };
-  resourceUsageIndexes.set(project, index);
+  writeLimitedCache(resourceUsageIndexes, cacheKey, index);
   return index;
+}
+
+function textUsageDependencyKey(project: Project) {
+  return [
+    "triggers", objectCacheKey(project.triggers),
+    "battles", objectCacheKey(project.battles),
+    "simple", objectCacheKey(project.simpleEncounters),
+    "complex", objectCacheKey(project.complexEncounters),
+    "extracodes", objectCacheKey(project.extracodes),
+    "randomLevels", objectCacheKey(project.randomLevels),
+    "ed3Reachability", objectCacheKey(project.semanticSchema?.decoding?.ed3Reachability)
+  ].join(":");
+}
+
+function resourceUsageDependencyKey(project: Project) {
+  return ["maps", objectCacheKey(project.maps)].join(":");
+}
+
+function objectCacheKey(value: object | null | undefined) {
+  if (!value) return "none";
+  const existing = objectIds.get(value);
+  if (existing) return String(existing);
+  const next = nextObjectId++;
+  objectIds.set(value, next);
+  return String(next);
+}
+
+function writeLimitedCache<T>(cache: Map<string, T>, key: string, value: T) {
+  cache.set(key, value);
+  if (cache.size <= MAX_CONTENT_USAGE_CACHE_ENTRIES) return;
+  const firstKey = cache.keys().next().value;
+  if (firstKey) cache.delete(firstKey);
 }
 
 function buildMapCicnUsageLinks(project: Project) {

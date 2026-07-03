@@ -26,10 +26,14 @@ export type ProjectRecordIndex = {
   resources: Map<string, { label: string; type: string; resourceType: string; resourceId: number; previewPath?: string | null; source?: string | null }>;
 };
 
-const indexCache = new WeakMap<Project, ProjectRecordIndex>();
+const objectIds = new WeakMap<object, number>();
+let nextObjectId = 1;
+const MAX_PROJECT_RECORD_INDEX_CACHE_ENTRIES = 64;
+const indexCache = new Map<string, ProjectRecordIndex>();
 
 export function buildProjectRecordIndex(project: Project): ProjectRecordIndex {
-  const cached = indexCache.get(project);
+  const cacheKey = projectRecordIndexDependencyKey(project);
+  const cached = indexCache.get(cacheKey);
   if (cached) return cached;
   const resources = new Map<ProjectRecordIndex["resources"] extends Map<infer K, unknown> ? K : string, ProjectRecordIndex["resources"] extends Map<string, infer V> ? V : never>();
   const addResource = (resourceType: string, resourceId: number, label: string, source?: string | null, previewPath?: string | null) => {
@@ -67,8 +71,47 @@ export function buildProjectRecordIndex(project: Project): ProjectRecordIndex {
     assets: new Map((project.assets ?? []).map((record) => [record.id, record])),
     resources
   };
-  indexCache.set(project, index);
+  writeIndexCache(cacheKey, index);
   return index;
+}
+
+function projectRecordIndexDependencyKey(project: Project) {
+  return [
+    "messages", objectCacheKey(project.messages),
+    "optionLabels", objectCacheKey(project.optionLabels),
+    "triggers", objectCacheKey(project.triggers),
+    "battles", objectCacheKey(project.battles),
+    "monsters", objectCacheKey(project.monsters),
+    "treasures", objectCacheKey(project.treasures),
+    "shops", objectCacheKey(project.shops),
+    "simple", objectCacheKey(project.simpleEncounters),
+    "complex", objectCacheKey(project.complexEncounters),
+    "thief", objectCacheKey(project.thiefEncounters),
+    "timed", objectCacheKey(project.timedEncounters),
+    "items", objectCacheKey(project.scenarioItems),
+    "maps", objectCacheKey(project.maps),
+    "assets", objectCacheKey(project.assets),
+    "pictures", objectCacheKey(project.assetCatalog.pictures),
+    "icons", objectCacheKey(project.assetCatalog.icons),
+    "sounds", objectCacheKey(project.assetCatalog.sounds),
+    "tilesets", objectCacheKey(project.assetCatalog.tilesets)
+  ].join(":");
+}
+
+function objectCacheKey(value: object | null | undefined) {
+  if (!value) return "none";
+  const existing = objectIds.get(value);
+  if (existing) return String(existing);
+  const next = nextObjectId++;
+  objectIds.set(value, next);
+  return String(next);
+}
+
+function writeIndexCache(key: string, value: ProjectRecordIndex) {
+  indexCache.set(key, value);
+  if (indexCache.size <= MAX_PROJECT_RECORD_INDEX_CACHE_ENTRIES) return;
+  const firstKey = indexCache.keys().next().value;
+  if (firstKey) indexCache.delete(firstKey);
 }
 
 export function labelForSelectedId(project: Project | null, catalog: LibraryCatalog | null | undefined, id: string | null | undefined): string {
