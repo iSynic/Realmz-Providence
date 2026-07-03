@@ -47,11 +47,11 @@ type ProjectGalleryItem =
 
 const ASSET_PAGE_SIZE_OPTIONS = [50, 100, 200, 500, 0];
 
-const ASSETS_WORKBENCH_HELP = "Assets is the resource-fork workbench: scenario media that ships with the project, Realmz reference resources, Divinity reference art, decoded records, and raw resource inventory all live here with export-scope and preview-status labels.";
+const ASSETS_WORKBENCH_HELP = "Assets shows what media can be previewed, what media the scenario owns, and which records use each resource. A previewable reference asset is not exported unless it is imported or scenario-supplied.";
 const ASSET_KIND_FILTER_HELP = "Filter by Realmz resource family. Pictures are PICT resources, sounds are snd resources, icons and special land tiles are cicn resources, and text resources are TEXT or STR# entries.";
 const UI_REFERENCE_HELP = "Divinity and Realmz editor interface art is useful for research, but it is not scenario media. Keep it hidden unless you are comparing manual/editor artwork.";
 const SPECIAL_LAND_FILTER_HELP = "Special Land Tiles are 32 x 32 cicn resources painted as negative map field values. Realmz draws the landlook base tile under the transparent icon.";
-const RESOURCE_FALLBACK_HELP = "Fallback warnings identify records that point at resources Providence could not resolve from the scenario or bundled Realmz libraries. Treat used fallbacks as release risks.";
+const RESOURCE_FALLBACK_HELP = "Fallback warnings identify records that point at resources Providence could not resolve from the scenario or bundled Realmz libraries. Treat used missing resources as release risks.";
 const TILE_ATLAS_HELP = "Tile atlases are landlook render sources. Standard Realmz atlases are reference data; scenario custom landlooks ship only when the scenario supplies them.";
 
 function assetSectionHelp(section: AssetSection) {
@@ -59,7 +59,7 @@ function assetSectionHelp(section: AssetSection) {
     return "Scenario Assets are project-owned media that Providence can package into the scenario resource fork or companion files. Use this section for authored pictures, sounds, icons, text, and special land tiles.";
   }
   if (section === "realmz") {
-    return "Reference Libraries are Realmz built-ins. They are available to Realmz at runtime and can power previews and pickers, but they are not copied into your scenario.";
+    return "Reference Libraries are Realmz built-ins. They can power previews and pickers, but they are read-only and are not copied into your scenario.";
   }
   if (section === "divinity") {
     return "Divinity Reference contains editor/manual evidence and comparison art. These resources are read-only and usually should not appear in normal authoring pickers.";

@@ -2245,6 +2245,7 @@ body.is-resizing-pane .pane-resize-handle::before {
 
 
 .documents-header div {
+  min-width: 0;
   display: grid;
   gap: 3px;
 }
@@ -2263,8 +2264,10 @@ body.is-resizing-pane .pane-resize-handle::before {
 
 
 .documents-header strong {
+  min-width: 0;
   color: #f2f8ff;
   font-size: 15px;
+  overflow-wrap: anywhere;
 }
 
 
@@ -2272,7 +2275,7 @@ body.is-resizing-pane .pane-resize-handle::before {
 .documents-body {
   min-height: 0;
   display: grid;
-  grid-template-columns: 270px minmax(0, 1fr) 280px;
+  grid-template-columns: minmax(230px, 270px) minmax(0, 1fr) minmax(240px, 280px);
 }
 
 
@@ -2754,10 +2757,29 @@ button.documents-source-chip {
 
 @media (max-width: 1240px) {
   .documents-body {
-    grid-template-columns: 250px minmax(0, 1fr);
+    grid-template-columns: minmax(220px, 250px) minmax(0, 1fr);
   }
 
   .documents-reference-panel {
+    display: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .documents-panel {
+    width: calc(100vw - 20px);
+    height: calc(100vh - 20px);
+  }
+
+  .documents-overlay {
+    padding: 10px;
+  }
+
+  .documents-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .documents-nav-shell {
     display: none;
   }
 }

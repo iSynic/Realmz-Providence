@@ -1312,9 +1312,9 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
             facts: ["reusable", "Data ED3"]
           },
           {
-            title: "EDCD Settings",
-            body: "Five-short Data EDCD rows used by many opcodes for targets, ranges, branch modes, sounds, messages, or mutation settings.",
-            facts: ["5 shorts", "typed fields"]
+            title: "Action Settings",
+            body: "Extra fields used when a CODE/ID step needs more than one target, range, branch, or option. Providence names those fields from the selected action.",
+            facts: ["settings row", "typed fields"]
           }
         ]
       },
@@ -1386,20 +1386,34 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "Filter the inventory before editing. Current Map is fastest while map authoring; Warnings is best before release; Reusable shows empty fixed slots that can be repurposed safely.",
           "Create or select an Action Point, then edit its map cell, chance, and goto fields only when those fields are meaningful for map triggers.",
           "Choose a step, pick an action, inspect the Divinity help, set a target or Settings fields, then Apply Step. Dirty step changes are draft-only until applied.",
-          "Use Target Details when a direct target has an inline editor. Use Settings when an opcode's target and branch fields live in EDCD."
+          "Use Target Details when a direct target has an inline editor. Use Settings when the step needs named options such as branch mode, message, sound, battle, map, range, or secondary target fields.",
+          "Open Settings Rows when you need to find orphaned rows, repair missing rows, duplicate a known row, or understand why two steps share the same settings."
         ]
       },
       {
         title: "CODE, ID, and EDCD",
         paragraphs: [
-          "A Realmz step is small but dense: CODE says what to do, ID either points directly at a target or selects an EDCD row, and EDCD optionally supplies five additional signed-short settings. The same number can mean very different things depending on the opcode.",
-          "Providence therefore keeps the raw numbers visible but encourages guided editing. The selected action definition, target picker, Settings labels, and diagnostics are all derived from the opcode/EDCD crosswalk."
+          "A Realmz step is small but dense: CODE says what to do, ID either points directly at a target or selects a settings row, and the settings row optionally supplies five additional signed-short fields. The same number can mean very different things depending on the opcode.",
+          "Providence keeps CODE, ID, and Data EDCD visible for evidence, but normal authoring should follow the action name, target picker, Settings labels, and diagnostics derived from the opcode crosswalk."
         ],
         points: [
           "Direct-target opcodes use ID as the target record number, such as a message, sound, picture, battle, shop, encounter, treasure, monster, or Extra Action Point.",
-          "EDCD-backed opcodes use ID as a settings-row pointer. Missing targets inside EDCD should be fixed in Settings, not by changing the raw ID blindly.",
+          "Settings-backed opcodes use ID as a settings-row pointer. Missing targets inside the row should be fixed in Settings, not by changing the raw ID blindly.",
           "Opcode 39 directly runs an Extra Action Point. Opcode 8 copies an Action Point from the current map. They are intentionally not the same authoring operation.",
           "Dispatcher no-op or Not Used codes are preserved and labeled, but they should not be treated as active unknown behavior unless evidence says Realmz executes them."
+        ]
+      },
+      {
+        title: "Settings Rows In Practice",
+        paragraphs: [
+          "Settings Rows is the advanced list behind the per-step Settings editor. It is useful when imported scenarios contain shared rows, missing rows, or rows that are no longer called by any visible script step.",
+          "For ordinary authoring, start from the script step that calls the row. The selected action gives the row its field names, so editing from the caller is safer than navigating by row number alone."
+        ],
+        points: [
+          "Shared rows can intentionally feed more than one step; duplicate before changing a shared row when only one caller should change.",
+          "Missing rows block the action that points at them and should be repaired or retargeted before release.",
+          "Unused rows are fixed-slot leftovers or imported evidence until an author reuses, duplicates, or clears them.",
+          "Row IDs stay stable because scripts, encounters, and imported records can store direct references to them."
         ]
       },
       {
@@ -1418,6 +1432,24 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           tone: "warning",
           title: "Runtime cache edits are not scenario source edits",
           body: "When an opcode changes shops, encounters, random areas, or trigger state during play, Realmz may be changing generated runtime data. Linter and Export should keep that distinction visible."
+        }
+      },
+      {
+        title: "Story Flags Beta",
+        paragraphs: [
+          "Story Flags is Providence's beta layer over Divinity quest flag usage. It does not invent a new quest system; it names raw flag IDs, shows decoded set/test/clear/increment/branch uses, and lets authors attach notes to groups of flags.",
+          "The view is useful for authoring continuity, but flag meaning still comes from scenario context. Treat names and notes as project documentation until scripts, encounters, and playtesting prove the intended story behavior."
+        ],
+        points: [
+          "Decoded Story Flags lists every flag Providence can name or find in script usage.",
+          "Flag Flow shows where each flag is read or written so an author can jump back to the owning script step.",
+          "Author Notes group related flags without changing runtime behavior.",
+          "Create labels for meaningful flags before using them in target pickers or release notes."
+        ],
+        callout: {
+          tone: "info",
+          title: "Beta means interpretation, not storage risk",
+          body: "Editing a story flag label or author note changes Providence metadata. The underlying Realmz script fields remain the source of runtime behavior."
         }
       },
       {
@@ -1565,13 +1597,13 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "Result Numbers and Action Columns",
         paragraphs: [
-          "Simple and complex encounters both end by selecting a result number. Providence shows four result columns because Realmz stores four compact action-column targets for each encounter.",
-          "Each result column contains ordered CODE/ID rows. These rows use the same action vocabulary as Scripts, but they are stored inside the encounter record rather than as a separate Action Point."
+          "Simple and complex encounters both reduce player choices and tests to a result number. Providence shows four result columns because Realmz stores four compact outcome scripts inside each encounter record.",
+          "Each result column contains ordered CODE/ID rows. These rows use the same action vocabulary as Scripts, but they are local to the encounter unless they call an Extra Action Point."
         ],
         points: [
-          "Result 1 runs the first column; Result 2 runs the second column; Result 3 and Result 4 do the same for their columns.",
+          "Result 1 runs the first column; Result 2 runs the second column; Result 3 and Result 4 run their matching columns.",
           "Result 0 usually means no branch result or an unavailable path.",
-          "A result column can show text, play sounds, start battles, grant treasure, call shops, branch to scripts, or do any other supported CODE/ID action.",
+          "A branch field chooses the result; the result column then shows text, plays sounds, starts battles, grants treasure, opens shops, calls scripts, or runs other supported CODE/ID actions.",
           "Use Scripts when the behavior needs a longer reusable macro, GOSUB flow, or stateful logic that does not fit cleanly in the encounter's compact columns.",
           "Clearing an encounter should be done carefully because scripts and complex encounters can still target its numeric record ID."
         ]
@@ -1877,11 +1909,11 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "Preview and Diagnostic Status",
         paragraphs: [
-          "Every resource should either preview, play, decode, or explain why it is metadata-only, unsupported, malformed, or missing a fallback. The preview filters are intentionally diagnostic, not cosmetic.",
-          "Missing fallback warnings mean a Realmz record refers to something Providence could not find in scenario or library resources. Those are release risks when the missing resource is used by maps, monsters, scripts, startup pictures, or sound actions."
+          "Every resource row should either preview, play, decode, or explain why it is metadata-only, unsupported, malformed, or missing a fallback. The preview filters are meant to answer what an author can safely inspect right now.",
+          "A preview does not prove scenario ownership. Missing fallback warnings mean a Realmz record refers to something Providence could not find in scenario or library resources; those are release risks when used by maps, monsters, scripts, startup pictures, or sound actions."
         ],
         cards: [
-          { title: "Previewable", body: "A picture, icon, tile, or text resource decoded into a usable preview.", facts: ["safe to inspect"] },
+          { title: "Previewable", body: "A picture, icon, tile, or text resource decoded into a usable preview. Check its scope badge before assuming it exports.", facts: ["safe to inspect"] },
           { title: "Playable", body: "A sound resource decoded into browser/desktop playable audio.", facts: ["snd"] },
           { title: "Info Only", body: "A known resource type or compatibility marker that is intentionally not rendered.", facts: ["preserve"] },
           { title: "Cannot Preview", body: "A known type with an unsupported variant. Preserve unless the author replaces it.", facts: ["unsupported"] },

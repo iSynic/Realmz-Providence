@@ -117,7 +117,7 @@ const SCRIPT_EDITOR_TABS = [
   { id: "action-points", label: "Action Points", title: "Create and edit map Action Points." },
   { id: "macros", label: "Extra Action Points", title: "Extra Action Points and branch targets." },
   { id: "global-macros", label: "Global Events", title: "Scenario-wide event hooks and startup logic." },
-  { id: "quests", label: "Story Flags", title: "Raw Divinity quest flags, counters, branches, and optional author notes." },
+  { id: "quests", label: "Story Flags", title: "Beta story-flag labels, decoded usage, and optional author notes." },
   { id: "settings-rows", label: "Settings Rows", title: "Advanced browser for EDCD action settings rows." },
   { id: "ed3-evidence", label: "Unlinked Extra APs", title: "Extra Action Points not yet linked from known scenario behavior." }
 ];
@@ -147,7 +147,7 @@ const TARGET_PICKER_HELP =
 const ACTION_CHOOSER_HELP =
   "Choose Action changes only the selected step draft. Apply Step is still required before the script record is updated.";
 const SETTINGS_HELP =
-  "Settings rows hold the editable options for many Realmz actions. Imported scripts keep their original row numbers; new actions get an unused row automatically, so authors should normally edit the fields instead of memorizing row IDs.";
+  "Settings rows hold the extra fields for actions whose CODE/ID slot is too small. Pick the row from its caller when possible; Providence names the fields for the selected action and keeps row IDs stable.";
 const SIMPLE_ENCOUNTER_SOURCE_HELP =
   "Simple Encounters are Data ED source records. The prompt points to a String, the four option labels live inside this record, and each option result jumps to one of four script columns.";
 const COMPLEX_ENCOUNTER_SOURCE_HELP =
@@ -172,7 +172,7 @@ const COMPLEX_SPELL_TESTS_HELP =
 const COMPLEX_ITEM_TESTS_HELP =
   "Item responses match Realmz item IDs from Economy or the reference item library. When the party uses a matching item, Realmz runs the selected result script column.";
 const ENCOUNTER_RESULT_ACTION_HELP =
-  "Encounter result columns are compact script rows. Result 1, 2, 3, or 4 chooses one column, then Realmz executes its ordered CODE/ID rows.";
+  "Encounter result columns are the outcome scripts. Branch fields choose Result 1, 2, 3, or 4; Realmz then runs that column's ordered CODE/ID rows.";
 const ROGUE_ACTION_TESTS_HELP =
   "Rogue action rows control which Divinity thief actions are available, the skill modifier, success/failure result codes, and the text/sound feedback for each outcome.";
 const ROGUE_TRAP_HELP =
@@ -1258,7 +1258,7 @@ function QuestWorkbench({
       <header className="settings-rows-header">
         <div>
           <strong>Story Flags</strong>
-          <small>Realmz stores raw quest flags, counters, and branches. Providence shows where flags are set, tested, cleared, incremented, and used.</small>
+          <small>Beta view for naming story flags and reviewing where scripts set, test, clear, increment, and branch on them.</small>
         </div>
         <div className="script-toolbar">
           <button type="button" className="btn btn-secondary btn-xs" onClick={createThread}>
@@ -1268,7 +1268,7 @@ function QuestWorkbench({
       </header>
       <div className="quest-workbench-layout">
         <aside className="quest-thread-column">
-          <PanelSection title="Raw Divinity Quest Flags" eyebrow={`${model.quests.length} known`} density="compact" className="quest-raw-panel">
+          <PanelSection title="Decoded Story Flags" eyebrow={`${model.quests.length} known`} density="compact" className="quest-raw-panel">
             <div className="quest-raw-list">
               {model.quests.map((quest) => (
                 <button
@@ -1721,7 +1721,7 @@ function SettingsRowsPanel({
           <TutorialTip title="Settings Rows" body={SETTINGS_HELP} side="below">
             <strong>Settings Rows</strong>
           </TutorialTip>
-          <small>Inspect, reuse, repair, and document the sidecar settings used by EDCD-backed actions.</small>
+          <small>Inspect and repair the extra fields used by settings-backed actions.</small>
         </div>
         <div className="script-toolbar">
           <button type="button" className="btn btn-secondary btn-xs" onClick={createRow}>
