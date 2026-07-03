@@ -271,7 +271,7 @@ export function PaintPalettePanel({
       <div className={metaClass}>
         <TutorialTip
           title="Paint Palette"
-          body="Click a tile to choose the raw Realmz map-field value Paint will place. Landlook tiles use the active atlas; Special / Icons includes negative cicn structures and landmarks; Custom palettes collect single tiles. In Stamp mode, this area becomes the Stamp Library for multi-cell brushes."
+          body="Choose what Paint places. Landlook uses the active atlas, Special / Icons contains map icon values, Custom collects reusable single tiles, and Stamp mode shows multi-cell brushes."
           side={variant === "bar" ? "above" : "right"}
         >
           <strong>Palette</strong>

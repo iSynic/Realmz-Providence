@@ -1076,7 +1076,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "Eraser restores cells to the current map's clear tile, which can be walkable blank space on dungeon maps.",
           "Fill Region uses the selected tile, cycle group, random group, or custom palette variation.",
           "Chance To Fill scatters paint across only some eligible cells, useful for rocks, trees, graves, ruins, or other flavor tiles.",
-          "Sample picks an existing map cell into the paint tile so imported maps can teach the palette."
+          "Sample picks an existing map cell into the paint tile so imported maps can teach the palette.",
+          "Dropping a tile on a custom palette selects that palette. If the tile is already present, Providence marks the target and leaves the palette unchanged."
         ]
       },
       {
@@ -1092,6 +1093,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "New From Selection captures the selected map region as a project stamp, omitting clear/base cells so transparent gaps do not overwrite surrounding terrain.",
           "Edit opens a grid where cells can be filled with the current paint tile, cleared to transparent, resized, renamed, and rearranged.",
           "Copy To Global and Copy To Project move useful stamps between the project library and your personal library.",
+          "Stamp cards show both the footprint and the painted tile count, so sparse stamps with transparent gaps are visible before placement.",
           "Transparent stamp cells are skipped during placement; explicit clear/base tiles only paint when they are deliberately stored as cells."
         ],
         callout: {
