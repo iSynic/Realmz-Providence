@@ -160,11 +160,6 @@ export function EdcdRowEditor({
   );
   const editorBody = (
       <div className={`edcd-row-editor${presentation === "selected-step" ? " selected-step-edcd-editor" : ""}`}>
-        {presentation === "selected-step" && (
-          <div className="edcd-inline-actions">
-            {actionButtons}
-          </div>
-        )}
         {!row && (
           <EmptyState
             compact
@@ -216,7 +211,18 @@ export function EdcdRowEditor({
       </div>
   );
 
-  if (presentation === "selected-step") return editorBody;
+  if (presentation === "selected-step") {
+    return (
+      <>
+        <div className="edcd-selected-step-action-strip">
+          {actionButtons}
+        </div>
+        <div className="realmz-current-step-authoring-subpane">
+          {editorBody}
+        </div>
+      </>
+    );
+  }
 
   return (
     <PanelSection
@@ -1792,11 +1798,6 @@ function ChoiceDialogEditor({
   );
   const editorBody = (
       <div className={`choice-dialog-editor${presentation === "selected-step" ? " selected-step-edcd-editor" : ""}`}>
-        {presentation === "selected-step" && (
-          <div className="edcd-inline-actions">
-            {actionButtons}
-          </div>
-        )}
         {!rowExists && (
           <EmptyState
             compact
@@ -1895,7 +1896,18 @@ function ChoiceDialogEditor({
       </div>
   );
 
-  if (presentation === "selected-step") return editorBody;
+  if (presentation === "selected-step") {
+    return (
+      <>
+        <div className="edcd-selected-step-action-strip">
+          {actionButtons}
+        </div>
+        <div className="realmz-current-step-authoring-subpane">
+          {editorBody}
+        </div>
+      </>
+    );
+  }
 
   return (
     <PanelSection

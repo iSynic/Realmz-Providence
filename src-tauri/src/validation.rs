@@ -2,6 +2,10 @@ use crate::project::*;
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
 
+fn managed_resource_type_supported(resource_type: &str) -> bool {
+    matches!(resource_type, "PICT" | "cicn" | "snd " | "TEXT" | "styl")
+}
+
 pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
     let mut errors = Vec::new();
     let mut warnings = Vec::new();
@@ -653,7 +657,7 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                 asset.label
             ));
         }
-        if !matches!(asset.resource_type.as_str(), "PICT" | "cicn" | "snd ") {
+        if !managed_resource_type_supported(asset.resource_type.as_str()) {
             errors.push(format!(
                 "{} targets unsupported resource type {}.",
                 asset.label, asset.resource_type
@@ -701,6 +705,20 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                 warnings.push(format!(
                     "{} uses snd id {}; custom scenario sounds normally use {}-{}.",
                     asset.label, asset.resource_id, SCENARIO_SOUND_MIN_ID, SCENARIO_SOUND_MAX_ID
+                ));
+            }
+        }
+        if matches!(asset.kind, ManagedAssetKind::Text) {
+            if asset.resource_type != "TEXT" && asset.resource_type != "styl" {
+                errors.push(format!(
+                    "{} is a text resource but targets {}; scrolling text assets must export as TEXT resources, with imported style companions preserved as styl.",
+                    asset.label, asset.resource_type
+                ));
+            }
+            if asset.resource_type == "TEXT" && !(-300..=-200).contains(&asset.resource_id) {
+                warnings.push(format!(
+                    "{} uses TEXT id {}; Divinity documents scrolling text resources in the -200 through -300 range. Realmz source uses direct TEXT lookup, so Providence preserves this ID.",
+                    asset.label, asset.resource_id
                 ));
             }
         }
@@ -1030,7 +1048,7 @@ pub fn validate_target_compatibility(project: &ProvidenceProject) -> Vec<TargetC
     let unsupported_managed_assets = project
         .assets
         .iter()
-        .filter(|asset| !matches!(asset.resource_type.as_str(), "PICT" | "cicn" | "snd "))
+        .filter(|asset| !managed_resource_type_supported(asset.resource_type.as_str()))
         .count();
     if unsupported_managed_assets > 0 {
         for target in [
@@ -1043,7 +1061,7 @@ pub fn validate_target_compatibility(project: &ProvidenceProject) -> Vec<TargetC
                 severity: DiagnosticSeverity::Warning,
                 code: "unsupported-managed-media-type".to_string(),
                 message: format!(
-                    "{unsupported_managed_assets} managed asset(s) target unsupported resource types; only PICT, cicn, and snd are known-good replacement writers."
+                    "{unsupported_managed_assets} managed asset(s) target unsupported resource types; only PICT, cicn, snd, TEXT, and styl are known-good replacement writers."
                 ),
                 source: Some("Assets".to_string()),
             });

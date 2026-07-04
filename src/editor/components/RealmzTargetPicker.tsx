@@ -357,7 +357,7 @@ function targetFallbackLabel(label: string, value: number) {
   if (label === "String Target") return `String ${value}`;
   if (label === "Sound Resource") return `Sound ${value}`;
   if (label === "Picture Resource") return `Picture ${value}`;
-  if (label === "TEXT Resource") return `TEXT ${value}`;
+  if (label === "Scrolling Text") return `Scrolling Text ${value}`;
   return `${base} ${value}`;
 }
 
@@ -378,7 +378,7 @@ export function targetPickerConfig(opcode: number) {
     44: { label: "Complex Encounter", hint: "Select the complex encounter this action mutates.", recordType: "complexEncounter" },
     47: { label: "Quest Flag", hint: "Select a quest flag to write.", recordType: "questLabel" },
     49: { label: "Shop Target", hint: "Select a shop record.", recordType: "shop" },
-    62: { label: "TEXT Resource", hint: "Select a classic TEXT resource for the scrolling-text movie window.", searchPlaceholder: "Search TEXT resource ID..." },
+    62: { label: "Scrolling Text", hint: "Select a scenario TEXT resource for the scrolling-text movie window.", searchPlaceholder: "Search scrolling text # or body..." },
     97: { label: "Map Record", hint: "Select a map record." },
     104: { label: "Simple Encounter", hint: "Select the simple encounter this action mutates.", recordType: "simpleEncounter" },
     127: { label: "Monster Target", hint: "Select a monster record.", recordType: "monster" }
@@ -937,8 +937,9 @@ function addTextResourceTargets(project: Project, options: ScriptTargetOption[],
     options.push({
       key: asset.id,
       value: asset.resourceId,
-      label: `${asset.label} (TEXT ${asset.resourceId})`,
-      detail: `TEXT resource | ${asset.exportState}`,
+      label: `${asset.label} (Scrolling Text ${asset.resourceId})`,
+      detail: `scrolling TEXT | ${asset.exportState}`,
+      summary: decodeTextAssetPreview(asset),
       entity: { type: "resource", id: asset.id },
       previewPath: asset.previewPath,
       previewMimeType: asset.mimeType,
@@ -954,8 +955,8 @@ function addTextResourceTargets(project: Project, options: ScriptTargetOption[],
     options.push({
       key: asset.id,
       value: asset.resourceId,
-      label: `${asset.label} (TEXT ${asset.resourceId})`,
-      detail: "TEXT resource | library catalog",
+      label: `${asset.label} (Scrolling Text ${asset.resourceId})`,
+      detail: "scrolling TEXT | library catalog",
       summary: asset.relativePath,
       compatibility: "Realmz TEXT resource",
       sourceState: "Imported library asset",
@@ -973,8 +974,9 @@ function textResourceOptionForId(project: Project, id: number, catalog?: Library
       return {
         key: asset.id,
         value: asset.resourceId,
-        label: `${asset.label} (TEXT ${asset.resourceId})`,
-        detail: `TEXT resource | ${asset.exportState}`,
+        label: `${asset.label} (Scrolling Text ${asset.resourceId})`,
+        detail: `scrolling TEXT | ${asset.exportState}`,
+        summary: decodeTextAssetPreview(asset),
         entity: { type: "resource", id: asset.id },
         previewPath: asset.previewPath,
         previewMimeType: asset.mimeType,
@@ -991,8 +993,8 @@ function textResourceOptionForId(project: Project, id: number, catalog?: Library
     return {
       key: asset.id,
       value: asset.resourceId,
-      label: `${asset.label} (TEXT ${asset.resourceId})`,
-      detail: "TEXT resource | library catalog",
+      label: `${asset.label} (Scrolling Text ${asset.resourceId})`,
+      detail: "scrolling TEXT | library catalog",
       summary: asset.relativePath,
       compatibility: "Realmz TEXT resource",
       sourceState: "Imported library asset",
@@ -1014,13 +1016,39 @@ function textResourceOptionFromSemanticEntity(entity: SemanticEntity): ScriptTar
   return {
     key: entity.id,
     value: resourceId,
-    label: `${entity.label || `TEXT ${resourceId}`} (TEXT ${resourceId})`,
-    detail: `TEXT resource | ${entity.source}`,
+    label: `${entity.label || `Scrolling Text ${resourceId}`} (Scrolling Text ${resourceId})`,
+    detail: `scrolling TEXT | ${entity.source}`,
+    summary: typeof entity.summary.textPreview === "string" ? entity.summary.textPreview : undefined,
     compatibility: "Realmz TEXT resource",
     sourceState: entity.editState === "editable" ? "Scenario resource" : "Reference resource",
     entity: selectEntityFromId(entity.id),
     previewMimeType: "text/plain"
   };
+}
+
+function decodeTextAssetPreview(asset: Project["assets"][number]) {
+  for (const value of [asset.resourcePath, asset.previewPath, asset.originalPath]) {
+    const text = decodeTextDataUrlPreview(value);
+    if (text) return text.slice(0, 240);
+  }
+  return undefined;
+}
+
+function decodeTextDataUrlPreview(value: string | null | undefined) {
+  if (!value?.startsWith("data:")) return "";
+  const comma = value.indexOf(",");
+  if (comma < 0) return "";
+  try {
+    const metadata = value.slice(0, comma).toLowerCase();
+    const payload = value.slice(comma + 1);
+    if (!metadata.includes(";base64")) return decodeURIComponent(payload);
+    const binary = atob(payload);
+    let text = "";
+    for (let index = 0; index < binary.length; index += 1) text += String.fromCharCode(binary.charCodeAt(index));
+    return text;
+  } catch {
+    return "";
+  }
 }
 
 function semanticResourceId(entity: SemanticEntity) {

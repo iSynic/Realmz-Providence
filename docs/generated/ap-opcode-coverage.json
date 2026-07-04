@@ -164,9 +164,9 @@
       "providenceFields": [
         {
           "index": null,
-          "label": "ID",
-          "internalName": "id",
-          "targetFamily": "direct-id",
+          "label": "Step only",
+          "internalName": "stepOnly",
+          "targetFamily": null,
           "preserved": false
         }
       ],
@@ -3720,7 +3720,7 @@
       "providenceFields": [
         {
           "index": null,
-          "label": "TEXT Resource",
+          "label": "Scrolling Text",
           "internalName": "textResourceId",
           "targetFamily": "text-resource",
           "preserved": false

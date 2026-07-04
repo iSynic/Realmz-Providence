@@ -573,6 +573,72 @@ struct ResourceExportResult {
     blocked_assets: Vec<String>,
 }
 
+fn managed_resource_type_supported(resource_type: &str) -> bool {
+    matches!(resource_type, "PICT" | "cicn" | "snd " | "TEXT" | "styl")
+}
+
+fn managed_asset_resource_bytes(
+    project_dir: &Path,
+    asset: &crate::project::ManagedAsset,
+) -> std::result::Result<Vec<u8>, String> {
+    for value in [&asset.resource_path, &asset.preview_path, &asset.original_path] {
+        if let Some(bytes) = decode_data_url_bytes(value)? {
+            return Ok(bytes);
+        }
+    }
+    let path = project_dir.join(&asset.resource_path);
+    if !path.is_file() {
+        return Err("converted resource bytes are missing".to_string());
+    }
+    fs::read(&path).map_err(|error| error.to_string())
+}
+
+fn decode_data_url_bytes(value: &str) -> std::result::Result<Option<Vec<u8>>, String> {
+    if !value.starts_with("data:") {
+        return Ok(None);
+    }
+    let Some((metadata, payload)) = value.split_once(',') else {
+        return Err("data URL has no payload".to_string());
+    };
+    if metadata.to_ascii_lowercase().contains(";base64") {
+        return STANDARD
+            .decode(payload)
+            .map(Some)
+            .map_err(|error| format!("base64 decode failed: {error}"));
+    }
+    percent_decode_data_url_payload(payload).map(Some)
+}
+
+fn percent_decode_data_url_payload(payload: &str) -> std::result::Result<Vec<u8>, String> {
+    let mut bytes = Vec::with_capacity(payload.len());
+    let raw = payload.as_bytes();
+    let mut index = 0;
+    while index < raw.len() {
+        if raw[index] == b'%' {
+            if index + 2 >= raw.len() {
+                return Err("truncated percent escape in data URL".to_string());
+            }
+            let high = hex_digit(raw[index + 1])?;
+            let low = hex_digit(raw[index + 2])?;
+            bytes.push((high << 4) | low);
+            index += 3;
+        } else {
+            bytes.push(raw[index]);
+            index += 1;
+        }
+    }
+    Ok(bytes)
+}
+
+fn hex_digit(value: u8) -> std::result::Result<u8, String> {
+    match value {
+        b'0'..=b'9' => Ok(value - b'0'),
+        b'a'..=b'f' => Ok(value - b'a' + 10),
+        b'A'..=b'F' => Ok(value - b'A' + 10),
+        _ => Err("invalid percent escape in data URL".to_string()),
+    }
+}
+
 fn write_managed_resources(
     project_dir: &Path,
     output_dir: &Path,
@@ -619,22 +685,23 @@ fn write_managed_resources(
             result.blocked_assets.push(asset.label.clone());
             continue;
         }
-        if !matches!(asset.resource_type.as_str(), "PICT" | "cicn" | "snd ") {
+        if !managed_resource_type_supported(asset.resource_type.as_str()) {
             result.blocked_assets.push(format!(
                 "{} uses unsupported resource type {}",
                 asset.label, asset.resource_type
             ));
             continue;
         }
-        let path = project_dir.join(&asset.resource_path);
-        if !path.is_file() {
-            result.blocked_assets.push(format!(
-                "{} is missing converted resource bytes",
-                asset.label
-            ));
-            continue;
-        }
-        let data = fs::read(&path).with_path(&path)?;
+        let data = match managed_asset_resource_bytes(project_dir, asset) {
+            Ok(data) => data,
+            Err(error) => {
+                result.blocked_assets.push(format!(
+                    "{} is missing converted resource bytes: {}",
+                    asset.label, error
+                ));
+                continue;
+            }
+        };
         updates.push(ResourceForkEntry {
             resource_type: asset.resource_type.clone(),
             id: asset.resource_id,
@@ -993,15 +1060,51 @@ fn scenario_shell_file_name(project: &ProvidenceProject) -> &str {
 #[cfg(test)]
 mod tests {
     use super::{
-        monster_icon_override_updates, preserve_imported_fixed_length,
+        managed_asset_resource_bytes, managed_resource_type_supported, monster_icon_override_updates,
+        preserve_imported_fixed_length,
         scenario_icon_resource_updates, ResourceExportResult,
     };
     use crate::project::{
-        Confidence, MonsterIconOverride, MonsterIconOverrideSource, Provenance,
-        ScenarioIconResource, ScenarioIconResourceSource, ScenarioItemRecord,
+        Confidence, ManagedAsset, ManagedAssetExportState, ManagedAssetKind, MonsterIconOverride,
+        MonsterIconOverrideSource, Provenance, ScenarioIconResource, ScenarioIconResourceSource,
+        ScenarioItemRecord,
     };
     use base64::{engine::general_purpose::STANDARD, Engine as _};
     use std::fs;
+
+    #[test]
+    fn managed_text_asset_resource_data_url_exports_plain_text() {
+        let asset = ManagedAsset {
+            id: "managed:TEXT:-200:authored".to_string(),
+            label: "Scrolling Text -200".to_string(),
+            kind: ManagedAssetKind::Text,
+            resource_type: "TEXT".to_string(),
+            resource_id: -200,
+            file_name: "scrolling-text--200.txt".to_string(),
+            original_path: String::new(),
+            preview_path: String::new(),
+            resource_path: format!("data:text/plain;base64,{}", STANDARD.encode(b"scrolling text")),
+            mime_type: "text/plain".to_string(),
+            bytes: 14,
+            sha256: "fixture".to_string(),
+            width: None,
+            height: None,
+            duration_ms: None,
+            sample_rate: None,
+            channels: None,
+            export_state: ManagedAssetExportState::Ready,
+            provenance: "test".to_string(),
+            linked_entity: Some("resource:TEXT:-200".to_string()),
+            conversion: None,
+        };
+
+        assert!(managed_resource_type_supported("TEXT"));
+        assert!(managed_resource_type_supported("styl"));
+        assert_eq!(
+            managed_asset_resource_bytes(std::path::Path::new("."), &asset).unwrap(),
+            b"scrolling text".to_vec()
+        );
+    }
 
     #[test]
     fn monster_icon_override_exports_paired_target_resources() {

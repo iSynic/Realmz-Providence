@@ -884,15 +884,26 @@ function ScriptAuthoringPanel({
     if (slot === selectedSlot) return;
     requestDraftNavigation(`select step ${slot + 1}`, () => performSelectStepSlot(slot));
   }, [performSelectStepSlot, requestDraftNavigation, selectedSlot]);
-  const guardedSelectEntity = useCallback((entity: SelectedEntity) => {
-    requestDraftNavigation("open the selected target", () => onSelectEntity(entity));
-  }, [onSelectEntity, requestDraftNavigation]);
-  const guardedOpenTool = useCallback((tab: "text", editor: string) => {
-    requestDraftNavigation(`open ${editor}`, () => onOpenTool?.(tab, editor));
-  }, [onOpenTool, requestDraftNavigation]);
-  const guardedOpenMapCoordinate = useCallback((target: MapCoordinateTarget) => {
-    requestDraftNavigation("open the map location", () => onOpenMapCoordinate?.(target));
-  }, [onOpenMapCoordinate, requestDraftNavigation]);
+  const openPreviewEntity = useCallback((entity: SelectedEntity) => {
+    onSelectEntity(entity);
+  }, [onSelectEntity]);
+  const openPreviewTool = useCallback((tab: "text", editor: string) => {
+    onOpenTool?.(tab, editor);
+  }, [onOpenTool]);
+  const openPreviewMapCoordinate = useCallback((target: MapCoordinateTarget) => {
+    onOpenMapCoordinate?.(target);
+  }, [onOpenMapCoordinate]);
+  const clearSelectedStep = () => {
+    if (!selectedTrigger) return;
+    discardSelectedDraft();
+    if (!selectedAction) return;
+    onApplyCommand?.({ kind: "deleteActionSlot", label: "Clear step", triggerId: selectedTrigger.id, slot: selectedSlot });
+  };
+  const clearSelectedScript = () => {
+    if (!selectedTrigger) return;
+    discardSelectedDraft();
+    onApplyCommand?.({ kind: "deleteTrigger", label: isMacro ? deleteMacroLabel : "Clear Action Point", triggerId: selectedTrigger.id });
+  };
   const moveSelectedStep = (toSlot: number) => {
     if (!selectedTrigger || toSlot < 0 || toSlot > 7 || toSlot === selectedSlot) return;
     const fromKey = `${selectedTrigger.id}:${selectedSlot}`;
@@ -951,8 +962,8 @@ function ScriptAuthoringPanel({
         type="button"
         className="btn btn-danger btn-xs icon-only"
         title="Clear step"
-        disabled={!selectedAction}
-        onClick={() => requestDraftNavigation("clear this step", () => onApplyCommand?.({ kind: "deleteActionSlot", label: "Clear step", triggerId: selectedTrigger.id, slot: selectedSlot }))}
+        disabled={!selectedAction && !selectedDraftDirty}
+        onClick={clearSelectedStep}
       >
         <X size={12} />
       </button>
@@ -988,7 +999,7 @@ function ScriptAuthoringPanel({
       desktopRuntime={desktopRuntime}
       projectDir={projectDir}
       workspaceDir={workspaceDir}
-      onSelectEntity={guardedSelectEntity}
+      onSelectEntity={openPreviewEntity}
       onApplyCommand={onApplyCommand}
     />
   ) : null;
@@ -1023,9 +1034,9 @@ function ScriptAuthoringPanel({
       onSetCategoryFilter={setCategoryFilter}
       onSetOpcodeQuery={setOpcodeQuery}
       onSetSelectedDraft={setSelectedDraft}
-      onSelectEntity={guardedSelectEntity}
-      onOpenTool={guardedOpenTool}
-      onOpenMapCoordinate={guardedOpenMapCoordinate}
+      onSelectEntity={openPreviewEntity}
+      onOpenTool={openPreviewTool}
+      onOpenMapCoordinate={openPreviewMapCoordinate}
       onApplyCommand={onApplyCommand}
     />
   ) : null;
@@ -1203,7 +1214,7 @@ function ScriptAuthoringPanel({
                       className="btn btn-danger btn-xs"
                       type="button"
                       title={isMacro ? "Delete this Extra Action Point" : "Clear this Action Point record so it can be reused"}
-                      onClick={() => requestDraftNavigation(isMacro ? "delete this Extra Action Point" : "clear this Action Point", () => onApplyCommand?.({ kind: "deleteTrigger", label: isMacro ? deleteMacroLabel : "Clear Action Point", triggerId: selectedTrigger.id }))}
+                      onClick={clearSelectedScript}
                     >
                       <Trash2 size={12} /> {isMacro ? deleteMacroLabel : "Clear Action Point"}
                     </button>
@@ -1214,7 +1225,7 @@ function ScriptAuthoringPanel({
               {isMacro ? (
                 <>
                   {selectedCombatMacroContext && (
-                    <CombatMacroContextCard context={selectedCombatMacroContext} onSelectEntity={guardedSelectEntity} />
+                    <CombatMacroContextCard context={selectedCombatMacroContext} onSelectEntity={openPreviewEntity} />
                   )}
                 </>
               ) : (
@@ -1260,7 +1271,7 @@ function ScriptAuthoringPanel({
                         target={triggerLocationMapTarget}
                         maps={projectMaps}
                         label="Open trigger location on Maps"
-                        onOpenMapCoordinate={guardedOpenMapCoordinate}
+                        onOpenMapCoordinate={openPreviewMapCoordinate}
                       />
                     </div>
                   </section>
@@ -1307,7 +1318,7 @@ function ScriptAuthoringPanel({
                         target={afterScriptMapTarget}
                         maps={projectMaps}
                         label="Open after-script destination on Maps"
-                        onOpenMapCoordinate={guardedOpenMapCoordinate}
+                        onOpenMapCoordinate={openPreviewMapCoordinate}
                       />
                     </div>
                   </section>
@@ -1366,7 +1377,7 @@ function ScriptAuthoringPanel({
                       })}
                     </ScrollArea>
                     {showInlineFlowPreview && (
-                        <ScriptFlowPreview project={project} catalog={catalog} trigger={selectedTrigger} onSelectEntity={guardedSelectEntity} />
+                        <ScriptFlowPreview project={project} catalog={catalog} trigger={selectedTrigger} onSelectEntity={openPreviewEntity} />
                     )}
                   </PanelSection>
                   {!floatingDetail && (
@@ -1400,7 +1411,7 @@ function ScriptAuthoringPanel({
                 selectedOption={selectedOption}
                 selectedSlotEntity={selectedSlotEntity}
                 selectedEdcdRowId={selectedEdcdRowId}
-                onSelectEntity={guardedSelectEntity}
+                onSelectEntity={openPreviewEntity}
               />
               {isMacro && (
                 <CollapsibleSection
@@ -2678,32 +2689,36 @@ function SelectedStepDetail({
       });
     }
   };
-  const settingsEditor = (isEdcdBackedStep || selectedEdcdUsage) ? (
-    <div className="realmz-current-step-authoring-subpane">
-      <EdcdRowEditor
-        project={project}
-        catalog={catalog}
-        edcdUsage={selectedEdcdUsage}
-        fallbackRowId={selectedDraft.id}
-        fallbackShape={selectedOption.edcdShape}
-        fallbackFieldNames={edcdFieldNamesForShape(selectedOption.edcdShape)}
-        fallbackInitialValues={selectedDefaultEdcdValues}
-        fallbackOpcode={selectedDraft.rawCode}
-        parameterLabels={selectedParameterLabels}
-        selectedSlotLabel={`step ${selectedSlot + 1}`}
-        onSelectEntity={onSelectEntity}
-        onOpenText={(editor) => onOpenTool?.("text", editor)}
-        onOpenMapCoordinate={onOpenMapCoordinate}
-        onStepOpcodeChange={(rawCode) => {
-          if (rawCode !== 23 && rawCode !== -23) return;
-          if (selectedDraft.rawCode === rawCode) return;
-          onSetSelectedDraft({ ...selectedDraft, rawCode });
-        }}
-        onApplyCommand={onApplyCommand}
-        presentation={isEdcdBackedStep ? "selected-step" : "inventory"}
-      />
-    </div>
+  const settingsEditorPresentation = isEdcdBackedStep ? "selected-step" : "inventory";
+  const settingsEditorContent = (isEdcdBackedStep || selectedEdcdUsage) ? (
+    <EdcdRowEditor
+      project={project}
+      catalog={catalog}
+      edcdUsage={selectedEdcdUsage}
+      fallbackRowId={selectedDraft.id}
+      fallbackShape={selectedOption.edcdShape}
+      fallbackFieldNames={edcdFieldNamesForShape(selectedOption.edcdShape)}
+      fallbackInitialValues={selectedDefaultEdcdValues}
+      fallbackOpcode={selectedDraft.rawCode}
+      parameterLabels={selectedParameterLabels}
+      selectedSlotLabel={`step ${selectedSlot + 1}`}
+      onSelectEntity={onSelectEntity}
+      onOpenText={(editor) => onOpenTool?.("text", editor)}
+      onOpenMapCoordinate={onOpenMapCoordinate}
+      onStepOpcodeChange={(rawCode) => {
+        if (rawCode !== 23 && rawCode !== -23) return;
+        if (selectedDraft.rawCode === rawCode) return;
+        onSetSelectedDraft({ ...selectedDraft, rawCode });
+      }}
+      onApplyCommand={onApplyCommand}
+      presentation={settingsEditorPresentation}
+    />
   ) : null;
+  const settingsEditor = settingsEditorContent && settingsEditorPresentation === "inventory" ? (
+    <div className="realmz-current-step-authoring-subpane">
+      {settingsEditorContent}
+    </div>
+  ) : settingsEditorContent;
   const inlineTargetPicker = hasInlineTargetPicker ? (
     <div className="realmz-current-step-target">
       <TargetPicker

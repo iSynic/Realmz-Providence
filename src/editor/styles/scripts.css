@@ -1748,12 +1748,13 @@
   min-width: 0;
 }
 
-.edcd-inline-actions {
+.edcd-selected-step-action-strip {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: 6px;
+  min-width: 0;
 }
 
 .selected-step-edcd-editor {

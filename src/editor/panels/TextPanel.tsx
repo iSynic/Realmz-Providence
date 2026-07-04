@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Copy, Eraser, List, MessageSquarePlus, Volume2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, Eraser, FileText, List, MessageSquarePlus, Trash2, Volume2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LibraryCatalog, MessageRecord, OptionLabelRecord, Project, ProjectCommand, SelectedEntity } from "../types";
 import { selectEntityFromId } from "../utils";
@@ -8,13 +8,14 @@ import { filterTargetOptions, signedSoundValueForSelection, signedSoundWaitsForC
 import { playPreviewUrl, useResolvedPreviewUrl, type PreviewRuntimeContext } from "../previewUrls";
 
 const DIVINITY_TEXT_SEPARATOR = `${" ".repeat(20)}\uf8ff${" ".repeat(20)}`;
-type TextAuthoringTab = "strings" | "option-labels";
+type TextAuthoringTab = "strings" | "option-labels" | "scrolling-text";
 const TEXT_WORKBENCH_HELP = "Text authors the central Data SD2 message pool, Data OD two-choice option labels, and readable TEXT/STR#/styl reference resources. Other tools link back here through numeric message and option-label IDs.";
 const EXPORT_TEXT_HELP = "Export Text writes all Data SD2 strings with Divinity-style separators so the file can be spell-checked without changing the project.";
 const IMPORT_TEXT_HELP = "Import Text accepts a file from this export workflow and refuses imports with the wrong number of string segments to avoid shifting every string ID.";
 const REFERENCE_STRINGS_HELP = "Reference Strings shows readable TEXT, STR#, and style resources from project or library resource forks. These are searchable evidence, not the central Data SD2 message pool.";
 const STRINGS_TAB_HELP = "Strings edits Data SD2 message records: Realmz text boxes used by scripts, battles, encounters, random areas, notes, and many prompts.";
 const OPTION_LABELS_TAB_HELP = "Option Labels edits Data OD compact labels for two-choice dialogs. Realmz uses the first visible character as the keyboard shortcut.";
+const SCROLLING_TEXT_TAB_HELP = "Scrolling Text authors scenario TEXT resources used by the Display Scrolling Text action. These are separate from ordinary Data SD2 strings; imported styl companions are preserved by the resource fork path.";
 const FIND_OCCURRENCE_HELP = "Find Occurrence searches every scenario string by ID or text, then jumps through matching Data SD2 records.";
 const FIND_LONG_STRING_HELP = "Find Long String jumps to strings at the Realmz byte limit or with characters that need cleanup before export.";
 const STRING_BYTE_LIMIT_HELP = "Realmz message records are fixed 256-byte Pascal strings, so the editable text must fit in 255 Classic text bytes before export.";
@@ -52,17 +53,24 @@ export function TextPanel({
   const [showList, setShowList] = useState(activeEditor === "messages" || activeEditor === "domain");
   const [showReferences, setShowReferences] = useState(activeEditor === "text-resources" || activeEditor === "spell-check");
   const [selectedReferenceId, setSelectedReferenceId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<TextAuthoringTab>(() => activeEditor === "option-labels" ? "option-labels" : "strings");
+  const [activeTab, setActiveTab] = useState<TextAuthoringTab>(() => activeEditor === "option-labels" ? "option-labels" : activeEditor === "text-resources" ? "scrolling-text" : "strings");
   const [selectedOptionId, setSelectedOptionId] = useState<number | null>(null);
+  const [selectedScrollingTextAssetId, setSelectedScrollingTextAssetId] = useState<string | null>(null);
   const [messageListLimit, setMessageListLimit] = useState(320);
   const [optionListLimit, setOptionListLimit] = useState(320);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const records = useMemo(() => [...(project.messages ?? [])].sort((a, b) => a.id - b.id), [project.messages]);
   const optionRecords = useMemo(() => [...(project.optionLabels ?? [])].sort((a, b) => a.id - b.id), [project.optionLabels]);
+  const scrollingTextAssets = useMemo(() => scrollingTextProjectAssets(project), [project]);
   const selectedId = selectedMessageId(selectedEntity, records) ?? records[0]?.id ?? 0;
   const selectedRecord = records.find((record) => record.id === selectedId) ?? null;
   const effectiveOptionId = selectedOptionId ?? optionRecords[0]?.id ?? 0;
   const selectedOption = optionRecords.find((record) => record.id === effectiveOptionId) ?? null;
+  const selectedScrollingTextAsset = scrollingTextAssets.find((asset) => asset.id === selectedScrollingTextAssetId)
+    ?? scrollingTextAssets.find((asset) => selectedEntity?.type === "resource" && selectedEntity.id === asset.id)
+    ?? scrollingTextAssets[0]
+    ?? null;
+  const nextScrollingTextId = nextScrollingTextResourceId(project);
   const selectOptionLabel = (id: number) => {
     setSelectedOptionId(id);
     onSelectEntity(selectEntityFromId(`option-label:${id}`));
@@ -117,7 +125,11 @@ export function TextPanel({
   }, [activeTab, onSelectEntity, records, selectedRecord]);
 
   useEffect(() => {
-    if (activeEditor === "text-resources" || activeEditor === "spell-check") {
+    if (activeEditor === "text-resources") {
+      setActiveTab("scrolling-text");
+      setShowReferences(true);
+    }
+    if (activeEditor === "spell-check") {
       setShowReferences(true);
     }
     if (activeEditor === "messages" || activeEditor === "domain") {
@@ -143,6 +155,14 @@ export function TextPanel({
   }, [selectedEntity]);
 
   useEffect(() => {
+    if (!selectedEntity?.id) return;
+    const asset = scrollingTextAssets.find((candidate) => candidate.id === selectedEntity.id);
+    if (!asset) return;
+    setActiveTab("scrolling-text");
+    setSelectedScrollingTextAssetId(asset.id);
+  }, [scrollingTextAssets, selectedEntity]);
+
+  useEffect(() => {
     setMessageListLimit(320);
   }, [query]);
 
@@ -158,7 +178,7 @@ export function TextPanel({
           <p>Edit scenario strings and two-choice option labels used by Realmz dialogs.</p>
         </div>
         <div className="text-workbench-actions">
-          <b>{records.length.toLocaleString()} strings | {optionRecords.length.toLocaleString()} option labels</b>
+          <b>{records.length.toLocaleString()} strings | {optionRecords.length.toLocaleString()} option labels | {scrollingTextAssets.length.toLocaleString()} scrolling text</b>
           <input
             ref={importInputRef}
             type="file"
@@ -210,6 +230,19 @@ export function TextPanel({
           >
             <MessageSquarePlus size={14} /> New String {nextId}
           </button>
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={() => {
+              const asset = scrollingTextAssetFromDraft(null, nextScrollingTextId, `Scrolling Text ${nextScrollingTextId}`, "");
+              onApplyCommand({ kind: "attachProjectAsset", label: `Create Scrolling Text ${nextScrollingTextId}`, asset });
+              setActiveTab("scrolling-text");
+              setSelectedScrollingTextAssetId(asset.id);
+              onSelectEntity(selectEntityFromId(asset.id));
+            }}
+          >
+            <FileText size={14} /> New Scrolling Text {nextScrollingTextId}
+          </button>
         </div>
       </header>
       <div className="text-authoring-tabs" role="tablist" aria-label="String editors">
@@ -221,6 +254,11 @@ export function TextPanel({
         <TutorialTip title="Option Labels" body={OPTION_LABELS_TAB_HELP} side="below">
           <button type="button" className={activeTab === "option-labels" ? "active" : ""} role="tab" aria-selected={activeTab === "option-labels"} onClick={() => setActiveTab("option-labels")}>
             Option Labels
+          </button>
+        </TutorialTip>
+        <TutorialTip title="Scrolling Text" body={SCROLLING_TEXT_TAB_HELP} side="below">
+          <button type="button" className={activeTab === "scrolling-text" ? "active" : ""} role="tab" aria-selected={activeTab === "scrolling-text"} onClick={() => setActiveTab("scrolling-text")}>
+            Scrolling Text
           </button>
         </TutorialTip>
       </div>
@@ -348,7 +386,7 @@ export function TextPanel({
             </section>
           )}
         </main>
-      </div> : (
+      </div> : activeTab === "option-labels" ? (
         <OptionLabelsWorkbench
           project={project}
           records={optionRecords}
@@ -358,6 +396,19 @@ export function TextPanel({
           onSelect={selectOptionLabel}
           onShowMore={() => setOptionListLimit((value) => value + 320)}
           onResetListLimit={() => setOptionListLimit(320)}
+          onSelectEntity={onSelectEntity}
+          onApplyCommand={onApplyCommand}
+        />
+      ) : (
+        <ScrollingTextWorkbench
+          project={project}
+          assets={scrollingTextAssets}
+          selectedAsset={selectedScrollingTextAsset}
+          nextResourceId={nextScrollingTextId}
+          onSelect={(asset) => {
+            setSelectedScrollingTextAssetId(asset.id);
+            onSelectEntity(selectEntityFromId(asset.id));
+          }}
           onSelectEntity={onSelectEntity}
           onApplyCommand={onApplyCommand}
         />
@@ -903,6 +954,206 @@ function OptionLabelEditor({
   );
 }
 
+function ScrollingTextWorkbench({
+  project,
+  assets,
+  selectedAsset,
+  nextResourceId,
+  onSelect,
+  onSelectEntity,
+  onApplyCommand
+}: {
+  project: Project;
+  assets: Project["assets"];
+  selectedAsset: Project["assets"][number] | null;
+  nextResourceId: number;
+  onSelect: (asset: Project["assets"][number]) => void;
+  onSelectEntity: (entity: SelectedEntity) => void;
+  onApplyCommand: (command: ProjectCommand) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [listLimit, setListLimit] = useState(320);
+  const filteredAssets = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) return assets;
+    return assets.filter((asset) => {
+      const text = decodeTextAsset(asset);
+      return `${asset.resourceId} ${asset.label} ${text}`.toLowerCase().includes(normalized);
+    });
+  }, [assets, query]);
+  useEffect(() => {
+    setListLimit(320);
+  }, [query]);
+  return (
+    <>
+      <nav className="text-string-navigator text-scrolling-toolbar" aria-label="Scrolling text resources">
+        <label className="text-find-field">
+          <TutorialTip title="Search Scrolling Text" body="Search authored scenario TEXT resources by resource ID, label, or body text." side="below">
+            <span>Search Scrolling Text</span>
+          </TutorialTip>
+          <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search scrolling text..." />
+        </label>
+        <button
+          type="button"
+          className="btn btn-primary btn-sm"
+          onClick={() => {
+            const asset = scrollingTextAssetFromDraft(null, nextResourceId, `Scrolling Text ${nextResourceId}`, "");
+            onApplyCommand({ kind: "attachProjectAsset", label: `Create Scrolling Text ${nextResourceId}`, asset });
+            onSelect(asset);
+          }}
+        >
+          <FileText size={14} /> New Scrolling Text {nextResourceId}
+        </button>
+      </nav>
+      <div className="text-workbench-layout">
+        <aside className="text-message-list-panel">
+          <div className="text-search-row">
+            <span>{filteredAssets.length.toLocaleString()} shown</span>
+            <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search scrolling text..." />
+          </div>
+          <div className="text-message-list" role="list" aria-label="Scrolling text resources">
+            {filteredAssets.slice(0, listLimit).map((asset) => {
+              const selected = asset.id === selectedAsset?.id;
+              const text = decodeTextAsset(asset);
+              const byteLength = classicTextByteLength(text);
+              return (
+                <button key={asset.id} type="button" className={selected ? "selected" : ""} onClick={() => onSelect(asset)}>
+                  <strong>Scrolling Text {asset.resourceId}</strong>
+                  <span>{asset.label}</span>
+                  <small>{byteLength.toLocaleString()} byte{byteLength === 1 ? "" : "s"} | {asset.exportState}</small>
+                </button>
+              );
+            })}
+            {filteredAssets.length > listLimit && (
+              <button type="button" className="text-list-more" onClick={() => setListLimit((value) => value + 320)}>
+                Show {Math.min(320, filteredAssets.length - listLimit).toLocaleString()} more
+              </button>
+            )}
+            {filteredAssets.length === 0 && <p>No scrolling text resources match this search.</p>}
+          </div>
+        </aside>
+        <main className="text-editor-surface">
+          {selectedAsset ? (
+            <ScrollingTextEditor
+              key={selectedAsset.id}
+              project={project}
+              asset={selectedAsset}
+              assets={assets}
+              onSelectEntity={onSelectEntity}
+              onApplyCommand={onApplyCommand}
+            />
+          ) : (
+            <div className="empty-copy">Create a scrolling text resource to begin authoring TEXT resources.</div>
+          )}
+        </main>
+      </div>
+    </>
+  );
+}
+
+function ScrollingTextEditor({
+  project,
+  asset,
+  assets,
+  onSelectEntity,
+  onApplyCommand
+}: {
+  project: Project;
+  asset: Project["assets"][number];
+  assets: Project["assets"];
+  onSelectEntity: (entity: SelectedEntity) => void;
+  onApplyCommand: (command: ProjectCommand) => void;
+}) {
+  const [resourceIdDraft, setResourceIdDraft] = useState(String(asset.resourceId));
+  const [label, setLabel] = useState(asset.label);
+  const [text, setText] = useState(() => decodeTextAsset(asset));
+  useEffect(() => {
+    setResourceIdDraft(String(asset.resourceId));
+    setLabel(asset.label);
+    setText(decodeTextAsset(asset));
+  }, [asset]);
+  const resourceId = Number(resourceIdDraft);
+  const validResourceId = Number.isInteger(resourceId);
+  const duplicateResourceId = validResourceId && assets.some((candidate) => candidate.id !== asset.id && candidate.resourceId === resourceId && candidate.resourceType.trim() === "TEXT");
+  const byteLength = classicTextByteLength(text);
+  const unsupportedChars = unsupportedClassicTextChars(text);
+  const changed = validResourceId && (resourceId !== asset.resourceId || label !== asset.label || text !== decodeTextAsset(asset));
+  const inManualRange = validResourceId && resourceId <= -200 && resourceId >= -300;
+  const styleEntity = useMemo(() => sameIdStyleResourceEntity(project, resourceId), [project, resourceId]);
+  const applyDisabled = !changed || !validResourceId || duplicateResourceId;
+  return (
+    <article className="text-message-editor text-scrolling-resource-editor">
+      <header>
+        <div>
+          <span>Scrolling Text {asset.resourceId}</span>
+          <small>Scenario TEXT resource used by Display Scrolling Text.</small>
+        </div>
+        <div className="text-message-actions">
+          {styleEntity && (
+            <button type="button" className="btn btn-secondary btn-xs" onClick={() => onSelectEntity(styleEntity)}>
+              Open Style
+            </button>
+          )}
+          <button
+            type="button"
+            className="btn btn-danger btn-xs"
+            onClick={() => onApplyCommand({ kind: "deleteProjectAsset", label: `Delete Scrolling Text ${asset.resourceId}`, assetId: asset.id })}
+          >
+            <Trash2 size={12} /> Delete
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary btn-xs"
+            disabled={applyDisabled}
+            onClick={() => {
+              if (!validResourceId) return;
+              const nextAsset = scrollingTextAssetFromDraft(asset, resourceId, label.trim() || `Scrolling Text ${resourceId}`, text);
+              onApplyCommand({ kind: "replaceProjectAsset", label: `Update Scrolling Text ${resourceId}`, assetId: asset.id, asset: nextAsset });
+            }}
+          >
+            Apply Scrolling Text
+          </button>
+        </div>
+      </header>
+      <div className="text-scrolling-resource-grid">
+        <label>
+          <span>Resource ID</span>
+          <input value={resourceIdDraft} onChange={(event) => setResourceIdDraft(event.currentTarget.value)} />
+        </label>
+        <label>
+          <span>Label</span>
+          <input value={label} onChange={(event) => setLabel(event.currentTarget.value)} />
+        </label>
+      </div>
+      <label className="text-message-field">
+        <span>Text</span>
+        <textarea value={text} onChange={(event) => setText(event.currentTarget.value)} />
+      </label>
+      <div className={`text-message-status ${!validResourceId || duplicateResourceId || unsupportedChars.length || !inManualRange ? "warning" : "ok"}`}>
+        <span>{byteLength.toLocaleString()} byte{byteLength === 1 ? "" : "s"} before export</span>
+        {!validResourceId && <b>Resource ID must be a whole number.</b>}
+        {duplicateResourceId && <b>Another scrolling TEXT resource already uses this ID.</b>}
+        {!inManualRange && validResourceId && <b>Divinity documents scrolling TEXT IDs -200 through -300; Realmz source uses direct resource lookup.</b>}
+        {unsupportedChars.length > 0 && <b>{unsupportedChars.length} non-ASCII character{unsupportedChars.length === 1 ? "" : "s"} will export as UTF-8 in the authored TEXT resource.</b>}
+        {styleEntity && <b>Same-ID styl resource is preserved from imported resources.</b>}
+        {!changed && validResourceId && !duplicateResourceId && unsupportedChars.length === 0 && inManualRange && <b>Ready</b>}
+      </div>
+      <details className="advanced-details">
+        <summary>
+          <TutorialTip title="Advanced Details" body="Shows how this authored scrolling text will export as a Realmz TEXT resource. Same-ID styl resources remain preserved from imported resource forks." side="below">
+            <span>Advanced Details</span>
+          </TutorialTip>
+        </summary>
+        <div className="summary-table">
+          <div><dt>Resource</dt><dd>TEXT {asset.resourceId}</dd></div>
+          <div><dt>Export State</dt><dd>{asset.exportState}</dd></div>
+          <div><dt>Style</dt><dd>{styleEntity ? "Same-ID styl resource present" : "No authored style resource"}</dd></div>
+        </div>
+      </details>
+    </article>
+  );
+}
+
 function selectedMessageId(selectedEntity: SelectedEntity | null, records: MessageRecord[]) {
   if (selectedEntity?.id.startsWith("message:")) {
     const id = Number(selectedEntity.id.slice("message:".length));
@@ -980,6 +1231,110 @@ function nextOptionLabelId(records: OptionLabelRecord[]) {
   return records.length;
 }
 
+function scrollingTextProjectAssets(project: Project) {
+  return [...(project.assets ?? [])]
+    .filter((asset) => asset.resourceType.trim() === "TEXT" || asset.kind === "text")
+    .sort((a, b) => a.resourceId - b.resourceId || a.label.localeCompare(b.label));
+}
+
+function nextScrollingTextResourceId(project: Project) {
+  const used = new Set<number>();
+  for (const asset of project.assets ?? []) {
+    if (asset.resourceType.trim() === "TEXT" || asset.kind === "text") used.add(asset.resourceId);
+  }
+  for (const entity of project.semanticSchema?.entities ?? []) {
+    if (String(entity.summary.type ?? entity.summary.resourceType ?? "").trim() !== "TEXT") continue;
+    const id = Number(entity.summary.resourceId ?? entity.summary.id ?? entity.summary.index);
+    if (Number.isInteger(id)) used.add(id);
+  }
+  for (let id = -200; id >= -300; id -= 1) {
+    if (!used.has(id)) return id;
+  }
+  return -200;
+}
+
+function scrollingTextAssetFromDraft(existing: Project["assets"][number] | null, resourceId: number, label: string, text: string): Project["assets"][number] {
+  const bytes = classicTextBytes(text);
+  const sha256 = `text-${hashText(text)}`;
+  const safeId = String(resourceId).replace(/[^-\d]/g, "");
+  const fileName = `scrolling-text-${safeId}.txt`;
+  const dataUrl = bytesToDataUrl(bytes);
+  return {
+    id: existing?.id ?? `managed:TEXT:${resourceId}:authored`,
+    label,
+    kind: "text",
+    resourceType: "TEXT",
+    resourceId,
+    fileName,
+    originalPath: dataUrl,
+    previewPath: dataUrl,
+    resourcePath: dataUrl,
+    mimeType: "text/plain",
+    bytes: bytes.length,
+    sha256,
+    width: null,
+    height: null,
+    durationMs: null,
+    sampleRate: null,
+    channels: null,
+    exportState: "ready",
+    provenance: existing?.provenance ?? "Authored in Providence Scrolling Text",
+    linkedEntity: `resource:TEXT:${resourceId}`,
+    conversion: null
+  };
+}
+
+function decodeTextAsset(asset: Project["assets"][number]) {
+  return decodeTextDataUrl(asset.resourcePath) || decodeTextDataUrl(asset.previewPath) || decodeTextDataUrl(asset.originalPath);
+}
+
+function sameIdStyleResourceEntity(project: Project, resourceId: number): SelectedEntity | null {
+  if (!Number.isInteger(resourceId)) return null;
+  const projectAsset = (project.assets ?? []).find((asset) => asset.resourceType.trim() === "styl" && asset.resourceId === resourceId);
+  if (projectAsset) return { type: "resource", id: projectAsset.id };
+  const entity = project.semanticSchema?.entities.find((candidate) => {
+    const resourceType = String(candidate.summary.type ?? candidate.summary.resourceType ?? "").trim();
+    if (resourceType !== "styl") return false;
+    const id = Number(candidate.summary.resourceId ?? candidate.summary.id ?? candidate.summary.index);
+    return Number.isInteger(id) && id === resourceId;
+  });
+  return entity ? selectEntityFromId(entity.id) : null;
+}
+
+function classicTextBytes(text: string) {
+  const bytes = new Uint8Array(Array.from(text ?? "").map((char) => {
+    const code = char.charCodeAt(0);
+    return code <= 0x7f ? code : 0x3f;
+  }));
+  return bytes;
+}
+
+function bytesToDataUrl(bytes: Uint8Array) {
+  let binary = "";
+  for (let offset = 0; offset < bytes.length; offset += 8192) {
+    const chunk = bytes.slice(offset, offset + 8192);
+    binary += String.fromCharCode(...chunk);
+  }
+  return `data:text/plain;base64,${btoa(binary)}`;
+}
+
+function base64ToText(payload: string) {
+  const binary = atob(payload);
+  let text = "";
+  for (let index = 0; index < binary.length; index += 1) {
+    text += String.fromCharCode(binary.charCodeAt(index));
+  }
+  return text;
+}
+
+function hashText(text: string) {
+  let hash = 2166136261;
+  for (let index = 0; index < text.length; index += 1) {
+    hash = Math.imul(hash ^ text.charCodeAt(index), 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
 function optionLabelShortcut(text: string) {
   return text
     .split("")
@@ -1023,7 +1378,7 @@ function textReferenceRows(project: Project, catalog: LibraryCatalog | null | un
       label: asset.label,
       detail: textResourceDetail({ resourceId: asset.resourceId, type: asset.resourceType, bytes: asset.bytes }),
       source: "Project",
-      preview: asset.originalPath?.startsWith("data:text/") ? decodeTextDataUrl(asset.originalPath) : ""
+      preview: decodeTextAsset(asset)
     })),
     ...(catalog?.entities ?? []).filter((entity) => wantedTypes.has(entity.type)).map((entity) => ({
       id: entity.id,
@@ -1043,7 +1398,9 @@ function decodeTextDataUrl(dataUrl: string | null | undefined) {
   const comma = dataUrl.indexOf(",");
   if (comma < 0) return "";
   try {
-    return decodeURIComponent(dataUrl.slice(comma + 1));
+    const metadata = dataUrl.slice(0, comma).toLowerCase();
+    const payload = dataUrl.slice(comma + 1);
+    return metadata.includes(";base64") ? base64ToText(payload) : decodeURIComponent(payload);
   } catch {
     return "";
   }

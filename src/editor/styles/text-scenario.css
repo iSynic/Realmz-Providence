@@ -977,6 +977,7 @@
 .text-workbench > .text-workbench-header,
 .text-workbench > .text-authoring-tabs,
 .text-workbench > .text-string-navigator,
+.text-workbench > .text-scrolling-toolbar,
 .text-workbench > .text-file-status,
 .text-workbench > .text-workbench-layout {
   width: min(100%, 1500px);
@@ -1084,6 +1085,39 @@
   background: #0b1118;
   color: #f5fbff;
   padding: 5px 8px;
+  font: inherit;
+}
+
+.text-scrolling-toolbar {
+  grid-template-columns: minmax(260px, 1fr) auto;
+}
+
+.text-scrolling-resource-grid {
+  display: grid;
+  grid-template-columns: minmax(110px, 160px) minmax(220px, 1fr);
+  gap: 10px;
+}
+
+.text-scrolling-resource-grid label {
+  display: grid;
+  gap: 6px;
+}
+
+.text-scrolling-resource-grid span {
+  color: #70b8f3;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.text-scrolling-resource-grid input {
+  min-width: 0;
+  min-height: 34px;
+  border: 1px solid #2d3b49;
+  border-radius: 6px;
+  background: #0b1118;
+  color: #f5fbff;
+  padding: 8px 10px;
   font: inherit;
 }
 

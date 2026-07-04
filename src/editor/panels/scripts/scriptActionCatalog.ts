@@ -457,11 +457,11 @@ const ACTION_METADATA_OVERRIDES: Record<number, ScriptActionMetadataOverride> = 
   62: {
     storage: "direct-code-id",
     target: {
-      label: "TEXT Resource",
+      label: "Scrolling Text",
       realmzField: "ID",
       targetFamily: "text-resource",
       defaultValue: 0,
-      help: "Classic TEXT resource ID to display in the scrolling-text movie window. Divinity documents these as TEXT resources, commonly negative IDs such as -200 through -300, not normal scenario strings."
+      help: "Scenario TEXT resource ID to display in the scrolling-text movie window. Divinity documents these as TEXT resources, commonly negative IDs such as -200 through -300, not normal scenario strings."
     },
     defaultDraft: { rawCode: 62, id: 0 }
   },
@@ -1048,7 +1048,7 @@ function formKindFor(
   edcdShape: string | undefined,
   targetFamily: string | undefined
 ): ScriptStepFormKind {
-  if (IGNORED_ACTIONS.has(code)) return "advanced";
+  if (IGNORED_ACTIONS.has(code)) return "step-only";
   if (MANUAL_NONE_STEP_ONLY_ACTIONS.has(code)) return "step-only";
   if (category === "Advanced") return "advanced";
   if (code === 3 || edcdShape === "choice") return "choice";

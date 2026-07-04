@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const catalogPath = path.join(root, "src/editor/panels/scripts/scriptActionCatalog.ts");
 const panelPath = path.join(root, "src/editor/panels/ScriptsPanel.tsx");
+const textPanelPath = path.join(root, "src/editor/panels/TextPanel.tsx");
 const edcdPath = path.join(root, "src/editor/components/EdcdRowEditor.tsx");
 const edcdRowsPath = path.join(root, "src/editor/edcdRows.ts");
 const edcdTargetsPath = path.join(root, "src/editor/edcdTargets.ts");
@@ -17,6 +18,7 @@ const apOpcodeCoveragePath = path.join(root, "docs/generated/ap-opcode-coverage.
 
 const catalog = fs.readFileSync(catalogPath, "utf8");
 const panel = fs.readFileSync(panelPath, "utf8");
+const textPanel = fs.readFileSync(textPanelPath, "utf8");
 const edcd = fs.readFileSync(edcdPath, "utf8");
 const edcdRows = fs.readFileSync(edcdRowsPath, "utf8");
 const edcdTargets = fs.readFileSync(edcdTargetsPath, "utf8");
@@ -165,8 +167,8 @@ if (macro121?.evidenceConfidence !== "source-backed") {
 }
 
 const scrollingText62 = coverageEntry(62);
-if (!hasCoverageField(scrollingText62, "TEXT Resource", "text-resource")) {
-  failures.push("Opcode 62 should report a TEXT Resource target field.");
+if (!hasCoverageField(scrollingText62, "Scrolling Text", "text-resource")) {
+  failures.push("Opcode 62 should report a Scrolling Text target field.");
 }
 
 const noManualEvidence = coverageEntry(-14);
@@ -214,9 +216,9 @@ for (const opcode of [84, 98, 99]) {
 
 for (const snippet of [
   "62: {",
-  "label: \"TEXT Resource\"",
+  "label: \"Scrolling Text\"",
   "targetFamily: \"text-resource\"",
-  "Classic TEXT resource ID to display"
+  "Scenario TEXT resource ID to display"
 ]) {
   if (!catalog.includes(snippet)) failures.push(`Scrolling-text opcode 62 should be modeled as a TEXT resource target: ${snippet}`);
 }
@@ -245,8 +247,8 @@ for (const snippet of [
   "signedTargetValueForSelection",
   "signedTargetBehaviorLabel",
   "return id > 0 ? soundReferenceOption(id) : null",
-  "if (label === \"TEXT Resource\") return `TEXT ${value}`",
-  "62: { label: \"TEXT Resource\"",
+  "if (label === \"Scrolling Text\") return `Scrolling Text ${value}`",
+  "62: { label: \"Scrolling Text\"",
   "const id = code === 62 ? resolvedValue : Math.abs(resolvedValue)",
   "addTextResourceTargets(project, options, catalog)",
   "return textResourceOptionForId(project, id, catalog)",
@@ -255,6 +257,16 @@ for (const snippet of [
   "TargetMacroFlowPreview"
 ]) {
   if (!targetPicker.includes(snippet)) failures.push(`Target picker is missing signed message helper: ${snippet}`);
+}
+for (const snippet of [
+  "type TextAuthoringTab = \"strings\" | \"option-labels\" | \"scrolling-text\"",
+  "SCROLLING_TEXT_TAB_HELP",
+  "scrollingTextAssetFromDraft",
+  "data:text/plain;base64",
+  "resourceType: \"TEXT\"",
+  "Apply Scrolling Text"
+]) {
+  if (!textPanel.includes(snippet)) failures.push(`Text panel is missing authored scrolling TEXT resource support: ${snippet}`);
 }
 const searchDrivenTargetBranch = targetPicker.match(/\{isSearchDrivenPicker \? \([\s\S]*?\)\s*:\s*\(/);
 if (!searchDrivenTargetBranch) {
@@ -524,6 +536,25 @@ for (const snippet of [
 ]) {
   if (!panel.includes(snippet)) failures.push(`Scripts panel is missing dirty selected-step navigation guard behavior: ${snippet}`);
 }
+for (const snippet of [
+  "const openPreviewEntity = useCallback",
+  "onSelectEntity={openPreviewEntity}",
+  "onOpenMapCoordinate={openPreviewMapCoordinate}",
+  "const clearSelectedStep = () =>",
+  "disabled={!selectedAction && !selectedDraftDirty}",
+  "onClick={clearSelectedStep}",
+  "onClick={clearSelectedScript}"
+]) {
+  if (!panel.includes(snippet)) failures.push(`Scripts panel is missing AP draft guard regression handling: ${snippet}`);
+}
+for (const snippet of [
+  "requestDraftNavigation(\"open the selected target\"",
+  "requestDraftNavigation(\"open the map location\"",
+  "requestDraftNavigation(\"clear this step\"",
+  "requestDraftNavigation(isMacro ? \"delete this Extra Action Point\""
+]) {
+  if (panel.includes(snippet)) failures.push(`Scripts panel still gates preview/destructive actions with the dirty-step navigation modal: ${snippet}`);
+}
 
 for (const snippet of [
   "combatMacroContextFor",
@@ -541,9 +572,15 @@ for (const snippet of [
 for (const snippet of [
   "NOT_USED_ACTION_CODES",
   "const IGNORED_ACTIONS = new Set([0, ...NOT_USED_ACTION_CODES])",
+  "if (IGNORED_ACTIONS.has(code)) return \"step-only\"",
   "definition.authoringLevel === \"ignored\") return false"
 ]) {
   if (!catalog.includes(snippet)) failures.push(`Action catalog is missing preserve-only chooser filtering support: ${snippet}`);
+}
+
+const emptyStep = coverageEntry(0);
+if (!hasCoverageField(emptyStep, "Step only")) {
+  failures.push("Opcode 0 Empty Step should report step-only Providence authoring, not a generic value field.");
 }
 
 const normalUiSources = [

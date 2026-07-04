@@ -34,7 +34,7 @@ const entries = Object.values(crosswalk)
     const manual = summarizeManualHelp(manualEntries);
     const manualNoOptions = manualEntriesHaveNoOptions(manualEntries);
     const isManualNoneStepOnly = manualNoneStepOnly.has(code);
-    const providenceFields = providenceAuthoringFields(entry, isManualNoneStepOnly);
+    const providenceFields = providenceAuthoringFields(entry, state, isManualNoneStepOnly);
     const gapStatus = auditGapStatus(entry, state, status, manualEntries, isManualNoneStepOnly);
     const evidenceConfidence = auditEvidenceConfidence(entry, status, manualEntries);
     const chooserConsolidation = chooserConsolidationFor(code);
@@ -161,7 +161,7 @@ function relatedManualOpcodes(manualEntries, code) {
     .sort((a, b) => a - b);
 }
 
-function providenceAuthoringFields(entry, isManualNoneStepOnly) {
+function providenceAuthoringFields(entry, state, isManualNoneStepOnly) {
   if (entry.parameters?.length > 0) {
     return entry.parameters.map((parameter) => ({
       index: parameter.index,
@@ -171,7 +171,7 @@ function providenceAuthoringFields(entry, isManualNoneStepOnly) {
       preserved: Boolean(parameter.preserved)
     }));
   }
-  if (isManualNoneStepOnly || entry.opcode === 84 || entry.opcode === 98 || entry.opcode === 99) {
+  if (state.inIgnored || isManualNoneStepOnly || entry.opcode === 84 || entry.opcode === 98 || entry.opcode === 99) {
     return [{
       index: null,
       label: "Step only",
@@ -183,7 +183,7 @@ function providenceAuthoringFields(entry, isManualNoneStepOnly) {
   if (entry.opcode === 62) {
     return [{
       index: null,
-      label: "TEXT Resource",
+      label: "Scrolling Text",
       internalName: "textResourceId",
       targetFamily: "text-resource",
       preserved: false
