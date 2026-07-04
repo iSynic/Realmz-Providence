@@ -14,6 +14,16 @@ This card unlocks a stronger Maps/Scenario authoring surface for `Data MD2`: map
 - `F:\Realmz\src\realmz_orig\mapstuff.c:139-169`: ten icon slots draw `cicn` markers at grid positions on the map preview.
 - `F:\Realmz\src\realmz_orig\mapstuff.c:180-193`: the current party location marker is overlaid when the map preview includes the current level and coordinates.
 - `F:\Realmz\src\realmz_orig\mapstuff.c:211`: displays the record `note` string.
+- `F:\Realmz\src\realmz_orig\setupnewgame.c:58-65`: initializes the saved-game `map[20]` availability flags and starts new games with map 0 available.
+- `F:\Realmz\src\realmz_orig\misc.c:2019-2032`: `updatemapmenu` builds the Maps/Notes menu from `map[20]`, using `STR# -102` Map Names for available entries and `STR# -101` Map Names for unavailable entries.
+- `F:\Realmz\src\realmz_orig\handlemenuchoice.c:735-741`: selecting a Maps menu item calls `showmap(theItem - 4)`, so menu item 4 opens `Data MD2` record 0.
+- `F:\Realmz\src\realmz_orig\newland.c:2399-2407`: opcode 29 marks `map[abs(id)]` available, refreshes the Maps/Notes menu, and immediately displays the map when the ID is negative.
+
+## Maps Menu Runtime Model
+
+Realmz exposes exactly 20 Maps/Notes menu map slots through the saved-game `map[20]` availability array. Those flags are not scenario-authored defaults in `Data MD2`; they are runtime/player-state unlocks. Scenario authors provide the menu targets through `Data MD2` records and can grant/display them with opcode 29.
+
+Menu labels come from the scenario resource fork, not from `Data MD2`: `STR# -102` contains the unlocked/available Map Names list, and `STR# -101` contains the unavailable/locked Map Names list. Providence treats these as Maps Menu names and keeps the `Data MD2` record body as the map display target, picture link, marker list, rectangle, and note payload.
 
 ## Byte Layout
 

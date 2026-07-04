@@ -19,7 +19,7 @@ const MAP_WORKBENCH_MODES: Array<{ id: MapWorkbenchMode; label: string; descript
   { id: "land-layout", label: "Land Layout", description: "Edit outdoor level adjacency for off-map travel." },
   { id: "land-tiles", label: "Land Tiles", description: "Inspect landlook tiles, movement metadata, and combat expansion." },
   { id: "random-areas", label: "Random Encounters", description: "Edit random encounter rectangles: priority, chance, battles, text, sounds, and extra AP doors." },
-  { id: "map-records", label: "Map Records", description: "Browse and edit map starts, picture links, rectangles, and notes." }
+  { id: "map-records", label: "Maps Menu", description: "Browse and edit Realmz Maps menu entries, picture links, rectangles, markers, and notes." }
 ];
 
 export function MapsPanel({
@@ -356,7 +356,7 @@ export function MapsPanel({
         )}
         {workbenchMode === "map-records" && (
           <MapModeSurface
-            title="Map Records"
+            title="Maps Menu"
             subtitle="Map records describe starts, picture links, rectangles, notes, and related map navigation."
           >
             <MapRecordsWorkbench

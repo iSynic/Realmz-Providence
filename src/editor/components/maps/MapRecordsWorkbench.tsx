@@ -6,13 +6,13 @@ import { TutorialTip } from "../TutorialTip";
 import { MapDiagnostics, MapNumberField } from "./MapFormControls";
 
 const MAP_RECORDS_HELP =
-  "Map Records are Divinity Map Editor records: named/startable map entries with start coordinates, optional PICT links, markers, display rectangles, notes, and source-backed map settings.";
+  "Maps Menu records are Realmz Data MD2 records. The Maps/Notes menu unlocks up to 20 entries, and each entry can display a tile map preview, a PICT-backed view, markers, or note text.";
 const MAP_RECORD_FILTER_HELP =
-  "When a map is selected, Providence shows map records whose land/dungeon flag and level index point at that map. Switch maps or clear the selection to inspect other records.";
+  "When a map is selected, Providence shows Maps Menu records whose land/dungeon flag and level index point at that map. Switch maps or clear the selection to inspect other entries.";
 const MAP_RECORD_CANVAS_HELP =
-  "Show map-record starts and markers on the canvas. This switches to Canvas mode with the map-record overlay enabled, without changing the records.";
+  "Show Maps Menu starts and markers on the canvas. This switches to Canvas mode with the map-record overlay enabled, without changing the records.";
 const MAP_RECORD_ROW_HELP =
-  "Select a map record to inspect source evidence, editable fields, outgoing links, incoming references, and canvas navigation actions.";
+  "Select a Maps Menu record to inspect source evidence, editable fields, outgoing links, incoming references, and canvas navigation actions.";
 const MAP_RECORD_SUMMARY_HELP =
   "This summary combines the record's display name, target level, start coordinate, PICT link, marker count, display rectangle, and note.";
 const MAP_RECORD_OPEN_HELP =
@@ -22,7 +22,7 @@ const MAP_RECORD_COPY_HELP =
 const MAP_RECORD_DETAILS_HELP =
   "Semantic details show the decoded source record, byte range, confidence, and links so you can distinguish editable fields from preserved evidence.";
 const MAP_RECORD_EDITOR_HELP =
-  "Edit source-backed Data MD2 map-record fields. Names remain read-only because they come from scenario resource data; unknown bytes stay preserved on export.";
+  "Edit source-backed Data MD2 Maps Menu fields. Menu names come from STR# -102/-101 Map Names resources; unknown bytes stay preserved on export.";
 const MAP_RECORD_START_HELP =
   "Start X and Start Y are the 0..89 map coordinates where Realmz places the party or cursor for this map record.";
 const MAP_RECORD_LEVEL_HELP =
@@ -76,12 +76,12 @@ export function MapRecordsWorkbench({
   }, [selectedMap?.id, selectedRecordId, visibleRecordKey]);
   const selectedRecord = visibleRecords.find((record) => record.id === selectedRecordId) ?? null;
   const selectedSemantic = selectedRecord ? mapRecords.find((record) => summaryNumber(record, "id") === selectedRecord.id) ?? semanticForMapRecord(selectedRecord) : null;
-  if (!project) return <p className="empty-copy compact">Open a project to browse map records.</p>;
+  if (!project) return <p className="empty-copy compact">Open a project to browse Maps Menu records.</p>;
   return (
     <div className="map-records-workbench">
       <p className="empty-copy compact">
-        <TutorialTip title="Map Records" body={MAP_RECORDS_HELP} side="below">
-          <span>Browse and edit source-backed map records for starts, pictures, markers, rectangles, and notes.</span>
+        <TutorialTip title="Maps Menu" body={MAP_RECORDS_HELP} side="below">
+          <span>Browse and edit source-backed Maps Menu records.</span>
         </TutorialTip>
       </p>
       <div className="map-records-toolbar">
@@ -94,10 +94,10 @@ export function MapRecordsWorkbench({
           ]}
         />
         <div className="context-action-stack compact">
-          <TutorialTip title="Visible Map Records" body={MAP_RECORD_FILTER_HELP} side="below">
+          <TutorialTip title="Visible Maps Menu Records" body={MAP_RECORD_FILTER_HELP} side="below">
             <span className="map-help-anchor">Current Filter</span>
           </TutorialTip>
-          <TutorialTip title="Show Map Records On Canvas" body={MAP_RECORD_CANVAS_HELP} side="below">
+          <TutorialTip title="Show Maps Menu Records On Canvas" body={MAP_RECORD_CANVAS_HELP} side="below">
             <button className="btn btn-primary btn-xs context-action-button" type="button" onClick={() => {
               onSetWorkbenchMode("canvas");
               onSetViewFlag("showMapRecords", true);
@@ -108,9 +108,9 @@ export function MapRecordsWorkbench({
         </div>
       </div>
       <div className="map-records-layout">
-        <div className="map-records-table" role="list" aria-label="Map records">
-          <TutorialTip title="Map Record Rows" body={MAP_RECORD_ROW_HELP} side="below">
-            <span className="map-help-anchor map-record-list-help">Map Record Rows</span>
+        <div className="map-records-table" role="list" aria-label="Maps Menu records">
+          <TutorialTip title="Maps Menu Rows" body={MAP_RECORD_ROW_HELP} side="below">
+            <span className="map-help-anchor map-record-list-help">Maps Menu Rows</span>
           </TutorialTip>
           {visibleRecords.map((record) => (
             <button
@@ -120,24 +120,24 @@ export function MapRecordsWorkbench({
               onClick={() => setSelectedRecordId(record.id)}
             >
               <span>
-                <b>{record.primaryName || record.name || `Map Record ${record.id}`}</b>
+                <b>{record.primaryName || record.name || `Maps Menu ${record.id}`}</b>
                 <small>{record.isDungeon ? "Dungeon" : "Land"} {record.level} at {record.startX},{record.startY}</small>
               </span>
               <em>PICT {record.pictId || "none"}</em>
             </button>
           ))}
-          {visibleRecords.length === 0 && <span className="empty-inline">No map records resolve to the current map.</span>}
+          {visibleRecords.length === 0 && <span className="empty-inline">No Maps Menu records resolve to the current map.</span>}
         </div>
         <div className="map-record-detail">
           {selectedRecord && selectedSemantic ? (
             <>
               <div className="map-record-summary-card">
-                <TutorialTip title="Map Record Summary" body={MAP_RECORD_SUMMARY_HELP} side="below">
+                <TutorialTip title="Maps Menu Summary" body={MAP_RECORD_SUMMARY_HELP} side="below">
                   <span className="map-help-anchor">Record Summary</span>
                 </TutorialTip>
                 <InfoGrid
                   rows={[
-                    ["Name", selectedRecord.primaryName || selectedRecord.name || `Map Record ${selectedRecord.id}`],
+                    ["Name", selectedRecord.primaryName || selectedRecord.name || `Maps Menu ${selectedRecord.id}`],
                     ["Level", `${selectedRecord.isDungeon ? "Dungeon" : "Land"} ${selectedRecord.level}`],
                     ["Start", `${selectedRecord.startX}, ${selectedRecord.startY}`],
                     ["Picture", selectedRecord.pictId || "none"],
@@ -174,7 +174,7 @@ export function MapRecordsWorkbench({
               />
             </>
           ) : (
-            <p className="empty-copy compact">Select a map record to inspect or edit it.</p>
+            <p className="empty-copy compact">Select a Maps Menu record to inspect or edit it.</p>
           )}
         </div>
       </div>
@@ -186,7 +186,7 @@ function semanticForMapRecord(record: MapRecord): SemanticEntity {
   return {
     id: `map-record:${record.id}`,
     type: "map record",
-    label: record.primaryName || record.name || `Map Record ${record.id}`,
+    label: record.primaryName || record.name || `Maps Menu ${record.id}`,
     editState: "editable",
     confidence: "confirmed",
     source: "Data MD2",
@@ -197,7 +197,7 @@ function semanticForMapRecord(record: MapRecord): SemanticEntity {
     editable: true,
     summary: {
       id: record.id,
-      name: record.primaryName || record.name || `Map Record ${record.id}`,
+      name: record.primaryName || record.name || `Maps Menu ${record.id}`,
       startX: record.startX,
       startY: record.startY,
       level: record.level,
@@ -309,7 +309,7 @@ function MapRecordEditor({
     <details className="context-section map-record-editor" open>
       <summary>
         <TutorialTip title="Edit Map Record" body={MAP_RECORD_EDITOR_HELP} side="below">
-          <span>Edit Map Record</span>
+        <span>Edit Maps Menu Record</span>
         </TutorialTip>
         <b>Map Settings</b>
       </summary>
@@ -378,7 +378,7 @@ function MapRecordEditor({
         </TutorialTip>
       </div>
       <p className="empty-copy compact">
-        Names stay read-only because they are stored in the scenario resource data. Unknown map-setting bytes stay preserved on export.
+        Menu names come from the scenario Map Names STR# resources. Unknown map-setting bytes stay preserved on export.
       </p>
     </details>
   );

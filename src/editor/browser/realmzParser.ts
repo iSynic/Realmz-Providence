@@ -33,7 +33,7 @@ import {
   ResourceAsset
 } from "../types";
 import { browserReferenceAtlasUrl, hasBrowserReferenceAtlas } from "./atlasPaths";
-import { parseResourceFork, type ResourceEntry } from "./library";
+import { parseResourceFork, parseStringListResource, type ResourceEntry } from "./library";
 import { inspectResourcePreview } from "./resourcePreview";
 import { actionOptionFor, normalizeStepOpcode } from "../realmzActions";
 import { referencedMapIconIds } from "../map/renderValues";
@@ -65,6 +65,8 @@ const BROWSER_EAGER_ICON_PREVIEW_MAX_BYTES = 24 * 1024;
 const BROWSER_EAGER_SOUND_PREVIEW_MAX_BYTES = 96 * 1024;
 const BROWSER_EAGER_SOUND_PREVIEW_MAX_COUNT = 8;
 const MONSTER_ICON_PAIR_OFFSET = 308;
+const PRIMARY_MAP_NAMES_RESOURCE_ID = -102;
+const SECONDARY_MAP_NAMES_RESOURCE_ID = -101;
 
 export const TRACKED_FILES = [
   "Scenario",
@@ -200,6 +202,7 @@ export function parseScenarioBuffers(buffers: Map<string, Uint8Array>): ParsedBr
   attachRenderInfo(maps, randomLevels);
   const landLayout = parseLandLayout(buffers.get("Layout"));
   const mapRecords = parseMapRecords(buffers.get("Data MD2"));
+  applyMapNameHints(maps, mapRecords, buffers);
   const tileAttributes = [
     ...parseTileAttributes(buffers.get("Data Solids")),
     ...parseLandlookMapstats(buffers.get("Data Custom 1 BD"), 6, "Data Custom 1 BD"),
@@ -1121,6 +1124,66 @@ function buildScenarioIconCatalog(
     seen.add(resource.id);
   }
   return icons.sort((a, b) => a.resourceId - b.resourceId);
+}
+
+type BrowserMapNameHint = {
+  id: number;
+  name: string;
+  primaryName: string;
+  secondaryName: string;
+  source: string;
+};
+
+function applyMapNameHints(maps: MapEntity[], mapRecords: MapRecord[], buffers: Map<string, Uint8Array>) {
+  const names = resourceMapNames(buffers);
+  if (names.size === 0) return;
+  for (const record of mapRecords) {
+    const hint = names.get(record.id);
+    if (!hint || !hint.name) continue;
+    record.name = hint.name;
+    record.primaryName = hint.primaryName || undefined;
+    record.secondaryName = hint.secondaryName || undefined;
+    record.nameSource = hint.source;
+    const map = maps.find((candidate) => candidate.levelType === (record.isDungeon ? "dungeon" : "land") && candidate.index === record.level);
+    if (map) map.name = hint.name;
+  }
+}
+
+function resourceMapNames(buffers: Map<string, Uint8Array>) {
+  const primary: string[] = [];
+  const secondary: string[] = [];
+  const sources = new Set<string>();
+  for (const { source, resource } of scenarioResourceEntries(buffers)) {
+    if (resource.resourceType !== "STR#" || resource.name !== "Map Names") continue;
+    if (resource.id === PRIMARY_MAP_NAMES_RESOURCE_ID) {
+      primary.splice(0, primary.length, ...parseStringListResource(resource.data));
+      sources.add(`${source}:STR# ${resource.id}`);
+    } else if (resource.id === SECONDARY_MAP_NAMES_RESOURCE_ID) {
+      secondary.splice(0, secondary.length, ...parseStringListResource(resource.data));
+      sources.add(`${source}:STR# ${resource.id}`);
+    }
+  }
+  const names = new Map<number, BrowserMapNameHint>();
+  const count = Math.max(primary.length, secondary.length);
+  for (let id = 0; id < count; id += 1) {
+    const primaryName = cleanResourceMapName(primary[id] ?? "");
+    const secondaryName = cleanResourceMapName(secondary[id] ?? "");
+    const name = primaryName || secondaryName;
+    if (!name && !primaryName && !secondaryName) continue;
+    names.set(id, {
+      id,
+      name,
+      primaryName,
+      secondaryName,
+      source: Array.from(sources).join(", ")
+    });
+  }
+  return names;
+}
+
+function cleanResourceMapName(value: string) {
+  const trimmed = value.trim();
+  return trimmed && Array.from(trimmed).every((ch) => ch === "-") ? "" : trimmed;
 }
 
 function parseScenarioMonsterIconOverrides(

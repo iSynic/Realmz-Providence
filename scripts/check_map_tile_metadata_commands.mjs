@@ -1,5 +1,8 @@
+import fs from "node:fs";
+import path from "node:path";
 import { createServer } from "vite";
 
+const root = process.cwd();
 const server = await createServer({
   appType: "custom",
   logLevel: "silent",
@@ -18,6 +21,7 @@ try {
   checkCustomLandlookBaseSync(commands);
   checkBuiltInLandlookStaysReadOnly(commands);
   checkSpecialTileSolidity(commands, metadata);
+  checkMapsMenuRecordEvidence();
 
   if (failures.length > 0) {
     console.error("Map tile metadata command checks failed:");
@@ -117,6 +121,41 @@ function checkSpecialTileSolidity({ updateSpecialTileSolidity }, { classifyTileV
   const meaning = classifyTileValue(-384, customTileset(), next.tileAttributes, {});
   assert(meaning.attributeFlags.includes("special-icon"), "negative special tile did not keep special-icon grouping");
   assert(meaning.attributeFlags.includes("solid"), "negative special tile did not pick up Data Solids solidity");
+}
+
+function checkMapsMenuRecordEvidence() {
+  const browserParser = fs.readFileSync(path.join(root, "src/editor/browser/realmzParser.ts"), "utf8");
+  const mapWorkbench = fs.readFileSync(path.join(root, "src/editor/components/maps/MapRecordsWorkbench.tsx"), "utf8");
+  const mapsPanel = fs.readFileSync(path.join(root, "src/editor/panels/MapsPanel.tsx"), "utf8");
+  const evidence = fs.readFileSync(path.join(root, "docs/format-evidence-cards/map-record-runtime-anchors.md"), "utf8");
+  for (const snippet of [
+    "PRIMARY_MAP_NAMES_RESOURCE_ID = -102",
+    "SECONDARY_MAP_NAMES_RESOURCE_ID = -101",
+    "applyMapNameHints(maps, mapRecords, buffers)",
+    "parseStringListResource(resource.data)",
+    "record.primaryName = hint.primaryName || undefined",
+    "map.name = hint.name"
+  ]) {
+    assert(browserParser.includes(snippet), `Browser parser should apply Maps Menu STR# name hints: ${snippet}`);
+  }
+  for (const snippet of [
+    "Maps Menu",
+    "Realmz Data MD2 records",
+    "STR# -102/-101 Map Names resources",
+    "Menu names come from the scenario Map Names STR# resources"
+  ]) {
+    assert(mapWorkbench.includes(snippet), `Maps Menu workbench should use runtime-backed authoring language: ${snippet}`);
+  }
+  assert(mapsPanel.includes('label: "Maps Menu"'), "Maps panel should expose Data MD2 records as Maps Menu entries.");
+  for (const snippet of [
+    "map[20]",
+    "STR# -102",
+    "STR# -101",
+    "showmap(theItem - 4)",
+    "opcode 29"
+  ]) {
+    assert(evidence.includes(snippet), `Map record evidence should document the runtime Maps menu model: ${snippet}`);
+  }
 }
 
 function projectWithCustomLandlook(overrides = {}) {

@@ -40,7 +40,7 @@ const MAP_TOOLSET_MODES: Array<{ id: MapWorkbenchMode; label: string; body: stri
   { id: "land-layout", label: "Land Layout", body: "Outdoor adjacency grid" },
   { id: "land-tiles", label: "Land Tiles", body: "Tile attributes and combat map" },
   { id: "random-areas", label: "Random Encounters", body: "Encounter rectangles" },
-  { id: "map-records", label: "Map Records", body: "Canvas-backed starts and notes" }
+  { id: "map-records", label: "Maps Menu", body: "Menu maps, starts, and notes" }
 ];
 
 const PAINT_PALETTE_STORAGE_KEY = "providence.mapPaintPalette.v1";
@@ -504,7 +504,7 @@ function modeLabel(mode: MapWorkbenchMode) {
     case "land-layout": return "Land Layout";
     case "land-tiles": return "Land Tiles";
     case "random-areas": return "Random Encounters";
-    case "map-records": return "Map Records";
+    case "map-records": return "Maps Menu";
   }
 }
 
@@ -833,7 +833,7 @@ function MapToolsetModeNotice({
       body: "These are Realmz random encounter rectangles: chance, battle ranges, text, sound, and extra Action Point doors."
     },
     "map-records": {
-      title: "Map Records mode",
+      title: "Maps Menu mode",
       body: "Use the center table to browse starts, picture links, rectangles, notes, and map-record fields."
     }
   };
