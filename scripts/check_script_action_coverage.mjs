@@ -6,19 +6,25 @@ const catalogPath = path.join(root, "src/editor/panels/scripts/scriptActionCatal
 const panelPath = path.join(root, "src/editor/panels/ScriptsPanel.tsx");
 const edcdPath = path.join(root, "src/editor/components/EdcdRowEditor.tsx");
 const edcdRowsPath = path.join(root, "src/editor/edcdRows.ts");
+const edcdTargetsPath = path.join(root, "src/editor/edcdTargets.ts");
 const appUtilsPath = path.join(root, "src/editor/app/appUtils.ts");
 const appBootstrapPath = path.join(root, "src/editor/app/useAppBootstrapEffects.ts");
 const semanticPath = path.join(root, "src/editor/browser/semantic.ts");
 const browserProjectPath = path.join(root, "src/editor/browser/project.ts");
+const rustProjectPath = path.join(root, "src-tauri/src/project.rs");
+const rustValidationPath = path.join(root, "src-tauri/src/validation.rs");
 
 const catalog = fs.readFileSync(catalogPath, "utf8");
 const panel = fs.readFileSync(panelPath, "utf8");
 const edcd = fs.readFileSync(edcdPath, "utf8");
 const edcdRows = fs.readFileSync(edcdRowsPath, "utf8");
+const edcdTargets = fs.readFileSync(edcdTargetsPath, "utf8");
 const appUtils = fs.readFileSync(appUtilsPath, "utf8");
 const appBootstrap = fs.readFileSync(appBootstrapPath, "utf8");
 const semantic = fs.readFileSync(semanticPath, "utf8");
 const browserProject = fs.readFileSync(browserProjectPath, "utf8");
+const rustProject = fs.readFileSync(rustProjectPath, "utf8");
+const rustValidation = fs.readFileSync(rustValidationPath, "utf8");
 const targetPickerPath = path.join(root, "src/editor/components/RealmzTargetPicker.tsx");
 const inventoryPath = path.join(root, "src/editor/panels/scripts/scriptInventory.tsx");
 const validationPath = path.join(root, "src/editor/scriptValidation.ts");
@@ -66,6 +72,31 @@ if (!advancedMatch) {
   }
 }
 
+for (const opcode of [84, 98, 99]) {
+  const registrationPattern = new RegExp(`${opcode}:\\s*\\{\\s*storage:\\s*"direct-code-id",\\s*formKind:\\s*"step-only",\\s*defaultDraft:\\s*\\{\\s*rawCode:\\s*${opcode},\\s*id:\\s*0\\s*\\}\\s*\\}`);
+  if (!registrationPattern.test(catalog)) {
+    failures.push(`Registration action ${opcode} should be step-only with a zero ID default.`);
+  }
+}
+
+for (const snippet of [
+  "62: {",
+  "label: \"TEXT Resource\"",
+  "targetFamily: \"text-resource\"",
+  "Classic TEXT resource ID to display"
+]) {
+  if (!catalog.includes(snippet)) failures.push(`Scrolling-text opcode 62 should be modeled as a TEXT resource target: ${snippet}`);
+}
+
+for (const snippet of [
+  "const RANDOM_REGION_PARAMETERS",
+  "label: \"Encounter Chance\"",
+  "Providence edits positive values as percent",
+  "if (definition.opcode === -23) return false"
+]) {
+  if (!catalog.includes(snippet)) failures.push(`Random encounter area authoring is missing unified chooser or percent-facing metadata: ${snippet}`);
+}
+
 for (const snippet of [
   "authoringLevel:",
   "validationPosture:",
@@ -77,13 +108,111 @@ for (const snippet of [
 for (const snippet of [
   "resolveSignedMessageTarget",
   "signedTargetValueForSelection",
-  "signedTargetBehaviorLabel"
+  "signedTargetBehaviorLabel",
+  "return id > 0 ? soundReferenceOption(id) : null",
+  "if (label === \"TEXT Resource\") return `TEXT ${value}`",
+  "62: { label: \"TEXT Resource\"",
+  "const id = code === 62 ? resolvedValue : Math.abs(resolvedValue)",
+  "addTextResourceTargets(project, options, catalog)",
+  "return textResourceOptionForId(project, id, catalog)",
+  "62: [\"resource\"]",
+  "const isSearchDrivenPicker = shouldShowSearch",
+  "TargetMacroFlowPreview"
 ]) {
   if (!targetPicker.includes(snippet)) failures.push(`Target picker is missing signed message helper: ${snippet}`);
+}
+const searchDrivenTargetBranch = targetPicker.match(/\{isSearchDrivenPicker \? \([\s\S]*?\)\s*:\s*\(/);
+if (!searchDrivenTargetBranch) {
+  failures.push("Target picker is missing the search-driven branch for searchable direct targets.");
+} else if (searchDrivenTargetBranch[0].includes("<select")) {
+  failures.push("Searchable direct target fields must not render both search and select controls.");
+}
+const fixedListTargetBranch = targetPicker.match(/\) : \(\s*<label className="target-picker-select-label"[\s\S]*?\)\}\s*\{showWaitControl/);
+if (!fixedListTargetBranch) {
+  failures.push("Target picker is missing the compact fixed-list branch.");
+} else {
+  for (const snippet of [
+    "target-picker-select-row with-open-action",
+    "className=\"btn btn-secondary btn-xs icon-only target-picker-open-button\""
+  ]) {
+    if (!fixedListTargetBranch[0].includes(snippet)) failures.push(`Fixed-list target picker is missing compact open behavior: ${snippet}`);
+  }
+  if (fixedListTargetBranch[0].includes(">Open Target<")) {
+    failures.push("Fixed-list target picker should use a compact open icon, not a separate Open Target button.");
+  }
+}
+if (targetPicker.includes("if (resolvedValue === 0) return null;")) {
+  failures.push("Target picker must not treat every 0 ID as unselected; encounter/map/quest record 0 can be real targets.");
+}
+if (targetPicker.includes("|| value === 0")) {
+  failures.push("Target picker should not offer Create when a real zero-ID target is already selected.");
+}
+for (const snippet of [
+  "const inlineDirectTargetPickerAvailable = Boolean(targetPickerConfig(selectedDraft.rawCode));",
+  "&& !inlineDirectTargetPickerAvailable && !inlineDirectTargetEditorAvailable",
+  "definitionForActionChooserUse",
+  "selectedDraft.rawCode === -23",
+  "actionChooserDefinitionMatchesDraft",
+  "onStepOpcodeChange"
+]) {
+  if (!panel.includes(snippet)) failures.push(`Selected step detail is missing inline target drawer suppression: ${snippet}`);
+}
+const edcdSearchTargetField = edcd.match(/function EdcdSearchTargetField\([\s\S]*?\n}\r?\n\r?\nfunction EdcdSelectTargetField/);
+if (!edcdSearchTargetField) {
+  failures.push("EDCD search target field is missing.");
+} else {
+  for (const snippet of [
+    "onKeyDown={handleSearchKeyDown}",
+    "chooseOption(firstOption)",
+    "className=\"btn btn-secondary btn-xs icon-only\"",
+    "className=\"btn btn-danger btn-xs icon-only\""
+  ]) {
+    if (!edcdSearchTargetField[0].includes(snippet)) failures.push(`EDCD search target field is missing compact search behavior: ${snippet}`);
+  }
+  if (edcdSearchTargetField[0].includes("Open {label}")) {
+    failures.push("EDCD search target fields should use compact open icons, not an inline Open label button.");
+  }
+}
+const edcdSelectTargetField = edcd.match(/function EdcdSelectTargetField\([\s\S]*?\n}\r?\n\r?\nfunction EdcdMacroFlowPreview/);
+if (!edcdSelectTargetField) {
+  failures.push("EDCD select target field is missing.");
+} else {
+  for (const snippet of [
+    "const hasOpenTarget = Boolean(selected?.entity && onOpen)",
+    "edcd-target-select-row with-open-action",
+    "edcd-target-inline-detail",
+    "EdcdMacroFlowPreview"
+  ]) {
+    if (!edcdSelectTargetField[0].includes(snippet)) failures.push(`EDCD select target field is missing compact target behavior: ${snippet}`);
+  }
+  if (edcdSelectTargetField[0].includes("edcd-selected-target-row")) {
+    failures.push("EDCD select target fields must not render a second selected-target card under the picker.");
+  }
+}
+
+for (const snippet of [
+  "function RandomRegionLevelField",
+  "function RandomRegionChanceField",
+  "randomRegionLevelField(shapeId, internalName)",
+  "randomRegionChanceField(shapeId, internalName)",
+  "formatPercentFromTenThousand",
+  "Invisible encounter (-1)"
+]) {
+  if (!edcd.includes(snippet)) failures.push(`Random encounter area EDCD editor is missing mixed level/chance controls: ${snippet}`);
+}
+
+for (const snippet of [
+  "shape.toLowerCase() === \"random-region-mutation\" && field.toLowerCase() === \"level\"",
+  "const levelType = opcode === -23 ? \"dungeon\" : \"land\""
+]) {
+  if (!edcdTargets.includes(snippet)) failures.push(`Random encounter area target validation is missing opcode-aware map level checks: ${snippet}`);
 }
 
 if (!validation.includes("resolveSignedMessageTarget(code, id)")) {
   failures.push("Script validation does not normalize signed message targets.");
+}
+if (rustValidation.includes("1 | 62 | 71")) {
+  failures.push("Rust validation must not treat scrolling-text opcode 62 as a Data SD2 message target.");
 }
 for (const snippet of [
   "const ed3Summary = trigger.source === \"Data ED3\" ? ed3DiagnosticForTrigger(project, trigger) : null",
@@ -132,6 +261,9 @@ for (const snippet of [
 ]) {
   if (!semantic.includes(snippet)) failures.push(`Browser semantic schema is missing combat macro reachability support: ${snippet}`);
 }
+if (!rustProject.includes("pub const SEMANTIC_SCHEMA_VERSION: u32 = 5;")) {
+  failures.push("Rust semantic schema version must match browser semantic schema version 5.");
+}
 if (
   semantic.indexOf("addBattles(schema, projectParts.battles)") > semantic.indexOf("classifyEd3Reachability(schema, projectParts.triggers)") ||
   semantic.indexOf("addMonsters(schema, projectParts.monsters, projectParts.monsterSets)") > semantic.indexOf("classifyEd3Reachability(schema, projectParts.triggers)")
@@ -177,10 +309,12 @@ for (const snippet of [
 
 for (const snippet of [
   "isSemanticMappingPending(state.project)",
-  "\"scripts\"",
-  "buildBrowserSemanticSchemaForProject(project)"
+  "\"scripts\""
 ]) {
   if (!appBootstrap.includes(snippet)) failures.push(`App bootstrap is missing Scripts semantic mapping support: ${snippet}`);
+}
+if (!/buildBrowserSemanticSchemaForProject\(\s*project\b/.test(appBootstrap)) {
+  failures.push("App bootstrap is missing Scripts semantic mapping support: buildBrowserSemanticSchemaForProject(project)");
 }
 
 for (const snippet of [
@@ -240,6 +374,17 @@ for (const snippet of [
   "contextKind: \"complexEncounter\""
 ]) {
   if (!edcdRows.includes(snippet)) failures.push(`Action Settings usage is missing encounter caller coverage: ${snippet}`);
+}
+
+for (const snippet of [
+  "landLevel",
+  "dungeonLevel",
+  "dungeonMoveLevelTargetKind",
+  "normalizedShape === \"dungeon-move\" && normalizedName === \"level\"",
+  "record.levelType === \"land\" && record.index === value",
+  "record.levelType === \"dungeon\" && record.index === value"
+]) {
+  if (!edcdTargets.includes(snippet)) failures.push(`Action Settings target validation is missing typed dungeon-move map handling: ${snippet}`);
 }
 
 for (const snippet of [

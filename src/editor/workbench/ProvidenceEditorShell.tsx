@@ -145,6 +145,7 @@ export function ProvidenceEditorShell({
         activeWorkbench={state.activeWorkbench}
         project={state.project}
         catalog={state.libraryCatalog}
+        semanticMapping={state.semanticMapping}
       />
     </div>
   );

@@ -158,6 +158,12 @@ fn import_scenario_with_name(
             source_path.display()
         )));
     }
+    if source_path.join(PROJECT_FILE_NAME).is_file() {
+        return Err(ProvidenceError::message(format!(
+            "{} is a Providence project package. Use Open Project for .providence folders; import expects an original Realmz scenario folder.",
+            source_path.display()
+        )));
+    }
 
     fs::create_dir_all(project_dir).with_path(project_dir)?;
     let raw_dir = project_dir.join(RAW_SOURCES_DIR);
@@ -183,6 +189,12 @@ fn import_scenario_with_name(
             let bytes = fs::read(&path).with_path(&path)?;
             buffers.insert(file.name.clone(), bytes);
         }
+    }
+    if buffers.is_empty() {
+        return Err(ProvidenceError::message(format!(
+            "No Realmz scenario data files were found in {}. Choose the scenario folder containing files such as Data LD, Data DD, Data ED, and Scenario.",
+            source_path.display()
+        )));
     }
 
     let mut parsed = parse_scenario_buffers(&buffers);
@@ -299,10 +311,7 @@ pub fn build_project_semantic_schema(
 
 pub fn open_project(project_dir: impl AsRef<Path>) -> Result<ProvidenceProject> {
     let project_dir = project_dir.as_ref();
-    let project_path = project_dir.join(PROJECT_FILE_NAME);
-    let text = fs::read_to_string(&project_path).with_path(&project_path)?;
-    let mut project: ProvidenceProject =
-        serde_json::from_str(&text).with_json_path(project_path)?;
+    let mut project = read_saved_project(project_dir)?;
     backfill_tileset_metadata(&mut project);
     ensure_reference_tile_attributes(&mut project)?;
     hydrate_scenario_metadata(project_dir, &mut project)?;
@@ -319,6 +328,30 @@ pub fn open_project(project_dir: impl AsRef<Path>) -> Result<ProvidenceProject> 
     import_sound_assets(&raw_dir, &project_dir.join(ASSETS_DIR), &mut project)?;
     save_project(project_dir, &project)?;
     Ok(project)
+}
+
+pub fn open_project_for_semantic_mapping(
+    project_dir: impl AsRef<Path>,
+) -> Result<ProvidenceProject> {
+    let project_dir = project_dir.as_ref();
+    let mut project = read_saved_project(project_dir)?;
+    backfill_tileset_metadata(&mut project);
+    ensure_reference_tile_attributes(&mut project)?;
+    hydrate_scenario_metadata(project_dir, &mut project)?;
+    let raw_dir = project_dir.join(if project.source.raw_sources_dir.is_empty() {
+        RAW_SOURCES_DIR
+    } else {
+        project.source.raw_sources_dir.as_str()
+    });
+    hydrate_custom_spell_names(&raw_dir, &mut project)?;
+    hydrate_rule_names(&raw_dir, None, &mut project)?;
+    Ok(project)
+}
+
+fn read_saved_project(project_dir: &Path) -> Result<ProvidenceProject> {
+    let project_path = project_dir.join(PROJECT_FILE_NAME);
+    let text = fs::read_to_string(&project_path).with_path(&project_path)?;
+    serde_json::from_str(&text).with_json_path(project_path)
 }
 
 pub fn save_project(project_dir: impl AsRef<Path>, project: &ProvidenceProject) -> Result<()> {
@@ -2074,5 +2107,46 @@ mod tests {
         );
         assert_eq!(reopened.scenario_icon_resources.len(), 1);
         assert_eq!(reopened.scenario_icon_resources[0].resource_base64, "CCCC");
+    }
+
+    #[test]
+    fn import_scenario_rejects_non_scenario_project_package() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let source = temp.path().join("Empty.providence");
+        fs::create_dir_all(source.join(RAW_SOURCES_DIR)).expect("create raw sources");
+        fs::write(source.join(PROJECT_FILE_NAME), "{}").expect("write project json");
+        let target = temp.path().join("Imported.providence");
+
+        let error = import_scenario(&source, &target)
+            .expect_err("project packages should not import as scenarios");
+        let message = error.to_string();
+        assert!(
+            message.contains("Providence project package"),
+            "unexpected error: {message}"
+        );
+        assert!(
+            !target.join(PROJECT_FILE_NAME).exists(),
+            "invalid scenario imports should not save an empty project"
+        );
+    }
+
+    #[test]
+    fn import_scenario_rejects_empty_source_folder() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let source = temp.path().join("Not A Scenario");
+        fs::create_dir_all(&source).expect("create source");
+        let target = temp.path().join("Imported.providence");
+
+        let error = import_scenario(&source, &target)
+            .expect_err("empty folders should not import as scenarios");
+        let message = error.to_string();
+        assert!(
+            message.contains("No Realmz scenario data files"),
+            "unexpected error: {message}"
+        );
+        assert!(
+            !target.join(PROJECT_FILE_NAME).exists(),
+            "invalid scenario imports should not save an empty project"
+        );
     }
 }

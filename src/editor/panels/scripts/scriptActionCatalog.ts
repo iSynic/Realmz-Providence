@@ -19,6 +19,8 @@ export type ScriptActionCategory =
   | "Extra Action Points"
   | "Advanced";
 
+export type ScriptActionCategoryFilter = "All" | ScriptActionCategory;
+
 export type ScriptActionStorage =
   | "direct-code-id"
   | "data-edcd-parameter-row"
@@ -45,6 +47,7 @@ export type ScriptStepFormKind =
   | "logic"
   | "media"
   | "reusable-action"
+  | "step-only"
   | "guided-settings"
   | "advanced";
 
@@ -161,7 +164,7 @@ const ADVANCED_ACTIONS = new Set([121]);
 const IGNORED_ACTIONS = new Set([0, ...NOT_USED_ACTION_CODES]);
 
 const ACTION_OVERRIDES: Record<number, Partial<Pick<ScriptActionDefinition, "label" | "shortLabel" | "category" | "description" | "searchTerms">>> = {
-  [-23]: { label: "Change Random Encounter Area", shortLabel: "Random Area", category: "Encounters", description: "Adjust a dungeon random encounter area." },
+  [-23]: { label: "Change Dungeon Random Encounter Area", shortLabel: "Random Area", category: "Encounters", description: "Adjust a dungeon random encounter area." },
   [-14]: { label: "Pick Opposite Characters", shortLabel: "Pick Opposite", category: "Party", description: "Switch the selected character set to its opposite." },
   0: { label: "Empty Step", shortLabel: "Empty", category: "Advanced", description: "Leave this step unused." },
   1: { label: "Show Message", shortLabel: "Show Message", category: "Dialogue", description: "Show a scenario message." },
@@ -186,7 +189,13 @@ const ACTION_OVERRIDES: Record<number, Partial<Pick<ScriptActionDefinition, "lab
   20: { label: "Move Party", shortLabel: "Move Party", category: "Travel", description: "Move the party to another level and cell." },
   21: { label: "Branch On Item", shortLabel: "Item Branch", category: "Items", description: "Branch depending on whether the party has an item." },
   22: { label: "Change Item", shortLabel: "Item Change", category: "Items", description: "Drop, charge, or replace item data." },
-  23: { label: "Change Random Encounter Area", shortLabel: "Random Area", category: "Encounters", description: "Adjust a random encounter area." },
+  23: {
+    label: "Change Random Encounter Area",
+    shortLabel: "Random Area",
+    category: "Encounters",
+    description: "Adjust a land or dungeon random encounter area.",
+    searchTerms: ["dungeon", "land", "random rectangle", "random encounter rectangle", "random area", "-23", "23"]
+  },
   24: { label: "Continue Steps", shortLabel: "Continue", category: "Logic", description: "Keep evaluating following steps." },
   25: { label: "Exit And Delete Action Point", shortLabel: "Exit/Delete AP", category: "Logic", description: "Stop this script and delete or disable the current Action Point after it fires." },
   26: { label: "Get Click", shortLabel: "Get Click", category: "Logic", description: "Wait for or capture a player click for following action behavior." },
@@ -297,11 +306,25 @@ const ACTION_OVERRIDES: Record<number, Partial<Pick<ScriptActionDefinition, "lab
 
 type ScriptActionMetadataOverride = {
   storage?: ScriptActionStorage;
+  formKind?: ScriptStepFormKind;
   edcdShape?: string;
   target?: Partial<ScriptTargetFieldDefinition>;
   defaultDraft?: ScriptStepDraft;
   parameterDefaults?: readonly [number, number, number, number, number];
   parameters?: Record<number, Partial<ScriptParameterFieldDefinition>>;
+};
+
+const RANDOM_REGION_PARAMETER_DEFAULTS: readonly [number, number, number, number, number] = [0, 0, 0, 0, 0];
+
+const RANDOM_REGION_PARAMETERS: Record<number, Partial<ScriptParameterFieldDefinition>> = {
+  0: { label: "Map Level", targetFamily: "map-level" },
+  1: { label: "Random Area" },
+  2: {
+    label: "Encounter Chance",
+    help: "Stored as chances in 10,000. Providence edits positive values as percent; -1 uses the invisible encounter."
+  },
+  3: { label: "Battle Range Low", targetFamily: "battle" },
+  4: { label: "Battle Range High", targetFamily: "battle" }
 };
 
 const ACTION_METADATA_OVERRIDES: Record<number, ScriptActionMetadataOverride> = {
@@ -400,19 +423,21 @@ const ACTION_METADATA_OVERRIDES: Record<number, ScriptActionMetadataOverride> = 
       4: { label: "Message" }
     }
   },
+  [-23]: {
+    storage: "data-edcd-parameter-row",
+    edcdShape: "random-region-mutation",
+    target: parameterRowTarget("Random Encounter Area"),
+    defaultDraft: { rawCode: -23, id: 0, parameters: RANDOM_REGION_PARAMETER_DEFAULTS },
+    parameterDefaults: RANDOM_REGION_PARAMETER_DEFAULTS,
+    parameters: RANDOM_REGION_PARAMETERS
+  },
   23: {
     storage: "data-edcd-parameter-row",
     edcdShape: "random-region-mutation",
     target: parameterRowTarget("Random Encounter Area"),
-    defaultDraft: { rawCode: 23, id: 0, parameters: [0, 0, 0, 0, 0] },
-    parameterDefaults: [0, 0, 0, 0, 0],
-    parameters: {
-      0: { label: "Land Level", targetFamily: "map-level" },
-      1: { label: "Rectangle" },
-      2: { label: "Chance Scale", help: "Encounter chance value in Realmz's 10,000-point scale." },
-      3: { label: "Battle Low", targetFamily: "battle" },
-      4: { label: "Battle High", targetFamily: "battle" }
-    }
+    defaultDraft: { rawCode: 23, id: 0, parameters: RANDOM_REGION_PARAMETER_DEFAULTS },
+    parameterDefaults: RANDOM_REGION_PARAMETER_DEFAULTS,
+    parameters: RANDOM_REGION_PARAMETERS
   },
   39: {
     storage: "data-ed3-direct",
@@ -428,11 +453,11 @@ const ACTION_METADATA_OVERRIDES: Record<number, ScriptActionMetadataOverride> = 
   62: {
     storage: "direct-code-id",
     target: {
-      label: "Scrolling Text",
+      label: "TEXT Resource",
       realmzField: "ID",
-      targetFamily: "scrolling-text",
+      targetFamily: "text-resource",
       defaultValue: 0,
-      help: "Scrolling text scene to display."
+      help: "Classic TEXT resource ID to display in the scrolling-text movie window. Divinity documents these as TEXT resources, commonly negative IDs such as -200 through -300, not normal scenario strings."
     },
     defaultDraft: { rawCode: 62, id: 0 }
   },
@@ -528,6 +553,9 @@ const ACTION_METADATA_OVERRIDES: Record<number, ScriptActionMetadataOverride> = 
     },
     defaultDraft: { rawCode: 71, id: 1 }
   },
+  84: { storage: "direct-code-id", formKind: "step-only", defaultDraft: { rawCode: 84, id: 0 } },
+  98: { storage: "direct-code-id", formKind: "step-only", defaultDraft: { rawCode: 98, id: 0 } },
+  99: { storage: "direct-code-id", formKind: "step-only", defaultDraft: { rawCode: 99, id: 0 } },
   122: {
     storage: "data-edcd-parameter-row",
     edcdShape: "fumble",
@@ -560,6 +588,8 @@ const LEGACY_CATEGORY_MAP: Record<string, ScriptActionCategory> = {
 
 export const SCRIPT_ACTION_CATEGORIES = CATEGORY_ORDER;
 
+export const SCRIPT_ACTION_CATEGORY_FILTERS: ScriptActionCategoryFilter[] = ["All", ...CATEGORY_ORDER];
+
 export const SCRIPT_ACTION_DEFINITIONS: ScriptActionDefinition[] = ACTION_OPTIONS.map((option) => buildActionDefinition(option));
 
 export const SCRIPT_ACTION_COVERAGE: ScriptActionCoverageEntry[] = SCRIPT_ACTION_DEFINITIONS.map((definition) => ({
@@ -589,14 +619,19 @@ export function scriptActionDefinitionFor(rawCode: number): ScriptActionDefiniti
   return buildActionDefinition(option, true);
 }
 
-export function actionDefinitionsForCategory(category: ScriptActionCategory, query = "") {
+export function actionDefinitionsForCategory(category: ScriptActionCategoryFilter, query = "") {
   const normalizedQuery = query.trim().toLowerCase();
   return SCRIPT_ACTION_DEFINITIONS.filter((definition) => {
+    if (definition.opcode === -23) return false;
     if (definition.authoringLevel === "ignored") return false;
-    if (definition.category !== category) return false;
+    if (category !== "All" && definition.category !== category) return false;
     if (!normalizedQuery) return true;
     return actionDefinitionSearchText(definition).includes(normalizedQuery);
   });
+}
+
+export function actionDefinitionPathLabel(definition: ScriptActionDefinition) {
+  return `${definition.categoryLabel} > ${definition.label}`;
 }
 
 export function actionDefinitionSearchText(definition: ScriptActionDefinition) {
@@ -739,7 +774,10 @@ function summarizeSettingsBackedAction(
     return `${definition.shortLabel}: ${rangeTargetSummary(project, "battle", values[0] ?? 0, values[1] ?? 0)}`;
   }
   if (code === 92 || code === 23 || code === -23) {
-    return `${definition.shortLabel}: ${mapLevelLabel(project, values[0] ?? 0)}, rectangle ${values[1] ?? 0}`;
+    const level = code === 23 || code === -23
+      ? randomRegionLevelLabel(project, code, values[0] ?? 0)
+      : mapLevelLabel(project, values[0] ?? 0);
+    return `${definition.shortLabel}: ${level}, random area ${values[1] ?? 0}`;
   }
   if (code === 106) {
     const state = values[0] === 1 ? "light" : values[0] === 2 ? "dark" : `state ${values[0] ?? 0}`;
@@ -753,7 +791,7 @@ function summarizeSettingsBackedAction(
     .slice(0, 3)
     .map((parameter) => {
       const value = values[parameter.index] ?? 0;
-      return `${parameter.label} ${targetValueSummary(project, catalog, definition, parameter, value)}`;
+      return `${parameter.label} ${targetValueSummary(project, catalog, definition, parameter, value, values)}`;
     });
   return fieldSummaries.length > 0 ? `${definition.shortLabel}: ${fieldSummaries.join(", ")}` : "";
 }
@@ -770,12 +808,13 @@ function targetValueSummary(
   catalog: LibraryCatalog | null | undefined,
   definition: ScriptActionDefinition,
   parameter: ScriptParameterFieldDefinition,
-  value: number
+  value: number,
+  values: number[] = [value]
 ) {
   if (parameter.targetFamily === "map-level") return mapLevelLabel(project, value);
   if (parameter.targetFamily === "message") return messageLabel(project, value);
   if (parameter.targetFamily === "battle") return targetRoute(project, "battle", Math.abs(value), catalog)?.label ?? String(value);
-  const targetKind = edcdFieldTargetKind(definition.edcdShape ?? "", parameter.internalName, definition.parameters.map((field) => field.internalName), [value], definition.opcode);
+  const targetKind = edcdFieldTargetKind(definition.edcdShape ?? "", parameter.internalName, definition.parameters.map((field) => field.internalName), values, definition.opcode);
   if (targetKind) return targetRoute(project, targetKind, value, catalog)?.label ?? String(value);
   if (definition.target?.targetFamily && definition.target.targetFamily !== "parameter-row") {
     const target = targetOptionForOpcodeValue(project, definition.opcode, value, catalog);
@@ -831,6 +870,12 @@ function mapLevelLabel(project: Project | null, value: number) {
   if (value < 0) return "current level";
   const map = project?.maps.find((candidate) => candidate.index === value);
   return map?.name ?? `Land ${value}`;
+}
+
+function randomRegionLevelLabel(project: Project | null, rawCode: number, value: number) {
+  const levelType = rawCode === -23 ? "dungeon" : "land";
+  const map = project?.maps.find((candidate) => candidate.levelType === levelType && candidate.index === value);
+  return map?.name ?? `${levelType === "dungeon" ? "Dungeon" : "Land"} ${value}`;
 }
 
 function coordinateLabel(value: number | undefined) {
@@ -909,7 +954,7 @@ function buildActionDefinition(option: RealmzActionOption, forceAdvanced = false
     : usesOfficialManualTitle
       ? option.displayTitle
       : override?.shortLabel ?? option.displayTitle;
-  const formKind = formKindFor(code, category, storage, metadata?.edcdShape ?? option.edcdShape, target?.targetFamily);
+  const formKind = metadata?.formKind ?? formKindFor(code, category, storage, metadata?.edcdShape ?? option.edcdShape, target?.targetFamily);
   return {
     opcode: code,
     label,

@@ -181,7 +181,10 @@ export function useProjectLifecycleActions({
         setExportDir(defaultExportPath(roots.export, project.scenario.name));
         dispatch({ type: "setProject", project, selectedMapId: project.maps[0]?.id ?? null });
         dispatch({ type: "setTab", tab: "maps" });
-        dispatch({ type: "setStatus", status: `Imported ${handle.name} into ${project.scenario.name}` });
+        dispatch({
+          type: "setStatus",
+          status: `Imported ${handle.name} into ${project.scenario.name}: ${project.maps.length.toLocaleString()} maps, ${project.triggers.length.toLocaleString()} action points`
+        });
       } catch (error) {
         dispatch({ type: "setStatus", status: `Browser import failed: ${commandError(error)}` });
       }
@@ -204,7 +207,10 @@ export function useProjectLifecycleActions({
       });
       dispatch({ type: "setProject", project, selectedMapId: project.maps[0]?.id ?? null });
       dispatch({ type: "setTab", tab: "maps" });
-      dispatch({ type: "setStatus", status: `Imported ${pathBaseName(selectedPath)} into ${project.scenario.name}` });
+      dispatch({
+        type: "setStatus",
+        status: `Imported ${pathBaseName(selectedPath)} into ${project.scenario.name}: ${project.maps.length.toLocaleString()} maps, ${project.triggers.length.toLocaleString()} action points`
+      });
     } catch (error) {
       dispatch({ type: "setStatus", status: `Import failed: ${commandError(error)}` });
     }

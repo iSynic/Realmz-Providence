@@ -77,7 +77,6 @@ function validateAction(project: Project, trigger: TriggerRecord, slot: number, 
   if (option.edcdShape) {
     const rowId = Math.max(0, id);
     const row = project.extracodes.find((candidate) => candidate.id === rowId);
-    diagnostics.push(slotIssue("info", trigger.id, slot, "edcd-parameter-row", "ID selects a settings row.", `${option.shortLabel} uses Data EDCD row ${rowId}; the editable targets live in Settings fields, not in the step ID itself.`));
     if (!row) {
       diagnostics.push(slotIssue("warning", trigger.id, slot, "missing-settings", "Missing settings.", `${option.shortLabel} needs settings ${rowId}; create them before relying on this behavior.`));
     } else if (row.values.length !== 5 || row.values.some((value) => !Number.isFinite(value))) {
@@ -93,7 +92,7 @@ function validateAction(project: Project, trigger: TriggerRecord, slot: number, 
             trigger.id,
             slot,
             `missing-edcd-${issue.field}`,
-            `Missing ${fieldLabel.toLowerCase()} target.`,
+            `Missing ${issue.targetLabel} target.`,
             `Settings ${rowId} field ${issue.index + 1} (${fieldLabel}) points at ${issue.targetLabel} ${issue.value}, but that target does not exist.`
           ));
         }
@@ -106,7 +105,8 @@ function validateAction(project: Project, trigger: TriggerRecord, slot: number, 
     const resolvedId = resolveSignedMessageTarget(code, id);
     const selected = targetOptionForOpcodeValue(project, code, id, catalog);
     if (!selected) {
-      diagnostics.push(slotIssue("warning", trigger.id, slot, "unresolved-target", `${config.label} does not resolve to a known target.`, `Choose or create ${config.label.toLowerCase()} ${resolvedId}.`));
+      const action = config.recordType ? "Choose or create" : "Choose or import";
+      diagnostics.push(slotIssue("warning", trigger.id, slot, "unresolved-target", `${config.label} does not resolve to a known target.`, `${action} ${config.label.toLowerCase()} ${resolvedId}.`));
     }
   }
   diagnostics.push(...validateTargetRecord(project, trigger.id, slot, code, id));

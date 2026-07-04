@@ -1,6 +1,6 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { AlertTriangle, ArrowDown, ArrowUp, Copy, CopyPlus, Plus, Save, Trash2, Volume2, X } from "lucide-react";
-import { Action, ComplexEncounterRecord, Ed3ReachabilityRow, EncounterActionRow, LevelType, LibraryCatalog, Project, ProjectCommand, QuestThread, RealmzTargetRecordKind, ScriptDetailSurface, ScriptInventoryFilter, SelectedEntity, SemanticEntity, SimpleEncounterRecord, TriggerRecord } from "../types";
+import { AlertTriangle, ArrowDown, ArrowUp, Copy, CopyPlus, Eye, Plus, Save, Trash2, Volume2, X } from "lucide-react";
+import { Action, ComplexEncounterRecord, Ed3ReachabilityRow, EncounterActionRow, LevelType, LibraryCatalog, MapCoordinateTarget, Project, ProjectCommand, QuestThread, RealmzTargetRecordKind, ScriptDetailSurface, ScriptInventoryFilter, SelectedEntity, SemanticEntity, SimpleEncounterRecord, TriggerRecord } from "../types";
 import { linksFor, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
 import { actionSlotEntitiesForTriggerRecord, ed3ReachabilityFor, extraActionEvidenceSummary, extraActionPointClassification } from "../semanticGraph";
 import { EdcdRowEditor } from "../components/EdcdRowEditor";
@@ -47,13 +47,14 @@ import {
 } from "./scripts/scriptInventory";
 import {
   SCRIPT_ACTION_DEFINITIONS,
-  SCRIPT_ACTION_CATEGORIES,
+  SCRIPT_ACTION_CATEGORY_FILTERS,
+  actionDefinitionPathLabel,
   actionDefinitionsForCategory,
   scriptActionDefinitionFor,
   scriptActionSummary,
   scriptStepBranchHint,
   scriptStepFlowRoutes,
-  type ScriptActionCategory,
+  type ScriptActionCategoryFilter,
   type ScriptActionDefinition
 } from "./scripts/scriptActionCatalog";
 
@@ -70,6 +71,10 @@ const MONSTER_TRAIT_LABELS = [
 
 const MONSTER_MONEY_LABELS = ["Gold", "Gems", "Jewelry"];
 const REQUIRED_WEAPON_MAX_SPECIFIC_CODE = 253;
+
+function shouldSuppressInlineTargetRecordPanel(recordType: RealmzTargetRecordKind | undefined) {
+  return recordType === "simpleEncounter" || recordType === "complexEncounter";
+}
 
 function includeSelectedTrigger(records: TriggerRecord[], selected: TriggerRecord | null, limit: number) {
   const cappedLimit = Math.max(0, limit);
@@ -126,6 +131,8 @@ const SCRIPT_WORKBENCH_HELP =
   "Scripts is the Divinity Action Point hub: map triggers, reusable Extra Action Points, global hooks, quest usage, CODE/ID steps, EDCD settings, targets, diagnostics, and source evidence.";
 const CREATE_AP_HELP =
   "Creates a map or dungeon Action Point at the chosen cell. Realmz stores these as fixed records, so Providence reuses empty slots instead of shifting later record IDs.";
+const SAME_AS_TRIGGER_DESTINATION_HELP =
+  "This after-script destination exactly matches the trigger cell, so Providence shows it as a read-only mirror here. To make it separate, select this Action Point on Maps, expand After Script Destination, and edit Level/X/Y there.";
 const INVENTORY_FILTER_HELP =
   "Use Current Map while authoring one area, Active for non-empty records, Reusable for cleared fixed slots, Warnings before release, and All when tracing links across the scenario.";
 const SCRIPT_RECORD_HELP =
@@ -139,7 +146,7 @@ const TARGET_DRAWER_HELP =
 const FLOW_PREVIEW_HELP =
   "Flow Preview summarizes obvious branches, GOSUBs, Extra Action Point calls, choices, and logic paths. It is a navigation aid, not a full runtime interpreter.";
 const TECHNICAL_DETAILS_HELP =
-  "Technical Details shows the raw Realmz storage: source file, record index, door ID, selected slot, applied and draft CODE/ID, EDCD settings ID, dispatcher status, and semantic links.";
+  "Technical Details shows the raw Realmz storage: source file, record index, door ID, selected slot, applied and draft CODE/ID, Action Settings storage row, dispatcher status, and semantic links.";
 const STEP_REFERENCE_HELP =
   "Step Reference keeps the opcode notes, Divinity wording, and raw CODE/ID storage available without making them the main authoring surface.";
 const TARGET_PICKER_HELP =
@@ -147,7 +154,7 @@ const TARGET_PICKER_HELP =
 const ACTION_CHOOSER_HELP =
   "Choose Action changes only the selected step draft. Apply Step is still required before the script record is updated.";
 const SETTINGS_HELP =
-  "Action Settings hold the extra fields for actions whose CODE/ID slot is too small. Pick the Settings ID from its caller when possible; Providence names the fields for the selected action and keeps settings IDs stable.";
+  "Action Settings hold the extra fields for actions whose CODE/ID slot is too small. Pick the storage row from its caller when possible; Providence names the fields for the selected action and keeps imported storage stable.";
 const SIMPLE_ENCOUNTER_SOURCE_HELP =
   "Simple Encounters are Data ED source records. The prompt points to a String, the four option labels live inside this record, and each option result jumps to one of four script columns.";
 const COMPLEX_ENCOUNTER_SOURCE_HELP =
@@ -344,6 +351,7 @@ export function ScriptsPanel({
   onSelectEntity,
   onSelectEditor,
   onOpenTool,
+  onOpenMapCoordinate,
   onApplyCommand,
   activeEditor = "action-points"
 }: {
@@ -356,6 +364,7 @@ export function ScriptsPanel({
   onSelectEntity: (entity: SelectedEntity) => void;
   onSelectEditor?: (editor: string) => void;
   onOpenTool?: (tab: "text", editor: string) => void;
+  onOpenMapCoordinate?: (target: MapCoordinateTarget) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
   activeEditor?: string;
 }) {
@@ -385,6 +394,7 @@ export function ScriptsPanel({
         onSelectEntity={handleSelectEntity}
         onSelectEditor={onSelectEditor}
         onOpenTool={onOpenTool}
+        onOpenMapCoordinate={onOpenMapCoordinate}
         onApplyCommand={handleApplyCommand}
       />
     </div>
@@ -420,6 +430,16 @@ function ScriptEditorTabs({
   );
 }
 
+function actionSlotSelectionId(trigger: TriggerRecord, slot: number) {
+  return `action-slot:${triggerSelectionId(trigger)}:${slot}`;
+}
+
+function actionSlotIndexFromSelection(entityId: string | null | undefined) {
+  if (!entityId?.startsWith("action-slot:")) return null;
+  const slot = Number(entityId.slice(entityId.lastIndexOf(":") + 1));
+  return Number.isInteger(slot) ? slot : null;
+}
+
 function ScriptAuthoringPanel({
   project,
   catalog,
@@ -431,6 +451,7 @@ function ScriptAuthoringPanel({
   onSelectEntity,
   onSelectEditor,
   onOpenTool,
+  onOpenMapCoordinate,
   onApplyCommand
 }: {
   project: Project | null;
@@ -443,6 +464,7 @@ function ScriptAuthoringPanel({
   onSelectEntity: (entity: SelectedEntity) => void;
   onSelectEditor?: (editor: string) => void;
   onOpenTool?: (tab: "text", editor: string) => void;
+  onOpenMapCoordinate?: (target: MapCoordinateTarget) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const activeTabKind = scriptTabKind(activeEditor);
@@ -453,7 +475,7 @@ function ScriptAuthoringPanel({
   const projectMaps = project?.maps ?? [];
   const [draft, setDraft] = useState<Record<string, { rawCode: number; id: number }>>({});
   const [selectedSlot, setSelectedSlot] = useState(0);
-  const [categoryFilter, setCategoryFilter] = useState<ScriptActionCategory>("Dialogue");
+  const [categoryFilter, setCategoryFilter] = useState<ScriptActionCategoryFilter>("All");
   const [opcodeQuery, setOpcodeQuery] = useState("");
   const [scriptQuery, setScriptQuery] = useState("");
   const [inventoryFilter, setInventoryFilter] = usePersistentValue<ScriptInventoryFilter>("scripts.inventory.filter", "current-map");
@@ -625,9 +647,21 @@ function ScriptAuthoringPanel({
     setSelectedScriptId(trigger.id);
     onSelectEntity(selectEntityFromId(triggerSelectionId(trigger)));
   }, [onSelectEntity]);
+  const selectStepSlot = useCallback((slot: number) => {
+    setSelectedSlot(slot);
+    if (selectedTrigger) {
+      onSelectEntity(selectEntityFromId(actionSlotSelectionId(selectedTrigger, slot)));
+    }
+  }, [onSelectEntity, selectedTrigger]);
+  useEffect(() => {
+    const slot = actionSlotIndexFromSelection(selectedEntity?.id);
+    if (slot == null || slot < 0 || slot > 7 || slot === selectedSlot) return;
+    if (!selectedTrigger || !triggerMatchesSelection(selectedTrigger, selectedEntity?.id ?? "")) return;
+    setSelectedSlot(slot);
+  }, [selectedEntity?.id, selectedSlot, selectedTrigger]);
   useEffect(() => {
     if (!selectedTrigger) return;
-    if (selectedTrigger.actions.some((action) => action.slot === selectedSlot)) return;
+    if (selectedSlot >= 0 && selectedSlot <= 7) return;
     setSelectedSlot(selectedTrigger.actions[0]?.slot ?? 0);
   }, [selectedTrigger?.id, selectedSlot, selectedTrigger]);
   const visibleScripts = useMemo(
@@ -716,7 +750,7 @@ function ScriptAuthoringPanel({
             const trigger = project.triggers.find((candidate) => candidate.id === caller.triggerId);
             if (!trigger) return;
             setSelectedSlot(caller.slot);
-            onSelectEntity(selectEntityFromId(triggerSelectionId(trigger)));
+            onSelectEntity(selectEntityFromId(actionSlotSelectionId(trigger, caller.slot)));
             onSelectEditor?.(scriptEditorForTriggerSource(trigger.source));
             return;
           }
@@ -754,6 +788,31 @@ function ScriptAuthoringPanel({
   const moveMapKey = selectedTrigger && !isMacro && selectedTrigger.levelType && selectedTrigger.levelIndex != null
     ? `${selectedTrigger.levelType}:${selectedTrigger.levelIndex}`
     : "";
+  const selectedTriggerCoordinate = selectedTrigger?.coordinate ?? null;
+  const destinationMatchesTrigger = Boolean(
+    selectedTrigger &&
+    !isMacro &&
+    selectedTriggerCoordinate &&
+    selectedTrigger.landid === selectedTrigger.levelIndex &&
+    selectedTrigger.targetX === selectedTriggerCoordinate.x &&
+    selectedTrigger.targetY === selectedTriggerCoordinate.y
+  );
+  const triggerLocationMapTarget: MapCoordinateTarget | null = selectedTrigger && !isMacro ? {
+    levelType: selectedTrigger.levelType ?? "land",
+    levelIndex: selectedTrigger.levelIndex ?? 0,
+    x: selectedTrigger.coordinate?.x ?? selectedTrigger.targetX ?? 0,
+    y: selectedTrigger.coordinate?.y ?? selectedTrigger.targetY ?? 0
+  } : null;
+  const afterScriptMapTarget: MapCoordinateTarget | null = selectedTrigger && !isMacro ? {
+    levelType: selectedTrigger.levelType ?? "land",
+    levelIndex: selectedTrigger.landid ?? selectedTrigger.levelIndex ?? 0,
+    x: selectedTrigger.targetX ?? 0,
+    y: selectedTrigger.targetY ?? 0
+  } : null;
+  const afterScriptMapKey = afterScriptMapTarget ? `${afterScriptMapTarget.levelType}:${afterScriptMapTarget.levelIndex}` : "";
+  const afterScriptMaps = selectedTrigger && !isMacro
+    ? projectMaps.filter((map) => map.levelType === (selectedTrigger.levelType ?? "land"))
+    : projectMaps;
   const issueCounts = issueCountsBySlot(triggerDiagnostics);
   const setSelectedDraft = (values: { rawCode: number; id: number }) => setDraft((current) => ({ ...current, [selectedKey]: values }));
   const moveSelectedStep = (toSlot: number) => {
@@ -770,7 +829,7 @@ function ScriptAuthoringPanel({
       else delete next[fromKey];
       return next;
     });
-    setSelectedSlot(toSlot);
+    selectStepSlot(toSlot);
     onApplyCommand?.({ kind: "swapActionSlots", label: "Move step", triggerId: selectedTrigger.id, fromSlot: selectedSlot, toSlot });
   };
   const applySelectedSlot = () => {
@@ -796,16 +855,17 @@ function ScriptAuthoringPanel({
   const floatingDetail = detailSurface === "floating";
   const targetRecordType = realmzScriptStepDescriptorFor(selectedDraft.rawCode).targetType;
   const selectedDraftTargetId = resolveSignedMessageTarget(selectedDraft.rawCode, selectedDraft.id);
-  const directTargetDrawerAvailable = Boolean(targetRecordType);
-  const wideTargetRecord = false;
+  const inlineDirectTargetPickerAvailable = Boolean(targetPickerConfig(selectedDraft.rawCode));
+  const inlineDirectTargetEditorAvailable = targetRecordType === "message";
+  const directTargetDrawerAvailable = Boolean(targetRecordType) && !inlineDirectTargetPickerAvailable && !inlineDirectTargetEditorAvailable && !shouldSuppressInlineTargetRecordPanel(targetRecordType);
   const detailSurfaceButton = (
     <button
       type="button"
       className="btn btn-secondary btn-xs"
-      title={floatingDetail ? "Dock this selected slot editor back into the Scripts workbench." : "Float this selected slot editor for more target editing room."}
+      title={floatingDetail ? "Dock this selected slot editor back into the Scripts workbench." : "Pop this selected slot editor out for more target editing room."}
       onClick={() => setDetailSurface(floatingDetail ? "docked" : "floating")}
     >
-      {floatingDetail ? "Dock" : "Float"}
+      {floatingDetail ? "Dock" : "Pop-Out"}
     </button>
   );
   const stepDetailActions = selectedTrigger ? (
@@ -823,15 +883,16 @@ function ScriptAuthoringPanel({
       <button type="button" className="btn btn-danger btn-xs icon-only" title="Clear step" disabled={!selectedAction} onClick={() => onApplyCommand?.({ kind: "deleteActionSlot", label: "Clear step", triggerId: selectedTrigger.id, slot: selectedSlot })}>
         <X size={12} />
       </button>
-      <button
-        type="button"
-        className={`btn btn-secondary btn-xs${targetDrawerOpen && directTargetDrawerAvailable ? " active" : ""}`}
-        title={directTargetDrawerAvailable ? targetDrawerOpen ? "Hide target record context" : "Open the selected target record context" : "This action does not have a direct target record."}
-        disabled={!directTargetDrawerAvailable}
-        onClick={() => directTargetDrawerAvailable && setTargetDrawerOpen(!targetDrawerOpen)}
-      >
-        Target
-      </button>
+      {directTargetDrawerAvailable && (
+        <button
+          type="button"
+          className={`btn btn-secondary btn-xs${targetDrawerOpen ? " active" : ""}`}
+          title={targetDrawerOpen ? "Hide target details" : "Open the selected target details"}
+          onClick={() => setTargetDrawerOpen(!targetDrawerOpen)}
+        >
+          Target
+        </button>
+      )}
       <button
         type="button"
         className={`btn btn-primary btn-xs script-apply-button${selectedDraftDirty ? " is-dirty" : ""}`}
@@ -842,6 +903,21 @@ function ScriptAuthoringPanel({
         <Save size={12} /> Apply Step
       </button>
     </>
+  ) : null;
+  const targetEditorPanel = selectedTrigger && targetDrawerOpen && directTargetDrawerAvailable ? (
+    <TargetRecordEditor
+      key={`${targetRecordType}:${selectedDraft.rawCode}:${selectedDraftTargetId}`}
+      project={project}
+      catalog={catalog}
+      opcode={selectedDraft.rawCode}
+      targetId={selectedDraftTargetId}
+      presentation="inline"
+      desktopRuntime={desktopRuntime}
+      projectDir={projectDir}
+      workspaceDir={workspaceDir}
+      onSelectEntity={onSelectEntity}
+      onApplyCommand={onApplyCommand}
+    />
   ) : null;
   const stepDetailBody = selectedTrigger ? (
     <SelectedStepDetail
@@ -867,34 +943,18 @@ function ScriptAuthoringPanel({
       desktopRuntime={desktopRuntime}
       projectDir={projectDir}
       workspaceDir={workspaceDir}
+      targetRecordPanel={targetEditorPanel}
+      targetRecordAvailable={directTargetDrawerAvailable}
+      targetRecordOpen={targetDrawerOpen}
+      onShowTargetRecord={() => setTargetDrawerOpen(true)}
       onSetCategoryFilter={setCategoryFilter}
       onSetOpcodeQuery={setOpcodeQuery}
       onSetSelectedDraft={setSelectedDraft}
       onSelectEntity={onSelectEntity}
       onOpenTool={onOpenTool}
+      onOpenMapCoordinate={onOpenMapCoordinate}
       onApplyCommand={onApplyCommand}
     />
-  ) : null;
-  const targetEditorPanel = selectedTrigger && targetDrawerOpen && directTargetDrawerAvailable ? (
-    <PanelSection title="Target Record" eyebrow="selected step" density="compact" scroll className={`script-target-drawer${wideTargetRecord ? " wide-target" : ""}`} actions={<button type="button" className="btn btn-secondary btn-xs icon-only" title="Hide target record context" onClick={() => setTargetDrawerOpen(false)}><X size={12} /></button>}>
-      <p className="field-help">
-        <TutorialTip title="Target Record" body={TARGET_DRAWER_HELP} side="below">
-          <span>Inspect or open the record selected by this step.</span>
-        </TutorialTip>
-      </p>
-      <TargetRecordEditor
-        key={`${targetRecordType}:${selectedDraft.rawCode}:${selectedDraftTargetId}`}
-        project={project}
-        catalog={catalog}
-        opcode={selectedDraft.rawCode}
-        targetId={selectedDraftTargetId}
-        desktopRuntime={desktopRuntime}
-        projectDir={projectDir}
-        workspaceDir={workspaceDir}
-        onSelectEntity={onSelectEntity}
-        onApplyCommand={onApplyCommand}
-      />
-    </PanelSection>
   ) : null;
   const usedStepCount = selectedTrigger?.actions.filter((action) => action.rawCode !== 0).length ?? 0;
   const firstEmptyStep = selectedTrigger ? Array.from({ length: 8 }, (_, slot) => slot).find((slot) => {
@@ -907,6 +967,7 @@ function ScriptAuthoringPanel({
     inventoryFilter === "ed3-unlinked" ||
     ED3_EVIDENCE_FILTERS.some((filter) => filter.id === inventoryFilter)
   );
+  const showInlineFlowPreview = activeTabKind !== "action-points" && activeTabKind !== "reusable-actions";
   return (
     <section className="realmz-script-editor">
       <header className="settings-rows-header">
@@ -917,23 +978,12 @@ function ScriptAuthoringPanel({
           <small>Build scenario behavior from clear steps, targets, choices, and Extra Action Points.</small>
         </div>
         <div className="script-toolbar">
-          {activeTabKind === "action-points" && (
-            <button
-              type="button"
-              className="btn btn-primary btn-xs script-create-primary"
-              disabled={!selectedMap || !selectedMapCapacity?.canCreate}
-              title={actionPointCreateTitle}
-              onClick={createSelectedMapActionPoint}
-            >
-              <Plus size={12} /> Action Point
-            </button>
-          )}
           {activeTabKind === "reusable-actions" && (
             <button type="button" className="btn btn-secondary btn-xs" onClick={() => onApplyCommand?.({ kind: "createMacro", label: "Create Extra Action Point" })}>
               <Plus size={12} /> Extra Action Point
             </button>
           )}
-          {selectedTrigger && (
+          {selectedTrigger && activeTabKind !== "action-points" && (
             <button type="button" className="btn btn-secondary btn-xs" onClick={() => onApplyCommand?.({ kind: "duplicateTrigger", label: "Duplicate script", triggerId: selectedTrigger.id })}>
               <Copy size={12} /> Duplicate
             </button>
@@ -955,7 +1005,7 @@ function ScriptAuthoringPanel({
         <div className="script-create-strip">
           <label>
             <TutorialTip title="New Action Point" body={CREATE_AP_HELP} side="below">
-              <span>New Action Point</span>
+              <span>Map</span>
             </TutorialTip>
             <select value={newActionPoint.mapId} onChange={(event) => setNewActionPoint({ ...newActionPoint, mapId: event.currentTarget.value })}>
               {projectMaps.map((map) => (
@@ -963,8 +1013,8 @@ function ScriptAuthoringPanel({
               ))}
             </select>
           </label>
-          <NumberField label="X" value={newActionPoint.x} onCommit={(x) => setNewActionPoint({ ...newActionPoint, x: clampRealmzCoordinate(x) })} compact />
-          <NumberField label="Y" value={newActionPoint.y} onCommit={(y) => setNewActionPoint({ ...newActionPoint, y: clampRealmzCoordinate(y) })} compact />
+          <NumberField label="X" value={newActionPoint.x} onCommit={(x) => setNewActionPoint({ ...newActionPoint, x: clampRealmzCoordinate(x) })} />
+          <NumberField label="Y" value={newActionPoint.y} onCommit={(y) => setNewActionPoint({ ...newActionPoint, y: clampRealmzCoordinate(y) })} />
           <button
             type="button"
             className="btn btn-primary btn-xs script-create-primary"
@@ -974,6 +1024,11 @@ function ScriptAuthoringPanel({
           >
             <Plus size={12} /> Action Point
           </button>
+          {selectedTrigger && (
+            <button type="button" className="btn btn-secondary btn-xs" onClick={() => onApplyCommand?.({ kind: "duplicateTrigger", label: "Duplicate script", triggerId: selectedTrigger.id })}>
+              <Copy size={12} /> Duplicate
+            </button>
+          )}
           <small className={selectedMapCapacity?.canCreate ? "script-capacity-note" : "script-capacity-note blocked"}>
             {selectedMapCapacity?.active ?? 0}/{selectedMapCapacity?.max ?? 100} active Action Point records
             {selectedMapCapacity?.reusable ? `, ${selectedMapCapacity.reusable} empty reusable slot(s)` : selectedMapCapacity?.canCreate ? ", next create will append a fixed record" : ". Clear selected Action Point to reuse this record."}
@@ -1086,54 +1141,102 @@ function ScriptAuthoringPanel({
                 </>
               ) : (
                 <div className="script-header-grid">
-                  <NumberField
-                    label="% Chance"
-                    value={selectedTrigger.percent}
-                    onCommit={(percent) => onApplyCommand?.({ kind: "updateTriggerHeader", label: "Update action chance", triggerId: selectedTrigger.id, fields: { percent } })}
-                  />
-                  <label>
-                    <span>Map</span>
-                    <select
-                      value={moveMapKey}
-                      onChange={(event) => {
-                        const [levelType, levelIndex] = event.currentTarget.value.split(":");
-                        moveSelectedActionPoint({ levelType: levelType as LevelType, levelIndex: Number(levelIndex) });
-                      }}
-                    >
-                      {projectMaps.map((map) => (
-                        <option key={map.id} value={`${map.levelType}:${map.index}`}>{map.name}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <NumberField
-                    label="Cell X"
-                    value={selectedTrigger.coordinate?.x ?? selectedTrigger.targetX ?? 0}
-                    onCommit={(x) => moveSelectedActionPoint({ x })}
-                  />
-                  <NumberField
-                    label="Cell Y"
-                    value={selectedTrigger.coordinate?.y ?? selectedTrigger.targetY ?? 0}
-                    onCommit={(y) => moveSelectedActionPoint({ y })}
-                  />
-                  <NumberField
-                    label="Goto Level"
-                    value={selectedTrigger.landid ?? 0}
-                    onCommit={(landid) => onApplyCommand?.({ kind: "updateTriggerHeader", label: "Update action target level", triggerId: selectedTrigger.id, fields: { landid } })}
-                  />
-                  <NumberField
-                    label="Goto X"
-                    value={selectedTrigger.targetX ?? 0}
-                    onCommit={(targetX) => onApplyCommand?.({ kind: "updateTriggerHeader", label: "Update action target X", triggerId: selectedTrigger.id, fields: { targetX } })}
-                  />
-                  <NumberField
-                    label="Goto Y"
-                    value={selectedTrigger.targetY ?? 0}
-                    onCommit={(targetY) => onApplyCommand?.({ kind: "updateTriggerHeader", label: "Update action target Y", triggerId: selectedTrigger.id, fields: { targetY } })}
-                  />
+                  <section className="script-header-group script-header-chance" aria-label="Activation Chance">
+                    <h4>Activation Chance</h4>
+                    <NumberField
+                      label="%"
+                      value={selectedTrigger.percent}
+                      onCommit={(percent) => onApplyCommand?.({ kind: "updateTriggerHeader", label: "Update action chance", triggerId: selectedTrigger.id, fields: { percent } })}
+                    />
+                  </section>
+                  <section className="script-header-group script-header-location" aria-label="Trigger Location">
+                    <div className="script-header-title-row">
+                      <h4>Trigger Location</h4>
+                    </div>
+                    <div className="script-header-fields">
+                      <label className="script-header-map-field script-header-inline-field">
+                        <span>Map</span>
+                        <select
+                          value={moveMapKey}
+                          onChange={(event) => {
+                            const [levelType, levelIndex] = event.currentTarget.value.split(":");
+                            moveSelectedActionPoint({ levelType: levelType as LevelType, levelIndex: Number(levelIndex) });
+                          }}
+                        >
+                          {projectMaps.map((map) => (
+                            <option key={map.id} value={`${map.levelType}:${map.index}`}>{map.name}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <NumberField
+                        label="X"
+                        value={selectedTrigger.coordinate?.x ?? selectedTrigger.targetX ?? 0}
+                        onCommit={(x) => moveSelectedActionPoint({ x })}
+                      />
+                      <NumberField
+                        label="Y"
+                        value={selectedTrigger.coordinate?.y ?? selectedTrigger.targetY ?? 0}
+                        onCommit={(y) => moveSelectedActionPoint({ y })}
+                      />
+                      <MapCoordinateJumpButton
+                        target={triggerLocationMapTarget}
+                        maps={projectMaps}
+                        label="Open trigger location on Maps"
+                        onOpenMapCoordinate={onOpenMapCoordinate}
+                      />
+                    </div>
+                  </section>
+                  <section className={`script-header-group script-header-destination${destinationMatchesTrigger ? " is-same" : ""}`} aria-label="After Script Destination">
+                    <div className="script-header-title-row">
+                      <div className="script-header-summary-label">
+                        <h4>After Script Destination</h4>
+                        {destinationMatchesTrigger && (
+                          <TutorialTip title="Same As Trigger" body={SAME_AS_TRIGGER_DESTINATION_HELP} side="below">
+                            <small>Same as trigger</small>
+                          </TutorialTip>
+                        )}
+                      </div>
+                    </div>
+                    <div className="script-header-fields">
+                      <label className="script-header-map-field script-header-inline-field">
+                        <span>Map</span>
+                        <select
+                          value={afterScriptMapKey}
+                          disabled={destinationMatchesTrigger}
+                          onChange={(event) => {
+                            const [, levelIndex] = event.currentTarget.value.split(":");
+                            onApplyCommand?.({ kind: "updateTriggerHeader", label: "Update action target level", triggerId: selectedTrigger.id, fields: { landid: Number(levelIndex) } });
+                          }}
+                        >
+                          {afterScriptMaps.map((map) => (
+                            <option key={map.id} value={`${map.levelType}:${map.index}`}>{map.name}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <NumberField
+                        label="X"
+                        value={selectedTrigger.targetX ?? 0}
+                        disabled={destinationMatchesTrigger}
+                        onCommit={(targetX) => onApplyCommand?.({ kind: "updateTriggerHeader", label: "Update action target X", triggerId: selectedTrigger.id, fields: { targetX } })}
+                      />
+                      <NumberField
+                        label="Y"
+                        value={selectedTrigger.targetY ?? 0}
+                        disabled={destinationMatchesTrigger}
+                        onCommit={(targetY) => onApplyCommand?.({ kind: "updateTriggerHeader", label: "Update action target Y", triggerId: selectedTrigger.id, fields: { targetY } })}
+                      />
+                      <MapCoordinateJumpButton
+                        target={afterScriptMapTarget}
+                        maps={projectMaps}
+                        label="Open after-script destination on Maps"
+                        onOpenMapCoordinate={onOpenMapCoordinate}
+                      />
+                    </div>
+                  </section>
                 </div>
               )}
               <div className="realmz-visual-script-scroll" aria-label="Script step authoring area">
-                <div className={`realmz-visual-script${floatingDetail ? " has-floating-detail" : ""}${targetEditorPanel ? "" : " no-target-drawer"}${wideTargetRecord && targetEditorPanel && !floatingDetail ? " has-wide-target" : ""}`}>
+                <div className={`realmz-visual-script${floatingDetail ? " has-floating-detail" : ""}`}>
                   <PanelSection
                     title="Steps"
                     eyebrow={`${usedStepCount} of 8 used`}
@@ -1142,7 +1245,7 @@ function ScriptAuthoringPanel({
                     scroll
                     className="script-steps-panel"
                     actions={firstEmptyStep != null ? (
-                      <button type="button" className="btn btn-primary btn-xs" onClick={() => setSelectedSlot(firstEmptyStep)}>
+                      <button type="button" className="btn btn-primary btn-xs" onClick={() => selectStepSlot(firstEmptyStep)}>
                         <Plus size={12} /> Add Step
                       </button>
                     ) : undefined}
@@ -1166,7 +1269,7 @@ function ScriptAuthoringPanel({
                             key={slot}
                             className={`realmz-step-card${slot === selectedSlot ? " selected" : ""}${changed ? " dirty" : ""}${slotIssues.errors ? " has-error" : slotIssues.warnings ? " has-warning" : ""}`}
                             type="button"
-                            onClick={() => setSelectedSlot(slot)}
+                            onClick={() => selectStepSlot(slot)}
                             style={{ borderColor: categoryColor(option.category) }}
                           >
                             <span className="slot-index">{slot + 1}</span>
@@ -1184,14 +1287,15 @@ function ScriptAuthoringPanel({
                         );
                       })}
                     </ScrollArea>
-                    <ScriptFlowPreview project={project} catalog={catalog} trigger={selectedTrigger} onSelectEntity={onSelectEntity} />
+                    {showInlineFlowPreview && (
+                      <ScriptFlowPreview project={project} catalog={catalog} trigger={selectedTrigger} onSelectEntity={onSelectEntity} />
+                    )}
                   </PanelSection>
                   {!floatingDetail && (
                     <PanelSection title="Current Step" eyebrow={`slot ${selectedSlot + 1} | ${selectedDefinition.category}`} scroll className="script-current-step-panel" actions={stepDetailActions}>
                       {stepDetailBody}
                     </PanelSection>
                   )}
-                  {!floatingDetail && targetEditorPanel}
                 </div>
               </div>
               {floatingDetail && (
@@ -1207,7 +1311,6 @@ function ScriptAuthoringPanel({
                   }
                 >
                   {stepDetailBody}
-                  {targetEditorPanel}
                 </FloatingWorkbenchPanel>
               )}
               <SourceEvidence
@@ -1938,7 +2041,7 @@ function SourceEvidence({
     <CollapsibleSection title="Technical Details" eyebrow="advanced" count={String(count)} density="compact" storageKey="scripts.sourceEvidence.open" defaultOpen={false}>
       <p className="field-help">
         <TutorialTip title="Technical Details" body={TECHNICAL_DETAILS_HELP} side="below">
-          <span>Raw storage, CODE/ID, EDCD settings ID, dispatcher status, and semantic links.</span>
+          <span>Raw storage, CODE/ID, Action Settings storage row, dispatcher status, and semantic links.</span>
         </TutorialTip>
       </p>
       <SourceEvidenceDetails
@@ -2006,7 +2109,7 @@ function SourceEvidenceDetails({
         <FieldRow label="Draft CODE/ID" value={`${selectedDraft.rawCode} / ${selectedDraft.id}`} />
         <FieldRow label="Opcode" value={selectedOption.label} />
         <FieldRow label="Dispatcher" value={isDispatcherNoopOpcode(selectedDraft.rawCode) ? "dispatcher no-op; Realmz ignores this CODE" : "has documented dispatcher behavior"} />
-        <FieldRow label="Settings ID" value={selectedEdcdRowId != null ? `#${selectedEdcdRowId}${resolvedEdcdUsage?.shape ? ` (${resolvedEdcdUsage.shape})` : ""}` : "none"} />
+        <FieldRow label="Data EDCD Row" value={selectedEdcdRowId != null ? `${selectedEdcdRowId}${resolvedEdcdUsage?.shape ? ` (${resolvedEdcdUsage.shape})` : ""}` : "none"} />
         <FieldRow label="Edit State" value={resolvedSlotEntity?.editState ?? "authored/draft"} />
       </div>
       {resolvedEdcdUsage?.summary && <p className="field-help">{resolvedEdcdUsage.summary}</p>}
@@ -2118,8 +2221,14 @@ function ScriptFlowPreview({
             <small>{routes[0]?.target ? `${routes[0].label}: ${routes[0].target.label}` : routes[0]?.detail || summary}</small>
           </p>
           {routes[0]?.target && (
-            <button type="button" className="btn btn-secondary btn-xs" onClick={() => onSelectEntity(selectEntityForFlowTarget(routes[0].target!))}>
-              Open Target
+            <button
+              type="button"
+              className="btn btn-secondary btn-xs icon-only"
+              title={`Open ${routes[0].target.label}`}
+              aria-label={`Open ${routes[0].target.label}`}
+              onClick={() => onSelectEntity(selectEntityForFlowTarget(routes[0].target!))}
+            >
+              <Eye size={12} />
             </button>
           )}
         </div>
@@ -2152,7 +2261,7 @@ function humanActionValueLabel(label: string) {
 function actionAuthoringStateLabel(definition: ScriptActionDefinition, combatMacroContext?: CombatMacroContext | null) {
   if (definition.opcode === 121 && combatMacroContext) return "Combat macro action";
   if (definition.opcode === 121) return "Macro-only imported action";
-  if (definition.opcode === 84) return "Legacy registration action";
+  if ([84, 98, 99].includes(definition.opcode)) return "Legacy registration action";
   if (definition.shortLabel === "Inert Imported Action") return "Inert imported action";
   if (definition.validationPosture === "no-effect") return "Preserve-only / no normal effect";
   if (definition.authoringLevel === "first-class") return "Friendly editor";
@@ -2166,8 +2275,8 @@ function actionAuthoringStateDetail(definition: ScriptActionDefinition, combatMa
     if (combatMacroContext) return "This action is meaningful in the selected battle or monster macro. Providence edits the same CODE/ID and Action Settings while keeping Extra Action Point storage unchanged.";
     return "Realmz source performs this only during combat. Ordinary AP imports are preserved here and are not routine Action Point authoring backlog; use monster or battle macro surfaces for intentional authoring.";
   }
-  if (definition.opcode === 84) {
-    return "Classic Realmz used this as a scenario registration gate. Modern open-source Realmz keeps the dispatcher but comments out enforcement, so this is legacy compatibility authoring.";
+  if ([84, 98, 99].includes(definition.opcode)) {
+    return "Divinity documents these registration actions without an authored ID or E-Code value. Placing the step runs the legacy registration behavior; modern open-source Realmz keeps related dispatchers but comments out enforcement.";
   }
   if (definition.shortLabel === "Inert Imported Action") {
     return "This is a documented Not Used opcode. Providence keeps the imported CODE/ID value, but it is not normal authoring behavior.";
@@ -2179,7 +2288,7 @@ function actionAuthoringStateDetail(definition: ScriptActionDefinition, combatMa
     return "Providence knows the target type and can edit this as normal scenario behavior.";
   }
   if (definition.authoringLevel === "guided") {
-    return "Providence edits the attached Action Settings with named fields, while keeping the original settings ID and file storage intact.";
+    return "Providence edits the attached Action Settings with named fields, while keeping the original storage row and file format intact.";
   }
   if (definition.authoringLevel === "advanced") {
     return "Providence recognizes and preserves the stored values, but this action does not yet have a complete friendly authoring form.";
@@ -2193,6 +2302,41 @@ function actionStorageLabel(definition: ScriptActionDefinition) {
   if (definition.storage === "data-ed3-direct") return "Extra Action Point";
   if (definition.storage === "same-map-action-point-copy") return "Same-map Action Point copy";
   return definition.storage;
+}
+
+function actionSettingsTitleForShape(edcdShape?: string | null, fallback = "Action Settings") {
+  const normalized = edcdShape?.toLowerCase();
+  const titles: Record<string, string> = {
+    "action-data-patching": "Action Code Replacement",
+    battle: "Battle Setup",
+    choice: "Choice Dialog",
+    "random-message": "Message Range",
+    teleport: "Movement",
+    "party-condition-branch": "Condition Branch",
+    "force-branch": "Branch Target",
+    "percent-branch": "Percent Branch",
+    "condition-branch": "Condition Branch",
+    "random-region-shape-mutation": "Random Area Shape",
+    fumble: "Fumble Result"
+  };
+  return normalized ? titles[normalized] ?? fallback : fallback;
+}
+
+function actionSettingsTitleForStep(definition: ScriptActionDefinition, edcdShape?: string) {
+  return actionSettingsTitleForShape(edcdShape, definition.target?.label ?? "Action Settings");
+}
+
+function actionSettingsFieldLabel(title: string) {
+  return title.endsWith("Settings") ? title : `${title} Settings`;
+}
+
+function authorSettingsWarning(usage: EdcdRowUsage, title: string, warning: string) {
+  const label = actionSettingsFieldLabel(title).toLowerCase();
+  if (usage.status === "missing") return `This step references ${label} that do not exist yet. Applying the fields below will create them.`;
+  if (usage.status === "shared") return `These ${label} are shared by ${usage.callers.length} steps. Editing them changes every caller.`;
+  if (usage.status === "conflict") return `These settings are used by different action types: ${usage.possibleShapes.join(", ")}. Duplicate before editing if that is not intentional.`;
+  if (usage.status === "unused") return `These ${label} are stored but not called by another script yet.`;
+  return warning.replace(/\bSettings\s*#?\d+\b/gi, "these settings");
 }
 
 function useTargetPreviewUrl(option: ScriptTargetOption | null, opcode: number, project: Project, desktopRuntime: boolean, projectDir: string, workspaceDir: string) {
@@ -2239,11 +2383,16 @@ function SelectedStepDetail({
   desktopRuntime,
   projectDir,
   workspaceDir,
+  targetRecordPanel,
+  targetRecordAvailable,
+  targetRecordOpen,
+  onShowTargetRecord,
   onSetCategoryFilter,
   onSetOpcodeQuery,
   onSetSelectedDraft,
   onSelectEntity,
   onOpenTool,
+  onOpenMapCoordinate,
   onApplyCommand
 }: {
   project: Project;
@@ -2271,17 +2420,22 @@ function SelectedStepDetail({
   selectedSlotEntity?: SemanticEntity;
   selectedSlotDiagnostics: ScriptDiagnostic[];
   combatMacroContext?: CombatMacroContext | null;
-  categoryFilter: ScriptActionCategory;
+  categoryFilter: ScriptActionCategoryFilter;
   opcodeQuery: string;
   filteredDefinitions: ScriptActionDefinition[];
   desktopRuntime: boolean;
   projectDir: string;
   workspaceDir: string;
-  onSetCategoryFilter: (category: ScriptActionCategory) => void;
+  targetRecordPanel?: ReactNode;
+  targetRecordAvailable?: boolean;
+  targetRecordOpen?: boolean;
+  onShowTargetRecord?: () => void;
+  onSetCategoryFilter: (category: ScriptActionCategoryFilter) => void;
   onSetOpcodeQuery: (query: string) => void;
   onSetSelectedDraft: (values: { rawCode: number; id: number }) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
   onOpenTool?: (tab: "text", editor: string) => void;
+  onOpenMapCoordinate?: (target: MapCoordinateTarget) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const [previewExpanded, setPreviewExpanded] = useState(false);
@@ -2319,7 +2473,6 @@ function SelectedStepDetail({
   useEffect(() => {
     setActionChooserOpen(false);
   }, [selectedSlot]);
-  const selectedFlowRoutes = useMemo(() => scriptStepFlowRoutes(project, catalog, selectedDraft), [catalog, project, selectedDraft]);
   const selectedCombatMacroActionNote = combatMacroActionNote(selectedDefinition.opcode, combatMacroContext ?? null);
   const combatMacroActionDefinitions = useMemo(
     () => combatMacroActionOpcodes(combatMacroContext ?? null).map((opcode) => scriptActionDefinitionFor(opcode)),
@@ -2327,32 +2480,67 @@ function SelectedStepDetail({
   );
   const settingLabels = visibleParameters.map((parameter) => `${parameter.index + 1}. ${parameter.label}`);
   const previewBehavior = signedTargetBehaviorLabel(selectedDraft.rawCode, selectedDraft.id);
+  const isEdcdBackedStep = Boolean(selectedOption.edcdShape);
+  const isSameMapActionPointStep = normalizeStepOpcode(selectedDraft.rawCode) === 8;
+  const selectedTriggerRecord = useMemo(
+    () => project.triggers.find((trigger) => trigger.id === selectedTriggerId) ?? null,
+    [project.triggers, selectedTriggerId]
+  );
+  const sameMapActionPointTarget = useMemo(() => {
+    if (!isSameMapActionPointStep || !selectedTriggerRecord?.levelType || selectedTriggerRecord.levelIndex == null) return null;
+    return project.triggers.find((candidate) =>
+      candidate.source !== "Data ED3" &&
+      candidate.levelType === selectedTriggerRecord.levelType &&
+      candidate.levelIndex === selectedTriggerRecord.levelIndex &&
+      candidate.recordIndex === selectedDraft.id
+    ) ?? null;
+  }, [isSameMapActionPointStep, project.triggers, selectedDraft.id, selectedTriggerRecord]);
+  const sameMapActionPointJumpTitle = sameMapActionPointTarget
+    ? `Open Action Point ${sameMapActionPointTarget.recordIndex} on this map.`
+    : selectedTriggerRecord?.levelType && selectedTriggerRecord.levelIndex != null
+      ? `No Action Point ${selectedDraft.id} exists on this map.`
+      : "This script is not attached to a map, so there is no same-map Action Point to open.";
+  const selectedTargetPickerConfig = targetPickerConfig(selectedDraft.rawCode);
+  const hasInlineTargetPicker = !isEdcdBackedStep && Boolean(selectedTargetPickerConfig);
+  const isStepOnlyAction = selectedDefinition.formKind === "step-only";
+  const inlineMessageTargetId = selectedTargetPickerConfig?.recordType === "message"
+    ? resolveSignedMessageTarget(selectedDraft.rawCode, selectedDraft.id)
+    : 0;
+  const hasInlineMessageEditor = inlineMessageTargetId > 0;
   const previewCanExpand = Boolean(
-    selectedTargetPreview && [
+    !hasInlineTargetPicker && selectedTargetPreview && [
       selectedTargetPreview.detail,
       selectedTargetPreview.summary,
       selectedTargetPreview.compatibility,
       selectedTargetPreview.sourceState,
       previewBehavior
     ].filter(Boolean).join(" ").length > 96
-  ) || selectedFlowRoutes.length > 1;
-  const isEdcdBackedStep = Boolean(selectedOption.edcdShape);
-  const hasInlineTargetPicker = !isEdcdBackedStep && Boolean(targetPickerConfig(selectedDraft.rawCode));
-  const edcdRowOptions = edcdUsages.filter((usage) => usage.exists || usage.callers.length > 0);
+  );
+  const authorSettingsTitle = actionSettingsTitleForStep(selectedDefinition, selectedOption.edcdShape);
+  const authorSettingsLabel = actionSettingsFieldLabel(authorSettingsTitle);
+  const definitionForActionChooserUse = (definition: ScriptActionDefinition) => {
+    if (definition.opcode !== 23) return definition;
+    if (selectedDraft.rawCode === -23 || selectedTriggerRecord?.levelType === "dungeon") return scriptActionDefinitionFor(-23);
+    return definition;
+  };
+  const actionChooserDefinitionMatchesDraft = (definition: ScriptActionDefinition) => {
+    if (definition.opcode === 23 && selectedDraft.rawCode === -23) return true;
+    return selectedDraft.rawCode === definition.opcode;
+  };
   const useActionDefinition = (definition: ScriptActionDefinition) => {
-    onSetSelectedDraft(draftForNewDefinition(definition));
+    onSetSelectedDraft(draftForNewDefinition(definitionForActionChooserUse(definition)));
     setActionChooserOpen(false);
   };
   const duplicateSettingsForStep = () => {
     if (!isEdcdBackedStep) return;
     const nextId = nextUnusedEdcdRowId(project);
     const values = normalizeEdcdValues(selectedRowUsage?.values ?? selectedDefaultEdcdValues);
-    onApplyCommand?.({ kind: "updateEdcdRow", label: `Duplicate Settings #${selectedDraft.id}`, rowId: nextId, values });
+    onApplyCommand?.({ kind: "updateEdcdRow", label: `Duplicate ${authorSettingsLabel}`, rowId: nextId, values });
     onSetSelectedDraft({ ...selectedDraft, id: nextId });
     if (selectedSlotApplied) {
       onApplyCommand?.({
         kind: "updateActionSlot",
-        label: `Use Settings #${nextId}`,
+        label: `Use ${authorSettingsLabel}`,
         triggerId: selectedTriggerId,
         slot: selectedSlot,
         rawCode: selectedDraft.rawCode,
@@ -2361,7 +2549,7 @@ function SelectedStepDetail({
     }
   };
   const settingsEditor = (isEdcdBackedStep || selectedEdcdUsage) ? (
-    <CollapsibleSection title="Action Settings" eyebrow={isEdcdBackedStep ? "guided fields" : "optional"} density="compact" storageKey="scripts.edcdEditor.open" defaultOpen={Boolean(isEdcdBackedStep || selectedEdcdUsage)}>
+    <div className="realmz-current-step-authoring-subpane">
       <EdcdRowEditor
         project={project}
         catalog={catalog}
@@ -2375,9 +2563,43 @@ function SelectedStepDetail({
         selectedSlotLabel={`step ${selectedSlot + 1}`}
         onSelectEntity={onSelectEntity}
         onOpenText={(editor) => onOpenTool?.("text", editor)}
+        onOpenMapCoordinate={onOpenMapCoordinate}
+        onStepOpcodeChange={(rawCode) => {
+          if (rawCode !== 23 && rawCode !== -23) return;
+          if (selectedDraft.rawCode === rawCode) return;
+          onSetSelectedDraft({ ...selectedDraft, rawCode });
+        }}
         onApplyCommand={onApplyCommand}
+        presentation={isEdcdBackedStep ? "selected-step" : "inventory"}
       />
-    </CollapsibleSection>
+    </div>
+  ) : null;
+  const inlineTargetPicker = hasInlineTargetPicker ? (
+    <div className="realmz-current-step-target">
+      <TargetPicker
+        project={project}
+        catalog={catalog}
+        opcode={selectedDraft.rawCode}
+        value={selectedDraft.id}
+        showDetail={!hasInlineMessageEditor}
+        previewContext={{ desktopRuntime, projectDir, workspaceDir }}
+        onChange={(id) => onSetSelectedDraft({ ...selectedDraft, id })}
+        onInspect={onSelectEntity}
+        onCreate={(recordType, id) => {
+          const targetId = id ?? nextAuthorableTargetId(project, recordType);
+          onApplyCommand?.({ kind: "createTargetRecord", label: `Create ${recordType}`, recordType, id: targetId });
+          onSetSelectedDraft({ ...selectedDraft, id: signedTargetValueForSelection(selectedDraft.rawCode, selectedDraft.id, targetId) });
+        }}
+      />
+      {hasInlineMessageEditor && (
+        <InlineMessageTargetEditor
+          project={project}
+          targetId={inlineMessageTargetId}
+          onApplyCommand={onApplyCommand}
+        />
+      )}
+      {!hasInlineMessageEditor && targetRecordPanel}
+    </div>
   ) : null;
   return (
     <div className="realmz-step-detail selected-step-detail">
@@ -2389,10 +2611,99 @@ function SelectedStepDetail({
       )}
       <ScriptDiagnostics issues={selectedSlotDiagnostics} />
       <div className={`realmz-current-opcode${previewExpanded ? " expanded" : ""}`} style={{ borderColor: categoryColor(selectedOption.category) }}>
-        <div>
-          <strong>{selectedDefinition.label}</strong>
-          <span>{selectedDefinition.categoryLabel}</span>
-        </div>
+        <header className="realmz-current-opcode-header">
+          <div>
+            <strong>{actionDefinitionPathLabel(selectedDefinition)}</strong>
+            <span>{selectedDefinition.categoryLabel}</span>
+            <small className="script-storage-chip">CODE {selectedDraft.rawCode} / ID {selectedDraft.id}</small>
+          </div>
+          <button
+            type="button"
+            className="btn btn-secondary btn-xs"
+            onClick={() => {
+              setActionChooserOpen((current) => {
+                const nextOpen = !current;
+                if (nextOpen) onSetCategoryFilter(selectedDraft.rawCode === 0 ? "All" : selectedDefinition.category);
+                return nextOpen;
+              });
+            }}
+          >
+            {selectedDraft.rawCode === 0 ? "Choose Action" : "Change Action"}
+          </button>
+        </header>
+        {actionChooserOpen && (
+          <div className="script-action-chooser action-chooser-dropdown" role="dialog" aria-label="Choose action for selected step">
+            <header>
+              <div>
+                <TutorialTip title="Choose Action" body={ACTION_CHOOSER_HELP} side="below">
+                  <strong>{selectedDraft.rawCode === 0 ? "Choose Action" : "Change Action"}</strong>
+                </TutorialTip>
+                <small>This changes the selected step draft. Use Apply Step when you are ready.</small>
+              </div>
+              <button type="button" className="btn btn-secondary btn-xs icon-only" title="Close action chooser" onClick={() => setActionChooserOpen(false)}>
+                <X size={12} />
+              </button>
+            </header>
+            <div className="realmz-opcode-catalog">
+              <div className="realmz-step-category-bar">
+                {SCRIPT_ACTION_CATEGORY_FILTERS.map((category) => (
+                  <button
+                    key={category}
+                    type="button"
+                    className={categoryFilter === category ? "active" : ""}
+                    onClick={() => onSetCategoryFilter(category)}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+              <input
+                className="realmz-opcode-search"
+                value={opcodeQuery}
+                onChange={(event) => onSetOpcodeQuery(event.currentTarget.value)}
+                placeholder="Search actions, targets, and settings..."
+                aria-label="Search script actions"
+              />
+              {combatMacroContext && combatMacroActionDefinitions.length > 0 && (
+                <div className="combat-macro-action-strip">
+                  <header>
+                    <strong>Combat Macro Actions</strong>
+                    <small>{combatMacroContextTitle(combatMacroContext)}</small>
+                  </header>
+                  <div>
+                    {combatMacroActionDefinitions.map((definition) => (
+                      <button
+                        key={definition.opcode}
+                        type="button"
+                        className={actionChooserDefinitionMatchesDraft(definition) ? "selected" : ""}
+                        title={combatMacroActionNote(definition.opcode, combatMacroContext) ?? definition.description}
+                        onClick={() => useActionDefinition(definition)}
+                      >
+                        <strong>{definition.shortLabel}</strong>
+                        <span>{definition.opcode}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="realmz-step-picker-grid action-chooser-grid">
+                {filteredDefinitions.map((definition) => (
+                  <button
+                    key={definition.opcode}
+                    type="button"
+                    title={`${actionDefinitionPathLabel(definition)}. ${definition.summary}`}
+                    className={actionChooserDefinitionMatchesDraft(definition) ? "selected" : ""}
+                    onClick={() => useActionDefinition(definition)}
+                  >
+                    <strong>{categoryFilter === "All" ? actionDefinitionPathLabel(definition) : definition.label}</strong>
+                    <span>{definition.summary}</span>
+                    <small>{actionChooserDefinitionMatchesDraft(definition) ? "Current action" : definition.categoryLabel}</small>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
         <p>{selectedDefinition.summary}</p>
         {selectedCombatMacroActionNote && combatMacroContext && (
           <div className="combat-macro-action-note">
@@ -2400,7 +2711,7 @@ function SelectedStepDetail({
             <small>{selectedCombatMacroActionNote}</small>
           </div>
         )}
-        {selectedTargetPreview && (
+        {!hasInlineTargetPicker && selectedTargetPreview && (
           <div className="realmz-selected-target-preview">
             <span>{selectedDefinition.target?.label ?? "Target"}</span>
             <strong>{selectedTargetPreview.label}</strong>
@@ -2433,189 +2744,78 @@ function SelectedStepDetail({
             )}
           </div>
         )}
-        {selectedFlowRoutes.length > 0 && (
-          <div className="script-step-route-preview">
-            <span>Flow</span>
-            {selectedFlowRoutes.map((route, index) => (
-              <p key={`${route.kind}-${index}`}>
-                <b>{route.label}</b>
-                <small>{route.target ? `${route.target.label}: ${route.target.detail}` : route.detail}</small>
-              </p>
-            ))}
-          </div>
-        )}
         {previewCanExpand && (
           <button type="button" className="btn btn-secondary btn-xs realmz-preview-toggle" onClick={() => setPreviewExpanded((current) => !current)}>
             {previewExpanded ? "Collapse Preview" : "Show Full Preview"}
           </button>
         )}
-      </div>
-      <div className="realmz-step-form-grid">
-        <div className={`script-required-field realmz-step-action-field current-action-field${hasInlineTargetPicker ? " wide" : ""}`}>
-          <span>Action</span>
-          <div className="current-action-choice">
-            <div>
-              <strong>{selectedDefinition.label}</strong>
-              <small>{selectedDefinition.description}</small>
+        {inlineTargetPicker}
+        {!isEdcdBackedStep && !hasInlineTargetPicker && !isStepOnlyAction && (
+          <div className="realmz-step-form-grid realmz-current-step-authoring-subpane">
+            <div className={`script-required-field realmz-step-id-field${isSameMapActionPointStep ? " script-source-ap-id-field" : ""}`}>
+              <span>{selectedDefinition.target?.label ?? selectedIdLabel}</span>
+              <div className="script-source-ap-field-row">
+                <input
+                  type={isSameMapActionPointStep ? "text" : "number"}
+                  inputMode={isSameMapActionPointStep ? "numeric" : undefined}
+                  pattern={isSameMapActionPointStep ? "-?[0-9]*" : undefined}
+                  value={selectedDraft.id}
+                  onChange={(event) => {
+                    const nextValue = Number.parseInt(event.currentTarget.value, 10);
+                    onSetSelectedDraft({ ...selectedDraft, id: Number.isFinite(nextValue) ? nextValue : 0 });
+                  }}
+                  aria-label={`Slot ${selectedSlot} ${selectedIdLabel}`}
+                />
+                {isSameMapActionPointStep && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-xs icon-only script-source-ap-jump"
+                    title={sameMapActionPointJumpTitle}
+                    disabled={!sameMapActionPointTarget}
+                    onClick={() => {
+                      if (!sameMapActionPointTarget) return;
+                      onSelectEntity(selectEntityFromId(triggerEntityId(
+                        sameMapActionPointTarget.levelType,
+                        sameMapActionPointTarget.levelIndex,
+                        sameMapActionPointTarget.recordIndex,
+                        sameMapActionPointTarget.source
+                      )));
+                    }}
+                  >
+                    <Eye size={12} />
+                  </button>
+                )}
+              </div>
+              <small>{selectedDefinition.target?.help || selectedDefinition.description}</small>
             </div>
+          </div>
+        )}
+        {isEdcdBackedStep && selectedRowUsage?.warnings.map((warning) => (
+          <p key={warning} className="field-warning">{authorSettingsWarning(selectedRowUsage, authorSettingsTitle, warning)}</p>
+        ))}
+        {isEdcdBackedStep && selectedRowUsage?.status === "shared" && (
+          <button type="button" className="btn btn-secondary btn-xs duplicate-settings-button" onClick={duplicateSettingsForStep}>
+            <Copy size={12} /> Duplicate {authorSettingsTitle} For This Step
+          </button>
+        )}
+        {settingsEditor}
+        {!hasInlineTargetPicker && targetRecordPanel && (
+          <div className="realmz-current-step-authoring-subpane target-record-subpane">
+            {targetRecordPanel}
+          </div>
+        )}
+        {!hasInlineTargetPicker && targetRecordAvailable && !targetRecordOpen && !targetRecordPanel && (
+          <div className="realmz-current-step-authoring-subpane target-record-restore-subpane">
             <button
               type="button"
               className="btn btn-secondary btn-xs"
-              onClick={() => setActionChooserOpen((current) => !current)}
+              onClick={onShowTargetRecord}
             >
-              {selectedDraft.rawCode === 0 ? "Choose Action" : "Change Action"}
+              <Eye size={12} /> Show Target Details
             </button>
           </div>
-        </div>
-        {isEdcdBackedStep ? (
-          <div className="script-required-field realmz-step-id-field settings-row-field">
-            <span>{selectedDefinition.target?.label ?? selectedIdLabel}</span>
-            <div className={`settings-row-current ${selectedRowUsage ? edcdUsageStatusTone(selectedRowUsage.status) : "warning"}`}>
-              <strong>Settings #{selectedDraft.id}</strong>
-              <small>{selectedRowUsage?.summary ?? "Will create these settings when values are applied."}</small>
-            </div>
-            <details className="settings-row-selector">
-              <summary>Advanced Settings ID</summary>
-              <div className="settings-row-selector-body">
-                <select
-                  value={selectedDraft.id}
-                  onChange={(event) => onSetSelectedDraft({ ...selectedDraft, id: Number(event.currentTarget.value) })}
-                >
-                  {!edcdRowOptions.some((usage) => usage.rowId === selectedDraft.id) && <option value={selectedDraft.id}>Settings #{selectedDraft.id}</option>}
-                  {edcdRowOptions.map((usage) => (
-                    <option key={usage.rowId} value={usage.rowId}>
-                      Settings #{usage.rowId} - {usage.statusLabel} - {usage.primaryActionLabel ?? usage.primaryShape ?? "raw settings"}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="number"
-                  value={selectedDraft.id}
-                  onChange={(event) => onSetSelectedDraft({ ...selectedDraft, id: Number(event.currentTarget.value) })}
-                  aria-label={`Slot ${selectedSlot} settings ID`}
-                />
-              </div>
-              <small>Existing imports keep their settings ID. New actions start on an unused ID automatically.</small>
-            </details>
-          </div>
-        ) : hasInlineTargetPicker ? null : (
-          <label className="script-required-field realmz-step-id-field">
-            <span>{selectedDefinition.target?.label ?? selectedIdLabel}</span>
-            <input
-              type="number"
-              value={selectedDraft.id}
-              onChange={(event) => onSetSelectedDraft({ ...selectedDraft, id: Number(event.currentTarget.value) })}
-              aria-label={`Slot ${selectedSlot} ${selectedIdLabel}`}
-            />
-            <small>{selectedDefinition.target?.help || selectedDefinition.description}</small>
-          </label>
         )}
       </div>
-      {actionChooserOpen && (
-        <div className="script-action-chooser" role="dialog" aria-label="Choose action for selected step">
-          <header>
-            <div>
-              <TutorialTip title="Choose Action" body={ACTION_CHOOSER_HELP} side="below">
-                <strong>{selectedDraft.rawCode === 0 ? "Choose Action" : "Change Action"}</strong>
-              </TutorialTip>
-              <small>This changes the selected step draft. Use Apply Step when you are ready.</small>
-            </div>
-            <button type="button" className="btn btn-secondary btn-xs icon-only" title="Close action chooser" onClick={() => setActionChooserOpen(false)}>
-              <X size={12} />
-            </button>
-          </header>
-          <div className="realmz-opcode-catalog">
-            <div className="realmz-step-category-bar">
-              {SCRIPT_ACTION_CATEGORIES.map((category) => (
-                <button
-                  key={category}
-                  type="button"
-                  className={categoryFilter === category ? "active" : ""}
-                  onClick={() => onSetCategoryFilter(category)}
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
-            <input
-              className="realmz-opcode-search"
-              value={opcodeQuery}
-              onChange={(event) => onSetOpcodeQuery(event.currentTarget.value)}
-              placeholder="Search actions, targets, and settings..."
-              aria-label="Search script actions"
-            />
-            {combatMacroContext && combatMacroActionDefinitions.length > 0 && (
-              <div className="combat-macro-action-strip">
-                <header>
-                  <strong>Combat Macro Actions</strong>
-                  <small>{combatMacroContextTitle(combatMacroContext)}</small>
-                </header>
-                <div>
-                  {combatMacroActionDefinitions.map((definition) => (
-                    <button
-                      key={definition.opcode}
-                      type="button"
-                      className={selectedDraft.rawCode === definition.opcode ? "selected" : ""}
-                      title={combatMacroActionNote(definition.opcode, combatMacroContext) ?? definition.description}
-                      onClick={() => useActionDefinition(definition)}
-                    >
-                      <strong>{definition.shortLabel}</strong>
-                      <span>{definition.opcode}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div className="realmz-step-picker-grid action-chooser-grid">
-              {filteredDefinitions.map((definition) => (
-                <button
-                  key={definition.opcode}
-                  type="button"
-                  className={selectedDraft.rawCode === definition.opcode ? "selected" : ""}
-                  onClick={() => useActionDefinition(definition)}
-                >
-                  <strong>{definition.shortLabel}</strong>
-                  <span>{definition.summary}</span>
-                  <small>{selectedDraft.rawCode === definition.opcode ? "Current action" : "Use For This Step"}</small>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-      {isEdcdBackedStep && selectedRowUsage?.warnings.map((warning) => (
-        <p key={warning} className="field-warning">{warning}</p>
-      ))}
-      {isEdcdBackedStep && selectedRowUsage?.status === "shared" && (
-        <button type="button" className="btn btn-secondary btn-xs duplicate-settings-button" onClick={duplicateSettingsForStep}>
-          <Copy size={12} /> Duplicate Settings For This Step
-        </button>
-      )}
-      {isEdcdBackedStep ? settingsEditor : null}
-      {hasInlineTargetPicker && (
-        <>
-          <p className="field-help">
-            <TutorialTip title="Target Picker" body={TARGET_PICKER_HELP} side="below">
-              <span>{selectedDefinition.target?.help || selectedDefinition.description}</span>
-            </TutorialTip>
-          </p>
-          <TargetPicker
-            project={project}
-            catalog={catalog}
-            opcode={selectedDraft.rawCode}
-            value={selectedDraft.id}
-            previewContext={{ desktopRuntime, projectDir, workspaceDir }}
-            onChange={(id) => onSetSelectedDraft({ ...selectedDraft, id })}
-            onInspect={onSelectEntity}
-            onCreate={(recordType, id) => {
-              const targetId = id ?? nextAuthorableTargetId(project, recordType);
-              onApplyCommand?.({ kind: "createTargetRecord", label: `Create ${recordType}`, recordType, id: targetId });
-              onSetSelectedDraft({ ...selectedDraft, id: signedTargetValueForSelection(selectedDraft.rawCode, selectedDraft.id, targetId) });
-            }}
-          />
-        </>
-      )}
-      {!isEdcdBackedStep ? settingsEditor : null}
       <CollapsibleSection title="Step Reference" eyebrow="technical details" density="compact" storageKey="scripts.stepReference.open" defaultOpen={false}>
         <p className="field-help">
           <TutorialTip title="Step Reference" body={STEP_REFERENCE_HELP} side="below">
@@ -2627,12 +2827,13 @@ function SelectedStepDetail({
           <FieldRow label="Authoring State" value={`${actionAuthoringStateLabel(selectedDefinition, combatMacroContext)} - ${actionAuthoringStateDetail(selectedDefinition, combatMacroContext)}`} />
           <FieldRow label="Storage" value={actionStorageLabel(selectedDefinition)} />
           <FieldRow label="Export Behavior" value="Unchanged values are preserved on export. Edits update the same classic Realmz fields Providence already imports." />
-          <FieldRow label="CODE / ID" value={`${selectedDraft.rawCode} / ${selectedDraft.id}`} />
+          <FieldRow label="Original CODE / ID" value={`${selectedDraft.rawCode} / ${selectedDraft.id}`} />
           <FieldRow label="Target Meaning" value={selectedDefinition.target?.help || selectedDefinition.description || "No direct target required."} />
           {settingLabels.length > 0 && (
             <FieldRow label="Settings Fields" value={settingLabels.join("; ")} />
           )}
-          {selectedEdcdRowId != null && <FieldRow label="Settings ID" value={`#${selectedEdcdRowId}`} />}
+          {selectedEdcdRowId != null && <FieldRow label="Data EDCD Row" value={selectedEdcdRowId} />}
+          {selectedRowUsage?.summary && <FieldRow label="Action Settings Summary" value={selectedRowUsage.summary} />}
           {selectedDivinityHelp?.use && <FieldRow label="Divinity Use" value={selectedDivinityHelp.use} />}
           {selectedDivinityHelp?.options && selectedDivinityHelp.options.toLowerCase() !== "none" && (
             <FieldRow label="Divinity Options" value={selectedDivinityHelp.options} />
@@ -2669,7 +2870,7 @@ export function TargetRecordEditor({
   opcode: number;
   targetId: number;
   recordType?: RealmzTargetRecordKind;
-  presentation?: "context" | "workbench";
+  presentation?: "context" | "workbench" | "inline";
   desktopRuntime?: boolean;
   projectDir?: string;
   workspaceDir?: string;
@@ -2696,12 +2897,14 @@ export function TargetRecordEditor({
     return <EmptyState compact title="No target selected" body="Choose an existing target or create a new one from the picker." />;
   }
   const targetIssues = validateRealmzTargetRecord(project, targetType, targetId, catalog);
+  const targetChrome = presentation === "inline" ? "embedded" : "full";
   if (presentation === "workbench" && targetType === "simpleEncounter") {
     const record = project.simpleEncounters?.find((candidate) => candidate.id === targetId);
     return (
       <InlineTargetShell
         title={`Simple Encounter ${targetId}`}
         exists={Boolean(record)}
+        chrome={targetChrome}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create simple encounter", recordType: "simpleEncounter", id: targetId })}
       >
@@ -2736,6 +2939,7 @@ export function TargetRecordEditor({
       <InlineTargetShell
         title={`Complex Encounter ${targetId}`}
         exists={Boolean(record)}
+        chrome={targetChrome}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create complex encounter", recordType: "complexEncounter", id: targetId })}
       >
@@ -2780,6 +2984,7 @@ export function TargetRecordEditor({
       <InlineTargetShell
         title={`Rogue Encounter ${targetId}`}
         exists={Boolean(record)}
+        chrome={targetChrome}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create rogue encounter", recordType: "thiefEncounter", id: targetId })}
       >
@@ -2803,6 +3008,7 @@ export function TargetRecordEditor({
       <InlineTargetShell
         title={`Time Encounter ${targetId}`}
         exists={Boolean(record)}
+        chrome={targetChrome}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create timed encounter", recordType: "timedEncounter", id: targetId })}
       >
@@ -2816,6 +3022,7 @@ export function TargetRecordEditor({
       <InlineTargetShell
         title={`String ${targetId}`}
         exists={Boolean(record)}
+        chrome={targetChrome}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create string", recordType: "message", id: targetId })}
         onClear={() => onApplyCommand?.({ kind: "deleteTargetRecord", label: "Clear string", recordType: "message", id: targetId })}
@@ -2841,6 +3048,7 @@ export function TargetRecordEditor({
       <InlineTargetShell
         title={`Battle ${targetId}`}
         exists={Boolean(record)}
+        chrome={targetChrome}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create battle", recordType: "battle", id: targetId })}
       >
@@ -2854,6 +3062,7 @@ export function TargetRecordEditor({
       <InlineTargetShell
         title={`Monster ${targetId}`}
         exists={Boolean(record)}
+        chrome={targetChrome}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create monster", recordType: "monster", id: targetId })}
       >
@@ -2867,6 +3076,7 @@ export function TargetRecordEditor({
       <InlineTargetShell
         title={`Treasure ${targetId}`}
         exists={Boolean(record)}
+        chrome={targetChrome}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create treasure", recordType: "treasure", id: targetId })}
       >
@@ -2880,6 +3090,7 @@ export function TargetRecordEditor({
       <InlineTargetShell
         title={`Shop ${targetId}`}
         exists={Boolean(record)}
+        chrome={targetChrome}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create shop", recordType: "shop", id: targetId })}
       >
@@ -2893,6 +3104,7 @@ export function TargetRecordEditor({
       <InlineTargetShell
         title={`Battle ${targetId}`}
         exists={Boolean(record)}
+        chrome={targetChrome}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create battle", recordType: "battle", id: targetId })}
         onClear={() => onApplyCommand?.({ kind: "deleteTargetRecord", label: "Clear battle", recordType: "battle", id: targetId })}
@@ -2949,6 +3161,7 @@ export function TargetRecordEditor({
       <InlineTargetShell
         title={`Monster ${targetId}`}
         exists={Boolean(record)}
+        chrome={targetChrome}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create monster", recordType: "monster", id: targetId })}
         onClear={() => onApplyCommand?.({ kind: "deleteTargetRecord", label: "Clear monster", recordType: "monster", id: targetId })}
@@ -3180,6 +3393,7 @@ export function TargetRecordEditor({
       <InlineTargetShell
         title={`Treasure ${targetId}`}
         exists={Boolean(record)}
+        chrome={targetChrome}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create treasure", recordType: "treasure", id: targetId })}
         onClear={() => onApplyCommand?.({ kind: "deleteTargetRecord", label: "Clear treasure", recordType: "treasure", id: targetId })}
@@ -3216,6 +3430,7 @@ export function TargetRecordEditor({
       <InlineTargetShell
         title={`Shop ${targetId}`}
         exists={Boolean(record)}
+        chrome={targetChrome}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create shop", recordType: "shop", id: targetId })}
         onClear={() => onApplyCommand?.({ kind: "deleteTargetRecord", label: "Clear shop", recordType: "shop", id: targetId })}
@@ -3271,6 +3486,7 @@ export function TargetRecordEditor({
       <InlineTargetShell
         title={`Simple Encounter ${targetId}`}
         exists={Boolean(record)}
+        chrome={targetChrome}
         issues={targetIssues}
         help={SIMPLE_ENCOUNTER_SOURCE_HELP}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create simple encounter", recordType: "simpleEncounter", id: targetId })}
@@ -3285,6 +3501,7 @@ export function TargetRecordEditor({
       <InlineTargetShell
         title={`Complex Encounter ${targetId}`}
         exists={Boolean(record)}
+        chrome={targetChrome}
         issues={targetIssues}
         help={COMPLEX_ENCOUNTER_SOURCE_HELP}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create complex encounter", recordType: "complexEncounter", id: targetId })}
@@ -3299,6 +3516,7 @@ export function TargetRecordEditor({
       <InlineTargetShell
         title={`Time Encounter ${targetId}`}
         exists={Boolean(record)}
+        chrome={targetChrome}
         issues={targetIssues}
         help={TIMED_ENCOUNTER_SOURCE_HELP}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create time encounter", recordType: "timedEncounter", id: targetId })}
@@ -3313,6 +3531,7 @@ export function TargetRecordEditor({
       <InlineTargetShell
         title={`Rogue Encounter ${targetId}`}
         exists={Boolean(record)}
+        chrome={targetChrome}
         issues={targetIssues}
         help={ROGUE_ENCOUNTER_SOURCE_HELP}
         onCreate={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create rogue encounter", recordType: "thiefEncounter", id: targetId })}
@@ -3327,6 +3546,7 @@ export function TargetRecordEditor({
       <InlineTargetShell
         title={`Quest ${targetId}`}
         exists={Boolean(record)}
+        chrome={targetChrome}
         issues={targetIssues}
         onCreate={() => onApplyCommand?.({ kind: "upsertQuestLabel", label: "Create quest label", quest: { id: targetId, label: `Quest ${targetId}` } })}
         onClear={() => onApplyCommand?.({ kind: "deleteQuestLabel", label: "Clear quest label", id: targetId })}
@@ -3343,6 +3563,46 @@ export function TargetRecordEditor({
   return null;
 }
 
+function InlineMessageTargetEditor({
+  project,
+  targetId,
+  onApplyCommand
+}: {
+  project: Project;
+  targetId: number;
+  onApplyCommand?: (command: ProjectCommand) => void;
+}) {
+  if (!Number.isInteger(targetId) || targetId <= 0) return null;
+  const record = project.messages?.find((candidate) => candidate.id === targetId);
+  return (
+    <div className="inline-message-target-editor">
+      {record ? (
+        <label className="script-target-wide-field">
+          <span>Text</span>
+          <textarea
+            key={`inline-message:${targetId}`}
+            defaultValue={record.text}
+            maxLength={255}
+            onBlur={(event) => onApplyCommand?.({ kind: "updateMessageRecord", label: "Update string", id: targetId, changes: { text: event.currentTarget.value } })}
+          />
+          <small>{record.text.length}/255 bytes before Classic encoding</small>
+        </label>
+      ) : (
+        <div className="inline-message-target-missing">
+          <small>This step points at string {targetId}, but that string does not exist yet.</small>
+          <button
+            type="button"
+            className="btn btn-secondary btn-xs"
+            onClick={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create string", recordType: "message", id: targetId })}
+          >
+            Create String
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function InlineTargetShell({
   title,
   exists,
@@ -3350,6 +3610,7 @@ function InlineTargetShell({
   onClear,
   issues,
   help,
+  chrome = "full",
   children
 }: {
   title: string;
@@ -3358,8 +3619,22 @@ function InlineTargetShell({
   onClear?: () => void;
   issues?: ScriptDiagnostic[];
   help?: string;
+  chrome?: "full" | "embedded";
   children: ReactNode;
 }) {
+  if (chrome === "embedded") {
+    return (
+      <div className="script-inline-target-editor embedded">
+        {exists && issues && issues.length > 0 && <ScriptDiagnostics issues={issues} />}
+        {exists ? children : (
+          <div className="inline-message-target-missing">
+            <small>This step points at {title}, but that target does not exist yet.</small>
+            <button type="button" className="btn btn-secondary btn-xs" onClick={onCreate}>Create {title}</button>
+          </div>
+        )}
+      </div>
+    );
+  }
   return (
     <div className="script-inline-target-editor">
       <header>
@@ -3385,7 +3660,7 @@ function InlineTargetShell({
         </div>
       </header>
       {exists && issues && issues.length > 0 && <ScriptDiagnostics issues={issues} />}
-      {exists ? children : <small>This slot points at a target record that does not exist yet.</small>}
+      {exists ? children : <small>This slot points at a target that does not exist yet.</small>}
     </div>
   );
 }
@@ -7281,7 +7556,56 @@ function isScriptsBenchmarkMode() {
   return typeof window !== "undefined" && new URLSearchParams(window.location.search).has("benchmarkScripts");
 }
 
-function NumberField({ label, value, onCommit, compact = false }: { label: string; value: number; onCommit: (value: number) => void; compact?: boolean }) {
+function MapCoordinateJumpButton({
+  target,
+  maps,
+  label,
+  onOpenMapCoordinate
+}: {
+  target: MapCoordinateTarget | null;
+  maps: Project["maps"];
+  label: string;
+  onOpenMapCoordinate?: (target: MapCoordinateTarget) => void;
+}) {
+  const map = target
+    ? maps.find((candidate) => candidate.levelType === target.levelType && candidate.index === target.levelIndex) ?? null
+    : null;
+  const title = target
+    ? map
+      ? `${label}: ${map.name} ${target.x}, ${target.y}`
+      : `No ${target.levelType} level ${target.levelIndex} exists for ${target.x}, ${target.y}.`
+    : "No map coordinate is selected.";
+  return (
+    <button
+      type="button"
+      className="btn btn-secondary btn-xs icon-only script-coordinate-jump"
+      title={title}
+      disabled={!target || !map || !onOpenMapCoordinate}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!target || !map) return;
+        onOpenMapCoordinate?.(target);
+      }}
+    >
+      <Eye size={12} />
+    </button>
+  );
+}
+
+function NumberField({
+  label,
+  value,
+  onCommit,
+  compact = false,
+  disabled = false
+}: {
+  label: string;
+  value: number;
+  onCommit: (value: number) => void;
+  compact?: boolean;
+  disabled?: boolean;
+}) {
   const [draft, setDraft] = useState(String(value));
   useEffect(() => {
     setDraft(String(value));
@@ -7292,6 +7616,7 @@ function NumberField({ label, value, onCommit, compact = false }: { label: strin
       <input
         type="number"
         value={draft}
+        disabled={disabled}
         onChange={(event) => setDraft(event.currentTarget.value)}
         onBlur={() => {
           const next = Number(draft);

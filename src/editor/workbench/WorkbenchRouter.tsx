@@ -1,6 +1,6 @@
 import { ReactNode, Suspense } from "react";
 import { EditorState } from "../store";
-import { AssetSearchHint, BenchmarkReport, ExportReport, LibraryCatalog, ManagedAssetKind, MapEntity, MapViewFlag, ProjectCommand, RandomLevel, ScenarioTarget, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
+import { AssetSearchHint, BenchmarkReport, ExportReport, LibraryCatalog, ManagedAssetKind, MapCoordinateTarget, MapEntity, MapViewFlag, ProjectCommand, RandomLevel, ScenarioTarget, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
 import { MediaAssetImportOptions } from "../mediaAssets";
 import { LibraryDraftSpec } from "../libraryDrafts";
 import { Issue } from "../types";
@@ -60,6 +60,7 @@ function WorkbenchRouterContent({
   onClearSelection,
   onOpenScripts,
   onOpenTool,
+  onOpenMapCoordinate,
   onBeginPaintStroke,
   onApplyCommand,
   onCommitPaintStroke,
@@ -166,6 +167,7 @@ function WorkbenchRouterContent({
         onSelectEntity={onSelectEntity}
         onSelectEditor={onSelectEditor}
         onOpenTool={onOpenTool}
+        onOpenMapCoordinate={onOpenMapCoordinate}
         onApplyCommand={onApplyCommand}
         onUpdateLibraryCatalog={onUpdateLibraryCatalog}
       />
@@ -356,6 +358,7 @@ type WorkbenchRouterProps = {
   onClearSelection: () => void;
   onOpenScripts: (entity: SelectedEntity) => void;
   onOpenTool: (tab: "assets" | "rules" | "scripts" | "text", editor: string) => void;
+  onOpenMapCoordinate: (target: MapCoordinateTarget) => void;
   onBeginPaintStroke: (label: string) => void;
   onApplyCommand: (command: ProjectCommand) => void;
   onCommitPaintStroke: () => void;

@@ -1487,7 +1487,7 @@ fn validate_action_target(
         return;
     }
     let target = match code {
-        1 | 62 | 71 => Some(("message", refs.messages)),
+        1 | 71 => Some(("message", refs.messages)),
         2 | 48 | 56 | 107 => Some(("battle", refs.battles)),
         4 | 35 | 104 => Some(("simple encounter", refs.simple_encounters)),
         5 | 44 => Some(("complex encounter", refs.complex_encounters)),
@@ -2151,6 +2151,7 @@ mod tests {
             action(0, 1, 1),
             action(1, 1, 2),
             action(2, 1, -1),
+            action(3, 62, 200),
             action(1, 10, 3),
             action(8, 6, 4),
         ]);
@@ -2180,6 +2181,9 @@ mod tests {
         assert!(!warnings
             .iter()
             .any(|message| message.contains("references message -1")));
+        assert!(!warnings
+            .iter()
+            .any(|message| message.contains("references message 200")));
     }
 
     #[test]

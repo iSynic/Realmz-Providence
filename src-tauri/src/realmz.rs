@@ -4845,7 +4845,9 @@ mod tests {
 
         let over_cap_battle = BattleRecord {
             id: 1,
-            grid: (0..13 * 13).map(|slot| if slot < 101 { 1 } else { 0 }).collect(),
+            grid: (0..13 * 13)
+                .map(|slot| if slot < 101 { 1 } else { 0 })
+                .collect(),
             dist: 1,
             message_before: 0,
             message_after: 0,
@@ -4854,7 +4856,8 @@ mod tests {
             authored: true,
             provenance: provenance("Data BD", 1, BATTLE_BYTES, BATTLE_BYTES),
         };
-        let error = write_battles(&[over_cap_battle]).expect_err("over-cap authored battles must fail");
+        let error =
+            write_battles(&[over_cap_battle]).expect_err("over-cap authored battles must fail");
         assert!(error.to_string().contains("at most 100 loaded monsters"));
 
         let monster = MonsterRecord {

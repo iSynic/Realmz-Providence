@@ -10,6 +10,7 @@ import {
   MapHudAnchor,
   MapPaintMode,
   MapPaintVariation,
+  MapFocusTarget,
   MapRegionSelection,
   MapViewOptions,
   ProjectCommand,
@@ -76,6 +77,7 @@ export function RealmzMapCanvas({
   showMapRecords,
   previewMode,
   previewFocalPoint,
+  focusTarget,
   selectedEntity,
   selectedCell,
   selectedRegion,
@@ -116,6 +118,7 @@ export function RealmzMapCanvas({
   showMapRecords: boolean;
   previewMode: MapPreviewMode;
   previewFocalPoint: MapPreviewFocalPoint;
+  focusTarget: MapFocusTarget | null;
   selectedEntity: SelectedEntity | null;
   selectedCell: { x: number; y: number; tile: number } | null;
   selectedRegion: MapRegionSelection | null;
@@ -173,6 +176,28 @@ export function RealmzMapCanvas({
   const mapCssSize = Math.round(BASE_CANVAS_SIZE * zoom);
   const coordinateGutterCss = viewOptions.showRealmzCoordinates ? mapCssSize / MAP_CELLS : 0;
   const canvasCssSize = Math.round(mapCssSize + coordinateGutterCss * 2);
+
+  useEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap || !focusTarget || focusTarget.kind !== "cell" || focusTarget.mapId !== map.id) return;
+    const cellSize = mapCssSize / MAP_CELLS;
+    const centerX = coordinateGutterCss + (focusTarget.x + 0.5) * cellSize;
+    const centerY = coordinateGutterCss + (focusTarget.y + 0.5) * cellSize;
+    wrap.scrollTo({
+      left: clampScroll(centerX - wrap.clientWidth / 2, wrap.scrollWidth - wrap.clientWidth),
+      top: clampScroll(centerY - wrap.clientHeight / 2, wrap.scrollHeight - wrap.clientHeight),
+      behavior: "smooth"
+    });
+  }, [
+    focusTarget,
+    focusTarget?.kind,
+    focusTarget?.mapId,
+    focusTarget?.nonce,
+    map.id,
+    mapCssSize,
+    coordinateGutterCss
+  ]);
+
   const previewPaintChange = useCallback((change: { x: number; y: number; to: number }) => {
     const canvas = baseCanvasRef.current;
     if (!canvas) return;

@@ -416,7 +416,7 @@ function validateEncounterActions(project: Project, recordType: RealmzTargetReco
               recordId,
               action.slot,
               `missing-edcd-${issue.field}`,
-              `Missing ${fieldLabel.toLowerCase()} target.`,
+              `Missing ${issue.targetLabel} target.`,
               `Settings ${rowId} field ${issue.index + 1} (${fieldLabel}) points at ${issue.targetLabel} ${issue.value}, but that target does not exist.`
             ));
           }

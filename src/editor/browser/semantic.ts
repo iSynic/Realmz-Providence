@@ -18,6 +18,14 @@ import {
 import { FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RANDLEVEL_BYTES } from "./realmzParser";
 import { parseResourceFork, type ResourceEntry } from "./library";
 
+export type BrowserSemanticBuildProgress = {
+  phase: string;
+  label: string;
+  detail: string;
+  completed: number;
+  total: number;
+};
+
 export function buildBrowserSemanticSchema(projectParts: {
   scenario: Project["scenario"];
   buffers: Map<string, Uint8Array>;
@@ -32,7 +40,7 @@ export function buildBrowserSemanticSchema(projectParts: {
   monsterSets: MonsterSet[];
   assetCatalog: Project["assetCatalog"];
   records: Project["records"];
-}): SemanticSchema {
+}, onProgress?: (progress: BrowserSemanticBuildProgress) => void): SemanticSchema {
   const schema: SemanticSchema = {
     schemaVersion: 5,
     sources: [],
@@ -53,23 +61,96 @@ export function buildBrowserSemanticSchema(projectParts: {
     summary: { sourceCount: 0, recordCount: 0, entityCount: 0, linkCount: 0, diagnosticCount: 0 }
   };
 
-  addSources(schema, projectParts.buffers, projectParts.sourceFiles);
-  addScenarioEntity(schema, projectParts.scenario);
-  addRecordAlignments(schema, projectParts.records.alignments);
-  addSupportingRecords(schema, projectParts.buffers);
-  addMaps(schema, projectParts.maps);
-  addMapRecords(schema, projectParts.mapRecords, projectParts.maps);
-  addRandomLevels(schema, projectParts.randomLevels);
-  addExtracodes(schema, projectParts.extracodes);
-  addTriggers(schema, projectParts.triggers, projectParts.extracodes);
-  addBattles(schema, projectParts.battles);
-  addMonsters(schema, projectParts.monsters, projectParts.monsterSets);
-  addTileAssets(schema, projectParts.assetCatalog);
-  addRenderProfiles(schema, projectParts.maps, projectParts.assetCatalog);
-  addResourceEntities(schema, projectParts.buffers, projectParts.sourceFiles);
-  addInferredTargets(schema);
-  classifyEd3Reachability(schema, projectParts.triggers);
-  finalize(schema);
+  const phases = [
+    {
+      phase: "sources",
+      label: "Reading Sources",
+      detail: `${projectParts.sourceFiles.length.toLocaleString()} source file(s), ${projectParts.buffers.size.toLocaleString()} raw buffer(s)`,
+      run: () => {
+        addSources(schema, projectParts.buffers, projectParts.sourceFiles);
+        addScenarioEntity(schema, projectParts.scenario);
+      }
+    },
+    {
+      phase: "records",
+      label: "Registering Records",
+      detail: `${projectParts.records.alignments.length.toLocaleString()} decoded record alignment(s)`,
+      run: () => {
+        addRecordAlignments(schema, projectParts.records.alignments);
+        addSupportingRecords(schema, projectParts.buffers);
+      }
+    },
+    {
+      phase: "maps",
+      label: "Mapping Maps",
+      detail: `${projectParts.maps.length.toLocaleString()} map(s), ${projectParts.mapRecords.length.toLocaleString()} map record(s)`,
+      run: () => {
+        addMaps(schema, projectParts.maps);
+        addMapRecords(schema, projectParts.mapRecords, projectParts.maps);
+      }
+    },
+    {
+      phase: "encounters",
+      label: "Mapping Encounters",
+      detail: `${projectParts.randomLevels.length.toLocaleString()} random encounter level(s)`,
+      run: () => addRandomLevels(schema, projectParts.randomLevels)
+    },
+    {
+      phase: "settings",
+      label: "Mapping Settings Rows",
+      detail: `${projectParts.extracodes.length.toLocaleString()} Action Settings row(s)`,
+      run: () => addExtracodes(schema, projectParts.extracodes)
+    },
+    {
+      phase: "action-points",
+      label: "Mapping Action Points",
+      detail: `${projectParts.triggers.length.toLocaleString()} Action Point and Extra Action Point record(s)`,
+      run: () => addTriggers(schema, projectParts.triggers, projectParts.extracodes)
+    },
+    {
+      phase: "combat",
+      label: "Mapping Combat",
+      detail: `${projectParts.battles.length.toLocaleString()} battle(s), ${projectParts.monsters.length.toLocaleString()} monster record(s)`,
+      run: () => {
+        addBattles(schema, projectParts.battles);
+        addMonsters(schema, projectParts.monsters, projectParts.monsterSets);
+      }
+    },
+    {
+      phase: "resources",
+      label: "Mapping Resources",
+      detail: `${(projectParts.assetCatalog.tilesets.length + (projectParts.assetCatalog.icons?.length ?? 0) + (projectParts.assetCatalog.sounds?.length ?? 0)).toLocaleString()} catalog resource(s)`,
+      run: () => {
+        addTileAssets(schema, projectParts.assetCatalog);
+        addRenderProfiles(schema, projectParts.maps, projectParts.assetCatalog);
+        addResourceEntities(schema, projectParts.buffers, projectParts.sourceFiles);
+      }
+    },
+    {
+      phase: "links",
+      label: "Connecting Links",
+      detail: "Resolving inferred targets and caller relationships",
+      run: () => addInferredTargets(schema)
+    },
+    {
+      phase: "reachability",
+      label: "Classifying Extra Action Points",
+      detail: `${projectParts.triggers.filter((trigger) => trigger.source === "Data ED3").length.toLocaleString()} Extra Action Point row(s)`,
+      run: () => classifyEd3Reachability(schema, projectParts.triggers)
+    },
+    {
+      phase: "finalize",
+      label: "Finalizing Index",
+      detail: "Building reverse links and summary counts",
+      run: () => finalize(schema)
+    }
+  ];
+  const total = phases.length;
+  phases.forEach((step, index) => {
+    onProgress?.({ phase: step.phase, label: step.label, detail: step.detail, completed: index, total });
+    step.run();
+    onProgress?.({ phase: step.phase, label: step.label, detail: step.detail, completed: index + 1, total });
+  });
   return schema;
 }
 

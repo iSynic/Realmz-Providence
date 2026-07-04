@@ -1331,6 +1331,13 @@ export type MapFocusTarget =
   | { kind: "entity"; mapId: string; entity: SelectedEntity; nonce: number }
   | { kind: "rect"; mapId: string; x: number; y: number; nonce: number };
 
+export type MapCoordinateTarget = {
+  levelType: LevelType;
+  levelIndex: number;
+  x: number;
+  y: number;
+};
+
 export type Project = {
   schemaVersion: number;
   appVersion: string;
@@ -1668,6 +1675,19 @@ export type BenchmarkReport = {
   validationMs: number;
   estimatedCanvasTiles: number;
   ok: boolean;
+};
+
+export type SemanticMappingProgress = {
+  active: boolean;
+  source: "browser" | "desktop";
+  phase: string;
+  label: string;
+  detail: string;
+  completed: number;
+  total: number;
+  startedAt: number;
+  updatedAt: number;
+  indeterminate?: boolean;
 };
 
 export type SemanticSchema = {

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 pub const PROJECT_SCHEMA_VERSION: u32 = 4;
-pub const SEMANTIC_SCHEMA_VERSION: u32 = 4;
+pub const SEMANTIC_SCHEMA_VERSION: u32 = 5;
 pub const MAP_SIZE: usize = 90;
 pub const RACE_NAME_LIMIT: usize = 70;
 pub const CASTE_NAME_LIMIT: usize = 30;

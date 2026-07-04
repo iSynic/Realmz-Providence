@@ -51,6 +51,8 @@ const DEFAULT_PALETTE_STATE: PaintPaletteState = {
   width: 440,
   height: 560
 };
+const MAP_SAME_AS_TRIGGER_DESTINATION_HELP =
+  "This after-script destination exactly matches the trigger cell. Expand this section and edit Level/X/Y to make the destination separate.";
 
 type PaintPaletteState = {
   mode: "docked" | "floating";
@@ -1022,7 +1024,7 @@ function PaintInspector({
         <div className="paint-palette-shell-header">
           <TutorialTip
             title="Tile Palette"
-            body="Dock the palette in the Paint Inspector or float it over the map. Custom palettes are saved with the project; drag tiles from any tab into the reveal dock to collect them."
+            body="Dock the palette in the Paint Inspector or pop it out over the map. Custom palettes are saved with the project; drag tiles from any tab into the reveal dock to collect them."
             side="right"
           >
             <span>Tile Palette</span>
@@ -1035,7 +1037,7 @@ function PaintInspector({
             )}
             {paletteOpen && (
               <button className="btn btn-secondary btn-xs" type="button" onClick={() => onSetPaletteState({ ...paletteState, mode: docked ? "floating" : "docked" })}>
-                {docked ? "Float" : "Dock"}
+                {docked ? "Pop-Out" : "Dock"}
               </button>
             )}
             {paletteOpen && (
@@ -2204,6 +2206,13 @@ function TriggerSelectionDetails({
       y: patch.y ?? trigger.coordinate.y
     });
   };
+  const destinationMatchesTrigger = Boolean(
+    isActionPoint &&
+    trigger.coordinate &&
+    trigger.landid === trigger.levelIndex &&
+    trigger.targetX === trigger.coordinate.x &&
+    trigger.targetY === trigger.coordinate.y
+  );
   return (
     <>
       <InfoGrid
@@ -2226,12 +2235,32 @@ function TriggerSelectionDetails({
       )}
       {isActionPoint && trigger.coordinate && (
         <div className="map-authoring-form">
-          <MapNumberField label="Cell X" value={trigger.coordinate.x} min={0} max={89} onCommit={(x) => move({ x })} />
-          <MapNumberField label="Cell Y" value={trigger.coordinate.y} min={0} max={89} onCommit={(y) => move({ y })} />
-          <MapNumberField label="% Chance" value={trigger.percent} min={0} max={100} onCommit={(percent) => onApplyCommand({ kind: "updateTriggerHeader", label: "Update Action Point chance", triggerId: trigger.id, fields: { percent } })} />
-          <MapNumberField label="Goto Level" value={trigger.landid ?? 0} min={0} max={255} onCommit={(landid) => onApplyCommand({ kind: "updateTriggerHeader", label: "Update Action Point target level", triggerId: trigger.id, fields: { landid } })} />
-          <MapNumberField label="Goto X" value={trigger.targetX ?? 0} min={0} max={89} onCommit={(targetX) => onApplyCommand({ kind: "updateTriggerHeader", label: "Update Action Point target X", triggerId: trigger.id, fields: { targetX } })} />
-          <MapNumberField label="Goto Y" value={trigger.targetY ?? 0} min={0} max={89} onCommit={(targetY) => onApplyCommand({ kind: "updateTriggerHeader", label: "Update Action Point target Y", triggerId: trigger.id, fields: { targetY } })} />
+          <section className="map-authoring-group" aria-label="Trigger Location">
+            <h4>Trigger Location</h4>
+            <div className="map-authoring-fields two-column">
+              <MapNumberField label="X" value={trigger.coordinate.x} min={0} max={89} onCommit={(x) => move({ x })} />
+              <MapNumberField label="Y" value={trigger.coordinate.y} min={0} max={89} onCommit={(y) => move({ y })} />
+            </div>
+          </section>
+          <section className="map-authoring-group" aria-label="Activation">
+            <h4>Activation</h4>
+            <MapNumberField label="% Chance" value={trigger.percent} min={0} max={100} onCommit={(percent) => onApplyCommand({ kind: "updateTriggerHeader", label: "Update Action Point chance", triggerId: trigger.id, fields: { percent } })} />
+          </section>
+          <details className="map-authoring-group map-authoring-destination" open={!destinationMatchesTrigger}>
+            <summary>
+              <span>After Script Destination</span>
+              {destinationMatchesTrigger && (
+                <TutorialTip title="Same As Trigger" body={MAP_SAME_AS_TRIGGER_DESTINATION_HELP} side="below">
+                  <small>Same as trigger</small>
+                </TutorialTip>
+              )}
+            </summary>
+            <div className="map-authoring-fields three-column">
+              <MapNumberField label="Level" value={trigger.landid ?? 0} min={0} max={255} onCommit={(landid) => onApplyCommand({ kind: "updateTriggerHeader", label: "Update Action Point target level", triggerId: trigger.id, fields: { landid } })} />
+              <MapNumberField label="X" value={trigger.targetX ?? 0} min={0} max={89} onCommit={(targetX) => onApplyCommand({ kind: "updateTriggerHeader", label: "Update Action Point target X", triggerId: trigger.id, fields: { targetX } })} />
+              <MapNumberField label="Y" value={trigger.targetY ?? 0} min={0} max={89} onCommit={(targetY) => onApplyCommand({ kind: "updateTriggerHeader", label: "Update Action Point target Y", triggerId: trigger.id, fields: { targetY } })} />
+            </div>
+          </details>
           <button className="btn btn-ghost btn-xs context-action-button" type="button" onClick={() => onApplyCommand({ kind: "deleteTrigger", label: "Clear Action Point", triggerId: trigger.id })}>
             Clear to reusable slot
           </button>

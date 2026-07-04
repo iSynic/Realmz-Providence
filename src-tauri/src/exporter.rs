@@ -1,8 +1,8 @@
 use crate::error::{IoPath, ProvidenceError, Result};
 use crate::importer::RAW_SOURCES_DIR;
 use crate::project::{
-    LevelType, MonsterIconOverride, ProvidenceProject, ScenarioTarget, TargetCompatibilityBuckets,
-    TargetCompatibilityIssue,
+    LevelType, MonsterIconOverride, MonsterIconOverrideSource, ProvidenceProject, ScenarioTarget,
+    TargetCompatibilityBuckets, TargetCompatibilityIssue,
 };
 use crate::realmz::{
     write_battles, write_caste_overrides, write_complex_encounters, write_custom_landlook_metadata,
@@ -603,6 +603,7 @@ fn write_managed_resources(
     let mut updates = map_name_resource_updates(project, &original);
     updates.extend(monster_icon_override_updates(
         &project.monster_icon_overrides,
+        &original,
         &mut result,
     ));
     updates.extend(scenario_icon_resource_updates(
@@ -663,9 +664,11 @@ fn write_managed_resources(
 
 fn monster_icon_override_updates(
     overrides: &[MonsterIconOverride],
+    original: &[u8],
     result: &mut ResourceExportResult,
 ) -> Vec<ResourceForkEntry> {
     let mut updates = Vec::new();
+    let original_entries = parse_resource_fork_entries(original);
     for override_entry in overrides {
         let target = override_entry.target_base_icon_id;
         if target <= 0 || target > i32::from(i16::MAX) - 308 {
@@ -700,18 +703,52 @@ fn monster_icon_override_updates(
             .source_label
             .clone()
             .unwrap_or_else(|| format!("Monster Mash {}", source));
+        let preserve_existing_metadata = matches!(
+            override_entry.source_kind,
+            MonsterIconOverrideSource::ScenarioResource
+        );
+        let existing_base = preserve_existing_metadata
+            .then(|| {
+                original_entries
+                    .iter()
+                    .find(|entry| entry.resource_type == "cicn" && entry.id == target as i16)
+            })
+            .flatten();
+        let existing_paired = preserve_existing_metadata
+            .then(|| {
+                original_entries.iter().find(|entry| {
+                    entry.resource_type == "cicn" && entry.id == (target + 308) as i16
+                })
+            })
+            .flatten();
         updates.push(ResourceForkEntry {
             resource_type: "cicn".to_string(),
             id: target as i16,
-            name: format!("Monster icon override from {label}"),
-            attributes: 0,
+            name: existing_base
+                .map(|entry| entry.name.clone())
+                .unwrap_or_else(|| {
+                    if preserve_existing_metadata {
+                        String::new()
+                    } else {
+                        format!("Monster icon override from {label}")
+                    }
+                }),
+            attributes: existing_base.map(|entry| entry.attributes).unwrap_or(0),
             data: base_data,
         });
         updates.push(ResourceForkEntry {
             resource_type: "cicn".to_string(),
             id: (target + 308) as i16,
-            name: format!("Monster icon override from {label} facing"),
-            attributes: 0,
+            name: existing_paired
+                .map(|entry| entry.name.clone())
+                .unwrap_or_else(|| {
+                    if preserve_existing_metadata {
+                        String::new()
+                    } else {
+                        format!("Monster icon override from {label} facing")
+                    }
+                }),
+            attributes: existing_paired.map(|entry| entry.attributes).unwrap_or(0),
             data: paired_data,
         });
         result.written_resources.push(format!(
@@ -979,7 +1016,7 @@ mod tests {
         }];
         let mut result = ResourceExportResult::default();
 
-        let entries = monster_icon_override_updates(&overrides, &mut result);
+        let entries = monster_icon_override_updates(&overrides, &[], &mut result);
 
         assert_eq!(entries.len(), 2);
         let base = entries

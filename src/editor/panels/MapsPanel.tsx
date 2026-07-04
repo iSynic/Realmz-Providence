@@ -277,6 +277,7 @@ export function MapsPanel({
                 showMapRecords={state.showMapRecords}
                 previewMode={previewMode}
                 previewFocalPoint={previewFocalPoint ?? state.selectedCell ?? defaultPreviewFocalPoint(selectedMap)}
+                focusTarget={state.focusTarget}
                 selectedEntity={state.selectedEntity}
                 selectedCell={state.selectedCell}
                 selectedRegion={selectedRegion}

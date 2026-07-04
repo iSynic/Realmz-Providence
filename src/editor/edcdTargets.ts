@@ -20,6 +20,8 @@ export type EdcdTargetKind =
   | "sound"
   | "monster"
   | "mapLevel"
+  | "landLevel"
+  | "dungeonLevel"
   | "mapRecord"
   | "randomEncounterRectangle"
   | "scrollingText";
@@ -89,6 +91,7 @@ export function edcdFieldTargetKind(shape: string, name: string, fieldNames: str
   if (normalizedName.includes("treasure")) return "treasure";
   if (normalizedName.includes("randomrect") || (normalizedName === "rectangle" && normalizedShape.includes("random"))) return "randomEncounterRectangle";
   if (normalizedName.includes("maprecord")) return "mapRecord";
+  if (normalizedShape === "dungeon-move" && normalizedName === "level") return dungeonMoveLevelTargetKind(fieldNames, values);
   if (normalizedName === "landlevel" || normalizedName === "maplevel" || (normalizedName === "level" && (normalizedShape.includes("teleport") || normalizedShape.includes("random-region") || normalizedShape.includes("dungeon")))) return "mapLevel";
   if (normalizedShape.includes("item") && (normalizedName.includes("item") || normalizedName === "required")) return "item";
   if (normalizedName === "shop") return "shop";
@@ -201,8 +204,8 @@ export function edcdTargetOptions(project: Project, targetKind: EdcdTargetKind, 
     return (project.messages ?? []).map((record) => ({
       key: `message:${record.id}`,
       value: record.id,
-      label: `Message ${record.id}`,
-      detail: record.text || "empty message",
+      label: `String ${record.id}`,
+      detail: record.text || "empty string",
       entity: selectEntityFromId(`message:${record.id}`)
     }));
   }
@@ -249,8 +252,11 @@ export function edcdTargetOptions(project: Project, targetKind: EdcdTargetKind, 
       entity: { type: "monster", id: `monster:${record.id}` }
     }));
   }
-  if (targetKind === "mapLevel") {
-    return dedupeEdcdTargetOptions((project.maps ?? []).map((map) => ({
+  if (targetKind === "mapLevel" || targetKind === "landLevel" || targetKind === "dungeonLevel") {
+    const levelType = targetKind === "landLevel" ? "land" : targetKind === "dungeonLevel" ? "dungeon" : null;
+    return dedupeEdcdTargetOptions((project.maps ?? [])
+      .filter((map) => levelType == null || map.levelType === levelType)
+      .map((map) => ({
       key: `map-level:${map.levelType}:${map.index}`,
       value: map.index,
       label: `${map.levelType === "dungeon" ? "Dungeon" : "Land"} Level ${map.index}`,
@@ -316,6 +322,18 @@ export function missingEdcdTargetReferences(project: Project, shape: string, fie
     if (targetKind === "message" && Math.abs(rawValue) >= 10000) continue;
     const value = normalizedEdcdTargetValueForValidation(targetKind, rawValue, field, opcode);
     if (!Number.isFinite(value) || value < 0) continue;
+    if (shape.toLowerCase() === "random-region-mutation" && field.toLowerCase() === "level") {
+      const levelType = opcode === -23 ? "dungeon" : "land";
+      if ((project.maps ?? []).some((record) => record.levelType === levelType && record.index === value)) continue;
+      issues.push({
+        index,
+        field,
+        targetKind,
+        targetLabel: `${levelType === "dungeon" ? "Dungeon" : "Land"} Level`,
+        value
+      });
+      continue;
+    }
     if (value === 0 && !["macro", "simpleEncounter", "complexEncounter"].includes(targetKind)) continue;
     if (edcdTargetExists(project, targetKind, value, catalog)) continue;
     issues.push({
@@ -349,6 +367,8 @@ function edcdTargetExists(project: Project, targetKind: EdcdTargetKind, value: n
   }
   if (targetKind === "monster") return (project.monsters ?? []).some((record) => record.id === value);
   if (targetKind === "mapLevel") return (project.maps ?? []).some((record) => record.index === value);
+  if (targetKind === "landLevel") return (project.maps ?? []).some((record) => record.levelType === "land" && record.index === value);
+  if (targetKind === "dungeonLevel") return (project.maps ?? []).some((record) => record.levelType === "dungeon" && record.index === value);
   if (targetKind === "mapRecord") return (project.mapRecords ?? []).some((record) => record.id === value);
   if (targetKind === "randomEncounterRectangle") return (project.randomLevels ?? []).some((level) => level.rects.some((rect) => rect.rectIndex === value));
   if (targetKind === "scrollingText") return (project.messages ?? []).some((record) => record.id === value);
@@ -380,13 +400,13 @@ function normalizedEdcdTargetValueForValidation(targetKind: EdcdTargetKind, rawV
 
 export function createRecordTypeForEdcdTarget(targetKind: EdcdTargetKind | null): RealmzTargetRecordKind | null {
   if (!targetKind || targetKind === "macro" || targetKind === "optionLabel" || targetKind === "sound") return null;
-  if (targetKind === "item" || targetKind === "mapLevel" || targetKind === "mapRecord" || targetKind === "randomEncounterRectangle" || targetKind === "scrollingText") return null;
+  if (targetKind === "item" || targetKind === "mapLevel" || targetKind === "landLevel" || targetKind === "dungeonLevel" || targetKind === "mapRecord" || targetKind === "randomEncounterRectangle" || targetKind === "scrollingText") return null;
   return targetKind;
 }
 
 export function edcdTargetLabel(targetKind: EdcdTargetKind) {
   const labels: Record<EdcdTargetKind, string> = {
-    message: "message",
+    message: "string",
     optionLabel: "option label",
     battle: "battle",
     treasure: "treasure",
@@ -401,6 +421,8 @@ export function edcdTargetLabel(targetKind: EdcdTargetKind) {
     sound: "sound",
     monster: "monster",
     mapLevel: "map level",
+    landLevel: "land level",
+    dungeonLevel: "dungeon level",
     mapRecord: "map record",
     randomEncounterRectangle: "random encounter area",
     scrollingText: "scrolling text"
@@ -439,6 +461,11 @@ function missingChoiceDialogReferences(project: Project, fieldNames: string[], v
   }
 
   return issues;
+}
+
+function dungeonMoveLevelTargetKind(fieldNames: string[], values: number[]): EdcdTargetKind {
+  const mode = valueForField(fieldNames, values, "mode") ?? values[0] ?? 0;
+  return mode === 0 ? "dungeonLevel" : "landLevel";
 }
 
 function isBranchTargetField(normalizedName: string) {

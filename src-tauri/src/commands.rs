@@ -4,7 +4,9 @@ use crate::importer::{
     build_project_semantic_schema as build_project_semantic_schema_impl,
     create_project as create_project_impl, import_scenario as import_scenario_impl,
     import_scenario_into_project as import_scenario_into_project_impl,
-    open_project as open_project_impl, save_project as save_project_impl,
+    open_project as open_project_impl,
+    open_project_for_semantic_mapping as open_project_for_semantic_mapping_impl,
+    save_project as save_project_impl,
 };
 use crate::media_assets::mime_for_path;
 use crate::project::{ProvidenceProject, ScenarioTarget, SemanticSchema, ValidationReport};
@@ -253,6 +255,20 @@ pub fn build_project_semantic_schema(
     project_dir: String,
     mut project: ProvidenceProject,
 ) -> Result<ProjectSemanticBuildResult> {
+    let semantic_schema = build_project_semantic_schema_impl(project_dir, &project)?;
+    project.semantic_schema = semantic_schema.clone();
+    let validation = validate_project_impl(&project);
+    Ok(ProjectSemanticBuildResult {
+        semantic_schema,
+        validation,
+    })
+}
+
+#[tauri::command]
+pub fn build_saved_project_semantic_schema(
+    project_dir: String,
+) -> Result<ProjectSemanticBuildResult> {
+    let mut project = open_project_for_semantic_mapping_impl(&project_dir)?;
     let semantic_schema = build_project_semantic_schema_impl(project_dir, &project)?;
     project.semantic_schema = semantic_schema.clone();
     let validation = validate_project_impl(&project);

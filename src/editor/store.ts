@@ -16,6 +16,7 @@ import {
   ProjectCommand,
   ProvidenceWorkspace,
   SelectedEntity,
+  SemanticMappingProgress,
   SemanticSchema,
   SidePanelMode,
   ValidationReport
@@ -55,6 +56,7 @@ export type EditorState = MapViewOptions & {
   dirty: boolean;
   exportReport: ExportReport | null;
   benchmark: BenchmarkReport | null;
+  semanticMapping: SemanticMappingProgress | null;
   zoom: number;
   smoothTiles: boolean;
   past: HistoryEntry[];
@@ -106,6 +108,7 @@ export type EditorAction =
   | { type: "setStatus"; status: string }
   | { type: "setExportReport"; report: ExportReport | null }
   | { type: "setBenchmark"; report: BenchmarkReport | null }
+  | { type: "setSemanticMappingProgress"; progress: SemanticMappingProgress | null }
   | { type: "setMapFocusTarget"; target: MapFocusTarget | null }
   | { type: "setZoom"; zoom: number }
   | { type: "setSmoothTiles"; value: boolean }
@@ -142,6 +145,7 @@ export function initialEditorState(desktopRuntime: boolean): EditorState {
     dirty: false,
     exportReport: null,
     benchmark: null,
+    semanticMapping: null,
     zoom: 1,
     smoothTiles: true,
     showRealTiles: true,
@@ -239,6 +243,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         dirty: false,
         exportReport: null,
         benchmark: null,
+        semanticMapping: null,
         past: [],
         future: [],
         groupBaseProject: null,
@@ -256,6 +261,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return state.project
         ? {
             ...state,
+            semanticMapping: null,
             project: {
               ...state.project,
               semanticSchema: action.schema,
@@ -429,6 +435,8 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return { ...state, exportReport: action.report, activeTab: action.report ? "export" : state.activeTab };
     case "setBenchmark":
       return { ...state, benchmark: action.report, activeTab: action.report ? "export" : state.activeTab };
+    case "setSemanticMappingProgress":
+      return { ...state, semanticMapping: action.progress };
     case "setMapFocusTarget":
       return { ...state, focusTarget: action.target };
     case "setZoom":

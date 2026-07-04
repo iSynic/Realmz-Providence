@@ -466,7 +466,63 @@
 
 
 .map-authoring-form {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.map-authoring-group {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+  padding: 8px;
+  border: 1px solid #263d4f;
+  border-radius: 6px;
+  background: #0c141c;
+}
+
+.map-authoring-group h4,
+.map-authoring-group summary {
+  margin: 0;
+  color: #d7e7f8;
+  font-size: 11px;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.map-authoring-group summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.map-authoring-group summary::-webkit-details-marker {
+  display: none;
+}
+
+.map-authoring-group summary small {
+  color: #87a1b9;
+  font-size: 10px;
+  text-transform: none;
+}
+
+.map-authoring-fields {
+  display: grid;
+  gap: 8px;
+  align-items: end;
+}
+
+.map-authoring-fields.two-column {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.map-authoring-fields.three-column {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.map-authoring-destination:not([open]) .map-authoring-fields {
+  display: none;
 }
 
 

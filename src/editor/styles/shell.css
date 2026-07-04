@@ -300,6 +300,24 @@
   background: #2d281b;
 }
 
+.btn-danger {
+  color: #ffd7d3;
+  border-color: #9c3b32;
+  background: #3a1715;
+}
+
+.btn-danger:hover:not(:disabled) {
+  color: #fff0ed;
+  border-color: #e35b4e;
+  background: #5a211d;
+}
+
+.btn-danger:disabled {
+  color: #8f6965;
+  border-color: #49302d;
+  background: #201615;
+}
+
 
 
 .btn-ghost {
@@ -3209,6 +3227,12 @@ button.documents-source-chip {
 .semantic-mapping-progress.compact {
   width: 86px;
   height: 5px;
+}
+
+.semantic-mapping-progress.determinate::before {
+  width: var(--semantic-progress, 2%);
+  transform: none;
+  animation: none;
 }
 
 @keyframes semantic-mapping-sweep {

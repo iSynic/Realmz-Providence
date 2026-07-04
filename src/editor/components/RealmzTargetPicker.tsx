@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Volume2 } from "lucide-react";
+import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
+import { Eye, Volume2 } from "lucide-react";
 import { LibraryCatalog, Project, RealmzTargetRecordKind, SelectedEntity, SemanticEntity } from "../types";
 import { selectEntityFromId } from "../utils";
 import { actionOptionFor, normalizeStepOpcode } from "../realmzActions";
@@ -106,7 +106,9 @@ export function TargetPicker({
   }, [opcode, projectLoadKey]);
   const resolvedValue = resolveSignedTargetValue(opcode, value);
   const selectedStub = useMemo(() => targetOptionForOpcodeValue(project, opcode, value, catalog), [opcode, projectLoadKey, targetDependencyKey, value]);
-  const effectiveTargetsLoaded = !showSearch || targetsLoaded;
+  const shouldShowSearch = showSearch && config?.searchable !== false;
+  const isSearchDrivenPicker = shouldShowSearch;
+  const effectiveTargetsLoaded = !shouldShowSearch || targetsLoaded;
   const targets = useMemo(() => {
     if (!effectiveTargetsLoaded && !query.trim()) return selectedStub ? [selectedStub] : [];
     return targetOptionsForOpcode(project, opcode, catalog);
@@ -137,48 +139,127 @@ export function TargetPicker({
   const visibleTargets = selected && !filteredTargets.some((target) => target.key === selected.key)
     ? [selected, ...filteredTargets.slice(0, 159)]
     : filteredTargets.slice(0, 160);
+  const normalizedQuery = query.trim();
+  const searchResultTargets = normalizedQuery && isSearchDrivenPicker
+    ? filteredTargets.slice(0, 8)
+    : [];
   const hasCurrentValue = Number.isFinite(resolvedValue) && resolvedValue !== 0 && !selected;
-  const canCreateTarget = Boolean(config.recordType && onCreate && (!selected || hasCurrentValue || value === 0));
+  const canCreateTarget = Boolean(config.recordType && onCreate && (!selected || hasCurrentValue));
   const behavior = signedTargetBehaviorLabel(opcode, value);
   const showWaitControl = supportsSignedSoundReference(opcode) && resolvedValue !== 0;
   const detail = selected
     ? [selected.detail, selected.summary, behavior, selected.compatibility, selected.sourceState].filter(Boolean).join(" | ")
     : config.hint;
+  const selectedDetail = selected
+    ? showDetail
+      ? [selected.detail, selected.summary, behavior, selected.compatibility, selected.sourceState].filter(Boolean).join(" | ") || `Selected ${config.label.toLowerCase()}`
+      : ""
+    : hasCurrentValue ? `${targetFallbackLabel(config.label, resolvedValue)} does not exist yet.` : config.hint;
+  const chooseTarget = (target: ScriptTargetOption) => {
+    onChange(signedTargetValueForSelection(opcode, value, target.value));
+    setQuery("");
+    setTargetsLoaded(false);
+  };
+  const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setQuery("");
+      setTargetsLoaded(false);
+      return;
+    }
+    if (event.key !== "Enter") return;
+    const firstTarget = searchResultTargets[0];
+    if (!firstTarget) return;
+    event.preventDefault();
+    chooseTarget(firstTarget);
+  };
   return (
     <div className="realmz-target-picker">
-      <label>
-        <span>{config.label}</span>
-        {showSearch && (
-          <input
-            value={query}
-            onChange={(event) => {
-              const nextQuery = event.currentTarget.value;
-              setTargetsLoaded(Boolean(nextQuery.trim()));
-              setQuery(nextQuery);
-            }}
-            placeholder={`Search ${config.label.toLowerCase()}...`}
-            aria-label={`Search ${config.label}`}
-          />
-        )}
-        <select
-          onFocus={() => setTargetsLoaded(true)}
-          onMouseDown={() => setTargetsLoaded(true)}
-          value={hasCurrentValue ? `raw:${resolvedValue}` : selected ? String(selected.value) : ""}
-          onChange={(event) => {
-            const raw = event.currentTarget.value;
-            if (!raw || raw.startsWith("raw:")) return;
-            onChange(signedTargetValueForSelection(opcode, value, Number(raw)));
-          }}
-        >
-          <option value="">{emptyLabel ?? `Choose ${config.label.toLowerCase()}`}</option>
-          {hasCurrentValue && <option value={`raw:${resolvedValue}`}>Current value {resolvedValue}</option>}
-          {visibleTargets.map((target) => (
-            <option key={target.key} value={target.value}>
-              {target.label}
-            </option>
-          ))}
-        </select>
-      </label>
+      {isSearchDrivenPicker ? (
+        <>
+          <label className="target-picker-search-label">
+            <span>{config.label}</span>
+            <input
+              value={query}
+              onChange={(event) => {
+                const nextQuery = event.currentTarget.value;
+                setTargetsLoaded(Boolean(nextQuery.trim()));
+                setQuery(nextQuery);
+              }}
+              onKeyDown={handleSearchKeyDown}
+              placeholder={config.searchPlaceholder ?? `Search ${config.label.toLowerCase()}...`}
+              aria-label={`Search ${config.label}`}
+            />
+          </label>
+          <div className={`target-picker-selected-row${selected ? "" : " missing"}`}>
+            <div>
+              <strong>{selected ? selected.label : hasCurrentValue ? targetFallbackLabel(config.label, resolvedValue) : emptyLabel ?? `No ${config.label.toLowerCase()} selected`}</strong>
+              {selectedDetail && <small>{selectedDetail}</small>}
+            </div>
+            {selected?.entity && (
+              <button className="btn btn-secondary btn-xs icon-only target-picker-open-button" type="button" title={`Open ${selected.label}`} onClick={() => onInspect(selected.entity!)}>
+                <Eye size={12} />
+              </button>
+            )}
+          </div>
+          {isDirectMacroOpcode(normalizeStepOpcode(opcode)) && <TargetMacroFlowPreview project={project} catalog={catalog} macroId={resolvedValue} />}
+          {normalizedQuery && (
+            <div className="target-picker-search-preview target-picker-string-results" aria-live="polite">
+              {searchResultTargets.map((target) => (
+                <button
+                  key={target.key}
+                  type="button"
+                  className={target.value === resolvedValue ? "selected" : ""}
+                  title={targetOptionTitle(target)}
+                  onClick={() => chooseTarget(target)}
+                >
+                  <strong>{target.label}</strong>
+                  <small>{[target.detail, target.summary, target.compatibility, target.sourceState].filter(Boolean).join(" | ") || "No details available."}</small>
+                </button>
+              ))}
+              {searchResultTargets.length === 0 && <span className="target-picker-empty">No {config.label.toLowerCase()} targets match this search.</span>}
+              {filteredTargets.length > searchResultTargets.length && (
+                <small>{filteredTargets.length - searchResultTargets.length} more matching target(s); keep typing to narrow.</small>
+              )}
+            </div>
+          )}
+        </>
+      ) : (
+        <label className="target-picker-select-label">
+          <span>{config.label}</span>
+          <div className={selected?.entity ? "target-picker-select-row with-open-action" : "target-picker-select-row"}>
+            <select
+              onFocus={() => setTargetsLoaded(true)}
+              onMouseDown={() => setTargetsLoaded(true)}
+              value={hasCurrentValue ? `raw:${resolvedValue}` : selected ? String(selected.value) : ""}
+              onChange={(event) => {
+                const raw = event.currentTarget.value;
+                if (!raw || raw.startsWith("raw:")) return;
+                onChange(signedTargetValueForSelection(opcode, value, Number(raw)));
+              }}
+            >
+              <option value="">{emptyLabel ?? `Choose ${config.label.toLowerCase()}`}</option>
+              {hasCurrentValue && <option value={`raw:${resolvedValue}`}>Current value {resolvedValue}</option>}
+              {visibleTargets.map((target) => (
+                <option key={target.key} value={target.value} title={targetOptionTitle(target)}>
+                  {target.label}
+                </option>
+              ))}
+            </select>
+            {selected?.entity && (
+              <button
+                className="btn btn-secondary btn-xs icon-only target-picker-open-button"
+                type="button"
+                title={`Open ${selected.label}`}
+                aria-label={`Open ${selected.label}`}
+                onClick={() => onInspect(selected.entity!)}
+              >
+                <Eye size={12} />
+              </button>
+            )}
+          </div>
+        </label>
+      )}
       {showWaitControl && (
         <label className="realmz-target-picker-wait">
           <input
@@ -189,12 +270,7 @@ export function TargetPicker({
           <span>Wait for sound to finish</span>
         </label>
       )}
-      {showDetail && <small>{detail}</small>}
-      {selected?.entity && (
-        <button className="btn btn-secondary btn-xs" type="button" onClick={() => onInspect(selected.entity!)}>
-          Open Target
-        </button>
-      )}
+      {!isSearchDrivenPicker && showDetail && <small>{detail}</small>}
       {normalizeStepOpcode(opcode) === 9 && selected && (
         <button
           className="btn btn-secondary btn-xs"
@@ -225,35 +301,90 @@ export function TargetPicker({
           {createTargetButtonLabel(config.recordType!, hasCurrentValue ? resolvedValue : undefined)}
         </button>
       )}
-      {showTargetCount && targets.length === 0 && <span className="target-picker-empty">No targets are available yet.</span>}
-      {showTargetCount && targets.length > 0 && filteredTargets.length === 0 && <span className="target-picker-empty">No targets match this search.</span>}
-      {showTargetCount && filteredTargets.length > visibleTargets.length && <span className="target-picker-empty">{filteredTargets.length - visibleTargets.length} more target(s); search to narrow.</span>}
+      {!isSearchDrivenPicker && showTargetCount && targets.length === 0 && <span className="target-picker-empty">No targets are available yet.</span>}
+      {!isSearchDrivenPicker && showTargetCount && targets.length > 0 && filteredTargets.length === 0 && <span className="target-picker-empty">No targets match this search.</span>}
+      {!isSearchDrivenPicker && showTargetCount && filteredTargets.length > visibleTargets.length && <span className="target-picker-empty">{filteredTargets.length - visibleTargets.length} more target(s); search to narrow.</span>}
     </div>
   );
+}
+
+function TargetMacroFlowPreview({
+  project,
+  catalog,
+  macroId
+}: {
+  project: Project | null;
+  catalog?: LibraryCatalog | null;
+  macroId: number;
+}) {
+  const trigger = project?.triggers.find((candidate) => candidate.source === "Data ED3" && candidate.recordIndex === macroId);
+  if (!trigger) return null;
+  const actions = trigger.actions
+    .filter((action) => action.rawCode !== 0)
+    .slice()
+    .sort((a, b) => a.slot - b.slot);
+  if (actions.length === 0) return <small className="target-picker-flow-empty">Extra Action Point {macroId} has no occupied action slots.</small>;
+  return (
+    <div className="target-picker-flow-preview" aria-label={`Extra Action Point ${macroId} flow preview`}>
+      {actions.slice(0, 5).map((action) => (
+        <div key={`${action.slot}-${action.rawCode}-${action.id}`}>
+          <span>{action.slot + 1}</span>
+          <small>{targetPickerFlowActionSummary(project, catalog, action.rawCode, action.id)}</small>
+        </div>
+      ))}
+      {actions.length > 5 && <small>{actions.length - 5} more action slot(s).</small>}
+    </div>
+  );
+}
+
+function targetPickerFlowActionSummary(project: Project | null, catalog: LibraryCatalog | null | undefined, rawCode: number, id: number) {
+  const code = normalizeStepOpcode(rawCode);
+  const action = actionOptionFor(code);
+  if (code === 0) return "Empty";
+  const target = targetOptionForOpcodeValue(project, rawCode, id, catalog);
+  if (target) return `${action.shortLabel}: ${target.label}`;
+  if (id !== 0) return `${action.shortLabel}: ${id}`;
+  return action.shortLabel;
+}
+
+function targetFallbackLabel(label: string, value: number) {
+  const base = label
+    .replace(/\s+Target$/i, "")
+    .replace(/\s+Resource$/i, "");
+  if (label === "String Target") return `String ${value}`;
+  if (label === "Sound Resource") return `Sound ${value}`;
+  if (label === "Picture Resource") return `Picture ${value}`;
+  if (label === "TEXT Resource") return `TEXT ${value}`;
+  return `${base} ${value}`;
 }
 
 export function targetPickerConfig(opcode: number) {
   const code = normalizeStepOpcode(opcode);
   if (actionOptionFor(code).edcdShape) return null;
-  const configs: Record<number, { label: string; hint: string; recordType?: RealmzTargetRecordKind }> = {
-    1: { label: "String Target", hint: "Select the scenario string this action displays.", recordType: "message" },
-    4: { label: "Simple Encounter", hint: "Select a simple encounter record.", recordType: "simpleEncounter" },
-    5: { label: "Complex Encounter", hint: "Select a complex encounter record.", recordType: "complexEncounter" },
+  const configs: Record<number, { label: string; hint: string; recordType?: RealmzTargetRecordKind; searchable?: boolean; searchPlaceholder?: string }> = {
+    1: { label: "String Target", hint: "Select the scenario string this action displays.", recordType: "message", searchPlaceholder: "Search string # or text..." },
+    4: { label: "Simple Encounter", hint: "Select a simple encounter record.", recordType: "simpleEncounter", searchable: false },
+    5: { label: "Complex Encounter", hint: "Select a complex encounter record.", recordType: "complexEncounter", searchable: false },
     6: { label: "Shop Target", hint: "Select a shop record.", recordType: "shop" },
     9: { label: "Sound Resource", hint: "Select a playable sound resource or managed sound asset." },
     10: { label: "Treasure Target", hint: "Select a treasure record.", recordType: "treasure" },
     27: { label: "Picture Resource", hint: "Select a picture resource or managed picture asset." },
-    29: { label: "Map Item", hint: "Select map item 0 through 19." },
-    35: { label: "Simple Encounter", hint: "Select the simple encounter this action mutates.", recordType: "simpleEncounter" },
+    29: { label: "Map Item", hint: "Select map item 0 through 19.", searchable: false },
+    35: { label: "Simple Encounter", hint: "Select the simple encounter this action mutates.", recordType: "simpleEncounter", searchable: false },
     39: { label: "Extra Action Point", hint: "Select the Extra Action Point this action runs." },
-    44: { label: "Complex Encounter", hint: "Select the complex encounter this action mutates.", recordType: "complexEncounter" },
+    44: { label: "Complex Encounter", hint: "Select the complex encounter this action mutates.", recordType: "complexEncounter", searchable: false },
     47: { label: "Quest Flag", hint: "Select a quest flag to write.", recordType: "questLabel" },
     49: { label: "Shop Target", hint: "Select a shop record.", recordType: "shop" },
+    62: { label: "TEXT Resource", hint: "Select a classic TEXT resource for the scrolling-text movie window.", searchPlaceholder: "Search TEXT resource ID..." },
     97: { label: "Map Record", hint: "Select a map record." },
-    104: { label: "Simple Encounter", hint: "Select the simple encounter this action mutates.", recordType: "simpleEncounter" },
+    104: { label: "Simple Encounter", hint: "Select the simple encounter this action mutates.", recordType: "simpleEncounter", searchable: false },
     127: { label: "Monster Target", hint: "Select a monster record.", recordType: "monster" }
   };
   return configs[code] ?? null;
+}
+
+function encounterPromptDetail(prompt: number) {
+  return prompt > 0 ? `Prompt String ${prompt}` : "No prompt string";
 }
 
 export function targetOptionsForOpcode(project: Project | null, opcode: number, catalog?: LibraryCatalog | null): ScriptTargetOption[] {
@@ -264,6 +395,9 @@ export function targetOptionsForOpcode(project: Project | null, opcode: number, 
   if (cached) return cached;
   const options: ScriptTargetOption[] = [];
   addTypedProjectTargets(project, code, options, catalog);
+  if (code === 62) {
+    addTextResourceTargets(project, options, catalog);
+  }
   if (code === 9 || code === 27) {
     const wantedKinds = code === 9 ? new Set(["sound"]) : new Set(["picture", "icon"]);
     for (const asset of project.assets ?? []) {
@@ -384,8 +518,7 @@ export function targetOptionForOpcodeValue(project: Project | null, opcode: numb
   if (!project || !Number.isFinite(value)) return null;
   const code = normalizeStepOpcode(opcode);
   const resolvedValue = resolveSignedTargetValue(code, value);
-  if (resolvedValue === 0) return null;
-  const id = Math.abs(resolvedValue);
+  const id = code === 62 ? resolvedValue : Math.abs(resolvedValue);
   const selected = optionFromTypedProjectTarget(project, code, id, catalog);
   return selected;
 }
@@ -413,6 +546,7 @@ function targetOptionsDependencyKey(project: Project | null, opcode: number, cat
   else if ([4, 35, 104].includes(code)) parts.push("simple", objectCacheKey(project.simpleEncounters), "triggers", objectCacheKey(project.triggers));
   else if ([5, 44].includes(code)) parts.push("complex", objectCacheKey(project.complexEncounters), "triggers", objectCacheKey(project.triggers));
   else if (code === 47) parts.push("quests", objectCacheKey(project.questLabels));
+  else if (code === 62) parts.push("assets", objectCacheKey(project.assets), "resources", objectCacheKey(project.semanticSchema?.entities), "catalog", catalogAssets);
   else if (code === 9) parts.push("assets", objectCacheKey(project.assets), "sounds", objectCacheKey(assetCatalog?.sounds), "catalog", catalogAssets);
   else if (code === 27) parts.push("assets", objectCacheKey(project.assets), "pictures", objectCacheKey(assetCatalog?.pictures), "icons", objectCacheKey(assetCatalog?.icons), "catalog", catalogAssets);
   else if (code === 97 || code === 106) parts.push("maps", objectCacheKey(project.maps));
@@ -511,8 +645,7 @@ function optionFromTypedProjectTarget(project: Project, code: number, id: number
           key: `simple:${record.id}`,
           value: record.id,
           label: `Simple Encounter ${record.id}`,
-          detail: `${record.actions.length} action(s), prompt ${record.prompt}`,
-          summary: record.texts.find(Boolean) ?? "no text",
+          detail: `${record.actions.length} action(s), ${encounterPromptDetail(record.prompt)}`,
           compatibility: "Editable",
           sourceState: record.authored ? "Authored" : "Imported",
           entity: { type: "encounter", id: `encounter:simple:${record.id}` }
@@ -526,8 +659,7 @@ function optionFromTypedProjectTarget(project: Project, code: number, id: number
           key: `complex:${record.id}`,
           value: record.id,
           label: `Complex Encounter ${record.id}`,
-          detail: `${record.actions.length} action(s), prompt ${record.prompt}`,
-          summary: record.texts.find(Boolean) ?? "no text",
+          detail: `${record.actions.length} action(s), ${encounterPromptDetail(record.prompt)}`,
           compatibility: "Editable",
           sourceState: record.authored ? "Authored" : "Imported",
           entity: { type: "encounter", id: `encounter:complex:${record.id}` }
@@ -539,6 +671,9 @@ function optionFromTypedProjectTarget(project: Project, code: number, id: number
     return quest
       ? { key: `quest:${quest.id}`, value: quest.id, label: quest.label, detail: quest.note || "Quest metadata", entity: { type: "questFlag", id: `quest:${quest.id}` } }
       : { key: `quest:${id}`, value: id, label: `Quest Flag ${id}`, detail: "Scenario state flag", entity: { type: "questFlag", id: `quest:${id}` } };
+  }
+  if (code === 62) {
+    return textResourceOptionForId(project, id, catalog);
   }
   if (code === 29) {
     return id >= 0 && id <= 19
@@ -622,7 +757,7 @@ function optionFromTypedProjectTarget(project: Project, code: number, id: number
           libraryAsset: fallbackLibraryAsset
         };
       }
-      return soundReferenceOption(id);
+      return id > 0 ? soundReferenceOption(id) : null;
     }
     if (code === 27) {
       const pictureAsset = (project.assetCatalog.pictures ?? []).find((candidate) => candidate.resourceId === id);
@@ -777,13 +912,13 @@ function addTypedProjectTargets(project: Project, code: number, options: ScriptT
   if ([4, 35, 104].includes(code)) {
     const used = usageCounts(project, [4, 35, 104]);
     for (const record of project.simpleEncounters ?? []) {
-      options.push({ key: `simple:${record.id}`, value: record.id, label: `Simple Encounter ${record.id}`, detail: `${record.actions.length} action(s), prompt ${record.prompt}`, summary: `${record.texts.find(Boolean) ?? "no text"} | ${used.get(record.id) ?? 0} script use(s)`, compatibility: "Editable", sourceState: record.authored ? "Authored" : "Imported", entity: { type: "encounter", id: `encounter:simple:${record.id}` } });
+      options.push({ key: `simple:${record.id}`, value: record.id, label: `Simple Encounter ${record.id}`, detail: `${record.actions.length} action(s), ${encounterPromptDetail(record.prompt)}`, summary: `${used.get(record.id) ?? 0} script use(s)`, compatibility: "Editable", sourceState: record.authored ? "Authored" : "Imported", entity: { type: "encounter", id: `encounter:simple:${record.id}` } });
     }
   }
   if ([5, 44].includes(code)) {
     const used = usageCounts(project, [5, 44]);
     for (const record of project.complexEncounters ?? []) {
-      options.push({ key: `complex:${record.id}`, value: record.id, label: `Complex Encounter ${record.id}`, detail: `${record.actions.length} action(s), prompt ${record.prompt}`, summary: `${record.texts.find(Boolean) ?? "no text"} | ${used.get(record.id) ?? 0} script use(s)`, compatibility: "Editable", sourceState: record.authored ? "Authored" : "Imported", entity: { type: "encounter", id: `encounter:complex:${record.id}` } });
+      options.push({ key: `complex:${record.id}`, value: record.id, label: `Complex Encounter ${record.id}`, detail: `${record.actions.length} action(s), ${encounterPromptDetail(record.prompt)}`, summary: `${used.get(record.id) ?? 0} script use(s)`, compatibility: "Editable", sourceState: record.authored ? "Authored" : "Imported", entity: { type: "encounter", id: `encounter:complex:${record.id}` } });
     }
   }
   if (code === 47) {
@@ -791,6 +926,106 @@ function addTypedProjectTargets(project: Project, code: number, options: ScriptT
       options.push({ key: `quest:${quest.id}`, value: quest.id, label: quest.label, detail: quest.note || "Quest metadata", entity: { type: "questFlag", id: `quest:${quest.id}` } });
     }
   }
+}
+
+function addTextResourceTargets(project: Project, options: ScriptTargetOption[], catalog?: LibraryCatalog | null) {
+  for (const asset of project.assets ?? []) {
+    if (asset.resourceType.trim() !== "TEXT" && asset.kind !== "text") continue;
+    options.push({
+      key: asset.id,
+      value: asset.resourceId,
+      label: `${asset.label} (TEXT ${asset.resourceId})`,
+      detail: `TEXT resource | ${asset.exportState}`,
+      entity: { type: "resource", id: asset.id },
+      previewPath: asset.previewPath,
+      previewMimeType: asset.mimeType,
+      managedAsset: asset
+    });
+  }
+  for (const entity of project.semanticSchema?.entities ?? []) {
+    const option = textResourceOptionFromSemanticEntity(entity);
+    if (option) options.push(option);
+  }
+  for (const asset of catalog?.assets ?? []) {
+    if (asset.resourceId == null || asset.resourceType?.trim() !== "TEXT") continue;
+    options.push({
+      key: asset.id,
+      value: asset.resourceId,
+      label: `${asset.label} (TEXT ${asset.resourceId})`,
+      detail: "TEXT resource | library catalog",
+      summary: asset.relativePath,
+      compatibility: "Realmz TEXT resource",
+      sourceState: "Imported library asset",
+      entity: { type: "resource", id: asset.id },
+      previewPath: asset.previewPath,
+      previewMimeType: asset.mimeType,
+      libraryAsset: asset
+    });
+  }
+}
+
+function textResourceOptionForId(project: Project, id: number, catalog?: LibraryCatalog | null): ScriptTargetOption | null {
+  for (const asset of project.assets ?? []) {
+    if ((asset.resourceType.trim() === "TEXT" || asset.kind === "text") && asset.resourceId === id) {
+      return {
+        key: asset.id,
+        value: asset.resourceId,
+        label: `${asset.label} (TEXT ${asset.resourceId})`,
+        detail: `TEXT resource | ${asset.exportState}`,
+        entity: { type: "resource", id: asset.id },
+        previewPath: asset.previewPath,
+        previewMimeType: asset.mimeType,
+        managedAsset: asset
+      };
+    }
+  }
+  for (const entity of project.semanticSchema?.entities ?? []) {
+    const option = textResourceOptionFromSemanticEntity(entity);
+    if (option?.value === id) return option;
+  }
+  for (const asset of catalog?.assets ?? []) {
+    if (asset.resourceId == null || asset.resourceId !== id || asset.resourceType?.trim() !== "TEXT") continue;
+    return {
+      key: asset.id,
+      value: asset.resourceId,
+      label: `${asset.label} (TEXT ${asset.resourceId})`,
+      detail: "TEXT resource | library catalog",
+      summary: asset.relativePath,
+      compatibility: "Realmz TEXT resource",
+      sourceState: "Imported library asset",
+      entity: { type: "resource", id: asset.id },
+      previewPath: asset.previewPath,
+      previewMimeType: asset.mimeType,
+      libraryAsset: asset
+    };
+  }
+  return null;
+}
+
+function textResourceOptionFromSemanticEntity(entity: SemanticEntity): ScriptTargetOption | null {
+  if (entity.type !== "resource") return null;
+  const resourceType = String(entity.summary.type ?? entity.summary.resourceType ?? "").trim();
+  if (resourceType !== "TEXT") return null;
+  const resourceId = semanticResourceId(entity);
+  if (resourceId == null) return null;
+  return {
+    key: entity.id,
+    value: resourceId,
+    label: `${entity.label || `TEXT ${resourceId}`} (TEXT ${resourceId})`,
+    detail: `TEXT resource | ${entity.source}`,
+    compatibility: "Realmz TEXT resource",
+    sourceState: entity.editState === "editable" ? "Scenario resource" : "Reference resource",
+    entity: selectEntityFromId(entity.id),
+    previewMimeType: "text/plain"
+  };
+}
+
+function semanticResourceId(entity: SemanticEntity) {
+  for (const key of ["resourceId", "id", "index"]) {
+    const value = entity.summary[key];
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+  }
+  return trailingNumber(entity.id);
 }
 
 function usageCounts(project: Project, opcodes: number[]) {
@@ -820,6 +1055,10 @@ export function filterTargetOptions(options: ScriptTargetOption[], query: string
   ].join(" ").toLowerCase().includes(normalized));
 }
 
+function targetOptionTitle(option: ScriptTargetOption) {
+  return [option.label, option.detail, option.summary, option.compatibility, option.sourceState].filter(Boolean).join(" | ");
+}
+
 function createTargetButtonLabel(recordType: RealmzTargetRecordKind, id?: number) {
   const labels: Record<RealmzTargetRecordKind, string> = {
     message: "String",
@@ -838,6 +1077,7 @@ function createTargetButtonLabel(recordType: RealmzTargetRecordKind, id?: number
 
 function entityMatchesOpcodeTarget(entity: SemanticEntity, code: number) {
   if (code === 9 && entity.type === "resource") return String(entity.summary.type ?? "").trim() === "snd";
+  if (code === 62 && entity.type === "resource") return String(entity.summary.type ?? entity.summary.resourceType ?? "").trim() === "TEXT";
   if (code === 27 && entity.type === "resource") {
     const resourceType = String(entity.summary.type ?? "").trim();
     return resourceType === "PICT" || resourceType === "cicn";
@@ -863,6 +1103,7 @@ export function targetSemanticTypes(code: number) {
     48: ["battle"],
     49: ["shop"],
     56: ["battle"],
+    62: ["resource"],
     97: ["map", "map record"],
     104: ["simple encounter"],
     107: ["battle"],

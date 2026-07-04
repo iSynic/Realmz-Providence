@@ -37,7 +37,7 @@ const TOPBAR_SAVE_HELP =
 const TOPBAR_EXPORT_HELP =
   "Export writes a Realmz-readable scenario folder from the current project state, after validation and preservation checks have had a chance to catch risky output.";
 const TOPBAR_HISTORY_HELP =
-  "Workbench history moves backward and forward through recently visited Providence tools without changing the project itself.";
+  "Workbench history moves backward and forward through recently visited Providence tools and selected records without changing the project itself.";
 
 export function WorkbenchTopbar({
   activeWorkbench,

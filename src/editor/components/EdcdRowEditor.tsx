@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import { Save, Trash2 } from "lucide-react";
-import { LibraryCatalog, Project, ProjectCommand, SelectedEntity } from "../types";
+import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
+import { Eye, Save, Trash2 } from "lucide-react";
+import { LibraryCatalog, MapCoordinateTarget, Project, ProjectCommand, SelectedEntity } from "../types";
 import { CollapsibleSection, EmptyState, FieldRow, PanelSection } from "../ui";
-import { itemReferenceDetail, itemReferenceOptions } from "../itemReferences";
-import { createRecordTypeForEdcdTarget, edcdFieldTargetKind, edcdTargetLabel, edcdTargetOptions, missingEdcdTargetReferences, type EdcdTargetKind } from "../edcdTargets";
+import { itemReferenceOptions, type ItemReferenceOption } from "../itemReferences";
+import { createRecordTypeForEdcdTarget, edcdFieldTargetKind, edcdTargetLabel, edcdTargetOptions, missingEdcdTargetReferences, type EdcdTargetKind, type EdcdTargetOption } from "../edcdTargets";
 import { type OpcodeParameterLabel } from "../opcodeCrosswalk";
 import { CHOICE_BRANCH_MODES, choiceBranchModeLabel, choiceBranchTargetKind, choiceContinueLabel, nextOptionLabelId, parseChoicePromptValue, serializeChoicePromptValue, type ChoicePromptKind } from "../choiceDialogs";
 import { scriptActionSummary } from "../panels/scripts/scriptActionCatalog";
@@ -26,6 +26,8 @@ type EdcdUsage = {
   summary?: string;
 };
 
+type EdcdRowEditorPresentation = "inventory" | "selected-step";
+
 export function EdcdRowEditor({
   project,
   catalog,
@@ -39,7 +41,10 @@ export function EdcdRowEditor({
   selectedSlotLabel,
   onSelectEntity,
   onOpenText,
-  onApplyCommand
+  onOpenMapCoordinate,
+  onStepOpcodeChange,
+  onApplyCommand,
+  presentation = "inventory"
 }: {
   project: Project;
   catalog?: LibraryCatalog | null;
@@ -53,7 +58,10 @@ export function EdcdRowEditor({
   selectedSlotLabel: string;
   onSelectEntity?: (entity: SelectedEntity) => void;
   onOpenText?: (editor: "messages" | "option-labels") => void;
+  onOpenMapCoordinate?: (target: MapCoordinateTarget) => void;
+  onStepOpcodeChange?: (rawCode: number) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
+  presentation?: EdcdRowEditorPresentation;
 }) {
   const rowId = edcdUsage?.rowId ?? (fallbackShape ? Math.max(0, fallbackRowId) : null);
   const shape = edcdUsage?.shape ?? fallbackShape ?? null;
@@ -99,11 +107,17 @@ export function EdcdRowEditor({
   const targetIssues = missingEdcdTargetReferences(project, shapeId, fieldNames, numericDraft, opcode, preservedIndexes, catalog);
   const guidedSections = guidedSectionsForShape(shapeId, primaryFields, numericDraft, opcode);
   const guidedSummary = guidedSummaryForEdcd(project, catalog, shapeId, opcode, rowId, numericDraft, fieldNames, edcdUsage?.summary);
+  const mapCoordinateTarget = mapCoordinateTargetForEdcd(shapeId, numericDraft);
+  const mapCoordinateMap = mapCoordinateTarget
+    ? project.maps.find((candidate) => candidate.levelType === mapCoordinateTarget.levelType && candidate.index === mapCoordinateTarget.levelIndex) ?? null
+    : null;
+  const showGuidedSummary = Boolean(guidedSummary && presentation !== "selected-step");
 
   if (shapeId.toLowerCase() === "choice" && Math.abs(opcode ?? 0) === 3) {
     return (
       <ChoiceDialogEditor
         project={project}
+        catalog={catalog}
         rowId={rowId}
         rowExists={Boolean(row)}
         initialValues={initialValues}
@@ -112,52 +126,55 @@ export function EdcdRowEditor({
         onSelectEntity={onSelectEntity}
         onOpenText={onOpenText}
         onApplyCommand={onApplyCommand}
+        presentation={presentation}
       />
     );
   }
 
-  return (
-    <PanelSection
-      title={settingsTitleForShape(shapeId)}
-      eyebrow={`settings ${rowId}`}
-      density="compact"
-      actions={
-        <>
-          <button
-            type="button"
-            className="btn btn-primary btn-xs"
-            disabled={!onApplyCommand || !changed}
-            onClick={() => onApplyCommand?.({
-              kind: "updateEdcdRow",
-              label: `Update settings ${rowId}`,
-              rowId,
-              values: numericDraft
-            })}
-          >
-            <Save size={12} /> Apply Settings
-          </button>
-          {row && (
-            <button
-              type="button"
-              className="btn btn-danger btn-xs"
-              disabled={!onApplyCommand}
-              onClick={() => onApplyCommand?.({ kind: "deleteEdcdRow", label: `Delete settings ${rowId}`, rowId })}
-            >
-              <Trash2 size={12} /> Clear Settings
-            </button>
-          )}
-        </>
-      }
-    >
-      <div className="edcd-row-editor">
+  const actionButtons = (
+    <>
+      <button
+        type="button"
+        className="btn btn-primary btn-xs"
+        disabled={!onApplyCommand || !changed}
+        onClick={() => onApplyCommand?.({
+          kind: "updateEdcdRow",
+          label: `Update settings ${rowId}`,
+          rowId,
+          values: numericDraft
+        })}
+      >
+        <Save size={12} /> Apply Settings
+      </button>
+      {row && (
+        <button
+          type="button"
+          className="btn btn-danger btn-xs"
+          disabled={!onApplyCommand}
+          onClick={() => onApplyCommand?.({ kind: "deleteEdcdRow", label: `Delete settings ${rowId}`, rowId })}
+        >
+          <Trash2 size={12} /> Clear Settings
+        </button>
+      )}
+    </>
+  );
+  const editorBody = (
+      <div className={`edcd-row-editor${presentation === "selected-step" ? " selected-step-edcd-editor" : ""}`}>
+        {presentation === "selected-step" && (
+          <div className="edcd-inline-actions">
+            {actionButtons}
+          </div>
+        )}
         {!row && (
           <EmptyState
             compact
             title="Settings not created yet"
-            body={`This ${selectedSlotLabel} will use settings ${rowId}. Applying the guided settings below will create that row.`}
+            body={presentation === "selected-step"
+              ? `This ${selectedSlotLabel} will create these settings when applied.`
+              : `This ${selectedSlotLabel} will use settings ${rowId}. Applying the guided settings below will create that row.`}
           />
         )}
-        {guidedSummary && (
+        {showGuidedSummary && (
           <div className="guided-edcd-summary">
             <span>Behavior</span>
             <strong>{guidedSummary}</strong>
@@ -165,17 +182,7 @@ export function EdcdRowEditor({
         )}
         {guidedSections.length > 0 ? (
           <div className="guided-edcd-sections">
-            {guidedSections.map((section) => (
-              <section key={section.title} className="guided-edcd-section">
-                <header>
-                  <span>{section.eyebrow}</span>
-                  <h4>{section.title}</h4>
-                </header>
-                <div className="edcd-field-grid">
-                  {section.fields.map((field) => renderParameterField(field))}
-                </div>
-              </section>
-            ))}
+            {guidedSections.map((section) => renderGuidedSection(section))}
           </div>
         ) : (
           <EmptyState compact title="No editable settings" body="These imported settings do not have normal editable fields." />
@@ -194,7 +201,7 @@ export function EdcdRowEditor({
         <CollapsibleSection title="Technical Details" eyebrow="advanced" density="compact" storageKey={`scripts.parameterRow.${rowId}.advanced.open`} defaultOpen={false}>
           <div className="realmz-raw-preview">
             {edcdUsage?.summary && <FieldRow label="Summary" value={edcdUsage.summary} />}
-            <FieldRow label="Settings ID" value={`#${rowId}`} />
+            <FieldRow label="Data EDCD Row" value={rowId} />
             <FieldRow label="Internal Shape" value={shapeId} />
             <FieldRow label="Internal Fields" value={fieldNames.join(", ")} />
             <FieldRow label="Raw Values" value={numericDraft.join(", ")} />
@@ -207,26 +214,185 @@ export function EdcdRowEditor({
           </div>
         </CollapsibleSection>
       </div>
+  );
+
+  if (presentation === "selected-step") return editorBody;
+
+  return (
+    <PanelSection
+      title={settingsTitleForShape(shapeId)}
+      eyebrow={`settings ${rowId}`}
+      density="compact"
+      actions={actionButtons}
+    >
+      {editorBody}
     </PanelSection>
   );
+
+  function setDraftValue(index: number, value: number | string) {
+    const next = [...draft];
+    next[index] = String(value);
+    setDraft(next);
+  }
+
+  function renderGuidedSection(section: GuidedSection) {
+    const normalizedShape = normalizeShape(shapeId);
+    const normalizedTitle = section.title.toLowerCase();
+    if ((normalizedShape === "teleport" || normalizedShape === "dungeon-move") && normalizedTitle === "destination") {
+      return renderTeleportDestinationSection(section);
+    }
+    return (
+      <section key={section.title} className="guided-edcd-section">
+        <header>
+          <span>{section.eyebrow}</span>
+          <h4>{section.title}</h4>
+        </header>
+        <div className="edcd-field-grid">
+          {section.fields.map((field) => renderParameterField(field))}
+        </div>
+      </section>
+    );
+  }
+
+  function renderTeleportDestinationSection(section: GuidedSection) {
+    const normalizedShape = normalizeShape(shapeId);
+    const destinationLevelType = normalizedShape === "dungeon-move" ? "dungeon" : "land";
+    const levelField = section.fields.find((field) => ["levelorkeep", "level", "legacylevel"].includes(normalizeField(field.internalName)));
+    const xField = section.fields.find((field) => ["xorkeep", "x"].includes(normalizeField(field.internalName)));
+    const yField = section.fields.find((field) => ["yorkeep", "y"].includes(normalizeField(field.internalName)));
+    const levelValue = levelField ? Number(draft[levelField.index] ?? -1) : -1;
+    const mapOptions = project.maps
+      .filter((map) => map.levelType === destinationLevelType)
+      .slice()
+      .sort((a, b) => a.index - b.index);
+    const hasLevelValue = levelValue === -1 || mapOptions.some((map) => map.index === levelValue);
+    const jumpTarget = mapCoordinateTargetForEdcd(shapeId, numericDraft);
+    const jumpMap = jumpTarget
+      ? project.maps.find((candidate) => candidate.levelType === jumpTarget.levelType && candidate.index === jumpTarget.levelIndex) ?? null
+      : null;
+    const jumpTitle = jumpTarget
+      ? jumpMap
+        ? `Open ${jumpMap.name} at ${jumpTarget.x}, ${jumpTarget.y} on Maps.`
+        : `No ${jumpTarget.levelType} level ${jumpTarget.levelIndex} exists for ${jumpTarget.x}, ${jumpTarget.y}.`
+      : "Choose a concrete level, X, and Y to preview this destination on Maps.";
+    return (
+      <section key={section.title} className="guided-edcd-section">
+        <header>
+          <span>{section.eyebrow}</span>
+          <h4>{section.title}</h4>
+        </header>
+        <div className="edcd-teleport-destination-grid">
+          {levelField && (
+            <label className={fieldClassName(levelField, false, null, guidedFieldPresentation(shapeId, levelField.internalName, numericDraft, opcode))}>
+              <span title={levelField.internalName}>{destinationLevelType === "dungeon" ? "Dungeon Level" : "Land Level"}</span>
+              <select
+                disabled={guidedFieldPresentation(shapeId, levelField.internalName, numericDraft, opcode).disabled}
+                value={hasLevelValue ? String(levelValue) : `raw:${levelValue}`}
+                onChange={(event) => {
+                  const raw = event.currentTarget.value;
+                  if (raw.startsWith("raw:")) return;
+                  setDraftValue(levelField.index, Number(raw));
+                }}
+              >
+                {!hasLevelValue && <option value={`raw:${levelValue}`}>Imported level {levelValue}</option>}
+                <option value="-1">-1 = Current {destinationLevelType === "dungeon" ? "Dungeon Level" : "Land Level"}</option>
+                {mapOptions.map((map) => (
+                  <option key={map.id} value={map.index}>{map.name}</option>
+                ))}
+              </select>
+            </label>
+          )}
+          {xField && (
+            <CompactNumberField
+              field={xField}
+              label="X Coordinate"
+              value={draft[xField.index] ?? "0"}
+              disabled={guidedFieldPresentation(shapeId, xField.internalName, numericDraft, opcode).disabled}
+              onChange={(value) => setDraftValue(xField.index, value)}
+            />
+          )}
+          {yField && (
+            <CompactNumberField
+              field={yField}
+              label="Y Coordinate"
+              value={draft[yField.index] ?? "0"}
+              disabled={guidedFieldPresentation(shapeId, yField.internalName, numericDraft, opcode).disabled}
+              onChange={(value) => setDraftValue(yField.index, value)}
+            />
+          )}
+          <button
+            type="button"
+            className="btn btn-secondary btn-xs icon-only edcd-map-jump-button edcd-destination-jump"
+            title={jumpTitle}
+            disabled={!jumpTarget || !jumpMap || !onOpenMapCoordinate}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              if (!jumpTarget || !jumpMap) return;
+              onOpenMapCoordinate?.(jumpTarget);
+            }}
+          >
+            <Eye size={12} />
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  function fieldClassName(
+    field: { index: number; internalName: string },
+    isItemField: boolean,
+    targetIssue: ReturnType<typeof missingEdcdTargetReferences>[number] | undefined | null,
+    presentation: ReturnType<typeof guidedFieldPresentation>
+  ) {
+    return `${isItemField ? "edcd-item-field" : ""}${targetIssue ? " has-warning" : ""}${presentation.disabled ? " is-disabled" : ""}`;
+  }
 
   function renderParameterField(field: { index: number; internalName: string; label: string; help: string; preserved: boolean }) {
     const { index, internalName, label, help, preserved } = field;
     const value = Number(draft[index] ?? "0");
     const presentation = guidedFieldPresentation(shapeId, internalName, numericDraft, opcode);
     const modeOptions = guidedModeOptionsForField(shapeId, internalName, opcode);
-    const targetKind = !preserved && !modeOptions ? edcdFieldTargetKind(shapeId, internalName, fieldNames, numericDraft, opcode) : null;
-    const isItemField = !preserved && !targetKind && edcdFieldLooksLikeItem(shapeId, internalName);
-    const selectedItem = itemOptions.find((option) => option.value === value);
+    const isRandomRegionLevel = randomRegionLevelField(shapeId, internalName);
+    const isRandomRegionChance = randomRegionChanceField(shapeId, internalName);
+    const targetKind = !preserved && !modeOptions && !isRandomRegionLevel && !isRandomRegionChance
+      ? edcdFieldTargetKind(shapeId, internalName, fieldNames, numericDraft, opcode)
+      : null;
+    const isItemField = !preserved && !targetKind && edcdFieldLooksLikeItem(shapeId, internalName, opcode);
     const targetOptions = targetKind ? edcdTargetOptions(project, targetKind, catalog) : [];
     const selectedTarget = targetOptions.find((option) => option.value === value);
     const createRecordType = createRecordTypeForEdcdTarget(targetKind);
     const targetLabel = targetKind ? edcdTargetLabel(targetKind) : "";
     const targetIssue = targetIssues.find((issue) => issue.index === index);
-    const fieldHelp = [presentation.help, help].filter(Boolean).join(" ");
+    const fieldHelp = presentation.suppressHelp ? presentation.help ?? "" : [presentation.help, help].filter(Boolean).join(" ");
+    const mapJumpTarget = onOpenMapCoordinate && isCoordinateJumpField(shapeId, internalName) ? mapCoordinateTarget : null;
+    const mapJumpTitle = mapJumpTarget
+      ? mapCoordinateMap
+        ? `Open ${mapCoordinateMap.name} at ${mapJumpTarget.x}, ${mapJumpTarget.y} on Maps.`
+        : `No ${mapJumpTarget.levelType} level ${mapJumpTarget.levelIndex} exists for ${mapJumpTarget.x}, ${mapJumpTarget.y}.`
+      : "";
+    const useSearchTarget = targetKind === "message" || targetKind === "sound";
     return (
-      <label key={`${rowId}-${internalName}-${index}`} className={`${isItemField || targetKind ? "edcd-item-field" : ""}${targetIssue ? " has-warning" : ""}${presentation.disabled ? " is-disabled" : ""}`}>
-        <span title={internalName}>{presentation.label ?? label}</span>
+      <label key={`${rowId}-${internalName}-${index}`} className={fieldClassName(field, Boolean(isItemField || targetKind || isRandomRegionLevel), targetIssue, presentation)}>
+        <span className="edcd-field-label-row" title={internalName}>
+          <span>{presentation.label ?? label}</span>
+          {mapJumpTarget && (
+            <button
+              type="button"
+              className="btn btn-secondary btn-xs icon-only edcd-map-jump-button"
+              title={mapJumpTitle}
+              disabled={!mapCoordinateMap}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                if (!mapCoordinateMap) return;
+                onOpenMapCoordinate?.(mapJumpTarget);
+              }}
+            >
+              <Eye size={12} />
+            </button>
+          )}
+        </span>
         {modeOptions && (
           <select
             disabled={presentation.disabled}
@@ -245,82 +411,71 @@ export function EdcdRowEditor({
             ))}
           </select>
         )}
-        {targetKind && (
-          <select
+        {isRandomRegionLevel && (
+          <RandomRegionLevelField
+            project={project}
+            value={value}
+            opcode={opcode}
             disabled={presentation.disabled}
-            value={selectedTarget ? String(value) : value === 0 ? "0" : `raw:${value}`}
-            onChange={(event) => {
-              const raw = event.currentTarget.value;
-              if (raw.startsWith("raw:")) return;
-              const next = [...draft];
-              next[index] = raw;
-              setDraft(next);
+            onChange={(levelType, nextValue) => {
+              setDraftValue(index, nextValue);
+              onStepOpcodeChange?.(levelType === "dungeon" ? -23 : 23);
             }}
-          >
-            <option value="0">No {targetLabel}</option>
-            {value !== 0 && !selectedTarget && (
-              <option value={`raw:${value}`}>
-                {value > 0 ? `Missing ${targetLabel} ${value}` : `No ${targetLabel} selected (${value})`}
-              </option>
-            )}
-            {targetOptions.map((option) => (
-              <option key={option.key} value={option.value}>{option.label}</option>
-            ))}
-          </select>
+            onOpen={(entity) => onSelectEntity?.(entity)}
+          />
+        )}
+        {targetKind && !useSearchTarget && (
+          <EdcdSelectTargetField
+            project={project}
+            catalog={catalog}
+            label={targetLabel}
+            targetKind={targetKind}
+            value={value}
+            disabled={presentation.disabled}
+            options={targetOptions}
+            onChange={(nextValue) => setDraftValue(index, nextValue)}
+            onOpen={(entity) => onSelectEntity?.(entity)}
+          />
+        )}
+        {isRandomRegionChance && (
+          <RandomRegionChanceField
+            value={draft[index] ?? "0"}
+            disabled={presentation.disabled}
+            onChange={(nextValue) => setDraftValue(index, nextValue)}
+          />
         )}
         {isItemField && (
-          <select
+          <EdcdItemTargetField
+            value={value}
             disabled={presentation.disabled}
-            value={selectedItem ? String(value) : value === 0 ? "0" : `raw:${value}`}
-            onChange={(event) => {
-              const raw = event.currentTarget.value;
-              if (raw.startsWith("raw:")) return;
-              const next = [...draft];
-              next[index] = raw;
-              setDraft(next);
-            }}
-          >
-            <option value="0">No item</option>
-            {value !== 0 && !selectedItem && <option value={`raw:${value}`}>Current item {value}</option>}
-            {itemOptions.slice(0, 260).map((option) => (
-              <option key={option.key} value={option.value}>{option.label}</option>
-            ))}
-          </select>
+            options={itemOptions}
+            onChange={(nextValue) => setDraftValue(index, nextValue)}
+          />
         )}
-        <input
-          type="number"
-          disabled={presentation.disabled}
-          value={draft[index] ?? "0"}
-          onChange={(event) => {
-            const next = [...draft];
-            next[index] = event.currentTarget.value;
-            setDraft(next);
-          }}
-        />
-        {fieldHelp && <small>{fieldHelp}</small>}
-        {isItemField && <small>{selectedItem ? [selectedItem.detail, selectedItem.sourceState].filter(Boolean).join(" | ") : itemReferenceDetail(project, value, catalog)}</small>}
-        {targetKind && (
-            <small>
-              {selectedTarget
-                ? selectedTarget.detail
-                : value > 0
-                  ? `No ${targetLabel} ${value} exists yet.`
-                  : `No ${targetLabel} selected. ${value < 0 ? `${value} is kept as an imported blank value.` : ""}`}
-            </small>
+        {!modeOptions && !targetKind && !isItemField && !isRandomRegionLevel && !isRandomRegionChance && (
+          <input
+            type="number"
+            disabled={presentation.disabled}
+            value={draft[index] ?? "0"}
+            onChange={(event) => setDraftValue(index, event.currentTarget.value)}
+          />
         )}
+        {useSearchTarget && targetKind && (
+          <EdcdSearchTargetField
+            label={targetKind === "message" ? "String" : targetLabel}
+            targetKind={targetKind}
+            value={value}
+            disabled={presentation.disabled}
+            options={targetOptions}
+            onChange={(nextValue) => setDraftValue(index, nextValue)}
+            onOpen={(entity) => onSelectEntity?.(entity)}
+          />
+        )}
+        {fieldHelp && !targetKind && !isItemField && !isRandomRegionLevel && !isRandomRegionChance && <small>{fieldHelp}</small>}
         {targetIssue && (
           <p className="field-warning">
             This {targetIssue.targetLabel} {targetIssue.value} does not exist yet. Create it or choose an existing {targetIssue.targetLabel}.
           </p>
-        )}
-        {selectedTarget?.entity && onSelectEntity && (
-          <button
-            type="button"
-            className="btn btn-secondary btn-xs"
-            onClick={() => onSelectEntity(selectedTarget.entity!)}
-          >
-            Open {targetLabel}
-          </button>
         )}
         {createRecordType && value > 0 && !selectedTarget && onApplyCommand && (
           <button
@@ -341,6 +496,563 @@ export function EdcdRowEditor({
   }
 }
 
+function CompactNumberField({
+  field,
+  label,
+  value,
+  disabled,
+  onChange
+}: {
+  field: { internalName: string };
+  label: string;
+  value: string;
+  disabled?: boolean;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className={`edcd-compact-number-field${disabled ? " is-disabled" : ""}`}>
+      <span title={field.internalName}>{label}</span>
+      <input
+        type="text"
+        inputMode="numeric"
+        pattern="-?[0-9]*"
+        disabled={disabled}
+        value={value}
+        onChange={(event) => onChange(event.currentTarget.value)}
+      />
+    </label>
+  );
+}
+
+function RandomRegionLevelField({
+  project,
+  value,
+  opcode,
+  disabled,
+  onChange,
+  onOpen
+}: {
+  project: Project;
+  value: number;
+  opcode?: number;
+  disabled?: boolean;
+  onChange: (levelType: "land" | "dungeon", value: number) => void;
+  onOpen?: (entity: SelectedEntity) => void;
+}) {
+  const currentLevelType = opcode === -23 ? "dungeon" : "land";
+  const options = (project.maps ?? [])
+    .filter((map) => map.levelType === "land" || map.levelType === "dungeon")
+    .slice()
+    .sort((a, b) => mapLevelTypeSort(a.levelType) - mapLevelTypeSort(b.levelType) || a.index - b.index)
+    .map((map) => ({
+      key: `${map.levelType}:${map.index}`,
+      levelType: map.levelType as "land" | "dungeon",
+      value: map.index,
+      label: `${map.levelType === "dungeon" ? "Dungeon" : "Land"} Level ${map.index}`,
+      detail: `${map.name}, ${map.width} x ${map.height}`,
+      entity: selectEntityFromId(`map:${map.id}`)
+    }));
+  const selected = options.find((option) => option.levelType === currentLevelType && option.value === value) ?? null;
+  const selectValue = selected ? selected.key : `raw:${currentLevelType}:${value}`;
+  return (
+    <div className="edcd-select-target-field edcd-random-region-level-field">
+      <div className={selected?.entity && onOpen ? "edcd-target-select-row with-open-action" : "edcd-target-select-row"}>
+        <select
+          disabled={disabled}
+          value={selectValue}
+          onChange={(event) => {
+            const raw = event.currentTarget.value;
+            if (raw.startsWith("raw:")) return;
+            const option = options.find((candidate) => candidate.key === raw);
+            if (!option) return;
+            onChange(option.levelType, option.value);
+          }}
+        >
+          {!selected && (
+            <option value={selectValue}>
+              Missing {currentLevelType === "dungeon" ? "Dungeon" : "Land"} Level {value}
+            </option>
+          )}
+          {options.map((option) => (
+            <option key={option.key} value={option.key}>{option.label}</option>
+          ))}
+        </select>
+        {selected?.entity && onOpen && (
+          <button
+            type="button"
+            className="btn btn-secondary btn-xs icon-only"
+            title={`Open ${selected.label}`}
+            disabled={disabled}
+            onClick={(event) => {
+              event.preventDefault();
+              onOpen(selected.entity);
+            }}
+          >
+            <Eye size={12} />
+          </button>
+        )}
+      </div>
+      <small className={`edcd-target-inline-detail${selected ? "" : " missing"}`}>
+        {selected?.detail ?? `No ${currentLevelType} level ${value} exists yet.`}
+      </small>
+    </div>
+  );
+}
+
+function RandomRegionChanceField({
+  value,
+  disabled,
+  onChange
+}: {
+  value: string;
+  disabled?: boolean;
+  onChange: (value: number | string) => void;
+}) {
+  const raw = Number(value);
+  const safeRaw = Number.isFinite(raw) ? raw : 0;
+  const mode = safeRaw === -1 ? "invisible" : safeRaw > 0 ? "percent" : "none";
+  const [percentText, setPercentText] = useState(mode === "percent" ? formatPercentFromTenThousand(safeRaw) : "");
+
+  useEffect(() => {
+    setPercentText(mode === "percent" ? formatPercentFromTenThousand(safeRaw) : "");
+  }, [mode, safeRaw]);
+
+  return (
+    <div className="edcd-random-chance-field">
+      <select
+        disabled={disabled}
+        value={mode}
+        onChange={(event) => {
+          const nextMode = event.currentTarget.value;
+          if (nextMode === "invisible") {
+            onChange(-1);
+            return;
+          }
+          if (nextMode === "none") {
+            onChange(0);
+            return;
+          }
+          const nextRaw = safeRaw > 0 ? safeRaw : 100;
+          setPercentText(formatPercentFromTenThousand(nextRaw));
+          onChange(nextRaw);
+        }}
+      >
+        <option value="none">No random encounters</option>
+        <option value="percent">Percent chance</option>
+        <option value="invisible">Invisible encounter (-1)</option>
+      </select>
+      {mode === "percent" && (
+        <label className="edcd-random-chance-percent">
+          <input
+            type="text"
+            inputMode="decimal"
+            disabled={disabled}
+            value={percentText}
+            onChange={(event) => {
+              const text = event.currentTarget.value;
+              setPercentText(text);
+              const parsed = Number(text);
+              if (!Number.isFinite(parsed)) return;
+              const clamped = Math.min(100, Math.max(0, parsed));
+              onChange(Math.round(clamped * 100));
+            }}
+          />
+          <span>%</span>
+        </label>
+      )}
+      <small>{randomRegionChanceDescription(safeRaw)}</small>
+    </div>
+  );
+}
+
+function randomRegionLevelField(shape: string, name: string) {
+  return normalizeShape(shape) === "random-region-mutation" && normalizeField(name) === "level";
+}
+
+function randomRegionChanceField(shape: string, name: string) {
+  return normalizeShape(shape) === "random-region-mutation" && normalizeField(name) === "percent";
+}
+
+function formatPercentFromTenThousand(raw: number) {
+  const percent = raw / 100;
+  return Number.isInteger(percent)
+    ? String(percent)
+    : percent.toFixed(2).replace(/0+$/g, "").replace(/\.$/, "");
+}
+
+function randomRegionChanceDescription(raw: number) {
+  if (raw === -1) return "Uses Realmz's invisible encounter sentinel.";
+  if (raw <= 0) return "0 in 10,000: no random encounters.";
+  return `${raw} in 10,000 (${formatPercentFromTenThousand(raw)}%).`;
+}
+
+function mapLevelTypeSort(levelType: string) {
+  return levelType === "land" ? 0 : 1;
+}
+
+type EdcdItemSearchResult = Pick<ItemReferenceOption, "key" | "value" | "label" | "detail" | "summary" | "sourceState">;
+
+function EdcdItemTargetField({
+  value,
+  disabled,
+  options,
+  onChange
+}: {
+  value: number;
+  disabled?: boolean;
+  options: ItemReferenceOption[];
+  onChange: (value: number) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const selected = options.find((option) => option.value === value) ?? null;
+  const normalizedQuery = query.trim().toLowerCase();
+  const queryNumber = /^-?\d+$/.test(normalizedQuery) ? Number(normalizedQuery) : null;
+  const matchedOptions: EdcdItemSearchResult[] = normalizedQuery
+    ? options.filter((option) => edcdItemOptionMatches(option, normalizedQuery)).slice(0, 8)
+    : [];
+  const rawQueryOption: EdcdItemSearchResult | null = queryNumber != null && !options.some((option) => option.value === queryNumber)
+    ? {
+      key: `raw:item:${queryNumber}`,
+      value: queryNumber,
+      label: `Item ${queryNumber}`,
+      detail: "Raw Realmz item ID",
+      summary: "",
+      sourceState: "No decoded item record"
+    }
+    : null;
+  const resultOptions = rawQueryOption ? [rawQueryOption, ...matchedOptions] : matchedOptions;
+  const matchCount = normalizedQuery ? options.filter((option) => edcdItemOptionMatches(option, normalizedQuery)).length + (rawQueryOption ? 1 : 0) : 0;
+  const selectedLabel = selected?.label ?? (value ? `Item ${value}` : "No item selected");
+  const selectedDetail = selected
+    ? [selected.detail, selected.sourceState].filter(Boolean).join(" | ")
+    : value
+      ? "Raw Realmz item ID; no decoded project usage yet."
+      : "Search to choose an item.";
+  const chooseOption = (option: EdcdItemSearchResult) => {
+    onChange(option.value);
+    setQuery("");
+  };
+  const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setQuery("");
+      return;
+    }
+    if (event.key !== "Enter") return;
+    const firstOption = resultOptions[0];
+    if (!firstOption) return;
+    event.preventDefault();
+    chooseOption(firstOption);
+  };
+  return (
+    <div className="edcd-search-target-field">
+      <input
+        type="search"
+        disabled={disabled}
+        value={query}
+        onChange={(event) => setQuery(event.currentTarget.value)}
+        onKeyDown={handleSearchKeyDown}
+        placeholder="Search item # or name..."
+        aria-label="Search item"
+      />
+      {normalizedQuery ? (
+        <div className="edcd-search-target-results" aria-live="polite">
+          {resultOptions.map((option) => (
+            <button
+              key={option.key}
+              type="button"
+              className={option.value === value ? "selected" : ""}
+              disabled={disabled}
+              title={[option.detail, option.sourceState].filter(Boolean).join(" | ")}
+              onClick={(event) => {
+                event.preventDefault();
+                chooseOption(option);
+              }}
+            >
+              <strong>{option.label}</strong>
+              <small>{[option.detail, option.sourceState].filter(Boolean).join(" | ") || "No details available."}</small>
+            </button>
+          ))}
+          {resultOptions.length === 0 && <small>No item references match this search.</small>}
+          {matchCount > resultOptions.length && <small>{matchCount - resultOptions.length} more item reference(s); search to narrow.</small>}
+        </div>
+      ) : (
+        <div className={`edcd-selected-target-row${selected || value === 0 ? "" : " missing"}`}>
+          <div>
+            <strong>{selectedLabel}</strong>
+            <small>{selectedDetail}</small>
+          </div>
+          <div className="edcd-selected-target-actions">
+            {value !== 0 && (
+              <button
+                type="button"
+                className="btn btn-danger btn-xs icon-only"
+                disabled={disabled}
+                title="Clear item"
+                aria-label="Clear item"
+                onClick={(event) => {
+                  event.preventDefault();
+                  onChange(0);
+                }}
+              >
+                <Trash2 size={12} />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EdcdSearchTargetField({
+  label,
+  targetKind,
+  value,
+  disabled,
+  options,
+  onChange,
+  onOpen
+}: {
+  label: string;
+  targetKind: EdcdTargetKind;
+  value: number;
+  disabled?: boolean;
+  options: EdcdTargetOption[];
+  onChange: (value: number) => void;
+  onOpen?: (entity: SelectedEntity) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const resolvedValue = targetKind === "message" || targetKind === "sound" ? Math.abs(value) : value;
+  const selected = options.find((option) => option.value === resolvedValue) ?? null;
+  const normalizedQuery = query.trim().toLowerCase();
+  const queryNumber = /^-?\d+$/.test(normalizedQuery) ? Number(normalizedQuery) : null;
+  const matchedOptions = normalizedQuery
+    ? options.filter((option) => edcdTargetOptionMatches(option, normalizedQuery)).slice(0, 6)
+    : [];
+  const rawQueryOption = queryNumber != null && !options.some((option) => option.value === Math.abs(queryNumber))
+    ? {
+      key: `raw:${targetKind}:${queryNumber}`,
+      value: targetKind === "sound" ? queryNumber : Math.abs(queryNumber),
+      label: `${targetKind === "message" ? "String" : label} ${Math.abs(queryNumber)}`,
+      detail: targetKind === "message" ? "No string record exists yet." : "Raw sound reference."
+    }
+    : null;
+  const resultOptions = rawQueryOption ? [rawQueryOption, ...matchedOptions] : matchedOptions;
+  const selectedLabel = selected?.label ?? (value ? `${targetKind === "message" ? "String" : label} ${Math.abs(value)}` : `No ${label.toLowerCase()} selected`);
+  const selectedDetail = selected?.detail ?? (value ? `No matching ${label.toLowerCase()} target exists yet.` : `Search to choose a ${label.toLowerCase()}.`);
+  const chooseOption = (option: EdcdTargetOption) => {
+    onChange(option.value);
+    setQuery("");
+  };
+  const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setQuery("");
+      return;
+    }
+    if (event.key !== "Enter") return;
+    const firstOption = resultOptions[0];
+    if (!firstOption) return;
+    event.preventDefault();
+    chooseOption(firstOption);
+  };
+  return (
+    <div className="edcd-search-target-field">
+      <input
+        type="search"
+        disabled={disabled}
+        value={query}
+        onChange={(event) => setQuery(event.currentTarget.value)}
+        onKeyDown={handleSearchKeyDown}
+        placeholder={targetKind === "message" ? "Search string # or text..." : "Search sound # or name..."}
+        aria-label={`Search ${label}`}
+      />
+      {normalizedQuery ? (
+        <div className="edcd-search-target-results" aria-live="polite">
+          {resultOptions.map((option) => (
+            <button
+              key={option.key}
+              type="button"
+                className={option.value === value || Math.abs(option.value) === resolvedValue ? "selected" : ""}
+                disabled={disabled}
+                title={option.detail}
+                onClick={(event) => {
+                  event.preventDefault();
+                  chooseOption(option);
+                }}
+              >
+                <strong>{option.label}</strong>
+              <small>{option.detail || "No details available."}</small>
+            </button>
+          ))}
+          {resultOptions.length === 0 && <small>No {label.toLowerCase()} targets match this search.</small>}
+        </div>
+      ) : (
+        <div className={`edcd-selected-target-row${selected ? "" : " missing"}`}>
+          <div>
+            <strong>{selectedLabel}</strong>
+            <small>{selectedDetail}</small>
+          </div>
+          <div className="edcd-selected-target-actions">
+            {selected?.entity && onOpen && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-xs icon-only"
+                disabled={disabled}
+                title={`Open ${selected.label}`}
+                aria-label={`Open ${selected.label}`}
+                onClick={(event) => {
+                  event.preventDefault();
+                  onOpen(selected.entity!);
+                }}
+              >
+                <Eye size={12} />
+              </button>
+            )}
+            {value !== 0 && (
+              <button
+                type="button"
+                className="btn btn-danger btn-xs icon-only"
+                disabled={disabled}
+                title={`Clear ${label}`}
+                aria-label={`Clear ${label}`}
+                onClick={(event) => {
+                  event.preventDefault();
+                  onChange(0);
+                }}
+              >
+                <Trash2 size={12} />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EdcdSelectTargetField({
+  project,
+  catalog,
+  label,
+  targetKind,
+  value,
+  disabled,
+  options,
+  onChange,
+  onOpen
+}: {
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  label: string;
+  targetKind: EdcdTargetKind;
+  value: number;
+  disabled?: boolean;
+  options: EdcdTargetOption[];
+  onChange: (value: number) => void;
+  onOpen?: (entity: SelectedEntity) => void;
+}) {
+  const selected = options.find((option) => option.value === value) ?? null;
+  const selectValue = selected ? String(value) : `raw:${value}`;
+  const displayLabel = sentenceCase(label);
+  const isMacroTarget = targetKind === "macro";
+  const hasOpenTarget = Boolean(selected?.entity && onOpen);
+  const targetDetail = selected
+    ? selected.detail || "No details available."
+    : value > 0
+      ? `No ${label} ${value} exists yet.`
+      : `Imported value ${value}; choose an existing ${label} above.`;
+  return (
+    <div className="edcd-select-target-field">
+      <div className={hasOpenTarget ? "edcd-target-select-row with-open-action" : "edcd-target-select-row"}>
+        <select
+          disabled={disabled}
+          value={selectValue}
+          onChange={(event) => {
+            const raw = event.currentTarget.value;
+            if (raw.startsWith("raw:")) return;
+            onChange(Number(raw));
+          }}
+        >
+          {!selected && (
+            <option value={`raw:${value}`}>
+              {value > 0 ? `Missing ${displayLabel} ${value}` : `Current ${displayLabel} ${value}`}
+            </option>
+          )}
+          {options.map((option) => (
+            <option key={option.key} value={option.value}>{option.label}</option>
+          ))}
+        </select>
+        {hasOpenTarget && (
+          <button
+            type="button"
+            className="btn btn-secondary btn-xs icon-only"
+            title={selected ? `Open ${selected.label}` : `No ${displayLabel} selected`}
+            disabled={disabled || !selected?.entity || !onOpen}
+            onClick={(event) => {
+              event.preventDefault();
+              if (!selected?.entity) return;
+              onOpen?.(selected.entity);
+            }}
+          >
+            <Eye size={12} />
+          </button>
+        )}
+      </div>
+      <small className={`edcd-target-inline-detail${selected ? "" : " missing"}`}>{targetDetail}</small>
+      {isMacroTarget && <EdcdMacroFlowPreview project={project} catalog={catalog} macroId={value} />}
+    </div>
+  );
+}
+
+function EdcdMacroFlowPreview({
+  project,
+  catalog,
+  macroId
+}: {
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  macroId: number;
+}) {
+  const trigger = project.triggers.find((candidate) => candidate.source === "Data ED3" && candidate.recordIndex === macroId);
+  if (!trigger) return null;
+  const actions = trigger.actions
+    .filter((action) => action.rawCode !== 0)
+    .slice()
+    .sort((a, b) => a.slot - b.slot);
+  if (actions.length === 0) return <small className="edcd-target-flow-empty">Extra Action Point {macroId} has no occupied action slots.</small>;
+  return (
+    <div className="edcd-target-flow-preview" aria-label={`Extra Action Point ${macroId} flow preview`}>
+      {actions.slice(0, 5).map((action) => (
+        <div key={`${action.slot}-${action.rawCode}-${action.id}`}>
+          <span>{action.slot + 1}</span>
+          <small>{scriptActionSummary(project, catalog, { rawCode: action.rawCode, id: action.id })}</small>
+        </div>
+      ))}
+      {actions.length > 5 && <small>{actions.length - 5} more action slot(s).</small>}
+    </div>
+  );
+}
+
+function edcdTargetOptionMatches(option: EdcdTargetOption, normalizedQuery: string) {
+  return [
+    option.label,
+    option.detail,
+    String(option.value)
+  ].join(" ").toLowerCase().includes(normalizedQuery);
+}
+
+function edcdItemOptionMatches(option: ItemReferenceOption, normalizedQuery: string) {
+  return [
+    option.label,
+    option.detail,
+    option.summary,
+    option.sourceState,
+    String(option.value)
+  ].join(" ").toLowerCase().includes(normalizedQuery);
+}
+
 type GuidedField = {
   index: number;
   internalName: string;
@@ -358,6 +1070,14 @@ type GuidedSection = {
 type ModeOption = {
   value: number;
   label: string;
+};
+
+type GuidedFieldPresentation = {
+  label?: string;
+  help?: string;
+  disabled?: boolean;
+  technicalOnly?: boolean;
+  suppressHelp?: boolean;
 };
 
 function guidedSectionsForShape(shape: string, fields: GuidedField[], values: number[], opcode?: number): GuidedSection[] {
@@ -380,6 +1100,18 @@ function guidedSectionPlan(shape: string, opcode?: number) {
     return [
       { title: "What To Replace", eyebrow: "Target Script", names: ["levelorcache", "targetrecord", "levelkind", "resultslot"] },
       { title: "Replacement Codes", eyebrow: "Source", names: ["macro"] }
+    ];
+  }
+  if (shape === "item-branch") {
+    return [
+      { title: "Item Check", eyebrow: "Condition", names: ["item", "required"] },
+      { title: "Result", eyebrow: "Where To Go", names: ["branchmode", "hastarget", "missingbehavior", "missingtarget"] }
+    ];
+  }
+  if (shape === "item-charge-branch") {
+    return [
+      { title: "Item Check", eyebrow: "Condition", names: ["item", "required", "minimumcharges"] },
+      { title: "Result", eyebrow: "Where To Go", names: ["branchmode", "successtarget", "failuretarget"] }
     ];
   }
   if (shape.includes("branch") || ["choice", "force-branch", "percent-branch", "range-branch", "random-branch"].includes(shape)) {
@@ -433,7 +1165,7 @@ function fieldsForGenericSection(_shape: string) {
   return ["param0", "param1", "param2", "param3", "param4", "mode", "value", "scope", "selector", "sourceset", "unused"];
 }
 
-function guidedFieldPresentation(shape: string, name: string, values: number[], opcode?: number) {
+function guidedFieldPresentation(shape: string, name: string, values: number[], opcode?: number): GuidedFieldPresentation {
   const normalizedShape = normalizeShape(shape);
   const normalizedName = normalizeField(name);
   const branchMode = fieldValue(values, 2);
@@ -470,12 +1202,44 @@ function guidedFieldPresentation(shape: string, name: string, values: number[], 
     };
   }
   if (normalizedName.includes("unused")) return { disabled: true, technicalOnly: true, help: "Preserved imported compatibility value." };
+  if (normalizedShape === "force-branch" && normalizedName === "testa" && opcode === 38) {
+    return { label: "Item To Check", help: "", suppressHelp: true };
+  }
+  if (normalizedShape === "force-branch" && normalizedName === "testb" && opcode === 38) {
+    return { label: "Continue When", help: "", suppressHelp: true };
+  }
   if (normalizedShape === "force-branch" && normalizedName === "testb" && opcode === 46) {
     return { label: "Branch When", help: "Classic Realmz checks the quest flag, then branches when this condition matches." };
   }
   if (normalizedShape === "force-branch" && normalizedName === "testa" && opcode === 46) {
     return { label: "Quest To Check", help: "Quest flag tested by this branch." };
   }
+  if (normalizedShape === "random-region-mutation" && normalizedName === "level") {
+    return { label: "Map Level", help: "", suppressHelp: true };
+  }
+  if (normalizedShape === "random-region-mutation" && normalizedName === "randomregion") {
+    return { label: "Random Area", help: "", suppressHelp: true };
+  }
+  if (normalizedShape === "random-region-mutation" && normalizedName === "percent") {
+    return { label: "Encounter Chance", help: "", suppressHelp: true };
+  }
+  if (normalizedShape === "random-region-mutation" && normalizedName === "battleloworkeep") {
+    return { label: "Battle Range Low", help: "-1 keeps the current low battle range." };
+  }
+  if (normalizedShape === "random-region-mutation" && normalizedName === "battlehighorkeep") {
+    return { label: "Battle Range High", help: "-1 keeps the current high battle range." };
+  }
+  if (normalizedName === "message") return { label: "String", help: "" };
+  if (normalizedName === "messagelow") return { label: "String Low", help: "" };
+  if (normalizedName === "messagehigh") return { label: "String High", help: "" };
+  if ((normalizedShape === "item-branch" || normalizedShape === "item-charge-branch") && normalizedName === "item") return { label: "Item To Check", help: "" };
+  if (normalizedShape === "item-branch" && normalizedName === "branchmode") return { label: "If Possessed, Go To", help: "" };
+  if (normalizedShape === "item-branch" && normalizedName === "hastarget") return { label: "If Possessed Target", help: "" };
+  if (normalizedShape === "item-branch" && normalizedName === "missingbehavior") return { label: "If Missing", help: "" };
+  if (normalizedShape === "item-branch" && normalizedName === "missingtarget") return { label: "If Missing Target", help: "" };
+  if (normalizedShape === "item-charge-branch" && normalizedName === "branchmode") return { label: "If Enough Charges, Go To", help: "" };
+  if (normalizedShape === "item-charge-branch" && normalizedName === "successtarget") return { label: "If Enough Charges Target", help: "" };
+  if (normalizedShape === "item-charge-branch" && normalizedName === "failuretarget") return { label: "If Not Enough Charges Target", help: "" };
   if (normalizedName === "branchmode") return { label: "Destination Type", help: "Controls what kind of record the target field points to." };
   if (normalizedName === "target") return { label: "Destination", help: "Where the script goes when this condition succeeds." };
   return {};
@@ -513,6 +1277,12 @@ function guidedModeOptionsForField(shape: string, name: string, opcode?: number)
       { value: 2, label: "Always branch" }
     ];
   }
+  if (normalizedShape === "force-branch" && normalizedName === "testb" && opcode === 38) {
+    return [
+      { value: 0, label: "Party has item" },
+      { value: 1, label: "Party does not have item" }
+    ];
+  }
   if ((normalizedShape === "force-branch" || normalizedShape === "percent-branch") && normalizedName === "branchmode") {
     return forceBranchDestinationOptions();
   }
@@ -527,6 +1297,13 @@ function guidedModeOptionsForField(shape: string, name: string, opcode?: number)
     "quest-value"
   ].includes(normalizedShape) && normalizedName === "branchmode") {
     return zeroBasedBranchDestinationOptions();
+  }
+  if (normalizedShape === "item-branch" && normalizedName === "missingbehavior") {
+    return [
+      { value: 0, label: "Use If Missing Target" },
+      { value: 1, label: "Continue Current Script" },
+      { value: 2, label: "Show String And Exit" }
+    ];
   }
   if (normalizedName === "isdungeon") {
     return [
@@ -545,7 +1322,7 @@ function guidedModeOptionsForField(shape: string, name: string, opcode?: number)
       { value: -1, label: "Keep current shape" },
       { value: 0, label: "Set coordinates" },
       { value: 1, label: "Offset rectangle" },
-      { value: 2, label: "Use next Settings ID" }
+      { value: 2, label: "Use next action settings row" }
     ];
   }
   if (normalizedName === "revivepartyflag") {
@@ -624,6 +1401,11 @@ function guidedSummaryForEdcd(
 }
 
 function forceBranchConditionSummary(opcode: number | undefined, testA: number, testB: number) {
+  if (opcode === 38) {
+    if (testB === 0) return `If party has ${itemIdSummary(testA)}`;
+    if (testB === 1) return `If party does not have ${itemIdSummary(testA)}`;
+    return `If ${itemIdSummary(testA)} matches imported possession test ${testB}`;
+  }
   if (opcode === 46) {
     if (testB === 0) return `If Quest ${testA} is not set`;
     if (testB === 1) return `If Quest ${testA} is set`;
@@ -747,8 +1529,14 @@ function clipText(value: string, max: number) {
   return clean.length > max ? `${clean.slice(0, Math.max(0, max - 1))}...` : clean;
 }
 
+function sentenceCase(value: string) {
+  const clean = value.trim();
+  return clean ? `${clean.charAt(0).toUpperCase()}${clean.slice(1)}` : value;
+}
+
 function ChoiceDialogEditor({
   project,
+  catalog,
   rowId,
   rowExists,
   initialValues,
@@ -756,9 +1544,11 @@ function ChoiceDialogEditor({
   selectedSlotLabel,
   onSelectEntity,
   onOpenText,
-  onApplyCommand
+  onApplyCommand,
+  presentation = "inventory"
 }: {
   project: Project;
+  catalog?: LibraryCatalog | null;
   rowId: number;
   rowExists: boolean;
   initialValues: number[];
@@ -767,6 +1557,7 @@ function ChoiceDialogEditor({
   onSelectEntity?: (entity: SelectedEntity) => void;
   onOpenText?: (editor: "messages" | "option-labels") => void;
   onApplyCommand?: (command: ProjectCommand) => void;
+  presentation?: EdcdRowEditorPresentation;
 }) {
   const [draft, setDraft] = useState(initialValues.map(String));
 
@@ -782,9 +1573,8 @@ function ChoiceDialogEditor({
   const continueValue = numericDraft[0] ?? 0;
   const branchMode = numericDraft[1] ?? 0;
   const branchKind = choiceBranchTargetKind(branchMode);
-  const branchOptions = branchKind ? edcdTargetOptions(project, branchKind) : [];
+  const branchOptions = branchKind ? edcdTargetOptions(project, branchKind, catalog) : [];
   const branchTarget = numericDraft[2] ?? 0;
-  const selectedBranch = branchOptions.find((option) => option.value === branchTarget);
 
   const setField = (index: number, value: number) => {
     const next = [...draft];
@@ -792,45 +1582,47 @@ function ChoiceDialogEditor({
     setDraft(next);
   };
 
-  return (
-    <PanelSection
-      title={`Choice Dialog ${rowId}`}
-      eyebrow="Player Option"
-      density="compact"
-      actions={
-        <>
-          <button
-            type="button"
-            className="btn btn-primary btn-xs"
-            disabled={!onApplyCommand || !changed}
-            onClick={() => onApplyCommand?.({
-              kind: "updateEdcdRow",
-              label: `Update choice dialog ${rowId}`,
-              rowId,
-              values: numericDraft
-            })}
-          >
-            <Save size={12} /> Apply Choice
-          </button>
-          {rowExists && (
-            <button
-              type="button"
-              className="btn btn-danger btn-xs"
-              disabled={!onApplyCommand}
-              onClick={() => onApplyCommand?.({ kind: "deleteEdcdRow", label: `Clear choice dialog ${rowId}`, rowId })}
-            >
-              <Trash2 size={12} /> Clear Choice
-            </button>
-          )}
-        </>
-      }
-    >
-      <div className="choice-dialog-editor">
+  const actionButtons = (
+    <>
+      <button
+        type="button"
+        className="btn btn-primary btn-xs"
+        disabled={!onApplyCommand || !changed}
+        onClick={() => onApplyCommand?.({
+          kind: "updateEdcdRow",
+          label: `Update choice dialog ${rowId}`,
+          rowId,
+          values: numericDraft
+        })}
+      >
+        <Save size={12} /> Apply Choice
+      </button>
+      {rowExists && (
+        <button
+          type="button"
+          className="btn btn-danger btn-xs"
+          disabled={!onApplyCommand}
+          onClick={() => onApplyCommand?.({ kind: "deleteEdcdRow", label: `Clear choice dialog ${rowId}`, rowId })}
+        >
+          <Trash2 size={12} /> Clear Choice
+        </button>
+      )}
+    </>
+  );
+  const editorBody = (
+      <div className={`choice-dialog-editor${presentation === "selected-step" ? " selected-step-edcd-editor" : ""}`}>
+        {presentation === "selected-step" && (
+          <div className="edcd-inline-actions">
+            {actionButtons}
+          </div>
+        )}
         {!rowExists && (
           <EmptyState
             compact
             title="Missing choice dialog settings"
-            body={`This ${selectedSlotLabel} uses choice dialog ${rowId}. Applying values here will create it.`}
+            body={presentation === "selected-step"
+              ? `This ${selectedSlotLabel} will create this choice dialog when applied.`
+              : `This ${selectedSlotLabel} uses choice dialog ${rowId}. Applying values here will create it.`}
           />
         )}
         <div className="choice-dialog-grid">
@@ -864,24 +1656,24 @@ function ChoiceDialogEditor({
           <label className={`${branchKind ? "script-required-field" : ""}${targetIssues.some((issue) => issue.index === 2) ? " has-warning" : ""}`}>
             <span>Branch Target</span>
             {branchKind ? (
-              <select
-                value={selectedBranch ? String(branchTarget) : branchTarget === 0 ? "0" : `raw:${branchTarget}`}
-                onChange={(event) => {
-                  const raw = event.currentTarget.value;
-                  if (raw.startsWith("raw:")) return;
-                  setField(2, Number(raw));
-                }}
-              >
-                <option value="0">No target</option>
-                {branchTarget !== 0 && !selectedBranch && <option value={`raw:${branchTarget}`}>Current target {branchTarget}</option>}
-                {branchOptions.map((option) => (
-                  <option key={option.key} value={option.value}>{option.label}</option>
-                ))}
-              </select>
+              <EdcdSelectTargetField
+                project={project}
+                catalog={catalog}
+                label={edcdTargetLabel(branchKind)}
+                targetKind={branchKind}
+                value={branchTarget}
+                options={branchOptions}
+                onChange={(nextValue) => setField(2, nextValue)}
+                onOpen={(entity) => onSelectEntity?.(entity)}
+              />
             ) : (
-              <input type="number" value={draft[2] ?? "0"} onChange={(event) => setField(2, Number(event.currentTarget.value))} />
+              <div className="edcd-selected-target-row missing">
+                <div>
+                  <strong>No branch target</strong>
+                  <small>{choiceBranchModeLabel(branchMode)} does not use a target record.</small>
+                </div>
+              </div>
             )}
-            <small>{branchKind ? selectedBranch?.detail ?? `${choiceBranchModeLabel(branchMode)} target.` : "Only used when the branch mode needs a target."}</small>
           </label>
         </div>
         <div className="choice-prompt-grid">
@@ -913,13 +1705,25 @@ function ChoiceDialogEditor({
         ))}
         <CollapsibleSection title="Technical Details" eyebrow="advanced" density="compact" storageKey={`scripts.choiceDialog.${rowId}.advanced.open`} defaultOpen={false}>
           <div className="realmz-raw-preview">
-            <FieldRow label="Settings ID" value={`#${rowId}`} />
+            <FieldRow label="Data EDCD Row" value={rowId} />
             <FieldRow label="Internal Shape" value="choice" />
             <FieldRow label="Internal Fields" value="replyPolarity, branchMode, branchTarget, promptA, promptB" />
             <FieldRow label="Raw Values" value={numericDraft.join(", ")} />
           </div>
         </CollapsibleSection>
       </div>
+  );
+
+  if (presentation === "selected-step") return editorBody;
+
+  return (
+    <PanelSection
+      title={`Choice Dialog ${rowId}`}
+      eyebrow="Player Option"
+      density="compact"
+      actions={actionButtons}
+    >
+      {editorBody}
     </PanelSection>
   );
 }
@@ -1042,15 +1846,39 @@ function ChoicePromptField({
   );
 }
 
-function edcdFieldLooksLikeItem(shape: string, name: string) {
+function edcdFieldLooksLikeItem(shape: string, name: string, opcode?: number) {
   const normalizedShape = shape.toLowerCase();
   const normalizedName = name.toLowerCase();
+  if (normalizeShape(shape) === "force-branch" && opcode === 38 && normalizedName === "testa") return true;
   if (!normalizedShape.includes("item") && normalizedShape !== "random-items") return false;
   return ["item", "itemlow", "itemhigh", "replacementitem"].includes(normalizedName) || normalizedName.includes("item");
 }
 
 function fieldNameIsPreserved(name: string) {
   return name.toLowerCase().includes("unused");
+}
+
+function mapCoordinateTargetForEdcd(shape: string, values: number[]): MapCoordinateTarget | null {
+  const normalized = normalizeShape(shape);
+  if (normalized !== "teleport" && normalized !== "dungeon-move") return null;
+  const levelIndex = Number(values[0] ?? -1);
+  const x = Number(values[1] ?? -1);
+  const y = Number(values[2] ?? -1);
+  if (!Number.isInteger(levelIndex) || !Number.isInteger(x) || !Number.isInteger(y)) return null;
+  if (levelIndex < 0 || x < 0 || y < 0) return null;
+  return {
+    levelType: normalized === "dungeon-move" ? "dungeon" : "land",
+    levelIndex,
+    x,
+    y
+  };
+}
+
+function isCoordinateJumpField(shape: string, name: string) {
+  const normalizedShape = normalizeShape(shape);
+  if (normalizedShape !== "teleport" && normalizedShape !== "dungeon-move") return false;
+  const normalizedName = normalizeField(name);
+  return normalizedName === "x" || normalizedName === "y" || normalizedName === "xorkeep" || normalizedName === "yorkeep";
 }
 
 function settingsTitleForShape(shape: string) {

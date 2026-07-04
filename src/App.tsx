@@ -17,8 +17,9 @@ import {
   referencedMapIconIds,
   tileIconCandidates
 } from "./editor/map/renderValues";
+import { clampCell, tileValueAt } from "./editor/map/geometry";
 import { editorReducer, initialEditorState, BROWSER_PREVIEW_STATUS } from "./editor/store";
-import { ActiveWorkbench, AssetSearchHint, EditorTab, MapEntity, MapViewFlag, ProjectCommand, SelectedEntity } from "./editor/types";
+import { ActiveWorkbench, AssetSearchHint, EditorTab, MapCoordinateTarget, MapEntity, MapViewFlag, ProjectCommand, SelectedEntity } from "./editor/types";
 import { hasDesktopRuntime, issuesFor } from "./editor/utils";
 import {
   extraActionPointClassification,
@@ -54,7 +55,24 @@ type WorkbenchHistoryLocation = {
   workbench: ActiveWorkbench;
   domain: EditorTab;
   editor: string;
+  selectedEntity: SelectedEntity | null;
+  selectedMapId: string | null;
+  selectedCell: { x: number; y: number; tile: number } | null;
 };
+
+function workbenchHistorySelectionKey(
+  domain: EditorTab,
+  selectedEntity: SelectedEntity | null,
+  selectedMapId: string | null,
+  selectedCell: { x: number; y: number; tile: number } | null
+) {
+  if (selectedEntity) return selectedEntity.id;
+  if (domain === "maps" && selectedMapId) {
+    if (selectedCell) return `${selectedMapId}:${selectedCell.x}:${selectedCell.y}`;
+    return selectedMapId;
+  }
+  return "";
+}
 
 function importedMapIconCacheKey(project: { source: { sourcePath: string }; maps: MapEntity[] }) {
   return [
@@ -86,12 +104,32 @@ export function App() {
   const [state, dispatch] = useReducer(editorReducer, desktopRuntime, initialEditorState);
   const importedMapIconCacheRef = useRef<{ key: string; ids: number[] }>({ key: "", ids: [] });
   const historyNavigationRef = useRef(false);
-  const activeWorkbenchLocation = useMemo<WorkbenchHistoryLocation>(() => ({
-    key: `${state.activeWorkbench}:${state.activeDomain}:${state.activeEditor}`,
-    workbench: state.activeWorkbench,
-    domain: state.activeDomain,
-    editor: state.activeEditor
-  }), [state.activeWorkbench, state.activeDomain, state.activeEditor]);
+  const selectedEntityId = state.selectedEntity?.id ?? "";
+  const selectedCellKey = state.selectedCell ? `${state.selectedCell.x}:${state.selectedCell.y}:${state.selectedCell.tile}` : "";
+  const activeWorkbenchLocation = useMemo<WorkbenchHistoryLocation>(() => {
+    const selectionKey = workbenchHistorySelectionKey(
+      state.activeDomain,
+      state.selectedEntity,
+      state.selectedMapId,
+      state.selectedCell
+    );
+    return {
+      key: `${state.activeWorkbench}:${state.activeDomain}:${state.activeEditor}:${selectionKey}`,
+      workbench: state.activeWorkbench,
+      domain: state.activeDomain,
+      editor: state.activeEditor,
+      selectedEntity: state.selectedEntity ? { ...state.selectedEntity } : null,
+      selectedMapId: state.selectedMapId,
+      selectedCell: state.selectedCell ? { ...state.selectedCell } : null
+    };
+  }, [
+    state.activeWorkbench,
+    state.activeDomain,
+    state.activeEditor,
+    state.selectedMapId,
+    selectedEntityId,
+    selectedCellKey
+  ]);
   const [workbenchHistory, setWorkbenchHistory] = useState<{ entries: WorkbenchHistoryLocation[]; index: number }>({
     entries: [],
     index: -1
@@ -299,6 +337,7 @@ export function App() {
       const mapId = `${match[1]}:${match[2]}`;
       if (state.project.maps.some((map) => map.id === mapId)) {
         dispatch({ type: "setSelectedMap", id: mapId });
+        dispatch({ type: "selectEntity", entity });
         openProjectDomain("maps");
         return;
       }
@@ -422,6 +461,28 @@ export function App() {
     dispatch({ type: "setStatus", status: `Opened ${editor.replace(/-/g, " ")}.` });
   }
 
+  function openMapCoordinate(target: MapCoordinateTarget) {
+    const map = state.project?.maps.find((candidate) => (
+      candidate.levelType === target.levelType && candidate.index === target.levelIndex
+    ));
+    if (!map) {
+      dispatch({
+        type: "setStatus",
+        status: `No ${target.levelType} level ${target.levelIndex} exists for ${target.x}, ${target.y}.`
+      });
+      return;
+    }
+    const x = clampCell(target.x);
+    const y = clampCell(target.y);
+    openProjectDomain("maps");
+    dispatch({ type: "setActiveEditor", editor: "domain" });
+    dispatch({ type: "setSelectedMap", id: map.id });
+    dispatch({ type: "setTool", tool: "select" });
+    dispatch({ type: "setSelectedCell", cell: { x, y, tile: tileValueAt(map, x, y) } });
+    dispatch({ type: "setMapFocusTarget", target: { kind: "cell", mapId: map.id, x, y, nonce: nextMapFocusNonce() } });
+    dispatch({ type: "setStatus", status: `Opened ${map.name} at ${x}, ${y}.` });
+  }
+
   function openProjectDomain(domain: EditorTab) {
     if (state.project) {
       dispatch({ type: "setWorkbench", workbench: "project", tab: domain });
@@ -469,9 +530,28 @@ export function App() {
   }
 
   function applyWorkbenchLocation(location: WorkbenchHistoryLocation) {
+    const locationMapId = location.selectedMapId ?? (
+      location.selectedEntity ? mapIdForEntity(state.project, location.selectedEntity.id) : null
+    );
     dispatch({ type: "setWorkbench", workbench: location.workbench, tab: location.domain });
     dispatch({ type: "setActiveDomain", domain: location.domain });
     dispatch({ type: "setActiveEditor", editor: location.editor });
+    if (locationMapId) {
+      dispatch({ type: "setSelectedMap", id: locationMapId });
+    }
+    if (location.domain === "maps" && location.selectedCell && !location.selectedEntity && locationMapId) {
+      dispatch({ type: "setSelectedCell", cell: location.selectedCell });
+      dispatch({
+        type: "setMapFocusTarget",
+        target: { kind: "cell", mapId: locationMapId, x: location.selectedCell.x, y: location.selectedCell.y, nonce: nextMapFocusNonce() }
+      });
+    } else {
+      dispatch({ type: "setSelectedCell", cell: null });
+    }
+    dispatch({ type: "selectEntity", entity: location.selectedEntity });
+    if (location.domain === "maps" && location.selectedEntity && locationMapId) {
+      dispatch({ type: "setMapFocusTarget", target: { kind: "entity", mapId: locationMapId, entity: location.selectedEntity, nonce: nextMapFocusNonce() } });
+    }
     dispatch({ type: "setStatus", status: `Returned to ${location.domain.replace(/-/g, " ")}.` });
   }
 
@@ -571,6 +651,7 @@ export function App() {
         onClearSelection={clearMapSelection}
         onOpenScripts={openScriptsForEntity}
         onOpenTool={openProjectTool}
+        onOpenMapCoordinate={openMapCoordinate}
         onBeginPaintStroke={(label) => dispatch({ type: "beginCommandGroup", label })}
         onApplyCommand={applyProjectCommand}
         onCommitPaintStroke={() => dispatch({ type: "commitCommandGroup" })}

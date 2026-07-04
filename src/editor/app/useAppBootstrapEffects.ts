@@ -18,10 +18,20 @@ import { runDesktopUiHarness } from "../desktopUiHarness";
 import { isActorOrCreatureIconId } from "../resourceResolver";
 import { BROWSER_PREVIEW_STATUS, EditorAction, EditorState } from "../store";
 import { AtlasEntry, IconEntry, Project, ProvidenceWorkspace, TilesetAsset } from "../types";
+import type { SemanticMappingProgress } from "../types";
 import { commandError } from "../utils";
 import { isPaintableSpecialLandLibraryAsset, isSemanticMappingPending } from "./appUtils";
+import type { BrowserSemanticBuildProgress } from "../browser/semantic";
 
 const BROWSER_ICON_OVERLAY_PRELOAD_LIMIT = 180;
+const SEMANTIC_MAPPING_PHASE_TOTAL = 11;
+const DESKTOP_SEMANTIC_MAPPING_STAGES = [
+  { afterMs: 0, phase: "sources", label: "Preparing Source Snapshot", completed: 0 },
+  { afterMs: 1800, phase: "records", label: "Reading Scenario Records", completed: 2 },
+  { afterMs: 4200, phase: "action-points", label: "Mapping Action Points", completed: 5 },
+  { afterMs: 7600, phase: "links", label: "Connecting Script Links", completed: 8 },
+  { afterMs: 12000, phase: "finalize", label: "Finalizing Index", completed: 10 }
+];
 
 export function useAppBootstrapEffects({
   state,
@@ -133,17 +143,46 @@ export function useAppBootstrapEffects({
     if (!shouldBuildSemanticSchemaForTab(state.activeTab)) return;
     let disposed = false;
     const project = state.project;
-    dispatch({ type: "setStatus", status: "Mapping scenario links..." });
+    const startedAt = Date.now();
+    dispatch({
+      type: "setSemanticMappingProgress",
+      progress: semanticMappingStarted(project, desktopRuntime ? "desktop" : "browser", startedAt)
+    });
+    dispatch({ type: "setStatus", status: "Mapping scenario links: preparing source snapshot..." });
+    const desktopProgressTimer = desktopRuntime
+      ? window.setInterval(() => {
+          if (disposed) return;
+          const progress = desktopSemanticMappingProgress(project, startedAt, Date.now());
+          dispatch({
+            type: "setSemanticMappingProgress",
+            progress
+          });
+          dispatch({ type: "setStatus", status: `Mapping scenario links: ${progress.label.toLowerCase()}...` });
+        }, 1000)
+      : null;
+    const useSavedDesktopProject = desktopRuntime && !state.dirty;
     const mapping = desktopRuntime
-      ? invoke<{ semanticSchema: Project["semanticSchema"]; validation: Project["validation"] }>("build_project_semantic_schema", { projectDir, project })
+      ? useSavedDesktopProject
+        ? invoke<{ semanticSchema: Project["semanticSchema"]; validation: Project["validation"] }>("build_saved_project_semantic_schema", { projectDir })
+        : invoke<{ semanticSchema: Project["semanticSchema"]; validation: Project["validation"] }>("build_project_semantic_schema", { projectDir, project })
       : waitForBrowserPaint().then(async () => {
-          const result = await buildBrowserSemanticSchemaForProject(project);
+          const result = await buildBrowserSemanticSchemaForProject(project, (progress) => {
+            if (!disposed) {
+              const nextProgress = browserSemanticMappingProgress(project, progress, startedAt);
+              dispatch({
+                type: "setSemanticMappingProgress",
+                progress: nextProgress
+              });
+              dispatch({ type: "setStatus", status: `Mapping scenario links: ${nextProgress.label.toLowerCase()}...` });
+            }
+          });
           if (!result) throw new Error("No browser scenario buffers are available for mapping.");
           return result;
         });
     mapping
       .then((result) => {
         if (disposed) return;
+        if (desktopProgressTimer != null) window.clearInterval(desktopProgressTimer);
         const schema = result.semanticSchema;
         dispatch({ type: "setSemanticSchema", schema, validation: result.validation });
         dispatch({
@@ -152,12 +191,17 @@ export function useAppBootstrapEffects({
         });
       })
       .catch((error) => {
-        if (!disposed) dispatch({ type: "setStatus", status: `Scenario mapping failed: ${commandError(error)}` });
+        if (desktopProgressTimer != null) window.clearInterval(desktopProgressTimer);
+        if (!disposed) {
+          dispatch({ type: "setSemanticMappingProgress", progress: null });
+          dispatch({ type: "setStatus", status: `Scenario mapping failed: ${commandError(error)}` });
+        }
       });
     return () => {
       disposed = true;
+      if (desktopProgressTimer != null) window.clearInterval(desktopProgressTimer);
     };
-  }, [desktopRuntime, dispatch, projectDir, state.activeTab, state.project]);
+  }, [desktopRuntime, dispatch, projectDir, state.activeTab, state.dirty, state.project]);
 
   useEffect(() => {
     if (desktopRuntime || !state.project) return;
@@ -449,6 +493,67 @@ export function useAppBootstrapEffects({
       }
     };
   }, [desktopRuntime, dispatch, iconLoadKey, projectDir, state.activeTab, workspaceDir]);
+}
+
+function semanticMappingStarted(project: Project, source: SemanticMappingProgress["source"], startedAt: number): SemanticMappingProgress {
+  return {
+    active: true,
+    source,
+    phase: "queued",
+    label: "Preparing Source Snapshot",
+    detail: semanticMappingScenarioSummary(project),
+    completed: 0,
+    total: SEMANTIC_MAPPING_PHASE_TOTAL,
+    startedAt,
+    updatedAt: startedAt,
+    indeterminate: source === "desktop"
+  };
+}
+
+function browserSemanticMappingProgress(
+  project: Project,
+  progress: BrowserSemanticBuildProgress,
+  startedAt: number
+): SemanticMappingProgress {
+  return {
+    active: true,
+    source: "browser",
+    phase: progress.phase,
+    label: progress.label,
+    detail: `${progress.detail} | ${semanticMappingScenarioSummary(project)}`,
+    completed: progress.completed,
+    total: progress.total,
+    startedAt,
+    updatedAt: Date.now()
+  };
+}
+
+function desktopSemanticMappingProgress(project: Project, startedAt: number, now: number): SemanticMappingProgress {
+  const elapsed = now - startedAt;
+  const stage = [...DESKTOP_SEMANTIC_MAPPING_STAGES].reverse().find((candidate) => elapsed >= candidate.afterMs) ?? DESKTOP_SEMANTIC_MAPPING_STAGES[0];
+  return {
+    active: true,
+    source: "desktop",
+    phase: stage.phase,
+    label: stage.label,
+    detail: `${semanticMappingScenarioSummary(project)} | desktop command is still running`,
+    completed: stage.completed,
+    total: SEMANTIC_MAPPING_PHASE_TOTAL,
+    startedAt,
+    updatedAt: now,
+    indeterminate: true
+  };
+}
+
+function semanticMappingScenarioSummary(project: Project) {
+  const extraActionCount = project.triggers.filter((trigger) => trigger.source === "Data ED3").length;
+  const mapActionCount = project.triggers.length - extraActionCount;
+  return [
+    `${project.maps.length.toLocaleString()} map(s)`,
+    `${mapActionCount.toLocaleString()} Action Point(s)`,
+    `${extraActionCount.toLocaleString()} Extra Action Point(s)`,
+    `${project.extracodes.length.toLocaleString()} Action Settings row(s)`
+  ].join(", ");
 }
 
 function waitForBrowserPaint() {

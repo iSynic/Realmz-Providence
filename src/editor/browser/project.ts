@@ -2,7 +2,7 @@ import { BenchmarkReport, Project, ScenarioShell, ValidationReport } from "../ty
 import { BrowserScenarioSource, readProjectJson, readScenarioSource } from "./fsAccess";
 import { browserReferenceAtlasUrl, browserTilesetAtlasUrl, hasBrowserReferenceAtlas } from "./atlasPaths";
 import { parseResourceFork, parseStringListResource } from "./library";
-import { buildBrowserSemanticSchema } from "./semantic";
+import { buildBrowserSemanticSchema, type BrowserSemanticBuildProgress } from "./semantic";
 import { landlookBaseTile, landlookName, landlookPictId, parseLandlookMapstats, parseScenarioBuffers, TRACKED_FILES } from "./realmzParser";
 import { inspectResourcePreview } from "./resourcePreview";
 import { assetFallbacks, blockedSemanticObjects, generatedRuntimeCaches, resourceGaps, unresolvedLinks } from "../semanticGraph";
@@ -191,7 +191,10 @@ export async function buildPendingBrowserSemanticSchema(project: Project): Promi
   return buildBrowserSemanticSchemaForProject(project);
 }
 
-export async function buildBrowserSemanticSchemaForProject(project: Project): Promise<{ semanticSchema: Project["semanticSchema"]; validation: Project["validation"] }> {
+export async function buildBrowserSemanticSchemaForProject(
+  project: Project,
+  onProgress?: (progress: BrowserSemanticBuildProgress) => void
+): Promise<{ semanticSchema: Project["semanticSchema"]; validation: Project["validation"] }> {
   const key = browserSemanticCacheKey(project);
   const pending = pendingBrowserSemantics.get(key);
   const request = {
@@ -209,7 +212,7 @@ export async function buildBrowserSemanticSchemaForProject(project: Project): Pr
     assetCatalog: project.assetCatalog,
     records: project.records
   };
-  const semanticSchema = await buildBrowserSemanticSchemaAsync(request);
+  const semanticSchema = await buildBrowserSemanticSchemaAsync(request, onProgress);
   if (pending) pendingBrowserSemantics.delete(key);
   return {
     semanticSchema,
@@ -221,11 +224,24 @@ function browserSemanticCacheKey(project: Project) {
   return project.source.sourcePath || project.scenario.projectPath || project.scenario.name;
 }
 
-function buildBrowserSemanticSchemaAsync(request: Parameters<typeof buildBrowserSemanticSchema>[0]): Promise<Project["semanticSchema"]> {
-  if (typeof Worker === "undefined") return Promise.resolve(buildBrowserSemanticSchema(request));
+function buildBrowserSemanticSchemaAsync(
+  request: Parameters<typeof buildBrowserSemanticSchema>[0],
+  onProgress?: (progress: BrowserSemanticBuildProgress) => void
+): Promise<Project["semanticSchema"]> {
+  if (typeof Worker === "undefined") return Promise.resolve(buildBrowserSemanticSchema(request, onProgress));
   return new Promise((resolve, reject) => {
     const worker = new Worker(new URL("./semanticWorker.ts", import.meta.url), { type: "module" });
-    worker.onmessage = (event: MessageEvent<{ ok: true; semanticSchema: Project["semanticSchema"] } | { ok: false; error: string }>) => {
+    worker.onmessage = (
+      event: MessageEvent<
+        | { ok: true; semanticSchema: Project["semanticSchema"] }
+        | { ok: "progress"; progress: BrowserSemanticBuildProgress }
+        | { ok: false; error: string }
+      >
+    ) => {
+      if (event.data.ok === "progress") {
+        onProgress?.(event.data.progress);
+        return;
+      }
       worker.terminate();
       if (event.data.ok) {
         resolve(event.data.semanticSchema);
