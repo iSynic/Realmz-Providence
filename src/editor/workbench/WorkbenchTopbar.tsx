@@ -13,9 +13,9 @@ const TOPBAR_HELP_HELP =
 const TOPBAR_MANUAL_HELP =
   "Triple-click the Realmz Providence mark to open the local Divinity Manual. Providence docs summarize workflows; the manual remains the chapter-level legacy reference.";
 const TOPBAR_RUNTIME_HELP =
-  "The runtime badge tells you whether you are in the desktop app or browser preview. Desktop is the release target for native folder dialogs, save, and export.";
+  "The runtime badge tells you whether you are in the desktop app or browser preview. Desktop can write project folders and export Realmz scenario folders; browser mode uses picker imports and downloadable project JSON.";
 const TOPBAR_DIRTY_HELP =
-  "Dirty means the Providence project has unsaved editor changes. Save writes the project package; it does not export a Realmz scenario folder.";
+  "Dirty means the Providence project has unsaved editor changes. Desktop Save writes the project package; browser Save downloads project.json for later reopening.";
 const TOPBAR_EDITING_HELP =
   "Editing appears while a text field or editable control owns focus. Keyboard shortcuts may defer to that field until editing ends.";
 const TOPBAR_LIBRARY_HELP =
@@ -33,9 +33,9 @@ const TOPBAR_UNDO_HELP =
 const TOPBAR_REDO_HELP =
   "Redo reapplies an undone Providence project command when history is available.";
 const TOPBAR_SAVE_HELP =
-  "Save writes the Providence project package on desktop. Browser preview keeps more state in memory and cannot replace the desktop save path.";
+  "Save writes the Providence project package on desktop. In browser mode, Save downloads the current project as project.json so edits are not trapped in memory.";
 const TOPBAR_EXPORT_HELP =
-  "Export writes a Realmz-readable scenario folder from the current project state, after validation and preservation checks have had a chance to catch risky output.";
+  "Export writes a Realmz-readable scenario folder from the current project state. The scenario writer is desktop-only today; browser mode routes you to save project JSON and export from desktop.";
 const TOPBAR_HISTORY_HELP =
   "Workbench history moves backward and forward through recently visited Providence tools and selected records without changing the project itself.";
 
@@ -111,6 +111,9 @@ export function WorkbenchTopbar({
   onExport: () => void;
 }) {
   const manualClickRef = useRef({ count: 0, lastClickMs: 0 });
+  const isDesktopRuntime = runtimeLabel === "Desktop";
+  const saveTitle = canSave ? (isDesktopRuntime ? "Save project" : "Download project.json") : browserPreviewStatus;
+  const exportTitle = canExport ? (isDesktopRuntime ? "Export scenario" : "Export requires desktop writer") : browserPreviewStatus;
 
   function handleManualIconClick() {
     const now = window.performance.now();
@@ -248,12 +251,12 @@ export function WorkbenchTopbar({
           </TutorialTip>
         </div>
         <TutorialTip title="Save Project" body={TOPBAR_SAVE_HELP} side="below">
-          <IconButton title={canSave ? "Save project" : browserPreviewStatus} onClick={onSave} disabled={!canSave}>
+          <IconButton title={saveTitle} onClick={onSave} disabled={!canSave}>
             <Save size={15} />
           </IconButton>
         </TutorialTip>
         <TutorialTip title="Export Scenario" body={TOPBAR_EXPORT_HELP} side="below">
-          <IconButton title={canExport ? "Export scenario" : browserPreviewStatus} onClick={onExport} disabled={!canExport}>
+          <IconButton title={exportTitle} onClick={onExport} disabled={!canExport}>
             <Download size={15} />
           </IconButton>
         </TutorialTip>

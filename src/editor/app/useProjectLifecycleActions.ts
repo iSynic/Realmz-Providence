@@ -322,7 +322,16 @@ export function useProjectLifecycleActions({
   async function saveProject() {
     if (!state.project) return;
     if (!desktopRuntime) {
-      dispatch({ type: "setStatus", status: BROWSER_PREVIEW_STATUS });
+      try {
+        downloadBrowserProjectJson(state.project);
+        dispatch({ type: "markSaved", project: state.project });
+        dispatch({
+          type: "setStatus",
+          status: "Downloaded project.json. Reopen that file or folder later to continue from this browser-saved copy."
+        });
+      } catch (error) {
+        dispatch({ type: "setStatus", status: `Browser save failed: ${commandError(error)}` });
+      }
       return;
     }
     try {
@@ -338,7 +347,10 @@ export function useProjectLifecycleActions({
   async function exportProject(scenarioTarget: ScenarioTarget = "providence-portable-folder") {
     if (!state.project) return;
     if (!desktopRuntime) {
-      dispatch({ type: "setStatus", status: BROWSER_PREVIEW_STATUS });
+      dispatch({
+        type: "setStatus",
+        status: "Scenario folder export uses the desktop writer. Use Save to download project.json, then export from the desktop app."
+      });
       return;
     }
     try {
@@ -417,4 +429,20 @@ export function useProjectLifecycleActions({
     validateProject,
     benchmarkProject
   };
+}
+
+function downloadBrowserProjectJson(project: Project) {
+  if (typeof document === "undefined") throw new Error(BROWSER_PREVIEW_STATUS);
+  const blob = new Blob([`${JSON.stringify(project, null, 2)}\n`], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "project.json";
+  link.style.position = "fixed";
+  link.style.left = "-10000px";
+  link.style.top = "-10000px";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }

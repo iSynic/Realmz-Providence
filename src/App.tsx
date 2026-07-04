@@ -576,8 +576,8 @@ export function App() {
       activeStatus={activeStatus}
       undoLabel={undoLabel}
       redoLabel={redoLabel}
-      canSave={Boolean(state.project && desktopRuntime)}
-      canExport={Boolean(state.project && desktopRuntime)}
+      canSave={Boolean(state.project)}
+      canExport={Boolean(state.project)}
       tutorialEnabled={state.tutorialEnabled}
       canNavigateBack={workbenchHistory.index > 0}
       canNavigateForward={workbenchHistory.index >= 0 && workbenchHistory.index < workbenchHistory.entries.length - 1}
