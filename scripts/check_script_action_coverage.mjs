@@ -317,8 +317,11 @@ for (const snippet of [
 ]) {
   if (!textPanel.includes(snippet)) failures.push(`Text panel is missing authored scrolling TEXT resource support: ${snippet}`);
 }
-if (!textPanel.includes("setSelectedImportedResourceId(resource.entityId);") || !textPanel.includes("onSelectEntity(selectEntityFromId(resource.entityId));")) {
-  failures.push("Imported scrolling TEXT list rows must select locally and update selected entity, not navigate to Assets.");
+if (!textPanel.includes("setSelectedImportedResourceId(resource.entityId);")) {
+  failures.push("Imported scrolling TEXT list rows must select locally.");
+}
+if (textPanel.includes("onSelectEntity(selectEntityFromId(resource.entityId));")) {
+  failures.push("Imported scrolling TEXT list rows must not select generic resource entities because that routes to Assets.");
 }
 for (const snippet of [
   ".text-style-preview",

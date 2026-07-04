@@ -1061,7 +1061,6 @@ function ScrollingTextWorkbench({
                     className={selected ? "selected" : ""}
                     onClick={() => {
                       setSelectedImportedResourceId(resource.entityId);
-                      onSelectEntity(selectEntityFromId(resource.entityId));
                     }}
                   >
                     <strong>Scrolling Text {resource.resourceId}</strong>
