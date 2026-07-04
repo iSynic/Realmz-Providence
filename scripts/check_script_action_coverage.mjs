@@ -274,12 +274,17 @@ for (const snippet of [
   "importedScrollingTextResourceRows",
   "Make Editable",
   "StyleCompanionEditor",
+  "ClassicStyleRunDraft",
   "plainStyleAssetFromDraft",
   "styleAssetFromBytes",
   "Make Style Editable",
   "Apply Full-Text Style",
+  "Add Style Run",
+  "Apply Style Runs",
   "Apply Style Bytes",
   "parseClassicStyleRuns",
+  "styleRunDraftsFromRuns",
+  "classicStyleRunsFromDrafts",
   "classicStyleBytesFromRuns",
   "parseHexBytes",
   "function bytesToDataUrl(bytes: Uint8Array, mimeType = \"text/plain\")",
@@ -315,10 +320,12 @@ for (const snippet of [
 }
 for (const snippet of [
   "authored_scrolling_text_exports_same_id_text_and_style_resources",
+  "imported_scrolling_text_edit_preserves_same_id_style_resource",
   "resource_type: \"TEXT\".to_string()",
   "resource_type: \"styl\".to_string()",
   "TEXT -200",
-  "styl -200"
+  "styl -200",
+  "Mithril Vault should contain same-ID styl -204"
 ]) {
   if (!fixtureRoundtrip.includes(snippet)) failures.push(`Fixture roundtrip tests are missing styled scrolling TEXT export coverage: ${snippet}`);
 }

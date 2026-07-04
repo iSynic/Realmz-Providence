@@ -626,6 +626,97 @@ fn authored_scrolling_text_exports_same_id_text_and_style_resources() {
 }
 
 #[test]
+fn imported_scrolling_text_edit_preserves_same_id_style_resource() {
+    let Some(source) = fixture_path("Mithril Vault") else {
+        eprintln!("Skipping scrolling TEXT style preservation fixture; Mithril Vault is absent.");
+        return;
+    };
+    let temp = tempdir().unwrap();
+    let project_dir = temp.path().join("project");
+    let export_dir = temp.path().join("exported");
+    let mut project = import_scenario(&source, &project_dir).unwrap();
+    let resource_id = -204;
+    let source_resource = resource_path_with_entry(&project, &source, "TEXT", resource_id)
+        .expect("Mithril Vault should import TEXT -204");
+    let original_text = resource_entry(&source_resource, "TEXT", resource_id)
+        .expect("Mithril Vault should contain TEXT -204");
+    let original_style = resource_entry(&source_resource, "styl", resource_id)
+        .expect("Mithril Vault should contain same-ID styl -204");
+    let authored_text = b"Providence authored scrolling TEXT body while preserving the imported style companion.".to_vec();
+
+    project.assets.push(ManagedAsset {
+        id: format!("managed:TEXT:{resource_id}:fixture-edit"),
+        label: "History Of The Geyser".to_string(),
+        kind: ManagedAssetKind::Text,
+        resource_type: "TEXT".to_string(),
+        resource_id,
+        file_name: "scrolling-text--204.txt".to_string(),
+        original_path: String::new(),
+        preview_path: String::new(),
+        resource_path: format!("data:text/plain;base64,{}", STANDARD.encode(&authored_text)),
+        mime_type: "text/plain".to_string(),
+        bytes: authored_text.len() as u64,
+        sha256: sha256_hex(&authored_text),
+        width: None,
+        height: None,
+        duration_ms: None,
+        sample_rate: None,
+        channels: None,
+        export_state: ManagedAssetExportState::Ready,
+        provenance: "fixture scrolling TEXT edit".to_string(),
+        linked_entity: Some(format!("resource:TEXT:{resource_id}")),
+        conversion: None,
+    });
+
+    let report = export_project(
+        &project_dir,
+        &project,
+        &export_dir,
+        ScenarioTarget::ProvidencePortableFolder,
+    )
+    .unwrap();
+    assert!(
+        report
+            .written_resources
+            .iter()
+            .any(|entry| entry.contains("TEXT -204")),
+        "authored imported TEXT replacement should be reported as a written resource"
+    );
+    assert!(
+        !report
+            .written_resources
+            .iter()
+            .any(|entry| entry.contains("styl -204")),
+        "editing imported TEXT alone should not author a styl replacement"
+    );
+
+    let exported_resource = resource_path_with_entry(&project, &export_dir, "TEXT", resource_id)
+        .expect("export should preserve scenario resource fork with TEXT -204");
+    let exported_text = resource_entry(&exported_resource, "TEXT", resource_id)
+        .expect("export should contain TEXT -204");
+    let exported_style = resource_entry(&exported_resource, "styl", resource_id)
+        .expect("export should preserve same-ID styl -204");
+
+    assert_ne!(
+        original_text.data, exported_text.data,
+        "TEXT -204 should be replaced by authored body bytes"
+    );
+    assert_eq!(exported_text.data, authored_text);
+    assert_eq!(
+        exported_style.data, original_style.data,
+        "same-ID styl -204 payload should remain byte-identical"
+    );
+    assert_eq!(
+        exported_style.name, original_style.name,
+        "same-ID styl -204 name should remain preserved"
+    );
+    assert_eq!(
+        exported_style.attributes, original_style.attributes,
+        "same-ID styl -204 attributes should remain preserved"
+    );
+}
+
+#[test]
 fn rules_spell_export_mutates_only_owned_record_byte_and_preserves_tail() {
     let Some(source) = out_fixture_path("Begining of the End") else {
         eprintln!("Skipping rules spell fixture; Begining of the End is absent.");

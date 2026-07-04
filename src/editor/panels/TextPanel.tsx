@@ -1312,6 +1312,7 @@ function StyleCompanionEditor({
   const [boldDraft, setBoldDraft] = useState(false);
   const [italicDraft, setItalicDraft] = useState(false);
   const [underlineDraft, setUnderlineDraft] = useState(false);
+  const [styleRunDrafts, setStyleRunDrafts] = useState<ClassicStyleRunDraft[]>([]);
   useEffect(() => {
     const run = firstStyleRun ?? DEFAULT_CLASSIC_STYLE_RUN;
     setFontDraft(String(run.font));
@@ -1321,6 +1322,9 @@ function StyleCompanionEditor({
     setItalicDraft((run.face & CLASSIC_STYLE_FACE_BITS.italic) !== 0);
     setUnderlineDraft((run.face & CLASSIC_STYLE_FACE_BITS.underline) !== 0);
   }, [firstStyleRun?.font, firstStyleRun?.size, firstStyleRun?.face, firstStyleRun?.color.red, firstStyleRun?.color.green, firstStyleRun?.color.blue]);
+  useEffect(() => {
+    setStyleRunDrafts(parsedStyleRuns.ok ? styleRunDraftsFromRuns(parsedStyleRuns.runs) : []);
+  }, [resourceId, companion.styleHex, parsedStyleRuns.ok]);
   const styleHexDirty = normalizeHex(styleHexDraft) !== normalizeHex(companion.styleHex ?? "");
   const canOpen = companion.entity != null;
   const parsedFont = Number(fontDraft);
@@ -1328,6 +1332,17 @@ function StyleCompanionEditor({
   const fullStyleDraftValid = Number.isInteger(parsedFont) && parsedFont >= 0 && parsedFont <= 32767
     && Number.isInteger(parsedSize) && parsedSize >= 1 && parsedSize <= 255
     && /^#[0-9a-fA-F]{6}$/.test(colorDraft);
+  const styleRunDraftResult = useMemo(() => classicStyleRunsFromDrafts(styleRunDrafts), [styleRunDrafts]);
+  const styleRunBytes = styleRunDraftResult.ok ? classicStyleBytesFromRuns(styleRunDraftResult.runs) : null;
+  const styleRunBytesDirty = styleRunBytes ? !bytesEqual(styleRunBytes, companion.rawStyleBytes ?? new Uint8Array()) : false;
+  const applyStyleBytes = (bytes: Uint8Array, provenance: string, label: string) => {
+    const asset = styleAssetFromBytes(companion.managedAsset ?? null, resourceId, bytes, provenance);
+    onApplyCommand(
+      companion.managedAsset
+        ? { kind: "replaceProjectAsset", label, assetId: companion.managedAsset.id, asset }
+        : { kind: "attachProjectAsset", label, asset }
+    );
+  };
   const styleState = companion.managedAsset
     ? "Authored style override"
     : companion.importedEntity
@@ -1394,7 +1409,7 @@ function StyleCompanionEditor({
       <div className="text-style-run-editor">
         <div className={`text-style-companion-summary ${parsedStyleRuns.ok ? "" : "warning"}`}>
           <span>{parsedStyleRuns.ok ? "Classic style-run table" : parsedStyleRuns.error}</span>
-          <span>{parsedStyleRuns.ok ? "Use full-text style for authoring; raw bytes remain available for exact preservation." : "Raw bytes are preserved and can still be edited below."}</span>
+          <span>{parsedStyleRuns.ok ? "Edit style runs below; raw bytes remain available for exact preservation." : "Raw bytes are preserved and can still be edited below."}</span>
         </div>
         <div className="text-style-full-run-controls">
           <label>
@@ -1441,41 +1456,100 @@ function StyleCompanionEditor({
                 ascent: Math.max(0, Math.min(template.ascent, Math.max(parsedSize - 1, 0))),
                 color: cssHexToClassicRgb(colorDraft)
               }]);
-              const asset = styleAssetFromBytes(
-                companion.managedAsset ?? null,
-                resourceId,
-                bytes,
-                "Authored in Providence Scrolling Text style runs"
-              );
-              onApplyCommand(
-                companion.managedAsset
-                  ? { kind: "replaceProjectAsset", label: `Update Style ${resourceId}`, assetId: companion.managedAsset.id, asset }
-                  : { kind: "attachProjectAsset", label: `Author Style ${resourceId}`, asset }
-              );
+              applyStyleBytes(bytes, "Authored in Providence Scrolling Text style runs", `Update Style ${resourceId}`);
             }}
           >
             Apply Full-Text Style
           </button>
         </div>
-        {parsedStyleRuns.ok && parsedStyleRuns.runs.length > 0 && (
-          <div className="text-style-run-table" role="table" aria-label="Classic style runs">
+        {parsedStyleRuns.ok && (
+          <div className="text-style-run-table" role="table" aria-label="Editable Classic style runs">
             <div role="row">
               <b>Start</b>
               <b>Font</b>
               <b>Size</b>
-              <b>Face</b>
               <b>Color</b>
+              <b>Style</b>
+              <b>Actions</b>
             </div>
-            {parsedStyleRuns.runs.slice(0, 8).map((run) => (
-              <div role="row" key={`${run.index}:${run.startChar}`}>
-                <span>{run.startChar}</span>
-                <span>{run.font}</span>
-                <span>{run.size}</span>
-                <span>{classicStyleFaceLabel(run.face)}</span>
-                <span>{classicRgbToCssHex(run.color)}</span>
+            {styleRunDrafts.map((run) => (
+              <div role="row" key={run.id}>
+                <input
+                  value={run.startChar}
+                  onChange={(event) => setStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { startChar: event.currentTarget.value }))}
+                  inputMode="numeric"
+                  aria-label={`Style run ${run.index + 1} start character`}
+                />
+                <input
+                  value={run.font}
+                  onChange={(event) => setStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { font: event.currentTarget.value }))}
+                  inputMode="numeric"
+                  aria-label={`Style run ${run.index + 1} font ID`}
+                />
+                <input
+                  value={run.size}
+                  onChange={(event) => setStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { size: event.currentTarget.value }))}
+                  inputMode="numeric"
+                  aria-label={`Style run ${run.index + 1} size`}
+                />
+                <input
+                  value={run.color}
+                  onChange={(event) => setStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { color: event.currentTarget.value }))}
+                  aria-label={`Style run ${run.index + 1} color`}
+                />
+                <div className="text-style-run-flags">
+                  <label title="Bold">
+                    <input type="checkbox" checked={run.bold} onChange={(event) => setStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { bold: event.currentTarget.checked }))} />
+                    <span>B</span>
+                  </label>
+                  <label title="Italic">
+                    <input type="checkbox" checked={run.italic} onChange={(event) => setStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { italic: event.currentTarget.checked }))} />
+                    <span>I</span>
+                  </label>
+                  <label title="Underline">
+                    <input type="checkbox" checked={run.underline} onChange={(event) => setStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { underline: event.currentTarget.checked }))} />
+                    <span>U</span>
+                  </label>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-danger btn-xs"
+                  disabled={styleRunDrafts.length <= 1}
+                  onClick={() => setStyleRunDrafts((drafts) => removeStyleRunDraft(drafts, run.id))}
+                >
+                  Remove
+                </button>
               </div>
             ))}
-            {parsedStyleRuns.runs.length > 8 && <small>{(parsedStyleRuns.runs.length - 8).toLocaleString()} more style run(s) preserved in raw bytes.</small>}
+            {!styleRunDraftResult.ok && <small className="warning">{styleRunDraftResult.error}</small>}
+            {styleRunDraftResult.ok && styleRunDraftResult.runs.some((run) => (run.face & CLASSIC_STYLE_EXTRA_FACE_MASK) !== 0) && (
+              <small>Imported outline, shadow, condense, or extend style flags are preserved when rows are edited.</small>
+            )}
+            <div className="text-style-run-actions">
+              <button
+                type="button"
+                className="btn btn-secondary btn-xs"
+                onClick={() => setStyleRunDrafts((drafts) => addStyleRunDraft(drafts))}
+              >
+                Add Style Run
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary btn-xs"
+                disabled={!styleRunDraftResult.ok || !styleRunBytesDirty}
+                onClick={() => {
+                  if (!styleRunBytes) return;
+                  applyStyleBytes(styleRunBytes, "Authored in Providence Scrolling Text style runs", `Update Style ${resourceId}`);
+                }}
+              >
+                Apply Style Runs
+              </button>
+              {styleRunBytesDirty && (
+                <button type="button" className="btn btn-secondary btn-xs" onClick={() => setStyleRunDrafts(parsedStyleRuns.ok ? styleRunDraftsFromRuns(parsedStyleRuns.runs) : [])}>
+                  Revert Runs
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -1610,6 +1684,13 @@ const CLASSIC_STYLE_FACE_BITS = {
   condense: 32,
   extend: 64
 } as const;
+const CLASSIC_STYLE_EDITABLE_FACE_MASK = CLASSIC_STYLE_FACE_BITS.bold
+  | CLASSIC_STYLE_FACE_BITS.italic
+  | CLASSIC_STYLE_FACE_BITS.underline;
+const CLASSIC_STYLE_EXTRA_FACE_MASK = CLASSIC_STYLE_FACE_BITS.outline
+  | CLASSIC_STYLE_FACE_BITS.shadow
+  | CLASSIC_STYLE_FACE_BITS.condense
+  | CLASSIC_STYLE_FACE_BITS.extend;
 
 type ClassicTextColor = {
   red: number;
@@ -1626,6 +1707,21 @@ type ClassicTextStyleRun = {
   face: number;
   size: number;
   color: ClassicTextColor;
+};
+
+type ClassicStyleRunDraft = {
+  id: string;
+  index: number;
+  startChar: string;
+  height: number;
+  ascent: number;
+  font: string;
+  faceExtra: number;
+  size: string;
+  color: string;
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
 };
 
 const DEFAULT_CLASSIC_STYLE_RUN: ClassicTextStyleRun = {
@@ -1883,6 +1979,14 @@ function bytesToHex(bytes: Uint8Array) {
   return Array.from(bytes).map((byte) => byte.toString(16).padStart(2, "0")).join(" ");
 }
 
+function bytesEqual(left: Uint8Array, right: Uint8Array) {
+  if (left.byteLength !== right.byteLength) return false;
+  for (let index = 0; index < left.byteLength; index += 1) {
+    if (left[index] !== right[index]) return false;
+  }
+  return true;
+}
+
 function normalizeHex(value: string) {
   return value.replace(/[^0-9a-fA-F]/g, "").toLowerCase();
 }
@@ -1947,6 +2051,79 @@ function classicStyleBytesFromRuns(runs: ClassicTextStyleRun[]) {
     writeU16(bytes, offset + 18, run.color.blue);
   });
   return bytes;
+}
+
+function styleRunDraftsFromRuns(runs: ClassicTextStyleRun[]) {
+  const source = runs.length ? runs : [DEFAULT_CLASSIC_STYLE_RUN];
+  return source.map((run, index): ClassicStyleRunDraft => ({
+    id: `${index}:${run.startChar}:${run.font}:${run.size}:${run.face}`,
+    index,
+    startChar: String(run.startChar),
+    height: run.height,
+    ascent: run.ascent,
+    font: String(run.font),
+    faceExtra: run.face & ~CLASSIC_STYLE_EDITABLE_FACE_MASK,
+    size: String(run.size > 0 ? run.size : 12),
+    color: classicRgbToCssHex(run.color),
+    bold: (run.face & CLASSIC_STYLE_FACE_BITS.bold) !== 0,
+    italic: (run.face & CLASSIC_STYLE_FACE_BITS.italic) !== 0,
+    underline: (run.face & CLASSIC_STYLE_FACE_BITS.underline) !== 0
+  }));
+}
+
+function updateStyleRunDraft(drafts: ClassicStyleRunDraft[], id: string, update: Partial<ClassicStyleRunDraft>) {
+  return drafts.map((draft) => draft.id === id ? { ...draft, ...update } : draft);
+}
+
+function addStyleRunDraft(drafts: ClassicStyleRunDraft[]) {
+  const template = drafts[drafts.length - 1] ?? styleRunDraftsFromRuns([])[0];
+  const start = Number(template.startChar);
+  const nextStart = Number.isFinite(start) ? start + 1 : drafts.length;
+  return [
+    ...drafts,
+    {
+      ...template,
+      id: `new:${Date.now()}:${drafts.length}`,
+      index: drafts.length,
+      startChar: String(nextStart)
+    }
+  ];
+}
+
+function removeStyleRunDraft(drafts: ClassicStyleRunDraft[], id: string) {
+  return drafts.filter((draft) => draft.id !== id).map((draft, index) => ({ ...draft, index }));
+}
+
+function classicStyleRunsFromDrafts(drafts: ClassicStyleRunDraft[]): { ok: true; runs: ClassicTextStyleRun[] } | { ok: false; error: string } {
+  const usedStartChars = new Set<number>();
+  const runs: ClassicTextStyleRun[] = [];
+  for (const [index, draft] of drafts.entries()) {
+    const startChar = Number(draft.startChar);
+    const font = Number(draft.font);
+    const size = Number(draft.size);
+    if (!Number.isInteger(startChar) || startChar < 0) return { ok: false, error: `Style run ${index + 1} needs a non-negative start character.` };
+    if (!Number.isInteger(font) || font < 0 || font > 32767) return { ok: false, error: `Style run ${index + 1} needs a font ID from 0 to 32767.` };
+    if (!Number.isInteger(size) || size < 1 || size > 255) return { ok: false, error: `Style run ${index + 1} needs a size from 1 to 255.` };
+    if (!/^#[0-9a-fA-F]{6}$/.test(draft.color)) return { ok: false, error: `Style run ${index + 1} needs a #RRGGBB color.` };
+    if (usedStartChars.has(startChar)) return { ok: false, error: `Style run start ${startChar} is duplicated.` };
+    usedStartChars.add(startChar);
+    const face = (draft.faceExtra & CLASSIC_STYLE_EXTRA_FACE_MASK)
+      | (draft.bold ? CLASSIC_STYLE_FACE_BITS.bold : 0)
+      | (draft.italic ? CLASSIC_STYLE_FACE_BITS.italic : 0)
+      | (draft.underline ? CLASSIC_STYLE_FACE_BITS.underline : 0);
+    runs.push({
+      index,
+      startChar,
+      height: Math.max(size, draft.height || size),
+      ascent: Math.max(0, Math.min(draft.ascent || Math.max(size - 3, 0), size)),
+      font,
+      face,
+      size,
+      color: cssHexToClassicRgb(draft.color)
+    });
+  }
+  runs.sort((left, right) => left.startChar - right.startChar);
+  return { ok: true, runs: runs.map((run, index) => ({ ...run, index })) };
 }
 
 function classicStyleFaceLabel(face: number) {
