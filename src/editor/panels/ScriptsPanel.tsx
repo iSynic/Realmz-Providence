@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { type KeyboardEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { AlertTriangle, ArrowDown, ArrowUp, Copy, CopyPlus, Eye, Plus, Save, Trash2, Volume2, X } from "lucide-react";
 import { Action, ComplexEncounterRecord, Ed3ReachabilityRow, EncounterActionRow, LevelType, LibraryCatalog, MapCoordinateTarget, Project, ProjectCommand, QuestThread, RealmzTargetRecordKind, ScriptDetailSurface, ScriptInventoryFilter, SelectedEntity, SemanticEntity, SimpleEncounterRecord, TriggerRecord } from "../types";
 import { linksFor, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
@@ -6206,7 +6206,7 @@ function TimedEncounterShell({
             <TimedNumberRow label="Increment" value={record.increment} onCommit={(increment) => update({ increment })} />
             <TimedNumberRow label="% Chance" value={record.percent} onCommit={(percent) => update({ percent })} />
             <TimedNumberRow label="Extra AP To Activate" value={record.door} onCommit={(door) => update({ door })} />
-            <TimedNumberRow label="Required Item ID" value={record.requiredItem} onCommit={(requiredItem) => update({ requiredItem })} />
+            <ItemIdField project={project} catalog={catalog} label="Required Item" value={record.requiredItem} onCommit={(requiredItem) => update({ requiredItem })} compact />
             <TimedNumberRow label="Required Quest ID" value={record.requiredQuest} onCommit={(requiredQuest) => update({ requiredQuest })} />
           </div>
           <div className="timed-encounter-column">
@@ -6619,7 +6619,6 @@ function ComplexEncounterResponseGrid({
                 value={ids[slot] ?? 0}
                 onCommit={(value) => onIdsCommit(updateArraySlot(ids, slot, value, count))}
                 compact
-                hideRaw
               />
             )}
             {hasStoredValue(slot) && (
@@ -7371,35 +7370,97 @@ function clampShopQuantityDelta(value: number) {
   return Math.max(-255, Math.min(255, Math.trunc(value)));
 }
 
-function ItemIdField({ project, catalog, label, value, onCommit, compact = false, hideRaw = false }: { project: Project; catalog?: LibraryCatalog | null; label: string; value: number; onCommit: (value: number) => void; compact?: boolean; hideRaw?: boolean }) {
+function ItemIdField({ project, catalog, label, value, onCommit, compact = false }: { project: Project; catalog?: LibraryCatalog | null; label: string; value: number; onCommit: (value: number) => void; compact?: boolean }) {
   const [query, setQuery] = useState("");
   const options = useMemo(() => itemReferenceOptions(project, catalog), [project, catalog]);
   const selected = options.find((option) => option.value === value);
-  const filteredOptions = useMemo(() => filterItemTargetOptions(options, query), [options, query]);
-  const visibleOptions = useMemo(() => {
-    const visible = filteredOptions.slice(0, 260);
-    if (selected && !visible.some((option) => option.value === selected.value)) return [selected, ...visible.slice(0, 259)];
-    return visible;
-  }, [filteredOptions, selected]);
+  const normalizedQuery = query.trim();
+  const queryNumber = /^-?\d+$/.test(normalizedQuery) ? Number(normalizedQuery) : null;
+  const matchedOptions = useMemo(() => {
+    if (!normalizedQuery) return [];
+    return filterItemTargetOptions(options, normalizedQuery).slice(0, 12);
+  }, [normalizedQuery, options]);
+  const rawQueryOption: ItemReferenceOption | null =
+    queryNumber != null && !options.some((option) => option.value === queryNumber)
+      ? {
+        key: `raw-item:${queryNumber}`,
+        value: queryNumber,
+        label: queryNumber === 0 ? "Empty / none (0)" : `Item ${queryNumber} (${queryNumber})`,
+        category: "unknown",
+        detail: itemReferenceDetail(project, queryNumber, catalog),
+        summary: itemReferenceDetail(project, queryNumber, catalog),
+        sourceState: queryNumber === 0 ? "" : "Raw item ID",
+        iconId: null
+      }
+      : null;
+  const resultOptions = rawQueryOption ? [rawQueryOption, ...matchedOptions] : matchedOptions;
+  const selectedLabel = selected ? itemOptionDisplayName(selected) : value === 0 ? "No item selected" : `Item ${value}`;
+  const selectedDetail = selected ? [selected.detail, selected.sourceState].filter(Boolean).join(" | ") : itemReferenceDetail(project, value, catalog);
+  const chooseItem = (option: ItemReferenceOption) => {
+    onCommit(option.value);
+    setQuery("");
+  };
+  const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setQuery("");
+      return;
+    }
+    if (event.key !== "Enter") return;
+    const firstOption = resultOptions[0];
+    if (!firstOption) return;
+    event.preventDefault();
+    chooseItem(firstOption);
+  };
   return (
-    <label className={`script-item-id-field${compact ? " compact" : ""}`}>
+    <div className={`script-item-id-field${compact ? " compact" : ""}`}>
       <span>{label}</span>
       <input
+        type="search"
         value={query}
         onChange={(event) => setQuery(event.currentTarget.value)}
-        placeholder="Search items..."
+        onKeyDown={handleSearchKeyDown}
+        placeholder="Search item # or name..."
         aria-label={`Search ${label} items`}
       />
-      <select value={value} onChange={(event) => onCommit(Number(event.currentTarget.value))}>
-        <option value={0}>Empty / none</option>
-        {value !== 0 && !options.some((option) => option.value === value) && <option value={value}>Current item ID {value}</option>}
-        {visibleOptions.map((option) => (
-          <option key={option.key} value={option.value}>{option.label}</option>
-        ))}
-      </select>
-      {!hideRaw && <input type="number" value={value} onChange={(event) => onCommit(Number(event.currentTarget.value))} aria-label={`${label} raw item ID`} />}
-      <small>{selected ? [selected.detail, selected.sourceState].filter(Boolean).join(" | ") : filteredOptions.length === 0 && query.trim() ? "No items match this search." : itemReferenceDetail(project, value, catalog)}</small>
-    </label>
+      {normalizedQuery ? (
+        <div className="script-item-results" aria-live="polite">
+          {resultOptions.map((option) => (
+            <button
+              key={option.key}
+              type="button"
+              className={option.value === value ? "selected" : ""}
+              title={[option.label, option.detail, option.sourceState].filter(Boolean).join(" | ")}
+              onClick={() => chooseItem(option)}
+            >
+              <b>{itemCategoryBadge(option.category)}</b>
+              <strong>{option.label}</strong>
+              <small>{[option.detail, option.sourceState].filter(Boolean).join(" | ") || "No details available."}</small>
+            </button>
+          ))}
+          {resultOptions.length === 0 && <small>No items match this search.</small>}
+          {matchedOptions.length === 12 && <small>Keep typing to narrow more item matches.</small>}
+        </div>
+      ) : (
+        <div className={`script-item-selected-row${value === 0 ? " missing" : ""}`}>
+          <div>
+            <strong>{selectedLabel}</strong>
+            <small>{selectedDetail}</small>
+          </div>
+          {value !== 0 && (
+            <button
+              type="button"
+              className="btn btn-danger btn-xs icon-only"
+              title={`Clear ${label}`}
+              aria-label={`Clear ${label}`}
+              onClick={() => onCommit(0)}
+            >
+              <Trash2 size={12} />
+            </button>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

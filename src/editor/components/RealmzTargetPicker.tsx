@@ -363,21 +363,21 @@ export function targetPickerConfig(opcode: number) {
   if (actionOptionFor(code).edcdShape) return null;
   const configs: Record<number, { label: string; hint: string; recordType?: RealmzTargetRecordKind; searchable?: boolean; searchPlaceholder?: string }> = {
     1: { label: "String Target", hint: "Select the scenario string this action displays.", recordType: "message", searchPlaceholder: "Search string # or text..." },
-    4: { label: "Simple Encounter", hint: "Select a simple encounter record.", recordType: "simpleEncounter", searchable: false },
-    5: { label: "Complex Encounter", hint: "Select a complex encounter record.", recordType: "complexEncounter", searchable: false },
+    4: { label: "Simple Encounter", hint: "Select a simple encounter record.", recordType: "simpleEncounter" },
+    5: { label: "Complex Encounter", hint: "Select a complex encounter record.", recordType: "complexEncounter" },
     6: { label: "Shop Target", hint: "Select a shop record.", recordType: "shop" },
     9: { label: "Sound Resource", hint: "Select a playable sound resource or managed sound asset." },
     10: { label: "Treasure Target", hint: "Select a treasure record.", recordType: "treasure" },
     27: { label: "Picture Resource", hint: "Select a picture resource or managed picture asset." },
     29: { label: "Map Item", hint: "Select map item 0 through 19.", searchable: false },
-    35: { label: "Simple Encounter", hint: "Select the simple encounter this action mutates.", recordType: "simpleEncounter", searchable: false },
+    35: { label: "Simple Encounter", hint: "Select the simple encounter this action mutates.", recordType: "simpleEncounter" },
     39: { label: "Extra Action Point", hint: "Select the Extra Action Point this action runs." },
-    44: { label: "Complex Encounter", hint: "Select the complex encounter this action mutates.", recordType: "complexEncounter", searchable: false },
+    44: { label: "Complex Encounter", hint: "Select the complex encounter this action mutates.", recordType: "complexEncounter" },
     47: { label: "Quest Flag", hint: "Select a quest flag to write.", recordType: "questLabel" },
     49: { label: "Shop Target", hint: "Select a shop record.", recordType: "shop" },
     62: { label: "TEXT Resource", hint: "Select a classic TEXT resource for the scrolling-text movie window.", searchPlaceholder: "Search TEXT resource ID..." },
     97: { label: "Map Record", hint: "Select a map record." },
-    104: { label: "Simple Encounter", hint: "Select the simple encounter this action mutates.", recordType: "simpleEncounter", searchable: false },
+    104: { label: "Simple Encounter", hint: "Select the simple encounter this action mutates.", recordType: "simpleEncounter" },
     127: { label: "Monster Target", hint: "Select a monster record.", recordType: "monster" }
   };
   return configs[code] ?? null;

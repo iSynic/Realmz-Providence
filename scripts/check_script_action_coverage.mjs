@@ -259,6 +259,15 @@ if (!fixedListTargetBranch) {
     failures.push("Fixed-list target picker should use a compact open icon, not a separate Open Target button.");
   }
 }
+for (const snippet of [
+  "recordType: \"simpleEncounter\", searchable: false",
+  "recordType: \"complexEncounter\", searchable: false"
+]) {
+  if (targetPicker.includes(snippet)) failures.push(`Encounter direct target picker must use search as the primary selector: ${snippet}`);
+}
+if (!targetPicker.includes("29: { label: \"Map Item\", hint: \"Select map item 0 through 19.\", searchable: false }")) {
+  failures.push("Map Item should remain the fixed-list exception for the direct target picker.");
+}
 if (targetPicker.includes("if (resolvedValue === 0) return null;")) {
   failures.push("Target picker must not treat every 0 ID as unselected; encounter/map/quest record 0 can be real targets.");
 }
@@ -274,6 +283,32 @@ for (const snippet of [
   "onStepOpcodeChange"
 ]) {
   if (!panel.includes(snippet)) failures.push(`Selected step detail is missing inline target drawer suppression: ${snippet}`);
+}
+const itemIdField = panel.match(/function ItemIdField\([\s\S]*?\n}\r?\n\r?\nfunction RequiredWeaponField/);
+if (!itemIdField) {
+  failures.push("ItemIdField is missing.");
+} else {
+  for (const snippet of [
+    "type=\"search\"",
+    "placeholder=\"Search item # or name...\"",
+    "chooseItem(firstOption)",
+    "script-item-results",
+    "script-item-selected-row",
+    "itemCategoryBadge(option.category)"
+  ]) {
+    if (!itemIdField[0].includes(snippet)) failures.push(`ItemIdField is missing search-only item authoring behavior: ${snippet}`);
+  }
+  if (itemIdField[0].includes("<select")) failures.push("ItemIdField must not render both search and select controls.");
+  if (itemIdField[0].includes("type=\"number\"")) failures.push("ItemIdField must not render a separate raw numeric sidecar.");
+}
+if (panel.includes("hideRaw")) {
+  failures.push("ItemIdField raw-entry escape hatch should be removed; numeric item IDs are authored through search.");
+}
+if (panel.includes("TimedNumberRow label=\"Required Item ID\"")) {
+  failures.push("Timed Encounter required item should use the shared item search field, not a raw number row.");
+}
+if (!panel.includes("label=\"Required Item\" value={record.requiredItem}")) {
+  failures.push("Timed Encounter required item search field is missing.");
 }
 const edcdSearchTargetField = edcd.match(/function EdcdSearchTargetField\([\s\S]*?\n}\r?\n\r?\nfunction EdcdSelectTargetField/);
 if (!edcdSearchTargetField) {
@@ -299,13 +334,27 @@ if (!edcdSelectTargetField) {
     "const hasOpenTarget = Boolean(selected?.entity && onOpen)",
     "edcd-target-select-row with-open-action",
     "edcd-target-inline-detail",
-    "EdcdMacroFlowPreview"
+    "EdcdMacroFlowPreview",
+    "edcdTargetKindUsesSearch(targetKind)",
+    "edcd-search-selected-target"
   ]) {
     if (!edcdSelectTargetField[0].includes(snippet)) failures.push(`EDCD select target field is missing compact target behavior: ${snippet}`);
   }
   if (edcdSelectTargetField[0].includes("edcd-selected-target-row")) {
     failures.push("EDCD select target fields must not render a second selected-target card under the picker.");
   }
+}
+for (const snippet of [
+  "function edcdTargetKindUsesSearch",
+  "\"battle\"",
+  "\"treasure\"",
+  "\"shop\"",
+  "\"simpleEncounter\"",
+  "\"complexEncounter\"",
+  "\"macro\"",
+  "\"monster\""
+]) {
+  if (!edcd.includes(snippet)) failures.push(`EDCD target normalization is missing search-backed target family: ${snippet}`);
 }
 
 for (const snippet of [

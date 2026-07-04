@@ -977,12 +977,123 @@ function EdcdSelectTargetField({
   const selectValue = selected ? String(value) : `raw:${value}`;
   const displayLabel = sentenceCase(label);
   const isMacroTarget = targetKind === "macro";
+  const useSearchTarget = edcdTargetKindUsesSearch(targetKind);
   const hasOpenTarget = Boolean(selected?.entity && onOpen);
   const targetDetail = selected
     ? selected.detail || "No details available."
     : value > 0
       ? `No ${label} ${value} exists yet.`
       : `Imported value ${value}; choose an existing ${label} above.`;
+  const [query, setQuery] = useState("");
+  const normalizedQuery = query.trim().toLowerCase();
+  const queryNumber = /^-?\d+$/.test(normalizedQuery) ? Number(normalizedQuery) : null;
+  const matchedOptions = normalizedQuery
+    ? options.filter((option) => edcdTargetOptionMatches(option, normalizedQuery)).slice(0, 8)
+    : [];
+  const rawQueryOption: EdcdTargetOption | null = queryNumber != null && !options.some((option) => option.value === queryNumber)
+    ? {
+      key: `raw:${targetKind}:${queryNumber}`,
+      value: queryNumber,
+      label: `${displayLabel} ${queryNumber}`,
+      detail: `No ${label} ${queryNumber} exists yet.`
+    }
+    : null;
+  const resultOptions = rawQueryOption ? [rawQueryOption, ...matchedOptions] : matchedOptions;
+  const selectedLabel = selected?.label ?? (value > 0 ? `Missing ${displayLabel} ${value}` : `No ${label.toLowerCase()} selected`);
+  const selectedDetail = selected?.detail ?? (value > 0 ? `No ${label} ${value} exists yet.` : `Search to choose a ${label.toLowerCase()}.`);
+  const chooseTarget = (option: EdcdTargetOption) => {
+    onChange(option.value);
+    setQuery("");
+  };
+  const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setQuery("");
+      return;
+    }
+    if (event.key !== "Enter") return;
+    const firstOption = resultOptions[0];
+    if (!firstOption) return;
+    event.preventDefault();
+    chooseTarget(firstOption);
+  };
+  if (useSearchTarget) {
+    return (
+      <div className="edcd-select-target-field edcd-search-target-field">
+        <input
+          type="search"
+          disabled={disabled}
+          value={query}
+          onChange={(event) => setQuery(event.currentTarget.value)}
+          onKeyDown={handleSearchKeyDown}
+          placeholder={`Search ${label.toLowerCase()}...`}
+          aria-label={`Search ${label}`}
+        />
+        {normalizedQuery ? (
+          <div className="edcd-search-target-results" aria-live="polite">
+            {resultOptions.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                className={option.value === value ? "selected" : ""}
+                disabled={disabled}
+                title={option.detail}
+                onClick={(event) => {
+                  event.preventDefault();
+                  chooseTarget(option);
+                }}
+              >
+                <strong>{option.label}</strong>
+                <small>{option.detail || "No details available."}</small>
+              </button>
+            ))}
+            {resultOptions.length === 0 && <small>No {label.toLowerCase()} targets match this search.</small>}
+            {matchedOptions.length === 8 && <small>Keep typing to narrow more {label.toLowerCase()} matches.</small>}
+          </div>
+        ) : (
+          <div className={`edcd-search-selected-target${selected ? "" : " missing"}`}>
+            <div>
+              <strong>{selectedLabel}</strong>
+              <small>{selectedDetail}</small>
+            </div>
+            <div className="edcd-selected-target-actions">
+              {selected?.entity && onOpen && (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-xs icon-only"
+                  title={`Open ${selected.label}`}
+                  aria-label={`Open ${selected.label}`}
+                  disabled={disabled}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    onOpen(selected.entity!);
+                  }}
+                >
+                  <Eye size={12} />
+                </button>
+              )}
+              {value !== 0 && (
+                <button
+                  type="button"
+                  className="btn btn-danger btn-xs icon-only"
+                  title={`Clear ${label}`}
+                  aria-label={`Clear ${label}`}
+                  disabled={disabled}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    onChange(0);
+                  }}
+                >
+                  <Trash2 size={12} />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+        {isMacroTarget && <EdcdMacroFlowPreview project={project} catalog={catalog} macroId={value} />}
+      </div>
+    );
+  }
   return (
     <div className="edcd-select-target-field">
       <div className={hasOpenTarget ? "edcd-target-select-row with-open-action" : "edcd-target-select-row"}>
@@ -1024,6 +1135,20 @@ function EdcdSelectTargetField({
       {isMacroTarget && <EdcdMacroFlowPreview project={project} catalog={catalog} macroId={value} />}
     </div>
   );
+}
+
+function edcdTargetKindUsesSearch(targetKind: EdcdTargetKind) {
+  return [
+    "battle",
+    "treasure",
+    "shop",
+    "simpleEncounter",
+    "complexEncounter",
+    "thiefEncounter",
+    "timedEncounter",
+    "macro",
+    "monster"
+  ].includes(targetKind);
 }
 
 function EdcdMacroFlowPreview({
