@@ -164,6 +164,12 @@ export function TextPanel({
   }, [scrollingTextAssets, selectedEntity]);
 
   useEffect(() => {
+    if (!selectedEntity?.id) return;
+    if (!importedScrollingTextResources.some((resource) => resource.entityId === selectedEntity.id)) return;
+    setActiveTab("scrolling-text");
+  }, [importedScrollingTextResources, selectedEntity]);
+
+  useEffect(() => {
     setMessageListLimit(320);
   }, [query]);
 
@@ -980,7 +986,20 @@ function ScrollingTextWorkbench({
 }) {
   const [query, setQuery] = useState("");
   const [listLimit, setListLimit] = useState(320);
-  const selectedImportedResource = importedResources.find((resource) => resource.entityId === selectedEntity?.id) ?? null;
+  const [selectedImportedResourceId, setSelectedImportedResourceId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!selectedEntity?.id) return;
+    if (!importedResources.some((resource) => resource.entityId === selectedEntity.id)) return;
+    setSelectedImportedResourceId(selectedEntity.id);
+  }, [importedResources, selectedEntity?.id]);
+  useEffect(() => {
+    if (!selectedImportedResourceId) return;
+    if (importedResources.some((resource) => resource.entityId === selectedImportedResourceId)) return;
+    setSelectedImportedResourceId(null);
+  }, [importedResources, selectedImportedResourceId]);
+  const selectedImportedResource = importedResources.find((resource) => resource.entityId === selectedImportedResourceId)
+    ?? importedResources.find((resource) => resource.entityId === selectedEntity?.id)
+    ?? null;
   const filteredRows = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     const assetRows = assets.map((asset) => ({ kind: "asset" as const, asset }));
@@ -1015,6 +1034,7 @@ function ScrollingTextWorkbench({
           onClick={() => {
             const asset = scrollingTextAssetFromDraft(null, nextResourceId, `Scrolling Text ${nextResourceId}`, "");
             onApplyCommand({ kind: "attachProjectAsset", label: `Create Scrolling Text ${nextResourceId}`, asset });
+            setSelectedImportedResourceId(null);
             onSelect(asset);
           }}
         >
@@ -1031,10 +1051,10 @@ function ScrollingTextWorkbench({
             {filteredRows.slice(0, listLimit).map((row) => {
               if (row.kind === "imported") {
                 const resource = row.resource;
-                const selected = resource.entityId === selectedEntity?.id;
+                const selected = resource.entityId === selectedImportedResource?.entityId;
                 const byteLength = classicTextByteLength(resource.text);
                 return (
-                  <button key={resource.entityId} type="button" className={selected ? "selected" : ""} onClick={() => onSelectEntity(selectEntityFromId(resource.entityId))}>
+                  <button key={resource.entityId} type="button" className={selected ? "selected" : ""} onClick={() => setSelectedImportedResourceId(resource.entityId)}>
                     <strong>Scrolling Text {resource.resourceId}</strong>
                     <span>{resource.label}</span>
                     <small>{byteLength.toLocaleString()} byte{byteLength === 1 ? "" : "s"} | imported TEXT | {resource.hasStyle ? "same-ID styl present" : "plain"}</small>
@@ -1046,7 +1066,15 @@ function ScrollingTextWorkbench({
               const text = decodeTextAsset(asset);
               const byteLength = classicTextByteLength(text);
               return (
-                <button key={asset.id} type="button" className={selected ? "selected" : ""} onClick={() => onSelect(asset)}>
+                <button
+                  key={asset.id}
+                  type="button"
+                  className={selected ? "selected" : ""}
+                  onClick={() => {
+                    setSelectedImportedResourceId(null);
+                    onSelect(asset);
+                  }}
+                >
                   <strong>Scrolling Text {asset.resourceId}</strong>
                   <span>{asset.label}</span>
                   <small>{byteLength.toLocaleString()} byte{byteLength === 1 ? "" : "s"} | {asset.exportState}</small>
@@ -1069,7 +1097,10 @@ function ScrollingTextWorkbench({
               onSelectEntity={onSelectEntity}
               onApplyCommand={(command) => {
                 onApplyCommand(command);
-                if (command.kind === "attachProjectAsset") onSelect(command.asset);
+                if (command.kind === "attachProjectAsset") {
+                  setSelectedImportedResourceId(null);
+                  onSelect(command.asset);
+                }
               }}
             />
           ) : selectedAsset ? (

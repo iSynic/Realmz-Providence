@@ -777,6 +777,7 @@ function scenarioResourceAssets(project: Project | null): ScenarioResourceAsset[
   if (!project) return [];
   const assets: ScenarioResourceAsset[] = [];
   const seen = new Set<string>();
+  const managedResourceKeys = new Set((project.assets ?? []).map((asset) => `${asset.resourceType.trim()}:${asset.resourceId}`));
   const addResource = (resourceType: string, resourceId: number, label: string, source: string, previewPath?: string | null, extraSummary: Record<string, unknown> = {}) => {
     const key = `${resourceType}:${resourceId}:${source}`;
     if (seen.has(key)) return;
@@ -810,7 +811,37 @@ function scenarioResourceAssets(project: Project | null): ScenarioResourceAsset[
       previewStatus: tileset.available ? "preview-ready" : "missing-fallback"
     });
   }
+  for (const entity of project.semanticSchema?.entities ?? []) {
+    const resourceType = resourceTypeFromSummary(entity.summary);
+    if (resourceType !== "TEXT" && resourceType !== "STR#" && resourceType !== "styl") continue;
+    const resourceId = resourceIdFromSummary(entity.summary);
+    if (resourceId == null) continue;
+    if (managedResourceKeys.has(`${resourceType}:${resourceId}`)) continue;
+    const summary = textResourceSummaryFromSemanticEntity(entity);
+    const previewPath = typeof summary.previewDataUrl === "string" ? summary.previewDataUrl : "";
+    addResource(resourceType, resourceId, entity.label || `${resourceType} ${resourceId}`, entity.source, previewPath, summary);
+  }
   return assets.sort((a, b) => a.resourceType.localeCompare(b.resourceType) || a.resourceId - b.resourceId || a.source.localeCompare(b.source));
+}
+
+function textResourceSummaryFromSemanticEntity(entity: SemanticEntity) {
+  const summary: Record<string, unknown> = {
+    ...entity.summary,
+    bytes: numberSummary(entity.summary.bytes) ?? numberSummary(entity.summary.textBytes) ?? numberSummary(entity.summary.styleBytes) ?? 0
+  };
+  const resourceType = resourceTypeFromSummary(summary);
+  if ((resourceType === "TEXT" || resourceType === "STR#") && typeof summary.previewDataUrl !== "string") {
+    const text = importedTextResourceBody(summary);
+    if (text) summary.previewDataUrl = `data:text/plain;charset=utf-8,${encodeURIComponent(text)}`;
+  }
+  return summary;
+}
+
+function importedTextResourceBody(summary: Record<string, unknown>) {
+  if (typeof summary.text === "string") return summary.text;
+  if (typeof summary.textPreview === "string") return summary.textPreview;
+  if (typeof summary.preview === "string") return summary.preview;
+  return "";
 }
 
 function directResourceEntity(resourceType: string, resourceId: number, label: string, source: string, previewPath?: string | null, summary: Record<string, unknown> = {}): SemanticEntity {

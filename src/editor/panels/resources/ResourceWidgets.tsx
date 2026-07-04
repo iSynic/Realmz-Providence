@@ -60,6 +60,7 @@ export function assetKindFilterFromEditor(activeEditor: string): ManagedAssetKin
   if (activeEditor === "pictures") return "picture";
   if (activeEditor === "sounds") return "sound";
   if (activeEditor === "icons" || activeEditor === "divinity-icons") return "icon";
+  if (activeEditor === "text-resources") return "text";
   if (activeEditor === "special-land") return "special-land-tile";
   return "all";
 }
