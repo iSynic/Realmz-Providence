@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight, Copy, Eraser, FileText, List, MessageSquarePlus, Trash2, Volume2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import { LibraryCatalog, MessageRecord, OptionLabelRecord, Project, ProjectCommand, SelectedEntity } from "../types";
 import { selectEntityFromId } from "../utils";
 import { classicTextByteLength, messageUsageLinks, optionLabelUsageLinks, unsupportedClassicTextChars } from "../contentLinks";
@@ -1378,6 +1379,7 @@ function StyleCompanionEditor({
   const styleRunDraftResult = useMemo(() => classicStyleRunsFromDrafts(styleRunDrafts), [styleRunDrafts]);
   const styleRunBytes = styleRunDraftResult.ok ? classicStyleBytesFromRuns(styleRunDraftResult.runs) : null;
   const styleRunBytesDirty = styleRunBytes ? !bytesEqual(styleRunBytes, companion.rawStyleBytes ?? new Uint8Array()) : false;
+  const previewRuns = styleRunDraftResult.ok ? styleRunDraftResult.runs : parsedStyleRuns.ok ? parsedStyleRuns.runs : [];
   const applyStyleBytes = (bytes: Uint8Array, provenance: string, label: string) => {
     const asset = styleAssetFromBytes(companion.managedAsset ?? null, resourceId, bytes, provenance);
     onApplyCommand(
@@ -1449,6 +1451,12 @@ function StyleCompanionEditor({
           <b>TEXT edits preserve the imported style runs; flatten only if the old rich styling no longer matches the edited body.</b>
         )}
       </div>
+      <StyledScrollingTextPreview
+        text={text}
+        runs={previewRuns}
+        parseError={parsedStyleRuns.ok ? null : parsedStyleRuns.error}
+        draftDirty={styleRunBytesDirty}
+      />
       <div className="text-style-run-editor">
         <div className={`text-style-companion-summary ${parsedStyleRuns.ok ? "" : "warning"}`}>
           <span>{parsedStyleRuns.ok ? "Classic style-run table" : parsedStyleRuns.error}</span>
@@ -1666,6 +1674,50 @@ function StyleCompanionEditor({
   );
 }
 
+function StyledScrollingTextPreview({
+  text,
+  runs,
+  parseError,
+  draftDirty
+}: {
+  text: string;
+  runs: ClassicTextStyleRun[];
+  parseError: string | null;
+  draftDirty: boolean;
+}) {
+  const preview = useMemo(() => styledTextPreviewSegments(text, runs), [text, runs]);
+  return (
+    <section className="text-style-preview">
+      <header>
+        <div>
+          <span>Styled Preview</span>
+          <small>Providence interpretation of Classic TEXT/styl runs.</small>
+        </div>
+        {draftDirty && <b>Draft style runs</b>}
+      </header>
+      <div className="text-style-preview-body">
+        {preview.segments.length > 0 ? preview.segments.map((segment) => (
+          <span
+            key={`${segment.start}:${segment.end}:${segment.text.slice(0, 12)}`}
+            className={`text-style-preview-run ${segment.run ? "" : "plain"}`}
+            style={segment.run ? classicStyleRunCss(segment.run) : undefined}
+            title={segment.run ? styleRunPreviewTitle(segment.run, segment.start, segment.end) : `Plain text from character ${segment.start}`}
+          >
+            <i>char {segment.start}</i>
+            {segment.text}
+          </span>
+        )) : <span className="text-style-preview-empty">No scrolling TEXT body to preview.</span>}
+      </div>
+      {(parseError || preview.diagnostics.length > 0) && (
+        <ul className="text-style-preview-diagnostics">
+          {parseError && <li>{parseError}</li>}
+          {preview.diagnostics.map((diagnostic) => <li key={diagnostic}>{diagnostic}</li>)}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 function selectedMessageId(selectedEntity: SelectedEntity | null, records: MessageRecord[]) {
   if (selectedEntity?.id.startsWith("message:")) {
     const id = Number(selectedEntity.id.slice("message:".length));
@@ -1736,6 +1788,22 @@ type ImportedScrollingTextResource = {
   hasStyle: boolean;
   styleEntityId: string | null;
 };
+
+type ProjectSemanticEntity = NonNullable<Project["semanticSchema"]>["entities"][number];
+
+function semanticResourceType(entity: ProjectSemanticEntity) {
+  const direct = String(entity.summary.type ?? entity.summary.resourceType ?? "").trim();
+  if (direct) return direct;
+  const match = entity.id.match(/^resource:([^:]+):/);
+  return match?.[1]?.trim() ?? "";
+}
+
+function semanticResourceId(entity: ProjectSemanticEntity) {
+  const direct = Number(entity.summary.resourceId ?? entity.summary.id ?? entity.summary.index);
+  if (Number.isInteger(direct)) return direct;
+  const match = entity.id.match(/^resource:[^:]+:(-?\d+)/);
+  return match ? Number(match[1]) : NaN;
+}
 
 const CLASSIC_STYLE_RUN_BYTES = 20;
 const CLASSIC_STYLE_FACE_BITS = {
@@ -1824,9 +1892,9 @@ function importedScrollingTextResourceRows(project: Project, managedAssets: Proj
   const managedIds = new Set(managedAssets.map((asset) => asset.resourceId));
   return (project.semanticSchema?.entities ?? [])
     .map((entity) => {
-      const resourceType = String(entity.summary.type ?? entity.summary.resourceType ?? "").trim();
+      const resourceType = semanticResourceType(entity);
       if (resourceType !== "TEXT") return null;
-      const resourceId = Number(entity.summary.resourceId ?? entity.summary.id ?? entity.summary.index);
+      const resourceId = semanticResourceId(entity);
       if (!Number.isInteger(resourceId) || managedIds.has(resourceId)) return null;
       const text = importedTextBody(entity.summary);
       const styleEntity = sameIdStyleResourceEntity(project, resourceId);
@@ -1861,8 +1929,8 @@ function nextScrollingTextResourceId(project: Project) {
     if (asset.resourceType.trim() === "TEXT" || asset.kind === "text") used.add(asset.resourceId);
   }
   for (const entity of project.semanticSchema?.entities ?? []) {
-    if (String(entity.summary.type ?? entity.summary.resourceType ?? "").trim() !== "TEXT") continue;
-    const id = Number(entity.summary.resourceId ?? entity.summary.id ?? entity.summary.index);
+    if (semanticResourceType(entity) !== "TEXT") continue;
+    const id = semanticResourceId(entity);
     if (Number.isInteger(id)) used.add(id);
   }
   for (let id = -200; id >= -300; id -= 1) {
@@ -1931,10 +1999,8 @@ function sameIdStyleCompanion(project: Project, resourceId: number): TextStyleCo
   const projectAsset = (project.assets ?? []).find((asset) => asset.resourceType.trim() === "styl" && asset.resourceId === resourceId);
   const managedStyleBytes = projectAsset ? bytesFromDataUrl(projectAsset.resourcePath) ?? bytesFromDataUrl(projectAsset.originalPath) ?? bytesFromDataUrl(projectAsset.previewPath) : null;
   const importedEntity = project.semanticSchema?.entities.find((candidate) => {
-    const resourceType = String(candidate.summary.type ?? candidate.summary.resourceType ?? "").trim();
-    if (resourceType !== "styl") return false;
-    const id = Number(candidate.summary.resourceId ?? candidate.summary.id ?? candidate.summary.index);
-    return Number.isInteger(id) && id === resourceId;
+    if (semanticResourceType(candidate) !== "styl") return false;
+    return semanticResourceId(candidate) === resourceId;
   }) ?? null;
   const importedStyleBytes = bytesFromBase64String(importedEntity?.summary.styleResourceBase64);
   const styleBytes = managedStyleBytes ?? importedStyleBytes;
@@ -2229,6 +2295,67 @@ function styleRunRangeTitle(run: ClassicStyleRunDraft, drafts: ClassicStyleRunDr
   if (range.beyondText) return `This style starts at character ${range.start}, which is beyond the current ${text.length}-character TEXT body.`;
   const excerpt = text.slice(range.start, range.endExclusive).replace(/\s+/g, " ").trim() || "(blank text)";
   return `Applies from character ${range.start} through ${Math.max(range.start, range.endExclusive - 1)}: ${excerpt}`;
+}
+
+type StyledTextPreviewSegment = {
+  start: number;
+  end: number;
+  text: string;
+  run: ClassicTextStyleRun | null;
+};
+
+function styledTextPreviewSegments(text: string, runs: ClassicTextStyleRun[]) {
+  const diagnostics: string[] = [];
+  if (!text) return { segments: [] as StyledTextPreviewSegment[], diagnostics };
+  const validRuns = runs
+    .filter((run) => Number.isInteger(run.startChar) && run.startChar >= 0)
+    .sort((left, right) => left.startChar - right.startChar || left.index - right.index);
+  if (validRuns.length === 0) {
+    return { segments: [{ start: 0, end: text.length, text, run: null }], diagnostics };
+  }
+  const segments: StyledTextPreviewSegment[] = [];
+  let cursor = 0;
+  validRuns.forEach((run, index) => {
+    const start = run.startChar;
+    const nextStart = validRuns.slice(index + 1).find((candidate) => candidate.startChar > start)?.startChar ?? text.length;
+    if (start >= text.length) {
+      diagnostics.push(`Style run ${run.index + 1} starts at character ${start}, outside the ${text.length}-character TEXT body.`);
+      return;
+    }
+    if (start > cursor) {
+      segments.push({ start: cursor, end: start, text: text.slice(cursor, start), run: null });
+    }
+    const end = Math.max(start, Math.min(nextStart, text.length));
+    if (end <= start) {
+      diagnostics.push(`Style run ${run.index + 1} at character ${start} has no visible text span.`);
+      return;
+    }
+    segments.push({ start, end, text: text.slice(start, end), run });
+    cursor = Math.max(cursor, end);
+  });
+  if (cursor < text.length) {
+    segments.push({ start: cursor, end: text.length, text: text.slice(cursor), run: null });
+  }
+  return { segments, diagnostics };
+}
+
+function classicStyleRunCss(run: ClassicTextStyleRun): CSSProperties {
+  const clampedSize = Math.max(10, Math.min(32, run.size || 12));
+  const decorations = [];
+  if (run.face & CLASSIC_STYLE_FACE_BITS.underline) decorations.push("underline");
+  if (run.face & CLASSIC_STYLE_FACE_BITS.outline) decorations.push("overline");
+  return {
+    color: classicRgbToCssHex(run.color),
+    fontSize: `${clampedSize}px`,
+    fontStyle: run.face & CLASSIC_STYLE_FACE_BITS.italic ? "italic" : "normal",
+    fontWeight: run.face & CLASSIC_STYLE_FACE_BITS.bold ? 900 : 600,
+    textDecorationLine: decorations.length ? decorations.join(" ") : "none",
+    letterSpacing: run.face & CLASSIC_STYLE_FACE_BITS.extend ? "0.04em" : "0"
+  };
+}
+
+function styleRunPreviewTitle(run: ClassicTextStyleRun, start: number, end: number) {
+  return `Style run ${run.index + 1}: characters ${start}-${Math.max(start, end - 1)}, font ${run.font}, size ${run.size}, ${classicStyleFaceLabel(run.face)}.`;
 }
 
 function classicStyleFaceLabel(face: number) {

@@ -5,6 +5,7 @@ const root = process.cwd();
 const catalogPath = path.join(root, "src/editor/panels/scripts/scriptActionCatalog.ts");
 const panelPath = path.join(root, "src/editor/panels/ScriptsPanel.tsx");
 const scriptsCssPath = path.join(root, "src/editor/styles/scripts.css");
+const textScenarioCssPath = path.join(root, "src/editor/styles/text-scenario.css");
 const combatPanelPath = path.join(root, "src/editor/panels/CombatPanel.tsx");
 const textPanelPath = path.join(root, "src/editor/panels/TextPanel.tsx");
 const resourcesPanelPath = path.join(root, "src/editor/panels/ResourcesPanel.tsx");
@@ -23,10 +24,12 @@ const rustValidationPath = path.join(root, "src-tauri/src/validation.rs");
 const rustSemanticResourcesPath = path.join(root, "src-tauri/src/semantic/resources.rs");
 const fixtureRoundtripPath = path.join(root, "src-tauri/tests/fixture_roundtrip.rs");
 const apOpcodeCoveragePath = path.join(root, "docs/generated/ap-opcode-coverage.json");
+const tutorialScriptsFixturePath = path.join(root, "tmp/editor-smoke-runs/20260524-234335/Tutorial-ScriptsV2.providence/project.json");
 
 const catalog = fs.readFileSync(catalogPath, "utf8");
 const panel = fs.readFileSync(panelPath, "utf8");
 const scriptsCss = fs.readFileSync(scriptsCssPath, "utf8");
+const textScenarioCss = fs.readFileSync(textScenarioCssPath, "utf8");
 const combatPanel = fs.readFileSync(combatPanelPath, "utf8");
 const textPanel = fs.readFileSync(textPanelPath, "utf8");
 const resourcesPanel = fs.readFileSync(resourcesPanelPath, "utf8");
@@ -55,6 +58,9 @@ const validation = fs.readFileSync(validationPath, "utf8");
 const scriptDiagnostics = fs.readFileSync(scriptDiagnosticsPath, "utf8");
 const reportScriptDiagnostics = fs.readFileSync(reportScriptDiagnosticsPath, "utf8");
 const apOpcodeCoverage = JSON.parse(fs.readFileSync(apOpcodeCoveragePath, "utf8"));
+const tutorialScriptsFixture = fs.existsSync(tutorialScriptsFixturePath)
+  ? JSON.parse(fs.readFileSync(tutorialScriptsFixturePath, "utf8"))
+  : null;
 
 const requiredCatalogExports = [
   "ScriptActionAuthoringLevel",
@@ -295,6 +301,12 @@ for (const snippet of [
   "classicStyleRunsFromDrafts",
   "classicStyleBytesFromRuns",
   "parseHexBytes",
+  "StyledScrollingTextPreview",
+  "styledTextPreviewSegments",
+  "Providence interpretation of Classic TEXT/styl runs",
+  "styleRunPreviewTitle",
+  "semanticResourceType(entity)",
+  "semanticResourceId(entity)",
   "function bytesToDataUrl(bytes: Uint8Array, mimeType = \"text/plain\")",
   "bytesToDataUrl(bytes, \"application/octet-stream\")",
   "resourceType: \"TEXT\"",
@@ -307,6 +319,28 @@ for (const snippet of [
 }
 if (!textPanel.includes("setSelectedImportedResourceId(resource.entityId);") || !textPanel.includes("onSelectEntity(selectEntityFromId(resource.entityId));")) {
   failures.push("Imported scrolling TEXT list rows must select locally and update selected entity, not navigate to Assets.");
+}
+for (const snippet of [
+  ".text-style-preview",
+  ".text-style-preview-body",
+  ".text-style-preview-run i",
+  ".text-style-preview-diagnostics"
+]) {
+  if (!textScenarioCss.includes(snippet)) failures.push(`Text CSS is missing styled scrolling TEXT preview styling: ${snippet}`);
+}
+if (tutorialScriptsFixture) {
+  const resources = (tutorialScriptsFixture.semanticSchema?.entities ?? [])
+    .filter((entity) => entity.type === "resource")
+    .map((entity) => ({
+      type: String(entity.summary?.type ?? entity.summary?.resourceType ?? ""),
+      id: Number(entity.summary?.resourceId ?? entity.summary?.id ?? entity.summary?.index)
+    }));
+  const hasText = (id) => resources.some((resource) => resource.type === "TEXT" && resource.id === id);
+  const hasStyle = (id) => resources.some((resource) => resource.type === "styl" && resource.id === id);
+  for (const id of [-200, -201, -202, -203, -204, -205, -206]) {
+    if (!hasText(id)) failures.push(`Tutorial Scripts V2 fixture should expose imported TEXT ${id} for scrolling text browser QA.`);
+  }
+  if (!hasStyle(-200)) failures.push("Tutorial Scripts V2 fixture should expose same-ID styl -200 for styled scrolling TEXT preview QA.");
 }
 for (const snippet of [
   "function scenarioResourceAssets",
