@@ -107,16 +107,15 @@ export function linkedEntities(project: Project | null, id: string, kinds?: Iter
 
 export function semanticTriggersForMap(project: Project | null, map: MapEntity | null) {
   if (!project || !map) return [];
-  const mapId = mapEntityId(map.levelType, map.index);
-  const triggerEntities = incomingLinks(project, mapId, ["located_on"])
-    .map((link) => entityById(project, link.from))
-    .filter((entity): entity is SemanticEntity => entity?.type === "trigger");
-  const records = triggerEntities
-    .map((entity) => triggerRecordForEntity(project, entity))
-    .filter((trigger): trigger is TriggerRecord => Boolean(trigger?.active));
-  return records.length > 0
-    ? records
-    : project.triggers.filter((trigger) => trigger.active && trigger.levelType === map.levelType && trigger.levelIndex === map.index);
+  // Action Point placement is mutable authoring state. Semantic located_on links are
+  // import evidence and can go stale after moving an AP, so map overlays must use
+  // the live trigger records as the source of truth.
+  return project.triggers.filter((trigger) => (
+    trigger.active &&
+    trigger.source !== "Data ED3" &&
+    trigger.levelType === map.levelType &&
+    trigger.levelIndex === map.index
+  ));
 }
 
 export function semanticMapRecordsForMap(project: Project | null, map: MapEntity | null) {

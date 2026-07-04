@@ -13,6 +13,7 @@ const edcdTargetsPath = path.join(root, "src/editor/edcdTargets.ts");
 const appUtilsPath = path.join(root, "src/editor/app/appUtils.ts");
 const appBootstrapPath = path.join(root, "src/editor/app/useAppBootstrapEffects.ts");
 const semanticPath = path.join(root, "src/editor/browser/semantic.ts");
+const semanticGraphPath = path.join(root, "src/editor/semanticGraph.ts");
 const browserProjectPath = path.join(root, "src/editor/browser/project.ts");
 const rustProjectPath = path.join(root, "src-tauri/src/project.rs");
 const rustValidationPath = path.join(root, "src-tauri/src/validation.rs");
@@ -31,6 +32,7 @@ const edcdTargets = fs.readFileSync(edcdTargetsPath, "utf8");
 const appUtils = fs.readFileSync(appUtilsPath, "utf8");
 const appBootstrap = fs.readFileSync(appBootstrapPath, "utf8");
 const semantic = fs.readFileSync(semanticPath, "utf8");
+const semanticGraph = fs.readFileSync(semanticGraphPath, "utf8");
 const browserProject = fs.readFileSync(browserProjectPath, "utf8");
 const rustProject = fs.readFileSync(rustProjectPath, "utf8");
 const rustValidation = fs.readFileSync(rustValidationPath, "utf8");
@@ -591,6 +593,23 @@ for (const snippet of [
 }
 if (!/buildBrowserSemanticSchemaForProject\(\s*project\b/.test(appBootstrap)) {
   failures.push("App bootstrap is missing Scripts semantic mapping support: buildBrowserSemanticSchemaForProject(project)");
+}
+
+const semanticTriggersForMap = semanticGraph.match(/export function semanticTriggersForMap[\s\S]*?\n}\n/);
+if (!semanticTriggersForMap) {
+  failures.push("Semantic graph is missing semanticTriggersForMap.");
+} else {
+  for (const snippet of [
+    "Action Point placement is mutable authoring state",
+    "trigger.source !== \"Data ED3\"",
+    "trigger.levelType === map.levelType",
+    "trigger.levelIndex === map.index"
+  ]) {
+    if (!semanticTriggersForMap[0].includes(snippet)) failures.push(`Map Action Point overlay source-of-truth guard is missing: ${snippet}`);
+  }
+  if (semanticTriggersForMap[0].includes("incomingLinks(project, mapId, [\"located_on\"]")) {
+    failures.push("Map Action Point overlays must use live trigger records instead of stale semantic located_on links.");
+  }
 }
 
 for (const snippet of [

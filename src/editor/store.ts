@@ -22,6 +22,7 @@ import {
   ValidationReport
 } from "./types";
 import { applyProjectCommand, projectCommandChangeCount, projectCommandLabel } from "./projectCommands";
+import { triggerEntityId } from "./utils";
 
 export const BROWSER_PREVIEW_STATUS = "Browser preview: choose a scenario folder in Chrome/Edge, or use the desktop app for save/export";
 const UNDO_LIMIT = 50;
@@ -311,10 +312,12 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       const nextProject = applyProjectCommand(state.project, action.command);
       if (nextProject === state.project) return state;
       const label = projectCommandLabel(action.command);
+      const selectedEntity = selectedEntityAfterCommand(state.selectedEntity, action.command, state.project, nextProject);
       if (state.groupBaseProject) {
         return {
           ...state,
           project: nextProject,
+          selectedEntity,
           dirty: true,
           future: [],
           groupChangeCount: state.groupChangeCount + projectCommandChangeCount(action.command),
@@ -324,6 +327,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return {
         ...state,
         project: nextProject,
+        selectedEntity,
         dirty: true,
         past: pushHistory(state.past, state.project, label),
         future: [],
@@ -475,4 +479,57 @@ function mapSelectionFor(project: Project | null, id: string | null): SelectedEn
   const map = project.maps.find((candidate) => candidate.id === id);
   if (!map) return null;
   return { type: "map", id: `map:${map.levelType}:${map.index}` };
+}
+
+function selectedEntityAfterCommand(
+  selectedEntity: SelectedEntity | null,
+  command: ProjectCommand,
+  previousProject: Project,
+  nextProject: Project
+): SelectedEntity | null {
+  if (command.kind !== "moveActionPoint" || !selectedEntity) return selectedEntity;
+  const original = previousProject.triggers.find((trigger) => trigger.id === command.triggerId);
+  if (!original || original.source === "Data ED3") return selectedEntity;
+  const oldSelectionId = triggerEntityId(original.levelType, original.levelIndex, original.recordIndex, original.source);
+  if (!selectionReferencesMovedTrigger(selectedEntity.id, original.id, oldSelectionId, original.source, original.recordIndex)) {
+    return selectedEntity;
+  }
+  const expectedSource = command.levelType === "land" ? "Data DD" : "Data DDD";
+  const moved = nextProject.triggers.find((trigger) => (
+    trigger.source === expectedSource &&
+    trigger.levelType === command.levelType &&
+    trigger.levelIndex === command.levelIndex &&
+    trigger.recordIndex === original.recordIndex &&
+    trigger.coordinate?.x === command.x &&
+    trigger.coordinate?.y === command.y
+  )) ?? nextProject.triggers.find((trigger) => (
+    trigger.source === expectedSource &&
+    trigger.levelType === command.levelType &&
+    trigger.levelIndex === command.levelIndex &&
+    trigger.coordinate?.x === command.x &&
+    trigger.coordinate?.y === command.y &&
+    triggerActionsEqual(trigger.actions, original.actions)
+  ));
+  if (!moved) return selectedEntity;
+  const nextSelectionId = triggerEntityId(moved.levelType, moved.levelIndex, moved.recordIndex, moved.source);
+  if (selectedEntity.id.startsWith(`action-slot:${oldSelectionId}:`)) {
+    return { ...selectedEntity, id: selectedEntity.id.replace(oldSelectionId, nextSelectionId) };
+  }
+  return { type: "trigger", id: nextSelectionId };
+}
+
+function selectionReferencesMovedTrigger(entityId: string, storageId: string, selectionId: string, source: string, recordIndex: number) {
+  return entityId === storageId ||
+    entityId === selectionId ||
+    entityId.includes(storageId) ||
+    entityId.startsWith(`action:${source}:${recordIndex}:`) ||
+    entityId.startsWith(`action-slot:${selectionId}:`);
+}
+
+function triggerActionsEqual(left: Project["triggers"][number]["actions"], right: Project["triggers"][number]["actions"]) {
+  if (left.length !== right.length) return false;
+  return left.every((action, index) => {
+    const other = right[index];
+    return other && action.slot === other.slot && action.rawCode === other.rawCode && action.id === other.id;
+  });
 }
