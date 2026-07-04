@@ -513,6 +513,19 @@ for (const snippet of [
 if (!panel.includes("moveSelectedStep")) failures.push("Scripts panel does not preserve selected step during move.");
 
 for (const snippet of [
+  "type ScriptDraftNavigationGuard",
+  "requestDraftNavigation(`select step",
+  "requestDraftNavigation(`select ${scriptLabel(project, trigger)}`",
+  "ScriptDraftNavigationDialog",
+  "Apply Changes",
+  "Discard Changes",
+  "Cancel",
+  "onRegisterDraftNavigationGuard"
+]) {
+  if (!panel.includes(snippet)) failures.push(`Scripts panel is missing dirty selected-step navigation guard behavior: ${snippet}`);
+}
+
+for (const snippet of [
   "combatMacroContextFor",
   "Battle Macro",
   "Monster Macro",

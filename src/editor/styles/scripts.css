@@ -1145,6 +1145,85 @@
 
 
 
+.script-draft-navigation-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2200;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(0 0 0 / 48%);
+  backdrop-filter: blur(2px);
+}
+
+
+
+.script-draft-navigation-dialog {
+  width: min(520px, 100%);
+  border: 1px solid #2d4a63;
+  border-radius: 8px;
+  background: #101820;
+  box-shadow: 0 18px 50px rgb(0 0 0 / 45%);
+  color: #d9e2ec;
+}
+
+
+
+.script-draft-navigation-dialog header,
+.script-draft-navigation-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+
+
+.script-draft-navigation-dialog header {
+  border-bottom: 1px solid #263847;
+}
+
+
+
+.script-draft-navigation-dialog header > div {
+  display: grid;
+  gap: 2px;
+}
+
+
+
+.script-draft-navigation-dialog header strong {
+  color: #f4f7fb;
+  font-size: 14px;
+}
+
+
+
+.script-draft-navigation-dialog header small {
+  color: #9fb3c5;
+  font-size: 11px;
+}
+
+
+
+.script-draft-navigation-dialog p {
+  margin: 0;
+  padding: 12px;
+  color: #c6d6e5;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+
+
+.script-draft-navigation-actions {
+  justify-content: flex-end;
+  border-top: 1px solid #263847;
+}
+
+
+
 .realmz-step-card.has-warning {
   box-shadow: inset 3px 0 0 #e6c477;
 }

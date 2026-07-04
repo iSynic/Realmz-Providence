@@ -120,6 +120,13 @@ type CombatMacroContext = {
   rootType: string | null;
 };
 
+type ScriptDraftNavigationGuard = (label: string, action: () => void) => void;
+
+type PendingScriptDraftNavigation = {
+  label: string;
+  action: () => void;
+};
+
 const SCRIPT_EDITOR_TABS = [
   { id: "action-points", label: "Action Points", title: "Create and edit map Action Points." },
   { id: "macros", label: "Extra Action Points", title: "Extra Action Points and branch targets." },
@@ -368,6 +375,7 @@ export function ScriptsPanel({
   activeEditor?: string;
 }) {
   const [, startScriptTransition] = useTransition();
+  const draftNavigationGuardRef = useRef<ScriptDraftNavigationGuard | null>(null);
   const effectiveEditor = activeEditor === "domain"
     ? "action-points"
     : activeEditor === "ed3-evidence"
@@ -379,9 +387,19 @@ export function ScriptsPanel({
   const handleApplyCommand = useCallback((command: ProjectCommand) => {
     startScriptTransition(() => onApplyCommand?.(command));
   }, [onApplyCommand]);
+  const handleSelectEditor = useCallback((editor: string) => {
+    if (editor === effectiveEditor) return;
+    const action = () => onSelectEditor?.(editor);
+    const guard = draftNavigationGuardRef.current;
+    if (guard) guard(`switch to ${scriptPanelTitle(editor)}`, action);
+    else action();
+  }, [effectiveEditor, onSelectEditor]);
+  const handleRegisterDraftNavigationGuard = useCallback((guard: ScriptDraftNavigationGuard | null) => {
+    draftNavigationGuardRef.current = guard;
+  }, []);
   return (
     <div className="editor-full-panel scripts-workbench">
-      <ScriptEditorTabs activeEditor={effectiveEditor} onSelectEditor={onSelectEditor} />
+      <ScriptEditorTabs activeEditor={effectiveEditor} onSelectEditor={handleSelectEditor} />
       <ScriptAuthoringPanel
         project={project}
         catalog={catalog}
@@ -395,6 +413,7 @@ export function ScriptsPanel({
         onOpenTool={onOpenTool}
         onOpenMapCoordinate={onOpenMapCoordinate}
         onApplyCommand={handleApplyCommand}
+        onRegisterDraftNavigationGuard={handleRegisterDraftNavigationGuard}
       />
     </div>
   );
@@ -451,7 +470,8 @@ function ScriptAuthoringPanel({
   onSelectEditor,
   onOpenTool,
   onOpenMapCoordinate,
-  onApplyCommand
+  onApplyCommand,
+  onRegisterDraftNavigationGuard
 }: {
   project: Project | null;
   catalog?: LibraryCatalog | null;
@@ -465,6 +485,7 @@ function ScriptAuthoringPanel({
   onOpenTool?: (tab: "text", editor: string) => void;
   onOpenMapCoordinate?: (target: MapCoordinateTarget) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
+  onRegisterDraftNavigationGuard?: (guard: ScriptDraftNavigationGuard | null) => void;
 }) {
   const activeTabKind = scriptTabKind(activeEditor);
   const scripts = useMemo(
@@ -481,6 +502,7 @@ function ScriptAuthoringPanel({
   const [detailSurface, setDetailSurface] = usePersistentValue<ScriptDetailSurface>("scripts.detailSurface", "docked");
   const [targetDrawerOpen, setTargetDrawerOpen] = usePersistentBoolean("scripts.targetDrawer.v2.open", false);
   const [selectedScriptId, setSelectedScriptId] = useState<string | null>(null);
+  const [pendingDraftNavigation, setPendingDraftNavigation] = useState<PendingScriptDraftNavigation | null>(null);
   const [newActionPoint, setNewActionPoint] = useState({ mapId: projectMaps[0]?.id ?? "", x: 1, y: 1 });
   const [warningScanReady, setWarningScanReady] = useState(false);
   const [selectedDiagnosticsReady, setSelectedDiagnosticsReady] = useState(false);
@@ -642,11 +664,11 @@ function ScriptAuthoringPanel({
     if (!selectedTriggerFromSelection) return;
     setSelectedScriptId(selectedTriggerFromSelection.id);
   }, [selectedTriggerFromSelection?.id, selectedTriggerFromSelection]);
-  const handleSelectTrigger = useCallback((trigger: TriggerRecord) => {
+  const performSelectTrigger = useCallback((trigger: TriggerRecord) => {
     setSelectedScriptId(trigger.id);
     onSelectEntity(selectEntityFromId(triggerSelectionId(trigger)));
   }, [onSelectEntity]);
-  const selectStepSlot = useCallback((slot: number) => {
+  const performSelectStepSlot = useCallback((slot: number) => {
     setSelectedSlot(slot);
     if (selectedTrigger) {
       onSelectEntity(selectEntityFromId(actionSlotSelectionId(selectedTrigger, slot)));
@@ -686,19 +708,21 @@ function ScriptAuthoringPanel({
   const selectedMapCapacity = selectedMap ? actionPointCapacity(project.triggers, selectedMap.levelType, selectedMap.index) : null;
   const createSelectedMapActionPoint = () => {
     if (!selectedMap || !selectedMapCapacity?.canCreate) return;
-    const recordIndex = nextActionPointRecordIndex(project.triggers, selectedMap.levelType, selectedMap.index);
-    onApplyCommand?.({
-      kind: "createActionPoint",
-      label: `Create Action Point ${newActionPoint.x},${newActionPoint.y}`,
-      levelType: selectedMap.levelType,
-      levelIndex: selectedMap.index,
-      x: clampRealmzCoordinate(newActionPoint.x),
-      y: clampRealmzCoordinate(newActionPoint.y)
+    requestDraftNavigation("create an Action Point", () => {
+      const recordIndex = nextActionPointRecordIndex(project.triggers, selectedMap.levelType, selectedMap.index);
+      onApplyCommand?.({
+        kind: "createActionPoint",
+        label: `Create Action Point ${newActionPoint.x},${newActionPoint.y}`,
+        levelType: selectedMap.levelType,
+        levelIndex: selectedMap.index,
+        x: clampRealmzCoordinate(newActionPoint.x),
+        y: clampRealmzCoordinate(newActionPoint.y)
+      });
+      if (recordIndex != null) {
+        const source = selectedMap.levelType === "land" ? "Data DD" : "Data DDD";
+        onSelectEntity(selectEntityFromId(triggerEntityId(selectedMap.levelType, selectedMap.index, recordIndex, source)));
+      }
     });
-    if (recordIndex != null) {
-      const source = selectedMap.levelType === "land" ? "Data DD" : "Data DDD";
-      onSelectEntity(selectEntityFromId(triggerEntityId(selectedMap.levelType, selectedMap.index, recordIndex, source)));
-    }
   };
   const actionPointCreateTitle = !selectedMap
     ? "Create a map before adding map Action Points."
@@ -814,6 +838,61 @@ function ScriptAuthoringPanel({
     : projectMaps;
   const issueCounts = issueCountsBySlot(triggerDiagnostics);
   const setSelectedDraft = (values: { rawCode: number; id: number }) => setDraft((current) => ({ ...current, [selectedKey]: values }));
+  const discardSelectedDraft = () => {
+    setDraft((current) => {
+      if (!(selectedKey in current)) return current;
+      const next = { ...current };
+      delete next[selectedKey];
+      return next;
+    });
+  };
+  const applySelectedSlot = () => {
+    if (!selectedTrigger) return;
+    onApplyCommand?.({
+      kind: "updateActionSlot",
+      label: `Update slot ${selectedSlot}`,
+      triggerId: selectedTrigger.id,
+      slot: selectedSlot,
+      rawCode: selectedDraft.rawCode,
+      id: selectedDraft.id
+    });
+  };
+  const requestDraftNavigation = useCallback<ScriptDraftNavigationGuard>((label, action) => {
+    if (!selectedDraftDirty) {
+      action();
+      return;
+    }
+    setPendingDraftNavigation({ label, action });
+  }, [selectedDraftDirty]);
+  useEffect(() => {
+    onRegisterDraftNavigationGuard?.(requestDraftNavigation);
+    return () => onRegisterDraftNavigationGuard?.(null);
+  }, [onRegisterDraftNavigationGuard, requestDraftNavigation]);
+  const continuePendingDraftNavigation = (mode: "apply" | "discard") => {
+    const pending = pendingDraftNavigation;
+    if (!pending) return;
+    setPendingDraftNavigation(null);
+    if (mode === "apply") applySelectedSlot();
+    else discardSelectedDraft();
+    pending.action();
+  };
+  const handleSelectTrigger = useCallback((trigger: TriggerRecord) => {
+    if (trigger.id === selectedTrigger?.id) return;
+    requestDraftNavigation(`select ${scriptLabel(project, trigger)}`, () => performSelectTrigger(trigger));
+  }, [performSelectTrigger, project, requestDraftNavigation, selectedTrigger?.id]);
+  const selectStepSlot = useCallback((slot: number) => {
+    if (slot === selectedSlot) return;
+    requestDraftNavigation(`select step ${slot + 1}`, () => performSelectStepSlot(slot));
+  }, [performSelectStepSlot, requestDraftNavigation, selectedSlot]);
+  const guardedSelectEntity = useCallback((entity: SelectedEntity) => {
+    requestDraftNavigation("open the selected target", () => onSelectEntity(entity));
+  }, [onSelectEntity, requestDraftNavigation]);
+  const guardedOpenTool = useCallback((tab: "text", editor: string) => {
+    requestDraftNavigation(`open ${editor}`, () => onOpenTool?.(tab, editor));
+  }, [onOpenTool, requestDraftNavigation]);
+  const guardedOpenMapCoordinate = useCallback((target: MapCoordinateTarget) => {
+    requestDraftNavigation("open the map location", () => onOpenMapCoordinate?.(target));
+  }, [onOpenMapCoordinate, requestDraftNavigation]);
   const moveSelectedStep = (toSlot: number) => {
     if (!selectedTrigger || toSlot < 0 || toSlot > 7 || toSlot === selectedSlot) return;
     const fromKey = `${selectedTrigger.id}:${selectedSlot}`;
@@ -828,19 +907,8 @@ function ScriptAuthoringPanel({
       else delete next[fromKey];
       return next;
     });
-    selectStepSlot(toSlot);
+    performSelectStepSlot(toSlot);
     onApplyCommand?.({ kind: "swapActionSlots", label: "Move step", triggerId: selectedTrigger.id, fromSlot: selectedSlot, toSlot });
-  };
-  const applySelectedSlot = () => {
-    if (!selectedTrigger) return;
-    onApplyCommand?.({
-      kind: "updateActionSlot",
-      label: `Update slot ${selectedSlot}`,
-      triggerId: selectedTrigger.id,
-      slot: selectedSlot,
-      rawCode: selectedDraft.rawCode,
-      id: selectedDraft.id
-    });
   };
   const moveSelectedActionPoint = (fields: Partial<{ levelType: LevelType; levelIndex: number; x: number; y: number }>) => {
     if (!selectedTrigger || isMacro) return;
@@ -879,7 +947,13 @@ function ScriptAuthoringPanel({
       <button type="button" className="btn btn-secondary btn-xs icon-only" title="Duplicate step to next position" disabled={!selectedAction || selectedSlot === 7} onClick={() => onApplyCommand?.({ kind: "duplicateActionSlot", label: "Duplicate step", triggerId: selectedTrigger.id, fromSlot: selectedSlot, toSlot: selectedSlot + 1 })}>
         <CopyPlus size={12} />
       </button>
-      <button type="button" className="btn btn-danger btn-xs icon-only" title="Clear step" disabled={!selectedAction} onClick={() => onApplyCommand?.({ kind: "deleteActionSlot", label: "Clear step", triggerId: selectedTrigger.id, slot: selectedSlot })}>
+      <button
+        type="button"
+        className="btn btn-danger btn-xs icon-only"
+        title="Clear step"
+        disabled={!selectedAction}
+        onClick={() => requestDraftNavigation("clear this step", () => onApplyCommand?.({ kind: "deleteActionSlot", label: "Clear step", triggerId: selectedTrigger.id, slot: selectedSlot }))}
+      >
         <X size={12} />
       </button>
       {directTargetDrawerAvailable && (
@@ -914,7 +988,7 @@ function ScriptAuthoringPanel({
       desktopRuntime={desktopRuntime}
       projectDir={projectDir}
       workspaceDir={workspaceDir}
-      onSelectEntity={onSelectEntity}
+      onSelectEntity={guardedSelectEntity}
       onApplyCommand={onApplyCommand}
     />
   ) : null;
@@ -949,9 +1023,9 @@ function ScriptAuthoringPanel({
       onSetCategoryFilter={setCategoryFilter}
       onSetOpcodeQuery={setOpcodeQuery}
       onSetSelectedDraft={setSelectedDraft}
-      onSelectEntity={onSelectEntity}
-      onOpenTool={onOpenTool}
-      onOpenMapCoordinate={onOpenMapCoordinate}
+      onSelectEntity={guardedSelectEntity}
+      onOpenTool={guardedOpenTool}
+      onOpenMapCoordinate={guardedOpenMapCoordinate}
       onApplyCommand={onApplyCommand}
     />
   ) : null;
@@ -1125,7 +1199,12 @@ function ScriptAuthoringPanel({
                     <Copy size={12} /> Duplicate
                   </button>
                   <TutorialTip title={isMacro ? "Delete Extra Action Point" : "Clear Action Point"} body={CLEAR_SCRIPT_HELP} side="below">
-                    <button className="btn btn-danger btn-xs" type="button" title={isMacro ? "Delete this Extra Action Point" : "Clear this Action Point record so it can be reused"} onClick={() => onApplyCommand?.({ kind: "deleteTrigger", label: isMacro ? deleteMacroLabel : "Clear Action Point", triggerId: selectedTrigger.id })}>
+                    <button
+                      className="btn btn-danger btn-xs"
+                      type="button"
+                      title={isMacro ? "Delete this Extra Action Point" : "Clear this Action Point record so it can be reused"}
+                      onClick={() => requestDraftNavigation(isMacro ? "delete this Extra Action Point" : "clear this Action Point", () => onApplyCommand?.({ kind: "deleteTrigger", label: isMacro ? deleteMacroLabel : "Clear Action Point", triggerId: selectedTrigger.id }))}
+                    >
                       <Trash2 size={12} /> {isMacro ? deleteMacroLabel : "Clear Action Point"}
                     </button>
                   </TutorialTip>
@@ -1135,7 +1214,7 @@ function ScriptAuthoringPanel({
               {isMacro ? (
                 <>
                   {selectedCombatMacroContext && (
-                    <CombatMacroContextCard context={selectedCombatMacroContext} onSelectEntity={onSelectEntity} />
+                    <CombatMacroContextCard context={selectedCombatMacroContext} onSelectEntity={guardedSelectEntity} />
                   )}
                 </>
               ) : (
@@ -1181,7 +1260,7 @@ function ScriptAuthoringPanel({
                         target={triggerLocationMapTarget}
                         maps={projectMaps}
                         label="Open trigger location on Maps"
-                        onOpenMapCoordinate={onOpenMapCoordinate}
+                        onOpenMapCoordinate={guardedOpenMapCoordinate}
                       />
                     </div>
                   </section>
@@ -1228,7 +1307,7 @@ function ScriptAuthoringPanel({
                         target={afterScriptMapTarget}
                         maps={projectMaps}
                         label="Open after-script destination on Maps"
-                        onOpenMapCoordinate={onOpenMapCoordinate}
+                        onOpenMapCoordinate={guardedOpenMapCoordinate}
                       />
                     </div>
                   </section>
@@ -1287,7 +1366,7 @@ function ScriptAuthoringPanel({
                       })}
                     </ScrollArea>
                     {showInlineFlowPreview && (
-                      <ScriptFlowPreview project={project} catalog={catalog} trigger={selectedTrigger} onSelectEntity={onSelectEntity} />
+                        <ScriptFlowPreview project={project} catalog={catalog} trigger={selectedTrigger} onSelectEntity={guardedSelectEntity} />
                     )}
                   </PanelSection>
                   {!floatingDetail && (
@@ -1321,7 +1400,7 @@ function ScriptAuthoringPanel({
                 selectedOption={selectedOption}
                 selectedSlotEntity={selectedSlotEntity}
                 selectedEdcdRowId={selectedEdcdRowId}
-                onSelectEntity={onSelectEntity}
+                onSelectEntity={guardedSelectEntity}
               />
               {isMacro && (
                 <CollapsibleSection
@@ -1350,7 +1429,59 @@ function ScriptAuthoringPanel({
           )}
         </div>
       </div>
+      {pendingDraftNavigation && (
+        <ScriptDraftNavigationDialog
+          destination={pendingDraftNavigation.label}
+          onApply={() => continuePendingDraftNavigation("apply")}
+          onDiscard={() => continuePendingDraftNavigation("discard")}
+          onCancel={() => setPendingDraftNavigation(null)}
+        />
+      )}
     </section>
+  );
+}
+
+function ScriptDraftNavigationDialog({
+  destination,
+  onApply,
+  onDiscard,
+  onCancel
+}: {
+  destination: string;
+  onApply: () => void;
+  onDiscard: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="script-draft-navigation-backdrop" role="presentation" onMouseDown={onCancel}>
+      <div
+        className="script-draft-navigation-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="script-draft-navigation-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <header>
+          <div>
+            <strong id="script-draft-navigation-title">Unapplied Step Changes</strong>
+            <small>Apply or discard the selected step before leaving it.</small>
+          </div>
+          <button type="button" className="btn btn-secondary btn-xs icon-only" aria-label="Cancel navigation" onClick={onCancel}>
+            <X size={12} />
+          </button>
+        </header>
+        <p>
+          You are about to {destination}. The selected step has changes that are not applied to the script yet.
+        </p>
+        <div className="script-draft-navigation-actions">
+          <button type="button" className="btn btn-secondary btn-xs" onClick={onCancel}>Cancel</button>
+          <button type="button" className="btn btn-danger btn-xs" onClick={onDiscard}>Discard Changes</button>
+          <button type="button" className="btn btn-primary btn-xs" onClick={onApply}>
+            <Save size={12} /> Apply Changes
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
