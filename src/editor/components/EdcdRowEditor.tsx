@@ -170,7 +170,7 @@ export function EdcdRowEditor({
             compact
             title={presentation === "selected-step" ? "Authoring fields not created yet" : "Settings not created yet"}
             body={presentation === "selected-step"
-              ? `Applying this ${selectedSlotLabel} will create the stored fields this action needs.`
+              ? `Applying this ${selectedSlotLabel} will create its editable fields.`
               : `This ${selectedSlotLabel} will use settings ${rowId}. Applying the guided settings below will create that row.`}
           />
         )}
@@ -201,7 +201,7 @@ export function EdcdRowEditor({
         <CollapsibleSection title="Technical Details" eyebrow="advanced" density="compact" storageKey={`scripts.parameterRow.${rowId}.advanced.open`} defaultOpen={false}>
           <div className="realmz-raw-preview">
             {edcdUsage?.summary && <FieldRow label="Summary" value={edcdUsage.summary} />}
-            <FieldRow label="Data EDCD Row" value={rowId} />
+            <FieldRow label="Action Settings Row" value={rowId} />
             <FieldRow label="Internal Shape" value={shapeId} />
             <FieldRow label="Internal Fields" value={fieldNames.join(", ")} />
             <FieldRow label="Raw Values" value={numericDraft.join(", ")} />
@@ -365,7 +365,8 @@ export function EdcdRowEditor({
     const createRecordType = createRecordTypeForEdcdTarget(targetKind);
     const targetLabel = targetKind ? edcdTargetLabel(targetKind) : "";
     const targetIssue = targetIssues.find((issue) => issue.index === index);
-    const fieldHelp = presentation.suppressHelp ? presentation.help ?? "" : [presentation.help, help].filter(Boolean).join(" ");
+    const rawFieldHelp = presentation.suppressHelp ? presentation.help ?? "" : [presentation.help, help].filter(Boolean).join(" ");
+    const fieldHelp = authorFieldHelp(rawFieldHelp, presentation.label ?? label);
     const mapJumpTarget = onOpenMapCoordinate && isCoordinateJumpField(shapeId, internalName) ? mapCoordinateTarget : null;
     const mapJumpTitle = mapJumpTarget
       ? mapCoordinateMap
@@ -496,6 +497,22 @@ export function EdcdRowEditor({
       </label>
     );
   }
+}
+
+function authorFieldHelp(text: string, label: string) {
+  const trimmed = text.trim();
+  if (!trimmed) return "";
+  const normalizedText = trimmed.toLowerCase().replace(/\s+/g, " ").replace(/\.$/, "");
+  const normalizedLabel = label.trim().toLowerCase().replace(/\s+/g, " ").replace(/\.$/, "");
+  if (!normalizedLabel) return trimmed;
+  if (normalizedText === normalizedLabel) return "";
+  if (normalizedText === `${normalizedLabel} to check for`) return "";
+  if (normalizedText === `${normalizedLabel} to alter`) return "";
+  if (normalizedText === `${normalizedLabel} to goto`) return "";
+  if (normalizedText === `select ${normalizedLabel}`) return "";
+  if (normalizedText === `select the ${normalizedLabel}`) return "";
+  if (normalizedText === `select a ${normalizedLabel}`) return "";
+  return trimmed;
 }
 
 function CompactNumberField({
@@ -731,7 +748,7 @@ function EdcdItemTargetField({
     ? [selected.detail, selected.sourceState].filter(Boolean).join(" | ")
     : value
       ? "Raw Realmz item ID; no decoded project usage yet."
-      : "Search to choose an item.";
+      : "";
   const selectedEntity = selected ? selectEntityFromId(`item:${selected.value}`) : null;
   const chooseOption = (option: EdcdItemSearchResult) => {
     onChange(option.value);
@@ -860,7 +877,7 @@ function EdcdSearchTargetField({
     : null;
   const resultOptions = rawQueryOption ? [rawQueryOption, ...matchedOptions] : matchedOptions;
   const selectedLabel = selected?.label ?? (value ? `${targetKind === "message" ? "String" : label} ${Math.abs(value)}` : `No ${label.toLowerCase()} selected`);
-  const selectedDetail = selected?.detail ?? (value ? `No matching ${label.toLowerCase()} target exists yet.` : `Search to choose a ${label.toLowerCase()}.`);
+  const selectedDetail = selected?.detail ?? (value ? `No matching ${label.toLowerCase()} target exists yet.` : "");
   const chooseOption = (option: EdcdTargetOption) => {
     onChange(option.value);
     setQuery("");
@@ -1000,7 +1017,7 @@ function EdcdSelectTargetField({
     : null;
   const resultOptions = rawQueryOption ? [rawQueryOption, ...matchedOptions] : matchedOptions;
   const selectedLabel = selected?.label ?? (value > 0 ? `Missing ${displayLabel} ${value}` : `No ${label.toLowerCase()} selected`);
-  const selectedDetail = selected?.detail ?? (value > 0 ? `No ${label} ${value} exists yet.` : `Search to choose a ${label.toLowerCase()}.`);
+  const selectedDetail = selected?.detail ?? (value > 0 ? `No ${label} ${value} exists yet.` : "");
   const chooseTarget = (option: EdcdTargetOption) => {
     onChange(option.value);
     setQuery("");
@@ -1850,7 +1867,7 @@ function ChoiceDialogEditor({
         ))}
         <CollapsibleSection title="Technical Details" eyebrow="advanced" density="compact" storageKey={`scripts.choiceDialog.${rowId}.advanced.open`} defaultOpen={false}>
           <div className="realmz-raw-preview">
-            <FieldRow label="Data EDCD Row" value={rowId} />
+            <FieldRow label="Action Settings Row" value={rowId} />
             <FieldRow label="Internal Shape" value="choice" />
             <FieldRow label="Internal Fields" value="replyPolarity, branchMode, branchTarget, promptA, promptB" />
             <FieldRow label="Raw Values" value={numericDraft.join(", ")} />

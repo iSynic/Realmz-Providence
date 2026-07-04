@@ -129,7 +129,7 @@ const SCRIPT_EDITOR_TABS = [
 ];
 
 const SCRIPT_WORKBENCH_HELP =
-  "Scripts is the Divinity Action Point hub: map triggers, reusable Extra Action Points, global hooks, quest usage, CODE/ID steps, EDCD settings, targets, diagnostics, and source evidence.";
+  "Scripts is the Divinity Action Point hub: map triggers, reusable Extra Action Points, global hooks, quest usage, CODE/ID steps, Action Settings, targets, diagnostics, and source evidence.";
 const CREATE_AP_HELP =
   "Creates a map or dungeon Action Point at the chosen cell. Realmz stores these as fixed records, so Providence reuses empty slots instead of shifting later record IDs.";
 const SAME_AS_TRIGGER_DESTINATION_HELP =
@@ -148,8 +148,6 @@ const FLOW_PREVIEW_HELP =
   "Flow Preview summarizes obvious branches, GOSUBs, Extra Action Point calls, choices, and logic paths. It is a navigation aid, not a full runtime interpreter.";
 const TECHNICAL_DETAILS_HELP =
   "Technical Details shows the raw Realmz storage: source file, record index, door ID, selected slot, applied and draft CODE/ID, Action Settings storage row, dispatcher status, and semantic links.";
-const STEP_REFERENCE_HELP =
-  "Step Reference keeps the opcode notes, Divinity wording, and raw CODE/ID storage available without making them the main authoring surface.";
 const TARGET_PICKER_HELP =
   "The target picker resolves the selected opcode's expected record type and can create safe source-backed shells when Providence has a writer for that target family.";
 const ACTION_CHOOSER_HELP =
@@ -1071,7 +1069,7 @@ function ScriptAuthoringPanel({
           {extraActionEvidenceFilterActive && (
             <div className="script-tab-note">
               <strong>{(inventoryCounts.get(inventoryFilter) ?? 0).toLocaleString()} Extra Action Point row(s) in this filter</strong>
-              <small>These rows are preserved with the scenario. The unlinked and evidence filters separate imported ED3 rows without source-backed callers from callable Extra Action Points.</small>
+              <small>These rows are preserved with the scenario. The unlinked and evidence filters separate imported reusable script rows without source-backed callers from callable Extra Action Points.</small>
             </div>
           )}
           </div>
@@ -2110,7 +2108,7 @@ function SourceEvidenceDetails({
         <FieldRow label="Draft CODE/ID" value={`${selectedDraft.rawCode} / ${selectedDraft.id}`} />
         <FieldRow label="Opcode" value={selectedOption.label} />
         <FieldRow label="Dispatcher" value={isDispatcherNoopOpcode(selectedDraft.rawCode) ? "dispatcher no-op; Realmz ignores this CODE" : "has documented dispatcher behavior"} />
-        <FieldRow label="Data EDCD Row" value={selectedEdcdRowId != null ? `${selectedEdcdRowId}${resolvedEdcdUsage?.shape ? ` (${resolvedEdcdUsage.shape})` : ""}` : "none"} />
+        <FieldRow label="Action Settings Row" value={selectedEdcdRowId != null ? `${selectedEdcdRowId}${resolvedEdcdUsage?.shape ? ` (${resolvedEdcdUsage.shape})` : ""}` : "none"} />
         <FieldRow label="Edit State" value={resolvedSlotEntity?.editState ?? "authored/draft"} />
       </div>
       {resolvedEdcdUsage?.summary && <p className="field-help">{resolvedEdcdUsage.summary}</p>}
@@ -2638,7 +2636,6 @@ function SelectedStepDetail({
                 <TutorialTip title="Choose Action" body={ACTION_CHOOSER_HELP} side="below">
                   <strong>{selectedDraft.rawCode === 0 ? "Choose Action" : "Change Action"}</strong>
                 </TutorialTip>
-                <small>This changes the selected step draft. Use Apply Step when you are ready.</small>
               </div>
               <button type="button" className="btn btn-secondary btn-xs icon-only" title="Close action chooser" onClick={() => setActionChooserOpen(false)}>
                 <X size={12} />
@@ -2817,11 +2814,6 @@ function SelectedStepDetail({
         )}
       </div>
       <CollapsibleSection title="Step Reference" eyebrow="technical details" density="compact" storageKey="scripts.stepReference.open" defaultOpen={false}>
-        <p className="field-help">
-          <TutorialTip title="Step Reference" body={STEP_REFERENCE_HELP} side="below">
-            <span>Raw storage and original reference wording for this selected step.</span>
-          </TutorialTip>
-        </p>
         <div className="realmz-raw-preview">
           <FieldRow label="Opcode" value={selectedDefinition.label} />
           <FieldRow label="Authoring State" value={`${actionAuthoringStateLabel(selectedDefinition, combatMacroContext)} - ${actionAuthoringStateDetail(selectedDefinition, combatMacroContext)}`} />
@@ -2832,7 +2824,7 @@ function SelectedStepDetail({
           {settingLabels.length > 0 && (
             <FieldRow label="Settings Fields" value={settingLabels.join("; ")} />
           )}
-          {selectedEdcdRowId != null && <FieldRow label="Data EDCD Row" value={selectedEdcdRowId} />}
+          {selectedEdcdRowId != null && <FieldRow label="Action Settings Row" value={selectedEdcdRowId} />}
           {selectedRowUsage?.summary && <FieldRow label="Action Settings Summary" value={selectedRowUsage.summary} />}
           {selectedDivinityHelp?.use && <FieldRow label="Divinity Use" value={selectedDivinityHelp.use} />}
           {selectedDivinityHelp?.options && selectedDivinityHelp.options.toLowerCase() !== "none" && (

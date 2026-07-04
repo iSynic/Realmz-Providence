@@ -154,7 +154,7 @@ export function TargetPicker({
     ? showDetail
       ? [selected.detail, selected.summary, behavior, selected.compatibility, selected.sourceState].filter(Boolean).join(" | ") || `Selected ${config.label.toLowerCase()}`
       : ""
-    : hasCurrentValue ? `${targetFallbackLabel(config.label, resolvedValue)} does not exist yet.` : config.hint;
+    : hasCurrentValue ? `${targetFallbackLabel(config.label, resolvedValue)} does not exist yet.` : "";
   const chooseTarget = (target: ScriptTargetOption) => {
     onChange(signedTargetValueForSelection(opcode, value, target.value));
     setQuery("");
