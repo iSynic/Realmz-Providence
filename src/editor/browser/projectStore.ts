@@ -1,5 +1,6 @@
 import { Project } from "../types";
-import { normalizeBrowserProject } from "./project";
+import { browserSourceSnapshotForProject, normalizeBrowserProject, registerBrowserSourceSnapshot } from "./project";
+import { BrowserRawSourceSnapshot } from "./fsAccess";
 
 const DB_NAME = "realmz-providence-browser-projects";
 const DB_VERSION = 1;
@@ -11,6 +12,7 @@ export type BrowserProjectSnapshot = {
   name: string;
   savedAt: string;
   project: Project;
+  rawSources?: BrowserRawSourceSnapshot;
 };
 
 export function browserProjectKey(project: Project) {
@@ -18,7 +20,7 @@ export function browserProjectKey(project: Project) {
   return `browser://${safeBrowserProjectName(project.scenario.name || "Untitled Scenario")}.providence`;
 }
 
-export async function saveBrowserProject(project: Project) {
+export async function saveBrowserProject(project: Project, rawSources?: BrowserRawSourceSnapshot | null) {
   const key = browserProjectKey(project);
   const storedProject =
     project.scenario.projectPath === key
@@ -30,16 +32,23 @@ export async function saveBrowserProject(project: Project) {
             projectPath: key
           }
         };
+  const db = await openProjectDb();
+  const existing = await getSnapshot(db, key);
+  const retainedRawSources =
+    rawSources ??
+    browserSourceSnapshotForProject(storedProject) ??
+    existing?.rawSources;
   const snapshot: BrowserProjectSnapshot = {
     key,
     name: storedProject.scenario.name || "Untitled Scenario",
     savedAt: new Date().toISOString(),
-    project: storedProject
+    project: storedProject,
+    rawSources: retainedRawSources
   };
-  const db = await openProjectDb();
   await putSnapshot(db, snapshot);
   rememberActiveProject(key);
   db.close();
+  registerBrowserSourceSnapshot(snapshot.project, snapshot.rawSources);
   return snapshot;
 }
 
@@ -49,12 +58,24 @@ export async function loadActiveBrowserProject() {
   const db = await openProjectDb();
   const snapshot = await getSnapshot(db, key);
   db.close();
-  return snapshot
-    ? {
-        ...snapshot,
-        project: normalizeBrowserProject(snapshot.project)
-      }
-    : null;
+  if (!snapshot) return null;
+  const project = normalizeBrowserProject(snapshot.project);
+  registerBrowserSourceSnapshot(project, snapshot.rawSources);
+  return {
+    ...snapshot,
+    project
+  };
+}
+
+export async function loadBrowserProjectRawSources(project: Project) {
+  const cached = browserSourceSnapshotForProject(project);
+  if (cached) return cached;
+  const db = await openProjectDb();
+  const snapshot = await getSnapshot(db, browserProjectKey(project));
+  db.close();
+  if (!snapshot?.rawSources) return null;
+  registerBrowserSourceSnapshot(project, snapshot.rawSources);
+  return snapshot.rawSources;
 }
 
 function activeProjectKey() {

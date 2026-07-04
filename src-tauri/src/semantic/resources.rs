@@ -430,6 +430,8 @@ fn resource_payload_summary(resource: &ResourceEntry) -> BTreeMap<String, serde_
         }
         "TEXT" => {
             let text = decode_classic_text(&resource.data);
+            let text_offset_body = decode_classic_text_offset_body(&resource.data);
+            let text_offset_length = text_offset_body.chars().count();
             summary([
                 ("family", json!("text")),
                 ("text", json!(text)),
@@ -437,6 +439,9 @@ fn resource_payload_summary(resource: &ResourceEntry) -> BTreeMap<String, serde_
                     "textPreview",
                     json!(decode_classic_text(&resource.data[..resource.data.len().min(240)])),
                 ),
+                ("textOffsetBody", json!(text_offset_body)),
+                ("textOffsetLength", json!(text_offset_length)),
+                ("textBytes", json!(resource.length)),
             ])
         }
         "styl" => {
@@ -524,6 +529,22 @@ fn resource_payload_summary(resource: &ResourceEntry) -> BTreeMap<String, serde_
             ),
         ]),
     }
+}
+
+fn decode_classic_text_offset_body(bytes: &[u8]) -> String {
+    let nul = bytes
+        .iter()
+        .position(|value| *value == 0)
+        .unwrap_or(bytes.len());
+    bytes[..nul]
+        .iter()
+        .map(|byte| match *byte {
+            9 => '\t',
+            10 | 13 => '\n',
+            32..=255 => *byte as char,
+            _ => ' ',
+        })
+        .collect()
 }
 
 fn sha256_hex(bytes: &[u8]) -> String {

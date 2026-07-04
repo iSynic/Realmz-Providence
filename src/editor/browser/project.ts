@@ -1,5 +1,5 @@
 import { BenchmarkReport, Project, ScenarioShell, ValidationReport } from "../types";
-import { BrowserScenarioSource, readProjectJson, readScenarioSource } from "./fsAccess";
+import { BrowserRawSourceSnapshot, BrowserScenarioSource, readProjectJson, readScenarioSource } from "./fsAccess";
 import { browserReferenceAtlasUrl, browserTilesetAtlasUrl, hasBrowserReferenceAtlas } from "./atlasPaths";
 import { parseResourceFork, parseStringListResource } from "./library";
 import { buildBrowserSemanticSchema, type BrowserSemanticBuildProgress } from "./semantic";
@@ -14,6 +14,7 @@ const EMPTY_TARGET_COMPATIBILITY = { blockers: [], warnings: [], notes: [] };
 const pendingBrowserSemantics = new Map<string, { files: Map<string, Uint8Array>; sourceFiles: Project["source"]["files"] }>();
 const browserScenarioPreviewSources = new Map<string, Map<string, Uint8Array>>();
 const browserScenarioResourcePreviewCache = new Map<string, string | null>();
+const browserScenarioRawSourceSnapshots = new Map<string, BrowserRawSourceSnapshot>();
 let bundledLandlookMapstatsPromise: Promise<Project["tileAttributes"]> | null = null;
 
 export function createBrowserProject(projectName: string): Project {
@@ -78,7 +79,7 @@ export function createBrowserProject(projectName: string): Project {
 }
 
 export async function importBrowserScenario(source: BrowserScenarioSource): Promise<Project> {
-  const { files, sourceFiles } = await readScenarioSource(source, TRACKED_FILES);
+  const { files, sourceFiles, rawSources } = await readScenarioSource(source, TRACKED_FILES);
   const parsed = parseScenarioBuffers(files);
   parsed.tileAttributes.push(...await loadBundledLandlookMapstats());
   const scenarioName = source.name || "Untitled Scenario";
@@ -139,8 +140,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
     semanticSchema: emptySemanticSchema(0),
     validation: { ok: true, errors: [], warnings: [], exportableFiles: [], passThroughFiles: [], targetCompatibilityIssues: [], targetCompatibility: EMPTY_TARGET_COMPATIBILITY }
   };
-  pendingBrowserSemantics.set(browserSemanticCacheKey(project), { files, sourceFiles });
-  browserScenarioPreviewSources.set(browserSemanticCacheKey(project), files);
+  registerBrowserSourceSnapshot(project, rawSources);
   project.validation = validateBrowserProject(project);
   return project;
 }
@@ -222,6 +222,33 @@ export async function buildBrowserSemanticSchemaForProject(
 
 function browserSemanticCacheKey(project: Project) {
   return project.source.sourcePath || project.scenario.projectPath || project.scenario.name;
+}
+
+export function registerBrowserSourceSnapshot(project: Project, rawSources: BrowserRawSourceSnapshot | null | undefined) {
+  if (!rawSources) return;
+  const key = browserSemanticCacheKey(project);
+  const files = browserBuffersFromRawSourceSnapshot(rawSources);
+  browserScenarioRawSourceSnapshots.set(key, rawSources);
+  browserScenarioPreviewSources.set(key, files);
+  pendingBrowserSemantics.set(key, { files, sourceFiles: project.source.files ?? [] });
+}
+
+export function browserSourceSnapshotForProject(project: Project | null | undefined) {
+  return project ? browserScenarioRawSourceSnapshots.get(browserSemanticCacheKey(project)) ?? null : null;
+}
+
+function browserBuffersFromRawSourceSnapshot(rawSources: BrowserRawSourceSnapshot) {
+  const files = new Map<string, Uint8Array>();
+  for (const file of rawSources.files) {
+    storeRawSourceBuffer(files, file.name, file.relativePath, file.bytesData);
+  }
+  return files;
+}
+
+function storeRawSourceBuffer(files: Map<string, Uint8Array>, name: string, relativePath: string, bytes: Uint8Array) {
+  files.set(name, bytes);
+  const normalized = relativePath.replace(/\\/g, "/");
+  if (normalized && normalized !== name) files.set(normalized, bytes);
 }
 
 function buildBrowserSemanticSchemaAsync(
@@ -702,6 +729,9 @@ export function validateBrowserProject(project: Project): ValidationReport {
   for (const encounter of project.timedEncounters ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "timedEncounter", encounter.id), errors, warnings);
   if ((project.assets ?? []).length > 0) {
     warnings.push(`${project.assets.length.toLocaleString()} managed media asset(s) are present; desktop export writes them to the Scenario resource fork.`);
+  }
+  if ((project.assets ?? []).some((asset) => asset.kind === "text" && (asset.resourceType === "TEXT" || asset.resourceType.trim() === "styl"))) {
+    warnings.push("Scrolling Text TEXT/styl export is runtime-suspect: recent Windows Realmz testing ignored styl formatting, and Mac Realmz 7.1.2 crashed after a Providence-authored Scrolling Text action step.");
   }
   if (project.semanticSchema.schemaVersion !== 5) {
     warnings.push(`Semantic schema version ${project.semanticSchema.schemaVersion} is stale; re-import this scenario to refresh archaeology data.`);

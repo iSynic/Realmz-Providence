@@ -610,6 +610,13 @@ fn authored_scrolling_text_exports_same_id_text_and_style_resources() {
             .any(|entry| entry.contains("styl -200")),
         "authored style companion should be reported as a written resource"
     );
+    assert!(
+        report
+            .resource_warnings
+            .iter()
+            .any(|entry| entry.contains("runtime-suspect")),
+        "authored scrolling text export should report current runtime uncertainty"
+    );
     let exported_resources =
         parse_resource_fork_entries(&fs::read(export_dir.join("Scenario")).unwrap());
     let exported_text = exported_resources
@@ -642,7 +649,9 @@ fn imported_scrolling_text_edit_preserves_same_id_style_resource() {
         .expect("Mithril Vault should contain TEXT -204");
     let original_style = resource_entry(&source_resource, "styl", resource_id)
         .expect("Mithril Vault should contain same-ID styl -204");
-    let authored_text = b"Providence authored scrolling TEXT body while preserving the imported style companion.".to_vec();
+    let authored_text =
+        b"Providence authored scrolling TEXT body while preserving the imported style companion."
+            .to_vec();
 
     project.assets.push(ManagedAsset {
         id: format!("managed:TEXT:{resource_id}:fixture-edit"),
@@ -713,6 +722,73 @@ fn imported_scrolling_text_edit_preserves_same_id_style_resource() {
     assert_eq!(
         exported_style.attributes, original_style.attributes,
         "same-ID styl -204 attributes should remain preserved"
+    );
+}
+
+#[test]
+fn imported_scrolling_text_style_offsets_use_raw_text_positions() {
+    let Some(source) = fixture_path("City of Bywater") else {
+        eprintln!("Skipping scrolling TEXT style offset fixture; City of Bywater is absent.");
+        return;
+    };
+    let temp = tempdir().unwrap();
+    let project_dir = temp.path().join("project");
+    let project = import_scenario(&source, &project_dir).unwrap();
+    let resource_id = -202;
+    let text_entity = project
+        .semantic_schema
+        .entities
+        .iter()
+        .find(|entity| entity.id == format!("resource:TEXT:{resource_id}"))
+        .expect("City of Bywater should expose TEXT -202");
+    let style_entity = project
+        .semantic_schema
+        .entities
+        .iter()
+        .find(|entity| entity.id == format!("resource:styl:{resource_id}"))
+        .expect("City of Bywater should expose same-ID styl -202");
+    let text_offset_body = text_entity
+        .summary
+        .get("textOffsetBody")
+        .and_then(Value::as_str)
+        .expect("TEXT -202 summary should include offset-preserving body");
+    let text_offset_length = text_entity
+        .summary
+        .get("textOffsetLength")
+        .and_then(Value::as_u64)
+        .expect("TEXT -202 summary should include offset-preserving length");
+    assert!(
+        text_offset_body.starts_with("\n\n\n\n<<< Click & Drag Mouse To Move About >>>"),
+        "offset-preserving body should retain leading Classic TEXT carriage returns"
+    );
+    assert_eq!(text_offset_length, text_offset_body.chars().count() as u64);
+
+    let at = |start: usize, length: usize| -> String {
+        text_offset_body.chars().skip(start).take(length).collect()
+    };
+    assert_eq!(at(89, "Command of Vixies".len()), "Command of Vixies");
+    assert_eq!(
+        at(108, "---------------------------------------------".len()),
+        "---------------------------------------------"
+    );
+    assert_eq!(at(155, "\nKnow ye".len()), "\nKnow ye");
+
+    let style_runs = style_entity
+        .summary
+        .get("styleRuns")
+        .and_then(Value::as_array)
+        .expect("styl -202 summary should include decoded style runs");
+    assert_eq!(
+        style_runs[1].get("start_char").and_then(Value::as_i64),
+        Some(89)
+    );
+    assert_eq!(
+        style_runs[3].get("start_char").and_then(Value::as_i64),
+        Some(108)
+    );
+    assert_eq!(
+        style_runs[5].get("start_char").and_then(Value::as_i64),
+        Some(155)
     );
 }
 

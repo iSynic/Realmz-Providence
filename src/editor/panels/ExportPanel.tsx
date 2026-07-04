@@ -17,11 +17,11 @@ import {
 
 type BrowserExportTarget = "project-zip" | "mac-classic-scenario-zip" | "windows-realmz-scenario-zip";
 
-const EXPORT_WORKBENCH_HELP = "Desktop export writes a Realmz-compatible scenario folder from the current project and reports what was written, preserved, passed through, blocked, or warned. Browser export can download a Providence project ZIP backup while the browser Realmz writer is being ported.";
+const EXPORT_WORKBENCH_HELP = "Desktop export writes a Realmz-compatible scenario folder from the current project and reports what was written, preserved, passed through, blocked, or warned. Browser export can download a Providence project ZIP package while the browser Realmz writer is being ported.";
 const EXPORT_TARGET_HELP = "Choose the package shape to write. Portable Providence is useful for internal roundtrips; Mac Classic and Windows Realmz match the target runtime folder conventions.";
-const EXPORT_ACTION_HELP = "Desktop Export Scenario Folder runs the writer for the selected target. Browser export downloads a Providence project ZIP backup that can be extracted and reopened later.";
+const EXPORT_ACTION_HELP = "Desktop Export Scenario Folder runs the writer for the selected target. Browser export downloads a Providence project ZIP package with project metadata, managed assets, and captured raw source material.";
 const EXPORT_JSON_HELP = "Download the current project.json directly. This is useful as a small browser backup or for inspecting the project state without extracting the ZIP package.";
-const BROWSER_SCENARIO_EXPORT_PENDING_HELP = "Browser scenario ZIP export needs the Realmz writer ported from the Rust/Tauri exporter and persistent browser source snapshots. A plain project.json ZIP is not enough to produce edited Realmz binary files, resource forks, target-specific folder layouts, and pass-through source files safely.";
+const BROWSER_SCENARIO_EXPORT_PENDING_HELP = "Browser scenario ZIP export still needs the Realmz writer ported from the Rust/Tauri exporter. The browser can download project packages, but Mac/Windows scenario ZIPs need writer parity for edited binary files, resource forks, target-specific folder layouts, and pass-through source files.";
 const BROWSER_EXPORT_TARGET_HELP = "Choose the browser export artifact. Project ZIP is available now; Mac and Windows scenario ZIPs are listed as the target formats that still need browser writer support.";
 const BENCHMARK_HELP = "Benchmark Project measures large-scenario UI and validation scale so release candidates do not regress on dense maps, triggers, or Action Settings.";
 const EXPORT_REPORT_HELP = "The export report is the release ledger for this session: output folder, target, source files, pass-through files, resource writes, preserved resources, blocked assets, and warnings.";
@@ -113,7 +113,7 @@ export function ExportPanel({
         {!desktopRuntime ? (
           <TutorialTip title="Browser Scenario ZIP Writer" body={BROWSER_SCENARIO_EXPORT_PENDING_HELP} side="below">
             <p className="empty-copy browser-export-boundary">
-              Browser export can download a Providence project backup. Mac/Windows Realmz scenario ZIP generation is a writer-porting gap, not a browser download limitation.
+              Browser export can download a Providence project package. Mac/Windows Realmz scenario ZIP generation is a writer-porting gap, not a browser download limitation.
             </p>
           </TutorialTip>
         ) : null}

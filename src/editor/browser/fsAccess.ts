@@ -1,5 +1,16 @@
 import { SourceFile } from "../types";
 
+export type BrowserRawSourceFile = SourceFile & {
+  bytesData: Uint8Array;
+};
+
+export type BrowserRawSourceSnapshot = {
+  capturedAt: string;
+  rootName: string;
+  totalBytes: number;
+  files: BrowserRawSourceFile[];
+};
+
 export type BrowserFileHandle = {
   kind: "file";
   name: string;
@@ -76,30 +87,35 @@ export async function readScenarioSource(source: BrowserScenarioSource, trackedF
 export async function readScenarioDirectory(handle: BrowserDirectoryHandle, trackedFiles: readonly string[]) {
   const files = new Map<string, Uint8Array>();
   const sourceFiles: SourceFile[] = [];
+  const rawSourceFiles: BrowserRawSourceFile[] = [];
   const tracked = new Set(trackedFiles);
   const markerName = handle.name;
 
   for await (const candidate of walkScenarioDirectory(handle)) {
     const { name, relativePath, handle: fileHandle } = candidate;
+    if (isIgnoredOsMetadataFile(name)) continue;
     const file = await fileHandle.getFile();
     const role = roleForFile(name, tracked);
-    const shouldRead = shouldReadScenarioFile(name, role, markerName, file.size);
-    const bytes = shouldRead ? new Uint8Array(await file.arrayBuffer()) : null;
-    sourceFiles.push({
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const sha256 = await sha256Hex(bytes);
+    const sourceFile = {
       name,
       relativePath,
       bytes: file.size,
-      sha256: bytes ? await sha256Hex(bytes) : "browser-preview-unread",
+      sha256,
       role,
       editable: role === "supported-binary"
-    });
-    if (bytes && (tracked.has(name) || isResourceFileName(name) || name === markerName || isScenarioMarkerCandidate(name, bytes, tracked))) {
+    };
+    sourceFiles.push(sourceFile);
+    rawSourceFiles.push({ ...sourceFile, bytesData: bytes });
+    if (tracked.has(name) || isResourceFileName(name) || name === markerName || isScenarioMarkerCandidate(name, bytes, tracked)) {
       storeScenarioBuffer(files, name, relativePath, bytes);
     }
   }
 
   sourceFiles.sort((a, b) => a.name.localeCompare(b.name));
-  return { files, sourceFiles };
+  rawSourceFiles.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
+  return { files, sourceFiles, rawSources: createRawSourceSnapshot(markerName, rawSourceFiles) };
 }
 
 async function* walkScenarioDirectory(
@@ -153,29 +169,34 @@ function pickDirectoryInput(): Promise<BrowserFileSelection> {
 async function readScenarioFileSelection(selection: BrowserFileSelection, trackedFiles: readonly string[]) {
   const files = new Map<string, Uint8Array>();
   const sourceFiles: SourceFile[] = [];
+  const rawSourceFiles: BrowserRawSourceFile[] = [];
   const tracked = new Set(trackedFiles);
-  const markerName = selection.name;
+  const markerName = selectionRootName(selection.files) || selection.name;
   for (const file of selection.files) {
     const name = fileBaseName(file);
-    const relativePath = relativeSelectionPath(file);
+    const relativePath = relativeSelectionPath(file, markerName);
     if (!name) continue;
+    if (isIgnoredOsMetadataFile(name)) continue;
     const role = roleForFile(name, tracked);
-    const shouldRead = shouldReadScenarioFile(name, role, markerName, file.size);
-    const bytes = shouldRead ? new Uint8Array(await file.arrayBuffer()) : null;
-    sourceFiles.push({
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const sha256 = await sha256Hex(bytes);
+    const sourceFile = {
       name,
       relativePath,
       bytes: file.size,
-      sha256: bytes ? await sha256Hex(bytes) : "browser-preview-unread",
+      sha256,
       role,
       editable: role === "supported-binary"
-    });
-    if (bytes && (tracked.has(name) || isResourceFileName(name) || name === markerName || isScenarioMarkerCandidate(name, bytes, tracked))) {
+    };
+    sourceFiles.push(sourceFile);
+    rawSourceFiles.push({ ...sourceFile, bytesData: bytes });
+    if (tracked.has(name) || isResourceFileName(name) || name === markerName || isScenarioMarkerCandidate(name, bytes, tracked)) {
       storeScenarioBuffer(files, name, relativePath, bytes);
     }
   }
   sourceFiles.sort((a, b) => a.name.localeCompare(b.name));
-  return { files, sourceFiles };
+  rawSourceFiles.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
+  return { files, sourceFiles, rawSources: createRawSourceSnapshot(markerName, rawSourceFiles) };
 }
 
 async function sha256Hex(bytes: Uint8Array) {
@@ -199,14 +220,6 @@ function roleForFile(name: string, tracked: Set<string>) {
   return "unknown";
 }
 
-function shouldReadScenarioFile(name: string, role: string, markerName: string, size: number) {
-  return role === "supported-binary" ||
-    role === "pass-through" ||
-    role === "resource-fork" ||
-    name === markerName ||
-    size <= 1024;
-}
-
 function selectionRootName(files: File[]) {
   const relative = relativeSelectionPath(files[0]);
   return relative.split(/[\\/]/).filter(Boolean)[0] || "Browser Scenario";
@@ -216,12 +229,20 @@ function fileBaseName(file: File) {
   return relativeSelectionPath(file).split(/[\\/]/).filter(Boolean).pop() ?? file.name;
 }
 
-function relativeSelectionPath(file: File) {
-  return file.webkitRelativePath || file.name;
+function relativeSelectionPath(file: File, rootName?: string) {
+  const relativePath = file.webkitRelativePath || file.name;
+  if (!rootName) return relativePath;
+  const parts = relativePath.split(/[\\/]/).filter(Boolean);
+  if (parts[0] === rootName) return parts.slice(1).join("/") || file.name;
+  return relativePath;
 }
 
 function isResourceFileName(name: string) {
   return name === "Scenario" || name.endsWith(".rsrc") || name.endsWith(".rsf") || name.startsWith("._");
+}
+
+function isIgnoredOsMetadataFile(name: string) {
+  return name === ".DS_Store";
 }
 
 function storeScenarioBuffer(files: Map<string, Uint8Array>, name: string, relativePath: string, bytes: Uint8Array) {
@@ -250,6 +271,15 @@ function isScenarioMarkerCandidate(name: string, bytes: Uint8Array, tracked: Set
     && !name.startsWith("Data ")
     && name !== "Global"
     && name !== "Layout";
+}
+
+function createRawSourceSnapshot(rootName: string, files: BrowserRawSourceFile[]): BrowserRawSourceSnapshot {
+  return {
+    capturedAt: new Date().toISOString(),
+    rootName,
+    totalBytes: files.reduce((sum, file) => sum + file.bytesData.byteLength, 0),
+    files
+  };
 }
 
 const SUPPORTED_WRITE_FILES = new Set([

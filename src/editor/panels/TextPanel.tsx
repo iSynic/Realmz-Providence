@@ -16,7 +16,7 @@ const IMPORT_TEXT_HELP = "Import Text accepts a file from this export workflow a
 const REFERENCE_STRINGS_HELP = "Reference Strings shows readable TEXT, STR#, and style resources from project or library resource forks. These are searchable evidence, not the central Data SD2 message pool.";
 const STRINGS_TAB_HELP = "Strings edits Data SD2 message records: Realmz text boxes used by scripts, battles, encounters, random areas, notes, and many prompts.";
 const OPTION_LABELS_TAB_HELP = "Option Labels edits Data OD compact labels for two-choice dialogs. Realmz uses the first visible character as the keyboard shortcut.";
-const SCROLLING_TEXT_TAB_HELP = "Scrolling Text authors scenario TEXT resources used by the Display Scrolling Text action. These are separate from ordinary Data SD2 strings; imported styl companions are preserved by the resource fork path.";
+const SCROLLING_TEXT_TAB_HELP = "Scrolling Text authors scenario TEXT resources used by the Display Scrolling Text action. These are separate from ordinary Data SD2 strings; styl companions are preserved as resource data, but current Windows testing ignores their formatting and Mac 7.1.2 runtime behavior is suspect.";
 const FIND_OCCURRENCE_HELP = "Find Occurrence searches every scenario string by ID or text, then jumps through matching Data SD2 records.";
 const FIND_LONG_STRING_HELP = "Find Long String jumps to strings at the Realmz byte limit or with characters that need cleanup before export.";
 const STRING_BYTE_LIMIT_HELP = "Realmz message records are fixed 256-byte Pascal strings, so the editable text must fit in 255 Classic text bytes before export.";
@@ -1523,7 +1523,7 @@ function StyleCompanionEditor({
         {parsedStyleRuns.ok && (
           <div className="text-style-run-table" role="table" aria-label="Editable Classic style runs">
             <div role="row">
-              <b title="Character offset where this style begins. The row applies until the next style run starts.">Starts At</b>
+              <b title="Raw Classic TEXT character offset where this style begins. The row applies until the next style run starts.">Starts At</b>
               <b>Font</b>
               <b>Size</b>
               <b>Color</b>
@@ -1690,7 +1690,7 @@ function StyledScrollingTextPreview({
       <header>
         <div>
           <span>Styled Preview</span>
-          <small>Inferred Classic TEXT/styl preview. Runtime alignment still needs verification.</small>
+          <small>Offset-preserving Classic TEXT/styl preview. Windows Realmz testing currently ignores styl formatting.</small>
         </div>
         {draftDirty && <b>Draft style runs</b>}
       </header>
@@ -1974,6 +1974,7 @@ function decodeTextAsset(asset: Project["assets"][number]) {
 }
 
 function importedTextBody(summary: Record<string, unknown>) {
+  if (typeof summary.textOffsetBody === "string") return summary.textOffsetBody;
   if (typeof summary.text === "string") return summary.text;
   if (typeof summary.textPreview === "string") return summary.textPreview;
   if (typeof summary.preview === "string") return summary.preview;

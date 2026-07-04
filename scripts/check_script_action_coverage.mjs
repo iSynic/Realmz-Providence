@@ -303,7 +303,7 @@ for (const snippet of [
   "parseHexBytes",
   "StyledScrollingTextPreview",
   "styledTextPreviewSegments",
-  "Inferred Classic TEXT/styl preview. Runtime alignment still needs verification.",
+  "Offset-preserving Classic TEXT/styl preview. Windows Realmz testing currently ignores styl formatting.",
   "styleRunPreviewTitle",
   "semanticResourceType(entity)",
   "semanticResourceId(entity)",

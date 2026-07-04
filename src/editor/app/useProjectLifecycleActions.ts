@@ -5,7 +5,7 @@ import { isBrowserPickerAbort, pickBrowserProjectSource, pickBrowserScenarioSour
 import { createBrowserWorkspace, importBrowserLibrary } from "../browser/library";
 import { benchmarkBrowserProject, createBrowserProject, ensureBrowserReferenceTileAttributes, importBrowserScenario, openBrowserProject, validateBrowserProject } from "../browser/project";
 import { browserProjectPackageFileName, createBrowserProjectPackageZip } from "../browser/projectPackage";
-import { loadActiveBrowserProject, saveBrowserProject } from "../browser/projectStore";
+import { loadActiveBrowserProject, loadBrowserProjectRawSources, saveBrowserProject } from "../browser/projectStore";
 import { persistBrowserIconLibraryEntries } from "../iconLibrary";
 import { LibraryDraftSpec, createLibraryDraft, updateLibraryDraft } from "../libraryDrafts";
 import { persistBrowserMonsterLibraryEntries } from "../monsterLibrary";
@@ -376,8 +376,12 @@ export function useProjectLifecycleActions({
   async function exportProject(scenarioTarget: ScenarioTarget = "providence-portable-folder") {
     if (!state.project) return;
     if (!desktopRuntime) {
-      downloadBrowserProjectPackage(state.project);
-      dispatch({ type: "setStatus", status: "Downloaded Providence project ZIP backup. Realmz scenario folder export still requires the desktop writer." });
+      try {
+        await downloadBrowserProjectPackage(state.project);
+        dispatch({ type: "setStatus", status: "Downloaded Providence project ZIP package with project metadata, managed asset payloads, and captured raw sources where available. Realmz scenario folder export still requires the writer port." });
+      } catch (error) {
+        dispatch({ type: "setStatus", status: `Project ZIP download failed: ${commandError(error)}` });
+      }
       return;
     }
     try {
@@ -481,9 +485,10 @@ function downloadBrowserProjectJson(project: Project) {
   URL.revokeObjectURL(url);
 }
 
-function downloadBrowserProjectPackage(project: Project) {
+async function downloadBrowserProjectPackage(project: Project) {
   if (typeof document === "undefined") throw new Error(BROWSER_PREVIEW_STATUS);
-  const blob = new Blob([createBrowserProjectPackageZip(project)], { type: "application/zip" });
+  const rawSources = await loadBrowserProjectRawSources(project);
+  const blob = new Blob([createBrowserProjectPackageZip(project, rawSources)], { type: "application/zip" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;

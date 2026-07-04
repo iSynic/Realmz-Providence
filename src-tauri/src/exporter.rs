@@ -581,7 +581,11 @@ fn managed_asset_resource_bytes(
     project_dir: &Path,
     asset: &crate::project::ManagedAsset,
 ) -> std::result::Result<Vec<u8>, String> {
-    for value in [&asset.resource_path, &asset.preview_path, &asset.original_path] {
+    for value in [
+        &asset.resource_path,
+        &asset.preview_path,
+        &asset.original_path,
+    ] {
         if let Some(bytes) = decode_data_url_bytes(value)? {
             return Ok(bytes);
         }
@@ -677,6 +681,7 @@ fn write_managed_resources(
         &project.scenario_icon_resources,
         &mut result,
     ));
+    let mut scrolling_text_runtime_warning_emitted = false;
     for asset in &project.assets {
         if !matches!(
             asset.export_state,
@@ -702,6 +707,15 @@ fn write_managed_resources(
                 continue;
             }
         };
+        if !scrolling_text_runtime_warning_emitted
+            && matches!(asset.kind, crate::project::ManagedAssetKind::Text)
+            && (asset.resource_type == "TEXT" || asset.resource_type.trim() == "styl")
+        {
+            result.resource_warnings.push(
+                "Scrolling Text TEXT/styl export is runtime-suspect: recent Windows Realmz testing ignored styl formatting, and Mac Realmz 7.1.2 crashed after a Providence-authored Scrolling Text action step.".to_string(),
+            );
+            scrolling_text_runtime_warning_emitted = true;
+        }
         updates.push(ResourceForkEntry {
             resource_type: asset.resource_type.clone(),
             id: asset.resource_id,
@@ -1060,8 +1074,8 @@ fn scenario_shell_file_name(project: &ProvidenceProject) -> &str {
 #[cfg(test)]
 mod tests {
     use super::{
-        managed_asset_resource_bytes, managed_resource_type_supported, monster_icon_override_updates,
-        preserve_imported_fixed_length,
+        managed_asset_resource_bytes, managed_resource_type_supported,
+        monster_icon_override_updates, preserve_imported_fixed_length,
         scenario_icon_resource_updates, ResourceExportResult,
     };
     use crate::project::{
@@ -1083,7 +1097,10 @@ mod tests {
             file_name: "scrolling-text--200.txt".to_string(),
             original_path: String::new(),
             preview_path: String::new(),
-            resource_path: format!("data:text/plain;base64,{}", STANDARD.encode(b"scrolling text")),
+            resource_path: format!(
+                "data:text/plain;base64,{}",
+                STANDARD.encode(b"scrolling text")
+            ),
             mime_type: "text/plain".to_string(),
             bytes: 14,
             sha256: "fixture".to_string(),

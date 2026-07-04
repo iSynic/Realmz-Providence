@@ -1501,10 +1501,14 @@ function hexPreview(bytes: Uint8Array, limit: number) {
 function textResourcePayloadSummary(resource: ResourceEntry) {
   if (resource.resourceType === "TEXT") {
     const text = decodeClassicTextBody(resource.data);
+    const textOffsetBody = decodeClassicTextOffsetBody(resource.data);
     return {
       family: "text",
       text,
-      textPreview: text.slice(0, 240)
+      textPreview: text.slice(0, 240),
+      textOffsetBody,
+      textOffsetLength: textOffsetBody.length,
+      textBytes: resource.length
     };
   }
   if (resource.resourceType === "styl") {
@@ -1899,6 +1903,19 @@ function decodeClassicTextBody(bytes: Uint8Array) {
     .replace(/[ \t]+\n/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+}
+
+function decodeClassicTextOffsetBody(bytes: Uint8Array) {
+  const nul = bytes.indexOf(0);
+  const slice = nul >= 0 ? bytes.slice(0, nul) : bytes;
+  return Array.from(slice)
+    .map((byte) => {
+      if (byte === 13 || byte === 10) return "\n";
+      if (byte === 9) return "\t";
+      if (byte >= 32) return String.fromCharCode(byte);
+      return " ";
+    })
+    .join("");
 }
 
 function decodeStringListResource(bytes: Uint8Array) {
