@@ -1423,7 +1423,7 @@
   gap: 4px;
 }
 
-.text-style-full-run-controls label span,
+.text-style-full-run-controls label > span:first-child,
 .text-style-run-table b {
   color: #8fc7ff;
   font-size: 10px;
@@ -1433,6 +1433,21 @@
 
 .text-style-full-run-controls input {
   min-height: 29px;
+}
+
+.text-style-color-field {
+  display: grid;
+  grid-template-columns: minmax(78px, 1fr) 30px;
+  gap: 5px;
+  align-items: center;
+}
+
+.text-style-color-field input[type="color"] {
+  width: 30px;
+  min-width: 30px;
+  min-height: 28px;
+  padding: 2px;
+  cursor: pointer;
 }
 
 .text-style-checkbox {
@@ -1459,7 +1474,7 @@
 
 .text-style-run-table [role="row"] {
   display: grid;
-  grid-template-columns: 64px 64px 64px 92px minmax(126px, 1fr) auto;
+  grid-template-columns: 72px 58px 54px minmax(126px, 148px) minmax(170px, 1fr) minmax(110px, auto) auto;
   gap: 8px;
   align-items: center;
 }
@@ -1488,6 +1503,16 @@
 
 .text-style-run-flags input {
   min-height: auto;
+}
+
+.text-style-run-excerpt {
+  min-width: 0;
+  overflow: hidden;
+  color: #c9d8e6;
+  font-size: 11px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .text-style-run-table span {

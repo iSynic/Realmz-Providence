@@ -922,7 +922,7 @@ function managedKindForResource(resourceType: string): ManagedAssetKind {
   if (normalized === "PICT") return "picture";
   if (normalized === "cicn") return "icon";
   if (normalized === "snd") return "sound";
-  if (normalized === "TEXT" || normalized === "STR#") return "text";
+  if (normalized === "TEXT" || normalized === "STR#" || normalized === "styl") return "text";
   return "other";
 }
 

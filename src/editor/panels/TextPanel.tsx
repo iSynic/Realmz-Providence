@@ -1184,6 +1184,7 @@ function ImportedScrollingTextResourceEditor({
       <StyleCompanionEditor
         project={project}
         resourceId={resource.resourceId}
+        text={resource.text}
         textChanged={false}
         onSelectEntity={onSelectEntity}
         onApplyCommand={onApplyCommand}
@@ -1295,6 +1296,7 @@ function ScrollingTextEditor({
         <StyleCompanionEditor
           project={project}
           resourceId={resourceId}
+          text={text}
           textChanged={changed}
           onSelectEntity={onSelectEntity}
           onApplyCommand={onApplyCommand}
@@ -1319,12 +1321,14 @@ function ScrollingTextEditor({
 function StyleCompanionEditor({
   project,
   resourceId,
+  text,
   textChanged,
   onSelectEntity,
   onApplyCommand
 }: {
   project: Project;
   resourceId: number;
+  text: string;
   textChanged: boolean;
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand: (command: ProjectCommand) => void;
@@ -1362,7 +1366,7 @@ function StyleCompanionEditor({
   const parsedSize = Number(sizeDraft);
   const fullStyleDraftValid = Number.isInteger(parsedFont) && parsedFont >= 0 && parsedFont <= 32767
     && Number.isInteger(parsedSize) && parsedSize >= 1 && parsedSize <= 255
-    && /^#[0-9a-fA-F]{6}$/.test(colorDraft);
+    && isCssHexColor(colorDraft);
   const styleRunDraftResult = useMemo(() => classicStyleRunsFromDrafts(styleRunDrafts), [styleRunDrafts]);
   const styleRunBytes = styleRunDraftResult.ok ? classicStyleBytesFromRuns(styleRunDraftResult.runs) : null;
   const styleRunBytesDirty = styleRunBytes ? !bytesEqual(styleRunBytes, companion.rawStyleBytes ?? new Uint8Array()) : false;
@@ -1453,7 +1457,15 @@ function StyleCompanionEditor({
           </label>
           <label>
             <span>Color</span>
-            <input value={colorDraft} onChange={(event) => setColorDraft(event.currentTarget.value)} placeholder="#000000" />
+            <span className="text-style-color-field">
+              <input value={colorDraft} onChange={(event) => setColorDraft(event.currentTarget.value)} placeholder="#000000" />
+              <input
+                type="color"
+                value={isCssHexColor(colorDraft) ? colorDraft : "#000000"}
+                onChange={(event) => setColorDraft(event.currentTarget.value)}
+                aria-label="Full-text style color"
+              />
+            </span>
           </label>
           <label className="text-style-checkbox">
             <input type="checkbox" checked={boldDraft} onChange={(event) => setBoldDraft(event.currentTarget.checked)} />
@@ -1496,10 +1508,11 @@ function StyleCompanionEditor({
         {parsedStyleRuns.ok && (
           <div className="text-style-run-table" role="table" aria-label="Editable Classic style runs">
             <div role="row">
-              <b>Start</b>
+              <b title="Character offset where this style begins. The row applies until the next style run starts.">Starts At</b>
               <b>Font</b>
               <b>Size</b>
               <b>Color</b>
+              <b>Text Range</b>
               <b>Style</b>
               <b>Actions</b>
             </div>
@@ -1523,11 +1536,22 @@ function StyleCompanionEditor({
                   inputMode="numeric"
                   aria-label={`Style run ${run.index + 1} size`}
                 />
-                <input
-                  value={run.color}
-                  onChange={(event) => setStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { color: event.currentTarget.value }))}
-                  aria-label={`Style run ${run.index + 1} color`}
-                />
+                <span className="text-style-color-field">
+                  <input
+                    value={run.color}
+                    onChange={(event) => setStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { color: event.currentTarget.value }))}
+                    aria-label={`Style run ${run.index + 1} color`}
+                  />
+                  <input
+                    type="color"
+                    value={isCssHexColor(run.color) ? run.color : "#000000"}
+                    onChange={(event) => setStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { color: event.currentTarget.value }))}
+                    aria-label={`Style run ${run.index + 1} color picker`}
+                  />
+                </span>
+                <span className="text-style-run-excerpt" title={styleRunRangeTitle(run, styleRunDrafts, text)}>
+                  {styleRunRangeSummary(run, styleRunDrafts, text)}
+                </span>
                 <div className="text-style-run-flags">
                   <label title="Bold">
                     <input type="checkbox" checked={run.bold} onChange={(event) => setStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { bold: event.currentTarget.checked }))} />
@@ -2155,6 +2179,48 @@ function classicStyleRunsFromDrafts(drafts: ClassicStyleRunDraft[]): { ok: true;
   }
   runs.sort((left, right) => left.startChar - right.startChar);
   return { ok: true, runs: runs.map((run, index) => ({ ...run, index })) };
+}
+
+function isCssHexColor(value: string) {
+  return /^#[0-9a-fA-F]{6}$/.test(value);
+}
+
+function styleRunStart(value: string) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
+}
+
+function styleRunRange(run: ClassicStyleRunDraft, drafts: ClassicStyleRunDraft[], text: string) {
+  const start = styleRunStart(run.startChar);
+  if (start == null) return null;
+  const nextStart = drafts
+    .map((draft) => styleRunStart(draft.startChar))
+    .filter((candidate): candidate is number => candidate != null && candidate > start)
+    .sort((left, right) => left - right)[0] ?? text.length;
+  return {
+    start,
+    endExclusive: Math.max(start, Math.min(nextStart, text.length)),
+    beyondText: start >= text.length
+  };
+}
+
+function styleRunRangeSummary(run: ClassicStyleRunDraft, drafts: ClassicStyleRunDraft[], text: string) {
+  const range = styleRunRange(run, drafts, text);
+  if (!range) return "Invalid start";
+  if (text.length === 0) return "Empty TEXT body";
+  if (range.beyondText) return `Starts after current text (${range.start})`;
+  const excerpt = text.slice(range.start, Math.min(range.endExclusive, range.start + 54)).replace(/\s+/g, " ").trim() || "(blank text)";
+  const suffix = range.endExclusive - range.start > 54 ? "..." : "";
+  return `${range.start}-${Math.max(range.start, range.endExclusive - 1)}: ${excerpt}${suffix}`;
+}
+
+function styleRunRangeTitle(run: ClassicStyleRunDraft, drafts: ClassicStyleRunDraft[], text: string) {
+  const range = styleRunRange(run, drafts, text);
+  if (!range) return "This row needs a non-negative start character.";
+  if (text.length === 0) return "This TEXT resource has no body text yet.";
+  if (range.beyondText) return `This style starts at character ${range.start}, which is beyond the current ${text.length}-character TEXT body.`;
+  const excerpt = text.slice(range.start, range.endExclusive).replace(/\s+/g, " ").trim() || "(blank text)";
+  return `Applies from character ${range.start} through ${Math.max(range.start, range.endExclusive - 1)}: ${excerpt}`;
 }
 
 function classicStyleFaceLabel(face: number) {

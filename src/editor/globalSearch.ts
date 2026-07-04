@@ -536,6 +536,34 @@ function addAssetRows(project: Project, add: (row: SearchableRow) => void) {
       aliases: resourceAliases(asset.resourceType, asset.resourceId)
     });
   }
+  const managedResourceKeys = new Set((project.assets ?? []).map((asset) => `${asset.resourceType.trim()}:${asset.resourceId}`));
+  for (const entity of project.semanticSchema?.entities ?? []) {
+    const resourceType = libraryEntityResourceType(entity);
+    const resourceId = libraryEntityResourceId(entity);
+    if (!["TEXT", "STR#", "styl"].includes(resourceType.trim()) || !Number.isFinite(resourceId)) continue;
+    if (managedResourceKeys.has(`${resourceType.trim()}:${resourceId}`)) continue;
+    add({
+      id: entity.id,
+      scope: "assets",
+      kind: resourceType,
+      title: entity.label || `${resourceType} ${resourceId}`,
+      subtitle: `${resourceType} ${resourceId} | ${entity.source}`,
+      snippet: compactSummary(entity.summary),
+      badges: ["Scenario Resource", resourceType],
+      selectedEntity: selectEntityFromId(entity.id),
+      route: {
+        kind: "workbench",
+        workbench: "project",
+        domain: "assets",
+        editor: "text-resources",
+        searchHint: assetSearchHint(resourceType, resourceId, entity.label),
+        assetSection: "project",
+        assetKindFilter: "text"
+      },
+      numericId: resourceId,
+      aliases: resourceAliases(resourceType, resourceId)
+    });
+  }
   for (const tileset of project.assetCatalog.tilesets ?? []) {
     add({
       id: `tileset:${tileset.id}`,
