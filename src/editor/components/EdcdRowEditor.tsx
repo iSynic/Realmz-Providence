@@ -355,10 +355,11 @@ export function EdcdRowEditor({
     const modeOptions = guidedModeOptionsForField(shapeId, internalName, opcode);
     const isRandomRegionLevel = randomRegionLevelField(shapeId, internalName);
     const isRandomRegionChance = randomRegionChanceField(shapeId, internalName);
-    const targetKind = !preserved && !modeOptions && !isRandomRegionLevel && !isRandomRegionChance
+    const detectedTargetKind = !preserved && !modeOptions && !isRandomRegionLevel && !isRandomRegionChance
       ? edcdFieldTargetKind(shapeId, internalName, fieldNames, numericDraft, opcode)
       : null;
-    const isItemField = !preserved && !targetKind && edcdFieldLooksLikeItem(shapeId, internalName, opcode);
+    const isItemField = !preserved && (detectedTargetKind === "item" || (!detectedTargetKind && edcdFieldLooksLikeItem(shapeId, internalName, opcode)));
+    const targetKind = isItemField ? null : detectedTargetKind;
     const targetOptions = targetKind ? edcdTargetOptions(project, targetKind, catalog) : [];
     const selectedTarget = targetOptions.find((option) => option.value === value);
     const createRecordType = createRecordTypeForEdcdTarget(targetKind);
@@ -450,6 +451,7 @@ export function EdcdRowEditor({
             disabled={presentation.disabled}
             options={itemOptions}
             onChange={(nextValue) => setDraftValue(index, nextValue)}
+            onOpen={(entity) => onSelectEntity?.(entity)}
           />
         )}
         {!modeOptions && !targetKind && !isItemField && !isRandomRegionLevel && !isRandomRegionChance && (
@@ -696,12 +698,14 @@ function EdcdItemTargetField({
   value,
   disabled,
   options,
-  onChange
+  onChange,
+  onOpen
 }: {
   value: number;
   disabled?: boolean;
   options: ItemReferenceOption[];
   onChange: (value: number) => void;
+  onOpen?: (entity: SelectedEntity) => void;
 }) {
   const [query, setQuery] = useState("");
   const selected = options.find((option) => option.value === value) ?? null;
@@ -728,6 +732,7 @@ function EdcdItemTargetField({
     : value
       ? "Raw Realmz item ID; no decoded project usage yet."
       : "Search to choose an item.";
+  const selectedEntity = selected ? selectEntityFromId(`item:${selected.value}`) : null;
   const chooseOption = (option: EdcdItemSearchResult) => {
     onChange(option.value);
     setQuery("");
@@ -783,6 +788,21 @@ function EdcdItemTargetField({
             <small>{selectedDetail}</small>
           </div>
           <div className="edcd-selected-target-actions">
+            {selectedEntity && onOpen && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-xs icon-only"
+                disabled={disabled}
+                title={`Open ${selectedLabel}`}
+                aria-label={`Open ${selectedLabel}`}
+                onClick={(event) => {
+                  event.preventDefault();
+                  onOpen(selectedEntity);
+                }}
+              >
+                <Eye size={12} />
+              </button>
+            )}
             {value !== 0 && (
               <button
                 type="button"
