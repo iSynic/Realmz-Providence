@@ -18,6 +18,7 @@ const ignored = parseNumberSet(catalogSource, "IGNORED_ACTIONS");
 const manualNoneStepOnly = parseNumberSet(catalogSource, "MANUAL_NONE_STEP_ONLY_ACTIONS");
 const overrideCodes = parseOverrideCodes(catalogSource, "ACTION_OVERRIDES");
 const actionDetailCodes = parseOverrideCodes(actionSource, "ACTION_DETAILS");
+const chooserConsolidations = parseChooserConsolidations(catalogSource);
 
 const entries = Object.values(crosswalk)
   .sort((a, b) => a.opcode - b.opcode)
@@ -36,6 +37,7 @@ const entries = Object.values(crosswalk)
     const providenceFields = providenceAuthoringFields(entry, isManualNoneStepOnly);
     const gapStatus = auditGapStatus(entry, state, status, manualEntries, isManualNoneStepOnly);
     const evidenceConfidence = auditEvidenceConfidence(entry, status, manualEntries);
+    const chooserConsolidation = chooserConsolidationFor(code);
     return {
       opcode: code,
       title: coverageTitle(entry),
@@ -47,6 +49,7 @@ const entries = Object.values(crosswalk)
       manualNoOptions,
       manualNoneStepOnly: isManualNoneStepOnly,
       relatedOpcodes: relatedManualOpcodes(manualEntries, code),
+      ...(chooserConsolidation ? { chooserConsolidation } : {}),
       providenceFields,
       edcdBacked: Boolean(entry.edcdBacked),
       shape: entry.shape,
@@ -238,8 +241,8 @@ function renderMarkdown(report) {
     "",
     "## Coverage",
     "",
-    "| Opcode | Gap | Confidence | Title | Manual ID | Providence Fields | Storage | Related | Notes |",
-    "| ---: | --- | --- | --- | --- | --- | --- | --- | --- |"
+    "| Opcode | Gap | Confidence | Title | Manual ID | Providence Fields | Storage | Related | Chooser | Notes |",
+    "| ---: | --- | --- | --- | --- | --- | --- | --- | --- | --- |"
   ];
   for (const entry of report.entries) {
     lines.push([
@@ -251,6 +254,7 @@ function renderMarkdown(report) {
       escapeCell(formatProvidenceFields(entry.providenceFields)),
       entry.edcdBacked ? "Data EDCD" : entry.targetFamily ?? "direct",
       entry.relatedOpcodes.join(", "),
+      escapeCell(formatChooserConsolidation(entry.chooserConsolidation)),
       escapeCell(entry.note || entry.runtimeNote || "")
     ].join(" | ") + " |");
   }
@@ -281,6 +285,36 @@ function formatProvidenceFields(fields) {
     .join("; ");
 }
 
+function formatChooserConsolidation(consolidation) {
+  if (!consolidation) return "";
+  if (consolidation.role === "canonical") {
+    return `Canonical chooser action for ${consolidation.aliasOpcodes.join(", ")}; ${consolidation.writeRule}`;
+  }
+  return `Hidden chooser alias of ${consolidation.canonicalOpcode}; ${consolidation.writeRule}`;
+}
+
+function chooserConsolidationFor(code) {
+  const alias = chooserConsolidations.find((entry) => entry.aliasOpcode === code);
+  if (alias) {
+    return {
+      role: "alias",
+      canonicalOpcode: alias.canonicalOpcode,
+      aliasOpcodes: [],
+      reason: alias.reason,
+      writeRule: alias.writeRule
+    };
+  }
+  const aliases = chooserConsolidations.filter((entry) => entry.canonicalOpcode === code);
+  if (aliases.length === 0) return null;
+  return {
+    role: "canonical",
+    canonicalOpcode: code,
+    aliasOpcodes: aliases.map((entry) => entry.aliasOpcode).sort((a, b) => a - b),
+    reason: aliases.map((entry) => entry.reason).join(" "),
+    writeRule: aliases.map((entry) => entry.writeRule).join(" ")
+  };
+}
+
 function parseNumberSet(source, name) {
   const match = source.match(new RegExp(`const\\s+${name}\\s*=\\s*new Set\\(\\[([\\s\\S]*?)\\]\\);`));
   if (!match) return new Set();
@@ -293,6 +327,20 @@ function parseOverrideCodes(source, name) {
   const end = source.indexOf("\n};", start);
   const body = end > start ? source.slice(start, end) : source.slice(start);
   return new Set((body.match(/(?:^|\n)\s*(-?\d+|\[-?\d+\])\s*:/g) ?? []).map((match) => Number(match.replace(/[^-\d]/g, ""))));
+}
+
+function parseChooserConsolidations(source) {
+  const start = source.indexOf("export const SCRIPT_ACTION_CHOOSER_CONSOLIDATIONS");
+  if (start < 0) return [];
+  const end = source.indexOf("] as const", start);
+  const body = end > start ? source.slice(start, end) : source.slice(start);
+  return [...body.matchAll(/\{\s*aliasOpcode:\s*(-?\d+),\s*canonicalOpcode:\s*(-?\d+),\s*reason:\s*"([^"]+)",\s*writeRule:\s*"([^"]+)"\s*\}/g)]
+    .map((match) => ({
+      aliasOpcode: Number(match[1]),
+      canonicalOpcode: Number(match[2]),
+      reason: match[3],
+      writeRule: match[4]
+    }));
 }
 
 function groupBy(values, keyFor) {

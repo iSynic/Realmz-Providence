@@ -50,6 +50,13 @@
       "relatedOpcodes": [
         23
       ],
+      "chooserConsolidation": {
+        "role": "alias",
+        "canonicalOpcode": 23,
+        "aliasOpcodes": [],
+        "reason": "Divinity documents opcode -23 as the dungeon-level form of opcode 23. The authored behavior is the same random encounter area mutation.",
+        "writeRule": "Providence shows one Change Random Encounter Area action; selecting a dungeon map target writes -23, and selecting a land map target writes 23."
+      },
       "providenceFields": [
         {
           "index": 0,
@@ -1441,6 +1448,15 @@
       "relatedOpcodes": [
         -23
       ],
+      "chooserConsolidation": {
+        "role": "canonical",
+        "canonicalOpcode": 23,
+        "aliasOpcodes": [
+          -23
+        ],
+        "reason": "Divinity documents opcode -23 as the dungeon-level form of opcode 23. The authored behavior is the same random encounter area mutation.",
+        "writeRule": "Providence shows one Change Random Encounter Area action; selecting a dungeon map target writes -23, and selecting a land map target writes 23."
+      },
       "providenceFields": [
         {
           "index": 0,

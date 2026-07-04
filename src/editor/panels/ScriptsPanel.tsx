@@ -50,6 +50,7 @@ import {
   SCRIPT_ACTION_CATEGORY_FILTERS,
   actionDefinitionPathLabel,
   actionDefinitionsForCategory,
+  canonicalActionChooserOpcode,
   scriptActionDefinitionFor,
   scriptActionSummary,
   scriptStepBranchHint,
@@ -2519,13 +2520,13 @@ function SelectedStepDetail({
   const authorSettingsTitle = actionSettingsTitleForStep(selectedDefinition, selectedOption.edcdShape);
   const authorSettingsLabel = actionSettingsFieldLabel(authorSettingsTitle);
   const definitionForActionChooserUse = (definition: ScriptActionDefinition) => {
-    if (definition.opcode !== 23) return definition;
+    const canonicalOpcode = canonicalActionChooserOpcode(definition.opcode);
+    if (canonicalOpcode !== 23) return definition;
     if (selectedDraft.rawCode === -23 || selectedTriggerRecord?.levelType === "dungeon") return scriptActionDefinitionFor(-23);
     return definition;
   };
   const actionChooserDefinitionMatchesDraft = (definition: ScriptActionDefinition) => {
-    if (definition.opcode === 23 && selectedDraft.rawCode === -23) return true;
-    return selectedDraft.rawCode === definition.opcode;
+    return canonicalActionChooserOpcode(definition.opcode) === canonicalActionChooserOpcode(selectedDraft.rawCode);
   };
   const useActionDefinition = (definition: ScriptActionDefinition) => {
     onSetSelectedDraft(draftForNewDefinition(definitionForActionChooserUse(definition)));

@@ -44,8 +44,11 @@ const requiredCatalogExports = [
   "ScriptStepFormDefinition",
   "ScriptTargetRoute",
   "ScriptFlowPreviewRoute",
+  "SCRIPT_ACTION_CHOOSER_CONSOLIDATIONS",
   "SCRIPT_ACTION_COVERAGE",
   "SCRIPT_STEP_FORM_DEFINITIONS",
+  "canonicalActionChooserOpcode",
+  "isActionChooserAliasOpcode",
   "scriptStepFlowRoutes"
 ];
 
@@ -125,6 +128,18 @@ for (const entry of coverageEntries) {
 }
 
 assertCoveragePair(-23, 23);
+
+const randomAreaCanonical = coverageEntry(23)?.chooserConsolidation;
+const randomAreaAlias = coverageEntry(-23)?.chooserConsolidation;
+if (randomAreaCanonical?.role !== "canonical" || !(randomAreaCanonical.aliasOpcodes ?? []).includes(-23)) {
+  failures.push("Opcode 23 should be documented as the canonical Change Random Encounter Area chooser action for -23.");
+}
+if (randomAreaAlias?.role !== "alias" || randomAreaAlias.canonicalOpcode !== 23) {
+  failures.push("Opcode -23 should be documented as a hidden chooser alias of opcode 23.");
+}
+if (!String(randomAreaCanonical?.writeRule ?? "").includes("selecting a dungeon map target writes -23")) {
+  failures.push("Random encounter area chooser consolidation should document the deterministic land/dungeon write rule.");
+}
 
 for (const opcode of [84, 98, 99]) {
   const entry = coverageEntry(opcode);
@@ -210,7 +225,9 @@ for (const snippet of [
   "const RANDOM_REGION_PARAMETERS",
   "label: \"Encounter Chance\"",
   "Providence edits positive values as percent",
-  "if (definition.opcode === -23) return false"
+  "aliasOpcode: -23",
+  "canonicalOpcode: 23",
+  "isActionChooserAliasOpcode(definition.opcode)"
 ]) {
   if (!catalog.includes(snippet)) failures.push(`Random encounter area authoring is missing unified chooser or percent-facing metadata: ${snippet}`);
 }
@@ -278,7 +295,7 @@ for (const snippet of [
   "const inlineDirectTargetPickerAvailable = Boolean(targetPickerConfig(selectedDraft.rawCode));",
   "&& !inlineDirectTargetPickerAvailable && !inlineDirectTargetEditorAvailable",
   "definitionForActionChooserUse",
-  "selectedDraft.rawCode === -23",
+  "canonicalActionChooserOpcode(definition.opcode)",
   "actionChooserDefinitionMatchesDraft",
   "onStepOpcodeChange"
 ]) {

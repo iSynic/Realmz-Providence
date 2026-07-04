@@ -594,6 +594,21 @@ export const SCRIPT_ACTION_CATEGORIES = CATEGORY_ORDER;
 
 export const SCRIPT_ACTION_CATEGORY_FILTERS: ScriptActionCategoryFilter[] = ["All", ...CATEGORY_ORDER];
 
+export const SCRIPT_ACTION_CHOOSER_CONSOLIDATIONS = [
+  {
+    aliasOpcode: -23,
+    canonicalOpcode: 23,
+    reason: "Divinity documents opcode -23 as the dungeon-level form of opcode 23. The authored behavior is the same random encounter area mutation.",
+    writeRule: "Providence shows one Change Random Encounter Area action; selecting a dungeon map target writes -23, and selecting a land map target writes 23."
+  }
+] as const;
+
+type ScriptActionChooserConsolidation = (typeof SCRIPT_ACTION_CHOOSER_CONSOLIDATIONS)[number];
+
+const ACTION_CHOOSER_ALIAS_BY_OPCODE: ReadonlyMap<number, ScriptActionChooserConsolidation> = new Map(
+  SCRIPT_ACTION_CHOOSER_CONSOLIDATIONS.map((entry) => [entry.aliasOpcode, entry])
+);
+
 export const SCRIPT_ACTION_DEFINITIONS: ScriptActionDefinition[] = ACTION_OPTIONS.map((option) => buildActionDefinition(option));
 
 export const SCRIPT_ACTION_COVERAGE: ScriptActionCoverageEntry[] = SCRIPT_ACTION_DEFINITIONS.map((definition) => ({
@@ -623,10 +638,19 @@ export function scriptActionDefinitionFor(rawCode: number): ScriptActionDefiniti
   return buildActionDefinition(option, true);
 }
 
+export function isActionChooserAliasOpcode(rawCode: number) {
+  return ACTION_CHOOSER_ALIAS_BY_OPCODE.has(normalizeStepOpcode(rawCode));
+}
+
+export function canonicalActionChooserOpcode(rawCode: number) {
+  const normalized = normalizeStepOpcode(rawCode);
+  return ACTION_CHOOSER_ALIAS_BY_OPCODE.get(normalized)?.canonicalOpcode ?? normalized;
+}
+
 export function actionDefinitionsForCategory(category: ScriptActionCategoryFilter, query = "") {
   const normalizedQuery = query.trim().toLowerCase();
   return SCRIPT_ACTION_DEFINITIONS.filter((definition) => {
-    if (definition.opcode === -23) return false;
+    if (isActionChooserAliasOpcode(definition.opcode)) return false;
     if (definition.authoringLevel === "ignored") return false;
     if (category !== "All" && definition.category !== category) return false;
     if (!normalizedQuery) return true;
