@@ -303,7 +303,7 @@ for (const snippet of [
   "parseHexBytes",
   "StyledScrollingTextPreview",
   "styledTextPreviewSegments",
-  "Providence interpretation of Classic TEXT/styl runs",
+  "Inferred Classic TEXT/styl preview. Runtime alignment still needs verification.",
   "styleRunPreviewTitle",
   "semanticResourceType(entity)",
   "semanticResourceId(entity)",

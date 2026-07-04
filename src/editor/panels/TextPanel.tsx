@@ -1690,7 +1690,7 @@ function StyledScrollingTextPreview({
       <header>
         <div>
           <span>Styled Preview</span>
-          <small>Providence interpretation of Classic TEXT/styl runs.</small>
+          <small>Inferred Classic TEXT/styl preview. Runtime alignment still needs verification.</small>
         </div>
         {draftDirty && <b>Draft style runs</b>}
       </header>
@@ -1702,7 +1702,7 @@ function StyledScrollingTextPreview({
             style={segment.run ? classicStyleRunCss(segment.run) : undefined}
             title={segment.run ? styleRunPreviewTitle(segment.run, segment.start, segment.end) : `Plain text from character ${segment.start}`}
           >
-            <i>char {segment.start}</i>
+            {segment.run && <i>{segment.start}</i>}
             {segment.text}
           </span>
         )) : <span className="text-style-preview-empty">No scrolling TEXT body to preview.</span>}
