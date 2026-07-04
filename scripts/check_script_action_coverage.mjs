@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const catalogPath = path.join(root, "src/editor/panels/scripts/scriptActionCatalog.ts");
 const panelPath = path.join(root, "src/editor/panels/ScriptsPanel.tsx");
+const scriptsCssPath = path.join(root, "src/editor/styles/scripts.css");
 const combatPanelPath = path.join(root, "src/editor/panels/CombatPanel.tsx");
 const textPanelPath = path.join(root, "src/editor/panels/TextPanel.tsx");
 const edcdPath = path.join(root, "src/editor/components/EdcdRowEditor.tsx");
@@ -15,10 +16,13 @@ const semanticPath = path.join(root, "src/editor/browser/semantic.ts");
 const browserProjectPath = path.join(root, "src/editor/browser/project.ts");
 const rustProjectPath = path.join(root, "src-tauri/src/project.rs");
 const rustValidationPath = path.join(root, "src-tauri/src/validation.rs");
+const rustSemanticResourcesPath = path.join(root, "src-tauri/src/semantic/resources.rs");
+const fixtureRoundtripPath = path.join(root, "src-tauri/tests/fixture_roundtrip.rs");
 const apOpcodeCoveragePath = path.join(root, "docs/generated/ap-opcode-coverage.json");
 
 const catalog = fs.readFileSync(catalogPath, "utf8");
 const panel = fs.readFileSync(panelPath, "utf8");
+const scriptsCss = fs.readFileSync(scriptsCssPath, "utf8");
 const combatPanel = fs.readFileSync(combatPanelPath, "utf8");
 const textPanel = fs.readFileSync(textPanelPath, "utf8");
 const edcd = fs.readFileSync(edcdPath, "utf8");
@@ -30,6 +34,8 @@ const semantic = fs.readFileSync(semanticPath, "utf8");
 const browserProject = fs.readFileSync(browserProjectPath, "utf8");
 const rustProject = fs.readFileSync(rustProjectPath, "utf8");
 const rustValidation = fs.readFileSync(rustValidationPath, "utf8");
+const rustSemanticResources = fs.readFileSync(rustSemanticResourcesPath, "utf8");
+const fixtureRoundtrip = fs.readFileSync(fixtureRoundtripPath, "utf8");
 const targetPickerPath = path.join(root, "src/editor/components/RealmzTargetPicker.tsx");
 const inventoryPath = path.join(root, "src/editor/panels/scripts/scriptInventory.tsx");
 const validationPath = path.join(root, "src/editor/scriptValidation.ts");
@@ -265,11 +271,56 @@ for (const snippet of [
   "SCROLLING_TEXT_TAB_HELP",
   "scrollingTextAssetFromDraft",
   "selectedScrollingTextAssetFromEntity",
-  "data:text/plain;base64",
+  "importedScrollingTextResourceRows",
+  "Make Editable",
+  "StyleCompanionEditor",
+  "plainStyleAssetFromDraft",
+  "styleAssetFromBytes",
+  "Make Style Editable",
+  "Apply Full-Text Style",
+  "Apply Style Bytes",
+  "parseClassicStyleRuns",
+  "classicStyleBytesFromRuns",
+  "parseHexBytes",
+  "function bytesToDataUrl(bytes: Uint8Array, mimeType = \"text/plain\")",
+  "bytesToDataUrl(bytes, \"application/octet-stream\")",
   "resourceType: \"TEXT\"",
+  "resourceType: \"styl\"",
+  ".filter((asset) => asset.resourceType.trim() === \"TEXT\")",
+  "if (char === \"\\n\" || char === \"\\r\") return 13;",
   "Apply Scrolling Text"
 ]) {
   if (!textPanel.includes(snippet)) failures.push(`Text panel is missing authored scrolling TEXT resource support: ${snippet}`);
+}
+for (const snippet of [
+  "textResourcePayloadSummary(resource)",
+  "decodeClassicTextBody(resource.data)",
+  "styleRunCountCandidate",
+  "styleResourceBase64",
+  "styleRunTableStatus",
+  "classicStyleRunSummary",
+  "bytesToBase64(resource.data)",
+  "resource.resourceType === \"TEXT\""
+]) {
+  if (!semantic.includes(snippet)) failures.push(`Browser semantic resources are missing TEXT/styl authoring summaries: ${snippet}`);
+}
+for (const snippet of [
+  "styleResourceBase64",
+  "STANDARD.encode(&resource.data)",
+  "styleRunTableStatus",
+  "classic_style_run_summary",
+  "classic-style-run-table"
+]) {
+  if (!rustSemanticResources.includes(snippet)) failures.push(`Rust semantic resources are missing desktop TEXT/styl authoring summaries: ${snippet}`);
+}
+for (const snippet of [
+  "authored_scrolling_text_exports_same_id_text_and_style_resources",
+  "resource_type: \"TEXT\".to_string()",
+  "resource_type: \"styl\".to_string()",
+  "TEXT -200",
+  "styl -200"
+]) {
+  if (!fixtureRoundtrip.includes(snippet)) failures.push(`Fixture roundtrip tests are missing styled scrolling TEXT export coverage: ${snippet}`);
 }
 for (const snippet of [
   "return scrollingTextResourceOptions(project);",
@@ -559,9 +610,15 @@ for (const snippet of [
   if (!panel.includes(snippet)) failures.push(`Scripts panel is missing dirty selected-step navigation guard behavior: ${snippet}`);
 }
 for (const snippet of [
-  "const openPreviewEntity = useCallback",
-  "onSelectEntity={openPreviewEntity}",
-  "onOpenMapCoordinate={openPreviewMapCoordinate}",
+  "const previewEntity = useCallback",
+  "const openTargetEntity = useCallback",
+  "const previewMapCoordinate = useCallback",
+  "const openTargetMapCoordinate = useCallback",
+  "ScriptPreviewDialog",
+  "onPreviewEntity={previewEntity}",
+  "onInspect={onPreviewEntity}",
+  "ScriptDestructiveActionDialog",
+  "setPendingDestructiveAction",
   "const clearSelectedStep = () =>",
   "disabled={!selectedAction && !selectedDraftDirty}",
   "onClick={clearSelectedStep}",
@@ -570,12 +627,38 @@ for (const snippet of [
   if (!panel.includes(snippet)) failures.push(`Scripts panel is missing AP draft guard regression handling: ${snippet}`);
 }
 for (const snippet of [
+  "const openPreviewEntity = useCallback",
+  "onSelectEntity={openPreviewEntity}",
+  "onOpenMapCoordinate={openPreviewMapCoordinate}",
   "requestDraftNavigation(\"open the selected target\"",
   "requestDraftNavigation(\"open the map location\"",
   "requestDraftNavigation(\"clear this step\"",
   "requestDraftNavigation(isMacro ? \"delete this Extra Action Point\""
 ]) {
   if (panel.includes(snippet)) failures.push(`Scripts panel still gates preview/destructive actions with the dirty-step navigation modal: ${snippet}`);
+}
+
+for (const snippet of [
+  "SCRIPT_STEP_CATEGORY_BADGES",
+  "className=\"settings\" title=\"Uses Action Settings\"",
+  "className=\"category\" title={categoryBadge.label} aria-label={categoryBadge.label}"
+]) {
+  if (!panel.includes(snippet)) failures.push(`Scripts panel is missing compact step-card badge behavior: ${snippet}`);
+}
+for (const snippet of [
+  "return `${trigger.actions.length} step${trigger.actions.length === 1 ? \"\" : \"s\"}`;",
+  "return `${mapLabel} | reusable slot`;",
+  "return mapLabel;"
+]) {
+  if (!inventory.includes(snippet)) failures.push(`Script inventory list rows are missing deduplicated subtitle behavior: ${snippet}`);
+}
+for (const snippet of [
+  "width: clamp(210px, 15vw, 280px);",
+  "grid-template-columns: minmax(240px, 300px) minmax(520px, 1fr);",
+  ".realmz-step-card b em.category",
+  ".realmz-step-card b em.settings"
+]) {
+  if (!scriptsCss.includes(snippet)) failures.push(`Scripts CSS is missing denser AP/XAP list and compact step-card badge styling: ${snippet}`);
 }
 
 for (const snippet of [

@@ -1,5 +1,6 @@
 use super::common::*;
 use crate::project::*;
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 use serde_json::json;
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
@@ -440,10 +441,16 @@ fn resource_payload_summary(resource: &ResourceEntry) -> BTreeMap<String, serde_
         }
         "styl" => {
             let run_count = u16_safe(&resource.data, 0).unwrap_or(0);
+            let style_runs = classic_style_run_summary(&resource.data);
             summary([
                 ("family", json!("text-style")),
                 ("styleRunCountCandidate", json!(run_count)),
                 ("styleBytes", json!(resource.length)),
+                ("styleHexPreview", json!(hex_preview(&resource.data, 48))),
+                ("styleResourceBase64", json!(STANDARD.encode(&resource.data))),
+                ("styleRunTableStatus", json!(style_runs.status)),
+                ("styleRunStride", json!(style_runs.stride)),
+                ("styleRuns", json!(style_runs.runs)),
                 (
                     "note",
                     json!("Classic styled-text metadata; exact consumers remain inferred."),
@@ -523,4 +530,84 @@ fn sha256_hex(bytes: &[u8]) -> String {
     let mut hasher = Sha256::new();
     hasher.update(bytes);
     hex::encode(hasher.finalize())
+}
+
+#[derive(serde::Serialize)]
+struct ClassicStyleRunSummary {
+    status: &'static str,
+    stride: Option<usize>,
+    runs: Vec<ClassicStyleRun>,
+}
+
+#[derive(serde::Serialize)]
+struct ClassicStyleRun {
+    index: usize,
+    start_char: i32,
+    height: i16,
+    ascent: i16,
+    font: i16,
+    face: u8,
+    size: i16,
+    red: u16,
+    green: u16,
+    blue: u16,
+}
+
+fn classic_style_run_summary(bytes: &[u8]) -> ClassicStyleRunSummary {
+    let Some(run_count) = u16_safe(bytes, 0) else {
+        return ClassicStyleRunSummary {
+            status: "raw-preserved",
+            stride: None,
+            runs: Vec::new(),
+        };
+    };
+    let expected_length = 2 + run_count * 20;
+    if bytes.len() != expected_length {
+        return ClassicStyleRunSummary {
+            status: "raw-preserved",
+            stride: None,
+            runs: Vec::new(),
+        };
+    }
+    let runs = (0..run_count.min(16))
+        .map(|index| {
+            let offset = 2 + index * 20;
+            ClassicStyleRun {
+                index,
+                start_char: i32_be(bytes, offset),
+                height: i16_be(bytes, offset + 4),
+                ascent: i16_be(bytes, offset + 6),
+                font: i16_be(bytes, offset + 8),
+                face: bytes.get(offset + 10).copied().unwrap_or(0),
+                size: i16_be(bytes, offset + 12),
+                red: u16_value(bytes, offset + 14),
+                green: u16_value(bytes, offset + 16),
+                blue: u16_value(bytes, offset + 18),
+            }
+        })
+        .collect();
+    ClassicStyleRunSummary {
+        status: "classic-style-run-table",
+        stride: Some(20),
+        runs,
+    }
+}
+
+fn i32_be(buffer: &[u8], offset: usize) -> i32 {
+    if offset + 4 > buffer.len() {
+        return 0;
+    }
+    i32::from_be_bytes([
+        buffer[offset],
+        buffer[offset + 1],
+        buffer[offset + 2],
+        buffer[offset + 3],
+    ])
+}
+
+fn u16_value(buffer: &[u8], offset: usize) -> u16 {
+    if offset + 2 > buffer.len() {
+        return 0;
+    }
+    u16::from_be_bytes([buffer[offset], buffer[offset + 1]])
 }

@@ -198,13 +198,12 @@ export function scriptLabel(project: Project, trigger: TriggerRecord) {
 
 export function scriptSubtitle(project: Project, trigger: TriggerRecord) {
   if (trigger.source === "Data ED3") {
-    const kind = authorFacingExtraActionKind(extraActionPointClassification(project, trigger));
-    return `${kind} | ${trigger.actions.length} step${trigger.actions.length === 1 ? "" : "s"}`;
+    return `${trigger.actions.length} step${trigger.actions.length === 1 ? "" : "s"}`;
   }
   const map = project.maps.find((candidate) => candidate.levelType === trigger.levelType && candidate.index === trigger.levelIndex);
   const mapLabel = map?.name ?? `${trigger.levelType ?? "map"} ${trigger.levelIndex ?? 0}`;
-  const coordinate = trigger.coordinate ? `${trigger.coordinate.x},${trigger.coordinate.y}` : isReusableDoorPlaceholder(trigger) ? "empty reusable slot" : "no coordinate";
-  return `${mapLabel} | ${coordinate}`;
+  if (isReusableDoorPlaceholder(trigger)) return `${mapLabel} | reusable slot`;
+  return mapLabel;
 }
 
 export function scriptMatchesQuery(project: Project, trigger: TriggerRecord, query: string) {

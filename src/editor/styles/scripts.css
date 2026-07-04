@@ -285,8 +285,8 @@
 
 
 .script-list-column {
-  width: clamp(240px, 18vw, 330px);
-  flex: 0 0 clamp(240px, 18vw, 330px);
+  width: clamp(210px, 15vw, 280px);
+  flex: 0 0 clamp(210px, 15vw, 280px);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1215,6 +1215,25 @@
   line-height: 1.45;
 }
 
+.script-destructive-action-dialog {
+  border-color: #8f332b;
+}
+
+.script-preview-dialog {
+  border-color: #2c6d94;
+}
+
+.script-preview-dialog-note {
+  margin: 0 12px 12px;
+  padding: 10px;
+  border: 1px solid #244253;
+  border-radius: 6px;
+  background: #0b141b;
+  color: #9fb3c5;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 
 
 .script-draft-navigation-actions {
@@ -1343,7 +1362,7 @@
 .realmz-step-card b {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   justify-content: flex-end;
   color: #8d9aaa;
   font-size: 9px;
@@ -1353,15 +1372,32 @@
 
 
 .realmz-step-card b em {
-  min-height: 16px;
+  width: 18px;
+  height: 18px;
   display: inline-flex;
   align-items: center;
-  padding: 1px 4px;
+  justify-content: center;
+  padding: 0;
   border: 1px solid #34495e;
-  border-radius: 3px;
+  border-radius: 999px;
   color: #9dcfff;
   background: #0d1823;
   font-style: normal;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.realmz-step-card b em.category {
+  border-color: #52616f;
+  color: #d5e7f8;
+  background: #101820;
+}
+
+.realmz-step-card b em.settings {
+  border-color: #365371;
+  color: #9dcfff;
+  background: #0d1823;
 }
 
 
@@ -6799,6 +6835,23 @@
   text-align: left;
 }
 
+.realmz-script-list button > strong,
+.realmz-script-list button > small {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.realmz-script-list button > strong {
+  font-size: 13px;
+  line-height: 1.15;
+}
+
+.realmz-script-list button > small {
+  line-height: 1.2;
+}
+
 
 
 
@@ -6884,14 +6937,14 @@
 .realmz-visual-script {
   flex: 1 1 auto;
   display: grid;
-  grid-template-columns: minmax(210px, 250px) minmax(560px, 1fr);
+  grid-template-columns: minmax(240px, 300px) minmax(520px, 1fr);
   gap: 10px;
   align-items: stretch;
   margin-top: 10px;
   height: 100%;
   min-height: 0;
-  min-width: 790px;
-  width: max(100%, 790px);
+  min-width: 780px;
+  width: max(100%, 780px);
   max-width: none;
 }
 

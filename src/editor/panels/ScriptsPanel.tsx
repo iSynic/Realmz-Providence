@@ -55,6 +55,7 @@ import {
   scriptActionSummary,
   scriptStepBranchHint,
   scriptStepFlowRoutes,
+  type ScriptActionCategory,
   type ScriptActionCategoryFilter,
   type ScriptActionDefinition
 } from "./scripts/scriptActionCatalog";
@@ -72,6 +73,21 @@ const MONSTER_TRAIT_LABELS = [
 
 const MONSTER_MONEY_LABELS = ["Gold", "Gems", "Jewelry"];
 const REQUIRED_WEAPON_MAX_SPECIFIC_CODE = 253;
+
+const SCRIPT_STEP_CATEGORY_BADGES: Record<ScriptActionCategory, { mark: string; label: string }> = {
+  Dialogue: { mark: "D", label: "Dialogue action" },
+  Choices: { mark: "?", label: "Choice action" },
+  Encounters: { mark: "E", label: "Encounter action" },
+  Rewards: { mark: "$", label: "Reward action" },
+  Travel: { mark: "T", label: "Travel action" },
+  Media: { mark: "M", label: "Media action" },
+  Party: { mark: "P", label: "Party action" },
+  Items: { mark: "I", label: "Item action" },
+  Rules: { mark: "R", label: "Rules action" },
+  Logic: { mark: "L", label: "Logic action" },
+  "Extra Action Points": { mark: "X", label: "Extra Action Point action" },
+  Advanced: { mark: "A", label: "Advanced or preserved action" }
+};
 
 function shouldSuppressInlineTargetRecordPanel(recordType: RealmzTargetRecordKind | undefined) {
   return recordType === "simpleEncounter" || recordType === "complexEncounter";
@@ -126,6 +142,27 @@ type PendingScriptDraftNavigation = {
   label: string;
   action: () => void;
 };
+
+type PendingScriptDestructiveAction = {
+  title: string;
+  body: string;
+  confirmLabel: string;
+  action: () => void;
+};
+
+type ScriptPreviewTarget =
+  | {
+      kind: "entity";
+      title: string;
+      detail: string;
+      entity: SelectedEntity;
+    }
+  | {
+      kind: "map-coordinate";
+      title: string;
+      detail: string;
+      target: MapCoordinateTarget;
+    };
 
 const SCRIPT_EDITOR_TABS = [
   { id: "action-points", label: "Action Points", title: "Create and edit map Action Points." },
@@ -503,6 +540,8 @@ function ScriptAuthoringPanel({
   const [targetDrawerOpen, setTargetDrawerOpen] = usePersistentBoolean("scripts.targetDrawer.v2.open", false);
   const [selectedScriptId, setSelectedScriptId] = useState<string | null>(null);
   const [pendingDraftNavigation, setPendingDraftNavigation] = useState<PendingScriptDraftNavigation | null>(null);
+  const [pendingDestructiveAction, setPendingDestructiveAction] = useState<PendingScriptDestructiveAction | null>(null);
+  const [previewTarget, setPreviewTarget] = useState<ScriptPreviewTarget | null>(null);
   const [newActionPoint, setNewActionPoint] = useState({ mapId: projectMaps[0]?.id ?? "", x: 1, y: 1 });
   const [warningScanReady, setWarningScanReady] = useState(false);
   const [selectedDiagnosticsReady, setSelectedDiagnosticsReady] = useState(false);
@@ -884,25 +923,60 @@ function ScriptAuthoringPanel({
     if (slot === selectedSlot) return;
     requestDraftNavigation(`select step ${slot + 1}`, () => performSelectStepSlot(slot));
   }, [performSelectStepSlot, requestDraftNavigation, selectedSlot]);
-  const openPreviewEntity = useCallback((entity: SelectedEntity) => {
-    onSelectEntity(entity);
-  }, [onSelectEntity]);
-  const openPreviewTool = useCallback((tab: "text", editor: string) => {
-    onOpenTool?.(tab, editor);
-  }, [onOpenTool]);
-  const openPreviewMapCoordinate = useCallback((target: MapCoordinateTarget) => {
-    onOpenMapCoordinate?.(target);
-  }, [onOpenMapCoordinate]);
+  const previewEntity = useCallback((entity: SelectedEntity) => {
+    setPreviewTarget({
+      kind: "entity",
+      title: semanticLabel(project, entity.id),
+      detail: `${entity.type} target`,
+      entity
+    });
+  }, [project]);
+  const openTargetEntity = useCallback((entity: SelectedEntity) => {
+    requestDraftNavigation(`open ${semanticLabel(project, entity.id)}`, () => onSelectEntity(entity));
+  }, [onSelectEntity, project, requestDraftNavigation]);
+  const openTargetTool = useCallback((tab: "text", editor: string) => {
+    requestDraftNavigation(`open ${textEditorNavigationLabel(editor)}`, () => onOpenTool?.(tab, editor));
+  }, [onOpenTool, requestDraftNavigation]);
+  const previewMapCoordinate = useCallback((target: MapCoordinateTarget) => {
+    const map = projectMaps.find((candidate) => candidate.levelType === target.levelType && candidate.index === target.levelIndex);
+    setPreviewTarget({
+      kind: "map-coordinate",
+      title: map?.name ?? `${target.levelType === "dungeon" ? "Dungeon" : "Land"} level ${target.levelIndex}`,
+      detail: `${target.x}, ${target.y}`,
+      target
+    });
+  }, [projectMaps]);
+  const openTargetMapCoordinate = useCallback((target: MapCoordinateTarget) => {
+    const map = projectMaps.find((candidate) => candidate.levelType === target.levelType && candidate.index === target.levelIndex);
+    requestDraftNavigation(`open ${map?.name ?? "the map location"} at ${target.x}, ${target.y}`, () => onOpenMapCoordinate?.(target));
+  }, [onOpenMapCoordinate, projectMaps, requestDraftNavigation]);
   const clearSelectedStep = () => {
     if (!selectedTrigger) return;
-    discardSelectedDraft();
-    if (!selectedAction) return;
-    onApplyCommand?.({ kind: "deleteActionSlot", label: "Clear step", triggerId: selectedTrigger.id, slot: selectedSlot });
+    setPendingDestructiveAction({
+      title: `Clear Step ${selectedSlot + 1}`,
+      body: "This clears the selected step. Any unapplied draft changes for this step will be discarded.",
+      confirmLabel: "Clear Step",
+      action: () => {
+        discardSelectedDraft();
+        if (selectedAction) {
+          onApplyCommand?.({ kind: "deleteActionSlot", label: "Clear step", triggerId: selectedTrigger.id, slot: selectedSlot });
+        }
+      }
+    });
   };
   const clearSelectedScript = () => {
     if (!selectedTrigger) return;
-    discardSelectedDraft();
-    onApplyCommand?.({ kind: "deleteTrigger", label: isMacro ? deleteMacroLabel : "Clear Action Point", triggerId: selectedTrigger.id });
+    setPendingDestructiveAction({
+      title: isMacro ? deleteMacroLabel : "Clear Action Point",
+      body: isMacro
+        ? "This deletes the selected Extra Action Point. Any unapplied draft changes for the selected step will be discarded."
+        : "This clears the selected Action Point record so it can be reused. Any unapplied draft changes for the selected step will be discarded.",
+      confirmLabel: isMacro ? deleteMacroLabel : "Clear Action Point",
+      action: () => {
+        discardSelectedDraft();
+        onApplyCommand?.({ kind: "deleteTrigger", label: isMacro ? deleteMacroLabel : "Clear Action Point", triggerId: selectedTrigger.id });
+      }
+    });
   };
   const moveSelectedStep = (toSlot: number) => {
     if (!selectedTrigger || toSlot < 0 || toSlot > 7 || toSlot === selectedSlot) return;
@@ -999,7 +1073,7 @@ function ScriptAuthoringPanel({
       desktopRuntime={desktopRuntime}
       projectDir={projectDir}
       workspaceDir={workspaceDir}
-      onSelectEntity={openPreviewEntity}
+      onSelectEntity={openTargetEntity}
       onApplyCommand={onApplyCommand}
     />
   ) : null;
@@ -1034,9 +1108,10 @@ function ScriptAuthoringPanel({
       onSetCategoryFilter={setCategoryFilter}
       onSetOpcodeQuery={setOpcodeQuery}
       onSetSelectedDraft={setSelectedDraft}
-      onSelectEntity={openPreviewEntity}
-      onOpenTool={openPreviewTool}
-      onOpenMapCoordinate={openPreviewMapCoordinate}
+      onSelectEntity={openTargetEntity}
+      onPreviewEntity={previewEntity}
+      onOpenTool={openTargetTool}
+      onOpenMapCoordinate={previewMapCoordinate}
       onApplyCommand={onApplyCommand}
     />
   ) : null;
@@ -1052,6 +1127,19 @@ function ScriptAuthoringPanel({
     ED3_EVIDENCE_FILTERS.some((filter) => filter.id === inventoryFilter)
   );
   const showInlineFlowPreview = activeTabKind !== "action-points" && activeTabKind !== "reusable-actions";
+  const confirmPendingDestructiveAction = () => {
+    const pending = pendingDestructiveAction;
+    if (!pending) return;
+    setPendingDestructiveAction(null);
+    pending.action();
+  };
+  const openPreviewTarget = () => {
+    const preview = previewTarget;
+    if (!preview) return;
+    setPreviewTarget(null);
+    if (preview.kind === "entity") openTargetEntity(preview.entity);
+    else openTargetMapCoordinate(preview.target);
+  };
   return (
     <section className="realmz-script-editor">
       <header className="settings-rows-header">
@@ -1225,7 +1313,7 @@ function ScriptAuthoringPanel({
               {isMacro ? (
                 <>
                   {selectedCombatMacroContext && (
-                    <CombatMacroContextCard context={selectedCombatMacroContext} onSelectEntity={openPreviewEntity} />
+                    <CombatMacroContextCard context={selectedCombatMacroContext} onSelectEntity={openTargetEntity} />
                   )}
                 </>
               ) : (
@@ -1271,7 +1359,7 @@ function ScriptAuthoringPanel({
                         target={triggerLocationMapTarget}
                         maps={projectMaps}
                         label="Open trigger location on Maps"
-                        onOpenMapCoordinate={openPreviewMapCoordinate}
+                        onOpenMapCoordinate={previewMapCoordinate}
                       />
                     </div>
                   </section>
@@ -1318,7 +1406,7 @@ function ScriptAuthoringPanel({
                         target={afterScriptMapTarget}
                         maps={projectMaps}
                         label="Open after-script destination on Maps"
-                        onOpenMapCoordinate={openPreviewMapCoordinate}
+                        onOpenMapCoordinate={previewMapCoordinate}
                       />
                     </div>
                   </section>
@@ -1353,6 +1441,8 @@ function ScriptAuthoringPanel({
                         const changed = action ? current.rawCode !== action.rawCode || current.id !== action.id : current.rawCode !== 0 || current.id !== 0;
                         const slotIssues = issueCounts.get(slot) ?? { errors: 0, warnings: 0 };
                         const branchHint = scriptStepBranchHint(current.rawCode, current.id);
+                        const categoryBadge = SCRIPT_STEP_CATEGORY_BADGES[definition.category];
+                        const issueCount = slotIssues.errors + slotIssues.warnings;
                         return (
                           <button
                             key={slot}
@@ -1368,16 +1458,18 @@ function ScriptAuthoringPanel({
                               {branchHint && <small className="script-step-branch-hint">{branchHint}</small>}
                             </span>
                             <b>
-                              {option.edcdShape && <em>Settings</em>}
-                              {slotIssues.errors + slotIssues.warnings > 0 && <em className={slotIssues.errors ? "danger" : "warning"}>{slotIssues.errors + slotIssues.warnings}</em>}
-                              {definition.category}
+                              {option.edcdShape && <em className="settings" title="Uses Action Settings">S</em>}
+                              {issueCount > 0 && <em className={slotIssues.errors ? "danger" : "warning"} title={slotIssues.errors ? `${slotIssues.errors} error${slotIssues.errors === 1 ? "" : "s"}` : `${slotIssues.warnings} warning${slotIssues.warnings === 1 ? "" : "s"}`}>{issueCount}</em>}
+                              <em className="category" title={categoryBadge.label} aria-label={categoryBadge.label}>
+                                {categoryBadge.mark}
+                              </em>
                             </b>
                           </button>
                         );
                       })}
                     </ScrollArea>
                     {showInlineFlowPreview && (
-                        <ScriptFlowPreview project={project} catalog={catalog} trigger={selectedTrigger} onSelectEntity={openPreviewEntity} />
+                        <ScriptFlowPreview project={project} catalog={catalog} trigger={selectedTrigger} onSelectEntity={openTargetEntity} />
                     )}
                   </PanelSection>
                   {!floatingDetail && (
@@ -1411,7 +1503,7 @@ function ScriptAuthoringPanel({
                 selectedOption={selectedOption}
                 selectedSlotEntity={selectedSlotEntity}
                 selectedEdcdRowId={selectedEdcdRowId}
-                onSelectEntity={openPreviewEntity}
+                onSelectEntity={openTargetEntity}
               />
               {isMacro && (
                 <CollapsibleSection
@@ -1446,6 +1538,22 @@ function ScriptAuthoringPanel({
           onApply={() => continuePendingDraftNavigation("apply")}
           onDiscard={() => continuePendingDraftNavigation("discard")}
           onCancel={() => setPendingDraftNavigation(null)}
+        />
+      )}
+      {pendingDestructiveAction && (
+        <ScriptDestructiveActionDialog
+          title={pendingDestructiveAction.title}
+          body={pendingDestructiveAction.body}
+          confirmLabel={pendingDestructiveAction.confirmLabel}
+          onConfirm={confirmPendingDestructiveAction}
+          onCancel={() => setPendingDestructiveAction(null)}
+        />
+      )}
+      {previewTarget && (
+        <ScriptPreviewDialog
+          preview={previewTarget}
+          onClose={() => setPreviewTarget(null)}
+          onOpen={openPreviewTarget}
         />
       )}
     </section>
@@ -1494,6 +1602,99 @@ function ScriptDraftNavigationDialog({
       </div>
     </div>
   );
+}
+
+function ScriptDestructiveActionDialog({
+  title,
+  body,
+  confirmLabel,
+  onConfirm,
+  onCancel
+}: {
+  title: string;
+  body: string;
+  confirmLabel: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="script-draft-navigation-backdrop" role="presentation" onMouseDown={onCancel}>
+      <div
+        className="script-draft-navigation-dialog script-destructive-action-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="script-destructive-action-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <header>
+          <div>
+            <strong id="script-destructive-action-title">{title}</strong>
+            <small>This action changes the script immediately.</small>
+          </div>
+          <button type="button" className="btn btn-secondary btn-xs icon-only" aria-label="Cancel destructive action" onClick={onCancel}>
+            <X size={12} />
+          </button>
+        </header>
+        <p>{body}</p>
+        <div className="script-draft-navigation-actions">
+          <button type="button" className="btn btn-secondary btn-xs" onClick={onCancel}>Cancel</button>
+          <button type="button" className="btn btn-danger btn-xs" onClick={onConfirm}>
+            <Trash2 size={12} /> {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ScriptPreviewDialog({
+  preview,
+  onClose,
+  onOpen
+}: {
+  preview: ScriptPreviewTarget;
+  onClose: () => void;
+  onOpen: () => void;
+}) {
+  const openLabel = preview.kind === "entity" ? "Open Target" : "Open in Maps";
+  return (
+    <div className="script-draft-navigation-backdrop" role="presentation" onMouseDown={onClose}>
+      <div
+        className="script-draft-navigation-dialog script-preview-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="script-preview-dialog-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <header>
+          <div>
+            <strong id="script-preview-dialog-title">{preview.title}</strong>
+            <small>{preview.kind === "entity" ? "Target preview" : "Map coordinate preview"}</small>
+          </div>
+          <button type="button" className="btn btn-secondary btn-xs icon-only" aria-label="Close preview" onClick={onClose}>
+            <X size={12} />
+          </button>
+        </header>
+        <p>{preview.detail}</p>
+        <div className="script-preview-dialog-note">
+          Preview does not leave this step editor. Use {openLabel} to navigate to the target.
+        </div>
+        <div className="script-draft-navigation-actions">
+          <button type="button" className="btn btn-secondary btn-xs" onClick={onClose}>Close</button>
+          <button type="button" className="btn btn-primary btn-xs" onClick={onOpen}>
+            <Eye size={12} /> {openLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function textEditorNavigationLabel(editor: string) {
+  if (editor === "messages") return "Strings";
+  if (editor === "option-labels") return "Option Labels";
+  if (editor === "scrolling-text") return "Scrolling Text";
+  return "Text";
 }
 
 function QuestWorkbench({
@@ -2533,6 +2734,7 @@ function SelectedStepDetail({
   onSetOpcodeQuery,
   onSetSelectedDraft,
   onSelectEntity,
+  onPreviewEntity,
   onOpenTool,
   onOpenMapCoordinate,
   onApplyCommand
@@ -2576,6 +2778,7 @@ function SelectedStepDetail({
   onSetOpcodeQuery: (query: string) => void;
   onSetSelectedDraft: (values: { rawCode: number; id: number }) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
+  onPreviewEntity: (entity: SelectedEntity) => void;
   onOpenTool?: (tab: "text", editor: string) => void;
   onOpenMapCoordinate?: (target: MapCoordinateTarget) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
@@ -2730,7 +2933,7 @@ function SelectedStepDetail({
         showDetail={!hasInlineMessageEditor}
         previewContext={{ desktopRuntime, projectDir, workspaceDir }}
         onChange={(id) => onSetSelectedDraft({ ...selectedDraft, id })}
-        onInspect={onSelectEntity}
+        onInspect={onPreviewEntity}
         onCreate={(recordType, id) => {
           const targetId = id ?? nextAuthorableTargetId(project, recordType);
           onApplyCommand?.({ kind: "createTargetRecord", label: `Create ${recordType}`, recordType, id: targetId });
@@ -2867,7 +3070,7 @@ function SelectedStepDetail({
                 type="button"
                 className="realmz-picture-preview-button"
                 title="Picture preview"
-                onClick={() => selectedTargetPreview?.entity && onSelectEntity(selectedTargetPreview.entity)}
+                onClick={() => selectedTargetPreview?.entity && onPreviewEntity(selectedTargetPreview.entity)}
               >
                 <img src={selectedTargetPreviewUrl} alt={selectedTargetPreview.label} />
               </button>
@@ -2918,7 +3121,7 @@ function SelectedStepDetail({
                     disabled={!sameMapActionPointTarget}
                     onClick={() => {
                       if (!sameMapActionPointTarget) return;
-                      onSelectEntity(selectEntityFromId(triggerEntityId(
+                      onPreviewEntity(selectEntityFromId(triggerEntityId(
                         sameMapActionPointTarget.levelType,
                         sameMapActionPointTarget.levelIndex,
                         sameMapActionPointTarget.recordIndex,

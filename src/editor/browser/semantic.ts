@@ -1447,6 +1447,7 @@ function addResourceMemberEntities(schema: SemanticSchema, sourceName: string, r
       preview: hexPreview(resource.data, 20),
       scenarioSupplied: true
     };
+    Object.assign(summary, textResourcePayloadSummary(resource));
     Object.assign(summary, {
       previewStatus: "metadata-only",
       previewMimeType: resourcePreviewMimeType(resource.resourceType),
@@ -1495,6 +1496,40 @@ function resourceLabel(resource: ResourceEntry) {
 
 function hexPreview(bytes: Uint8Array, limit: number) {
   return Array.from(bytes.slice(0, limit)).map((byte) => byte.toString(16).padStart(2, "0")).join(" ");
+}
+
+function textResourcePayloadSummary(resource: ResourceEntry) {
+  if (resource.resourceType === "TEXT") {
+    const text = decodeClassicTextBody(resource.data);
+    return {
+      family: "text",
+      text,
+      textPreview: text.slice(0, 240)
+    };
+  }
+  if (resource.resourceType === "styl") {
+    const styleRuns = classicStyleRunSummary(resource.data);
+    return {
+      family: "text-style",
+      styleRunCountCandidate: i16At(resource.data, 0),
+      styleBytes: resource.length,
+      styleHexPreview: hexPreview(resource.data, 48),
+      styleResourceBase64: bytesToBase64(resource.data),
+      styleRunTableStatus: styleRuns.status,
+      styleRunStride: styleRuns.stride,
+      styleRuns: styleRuns.runs
+    };
+  }
+  if (resource.resourceType === "STR#") {
+    const strings = decodeStringListResource(resource.data);
+    return {
+      family: "string-list",
+      stringCount: strings.length,
+      strings,
+      textPreview: strings.slice(0, 4).join(" | ")
+    };
+  }
+  return {};
 }
 
 function addInferredTargets(schema: SemanticSchema) {
@@ -1807,6 +1842,11 @@ function i16At(buffer: Uint8Array, offset: number) {
   return value & 0x8000 ? value - 0x10000 : value;
 }
 
+function u16At(buffer: Uint8Array, offset: number) {
+  if (offset + 2 > buffer.byteLength) return 0;
+  return (buffer[offset] << 8) | buffer[offset + 1];
+}
+
 function i32At(buffer: Uint8Array, offset: number) {
   if (offset + 4 > buffer.byteLength) return 0;
   const value = (buffer[offset] << 24) | (buffer[offset + 1] << 16) | (buffer[offset + 2] << 8) | buffer[offset + 3];
@@ -1843,6 +1883,70 @@ function decodeClassicText(bytes: Uint8Array) {
     .join("")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function decodeClassicTextBody(bytes: Uint8Array) {
+  const nul = bytes.indexOf(0);
+  const slice = nul >= 0 ? bytes.slice(0, nul) : bytes;
+  return Array.from(slice)
+    .map((byte) => {
+      if (byte === 13) return "\n";
+      if (byte === 9) return "\t";
+      if (byte >= 32 && byte <= 126) return String.fromCharCode(byte);
+      return " ";
+    })
+    .join("")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function decodeStringListResource(bytes: Uint8Array) {
+  const count = i16At(bytes, 0);
+  const strings: string[] = [];
+  let cursor = 2;
+  for (let index = 0; index < count && cursor < bytes.byteLength; index += 1) {
+    const length = bytes[cursor] ?? 0;
+    cursor += 1;
+    const end = Math.min(cursor + length, bytes.byteLength);
+    strings.push(decodeClassicText(bytes.slice(cursor, end)));
+    cursor = end;
+  }
+  return strings;
+}
+
+function bytesToBase64(bytes: Uint8Array) {
+  let binary = "";
+  for (let offset = 0; offset < bytes.length; offset += 8192) {
+    const chunk = bytes.slice(offset, offset + 8192);
+    binary += String.fromCharCode(...chunk);
+  }
+  return btoa(binary);
+}
+
+function classicStyleRunSummary(bytes: Uint8Array) {
+  const runCount = i16At(bytes, 0);
+  const expectedLength = runCount == null || runCount < 0 ? -1 : 2 + runCount * 20;
+  if (runCount == null || runCount < 0 || bytes.byteLength !== expectedLength) {
+    return { status: "raw-preserved", stride: null, runs: [] };
+  }
+  const runs = [];
+  for (let index = 0; index < Math.min(runCount, 16); index += 1) {
+    const offset = 2 + index * 20;
+    runs.push({
+      index,
+      startChar: i32At(bytes, offset),
+      height: i16At(bytes, offset + 4),
+      ascent: i16At(bytes, offset + 6),
+      font: i16At(bytes, offset + 8),
+      face: bytes[offset + 10] ?? 0,
+      size: i16At(bytes, offset + 12),
+      red: u16At(bytes, offset + 14),
+      green: u16At(bytes, offset + 16),
+      blue: u16At(bytes, offset + 18)
+    });
+  }
+  return { status: "classic-style-run-table", stride: 20, runs };
 }
 
 function sourceId(name: string) {

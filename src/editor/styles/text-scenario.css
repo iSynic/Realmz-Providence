@@ -1357,6 +1357,153 @@
   color: #f5ce70;
 }
 
+.text-style-companion-editor {
+  display: grid;
+  gap: 8px;
+  border: 1px solid #26333f;
+  border-radius: 6px;
+  background: #0d141c;
+  padding: 10px;
+}
+
+.text-style-companion-editor > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.text-style-companion-editor > header span {
+  color: #f0f6fc;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.text-style-companion-editor > header small {
+  display: block;
+  margin-top: 2px;
+  color: #8fa5b7;
+  font-size: 11px;
+}
+
+.text-style-companion-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  color: #a8bed0;
+  font-size: 11px;
+}
+
+.text-style-companion-summary b {
+  color: #f5ce70;
+}
+
+  .text-style-companion-summary.warning span:first-child {
+    color: #ffb4a6;
+  }
+
+  .text-style-run-editor {
+    display: grid;
+    gap: 8px;
+    border-top: 1px solid #26333f;
+    padding-top: 8px;
+  }
+
+  .text-style-full-run-controls {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(86px, 130px)) repeat(3, auto) auto;
+    gap: 8px;
+    align-items: end;
+  }
+
+  .text-style-full-run-controls label {
+    display: grid;
+    gap: 4px;
+  }
+
+  .text-style-full-run-controls label span,
+  .text-style-run-table b {
+    color: #8fc7ff;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .text-style-full-run-controls input {
+    min-height: 29px;
+  }
+
+  .text-style-checkbox {
+    grid-auto-flow: column;
+    grid-template-columns: auto auto;
+    align-items: center;
+    justify-content: start;
+    min-height: 29px;
+  }
+
+  .text-style-checkbox input {
+    min-height: auto;
+  }
+
+  .text-style-run-table {
+    display: grid;
+    gap: 3px;
+    border: 1px solid #26333f;
+    border-radius: 5px;
+    background: #0a1118;
+    padding: 6px;
+    font-size: 11px;
+  }
+
+  .text-style-run-table [role="row"] {
+    display: grid;
+    grid-template-columns: 64px 64px 64px minmax(120px, 1fr) 86px;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .text-style-run-table span {
+    color: #d8e5f0;
+  }
+
+  .text-style-run-table small {
+    color: #91a4b7;
+  }
+  
+  .text-style-bytes-editor {
+    border-top: 1px solid #26333f;
+    padding-top: 8px;
+  }
+
+.text-style-bytes-editor > summary {
+  cursor: pointer;
+  color: #8fc7ff;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.text-style-bytes-editor label {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.text-style-bytes-editor label span {
+  color: #8fc7ff;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.text-style-bytes-editor textarea {
+  min-height: 84px;
+  resize: vertical;
+  font-family: var(--mono-font);
+  font-size: 12px;
+}
+
 .text-string-sound-panel {
   display: grid;
   gap: 8px;

@@ -519,6 +519,113 @@ fn custom_landlook_atlas_replacement_changes_only_target_pict_resource() {
 }
 
 #[test]
+fn authored_scrolling_text_exports_same_id_text_and_style_resources() {
+    let temp = tempdir().unwrap();
+    let project_dir = temp.path().join("project");
+    let export_dir = temp.path().join("exported");
+    let mut project = create_project("Styled Scrolling Text".to_string(), &project_dir).unwrap();
+    let text_bytes = b"Styled scrolling text fixture".to_vec();
+    let style_bytes = vec![
+        0x00, 0x01, // one style run
+        0x00, 0x00, 0x00, 0x00, // start char
+        0x00, 0x03, // height
+        0x00, 0x00, // ascent
+        0x00, 0x00, // font id
+        0x00, 0x01, // face: bold
+        0x00, 0x0c, // size
+        0x00, 0x00, // red
+        0x00, 0x00, // green
+        0x00, 0x00, // blue
+    ];
+
+    project.assets.push(ManagedAsset {
+        id: "managed:TEXT:-200:authored".to_string(),
+        label: "Scrolling Text -200".to_string(),
+        kind: ManagedAssetKind::Text,
+        resource_type: "TEXT".to_string(),
+        resource_id: -200,
+        file_name: "scrolling-text--200.txt".to_string(),
+        original_path: String::new(),
+        preview_path: String::new(),
+        resource_path: format!("data:text/plain;base64,{}", STANDARD.encode(&text_bytes)),
+        mime_type: "text/plain".to_string(),
+        bytes: text_bytes.len() as u64,
+        sha256: "text-fixture".to_string(),
+        width: None,
+        height: None,
+        duration_ms: None,
+        sample_rate: None,
+        channels: None,
+        export_state: ManagedAssetExportState::Ready,
+        provenance: "test scrolling TEXT authoring".to_string(),
+        linked_entity: Some("resource:TEXT:-200".to_string()),
+        conversion: None,
+    });
+    project.assets.push(ManagedAsset {
+        id: "managed:styl:-200:authored".to_string(),
+        label: "Scrolling Text -200 Style".to_string(),
+        kind: ManagedAssetKind::Text,
+        resource_type: "styl".to_string(),
+        resource_id: -200,
+        file_name: "scrolling-text--200.styl".to_string(),
+        original_path: String::new(),
+        preview_path: String::new(),
+        resource_path: format!(
+            "data:application/octet-stream;base64,{}",
+            STANDARD.encode(&style_bytes)
+        ),
+        mime_type: "application/octet-stream".to_string(),
+        bytes: style_bytes.len() as u64,
+        sha256: "style-fixture".to_string(),
+        width: None,
+        height: None,
+        duration_ms: None,
+        sample_rate: None,
+        channels: None,
+        export_state: ManagedAssetExportState::Ready,
+        provenance: "test scrolling styl authoring".to_string(),
+        linked_entity: Some("resource:styl:-200".to_string()),
+        conversion: None,
+    });
+
+    let report = export_project(
+        &project_dir,
+        &project,
+        &export_dir,
+        ScenarioTarget::ProvidencePortableFolder,
+    )
+    .unwrap();
+
+    assert!(
+        report
+            .written_resources
+            .iter()
+            .any(|entry| entry.contains("TEXT -200")),
+        "authored scrolling TEXT should be reported as a written resource"
+    );
+    assert!(
+        report
+            .written_resources
+            .iter()
+            .any(|entry| entry.contains("styl -200")),
+        "authored style companion should be reported as a written resource"
+    );
+    let exported_resources =
+        parse_resource_fork_entries(&fs::read(export_dir.join("Scenario")).unwrap());
+    let exported_text = exported_resources
+        .iter()
+        .find(|entry| entry.resource_type == "TEXT" && entry.id == -200)
+        .expect("export should contain TEXT -200");
+    let exported_style = exported_resources
+        .iter()
+        .find(|entry| entry.resource_type == "styl" && entry.id == -200)
+        .expect("export should contain styl -200");
+
+    assert_eq!(exported_text.data, text_bytes);
+    assert_eq!(exported_style.data, style_bytes);
+}
+
+#[test]
 fn rules_spell_export_mutates_only_owned_record_byte_and_preserves_tail() {
     let Some(source) = out_fixture_path("Begining of the End") else {
         eprintln!("Skipping rules spell fixture; Begining of the End is absent.");

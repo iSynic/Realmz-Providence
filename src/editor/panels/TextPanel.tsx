@@ -62,6 +62,7 @@ export function TextPanel({
   const records = useMemo(() => [...(project.messages ?? [])].sort((a, b) => a.id - b.id), [project.messages]);
   const optionRecords = useMemo(() => [...(project.optionLabels ?? [])].sort((a, b) => a.id - b.id), [project.optionLabels]);
   const scrollingTextAssets = useMemo(() => scrollingTextProjectAssets(project), [project]);
+  const importedScrollingTextResources = useMemo(() => importedScrollingTextResourceRows(project, scrollingTextAssets), [project, scrollingTextAssets]);
   const selectedId = selectedMessageId(selectedEntity, records) ?? records[0]?.id ?? 0;
   const selectedRecord = records.find((record) => record.id === selectedId) ?? null;
   const effectiveOptionId = selectedOptionId ?? optionRecords[0]?.id ?? 0;
@@ -178,7 +179,7 @@ export function TextPanel({
           <p>Edit scenario strings and two-choice option labels used by Realmz dialogs.</p>
         </div>
         <div className="text-workbench-actions">
-          <b>{records.length.toLocaleString()} strings | {optionRecords.length.toLocaleString()} option labels | {scrollingTextAssets.length.toLocaleString()} scrolling text</b>
+          <b>{records.length.toLocaleString()} strings | {optionRecords.length.toLocaleString()} option labels | {(scrollingTextAssets.length + importedScrollingTextResources.length).toLocaleString()} scrolling text</b>
           <input
             ref={importInputRef}
             type="file"
@@ -403,6 +404,8 @@ export function TextPanel({
         <ScrollingTextWorkbench
           project={project}
           assets={scrollingTextAssets}
+          importedResources={importedScrollingTextResources}
+          selectedEntity={selectedEntity}
           selectedAsset={selectedScrollingTextAsset}
           nextResourceId={nextScrollingTextId}
           onSelect={(asset) => {
@@ -957,6 +960,8 @@ function OptionLabelEditor({
 function ScrollingTextWorkbench({
   project,
   assets,
+  importedResources,
+  selectedEntity,
   selectedAsset,
   nextResourceId,
   onSelect,
@@ -965,6 +970,8 @@ function ScrollingTextWorkbench({
 }: {
   project: Project;
   assets: Project["assets"];
+  importedResources: ImportedScrollingTextResource[];
+  selectedEntity: SelectedEntity | null;
   selectedAsset: Project["assets"][number] | null;
   nextResourceId: number;
   onSelect: (asset: Project["assets"][number]) => void;
@@ -973,14 +980,22 @@ function ScrollingTextWorkbench({
 }) {
   const [query, setQuery] = useState("");
   const [listLimit, setListLimit] = useState(320);
-  const filteredAssets = useMemo(() => {
+  const selectedImportedResource = importedResources.find((resource) => resource.entityId === selectedEntity?.id) ?? null;
+  const filteredRows = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    if (!normalized) return assets;
-    return assets.filter((asset) => {
+    const assetRows = assets.map((asset) => ({ kind: "asset" as const, asset }));
+    const importedRows = importedResources.map((resource) => ({ kind: "imported" as const, resource }));
+    const rows = [...assetRows, ...importedRows].sort((a, b) => scrollingTextRowResourceId(a) - scrollingTextRowResourceId(b) || scrollingTextRowLabel(a).localeCompare(scrollingTextRowLabel(b)));
+    if (!normalized) return rows;
+    return rows.filter((row) => {
+      if (row.kind === "imported") {
+        return `${row.resource.resourceId} ${row.resource.label} ${row.resource.text}`.toLowerCase().includes(normalized);
+      }
+      const { asset } = row;
       const text = decodeTextAsset(asset);
       return `${asset.resourceId} ${asset.label} ${text}`.toLowerCase().includes(normalized);
     });
-  }, [assets, query]);
+  }, [assets, importedResources, query]);
   useEffect(() => {
     setListLimit(320);
   }, [query]);
@@ -993,6 +1008,7 @@ function ScrollingTextWorkbench({
           </TutorialTip>
           <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search scrolling text..." />
         </label>
+        <b>{assets.length.toLocaleString()} authored | {importedResources.length.toLocaleString()} imported</b>
         <button
           type="button"
           className="btn btn-primary btn-sm"
@@ -1008,12 +1024,25 @@ function ScrollingTextWorkbench({
       <div className="text-workbench-layout">
         <aside className="text-message-list-panel">
           <div className="text-search-row">
-            <span>{filteredAssets.length.toLocaleString()} shown</span>
+            <span>{filteredRows.length.toLocaleString()} shown</span>
             <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search scrolling text..." />
           </div>
           <div className="text-message-list" role="list" aria-label="Scrolling text resources">
-            {filteredAssets.slice(0, listLimit).map((asset) => {
-              const selected = asset.id === selectedAsset?.id;
+            {filteredRows.slice(0, listLimit).map((row) => {
+              if (row.kind === "imported") {
+                const resource = row.resource;
+                const selected = resource.entityId === selectedEntity?.id;
+                const byteLength = classicTextByteLength(resource.text);
+                return (
+                  <button key={resource.entityId} type="button" className={selected ? "selected" : ""} onClick={() => onSelectEntity(selectEntityFromId(resource.entityId))}>
+                    <strong>Scrolling Text {resource.resourceId}</strong>
+                    <span>{resource.label}</span>
+                    <small>{byteLength.toLocaleString()} byte{byteLength === 1 ? "" : "s"} | imported TEXT | {resource.hasStyle ? "same-ID styl present" : "plain"}</small>
+                  </button>
+                );
+              }
+              const { asset } = row;
+              const selected = asset.id === selectedAsset?.id && !selectedImportedResource;
               const text = decodeTextAsset(asset);
               const byteLength = classicTextByteLength(text);
               return (
@@ -1024,16 +1053,26 @@ function ScrollingTextWorkbench({
                 </button>
               );
             })}
-            {filteredAssets.length > listLimit && (
+            {filteredRows.length > listLimit && (
               <button type="button" className="text-list-more" onClick={() => setListLimit((value) => value + 320)}>
-                Show {Math.min(320, filteredAssets.length - listLimit).toLocaleString()} more
+                Show {Math.min(320, filteredRows.length - listLimit).toLocaleString()} more
               </button>
             )}
-            {filteredAssets.length === 0 && <p>No scrolling text resources match this search.</p>}
+            {filteredRows.length === 0 && <p>No scrolling text resources match this search.</p>}
           </div>
         </aside>
         <main className="text-editor-surface">
-          {selectedAsset ? (
+          {selectedImportedResource ? (
+            <ImportedScrollingTextResourceEditor
+              project={project}
+              resource={selectedImportedResource}
+              onSelectEntity={onSelectEntity}
+              onApplyCommand={(command) => {
+                onApplyCommand(command);
+                if (command.kind === "attachProjectAsset") onSelect(command.asset);
+              }}
+            />
+          ) : selectedAsset ? (
             <ScrollingTextEditor
               key={selectedAsset.id}
               project={project}
@@ -1043,11 +1082,94 @@ function ScrollingTextWorkbench({
               onApplyCommand={onApplyCommand}
             />
           ) : (
-            <div className="empty-copy">Create a scrolling text resource to begin authoring TEXT resources.</div>
+            <div className="empty-copy">Create a scrolling text resource or select an imported TEXT resource to make it editable.</div>
           )}
         </main>
       </div>
     </>
+  );
+}
+
+type ScrollingTextListRow =
+  | { kind: "asset"; asset: Project["assets"][number] }
+  | { kind: "imported"; resource: ImportedScrollingTextResource };
+
+function scrollingTextRowResourceId(row: ScrollingTextListRow) {
+  return row.kind === "asset" ? row.asset.resourceId : row.resource.resourceId;
+}
+
+function scrollingTextRowLabel(row: ScrollingTextListRow) {
+  return row.kind === "asset" ? row.asset.label : row.resource.label;
+}
+
+function ImportedScrollingTextResourceEditor({
+  project,
+  resource,
+  onSelectEntity,
+  onApplyCommand
+}: {
+  project: Project;
+  resource: ImportedScrollingTextResource;
+  onSelectEntity: (entity: SelectedEntity) => void;
+  onApplyCommand: (command: ProjectCommand) => void;
+}) {
+  const byteLength = classicTextByteLength(resource.text);
+  const unsupportedChars = unsupportedClassicTextChars(resource.text);
+  return (
+    <article className="text-message-editor text-scrolling-resource-editor">
+      <header>
+        <div>
+          <span>Scrolling Text {resource.resourceId}</span>
+          <small>Imported scenario TEXT resource. Make it editable to author a scenario-owned replacement.</small>
+        </div>
+        <div className="text-message-actions">
+          {resource.styleEntityId && (
+            <button type="button" className="btn btn-secondary btn-xs" onClick={() => onSelectEntity(selectEntityFromId(resource.styleEntityId!))}>
+              Open Style
+            </button>
+          )}
+          <button
+            type="button"
+            className="btn btn-primary btn-xs"
+            onClick={() => {
+              const asset = scrollingTextAssetFromDraft(null, resource.resourceId, resource.label, resource.text);
+              onApplyCommand({ kind: "attachProjectAsset", label: `Make Scrolling Text ${resource.resourceId} editable`, asset });
+            }}
+          >
+            Make Editable
+          </button>
+        </div>
+      </header>
+      <label className="text-message-field">
+        <span>Text</span>
+        <textarea value={resource.text} readOnly />
+      </label>
+      <div className={`text-message-status ${unsupportedChars.length ? "warning" : "ok"}`}>
+        <span>{byteLength.toLocaleString()} byte{byteLength === 1 ? "" : "s"} imported</span>
+        <b>Source-backed imported TEXT remains preserved until Make Editable creates an authored replacement.</b>
+        {resource.hasStyle && <b>Same-ID styl resource is present and remains preserved by resource export.</b>}
+        {unsupportedChars.length > 0 && <b>{unsupportedChars.length} non-ASCII character{unsupportedChars.length === 1 ? "" : "s"} will export as ? if this TEXT is made editable without cleanup.</b>}
+      </div>
+      <StyleCompanionEditor
+        project={project}
+        resourceId={resource.resourceId}
+        textChanged={false}
+        onSelectEntity={onSelectEntity}
+        onApplyCommand={onApplyCommand}
+      />
+      <details className="advanced-details">
+        <summary>
+          <TutorialTip title="Advanced Details" body="Imported TEXT resources are shown here from the scenario resource fork. Making one editable writes an authored TEXT resource with the same ID; same-ID styl companions are preserved unless separately replaced." side="below">
+            <span>Advanced Details</span>
+          </TutorialTip>
+        </summary>
+        <div className="summary-table">
+          <div><dt>Resource</dt><dd>TEXT {resource.resourceId}</dd></div>
+          <div><dt>Source</dt><dd>{resource.source}</dd></div>
+          <div><dt>Style</dt><dd>{resource.hasStyle ? "Same-ID styl resource present" : "No same-ID styl resource found"}</dd></div>
+        </div>
+      </details>
+    </article>
   );
 }
 
@@ -1079,7 +1201,7 @@ function ScrollingTextEditor({
   const unsupportedChars = unsupportedClassicTextChars(text);
   const changed = validResourceId && (resourceId !== asset.resourceId || label !== asset.label || text !== decodeTextAsset(asset));
   const inManualRange = validResourceId && resourceId <= -200 && resourceId >= -300;
-  const styleEntity = useMemo(() => sameIdStyleResourceEntity(project, resourceId), [project, resourceId]);
+  const styleCompanion = useMemo(() => sameIdStyleCompanion(project, resourceId), [project, resourceId]);
   const applyDisabled = !changed || !validResourceId || duplicateResourceId;
   return (
     <article className="text-message-editor text-scrolling-resource-editor">
@@ -1089,8 +1211,8 @@ function ScrollingTextEditor({
           <small>Scenario TEXT resource used by Display Scrolling Text.</small>
         </div>
         <div className="text-message-actions">
-          {styleEntity && (
-            <button type="button" className="btn btn-secondary btn-xs" onClick={() => onSelectEntity(styleEntity)}>
+          {styleCompanion.entity && (
+            <button type="button" className="btn btn-secondary btn-xs" onClick={() => onSelectEntity(styleCompanion.entity!)}>
               Open Style
             </button>
           )}
@@ -1135,9 +1257,18 @@ function ScrollingTextEditor({
         {duplicateResourceId && <b>Another scrolling TEXT resource already uses this ID.</b>}
         {!inManualRange && validResourceId && <b>Divinity documents scrolling TEXT IDs -200 through -300; Realmz source uses direct resource lookup.</b>}
         {unsupportedChars.length > 0 && <b>{unsupportedChars.length} non-ASCII character{unsupportedChars.length === 1 ? "" : "s"} will export as UTF-8 in the authored TEXT resource.</b>}
-        {styleEntity && <b>Same-ID styl resource is preserved from imported resources.</b>}
+        {styleCompanion.entity && <b>Same-ID styl resource is {styleCompanion.managedAsset ? "authored" : "preserved from imported resources"}.</b>}
         {!changed && validResourceId && !duplicateResourceId && unsupportedChars.length === 0 && inManualRange && <b>Ready</b>}
       </div>
+      {validResourceId && (
+        <StyleCompanionEditor
+          project={project}
+          resourceId={resourceId}
+          textChanged={changed}
+          onSelectEntity={onSelectEntity}
+          onApplyCommand={onApplyCommand}
+        />
+      )}
       <details className="advanced-details">
         <summary>
           <TutorialTip title="Advanced Details" body="Shows how this authored scrolling text will export as a Realmz TEXT resource. Same-ID styl resources remain preserved from imported resource forks." side="below">
@@ -1147,10 +1278,254 @@ function ScrollingTextEditor({
         <div className="summary-table">
           <div><dt>Resource</dt><dd>TEXT {asset.resourceId}</dd></div>
           <div><dt>Export State</dt><dd>{asset.exportState}</dd></div>
-          <div><dt>Style</dt><dd>{styleEntity ? "Same-ID styl resource present" : "No authored style resource"}</dd></div>
+          <div><dt>Style</dt><dd>{styleCompanion.entity ? "Same-ID styl resource present" : "No authored style resource"}</dd></div>
         </div>
       </details>
     </article>
+  );
+}
+
+function StyleCompanionEditor({
+  project,
+  resourceId,
+  textChanged,
+  onSelectEntity,
+  onApplyCommand
+}: {
+  project: Project;
+  resourceId: number;
+  textChanged: boolean;
+  onSelectEntity: (entity: SelectedEntity) => void;
+  onApplyCommand: (command: ProjectCommand) => void;
+}) {
+  const companion = useMemo(() => sameIdStyleCompanion(project, resourceId), [project, resourceId]);
+  const [styleHexDraft, setStyleHexDraft] = useState("");
+  useEffect(() => {
+    setStyleHexDraft(companion.styleHex ?? "");
+  }, [resourceId, companion.managedAsset?.id, companion.importedEntity?.id, companion.styleHex]);
+  const parsedStyleBytes = useMemo(() => parseHexBytes(styleHexDraft), [styleHexDraft]);
+  const parsedStyleRuns = useMemo(() => parseClassicStyleRuns(companion.rawStyleBytes), [companion.rawStyleBytes]);
+  const firstStyleRun = parsedStyleRuns.ok ? parsedStyleRuns.runs[0] : null;
+  const [fontDraft, setFontDraft] = useState("0");
+  const [sizeDraft, setSizeDraft] = useState("12");
+  const [colorDraft, setColorDraft] = useState("#000000");
+  const [boldDraft, setBoldDraft] = useState(false);
+  const [italicDraft, setItalicDraft] = useState(false);
+  const [underlineDraft, setUnderlineDraft] = useState(false);
+  useEffect(() => {
+    const run = firstStyleRun ?? DEFAULT_CLASSIC_STYLE_RUN;
+    setFontDraft(String(run.font));
+    setSizeDraft(String(run.size > 0 ? run.size : 12));
+    setColorDraft(classicRgbToCssHex(run.color));
+    setBoldDraft((run.face & CLASSIC_STYLE_FACE_BITS.bold) !== 0);
+    setItalicDraft((run.face & CLASSIC_STYLE_FACE_BITS.italic) !== 0);
+    setUnderlineDraft((run.face & CLASSIC_STYLE_FACE_BITS.underline) !== 0);
+  }, [firstStyleRun?.font, firstStyleRun?.size, firstStyleRun?.face, firstStyleRun?.color.red, firstStyleRun?.color.green, firstStyleRun?.color.blue]);
+  const styleHexDirty = normalizeHex(styleHexDraft) !== normalizeHex(companion.styleHex ?? "");
+  const canOpen = companion.entity != null;
+  const parsedFont = Number(fontDraft);
+  const parsedSize = Number(sizeDraft);
+  const fullStyleDraftValid = Number.isInteger(parsedFont) && parsedFont >= 0 && parsedFont <= 32767
+    && Number.isInteger(parsedSize) && parsedSize >= 1 && parsedSize <= 255
+    && /^#[0-9a-fA-F]{6}$/.test(colorDraft);
+  const styleState = companion.managedAsset
+    ? "Authored style override"
+    : companion.importedEntity
+      ? "Imported style preserved"
+      : "Plain scrolling text";
+  return (
+    <section className="text-style-companion-editor">
+      <header>
+        <div>
+          <span>Style Companion</span>
+          <small>{styleState}</small>
+        </div>
+        <div className="text-message-actions">
+          {canOpen && (
+            <button type="button" className="btn btn-secondary btn-xs" onClick={() => onSelectEntity(companion.entity!)}>
+              Open Style
+            </button>
+          )}
+          {companion.managedAsset && (
+            <button
+              type="button"
+              className="btn btn-danger btn-xs"
+              onClick={() => onApplyCommand({ kind: "deleteProjectAsset", label: `Remove Style Override ${resourceId}`, assetId: companion.managedAsset!.id })}
+            >
+              Remove Override
+            </button>
+          )}
+          {companion.importedStyleBytes && !companion.managedAsset && (
+            <button
+              type="button"
+              className="btn btn-primary btn-xs"
+              onClick={() => {
+                const asset = styleAssetFromBytes(null, resourceId, companion.importedStyleBytes!, "Authored from imported style companion");
+                onApplyCommand({ kind: "attachProjectAsset", label: `Make Style ${resourceId} editable`, asset });
+              }}
+            >
+              Make Style Editable
+            </button>
+          )}
+          <button
+            type="button"
+            className="btn btn-secondary btn-xs"
+            disabled={companion.managedAsset?.provenance === "Authored in Providence Scrolling Text as plain style"}
+            onClick={() => {
+              const asset = plainStyleAssetFromDraft(companion.managedAsset ?? null, resourceId);
+              onApplyCommand(
+                companion.managedAsset
+                  ? { kind: "replaceProjectAsset", label: `Flatten Style ${resourceId}`, assetId: companion.managedAsset.id, asset }
+                  : { kind: "attachProjectAsset", label: `Flatten Style ${resourceId}`, asset }
+              );
+            }}
+          >
+            Flatten To Plain Style
+          </button>
+        </div>
+      </header>
+      <div className="text-style-companion-summary">
+        <span>{companion.runCount == null ? "No style runs" : `${companion.runCount} style run${companion.runCount === 1 ? "" : "s"}`}</span>
+        <span>{companion.styleBytes == null ? "No styl resource will be exported unless one is authored or preserved." : `${companion.styleBytes.toLocaleString()} style byte${companion.styleBytes === 1 ? "" : "s"}`}</span>
+        {textChanged && companion.importedEntity && !companion.managedAsset && (
+          <b>TEXT edits preserve the imported style runs; flatten only if the old rich styling no longer matches the edited body.</b>
+        )}
+      </div>
+      <div className="text-style-run-editor">
+        <div className={`text-style-companion-summary ${parsedStyleRuns.ok ? "" : "warning"}`}>
+          <span>{parsedStyleRuns.ok ? "Classic style-run table" : parsedStyleRuns.error}</span>
+          <span>{parsedStyleRuns.ok ? "Use full-text style for authoring; raw bytes remain available for exact preservation." : "Raw bytes are preserved and can still be edited below."}</span>
+        </div>
+        <div className="text-style-full-run-controls">
+          <label>
+            <span>Font ID</span>
+            <input value={fontDraft} onChange={(event) => setFontDraft(event.currentTarget.value)} inputMode="numeric" />
+          </label>
+          <label>
+            <span>Size</span>
+            <input value={sizeDraft} onChange={(event) => setSizeDraft(event.currentTarget.value)} inputMode="numeric" />
+          </label>
+          <label>
+            <span>Color</span>
+            <input value={colorDraft} onChange={(event) => setColorDraft(event.currentTarget.value)} placeholder="#000000" />
+          </label>
+          <label className="text-style-checkbox">
+            <input type="checkbox" checked={boldDraft} onChange={(event) => setBoldDraft(event.currentTarget.checked)} />
+            <span>Bold</span>
+          </label>
+          <label className="text-style-checkbox">
+            <input type="checkbox" checked={italicDraft} onChange={(event) => setItalicDraft(event.currentTarget.checked)} />
+            <span>Italic</span>
+          </label>
+          <label className="text-style-checkbox">
+            <input type="checkbox" checked={underlineDraft} onChange={(event) => setUnderlineDraft(event.currentTarget.checked)} />
+            <span>Underline</span>
+          </label>
+          <button
+            type="button"
+            className="btn btn-primary btn-xs"
+            disabled={!fullStyleDraftValid}
+            onClick={() => {
+              if (!fullStyleDraftValid) return;
+              const face = (boldDraft ? CLASSIC_STYLE_FACE_BITS.bold : 0)
+                | (italicDraft ? CLASSIC_STYLE_FACE_BITS.italic : 0)
+                | (underlineDraft ? CLASSIC_STYLE_FACE_BITS.underline : 0);
+              const template = firstStyleRun ?? DEFAULT_CLASSIC_STYLE_RUN;
+              const bytes = classicStyleBytesFromRuns([{
+                ...template,
+                startChar: 0,
+                font: parsedFont,
+                face,
+                size: parsedSize,
+                height: Math.max(template.height, parsedSize),
+                ascent: Math.max(0, Math.min(template.ascent, Math.max(parsedSize - 1, 0))),
+                color: cssHexToClassicRgb(colorDraft)
+              }]);
+              const asset = styleAssetFromBytes(
+                companion.managedAsset ?? null,
+                resourceId,
+                bytes,
+                "Authored in Providence Scrolling Text style runs"
+              );
+              onApplyCommand(
+                companion.managedAsset
+                  ? { kind: "replaceProjectAsset", label: `Update Style ${resourceId}`, assetId: companion.managedAsset.id, asset }
+                  : { kind: "attachProjectAsset", label: `Author Style ${resourceId}`, asset }
+              );
+            }}
+          >
+            Apply Full-Text Style
+          </button>
+        </div>
+        {parsedStyleRuns.ok && parsedStyleRuns.runs.length > 0 && (
+          <div className="text-style-run-table" role="table" aria-label="Classic style runs">
+            <div role="row">
+              <b>Start</b>
+              <b>Font</b>
+              <b>Size</b>
+              <b>Face</b>
+              <b>Color</b>
+            </div>
+            {parsedStyleRuns.runs.slice(0, 8).map((run) => (
+              <div role="row" key={`${run.index}:${run.startChar}`}>
+                <span>{run.startChar}</span>
+                <span>{run.font}</span>
+                <span>{run.size}</span>
+                <span>{classicStyleFaceLabel(run.face)}</span>
+                <span>{classicRgbToCssHex(run.color)}</span>
+              </div>
+            ))}
+            {parsedStyleRuns.runs.length > 8 && <small>{(parsedStyleRuns.runs.length - 8).toLocaleString()} more style run(s) preserved in raw bytes.</small>}
+          </div>
+        )}
+      </div>
+      {(companion.styleHex || companion.managedAsset) && (
+        <details className="text-style-bytes-editor" open={Boolean(companion.managedAsset) || undefined}>
+          <summary>Style Bytes</summary>
+          <label>
+            <span>Hex</span>
+            <textarea
+              value={styleHexDraft}
+              onChange={(event) => setStyleHexDraft(event.currentTarget.value)}
+              spellCheck={false}
+              placeholder="00 00"
+            />
+          </label>
+          <div className={`text-style-companion-summary ${parsedStyleBytes.ok ? "" : "warning"}`}>
+            <span>{parsedStyleBytes.ok ? `${parsedStyleBytes.bytes.length.toLocaleString()} byte${parsedStyleBytes.bytes.length === 1 ? "" : "s"} ready` : parsedStyleBytes.error}</span>
+            <span>Hex edits replace the same-ID styl resource exactly; use this only when preserving or intentionally editing imported style data.</span>
+          </div>
+          <div className="text-message-actions">
+            <button
+              type="button"
+              className="btn btn-primary btn-xs"
+              disabled={!parsedStyleBytes.ok || !styleHexDirty}
+              onClick={() => {
+                if (!parsedStyleBytes.ok) return;
+                const asset = styleAssetFromBytes(
+                  companion.managedAsset ?? null,
+                  resourceId,
+                  parsedStyleBytes.bytes,
+                  companion.managedAsset?.provenance ?? "Authored in Providence Scrolling Text style bytes"
+                );
+                onApplyCommand(
+                  companion.managedAsset
+                    ? { kind: "replaceProjectAsset", label: `Update Style ${resourceId}`, assetId: companion.managedAsset.id, asset }
+                    : { kind: "attachProjectAsset", label: `Author Style ${resourceId}`, asset }
+                );
+              }}
+            >
+              Apply Style Bytes
+            </button>
+            {styleHexDirty && (
+              <button type="button" className="btn btn-secondary btn-xs" onClick={() => setStyleHexDraft(companion.styleHex ?? "")}>
+                Revert Bytes
+              </button>
+            )}
+          </div>
+        </details>
+      )}
+    </section>
   );
 }
 
@@ -1215,6 +1590,55 @@ type TextReferenceRow = {
   preview: string;
 };
 
+type ImportedScrollingTextResource = {
+  entityId: string;
+  resourceId: number;
+  label: string;
+  source: string;
+  text: string;
+  hasStyle: boolean;
+  styleEntityId: string | null;
+};
+
+const CLASSIC_STYLE_RUN_BYTES = 20;
+const CLASSIC_STYLE_FACE_BITS = {
+  bold: 1,
+  italic: 2,
+  underline: 4,
+  outline: 8,
+  shadow: 16,
+  condense: 32,
+  extend: 64
+} as const;
+
+type ClassicTextColor = {
+  red: number;
+  green: number;
+  blue: number;
+};
+
+type ClassicTextStyleRun = {
+  index: number;
+  startChar: number;
+  height: number;
+  ascent: number;
+  font: number;
+  face: number;
+  size: number;
+  color: ClassicTextColor;
+};
+
+const DEFAULT_CLASSIC_STYLE_RUN: ClassicTextStyleRun = {
+  index: 0,
+  startChar: 0,
+  height: 12,
+  ascent: 9,
+  font: 0,
+  face: 0,
+  size: 12,
+  color: { red: 0, green: 0, blue: 0 }
+};
+
 function nextMessageId(records: MessageRecord[]) {
   const used = new Set(records.map((record) => record.id));
   for (let id = 0; id < 10000; id += 1) {
@@ -1233,7 +1657,31 @@ function nextOptionLabelId(records: OptionLabelRecord[]) {
 
 function scrollingTextProjectAssets(project: Project) {
   return [...(project.assets ?? [])]
-    .filter((asset) => asset.resourceType.trim() === "TEXT" || asset.kind === "text")
+    .filter((asset) => asset.resourceType.trim() === "TEXT")
+    .sort((a, b) => a.resourceId - b.resourceId || a.label.localeCompare(b.label));
+}
+
+function importedScrollingTextResourceRows(project: Project, managedAssets: Project["assets"]): ImportedScrollingTextResource[] {
+  const managedIds = new Set(managedAssets.map((asset) => asset.resourceId));
+  return (project.semanticSchema?.entities ?? [])
+    .map((entity) => {
+      const resourceType = String(entity.summary.type ?? entity.summary.resourceType ?? "").trim();
+      if (resourceType !== "TEXT") return null;
+      const resourceId = Number(entity.summary.resourceId ?? entity.summary.id ?? entity.summary.index);
+      if (!Number.isInteger(resourceId) || managedIds.has(resourceId)) return null;
+      const text = importedTextBody(entity.summary);
+      const styleEntity = sameIdStyleResourceEntity(project, resourceId);
+      return {
+        entityId: entity.id,
+        resourceId,
+        label: entity.label || `Scrolling Text ${resourceId}`,
+        source: entity.source,
+        text,
+        hasStyle: styleEntity != null,
+        styleEntityId: styleEntity?.id ?? null
+      };
+    })
+    .filter((row): row is ImportedScrollingTextResource => row != null)
     .sort((a, b) => a.resourceId - b.resourceId || a.label.localeCompare(b.label));
 }
 
@@ -1299,34 +1747,268 @@ function decodeTextAsset(asset: Project["assets"][number]) {
   return decodeTextDataUrl(asset.resourcePath) || decodeTextDataUrl(asset.previewPath) || decodeTextDataUrl(asset.originalPath);
 }
 
-function sameIdStyleResourceEntity(project: Project, resourceId: number): SelectedEntity | null {
-  if (!Number.isInteger(resourceId)) return null;
+function importedTextBody(summary: Record<string, unknown>) {
+  if (typeof summary.text === "string") return summary.text;
+  if (typeof summary.textPreview === "string") return summary.textPreview;
+  if (typeof summary.preview === "string") return summary.preview;
+  return "";
+}
+
+type TextStyleCompanion = {
+  entity: SelectedEntity | null;
+  managedAsset: Project["assets"][number] | null;
+  importedEntity: NonNullable<Project["semanticSchema"]>["entities"][number] | null;
+  importedStyleBytes: Uint8Array | null;
+  rawStyleBytes: Uint8Array | null;
+  runCount: number | null;
+  styleBytes: number | null;
+  styleHex: string | null;
+};
+
+function sameIdStyleCompanion(project: Project, resourceId: number): TextStyleCompanion {
+  if (!Number.isInteger(resourceId)) {
+    return { entity: null, managedAsset: null, importedEntity: null, importedStyleBytes: null, rawStyleBytes: null, runCount: null, styleBytes: null, styleHex: null };
+  }
   const projectAsset = (project.assets ?? []).find((asset) => asset.resourceType.trim() === "styl" && asset.resourceId === resourceId);
-  if (projectAsset) return { type: "resource", id: projectAsset.id };
-  const entity = project.semanticSchema?.entities.find((candidate) => {
+  const managedStyleBytes = projectAsset ? bytesFromDataUrl(projectAsset.resourcePath) ?? bytesFromDataUrl(projectAsset.originalPath) ?? bytesFromDataUrl(projectAsset.previewPath) : null;
+  const importedEntity = project.semanticSchema?.entities.find((candidate) => {
     const resourceType = String(candidate.summary.type ?? candidate.summary.resourceType ?? "").trim();
     if (resourceType !== "styl") return false;
     const id = Number(candidate.summary.resourceId ?? candidate.summary.id ?? candidate.summary.index);
     return Number.isInteger(id) && id === resourceId;
-  });
-  return entity ? selectEntityFromId(entity.id) : null;
+  }) ?? null;
+  const importedStyleBytes = bytesFromBase64String(importedEntity?.summary.styleResourceBase64);
+  const styleBytes = managedStyleBytes ?? importedStyleBytes;
+  const entity = projectAsset ? { type: "resource" as const, id: projectAsset.id } : importedEntity ? selectEntityFromId(importedEntity.id) : null;
+  return {
+    entity,
+    managedAsset: projectAsset ?? null,
+    importedEntity,
+    importedStyleBytes,
+    rawStyleBytes: styleBytes,
+    runCount: styleBytes ? u16FromBytes(styleBytes, 0) : numberSummary(importedEntity?.summary.styleRunCountCandidate),
+    styleBytes: styleBytes ? styleBytes.length : projectAsset ? projectAsset.bytes : numberSummary(importedEntity?.summary.styleBytes),
+    styleHex: styleBytes ? bytesToHex(styleBytes) : null
+  };
+}
+
+function sameIdStyleResourceEntity(project: Project, resourceId: number): SelectedEntity | null {
+  return sameIdStyleCompanion(project, resourceId)?.entity ?? null;
+}
+
+function numberSummary(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+}
+
+function plainStyleAssetFromDraft(existing: Project["assets"][number] | null, resourceId: number): Project["assets"][number] {
+  return styleAssetFromBytes(existing, resourceId, new Uint8Array([0, 0]), "Authored in Providence Scrolling Text as plain style");
+}
+
+function styleAssetFromBytes(existing: Project["assets"][number] | null, resourceId: number, bytes: Uint8Array, provenance: string): Project["assets"][number] {
+  const safeId = String(resourceId).replace(/[^-\d]/g, "");
+  const dataUrl = bytesToDataUrl(bytes, "application/octet-stream");
+  return {
+    id: existing?.id ?? `managed:styl:${resourceId}:${provenance.includes("plain") ? "plain" : "authored"}`,
+    label: provenance.includes("plain") ? `Plain Style ${resourceId}` : `Style ${resourceId}`,
+    kind: "text",
+    resourceType: "styl",
+    resourceId,
+    fileName: `scrolling-text-${safeId}.styl`,
+    originalPath: dataUrl,
+    previewPath: dataUrl,
+    resourcePath: dataUrl,
+    mimeType: "application/octet-stream",
+    bytes: bytes.length,
+    sha256: `styl-${hashBytes(bytes)}`,
+    width: null,
+    height: null,
+    durationMs: null,
+    sampleRate: null,
+    channels: null,
+    exportState: "ready",
+    provenance,
+    linkedEntity: `resource:styl:${resourceId}`,
+    conversion: null
+  };
 }
 
 function classicTextBytes(text: string) {
   const bytes = new Uint8Array(Array.from(text ?? "").map((char) => {
+    if (char === "\n" || char === "\r") return 13;
     const code = char.charCodeAt(0);
     return code <= 0x7f ? code : 0x3f;
   }));
   return bytes;
 }
 
-function bytesToDataUrl(bytes: Uint8Array) {
+function bytesToDataUrl(bytes: Uint8Array, mimeType = "text/plain") {
   let binary = "";
   for (let offset = 0; offset < bytes.length; offset += 8192) {
     const chunk = bytes.slice(offset, offset + 8192);
     binary += String.fromCharCode(...chunk);
   }
-  return `data:text/plain;base64,${btoa(binary)}`;
+  return `data:${mimeType};base64,${btoa(binary)}`;
+}
+
+function bytesFromDataUrl(dataUrl: string | null | undefined) {
+  if (!dataUrl) return null;
+  const comma = dataUrl.indexOf(",");
+  if (comma < 0) return null;
+  const metadata = dataUrl.slice(0, comma).toLowerCase();
+  const payload = dataUrl.slice(comma + 1);
+  if (!metadata.includes(";base64")) return null;
+  return bytesFromBase64String(payload);
+}
+
+function bytesFromBase64String(payload: unknown) {
+  if (typeof payload !== "string" || payload.length === 0) return null;
+  try {
+    const binary = atob(payload);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) {
+      bytes[index] = binary.charCodeAt(index);
+    }
+    return bytes;
+  } catch {
+    return null;
+  }
+}
+
+function bytesToHex(bytes: Uint8Array) {
+  return Array.from(bytes).map((byte) => byte.toString(16).padStart(2, "0")).join(" ");
+}
+
+function normalizeHex(value: string) {
+  return value.replace(/[^0-9a-fA-F]/g, "").toLowerCase();
+}
+
+function parseHexBytes(value: string): { ok: true; bytes: Uint8Array } | { ok: false; error: string } {
+  const normalized = normalizeHex(value);
+  if (normalized.length === 0) return { ok: true, bytes: new Uint8Array() };
+  if (normalized.length % 2 !== 0) return { ok: false, error: "Hex must contain complete byte pairs." };
+  const bytes = new Uint8Array(normalized.length / 2);
+  for (let index = 0; index < bytes.length; index += 1) {
+    bytes[index] = Number.parseInt(normalized.slice(index * 2, index * 2 + 2), 16);
+  }
+  return { ok: true, bytes };
+}
+
+function parseClassicStyleRuns(bytes: Uint8Array | null): { ok: true; runs: ClassicTextStyleRun[] } | { ok: false; error: string } {
+  if (!bytes || bytes.byteLength === 0) return { ok: true, runs: [] };
+  if (bytes.byteLength < 2) return { ok: false, error: "Style bytes are too short to contain a run count." };
+  const runCount = u16FromBytes(bytes, 0);
+  const expectedLength = 2 + runCount * CLASSIC_STYLE_RUN_BYTES;
+  if (bytes.byteLength !== expectedLength) {
+    return {
+      ok: false,
+      error: `Style table does not match the Classic ${CLASSIC_STYLE_RUN_BYTES}-byte run format (${bytes.byteLength} byte(s), expected ${expectedLength}).`
+    };
+  }
+  const runs: ClassicTextStyleRun[] = [];
+  for (let index = 0; index < runCount; index += 1) {
+    const offset = 2 + index * CLASSIC_STYLE_RUN_BYTES;
+    runs.push({
+      index,
+      startChar: i32FromBytes(bytes, offset),
+      height: i16FromBytes(bytes, offset + 4),
+      ascent: i16FromBytes(bytes, offset + 6),
+      font: i16FromBytes(bytes, offset + 8),
+      face: bytes[offset + 10] ?? 0,
+      size: i16FromBytes(bytes, offset + 12),
+      color: {
+        red: u16FromBytes(bytes, offset + 14),
+        green: u16FromBytes(bytes, offset + 16),
+        blue: u16FromBytes(bytes, offset + 18)
+      }
+    });
+  }
+  return { ok: true, runs };
+}
+
+function classicStyleBytesFromRuns(runs: ClassicTextStyleRun[]) {
+  const bytes = new Uint8Array(2 + runs.length * CLASSIC_STYLE_RUN_BYTES);
+  writeU16(bytes, 0, runs.length);
+  runs.forEach((run, index) => {
+    const offset = 2 + index * CLASSIC_STYLE_RUN_BYTES;
+    writeI32(bytes, offset, run.startChar);
+    writeI16(bytes, offset + 4, run.height);
+    writeI16(bytes, offset + 6, run.ascent);
+    writeI16(bytes, offset + 8, run.font);
+    bytes[offset + 10] = run.face & 0xff;
+    bytes[offset + 11] = 0;
+    writeI16(bytes, offset + 12, run.size);
+    writeU16(bytes, offset + 14, run.color.red);
+    writeU16(bytes, offset + 16, run.color.green);
+    writeU16(bytes, offset + 18, run.color.blue);
+  });
+  return bytes;
+}
+
+function classicStyleFaceLabel(face: number) {
+  const labels: string[] = [];
+  if (face & CLASSIC_STYLE_FACE_BITS.bold) labels.push("Bold");
+  if (face & CLASSIC_STYLE_FACE_BITS.italic) labels.push("Italic");
+  if (face & CLASSIC_STYLE_FACE_BITS.underline) labels.push("Underline");
+  if (face & CLASSIC_STYLE_FACE_BITS.outline) labels.push("Outline");
+  if (face & CLASSIC_STYLE_FACE_BITS.shadow) labels.push("Shadow");
+  if (face & CLASSIC_STYLE_FACE_BITS.condense) labels.push("Condense");
+  if (face & CLASSIC_STYLE_FACE_BITS.extend) labels.push("Extend");
+  return labels.length ? labels.join(", ") : "Plain";
+}
+
+function classicRgbToCssHex(color: ClassicTextColor) {
+  const toByte = (value: number) => Math.max(0, Math.min(255, Math.round(value / 257)));
+  return `#${[toByte(color.red), toByte(color.green), toByte(color.blue)].map((value) => value.toString(16).padStart(2, "0")).join("")}`;
+}
+
+function cssHexToClassicRgb(value: string): ClassicTextColor {
+  const normalized = value.replace(/^#/, "");
+  const red = Number.parseInt(normalized.slice(0, 2), 16) * 257;
+  const green = Number.parseInt(normalized.slice(2, 4), 16) * 257;
+  const blue = Number.parseInt(normalized.slice(4, 6), 16) * 257;
+  return { red, green, blue };
+}
+
+function u16FromBytes(bytes: Uint8Array, offset: number) {
+  if (offset + 2 > bytes.byteLength) return 0;
+  return (bytes[offset] << 8) | bytes[offset + 1];
+}
+
+function i16FromBytes(bytes: Uint8Array, offset: number) {
+  if (offset + 2 > bytes.byteLength) return 0;
+  const value = (bytes[offset] << 8) | bytes[offset + 1];
+  return value & 0x8000 ? value - 0x10000 : value;
+}
+
+function i32FromBytes(bytes: Uint8Array, offset: number) {
+  if (offset + 4 > bytes.byteLength) return 0;
+  const value = ((bytes[offset] ?? 0) * 0x1000000) + (((bytes[offset + 1] ?? 0) << 16) | ((bytes[offset + 2] ?? 0) << 8) | (bytes[offset + 3] ?? 0));
+  return value > 0x7fffffff ? value - 0x100000000 : value;
+}
+
+function writeU16(bytes: Uint8Array, offset: number, value: number) {
+  const normalized = Math.max(0, Math.min(0xffff, Math.round(value)));
+  bytes[offset] = (normalized >> 8) & 0xff;
+  bytes[offset + 1] = normalized & 0xff;
+}
+
+function writeI16(bytes: Uint8Array, offset: number, value: number) {
+  const normalized = Math.max(-0x8000, Math.min(0x7fff, Math.round(value)));
+  writeU16(bytes, offset, normalized < 0 ? normalized + 0x10000 : normalized);
+}
+
+function writeI32(bytes: Uint8Array, offset: number, value: number) {
+  const normalized = Math.max(-0x80000000, Math.min(0x7fffffff, Math.round(value)));
+  const unsigned = normalized < 0 ? normalized + 0x100000000 : normalized;
+  bytes[offset] = Math.floor(unsigned / 0x1000000) & 0xff;
+  bytes[offset + 1] = (unsigned >> 16) & 0xff;
+  bytes[offset + 2] = (unsigned >> 8) & 0xff;
+  bytes[offset + 3] = unsigned & 0xff;
 }
 
 function base64ToText(payload: string) {
@@ -1342,6 +2024,14 @@ function hashText(text: string) {
   let hash = 2166136261;
   for (let index = 0; index < text.length; index += 1) {
     hash = Math.imul(hash ^ text.charCodeAt(index), 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+function hashBytes(bytes: Uint8Array) {
+  let hash = 2166136261;
+  for (const byte of bytes) {
+    hash = Math.imul(hash ^ byte, 16777619);
   }
   return (hash >>> 0).toString(16).padStart(8, "0");
 }
@@ -1390,6 +2080,13 @@ function textReferenceRows(project: Project, catalog: LibraryCatalog | null | un
       detail: textResourceDetail({ resourceId: asset.resourceId, type: asset.resourceType, bytes: asset.bytes }),
       source: "Project",
       preview: decodeTextAsset(asset)
+    })),
+    ...(project.semanticSchema?.entities ?? []).filter((entity) => wantedTypes.has(entity.type)).map((entity) => ({
+      id: entity.id,
+      label: entity.label,
+      detail: textResourceDetail(entity.summary ?? {}),
+      source: entity.source || "Scenario resource fork",
+      preview: textResourcePreview(entity.summary ?? {})
     })),
     ...(catalog?.entities ?? []).filter((entity) => wantedTypes.has(entity.type)).map((entity) => ({
       id: entity.id,
