@@ -679,7 +679,7 @@ function RandomRegionChanceField({
           <span>%</span>
         </label>
       )}
-      <small>{randomRegionChanceDescription(safeRaw)}</small>
+      <span className="visually-hidden">{randomRegionChanceDescription(safeRaw)}</span>
     </div>
   );
 }
@@ -792,7 +792,7 @@ function EdcdItemTargetField({
               }}
             >
               <strong>{option.label}</strong>
-              <small>{[option.detail, option.sourceState].filter(Boolean).join(" | ") || "No details available."}</small>
+              {edcdSearchResultDetail(option.detail, option.sourceState) && <small>{edcdSearchResultDetail(option.detail, option.sourceState)}</small>}
             </button>
           ))}
           {resultOptions.length === 0 && <small>No item references match this search.</small>}
@@ -802,7 +802,7 @@ function EdcdItemTargetField({
         <div className={`edcd-selected-target-row${selected || value === 0 ? "" : " missing"}`}>
           <div>
             <strong>{selectedLabel}</strong>
-            <small>{selectedDetail}</small>
+            {selectedDetail && <small>{selectedDetail}</small>}
           </div>
           <div className="edcd-selected-target-actions">
             {selectedEntity && onOpen && (
@@ -877,7 +877,7 @@ function EdcdSearchTargetField({
     : null;
   const resultOptions = rawQueryOption ? [rawQueryOption, ...matchedOptions] : matchedOptions;
   const selectedLabel = selected?.label ?? (value ? `${targetKind === "message" ? "String" : label} ${Math.abs(value)}` : `No ${label.toLowerCase()} selected`);
-  const selectedDetail = selected?.detail ?? (value ? `No matching ${label.toLowerCase()} target exists yet.` : "");
+  const selectedDetail = edcdCompactTargetDetail(targetKind, selected, value, label);
   const chooseOption = (option: EdcdTargetOption) => {
     onChange(option.value);
     setQuery("");
@@ -920,7 +920,7 @@ function EdcdSearchTargetField({
                 }}
               >
                 <strong>{option.label}</strong>
-              <small>{option.detail || "No details available."}</small>
+              {option.detail && <small>{option.detail}</small>}
             </button>
           ))}
           {resultOptions.length === 0 && <small>No {label.toLowerCase()} targets match this search.</small>}
@@ -929,7 +929,7 @@ function EdcdSearchTargetField({
         <div className={`edcd-selected-target-row${selected ? "" : " missing"}`}>
           <div>
             <strong>{selectedLabel}</strong>
-            <small>{selectedDetail}</small>
+            {selectedDetail && <small>{selectedDetail}</small>}
           </div>
           <div className="edcd-selected-target-actions">
             {selected?.entity && onOpen && (
@@ -997,10 +997,10 @@ function EdcdSelectTargetField({
   const useSearchTarget = edcdTargetKindUsesSearch(targetKind);
   const hasOpenTarget = Boolean(selected?.entity && onOpen);
   const targetDetail = selected
-    ? selected.detail || "No details available."
+    ? edcdCompactTargetDetail(targetKind, selected, value, label)
     : value > 0
       ? `No ${label} ${value} exists yet.`
-      : `Imported value ${value}; choose an existing ${label} above.`;
+      : "";
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLowerCase();
   const queryNumber = /^-?\d+$/.test(normalizedQuery) ? Number(normalizedQuery) : null;
@@ -1061,7 +1061,7 @@ function EdcdSelectTargetField({
                 }}
               >
                 <strong>{option.label}</strong>
-                <small>{option.detail || "No details available."}</small>
+                {option.detail && <small>{option.detail}</small>}
               </button>
             ))}
             {resultOptions.length === 0 && <small>No {label.toLowerCase()} targets match this search.</small>}
@@ -1071,7 +1071,7 @@ function EdcdSelectTargetField({
           <div className={`edcd-search-selected-target${selected ? "" : " missing"}`}>
             <div>
               <strong>{selectedLabel}</strong>
-              <small>{selectedDetail}</small>
+              {selectedDetail && <small>{selectedDetail}</small>}
             </div>
             <div className="edcd-selected-target-actions">
               {selected?.entity && onOpen && (
@@ -1148,7 +1148,7 @@ function EdcdSelectTargetField({
           </button>
         )}
       </div>
-      <small className={`edcd-target-inline-detail${selected ? "" : " missing"}`}>{targetDetail}</small>
+      {targetDetail && <small className={`edcd-target-inline-detail${selected ? "" : " missing"}`}>{targetDetail}</small>}
       {isMacroTarget && <EdcdMacroFlowPreview project={project} catalog={catalog} macroId={value} />}
     </div>
   );
@@ -1166,6 +1166,25 @@ function edcdTargetKindUsesSearch(targetKind: EdcdTargetKind) {
     "macro",
     "monster"
   ].includes(targetKind);
+}
+
+function edcdCompactTargetDetail(targetKind: EdcdTargetKind, selected: EdcdTargetOption | null, value: number, label: string) {
+  if (!selected) return value ? `No matching ${label.toLowerCase()} target exists yet.` : "";
+  const detail = selected.detail.trim();
+  if (!detail) return "";
+  if (targetKind === "sound" && edcdSoundDetailIsGeneric(detail)) return "";
+  return detail;
+}
+
+function edcdSearchResultDetail(...parts: Array<string | undefined>) {
+  return parts.map((part) => part?.trim()).filter(Boolean).join(" | ");
+}
+
+function edcdSoundDetailIsGeneric(detail: string) {
+  const normalized = detail.toLowerCase().replace(/\s+/g, " ").trim();
+  return normalized === "library sound reference" ||
+    normalized === "built-in realmz/divinity sound reference" ||
+    normalized === "raw sound reference";
 }
 
 function EdcdMacroFlowPreview({

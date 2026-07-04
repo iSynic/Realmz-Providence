@@ -148,11 +148,11 @@ export function TargetPicker({
   const behavior = signedTargetBehaviorLabel(opcode, value);
   const showWaitControl = supportsSignedSoundReference(opcode) && resolvedValue !== 0;
   const detail = selected
-    ? [selected.detail, selected.summary, behavior, selected.compatibility, selected.sourceState].filter(Boolean).join(" | ")
-    : config.hint;
+    ? targetPickerSelectedDetail(selected, normalizeStepOpcode(opcode), behavior)
+    : "";
   const selectedDetail = selected
     ? showDetail
-      ? [selected.detail, selected.summary, behavior, selected.compatibility, selected.sourceState].filter(Boolean).join(" | ") || `Selected ${config.label.toLowerCase()}`
+      ? targetPickerSelectedDetail(selected, normalizeStepOpcode(opcode), behavior) || `Selected ${config.label.toLowerCase()}`
       : ""
     : hasCurrentValue ? `${targetFallbackLabel(config.label, resolvedValue)} does not exist yet.` : "";
   const chooseTarget = (target: ScriptTargetOption) => {
@@ -205,18 +205,21 @@ export function TargetPicker({
           {isDirectMacroOpcode(normalizeStepOpcode(opcode)) && <TargetMacroFlowPreview project={project} catalog={catalog} macroId={resolvedValue} />}
           {normalizedQuery && (
             <div className="target-picker-search-preview target-picker-string-results" aria-live="polite">
-              {searchResultTargets.map((target) => (
-                <button
-                  key={target.key}
-                  type="button"
-                  className={target.value === resolvedValue ? "selected" : ""}
-                  title={targetOptionTitle(target)}
-                  onClick={() => chooseTarget(target)}
-                >
-                  <strong>{target.label}</strong>
-                  <small>{[target.detail, target.summary, target.compatibility, target.sourceState].filter(Boolean).join(" | ") || "No details available."}</small>
-                </button>
-              ))}
+              {searchResultTargets.map((target) => {
+                const resultDetail = targetPickerSearchResultDetail(target, normalizeStepOpcode(opcode));
+                return (
+                  <button
+                    key={target.key}
+                    type="button"
+                    className={target.value === resolvedValue ? "selected" : ""}
+                    title={targetOptionTitle(target)}
+                    onClick={() => chooseTarget(target)}
+                  >
+                    <strong>{target.label}</strong>
+                    {resultDetail && <small>{resultDetail}</small>}
+                  </button>
+                );
+              })}
               {searchResultTargets.length === 0 && <span className="target-picker-empty">No {config.label.toLowerCase()} targets match this search.</span>}
               {filteredTargets.length > searchResultTargets.length && (
                 <small>{filteredTargets.length - searchResultTargets.length} more matching target(s); keep typing to narrow.</small>
@@ -270,7 +273,7 @@ export function TargetPicker({
           <span>Wait for sound to finish</span>
         </label>
       )}
-      {!isSearchDrivenPicker && showDetail && <small>{detail}</small>}
+      {!isSearchDrivenPicker && showDetail && detail && <small>{detail}</small>}
       {normalizeStepOpcode(opcode) === 9 && selected && (
         <button
           className="btn btn-secondary btn-xs"
@@ -1057,6 +1060,39 @@ export function filterTargetOptions(options: ScriptTargetOption[], query: string
 
 function targetOptionTitle(option: ScriptTargetOption) {
   return [option.label, option.detail, option.summary, option.compatibility, option.sourceState].filter(Boolean).join(" | ");
+}
+
+function targetPickerSelectedDetail(option: ScriptTargetOption, opcode: number, behavior: string) {
+  return [
+    targetPickerVisibleDetail(option, opcode),
+    option.summary,
+    behavior,
+    option.compatibility,
+    option.sourceState
+  ].filter(Boolean).join(" | ");
+}
+
+function targetPickerSearchResultDetail(option: ScriptTargetOption, opcode: number) {
+  return [
+    targetPickerVisibleDetail(option, opcode),
+    option.summary,
+    option.compatibility,
+    option.sourceState
+  ].filter(Boolean).join(" | ");
+}
+
+function targetPickerVisibleDetail(option: ScriptTargetOption, opcode: number) {
+  const detail = option.detail.trim();
+  if (!detail) return "";
+  if (opcode === 9 && targetPickerSoundDetailIsGeneric(detail)) return "";
+  return detail;
+}
+
+function targetPickerSoundDetailIsGeneric(detail: string) {
+  const normalized = detail.toLowerCase().replace(/\s+/g, " ").trim();
+  return normalized === "library sound reference" ||
+    normalized === "built-in realmz/divinity sound reference" ||
+    normalized === "raw sound reference";
 }
 
 function createTargetButtonLabel(recordType: RealmzTargetRecordKind, id?: number) {

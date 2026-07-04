@@ -5622,14 +5622,21 @@
 .edcd-search-target-results strong,
 .edcd-selected-target-row strong,
 .edcd-search-selected-target strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
   color: #e9f4ff;
   font-size: 11px;
   line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .edcd-search-target-results small,
 .edcd-selected-target-row small,
 .edcd-search-selected-target small {
+  display: block;
+  margin-top: 3px;
   min-width: 0;
   overflow: hidden;
   color: #9eb1c2;
@@ -5691,10 +5698,11 @@
 
 
 .edcd-field-grid small {
-  margin-top: 2px;
+  display: block;
+  margin-top: 5px;
   color: #8399ab;
   font-size: 9px;
-  line-height: 1.35;
+  line-height: 1.45;
 }
 
 
@@ -7465,9 +7473,9 @@
 
 .target-picker-search-preview button {
   display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  gap: 8px;
-  align-items: baseline;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 3px;
+  align-items: start;
   min-width: 0;
   border: 1px solid #263746;
   border-radius: 5px;
@@ -7484,13 +7492,19 @@
 }
 
 .target-picker-search-preview strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
   color: #e9f4ff;
   font-size: 11px;
   line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .target-picker-search-preview small {
   grid-column: auto;
+  display: block;
   min-width: 0;
   overflow: hidden;
   color: #9eb1c2;
