@@ -13,6 +13,7 @@ const semanticPath = path.join(root, "src/editor/browser/semantic.ts");
 const browserProjectPath = path.join(root, "src/editor/browser/project.ts");
 const rustProjectPath = path.join(root, "src-tauri/src/project.rs");
 const rustValidationPath = path.join(root, "src-tauri/src/validation.rs");
+const apOpcodeCoveragePath = path.join(root, "docs/generated/ap-opcode-coverage.json");
 
 const catalog = fs.readFileSync(catalogPath, "utf8");
 const panel = fs.readFileSync(panelPath, "utf8");
@@ -35,6 +36,7 @@ const inventory = fs.readFileSync(inventoryPath, "utf8");
 const validation = fs.readFileSync(validationPath, "utf8");
 const scriptDiagnostics = fs.readFileSync(scriptDiagnosticsPath, "utf8");
 const reportScriptDiagnostics = fs.readFileSync(reportScriptDiagnosticsPath, "utf8");
+const apOpcodeCoverage = JSON.parse(fs.readFileSync(apOpcodeCoveragePath, "utf8"));
 
 const requiredCatalogExports = [
   "ScriptActionAuthoringLevel",
@@ -48,6 +50,122 @@ const requiredCatalogExports = [
 ];
 
 const failures = [];
+const coverageEntries = Array.isArray(apOpcodeCoverage.entries) ? apOpcodeCoverage.entries : [];
+const coverageByOpcode = new Map(coverageEntries.map((entry) => [entry.opcode, entry]));
+const manualNoneStepOnlyMatch = catalog.match(/const MANUAL_NONE_STEP_ONLY_ACTIONS = new Set\(\[([\s\S]*?)\]\);/);
+const manualNoneStepOnlyCodes = new Set((manualNoneStepOnlyMatch?.[1].match(/-?\d+/g) ?? []).map(Number));
+const expectedManualNoneStepOnlyCodes = [25, 26, 34, 82, 83, 84, 91, 93, 94, 96, 97, 98, 99, 100, 101, 102];
+
+function coverageEntry(opcode) {
+  const entry = coverageByOpcode.get(opcode);
+  if (!entry) failures.push(`Opcode audit report is missing opcode ${opcode}.`);
+  return entry;
+}
+
+function hasCoverageField(entry, label, targetFamily = undefined) {
+  return (entry?.providenceFields ?? []).some((field) => {
+    if (field.label !== label) return false;
+    return targetFamily === undefined || field.targetFamily === targetFamily;
+  });
+}
+
+function assertCoveragePair(a, b) {
+  const left = coverageEntry(a);
+  const right = coverageEntry(b);
+  if (left && !(left.relatedOpcodes ?? []).includes(b)) {
+    failures.push(`Opcode audit report should link ${a} to related opcode ${b}.`);
+  }
+  if (right && !(right.relatedOpcodes ?? []).includes(a)) {
+    failures.push(`Opcode audit report should link ${b} to related opcode ${a}.`);
+  }
+}
+
+if (apOpcodeCoverage.schemaVersion !== 2) {
+  failures.push("Opcode audit report must use schemaVersion 2.");
+}
+if (!manualNoneStepOnlyMatch) {
+  failures.push("Action catalog must declare MANUAL_NONE_STEP_ONLY_ACTIONS.");
+}
+for (const opcode of expectedManualNoneStepOnlyCodes) {
+  if (!manualNoneStepOnlyCodes.has(opcode)) {
+    failures.push(`Manual no-option opcode ${opcode} should be in MANUAL_NONE_STEP_ONLY_ACTIONS.`);
+  }
+}
+for (const key of ["crosswalk", "manualHelp", "catalog", "actions"]) {
+  if (!apOpcodeCoverage.source?.[key]) failures.push(`Opcode audit report is missing source.${key}.`);
+}
+if (coverageEntries.length < 120) {
+  failures.push(`Opcode audit report has too few entries: ${coverageEntries.length}.`);
+}
+for (const key of ["counts", "gapCounts", "confidenceCounts"]) {
+  const total = Object.values(apOpcodeCoverage[key] ?? {}).reduce((sum, value) => sum + Number(value || 0), 0);
+  if (total !== coverageEntries.length) {
+    failures.push(`Opcode audit report ${key} total ${total} does not match entry count ${coverageEntries.length}.`);
+  }
+}
+for (const entry of coverageEntries) {
+  for (const key of ["opcode", "title", "status", "gapStatus", "evidenceConfidence", "manual", "manualNoOptions", "manualNoneStepOnly", "relatedOpcodes", "providenceFields"]) {
+    if (!(key in entry)) failures.push(`Opcode audit report entry ${entry.opcode ?? "(unknown)"} is missing ${key}.`);
+  }
+  if (!Array.isArray(entry.manual?.resourceIds)) {
+    failures.push(`Opcode audit report entry ${entry.opcode ?? "(unknown)"} is missing manual.resourceIds.`);
+  }
+  if (!Array.isArray(entry.relatedOpcodes)) {
+    failures.push(`Opcode audit report entry ${entry.opcode ?? "(unknown)"} relatedOpcodes must be an array.`);
+  }
+  if (!Array.isArray(entry.providenceFields) || entry.providenceFields.length === 0) {
+    failures.push(`Opcode audit report entry ${entry.opcode ?? "(unknown)"} must list Providence fields.`);
+  }
+  if (entry.manualNoOptions && !entry.manualNoneStepOnly) {
+    failures.push(`Manual no-option opcode ${entry.opcode} should be marked manualNoneStepOnly or explicitly audited as an exception.`);
+  }
+  if (entry.manualNoneStepOnly && !hasCoverageField(entry, "Step only")) {
+    failures.push(`Manual no-option opcode ${entry.opcode} should report a step-only Providence field.`);
+  }
+}
+
+assertCoveragePair(-23, 23);
+
+for (const opcode of [84, 98, 99]) {
+  const entry = coverageEntry(opcode);
+  if (!entry) continue;
+  if (entry.gapStatus !== "legacy-compatible") {
+    failures.push(`Registration opcode ${opcode} should stay marked legacy-compatible.`);
+  }
+  const expectedConfidence = opcode === 84 ? "source-backed" : "manual-backed";
+  if (entry.evidenceConfidence !== expectedConfidence) {
+    failures.push(`Registration opcode ${opcode} should stay ${expectedConfidence}.`);
+  }
+  if (!hasCoverageField(entry, "Step only")) {
+    failures.push(`Registration opcode ${opcode} should report a step-only Providence field.`);
+  }
+}
+
+const macro121 = coverageEntry(121);
+if (macro121?.gapStatus !== "combat-macro-only") {
+  failures.push("Opcode 121 should stay marked combat-macro-only.");
+}
+if (macro121?.evidenceConfidence !== "source-backed") {
+  failures.push("Opcode 121 should stay source-backed.");
+}
+
+const scrollingText62 = coverageEntry(62);
+if (!hasCoverageField(scrollingText62, "TEXT Resource", "text-resource")) {
+  failures.push("Opcode 62 should report a TEXT Resource target field.");
+}
+
+const noManualEvidence = coverageEntry(-14);
+if (noManualEvidence?.gapStatus !== "needs-manual-evidence") {
+  failures.push("Opcode -14 should stay marked needs-manual-evidence until a source/manual backing is found.");
+}
+
+for (const opcode of [25, 26, 34, 82, 83, 91, 93, 94, 96, 97, 100, 101, 102]) {
+  const entry = coverageEntry(opcode);
+  if (entry?.gapStatus !== "step-only-no-options") {
+    failures.push(`Manual no-option opcode ${opcode} should stay marked step-only-no-options.`);
+  }
+}
+
 for (const name of requiredCatalogExports) {
   if (!catalog.includes(name)) failures.push(`Missing AP catalog coverage export/type: ${name}`);
 }

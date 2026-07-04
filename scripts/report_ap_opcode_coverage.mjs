@@ -7,12 +7,15 @@ const jsonOut = path.join(outDir, "ap-opcode-coverage.json");
 const mdOut = path.join(outDir, "ap-opcode-coverage.md");
 
 const crosswalk = readJson(path.join(root, "src", "editor", "generated", "opcodeEdcdCrosswalk.json")).entries;
+const manualHelp = readJson(path.join(root, "docs", "generated", "divinity-opcode-help.json"));
 const catalogSource = fs.readFileSync(path.join(root, "src", "editor", "panels", "scripts", "scriptActionCatalog.ts"), "utf8");
 const actionSource = fs.readFileSync(path.join(root, "src", "editor", "realmzActions.ts"), "utf8");
+const manualEntriesByResource = new Map(manualHelp.entries.map((entry) => [entry.resourceId, entry]));
 
 const firstClass = parseNumberSet(catalogSource, "FIRST_CLASS_ACTIONS");
 const advanced = parseNumberSet(catalogSource, "ADVANCED_ACTIONS");
 const ignored = parseNumberSet(catalogSource, "IGNORED_ACTIONS");
+const manualNoneStepOnly = parseNumberSet(catalogSource, "MANUAL_NONE_STEP_ONLY_ACTIONS");
 const overrideCodes = parseOverrideCodes(catalogSource, "ACTION_OVERRIDES");
 const actionDetailCodes = parseOverrideCodes(actionSource, "ACTION_DETAILS");
 
@@ -20,16 +23,31 @@ const entries = Object.values(crosswalk)
   .sort((a, b) => a.opcode - b.opcode)
   .map((entry) => {
     const code = entry.opcode;
+    const manualEntries = manualHelpEntriesFor(code);
     const hasCatalogName = overrideCodes.has(code) || actionDetailCodes.has(code);
     const inFirstClass = firstClass.has(code);
     const inAdvanced = advanced.has(code);
     const inIgnored = ignored.has(code);
-    const status = classify(entry, { inFirstClass, inAdvanced, inIgnored, hasCatalogName });
+    const state = { inFirstClass, inAdvanced, inIgnored, hasCatalogName };
+    const status = classify(entry, state);
+    const manual = summarizeManualHelp(manualEntries);
+    const manualNoOptions = manualEntriesHaveNoOptions(manualEntries);
+    const isManualNoneStepOnly = manualNoneStepOnly.has(code);
+    const providenceFields = providenceAuthoringFields(entry, isManualNoneStepOnly);
+    const gapStatus = auditGapStatus(entry, state, status, manualEntries, isManualNoneStepOnly);
+    const evidenceConfidence = auditEvidenceConfidence(entry, status, manualEntries);
     return {
       opcode: code,
       title: coverageTitle(entry),
       status,
+      gapStatus,
+      evidenceConfidence,
       note: coverageNote(entry, status),
+      manual,
+      manualNoOptions,
+      manualNoneStepOnly: isManualNoneStepOnly,
+      relatedOpcodes: relatedManualOpcodes(manualEntries, code),
+      providenceFields,
       edcdBacked: Boolean(entry.edcdBacked),
       shape: entry.shape,
       writerStatus: entry.writerStatus,
@@ -37,23 +55,31 @@ const entries = Object.values(crosswalk)
       firstClass: inFirstClass,
       advanced: inAdvanced,
       targetFamily: entry.targetFamily,
-      idMeaning: entry.idMeaning
+      idMeaning: entry.idMeaning,
+      sourceStatus: entry.sourceStatus ?? null,
+      runtimeNote: entry.runtimeNote ?? null
     };
   });
 
 const groups = groupBy(entries, (entry) => entry.status);
+const gapGroups = groupBy(entries, (entry) => entry.gapStatus);
+const confidenceGroups = groupBy(entries, (entry) => entry.evidenceConfidence);
 const report = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   source: {
     crosswalk: "src/editor/generated/opcodeEdcdCrosswalk.json",
+    manualHelp: "docs/generated/divinity-opcode-help.json",
     catalog: "src/editor/panels/scripts/scriptActionCatalog.ts",
     actions: "src/editor/realmzActions.ts"
   },
   counts: Object.fromEntries([...groups.entries()].map(([key, value]) => [key, value.length]).sort()),
+  gapCounts: Object.fromEntries([...gapGroups.entries()].map(([key, value]) => [key, value.length]).sort()),
+  confidenceCounts: Object.fromEntries([...confidenceGroups.entries()].map(([key, value]) => [key, value.length]).sort()),
   entries,
   notes: [
     "Wrath AP 32/33 screenshot parity should be checked against the actual imported trigger selection, because the supplied Divinity and Providence screenshots appear to show neighboring Action Points rather than a guaranteed same selected row.",
-    "Authorable status means Providence can present the action by name and preserve normal CODE/ID or Data EDCD storage. It does not imply a runtime interpreter."
+    "Authorable status means Providence can present the action by name and preserve normal CODE/ID or Data EDCD storage. It does not imply a runtime interpreter.",
+    "Gap status is an audit triage label. Covered in current UI means the opcode has a writable named surface; it does not mean every field layout or wording is final."
   ]
 };
 
@@ -90,23 +116,143 @@ function coverageTitle(entry) {
   return entry.title;
 }
 
+function manualHelpEntriesFor(code) {
+  const resourceIds = manualHelp.byCode[String(code)] ?? [];
+  return resourceIds.map((id) => manualEntriesByResource.get(id)).filter(Boolean);
+}
+
+function summarizeManualHelp(manualEntries) {
+  if (manualEntries.length === 0) {
+    return {
+      resourceIds: [],
+      title: "",
+      idField: "",
+      use: "",
+      options: "",
+      extraCodes: ""
+    };
+  }
+  const primary = manualEntries[0];
+  return {
+    resourceIds: manualEntries.map((entry) => entry.resourceId),
+    title: primary.title ?? "",
+    idField: primary.idField ?? "",
+    use: primary.use ?? "",
+    options: primary.options ?? "",
+    extraCodes: primary.extraCodes ?? ""
+  };
+}
+
+function manualEntriesHaveNoOptions(manualEntries) {
+  if (manualEntries.length === 0) return false;
+  return manualEntries.every((entry) =>
+    /^none$/i.test(String(entry.idField ?? "").trim()) &&
+    /^none$/i.test(String(entry.options ?? "").trim()) &&
+    /^none$/i.test(String(entry.extraCodes ?? "").trim())
+  );
+}
+
+function relatedManualOpcodes(manualEntries, code) {
+  return [...new Set(manualEntries.flatMap((entry) => entry.codes ?? []))]
+    .filter((relatedCode) => relatedCode !== code)
+    .sort((a, b) => a - b);
+}
+
+function providenceAuthoringFields(entry, isManualNoneStepOnly) {
+  if (entry.parameters?.length > 0) {
+    return entry.parameters.map((parameter) => ({
+      index: parameter.index,
+      label: parameter.label,
+      internalName: parameter.internalName,
+      targetFamily: parameter.targetFamily ?? null,
+      preserved: Boolean(parameter.preserved)
+    }));
+  }
+  if (isManualNoneStepOnly || entry.opcode === 84 || entry.opcode === 98 || entry.opcode === 99) {
+    return [{
+      index: null,
+      label: "Step only",
+      internalName: "stepOnly",
+      targetFamily: null,
+      preserved: false
+    }];
+  }
+  if (entry.opcode === 62) {
+    return [{
+      index: null,
+      label: "TEXT Resource",
+      internalName: "textResourceId",
+      targetFamily: "text-resource",
+      preserved: false
+    }];
+  }
+  return [{
+    index: null,
+    label: entry.idMeaning || "ID",
+    internalName: "id",
+    targetFamily: entry.targetFamily ?? null,
+    preserved: false
+  }];
+}
+
+function auditGapStatus(entry, state, status, manualEntries, isManualNoneStepOnly) {
+  if (state.inIgnored || status === "not-used-no-dispatch") return "intentionally-preserved";
+  if (entry.opcode === 121) return "combat-macro-only";
+  if (entry.opcode === 84 || entry.opcode === 98 || entry.opcode === 99) return "legacy-compatible";
+  if (isManualNoneStepOnly) return "step-only-no-options";
+  if (status === "truly-unknown") return "needs-source-runtime-evidence";
+  if (status === "edcd-backed-needs-form") return "needs-guided-authoring";
+  if (manualEntries.length === 0) return "needs-manual-evidence";
+  if (status === "preserved-but-known") return "preserved-known-behavior";
+  return "covered-in-current-ui";
+}
+
+function auditEvidenceConfidence(entry, status, manualEntries) {
+  if (entry.sourceStatus?.startsWith("source-audited") || entry.sourceStatus === "corrected-field-semantics") {
+    return "source-backed";
+  }
+  if (entry.opcode === 84 || entry.opcode === 121) return "source-backed";
+  if (status === "truly-unknown") return "unknown";
+  if (entry.writerStatus === "writer-gated-not-used") return "manual-plus-preservation";
+  if (manualEntries.length > 0) return "manual-backed";
+  return "catalog-only";
+}
+
 function renderMarkdown(report) {
   const lines = [
     "# Action Point Opcode Coverage",
     "",
-    "Generated from Providence's action catalog and the Divinity/manual opcode crosswalk.",
+    "Generated from Providence's action catalog, the Divinity/manual opcode crosswalk, and extracted Divinity opcode help.",
     "",
     "## Summary",
     "",
     ...Object.entries(report.counts).map(([status, count]) => `- ${status}: ${count}`),
     "",
+    "## Audit Triage",
+    "",
+    ...Object.entries(report.gapCounts).map(([status, count]) => `- ${status}: ${count}`),
+    "",
+    "## Evidence Confidence",
+    "",
+    ...Object.entries(report.confidenceCounts).map(([status, count]) => `- ${status}: ${count}`),
+    "",
     "## Coverage",
     "",
-    "| Opcode | Status | Title | Storage | Shape | Notes |",
-    "| ---: | --- | --- | --- | --- | --- |"
+    "| Opcode | Gap | Confidence | Title | Manual ID | Providence Fields | Storage | Related | Notes |",
+    "| ---: | --- | --- | --- | --- | --- | --- | --- | --- |"
   ];
   for (const entry of report.entries) {
-    lines.push(`| ${entry.opcode} | ${entry.status} | ${escapeCell(entry.title)} | ${entry.edcdBacked ? "Data EDCD" : entry.targetFamily ?? "direct"} | ${entry.shape ?? ""} | ${escapeCell(entry.note)} |`);
+    lines.push([
+      `| ${entry.opcode}`,
+      entry.gapStatus,
+      entry.evidenceConfidence,
+      escapeCell(entry.title),
+      escapeCell(entry.manual.idField || entry.idMeaning || ""),
+      escapeCell(formatProvidenceFields(entry.providenceFields)),
+      entry.edcdBacked ? "Data EDCD" : entry.targetFamily ?? "direct",
+      entry.relatedOpcodes.join(", "),
+      escapeCell(entry.note || entry.runtimeNote || "")
+    ].join(" | ") + " |");
   }
   lines.push(
     "",
@@ -123,6 +269,16 @@ function renderMarkdown(report) {
     ""
   );
   return `${lines.join("\n")}\n`;
+}
+
+function formatProvidenceFields(fields) {
+  return fields
+    .filter((field) => !field.preserved)
+    .map((field) => {
+      const target = field.targetFamily ? ` -> ${field.targetFamily}` : "";
+      return `${field.label}${target}`;
+    })
+    .join("; ");
 }
 
 function parseNumberSet(source, name) {

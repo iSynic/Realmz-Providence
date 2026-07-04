@@ -163,6 +163,10 @@ const ADVANCED_ACTIONS = new Set([121]);
 
 const IGNORED_ACTIONS = new Set([0, ...NOT_USED_ACTION_CODES]);
 
+const MANUAL_NONE_STEP_ONLY_ACTIONS = new Set([
+  25, 26, 34, 82, 83, 84, 91, 93, 94, 96, 97, 98, 99, 100, 101, 102
+]);
+
 const ACTION_OVERRIDES: Record<number, Partial<Pick<ScriptActionDefinition, "label" | "shortLabel" | "category" | "description" | "searchTerms">>> = {
   [-23]: { label: "Change Dungeon Random Encounter Area", shortLabel: "Random Area", category: "Encounters", description: "Adjust a dungeon random encounter area." },
   [-14]: { label: "Pick Opposite Characters", shortLabel: "Pick Opposite", category: "Party", description: "Switch the selected character set to its opposite." },
@@ -1019,6 +1023,7 @@ function formKindFor(
   targetFamily: string | undefined
 ): ScriptStepFormKind {
   if (IGNORED_ACTIONS.has(code)) return "advanced";
+  if (MANUAL_NONE_STEP_ONLY_ACTIONS.has(code)) return "step-only";
   if (category === "Advanced") return "advanced";
   if (code === 3 || edcdShape === "choice") return "choice";
   if (targetFamily === "message" || edcdShape === "random-message") return "message";
