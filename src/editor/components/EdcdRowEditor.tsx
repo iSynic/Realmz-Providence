@@ -168,9 +168,9 @@ export function EdcdRowEditor({
         {!row && (
           <EmptyState
             compact
-            title="Settings not created yet"
+            title={presentation === "selected-step" ? "Authoring fields not created yet" : "Settings not created yet"}
             body={presentation === "selected-step"
-              ? `This ${selectedSlotLabel} will create these settings when applied.`
+              ? `Applying this ${selectedSlotLabel} will create the stored fields this action needs.`
               : `This ${selectedSlotLabel} will use settings ${rowId}. Applying the guided settings below will create that row.`}
           />
         )}
@@ -1467,7 +1467,7 @@ function guidedModeOptionsForField(shape: string, name: string, opcode?: number)
       { value: -1, label: "Keep current shape" },
       { value: 0, label: "Set coordinates" },
       { value: 1, label: "Offset rectangle" },
-      { value: 2, label: "Use next action settings row" }
+      { value: 2, label: "Use paired shape details" }
     ];
   }
   if (normalizedName === "revivepartyflag") {
@@ -1764,9 +1764,9 @@ function ChoiceDialogEditor({
         {!rowExists && (
           <EmptyState
             compact
-            title="Missing choice dialog settings"
+            title={presentation === "selected-step" ? "Choice fields not created yet" : "Missing choice dialog settings"}
             body={presentation === "selected-step"
-              ? `This ${selectedSlotLabel} will create this choice dialog when applied.`
+              ? `Applying this ${selectedSlotLabel} will create the stored choice fields it needs.`
               : `This ${selectedSlotLabel} uses choice dialog ${rowId}. Applying values here will create it.`}
           />
         )}

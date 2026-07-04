@@ -526,6 +526,16 @@ for (const [label, source] of normalUiSources) {
   }
 }
 
+if (panel.includes("<small className=\"script-storage-chip\">CODE")) {
+  failures.push("Selected-step authoring header must keep raw CODE/ID in collapsed Step Reference, not the primary card.");
+}
+if (catalog.includes("Settings #${draft.id}") || catalog.includes("choose settings")) {
+  failures.push("Settings-backed step summaries should describe authoring fields, not raw settings row IDs.");
+}
+if (edcd.includes("Use next action settings row")) {
+  failures.push("Random rectangle shape mode should use author-facing wording instead of action settings row wording.");
+}
+
 if (/label:\s*["']Opcode\s+\d+/i.test(catalog)) {
   failures.push("Action catalog contains a visible Opcode label.");
 }

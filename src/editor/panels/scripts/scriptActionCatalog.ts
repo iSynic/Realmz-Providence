@@ -686,7 +686,7 @@ export function scriptActionSummary(
     if (draft.id === 0) return `${definition.shortLabel}: choose ${definition.target.label.toLowerCase()}`;
     return `${definition.shortLabel}: ${definition.target.label} ${draft.id}`;
   }
-  if (definition.parameters.length > 0) return `${definition.shortLabel}: Settings #${draft.id}`;
+  if (definition.parameters.length > 0) return `${definition.shortLabel}: authoring fields${draft.id ? " not created" : " needed"}`;
   return definition.shortLabel;
 }
 
@@ -758,7 +758,9 @@ function summarizeSettingsBackedAction(
   const code = normalizeStepOpcode(draft.rawCode);
   const values = settingsValues(project, draft);
   if (!values && definition.target?.targetFamily === "parameter-row") {
-    return draft.id === 0 ? `${definition.shortLabel}: choose settings` : `${definition.shortLabel}: Settings #${draft.id}`;
+    return draft.id === 0
+      ? `${definition.shortLabel}: choose authoring fields`
+      : `${definition.shortLabel}: authoring fields not created`;
   }
   if (!values) return "";
   if (code === 3) {

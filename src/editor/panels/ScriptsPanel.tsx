@@ -2615,7 +2615,6 @@ function SelectedStepDetail({
           <div>
             <strong>{actionDefinitionPathLabel(selectedDefinition)}</strong>
             <span>{selectedDefinition.categoryLabel}</span>
-            <small className="script-storage-chip">CODE {selectedDraft.rawCode} / ID {selectedDraft.id}</small>
           </div>
           <button
             type="button"
