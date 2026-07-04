@@ -1,0 +1,111 @@
+type ZipFileEntry = {
+  path: string;
+  bytes: Uint8Array;
+  modifiedAt?: Date;
+};
+
+const UTF8_FLAG = 0x0800;
+const STORE_METHOD = 0;
+const VERSION_NEEDED = 20;
+const VERSION_MADE_BY = 20;
+const CRC_TABLE = makeCrcTable();
+
+export function createStoredZip(entries: ZipFileEntry[]) {
+  const localParts: Uint8Array[] = [];
+  const centralParts: Uint8Array[] = [];
+  let offset = 0;
+
+  for (const entry of entries) {
+    const normalizedPath = entry.path.replace(/\\/g, "/").replace(/^\/+/, "");
+    const nameBytes = new TextEncoder().encode(normalizedPath);
+    const modified = dosDateTime(entry.modifiedAt ?? new Date());
+    const crc = crc32(entry.bytes);
+    const localHeader = new Uint8Array(30 + nameBytes.length);
+    const localView = new DataView(localHeader.buffer);
+    localView.setUint32(0, 0x04034b50, true);
+    localView.setUint16(4, VERSION_NEEDED, true);
+    localView.setUint16(6, UTF8_FLAG, true);
+    localView.setUint16(8, STORE_METHOD, true);
+    localView.setUint16(10, modified.time, true);
+    localView.setUint16(12, modified.date, true);
+    localView.setUint32(14, crc, true);
+    localView.setUint32(18, entry.bytes.length, true);
+    localView.setUint32(22, entry.bytes.length, true);
+    localView.setUint16(26, nameBytes.length, true);
+    localHeader.set(nameBytes, 30);
+
+    const centralHeader = new Uint8Array(46 + nameBytes.length);
+    const centralView = new DataView(centralHeader.buffer);
+    centralView.setUint32(0, 0x02014b50, true);
+    centralView.setUint16(4, VERSION_MADE_BY, true);
+    centralView.setUint16(6, VERSION_NEEDED, true);
+    centralView.setUint16(8, UTF8_FLAG, true);
+    centralView.setUint16(10, STORE_METHOD, true);
+    centralView.setUint16(12, modified.time, true);
+    centralView.setUint16(14, modified.date, true);
+    centralView.setUint32(16, crc, true);
+    centralView.setUint32(20, entry.bytes.length, true);
+    centralView.setUint32(24, entry.bytes.length, true);
+    centralView.setUint16(28, nameBytes.length, true);
+    centralView.setUint32(42, offset, true);
+    centralHeader.set(nameBytes, 46);
+
+    localParts.push(localHeader, entry.bytes);
+    centralParts.push(centralHeader);
+    offset += localHeader.length + entry.bytes.length;
+  }
+
+  const centralOffset = offset;
+  const centralSize = byteLength(centralParts);
+  const endRecord = new Uint8Array(22);
+  const endView = new DataView(endRecord.buffer);
+  endView.setUint32(0, 0x06054b50, true);
+  endView.setUint16(8, entries.length, true);
+  endView.setUint16(10, entries.length, true);
+  endView.setUint32(12, centralSize, true);
+  endView.setUint32(16, centralOffset, true);
+
+  return concatBytes([...localParts, ...centralParts, endRecord]);
+}
+
+function concatBytes(parts: Uint8Array[]) {
+  const output = new Uint8Array(byteLength(parts));
+  let offset = 0;
+  for (const part of parts) {
+    output.set(part, offset);
+    offset += part.length;
+  }
+  return output;
+}
+
+function byteLength(parts: Uint8Array[]) {
+  return parts.reduce((sum, part) => sum + part.length, 0);
+}
+
+function dosDateTime(date: Date) {
+  const year = Math.max(1980, date.getFullYear());
+  return {
+    time: (date.getHours() << 11) | (date.getMinutes() << 5) | Math.floor(date.getSeconds() / 2),
+    date: ((year - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate()
+  };
+}
+
+function crc32(bytes: Uint8Array) {
+  let crc = 0xffffffff;
+  for (const byte of bytes) {
+    crc = CRC_TABLE[(crc ^ byte) & 0xff] ^ (crc >>> 8);
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function makeCrcTable() {
+  const table = new Uint32Array(256);
+  for (let i = 0; i < table.length; i += 1) {
+    let value = i;
+    for (let bit = 0; bit < 8; bit += 1) {
+      value = (value & 1) ? 0xedb88320 ^ (value >>> 1) : value >>> 1;
+    }
+    table[i] = value >>> 0;
+  }
+  return table;
+}

@@ -13,9 +13,9 @@ const TOPBAR_HELP_HELP =
 const TOPBAR_MANUAL_HELP =
   "Triple-click the Realmz Providence mark to open the local Divinity Manual. Providence docs summarize workflows; the manual remains the chapter-level legacy reference.";
 const TOPBAR_RUNTIME_HELP =
-  "The runtime badge tells you whether you are in the desktop app or browser preview. Desktop can write project folders and export Realmz scenario folders; browser mode uses picker imports and downloadable project JSON.";
+  "The runtime badge tells you whether you are in the desktop app or browser preview. Desktop can write project folders and export Realmz scenario folders; browser mode saves projects locally in the browser.";
 const TOPBAR_DIRTY_HELP =
-  "Dirty means the Providence project has unsaved editor changes. Desktop Save writes the project package; browser Save downloads project.json for later reopening.";
+  "Dirty means the Providence project has unsaved editor changes. Desktop Save writes the project package; browser Save stores the project locally in this browser.";
 const TOPBAR_EDITING_HELP =
   "Editing appears while a text field or editable control owns focus. Keyboard shortcuts may defer to that field until editing ends.";
 const TOPBAR_LIBRARY_HELP =
@@ -33,9 +33,9 @@ const TOPBAR_UNDO_HELP =
 const TOPBAR_REDO_HELP =
   "Redo reapplies an undone Providence project command when history is available.";
 const TOPBAR_SAVE_HELP =
-  "Save writes the Providence project package on desktop. In browser mode, Save downloads the current project as project.json so edits are not trapped in memory.";
+  "Save writes the Providence project package on desktop. In browser mode, Save persists the current project in browser-local storage.";
 const TOPBAR_EXPORT_HELP =
-  "Export writes a Realmz-readable scenario folder from the current project state. The scenario writer is desktop-only today; browser mode routes you to save project JSON and export from desktop.";
+  "Export writes a Realmz-readable scenario folder on desktop. In browser mode, Export downloads a Providence project ZIP backup; the Realmz scenario writer is still desktop-only.";
 const TOPBAR_HISTORY_HELP =
   "Workbench history moves backward and forward through recently visited Providence tools and selected records without changing the project itself.";
 
@@ -48,7 +48,8 @@ export function WorkbenchTopbar({
   dirty,
   editing,
   importAllowed,
-  canUseFiles,
+  canOpenProject,
+  canImportScenario,
   browserPreviewStatus,
   undoLabel,
   redoLabel,
@@ -83,7 +84,8 @@ export function WorkbenchTopbar({
   dirty: boolean;
   editing: boolean;
   importAllowed: boolean;
-  canUseFiles: boolean;
+  canOpenProject: boolean;
+  canImportScenario: boolean;
   browserPreviewStatus: string;
   undoLabel: string | null;
   redoLabel: string | null;
@@ -112,8 +114,8 @@ export function WorkbenchTopbar({
 }) {
   const manualClickRef = useRef({ count: 0, lastClickMs: 0 });
   const isDesktopRuntime = runtimeLabel === "Desktop";
-  const saveTitle = canSave ? (isDesktopRuntime ? "Save project" : "Download project.json") : browserPreviewStatus;
-  const exportTitle = canExport ? (isDesktopRuntime ? "Export scenario" : "Export requires desktop writer") : browserPreviewStatus;
+  const saveTitle = canSave ? (isDesktopRuntime ? "Save project" : "Save project locally in this browser") : browserPreviewStatus;
+  const exportTitle = canExport ? (isDesktopRuntime ? "Export scenario" : "Download Providence project ZIP backup") : browserPreviewStatus;
 
   function handleManualIconClick() {
     const now = window.performance.now();
@@ -217,8 +219,8 @@ export function WorkbenchTopbar({
             className="topbar-action-button"
             type="button"
             onClick={onOpenProject}
-            disabled={!canUseFiles}
-            title={canUseFiles ? "Open Providence project package" : browserPreviewStatus}
+            disabled={!canOpenProject}
+            title={canOpenProject ? (isDesktopRuntime ? "Open Providence project package" : "Open saved browser project") : browserPreviewStatus}
           >
             <FolderOpen size={15} />
             <span>Open</span>
@@ -230,8 +232,8 @@ export function WorkbenchTopbar({
               className="topbar-action-button"
               type="button"
               onClick={onImportScenario}
-              disabled={!canUseFiles}
-              title={canUseFiles ? "Import a Realmz scenario into this empty project" : browserPreviewStatus}
+              disabled={!canImportScenario}
+              title={canImportScenario ? "Import a Realmz scenario into this empty project" : browserPreviewStatus}
             >
               <Upload size={15} />
               <span>Import</span>

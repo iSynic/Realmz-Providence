@@ -4,6 +4,8 @@ import { Dispatch } from "react";
 import { isBrowserPickerAbort, pickBrowserProjectSource, pickBrowserScenarioSource } from "../browser/fsAccess";
 import { createBrowserWorkspace, importBrowserLibrary } from "../browser/library";
 import { benchmarkBrowserProject, createBrowserProject, ensureBrowserReferenceTileAttributes, importBrowserScenario, openBrowserProject, validateBrowserProject } from "../browser/project";
+import { browserProjectPackageFileName, createBrowserProjectPackageZip } from "../browser/projectPackage";
+import { loadActiveBrowserProject, saveBrowserProject } from "../browser/projectStore";
 import { persistBrowserIconLibraryEntries } from "../iconLibrary";
 import { LibraryDraftSpec, createLibraryDraft, updateLibraryDraft } from "../libraryDrafts";
 import { persistBrowserMonsterLibraryEntries } from "../monsterLibrary";
@@ -73,11 +75,20 @@ export function useProjectLifecycleActions({
     const targetProjectDir = defaultProjectPath(roots.project, projectName);
     if (!desktopRuntime) {
       const project = await ensureBrowserReferenceTileAttributes(createBrowserProject(projectName));
-      setProjectDir(project.scenario.projectPath);
-      setExportDir(defaultExportPath(roots.export, project.scenario.name));
-      dispatch({ type: "setProject", project, selectedMapId: null });
-      dispatch({ type: "setTab", tab: "maps" });
-      dispatch({ type: "setStatus", status: `Created browser project ${project.scenario.name}` });
+      try {
+        const snapshot = await saveBrowserProject(project);
+        setProjectDir(snapshot.key);
+        setExportDir(defaultExportPath(roots.export, snapshot.project.scenario.name));
+        dispatch({ type: "setProject", project: snapshot.project, selectedMapId: null });
+        dispatch({ type: "setTab", tab: "maps" });
+        dispatch({ type: "setStatus", status: `Created and saved browser project ${snapshot.project.scenario.name}` });
+      } catch (error) {
+        setProjectDir(project.scenario.projectPath);
+        setExportDir(defaultExportPath(roots.export, project.scenario.name));
+        dispatch({ type: "setProject", project, selectedMapId: null });
+        dispatch({ type: "setTab", tab: "maps" });
+        dispatch({ type: "setStatus", status: `Created browser project ${project.scenario.name}; local save failed: ${commandError(error)}` });
+      }
       return;
     }
     try {
@@ -95,25 +106,40 @@ export function useProjectLifecycleActions({
 
   async function chooseExistingProject() {
     if (!desktopRuntime) {
+      try {
+        const snapshot = await loadActiveBrowserProject();
+        if (snapshot) {
+          setProjectDir(snapshot.key);
+          setExportDir(defaultExportPath(roots.export, snapshot.project.scenario.name));
+          dispatch({ type: "setProject", project: snapshot.project, selectedMapId: snapshot.project.maps[0]?.id ?? null });
+          dispatch({ type: "setTab", tab: "maps" });
+          dispatch({ type: "setStatus", status: `Opened saved browser project ${snapshot.project.scenario.name}` });
+          return;
+        }
+      } catch (error) {
+        dispatch({ type: "setStatus", status: `Browser project storage unavailable: ${commandError(error)}` });
+      }
       if (!browserFileSystem) {
-        dispatch({ type: "setStatus", status: "Browser project opening needs File System Access support, such as Chrome or Edge." });
+        dispatch({ type: "setStatus", status: "No saved browser project found. Import/opening from a folder needs browser directory support." });
         return;
       }
       try {
         const handle = await pickBrowserProjectSource();
         try {
           const project = await openBrowserProject(handle);
-          setProjectDir(`browser://${handle.name}`);
-          setExportDir(defaultExportPath(roots.export, project.scenario.name));
-          dispatch({ type: "setProject", project, selectedMapId: project.maps[0]?.id ?? null });
+          const snapshot = await saveBrowserProject(project);
+          setProjectDir(snapshot.key);
+          setExportDir(defaultExportPath(roots.export, snapshot.project.scenario.name));
+          dispatch({ type: "setProject", project: snapshot.project, selectedMapId: snapshot.project.maps[0]?.id ?? null });
           dispatch({ type: "setTab", tab: "maps" });
-          dispatch({ type: "setStatus", status: `Opened browser project ${project.scenario.name}` });
+          dispatch({ type: "setStatus", status: `Opened and saved browser project ${snapshot.project.scenario.name}` });
         } catch (error) {
           if (!isMissingProjectJson(error)) throw error;
           const project = await ensureBrowserReferenceTileAttributes(createBrowserProject(handle.name));
-          setProjectDir(`browser://${handle.name}`);
-          setExportDir(defaultExportPath(roots.export, project.scenario.name));
-          dispatch({ type: "setProject", project, selectedMapId: null });
+          const snapshot = await saveBrowserProject(project);
+          setProjectDir(snapshot.key);
+          setExportDir(defaultExportPath(roots.export, snapshot.project.scenario.name));
+          dispatch({ type: "setProject", project: snapshot.project, selectedMapId: null });
           dispatch({ type: "setTab", tab: "maps" });
           dispatch({ type: "setStatus", status: `Started empty browser project ${project.scenario.name}` });
         }
@@ -178,12 +204,14 @@ export function useProjectLifecycleActions({
             projectPath: state.project.scenario.projectPath
           }
         };
-        setExportDir(defaultExportPath(roots.export, project.scenario.name));
-        dispatch({ type: "setProject", project, selectedMapId: project.maps[0]?.id ?? null });
+        const snapshot = await saveBrowserProject(project);
+        setProjectDir(snapshot.key);
+        setExportDir(defaultExportPath(roots.export, snapshot.project.scenario.name));
+        dispatch({ type: "setProject", project: snapshot.project, selectedMapId: snapshot.project.maps[0]?.id ?? null });
         dispatch({ type: "setTab", tab: "maps" });
         dispatch({
           type: "setStatus",
-          status: `Imported ${handle.name} into ${project.scenario.name}: ${project.maps.length.toLocaleString()} maps, ${project.triggers.length.toLocaleString()} action points`
+          status: `Imported and saved ${handle.name} into ${snapshot.project.scenario.name}: ${snapshot.project.maps.length.toLocaleString()} maps, ${snapshot.project.triggers.length.toLocaleString()} action points`
         });
       } catch (error) {
         dispatch({ type: "setStatus", status: `Browser import failed: ${commandError(error)}` });
@@ -323,11 +351,12 @@ export function useProjectLifecycleActions({
     if (!state.project) return;
     if (!desktopRuntime) {
       try {
-        downloadBrowserProjectJson(state.project);
-        dispatch({ type: "markSaved", project: state.project });
+        const snapshot = await saveBrowserProject(state.project);
+        setProjectDir(snapshot.key);
+        dispatch({ type: "markSaved", project: snapshot.project });
         dispatch({
           type: "setStatus",
-          status: "Downloaded project.json. Reopen that file or folder later to continue from this browser-saved copy."
+          status: "Project saved locally in this browser. Use Export to download a Providence project ZIP backup."
         });
       } catch (error) {
         dispatch({ type: "setStatus", status: `Browser save failed: ${commandError(error)}` });
@@ -347,10 +376,8 @@ export function useProjectLifecycleActions({
   async function exportProject(scenarioTarget: ScenarioTarget = "providence-portable-folder") {
     if (!state.project) return;
     if (!desktopRuntime) {
-      dispatch({
-        type: "setStatus",
-        status: "Scenario folder export uses the desktop writer. Use Save to download project.json, then export from the desktop app."
-      });
+      downloadBrowserProjectPackage(state.project);
+      dispatch({ type: "setStatus", status: "Downloaded Providence project ZIP backup. Realmz scenario folder export still requires the desktop writer." });
       return;
     }
     try {
@@ -412,6 +439,12 @@ export function useProjectLifecycleActions({
     }
   }
 
+  function downloadProjectJsonBackup() {
+    if (!state.project) return;
+    downloadBrowserProjectJson(state.project);
+    dispatch({ type: "setStatus", status: "Downloaded project.json backup." });
+  }
+
   return {
     showNewProjectDialog,
     createNewProject,
@@ -425,6 +458,7 @@ export function useProjectLifecycleActions({
     updateDraftEntry,
     updateLibraryCatalog: commitLibraryCatalog,
     saveProject,
+    downloadProjectJsonBackup,
     exportProject,
     validateProject,
     benchmarkProject
@@ -438,6 +472,22 @@ function downloadBrowserProjectJson(project: Project) {
   const link = document.createElement("a");
   link.href = url;
   link.download = "project.json";
+  link.style.position = "fixed";
+  link.style.left = "-10000px";
+  link.style.top = "-10000px";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function downloadBrowserProjectPackage(project: Project) {
+  if (typeof document === "undefined") throw new Error(BROWSER_PREVIEW_STATUS);
+  const blob = new Blob([createBrowserProjectPackageZip(project)], { type: "application/zip" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = browserProjectPackageFileName(project);
   link.style.position = "fixed";
   link.style.left = "-10000px";
   link.style.top = "-10000px";

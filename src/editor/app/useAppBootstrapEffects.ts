@@ -7,6 +7,7 @@ import {
   loadBundledLibraryCatalog
 } from "../browser/library";
 import { buildBrowserSemanticSchemaForProject, ensureBrowserReferenceTileAttributes } from "../browser/project";
+import { loadActiveBrowserProject } from "../browser/projectStore";
 import { loadImage } from "../components/TileSprite";
 import {
   PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES,
@@ -95,6 +96,29 @@ export function useAppBootstrapEffects({
       disposed = true;
     };
   }, [desktopRuntime, dispatch, setProjectDir]);
+
+  useEffect(() => {
+    if (desktopRuntime || state.project) return;
+    const benchmarkProjectUrl = new URLSearchParams(window.location.search).get("benchmarkProject");
+    if (benchmarkProjectUrl) return;
+    let disposed = false;
+    async function restoreBrowserProject() {
+      try {
+        const snapshot = await loadActiveBrowserProject();
+        if (!snapshot || disposed) return;
+        setProjectDir(snapshot.key);
+        dispatch({ type: "setProject", project: snapshot.project, selectedMapId: snapshot.project.maps[0]?.id ?? null });
+        dispatch({ type: "setTab", tab: "maps" });
+        dispatch({ type: "setStatus", status: `Restored browser project ${snapshot.project.scenario.name}` });
+      } catch (error) {
+        if (!disposed) dispatch({ type: "setStatus", status: `Browser project restore skipped: ${commandError(error)}` });
+      }
+    }
+    void restoreBrowserProject();
+    return () => {
+      disposed = true;
+    };
+  }, [desktopRuntime, dispatch, setProjectDir, state.project]);
 
   useEffect(() => {
     let disposed = false;

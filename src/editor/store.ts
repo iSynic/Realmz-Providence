@@ -24,7 +24,7 @@ import {
 import { applyProjectCommand, projectCommandChangeCount, projectCommandLabel } from "./projectCommands";
 import { triggerEntityId } from "./utils";
 
-export const BROWSER_PREVIEW_STATUS = "Browser preview: choose a scenario folder in Chrome/Edge, or use the desktop app for save/export";
+export const BROWSER_PREVIEW_STATUS = "Browser preview: projects save locally in this browser; Export downloads a Providence project ZIP backup, and Realmz scenario export is desktop-only";
 const UNDO_LIMIT = 50;
 
 export type HistoryEntry = {

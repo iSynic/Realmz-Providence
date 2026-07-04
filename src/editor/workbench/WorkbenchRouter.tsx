@@ -74,6 +74,7 @@ function WorkbenchRouterContent({
   onDeleteAsset,
   onValidate,
   onExport,
+  onExportProjectJson,
   onBenchmark
 }: WorkbenchRouterProps) {
   if (!state.project && state.activeWorkbench === "project") {
@@ -321,7 +322,9 @@ function WorkbenchRouterContent({
         project={state.project}
         exportReport={exportReport}
         benchmark={benchmark}
+        desktopRuntime={desktopRuntime}
         onExport={onExport}
+        onExportProjectJson={onExportProjectJson}
         onBenchmark={onBenchmark}
       />
     );
@@ -372,6 +375,7 @@ type WorkbenchRouterProps = {
   onDeleteAsset: (assetId: string) => void;
   onValidate: () => void;
   onExport: (target?: ScenarioTarget) => void;
+  onExportProjectJson: () => void;
   onBenchmark: () => void;
 };
 

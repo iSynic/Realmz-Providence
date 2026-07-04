@@ -11,7 +11,8 @@ export function ProvidenceEditorShell({
   children,
   runtimeLabel,
   runtimeLive,
-  canUseFiles,
+  canOpenProject,
+  canImportScenario,
   browserPreviewStatus,
   importAllowed,
   railIssueCount,
@@ -45,7 +46,8 @@ export function ProvidenceEditorShell({
   children: ReactNode;
   runtimeLabel: string;
   runtimeLive: boolean;
-  canUseFiles: boolean;
+  canOpenProject: boolean;
+  canImportScenario: boolean;
   browserPreviewStatus: string;
   importAllowed: boolean;
   railIssueCount: number;
@@ -88,7 +90,8 @@ export function ProvidenceEditorShell({
         dirty={state.dirty}
         editing={Boolean(state.groupLabel)}
         importAllowed={importAllowed}
-        canUseFiles={canUseFiles}
+        canOpenProject={canOpenProject}
+        canImportScenario={canImportScenario}
         browserPreviewStatus={browserPreviewStatus}
         undoLabel={undoLabel}
         redoLabel={redoLabel}

@@ -294,6 +294,7 @@ export function App() {
     updateDraftEntry,
     updateLibraryCatalog,
     saveProject,
+    downloadProjectJsonBackup,
     exportProject,
     validateProject,
     benchmarkProject
@@ -567,9 +568,10 @@ export function App() {
   return (
     <ProvidenceEditorShell
       state={state}
-      runtimeLabel={desktopRuntime ? "Desktop" : browserFileSystem ? "Browser FS" : "Browser Preview"}
-      runtimeLive={desktopRuntime || browserFileSystem}
-      canUseFiles={desktopRuntime || browserFileSystem}
+      runtimeLabel={desktopRuntime ? "Desktop" : browserFileSystem ? "Browser FS" : "Browser Local"}
+      runtimeLive={true}
+      canOpenProject={true}
+      canImportScenario={desktopRuntime || browserFileSystem}
       browserPreviewStatus={BROWSER_PREVIEW_STATUS}
       importAllowed={importAllowed}
       railIssueCount={railIssueCount}
@@ -665,6 +667,7 @@ export function App() {
         onDeleteAsset={deleteManagedAsset}
         onValidate={validateProject}
         onExport={exportProject}
+        onExportProjectJson={downloadProjectJsonBackup}
         onBenchmark={benchmarkProject}
       />
       {projectDialogOpen && (

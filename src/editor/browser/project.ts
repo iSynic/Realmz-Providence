@@ -453,6 +453,10 @@ function i32At(buffer: Uint8Array, offset: number) {
 export async function openBrowserProject(source: BrowserScenarioSource): Promise<Project> {
   const text = await readProjectJson(source);
   const project = JSON.parse(text) as Project;
+  return normalizeBrowserProject(project);
+}
+
+export function normalizeBrowserProject(project: Project): Project {
   project.assets ??= [];
   project.scenario.shell ??= defaultScenarioShell(project.scenario.name);
   project.scenario.contactInfo ??= defaultScenarioContactInfo(project.scenario.name);
@@ -487,6 +491,7 @@ export async function openBrowserProject(source: BrowserScenarioSource): Promise
   project.editorMetadata.mapStamps ??= [];
   project.editorMetadata.questThreads ??= [];
   project.editorMetadata.questContextSources ??= [];
+  project.semanticSchema ??= emptySemanticSchema();
   project.semanticSchema.decoding ??= { ed3Reachability: [], dispatcherNoops: [], confidenceDebt: [] };
   backfillTilesetMetadata(project);
   project.validation = validateBrowserProject(project);

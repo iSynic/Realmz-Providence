@@ -3518,9 +3518,47 @@ button.documents-source-chip {
 
 .export-actions {
   display: flex;
+  flex-wrap: wrap;
+  align-items: end;
   gap: 8px;
   padding: 12px;
   border-bottom: 1px solid #252a31;
+}
+
+.export-actions .export-target-field {
+  display: grid;
+  gap: 4px;
+  min-width: min(100%, 320px);
+}
+
+.export-actions .export-target-field > span,
+.export-actions .export-target-field .tutorial-tip > span {
+  color: #cbd5df;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.export-actions .export-target-field select {
+  width: 100%;
+  min-height: 32px;
+  border: 1px solid #31445a;
+  border-radius: 5px;
+  background: #0e171f;
+  color: #eef7ff;
+  padding: 5px 8px;
+  font: inherit;
+  font-size: 14px;
+}
+
+.export-actions .export-target-field select:focus {
+  outline: 1px solid #2f8bd8;
+  border-color: #3a87c7;
+}
+
+.browser-export-boundary {
+  padding-top: 10px;
+  white-space: normal;
+  line-height: 1.45;
 }
 
 

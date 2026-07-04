@@ -15,9 +15,14 @@ import {
   unresolvedLinks
 } from "../semanticGraph";
 
-const EXPORT_WORKBENCH_HELP = "Export writes a Realmz-compatible scenario folder from the current project and reports what was written, preserved, passed through, blocked, or warned.";
+type BrowserExportTarget = "project-zip" | "mac-classic-scenario-zip" | "windows-realmz-scenario-zip";
+
+const EXPORT_WORKBENCH_HELP = "Desktop export writes a Realmz-compatible scenario folder from the current project and reports what was written, preserved, passed through, blocked, or warned. Browser export can download a Providence project ZIP backup while the browser Realmz writer is being ported.";
 const EXPORT_TARGET_HELP = "Choose the package shape to write. Portable Providence is useful for internal roundtrips; Mac Classic and Windows Realmz match the target runtime folder conventions.";
-const EXPORT_ACTION_HELP = "Export Scenario Folder runs the writer for the selected target. Run validation first, then inspect the export report for blocked assets, resource warnings, and target compatibility notes.";
+const EXPORT_ACTION_HELP = "Desktop Export Scenario Folder runs the writer for the selected target. Browser export downloads a Providence project ZIP backup that can be extracted and reopened later.";
+const EXPORT_JSON_HELP = "Download the current project.json directly. This is useful as a small browser backup or for inspecting the project state without extracting the ZIP package.";
+const BROWSER_SCENARIO_EXPORT_PENDING_HELP = "Browser scenario ZIP export needs the Realmz writer ported from the Rust/Tauri exporter and persistent browser source snapshots. A plain project.json ZIP is not enough to produce edited Realmz binary files, resource forks, target-specific folder layouts, and pass-through source files safely.";
+const BROWSER_EXPORT_TARGET_HELP = "Choose the browser export artifact. Project ZIP is available now; Mac and Windows scenario ZIPs are listed as the target formats that still need browser writer support.";
 const BENCHMARK_HELP = "Benchmark Project measures large-scenario UI and validation scale so release candidates do not regress on dense maps, triggers, or Action Settings.";
 const EXPORT_REPORT_HELP = "The export report is the release ledger for this session: output folder, target, source files, pass-through files, resource writes, preserved resources, blocked assets, and warnings.";
 const EXPORT_PLAN_HELP = "Export Plan previews the current project boundary before writing: writer-supported records, pass-through files, resource gaps, runtime caches, unresolved links, and blocked objects.";
@@ -30,47 +35,88 @@ export function ExportPanel({
   project,
   exportReport,
   benchmark,
+  desktopRuntime,
   onExport,
+  onExportProjectJson,
   onBenchmark
 }: {
   project: Project | null;
   exportReport: ExportReport | null;
   benchmark: BenchmarkReport | null;
+  desktopRuntime: boolean;
   onExport: (target?: ScenarioTarget) => void;
+  onExportProjectJson: () => void;
   onBenchmark: () => void;
 }) {
   const [target, setTarget] = useState<ScenarioTarget>("providence-portable-folder");
+  const [browserTarget, setBrowserTarget] = useState<BrowserExportTarget>("project-zip");
   const plan = exportPlan(project);
+  const exportTitle = desktopRuntime ? "Realmz Folder Export" : "Providence Project Backup";
+  const browserScenarioTargetSelected = !desktopRuntime && browserTarget !== "project-zip";
+  const exportButtonLabel = desktopRuntime
+    ? "Export Scenario Folder"
+    : browserScenarioTargetSelected
+      ? "Scenario ZIP Pending Browser Writer"
+      : "Download Project ZIP";
+  const exportButtonHelp = browserScenarioTargetSelected ? BROWSER_SCENARIO_EXPORT_PENDING_HELP : EXPORT_ACTION_HELP;
+  const exportDisabled = !project || browserScenarioTargetSelected;
   return (
     <div className="editor-full-panel export-workbench">
       <section className="tab-panel">
         <div className="panel-header">
-          <TutorialTip title="Realmz Folder Export" body={EXPORT_WORKBENCH_HELP} side="below">
-            <span>Realmz Folder Export</span>
+          <TutorialTip title={exportTitle} body={EXPORT_WORKBENCH_HELP} side="below">
+            <span>{exportTitle}</span>
           </TutorialTip>
         </div>
         <div className="export-actions">
-          <label className="field compact">
-            <TutorialTip title="Export Target" body={EXPORT_TARGET_HELP} side="below">
-              <span>Target</span>
-            </TutorialTip>
-            <select value={target} onChange={(event) => setTarget(event.target.value as ScenarioTarget)}>
-              <option value="providence-portable-folder">Portable Providence Folder</option>
-              <option value="mac-classic-folder">Mac Classic Folder</option>
-              <option value="windows-realmz-folder">Windows Realmz Folder</option>
-            </select>
-          </label>
-          <TutorialTip title="Export Scenario Folder" body={EXPORT_ACTION_HELP} side="below">
-            <button className="btn btn-primary" disabled={!project} onClick={() => onExport(target)}>
-              <Download size={14} /> Export Scenario Folder
+          {desktopRuntime ? (
+            <label className="field compact export-target-field">
+              <TutorialTip title="Export Target" body={EXPORT_TARGET_HELP} side="below">
+                <span>Target</span>
+              </TutorialTip>
+              <select value={target} onChange={(event) => setTarget(event.target.value as ScenarioTarget)}>
+                <option value="providence-portable-folder">Portable Providence Folder</option>
+                <option value="mac-classic-folder">Mac Classic Folder</option>
+                <option value="windows-realmz-folder">Windows Realmz Folder</option>
+              </select>
+            </label>
+          ) : (
+            <label className="field compact export-target-field">
+              <TutorialTip title="Browser Export Type" body={BROWSER_EXPORT_TARGET_HELP} side="below">
+                <span>Export Type</span>
+              </TutorialTip>
+              <select value={browserTarget} onChange={(event) => setBrowserTarget(event.target.value as BrowserExportTarget)}>
+                <option value="project-zip">Providence Project ZIP</option>
+                <option value="mac-classic-scenario-zip">Mac Classic Scenario ZIP</option>
+                <option value="windows-realmz-scenario-zip">Windows Realmz Scenario ZIP</option>
+              </select>
+            </label>
+          )}
+          <TutorialTip title={exportButtonLabel} body={exportButtonHelp} side="below">
+            <button className="btn btn-primary" disabled={exportDisabled} onClick={() => onExport(target)}>
+              <Download size={14} /> {exportButtonLabel}
             </button>
           </TutorialTip>
+          {!desktopRuntime ? (
+            <TutorialTip title="Download Project JSON" body={EXPORT_JSON_HELP} side="below">
+              <button className="btn btn-secondary" disabled={!project} onClick={onExportProjectJson}>
+                <Download size={14} /> Download Project JSON
+              </button>
+            </TutorialTip>
+          ) : null}
           <TutorialTip title="Benchmark Project" body={BENCHMARK_HELP} side="below">
             <button className="btn btn-secondary" disabled={!project} onClick={onBenchmark}>
               <Gauge size={14} /> Benchmark Project
             </button>
           </TutorialTip>
         </div>
+        {!desktopRuntime ? (
+          <TutorialTip title="Browser Scenario ZIP Writer" body={BROWSER_SCENARIO_EXPORT_PENDING_HELP} side="below">
+            <p className="empty-copy browser-export-boundary">
+              Browser export can download a Providence project backup. Mac/Windows Realmz scenario ZIP generation is a writer-porting gap, not a browser download limitation.
+            </p>
+          </TutorialTip>
+        ) : null}
         {exportReport ? (
           <TutorialTip title="Export Report" body={EXPORT_REPORT_HELP} side="below">
             <div>
