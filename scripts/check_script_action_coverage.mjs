@@ -7,6 +7,9 @@ const panelPath = path.join(root, "src/editor/panels/ScriptsPanel.tsx");
 const scriptsCssPath = path.join(root, "src/editor/styles/scripts.css");
 const combatPanelPath = path.join(root, "src/editor/panels/CombatPanel.tsx");
 const textPanelPath = path.join(root, "src/editor/panels/TextPanel.tsx");
+const resourcesPanelPath = path.join(root, "src/editor/panels/ResourcesPanel.tsx");
+const resourceWidgetsPath = path.join(root, "src/editor/panels/resources/ResourceWidgets.tsx");
+const globalSearchPath = path.join(root, "src/editor/globalSearch.ts");
 const edcdPath = path.join(root, "src/editor/components/EdcdRowEditor.tsx");
 const edcdRowsPath = path.join(root, "src/editor/edcdRows.ts");
 const edcdTargetsPath = path.join(root, "src/editor/edcdTargets.ts");
@@ -26,6 +29,9 @@ const panel = fs.readFileSync(panelPath, "utf8");
 const scriptsCss = fs.readFileSync(scriptsCssPath, "utf8");
 const combatPanel = fs.readFileSync(combatPanelPath, "utf8");
 const textPanel = fs.readFileSync(textPanelPath, "utf8");
+const resourcesPanel = fs.readFileSync(resourcesPanelPath, "utf8");
+const resourceWidgets = fs.readFileSync(resourceWidgetsPath, "utf8");
+const globalSearch = fs.readFileSync(globalSearchPath, "utf8");
 const edcd = fs.readFileSync(edcdPath, "utf8");
 const edcdRows = fs.readFileSync(edcdRowsPath, "utf8");
 const edcdTargets = fs.readFileSync(edcdTargetsPath, "utf8");
@@ -298,6 +304,31 @@ for (const snippet of [
   "Apply Scrolling Text"
 ]) {
   if (!textPanel.includes(snippet)) failures.push(`Text panel is missing authored scrolling TEXT resource support: ${snippet}`);
+}
+if (!textPanel.includes("setSelectedImportedResourceId(resource.entityId);") || !textPanel.includes("onSelectEntity(selectEntityFromId(resource.entityId));")) {
+  failures.push("Imported scrolling TEXT list rows must select locally and update selected entity, not navigate to Assets.");
+}
+for (const snippet of [
+  "function scenarioResourceAssets",
+  "resourceType !== \"TEXT\" && resourceType !== \"STR#\" && resourceType !== \"styl\"",
+  "managedResourceKeys.has(`${resourceType}:${resourceId}`)",
+  "textResourceSummaryFromSemanticEntity",
+  "kind: managedKindForResource(resourceType)"
+]) {
+  if (!resourcesPanel.includes(snippet)) failures.push(`Assets panel is missing imported TEXT/styl scenario-resource listing support: ${snippet}`);
+}
+for (const snippet of [
+  "if (activeEditor === \"text-resources\") return \"text\"",
+  "{ id: \"project\", editor: \"project-assets\", label: \"Scenario Assets\" }"
+]) {
+  if (!resourceWidgets.includes(snippet)) failures.push(`Assets text-resource workbench mapping is missing: ${snippet}`);
+}
+for (const snippet of [
+  "editor: \"text-resources\"",
+  "assetSection: \"project\"",
+  "assetKindFilter: \"text\""
+]) {
+  if (!globalSearch.includes(snippet)) failures.push(`Global search must deep-link imported TEXT/styl resources into Assets > Text Resources: ${snippet}`);
 }
 for (const snippet of [
   "textResourcePayloadSummary(resource)",

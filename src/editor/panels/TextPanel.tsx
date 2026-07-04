@@ -1054,7 +1054,15 @@ function ScrollingTextWorkbench({
                 const selected = resource.entityId === selectedImportedResource?.entityId;
                 const byteLength = classicTextByteLength(resource.text);
                 return (
-                  <button key={resource.entityId} type="button" className={selected ? "selected" : ""} onClick={() => setSelectedImportedResourceId(resource.entityId)}>
+                  <button
+                    key={resource.entityId}
+                    type="button"
+                    className={selected ? "selected" : ""}
+                    onClick={() => {
+                      setSelectedImportedResourceId(resource.entityId);
+                      onSelectEntity(selectEntityFromId(resource.entityId));
+                    }}
+                  >
                     <strong>Scrolling Text {resource.resourceId}</strong>
                     <span>{resource.label}</span>
                     <small>{byteLength.toLocaleString()} byte{byteLength === 1 ? "" : "s"} | imported TEXT | {resource.hasStyle ? "same-ID styl present" : "plain"}</small>
