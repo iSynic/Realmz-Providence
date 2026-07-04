@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const catalogPath = path.join(root, "src/editor/panels/scripts/scriptActionCatalog.ts");
 const panelPath = path.join(root, "src/editor/panels/ScriptsPanel.tsx");
+const combatPanelPath = path.join(root, "src/editor/panels/CombatPanel.tsx");
 const textPanelPath = path.join(root, "src/editor/panels/TextPanel.tsx");
 const edcdPath = path.join(root, "src/editor/components/EdcdRowEditor.tsx");
 const edcdRowsPath = path.join(root, "src/editor/edcdRows.ts");
@@ -18,6 +19,7 @@ const apOpcodeCoveragePath = path.join(root, "docs/generated/ap-opcode-coverage.
 
 const catalog = fs.readFileSync(catalogPath, "utf8");
 const panel = fs.readFileSync(panelPath, "utf8");
+const combatPanel = fs.readFileSync(combatPanelPath, "utf8");
 const textPanel = fs.readFileSync(textPanelPath, "utf8");
 const edcd = fs.readFileSync(edcdPath, "utf8");
 const edcdRows = fs.readFileSync(edcdRowsPath, "utf8");
@@ -262,11 +264,31 @@ for (const snippet of [
   "type TextAuthoringTab = \"strings\" | \"option-labels\" | \"scrolling-text\"",
   "SCROLLING_TEXT_TAB_HELP",
   "scrollingTextAssetFromDraft",
+  "selectedScrollingTextAssetFromEntity",
   "data:text/plain;base64",
   "resourceType: \"TEXT\"",
   "Apply Scrolling Text"
 ]) {
   if (!textPanel.includes(snippet)) failures.push(`Text panel is missing authored scrolling TEXT resource support: ${snippet}`);
+}
+for (const snippet of [
+  "return scrollingTextResourceOptions(project);",
+  "function scrollingTextResourceOptions",
+  "function scrollingTextOptionFromSemanticEntity",
+  "if (targetKind === \"scrollingText\") return scrollingTextResourceOptions(project).some"
+]) {
+  if (!edcdTargets.includes(snippet)) failures.push(`EDCD target resolution is missing TEXT resource support: ${snippet}`);
+}
+if (edcdTargets.includes("targetKind === \"scrollingText\") return (project.messages")) {
+  failures.push("EDCD target resolution must not treat scrolling TEXT as ordinary Data SD2 messages.");
+}
+for (const source of [panel, combatPanel]) {
+  if (!source.includes("target.targetKind === \"scrollingText\") return selectEntityFromId(`resource:TEXT:${target.value}`);")) {
+    failures.push("Flow target opening must deep-link scrolling text to resource:TEXT:<id>.");
+  }
+  if (source.includes("target.targetKind === \"message\" || target.targetKind === \"scrollingText\"")) {
+    failures.push("Flow target opening must not share the Data SD2 message path for scrolling TEXT.");
+  }
 }
 const searchDrivenTargetBranch = targetPicker.match(/\{isSearchDrivenPicker \? \([\s\S]*?\)\s*:\s*\(/);
 if (!searchDrivenTargetBranch) {

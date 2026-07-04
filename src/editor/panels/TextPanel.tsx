@@ -67,7 +67,7 @@ export function TextPanel({
   const effectiveOptionId = selectedOptionId ?? optionRecords[0]?.id ?? 0;
   const selectedOption = optionRecords.find((record) => record.id === effectiveOptionId) ?? null;
   const selectedScrollingTextAsset = scrollingTextAssets.find((asset) => asset.id === selectedScrollingTextAssetId)
-    ?? scrollingTextAssets.find((asset) => selectedEntity?.type === "resource" && selectedEntity.id === asset.id)
+    ?? selectedScrollingTextAssetFromEntity(scrollingTextAssets, selectedEntity)
     ?? scrollingTextAssets[0]
     ?? null;
   const nextScrollingTextId = nextScrollingTextResourceId(project);
@@ -156,7 +156,7 @@ export function TextPanel({
 
   useEffect(() => {
     if (!selectedEntity?.id) return;
-    const asset = scrollingTextAssets.find((candidate) => candidate.id === selectedEntity.id);
+    const asset = selectedScrollingTextAssetFromEntity(scrollingTextAssets, selectedEntity);
     if (!asset) return;
     setActiveTab("scrolling-text");
     setSelectedScrollingTextAssetId(asset.id);
@@ -1235,6 +1235,17 @@ function scrollingTextProjectAssets(project: Project) {
   return [...(project.assets ?? [])]
     .filter((asset) => asset.resourceType.trim() === "TEXT" || asset.kind === "text")
     .sort((a, b) => a.resourceId - b.resourceId || a.label.localeCompare(b.label));
+}
+
+function selectedScrollingTextAssetFromEntity(assets: Project["assets"], selectedEntity: SelectedEntity | null) {
+  if (selectedEntity?.type !== "resource") return null;
+  const resourceMatch = selectedEntity.id.match(/^resource:TEXT:(-?\d+)$/);
+  const resourceId = resourceMatch ? Number(resourceMatch[1]) : NaN;
+  return assets.find((asset) => {
+    if (asset.resourceType.trim() !== "TEXT" && asset.kind !== "text") return false;
+    if (asset.id === selectedEntity.id || asset.linkedEntity === selectedEntity.id) return true;
+    return Number.isInteger(resourceId) && asset.resourceId === resourceId;
+  }) ?? null;
 }
 
 function nextScrollingTextResourceId(project: Project) {

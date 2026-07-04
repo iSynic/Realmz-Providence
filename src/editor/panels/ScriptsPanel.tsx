@@ -2384,7 +2384,8 @@ function selectEntityForFlowTarget(target: { targetKind: string; value: number }
   if (target.targetKind === "complexEncounter") return selectEntityFromId(`encounter:complex:${target.value}`);
   if (target.targetKind === "thiefEncounter") return selectEntityFromId(`thief:${target.value}`);
   if (target.targetKind === "timedEncounter") return selectEntityFromId(`time:${target.value}`);
-  if (target.targetKind === "message" || target.targetKind === "scrollingText") return selectEntityFromId(`message:${target.value}`);
+  if (target.targetKind === "message") return selectEntityFromId(`message:${target.value}`);
+  if (target.targetKind === "scrollingText") return selectEntityFromId(`resource:TEXT:${target.value}`);
   if (target.targetKind === "treasure") return selectEntityFromId(`treasure:${target.value}`);
   if (target.targetKind === "shop") return selectEntityFromId(`shop:${target.value}`);
   if (target.targetKind === "monster") return selectEntityFromId(`monster:${target.value}`);

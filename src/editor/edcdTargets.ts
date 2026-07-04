@@ -289,13 +289,7 @@ export function edcdTargetOptions(project: Project, targetKind: EdcdTargetKind, 
     return dedupeEdcdTargetOptions(options);
   }
   if (targetKind === "scrollingText") {
-    return (project.messages ?? []).map((record) => ({
-      key: `scrolling-text:${record.id}`,
-      value: record.id,
-      label: `Scrolling Text ${record.id}`,
-      detail: record.text || "empty text",
-      entity: selectEntityFromId(`message:${record.id}`)
-    }));
+    return scrollingTextResourceOptions(project);
   }
   return (project.battles ?? []).map((record) => ({
     key: `battle:${record.id}`,
@@ -318,7 +312,6 @@ export function missingEdcdTargetReferences(project: Project, shape: string, fie
     const targetKind = edcdFieldTargetKind(shape, field, fieldNames, values, opcode);
     if (!targetKind || targetKind === "questLabel") continue;
     if (targetKind === "sound") continue;
-    if (targetKind === "scrollingText") continue;
     if (targetKind === "message" && Math.abs(rawValue) >= 10000) continue;
     const value = normalizedEdcdTargetValueForValidation(targetKind, rawValue, field, opcode);
     if (!Number.isFinite(value) || value < 0) continue;
@@ -371,7 +364,7 @@ function edcdTargetExists(project: Project, targetKind: EdcdTargetKind, value: n
   if (targetKind === "dungeonLevel") return (project.maps ?? []).some((record) => record.levelType === "dungeon" && record.index === value);
   if (targetKind === "mapRecord") return (project.mapRecords ?? []).some((record) => record.id === value);
   if (targetKind === "randomEncounterRectangle") return (project.randomLevels ?? []).some((level) => level.rects.some((rect) => rect.rectIndex === value));
-  if (targetKind === "scrollingText") return (project.messages ?? []).some((record) => record.id === value);
+  if (targetKind === "scrollingText") return scrollingTextResourceOptions(project).some((option) => option.value === value);
   return (project.battles ?? []).some((record) => record.id === value);
 }
 
@@ -385,10 +378,52 @@ function dedupeEdcdTargetOptions(options: EdcdTargetOption[]) {
 }
 
 function edcdTargetOptionScore(option: EdcdTargetOption) {
+  if (option.key.startsWith("managed:")) return 4;
   if (option.key.startsWith("asset:")) return 3;
+  if (option.key.startsWith("resource:TEXT:")) return 2;
   if (option.key.startsWith("library:")) return 2;
   if (option.key.startsWith("builtin-sound:")) return 1;
   return 0;
+}
+
+function scrollingTextResourceOptions(project: Project): EdcdTargetOption[] {
+  const options: EdcdTargetOption[] = [];
+  for (const asset of project.assets ?? []) {
+    if (asset.resourceType.trim() !== "TEXT" && asset.kind !== "text") continue;
+    options.push({
+      key: asset.id,
+      value: asset.resourceId,
+      label: `Scrolling Text ${asset.resourceId}`,
+      detail: `${asset.label} | ${asset.exportState}`,
+      entity: { type: "resource", id: asset.id }
+    });
+  }
+  for (const entity of project.semanticSchema?.entities ?? []) {
+    const option = scrollingTextOptionFromSemanticEntity(entity);
+    if (option) options.push(option);
+  }
+  return dedupeEdcdTargetOptions(options);
+}
+
+function scrollingTextOptionFromSemanticEntity(entity: Project["semanticSchema"]["entities"][number]): EdcdTargetOption | null {
+  if (entity.type !== "resource") return null;
+  const resourceType = String(entity.summary.type ?? entity.summary.resourceType ?? "").trim();
+  if (resourceType !== "TEXT") return null;
+  const id = Number(entity.summary.resourceId ?? entity.summary.id ?? entity.summary.index ?? trailingNumber(entity.id));
+  if (!Number.isInteger(id)) return null;
+  const preview = typeof entity.summary.textPreview === "string" ? entity.summary.textPreview : "";
+  return {
+    key: entity.id,
+    value: id,
+    label: entity.label || `Scrolling Text ${id}`,
+    detail: preview || `TEXT resource | ${entity.source}`,
+    entity: selectEntityFromId(entity.id)
+  };
+}
+
+function trailingNumber(value: string) {
+  const match = value.match(/(-?\d+)$/);
+  return match ? Number(match[1]) : NaN;
 }
 
 function normalizedEdcdTargetValueForValidation(targetKind: EdcdTargetKind, rawValue: number, field: string, opcode?: number) {
