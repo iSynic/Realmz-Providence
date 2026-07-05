@@ -546,7 +546,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "New, Open, And Import",
         paragraphs: [
           "New creates an empty Providence package with library-backed defaults. Empty projects can author new maps directly or import a raw Realmz scenario before any project content exists.",
-          "Open loads an existing Providence project package. If you select a raw scenario folder when you meant to import, Providence cannot assume how to merge it into the current project.",
+          "Open loads an existing Providence project package. Browser mode opens downloaded `.providence.zip` packages directly; desktop mode opens project package folders. If you select a raw scenario folder when you meant to import, Providence cannot assume how to merge it into the current project.",
           "Import Scenario reads classic Realmz scenario files, resource forks, fixed-record data, pictures, sounds, icons, maps, scripts, and runtime-adjacent evidence into the empty package. Imported source files are then treated as evidence and preservation inputs."
         ],
         cards: [
@@ -557,8 +557,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           },
           {
             title: "Open Project",
-            body: "Returns to a saved Providence project folder, including editor metadata and decoded assets.",
-            facts: ["project.json"]
+            body: "Returns to a saved Providence project package, including editor metadata, decoded assets, and browser-captured raw-source snapshots when present.",
+            facts: ["project.json", ".providence.zip"]
           },
           {
             title: "Import Scenario",
@@ -571,12 +571,12 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "Desktop And Browser Preview",
         paragraphs: [
           "Desktop is Providence's primary target. It owns native folder dialogs, persistent project save, scenario export, desktop smoke testing, and release builds.",
-          "Browser preview is useful for quick UI work and some import experiments. Save stores a local browser project, Export downloads a Providence project ZIP backup, and raw scenario folder import still depends on the browser's File System Access support."
+          "Browser preview is useful for quick UI work and some import experiments. Save stores a local browser project, Export downloads Providence project ZIP backups or conservative scenario ZIPs, and raw scenario folder import still depends on the browser's File System Access support."
         ],
         points: [
           "Trust desktop for final parity checks, fixture reproduction, and public release validation.",
           "Use browser preview for fast interface review, but confirm file-heavy workflows again in desktop.",
-          "Browser export produces Providence project backups only; Realmz binary file writing, resource fork output, target-specific folder layouts, and pass-through source copying remain desktop-only.",
+          "Browser scenario ZIP export is snapshot-backed: it preserves captured raw sources and supported resource updates, while unsupported authored binary record edits remain blocked until writer parity lands.",
           "When a topbar action is disabled in browser preview, read the status text; it usually reflects runtime file-system limits rather than missing scenario support."
         ]
       },
@@ -595,7 +595,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "Save, Dirty, Undo, Redo",
         paragraphs: [
-          "Save writes the Providence project package on desktop and stores the current project in browser-local storage in browser preview. It is separate from Export, which writes a Realmz scenario folder on desktop or downloads a Providence project ZIP backup in browser preview.",
+          "Save writes the Providence project package on desktop and stores the current project in browser-local storage in browser preview. It is separate from Export, which writes a Realmz scenario folder on desktop or downloads a Providence project ZIP or snapshot-backed scenario ZIP in browser preview.",
           "The Dirty badge means the package has unsaved editor changes. Undo and Redo operate on Providence project commands, such as map painting, resource edits, record changes, custom palettes, or metadata changes."
         ],
         points: [

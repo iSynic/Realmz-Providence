@@ -25,7 +25,7 @@ const TOPBAR_PROJECT_HELP =
 const TOPBAR_NEW_PROJECT_HELP =
   "New creates an empty Providence folder package. Import remains available only while the project is still empty, so create the package before importing a Realmz scenario.";
 const TOPBAR_OPEN_PROJECT_HELP =
-  "Open loads an existing Providence project package. Open expects Providence project files, not a raw Realmz scenario folder; use Import for raw scenarios.";
+  "Open loads an existing Providence project package. Browser mode opens downloaded .providence.zip packages; use Import for raw Realmz scenario folders.";
 const TOPBAR_IMPORT_HELP =
   "Import reads a Realmz scenario folder into an empty Providence project, keeping source snapshots so export can preserve unsupported files safely.";
 const TOPBAR_UNDO_HELP =
@@ -35,7 +35,7 @@ const TOPBAR_REDO_HELP =
 const TOPBAR_SAVE_HELP =
   "Save writes the Providence project package on desktop. In browser mode, Save persists the current project in browser-local storage.";
 const TOPBAR_EXPORT_HELP =
-  "Export writes a Realmz-readable scenario folder on desktop. In browser mode, Export downloads a Providence project ZIP backup; the Realmz scenario writer is still desktop-only.";
+  "Export writes a Realmz-readable scenario folder on desktop. In browser mode, Export downloads a Providence project ZIP backup or a conservative scenario ZIP from captured raw sources.";
 const TOPBAR_HISTORY_HELP =
   "Workbench history moves backward and forward through recently visited Providence tools and selected records without changing the project itself.";
 
@@ -115,7 +115,7 @@ export function WorkbenchTopbar({
   const manualClickRef = useRef({ count: 0, lastClickMs: 0 });
   const isDesktopRuntime = runtimeLabel === "Desktop";
   const saveTitle = canSave ? (isDesktopRuntime ? "Save project" : "Save project locally in this browser") : browserPreviewStatus;
-  const exportTitle = canExport ? (isDesktopRuntime ? "Export scenario" : "Download Providence project ZIP backup") : browserPreviewStatus;
+  const exportTitle = canExport ? (isDesktopRuntime ? "Export scenario" : "Download browser export ZIP") : browserPreviewStatus;
 
   function handleManualIconClick() {
     const now = window.performance.now();
@@ -220,7 +220,7 @@ export function WorkbenchTopbar({
             type="button"
             onClick={onOpenProject}
             disabled={!canOpenProject}
-            title={canOpenProject ? (isDesktopRuntime ? "Open Providence project package" : "Open saved browser project") : browserPreviewStatus}
+            title={canOpenProject ? (isDesktopRuntime ? "Open Providence project package" : "Open Providence project ZIP") : browserPreviewStatus}
           >
             <FolderOpen size={15} />
             <span>Open</span>

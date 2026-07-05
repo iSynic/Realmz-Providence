@@ -1,5 +1,5 @@
 import { BenchmarkReport, Project, ScenarioShell, ValidationReport } from "../types";
-import { BrowserRawSourceSnapshot, BrowserScenarioSource, readProjectJson, readScenarioSource } from "./fsAccess";
+import { BrowserProjectSource, BrowserRawSourceSnapshot, BrowserScenarioSource, readProjectPackage, readScenarioSource } from "./fsAccess";
 import { browserReferenceAtlasUrl, browserTilesetAtlasUrl, hasBrowserReferenceAtlas } from "./atlasPaths";
 import { parseResourceFork, parseStringListResource } from "./library";
 import { buildBrowserSemanticSchema, type BrowserSemanticBuildProgress } from "./semantic";
@@ -477,10 +477,11 @@ function i32At(buffer: Uint8Array, offset: number) {
   return value & 0x80000000 ? value - 0x100000000 : value;
 }
 
-export async function openBrowserProject(source: BrowserScenarioSource): Promise<Project> {
-  const text = await readProjectJson(source);
-  const project = JSON.parse(text) as Project;
-  return normalizeBrowserProject(project);
+export async function openBrowserProject(source: BrowserProjectSource): Promise<Project> {
+  const { projectJson, rawSources } = await readProjectPackage(source);
+  const project = normalizeBrowserProject(JSON.parse(projectJson) as Project);
+  if (rawSources) registerBrowserSourceSnapshot(project, rawSources);
+  return project;
 }
 
 export function normalizeBrowserProject(project: Project): Project {

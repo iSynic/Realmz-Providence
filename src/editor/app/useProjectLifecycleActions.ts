@@ -6,6 +6,7 @@ import { createBrowserWorkspace, importBrowserLibrary } from "../browser/library
 import { benchmarkBrowserProject, createBrowserProject, ensureBrowserReferenceTileAttributes, importBrowserScenario, openBrowserProject, validateBrowserProject } from "../browser/project";
 import { browserProjectPackageFileName, createBrowserProjectPackageZip } from "../browser/projectPackage";
 import { loadActiveBrowserProject, loadBrowserProjectRawSources, saveBrowserProject } from "../browser/projectStore";
+import { createBrowserScenarioPackageZip } from "../browser/scenarioPackage";
 import { persistBrowserIconLibraryEntries } from "../iconLibrary";
 import { LibraryDraftSpec, createLibraryDraft, updateLibraryDraft } from "../libraryDrafts";
 import { persistBrowserMonsterLibraryEntries } from "../monsterLibrary";
@@ -119,10 +120,6 @@ export function useProjectLifecycleActions({
       } catch (error) {
         dispatch({ type: "setStatus", status: `Browser project storage unavailable: ${commandError(error)}` });
       }
-      if (!browserFileSystem) {
-        dispatch({ type: "setStatus", status: "No saved browser project found. Import/opening from a folder needs browser directory support." });
-        return;
-      }
       try {
         const handle = await pickBrowserProjectSource();
         try {
@@ -135,6 +132,7 @@ export function useProjectLifecycleActions({
           dispatch({ type: "setStatus", status: `Opened and saved browser project ${snapshot.project.scenario.name}` });
         } catch (error) {
           if (!isMissingProjectJson(error)) throw error;
+          if (handle.kind === "project-zip-file") throw error;
           const project = await ensureBrowserReferenceTileAttributes(createBrowserProject(handle.name));
           const snapshot = await saveBrowserProject(project);
           setProjectDir(snapshot.key);
@@ -265,7 +263,7 @@ export function useProjectLifecycleActions({
       }
       try {
         dispatch({ type: "setStatus", status: `Refreshing ${label} in browser...` });
-        const handle = await pickBrowserProjectSource();
+        const handle = await pickBrowserScenarioSource();
         const catalog = await importBrowserLibrary(handle, kind);
         const workspace = createBrowserWorkspace(catalog);
         dispatch({ type: "setWorkspace", workspace });
@@ -377,10 +375,16 @@ export function useProjectLifecycleActions({
     if (!state.project) return;
     if (!desktopRuntime) {
       try {
-        await downloadBrowserProjectPackage(state.project);
-        dispatch({ type: "setStatus", status: "Downloaded Providence project ZIP package with project metadata, managed asset payloads, and captured raw sources where available. Realmz scenario folder export still requires the writer port." });
+        if (scenarioTarget === "providence-portable-folder") {
+          await downloadBrowserProjectPackage(state.project);
+          dispatch({ type: "setStatus", status: "Downloaded Providence project ZIP package with project metadata, managed asset payloads, and captured raw sources where available." });
+        } else {
+          const report = await downloadBrowserScenarioPackage(state.project, scenarioTarget);
+          dispatch({ type: "setExportReport", report });
+          dispatch({ type: "setStatus", status: `Downloaded ${scenarioTarget === "mac-classic-folder" ? "Mac Classic" : "Windows Realmz"} scenario ZIP with ${report.passThroughFiles.length.toLocaleString()} preserved source file(s) and ${report.writtenResources.length.toLocaleString()} resource update(s).` });
+        }
       } catch (error) {
-        dispatch({ type: "setStatus", status: `Project ZIP download failed: ${commandError(error)}` });
+        dispatch({ type: "setStatus", status: `Browser export failed: ${commandError(error)}` });
       }
       return;
     }
@@ -500,4 +504,29 @@ async function downloadBrowserProjectPackage(project: Project) {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+async function downloadBrowserScenarioPackage(project: Project, target: ScenarioTarget) {
+  if (typeof document === "undefined") throw new Error(BROWSER_PREVIEW_STATUS);
+  const rawSources = await loadBrowserProjectRawSources(project);
+  const result = createBrowserScenarioPackageZip(project, rawSources, target);
+  const blob = new Blob([arrayBufferCopy(result.zip)], { type: "application/zip" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = result.fileName;
+  link.style.position = "fixed";
+  link.style.left = "-10000px";
+  link.style.top = "-10000px";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  return result.report;
+}
+
+function arrayBufferCopy(bytes: Uint8Array) {
+  const copy = new Uint8Array(bytes.byteLength);
+  copy.set(bytes);
+  return copy.buffer;
 }

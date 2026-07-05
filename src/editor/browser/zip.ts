@@ -4,6 +4,11 @@ type ZipFileEntry = {
   modifiedAt?: Date;
 };
 
+export type StoredZipEntry = {
+  path: string;
+  bytes: Uint8Array;
+};
+
 const UTF8_FLAG = 0x0800;
 const STORE_METHOD = 0;
 const VERSION_NEEDED = 20;
@@ -68,6 +73,57 @@ export function createStoredZip(entries: ZipFileEntry[]) {
   return concatBytes([...localParts, ...centralParts, endRecord]);
 }
 
+export function readStoredZip(bytes: Uint8Array): StoredZipEntry[] {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const endOffset = findEndOfCentralDirectory(view);
+  const entryCount = view.getUint16(endOffset + 10, true);
+  const centralDirectoryOffset = view.getUint32(endOffset + 16, true);
+  const entries: StoredZipEntry[] = [];
+  let cursor = centralDirectoryOffset;
+
+  for (let index = 0; index < entryCount; index += 1) {
+    if (cursor + 46 > bytes.byteLength || view.getUint32(cursor, true) !== 0x02014b50) {
+      throw new Error("ZIP central directory is malformed.");
+    }
+    const flags = view.getUint16(cursor + 8, true);
+    const method = view.getUint16(cursor + 10, true);
+    const expectedCrc = view.getUint32(cursor + 16, true);
+    const compressedSize = view.getUint32(cursor + 20, true);
+    const uncompressedSize = view.getUint32(cursor + 24, true);
+    const fileNameLength = view.getUint16(cursor + 28, true);
+    const extraLength = view.getUint16(cursor + 30, true);
+    const commentLength = view.getUint16(cursor + 32, true);
+    const localHeaderOffset = view.getUint32(cursor + 42, true);
+    const fileNameStart = cursor + 46;
+    const fileNameEnd = fileNameStart + fileNameLength;
+    if (fileNameEnd > bytes.byteLength) throw new Error("ZIP central directory filename extends past end of file.");
+    const path = decodeZipPath(bytes.slice(fileNameStart, fileNameEnd), flags);
+    cursor = fileNameEnd + extraLength + commentLength;
+
+    if (!path || path.endsWith("/")) continue;
+    if (method !== STORE_METHOD) {
+      throw new Error(`ZIP entry '${path}' uses compression method ${method}; Providence browser project packages must use stored entries.`);
+    }
+    if (compressedSize !== uncompressedSize) {
+      throw new Error(`ZIP entry '${path}' has mismatched stored and uncompressed sizes.`);
+    }
+    if (localHeaderOffset + 30 > bytes.byteLength || view.getUint32(localHeaderOffset, true) !== 0x04034b50) {
+      throw new Error(`ZIP entry '${path}' has a malformed local header.`);
+    }
+    const localFileNameLength = view.getUint16(localHeaderOffset + 26, true);
+    const localExtraLength = view.getUint16(localHeaderOffset + 28, true);
+    const dataStart = localHeaderOffset + 30 + localFileNameLength + localExtraLength;
+    const dataEnd = dataStart + compressedSize;
+    if (dataEnd > bytes.byteLength) throw new Error(`ZIP entry '${path}' data extends past end of file.`);
+    const entryBytes = bytes.slice(dataStart, dataEnd);
+    if (crc32(entryBytes) !== expectedCrc) {
+      throw new Error(`ZIP entry '${path}' failed CRC validation.`);
+    }
+    entries.push({ path, bytes: entryBytes });
+  }
+  return entries;
+}
+
 function concatBytes(parts: Uint8Array[]) {
   const output = new Uint8Array(byteLength(parts));
   let offset = 0;
@@ -88,6 +144,19 @@ function dosDateTime(date: Date) {
     time: (date.getHours() << 11) | (date.getMinutes() << 5) | Math.floor(date.getSeconds() / 2),
     date: ((year - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate()
   };
+}
+
+function findEndOfCentralDirectory(view: DataView) {
+  const minOffset = Math.max(0, view.byteLength - 22 - 0xffff);
+  for (let offset = view.byteLength - 22; offset >= minOffset; offset -= 1) {
+    if (view.getUint32(offset, true) === 0x06054b50) return offset;
+  }
+  throw new Error("ZIP end-of-central-directory record was not found.");
+}
+
+function decodeZipPath(bytes: Uint8Array, flags: number) {
+  if ((flags & UTF8_FLAG) !== 0) return new TextDecoder().decode(bytes);
+  return Array.from(bytes).map((byte) => String.fromCharCode(byte)).join("");
 }
 
 function crc32(bytes: Uint8Array) {

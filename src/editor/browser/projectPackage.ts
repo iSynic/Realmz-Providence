@@ -1,5 +1,5 @@
-import { ManagedAsset, Project } from "../types";
-import { BrowserRawSourceSnapshot } from "./fsAccess";
+import type { ManagedAsset, Project } from "../types";
+import type { BrowserRawSourceSnapshot } from "./fsAccess";
 import { createStoredZip } from "./zip";
 
 type PackageEntry = {
@@ -20,11 +20,14 @@ type PackageAssetFile = {
 type PackageRawSourceFile = {
   name: string;
   relativePath: string;
+  originalRelativePath: string;
   packagePath: string;
   bytes: number;
   sha256: string;
   role: string;
   editable: boolean;
+  targetPlatform: string;
+  captureConfidence: string;
 };
 
 export function browserProjectPackageFileName(project: Project) {
@@ -60,11 +63,14 @@ export function createBrowserProjectPackageZip(project: Project, rawSources?: Br
       rawSourceFiles.push({
         name: source.name,
         relativePath,
+        originalRelativePath: source.originalRelativePath ?? source.relativePath,
         packagePath: packagePath.slice(rootName.length + 1),
         bytes: source.bytesData.byteLength,
         sha256: source.sha256,
         role: source.role,
-        editable: source.editable
+        editable: source.editable,
+        targetPlatform: source.targetPlatform ?? rawSources.targetPlatform ?? "unknown",
+        captureConfidence: source.captureConfidence ?? "captured"
       });
     }
   }
@@ -72,8 +78,10 @@ export function createBrowserProjectPackageZip(project: Project, rawSources?: Br
   const assetFiles = addManagedAssetFiles(rootName, project.assets ?? [], addEntry);
   addEntry(`${rootName}/raw-sources-manifest.json`, jsonBytes({
     schemaVersion: 1,
+    sourceKind: rawSources?.sourceKind ?? null,
     capturedAt: rawSources?.capturedAt ?? null,
     rootName: rawSources?.rootName ?? null,
+    targetPlatform: rawSources?.targetPlatform ?? null,
     capturedFileCount: rawSourceFiles.length,
     capturedBytes: rawSourceFiles.reduce((sum, file) => sum + file.bytes, 0),
     files: rawSourceFiles
@@ -99,6 +107,8 @@ export function createBrowserProjectPackageZip(project: Project, rawSources?: Br
     source: {
       sourcePath: project.source.sourcePath,
       rawSourcesDir: "raw-sources",
+      rawSourceKind: rawSources?.sourceKind ?? null,
+      rawSourceTargetPlatform: rawSources?.targetPlatform ?? null,
       capturedAt: rawSources?.capturedAt ?? null,
       capturedFileCount: rawSourceFiles.length,
       capturedBytes: rawSourceFiles.reduce((sum, file) => sum + file.bytes, 0)

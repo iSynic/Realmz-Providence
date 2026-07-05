@@ -7,7 +7,7 @@ const PROJECT_NAME_HELP =
 const PROJECT_START_HELP =
   "Start with New when authoring or importing a scenario, Open when returning to a Providence project package, or Library when you only need bundled Realmz/Divinity reference material.";
 const PROJECT_RUNTIME_HELP =
-  "Desktop projects can save, export, and use native folder dialogs. Browser preview loads bundled libraries in memory and has limited file-system support.";
+  "Desktop projects can save, export, and use native folder dialogs. Browser preview opens Providence ZIP packages, saves locally, and uses folder support only where the browser exposes it.";
 
 export function ProjectNameDialog({
   value,
@@ -83,7 +83,7 @@ export function ProjectStart({
         </h1>
         <p>Create a scenario project, open an existing project, or work in the bundled Realmz/Divinity library before a scenario exists.</p>
         <TutorialTip title={desktopRuntime ? "Desktop Runtime" : "Browser Preview"} body={PROJECT_RUNTIME_HELP} side="below">
-          <small>{desktopRuntime ? `Projects are created under ${projectRoot}. Bundled libraries are seeded automatically.` : "Browser preview loads bundled library fixtures into memory."}</small>
+          <small>{desktopRuntime ? `Projects are created under ${projectRoot}. Bundled libraries are seeded automatically.` : "Browser preview opens downloaded Providence ZIP packages and loads bundled library fixtures into memory."}</small>
         </TutorialTip>
         {!desktopRuntime && <small>{browserPreviewStatus}</small>}
       </div>

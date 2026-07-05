@@ -1,8 +1,12 @@
 import { DecodedResourcePreview, LibraryCatalog, LibraryEntity, LibraryRecord, LibrarySource, ProvidenceWorkspace } from "../types";
 import { BrowserDirectoryHandle, BrowserFileSelection, BrowserScenarioSource } from "./fsAccess";
+import { parseResourceFork, parseStringListResource, type ResourceEntry } from "./resourceFork";
 import { inspectResourcePreview, inspectResourcePreviewAsync } from "./resourcePreview";
 import { mergeBrowserIconLibraryEntries } from "../iconLibrary";
 import { mergeBrowserMonsterLibraryEntries } from "../monsterLibrary";
+
+export { parseResourceFork, parseStringListResource } from "./resourceFork";
+export type { ResourceEntry } from "./resourceFork";
 
 export const BROWSER_WORKSPACE_PATH = "browser://workspace";
 const LIBRARY_SCHEMA_VERSION = 4;
@@ -10,22 +14,6 @@ const bundledResourceCache = new Map<string, Promise<ResourceEntry[]>>();
 const bundledResourcePreviewCache = new Map<string, Promise<DecodedResourcePreview>>();
 type BrowserLibraryFile = { name: string; relativePath: string; bytes: Uint8Array };
 type BrowserLibrarySourceKind = "divinity-import" | "realmz-reference";
-export type ResourceEntry = {
-  resourceType: string;
-  id: number;
-  name: string;
-  attributes: number;
-  refOffset: number;
-  nameOffset: number | null;
-  dataRelativeOffset: number;
-  offset: number;
-  length: number;
-  data: Uint8Array;
-};
-
-const APPLE_SINGLE_MAGIC = 0x00051600;
-const APPLE_DOUBLE_MAGIC = 0x00051607;
-const RESOURCE_FORK_ENTRY_ID = 2;
 
 export function createBrowserWorkspace(catalog: LibraryCatalog | null = null): ProvidenceWorkspace {
   return {
@@ -481,85 +469,6 @@ async function addResourceEntries(
       }
     });
   }
-}
-
-export function parseResourceFork(original: Uint8Array): ResourceEntry[] {
-  const buffer = extractResourceFork(original);
-  if (buffer.byteLength < 32) return [];
-  const dataOffset = u32At(buffer, 0);
-  const mapOffset = u32At(buffer, 4);
-  if (dataOffset === null || mapOffset === null || mapOffset + 28 > buffer.byteLength) return [];
-  const typeListRelativeOffset = u16At(buffer, mapOffset + 24);
-  const nameListRelativeOffset = u16At(buffer, mapOffset + 26);
-  if (typeListRelativeOffset === null || nameListRelativeOffset === null) return [];
-  const typeListOffset = mapOffset + typeListRelativeOffset;
-  const nameListOffset = mapOffset + nameListRelativeOffset;
-  if (typeListOffset + 2 > buffer.byteLength) return [];
-  const rawTypeCount = u16At(buffer, typeListOffset);
-  if (rawTypeCount === null) return [];
-
-  const resources: ResourceEntry[] = [];
-  for (let typeIndex = 0; typeIndex <= rawTypeCount; typeIndex += 1) {
-    const typeOffset = typeListOffset + 2 + typeIndex * 8;
-    if (typeOffset + 8 > buffer.byteLength) continue;
-    const resourceType = decodeAscii(buffer.slice(typeOffset, typeOffset + 4));
-    const rawResourceCount = u16At(buffer, typeOffset + 4);
-    const refListRelativeOffset = u16At(buffer, typeOffset + 6);
-    if (rawResourceCount === null || refListRelativeOffset === null) continue;
-    const refListOffset = typeListOffset + refListRelativeOffset;
-    for (let refIndex = 0; refIndex <= rawResourceCount; refIndex += 1) {
-      const refOffset = refListOffset + refIndex * 12;
-      if (refOffset + 12 > buffer.byteLength) continue;
-      const id = i16At(buffer, refOffset);
-      const nameRelativeOffset = i16At(buffer, refOffset + 2);
-      let name = "";
-      let nameOffset: number | null = null;
-      if (nameRelativeOffset >= 0) {
-        nameOffset = nameListOffset + nameRelativeOffset;
-        if (nameOffset < buffer.byteLength) {
-          const length = buffer[nameOffset] ?? 0;
-          const end = Math.min(nameOffset + 1 + length, buffer.byteLength);
-          name = decodeClassicText(buffer.slice(nameOffset + 1, end));
-        }
-      }
-      const dataRelativeOffset = ((buffer[refOffset + 5] ?? 0) << 16) | ((buffer[refOffset + 6] ?? 0) << 8) | (buffer[refOffset + 7] ?? 0);
-      const lengthOffset = dataOffset + dataRelativeOffset;
-      const length = u32At(buffer, lengthOffset);
-      if (length === null || lengthOffset + 4 + length > buffer.byteLength) continue;
-      const offset = lengthOffset + 4;
-      resources.push({
-        resourceType,
-        id,
-        name,
-        attributes: buffer[refOffset + 4] ?? 0,
-        refOffset,
-        nameOffset,
-        dataRelativeOffset,
-        offset,
-        length,
-        data: buffer.slice(offset, offset + length)
-      });
-    }
-  }
-  return resources;
-}
-
-function extractResourceFork(buffer: Uint8Array) {
-  if (buffer.byteLength < 26) return buffer;
-  const magic = u32At(buffer, 0);
-  if (magic !== APPLE_SINGLE_MAGIC && magic !== APPLE_DOUBLE_MAGIC) return buffer;
-  const entryCount = u16At(buffer, 24);
-  if (entryCount === null) return buffer;
-  for (let index = 0; index < entryCount; index += 1) {
-    const entryOffset = 26 + index * 12;
-    const entryId = u32At(buffer, entryOffset);
-    const offset = u32At(buffer, entryOffset + 4);
-    const length = u32At(buffer, entryOffset + 8);
-    if (entryId === RESOURCE_FORK_ENTRY_ID && offset !== null && length !== null && offset + length <= buffer.byteLength) {
-      return buffer.slice(offset, offset + length);
-    }
-  }
-  return buffer;
 }
 
 function resourceEntityFamily(file: BrowserLibraryFile, resourceType: string) {
@@ -1082,10 +991,6 @@ function i16At(bytes: Uint8Array, offset: number) {
   return value >= 0x8000 ? value - 0x10000 : value;
 }
 
-function decodeAscii(bytes: Uint8Array) {
-  return [...bytes].map((byte) => String.fromCharCode(byte)).join("");
-}
-
 function decodeClassicText(bytes: Uint8Array) {
   const nul = bytes.indexOf(0);
   const slice = nul >= 0 ? bytes.slice(0, nul) : bytes;
@@ -1102,22 +1007,6 @@ function decodeClassicText(bytes: Uint8Array) {
     }
   }
   return output.trim();
-}
-
-export function parseStringListResource(bytes: Uint8Array) {
-  const count = u16At(bytes, 0);
-  if (count === null) return [];
-  const strings: string[] = [];
-  let offset = 2;
-  for (let index = 0; index < count; index += 1) {
-    if (offset >= bytes.byteLength) break;
-    const length = bytes[offset] ?? 0;
-    offset += 1;
-    if (offset + length > bytes.byteLength) break;
-    strings.push(decodeClassicText(bytes.slice(offset, offset + length)));
-    offset += length;
-  }
-  return strings;
 }
 
 function shortPreview(bytes: Uint8Array) {

@@ -17,12 +17,12 @@ import {
 
 type BrowserExportTarget = "project-zip" | "mac-classic-scenario-zip" | "windows-realmz-scenario-zip";
 
-const EXPORT_WORKBENCH_HELP = "Desktop export writes a Realmz-compatible scenario folder from the current project and reports what was written, preserved, passed through, blocked, or warned. Browser export can download a Providence project ZIP package while the browser Realmz writer is being ported.";
+const EXPORT_WORKBENCH_HELP = "Desktop export writes a Realmz-compatible scenario folder from the current project and reports what was written, preserved, passed through, blocked, or warned. Browser export downloads either a Providence project ZIP package or a scenario ZIP from the captured raw-source snapshot.";
 const EXPORT_TARGET_HELP = "Choose the package shape to write. Portable Providence is useful for internal roundtrips; Mac Classic and Windows Realmz match the target runtime folder conventions.";
-const EXPORT_ACTION_HELP = "Desktop Export Scenario Folder runs the writer for the selected target. Browser export downloads a Providence project ZIP package with project metadata, managed assets, and captured raw source material.";
+const EXPORT_ACTION_HELP = "Desktop Export Scenario Folder runs the writer for the selected target. Browser export downloads the selected ZIP artifact.";
 const EXPORT_JSON_HELP = "Download the current project.json directly. This is useful as a small browser backup or for inspecting the project state without extracting the ZIP package.";
-const BROWSER_SCENARIO_EXPORT_PENDING_HELP = "Browser scenario ZIP export still needs the Realmz writer ported from the Rust/Tauri exporter. The browser can download project packages, but Mac/Windows scenario ZIPs need writer parity for edited binary files, resource forks, target-specific folder layouts, and pass-through source files.";
-const BROWSER_EXPORT_TARGET_HELP = "Choose the browser export artifact. Project ZIP is available now; Mac and Windows scenario ZIPs are listed as the target formats that still need browser writer support.";
+const BROWSER_SCENARIO_EXPORT_HELP = "Browser scenario ZIP export packages the captured raw source snapshot and applies browser-supported resource fork updates. Authored binary record edits are blocked until their writer parity is ported.";
+const BROWSER_EXPORT_TARGET_HELP = "Choose the browser export artifact. Project ZIP is a Providence backup; Mac and Windows scenario ZIPs are Realmz folders built from captured raw sources.";
 const BENCHMARK_HELP = "Benchmark Project measures large-scenario UI and validation scale so release candidates do not regress on dense maps, triggers, or Action Settings.";
 const EXPORT_REPORT_HELP = "The export report is the release ledger for this session: output folder, target, source files, pass-through files, resource writes, preserved resources, blocked assets, and warnings.";
 const EXPORT_PLAN_HELP = "Export Plan previews the current project boundary before writing: writer-supported records, pass-through files, resource gaps, runtime caches, unresolved links, and blocked objects.";
@@ -51,15 +51,17 @@ export function ExportPanel({
   const [target, setTarget] = useState<ScenarioTarget>("providence-portable-folder");
   const [browserTarget, setBrowserTarget] = useState<BrowserExportTarget>("project-zip");
   const plan = exportPlan(project);
-  const exportTitle = desktopRuntime ? "Realmz Folder Export" : "Providence Project Backup";
-  const browserScenarioTargetSelected = !desktopRuntime && browserTarget !== "project-zip";
+  const exportTitle = desktopRuntime ? "Realmz Folder Export" : "Browser Package Export";
   const exportButtonLabel = desktopRuntime
     ? "Export Scenario Folder"
-    : browserScenarioTargetSelected
-      ? "Scenario ZIP Pending Browser Writer"
-      : "Download Project ZIP";
-  const exportButtonHelp = browserScenarioTargetSelected ? BROWSER_SCENARIO_EXPORT_PENDING_HELP : EXPORT_ACTION_HELP;
-  const exportDisabled = !project || browserScenarioTargetSelected;
+    : browserTarget === "mac-classic-scenario-zip"
+      ? "Download Mac Scenario ZIP"
+      : browserTarget === "windows-realmz-scenario-zip"
+        ? "Download Windows Scenario ZIP"
+        : "Download Project ZIP";
+  const exportButtonHelp = !desktopRuntime && browserTarget !== "project-zip" ? BROWSER_SCENARIO_EXPORT_HELP : EXPORT_ACTION_HELP;
+  const exportDisabled = !project;
+  const selectedBrowserScenarioTarget = browserTargetToScenarioTarget(browserTarget);
   return (
     <div className="editor-full-panel export-workbench">
       <section className="tab-panel">
@@ -93,7 +95,7 @@ export function ExportPanel({
             </label>
           )}
           <TutorialTip title={exportButtonLabel} body={exportButtonHelp} side="below">
-            <button className="btn btn-primary" disabled={exportDisabled} onClick={() => onExport(target)}>
+            <button className="btn btn-primary" disabled={exportDisabled} onClick={() => onExport(desktopRuntime ? target : selectedBrowserScenarioTarget)}>
               <Download size={14} /> {exportButtonLabel}
             </button>
           </TutorialTip>
@@ -111,9 +113,9 @@ export function ExportPanel({
           </TutorialTip>
         </div>
         {!desktopRuntime ? (
-          <TutorialTip title="Browser Scenario ZIP Writer" body={BROWSER_SCENARIO_EXPORT_PENDING_HELP} side="below">
+          <TutorialTip title="Browser Scenario ZIP Writer" body={BROWSER_SCENARIO_EXPORT_HELP} side="below">
             <p className="empty-copy browser-export-boundary">
-              Browser export can download a Providence project package. Mac/Windows Realmz scenario ZIP generation is a writer-porting gap, not a browser download limitation.
+              Browser scenario ZIPs preserve captured raw sources and supported resource fork updates. Binary record edits are blocked with diagnostics until that writer parity is ported.
             </p>
           </TutorialTip>
         ) : null}
@@ -262,6 +264,18 @@ function exportTargetLabel(target: ExportReport["target"]) {
       return "Portable Providence Folder";
     default:
       return target;
+  }
+}
+
+function browserTargetToScenarioTarget(target: BrowserExportTarget): ScenarioTarget {
+  switch (target) {
+    case "mac-classic-scenario-zip":
+      return "mac-classic-folder";
+    case "windows-realmz-scenario-zip":
+      return "windows-realmz-folder";
+    case "project-zip":
+    default:
+      return "providence-portable-folder";
   }
 }
 
