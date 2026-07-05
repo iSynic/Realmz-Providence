@@ -7,7 +7,7 @@ import { resourceConsumers } from "../../semanticGraph";
 import { resourceUsageLinks } from "../../contentLinks";
 import { ResourcePreviewBadge, ResourcePreviewDiagnostics } from "../../components/ResourcePreviewStatus";
 import { TutorialTip } from "../../components/TutorialTip";
-import { StyledScrollingTextPreview, parseClassicStyleRuns } from "../../components/StyledTextPreview";
+import { StyledScrollingTextPreview, parseClassicStyleRuns, type ClassicTextEditAlignment } from "../../components/StyledTextPreview";
 import { inspectBrowserBundledLibraryAssetPreview, loadBrowserBundledLibraryResourceData } from "../../browser/library";
 import { loadBrowserScenarioResourcePreview } from "../../browser/project";
 import { useResolvedPreviewUrl } from "../../previewUrls";
@@ -879,10 +879,11 @@ function LibraryResourceDetail({
   const kind = managedAssetKindForLibrary(item.asset);
   const textBody = isTextResourceAsset(item.asset) ? catalogTextBody(item.asset, catalog) || libraryTextBody(preview) : "";
   const styleBytes = useLibrarySameIdStyleBytes(item.asset, catalog, desktopRuntime, workspaceDir);
+  const textEditAlignment = classicMovieAlignmentForLibraryAsset(item.asset);
   return (
     <>
       {textBody ? (
-        <StyledTextResourcePreview text={textBody} styleBytes={styleBytes} label={item.asset.label} />
+        <StyledTextResourcePreview text={textBody} styleBytes={styleBytes} label={item.asset.label} textEditAlignment={textEditAlignment} />
       ) : kind === "text" && libraryPreviewText(preview) ? (
         <pre className="resource-detail-text" aria-label={item.asset.label}>{libraryPreviewText(preview)}</pre>
       ) : (
@@ -986,11 +987,24 @@ function ScenarioResourceDetail({
   );
 }
 
-function StyledTextResourcePreview({ text, styleBytes, label }: { text: string; styleBytes: Uint8Array | null; label: string }) {
+function StyledTextResourcePreview({
+  text,
+  styleBytes,
+  label,
+  textEditAlignment = "left"
+}: {
+  text: string;
+  styleBytes: Uint8Array | null;
+  label: string;
+  textEditAlignment?: ClassicTextEditAlignment;
+}) {
   const parsedStyleRuns = useMemo(() => parseClassicStyleRuns(styleBytes), [styleBytes]);
+  const alignmentNote = textEditAlignment === "center"
+    ? " This resource is centered because Realmz calls movie() with Classic TextEdit center alignment for it."
+    : "";
   const description = styleBytes
-    ? "Offset-preserving Classic TEXT/styl preview using the same renderer as Strings > Scrolling Text."
-    : "Offset-preserving Classic TEXT preview. No same-ID styl resource was resolved for this text.";
+    ? `Offset-preserving Classic TEXT/styl preview using the same renderer as Strings > Scrolling Text.${alignmentNote}`
+    : `Offset-preserving Classic TEXT preview. No same-ID styl resource was resolved for this text.${alignmentNote}`;
   return (
     <StyledScrollingTextPreview
       text={text}
@@ -999,9 +1013,17 @@ function StyledTextResourcePreview({ text, styleBytes, label }: { text: string; 
       draftDirty={false}
       title="Text Resource Preview"
       description={description}
+      textEditAlignment={textEditAlignment}
       className="resource-styled-text-preview"
     />
   );
+}
+
+function classicMovieAlignmentForLibraryAsset(asset: LibraryAsset): ClassicTextEditAlignment {
+  const resourceType = String(asset.resourceType ?? asset.type).trim();
+  if (resourceType !== "TEXT" || asset.resourceId !== 1128) return "left";
+  if (resourceOrigin(asset) !== "realmz-library") return "left";
+  return asset.relativePath.includes("The Family Jewels.rsrc") ? "center" : "left";
 }
 
 function useLibrarySameIdStyleBytes(asset: LibraryAsset, catalog: LibraryCatalog | null | undefined, desktopRuntime: boolean, workspaceDir: string) {

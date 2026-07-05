@@ -1,7 +1,9 @@
-import { useMemo } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 
 export const CLASSIC_STYLE_RUN_BYTES = 20;
+export const CLASSIC_TEXT_EDIT_VIEW_WIDTH = 320;
+export const CLASSIC_TEXT_EDIT_PREVIEW_SCALES = [1, 2, 3] as const;
 export const CLASSIC_STYLE_FACE_BITS = {
   bold: 1,
   italic: 2,
@@ -36,6 +38,9 @@ export type ClassicTextStyleRun = {
   color: ClassicTextColor;
 };
 
+export type ClassicTextEditAlignment = "left" | "center" | "right";
+type ClassicTextEditPreviewScale = typeof CLASSIC_TEXT_EDIT_PREVIEW_SCALES[number];
+
 export const DEFAULT_CLASSIC_STYLE_RUN: ClassicTextStyleRun = {
   index: 0,
   startChar: 0,
@@ -61,7 +66,10 @@ export function StyledScrollingTextPreview({
   draftDirty,
   title = "Styled Preview",
   description = "Offset-preserving Classic TEXT/styl preview. Windows Realmz testing currently ignores styl formatting.",
-  className = ""
+  className = "",
+  textEditAlignment = "left",
+  movieViewportWidth = CLASSIC_TEXT_EDIT_VIEW_WIDTH,
+  defaultViewportScale = 1
 }: {
   text: string;
   runs: ClassicTextStyleRun[];
@@ -70,8 +78,37 @@ export function StyledScrollingTextPreview({
   title?: string;
   description?: string;
   className?: string;
+  textEditAlignment?: ClassicTextEditAlignment;
+  movieViewportWidth?: number;
+  defaultViewportScale?: number;
 }) {
   const preview = useMemo(() => styledTextPreviewSegments(text, runs), [text, runs]);
+  const [viewportScale, setViewportScale] = useState<ClassicTextEditPreviewScale>(() => normalizePreviewScale(defaultViewportScale));
+  const [canvasHeight, setCanvasHeight] = useState(0);
+  const canvasRef = useRef<HTMLDivElement | null>(null);
+  const normalizedViewportWidth = Math.max(1, Math.round(movieViewportWidth));
+  const frameStyle = useMemo<CSSProperties>(() => ({
+    width: `${normalizedViewportWidth * viewportScale}px`,
+    height: canvasHeight > 0 ? `${canvasHeight * viewportScale}px` : undefined
+  }), [canvasHeight, normalizedViewportWidth, viewportScale]);
+  const canvasStyle = useMemo<CSSProperties>(() => ({
+    width: `${normalizedViewportWidth}px`,
+    textAlign: textEditAlignment,
+    transform: viewportScale === 1 ? "none" : `scale(${viewportScale})`
+  }), [normalizedViewportWidth, textEditAlignment, viewportScale]);
+  useLayoutEffect(() => {
+    const element = canvasRef.current;
+    if (!element) return undefined;
+    const measure = () => setCanvasHeight(element.scrollHeight);
+    measure();
+    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
+    observer?.observe(element);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [normalizedViewportWidth, preview]);
   return (
     <section className={`text-style-preview${className ? ` ${className}` : ""}`}>
       <header>
@@ -79,20 +116,39 @@ export function StyledScrollingTextPreview({
           <span>{title}</span>
           <small>{description}</small>
         </div>
-        {draftDirty && <b>Draft style runs</b>}
+        <div className="text-style-preview-header-actions">
+          {draftDirty && <b>Draft style runs</b>}
+          <div className="text-style-preview-scale-controls" aria-label="Classic TextEdit preview scale">
+            {CLASSIC_TEXT_EDIT_PREVIEW_SCALES.map((scale) => (
+              <button
+                key={scale}
+                type="button"
+                className={scale === viewportScale ? "active" : ""}
+                onClick={() => setViewportScale(scale)}
+                title={`${normalizedViewportWidth * scale}px Classic TextEdit viewport`}
+              >
+                {scale}x
+              </button>
+            ))}
+          </div>
+        </div>
       </header>
       <div className="text-style-preview-body">
-        {preview.segments.length > 0 ? preview.segments.map((segment) => (
-          <span
-            key={`${segment.start}:${segment.end}:${segment.text.slice(0, 12)}`}
-            className={`text-style-preview-run ${segment.run ? "" : "plain"}`}
-            style={segment.run ? classicStyleRunCss(segment.run) : undefined}
-            title={segment.run ? styleRunPreviewTitle(segment.run, segment.start, segment.end) : `Plain text from character ${segment.start}`}
-          >
-            {segment.run && <i>{segment.start}</i>}
-            {segment.text}
-          </span>
-        )) : <span className="text-style-preview-empty">No scrolling TEXT body to preview.</span>}
+        <div className="text-style-preview-frame" style={frameStyle}>
+          <div ref={canvasRef} className="text-style-preview-canvas" style={canvasStyle}>
+            {preview.segments.length > 0 ? preview.segments.map((segment) => (
+              <span
+                key={`${segment.start}:${segment.end}:${segment.text.slice(0, 12)}`}
+                className={`text-style-preview-run ${segment.run ? "" : "plain"}`}
+                style={segment.run ? classicStyleRunCss(segment.run) : undefined}
+                title={segment.run ? styleRunPreviewTitle(segment.run, segment.start, segment.end) : `Plain text from character ${segment.start}`}
+              >
+                {segment.run && <i>{segment.start}</i>}
+                {segment.text}
+              </span>
+            )) : <span className="text-style-preview-empty">No scrolling TEXT body to preview.</span>}
+          </div>
+        </div>
       </div>
       {(parseError || preview.diagnostics.length > 0) && (
         <ul className="text-style-preview-diagnostics">
@@ -102,6 +158,11 @@ export function StyledScrollingTextPreview({
       )}
     </section>
   );
+}
+
+function normalizePreviewScale(value: number): ClassicTextEditPreviewScale {
+  if (value === 2 || value === 3) return value;
+  return 1;
 }
 
 export function parseClassicStyleRuns(bytes: Uint8Array | null): { ok: true; runs: ClassicTextStyleRun[] } | { ok: false; error: string } {
