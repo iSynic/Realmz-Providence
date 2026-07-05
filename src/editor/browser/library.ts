@@ -517,11 +517,24 @@ function resourcePayloadSummary(resource: ResourceEntry) {
     return { family: "string-list", stringCount: strings.length, strings };
   }
   if (resource.resourceType === "TEXT") {
-    const text = decodeClassicText(resource.data);
-    return { family: "text", text, textPreview: decodeClassicText(resource.data.slice(0, 240)) };
+    const text = decodeClassicTextBody(resource.data);
+    const textOffsetBody = decodeClassicTextOffsetBody(resource.data);
+    return {
+      family: "text",
+      text,
+      textPreview: decodeClassicTextBody(resource.data.slice(0, 240)),
+      textOffsetBody,
+      textOffsetLength: textOffsetBody.length,
+      textBytes: resource.length
+    };
   }
   if (resource.resourceType === "styl") {
-    return { family: "text-style", styleRunCountCandidate: u16At(resource.data, 0) ?? 0, styleBytes: resource.length };
+    return {
+      family: "text-style",
+      styleRunCountCandidate: u16At(resource.data, 0) ?? 0,
+      styleBytes: resource.length,
+      styleResourceBase64: bytesToBase64(resource.data)
+    };
   }
   if (resource.resourceType === "snd ") {
     return { family: "sound", formatCandidate: i16At(resource.data, 0), commandCountCandidate: i16At(resource.data, 4) };
@@ -1007,6 +1020,43 @@ function decodeClassicText(bytes: Uint8Array) {
     }
   }
   return output.trim();
+}
+
+function decodeClassicTextBody(bytes: Uint8Array) {
+  const nul = bytes.indexOf(0);
+  const slice = nul >= 0 ? bytes.slice(0, nul) : bytes;
+  return Array.from(slice)
+    .map((byte) => {
+      if (byte === 13) return "\n";
+      if (byte === 9) return "\t";
+      if (byte >= 32 && byte <= 126) return String.fromCharCode(byte);
+      return " ";
+    })
+    .join("")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function decodeClassicTextOffsetBody(bytes: Uint8Array) {
+  const nul = bytes.indexOf(0);
+  const slice = nul >= 0 ? bytes.slice(0, nul) : bytes;
+  return Array.from(slice)
+    .map((byte) => {
+      if (byte === 13 || byte === 10) return "\n";
+      if (byte === 9) return "\t";
+      if (byte >= 32) return String.fromCharCode(byte);
+      return " ";
+    })
+    .join("");
+}
+
+function bytesToBase64(bytes: Uint8Array) {
+  let binary = "";
+  for (let offset = 0; offset < bytes.length; offset += 8192) {
+    binary += String.fromCharCode(...bytes.slice(offset, offset + 8192));
+  }
+  return btoa(binary);
 }
 
 function shortPreview(bytes: Uint8Array) {

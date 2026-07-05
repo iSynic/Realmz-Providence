@@ -1,13 +1,14 @@
 import { invoke } from "@tauri-apps/api/core";
 import { FileText, ImageIcon, Music, Upload, Trash2, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DecodedResourcePreview, LibraryAsset, LibraryCatalog, ManagedAsset, ManagedAssetKind, Project, ResourcePreviewDiagnostic, ResourcePreviewStatus, SelectedEntity, SemanticEntity } from "../../types";
 import { compactValue, selectEntityFromId } from "../../utils";
 import { resourceConsumers } from "../../semanticGraph";
 import { resourceUsageLinks } from "../../contentLinks";
 import { ResourcePreviewBadge, ResourcePreviewDiagnostics } from "../../components/ResourcePreviewStatus";
 import { TutorialTip } from "../../components/TutorialTip";
-import { inspectBrowserBundledLibraryAssetPreview } from "../../browser/library";
+import { StyledScrollingTextPreview, parseClassicStyleRuns } from "../../components/StyledTextPreview";
+import { inspectBrowserBundledLibraryAssetPreview, loadBrowserBundledLibraryResourceData } from "../../browser/library";
 import { loadBrowserScenarioResourcePreview } from "../../browser/project";
 import { useResolvedPreviewUrl } from "../../previewUrls";
 import { FloatingWorkbenchPanel, ScrollArea } from "../../ui";
@@ -831,13 +832,14 @@ export function ResourcePreviewContents({
       {item.type === "managed" && (
         <ManagedResourceDetail
           item={item}
+          project={project}
           desktopRuntime={desktopRuntime}
           projectDir={projectDir}
           onSelectEntity={onSelectEntity}
         />
       )}
       {item.type === "library" && (
-        <LibraryResourceDetail item={item} desktopRuntime={desktopRuntime} workspaceDir={workspaceDir ?? ""} onSelectEntity={onSelectEntity} />
+        <LibraryResourceDetail item={item} catalog={catalog} desktopRuntime={desktopRuntime} workspaceDir={workspaceDir ?? ""} onSelectEntity={onSelectEntity} />
       )}
       {item.type === "resource" && (
         <ScenarioResourceDetail
@@ -856,11 +858,13 @@ export function ResourcePreviewContents({
 
 function LibraryResourceDetail({
   item,
+  catalog,
   desktopRuntime,
   workspaceDir,
   onSelectEntity
 }: {
   item: Extract<ResourcePreviewItem, { type: "library" }>;
+  catalog?: LibraryCatalog | null;
   desktopRuntime: boolean;
   workspaceDir: string;
   onSelectEntity: (entity: SelectedEntity) => void;
@@ -873,9 +877,13 @@ function LibraryResourceDetail({
       ? item.preview
       : resolvedPreview;
   const kind = managedAssetKindForLibrary(item.asset);
+  const textBody = isTextResourceAsset(item.asset) ? catalogTextBody(item.asset, catalog) || libraryTextBody(preview) : "";
+  const styleBytes = useLibrarySameIdStyleBytes(item.asset, catalog, desktopRuntime, workspaceDir);
   return (
     <>
-      {kind === "text" && libraryPreviewText(preview) ? (
+      {textBody ? (
+        <StyledTextResourcePreview text={textBody} styleBytes={styleBytes} label={item.asset.label} />
+      ) : kind === "text" && libraryPreviewText(preview) ? (
         <pre className="resource-detail-text" aria-label={item.asset.label}>{libraryPreviewText(preview)}</pre>
       ) : (
         <ResourcePreviewMedia kind={kind} preview={preview.dataUrl} label={item.asset.label} />
@@ -932,9 +940,15 @@ function ScenarioResourceDetail({
     setBrowserPreview(loadBrowserScenarioResourcePreview(project, resourceType, resourceId));
   }, [referencePreview, preview, project, rawPreview, resourceId, resourceType]);
   const resolvedPreview = referencePreview ?? preview ?? browserPreview;
+  const textBody = resourceType === "TEXT"
+    ? resourceSummaryText(item.entity.summary) || (resolvedPreview?.startsWith("data:text/") ? decodeTextDataUrl(resolvedPreview) ?? "" : "")
+    : "";
+  const styleBytes = resourceType === "TEXT" && resourceId != null ? projectSameIdStyleBytes(project, resourceId) : null;
   return (
     <>
-      {resolvedPreview ? (
+      {textBody ? (
+        <StyledTextResourcePreview text={textBody} styleBytes={styleBytes} label={item.entity.label} />
+      ) : resolvedPreview ? (
         <ResourcePreviewMedia
           kind={resourceKindFromSummary(item.entity.summary)}
           preview={resolvedPreview}
@@ -972,6 +986,163 @@ function ScenarioResourceDetail({
   );
 }
 
+function StyledTextResourcePreview({ text, styleBytes, label }: { text: string; styleBytes: Uint8Array | null; label: string }) {
+  const parsedStyleRuns = useMemo(() => parseClassicStyleRuns(styleBytes), [styleBytes]);
+  const description = styleBytes
+    ? "Offset-preserving Classic TEXT/styl preview using the same renderer as Strings > Scrolling Text."
+    : "Offset-preserving Classic TEXT preview. No same-ID styl resource was resolved for this text.";
+  return (
+    <StyledScrollingTextPreview
+      text={text}
+      runs={parsedStyleRuns.ok ? parsedStyleRuns.runs : []}
+      parseError={parsedStyleRuns.ok ? null : parsedStyleRuns.error}
+      draftDirty={false}
+      title="Text Resource Preview"
+      description={description}
+      className="resource-styled-text-preview"
+    />
+  );
+}
+
+function useLibrarySameIdStyleBytes(asset: LibraryAsset, catalog: LibraryCatalog | null | undefined, desktopRuntime: boolean, workspaceDir: string) {
+  const catalogBytes = useMemo(() => catalogSameIdStyleBytes(asset, catalog), [asset, catalog]);
+  const styleAsset = useMemo(() => sameSourceStyleAsset(asset, catalog), [asset, catalog]);
+  const [browserBytes, setBrowserBytes] = useState<Uint8Array | null>(catalogBytes);
+  useEffect(() => {
+    let disposed = false;
+    setBrowserBytes(catalogBytes);
+    if (catalogBytes || desktopRuntime || !styleAsset) return () => { disposed = true; };
+    loadBrowserBundledLibraryResourceData(styleAsset)
+      .then((bytes) => {
+        if (!disposed) setBrowserBytes(bytes);
+      })
+      .catch(() => {
+        if (!disposed) setBrowserBytes(null);
+      });
+    return () => {
+      disposed = true;
+    };
+  }, [catalogBytes, desktopRuntime, styleAsset, workspaceDir]);
+  return catalogBytes ?? browserBytes;
+}
+
+function isTextResourceAsset(asset: Pick<ManagedAsset, "resourceType"> | LibraryAsset) {
+  return String(asset.resourceType ?? ("type" in asset ? asset.type : "")).trim() === "TEXT";
+}
+
+function libraryTextBody(preview: AssetPreviewState) {
+  return textBodyFromSummary(preview.summary) || libraryPreviewText(preview) || decodeTextDataUrl(preview.dataUrl ?? "") || "";
+}
+
+function managedTextBody(asset: ManagedAsset, preview: string | null) {
+  return decodeTextDataUrl(asset.resourcePath)
+    || decodeTextDataUrl(asset.previewPath)
+    || decodeTextDataUrl(asset.originalPath)
+    || decodeTextDataUrl(preview ?? "")
+    || "";
+}
+
+function textBodyFromSummary(summary: Record<string, unknown>) {
+  if (typeof summary.textOffsetBody === "string" && summary.textOffsetBody.trim()) return summary.textOffsetBody;
+  if (typeof summary.text === "string" && summary.text.trim()) return summary.text;
+  if (typeof summary.textPreview === "string" && summary.textPreview.trim()) return summary.textPreview;
+  if (typeof summary.preview === "string" && summary.preview.trim()) return summary.preview;
+  return "";
+}
+
+function projectSameIdStyleBytes(project: Project | null, resourceId: number) {
+  if (!project || !Number.isInteger(resourceId)) return null;
+  const managedStyle = project.assets?.find((asset) => asset.resourceType.trim() === "styl" && asset.resourceId === resourceId);
+  const managedBytes = managedStyle
+    ? bytesFromDataUrl(managedStyle.resourcePath) ?? bytesFromDataUrl(managedStyle.originalPath) ?? bytesFromDataUrl(managedStyle.previewPath)
+    : null;
+  if (managedBytes) return managedBytes;
+  const semanticStyle = project.semanticSchema?.entities.find((entity) =>
+    semanticEntityResourceType(entity) === "styl" &&
+    semanticEntityResourceId(entity) === resourceId
+  );
+  return bytesFromBase64String(semanticStyle?.summary.styleResourceBase64);
+}
+
+function catalogSameIdStyleBytes(asset: LibraryAsset, catalog: LibraryCatalog | null | undefined) {
+  if (!Number.isInteger(asset.resourceId)) return null;
+  const semanticStyle = catalog?.entities.find((entity) =>
+    entity.source === asset.source &&
+    semanticEntityResourceType(entity) === "styl" &&
+    semanticEntityResourceId(entity) === asset.resourceId
+  );
+  return bytesFromBase64String(semanticStyle?.summary.styleResourceBase64);
+}
+
+function catalogTextBody(asset: LibraryAsset, catalog: LibraryCatalog | null | undefined) {
+  if (!Number.isInteger(asset.resourceId)) return "";
+  const semanticText = catalog?.entities.find((entity) =>
+    entity.source === asset.source &&
+    semanticEntityResourceType(entity) === "TEXT" &&
+    semanticEntityResourceId(entity) === asset.resourceId
+  );
+  return semanticText ? textBodyFromSummary(semanticText.summary) : "";
+}
+
+function sameSourceStyleAsset(asset: LibraryAsset, catalog: LibraryCatalog | null | undefined) {
+  if (!Number.isInteger(asset.resourceId)) return null;
+  return catalog?.assets.find((candidate) =>
+    candidate.source === asset.source &&
+    candidate.resourceType?.trim() === "styl" &&
+    candidate.resourceId === asset.resourceId &&
+    sameLibraryResourceFile(candidate.relativePath, asset.relativePath)
+  ) ?? null;
+}
+
+function sameLibraryResourceFile(left: string, right: string) {
+  return left.split("#")[0]?.toLowerCase() === right.split("#")[0]?.toLowerCase();
+}
+
+function semanticEntityResourceType(entity: { id: string; summary: Record<string, unknown> }) {
+  const direct = resourceTypeFromSummary(entity.summary);
+  if (direct) return direct;
+  const match = entity.id.match(/^resource:([^:]+):/);
+  return match?.[1]?.trim() ?? "";
+}
+
+function semanticEntityResourceId(entity: { id: string; summary: Record<string, unknown> }) {
+  const direct = resourceIdFromSummary(entity.summary);
+  if (direct != null) return direct;
+  const match = entity.id.match(/^resource:[^:]+:(-?\d+)/);
+  return match ? Number(match[1]) : null;
+}
+
+function bytesFromDataUrl(dataUrl: string | null | undefined) {
+  if (!dataUrl) return null;
+  const comma = dataUrl.indexOf(",");
+  if (comma < 0) return null;
+  const metadata = dataUrl.slice(0, comma).toLowerCase();
+  const payload = dataUrl.slice(comma + 1);
+  try {
+    if (metadata.includes(";base64")) return bytesFromBase64String(payload);
+    const decoded = decodeURIComponent(payload);
+    const bytes = new Uint8Array(decoded.length);
+    for (let index = 0; index < decoded.length; index += 1) bytes[index] = decoded.charCodeAt(index) & 0xff;
+    return bytes;
+  } catch {
+    return null;
+  }
+}
+
+function bytesFromBase64String(payload: unknown) {
+  if (typeof payload !== "string" || payload.length === 0) return null;
+  try {
+    const binary = atob(payload);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) {
+      bytes[index] = binary.charCodeAt(index);
+    }
+    return bytes;
+  } catch {
+    return null;
+  }
+}
+
 function referencePictureIdFromPath(path: string | null | undefined) {
   if (!path) return null;
   const match = /^reference-picture:(-?\d+)$/i.exec(path.trim());
@@ -990,18 +1161,40 @@ function findReferencePictureAsset(catalog: LibraryCatalog | null | undefined, p
 
 export function ManagedResourceDetail({
   item,
+  project,
   desktopRuntime,
   projectDir,
   onSelectEntity
 }: {
   item: Extract<ResourcePreviewItem, { type: "managed" }>;
+  project: Project | null;
   desktopRuntime: boolean;
   projectDir: string;
   onSelectEntity: (entity: SelectedEntity) => void;
 }) {
   const originalPreview = useProjectPreview(item.asset.originalPath, desktopRuntime, projectDir, true, item.asset.sha256);
   const isSound = item.asset.kind === "sound";
+  const isText = isTextResourceAsset(item.asset);
+  const textBody = isText ? managedTextBody(item.asset, item.preview) : "";
+  const styleBytes = isText ? projectSameIdStyleBytes(project, item.asset.resourceId) : null;
   const conversionRows = managedConversionRows(item.asset);
+  if (isText && textBody) {
+    return (
+      <>
+        <StyledTextResourcePreview text={textBody} styleBytes={styleBytes} label={item.asset.label} />
+        <ResourceFactGrid rows={[
+          ["Resource", `${item.asset.resourceType} ${item.asset.resourceId}`],
+          ["Kind", kindLabel(item.asset.kind)],
+          ["Export", assetExportLabel(item.asset.exportState)],
+          ["Output", managedOutputSummary(item.asset)],
+          ["Original", managedSourceSummary(item.asset)],
+          ["Original Bytes", formatBytes(item.asset.bytes)]
+        ]} />
+        {conversionRows.length > 0 && <ResourceFactGrid title="Import Conversion" rows={conversionRows} />}
+        <UsageLinks usages={item.usages} onSelectEntity={onSelectEntity} />
+      </>
+    );
+  }
   return (
     <>
       <div className="resource-preview-comparison">
@@ -1129,9 +1322,7 @@ function resourceSummaryText(summary: Record<string, unknown>) {
     const decoded = decodeTextDataUrl(preview);
     if (decoded?.trim()) return decoded;
   }
-  if (typeof summary.text === "string" && summary.text.trim()) return summary.text;
-  if (typeof summary.textPreview === "string" && summary.textPreview.trim()) return summary.textPreview;
-  return "";
+  return textBodyFromSummary(summary);
 }
 
 function resourceKindFromSummary(summary: Record<string, unknown>): ManagedAssetKind {

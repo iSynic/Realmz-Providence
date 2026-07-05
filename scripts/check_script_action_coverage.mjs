@@ -6,8 +6,10 @@ const catalogPath = path.join(root, "src/editor/panels/scripts/scriptActionCatal
 const panelPath = path.join(root, "src/editor/panels/ScriptsPanel.tsx");
 const scriptsCssPath = path.join(root, "src/editor/styles/scripts.css");
 const textScenarioCssPath = path.join(root, "src/editor/styles/text-scenario.css");
+const assetsCssPath = path.join(root, "src/editor/styles/assets.css");
 const combatPanelPath = path.join(root, "src/editor/panels/CombatPanel.tsx");
 const textPanelPath = path.join(root, "src/editor/panels/TextPanel.tsx");
+const styledTextPreviewPath = path.join(root, "src/editor/components/StyledTextPreview.tsx");
 const resourcesPanelPath = path.join(root, "src/editor/panels/ResourcesPanel.tsx");
 const resourceWidgetsPath = path.join(root, "src/editor/panels/resources/ResourceWidgets.tsx");
 const globalSearchPath = path.join(root, "src/editor/globalSearch.ts");
@@ -22,7 +24,9 @@ const editorStorePath = path.join(root, "src/editor/store.ts");
 const mapContextSidebarPath = path.join(root, "src/editor/components/MapContextSidebar.tsx");
 const mapFormControlsPath = path.join(root, "src/editor/components/maps/MapFormControls.tsx");
 const browserProjectPath = path.join(root, "src/editor/browser/project.ts");
+const browserLibraryPath = path.join(root, "src/editor/browser/library.ts");
 const rustProjectPath = path.join(root, "src-tauri/src/project.rs");
+const rustWorkspacePath = path.join(root, "src-tauri/src/workspace.rs");
 const rustValidationPath = path.join(root, "src-tauri/src/validation.rs");
 const rustSemanticResourcesPath = path.join(root, "src-tauri/src/semantic/resources.rs");
 const fixtureRoundtripPath = path.join(root, "src-tauri/tests/fixture_roundtrip.rs");
@@ -33,8 +37,10 @@ const catalog = fs.readFileSync(catalogPath, "utf8");
 const panel = fs.readFileSync(panelPath, "utf8");
 const scriptsCss = fs.readFileSync(scriptsCssPath, "utf8");
 const textScenarioCss = fs.readFileSync(textScenarioCssPath, "utf8");
+const assetsCss = fs.readFileSync(assetsCssPath, "utf8");
 const combatPanel = fs.readFileSync(combatPanelPath, "utf8");
 const textPanel = fs.readFileSync(textPanelPath, "utf8");
+const styledTextPreview = fs.readFileSync(styledTextPreviewPath, "utf8");
 const resourcesPanel = fs.readFileSync(resourcesPanelPath, "utf8");
 const resourceWidgets = fs.readFileSync(resourceWidgetsPath, "utf8");
 const globalSearch = fs.readFileSync(globalSearchPath, "utf8");
@@ -49,7 +55,9 @@ const editorStore = fs.readFileSync(editorStorePath, "utf8");
 const mapContextSidebar = fs.readFileSync(mapContextSidebarPath, "utf8");
 const mapFormControls = fs.readFileSync(mapFormControlsPath, "utf8");
 const browserProject = fs.readFileSync(browserProjectPath, "utf8");
+const browserLibrary = fs.readFileSync(browserLibraryPath, "utf8");
 const rustProject = fs.readFileSync(rustProjectPath, "utf8");
+const rustWorkspace = fs.readFileSync(rustWorkspacePath, "utf8");
 const rustValidation = fs.readFileSync(rustValidationPath, "utf8");
 const rustSemanticResources = fs.readFileSync(rustSemanticResourcesPath, "utf8");
 const fixtureRoundtrip = fs.readFileSync(fixtureRoundtripPath, "utf8");
@@ -308,9 +316,6 @@ for (const snippet of [
   "classicStyleBytesFromRuns",
   "parseHexBytes",
   "StyledScrollingTextPreview",
-  "styledTextPreviewSegments",
-  "Offset-preserving Classic TEXT/styl preview. Windows Realmz testing currently ignores styl formatting.",
-  "styleRunPreviewTitle",
   "semanticResourceType(entity)",
   "semanticResourceId(entity)",
   "function bytesToDataUrl(bytes: Uint8Array, mimeType = \"text/plain\")",
@@ -322,6 +327,16 @@ for (const snippet of [
   "Apply Scrolling Text"
 ]) {
   if (!textPanel.includes(snippet)) failures.push(`Text panel is missing authored scrolling TEXT resource support: ${snippet}`);
+}
+for (const snippet of [
+  "export function StyledScrollingTextPreview",
+  "function styledTextPreviewSegments",
+  "Offset-preserving Classic TEXT/styl preview. Windows Realmz testing currently ignores styl formatting.",
+  "function styleRunPreviewTitle",
+  "export function parseClassicStyleRuns",
+  "export function classicStyleBytesFromRuns"
+]) {
+  if (!styledTextPreview.includes(snippet)) failures.push(`Shared styled TEXT preview is missing: ${snippet}`);
 }
 if (!textPanel.includes("setSelectedImportedResourceId(resource.entityId);")) {
   failures.push("Imported scrolling TEXT list rows must select locally.");
@@ -361,6 +376,20 @@ for (const snippet of [
   if (!resourcesPanel.includes(snippet)) failures.push(`Assets panel is missing imported TEXT/styl scenario-resource listing support: ${snippet}`);
 }
 for (const snippet of [
+  "StyledTextResourcePreview",
+  "useLibrarySameIdStyleBytes",
+  "loadBrowserBundledLibraryResourceData",
+  "projectSameIdStyleBytes",
+  "sameSourceStyleAsset",
+  "typeof summary.textOffsetBody === \"string\"",
+  "title=\"Text Resource Preview\""
+]) {
+  if (!resourceWidgets.includes(snippet)) failures.push(`Assets resource preview must reuse the styled scrolling TEXT preview path: ${snippet}`);
+}
+if (!textScenarioCss.includes(".text-style-preview") || !assetsCss.includes(".resource-styled-text-preview") || !resourceWidgets.includes("resource-styled-text-preview")) {
+  failures.push("Assets styled TEXT preview should retain shared text-style-preview styling and add a resource-styled-text-preview sizing hook.");
+}
+for (const snippet of [
   "if (activeEditor === \"text-resources\") return \"text\"",
   "{ id: \"project\", editor: \"project-assets\", label: \"Scenario Assets\" }"
 ]) {
@@ -386,6 +415,14 @@ for (const snippet of [
   if (!semantic.includes(snippet)) failures.push(`Browser semantic resources are missing TEXT/styl authoring summaries: ${snippet}`);
 }
 for (const snippet of [
+  "textOffsetBody",
+  "decodeClassicTextOffsetBody",
+  "styleResourceBase64",
+  "bytesToBase64(resource.data)"
+]) {
+  if (!browserLibrary.includes(snippet)) failures.push(`Browser library catalog TEXT/styl summaries must preserve scrolling-text preview data: ${snippet}`);
+}
+for (const snippet of [
   "styleResourceBase64",
   "STANDARD.encode(&resource.data)",
   "styleRunTableStatus",
@@ -393,6 +430,14 @@ for (const snippet of [
   "classic-style-run-table"
 ]) {
   if (!rustSemanticResources.includes(snippet)) failures.push(`Rust semantic resources are missing desktop TEXT/styl authoring summaries: ${snippet}`);
+}
+for (const snippet of [
+  "textOffsetBody",
+  "decode_classic_text_offset_body",
+  "styleResourceBase64",
+  "BASE64_STANDARD.encode(data)"
+]) {
+  if (!rustWorkspace.includes(snippet)) failures.push(`Desktop workspace library catalog TEXT/styl summaries must preserve scrolling-text preview data: ${snippet}`);
 }
 for (const snippet of [
   "authored_scrolling_text_exports_same_id_text_and_style_resources",

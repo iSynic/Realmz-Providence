@@ -1241,6 +1241,13 @@
 
 
 
+.asset-selection-inspector .resource-styled-text-preview .text-style-preview-body {
+  min-height: 220px;
+  max-height: 36vh;
+}
+
+
+
 .asset-selection-inspector .field-help {
   margin: 0;
 }
@@ -1420,6 +1427,13 @@
   font: 12px/1.45 var(--font-mono, ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace);
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+
+
+.resource-detail-view .resource-styled-text-preview .text-style-preview-body {
+  min-height: 260px;
+  max-height: 58vh;
 }
 
 

@@ -2,6 +2,7 @@ use crate::error::{IoPath, JsonPath, ProvidenceError, Result};
 use crate::project::{ByteRange, Confidence, DiagnosticSeverity, SemanticEditState};
 use crate::resource_preview::decode_classic_text;
 use crate::semantic::resources::{parse_resource_fork, resource_entity_id, resource_type_id};
+use base64::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -1203,7 +1204,59 @@ fn resource_payload_summary(resource_type: &str, data: &[u8]) -> BTreeMap<String
             ("strings", json!(strings)),
         ]);
     }
+    if resource_type == "TEXT" {
+        let text = decode_classic_text_body(data);
+        let text_offset_body = decode_classic_text_offset_body(data);
+        return summary([
+            ("family", json!("text")),
+            ("text", json!(text)),
+            (
+                "textPreview",
+                json!(decode_classic_text_body(&data[..data.len().min(240)])),
+            ),
+            ("textOffsetBody", json!(text_offset_body)),
+            ("textOffsetLength", json!(text_offset_body.chars().count())),
+            ("textBytes", json!(data.len())),
+        ]);
+    }
+    if resource_type == "styl" {
+        return summary([
+            ("family", json!("text-style")),
+            ("styleRunCountCandidate", json!(u16_be(data, 0).unwrap_or(0))),
+            ("styleBytes", json!(data.len())),
+            ("styleResourceBase64", json!(BASE64_STANDARD.encode(data))),
+        ]);
+    }
     BTreeMap::new()
+}
+
+fn decode_classic_text_body(bytes: &[u8]) -> String {
+    let nul = bytes.iter().position(|byte| *byte == 0).unwrap_or(bytes.len());
+    bytes[..nul]
+        .iter()
+        .map(|byte| match *byte {
+            13 => '\n',
+            9 => '\t',
+            32..=126 => char::from(*byte),
+            _ => ' ',
+        })
+        .collect::<String>()
+        .replace(" \n", "\n")
+        .trim()
+        .to_string()
+}
+
+fn decode_classic_text_offset_body(bytes: &[u8]) -> String {
+    let nul = bytes.iter().position(|byte| *byte == 0).unwrap_or(bytes.len());
+    bytes[..nul]
+        .iter()
+        .map(|byte| match *byte {
+            13 | 10 => '\n',
+            9 => '\t',
+            32..=255 => char::from(*byte),
+            _ => ' ',
+        })
+        .collect()
 }
 
 fn spell_record_summary(index: usize, record: &[u8]) -> BTreeMap<String, Value> {
