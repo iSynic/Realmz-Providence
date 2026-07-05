@@ -1,4 +1,4 @@
-import { MESSAGE_RECORD_BYTES, OPTION_LABEL_RECORD_BYTES, writeMessages, writeOptionLabels } from "./binaryWriters";
+import { BATTLE_RECORD_BYTES, MESSAGE_RECORD_BYTES, MONSTER_RECORD_BYTES, OPTION_LABEL_RECORD_BYTES, writeBattles, writeMessages, writeMonsters, writeOptionLabels } from "./binaryWriters";
 import { BrowserRawSourceFile, BrowserRawSourceSnapshot } from "./fsAccess";
 import { encodeStringListResource, mergeResourceEntries, parseResourceFork, type ResourceForkUpdate } from "./resourceFork";
 import { createStoredZip } from "./zip";
@@ -191,6 +191,25 @@ function writeSupportedBinaryRecords(project: Project, rawFiles: BrowserRawSourc
     writes.push({
       path: "Data OD",
       bytes: preserveMalformedRawTail("Data OD", writeOptionLabels(project.optionLabels), OPTION_LABEL_RECORD_BYTES, rawFiles)
+    });
+  }
+  if (project.battles.length > 0) {
+    writes.push({
+      path: "Data BD",
+      bytes: preserveMalformedRawTail("Data BD", writeBattles(project.battles), BATTLE_RECORD_BYTES, rawFiles)
+    });
+  }
+  if (project.monsters.length > 0) {
+    writes.push({
+      path: "Data MD",
+      bytes: preserveMalformedRawTail("Data MD", writeMonsters(project.monsters), MONSTER_RECORD_BYTES, rawFiles)
+    });
+  }
+  for (const monsterSet of project.monsterSets) {
+    if (monsterSet.monsters.length === 0) continue;
+    writes.push({
+      path: monsterSet.sourceFile,
+      bytes: preserveMalformedRawTail(monsterSet.sourceFile, writeMonsters(monsterSet.monsters), MONSTER_RECORD_BYTES, rawFiles)
     });
   }
   return writes.filter((write) => write.bytes.byteLength > 0);
@@ -444,8 +463,6 @@ function unsupportedAuthoredBinaryState(project: Project) {
   if (project.extracodes.some((record) => record.provenance?.confidence === "inferred")) labels.push("EDCD parameter rows");
   for (const [label, records] of [
     ["Map records", project.mapRecords],
-    ["Battles", project.battles],
-    ["Monsters", project.monsters],
     ["Monster descriptions", project.monsterDescriptions],
     ["Scenario items", project.scenarioItems],
     ["Treasures", project.treasures],
@@ -460,7 +477,6 @@ function unsupportedAuthoredBinaryState(project: Project) {
   ] as const) {
     if (records.some((record) => record.authored || record.provenance?.confidence === "inferred")) labels.push(label);
   }
-  if (project.monsterSets.some((set) => set.monsters.some((record) => record.authored || record.provenance?.confidence === "inferred"))) labels.push("Monster set records");
   if (project.ruleNames.authored) labels.push("Rule name resources");
   return [...new Set(labels)];
 }

@@ -58,10 +58,22 @@ sourceOptionLabels[0] = 1;
 sourceOptionLabels[1] = "A".charCodeAt(0);
 sourceOptionLabels[50] = 1;
 sourceOptionLabels[51] = "Q".charCodeAt(0);
+const sourceBattles = new Uint8Array(692);
+sourceBattles[0] = 0xaa;
+sourceBattles[1] = 0xbb;
+sourceBattles[346] = 0xcc;
+sourceBattles[347] = 0xdd;
+const sourceMonsters = new Uint8Array(420);
+sourceMonsters[0] = 0x11;
+sourceMonsters[1] = 0x22;
+sourceMonsters[210] = 0x33;
+sourceMonsters[211] = 0x44;
 const rawFiles = [
   rawFile("Scenario", sourceResourceFork, "resource-fork"),
   rawFile("Data SD2", sourceMessages, "supported-binary"),
   rawFile("Data OD", sourceOptionLabels, "supported-binary"),
+  rawFile("Data BD", sourceBattles, "supported-binary"),
+  rawFile("Data MD", sourceMonsters, "supported-binary"),
   rawFile("Data LD", [1, 2, 3, 4], "supported-binary"),
   rawFile("Data MENU", [5, 6, 7], "unknown"),
   rawFile("Custom Names.rsrc", [8, 9], "resource-fork"),
@@ -115,6 +127,89 @@ expect(bytesEqual(writtenMessages?.slice(0, 256), sourceMessages.slice(0, 256)),
 expect(bytesEqual(writtenMessages?.slice(256, 512), pascalRow(256, "Go")), "Authored message row should encode Pascal text");
 expect(bytesEqual(writtenOptions?.slice(0, 25), sourceOptionLabels.slice(0, 25)), "Unauthored option label row should remain byte-identical");
 expect(bytesEqual(writtenOptions?.slice(50, 75), pascalRow(25, "On")), "Authored option label row should encode Pascal text");
+
+const battleGrid = new Array(13 * 13).fill(0);
+battleGrid[0] = 7;
+battleGrid[168] = -3;
+const battleUpdateProject = {
+  ...project,
+  battles: [
+    { id: 0, grid: new Array(13 * 13).fill(0), dist: 0, messageBefore: 0, messageAfter: 0, battleMacro: 0, rawBytes: Array.from(sourceBattles.slice(0, 346)), authored: false },
+    { id: 1, grid: battleGrid, dist: -2, messageBefore: 12, messageAfter: 13, battleMacro: 14, rawBytes: Array.from(sourceBattles.slice(346, 692)), authored: true }
+  ]
+};
+const battleUpdate = createBrowserScenarioPackageZip(battleUpdateProject, rawSources, "mac-classic-folder");
+const battleUpdatedFiles = unzipScenarioPackage(battleUpdate.zip);
+expect(battleUpdate.report.writtenFiles.includes("Data BD"), "Authored battles should write Data BD");
+expect(!battleUpdate.report.passThroughFiles.includes("Data BD"), "Written Data BD should not be reported as pass-through");
+const writtenBattles = battleUpdatedFiles.get("Data BD");
+expect(writtenBattles?.byteLength === 692, "Written Data BD should retain source row count");
+expect(bytesEqual(writtenBattles?.slice(0, 346), sourceBattles.slice(0, 346)), "Unauthored battle row should remain byte-identical");
+expect(bytesEqual(writtenBattles?.slice(346, 692), battleRow({ grid: battleGrid, dist: -2, messageBefore: 12, messageAfter: 13, battleMacro: 14 })), "Authored battle row should encode combat fields");
+
+const authoredMonster = monsterRecord(1, {
+  hitDice: 9,
+  staminaBonus: 8,
+  agility: 7,
+  nameId: 6,
+  movementMax: 5,
+  armor: -4,
+  magicResistance: -3,
+  distance: -2,
+  traitor: -1,
+  size: 4,
+  typeFlags: [1, -1, 2, -2, 3, -3, 4, -4],
+  attackCount: 2,
+  magicAttackCount: 1,
+  attacks: [[1, 2, 3, 4], [-1, -2, -3, -4], [5, 6, 7, 8], [0, 0, 0, 0], [9, 10, 11, 12]],
+  damageBonus: -5,
+  castPercent: 33,
+  runPercent: 44,
+  surrenderPercent: 55,
+  missilePercent: 66,
+  canSummon: -6,
+  saves: [1, 2, 3, 4, 5, 6],
+  spellImmunities: [-1, -2, -3, -4, -5, -6],
+  money: [100, 200, 300],
+  spells: [10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+  items: [20, 21, 22, 23, 24, 25],
+  weapon: 26,
+  iconId: -27,
+  spellPoints: 28,
+  exp: 29,
+  stamina: 30,
+  staminaMax: 31,
+  underneath: [32, 33, 34, 35],
+  target: -7,
+  guarding: -8,
+  notOnMenu: true,
+  beenAttacked: -9,
+  movement: -10,
+  magicToHit: -11,
+  conditions: Array.from({ length: 40 }, (_, index) => index % 2 === 0 ? index : -index),
+  lr: -12,
+  up: -13,
+  attackNum: -14,
+  bonusAttack: -15,
+  deathMacro: -16,
+  maxSpellPoints: 37,
+  displayName: "Browser Beast"
+});
+const monsterUpdateProject = {
+  ...project,
+  monsters: [
+    monsterRecord(0, { rawBytes: Array.from(sourceMonsters.slice(0, 210)), authored: false }),
+    { ...authoredMonster, rawBytes: Array.from(sourceMonsters.slice(210, 420)), authored: true }
+  ]
+};
+const monsterUpdate = createBrowserScenarioPackageZip(monsterUpdateProject, rawSources, "mac-classic-folder");
+const monsterUpdatedFiles = unzipScenarioPackage(monsterUpdate.zip);
+expect(monsterUpdate.report.writtenFiles.includes("Data MD"), "Authored monsters should write Data MD");
+expect(!monsterUpdate.report.passThroughFiles.includes("Data MD"), "Written Data MD should not be reported as pass-through");
+const writtenMonsters = monsterUpdatedFiles.get("Data MD");
+expect(writtenMonsters?.byteLength === 420, "Written Data MD should retain source row count");
+expect(bytesEqual(writtenMonsters?.slice(0, 210), sourceMonsters.slice(0, 210)), "Unauthored monster row should remain byte-identical");
+expect(bytesEqual(writtenMonsters?.slice(210, 420), monsterRow(authoredMonster)), "Authored monster row should encode monster fields");
 
 const resourceUpdateProject = {
   ...project,
@@ -195,6 +290,139 @@ function pascalRow(length, text) {
   output[0] = bytes.byteLength;
   output.set(bytes, 1);
   return output;
+}
+
+function battleRow({ grid, dist, messageBefore, messageAfter, battleMacro }) {
+  const output = new Uint8Array(346);
+  for (let slot = 0; slot < 13 * 13; slot += 1) {
+    setI16(output, slot * 2, grid[slot] ?? 0);
+  }
+  output[338] = dist & 0xff;
+  setI16(output, 340, messageBefore);
+  setI16(output, 342, messageAfter);
+  setI16(output, 344, battleMacro);
+  return output;
+}
+
+function monsterRecord(id, overrides = {}) {
+  return {
+    id,
+    hitDice: 0,
+    staminaBonus: 0,
+    agility: 0,
+    nameId: 0,
+    movementMax: 0,
+    armor: 0,
+    magicResistance: 0,
+    distance: 0,
+    traitor: 0,
+    size: 0,
+    typeFlags: new Array(8).fill(0),
+    attackCount: 0,
+    magicAttackCount: 0,
+    attacks: Array.from({ length: 5 }, () => new Array(4).fill(0)),
+    damageBonus: 0,
+    castPercent: 0,
+    runPercent: 0,
+    surrenderPercent: 0,
+    missilePercent: 0,
+    canSummon: 0,
+    saves: new Array(6).fill(0),
+    spellImmunities: new Array(6).fill(0),
+    money: new Array(3).fill(0),
+    spells: new Array(10).fill(0),
+    items: new Array(6).fill(0),
+    weapon: 0,
+    iconId: 0,
+    spellPoints: 0,
+    exp: 0,
+    stamina: 0,
+    staminaMax: 0,
+    underneath: new Array(4).fill(0),
+    target: 0,
+    guarding: 0,
+    notOnMenu: false,
+    beenAttacked: 0,
+    movement: 0,
+    magicToHit: 0,
+    conditions: new Array(40).fill(0),
+    lr: 0,
+    up: 0,
+    attackNum: 0,
+    bonusAttack: 0,
+    deathMacro: 0,
+    maxSpellPoints: 0,
+    displayName: "",
+    rawBytes: new Array(210).fill(0),
+    authored: true,
+    ...overrides
+  };
+}
+
+function monsterRow(record) {
+  const output = new Uint8Array(210);
+  output[0] = record.hitDice & 0xff;
+  output[1] = record.staminaBonus & 0xff;
+  output[2] = record.agility & 0xff;
+  output[3] = record.nameId & 0xff;
+  output[4] = record.movementMax & 0xff;
+  output[5] = record.armor & 0xff;
+  output[6] = record.magicResistance & 0xff;
+  output[7] = record.distance & 0xff;
+  output[8] = record.traitor & 0xff;
+  output[9] = record.size & 0xff;
+  setI8Array(output, 10, record.typeFlags, 8);
+  output[18] = record.attackCount & 0xff;
+  output[19] = record.magicAttackCount & 0xff;
+  for (let row = 0; row < 5; row += 1) setI8Array(output, 20 + row * 4, record.attacks[row] ?? [], 4);
+  output[40] = record.damageBonus & 0xff;
+  output[41] = record.castPercent & 0xff;
+  output[42] = record.runPercent & 0xff;
+  output[43] = record.surrenderPercent & 0xff;
+  output[44] = record.missilePercent & 0xff;
+  output[45] = record.canSummon & 0xff;
+  setI8Array(output, 46, record.saves, 6);
+  setI8Array(output, 52, record.spellImmunities, 6);
+  setI16Array(output, 58, record.money, 3);
+  setI16Array(output, 64, record.spells, 10);
+  setI16Array(output, 84, record.items, 6);
+  setI16(output, 96, record.weapon);
+  setI16(output, 98, record.iconId);
+  setI16(output, 100, record.spellPoints);
+  setI16(output, 102, record.exp);
+  setI16(output, 104, record.stamina);
+  setI16(output, 106, record.staminaMax);
+  setI16Array(output, 108, record.underneath, 4);
+  output[116] = record.target & 0xff;
+  output[117] = record.guarding & 0xff;
+  output[118] = record.notOnMenu ? 1 : 0;
+  output[119] = record.beenAttacked & 0xff;
+  output[120] = record.movement & 0xff;
+  output[121] = record.magicToHit & 0xff;
+  setI8Array(output, 122, record.conditions, 40);
+  output[162] = record.lr & 0xff;
+  output[163] = record.up & 0xff;
+  output[164] = record.attackNum & 0xff;
+  output[165] = record.bonusAttack & 0xff;
+  setI16(output, 166, record.deathMacro);
+  setI16(output, 168, record.maxSpellPoints);
+  const name = new Uint8Array([...record.displayName].map((char) => char.charCodeAt(0)));
+  output.set(name, 170);
+  return output;
+}
+
+function setI8Array(output, offset, values, count) {
+  for (let index = 0; index < count; index += 1) output[offset + index] = (values[index] ?? 0) & 0xff;
+}
+
+function setI16Array(output, offset, values, count) {
+  for (let index = 0; index < count; index += 1) setI16(output, offset + index * 2, values[index] ?? 0);
+}
+
+function setI16(output, offset, value) {
+  const normalized = value < 0 ? value + 0x10000 : value;
+  output[offset] = (normalized >> 8) & 0xff;
+  output[offset + 1] = normalized & 0xff;
 }
 
 function rawFile(name, bytes, role) {
