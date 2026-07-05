@@ -22,6 +22,7 @@ import {
   ValidationReport
 } from "./types";
 import { applyProjectCommand, projectCommandChangeCount, projectCommandLabel } from "./projectCommands";
+import { tileValueAt } from "./map/geometry";
 import { triggerEntityId } from "./utils";
 
 export const BROWSER_PREVIEW_STATUS = "Browser preview: projects save locally in this browser; Export downloads Providence project ZIPs or snapshot-backed scenario ZIPs from captured raw sources";
@@ -313,11 +314,13 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       if (nextProject === state.project) return state;
       const label = projectCommandLabel(action.command);
       const selectedEntity = selectedEntityAfterCommand(state.selectedEntity, action.command, state.project, nextProject);
+      const selectedCell = selectedCellAfterCommand(state.selectedCell, action.command, state.selectedMapId, state.project, nextProject);
       if (state.groupBaseProject) {
         return {
           ...state,
           project: nextProject,
           selectedEntity,
+          selectedCell,
           dirty: true,
           future: [],
           groupChangeCount: state.groupChangeCount + projectCommandChangeCount(action.command),
@@ -328,6 +331,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         ...state,
         project: nextProject,
         selectedEntity,
+        selectedCell,
         dirty: true,
         past: pushHistory(state.past, state.project, label),
         future: [],
@@ -516,6 +520,36 @@ function selectedEntityAfterCommand(
     return { ...selectedEntity, id: selectedEntity.id.replace(oldSelectionId, nextSelectionId) };
   }
   return { type: "trigger", id: nextSelectionId };
+}
+
+function selectedCellAfterCommand(
+  selectedCell: EditorState["selectedCell"],
+  command: ProjectCommand,
+  selectedMapId: string | null,
+  previousProject: Project,
+  nextProject: Project
+): EditorState["selectedCell"] {
+  if (command.kind !== "moveActionPoint" || !selectedCell) return selectedCell;
+  const original = previousProject.triggers.find((trigger) => trigger.id === command.triggerId);
+  if (!original || original.source === "Data ED3" || !original.coordinate) return selectedCell;
+  const previousMap = selectedMapFor(previousProject, selectedMapId);
+  if (!previousMap || previousMap.levelType !== original.levelType || previousMap.index !== original.levelIndex) {
+    return selectedCell;
+  }
+  if (selectedCell.x !== original.coordinate.x || selectedCell.y !== original.coordinate.y) {
+    return selectedCell;
+  }
+  const targetMap = nextProject.maps.find((map) => map.levelType === command.levelType && map.index === command.levelIndex) ?? null;
+  if (!targetMap || targetMap.id !== previousMap.id) return null;
+  return {
+    x: command.x,
+    y: command.y,
+    tile: tileValueAt(targetMap, command.x, command.y)
+  };
+}
+
+function selectedMapFor(project: Project, selectedMapId: string | null) {
+  return project.maps.find((map) => map.id === selectedMapId) ?? project.maps[0] ?? null;
 }
 
 function selectionReferencesMovedTrigger(entityId: string, storageId: string, selectionId: string, source: string, recordIndex: number) {

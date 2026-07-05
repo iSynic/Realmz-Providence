@@ -19,6 +19,7 @@ export function MapNumberField({
   value,
   onCommit,
   help,
+  commitOnChange = false,
   min = -32768,
   max = 32767
 }: {
@@ -26,11 +27,18 @@ export function MapNumberField({
   value: number;
   onCommit: (value: number) => void;
   help?: string;
+  commitOnChange?: boolean;
   min?: number;
   max?: number;
 }) {
   const [draft, setDraft] = useState(String(value));
   useEffect(() => setDraft(String(value)), [value]);
+  const commitValue = (raw: string, normalizeDraft: boolean) => {
+    if (raw.trim() === "" || raw === "-") return;
+    const next = clampNumber(Number(raw), min, max);
+    if (normalizeDraft) setDraft(String(next));
+    if (next !== value) onCommit(next);
+  };
   const commit = () => {
     const next = clampNumber(Number(draft), min, max);
     setDraft(String(next));
@@ -51,7 +59,11 @@ export function MapNumberField({
         min={min}
         max={max}
         value={draft}
-        onChange={(event) => setDraft(event.currentTarget.value)}
+        onChange={(event) => {
+          const nextDraft = event.currentTarget.value;
+          setDraft(nextDraft);
+          if (commitOnChange) commitValue(nextDraft, false);
+        }}
         onBlur={commit}
         onKeyDown={(event) => {
           if (event.key === "Enter") event.currentTarget.blur();

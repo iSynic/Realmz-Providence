@@ -18,6 +18,9 @@ const appUtilsPath = path.join(root, "src/editor/app/appUtils.ts");
 const appBootstrapPath = path.join(root, "src/editor/app/useAppBootstrapEffects.ts");
 const semanticPath = path.join(root, "src/editor/browser/semantic.ts");
 const semanticGraphPath = path.join(root, "src/editor/semanticGraph.ts");
+const editorStorePath = path.join(root, "src/editor/store.ts");
+const mapContextSidebarPath = path.join(root, "src/editor/components/MapContextSidebar.tsx");
+const mapFormControlsPath = path.join(root, "src/editor/components/maps/MapFormControls.tsx");
 const browserProjectPath = path.join(root, "src/editor/browser/project.ts");
 const rustProjectPath = path.join(root, "src-tauri/src/project.rs");
 const rustValidationPath = path.join(root, "src-tauri/src/validation.rs");
@@ -42,6 +45,9 @@ const appUtils = fs.readFileSync(appUtilsPath, "utf8");
 const appBootstrap = fs.readFileSync(appBootstrapPath, "utf8");
 const semantic = fs.readFileSync(semanticPath, "utf8");
 const semanticGraph = fs.readFileSync(semanticGraphPath, "utf8");
+const editorStore = fs.readFileSync(editorStorePath, "utf8");
+const mapContextSidebar = fs.readFileSync(mapContextSidebarPath, "utf8");
+const mapFormControls = fs.readFileSync(mapFormControlsPath, "utf8");
 const browserProject = fs.readFileSync(browserProjectPath, "utf8");
 const rustProject = fs.readFileSync(rustProjectPath, "utf8");
 const rustValidation = fs.readFileSync(rustValidationPath, "utf8");
@@ -678,6 +684,27 @@ if (!semanticTriggersForMap) {
   if (semanticTriggersForMap[0].includes("incomingLinks(project, mapId, [\"located_on\"]")) {
     failures.push("Map Action Point overlays must use live trigger records instead of stale semantic located_on links.");
   }
+}
+
+for (const snippet of [
+  "selectedCellAfterCommand(state.selectedCell, action.command, state.selectedMapId, state.project, nextProject)",
+  "command.kind !== \"moveActionPoint\"",
+  "selectedCell.x !== original.coordinate.x",
+  "tileValueAt(targetMap, command.x, command.y)"
+]) {
+  if (!editorStore.includes(snippet)) failures.push(`Map Action Point move selection guard is missing: ${snippet}`);
+}
+for (const snippet of [
+  "commitOnChange = false",
+  "if (commitOnChange) commitValue(nextDraft, false)"
+]) {
+  if (!mapFormControls.includes(snippet)) failures.push(`Map number field live-commit support is missing: ${snippet}`);
+}
+for (const snippet of [
+  "label=\"X\" value={trigger.coordinate.x} min={0} max={89} commitOnChange",
+  "label=\"Y\" value={trigger.coordinate.y} min={0} max={89} commitOnChange"
+]) {
+  if (!mapContextSidebar.includes(snippet)) failures.push(`Map Action Point selection inspector live movement is missing: ${snippet}`);
 }
 
 for (const snippet of [

@@ -2238,8 +2238,8 @@ function TriggerSelectionDetails({
           <section className="map-authoring-group" aria-label="Trigger Location">
             <h4>Trigger Location</h4>
             <div className="map-authoring-fields two-column">
-              <MapNumberField label="X" value={trigger.coordinate.x} min={0} max={89} onCommit={(x) => move({ x })} />
-              <MapNumberField label="Y" value={trigger.coordinate.y} min={0} max={89} onCommit={(y) => move({ y })} />
+              <MapNumberField label="X" value={trigger.coordinate.x} min={0} max={89} commitOnChange onCommit={(x) => move({ x })} />
+              <MapNumberField label="Y" value={trigger.coordinate.y} min={0} max={89} commitOnChange onCommit={(y) => move({ y })} />
             </div>
           </section>
           <section className="map-authoring-group" aria-label="Activation">
