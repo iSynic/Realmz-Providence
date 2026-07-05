@@ -10,6 +10,7 @@ const assetsCssPath = path.join(root, "src/editor/styles/assets.css");
 const combatPanelPath = path.join(root, "src/editor/panels/CombatPanel.tsx");
 const textPanelPath = path.join(root, "src/editor/panels/TextPanel.tsx");
 const styledTextPreviewPath = path.join(root, "src/editor/components/StyledTextPreview.tsx");
+const textStyleAuthoringPath = path.join(root, "src/editor/textStyleAuthoring.ts");
 const resourcesPanelPath = path.join(root, "src/editor/panels/ResourcesPanel.tsx");
 const resourceWidgetsPath = path.join(root, "src/editor/panels/resources/ResourceWidgets.tsx");
 const globalSearchPath = path.join(root, "src/editor/globalSearch.ts");
@@ -30,6 +31,8 @@ const rustWorkspacePath = path.join(root, "src-tauri/src/workspace.rs");
 const rustValidationPath = path.join(root, "src-tauri/src/validation.rs");
 const rustSemanticResourcesPath = path.join(root, "src-tauri/src/semantic/resources.rs");
 const fixtureRoundtripPath = path.join(root, "src-tauri/tests/fixture_roundtrip.rs");
+const packagePath = path.join(root, "package.json");
+const checkTextStyleAuthoringPath = path.join(root, "scripts/check_text_style_authoring.mjs");
 const apOpcodeCoveragePath = path.join(root, "docs/generated/ap-opcode-coverage.json");
 const tutorialScriptsFixturePath = path.join(root, "tmp/editor-smoke-runs/20260524-234335/Tutorial-ScriptsV2.providence/project.json");
 
@@ -41,6 +44,7 @@ const assetsCss = fs.readFileSync(assetsCssPath, "utf8");
 const combatPanel = fs.readFileSync(combatPanelPath, "utf8");
 const textPanel = fs.readFileSync(textPanelPath, "utf8");
 const styledTextPreview = fs.readFileSync(styledTextPreviewPath, "utf8");
+const textStyleAuthoring = fs.readFileSync(textStyleAuthoringPath, "utf8");
 const resourcesPanel = fs.readFileSync(resourcesPanelPath, "utf8");
 const resourceWidgets = fs.readFileSync(resourceWidgetsPath, "utf8");
 const globalSearch = fs.readFileSync(globalSearchPath, "utf8");
@@ -61,6 +65,8 @@ const rustWorkspace = fs.readFileSync(rustWorkspacePath, "utf8");
 const rustValidation = fs.readFileSync(rustValidationPath, "utf8");
 const rustSemanticResources = fs.readFileSync(rustSemanticResourcesPath, "utf8");
 const fixtureRoundtrip = fs.readFileSync(fixtureRoundtripPath, "utf8");
+const packageJson = fs.readFileSync(packagePath, "utf8");
+const checkTextStyleAuthoring = fs.readFileSync(checkTextStyleAuthoringPath, "utf8");
 const targetPickerPath = path.join(root, "src/editor/components/RealmzTargetPicker.tsx");
 const inventoryPath = path.join(root, "src/editor/panels/scripts/scriptInventory.tsx");
 const validationPath = path.join(root, "src/editor/scriptValidation.ts");
@@ -306,6 +312,13 @@ for (const snippet of [
   "plainStyleAssetFromDraft",
   "styleAssetFromBytes",
   "Make Style Editable",
+  "CLASSIC_AUTHOR_FONT_OPTIONS",
+  "textSelectionRangeFromTextArea",
+  "applyAuthorStyleToSelection",
+  "Apply To Selection",
+  "Apply To Current Line",
+  "currentLineTextRange",
+  "Custom Font ID",
   "Apply Full-Text Style",
   "Add Style Run",
   "Apply Style Runs",
@@ -329,6 +342,37 @@ for (const snippet of [
   if (!textPanel.includes(snippet)) failures.push(`Text panel is missing authored scrolling TEXT resource support: ${snippet}`);
 }
 for (const snippet of [
+  "export const CLASSIC_AUTHOR_FONT_OPTIONS",
+  "export function textSelectionRangeFromTextArea",
+  "export function currentLineTextRange",
+  "export function applyAuthorStyleToSelection",
+  "export function styleRunDraftAtOffset",
+  "export function classicStyleRunsFromDrafts",
+  "export function styleRunRangeSummary",
+  "export function styleRunRangeTitle"
+]) {
+  if (!textStyleAuthoring.includes(snippet)) failures.push(`Text style authoring helpers are missing: ${snippet}`);
+}
+if (textPanel.includes("function applyAuthorStyleToSelection") || textPanel.includes("function classicStyleRunsFromDrafts")) {
+  failures.push("TextPanel should import style authoring helpers instead of owning duplicate style-run math.");
+}
+for (const snippet of [
+  "check:text-style-authoring",
+  "node scripts/check_text_style_authoring.mjs",
+  "npm run check:text-style-authoring"
+]) {
+  if (!packageJson.includes(snippet)) failures.push(`package.json is missing text style authoring check wiring: ${snippet}`);
+}
+for (const snippet of [
+  "checkCurrentLineRanges",
+  "checkSelectionStyleInsertion",
+  "checkSelectionRestoresCoveredStyle",
+  "classicStyleRunsFromDrafts",
+  "Text style authoring checks passed."
+]) {
+  if (!checkTextStyleAuthoring.includes(snippet)) failures.push(`Text style authoring check script is missing: ${snippet}`);
+}
+for (const snippet of [
   "export function StyledScrollingTextPreview",
   "function styledTextPreviewSegments",
   "Offset-preserving Classic TEXT/styl preview. Windows Realmz testing currently ignores styl formatting.",
@@ -348,9 +392,15 @@ for (const snippet of [
   ".text-style-preview",
   ".text-style-preview-body",
   ".text-style-preview-run i",
-  ".text-style-preview-diagnostics"
+  ".text-style-preview-diagnostics",
+  ".text-style-selection-summary",
+  ".text-style-custom-font",
+  ".text-style-run-technical-details"
 ]) {
   if (!textScenarioCss.includes(snippet)) failures.push(`Text CSS is missing styled scrolling TEXT preview styling: ${snippet}`);
+}
+if (textPanel.includes("open={Boolean(companion.managedAsset)")) {
+  failures.push("Raw scrolling TEXT style bytes must remain collapsed unless the author opens technical details.");
 }
 if (tutorialScriptsFixture) {
   const resources = (tutorialScriptsFixture.semanticSchema?.entities ?? [])

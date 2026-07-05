@@ -6,7 +6,6 @@ import { classicTextByteLength, messageUsageLinks, optionLabelUsageLinks, unsupp
 import { TutorialTip } from "../components/TutorialTip";
 import { filterTargetOptions, signedSoundValueForSelection, signedSoundWaitsForCompletion, soundReferenceOptionForQuery, targetOptionForOpcodeValue, targetOptionsForOpcode, type ScriptTargetOption } from "../components/RealmzTargetPicker";
 import {
-  CLASSIC_STYLE_EDITABLE_FACE_MASK,
   CLASSIC_STYLE_EXTRA_FACE_MASK,
   CLASSIC_STYLE_FACE_BITS,
   DEFAULT_CLASSIC_STYLE_RUN,
@@ -15,9 +14,27 @@ import {
   classicStyleBytesFromRuns,
   cssHexToClassicRgb,
   parseClassicStyleRuns,
-  u16FromBytes,
-  type ClassicTextStyleRun
+  u16FromBytes
 } from "../components/StyledTextPreview";
+import {
+  CLASSIC_AUTHOR_FONT_OPTIONS,
+  addStyleRunDraft,
+  applyAuthorStyleToSelection,
+  classicStyleRunsFromDrafts,
+  currentLineTextRange,
+  isCssHexColor,
+  removeStyleRunDraft,
+  selectedTextRange,
+  styleRunDraftsFromRuns,
+  styleRunRangeSummary,
+  styleRunRangeTitle,
+  textSelectionRangeFromTextArea,
+  textSelectionSummary,
+  textSelectionTitle,
+  updateStyleRunDraft,
+  type ClassicStyleRunDraft,
+  type TextSelectionRange
+} from "../textStyleAuthoring";
 import { playPreviewUrl, useResolvedPreviewUrl, type PreviewRuntimeContext } from "../previewUrls";
 
 const DIVINITY_TEXT_SEPARATOR = `${" ".repeat(20)}\uf8ff${" ".repeat(20)}`;
@@ -1166,6 +1183,8 @@ function ImportedScrollingTextResourceEditor({
 }) {
   const byteLength = classicTextByteLength(resource.text);
   const unsupportedChars = unsupportedClassicTextChars(resource.text);
+  const [textSelectionRange, setTextSelectionRange] = useState<TextSelectionRange>({ start: 0, end: 0 });
+  const captureSelection = (element: HTMLTextAreaElement) => setTextSelectionRange(textSelectionRangeFromTextArea(element));
   return (
     <article className="text-message-editor text-scrolling-resource-editor">
       <header>
@@ -1193,7 +1212,13 @@ function ImportedScrollingTextResourceEditor({
       </header>
       <label className="text-message-field">
         <span>Text</span>
-        <textarea value={resource.text} readOnly />
+        <textarea
+          value={resource.text}
+          readOnly
+          onSelect={(event) => captureSelection(event.currentTarget)}
+          onKeyUp={(event) => captureSelection(event.currentTarget)}
+          onMouseUp={(event) => captureSelection(event.currentTarget)}
+        />
       </label>
       <div className={`text-message-status ${unsupportedChars.length ? "warning" : "ok"}`}>
         <span>{byteLength.toLocaleString()} byte{byteLength === 1 ? "" : "s"} imported</span>
@@ -1206,6 +1231,7 @@ function ImportedScrollingTextResourceEditor({
         resourceId={resource.resourceId}
         text={resource.text}
         textChanged={false}
+        textSelectionRange={textSelectionRange}
         onSelectEntity={onSelectEntity}
         onApplyCommand={onApplyCommand}
       />
@@ -1241,11 +1267,14 @@ function ScrollingTextEditor({
   const [resourceIdDraft, setResourceIdDraft] = useState(String(asset.resourceId));
   const [label, setLabel] = useState(asset.label);
   const [text, setText] = useState(() => decodeTextAsset(asset));
+  const [textSelectionRange, setTextSelectionRange] = useState<TextSelectionRange>({ start: 0, end: 0 });
   useEffect(() => {
     setResourceIdDraft(String(asset.resourceId));
     setLabel(asset.label);
     setText(decodeTextAsset(asset));
+    setTextSelectionRange({ start: 0, end: 0 });
   }, [asset]);
+  const captureSelection = (element: HTMLTextAreaElement) => setTextSelectionRange(textSelectionRangeFromTextArea(element));
   const resourceId = Number(resourceIdDraft);
   const validResourceId = Number.isInteger(resourceId);
   const duplicateResourceId = validResourceId && assets.some((candidate) => candidate.id !== asset.id && candidate.resourceId === resourceId && candidate.resourceType.trim() === "TEXT");
@@ -1301,7 +1330,16 @@ function ScrollingTextEditor({
       </div>
       <label className="text-message-field">
         <span>Text</span>
-        <textarea value={text} onChange={(event) => setText(event.currentTarget.value)} />
+        <textarea
+          value={text}
+          onChange={(event) => {
+            setText(event.currentTarget.value);
+            captureSelection(event.currentTarget);
+          }}
+          onSelect={(event) => captureSelection(event.currentTarget)}
+          onKeyUp={(event) => captureSelection(event.currentTarget)}
+          onMouseUp={(event) => captureSelection(event.currentTarget)}
+        />
       </label>
       <div className={`text-message-status ${!validResourceId || duplicateResourceId || unsupportedChars.length || !inManualRange ? "warning" : "ok"}`}>
         <span>{byteLength.toLocaleString()} byte{byteLength === 1 ? "" : "s"} before export</span>
@@ -1318,6 +1356,7 @@ function ScrollingTextEditor({
           resourceId={resourceId}
           text={text}
           textChanged={changed}
+          textSelectionRange={textSelectionRange}
           onSelectEntity={onSelectEntity}
           onApplyCommand={onApplyCommand}
         />
@@ -1343,6 +1382,7 @@ function StyleCompanionEditor({
   resourceId,
   text,
   textChanged,
+  textSelectionRange,
   onSelectEntity,
   onApplyCommand
 }: {
@@ -1350,6 +1390,7 @@ function StyleCompanionEditor({
   resourceId: number;
   text: string;
   textChanged: boolean;
+  textSelectionRange: TextSelectionRange;
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
@@ -1391,6 +1432,14 @@ function StyleCompanionEditor({
   const styleRunBytes = styleRunDraftResult.ok ? classicStyleBytesFromRuns(styleRunDraftResult.runs) : null;
   const styleRunBytesDirty = styleRunBytes ? !bytesEqual(styleRunBytes, companion.rawStyleBytes ?? new Uint8Array()) : false;
   const previewRuns = styleRunDraftResult.ok ? styleRunDraftResult.runs : parsedStyleRuns.ok ? parsedStyleRuns.runs : [];
+  const normalizedTextSelection = selectedTextRange(textSelectionRange, text);
+  const selectedRangeValid = normalizedTextSelection.end > normalizedTextSelection.start;
+  const selectedTextSummary = selectedRangeValid ? textSelectionSummary(text, normalizedTextSelection) : "No text range selected";
+  const selectedTextTitle = selectedRangeValid ? textSelectionTitle(text, normalizedTextSelection) : "Select text in the TEXT body to derive style-run offsets.";
+  const currentLineRange = currentLineTextRange(textSelectionRange, text);
+  const currentLineValid = currentLineRange.end > currentLineRange.start;
+  const currentLineTitle = currentLineValid ? textSelectionTitle(text, currentLineRange) : "Place the cursor on a non-empty line to style that line.";
+  const fontOptionValue = CLASSIC_AUTHOR_FONT_OPTIONS.some((option) => option.id === parsedFont) ? String(parsedFont) : "custom";
   const applyStyleBytes = (bytes: Uint8Array, provenance: string, label: string) => {
     const asset = styleAssetFromBytes(companion.managedAsset ?? null, resourceId, bytes, provenance);
     onApplyCommand(
@@ -1474,10 +1523,32 @@ function StyleCompanionEditor({
           <span>{parsedStyleRuns.ok ? "Edit style runs below; raw bytes remain available for exact preservation." : "Raw bytes are preserved and can still be edited below."}</span>
         </div>
         <div className="text-style-full-run-controls">
+          <div className={`text-style-selection-summary ${selectedRangeValid ? "active" : ""}`} title={selectedTextTitle}>
+            <span>Selected Range</span>
+            <strong>{selectedRangeValid ? `${normalizedTextSelection.start}-${normalizedTextSelection.end - 1}` : "None"}</strong>
+            <small>{selectedTextSummary}</small>
+          </div>
           <label>
-            <span>Font ID</span>
-            <input value={fontDraft} onChange={(event) => setFontDraft(event.currentTarget.value)} inputMode="numeric" />
+            <span>Font</span>
+            <select
+              value={fontOptionValue}
+              onChange={(event) => {
+                setFontDraft(event.currentTarget.value === "custom" ? "" : event.currentTarget.value);
+              }}
+            >
+              {CLASSIC_AUTHOR_FONT_OPTIONS.map((option) => (
+                <option key={option.id} value={option.id}>{option.label} ({option.id})</option>
+              ))}
+              <option value="custom">Custom ID</option>
+            </select>
           </label>
+          <details className="text-style-custom-font" open={fontOptionValue === "custom" || undefined}>
+            <summary>Custom Font ID</summary>
+            <label>
+              <span>Font ID</span>
+              <input value={fontDraft} onChange={(event) => setFontDraft(event.currentTarget.value)} inputMode="numeric" />
+            </label>
+          </details>
           <label>
             <span>Size</span>
             <input value={sizeDraft} onChange={(event) => setSizeDraft(event.currentTarget.value)} inputMode="numeric" />
@@ -1508,7 +1579,56 @@ function StyleCompanionEditor({
           </label>
           <button
             type="button"
+            className="btn btn-secondary btn-xs"
+            disabled={!fullStyleDraftValid || !selectedRangeValid}
+            title={selectedTextTitle}
+            onClick={() => {
+              if (!fullStyleDraftValid || !selectedRangeValid) return;
+              setStyleRunDrafts((drafts) => applyAuthorStyleToSelection(drafts, text, normalizedTextSelection, {
+                font: parsedFont,
+                size: parsedSize,
+                color: colorDraft,
+                bold: boldDraft,
+                italic: italicDraft,
+                underline: underlineDraft
+              }));
+            }}
+          >
+            Apply To Selection
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary btn-xs"
+            disabled={!fullStyleDraftValid || !currentLineValid}
+            title={currentLineTitle}
+            onClick={() => {
+              if (!fullStyleDraftValid || !currentLineValid) return;
+              setStyleRunDrafts((drafts) => applyAuthorStyleToSelection(drafts, text, currentLineRange, {
+                font: parsedFont,
+                size: parsedSize,
+                color: colorDraft,
+                bold: boldDraft,
+                italic: italicDraft,
+                underline: underlineDraft
+              }));
+            }}
+          >
+            Apply To Current Line
+          </button>
+          <button
+            type="button"
             className="btn btn-primary btn-xs"
+            disabled={!styleRunDraftResult.ok || !styleRunBytesDirty}
+            onClick={() => {
+              if (!styleRunBytes) return;
+              applyStyleBytes(styleRunBytes, "Authored in Providence Scrolling Text style runs", `Update Style ${resourceId}`);
+            }}
+          >
+            Apply Style Runs
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary btn-xs"
             disabled={!fullStyleDraftValid}
             onClick={() => {
               if (!fullStyleDraftValid) return;
@@ -1533,7 +1653,9 @@ function StyleCompanionEditor({
           </button>
         </div>
         {parsedStyleRuns.ok && (
-          <div className="text-style-run-table" role="table" aria-label="Editable Classic style runs">
+          <details className="text-style-run-technical-details">
+            <summary>Technical Style Runs</summary>
+            <div className="text-style-run-table" role="table" aria-label="Editable Classic style runs">
             <div role="row">
               <b title="Raw Classic TEXT character offset where this style begins. The row applies until the next style run starts.">Starts At</b>
               <b>Font</b>
@@ -1632,11 +1754,12 @@ function StyleCompanionEditor({
                 </button>
               )}
             </div>
-          </div>
+            </div>
+          </details>
         )}
       </div>
       {(companion.styleHex || companion.managedAsset) && (
-        <details className="text-style-bytes-editor" open={Boolean(companion.managedAsset) || undefined}>
+        <details className="text-style-bytes-editor">
           <summary>Style Bytes</summary>
           <label>
             <span>Hex</span>
@@ -1771,21 +1894,6 @@ function semanticResourceId(entity: ProjectSemanticEntity) {
   const match = entity.id.match(/^resource:[^:]+:(-?\d+)/);
   return match ? Number(match[1]) : NaN;
 }
-
-type ClassicStyleRunDraft = {
-  id: string;
-  index: number;
-  startChar: string;
-  height: number;
-  ascent: number;
-  font: string;
-  faceExtra: number;
-  size: string;
-  color: string;
-  bold: boolean;
-  italic: boolean;
-  underline: boolean;
-};
 
 function nextMessageId(records: MessageRecord[]) {
   const used = new Set(records.map((record) => record.id));
@@ -2051,121 +2159,6 @@ function parseHexBytes(value: string): { ok: true; bytes: Uint8Array } | { ok: f
     bytes[index] = Number.parseInt(normalized.slice(index * 2, index * 2 + 2), 16);
   }
   return { ok: true, bytes };
-}
-
-function styleRunDraftsFromRuns(runs: ClassicTextStyleRun[]) {
-  const source = runs.length ? runs : [DEFAULT_CLASSIC_STYLE_RUN];
-  return source.map((run, index): ClassicStyleRunDraft => ({
-    id: `${index}:${run.startChar}:${run.font}:${run.size}:${run.face}`,
-    index,
-    startChar: String(run.startChar),
-    height: run.height,
-    ascent: run.ascent,
-    font: String(run.font),
-    faceExtra: run.face & ~CLASSIC_STYLE_EDITABLE_FACE_MASK,
-    size: String(run.size > 0 ? run.size : 12),
-    color: classicRgbToCssHex(run.color),
-    bold: (run.face & CLASSIC_STYLE_FACE_BITS.bold) !== 0,
-    italic: (run.face & CLASSIC_STYLE_FACE_BITS.italic) !== 0,
-    underline: (run.face & CLASSIC_STYLE_FACE_BITS.underline) !== 0
-  }));
-}
-
-function updateStyleRunDraft(drafts: ClassicStyleRunDraft[], id: string, update: Partial<ClassicStyleRunDraft>) {
-  return drafts.map((draft) => draft.id === id ? { ...draft, ...update } : draft);
-}
-
-function addStyleRunDraft(drafts: ClassicStyleRunDraft[]) {
-  const template = drafts[drafts.length - 1] ?? styleRunDraftsFromRuns([])[0];
-  const start = Number(template.startChar);
-  const nextStart = Number.isFinite(start) ? start + 1 : drafts.length;
-  return [
-    ...drafts,
-    {
-      ...template,
-      id: `new:${Date.now()}:${drafts.length}`,
-      index: drafts.length,
-      startChar: String(nextStart)
-    }
-  ];
-}
-
-function removeStyleRunDraft(drafts: ClassicStyleRunDraft[], id: string) {
-  return drafts.filter((draft) => draft.id !== id).map((draft, index) => ({ ...draft, index }));
-}
-
-function classicStyleRunsFromDrafts(drafts: ClassicStyleRunDraft[]): { ok: true; runs: ClassicTextStyleRun[] } | { ok: false; error: string } {
-  const usedStartChars = new Set<number>();
-  const runs: ClassicTextStyleRun[] = [];
-  for (const [index, draft] of drafts.entries()) {
-    const startChar = Number(draft.startChar);
-    const font = Number(draft.font);
-    const size = Number(draft.size);
-    if (!Number.isInteger(startChar) || startChar < 0) return { ok: false, error: `Style run ${index + 1} needs a non-negative start character.` };
-    if (!Number.isInteger(font) || font < 0 || font > 32767) return { ok: false, error: `Style run ${index + 1} needs a font ID from 0 to 32767.` };
-    if (!Number.isInteger(size) || size < 1 || size > 255) return { ok: false, error: `Style run ${index + 1} needs a size from 1 to 255.` };
-    if (!/^#[0-9a-fA-F]{6}$/.test(draft.color)) return { ok: false, error: `Style run ${index + 1} needs a #RRGGBB color.` };
-    if (usedStartChars.has(startChar)) return { ok: false, error: `Style run start ${startChar} is duplicated.` };
-    usedStartChars.add(startChar);
-    const face = (draft.faceExtra & CLASSIC_STYLE_EXTRA_FACE_MASK)
-      | (draft.bold ? CLASSIC_STYLE_FACE_BITS.bold : 0)
-      | (draft.italic ? CLASSIC_STYLE_FACE_BITS.italic : 0)
-      | (draft.underline ? CLASSIC_STYLE_FACE_BITS.underline : 0);
-    runs.push({
-      index,
-      startChar,
-      height: Math.max(size, draft.height || size),
-      ascent: Math.max(0, Math.min(draft.ascent || Math.max(size - 3, 0), size)),
-      font,
-      face,
-      size,
-      color: cssHexToClassicRgb(draft.color)
-    });
-  }
-  runs.sort((left, right) => left.startChar - right.startChar);
-  return { ok: true, runs: runs.map((run, index) => ({ ...run, index })) };
-}
-
-function isCssHexColor(value: string) {
-  return /^#[0-9a-fA-F]{6}$/.test(value);
-}
-
-function styleRunStart(value: string) {
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
-}
-
-function styleRunRange(run: ClassicStyleRunDraft, drafts: ClassicStyleRunDraft[], text: string) {
-  const start = styleRunStart(run.startChar);
-  if (start == null) return null;
-  const nextStart = drafts
-    .map((draft) => styleRunStart(draft.startChar))
-    .filter((candidate): candidate is number => candidate != null && candidate > start)
-    .sort((left, right) => left - right)[0] ?? text.length;
-  return {
-    start,
-    endExclusive: Math.max(start, Math.min(nextStart, text.length)),
-    beyondText: start >= text.length
-  };
-}
-
-function styleRunRangeSummary(run: ClassicStyleRunDraft, drafts: ClassicStyleRunDraft[], text: string) {
-  const range = styleRunRange(run, drafts, text);
-  if (!range) return "Invalid start";
-  if (text.length === 0) return "Empty TEXT body";
-  if (range.beyondText) return `Starts after current text (${range.start})`;
-  const excerpt = text.slice(range.start, Math.min(range.endExclusive, range.start + 54)).replace(/\s+/g, " ").trim() || "(blank text)";
-  const suffix = range.endExclusive - range.start > 54 ? "..." : "";
-  return `${range.start}-${Math.max(range.start, range.endExclusive - 1)}: ${excerpt}${suffix}`;
-}
-
-function styleRunRangeTitle(run: ClassicStyleRunDraft, drafts: ClassicStyleRunDraft[], text: string) {
-  const range = styleRunRange(run, drafts, text);
-  if (!range) return "This row needs a non-negative start character.";
-  if (text.length === 0) return "This TEXT resource has no body text yet.";
-  if (range.beyondText) return `This style starts at character ${range.start}, which is beyond the current ${text.length}-character TEXT body.`;
-  const excerpt = text.slice(range.start, range.endExclusive).replace(/\s+/g, " ").trim() || "(blank text)";
-  return `Applies from character ${range.start} through ${Math.max(range.start, range.endExclusive - 1)}: ${excerpt}`;
 }
 
 function base64ToText(payload: string) {

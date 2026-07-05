@@ -1512,7 +1512,7 @@
 
 .text-style-full-run-controls {
   display: grid;
-  grid-template-columns: repeat(3, minmax(86px, 130px)) repeat(3, auto) auto;
+  grid-template-columns: minmax(180px, 1fr) repeat(4, minmax(86px, 130px)) repeat(3, auto) repeat(3, auto);
   gap: 8px;
   align-items: end;
 }
@@ -1532,6 +1532,73 @@
 
 .text-style-full-run-controls input {
   min-height: 29px;
+}
+
+.text-style-full-run-controls select {
+  min-height: 29px;
+  border: 1px solid #2d3b49;
+  border-radius: 5px;
+  background: #0b1118;
+  color: #f5fbff;
+  padding: 5px 7px;
+  font-family: inherit;
+  font-size: 11px;
+}
+
+.text-style-selection-summary {
+  display: grid;
+  gap: 3px;
+  min-height: 58px;
+  border: 1px solid #26333f;
+  border-radius: 5px;
+  background: #0a1118;
+  padding: 7px;
+}
+
+.text-style-selection-summary.active {
+  border-color: #3d6684;
+  background: #0f1b26;
+}
+
+.text-style-selection-summary span {
+  color: #8fc7ff;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.text-style-selection-summary strong {
+  color: #f4f9ff;
+  font-size: 13px;
+}
+
+.text-style-selection-summary small {
+  overflow: hidden;
+  color: #91a4b7;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-style-custom-font {
+  display: grid;
+  gap: 4px;
+  align-self: stretch;
+  min-height: 29px;
+}
+
+.text-style-custom-font > summary {
+  min-height: 29px;
+  cursor: pointer;
+  color: #8fc7ff;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 29px;
+  text-transform: uppercase;
+}
+
+.text-style-custom-font label {
+  margin-top: 4px;
 }
 
 .text-style-color-field {
@@ -1569,6 +1636,23 @@
   background: #0a1118;
   padding: 6px;
   font-size: 11px;
+}
+
+.text-style-run-technical-details {
+  display: grid;
+  gap: 6px;
+}
+
+.text-style-run-technical-details > summary {
+  cursor: pointer;
+  color: #8fc7ff;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.text-style-run-technical-details[open] > summary {
+  margin-bottom: 6px;
 }
 
 .text-style-run-table [role="row"] {
