@@ -108,6 +108,8 @@ struct DirectBitsRect {
     height: usize,
     data_offset: usize,
     pixel_size: usize,
+    pack_type: usize,
+    component_count: usize,
 }
 
 struct OneBitPackBitsRect {
@@ -263,6 +265,8 @@ struct BitmapDrawCommand {
     next_offset: usize,
     row_bytes: usize,
     pixel_size: usize,
+    pack_type: usize,
+    component_count: usize,
     bounds: Rect,
     src_rect: Rect,
     dst_rect: Rect,
@@ -600,6 +604,8 @@ fn parse_bits_command(
         next_offset: next_offset.min(data.len()),
         row_bytes,
         pixel_size: 1,
+        pack_type: 0,
+        component_count: 1,
         bounds,
         src_rect,
         dst_rect,
@@ -723,6 +729,8 @@ fn parse_packbits_command(
         next_offset,
         row_bytes,
         pixel_size,
+        pack_type: 0,
+        component_count,
         bounds,
         src_rect,
         dst_rect,
@@ -767,6 +775,7 @@ fn parse_directbits_command(
     let pixel_size = u16_be(data, pixmap + 32).unwrap_or(usize::MAX);
     let component_count = u16_be(data, pixmap + 34).unwrap_or(usize::MAX);
     let component_size = u16_be(data, pixmap + 36).unwrap_or(usize::MAX);
+    let pack_type = u16_be(data, pixmap + 16).unwrap_or(0);
     if row_bytes_raw & 0x8000 == 0
         || row_bytes == 0
         || row_bytes > 8192
@@ -818,6 +827,8 @@ fn parse_directbits_command(
         next_offset,
         row_bytes,
         pixel_size,
+        pack_type,
+        component_count,
         bounds,
         src_rect,
         dst_rect,
@@ -966,6 +977,10 @@ fn decode_direct_bitmap_command(
                 rgba[out] = five_bit_to_u8((pixel >> 10) & 0x1f);
                 rgba[out + 1] = five_bit_to_u8((pixel >> 5) & 0x1f);
                 rgba[out + 2] = five_bit_to_u8(pixel & 0x1f);
+            } else if command.pack_type == 4 && command.component_count == 3 {
+                rgba[out] = row.get(x).copied().unwrap_or(0);
+                rgba[out + 1] = row.get(x + width).copied().unwrap_or(0);
+                rgba[out + 2] = row.get(x + width * 2).copied().unwrap_or(0);
             } else {
                 let source = x * 4;
                 rgba[out] = row.get(source + 1).copied().unwrap_or(0);
@@ -1214,6 +1229,7 @@ fn find_direct_bits_rect(data: &[u8]) -> std::result::Result<DirectBitsRect, Pic
         let pixel_size = u16_be(data, pixmap + 32).unwrap_or(usize::MAX);
         let component_count = u16_be(data, pixmap + 34).unwrap_or(usize::MAX);
         let component_size = u16_be(data, pixmap + 36).unwrap_or(usize::MAX);
+        let pack_type = u16_be(data, pixmap + 16).unwrap_or(0);
         if row_bytes_raw & 0x8000 == 0
             || row_bytes == 0
             || row_bytes > 8192
@@ -1244,6 +1260,8 @@ fn find_direct_bits_rect(data: &[u8]) -> std::result::Result<DirectBitsRect, Pic
                 height,
                 data_offset,
                 pixel_size,
+                pack_type,
+                component_count,
             });
         }
     }
@@ -1449,6 +1467,10 @@ fn decode_direct_bits_rect(
                 rgba[out] = five_bit_to_u8((pixel >> 10) & 0x1f);
                 rgba[out + 1] = five_bit_to_u8((pixel >> 5) & 0x1f);
                 rgba[out + 2] = five_bit_to_u8(pixel & 0x1f);
+            } else if rect.pack_type == 4 && rect.component_count == 3 {
+                rgba[out] = row.get(x).copied().unwrap_or(0);
+                rgba[out + 1] = row.get(x + width).copied().unwrap_or(0);
+                rgba[out + 2] = row.get(x + width * 2).copied().unwrap_or(0);
             } else {
                 let source = x * 4;
                 rgba[out] = row.get(source + 1).copied().unwrap_or(0);
@@ -1581,6 +1603,30 @@ mod tests {
     }
 
     #[test]
+    fn decodes_trial_by_fire_directbits_planar_rows() {
+        let path =
+            Path::new("F:/Realmz/out_win_clang/Scenarios/Trial by Fire/Scenario.rsrc");
+        if !path.exists() {
+            eprintln!("Skipping Trial by Fire PICT fixture; local fixture is absent.");
+            return;
+        }
+        let data = std::fs::read(path).expect("fixture should be readable");
+        let fork = extract_appledouble_resource_fork(&data).unwrap_or(data);
+        let Some(pict) = resource_data(&fork, b"PICT", 32128) else {
+            eprintln!("Skipping Trial by Fire PICT fixture; PICT 32128 is absent.");
+            return;
+        };
+        let decoded = decode_pict(&pict).expect("Trial by Fire PICT 32128 should decode");
+
+        assert_eq!(decoded.format, "directbits-32-packbits");
+        assert_eq!(decoded.pixel_size, 32);
+        assert_eq!(decoded.row_bytes, 1188);
+        assert_eq!(decoded.image.width, 297);
+        assert_eq!(decoded.image.height, 406);
+        assert_eq!(&decoded.image.rgba[0..4], &[114, 128, 199, 255]);
+    }
+
+    #[test]
     fn decodes_old_style_one_bit_bits_rect() {
         let pict = bits_rect_fixture();
         let decoded = decode_pict(&pict).expect("synthetic BitsRect should decode");
@@ -1622,6 +1668,18 @@ mod tests {
         assert_eq!(decoded.image.width, 1);
         assert_eq!(decoded.image.height, 1);
         assert_eq!(&decoded.image.rgba[0..4], &[255, 0, 0, 255]);
+    }
+
+    #[test]
+    fn decodes_thirty_two_bit_planar_directbits_rect() {
+        let pict = directbits32_planar_rect_fixture();
+        let decoded = decode_pict(&pict).expect("synthetic 32-bit DirectBitsRect should decode");
+        assert_eq!(decoded.format, "directbits-32-packbits");
+        assert_eq!(decoded.pixel_size, 32);
+        assert_eq!(decoded.image.width, 2);
+        assert_eq!(decoded.image.height, 1);
+        assert_eq!(&decoded.image.rgba[0..4], &[10, 30, 50, 255]);
+        assert_eq!(&decoded.image.rgba[4..8], &[20, 40, 60, 255]);
     }
 
     fn pict_header(width: i16, height: i16) -> Vec<u8> {
@@ -1714,6 +1772,34 @@ mod tests {
         bytes
     }
 
+    fn directbits32_planar_rect_fixture() -> Vec<u8> {
+        let mut bytes = pict_header(2, 1);
+        push_u16(&mut bytes, DIRECT_BITS_RECT as u16);
+        push_u32(&mut bytes, 0);
+        push_u16(&mut bytes, 0x8008);
+        push_rect(&mut bytes, 0, 0, 1, 2);
+        push_u16(&mut bytes, 0);
+        push_u16(&mut bytes, 4);
+        push_u32(&mut bytes, 0);
+        push_u32(&mut bytes, 0);
+        push_u32(&mut bytes, 0);
+        push_u16(&mut bytes, 16);
+        push_u16(&mut bytes, 32);
+        push_u16(&mut bytes, 3);
+        push_u16(&mut bytes, 8);
+        push_u32(&mut bytes, 0);
+        push_u32(&mut bytes, 0);
+        push_u32(&mut bytes, 0);
+        push_rect(&mut bytes, 0, 0, 1, 2);
+        push_rect(&mut bytes, 0, 0, 1, 2);
+        push_u16(&mut bytes, 0);
+        bytes.push(9);
+        bytes.push(7);
+        bytes.extend_from_slice(&[10, 20, 30, 40, 50, 60, 0, 0]);
+        push_u16(&mut bytes, END_PICTURE as u16);
+        bytes
+    }
+
     fn push_rect(bytes: &mut Vec<u8>, top: i16, left: i16, bottom: i16, right: i16) {
         push_u16(bytes, top as u16);
         push_u16(bytes, left as u16);
@@ -1767,5 +1853,24 @@ mod tests {
 
     fn u32_be_test(buffer: &[u8], offset: usize) -> Option<usize> {
         Some(u32::from_be_bytes(buffer.get(offset..offset + 4)?.try_into().ok()?) as usize)
+    }
+
+    fn extract_appledouble_resource_fork(data: &[u8]) -> Option<Vec<u8>> {
+        let magic = u32_be_test(data, 0)?;
+        if magic != 0x0005_1600 && magic != 0x0005_1607 {
+            return None;
+        }
+        let entry_count = u16_be(data, 24)?;
+        for entry_index in 0..entry_count {
+            let entry_offset = 26 + entry_index * 12;
+            let entry_id = u32_be_test(data, entry_offset)?;
+            if entry_id != 2 {
+                continue;
+            }
+            let offset = u32_be_test(data, entry_offset + 4)?;
+            let length = u32_be_test(data, entry_offset + 8)?;
+            return Some(data.get(offset..offset + length)?.to_vec());
+        }
+        None
     }
 }

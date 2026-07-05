@@ -649,6 +649,7 @@ export type ScenarioContactInfo = {
   payInfo: string[];
   titles: string[];
   description: string;
+  rawBytes?: number[];
   authored?: boolean;
   provenance?: Provenance;
 };
@@ -659,6 +660,7 @@ export type ScenarioRestrictions = {
   maxPartyLevel: number;
   bannedRaces: number[];
   bannedCastes: number[];
+  rawBytes?: number[];
   authored?: boolean;
   provenance?: Provenance;
 };

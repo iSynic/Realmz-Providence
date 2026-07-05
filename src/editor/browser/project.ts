@@ -344,6 +344,7 @@ function parseScenarioContactInfo(buffer?: Uint8Array): Project["scenario"]["con
     payInfo: [7, 8, 9, 10, 11].map((slot) => pascalSlot(buffer, slot)),
     titles: [12, 13, 14, 15, 16].map((slot) => pascalSlot(buffer, slot)),
     description: pascalSlot(buffer, 17),
+    rawBytes: Array.from(buffer.slice(0, 4608)),
     authored: false
   };
 }
@@ -427,6 +428,7 @@ function parseScenarioRestrictions(buffer?: Uint8Array): Project["scenario"]["re
     maxPartyLevel: i16At(buffer, 258),
     bannedRaces: Array.from(buffer.slice(260, 290)).flatMap((value, index) => value ? [index + 1] : []),
     bannedCastes: Array.from(buffer.slice(290, 320)).flatMap((value, index) => value ? [index + 1] : []),
+    rawBytes: Array.from(buffer.slice(0, 320)),
     authored: false
   };
 }

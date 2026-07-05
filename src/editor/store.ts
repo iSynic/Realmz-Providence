@@ -24,7 +24,7 @@ import {
 import { applyProjectCommand, projectCommandChangeCount, projectCommandLabel } from "./projectCommands";
 import { triggerEntityId } from "./utils";
 
-export const BROWSER_PREVIEW_STATUS = "Browser preview: projects save locally in this browser; Export downloads Providence project ZIPs or conservative scenario ZIPs from captured raw sources";
+export const BROWSER_PREVIEW_STATUS = "Browser preview: projects save locally in this browser; Export downloads Providence project ZIPs or snapshot-backed scenario ZIPs from captured raw sources";
 const UNDO_LIMIT = 50;
 
 export type HistoryEntry = {

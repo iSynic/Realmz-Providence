@@ -21,7 +21,7 @@ const EXPORT_WORKBENCH_HELP = "Desktop export writes a Realmz-compatible scenari
 const EXPORT_TARGET_HELP = "Choose the package shape to write. Portable Providence is useful for internal roundtrips; Mac Classic and Windows Realmz match the target runtime folder conventions.";
 const EXPORT_ACTION_HELP = "Desktop Export Scenario Folder runs the writer for the selected target. Browser export downloads the selected ZIP artifact.";
 const EXPORT_JSON_HELP = "Download the current project.json directly. This is useful as a small browser backup or for inspecting the project state without extracting the ZIP package.";
-const BROWSER_SCENARIO_EXPORT_HELP = "Browser scenario ZIP export packages the captured raw source snapshot and applies browser-supported resource fork updates. Authored binary record edits are blocked until their writer parity is ported.";
+const BROWSER_SCENARIO_EXPORT_HELP = "Browser scenario ZIP export packages the captured raw source snapshot and applies browser-supported record and resource updates. The export report calls out project-only labels, resource warnings, and missing raw-source material.";
 const BROWSER_EXPORT_TARGET_HELP = "Choose the browser export artifact. Project ZIP is a Providence backup; Mac and Windows scenario ZIPs are Realmz folders built from captured raw sources.";
 const BENCHMARK_HELP = "Benchmark Project measures large-scenario UI and validation scale so release candidates do not regress on dense maps, triggers, or Action Settings.";
 const EXPORT_REPORT_HELP = "The export report is the release ledger for this session: output folder, target, source files, pass-through files, resource writes, preserved resources, blocked assets, and warnings.";
@@ -115,7 +115,7 @@ export function ExportPanel({
         {!desktopRuntime ? (
           <TutorialTip title="Browser Scenario ZIP Writer" body={BROWSER_SCENARIO_EXPORT_HELP} side="below">
             <p className="empty-copy browser-export-boundary">
-              Browser scenario ZIPs preserve captured raw sources and supported resource fork updates. Binary record edits are blocked with diagnostics until that writer parity is ported.
+              Browser scenario ZIPs preserve captured raw sources and apply supported record/resource updates. Review the export report for resource warnings, project-only labels, and missing raw-source diagnostics.
             </p>
           </TutorialTip>
         ) : null}

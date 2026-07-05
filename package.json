@@ -70,6 +70,8 @@
     "check:combat-monsters": "node scripts/check_combat_monster_commands.mjs",
     "check:browser-project-package": "node scripts/check_browser_project_package.mjs",
     "check:browser-scenario-package": "node scripts/check_browser_scenario_package.mjs",
+    "check:browser-desktop-scenario-parity": "node scripts/check_browser_desktop_scenario_parity.mjs",
+    "check:pict-preview": "node scripts/check_pict_directbits_preview.mjs",
     "check:script-diagnostics": "node scripts/report_script_diagnostics.mjs --self-test --out tmp/script-diagnostics-self-test",
     "check:scenario-context": "node scripts/check_scenario_context_registry.mjs",
     "check:evidence-lab": "node scripts/check_evidence_lab_policy.mjs",

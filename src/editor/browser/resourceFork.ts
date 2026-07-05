@@ -106,7 +106,7 @@ export function writeResourceFork(entries: ResourceForkUpdate[]) {
     if (!groups.has(entry.resourceType)) groups.set(entry.resourceType, []);
     groups.get(entry.resourceType)!.push(entry);
   }
-  const sortedGroups = [...groups.entries()].sort(([left], [right]) => left.localeCompare(right));
+  const sortedGroups = [...groups.entries()].sort(([left], [right]) => compareResourceTypes(left, right));
   for (const [, group] of sortedGroups) group.sort((left, right) => left.id - right.id);
 
   const dataSection: number[] = [];
@@ -215,6 +215,15 @@ function resourceEntryToUpdate(entry: ResourceEntry): ResourceForkUpdate {
   };
 }
 
+function compareResourceTypes(left: string, right: string) {
+  const length = Math.min(left.length, right.length);
+  for (let index = 0; index < length; index += 1) {
+    const diff = left.charCodeAt(index) - right.charCodeAt(index);
+    if (diff !== 0) return diff;
+  }
+  return left.length - right.length;
+}
+
 function extractResourceFork(buffer: Uint8Array) {
   if (buffer.byteLength < 26) return buffer;
   const magic = u32At(buffer, 0);
@@ -238,21 +247,13 @@ function encodeClassicText(value: string) {
 }
 
 function decodeClassicText(bytes: Uint8Array) {
-  const nul = bytes.indexOf(0);
-  const slice = nul >= 0 ? bytes.slice(0, nul) : bytes;
-  let output = "";
-  let lastSpace = false;
-  for (const byte of slice) {
-    const ch = byte <= 31 ? " " : String.fromCharCode(byte);
-    if (/\s/.test(ch)) {
-      if (!lastSpace) output += " ";
-      lastSpace = true;
-    } else {
-      output += ch;
-      lastSpace = false;
-    }
-  }
-  return output.trim();
+  return [...bytes].map((byte) => {
+    if (byte === 0) return " ";
+    if (byte === 9) return "\t";
+    if (byte === 10 || byte === 13) return "\n";
+    if (byte >= 32 && byte <= 126) return String.fromCharCode(byte);
+    return "?";
+  }).join("").trim();
 }
 
 function decodeAscii(bytes: Uint8Array) {

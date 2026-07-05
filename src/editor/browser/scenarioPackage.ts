@@ -1,6 +1,60 @@
-import { BATTLE_RECORD_BYTES, MESSAGE_RECORD_BYTES, MONSTER_RECORD_BYTES, OPTION_LABEL_RECORD_BYTES, writeBattles, writeMessages, writeMonsters, writeOptionLabels } from "./binaryWriters";
+import {
+  BATTLE_RECORD_BYTES,
+  CASTE_RECORD_BYTES,
+  COMPLEX_ENCOUNTER_RECORD_BYTES,
+  DOOR_LEVEL_RECORD_BYTES,
+  DOOR_RECORD_BYTES,
+  EXTRACODE_RECORD_BYTES,
+  FIELD_RECORD_BYTES,
+  GLOBAL_MACRO_HOOK_BYTES,
+  LAND_LAYOUT_RECORD_BYTES,
+  ITEM_RECORD_BYTES,
+  MAP_RECORD_BYTES,
+  MESSAGE_RECORD_BYTES,
+  MONSTER_DESCRIPTION_RECORD_BYTES,
+  MONSTER_RECORD_BYTES,
+  OPTION_LABEL_RECORD_BYTES,
+  RACE_RECORD_BYTES,
+  RANDOM_LEVEL_RECORD_BYTES,
+  SCENARIO_CONTACT_INFO_BYTES,
+  SCENARIO_RESTRICTIONS_BYTES,
+  SCENARIO_SHELL_BYTES,
+  SHOP_RECORD_BYTES,
+  SIMPLE_ENCOUNTER_RECORD_BYTES,
+  TREASURE_RECORD_BYTES,
+  THIEF_ENCOUNTER_RECORD_BYTES,
+  TIMED_ENCOUNTER_RECORD_BYTES,
+  writeBattles,
+  writeCasteOverrides,
+  writeComplexEncounters,
+  writeCustomLandlookMetadata,
+  writeDoorFile,
+  writeExtraCodes,
+  writeGlobalMacroHooks,
+  writeLandLayout,
+  writeMacroFile,
+  writeMapFields,
+  writeMapRecords,
+  writeMessages,
+  writeMonsterDescriptions,
+  writeMonsters,
+  writeOptionLabels,
+  writeRaceOverrides,
+  writeRandomLevels,
+  writeScenarioItems,
+  writeScenarioContactInfo,
+  writeScenarioRestrictions,
+  writeScenarioShell,
+  writeScenarioSupportFile,
+  writeShops,
+  writeSimpleEncounters,
+  writeSpellOverrides,
+  writeThiefEncounters,
+  writeTimedEncounters,
+  writeTreasures
+} from "./binaryWriters";
 import { BrowserRawSourceFile, BrowserRawSourceSnapshot } from "./fsAccess";
-import { encodeStringListResource, mergeResourceEntries, parseResourceFork, type ResourceForkUpdate } from "./resourceFork";
+import { encodeStringListResource, mergeResourceEntries, parseResourceFork, parseStringListResource, type ResourceForkUpdate } from "./resourceFork";
 import { createStoredZip } from "./zip";
 import type { ExportReport, ManagedAsset, MapRecord, Project, ScenarioIconResource, ScenarioItemRecord, ScenarioTarget } from "../types";
 
@@ -110,6 +164,10 @@ export function createBrowserScenarioPackageZip(
   const targetCompatibilityIssues = (project.validation.targetCompatibilityIssues ?? []).filter((issue) => (
     issue.target === target || issue.target === "providence-portable-folder"
   ));
+  const warnings = [
+    ...(project.validation.ok ? [] : project.validation.warnings),
+    ...projectOnlyScenarioExportWarnings(project)
+  ];
   return {
     fileName,
     zip: createStoredZip(entries),
@@ -122,7 +180,7 @@ export function createBrowserScenarioPackageZip(
       preservedResources: resourceResult.preservedResources,
       resourceWarnings: resourceResult.resourceWarnings,
       blockedAssets: resourceResult.blockedAssets,
-      warnings: project.validation.ok ? [] : project.validation.warnings,
+      warnings,
       targetCompatibilityIssues,
       targetCompatibility: bucketTargetCompatibility(targetCompatibilityIssues)
     }
@@ -181,6 +239,25 @@ function hasResourceUpdates(project: Project) {
 
 function writeSupportedBinaryRecords(project: Project, rawFiles: BrowserRawSourceFile[]) {
   const writes: BinaryWriteResult[] = [];
+  if (project.scenario.shell?.authored) {
+    writes.push({
+      path: scenarioShellFileName(project),
+      bytes: preserveMalformedRawTail(scenarioShellFileName(project), writeScenarioShell(project.scenario.shell), SCENARIO_SHELL_BYTES, rawFiles)
+    });
+  }
+  if (project.scenario.supportFile?.authored) {
+    const supportFileName = project.scenario.supportFile.sourceFile?.trim() || "Scenario";
+    writes.push({
+      path: supportFileName,
+      bytes: preserveRawOverlay(supportFileName, writeScenarioSupportFile(project.scenario.supportFile), rawFiles)
+    });
+  }
+  if (project.scenario.securityBackup?.authored) {
+    writes.push({
+      path: "Data CS",
+      bytes: preserveMalformedRawTail("Data CS", writeScenarioShell(project.scenario.securityBackup), SCENARIO_SHELL_BYTES, rawFiles)
+    });
+  }
   if (project.messages.length > 0) {
     writes.push({
       path: "Data SD2",
@@ -212,7 +289,213 @@ function writeSupportedBinaryRecords(project: Project, rawFiles: BrowserRawSourc
       bytes: preserveMalformedRawTail(monsterSet.sourceFile, writeMonsters(monsterSet.monsters), MONSTER_RECORD_BYTES, rawFiles)
     });
   }
+  if (project.monsterDescriptions.length > 0) {
+    writes.push({
+      path: "Data DES",
+      bytes: preserveMalformedRawTail("Data DES", writeMonsterDescriptions(project.monsterDescriptions), MONSTER_DESCRIPTION_RECORD_BYTES, rawFiles)
+    });
+  }
+  if (project.maps.some((map) => map.levelType === "land")) {
+    writes.push({
+      path: "Data LD",
+      bytes: preserveMalformedRawTail("Data LD", writeMapFields(project.maps, "land"), FIELD_RECORD_BYTES, rawFiles)
+    });
+  }
+  if (project.maps.some((map) => map.levelType === "dungeon")) {
+    writes.push({
+      path: "Data DL",
+      bytes: preserveMalformedRawTail("Data DL", writeMapFields(project.maps, "dungeon"), FIELD_RECORD_BYTES, rawFiles)
+    });
+  }
+  if (project.mapRecords.length > 0) {
+    writes.push({
+      path: "Data MD2",
+      bytes: preserveMalformedRawTail("Data MD2", writeMapRecords(project.mapRecords), MAP_RECORD_BYTES, rawFiles)
+    });
+  }
+  if (project.randomLevels.some((level) => level.levelType === "land")) {
+    writes.push({
+      path: "Data RD",
+      bytes: preserveMalformedRawTail("Data RD", writeRandomLevels(project.randomLevels, "land"), RANDOM_LEVEL_RECORD_BYTES, rawFiles)
+    });
+  }
+  if (project.randomLevels.some((level) => level.levelType === "dungeon")) {
+    writes.push({
+      path: "Data RDD",
+      bytes: preserveMalformedRawTail("Data RDD", writeRandomLevels(project.randomLevels, "dungeon"), RANDOM_LEVEL_RECORD_BYTES, rawFiles)
+    });
+  }
+  if (project.triggers.some((trigger) => trigger.levelType === "land")) {
+    writes.push({
+      path: "Data DD",
+      bytes: preserveMalformedRawTail("Data DD", writeDoorFile(project.triggers, "land"), DOOR_LEVEL_RECORD_BYTES, rawFiles)
+    });
+  }
+  if (project.triggers.some((trigger) => trigger.levelType === "dungeon")) {
+    writes.push({
+      path: "Data DDD",
+      bytes: preserveMalformedRawTail("Data DDD", writeDoorFile(project.triggers, "dungeon"), DOOR_LEVEL_RECORD_BYTES, rawFiles)
+    });
+  }
+  if (project.triggers.some((trigger) => trigger.source === "Data ED3")) {
+    writes.push({
+      path: "Data ED3",
+      bytes: preserveMalformedRawTail("Data ED3", writeMacroFile(project.triggers), DOOR_RECORD_BYTES, rawFiles)
+    });
+  }
+  if (project.extracodes.length > 0) {
+    writes.push({
+      path: "Data EDCD",
+      bytes: preserveMalformedRawTail("Data EDCD", writeExtraCodes(project.extracodes), EXTRACODE_RECORD_BYTES, rawFiles)
+    });
+  }
+  if (project.scenario.globalMacroHooks) {
+    writes.push({
+      path: "Global",
+      bytes: preserveMalformedRawTail("Global", writeGlobalMacroHooks(project.scenario.globalMacroHooks), GLOBAL_MACRO_HOOK_BYTES, rawFiles)
+    });
+  }
+  if (project.landLayout) {
+    writes.push({
+      path: "Layout",
+      bytes: preserveMalformedRawTail("Layout", writeLandLayout(project.landLayout), LAND_LAYOUT_RECORD_BYTES, rawFiles)
+    });
+  }
+  for (const landlook of project.customLandlooks ?? []) {
+    if (!landlook.authored) continue;
+    writes.push({
+      path: landlook.sourceFile,
+      bytes: writeCustomLandlookMetadata(landlook)
+    });
+  }
+  if (project.scenario.contactInfo) {
+    writes.push({
+      path: "Data CI",
+      bytes: preserveMalformedRawTail("Data CI", writeScenarioContactInfo(project.scenario.contactInfo), SCENARIO_CONTACT_INFO_BYTES, rawFiles)
+    });
+  }
+  if (project.scenario.restrictions) {
+    writes.push({
+      path: "Data RI",
+      bytes: preserveMalformedRawTail("Data RI", writeScenarioRestrictions(project.scenario.restrictions), SCENARIO_RESTRICTIONS_BYTES, rawFiles)
+    });
+  }
+  if (project.scenarioItems.length > 0) {
+    writes.push({
+      path: "Data NI",
+      bytes: preserveMalformedRawTail("Data NI", writeScenarioItems(project.scenarioItems), ITEM_RECORD_BYTES, rawFiles)
+    });
+  }
+  if (project.treasures.length > 0) {
+    writes.push({
+      path: "Data TD",
+      bytes: preserveMalformedRawTail("Data TD", writeTreasures(project.treasures), TREASURE_RECORD_BYTES, rawFiles)
+    });
+  }
+  if (project.shops.length > 0) {
+    writes.push({
+      path: "Data SD",
+      bytes: preserveMalformedRawTail("Data SD", writeShops(project.shops), SHOP_RECORD_BYTES, rawFiles)
+    });
+  }
+  if (project.spellOverrides.length > 0) {
+    writes.push({
+      path: "Data Spell",
+      bytes: preserveRawOverlay("Data Spell", writeSpellOverrides(project.spellOverrides), rawFiles)
+    });
+    const spellNameResourceWrite = writeCustomSpellNameResources(project, rawFiles);
+    if (spellNameResourceWrite) writes.push(spellNameResourceWrite);
+  }
+  if (project.raceOverrides.length > 0) {
+    writes.push({
+      path: "Data Race",
+      bytes: preserveMalformedRawTail("Data Race", writeRaceOverrides(project.raceOverrides), RACE_RECORD_BYTES, rawFiles)
+    });
+  }
+  if (project.casteOverrides.length > 0) {
+    writes.push({
+      path: "Data Caste",
+      bytes: preserveMalformedRawTail("Data Caste", writeCasteOverrides(project.casteOverrides), CASTE_RECORD_BYTES, rawFiles)
+    });
+  }
+  if (project.simpleEncounters.length > 0) {
+    writes.push({
+      path: "Data ED",
+      bytes: preserveMalformedRawTail("Data ED", writeSimpleEncounters(project.simpleEncounters), SIMPLE_ENCOUNTER_RECORD_BYTES, rawFiles)
+    });
+  }
+  if (project.complexEncounters.length > 0) {
+    writes.push({
+      path: "Data ED2",
+      bytes: preserveMalformedRawTail("Data ED2", writeComplexEncounters(project.complexEncounters), COMPLEX_ENCOUNTER_RECORD_BYTES, rawFiles)
+    });
+  }
+  if (project.thiefEncounters.length > 0) {
+    writes.push({
+      path: "Data TD2",
+      bytes: preserveMalformedRawTail("Data TD2", writeThiefEncounters(project.thiefEncounters), THIEF_ENCOUNTER_RECORD_BYTES, rawFiles)
+    });
+  }
+  if (project.timedEncounters.length > 0) {
+    writes.push({
+      path: "Data TD3",
+      bytes: preserveMalformedRawTail("Data TD3", writeTimedEncounters(project.timedEncounters), TIMED_ENCOUNTER_RECORD_BYTES, rawFiles)
+    });
+  }
   return writes.filter((write) => write.bytes.byteLength > 0);
+}
+
+function writeCustomSpellNameResources(project: Project, rawFiles: BrowserRawSourceFile[]): BinaryWriteResult | null {
+  const source = dataSpellResourceFork(rawFiles);
+  if (!source) return null;
+  const entries = parseResourceFork(source.bytesData);
+  const updates: ResourceForkUpdate[] = [];
+  for (let levelIndex = 0; levelIndex < 7; levelIndex += 1) {
+    const resourceId = 5000 + levelIndex;
+    const entry = entries.find((candidate) => candidate.resourceType === "STR#" && candidate.id === resourceId);
+    if (!entry) continue;
+    const names = parseStringListResource(entry.data);
+    while (names.length < 15) names.push("");
+    let changed = false;
+    for (let slotIndex = 0; slotIndex < 15; slotIndex += 1) {
+      const customId = levelIndex * 15 + slotIndex;
+      const record = project.spellOverrides.find((candidate) => candidate.id === customId);
+      if (!record) continue;
+      const displayName = record.displayName?.trim() ?? "";
+      if (!displayName || displayName === names[slotIndex] || displayName === defaultCustomSpellName(customId)) continue;
+      names[slotIndex] = record.displayName ?? displayName;
+      changed = true;
+    }
+    if (changed) {
+      updates.push({
+        resourceType: entry.resourceType,
+        id: entry.id,
+        name: entry.name,
+        attributes: entry.attributes,
+        data: encodeStringListResource(names)
+      });
+    }
+  }
+  if (updates.length === 0) return null;
+  return {
+    path: outputPathForRawSource(source),
+    bytes: mergeResourceEntries(source.bytesData, updates).bytes
+  };
+}
+
+function dataSpellResourceFork(rawFiles: BrowserRawSourceFile[]) {
+  for (const name of ["Data Spell.rsrc", "Data Spell.rsf", "._Data Spell"]) {
+    const source = rawFiles.find((file) => file.name === name || outputPathForRawSource(file) === name);
+    if (!source) continue;
+    if (parseResourceFork(source.bytesData).some((entry) => entry.resourceType === "STR#" && entry.id >= 5000 && entry.id <= 5006)) {
+      return source;
+    }
+  }
+  return null;
+}
+
+function defaultCustomSpellName(customId: number) {
+  return `Custom Spell ${customId}`;
 }
 
 function managedAssetResourceUpdates(assets: ManagedAsset[], result: ResourceExportResult) {
@@ -421,6 +704,14 @@ function preserveMalformedRawTail(fileName: string, bytes: Uint8Array, recordByt
   return output;
 }
 
+function preserveRawOverlay(fileName: string, bytes: Uint8Array, rawFiles: BrowserRawSourceFile[]) {
+  const raw = rawSourceBytes(fileName, rawFiles);
+  if (!raw || raw.byteLength <= bytes.byteLength) return bytes;
+  const output = new Uint8Array(raw);
+  output.set(bytes);
+  return output;
+}
+
 function rawSourceBytes(fileName: string, rawFiles: BrowserRawSourceFile[]) {
   const normalizedName = normalizePackagePath(fileName).toLowerCase();
   return rawFiles.find((source) => (
@@ -447,38 +738,16 @@ function missingProjectSourceSnapshotFiles(project: Project, rawSources: Browser
   });
 }
 
-function unsupportedAuthoredBinaryState(project: Project) {
+function unsupportedAuthoredBinaryState(_project: Project) {
   const labels: string[] = [];
-  if (project.scenario.shell?.authored) labels.push(`Scenario shell ${project.scenario.shell.sourceFile}`);
-  if (project.scenario.supportFile?.authored) labels.push(`Scenario support file ${project.scenario.supportFile.sourceFile}`);
-  if (project.scenario.contactInfo?.authored) labels.push("Data CI contact info");
-  if (project.scenario.restrictions?.authored) labels.push("Data RI restrictions");
-  if (project.scenario.globalMacroHooks?.authored) labels.push("Global macro hooks");
-  if (project.scenario.securityBackup?.authored) labels.push("Data CS security backup");
-  if (project.landLayout?.authored) labels.push("Layout");
-  if ((project.customLandlooks ?? []).some((record) => record.authored)) labels.push("Custom landlook metadata");
-  if (project.maps.some((record) => record.provenance?.confidence === "inferred")) labels.push("Map field data");
-  if (project.triggers.some((record) => record.provenance?.confidence === "inferred")) labels.push("Action point / macro records");
-  if (project.randomLevels.some((record) => record.provenance?.confidence === "inferred")) labels.push("Random encounter levels");
-  if (project.extracodes.some((record) => record.provenance?.confidence === "inferred")) labels.push("EDCD parameter rows");
-  for (const [label, records] of [
-    ["Map records", project.mapRecords],
-    ["Monster descriptions", project.monsterDescriptions],
-    ["Scenario items", project.scenarioItems],
-    ["Treasures", project.treasures],
-    ["Shops", project.shops],
-    ["Simple encounters", project.simpleEncounters],
-    ["Complex encounters", project.complexEncounters],
-    ["Thief encounters", project.thiefEncounters],
-    ["Timed encounters", project.timedEncounters],
-    ["Spell overrides", project.spellOverrides],
-    ["Race overrides", project.raceOverrides],
-    ["Caste overrides", project.casteOverrides]
-  ] as const) {
-    if (records.some((record) => record.authored || record.provenance?.confidence === "inferred")) labels.push(label);
-  }
-  if (project.ruleNames.authored) labels.push("Rule name resources");
   return [...new Set(labels)];
+}
+
+function projectOnlyScenarioExportWarnings(project: Project) {
+  if (!project.ruleNames.authored) return [];
+  return [
+    "Race/caste rule name edits are project-only labels. Realmz stores those names in the global Data Files/Custom Names.rsrc support resource, which is not part of scenario ZIP export; Data Race/Data Caste behavior records still export normally."
+  ];
 }
 
 function managedAssetResourceBytes(asset: ManagedAsset) {

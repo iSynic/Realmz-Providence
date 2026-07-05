@@ -571,12 +571,12 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "Desktop And Browser Preview",
         paragraphs: [
           "Desktop is Providence's primary target. It owns native folder dialogs, persistent project save, scenario export, desktop smoke testing, and release builds.",
-          "Browser preview is useful for quick UI work and some import experiments. Save stores a local browser project, Export downloads Providence project ZIP backups or conservative scenario ZIPs, and raw scenario folder import still depends on the browser's File System Access support."
+          "Browser preview is useful for quick UI work and some import experiments. Save stores a local browser project, Export downloads Providence project ZIP backups or snapshot-backed scenario ZIPs, and raw scenario folder import still depends on the browser's File System Access support."
         ],
         points: [
           "Trust desktop for final parity checks, fixture reproduction, and public release validation.",
           "Use browser preview for fast interface review, but confirm file-heavy workflows again in desktop.",
-          "Browser scenario ZIP export is snapshot-backed: it preserves captured raw sources and supported resource updates, while unsupported authored binary record edits remain blocked until writer parity lands.",
+          "Browser scenario ZIP export is snapshot-backed: it preserves captured raw sources, applies supported record/resource updates, and reports project-only labels or missing raw-source material in the export report.",
           "When a topbar action is disabled in browser preview, read the status text; it usually reflects runtime file-system limits rather than missing scenario support."
         ]
       },
