@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { AtlasEntry, IconEntry, MapEntity, MapMarker, MapRecord, MapViewFlag, MapViewOptions, MapWorkbenchMode, Project, ProjectCommand, SelectedEntity, SemanticEntity } from "../../types";
 import { drawTileValueCell } from "../../map/drawMapCanvas";
 import { tileValueAt } from "../../map/geometry";
@@ -48,6 +48,7 @@ export function MapRecordsWorkbench({
   atlasEntries,
   icons,
   filterToSelectedMap = true,
+  onOpenTool,
   onApplyCommand
 }: {
   project: Project | null;
@@ -61,6 +62,7 @@ export function MapRecordsWorkbench({
   atlasEntries?: Record<string, AtlasEntry>;
   icons?: Record<number, IconEntry>;
   filterToSelectedMap?: boolean;
+  onOpenTool?: (tab: "text", editor: string) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
   const records = project?.mapRecords ?? [];
@@ -82,11 +84,27 @@ export function MapRecordsWorkbench({
   const selectedSemantic = selectedRecord ? mapRecords.find((record) => summaryNumber(record, "id") === selectedRecord.id) ?? semanticForMapRecord(selectedRecord) : null;
   const mapViewRecords = visibleRecords.filter((record) => playerMapRecordDisplayKind(record) !== "scrolling-text");
   const scrollingTextRecords = visibleRecords.filter((record) => playerMapRecordDisplayKind(record) === "scrolling-text");
+  const createRecord = () => {
+    const id = nextMapRecordId(records);
+    onApplyCommand({
+      kind: "createMapRecord",
+      label: `Create Player Map ${id}`,
+      id,
+      template: selectedMap
+        ? { level: selectedMap.index, isDungeon: selectedMap.levelType === "dungeon" }
+        : undefined
+    });
+    setSelectedRecordId(id);
+    onSelectEntity(selectEntityFromId(`map-record:${id}`));
+  };
   if (!project) return <p className="empty-copy compact">Open a project to browse player maps.</p>;
   return (
     <div className="map-records-workbench">
-      {onSetWorkbenchMode && onSetViewFlag && (
-        <div className="map-records-toolbar">
+      <div className="map-records-toolbar">
+        <button className="btn btn-primary btn-xs context-action-button" type="button" onClick={createRecord}>
+          New Player Map
+        </button>
+        {onSetWorkbenchMode && onSetViewFlag && (
           <TutorialTip title="Show Player Maps On Canvas" body={MAP_RECORD_CANVAS_HELP} side="below">
             <button className="btn btn-primary btn-xs context-action-button" type="button" onClick={() => {
               onSetWorkbenchMode("canvas");
@@ -95,8 +113,8 @@ export function MapRecordsWorkbench({
               Show On Canvas
             </button>
           </TutorialTip>
-        </div>
-      )}
+        )}
+      </div>
       <div className="map-records-layout">
         <div className="map-records-table" role="list" aria-label="Player maps">
           <PlayerMapRecordListGroup
@@ -122,6 +140,7 @@ export function MapRecordsWorkbench({
               atlasEntries={atlasEntries}
               icons={icons}
               onOpenRelatedMap={onOpenRelatedMap}
+              onOpenTool={onOpenTool}
               onSelectEntity={onSelectEntity}
               onApplyCommand={onApplyCommand}
             />
@@ -132,6 +151,14 @@ export function MapRecordsWorkbench({
       </div>
     </div>
   );
+}
+
+function nextMapRecordId(records: MapRecord[]) {
+  const used = new Set(records.map((record) => record.id));
+  for (let id = 0; id < 1000; id += 1) {
+    if (!used.has(id)) return id;
+  }
+  return records.length;
 }
 
 function PlayerMapRecordListGroup({
@@ -206,6 +233,7 @@ export function RecordSelectionDetails({
   atlasEntries,
   icons,
   onOpenRelatedMap,
+  onOpenTool,
   onSelectEntity,
   onApplyCommand
 }: {
@@ -215,6 +243,7 @@ export function RecordSelectionDetails({
   atlasEntries?: Record<string, AtlasEntry>;
   icons?: Record<number, IconEntry>;
   onOpenRelatedMap?: (record: MapRecord) => void;
+  onOpenTool?: (tab: "text", editor: string) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
@@ -244,6 +273,7 @@ export function RecordSelectionDetails({
           atlasEntries={atlasEntries}
           icons={icons}
           onOpenRelatedMap={onOpenRelatedMap}
+          onOpenTool={onOpenTool}
           onSelectEntity={onSelectEntity}
           onApplyCommand={onApplyCommand}
         />
@@ -290,6 +320,7 @@ function MapRecordEditor({
   atlasEntries,
   icons,
   onOpenRelatedMap,
+  onOpenTool,
   onSelectEntity,
   onApplyCommand
 }: {
@@ -300,6 +331,7 @@ function MapRecordEditor({
   atlasEntries?: Record<string, AtlasEntry>;
   icons?: Record<number, IconEntry>;
   onOpenRelatedMap?: (record: MapRecord) => void;
+  onOpenTool?: (tab: "text", editor: string) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
@@ -313,6 +345,7 @@ function MapRecordEditor({
   const updateMarker = (slot: number, changes: Partial<MapMarker>) => {
     update({ markers: markers.map((marker, index) => (index === slot ? { ...marker, ...changes } : marker)) });
   };
+  const isScrollingTextMap = playerMapRecordDisplayKind(record) === "scrolling-text";
   const targetMap = project?.maps.find((candidate) => candidate.levelType === (record.isDungeon ? "dungeon" : "land") && candidate.index === record.level) ?? null;
   const targetMapId = `${record.isDungeon ? "dungeon" : "land"}:${record.level}`;
   const compactNumberProps = { compact: true, plain: true, maxLength: 5 } as const;
@@ -349,74 +382,97 @@ function MapRecordEditor({
               <input value={record.secondaryName ?? ""} maxLength={255} onChange={(event) => updateNames({ secondaryName: event.currentTarget.value })} />
             </label>
             <div className="player-map-name-actions">
-              <TutorialTip title="Open Related Map" body={MAP_RECORD_OPEN_HELP} side="below">
+              {isScrollingTextMap ? (
                 <button className="btn btn-primary btn-xs" type="button" onClick={() => {
-                  onSelectEntity({ type: "map", id: `map:${targetMapId}` });
-                  onOpenRelatedMap?.(record);
+                  onSelectEntity(selectEntityFromId(`resource:TEXT:${record.show}`));
+                  onOpenTool?.("text", "text-resources");
                 }}>
-                  Open Map
+                  Edit Text in Strings
                 </button>
-              </TutorialTip>
-              <TutorialTip title="Copy Coordinates" body={MAP_RECORD_COPY_HELP} side="below">
-                <button className="btn btn-ghost btn-xs" type="button" onClick={() => navigator.clipboard?.writeText(`${record.startX},${record.startY}`)}>
-                  Copy XY
-                </button>
-              </TutorialTip>
+              ) : (
+                <>
+                  <TutorialTip title="Open Related Map" body={MAP_RECORD_OPEN_HELP} side="below">
+                    <button className="btn btn-primary btn-xs" type="button" onClick={() => {
+                      onSelectEntity({ type: "map", id: `map:${targetMapId}` });
+                      onOpenRelatedMap?.(record);
+                    }}>
+                      Open Map
+                    </button>
+                  </TutorialTip>
+                  <TutorialTip title="Copy Coordinates" body={MAP_RECORD_COPY_HELP} side="below">
+                    <button className="btn btn-ghost btn-xs" type="button" onClick={() => navigator.clipboard?.writeText(`${record.startX},${record.startY}`)}>
+                      Copy XY
+                    </button>
+                  </TutorialTip>
+                </>
+              )}
             </div>
           </div>
-          <div className="map-authoring-form player-map-compact-fields">
-            <MapNumberField label="Top Left X" value={record.startX} min={0} max={89} help={MAP_RECORD_START_HELP} onCommit={(startX) => update({ startX })} {...compactNumberProps} />
-            <MapNumberField label="Top Left Y" value={record.startY} min={0} max={89} help={MAP_RECORD_START_HELP} onCommit={(startY) => update({ startY })} {...compactNumberProps} />
-            <MapNumberField label="Level" value={record.level} min={0} max={255} help={MAP_RECORD_LEVEL_HELP} onCommit={(level) => update({ level })} {...compactNumberProps} />
-            <MapNumberField label="Picture ID" value={record.pictId} help={MAP_RECORD_PICT_HELP} onCommit={(pictId) => update({ pictId })} {...compactNumberProps} />
-            <MapNumberField label="Tile/Icon Size" value={record.iconSize} help={MAP_RECORD_ICON_SIZE_HELP} onCommit={(iconSize) => update({ iconSize })} {...compactNumberProps} />
-            <MapNumberField label="Show / Text ID" value={record.show} help={MAP_RECORD_SHOW_HELP} onCommit={(show) => update({ show })} {...compactNumberProps} />
-            <label className="map-check-field player-map-dungeon-toggle">
-              <input type="checkbox" checked={record.isDungeon} onChange={(event) => update({ isDungeon: event.currentTarget.checked })} />
-              <TutorialTip title="Dungeon Map" body={MAP_RECORD_DUNGEON_HELP} side="right">
-                <span>Dungeon map</span>
-              </TutorialTip>
-            </label>
-          </div>
-          <label className="player-map-text-field player-map-note-field">
-            <TutorialTip title="Map Note" body={MAP_RECORD_NOTE_HELP} side="right">
-              <span>Note</span>
-            </TutorialTip>
-            <textarea value={record.note} maxLength={255} onChange={(event) => update({ note: event.currentTarget.value })} />
-          </label>
+          {isScrollingTextMap ? (
+            <div className="map-authoring-form player-map-compact-fields player-map-text-reference-fields">
+              <MapNumberField label="Show / Text ID" value={record.show} help={MAP_RECORD_SHOW_HELP} onCommit={(show) => update({ show })} {...compactNumberProps} />
+            </div>
+          ) : (
+            <>
+              <div className="map-authoring-form player-map-compact-fields">
+                <MapNumberField label="Top Left X" value={record.startX} min={0} max={89} help={MAP_RECORD_START_HELP} onCommit={(startX) => update({ startX })} {...compactNumberProps} />
+                <MapNumberField label="Top Left Y" value={record.startY} min={0} max={89} help={MAP_RECORD_START_HELP} onCommit={(startY) => update({ startY })} {...compactNumberProps} />
+                <MapNumberField label="Level" value={record.level} min={0} max={255} help={MAP_RECORD_LEVEL_HELP} onCommit={(level) => update({ level })} {...compactNumberProps} />
+                <MapNumberField label="Picture ID" value={record.pictId} help={MAP_RECORD_PICT_HELP} onCommit={(pictId) => update({ pictId })} {...compactNumberProps} />
+                <MapNumberField label="Tile/Icon Size" value={record.iconSize} help={MAP_RECORD_ICON_SIZE_HELP} onCommit={(iconSize) => update({ iconSize })} {...compactNumberProps} />
+                <MapNumberField label="Show / Text ID" value={record.show} help={MAP_RECORD_SHOW_HELP} onCommit={(show) => update({ show })} {...compactNumberProps} />
+                <label className="map-check-field player-map-dungeon-toggle">
+                  <input type="checkbox" checked={record.isDungeon} onChange={(event) => update({ isDungeon: event.currentTarget.checked })} />
+                  <TutorialTip title="Dungeon Map" body={MAP_RECORD_DUNGEON_HELP} side="right">
+                    <span>Dungeon map</span>
+                  </TutorialTip>
+                </label>
+              </div>
+              <label className="player-map-text-field player-map-note-field">
+                <TutorialTip title="Map Note" body={MAP_RECORD_NOTE_HELP} side="right">
+                  <span>Note</span>
+                </TutorialTip>
+                <textarea value={record.note} maxLength={255} onChange={(event) => update({ note: event.currentTarget.value })} />
+              </label>
+            </>
+          )}
         </div>
       </div>
-      <details className="context-section">
-        <summary>
-          <TutorialTip title="Map Markers" body={MAP_RECORD_MARKERS_HELP} side="below">
-            <span>Markers</span>
-          </TutorialTip>
-          <b>{activeMarkerCount(record)}/10</b>
-        </summary>
-        <div className="map-authoring-form">
-          {markers.map((marker, slot) => (
-            <div className="map-door-pair" key={slot}>
-              <MapNumberField label={`M${slot + 1} Icon`} value={marker.iconId} help={MAP_RECORD_MARKER_FIELD_HELP} onCommit={(iconId) => updateMarker(slot, { iconId })} {...compactNumberProps} />
-              <MapNumberField label={`M${slot + 1} X`} value={marker.x} help={MAP_RECORD_MARKER_FIELD_HELP} onCommit={(x) => updateMarker(slot, { x })} {...compactNumberProps} />
-              <MapNumberField label={`M${slot + 1} Y`} value={marker.y} help={MAP_RECORD_MARKER_FIELD_HELP} onCommit={(y) => updateMarker(slot, { y })} {...compactNumberProps} />
+      {!isScrollingTextMap && (
+        <>
+          <details className="context-section">
+            <summary>
+              <TutorialTip title="Map Markers" body={MAP_RECORD_MARKERS_HELP} side="below">
+                <span>Markers</span>
+              </TutorialTip>
+              <b>{activeMarkerCount(record)}/10</b>
+            </summary>
+            <div className="map-authoring-form">
+              {markers.map((marker, slot) => (
+                <div className="map-door-pair" key={slot}>
+                  <MapNumberField label={`M${slot + 1} Icon`} value={marker.iconId} help={MAP_RECORD_MARKER_FIELD_HELP} onCommit={(iconId) => updateMarker(slot, { iconId })} {...compactNumberProps} />
+                  <MapNumberField label={`M${slot + 1} X`} value={marker.x} help={MAP_RECORD_MARKER_FIELD_HELP} onCommit={(x) => updateMarker(slot, { x })} {...compactNumberProps} />
+                  <MapNumberField label={`M${slot + 1} Y`} value={marker.y} help={MAP_RECORD_MARKER_FIELD_HELP} onCommit={(y) => updateMarker(slot, { y })} {...compactNumberProps} />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </details>
-      <details className="context-section">
-        <summary>
-          <TutorialTip title="Display Rectangle" body={MAP_RECORD_RECT_HELP} side="below">
-            <span>Display Rect</span>
-          </TutorialTip>
-          <b>{record.rect.left},{record.rect.top}</b>
-        </summary>
-        <div className="map-authoring-form">
-          <MapNumberField label="Top" value={record.rect.top} help={MAP_RECORD_RECT_HELP} onCommit={(top) => update({ rect: { ...record.rect, top } })} {...compactNumberProps} />
-          <MapNumberField label="Left" value={record.rect.left} help={MAP_RECORD_RECT_HELP} onCommit={(left) => update({ rect: { ...record.rect, left } })} {...compactNumberProps} />
-          <MapNumberField label="Bottom" value={record.rect.bottom} help={MAP_RECORD_RECT_HELP} onCommit={(bottom) => update({ rect: { ...record.rect, bottom } })} {...compactNumberProps} />
-          <MapNumberField label="Right" value={record.rect.right} help={MAP_RECORD_RECT_HELP} onCommit={(right) => update({ rect: { ...record.rect, right } })} {...compactNumberProps} />
-        </div>
-      </details>
+          </details>
+          <details className="context-section">
+            <summary>
+              <TutorialTip title="Display Rectangle" body={MAP_RECORD_RECT_HELP} side="below">
+                <span>Display Rect</span>
+              </TutorialTip>
+              <b>{record.rect.left},{record.rect.top}</b>
+            </summary>
+            <div className="map-authoring-form">
+              <MapNumberField label="Top" value={record.rect.top} help={MAP_RECORD_RECT_HELP} onCommit={(top) => update({ rect: { ...record.rect, top } })} {...compactNumberProps} />
+              <MapNumberField label="Left" value={record.rect.left} help={MAP_RECORD_RECT_HELP} onCommit={(left) => update({ rect: { ...record.rect, left } })} {...compactNumberProps} />
+              <MapNumberField label="Bottom" value={record.rect.bottom} help={MAP_RECORD_RECT_HELP} onCommit={(bottom) => update({ rect: { ...record.rect, bottom } })} {...compactNumberProps} />
+              <MapNumberField label="Right" value={record.rect.right} help={MAP_RECORD_RECT_HELP} onCommit={(right) => update({ rect: { ...record.rect, right } })} {...compactNumberProps} />
+            </div>
+          </details>
+        </>
+      )}
     </details>
   );
 }
@@ -458,6 +514,7 @@ function PlayerMapPreview({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [activeMarkerSlot, setActiveMarkerSlot] = useState(0);
   const [placingMarker, setPlacingMarker] = useState(false);
+  const [placeIconId, setPlaceIconId] = useState(137);
   const targetMap = project?.maps.find((candidate) => candidate.levelType === (record.isDungeon ? "dungeon" : "land") && candidate.index === record.level) ?? null;
   const picture = record.pictId !== 0
     ? project?.assetCatalog.pictures?.find((candidate) => candidate.resourceId === record.pictId) ?? null
@@ -467,6 +524,14 @@ function PlayerMapPreview({
   const iconEntries = icons ?? {};
   const tileSize = normalizedPreviewTileSize(record.iconSize);
   const markersKey = markers.map((marker) => `${marker.iconId}:${marker.x}:${marker.y}`).join("|");
+  const activeMarkerIconId = markers[activeMarkerSlot]?.iconId ?? 0;
+  const placeIconEntry = iconEntries[placeIconId] ?? iconEntries[Math.abs(placeIconId)] ?? null;
+  const iconOptions = useMemo(() => playerMapIconOptionIds(project, iconEntries), [iconEntries, project]);
+  const iconDatalistId = `player-map-icon-options-${record.id}`;
+
+  useEffect(() => {
+    if (activeMarkerIconId !== 0) setPlaceIconId(activeMarkerIconId);
+  }, [activeMarkerIconId, activeMarkerSlot]);
 
   useEffect(() => {
     if (!targetMap || picture?.previewPath || scrollingTextId !== null) return;
@@ -516,9 +581,8 @@ function PlayerMapPreview({
     const y = Math.floor(((event.clientY - bounds.top) * scaleY) / tileSize);
     const maxX = Math.max(0, Math.ceil(PLAYER_MAP_PREVIEW_WIDTH / tileSize) - 1);
     const maxY = Math.max(0, Math.ceil(PLAYER_MAP_PREVIEW_HEIGHT / tileSize) - 1);
-    const marker = markers[activeMarkerSlot] ?? { iconId: 0, x: 0, y: 0 };
     onUpdateMarker(activeMarkerSlot, {
-      iconId: marker.iconId || 137,
+      iconId: clampSignedInt16(placeIconId),
       x: Math.max(0, Math.min(maxX, x)),
       y: Math.max(0, Math.min(maxY, y))
     });
@@ -527,21 +591,7 @@ function PlayerMapPreview({
   return (
     <section className="player-map-preview-card">
       <header>
-        <div>
-          <strong>{scrollingTextId !== null ? "Scrolling text map" : picture?.previewPath ? "Picture preview" : "Terrain preview"}</strong>
-          <span>{scrollingTextId !== null ? `Scrolling Text ${scrollingTextId}` : targetMap ? `${targetMap.name} from ${record.startX},${record.startY}` : picture ? `Picture ${record.pictId}` : "Target map or picture is missing"}</span>
-        </div>
-        <div className="player-map-marker-tools">
-          <label>
-            <span>Marker</span>
-            <select value={activeMarkerSlot} onChange={(event) => setActiveMarkerSlot(Number(event.currentTarget.value))}>
-              {markers.map((_, slot) => <option key={slot} value={slot}>{slot + 1}</option>)}
-            </select>
-          </label>
-          <button className={`btn btn-xs ${placingMarker ? "btn-primary" : "btn-secondary"}`} type="button" disabled={!targetMap || Boolean(picture?.previewPath) || scrollingTextId !== null} onClick={() => setPlacingMarker((value) => !value)}>
-            Place
-          </button>
-        </div>
+        <strong>{scrollingTextId !== null ? "Scrolling text map" : picture?.previewPath ? "Picture preview" : "Terrain preview"}</strong>
       </header>
       {scrollingTextId !== null ? (
         <div className="player-map-scrolling-preview">
@@ -563,6 +613,48 @@ function PlayerMapPreview({
           aria-label="Player map terrain preview"
         />
       )}
+      {scrollingTextId === null && (
+        <div className="player-map-marker-tools">
+          <label>
+            <span>Marker</span>
+            <select value={activeMarkerSlot} onChange={(event) => setActiveMarkerSlot(Number(event.currentTarget.value))}>
+              {markers.map((_, slot) => <option key={slot} value={slot}>{slot + 1}</option>)}
+            </select>
+          </label>
+          <div className="player-map-place-icon-control">
+            <div className="player-map-place-icon-stepper">
+              <button className="btn btn-xs btn-secondary" type="button" aria-label="Previous icon ID" onClick={() => setPlaceIconId((value) => clampSignedInt16(value - 1))}>
+                -
+              </button>
+              <MapNumberField
+                label="Icon ID"
+                value={placeIconId}
+                help="Choose the icon resource written into the selected marker slot when you place it on the preview."
+                onCommit={(iconId) => setPlaceIconId(clampSignedInt16(iconId))}
+                commitOnChange
+                compact
+                plain
+                maxLength={6}
+                list={iconDatalistId}
+              />
+              <button className="btn btn-xs btn-secondary" type="button" aria-label="Next icon ID" onClick={() => setPlaceIconId((value) => clampSignedInt16(value + 1))}>
+                +
+              </button>
+            </div>
+            <span className="player-map-place-icon-preview" title={`Icon ${placeIconId}`}>
+              {placeIconEntry?.url ? <img src={placeIconEntry.url} alt="" /> : <span>{placeIconId}</span>}
+            </span>
+            <datalist id={iconDatalistId}>
+              {iconOptions.map((option) => (
+                <option key={option.id} value={option.id} label={option.label} />
+              ))}
+            </datalist>
+          </div>
+          <button className={`btn btn-xs ${placingMarker ? "btn-primary" : "btn-secondary"}`} type="button" disabled={!targetMap || Boolean(picture?.previewPath)} onClick={() => setPlacingMarker((value) => !value)}>
+            Place
+          </button>
+        </div>
+      )}
     </section>
   );
 }
@@ -571,6 +663,25 @@ function normalizedPreviewTileSize(value: number) {
   if (value === 8 || value === 16 || value === 32) return value;
   if (value > 0 && value < 64) return Math.max(4, Math.min(32, Math.trunc(value)));
   return 8;
+}
+
+function playerMapIconOptionIds(project: Project | null, icons: Record<number, IconEntry>) {
+  const byId = new Map<number, string>();
+  for (const id of Object.keys(icons)) {
+    const numeric = Number(id);
+    if (Number.isFinite(numeric)) byId.set(numeric, `Icon ${numeric}`);
+  }
+  for (const asset of project?.assetCatalog.icons ?? []) {
+    byId.set(asset.resourceId, asset.name ? `${asset.name} (${asset.resourceId})` : `Icon ${asset.resourceId}`);
+  }
+  return [...byId.entries()]
+    .sort(([left], [right]) => left - right)
+    .map(([id, label]) => ({ id, label }));
+}
+
+function clampSignedInt16(value: number) {
+  const numeric = Number.isFinite(value) ? Math.trunc(value) : 137;
+  return Math.max(-32768, Math.min(32767, numeric));
 }
 
 function drawPlayerMapMarkers(
@@ -670,7 +781,7 @@ function playerMapRecordDisplayKind(record: MapRecord) {
 
 function playerMapRecordListDescription(record: MapRecord) {
   const target = `${record.isDungeon ? "Dungeon" : "Land"} ${record.level} at ${record.startX},${record.startY}`;
-  if (playerMapRecordDisplayKind(record) === "scrolling-text") return `Scrolling Text ${record.show} from ${target}`;
+  if (playerMapRecordDisplayKind(record) === "scrolling-text") return `Opens Scrolling Text ${record.show}`;
   if (record.pictId !== 0) return `Picture-backed entry from ${target}`;
   return target;
 }
@@ -703,9 +814,6 @@ function mapRecordDiagnostics(record: MapRecord, map: MapEntity | null) {
   }
   if (map && (record.isDungeon !== (map.levelType === "dungeon") || record.level !== map.index)) {
     diagnostics.push(`This player map points to ${record.isDungeon ? "dungeon" : "land"} ${record.level}, not the current map.`);
-  }
-  if (record.show < 0 && record.pictId === 0) {
-    diagnostics.push(`This player map opens Scrolling Text ${record.show}; edit the text in Strings.`);
   }
   return diagnostics;
 }

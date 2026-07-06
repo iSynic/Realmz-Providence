@@ -2,7 +2,7 @@ import { Bold, ChevronLeft, ChevronRight, Copy, Eraser, FileText, Italic, List, 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LibraryCatalog, MessageRecord, OptionLabelRecord, Project, ProjectCommand, SelectedEntity } from "../types";
 import { selectEntityFromId } from "../utils";
-import { classicTextByteLength, messageUsageLinks, optionLabelUsageLinks, unsupportedClassicTextChars } from "../contentLinks";
+import { classicTextByteLength, messageUsageLinks, optionLabelUsageLinks, resourceUsageLinks, unsupportedClassicTextChars } from "../contentLinks";
 import { TutorialTip } from "../components/TutorialTip";
 import { filterTargetOptions, signedSoundValueForSelection, signedSoundWaitsForCompletion, soundReferenceOptionForQuery, targetOptionForOpcodeValue, targetOptionsForOpcode, type ScriptTargetOption } from "../components/RealmzTargetPicker";
 import {
@@ -98,10 +98,10 @@ export function TextPanel({
   const [messageListLimit, setMessageListLimit] = useState(320);
   const [optionListLimit, setOptionListLimit] = useState(320);
   const importInputRef = useRef<HTMLInputElement | null>(null);
-  const records = useMemo(() => [...(project.messages ?? [])].sort((a, b) => a.id - b.id), [project.messages]);
-  const optionRecords = useMemo(() => [...(project.optionLabels ?? [])].sort((a, b) => a.id - b.id), [project.optionLabels]);
-  const scrollingTextAssets = useMemo(() => scrollingTextProjectAssets(project), [project]);
-  const importedScrollingTextResources = useMemo(() => importedScrollingTextResourceRows(project, scrollingTextAssets), [project, scrollingTextAssets]);
+  const records = [...(project.messages ?? [])].sort((a, b) => a.id - b.id);
+  const optionRecords = [...(project.optionLabels ?? [])].sort((a, b) => a.id - b.id);
+  const scrollingTextAssets = scrollingTextProjectAssets(project);
+  const importedScrollingTextResources = importedScrollingTextResourceRows(project, scrollingTextAssets);
   const selectedId = selectedMessageId(selectedEntity, records) ?? records[0]?.id ?? 0;
   const selectedRecord = records.find((record) => record.id === selectedId) ?? null;
   const effectiveOptionId = selectedOptionId ?? optionRecords[0]?.id ?? 0;
@@ -609,7 +609,7 @@ function MessageEditor({
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
   const { confirmBeforeDraftDiscard, registerDraftGuard } = useDraftChangeGuards();
-  const [text, setText] = useState(record.text);
+  const [text, setText] = useSyncedTextDraft(record.id, record.text);
   const [soundQuery, setSoundQuery] = useState("");
   const byteLength = classicTextByteLength(text);
   const unsupportedChars = unsupportedClassicTextChars(text);
@@ -810,6 +810,21 @@ function clipText(value: string, max: number) {
   return `${value.slice(0, Math.max(0, max - 3))}...`;
 }
 
+function useSyncedTextDraft(recordId: number, appliedText: string) {
+  const [text, setText] = useState(appliedText);
+  const appliedRef = useRef({ recordId, text: appliedText });
+  useEffect(() => {
+    const previous = appliedRef.current;
+    const recordChanged = previous.recordId !== recordId;
+    const draftWasDirty = text !== previous.text;
+    if (recordChanged || !draftWasDirty) {
+      setText(appliedText);
+    }
+    appliedRef.current = { recordId, text: appliedText };
+  }, [appliedText, recordId, text]);
+  return [text, setText] as const;
+}
+
 function soundSummaryLabel(option: ScriptTargetOption | null, soundId: number) {
   if (!soundId) return "No sound";
   if (!option) return `Sound ${soundId}`;
@@ -961,7 +976,7 @@ function OptionLabelEditor({
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
   const { confirmBeforeDraftDiscard, registerDraftGuard } = useDraftChangeGuards();
-  const [text, setText] = useState(record.text);
+  const [text, setText] = useSyncedTextDraft(record.id, record.text);
   const byteLength = classicTextByteLength(text);
   const unsupportedChars = unsupportedClassicTextChars(text);
   const changed = text !== record.text;
@@ -1226,6 +1241,7 @@ function ScrollingTextWorkbench({
             <ImportedScrollingTextResourceEditor
               project={project}
               resource={selectedImportedResource}
+              onSelectEntity={onSelectEntity}
               onApplyCommand={(command) => {
                 confirmBeforeDraftDiscard(`make Scrolling Text ${selectedImportedResource.resourceId} editable`, () => {
                   onApplyCommand(command);
@@ -1242,6 +1258,7 @@ function ScrollingTextWorkbench({
               project={project}
               asset={selectedAsset}
               assets={assets}
+              onSelectEntity={onSelectEntity}
               onApplyCommand={onApplyCommand}
             />
           ) : (
@@ -1265,17 +1282,43 @@ function scrollingTextRowLabel(row: ScrollingTextListRow) {
   return row.kind === "asset" ? row.asset.label : row.resource.label;
 }
 
+function TextResourceUsageLinks({
+  usages,
+  onSelectEntity
+}: {
+  usages: ReturnType<typeof resourceUsageLinks>;
+  onSelectEntity: (entity: SelectedEntity) => void;
+}) {
+  if (usages.length === 0) return null;
+  return (
+    <div className="asset-usage-list text-resource-usage-list">
+      <TutorialTip title="Used By" body="Records that reference this scrolling TEXT resource." side="below">
+        <strong>Used By</strong>
+      </TutorialTip>
+      {usages.slice(0, 12).map((usage) => (
+        <button key={usage.key} type="button" disabled={!usage.entity} onClick={() => usage.entity && onSelectEntity(usage.entity)}>
+          {usage.label}
+          <small>{usage.detail}</small>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function ImportedScrollingTextResourceEditor({
   project,
   resource,
+  onSelectEntity,
   onApplyCommand
 }: {
   project: Project;
   resource: ImportedScrollingTextResource;
+  onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
   const byteLength = classicTextByteLength(resource.text);
   const unsupportedChars = unsupportedClassicTextChars(resource.text);
+  const usages = useMemo(() => resourceUsageLinks(project, "TEXT", resource.resourceId), [project, resource.resourceId]);
   const [textSelectionRange, setTextSelectionRange] = useState<TextSelectionRange>({ start: 0, end: 0 });
   const captureSelection = (element: HTMLTextAreaElement) => setTextSelectionRange(textSelectionRangeFromTextArea(element));
   return (
@@ -1304,6 +1347,7 @@ function ImportedScrollingTextResourceEditor({
         {resource.hasStyle && <b>Same-ID styl resource is present and remains preserved by resource export.</b>}
         {unsupportedChars.length > 0 && <b>{unsupportedChars.length} non-ASCII character{unsupportedChars.length === 1 ? "" : "s"} will export as ? if this TEXT is made editable without cleanup.</b>}
       </div>
+      <TextResourceUsageLinks usages={usages} onSelectEntity={onSelectEntity} />
       <StyleCompanionEditor
         project={project}
         resourceId={resource.resourceId}
@@ -1347,11 +1391,13 @@ function ScrollingTextEditor({
   project,
   asset,
   assets,
+  onSelectEntity,
   onApplyCommand
 }: {
   project: Project;
   asset: Project["assets"][number];
   assets: Project["assets"];
+  onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
   const { confirmBeforeDraftDiscard } = useDraftChangeGuards();
@@ -1375,6 +1421,7 @@ function ScrollingTextEditor({
   const changed = validResourceId && (resourceId !== asset.resourceId || label !== asset.label || text !== decodeTextAsset(asset));
   const inManualRange = validResourceId && resourceId <= -200 && resourceId >= -300;
   const styleCompanion = useMemo(() => sameIdStyleCompanion(project, resourceId), [project, resourceId]);
+  const usages = useMemo(() => resourceUsageLinks(project, "TEXT", validResourceId ? resourceId : asset.resourceId), [asset.resourceId, project, resourceId, validResourceId]);
   const applyBlocked = !validResourceId || duplicateResourceId;
   const applyScrollingText = () => {
     if (applyBlocked) return false;
@@ -1429,6 +1476,7 @@ function ScrollingTextEditor({
         {styleCompanion.entity && <b>Same-ID styl resource is {styleCompanion.managedAsset ? "authored" : "preserved from imported resources"}.</b>}
         {!changed && validResourceId && !duplicateResourceId && unsupportedChars.length === 0 && inManualRange && <b>Ready</b>}
       </div>
+      <TextResourceUsageLinks usages={usages} onSelectEntity={onSelectEntity} />
       {validResourceId && (
         <StyleCompanionEditor
           project={project}
@@ -1510,8 +1558,10 @@ function StyleCompanionEditor({
   const { registerDraftGuard } = useDraftChangeGuards();
   const companion = useMemo(() => sameIdStyleCompanion(project, resourceId), [project, resourceId]);
   const [styleHexDraft, setStyleHexDraft] = useState("");
+  const [styleHexTouched, setStyleHexTouched] = useState(false);
   useEffect(() => {
     setStyleHexDraft(companion.styleHex ?? "");
+    setStyleHexTouched(false);
   }, [resourceId, companion.managedAsset?.id, companion.importedEntity?.id, companion.styleHex]);
   const parsedStyleBytes = useMemo(() => parseHexBytes(styleHexDraft), [styleHexDraft]);
   const parsedStyleRuns = useMemo(() => parseClassicStyleRuns(companion.rawStyleBytes), [companion.rawStyleBytes]);
@@ -1523,6 +1573,7 @@ function StyleCompanionEditor({
   const [italicDraft, setItalicDraft] = useState(false);
   const [underlineDraft, setUnderlineDraft] = useState(false);
   const [styleRunDrafts, setStyleRunDrafts] = useState<ClassicStyleRunDraft[]>([]);
+  const [styleRunDraftsTouched, setStyleRunDraftsTouched] = useState(false);
   useEffect(() => {
     const run = firstStyleRun ?? DEFAULT_CLASSIC_STYLE_RUN;
     setFontDraft(String(run.font));
@@ -1534,12 +1585,16 @@ function StyleCompanionEditor({
   }, [firstStyleRun?.font, firstStyleRun?.size, firstStyleRun?.face, firstStyleRun?.color.red, firstStyleRun?.color.green, firstStyleRun?.color.blue]);
   useEffect(() => {
     setStyleRunDrafts(parsedStyleRuns.ok ? styleRunDraftsFromRuns(parsedStyleRuns.runs) : []);
+    setStyleRunDraftsTouched(false);
   }, [resourceId, companion.styleHex, parsedStyleRuns.ok]);
-  const styleHexDirty = normalizeHex(styleHexDraft) !== normalizeHex(companion.styleHex ?? "");
+  const styleHexChanged = normalizeHex(styleHexDraft) !== normalizeHex(companion.styleHex ?? "");
+  const styleHexDirty = styleHexTouched && styleHexChanged;
   const parsedFont = Number(fontDraft);
   const styleRunDraftResult = useMemo(() => classicStyleRunsFromDrafts(styleRunDrafts), [styleRunDrafts]);
   const styleRunBytes = styleRunDraftResult.ok ? classicStyleBytesFromRuns(styleRunDraftResult.runs) : null;
-  const styleRunBytesDirty = styleRunBytes ? !bytesEqual(styleRunBytes, companion.rawStyleBytes ?? new Uint8Array()) : false;
+  const styleRunBytesChanged = styleRunBytes ? !bytesEqual(styleRunBytes, companion.rawStyleBytes ?? new Uint8Array()) : false;
+  const styleRunBytesDirty = styleRunDraftsTouched && styleRunBytesChanged;
+  const styleRunDraftDirty = styleRunDraftsTouched && (!styleRunDraftResult.ok || styleRunBytesChanged);
   const previewRuns = styleRunDraftResult.ok ? styleRunDraftResult.runs : parsedStyleRuns.ok ? parsedStyleRuns.runs : [];
   const decodedText = useMemo(() => textBytes ? decodeClassicTextPreviewBytes(textBytes) : decodeClassicTextPreviewString(text), [text, textBytes]);
   const previewText = decodedText.text;
@@ -1586,7 +1641,16 @@ function StyleCompanionEditor({
   };
   const applyToolbarStyleToSelection = (style: AuthorStyleDraft | null) => {
     if (!style || !selectedRangeValid) return;
+    setStyleRunDraftsTouched(true);
     setStyleRunDrafts((drafts) => applyAuthorStyleToSelection(drafts, previewText, rawTextSelection, style, decodedText.rawByteLength));
+  };
+  const editStyleRunDrafts = (update: (drafts: ClassicStyleRunDraft[]) => ClassicStyleRunDraft[]) => {
+    setStyleRunDraftsTouched(true);
+    setStyleRunDrafts(update);
+  };
+  const resetStyleRunDrafts = () => {
+    setStyleRunDrafts(parsedStyleRuns.ok ? styleRunDraftsFromRuns(parsedStyleRuns.runs) : []);
+    setStyleRunDraftsTouched(false);
   };
   const applyStyleBytes = (bytes: Uint8Array, provenance: string, label: string) => {
     const asset = styleAssetFromBytes(companion.managedAsset ?? null, resourceId, bytes, provenance);
@@ -1602,6 +1666,7 @@ function StyleCompanionEditor({
   const applyViewportChanges = useCallback(() => {
     if (textApplyBlocked) return false;
     if (styleHexDirty && !parsedStyleBytes.ok) return false;
+    if (styleRunDraftsTouched && !styleRunDraftResult.ok) return false;
     if (canApplyTextChanges && onApplyTextChanges?.() === false) return false;
     if (styleHexDirty && parsedStyleBytes.ok) {
       applyStyleBytes(
@@ -1609,8 +1674,10 @@ function StyleCompanionEditor({
         companion.managedAsset?.provenance ?? "Authored in Providence Scrolling Text style bytes",
         companion.managedAsset ? `Update Style ${resourceId}` : `Author Style ${resourceId}`
       );
+      setStyleHexTouched(false);
     } else if (canApplyStyleRunChanges && styleRunBytes) {
       applyStyleBytes(styleRunBytes, "Authored in Providence Scrolling Text style runs", `Update Style ${resourceId}`);
+      setStyleRunDraftsTouched(false);
     }
     return true;
   }, [
@@ -1621,25 +1688,30 @@ function StyleCompanionEditor({
     parsedStyleBytes,
     resourceId,
     styleHexDirty,
+    styleRunDraftResult,
+    styleRunDraftsTouched,
     styleRunBytes,
     textApplyBlocked
   ]);
   const discardViewportChanges = useCallback(() => {
     onDiscardTextChanges?.();
     setStyleHexDraft(companion.styleHex ?? "");
+    setStyleHexTouched(false);
     setStyleRunDrafts(parsedStyleRuns.ok ? styleRunDraftsFromRuns(parsedStyleRuns.runs) : []);
+    setStyleRunDraftsTouched(false);
   }, [companion.styleHex, onDiscardTextChanges, parsedStyleRuns]);
   const draftSummary = useMemo(() => {
     const summary: string[] = [];
     if (textChanged) summary.push(`TEXT body changed (${decodedText.rawByteLength.toLocaleString()} byte preview)`);
     if (styleRunBytesDirty) summary.push("Style runs changed in the visual editor");
+    if (styleRunDraftsTouched && !styleRunDraftResult.ok) summary.push(styleRunDraftResult.error);
     if (styleHexDirty) summary.push("Raw styl bytes changed");
     if (textApplyBlocked) summary.push("Resource ID must be valid and unique before applying");
     if (styleHexDirty && !parsedStyleBytes.ok) summary.push(parsedStyleBytes.error);
     return summary.length > 0 ? summary : ["No pending scrolling text changes"];
-  }, [decodedText.rawByteLength, parsedStyleBytes, styleHexDirty, styleRunBytesDirty, textApplyBlocked, textChanged]);
+  }, [decodedText.rawByteLength, parsedStyleBytes, styleHexDirty, styleRunBytesDirty, styleRunDraftResult, styleRunDraftsTouched, textApplyBlocked, textChanged]);
   useEffect(() => {
-    if (!textChanged && !styleRunBytesDirty && !styleHexDirty) return;
+    if (!textChanged && !styleRunDraftDirty && !styleHexDirty) return;
     return registerDraftGuard({
       id: `scrolling-text:${resourceId}`,
       surface: "text",
@@ -1648,7 +1720,7 @@ function StyleCompanionEditor({
       apply: applyViewportChanges,
       discard: discardViewportChanges
     });
-  }, [applyViewportChanges, discardViewportChanges, draftSummary, registerDraftGuard, resourceId, styleHexDirty, styleRunBytesDirty, textChanged]);
+  }, [applyViewportChanges, discardViewportChanges, draftSummary, registerDraftGuard, resourceId, styleHexDirty, styleRunDraftDirty, textChanged]);
   const styleState = companion.managedAsset
     ? "Authored style override"
     : companion.importedEntity
@@ -1821,7 +1893,7 @@ function StyleCompanionEditor({
           textBytes={textBytes}
           runs={previewRuns}
           parseError={parsedStyleRuns.ok ? null : parsedStyleRuns.error}
-          draftDirty={styleRunBytesDirty}
+          draftDirty={styleRunDraftDirty}
           title={canEditText ? "Gameplay viewport editor" : "Gameplay viewport preview"}
           description={canEditText ? "Editable Display Scrolling Text in Realmz gameplay viewport geometry." : "Display Scrolling Text uses Realmz lookrect geometry; modern Realmz uses a 480 px gameplay text viewport."}
           movieViewportWidth={REALMZ_GAMEPLAY_TEXT_VIEW_WIDTH}
@@ -1848,32 +1920,32 @@ function StyleCompanionEditor({
               <div role="row" key={run.id}>
                 <input
                   value={run.startChar}
-                  onChange={(event) => setStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { startChar: event.currentTarget.value }))}
+                  onChange={(event) => editStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { startChar: event.currentTarget.value }))}
                   inputMode="numeric"
                   aria-label={`Style run ${run.index + 1} start character`}
                 />
                 <input
                   value={run.font}
-                  onChange={(event) => setStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { font: event.currentTarget.value }))}
+                  onChange={(event) => editStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { font: event.currentTarget.value }))}
                   inputMode="numeric"
                   aria-label={`Style run ${run.index + 1} font ID`}
                 />
                 <input
                   value={run.size}
-                  onChange={(event) => setStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { size: event.currentTarget.value }))}
+                  onChange={(event) => editStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { size: event.currentTarget.value }))}
                   inputMode="numeric"
                   aria-label={`Style run ${run.index + 1} size`}
                 />
                 <span className="text-style-color-field">
                   <input
                     value={run.color}
-                    onChange={(event) => setStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { color: event.currentTarget.value }))}
+                    onChange={(event) => editStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { color: event.currentTarget.value }))}
                     aria-label={`Style run ${run.index + 1} color`}
                   />
                   <input
                     type="color"
                     value={isCssHexColor(run.color) ? run.color : "#000000"}
-                    onChange={(event) => setStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { color: event.currentTarget.value }))}
+                    onChange={(event) => editStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { color: event.currentTarget.value }))}
                     aria-label={`Style run ${run.index + 1} color picker`}
                   />
                 </span>
@@ -1882,15 +1954,15 @@ function StyleCompanionEditor({
                 </span>
                 <div className="text-style-run-flags">
                   <label title="Bold">
-                    <input type="checkbox" checked={run.bold} onChange={(event) => setStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { bold: event.currentTarget.checked }))} />
+                    <input type="checkbox" checked={run.bold} onChange={(event) => editStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { bold: event.currentTarget.checked }))} />
                     <Bold size={12} />
                   </label>
                   <label title="Italic">
-                    <input type="checkbox" checked={run.italic} onChange={(event) => setStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { italic: event.currentTarget.checked }))} />
+                    <input type="checkbox" checked={run.italic} onChange={(event) => editStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { italic: event.currentTarget.checked }))} />
                     <Italic size={12} />
                   </label>
                   <label title="Underline">
-                    <input type="checkbox" checked={run.underline} onChange={(event) => setStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { underline: event.currentTarget.checked }))} />
+                    <input type="checkbox" checked={run.underline} onChange={(event) => editStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { underline: event.currentTarget.checked }))} />
                     <Underline size={12} />
                   </label>
                 </div>
@@ -1898,7 +1970,7 @@ function StyleCompanionEditor({
                   type="button"
                   className="btn btn-danger btn-xs"
                   disabled={styleRunDrafts.length <= 1}
-                  onClick={() => setStyleRunDrafts((drafts) => removeStyleRunDraft(drafts, run.id))}
+                  onClick={() => editStyleRunDrafts((drafts) => removeStyleRunDraft(drafts, run.id))}
                 >
                   Remove
                 </button>
@@ -1912,12 +1984,12 @@ function StyleCompanionEditor({
               <button
                 type="button"
                 className="btn btn-secondary btn-xs"
-                onClick={() => setStyleRunDrafts((drafts) => addStyleRunDraft(drafts))}
+                onClick={() => editStyleRunDrafts((drafts) => addStyleRunDraft(drafts))}
               >
                 Add Style Run
               </button>
-              {styleRunBytesDirty && (
-                <button type="button" className="btn btn-secondary btn-xs" onClick={() => setStyleRunDrafts(parsedStyleRuns.ok ? styleRunDraftsFromRuns(parsedStyleRuns.runs) : [])}>
+              {styleRunDraftDirty && (
+                <button type="button" className="btn btn-secondary btn-xs" onClick={resetStyleRunDrafts}>
                   Revert Runs
                 </button>
               )}
@@ -1933,7 +2005,10 @@ function StyleCompanionEditor({
             <span>Hex</span>
             <textarea
               value={styleHexDraft}
-              onChange={(event) => setStyleHexDraft(event.currentTarget.value)}
+              onChange={(event) => {
+                setStyleHexTouched(true);
+                setStyleHexDraft(event.currentTarget.value);
+              }}
               spellCheck={false}
               placeholder="00 00"
             />
@@ -1960,12 +2035,16 @@ function StyleCompanionEditor({
                     ? { kind: "replaceProjectAsset", label: `Update Style ${resourceId}`, assetId: companion.managedAsset.id, asset }
                     : { kind: "attachProjectAsset", label: `Author Style ${resourceId}`, asset }
                 );
+                setStyleHexTouched(false);
               }}
             >
               Apply Style Bytes
             </button>
             {styleHexDirty && (
-              <button type="button" className="btn btn-secondary btn-xs" onClick={() => setStyleHexDraft(companion.styleHex ?? "")}>
+              <button type="button" className="btn btn-secondary btn-xs" onClick={() => {
+                setStyleHexDraft(companion.styleHex ?? "");
+                setStyleHexTouched(false);
+              }}>
                 Revert Bytes
               </button>
             )}

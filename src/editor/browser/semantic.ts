@@ -667,12 +667,17 @@ function addMapRecords(schema: SemanticSchema, mapRecords: MapRecord[], maps: Ma
     upsertRecord(schema, browserRecord("Data MD2", record.id, 340, "map record", name, summary));
     const entityId = `map-record:${record.id}`;
     schema.entities.push(browserEntity(entityId, "map record", name, "Data MD2", recordRef, record.id * 340, 340, summary));
+    const isScrollingTextMap = record.pictId === 0 && record.show < 0;
+    const isTerrainMap = record.pictId === 0 && record.show >= 0;
     const levelType = record.isDungeon ? "dungeon" : "land";
     const mapId = mapEntityId(levelType, record.level);
-    if (knownMaps.has(mapId)) pushLink(schema, entityId, mapId, "describes_map", "source-backed");
+    if (isTerrainMap && knownMaps.has(mapId)) pushLink(schema, entityId, mapId, "describes_map", "source-backed");
     if (record.pictId !== 0) pushLink(schema, entityId, `resource:PICT:${record.pictId}`, "uses_resource", "source-backed", { field: "pictid" });
-    for (const icon of iconSlots) {
-      pushLink(schema, entityId, `resource:cicn:${icon.iconId}`, "uses_resource", "source-backed", { field: "icon", slot: icon.slot });
+    if (isScrollingTextMap) pushLink(schema, entityId, `resource:TEXT:${record.show}`, "uses_resource", "source-backed", { field: "show" });
+    if (isTerrainMap) {
+      for (const icon of iconSlots) {
+        pushLink(schema, entityId, `resource:cicn:${icon.iconId}`, "uses_resource", "source-backed", { field: "icon", slot: icon.slot });
+      }
     }
   }
 }

@@ -23,6 +23,7 @@ export function MapNumberField({
   compact = false,
   plain = false,
   maxLength,
+  list,
   min = -32768,
   max = 32767
 }: {
@@ -34,6 +35,7 @@ export function MapNumberField({
   compact?: boolean;
   plain?: boolean;
   maxLength?: number;
+  list?: string;
   min?: number;
   max?: number;
 }) {
@@ -66,6 +68,7 @@ export function MapNumberField({
         min={plain ? undefined : min}
         max={plain ? undefined : max}
         maxLength={maxLength}
+        list={list}
         value={draft}
         onChange={(event) => {
           const nextDraft = event.currentTarget.value;

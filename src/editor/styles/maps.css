@@ -1978,6 +1978,21 @@
   gap: 12px;
 }
 
+.player-maps-pane .map-records-workbench {
+  height: min(900px, calc(100dvh - 170px));
+  min-height: 0;
+  max-height: calc(100dvh - 170px);
+  box-sizing: border-box;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid #2b5d83;
+  border-left: 3px solid #3a9be8;
+  border-radius: 7px;
+  background: #0b141c;
+  box-shadow: 0 0 0 1px rgba(58, 155, 232, 0.07);
+  padding: 10px;
+}
+
 .player-maps-panel {
   flex: 1;
   min-width: 0;
@@ -2025,16 +2040,25 @@
 }
 
 .player-maps-pane .map-records-table {
+  height: 100%;
   max-height: none;
-  overflow: visible;
+  min-height: 0;
+  overflow: auto;
 }
 
 .player-maps-pane .map-records-layout {
-  grid-template-columns: minmax(190px, 270px) minmax(0, 1fr);
+  grid-template-columns: minmax(220px, 310px) minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  align-items: stretch;
 }
 
 .player-maps-pane .map-record-detail {
   justify-items: center;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 2px;
 }
 
 .player-maps-pane .record-selection-details {
@@ -2049,11 +2073,9 @@
   width: 100%;
   box-sizing: border-box;
   overflow: hidden;
-  border: 1px solid #2b5d83;
-  border-left: 3px solid #3a9be8;
+  border: 1px solid #263747;
   border-radius: 7px;
   background: #0b141c;
-  box-shadow: 0 0 0 1px rgba(58, 155, 232, 0.07);
   padding: 0 10px 10px;
 }
 
@@ -2164,7 +2186,7 @@
 
 .player-map-visual-editor {
   display: grid;
-  grid-template-columns: max-content minmax(0, 560px);
+  grid-template-columns: minmax(360px, 1fr) minmax(0, 560px);
   gap: 14px;
   align-items: start;
   justify-content: center;
@@ -2229,8 +2251,10 @@
 .player-map-preview-card {
   display: grid;
   gap: 8px;
-  width: fit-content;
+  width: 100%;
   max-width: 100%;
+  box-sizing: border-box;
+  justify-items: center;
   padding: 10px;
   border: 1px solid #263747;
   border-radius: 7px;
@@ -2238,19 +2262,11 @@
 }
 
 .player-map-preview-card header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.player-map-preview-card header div:first-child {
-  display: grid;
-  gap: 2px;
-}
-
-.player-map-preview-card header span {
-  color: #9fb4c5;
+  width: 100%;
+  box-sizing: border-box;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #263747;
+  text-align: left;
 }
 
 .player-map-preview-card canvas,
@@ -2317,19 +2333,109 @@
 .player-map-marker-tools {
   display: flex;
   align-items: end;
-  gap: 8px;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: min(420px, 100%);
+  padding-top: 2px;
 }
 
 .player-map-marker-tools label {
   display: grid;
   gap: 2px;
-  color: #9ed0ff;
+  color: #7ea9d5;
   font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.45px;
+  text-align: center;
   text-transform: uppercase;
 }
 
 .player-map-marker-tools select {
   width: 64px;
+  min-height: 30px;
+  box-sizing: border-box;
+  appearance: none;
+  border: 1px solid #2d3946;
+  border-radius: 5px;
+  background: #0f141a;
+  color: #f0f6fc;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.2;
+  padding: 6px 20px 6px 6px;
+  text-align: left;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #8fc7ff 50%),
+    linear-gradient(135deg, #8fc7ff 50%, transparent 50%);
+  background-position:
+    calc(100% - 12px) 12px,
+    calc(100% - 8px) 12px;
+  background-size: 4px 4px, 4px 4px;
+  background-repeat: no-repeat;
+}
+
+.player-map-marker-tools select:focus {
+  outline: none;
+  border-color: #4d91d6;
+  box-shadow: 0 0 0 1px rgba(77, 145, 214, 0.24);
+}
+
+.player-map-place-icon-control {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+  row-gap: 2px;
+}
+
+.player-map-place-icon-stepper {
+  display: grid;
+  grid-template-columns: 28px 56px 28px;
+  align-items: end;
+  column-gap: 12px;
+}
+
+.player-map-place-icon-control .map-number-field.compact {
+  width: 56px;
+}
+
+.player-map-place-icon-control .map-number-field.compact > span {
+  text-align: center;
+}
+
+.player-map-place-icon-control .map-number-field.compact input {
+  width: 100%;
+  min-width: 0;
+  padding-inline: 4px;
+}
+
+.player-map-place-icon-stepper .btn {
+  width: 28px;
+  min-width: 28px;
+  min-height: 30px;
+  padding: 4px 0;
+}
+
+.player-map-place-icon-preview {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  box-sizing: border-box;
+  border: 1px solid #2d3946;
+  border-radius: 5px;
+  background: #0f141a;
+  color: #9ed0ff;
+  font-size: 9px;
+  font-weight: 900;
+  overflow: hidden;
+}
+
+.player-map-place-icon-preview img {
+  max-width: 100%;
+  max-height: 100%;
+  image-rendering: pixelated;
 }
 
 
@@ -2354,6 +2460,8 @@
 .random-areas-list,
 .map-records-table {
   display: grid;
+  align-content: start;
+  grid-auto-rows: max-content;
   gap: 6px;
   max-height: min(70vh, 760px);
   overflow: auto;
@@ -2373,6 +2481,8 @@
 
 .map-record-list-group {
   display: grid;
+  align-content: start;
+  grid-auto-rows: max-content;
   gap: 5px;
 }
 

@@ -7,6 +7,7 @@ export function PlayerMapsPanel({
   atlasEntries,
   icons,
   onSelectEntity,
+  onOpenTool,
   onOpenRelatedMap,
   onApplyCommand
 }: {
@@ -15,6 +16,7 @@ export function PlayerMapsPanel({
   atlasEntries: Record<string, AtlasEntry>;
   icons: Record<number, IconEntry>;
   onSelectEntity: (entity: SelectedEntity) => void;
+  onOpenTool: (tab: "text", editor: string) => void;
   onOpenRelatedMap: (record: MapRecord) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
@@ -38,6 +40,7 @@ export function PlayerMapsPanel({
           atlasEntries={atlasEntries}
           icons={icons}
           onSelectEntity={onSelectEntity}
+          onOpenTool={onOpenTool}
           onOpenRelatedMap={onOpenRelatedMap}
           onApplyCommand={onApplyCommand}
         />

@@ -545,7 +545,7 @@ function targetOptionsDependencyKey(project: Project | null, opcode: number, cat
   else if (code === 62) parts.push("assets", objectCacheKey(project.assets), "resources", objectCacheKey(project.semanticSchema?.entities), "catalog", catalogAssets);
   else if (code === 9) parts.push("assets", objectCacheKey(project.assets), "sounds", objectCacheKey(assetCatalog?.sounds), "catalog", catalogAssets);
   else if (code === 27) parts.push("assets", objectCacheKey(project.assets), "pictures", objectCacheKey(assetCatalog?.pictures), "icons", objectCacheKey(assetCatalog?.icons), "catalog", catalogAssets);
-  else if (code === 29) parts.push("mapRecords", objectCacheKey(project.mapRecords), "triggers", objectCacheKey(project.triggers));
+  else if (code === 29) parts.push("mapRecords", objectCacheKey(project.mapRecords), "triggers", objectCacheKey(project.triggers), "assets", objectCacheKey(project.assets), "resources", objectCacheKey(project.semanticSchema?.entities));
   else if (code === 97 || code === 106) parts.push("maps", objectCacheKey(project.maps));
   else if (isDirectMacroOpcode(code)) parts.push("triggers", objectCacheKey(project.triggers));
   else parts.push("project", objectCacheKey(project));
@@ -674,7 +674,7 @@ function optionFromTypedProjectTarget(project: Project, code: number, id: number
   }
   if (code === 29) {
     const record = project.mapRecords?.find((candidate) => candidate.id === id);
-    if (record) return playerMapTargetOption(record, usageCounts(project, [29]));
+    if (record) return playerMapTargetOption(project, record, usageCounts(project, [29]));
     return id >= 0 && id <= 19 ? fallbackPlayerMapTargetOption(id) : null;
   }
   if (code === 97 || code === 106) {
@@ -926,7 +926,7 @@ function addPlayerMapTargets(project: Project, options: ScriptTargetOption[]) {
   for (const record of project.mapRecords ?? []) {
     if (record.id < 0 || record.id > 19) continue;
     seen.add(record.id);
-    options.push(playerMapTargetOption(record, used));
+    options.push(playerMapTargetOption(project, record, used));
   }
   for (let id = 0; id <= 19; id += 1) {
     if (seen.has(id)) continue;
@@ -934,13 +934,16 @@ function addPlayerMapTargets(project: Project, options: ScriptTargetOption[]) {
   }
 }
 
-function playerMapTargetOption(record: Project["mapRecords"][number], used: Map<number, number>): ScriptTargetOption {
+function playerMapTargetOption(project: Project, record: Project["mapRecords"][number], used: Map<number, number>): ScriptTargetOption {
   const primaryName = record.primaryName?.trim() || record.name?.trim() || `Player Map ${record.id}`;
   const secondaryName = record.secondaryName?.trim();
   const target = `${record.isDungeon ? "Dungeon" : "Land"} ${record.level} at ${record.startX},${record.startY}`;
   const display = playerMapTargetDisplay(record);
+  const linkedTextPreview = record.pictId === 0 && record.show < 0 ? playerMapLinkedTextPreview(project, record.show) : "";
   const summaryParts = [
     secondaryName && secondaryName !== primaryName ? `Secondary: ${secondaryName}` : "",
+    record.pictId === 0 && record.show < 0 ? `Opens TEXT ${record.show}` : "",
+    linkedTextPreview,
     record.note?.trim() || "",
     `${used.get(record.id) ?? 0} script use(s)`
   ].filter(Boolean);
@@ -969,8 +972,21 @@ function fallbackPlayerMapTargetOption(id: number, used = 0): ScriptTargetOption
 
 function playerMapTargetDisplay(record: Project["mapRecords"][number]) {
   if (record.pictId !== 0) return `PICT ${record.pictId}`;
-  if (record.show < 0) return `Scrolling Text ${record.show}`;
+  if (record.show < 0) return `opens TEXT ${record.show}`;
   return "Map view";
+}
+
+function playerMapLinkedTextPreview(project: Project, resourceId: number) {
+  for (const asset of project.assets ?? []) {
+    if ((asset.resourceType.trim() === "TEXT" || asset.kind === "text") && asset.resourceId === resourceId) {
+      return decodeTextAssetPreview(asset) ?? "";
+    }
+  }
+  for (const entity of project.semanticSchema?.entities ?? []) {
+    if (textResourceOptionFromSemanticEntity(entity)?.value !== resourceId) continue;
+    return typeof entity.summary.textPreview === "string" ? entity.summary.textPreview : "";
+  }
+  return "";
 }
 
 function addTextResourceTargets(project: Project, options: ScriptTargetOption[], catalog?: LibraryCatalog | null) {

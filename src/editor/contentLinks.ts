@@ -167,6 +167,10 @@ export function resourceUsageLinks(project: Project, resourceType: string | null
   if (resourceId == null) return [];
   const type = (resourceType ?? "").trim();
   const links: ContentUsageLink[] = [];
+  if (type === "TEXT") {
+    links.push(...directTextResourceUsageLinks(project, resourceId));
+    links.push(...playerMapTextUsageLinks(project, resourceId));
+  }
   if (type === "snd") {
     links.push(...directSoundUsageLinks(project, resourceId));
     links.push(...edcdSoundUsageLinks(project, resourceId));
@@ -356,6 +360,34 @@ function directPictureUsageLinks(project: Project, resourceId: number) {
   return links;
 }
 
+function directTextResourceUsageLinks(project: Project, resourceId: number) {
+  const links: ContentUsageLink[] = [];
+  forEachScriptAction(project, (action, context) => {
+    if (normalizeStepOpcode(action.rawCode) !== 62 || action.id !== resourceId) return;
+    links.push({
+      key: `${context.key}:scrolling-text`,
+      label: context.label,
+      detail: `${context.actionLabel}: Display Scrolling Text`,
+      entity: context.entity
+    });
+  });
+  return links;
+}
+
+function playerMapTextUsageLinks(project: Project, resourceId: number) {
+  const links: ContentUsageLink[] = [];
+  for (const record of project.mapRecords ?? []) {
+    if (record.pictId !== 0 || record.show !== resourceId || record.show >= 0) continue;
+    links.push({
+      key: `map-record:${record.id}:text`,
+      label: `Player Map ${record.id}: ${mapRecordUsageName(record)}`,
+      detail: `Maps/Notes entry opens TEXT ${resourceId}`,
+      entity: { type: "record", id: `map-record:${record.id}` }
+    });
+  }
+  return links;
+}
+
 function edcdSoundUsageLinks(project: Project, resourceId: number) {
   const links: ContentUsageLink[] = [];
   const rows = edcdRowsById(project);
@@ -533,4 +565,8 @@ function authorFacingExtraActionKind(classification: string) {
   if (classification === "Likely Padding" || classification === "Imported Empty Slot") return "Likely Padding";
   if (classification === "Runtime Residue" || classification === "Imported Runtime Mutation") return "Runtime Residue";
   return "Unlinked Extra Action";
+}
+
+function mapRecordUsageName(record: Project["mapRecords"][number]) {
+  return record.primaryName?.trim() || record.name?.trim() || `Player Map ${record.id}`;
 }

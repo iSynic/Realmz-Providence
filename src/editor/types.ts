@@ -1104,6 +1104,7 @@ export type ProjectCommand =
   | { kind: "paintBattleGridCells"; battleId: number; label: string; cells: BattleGridCellChange[] }
   | { kind: "createMap"; label: string; levelType: LevelType }
   | { kind: "duplicateMap"; label: string; mapId: string }
+  | { kind: "createMapRecord"; label: string; id?: number; template?: Partial<MapRecord> }
   | { kind: "createMacro"; label: string; displayName?: string }
   | { kind: "createStartupTestMacro"; label: string; complexEncounterId?: number }
   | { kind: "deleteMacro"; label: string; triggerId: string }

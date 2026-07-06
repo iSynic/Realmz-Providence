@@ -3,6 +3,7 @@ import {
   clearLandLayout,
   clearRandomRect,
   createMap,
+  createMapRecord,
   createRandomRect,
   duplicateMap,
   ensureLandLayout,
@@ -116,6 +117,7 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "paintBattleGridCells") return paintBattleGridCells(project, command.battleId, command.cells);
   if (command.kind === "createMap") return createMap(project, command);
   if (command.kind === "duplicateMap") return duplicateMap(project, command);
+  if (command.kind === "createMapRecord") return createMapRecord(project, command);
   if (command.kind === "createMacro") return createMacro(project, command.displayName);
   if (command.kind === "createStartupTestMacro") return createStartupTestMacro(project, command.complexEncounterId);
   if (command.kind === "deleteMacro" || command.kind === "deleteTrigger") return deleteTrigger(project, command.triggerId);

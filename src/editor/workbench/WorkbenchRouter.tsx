@@ -165,6 +165,7 @@ function WorkbenchRouterContent({
         atlasEntries={state.atlasEntries}
         icons={state.iconEntries}
         onSelectEntity={onSelectEntity}
+        onOpenTool={onOpenTool}
         onOpenRelatedMap={onOpenPlayerMapTarget}
         onApplyCommand={onApplyCommand}
       />

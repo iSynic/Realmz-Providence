@@ -57,6 +57,18 @@ export function duplicateMap(project: Project, command: Extract<ProjectCommand, 
   };
 }
 
+export function createMapRecord(project: Project, command: Extract<ProjectCommand, { kind: "createMapRecord" }>) {
+  const id = Number.isInteger(command.id) && command.id != null && command.id >= 0
+    ? command.id
+    : nextMapRecordId(project);
+  if ((project.mapRecords ?? []).some((record) => record.id === id)) return project;
+  const record = authoredMapRecord(id, command.template);
+  return {
+    ...project,
+    mapRecords: [...(project.mapRecords ?? []), record].sort((left, right) => left.id - right.id)
+  };
+}
+
 export function updateRandomLevelSettings(
   project: Project,
   command: Extract<ProjectCommand, { kind: "updateRandomLevelSettings" }>
@@ -721,6 +733,47 @@ function mapRecordRawBytes(record: MapRecord) {
   writeI16(bytes, 82, record.rect.right);
   writePascalText(bytes, 84, MAP_RECORD_BYTES - 84, record.note);
   return Array.from(bytes);
+}
+
+function nextMapRecordId(project: Project) {
+  const used = new Set((project.mapRecords ?? []).map((record) => record.id));
+  for (let id = 0; id < 1000; id += 1) {
+    if (!used.has(id)) return id;
+  }
+  return used.size;
+}
+
+function authoredMapRecord(id: number, template: Partial<MapRecord> = {}): MapRecord {
+  const markers = Array.from({ length: MAP_RECORD_MARKERS }, (_, slot) => ({
+    iconId: template.markers?.[slot]?.iconId ?? 0,
+    x: template.markers?.[slot]?.x ?? 0,
+    y: template.markers?.[slot]?.y ?? 0
+  }));
+  const record: MapRecord = {
+    id,
+    markers,
+    startX: template.startX ?? 0,
+    startY: template.startY ?? 0,
+    level: template.level ?? 0,
+    pictId: template.pictId ?? 0,
+    iconSize: template.iconSize ?? 16,
+    show: template.show ?? 1,
+    isDungeon: template.isDungeon ?? false,
+    rect: {
+      top: template.rect?.top ?? 0,
+      left: template.rect?.left ?? 0,
+      bottom: template.rect?.bottom ?? 0,
+      right: template.rect?.right ?? 0
+    },
+    note: template.note ?? "",
+    name: template.name ?? template.primaryName ?? `Player Map ${id}`,
+    primaryName: template.primaryName ?? template.name ?? `Player Map ${id}`,
+    secondaryName: template.secondaryName ?? "",
+    mapNameAuthored: true,
+    authored: true,
+    provenance: authoredProvenance("Data MD2", id, id * MAP_RECORD_BYTES, MAP_RECORD_BYTES)
+  };
+  return { ...record, rawBytes: mapRecordRawBytes(record) };
 }
 
 function mapRecordMarkers(record: MapRecord): MapMarker[] {

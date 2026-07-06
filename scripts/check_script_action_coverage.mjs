@@ -643,7 +643,7 @@ if (!targetPicker.includes("29: { label: \"Player Map\", hint: \"Select the Maps
 }
 for (const snippet of [
   "function addPlayerMapTargets(project: Project, options: ScriptTargetOption[])",
-  "options.push(playerMapTargetOption(record, used));",
+  "options.push(playerMapTargetOption(project, record, used));",
   "record.note?.trim() || \"\""
 ]) {
   if (!targetPicker.includes(snippet)) failures.push(`Code 29 Player Map picker is missing map-record search support: ${snippet}`);
