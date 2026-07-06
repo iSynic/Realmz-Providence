@@ -244,6 +244,9 @@ export function EdcdRowEditor({
   function renderGuidedSection(section: GuidedSection) {
     const normalizedShape = normalizeShape(shapeId);
     const normalizedTitle = section.title.toLowerCase();
+    if (normalizedShape === "item-branch" && normalizedTitle === "result") {
+      return renderItemBranchResultSection(section);
+    }
     if ((normalizedShape === "teleport" || normalizedShape === "dungeon-move") && normalizedTitle === "destination") {
       return renderTeleportDestinationSection(section);
     }
@@ -255,6 +258,43 @@ export function EdcdRowEditor({
         </header>
         <div className="edcd-field-grid">
           {section.fields.map((field) => renderParameterField(field))}
+        </div>
+      </section>
+    );
+  }
+
+  function renderItemBranchResultSection(section: GuidedSection) {
+    const fieldByName = (name: string) => section.fields.find((field) => normalizeField(field.internalName) === name);
+    const possessedMode = fieldByName("branchmode");
+    const possessedTarget = fieldByName("hastarget");
+    const missingMode = fieldByName("missingbehavior");
+    const missingTarget = fieldByName("missingtarget");
+    const groupedIndexes = new Set(
+      [possessedMode, possessedTarget, missingMode, missingTarget]
+        .filter((field): field is GuidedField => Boolean(field))
+        .map((field) => field.index)
+    );
+    const additionalFields = section.fields.filter((field) => !groupedIndexes.has(field.index));
+    return (
+      <section key={section.title} className="guided-edcd-section edcd-item-branch-result-section">
+        <header>
+          <span>{section.eyebrow}</span>
+          <h4>{section.title}</h4>
+        </header>
+        <div className="edcd-branch-result-grid">
+          <div className="edcd-branch-result-row">
+            {possessedMode && renderParameterField(possessedMode)}
+            {possessedTarget && renderParameterField(possessedTarget)}
+          </div>
+          <div className="edcd-branch-result-row">
+            {missingMode && renderParameterField(missingMode)}
+            {missingTarget && renderParameterField(missingTarget)}
+          </div>
+          {additionalFields.length > 0 && (
+            <div className="edcd-field-grid">
+              {additionalFields.map((field) => renderParameterField(field))}
+            </div>
+          )}
         </div>
       </section>
     );

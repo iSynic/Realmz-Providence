@@ -1083,9 +1083,9 @@
   width: 100%;
   min-width: 0;
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) auto;
+  grid-template-columns: 28px minmax(0, 1fr) minmax(76px, auto);
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   border: 1px solid #2b3541;
   border-radius: 6px;
   background: #11161d;
@@ -1269,7 +1269,7 @@
 
 
 
-.realmz-step-card span:nth-child(2) {
+.realmz-step-card .script-step-main {
   min-width: 0;
   display: grid;
   gap: 2px;
@@ -1277,8 +1277,8 @@
 
 
 
-.realmz-step-card strong,
-.realmz-step-card small {
+.realmz-step-card .script-step-main strong,
+.realmz-step-card .script-step-main small {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1287,20 +1287,59 @@
 
 
 
-.realmz-step-card strong {
+.realmz-step-card .script-step-main strong {
   color: #eef4fb;
   font-size: 11px;
 }
 
 
 
-.realmz-step-card small {
+.realmz-step-card .script-step-main small {
   color: #8996a4;
   font-size: 10px;
 }
 
 .realmz-step-card .script-step-branch-hint {
   color: #d5b8ff;
+}
+
+.script-step-storage {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(34px, 1fr));
+  gap: 4px;
+  min-width: 0;
+}
+
+.script-step-storage > span {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  place-items: center;
+  border: 1px solid #2b455a;
+  border-radius: 4px;
+  background: #0d1823;
+  padding: 3px 4px;
+}
+
+.script-step-storage small {
+  max-width: 100%;
+  overflow: hidden;
+  color: #7eaedf;
+  font-size: 8px;
+  font-weight: 900;
+  line-height: 1;
+  text-overflow: ellipsis;
+}
+
+.script-step-storage strong {
+  max-width: 100%;
+  overflow: hidden;
+  color: #e7f3ff;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .script-flow-preview {
@@ -1355,65 +1394,6 @@
   color: #9fb2c6;
   font-size: 10px;
   line-height: 1.25;
-}
-
-
-
-.realmz-step-card b {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  justify-content: flex-end;
-  color: #8d9aaa;
-  font-size: 9px;
-  text-transform: uppercase;
-}
-
-
-
-.realmz-step-card b em {
-  width: 18px;
-  height: 18px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: 1px solid #34495e;
-  border-radius: 999px;
-  color: #9dcfff;
-  background: #0d1823;
-  font-style: normal;
-  font-size: 9px;
-  font-weight: 900;
-  line-height: 1;
-}
-
-.realmz-step-card b em.category {
-  border-color: #52616f;
-  color: #d5e7f8;
-  background: #101820;
-}
-
-.realmz-step-card b em.settings {
-  border-color: #365371;
-  color: #9dcfff;
-  background: #0d1823;
-}
-
-
-
-.realmz-step-card b em.warning {
-  color: #f3ca76;
-  border-color: #6b5629;
-  background: #211d14;
-}
-
-
-
-.realmz-step-card b em.danger {
-  color: #ff9cad;
-  border-color: #7d3440;
-  background: #27151a;
 }
 
 
@@ -5497,6 +5477,38 @@
   justify-self: start;
   max-width: 100%;
   white-space: normal;
+}
+
+.edcd-branch-result-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.edcd-branch-result-row {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.8fr) minmax(260px, 1.2fr);
+  gap: 8px;
+  align-items: start;
+  min-width: 0;
+}
+
+.edcd-branch-result-row label {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  min-width: 0;
+}
+
+.edcd-branch-result-row input,
+.edcd-branch-result-row select {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 760px) {
+  .edcd-branch-result-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .edcd-teleport-destination-grid {

@@ -877,11 +877,13 @@ for (const snippet of [
 }
 
 for (const snippet of [
-  "SCRIPT_STEP_CATEGORY_BADGES",
-  "className=\"settings\" title=\"Uses Action Settings\"",
-  "className=\"category\" title={categoryBadge.label} aria-label={categoryBadge.label}"
+  "className=\"script-step-storage\"",
+  "`CODE ${current.rawCode}`",
+  "`ID ${current.id}`",
+  "<small>CODE</small>",
+  "<small>ID</small>"
 ]) {
-  if (!panel.includes(snippet)) failures.push(`Scripts panel is missing compact step-card badge behavior: ${snippet}`);
+  if (!panel.includes(snippet)) failures.push(`Scripts panel is missing visible step CODE/ID storage behavior: ${snippet}`);
 }
 for (const snippet of [
   "return `${trigger.actions.length} step${trigger.actions.length === 1 ? \"\" : \"s\"}`;",
@@ -893,10 +895,28 @@ for (const snippet of [
 for (const snippet of [
   "width: clamp(210px, 15vw, 280px);",
   "grid-template-columns: minmax(240px, 300px) minmax(520px, 1fr);",
-  ".realmz-step-card b em.category",
-  ".realmz-step-card b em.settings"
+  ".script-step-storage",
+  "grid-template-columns: repeat(2, minmax(34px, 1fr));",
+  ".script-step-storage strong"
 ]) {
-  if (!scriptsCss.includes(snippet)) failures.push(`Scripts CSS is missing denser AP/XAP list and compact step-card badge styling: ${snippet}`);
+  if (!scriptsCss.includes(snippet)) failures.push(`Scripts CSS is missing denser AP/XAP list and CODE/ID storage styling: ${snippet}`);
+}
+for (const snippet of [
+  "function renderItemBranchResultSection",
+  "const possessedMode = fieldByName(\"branchmode\")",
+  "const possessedTarget = fieldByName(\"hastarget\")",
+  "const missingMode = fieldByName(\"missingbehavior\")",
+  "const missingTarget = fieldByName(\"missingtarget\")",
+  "className=\"guided-edcd-section edcd-item-branch-result-section\""
+]) {
+  if (!edcd.includes(snippet)) failures.push(`EDCD editor is missing paired item-possession branch layout: ${snippet}`);
+}
+for (const snippet of [
+  ".edcd-branch-result-grid",
+  ".edcd-branch-result-row",
+  "grid-template-columns: minmax(190px, 0.8fr) minmax(260px, 1.2fr);"
+]) {
+  if (!scriptsCss.includes(snippet)) failures.push(`Scripts CSS is missing paired item-possession branch layout styling: ${snippet}`);
 }
 
 for (const snippet of [

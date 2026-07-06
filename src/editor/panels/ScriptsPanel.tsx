@@ -55,7 +55,6 @@ import {
   scriptActionSummary,
   scriptStepBranchHint,
   scriptStepFlowRoutes,
-  type ScriptActionCategory,
   type ScriptActionCategoryFilter,
   type ScriptActionDefinition
 } from "./scripts/scriptActionCatalog";
@@ -73,21 +72,6 @@ const MONSTER_TRAIT_LABELS = [
 
 const MONSTER_MONEY_LABELS = ["Gold", "Gems", "Jewelry"];
 const REQUIRED_WEAPON_MAX_SPECIFIC_CODE = 253;
-
-const SCRIPT_STEP_CATEGORY_BADGES: Record<ScriptActionCategory, { mark: string; label: string }> = {
-  Dialogue: { mark: "D", label: "Dialogue action" },
-  Choices: { mark: "?", label: "Choice action" },
-  Encounters: { mark: "E", label: "Encounter action" },
-  Rewards: { mark: "$", label: "Reward action" },
-  Travel: { mark: "T", label: "Travel action" },
-  Media: { mark: "M", label: "Media action" },
-  Party: { mark: "P", label: "Party action" },
-  Items: { mark: "I", label: "Item action" },
-  Rules: { mark: "R", label: "Rules action" },
-  Logic: { mark: "L", label: "Logic action" },
-  "Extra Action Points": { mark: "X", label: "Extra Action Point action" },
-  Advanced: { mark: "A", label: "Advanced or preserved action" }
-};
 
 function shouldSuppressInlineTargetRecordPanel(recordType: RealmzTargetRecordKind | undefined) {
   return recordType === "simpleEncounter" || recordType === "complexEncounter";
@@ -1441,8 +1425,13 @@ function ScriptAuthoringPanel({
                         const changed = action ? current.rawCode !== action.rawCode || current.id !== action.id : current.rawCode !== 0 || current.id !== 0;
                         const slotIssues = issueCounts.get(slot) ?? { errors: 0, warnings: 0 };
                         const branchHint = scriptStepBranchHint(current.rawCode, current.id);
-                        const categoryBadge = SCRIPT_STEP_CATEGORY_BADGES[definition.category];
                         const issueCount = slotIssues.errors + slotIssues.warnings;
+                        const storageTitle = [
+                          `CODE ${current.rawCode}`,
+                          `ID ${current.id}`,
+                          option.edcdShape ? "uses Action Settings" : "",
+                          issueCount > 0 ? `${issueCount} validation ${issueCount === 1 ? "issue" : "issues"}` : ""
+                        ].filter(Boolean).join(" | ");
                         return (
                           <button
                             key={slot}
@@ -1452,18 +1441,21 @@ function ScriptAuthoringPanel({
                             style={{ borderColor: categoryColor(option.category) }}
                           >
                             <span className="slot-index">{slot + 1}</span>
-                            <span>
+                            <span className="script-step-main">
                               <strong>{definition.shortLabel}</strong>
                               <small>{scriptActionSummary(project, catalog, current, actionSummary(action))}</small>
                               {branchHint && <small className="script-step-branch-hint">{branchHint}</small>}
                             </span>
-                            <b>
-                              {option.edcdShape && <em className="settings" title="Uses Action Settings">S</em>}
-                              {issueCount > 0 && <em className={slotIssues.errors ? "danger" : "warning"} title={slotIssues.errors ? `${slotIssues.errors} error${slotIssues.errors === 1 ? "" : "s"}` : `${slotIssues.warnings} warning${slotIssues.warnings === 1 ? "" : "s"}`}>{issueCount}</em>}
-                              <em className="category" title={categoryBadge.label} aria-label={categoryBadge.label}>
-                                {categoryBadge.mark}
-                              </em>
-                            </b>
+                            <span className="script-step-storage" title={storageTitle} aria-label={storageTitle}>
+                              <span>
+                                <small>CODE</small>
+                                <strong>{current.rawCode}</strong>
+                              </span>
+                              <span>
+                                <small>ID</small>
+                                <strong>{current.id}</strong>
+                              </span>
+                            </span>
                           </button>
                         );
                       })}
