@@ -20,6 +20,8 @@ const edcdRowsPath = path.join(root, "src/editor/edcdRows.ts");
 const edcdTargetsPath = path.join(root, "src/editor/edcdTargets.ts");
 const appUtilsPath = path.join(root, "src/editor/app/appUtils.ts");
 const appBootstrapPath = path.join(root, "src/editor/app/useAppBootstrapEffects.ts");
+const draftChangeGuardPath = path.join(root, "src/editor/app/draftChangeGuard.tsx");
+const appPath = path.join(root, "src/App.tsx");
 const semanticPath = path.join(root, "src/editor/browser/semantic.ts");
 const semanticGraphPath = path.join(root, "src/editor/semanticGraph.ts");
 const editorStorePath = path.join(root, "src/editor/store.ts");
@@ -55,6 +57,8 @@ const edcdRows = fs.readFileSync(edcdRowsPath, "utf8");
 const edcdTargets = fs.readFileSync(edcdTargetsPath, "utf8");
 const appUtils = fs.readFileSync(appUtilsPath, "utf8");
 const appBootstrap = fs.readFileSync(appBootstrapPath, "utf8");
+const draftChangeGuard = fs.readFileSync(draftChangeGuardPath, "utf8");
+const app = fs.readFileSync(appPath, "utf8");
 const semantic = fs.readFileSync(semanticPath, "utf8");
 const semanticGraph = fs.readFileSync(semanticGraphPath, "utf8");
 const editorStore = fs.readFileSync(editorStorePath, "utf8");
@@ -463,8 +467,8 @@ for (const snippet of [
 ]) {
   if (!styledTextPreview.includes(snippet)) failures.push(`Shared styled TEXT preview is missing: ${snippet}`);
 }
-if (!textPanel.includes("setSelectedImportedResourceId(resource.entityId);")) {
-  failures.push("Imported scrolling TEXT list rows must select locally.");
+if (!textPanel.includes("confirmBeforeDraftDiscard(`select Scrolling Text ${resource.resourceId}`") || !textPanel.includes("setSelectedImportedResourceId(resource.entityId)")) {
+  failures.push("Imported scrolling TEXT list rows must select locally through the shared draft guard.");
 }
 if (textPanel.includes("onSelectEntity(selectEntityFromId(resource.entityId));")) {
   failures.push("Imported scrolling TEXT list rows must not select generic resource entities because that routes to Assets.");
@@ -903,16 +907,17 @@ for (const snippet of [
 if (!panel.includes("moveSelectedStep")) failures.push("Scripts panel does not preserve selected step during move.");
 
 for (const snippet of [
-  "type ScriptDraftNavigationGuard",
+  "useDraftChangeGuards",
+  "registerDraftGuard",
+  "confirmBeforeDraftDiscard",
+  "scriptDraftGuardSummary",
+  "id: `script-step:${selectedTrigger.id}:${selectedSlot}`",
   "requestDraftNavigation(`select step",
   "requestDraftNavigation(`select ${scriptLabel(project, trigger)}`",
-  "ScriptDraftNavigationDialog",
-  "Apply Changes",
-  "Discard Changes",
-  "Cancel",
-  "onRegisterDraftNavigationGuard"
+  "surface: \"scripts\"",
+  "Apply Step"
 ]) {
-  if (!panel.includes(snippet)) failures.push(`Scripts panel is missing dirty selected-step navigation guard behavior: ${snippet}`);
+  if (!panel.includes(snippet)) failures.push(`Scripts panel is missing shared dirty selected-step navigation guard behavior: ${snippet}`);
 }
 for (const snippet of [
   "const previewEntity = useCallback",
@@ -941,6 +946,42 @@ for (const snippet of [
   "requestDraftNavigation(isMacro ? \"delete this Extra Action Point\""
 ]) {
   if (panel.includes(snippet)) failures.push(`Scripts panel still gates preview/destructive actions with the dirty-step navigation modal: ${snippet}`);
+}
+
+for (const snippet of [
+  "export type DraftGuardEntry",
+  "registerDraftGuard",
+  "confirmBeforeDraftDiscard",
+  "Apply and Continue",
+  "Discard Changes",
+  "groupDraftEntries",
+  "draftSurfaceLabel"
+]) {
+  if (!draftChangeGuard.includes(snippet)) failures.push(`Shared draft-change guard is missing expected behavior: ${snippet}`);
+}
+
+for (const snippet of [
+  "DraftChangeGuardProvider",
+  "useDraftChangeGuardController",
+  "confirmBeforeDraftDiscard(\"close the project\"",
+  "confirmBeforeDraftDiscard(\"open another project\"",
+  "confirmBeforeDraftDiscard(`open ${domain}`",
+  "onOpenResult={(result) => confirmBeforeDraftDiscard"
+]) {
+  if (!app.includes(snippet)) failures.push(`App is missing shared draft-change guard navigation wiring: ${snippet}`);
+}
+
+for (const snippet of [
+  "registerDraftGuard",
+  "id: `message:${record.id}`",
+  "id: `option-label:${record.id}`",
+  "id: `scrolling-text:${resourceId}`",
+  "selectTextTab",
+  "confirmBeforeDraftDiscard(`select String ${id}`",
+  "confirmBeforeDraftDiscard(`select Option Label ${id}`",
+  "Apply Changes"
+]) {
+  if (!textPanel.includes(snippet)) failures.push(`Text panel is missing shared draft-change guard registration: ${snippet}`);
 }
 
 for (const snippet of [

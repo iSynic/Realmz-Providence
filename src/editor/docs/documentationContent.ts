@@ -596,10 +596,12 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "Save, Dirty, Undo, Redo",
         paragraphs: [
           "Save writes the Providence project package on desktop and stores the current project in browser-local storage in browser preview. It is separate from Export, which writes a Realmz scenario folder on desktop or downloads a Providence project ZIP or snapshot-backed scenario ZIP in browser preview.",
-          "The Dirty badge means the package has unsaved editor changes. Undo and Redo operate on Providence project commands, such as map painting, resource edits, record changes, custom palettes, or metadata changes."
+          "The Dirty badge means the package has unsaved editor changes. Undo and Redo operate on Providence project commands, such as map painting, resource edits, record changes, custom palettes, or metadata changes.",
+          "Direct tools such as map painting, Action Point movement, and battle-grid monster placement apply immediately. Draft editors such as Action Point steps, strings, option labels, and scrolling TEXT/styl require Apply Changes before they become project commands."
         ],
         points: [
           "Save before risky editing passes, desktop smoke tests, or export attempts.",
+          "If you leave a draft editor with unapplied changes, Providence asks whether to Apply and Continue, Discard Changes, or Cancel.",
           "Use Undo/Redo for editor commands; text fields may temporarily own keyboard shortcuts while Editing is shown.",
           "Do not treat export as backup. Export is scenario output, while Save is the Providence authoring state."
         ]
@@ -1386,7 +1388,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "Choose the right tab: Action Points for map-cell scripts, Extra Action Points for reusable behavior and preserved imported ED3 rows, Global Events for scenario hooks, and Quests for flag usage.",
           "Filter the inventory before editing. Current Map is fastest while map authoring; Warnings is best before release; Reusable shows empty fixed slots that can be repurposed safely.",
           "Create or select an Action Point, then edit its map cell, chance, and goto fields only when those fields are meaningful for map triggers.",
-          "Choose a step, pick an action, inspect the Divinity help, set a target or Settings fields, then Apply Step. Dirty step changes are draft-only until applied.",
+          "Choose a step, pick an action, inspect the Divinity help, set a target or Settings fields, then Apply Step. Dirty step changes are draft-only until applied, and the shared unapplied-changes dialog protects them when navigating away.",
           "Use Target Details when a direct target has an inline editor. Use Settings when the step needs named options such as branch mode, message, sound, battle, map, range, or secondary target fields.",
           "Open Action Settings when you need to find orphaned settings, repair missing settings, duplicate a known Settings ID, or understand why two steps share the same settings."
         ]

@@ -11,6 +11,7 @@ import {
 import { useAssetActions } from "./editor/app/useAssetActions";
 import { useAppBootstrapEffects } from "./editor/app/useAppBootstrapEffects";
 import { useProjectLifecycleActions } from "./editor/app/useProjectLifecycleActions";
+import { DraftChangeGuardProvider, useDraftChangeGuardController } from "./editor/app/draftChangeGuard";
 import { canUseBrowserFileSystem } from "./editor/browser/fsAccess";
 import {
   PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES,
@@ -104,6 +105,7 @@ export function App() {
   const [assetSearchHint, setAssetSearchHint] = useState<AssetSearchHint | null>(null);
   const [projectNameDraft, setProjectNameDraft] = useState("Untitled Scenario");
   const [state, dispatch] = useReducer(editorReducer, desktopRuntime, initialEditorState);
+  const draftGuard = useDraftChangeGuardController();
   const importedMapIconCacheRef = useRef<{ key: string; ids: number[] }>({ key: "", ids: [] });
   const historyNavigationRef = useRef(false);
   const selectedEntityId = state.selectedEntity?.id ?? "";
@@ -325,9 +327,9 @@ export function App() {
     }
   });
 
-  function requestCloseProject() {
+  function requestCloseProject({ assumeDirty = false }: { assumeDirty?: boolean } = {}) {
     if (!state.project) return;
-    if (state.dirty) {
+    if (state.dirty || assumeDirty) {
       setCloseProjectDialogOpen(true);
       return;
     }
@@ -352,6 +354,10 @@ export function App() {
   function cancelCloseProject() {
     setCloseProjectDialogOpen(false);
     dispatch({ type: "setStatus", status: "Close project cancelled" });
+  }
+
+  function confirmBeforeDraftDiscard(destination: string, action: Parameters<typeof draftGuard.value.confirmBeforeDraftDiscard>[1]) {
+    draftGuard.value.confirmBeforeDraftDiscard(destination, action);
   }
 
   function updateSelectedMap(nextMap: MapEntity) {
@@ -599,6 +605,7 @@ export function App() {
   }
 
   return (
+    <DraftChangeGuardProvider value={draftGuard.value}>
     <ProvidenceEditorShell
       state={state}
       runtimeLabel={desktopRuntime ? "Desktop" : browserFileSystem ? "Browser FS" : "Browser Local"}
@@ -617,30 +624,34 @@ export function App() {
       tutorialEnabled={state.tutorialEnabled}
       canNavigateBack={workbenchHistory.index > 0}
       canNavigateForward={workbenchHistory.index >= 0 && workbenchHistory.index < workbenchHistory.entries.length - 1}
-      onLibrary={openLibraryHub}
-      onProject={openProjectWorkbench}
-      onDocuments={() => setDocumentsOpen(true)}
+      onLibrary={() => confirmBeforeDraftDiscard("open the Library workbench", () => openLibraryHub())}
+      onProject={() => confirmBeforeDraftDiscard("open the Project workbench", () => openProjectWorkbench())}
+      onDocuments={() => confirmBeforeDraftDiscard("open Documents", () => setDocumentsOpen(true))}
       onDivinityManual={() => {
-        setDivinityManualHref("");
-        setDivinityManualOpen(true);
+        confirmBeforeDraftDiscard("open the Divinity manual", () => {
+          setDivinityManualHref("");
+          setDivinityManualOpen(true);
+        });
       }}
-      onGlobalSearch={() => setGlobalSearchOpen(true)}
-      onNavigateBack={() => navigateWorkbenchHistory(-1)}
-      onNavigateForward={() => navigateWorkbenchHistory(1)}
+      onGlobalSearch={() => confirmBeforeDraftDiscard("open global search", () => setGlobalSearchOpen(true))}
+      onNavigateBack={() => confirmBeforeDraftDiscard("go back", () => navigateWorkbenchHistory(-1))}
+      onNavigateForward={() => confirmBeforeDraftDiscard("go forward", () => navigateWorkbenchHistory(1))}
       onToggleTutorial={() => dispatch({ type: "setTutorialEnabled", enabled: !state.tutorialEnabled })}
-      onNewProject={showNewProjectDialog}
-      onOpenProject={chooseExistingProject}
-      onCloseProject={requestCloseProject}
-      onImportScenario={importScenario}
+      onNewProject={() => confirmBeforeDraftDiscard("start a new project", () => showNewProjectDialog())}
+      onOpenProject={() => confirmBeforeDraftDiscard("open another project", () => chooseExistingProject())}
+      onCloseProject={() => confirmBeforeDraftDiscard("close the project", ({ appliedDrafts }) => requestCloseProject({ assumeDirty: appliedDrafts }))}
+      onImportScenario={() => confirmBeforeDraftDiscard("import a scenario", () => importScenario())}
       onUndo={() => dispatch({ type: "undo" })}
       onRedo={() => dispatch({ type: "redo" })}
       onSave={saveProject}
       onExport={exportProject}
       onSelectDomain={(domain) => {
-        openProjectDomain(domain);
-        dispatch({ type: "setActiveEditor", editor: domain === "scripts" ? "action-points" : "domain" });
+        confirmBeforeDraftDiscard(`open ${domain}`, () => {
+          openProjectDomain(domain);
+          dispatch({ type: "setActiveEditor", editor: domain === "scripts" ? "action-points" : "domain" });
+        });
       }}
-      onSelectEditor={(editor) => dispatch({ type: "setActiveEditor", editor })}
+      onSelectEditor={(editor) => confirmBeforeDraftDiscard(`open ${editor.replace(/-/g, " ")}`, () => dispatch({ type: "setActiveEditor", editor }))}
     >
       <WorkbenchRouter
         state={state}
@@ -650,12 +661,12 @@ export function App() {
             browserFileSystem={browserFileSystem}
             browserPreviewStatus={BROWSER_PREVIEW_STATUS}
             projectRoot={storagePaths.projectRoot}
-            onNewProject={showNewProjectDialog}
-            onOpenProject={chooseExistingProject}
-            onResumeProject={desktopRuntime ? undefined : resumeBrowserProject}
-            onImportScenario={importScenario}
-            onLibraryHub={openLibraryHub}
-            onDocuments={() => setDocumentsOpen(true)}
+            onNewProject={() => confirmBeforeDraftDiscard("start a new project", () => showNewProjectDialog())}
+            onOpenProject={() => confirmBeforeDraftDiscard("open another project", () => chooseExistingProject())}
+            onResumeProject={desktopRuntime ? undefined : () => confirmBeforeDraftDiscard("resume the browser-local project", () => resumeBrowserProject())}
+            onImportScenario={() => confirmBeforeDraftDiscard("import a scenario", () => importScenario())}
+            onLibraryHub={() => confirmBeforeDraftDiscard("open the Library workbench", () => openLibraryHub())}
+            onDocuments={() => confirmBeforeDraftDiscard("open Documents", () => setDocumentsOpen(true))}
           />
         }
         selectedMap={selectedMap}
@@ -673,11 +684,13 @@ export function App() {
         issues={visibleIssues}
         onSelectMap={selectMap}
         onSelectTile={(tile) => {
-          dispatch({ type: "setSelectedTile", tile });
-          if (state.activeTab !== "maps") {
-            openProjectDomain("maps");
-            dispatch({ type: "setStatus", status: `Selected Special Land Tile ${tile} for painting` });
-          }
+          confirmBeforeDraftDiscard(`select Special Land Tile ${tile}`, () => {
+            dispatch({ type: "setSelectedTile", tile });
+            if (state.activeTab !== "maps") {
+              openProjectDomain("maps");
+              dispatch({ type: "setStatus", status: `Selected Special Land Tile ${tile} for painting` });
+            }
+          });
         }}
         onSelectCell={(cell) => dispatch({ type: "setSelectedCell", cell })}
         onSelectEntity={selectEntity}
@@ -688,8 +701,8 @@ export function App() {
         onSetViewFlag={(flag: MapViewFlag, value: boolean) => dispatch({ type: "setMapViewFlag", flag, value })}
         onClearSelection={clearMapSelection}
         onOpenScripts={openScriptsForEntity}
-        onOpenTool={openProjectTool}
-        onOpenMapCoordinate={openMapCoordinate}
+        onOpenTool={(tab, editor) => confirmBeforeDraftDiscard(`open ${editor.replace(/-/g, " ")}`, () => openProjectTool(tab, editor))}
+        onOpenMapCoordinate={(target) => confirmBeforeDraftDiscard(`open map location ${target.x}, ${target.y}`, () => openMapCoordinate(target))}
         onBeginPaintStroke={(label) => dispatch({ type: "beginCommandGroup", label })}
         onApplyCommand={applyProjectCommand}
         onCommitPaintStroke={() => dispatch({ type: "commitCommandGroup" })}
@@ -747,9 +760,11 @@ export function App() {
           project={state.project}
           catalog={state.libraryCatalog}
           onClose={() => setGlobalSearchOpen(false)}
-          onOpenResult={openGlobalSearchResult}
+          onOpenResult={(result) => confirmBeforeDraftDiscard(`open ${result.title}`, () => openGlobalSearchResult(result))}
         />
       )}
+      {draftGuard.dialog}
     </ProvidenceEditorShell>
+    </DraftChangeGuardProvider>
   );
 }

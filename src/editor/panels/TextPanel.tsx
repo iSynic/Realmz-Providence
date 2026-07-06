@@ -1,5 +1,5 @@
 import { Bold, ChevronLeft, ChevronRight, Copy, Eraser, FileText, Italic, List, MessageSquarePlus, Trash2, Underline, Volume2 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LibraryCatalog, MessageRecord, OptionLabelRecord, Project, ProjectCommand, SelectedEntity } from "../types";
 import { selectEntityFromId } from "../utils";
 import { classicTextByteLength, messageUsageLinks, optionLabelUsageLinks, unsupportedClassicTextChars } from "../contentLinks";
@@ -43,6 +43,7 @@ import {
   displayRangeToRawRange
 } from "../classicTextPreview";
 import { playPreviewUrl, useResolvedPreviewUrl, type PreviewRuntimeContext } from "../previewUrls";
+import { useDraftChangeGuards } from "../app/draftChangeGuard";
 
 const DIVINITY_TEXT_SEPARATOR = `${" ".repeat(20)}\uf8ff${" ".repeat(20)}`;
 type TextAuthoringTab = "strings" | "option-labels" | "scrolling-text";
@@ -82,6 +83,7 @@ export function TextPanel({
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
+  const { confirmBeforeDraftDiscard } = useDraftChangeGuards();
   const [query, setQuery] = useState("");
   const [findQuery, setFindQuery] = useState("");
   const [findCursor, setFindCursor] = useState(0);
@@ -109,10 +111,30 @@ export function TextPanel({
     ?? scrollingTextAssets[0]
     ?? null;
   const nextScrollingTextId = nextScrollingTextResourceId(project);
-  const selectOptionLabel = (id: number) => {
-    setSelectedOptionId(id);
-    onSelectEntity(selectEntityFromId(`option-label:${id}`));
-  };
+  const selectMessage = useCallback((id: number) => {
+    confirmBeforeDraftDiscard(`select String ${id}`, () => onSelectEntity(selectEntityFromId(`message:${id}`)));
+  }, [confirmBeforeDraftDiscard, onSelectEntity]);
+  const selectOptionLabel = useCallback((id: number) => {
+    confirmBeforeDraftDiscard(`select Option Label ${id}`, () => {
+      setSelectedOptionId(id);
+      onSelectEntity(selectEntityFromId(`option-label:${id}`));
+    });
+  }, [confirmBeforeDraftDiscard, onSelectEntity]);
+  const selectScrollingText = useCallback((asset: Project["assets"][number]) => {
+    confirmBeforeDraftDiscard(`select ${asset.label}`, () => {
+      setSelectedScrollingTextAssetId(asset.id);
+      onSelectEntity(selectEntityFromId(asset.id));
+    });
+  }, [confirmBeforeDraftDiscard, onSelectEntity]);
+  const selectTextTab = useCallback((tab: TextAuthoringTab) => {
+    if (tab === activeTab) return;
+    const labels: Record<TextAuthoringTab, string> = {
+      strings: "Strings",
+      "option-labels": "Option Labels",
+      "scrolling-text": "Scrolling Text"
+    };
+    confirmBeforeDraftDiscard(`open ${labels[tab]}`, () => setActiveTab(tab));
+  }, [activeTab, confirmBeforeDraftDiscard]);
   const filteredRecords = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return records;
@@ -268,8 +290,10 @@ export function TextPanel({
             type="button"
             className="btn btn-primary btn-sm"
             onClick={() => {
-              onApplyCommand({ kind: "createTargetRecord", label: `Create String ${nextId}`, recordType: "message", id: nextId });
-              onSelectEntity(selectEntityFromId(`message:${nextId}`));
+              confirmBeforeDraftDiscard(`create String ${nextId}`, () => {
+                onApplyCommand({ kind: "createTargetRecord", label: `Create String ${nextId}`, recordType: "message", id: nextId });
+                onSelectEntity(selectEntityFromId(`message:${nextId}`));
+              });
             }}
           >
             <MessageSquarePlus size={14} /> New String {nextId}
@@ -278,11 +302,13 @@ export function TextPanel({
             type="button"
             className="btn btn-primary btn-sm"
             onClick={() => {
-              const asset = scrollingTextAssetFromDraft(null, nextScrollingTextId, `Scrolling Text ${nextScrollingTextId}`, "");
-              onApplyCommand({ kind: "attachProjectAsset", label: `Create Scrolling Text ${nextScrollingTextId}`, asset });
-              setActiveTab("scrolling-text");
-              setSelectedScrollingTextAssetId(asset.id);
-              onSelectEntity(selectEntityFromId(asset.id));
+              confirmBeforeDraftDiscard(`create Scrolling Text ${nextScrollingTextId}`, () => {
+                const asset = scrollingTextAssetFromDraft(null, nextScrollingTextId, `Scrolling Text ${nextScrollingTextId}`, "");
+                onApplyCommand({ kind: "attachProjectAsset", label: `Create Scrolling Text ${nextScrollingTextId}`, asset });
+                setActiveTab("scrolling-text");
+                setSelectedScrollingTextAssetId(asset.id);
+                onSelectEntity(selectEntityFromId(asset.id));
+              });
             }}
           >
             <FileText size={14} /> New Scrolling Text {nextScrollingTextId}
@@ -291,17 +317,17 @@ export function TextPanel({
       </header>
       <div className="text-authoring-tabs" role="tablist" aria-label="String editors">
         <TutorialTip title="Strings" body={STRINGS_TAB_HELP} side="below">
-          <button type="button" className={activeTab === "strings" ? "active" : ""} role="tab" aria-selected={activeTab === "strings"} onClick={() => setActiveTab("strings")}>
+          <button type="button" className={activeTab === "strings" ? "active" : ""} role="tab" aria-selected={activeTab === "strings"} onClick={() => selectTextTab("strings")}>
             Strings
           </button>
         </TutorialTip>
         <TutorialTip title="Option Labels" body={OPTION_LABELS_TAB_HELP} side="below">
-          <button type="button" className={activeTab === "option-labels" ? "active" : ""} role="tab" aria-selected={activeTab === "option-labels"} onClick={() => setActiveTab("option-labels")}>
+          <button type="button" className={activeTab === "option-labels" ? "active" : ""} role="tab" aria-selected={activeTab === "option-labels"} onClick={() => selectTextTab("option-labels")}>
             Option Labels
           </button>
         </TutorialTip>
         <TutorialTip title="Scrolling Text" body={SCROLLING_TEXT_TAB_HELP} side="below">
-          <button type="button" className={activeTab === "scrolling-text" ? "active" : ""} role="tab" aria-selected={activeTab === "scrolling-text"} onClick={() => setActiveTab("scrolling-text")}>
+          <button type="button" className={activeTab === "scrolling-text" ? "active" : ""} role="tab" aria-selected={activeTab === "scrolling-text"} onClick={() => selectTextTab("scrolling-text")}>
             Scrolling Text
           </button>
         </TutorialTip>
@@ -314,7 +340,7 @@ export function TextPanel({
           findCount={findMatches.length}
           showList={showList}
           onToggleList={() => setShowList((value) => !value)}
-          onSelect={(id) => onSelectEntity(selectEntityFromId(`message:${id}`))}
+          onSelect={selectMessage}
           onFindQueryChange={(value) => {
             setFindQuery(value);
             setFindCursor(0);
@@ -323,7 +349,7 @@ export function TextPanel({
             const first = findMatches[0];
             if (first != null) {
               setFindCursor(0);
-              onSelectEntity(selectEntityFromId(`message:${first}`));
+              selectMessage(first);
             }
           }}
           onFindNext={() => {
@@ -331,12 +357,12 @@ export function TextPanel({
             const currentIndex = findMatches.indexOf(selectedId);
             const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % findMatches.length : findCursor % findMatches.length;
             setFindCursor(nextIndex);
-            onSelectEntity(selectEntityFromId(`message:${findMatches[nextIndex]}`));
+            selectMessage(findMatches[nextIndex]);
           }}
           reviewCount={reviewStringIds.length}
           onFindNextReview={() => {
             const nextReviewId = nextReviewStringId(reviewStringIds, selectedId);
-            if (nextReviewId != null) onSelectEntity(selectEntityFromId(`message:${nextReviewId}`));
+            if (nextReviewId != null) selectMessage(nextReviewId);
           }}
         />
       )}
@@ -361,7 +387,7 @@ export function TextPanel({
                   key={record.id}
                   type="button"
                   className={selected ? "selected" : ""}
-                  onClick={() => onSelectEntity(selectEntityFromId(`message:${record.id}`))}
+                  onClick={() => selectMessage(record.id)}
                 >
                   <strong>String {record.id}</strong>
                   <span>{record.text || "Empty string"}</span>
@@ -386,7 +412,7 @@ export function TextPanel({
               record={selectedRecord}
               records={records}
               previewContext={{ desktopRuntime, projectDir, workspaceDir }}
-              onSelectEntity={onSelectEntity}
+              onSelectEntity={(entity) => confirmBeforeDraftDiscard(`open ${entity.id}`, () => onSelectEntity(entity))}
               onApplyCommand={onApplyCommand}
             />
           ) : (
@@ -414,7 +440,7 @@ export function TextPanel({
                 </div>
               </header>
               {selectedReference ? (
-                <TextReferenceDetail row={selectedReference} onBack={() => setSelectedReferenceId(null)} onInspect={() => onSelectEntity(selectEntityFromId(selectedReference.id))} />
+                <TextReferenceDetail row={selectedReference} onBack={() => setSelectedReferenceId(null)} onInspect={() => confirmBeforeDraftDiscard(`inspect ${selectedReference.label}`, () => onSelectEntity(selectEntityFromId(selectedReference.id)))} />
               ) : (
                 <div className="text-reference-grid">
                   {resourceRows.slice(0, 120).map((row) => (
@@ -440,7 +466,7 @@ export function TextPanel({
           onSelect={selectOptionLabel}
           onShowMore={() => setOptionListLimit((value) => value + 320)}
           onResetListLimit={() => setOptionListLimit(320)}
-          onSelectEntity={onSelectEntity}
+          onSelectEntity={(entity) => confirmBeforeDraftDiscard(`open ${entity.id}`, () => onSelectEntity(entity))}
           onApplyCommand={onApplyCommand}
         />
       ) : (
@@ -451,11 +477,8 @@ export function TextPanel({
           selectedEntity={selectedEntity}
           selectedAsset={selectedScrollingTextAsset}
           nextResourceId={nextScrollingTextId}
-          onSelect={(asset) => {
-            setSelectedScrollingTextAssetId(asset.id);
-            onSelectEntity(selectEntityFromId(asset.id));
-          }}
-          onSelectEntity={onSelectEntity}
+          onSelect={selectScrollingText}
+          onSelectEntity={(entity) => confirmBeforeDraftDiscard(`open ${entity.id}`, () => onSelectEntity(entity))}
           onApplyCommand={onApplyCommand}
         />
       )}
@@ -585,6 +608,7 @@ function MessageEditor({
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
+  const { confirmBeforeDraftDiscard, registerDraftGuard } = useDraftChangeGuards();
   const [text, setText] = useState(record.text);
   const [soundQuery, setSoundQuery] = useState("");
   const byteLength = classicTextByteLength(text);
@@ -606,6 +630,27 @@ function MessageEditor({
     ? [selectedSound, ...filteredSoundOptions.slice(0, 159)]
     : filteredSoundOptions;
   const selectedPreviewUrl = useStringSoundPreviewUrl(selectedSound, currentSoundId, project, previewContext);
+  const applyStringText = useCallback(() => {
+    if (byteLength > 255) return false;
+    onApplyCommand({ kind: "updateMessageRecord", label: `Update String ${record.id}`, id: record.id, changes: { text } });
+    return true;
+  }, [byteLength, onApplyCommand, record.id, text]);
+  const discardStringText = useCallback(() => setText(record.text), [record.text]);
+  useEffect(() => {
+    if (!changed) return;
+    return registerDraftGuard({
+      id: `message:${record.id}`,
+      surface: "text",
+      title: `String ${record.id}`,
+      summary: [
+        `Applied: ${clipText(record.text || "Empty string", 72)}`,
+        `Draft: ${clipText(text || "Empty string", 72)}`,
+        `${byteLength}/255 bytes before export`
+      ],
+      apply: applyStringText,
+      discard: discardStringText
+    });
+  }, [applyStringText, byteLength, changed, discardStringText, record.id, record.text, registerDraftGuard, text]);
   const updateSound = (soundId: number) => onApplyCommand({ kind: "updateStringSound", label: `Set String ${record.id} sound`, messageId: record.id, soundId });
   const updateSoundSelection = (soundId: number) => updateSound(signedSoundValueForSelection(soundId, signedSoundWaitsForCompletion(currentSoundId)));
   const updateSoundSign = (negativeReference: boolean) => updateSound(signedSoundValueForSelection(currentSoundId, negativeReference));
@@ -621,8 +666,10 @@ function MessageEditor({
             type="button"
             className="btn btn-secondary btn-xs"
             onClick={() => {
-              onApplyCommand({ kind: "duplicateMessageRecord", label: `Duplicate String ${record.id}`, fromId: record.id, toId: nextId });
-              onSelectEntity(selectEntityFromId(`message:${nextId}`));
+              confirmBeforeDraftDiscard(`duplicate String ${record.id}`, () => {
+                onApplyCommand({ kind: "duplicateMessageRecord", label: `Duplicate String ${record.id}`, fromId: record.id, toId: nextId });
+                onSelectEntity(selectEntityFromId(`message:${nextId}`));
+              });
             }}
           >
             <Copy size={12} /> Duplicate
@@ -631,8 +678,10 @@ function MessageEditor({
             type="button"
             className="btn btn-secondary btn-xs"
             onClick={() => {
-              setText("");
-              onApplyCommand({ kind: "deleteTargetRecord", label: `Clear String ${record.id}`, recordType: "message", id: record.id });
+              confirmBeforeDraftDiscard(`clear String ${record.id}`, () => {
+                setText("");
+                onApplyCommand({ kind: "deleteTargetRecord", label: `Clear String ${record.id}`, recordType: "message", id: record.id });
+              });
             }}
           >
             <Eraser size={12} /> Clear
@@ -641,7 +690,7 @@ function MessageEditor({
             type="button"
             className="btn btn-primary btn-xs"
             disabled={!changed || byteLength > 255}
-            onClick={() => onApplyCommand({ kind: "updateMessageRecord", label: `Update String ${record.id}`, id: record.id, changes: { text } })}
+            onClick={applyStringText}
           >
             Apply String
           </button>
@@ -756,6 +805,11 @@ function stringSoundForMessage(project: Project, messageId: number) {
   return supportFile.divinityStringSoundId ?? 0;
 }
 
+function clipText(value: string, max: number) {
+  if (value.length <= max) return value;
+  return `${value.slice(0, Math.max(0, max - 3))}...`;
+}
+
 function soundSummaryLabel(option: ScriptTargetOption | null, soundId: number) {
   if (!soundId) return "No sound";
   if (!option) return `Sound ${soundId}`;
@@ -795,6 +849,7 @@ function OptionLabelsWorkbench({
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
+  const { confirmBeforeDraftDiscard } = useDraftChangeGuards();
   const [query, setQuery] = useState("");
   const [showList, setShowList] = useState(true);
   const filteredRecords = useMemo(() => {
@@ -832,8 +887,10 @@ function OptionLabelsWorkbench({
           type="button"
           className="btn btn-primary btn-sm"
           onClick={() => {
-            onApplyCommand({ kind: "createOptionLabel", label: `Create Option Label ${nextId}`, id: nextId });
-            onSelect(nextId);
+            confirmBeforeDraftDiscard(`create Option Label ${nextId}`, () => {
+              onApplyCommand({ kind: "createOptionLabel", label: `Create Option Label ${nextId}`, id: nextId });
+              onSelect(nextId);
+            });
           }}
         >
           <MessageSquarePlus size={14} /> New Label {nextId}
@@ -903,6 +960,7 @@ function OptionLabelEditor({
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
+  const { confirmBeforeDraftDiscard, registerDraftGuard } = useDraftChangeGuards();
   const [text, setText] = useState(record.text);
   const byteLength = classicTextByteLength(text);
   const unsupportedChars = unsupportedClassicTextChars(text);
@@ -911,6 +969,27 @@ function OptionLabelEditor({
   const shortcut = optionLabelShortcut(text);
   const duplicateShortcut = shortcut ? records.some((candidate) => candidate.id !== record.id && optionLabelShortcut(candidate.text) === shortcut) : false;
   const nextId = nextOptionLabelId(records);
+  const applyOptionLabel = useCallback(() => {
+    if (byteLength > 24) return false;
+    onApplyCommand({ kind: "updateOptionLabel", label: `Update Option Label ${record.id}`, id: record.id, changes: { text } });
+    return true;
+  }, [byteLength, onApplyCommand, record.id, text]);
+  const discardOptionLabel = useCallback(() => setText(record.text), [record.text]);
+  useEffect(() => {
+    if (!changed) return;
+    return registerDraftGuard({
+      id: `option-label:${record.id}`,
+      surface: "text",
+      title: `Option Label ${record.id}`,
+      summary: [
+        `Applied: ${clipText(record.text || "Empty label", 72)}`,
+        `Draft: ${clipText(text || "Empty label", 72)}`,
+        `${byteLength}/24 bytes before export`
+      ],
+      apply: applyOptionLabel,
+      discard: discardOptionLabel
+    });
+  }, [applyOptionLabel, byteLength, changed, discardOptionLabel, record.id, record.text, registerDraftGuard, text]);
   return (
     <article className="text-message-editor">
       <header>
@@ -923,8 +1002,10 @@ function OptionLabelEditor({
             type="button"
             className="btn btn-secondary btn-xs"
             onClick={() => {
-              onApplyCommand({ kind: "duplicateOptionLabel", label: `Duplicate Option Label ${record.id}`, fromId: record.id, toId: nextId });
-              onSelect(nextId);
+              confirmBeforeDraftDiscard(`duplicate Option Label ${record.id}`, () => {
+                onApplyCommand({ kind: "duplicateOptionLabel", label: `Duplicate Option Label ${record.id}`, fromId: record.id, toId: nextId });
+                onSelect(nextId);
+              });
             }}
           >
             <Copy size={12} /> Duplicate
@@ -933,8 +1014,10 @@ function OptionLabelEditor({
             type="button"
             className="btn btn-secondary btn-xs"
             onClick={() => {
-              setText("");
-              onApplyCommand({ kind: "clearOptionLabel", label: `Clear Option Label ${record.id}`, id: record.id });
+              confirmBeforeDraftDiscard(`clear Option Label ${record.id}`, () => {
+                setText("");
+                onApplyCommand({ kind: "clearOptionLabel", label: `Clear Option Label ${record.id}`, id: record.id });
+              });
             }}
           >
             <Eraser size={12} /> Clear
@@ -943,7 +1026,7 @@ function OptionLabelEditor({
             type="button"
             className="btn btn-primary btn-xs"
             disabled={!changed || byteLength > 24}
-            onClick={() => onApplyCommand({ kind: "updateOptionLabel", label: `Update Option Label ${record.id}`, id: record.id, changes: { text } })}
+            onClick={applyOptionLabel}
           >
             Apply Label
           </button>
@@ -1021,6 +1104,7 @@ function ScrollingTextWorkbench({
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
+  const { confirmBeforeDraftDiscard } = useDraftChangeGuards();
   const [query, setQuery] = useState("");
   const [listLimit, setListLimit] = useState(320);
   const [selectedImportedResourceId, setSelectedImportedResourceId] = useState<string | null>(null);
@@ -1069,10 +1153,12 @@ function ScrollingTextWorkbench({
           type="button"
           className="btn btn-primary btn-sm"
           onClick={() => {
-            const asset = scrollingTextAssetFromDraft(null, nextResourceId, `Scrolling Text ${nextResourceId}`, "");
-            onApplyCommand({ kind: "attachProjectAsset", label: `Create Scrolling Text ${nextResourceId}`, asset });
-            setSelectedImportedResourceId(null);
-            onSelect(asset);
+            confirmBeforeDraftDiscard(`create Scrolling Text ${nextResourceId}`, () => {
+              const asset = scrollingTextAssetFromDraft(null, nextResourceId, `Scrolling Text ${nextResourceId}`, "");
+              onApplyCommand({ kind: "attachProjectAsset", label: `Create Scrolling Text ${nextResourceId}`, asset });
+              setSelectedImportedResourceId(null);
+              onSelect(asset);
+            });
           }}
         >
           <FileText size={14} /> New Scrolling Text {nextResourceId}
@@ -1096,7 +1182,7 @@ function ScrollingTextWorkbench({
                     type="button"
                     className={selected ? "selected" : ""}
                     onClick={() => {
-                      setSelectedImportedResourceId(resource.entityId);
+                      confirmBeforeDraftDiscard(`select Scrolling Text ${resource.resourceId}`, () => setSelectedImportedResourceId(resource.entityId));
                     }}
                   >
                     <strong>Scrolling Text {resource.resourceId}</strong>
@@ -1115,8 +1201,10 @@ function ScrollingTextWorkbench({
                   type="button"
                   className={selected ? "selected" : ""}
                   onClick={() => {
-                    setSelectedImportedResourceId(null);
-                    onSelect(asset);
+                    confirmBeforeDraftDiscard(`select Scrolling Text ${asset.resourceId}`, () => {
+                      setSelectedImportedResourceId(null);
+                      onSelect(asset);
+                    });
                   }}
                 >
                   <strong>Scrolling Text {asset.resourceId}</strong>
@@ -1139,11 +1227,13 @@ function ScrollingTextWorkbench({
               project={project}
               resource={selectedImportedResource}
               onApplyCommand={(command) => {
-                onApplyCommand(command);
-                if (command.kind === "attachProjectAsset" && command.asset.resourceType.trim() === "TEXT") {
-                  setSelectedImportedResourceId(null);
-                  onSelect(command.asset);
-                }
+                confirmBeforeDraftDiscard(`make Scrolling Text ${selectedImportedResource.resourceId} editable`, () => {
+                  onApplyCommand(command);
+                  if (command.kind === "attachProjectAsset" && command.asset.resourceType.trim() === "TEXT") {
+                    setSelectedImportedResourceId(null);
+                    onSelect(command.asset);
+                  }
+                });
               }}
             />
           ) : selectedAsset ? (
@@ -1264,6 +1354,7 @@ function ScrollingTextEditor({
   assets: Project["assets"];
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
+  const { confirmBeforeDraftDiscard } = useDraftChangeGuards();
   const [resourceIdDraft, setResourceIdDraft] = useState(String(asset.resourceId));
   const [label, setLabel] = useState(asset.label);
   const [text, setText] = useState(() => decodeTextAsset(asset));
@@ -1286,9 +1377,17 @@ function ScrollingTextEditor({
   const styleCompanion = useMemo(() => sameIdStyleCompanion(project, resourceId), [project, resourceId]);
   const applyBlocked = !validResourceId || duplicateResourceId;
   const applyScrollingText = () => {
-    if (applyBlocked || !changed) return;
+    if (applyBlocked) return false;
+    if (!changed) return true;
     const nextAsset = scrollingTextAssetFromDraft(asset, resourceId, label.trim() || `Scrolling Text ${resourceId}`, text);
     onApplyCommand({ kind: "replaceProjectAsset", label: `Update Scrolling Text ${resourceId}`, assetId: asset.id, asset: nextAsset });
+    return true;
+  };
+  const discardScrollingText = () => {
+    setResourceIdDraft(String(asset.resourceId));
+    setLabel(asset.label);
+    setText(decodeTextAsset(asset));
+    setTextSelectionRange({ start: 0, end: 0 });
   };
   return (
     <article className="text-message-editor text-scrolling-resource-editor">
@@ -1301,7 +1400,11 @@ function ScrollingTextEditor({
           <button
             type="button"
             className="btn btn-danger btn-xs"
-            onClick={() => onApplyCommand({ kind: "deleteProjectAsset", label: `Delete Scrolling Text ${asset.resourceId}`, assetId: asset.id })}
+            onClick={() => {
+              confirmBeforeDraftDiscard(`delete Scrolling Text ${asset.resourceId}`, () => {
+                onApplyCommand({ kind: "deleteProjectAsset", label: `Delete Scrolling Text ${asset.resourceId}`, assetId: asset.id });
+              });
+            }}
           >
             <Trash2 size={12} /> Delete
           </button>
@@ -1338,6 +1441,7 @@ function ScrollingTextEditor({
           textEditable
           onTextChange={setText}
           onApplyTextChanges={applyScrollingText}
+          onDiscardTextChanges={discardScrollingText}
           textApplyBlocked={applyBlocked}
           onApplyCommand={onApplyCommand}
         />
@@ -1385,6 +1489,7 @@ function StyleCompanionEditor({
   textEditable = false,
   onTextChange,
   onApplyTextChanges,
+  onDiscardTextChanges,
   textApplyBlocked = true,
   onApplyCommand
 }: {
@@ -1397,10 +1502,12 @@ function StyleCompanionEditor({
   onTextSelectionRangeChange?: (range: TextSelectionRange) => void;
   textEditable?: boolean;
   onTextChange?: (text: string) => void;
-  onApplyTextChanges?: () => void;
+  onApplyTextChanges?: () => boolean;
+  onDiscardTextChanges?: () => void;
   textApplyBlocked?: boolean;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
+  const { registerDraftGuard } = useDraftChangeGuards();
   const companion = useMemo(() => sameIdStyleCompanion(project, resourceId), [project, resourceId]);
   const [styleHexDraft, setStyleHexDraft] = useState("");
   useEffect(() => {
@@ -1492,13 +1599,56 @@ function StyleCompanionEditor({
   const canApplyTextChanges = textChanged && onApplyTextChanges != null;
   const canApplyStyleRunChanges = styleRunDraftResult.ok && styleRunBytes != null && styleRunBytesDirty;
   const applyChangesDisabled = textApplyBlocked || (!canApplyTextChanges && !canApplyStyleRunChanges);
-  const applyViewportChanges = () => {
-    if (textApplyBlocked) return;
-    if (canApplyTextChanges) onApplyTextChanges?.();
-    if (canApplyStyleRunChanges && styleRunBytes) {
+  const applyViewportChanges = useCallback(() => {
+    if (textApplyBlocked) return false;
+    if (styleHexDirty && !parsedStyleBytes.ok) return false;
+    if (canApplyTextChanges && onApplyTextChanges?.() === false) return false;
+    if (styleHexDirty && parsedStyleBytes.ok) {
+      applyStyleBytes(
+        parsedStyleBytes.bytes,
+        companion.managedAsset?.provenance ?? "Authored in Providence Scrolling Text style bytes",
+        companion.managedAsset ? `Update Style ${resourceId}` : `Author Style ${resourceId}`
+      );
+    } else if (canApplyStyleRunChanges && styleRunBytes) {
       applyStyleBytes(styleRunBytes, "Authored in Providence Scrolling Text style runs", `Update Style ${resourceId}`);
     }
-  };
+    return true;
+  }, [
+    canApplyStyleRunChanges,
+    canApplyTextChanges,
+    companion.managedAsset,
+    onApplyTextChanges,
+    parsedStyleBytes,
+    resourceId,
+    styleHexDirty,
+    styleRunBytes,
+    textApplyBlocked
+  ]);
+  const discardViewportChanges = useCallback(() => {
+    onDiscardTextChanges?.();
+    setStyleHexDraft(companion.styleHex ?? "");
+    setStyleRunDrafts(parsedStyleRuns.ok ? styleRunDraftsFromRuns(parsedStyleRuns.runs) : []);
+  }, [companion.styleHex, onDiscardTextChanges, parsedStyleRuns]);
+  const draftSummary = useMemo(() => {
+    const summary: string[] = [];
+    if (textChanged) summary.push(`TEXT body changed (${decodedText.rawByteLength.toLocaleString()} byte preview)`);
+    if (styleRunBytesDirty) summary.push("Style runs changed in the visual editor");
+    if (styleHexDirty) summary.push("Raw styl bytes changed");
+    if (textApplyBlocked) summary.push("Resource ID must be valid and unique before applying");
+    if (styleHexDirty && !parsedStyleBytes.ok) summary.push(parsedStyleBytes.error);
+    return summary.length > 0 ? summary : ["No pending scrolling text changes"];
+  }, [decodedText.rawByteLength, parsedStyleBytes, styleHexDirty, styleRunBytesDirty, textApplyBlocked, textChanged]);
+  useEffect(() => {
+    if (!textChanged && !styleRunBytesDirty && !styleHexDirty) return;
+    return registerDraftGuard({
+      id: `scrolling-text:${resourceId}`,
+      surface: "text",
+      title: `Scrolling Text ${resourceId}`,
+      summary: draftSummary,
+      apply: applyViewportChanges,
+      discard: discardViewportChanges
+    });
+  }, [applyViewportChanges, discardViewportChanges, draftSummary, registerDraftGuard, resourceId, styleHexDirty, styleRunBytesDirty, textChanged]);
   const styleState = companion.managedAsset
     ? "Authored style override"
     : companion.importedEntity

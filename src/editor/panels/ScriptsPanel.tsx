@@ -10,6 +10,7 @@ import { TutorialTip } from "../components/TutorialTip";
 import { playPreviewUrl, useIconPreviewUrl, useResolvedPreviewUrl, type PreviewRuntimeContext } from "../previewUrls";
 import { categoryColor } from "../components/TileSprite";
 import { CollapsibleSection, EmptyState, FieldRow, FloatingWorkbenchPanel, PanelSection, ScrollArea } from "../ui";
+import { useDraftChangeGuards } from "../app/draftChangeGuard";
 import { ACTION_OPTIONS, actionOptionFor, isDispatcherNoopOpcode, normalizeStepOpcode } from "../realmzActions";
 import { edcdFieldNamesForShape } from "../realmzEdcd";
 import { opcodeIdMeaning, parameterLabelsForOpcode } from "../opcodeCrosswalk";
@@ -118,13 +119,6 @@ type CombatMacroContext = {
   kind: CombatMacroContextKind;
   references: CombatMacroReference[];
   rootType: string | null;
-};
-
-type ScriptDraftNavigationGuard = (label: string, action: () => void) => void;
-
-type PendingScriptDraftNavigation = {
-  label: string;
-  action: () => void;
 };
 
 type PendingScriptDestructiveAction = {
@@ -396,7 +390,7 @@ export function ScriptsPanel({
   activeEditor?: string;
 }) {
   const [, startScriptTransition] = useTransition();
-  const draftNavigationGuardRef = useRef<ScriptDraftNavigationGuard | null>(null);
+  const { confirmBeforeDraftDiscard } = useDraftChangeGuards();
   const effectiveEditor = activeEditor === "domain"
     ? "action-points"
     : activeEditor === "ed3-evidence"
@@ -410,14 +404,8 @@ export function ScriptsPanel({
   }, [onApplyCommand]);
   const handleSelectEditor = useCallback((editor: string) => {
     if (editor === effectiveEditor) return;
-    const action = () => onSelectEditor?.(editor);
-    const guard = draftNavigationGuardRef.current;
-    if (guard) guard(`switch to ${scriptPanelTitle(editor)}`, action);
-    else action();
-  }, [effectiveEditor, onSelectEditor]);
-  const handleRegisterDraftNavigationGuard = useCallback((guard: ScriptDraftNavigationGuard | null) => {
-    draftNavigationGuardRef.current = guard;
-  }, []);
+    confirmBeforeDraftDiscard(`switch to ${scriptPanelTitle(editor)}`, () => onSelectEditor?.(editor));
+  }, [confirmBeforeDraftDiscard, effectiveEditor, onSelectEditor]);
   return (
     <div className="editor-full-panel scripts-workbench">
       <ScriptEditorTabs activeEditor={effectiveEditor} onSelectEditor={handleSelectEditor} />
@@ -434,7 +422,6 @@ export function ScriptsPanel({
         onOpenTool={onOpenTool}
         onOpenMapCoordinate={onOpenMapCoordinate}
         onApplyCommand={handleApplyCommand}
-        onRegisterDraftNavigationGuard={handleRegisterDraftNavigationGuard}
       />
     </div>
   );
@@ -491,8 +478,7 @@ function ScriptAuthoringPanel({
   onSelectEditor,
   onOpenTool,
   onOpenMapCoordinate,
-  onApplyCommand,
-  onRegisterDraftNavigationGuard
+  onApplyCommand
 }: {
   project: Project | null;
   catalog?: LibraryCatalog | null;
@@ -506,8 +492,8 @@ function ScriptAuthoringPanel({
   onOpenTool?: (tab: "text", editor: string) => void;
   onOpenMapCoordinate?: (target: MapCoordinateTarget) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
-  onRegisterDraftNavigationGuard?: (guard: ScriptDraftNavigationGuard | null) => void;
 }) {
+  const { registerDraftGuard, confirmBeforeDraftDiscard } = useDraftChangeGuards();
   const activeTabKind = scriptTabKind(activeEditor);
   const scripts = useMemo(
     () => project?.triggers.filter((trigger) => triggerVisibleForEditor(project, trigger, activeEditor)) ?? [],
@@ -523,7 +509,6 @@ function ScriptAuthoringPanel({
   const [detailSurface, setDetailSurface] = usePersistentValue<ScriptDetailSurface>("scripts.detailSurface", "docked");
   const [targetDrawerOpen, setTargetDrawerOpen] = usePersistentBoolean("scripts.targetDrawer.v2.open", false);
   const [selectedScriptId, setSelectedScriptId] = useState<string | null>(null);
-  const [pendingDraftNavigation, setPendingDraftNavigation] = useState<PendingScriptDraftNavigation | null>(null);
   const [pendingDestructiveAction, setPendingDestructiveAction] = useState<PendingScriptDestructiveAction | null>(null);
   const [previewTarget, setPreviewTarget] = useState<ScriptPreviewTarget | null>(null);
   const [newActionPoint, setNewActionPoint] = useState({ mapId: projectMaps[0]?.id ?? "", x: 1, y: 1 });
@@ -860,17 +845,17 @@ function ScriptAuthoringPanel({
     ? projectMaps.filter((map) => map.levelType === (selectedTrigger.levelType ?? "land"))
     : projectMaps;
   const issueCounts = issueCountsBySlot(triggerDiagnostics);
-  const setSelectedDraft = (values: { rawCode: number; id: number }) => setDraft((current) => ({ ...current, [selectedKey]: values }));
-  const discardSelectedDraft = () => {
+  const setSelectedDraft = useCallback((values: { rawCode: number; id: number }) => setDraft((current) => ({ ...current, [selectedKey]: values })), [selectedKey]);
+  const discardSelectedDraft = useCallback(() => {
     setDraft((current) => {
       if (!(selectedKey in current)) return current;
       const next = { ...current };
       delete next[selectedKey];
       return next;
     });
-  };
-  const applySelectedSlot = () => {
-    if (!selectedTrigger) return;
+  }, [selectedKey]);
+  const applySelectedSlot = useCallback(() => {
+    if (!selectedTrigger) return false;
     onApplyCommand?.({
       kind: "updateActionSlot",
       label: `Update slot ${selectedSlot}`,
@@ -879,26 +864,22 @@ function ScriptAuthoringPanel({
       rawCode: selectedDraft.rawCode,
       id: selectedDraft.id
     });
-  };
-  const requestDraftNavigation = useCallback<ScriptDraftNavigationGuard>((label, action) => {
-    if (!selectedDraftDirty) {
-      action();
-      return;
-    }
-    setPendingDraftNavigation({ label, action });
-  }, [selectedDraftDirty]);
+    return true;
+  }, [onApplyCommand, selectedDraft.id, selectedDraft.rawCode, selectedSlot, selectedTrigger]);
+  const requestDraftNavigation = useCallback((label: string, action: () => void) => {
+    confirmBeforeDraftDiscard(label, action);
+  }, [confirmBeforeDraftDiscard]);
   useEffect(() => {
-    onRegisterDraftNavigationGuard?.(requestDraftNavigation);
-    return () => onRegisterDraftNavigationGuard?.(null);
-  }, [onRegisterDraftNavigationGuard, requestDraftNavigation]);
-  const continuePendingDraftNavigation = (mode: "apply" | "discard") => {
-    const pending = pendingDraftNavigation;
-    if (!pending) return;
-    setPendingDraftNavigation(null);
-    if (mode === "apply") applySelectedSlot();
-    else discardSelectedDraft();
-    pending.action();
-  };
+    if (!selectedTrigger || !selectedDraftDirty) return;
+    return registerDraftGuard({
+      id: `script-step:${selectedTrigger.id}:${selectedSlot}`,
+      surface: "scripts",
+      title: `${scriptLabel(project, selectedTrigger)} - Step ${selectedSlot + 1}`,
+      summary: scriptDraftGuardSummary(project, selectedTrigger, selectedSlot, selectedAction, selectedDraft, selectedDefinition),
+      apply: applySelectedSlot,
+      discard: discardSelectedDraft
+    });
+  }, [applySelectedSlot, discardSelectedDraft, project, registerDraftGuard, selectedAction, selectedDefinition, selectedDraft, selectedDraftDirty, selectedSlot, selectedTrigger]);
   const handleSelectTrigger = useCallback((trigger: TriggerRecord) => {
     if (trigger.id === selectedTrigger?.id) return;
     requestDraftNavigation(`select ${scriptLabel(project, trigger)}`, () => performSelectTrigger(trigger));
@@ -1524,14 +1505,6 @@ function ScriptAuthoringPanel({
           )}
         </div>
       </div>
-      {pendingDraftNavigation && (
-        <ScriptDraftNavigationDialog
-          destination={pendingDraftNavigation.label}
-          onApply={() => continuePendingDraftNavigation("apply")}
-          onDiscard={() => continuePendingDraftNavigation("discard")}
-          onCancel={() => setPendingDraftNavigation(null)}
-        />
-      )}
       {pendingDestructiveAction && (
         <ScriptDestructiveActionDialog
           title={pendingDestructiveAction.title}
@@ -1549,50 +1522,6 @@ function ScriptAuthoringPanel({
         />
       )}
     </section>
-  );
-}
-
-function ScriptDraftNavigationDialog({
-  destination,
-  onApply,
-  onDiscard,
-  onCancel
-}: {
-  destination: string;
-  onApply: () => void;
-  onDiscard: () => void;
-  onCancel: () => void;
-}) {
-  return (
-    <div className="script-draft-navigation-backdrop" role="presentation" onMouseDown={onCancel}>
-      <div
-        className="script-draft-navigation-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="script-draft-navigation-title"
-        onMouseDown={(event) => event.stopPropagation()}
-      >
-        <header>
-          <div>
-            <strong id="script-draft-navigation-title">Unapplied Step Changes</strong>
-            <small>Apply or discard the selected step before leaving it.</small>
-          </div>
-          <button type="button" className="btn btn-secondary btn-xs icon-only" aria-label="Cancel navigation" onClick={onCancel}>
-            <X size={12} />
-          </button>
-        </header>
-        <p>
-          You are about to {destination}. The selected step has changes that are not applied to the script yet.
-        </p>
-        <div className="script-draft-navigation-actions">
-          <button type="button" className="btn btn-secondary btn-xs" onClick={onCancel}>Cancel</button>
-          <button type="button" className="btn btn-danger btn-xs" onClick={onDiscard}>Discard Changes</button>
-          <button type="button" className="btn btn-primary btn-xs" onClick={onApply}>
-            <Save size={12} /> Apply Changes
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -2591,6 +2520,25 @@ function selectEntityForFlowTarget(target: { targetKind: string; value: number }
 function humanActionValueLabel(label: string) {
   const clean = label.replace(/\bID\b/g, "Value").replace(/\bNumber\b/g, "Value").replace(/\s+/g, " ").trim();
   return clean && clean !== "Value" ? clean : "Value";
+}
+
+function scriptDraftGuardSummary(
+  project: Project,
+  trigger: TriggerRecord,
+  slot: number,
+  applied: Action | undefined,
+  draft: { rawCode: number; id: number },
+  definition: ScriptActionDefinition
+) {
+  const appliedLabel = applied
+    ? `${scriptActionDefinitionFor(applied.rawCode).shortLabel} (CODE ${applied.rawCode}, ID ${applied.id})`
+    : "Empty";
+  return [
+    `Script: ${scriptLabel(project, trigger)}`,
+    `Step: ${slot + 1}`,
+    `Applied: ${appliedLabel}`,
+    `Draft: ${definition.shortLabel} (CODE ${draft.rawCode}, ID ${draft.id})`
+  ];
 }
 
 function actionAuthoringStateLabel(definition: ScriptActionDefinition, combatMacroContext?: CombatMacroContext | null) {

@@ -2909,6 +2909,100 @@ button.documents-source-chip {
   background: #12161a;
 }
 
+.draft-change-dialog {
+  width: min(640px, 100%);
+  max-height: min(760px, calc(100vh - 48px));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  border: 1px solid #36516a;
+  border-radius: 8px;
+  background: #10161c;
+  box-shadow: 0 26px 90px rgba(0, 0, 0, 0.74);
+}
+
+.draft-change-dialog header,
+.draft-change-dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #243545;
+  background: #15191e;
+}
+
+.draft-change-dialog header > div {
+  display: grid;
+  gap: 3px;
+}
+
+.draft-change-dialog header strong {
+  color: #f3f7fb;
+  font-size: 14px;
+}
+
+.draft-change-dialog header small,
+.draft-change-dialog-body li {
+  color: #a8b4c0;
+  font-size: 11px;
+}
+
+.draft-change-dialog-body {
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.draft-change-dialog-body section {
+  display: grid;
+  gap: 8px;
+}
+
+.draft-change-dialog-body h4 {
+  color: #9fd0ff;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.draft-change-dialog-body article {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid #273847;
+  border-radius: 6px;
+  background: #0b1218;
+}
+
+.draft-change-dialog-body article strong {
+  color: #eef6ff;
+  font-size: 13px;
+}
+
+.draft-change-dialog-body ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.draft-change-dialog-error {
+  margin: 0;
+  padding: 9px 10px;
+  border: 1px solid #7c4630;
+  border-radius: 5px;
+  background: #211411;
+  color: #ffc8b7;
+  font-size: 12px;
+}
+
+.draft-change-dialog-actions {
+  justify-content: flex-end;
+  border-top: 1px solid #243545;
+  border-bottom: 0;
+}
+
 
 
 .editor-sidebar {
