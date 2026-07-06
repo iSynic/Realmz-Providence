@@ -372,7 +372,7 @@ export function targetPickerConfig(opcode: number) {
     9: { label: "Sound Resource", hint: "Select a playable sound resource or managed sound asset." },
     10: { label: "Treasure Target", hint: "Select a treasure record.", recordType: "treasure" },
     27: { label: "Picture Resource", hint: "Select a picture resource or managed picture asset." },
-    29: { label: "Map Item", hint: "Select map item 0 through 19.", searchable: false },
+    29: { label: "Player Map", hint: "Select the Maps/Notes entry to give or display.", searchPlaceholder: "Search map #, name, or note..." },
     35: { label: "Simple Encounter", hint: "Select the simple encounter this action mutates.", recordType: "simpleEncounter" },
     39: { label: "Extra Action Point", hint: "Select the Extra Action Point this action runs." },
     44: { label: "Complex Encounter", hint: "Select the complex encounter this action mutates.", recordType: "complexEncounter" },
@@ -477,14 +477,7 @@ export function targetOptionsForOpcode(project: Project | null, opcode: number, 
     }
   }
   if (code === 29) {
-    for (let id = 0; id <= 19; id += 1) {
-      options.push({
-        key: `map-item:${id}`,
-        value: id,
-        label: `Map Item ${id}`,
-        detail: id === 0 ? "Given automatically at adventure start" : "Player-visible map item"
-      });
-    }
+    addPlayerMapTargets(project, options);
   }
   if (code === 97 || code === 106) {
     for (const map of project.maps) {
@@ -552,6 +545,7 @@ function targetOptionsDependencyKey(project: Project | null, opcode: number, cat
   else if (code === 62) parts.push("assets", objectCacheKey(project.assets), "resources", objectCacheKey(project.semanticSchema?.entities), "catalog", catalogAssets);
   else if (code === 9) parts.push("assets", objectCacheKey(project.assets), "sounds", objectCacheKey(assetCatalog?.sounds), "catalog", catalogAssets);
   else if (code === 27) parts.push("assets", objectCacheKey(project.assets), "pictures", objectCacheKey(assetCatalog?.pictures), "icons", objectCacheKey(assetCatalog?.icons), "catalog", catalogAssets);
+  else if (code === 29) parts.push("mapRecords", objectCacheKey(project.mapRecords), "triggers", objectCacheKey(project.triggers));
   else if (code === 97 || code === 106) parts.push("maps", objectCacheKey(project.maps));
   else if (isDirectMacroOpcode(code)) parts.push("triggers", objectCacheKey(project.triggers));
   else parts.push("project", objectCacheKey(project));
@@ -679,14 +673,9 @@ function optionFromTypedProjectTarget(project: Project, code: number, id: number
     return textResourceOptionForId(project, id, catalog);
   }
   if (code === 29) {
-    return id >= 0 && id <= 19
-      ? {
-          key: `map-item:${id}`,
-          value: id,
-          label: `Map Item ${id}`,
-          detail: id === 0 ? "Given automatically at adventure start" : "Player-visible map item"
-        }
-      : null;
+    const record = project.mapRecords?.find((candidate) => candidate.id === id);
+    if (record) return playerMapTargetOption(record, usageCounts(project, [29]));
+    return id >= 0 && id <= 19 ? fallbackPlayerMapTargetOption(id) : null;
   }
   if (code === 97 || code === 106) {
     const map = project.maps.find((candidate) => candidate.index === id);
@@ -929,6 +918,59 @@ function addTypedProjectTargets(project: Project, code: number, options: ScriptT
       options.push({ key: `quest:${quest.id}`, value: quest.id, label: quest.label, detail: quest.note || "Quest metadata", entity: { type: "questFlag", id: `quest:${quest.id}` } });
     }
   }
+}
+
+function addPlayerMapTargets(project: Project, options: ScriptTargetOption[]) {
+  const used = usageCounts(project, [29]);
+  const seen = new Set<number>();
+  for (const record of project.mapRecords ?? []) {
+    if (record.id < 0 || record.id > 19) continue;
+    seen.add(record.id);
+    options.push(playerMapTargetOption(record, used));
+  }
+  for (let id = 0; id <= 19; id += 1) {
+    if (seen.has(id)) continue;
+    options.push(fallbackPlayerMapTargetOption(id, used.get(id) ?? 0));
+  }
+}
+
+function playerMapTargetOption(record: Project["mapRecords"][number], used: Map<number, number>): ScriptTargetOption {
+  const primaryName = record.primaryName?.trim() || record.name?.trim() || `Player Map ${record.id}`;
+  const secondaryName = record.secondaryName?.trim();
+  const target = `${record.isDungeon ? "Dungeon" : "Land"} ${record.level} at ${record.startX},${record.startY}`;
+  const display = playerMapTargetDisplay(record);
+  const summaryParts = [
+    secondaryName && secondaryName !== primaryName ? `Secondary: ${secondaryName}` : "",
+    record.note?.trim() || "",
+    `${used.get(record.id) ?? 0} script use(s)`
+  ].filter(Boolean);
+  return {
+    key: `map-item:${record.id}`,
+    value: record.id,
+    label: `Map ${record.id}: ${primaryName}`,
+    detail: `${target} | ${display}`,
+    summary: summaryParts.join(" | "),
+    compatibility: "Maps/Notes entry",
+    sourceState: record.authored || record.mapNameAuthored ? "Authored" : "Imported",
+    entity: selectEntityFromId(`map-record:${record.id}`)
+  };
+}
+
+function fallbackPlayerMapTargetOption(id: number, used = 0): ScriptTargetOption {
+  return {
+    key: `map-item:${id}`,
+    value: id,
+    label: `Map ${id}`,
+    detail: id === 0 ? "Maps/Notes entry | given automatically at adventure start" : "Maps/Notes entry",
+    summary: `${used} script use(s)`,
+    compatibility: "Maps/Notes entry"
+  };
+}
+
+function playerMapTargetDisplay(record: Project["mapRecords"][number]) {
+  if (record.pictId !== 0) return `PICT ${record.pictId}`;
+  if (record.show < 0) return `Scrolling Text ${record.show}`;
+  return "Map view";
 }
 
 function addTextResourceTargets(project: Project, options: ScriptTargetOption[], catalog?: LibraryCatalog | null) {

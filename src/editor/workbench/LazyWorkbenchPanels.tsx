@@ -12,6 +12,7 @@ export const LazyExportPanel = lazyNamed(() => import("../panels/ExportPanel"), 
 export const LazyLibraryHubPanel = lazyNamed(() => import("../panels/LibraryHubPanel"), "LibraryHubPanel");
 export const LazyLinterPanel = lazyNamed(() => import("../panels/LinterPanel"), "LinterPanel");
 export const LazyMapsPanel = lazyNamed(() => import("../panels/MapsPanel"), "MapsPanel");
+export const LazyPlayerMapsPanel = lazyNamed(() => import("../panels/PlayerMapsPanel"), "PlayerMapsPanel");
 export const LazyRecordsPanel = lazyNamed(() => import("../panels/RecordsPanel"), "RecordsPanel");
 export const LazyResourcesPanel = lazyNamed(() => import("../panels/ResourcesPanel"), "ResourcesPanel");
 export const LazyRulesPanel = lazyNamed(() => import("../panels/RulesPanel"), "RulesPanel");

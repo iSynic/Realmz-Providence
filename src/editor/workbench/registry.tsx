@@ -7,6 +7,7 @@ import {
   FileArchive,
   Flag,
   Grid3X3,
+  Map as MapIcon,
   MessageSquareText,
   Spline,
   Sword,
@@ -29,6 +30,7 @@ export const WORKBENCHES = [
 
 export const DOMAIN_ICONS: Record<EditorTab, JSX.Element> = {
   maps: <Grid3X3 size={15} />,
+  "player-maps": <MapIcon size={15} />,
   scripts: <Spline size={15} />,
   scenario: <Flag size={15} />,
   encounters: <BookOpen size={15} />,
@@ -44,6 +46,7 @@ export const DOMAIN_ICONS: Record<EditorTab, JSX.Element> = {
 
 export const DOMAIN_ORDER: EditorTab[] = [
   "maps",
+  "player-maps",
   "scripts",
   "text",
   "scenario",
@@ -61,15 +64,25 @@ const t = (tool: EditorToolDescriptor) => tool;
 export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
   maps: {
     id: "maps",
-    label: "Maps",
-    shortLabel: "Maps",
-    description: "Land levels, dungeon levels, layout, map starts, Action Points, and random rectangles.",
+    label: "Land/Dungeon Maps",
+    shortLabel: "Land/Dungeon",
+    description: "Land levels, dungeon levels, layout, tile painting, Action Points, and random rectangles.",
     help: "Use the contextual sidebar for core map setup or selection details. The canvas stays the primary surface.",
     tools: [
       t({ id: "land", label: "Land Editor", iconLabel: "L", workbench: "project", description: "Paint and inspect 90 x 90 land levels.", entityTypes: ["map"], defaultInspector: "map" }),
       t({ id: "dungeon", label: "Dungeon Editor", iconLabel: "D", workbench: "project", description: "Inspect dungeon levels, darkness, LOS, and render provenance.", entityTypes: ["map"], defaultInspector: "map" }),
-      t({ id: "layout", label: "Land Layout", iconLabel: "LL", workbench: "project", description: "Scenario-level arrangement, starts, and map-record navigation.", entityTypes: ["land-layout", "map record"], defaultInspector: "semantic" }),
+      t({ id: "layout", label: "Land Layout", iconLabel: "LL", workbench: "project", description: "Scenario-level outdoor arrangement and starts.", entityTypes: ["land-layout"], defaultInspector: "semantic" }),
       t({ id: "special-land", label: "Special Land Tiles", iconLabel: "SL", workbench: "both", description: "32 x 32 cicn-backed negative tile IDs.", entityTypes: ["special-land-tile"], defaultInspector: "resource" })
+    ]
+  },
+  "player-maps": {
+    id: "player-maps",
+    label: "Player Maps",
+    shortLabel: "Player Maps",
+    description: "Maps/Notes helper maps, names, pictures, markers, and description text.",
+    help: "Create and edit the Maps/Notes entries players can find in game.",
+    tools: [
+      t({ id: "map-records", label: "Player Maps", iconLabel: "PM", workbench: "project", description: "Edit player map names, previews, markers, and notes.", entityTypes: ["map record"], defaultInspector: "semantic" })
     ]
   },
   scripts: {
@@ -223,6 +236,7 @@ export function domainCount(
 ) {
   if (domain === "linter") return issueCount;
   if (domain === "maps") return listCount(project?.maps);
+  if (domain === "player-maps") return listCount(project?.mapRecords);
   if (domain === "scripts") return listCount(project?.triggers) + listCount(project?.extracodes);
   if (domain === "text") return listCount(project?.messages) + listCount(project?.optionLabels);
   if (domain === "scenario") return project ? [
@@ -265,7 +279,8 @@ function directProjectToolCount(toolId: string, project: Project | null) {
   if (!project) return 0;
   if (toolId === "land") return filteredListCount(project.maps, (map) => map.levelType === "land");
   if (toolId === "dungeon") return filteredListCount(project.maps, (map) => map.levelType === "dungeon");
-  if (toolId === "layout") return listCount(project.mapRecords) + (project.landLayout ? 1 : 0);
+  if (toolId === "layout") return project.landLayout ? 1 : 0;
+  if (toolId === "map-records") return listCount(project.mapRecords);
   if (toolId === "action-points") return filteredListCount(project.triggers, (trigger) => trigger.source !== "Data ED3");
   if (toolId === "macros" || toolId === "ed3-evidence") return filteredListCount(project.triggers, (trigger) => trigger.source === "Data ED3");
   if (toolId === "global-macros") return project.scenario?.globalMacroHooks ? 1 : 0;

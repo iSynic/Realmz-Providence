@@ -827,6 +827,8 @@ pub struct MapRecord {
     #[serde(default)]
     pub name_source: Option<String>,
     #[serde(default)]
+    pub map_name_authored: bool,
+    #[serde(default)]
     pub raw_bytes: Vec<u8>,
     #[serde(default)]
     pub authored: bool,

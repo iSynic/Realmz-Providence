@@ -25,22 +25,20 @@ import { LandTileAtlasEditor } from "./maps/LandTilesWorkbench";
 import { MapDiagnostics, MapNumberField } from "./maps/MapFormControls";
 import { RandomAreasWorkbench, RandomRectangleEditor, randomRectDiagnostics } from "./maps/RandomEncountersWorkbench";
 import { clearRegion, fillRegion, paintModeLabel, regionLabel, replaceRegion, replaceWholeMap } from "./maps/mapRegionUiUtils";
-import { MapRecordsWorkbench, RecordSelectionDetails } from "./maps/MapRecordsWorkbench";
+import { RecordSelectionDetails } from "./maps/MapRecordsWorkbench";
 import { SMART_BRUSH_PRESETS, smartBrushProfileForTileset } from "../map/smartTerrainBrush";
 
 export { LandLayoutEditor };
 export type { LandLayoutCellSelection };
 export { LandTileAtlasEditor };
 export { RandomAreasWorkbench };
-export { MapRecordsWorkbench };
 
 type MapContextFocus = "flags" | "atlas" | "layout" | "source";
 const MAP_TOOLSET_MODES: Array<{ id: MapWorkbenchMode; label: string; body: string }> = [
   { id: "canvas", label: "Canvas", body: "Map painting and placement" },
   { id: "land-layout", label: "Land Layout", body: "Outdoor adjacency grid" },
   { id: "land-tiles", label: "Land Tiles", body: "Tile attributes and combat map" },
-  { id: "random-areas", label: "Random Encounters", body: "Encounter rectangles" },
-  { id: "map-records", label: "Maps Menu", body: "Menu maps, starts, and notes" }
+  { id: "random-areas", label: "Random Encounters", body: "Encounter rectangles" }
 ];
 
 const PAINT_PALETTE_STORAGE_KEY = "providence.mapPaintPalette.v1";
@@ -479,16 +477,6 @@ function MapModeInspector({
           ]}
         />
       )}
-      {mode === "map-records" && (
-        <InfoGrid
-          rows={[
-            ["Current Map", selectedMap?.name ?? "none"],
-            ["Records", mapRecords.length],
-            ["Editing", "Canvas-backed"],
-            ["Next Step", "Full table planned"]
-          ]}
-        />
-      )}
       <div className="context-action-stack compact">
         <button className="btn btn-primary btn-xs context-action-button" type="button" onClick={() => onSetWorkbenchMode("canvas")}>
           Return To Canvas
@@ -504,7 +492,6 @@ function modeLabel(mode: MapWorkbenchMode) {
     case "land-layout": return "Land Layout";
     case "land-tiles": return "Land Tiles";
     case "random-areas": return "Random Encounters";
-    case "map-records": return "Maps Menu";
   }
 }
 
@@ -831,10 +818,6 @@ function MapToolsetModeNotice({
     "random-areas": {
       title: "Random Encounter Areas",
       body: "These are Realmz random encounter rectangles: chance, battle ranges, text, sound, and extra Action Point doors."
-    },
-    "map-records": {
-      title: "Maps Menu mode",
-      body: "Use the center table to browse starts, picture links, rectangles, notes, and map-record fields."
     }
   };
   return (

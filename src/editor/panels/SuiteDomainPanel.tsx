@@ -18,14 +18,21 @@ import { ruleCasteName, ruleRaceName } from "../ruleNames";
 
 const DOMAIN_CONFIG: Record<EditorTab, { title: string; subtitle: string; editors: DomainEditor[] }> = {
   maps: {
-    title: "Maps",
-    subtitle: "Land, layout, dungeon, map notes, and special land tile workflows.",
+    title: "Land/Dungeon Maps",
+    subtitle: "Land levels, dungeon levels, layout, and special land tile workflows.",
     editors: [
       { id: "land", label: "Land Editor", entityTypes: ["map"] },
       { id: "land-layout", label: "Land Layout", entityTypes: ["land-layout"], createType: "land-layout" },
       { id: "map-editor", label: "Map Editor", entityTypes: ["map"] },
       { id: "dungeon", label: "Dungeon Editor", entityTypes: ["map"] },
       { id: "special-land", label: "Special Land Tiles", entityTypes: ["special-land-tile"], createType: "special-land-tile" }
+    ]
+  },
+  "player-maps": {
+    title: "Player Maps",
+    subtitle: "Maps/Notes helper maps, names, pictures, markers, and description text.",
+    editors: [
+      { id: "map-records", label: "Player Maps", entityTypes: ["map record"], createType: "map record" }
     ]
   },
   scripts: {

@@ -565,6 +565,21 @@
   padding: 7px 8px;
 }
 
+.map-number-field.compact {
+  width: max-content;
+}
+
+.map-number-field.compact input {
+  width: 5ch;
+  min-width: 5ch;
+  padding: 6px 5px;
+  text-align: right;
+}
+
+.map-number-field.plain input {
+  appearance: textfield;
+}
+
 
 
 .map-number-field input:focus,
@@ -1963,6 +1978,360 @@
   gap: 12px;
 }
 
+.player-maps-panel {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  padding: 14px;
+  background: #101113;
+}
+
+.player-maps-pane {
+  width: min(100%, 1500px);
+  max-height: calc(100dvh - 92px);
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.player-maps-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.player-maps-header h2 {
+  margin: 0;
+}
+
+.player-maps-header p {
+  margin: 4px 0 0;
+  color: #9fb4c5;
+}
+
+.player-maps-header strong {
+  color: #f4c84c;
+  white-space: nowrap;
+}
+
+.player-maps-pane .map-records-table {
+  max-height: none;
+  overflow: visible;
+}
+
+.player-maps-pane .map-records-layout {
+  grid-template-columns: minmax(190px, 270px) minmax(0, 1fr);
+}
+
+.player-maps-pane .map-record-detail {
+  justify-items: center;
+}
+
+.player-maps-pane .record-selection-details {
+  width: min(100%, 1120px);
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+  justify-self: center;
+}
+
+.player-maps-pane .map-record-editor {
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid #2b5d83;
+  border-left: 3px solid #3a9be8;
+  border-radius: 7px;
+  background: #0b141c;
+  box-shadow: 0 0 0 1px rgba(58, 155, 232, 0.07);
+  padding: 0 10px 10px;
+}
+
+.player-maps-pane .map-record-editor > summary {
+  margin: 0 -10px 10px;
+  border-bottom: 1px solid #263746;
+  background: #101d2a;
+}
+
+.player-maps-pane .map-record-editor > summary b {
+  color: #8fc7ff;
+}
+
+.player-maps-pane .map-records-table {
+  gap: 5px;
+  padding: 6px;
+}
+
+.player-maps-pane .map-records-table button {
+  grid-template-columns: 46px minmax(0, 1fr) 34px;
+  gap: 6px;
+  padding: 7px;
+}
+
+.player-map-name-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  border: 1px solid #253340;
+  border-radius: 7px;
+  background: #0d1319;
+}
+
+.player-map-text-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.player-map-text-field > span,
+.player-map-text-field > .tutorial-tip > span {
+  color: #70b8f3;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.player-map-text-field input,
+.player-map-text-field textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid #2d3b49;
+  border-radius: 6px;
+  background: #0b1118;
+  color: #f5fbff;
+  padding: 8px 10px;
+  font: inherit;
+  line-height: 1.35;
+}
+
+.player-map-text-field input:focus,
+.player-map-text-field textarea:focus {
+  outline: none;
+  border-color: #4d91d6;
+  box-shadow: 0 0 0 1px rgba(77, 145, 214, 0.24);
+}
+
+.player-map-name-field {
+  min-width: 0;
+}
+
+.player-map-name-field input {
+  min-height: 34px;
+}
+
+.player-map-name-field.secondary {
+  margin-left: 0;
+  padding-left: 0;
+  border-left: 0;
+}
+
+.player-map-name-actions {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-left: 0;
+  padding: 8px 0 0;
+  border-top: 1px solid #2a3c4b;
+}
+
+.player-map-name-actions .tutorial-tip {
+  display: inline-flex;
+}
+
+.player-map-name-actions .btn {
+  min-height: 28px;
+  padding: 5px 9px;
+  white-space: nowrap;
+}
+
+.player-map-visual-editor {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 560px);
+  gap: 14px;
+  align-items: start;
+  justify-content: center;
+  min-width: 0;
+}
+
+.player-map-settings-panel {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  width: min(100%, 560px);
+  min-width: 0;
+}
+
+.player-map-compact-fields {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 10px 14px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  border: 1px solid #253340;
+  border-radius: 7px;
+  background: #0d1319;
+}
+
+.player-map-compact-fields .map-number-field.compact {
+  width: 100%;
+}
+
+.player-map-compact-fields .map-number-field.compact input {
+  width: 8ch;
+  min-width: 8ch;
+}
+
+.player-map-compact-fields .map-check-field {
+  grid-column: 1 / -1;
+}
+
+.player-map-note-field {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  border: 1px solid #253340;
+  border-radius: 7px;
+  background: #0d1319;
+}
+
+.player-map-note-field textarea {
+  min-height: 156px;
+  resize: vertical;
+}
+
+.player-maps-pane .map-record-editor .player-map-note-field textarea {
+  min-height: 156px;
+}
+
+.player-map-action-stack {
+  align-items: stretch;
+}
+
+.player-map-preview-card {
+  display: grid;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 10px;
+  border: 1px solid #263747;
+  border-radius: 7px;
+  background: #0d141b;
+}
+
+.player-map-preview-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.player-map-preview-card header div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.player-map-preview-card header span {
+  color: #9fb4c5;
+}
+
+.player-map-preview-card canvas,
+.player-map-picture-preview,
+.player-map-scrolling-preview {
+  width: min(480px, 100%);
+  aspect-ratio: 480 / 416;
+  height: auto;
+  max-width: 100%;
+  border: 1px solid #d4c790;
+  background: #0a0d11;
+  image-rendering: pixelated;
+}
+
+.player-map-preview-card canvas.placing-marker {
+  cursor: crosshair;
+  outline: 2px solid #4a9be8;
+}
+
+.player-map-picture-preview {
+  display: grid;
+  place-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.player-map-scrolling-preview {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  padding: 18px;
+  color: #19320f;
+  background: #f4f0dc;
+  text-align: center;
+}
+
+.player-map-scrolling-preview strong {
+  color: #17340e;
+}
+
+.player-map-scrolling-preview span {
+  max-width: 240px;
+  color: #36513a;
+  line-height: 1.35;
+}
+
+.player-map-picture-preview img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.player-map-picture-preview span {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  padding: 3px 5px;
+  border-radius: 4px;
+  background: rgba(7, 10, 14, 0.78);
+  color: #d5e4ef;
+  font-size: 10px;
+}
+
+.player-map-marker-tools {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+}
+
+.player-map-marker-tools label {
+  display: grid;
+  gap: 2px;
+  color: #9ed0ff;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.player-map-marker-tools select {
+  width: 64px;
+}
+
 
 
 .random-areas-toolbar,
@@ -1992,6 +2361,37 @@
   border: 1px solid #253340;
   border-radius: 7px;
   background: #0d1319;
+}
+
+.map-record-list-title {
+  color: #8fc7ff;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.map-record-list-group {
+  display: grid;
+  gap: 5px;
+}
+
+.map-record-list-group + .map-record-list-group {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #253340;
+}
+
+.map-record-technical-body {
+  display: grid;
+  gap: 10px;
+}
+
+.map-record-technical-body h4 {
+  margin: 0;
+  color: #9ed0ff;
+  font-size: 11px;
+  text-transform: uppercase;
 }
 
 
@@ -2057,6 +2457,41 @@
   font-weight: 850;
 }
 
+.map-records-table button em.map-record-picture-badge {
+  justify-self: end;
+  min-width: 30px;
+  line-height: 1.05;
+  text-align: right;
+  text-transform: uppercase;
+  white-space: normal;
+}
+
+.map-records-table button em.map-record-picture-badge.terrain {
+  color: #8fc7ff;
+}
+
+.map-records-table button em.map-record-picture-badge.picture {
+  color: #f3ca76;
+}
+
+.map-records-table button em.map-record-picture-badge.scrolling-text {
+  color: #d78fff;
+}
+
+.player-map-slot-badge {
+  display: grid;
+  place-items: center;
+  min-height: 32px;
+  border: 1px solid #284966;
+  border-radius: 5px;
+  background: #0c1a25;
+  color: #9ed0ff;
+  font-size: 10px;
+  line-height: 1.05;
+  text-align: center;
+  text-transform: uppercase;
+}
+
 
 
 .random-area-row strong {
@@ -2086,6 +2521,35 @@
   .map-records-toolbar,
   .combat-build-visuals {
     grid-template-columns: 1fr;
+  }
+
+  .player-map-visual-editor,
+  .player-maps-pane .map-records-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .player-maps-pane .record-selection-details,
+  .player-map-settings-panel {
+    width: 100%;
+  }
+
+  .player-map-visual-editor {
+    justify-content: stretch;
+  }
+
+  .player-map-compact-fields {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .player-map-name-field.secondary,
+  .player-map-name-actions {
+    margin-left: 0;
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .player-map-name-actions {
+    justify-content: flex-start;
   }
 }
 

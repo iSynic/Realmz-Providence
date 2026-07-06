@@ -21,10 +21,10 @@ import { BROWSER_PREVIEW_STATUS, EditorAction, EditorState } from "../store";
 import { AtlasEntry, IconEntry, Project, ProvidenceWorkspace, TilesetAsset } from "../types";
 import type { SemanticMappingProgress } from "../types";
 import { commandError } from "../utils";
-import { isPaintableSpecialLandLibraryAsset, isSemanticMappingPending } from "./appUtils";
+import { isPaintableSpecialLandLibraryAsset, isSemanticMappingPending, playerMapMarkerIconIds } from "./appUtils";
 import type { BrowserSemanticBuildProgress } from "../browser/semantic";
 
-const BROWSER_ICON_OVERLAY_PRELOAD_LIMIT = 180;
+const BROWSER_ICON_OVERLAY_PRELOAD_LIMIT = 1024;
 const SEMANTIC_MAPPING_PHASE_TOTAL = 11;
 const DESKTOP_SEMANTIC_MAPPING_STAGES = [
   { afterMs: 0, phase: "sources", label: "Preparing Source Snapshot", completed: 0 },
@@ -357,7 +357,9 @@ export function useAppBootstrapEffects({
       const projectCatalogIconAssets = (state.project.assetCatalog.icons ?? []).filter((asset) => asset.resourceType === "cicn");
       const libraryIconAssets = (state.libraryCatalog?.assets ?? []).filter(isPaintableSpecialLandLibraryAsset);
       const realmzActorIconAssets = (state.libraryCatalog?.assets ?? []).filter((asset) => isRealmzActorOrCreatureIconLibraryAsset(asset));
+      const realmzReferenceIconAssets = (state.libraryCatalog?.assets ?? []).filter((asset) => isRealmzReferenceIconLibraryAsset(asset));
       const mapIconIds = state.project.maps.flatMap((map) => referencedMapIconIds(map.tiles));
+      const playerMapIconIds = (state.project.mapRecords ?? []).flatMap(playerMapMarkerIconIds);
       const projectIconIds = [
         ...(state.project.assetCatalog.icons ?? [])
           .filter((asset) => asset.resourceType === "cicn")
@@ -369,6 +371,8 @@ export function useAppBootstrapEffects({
       const specialLibraryIconIds = libraryIconAssets
         .filter((asset) => asset.resourceId != null && !isActorOrCreatureIconId(Math.abs(asset.resourceId)))
         .flatMap((asset) => asset.resourceId == null ? [] : iconCandidateIdsForResource(asset.resourceId));
+      const playerMapIconIdSet = new Set(playerMapIconIds.flatMap(iconCandidateIdsForResource));
+      const mapIconIdSet = new Set(mapIconIds.flatMap(iconCandidateIdsForResource));
       const monsterIconIds = [
         ...(state.project.monsters ?? []).flatMap((monster) => iconCandidateIdsForResource(monster.iconId)),
         ...(state.project.monsterSets ?? []).flatMap((set) => set.monsters.flatMap((monster) => iconCandidateIdsForResource(monster.iconId)))
@@ -392,6 +396,7 @@ export function useAppBootstrapEffects({
           .flatMap((asset) => asset.resourceId == null ? [] : iconCandidateIdsForResource(asset.resourceId))
       ];
       const rawIds = uniqueIconIds([
+        ...playerMapIconIds,
         ...mapIconIds,
         ...projectIconIds,
         ...specialReferenceIconIds,
@@ -425,6 +430,11 @@ export function useAppBootstrapEffects({
               return iconCandidateIdsForResource(asset.resourceId).includes(id);
             });
             const realmzActorIconAsset = realmzActorIconAssets.find((asset) => {
+              if (asset.resourceId == null) return false;
+              if (isMonsterMashLibraryAsset(asset) && !monsterOverrideSourceIds.has(Math.abs(asset.resourceId))) return false;
+              return iconCandidateIdsForResource(asset.resourceId).includes(id);
+            });
+            const realmzReferenceIconAsset = realmzReferenceIconAssets.find((asset) => {
               if (asset.resourceId == null) return false;
               return iconCandidateIdsForResource(asset.resourceId).includes(id);
             });
@@ -463,9 +473,10 @@ export function useAppBootstrapEffects({
               const referenceUrl = browserReferenceIconUrl(id);
               if (referenceUrl) urls.push(referenceUrl);
             }
+            const allowReferenceIconAsset = iconIdMatchesSet(playerMapIconIdSet, id) || iconIdMatchesSet(mapIconIdSet, id) || isActorOrCreatureIconId(Math.abs(id));
             const preferredLibraryAsset = isActorOrCreatureIconId(Math.abs(id))
-              ? realmzActorIconAsset ?? libraryAsset
-              : libraryAsset;
+              ? realmzActorIconAsset ?? (allowReferenceIconAsset ? realmzReferenceIconAsset : null) ?? libraryAsset
+              : (allowReferenceIconAsset ? realmzReferenceIconAsset : null) ?? libraryAsset;
             if (preferredLibraryAsset) {
               try {
                 const libraryUrl = desktopRuntime
@@ -587,11 +598,11 @@ function waitForBrowserPaint() {
 }
 
 function shouldBuildSemanticSchemaForTab(tab: EditorState["activeTab"]) {
-  return ["scripts", "encounters", "combat", "economy", "rules", "assets", "records", "linter"].includes(tab);
+  return ["player-maps", "scripts", "encounters", "combat", "economy", "rules", "assets", "records", "linter"].includes(tab);
 }
 
 function shouldHydrateBrowserReferenceTileAttributesForTab(tab: EditorState["activeTab"]) {
-  return tab === "maps" || tab === "linter";
+  return tab === "maps" || tab === "player-maps" || tab === "linter";
 }
 
 function hasBrowserReferenceTileAttributes(project: Project) {
@@ -613,11 +624,11 @@ function cloneProjectForReferenceTileAttributes(project: Project): Project {
 }
 
 function shouldLoadTileAtlasesForTab(tab: EditorState["activeTab"]) {
-  return tab === "maps";
+  return tab === "maps" || tab === "player-maps";
 }
 
 function shouldLoadIconOverlaysForTab(tab: EditorState["activeTab"]) {
-  return tab === "maps" || tab === "combat";
+  return tab === "maps" || tab === "player-maps" || tab === "combat";
 }
 
 function isInlineAssetUrl(value: string) {
@@ -639,8 +650,7 @@ async function loadBrowserReferencePictureAsset(catalog: EditorState["libraryCat
 function iconCandidateIdsForResource(resourceId: number) {
   return [...new Set([
     ...tileIconCandidates(resourceId),
-    ...tileIconCandidates(-resourceId),
-    resourceId > 200 ? resourceId : null
+    resourceId
   ].filter((id): id is number => typeof id === "number"))];
 }
 
@@ -655,10 +665,21 @@ function uniqueIconIds(ids: number[]) {
   return out;
 }
 
+function iconIdMatchesSet(ids: Set<number>, id: number) {
+  const absId = Math.abs(id);
+  return ids.has(id) || ids.has(absId) || ids.has(-absId);
+}
+
 function isRealmzActorOrCreatureIconLibraryAsset(asset: { source?: string; resourceType?: string | null; resourceId?: number | null; type?: string; label?: string; relativePath?: string }) {
   if (asset.resourceType !== "cicn" || asset.resourceId == null) return false;
   if (!isActorOrCreatureIconId(Math.abs(asset.resourceId))) return false;
   if (isMonsterMashLibraryAsset(asset)) return false;
+  const text = `${asset.source ?? ""} ${asset.type ?? ""} ${asset.label ?? ""} ${asset.relativePath ?? ""}`.toLowerCase();
+  return text.includes(":realmz:") || text.includes("realmz-reference") || text.includes("the family jewels");
+}
+
+function isRealmzReferenceIconLibraryAsset(asset: { source?: string; resourceType?: string | null; resourceId?: number | null; type?: string; label?: string; relativePath?: string }) {
+  if (asset.resourceType !== "cicn" || asset.resourceId == null) return false;
   const text = `${asset.source ?? ""} ${asset.type ?? ""} ${asset.label ?? ""} ${asset.relativePath ?? ""}`.toLowerCase();
   return text.includes(":realmz:") || text.includes("realmz-reference") || text.includes("the family jewels");
 }

@@ -10,6 +10,7 @@ import {
   Flag,
   Grid3X3,
   Hand,
+  Map as MapIcon,
   MessageSquareText,
   MousePointer2,
   RectangleHorizontal,
@@ -36,7 +37,8 @@ export const TILE_CHOICES = [
 ];
 
 export const TABS: { id: EditorTab; label: string; icon: JSX.Element }[] = [
-  { id: "maps", label: "Maps", icon: <Grid3X3 size={15} /> },
+  { id: "maps", label: "Land/Dungeon Maps", icon: <Grid3X3 size={15} /> },
+  { id: "player-maps", label: "Player Maps", icon: <MapIcon size={15} /> },
   { id: "scripts", label: "Action Points", icon: <Spline size={15} /> },
   { id: "text", label: "Strings", icon: <MessageSquareText size={15} /> },
   { id: "scenario", label: "Scenario", icon: <Flag size={15} /> },

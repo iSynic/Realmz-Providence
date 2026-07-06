@@ -6,7 +6,8 @@ import {
   isPaintableSpecialLandLibraryAsset,
   isProjectEmpty,
   mapIdForEntity,
-  nextMapFocusNonce
+  nextMapFocusNonce,
+  playerMapMarkerIconIds
 } from "./editor/app/appUtils";
 import { useAssetActions } from "./editor/app/useAssetActions";
 import { useAppBootstrapEffects } from "./editor/app/useAppBootstrapEffects";
@@ -20,8 +21,8 @@ import {
 } from "./editor/map/renderValues";
 import { clampCell, tileValueAt } from "./editor/map/geometry";
 import { editorReducer, initialEditorState, BROWSER_PREVIEW_STATUS } from "./editor/store";
-import { ActiveWorkbench, AssetSearchHint, EditorTab, MapCoordinateTarget, MapEntity, MapViewFlag, ProjectCommand, SelectedEntity } from "./editor/types";
-import { hasDesktopRuntime, issuesFor } from "./editor/utils";
+import { ActiveWorkbench, AssetSearchHint, EditorTab, MapCoordinateTarget, MapEntity, MapRecord, MapViewFlag, ProjectCommand, SelectedEntity } from "./editor/types";
+import { hasDesktopRuntime, issuesFor, selectEntityFromId } from "./editor/utils";
 import {
   extraActionPointClassification,
   semanticMapRecordsForMap,
@@ -238,7 +239,9 @@ export function App() {
       state.project
         ? [
             ...new Set([
+              "map-icon-loader-v4",
               ...importedMapIconIds,
+              ...state.project.mapRecords.flatMap(playerMapMarkerIconIds),
               ...tileIconCandidates(state.selectedTile),
               ...(state.project.assetCatalog.icons ?? [])
                 .filter((asset) => asset.resourceType === "cicn")
@@ -264,6 +267,7 @@ export function App() {
       state.libraryCatalog?.assets,
       state.project?.assetCatalog.icons,
       state.project?.assets,
+      state.project?.mapRecords,
       state.selectedTile
     ]
   );
@@ -372,6 +376,15 @@ export function App() {
   }
 
   function selectEntity(entity: SelectedEntity) {
+    if (entity.id.startsWith("map-record:")) {
+      const mapId = mapIdForEntity(state.project, entity.id);
+      if (mapId) dispatch({ type: "setSelectedMap", id: mapId });
+      dispatch({ type: "selectEntity", entity });
+      openProjectDomain("player-maps");
+      dispatch({ type: "setActiveEditor", editor: "map-records" });
+      dispatch({ type: "setStatus", status: "Opened Player Map record." });
+      return;
+    }
     const match = entity.id.match(/^map:(land|dungeon):(\d+)$/);
     if (match && state.project) {
       const mapId = `${match[1]}:${match[2]}`;
@@ -521,6 +534,24 @@ export function App() {
     dispatch({ type: "setSelectedCell", cell: { x, y, tile: tileValueAt(map, x, y) } });
     dispatch({ type: "setMapFocusTarget", target: { kind: "cell", mapId: map.id, x, y, nonce: nextMapFocusNonce() } });
     dispatch({ type: "setStatus", status: `Opened ${map.name} at ${x}, ${y}.` });
+  }
+
+  function openPlayerMapTarget(record: MapRecord) {
+    const mapId = `${record.isDungeon ? "dungeon" : "land"}:${record.level}`;
+    const map = state.project?.maps.find((candidate) => candidate.id === mapId);
+    if (!map) {
+      dispatch({ type: "setStatus", status: `No ${record.isDungeon ? "dungeon" : "land"} level ${record.level} exists for Player Map ${record.id}.` });
+      return;
+    }
+    const entity = selectEntityFromId(`map-record:${record.id}`);
+    openProjectDomain("maps");
+    dispatch({ type: "setActiveEditor", editor: "domain" });
+    dispatch({ type: "setSelectedMap", id: map.id });
+    dispatch({ type: "setTool", tool: "select" });
+    dispatch({ type: "setMapViewFlag", flag: "showMapRecords", value: true });
+    dispatch({ type: "selectEntity", entity });
+    dispatch({ type: "setMapFocusTarget", target: { kind: "entity", mapId: map.id, entity, nonce: nextMapFocusNonce() } });
+    dispatch({ type: "setStatus", status: `Opened ${map.name} for Player Map ${record.id}.` });
   }
 
   function openProjectDomain(domain: EditorTab) {
@@ -703,6 +734,7 @@ export function App() {
         onOpenScripts={openScriptsForEntity}
         onOpenTool={(tab, editor) => confirmBeforeDraftDiscard(`open ${editor.replace(/-/g, " ")}`, () => openProjectTool(tab, editor))}
         onOpenMapCoordinate={(target) => confirmBeforeDraftDiscard(`open map location ${target.x}, ${target.y}`, () => openMapCoordinate(target))}
+        onOpenPlayerMapTarget={(record) => confirmBeforeDraftDiscard(`open Player Map ${record.id} target`, () => openPlayerMapTarget(record))}
         onBeginPaintStroke={(label) => dispatch({ type: "beginCommandGroup", label })}
         onApplyCommand={applyProjectCommand}
         onCommitPaintStroke={() => dispatch({ type: "commitCommandGroup" })}

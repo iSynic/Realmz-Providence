@@ -20,6 +20,9 @@ export function MapNumberField({
   onCommit,
   help,
   commitOnChange = false,
+  compact = false,
+  plain = false,
+  maxLength,
   min = -32768,
   max = 32767
 }: {
@@ -28,6 +31,9 @@ export function MapNumberField({
   onCommit: (value: number) => void;
   help?: string;
   commitOnChange?: boolean;
+  compact?: boolean;
+  plain?: boolean;
+  maxLength?: number;
   min?: number;
   max?: number;
 }) {
@@ -45,7 +51,7 @@ export function MapNumberField({
     if (next !== value) onCommit(next);
   };
   return (
-    <label className="map-number-field">
+    <label className={`map-number-field${compact ? " compact" : ""}${plain ? " plain" : ""}`}>
       <span>
         {help ? (
           <TutorialTip title={label} body={help} side="right">
@@ -54,10 +60,12 @@ export function MapNumberField({
         ) : label}
       </span>
       <input
-        type="number"
+        type={plain ? "text" : "number"}
         aria-label={label}
-        min={min}
-        max={max}
+        inputMode={plain ? "numeric" : undefined}
+        min={plain ? undefined : min}
+        max={plain ? undefined : max}
+        maxLength={maxLength}
         value={draft}
         onChange={(event) => {
           const nextDraft = event.currentTarget.value;

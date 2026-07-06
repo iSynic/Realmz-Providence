@@ -4,7 +4,8 @@ import { domainCount } from "../workbench/registry";
 import { TutorialTip } from "./TutorialTip";
 
 const RAIL_HINTS: Record<EditorTab, { short: string; title: string; detail: string }> = {
-  maps: { short: "Maps", title: "Maps", detail: "Land levels, dungeon levels, tile painting, Action Points, Random Rectangles" },
+  maps: { short: "Land/Dungeon", title: "Land/Dungeon Maps", detail: "Land levels, dungeon levels, tile painting, Action Points, Random Rectangles" },
+  "player-maps": { short: "Player Maps", title: "Player Maps", detail: "Maps/Notes helper maps, names, pictures, markers, and notes" },
   scripts: { short: "Action Points", title: "Action Points", detail: "Action Points, reusable actions, global events, and quest links" },
   scenario: { short: "Scenario", title: "Scenario", detail: "Startup information, restrictions, contact data, global events, registration" },
   encounters: { short: "Encounters", title: "Encounters", detail: "Simple, complex, rogue, and timed encounters" },

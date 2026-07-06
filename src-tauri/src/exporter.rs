@@ -1,8 +1,8 @@
 use crate::error::{IoPath, ProvidenceError, Result};
 use crate::importer::RAW_SOURCES_DIR;
 use crate::project::{
-    LevelType, MonsterIconOverride, MonsterIconOverrideSource, ProvidenceProject, ScenarioTarget,
-    TargetCompatibilityBuckets, TargetCompatibilityIssue,
+    LevelType, MapEntity, MonsterIconOverride, MonsterIconOverrideSource, ProvidenceProject,
+    ScenarioTarget, TargetCompatibilityBuckets, TargetCompatibilityIssue,
 };
 use crate::realmz::{
     write_battles, write_caste_overrides, write_complex_encounters, write_custom_landlook_metadata,
@@ -967,26 +967,38 @@ fn map_name_resource_updates(
     project: &ProvidenceProject,
     original_resource_fork: &[u8],
 ) -> Vec<ResourceForkEntry> {
-    if project.map_records.is_empty() {
+    map_name_resource_updates_for_records(
+        &project.map_records,
+        &project.maps,
+        original_resource_fork,
+    )
+}
+
+fn map_name_resource_updates_for_records(
+    map_records: &[crate::project::MapRecord],
+    maps: &[MapEntity],
+    original_resource_fork: &[u8],
+) -> Vec<ResourceForkEntry> {
+    if map_records.is_empty() {
         return Vec::new();
     }
     let existing = parse_resource_fork_entries(original_resource_fork);
+    let has_authored_names = map_records.iter().any(|record| record.map_name_authored);
     if existing
         .iter()
         .any(|entry| entry.resource_type == "STR#" && entry.id == -102)
+        && !has_authored_names
         && existing
             .iter()
             .any(|entry| entry.resource_type == "STR#" && entry.id == -101)
     {
         return Vec::new();
     }
-    let primary_names: Vec<String> = project
-        .map_records
+    let primary_names: Vec<String> = map_records
         .iter()
-        .map(|record| map_record_primary_name(project, record))
+        .map(|record| map_record_primary_name(maps, record))
         .collect();
-    let secondary_names: Vec<String> = project
-        .map_records
+    let secondary_names: Vec<String> = map_records
         .iter()
         .map(|record| {
             record
@@ -1016,14 +1028,11 @@ fn map_name_resource_updates(
     ]
 }
 
-fn map_record_primary_name(
-    project: &ProvidenceProject,
-    record: &crate::project::MapRecord,
-) -> String {
+fn map_record_primary_name(maps: &[MapEntity], record: &crate::project::MapRecord) -> String {
     for candidate in [
         record.name.as_deref(),
         record.primary_name.as_deref(),
-        map_name_for_record_target(project, record).as_deref(),
+        map_name_for_record_target(maps, record).as_deref(),
     ] {
         if let Some(name) = candidate.map(str::trim).filter(|name| !name.is_empty()) {
             return name.to_string();
@@ -1033,7 +1042,7 @@ fn map_record_primary_name(
 }
 
 fn map_name_for_record_target(
-    project: &ProvidenceProject,
+    maps: &[MapEntity],
     record: &crate::project::MapRecord,
 ) -> Option<String> {
     let level_type = if record.is_dungeon {
@@ -1042,9 +1051,7 @@ fn map_name_for_record_target(
         LevelType::Land
     };
     let level_index = usize::try_from(record.level).ok()?;
-    project
-        .maps
-        .iter()
+    maps.iter()
         .find(|map| map.level_type == level_type && map.index == level_index)
         .filter(|map| {
             map.name
@@ -1075,13 +1082,18 @@ fn scenario_shell_file_name(project: &ProvidenceProject) -> &str {
 mod tests {
     use super::{
         managed_asset_resource_bytes, managed_resource_type_supported,
-        monster_icon_override_updates, preserve_imported_fixed_length,
-        scenario_icon_resource_updates, ResourceExportResult,
+        map_name_resource_updates_for_records, monster_icon_override_updates,
+        preserve_imported_fixed_length, scenario_icon_resource_updates, ResourceExportResult,
     };
     use crate::project::{
-        Confidence, ManagedAsset, ManagedAssetExportState, ManagedAssetKind, MonsterIconOverride,
-        MonsterIconOverrideSource, Provenance, ScenarioIconResource, ScenarioIconResourceSource,
+        Confidence, LevelType, ManagedAsset, ManagedAssetExportState, ManagedAssetKind, MapEntity,
+        MapRecord, MapRecordRect, MapRender, MonsterIconOverride, MonsterIconOverrideSource,
+        Provenance, RenderMode, ScenarioIconResource, ScenarioIconResourceSource,
         ScenarioItemRecord,
+    };
+    use crate::resource_fork::{
+        decode_string_list_resource, encode_string_list_resource, write_resource_fork,
+        ResourceForkEntry,
     };
     use base64::{engine::general_purpose::STANDARD, Engine as _};
     use std::fs;
@@ -1215,6 +1227,81 @@ mod tests {
         assert_eq!(bytes, vec![1u8, 2, 7, 6, 5]);
     }
 
+    #[test]
+    fn map_name_resource_updates_preserve_existing_names_until_authored() {
+        let original = write_resource_fork(&[
+            map_names_resource(-102, &["Old Primary 0", "Old Primary 1"]),
+            map_names_resource(-101, &["Old Secondary 0", "Old Secondary 1"]),
+        ])
+        .unwrap();
+        let records = vec![map_record_with_names(
+            0,
+            "Old Primary 0",
+            "Old Secondary 0",
+            false,
+        )];
+
+        let updates = map_name_resource_updates_for_records(&records, &[], &original);
+
+        assert!(updates.is_empty());
+    }
+
+    #[test]
+    fn map_name_resource_updates_rewrite_authored_primary_and_secondary_names() {
+        let original = write_resource_fork(&[
+            map_names_resource(-102, &["Old Primary 0", "Old Primary 1"]),
+            map_names_resource(-101, &["Old Secondary 0", "Old Secondary 1"]),
+        ])
+        .unwrap();
+        let records = vec![
+            map_record_with_names(0, "New Primary 0", "New Secondary 0", true),
+            map_record_with_names(1, "Old Primary 1", "Old Secondary 1", false),
+        ];
+
+        let updates = map_name_resource_updates_for_records(&records, &[], &original);
+
+        assert_eq!(updates.len(), 2);
+        let primary = updates
+            .iter()
+            .find(|entry| entry.resource_type == "STR#" && entry.id == -102)
+            .expect("primary Map Names resource");
+        let secondary = updates
+            .iter()
+            .find(|entry| entry.resource_type == "STR#" && entry.id == -101)
+            .expect("secondary Map Names resource");
+        assert_eq!(
+            decode_string_list_resource(&primary.data),
+            vec!["New Primary 0".to_string(), "Old Primary 1".to_string()]
+        );
+        assert_eq!(
+            decode_string_list_resource(&secondary.data),
+            vec!["New Secondary 0".to_string(), "Old Secondary 1".to_string()]
+        );
+    }
+
+    #[test]
+    fn map_name_resource_updates_can_fallback_to_related_level_name() {
+        let records = vec![MapRecord {
+            name: None,
+            primary_name: None,
+            secondary_name: None,
+            level: 2,
+            ..map_record_with_names(0, "", "", true)
+        }];
+        let maps = vec![map_entity(LevelType::Land, 2, "Bywater Clue Map")];
+
+        let updates = map_name_resource_updates_for_records(&records, &maps, &[]);
+        let primary = updates
+            .iter()
+            .find(|entry| entry.resource_type == "STR#" && entry.id == -102)
+            .expect("primary Map Names resource");
+
+        assert_eq!(
+            decode_string_list_resource(&primary.data),
+            vec!["Bywater Clue Map".to_string()]
+        );
+    }
+
     fn scenario_item_with_icon(id: usize, icon_id: i16) -> ScenarioItemRecord {
         ScenarioItemRecord {
             id,
@@ -1269,6 +1356,84 @@ mod tests {
                 byte_length: 100,
                 confidence: Confidence::Confirmed,
             },
+        }
+    }
+
+    fn map_names_resource(id: i16, names: &[&str]) -> ResourceForkEntry {
+        ResourceForkEntry {
+            resource_type: "STR#".to_string(),
+            id,
+            name: "Map Names".to_string(),
+            attributes: 0,
+            data: encode_string_list_resource(
+                &names
+                    .iter()
+                    .map(|name| name.to_string())
+                    .collect::<Vec<_>>(),
+            ),
+        }
+    }
+
+    fn map_record_with_names(
+        id: usize,
+        primary_name: &str,
+        secondary_name: &str,
+        map_name_authored: bool,
+    ) -> MapRecord {
+        MapRecord {
+            id,
+            markers: Vec::new(),
+            start_x: 0,
+            start_y: 0,
+            level: 0,
+            pict_id: 0,
+            icon_size: 0,
+            show: 0,
+            is_dungeon: false,
+            rect: MapRecordRect {
+                top: 0,
+                left: 0,
+                bottom: 0,
+                right: 0,
+            },
+            note: String::new(),
+            name: (!primary_name.is_empty()).then(|| primary_name.to_string()),
+            primary_name: (!primary_name.is_empty()).then(|| primary_name.to_string()),
+            secondary_name: (!secondary_name.is_empty()).then(|| secondary_name.to_string()),
+            name_source: None,
+            map_name_authored,
+            raw_bytes: Vec::new(),
+            authored: false,
+            provenance: provenance("Data MD2", id, crate::realmz::MAP_RECORD_BYTES),
+        }
+    }
+
+    fn map_entity(level_type: LevelType, index: usize, name: &str) -> MapEntity {
+        MapEntity {
+            id: format!("{}:{}", level_type.as_str(), index),
+            level_type,
+            source: level_type.field_file().to_string(),
+            index,
+            name: name.to_string(),
+            width: 90,
+            height: 90,
+            tiles: Vec::new(),
+            render: MapRender {
+                tileset_id: "abstract-fallback".to_string(),
+                landlook: None,
+                mode: RenderMode::AbstractFallback,
+            },
+            provenance: provenance(level_type.field_file(), index, 16200),
+        }
+    }
+
+    fn provenance(source_file: &str, record_index: usize, byte_length: usize) -> Provenance {
+        Provenance {
+            source_file: source_file.to_string(),
+            record_index,
+            byte_offset: record_index * byte_length,
+            byte_length,
+            confidence: Confidence::Confirmed,
         }
     }
 }

@@ -85,6 +85,23 @@ export function updateMapRecord(project: Project, id: number, changes: Extract<P
   return changed ? { ...project, mapRecords } : project;
 }
 
+export function updateMapRecordNames(project: Project, id: number, changes: Extract<ProjectCommand, { kind: "updateMapRecordNames" }>["changes"]) {
+  let changed = false;
+  const mapRecords = (project.mapRecords ?? []).map((record) => {
+    if (record.id !== id) return record;
+    changed = true;
+    const primaryName = changes.primaryName ?? changes.name ?? record.primaryName ?? record.name;
+    return {
+      ...record,
+      ...changes,
+      name: changes.name ?? primaryName,
+      primaryName,
+      mapNameAuthored: true
+    };
+  });
+  return changed ? { ...project, mapRecords } : project;
+}
+
 export function ensureLandLayout(project: Project) {
   if (project.landLayout) return project;
   return {

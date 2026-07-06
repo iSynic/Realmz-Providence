@@ -13,6 +13,7 @@ import {
   updateCustomLandlookRangeSlot,
   updateLandLayoutCell,
   updateMapRecord,
+  updateMapRecordNames,
   updateRandomLevelSettings,
   updateSpecialTileSolidity,
   updateRandomRect
@@ -124,6 +125,7 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "updateTriggerHeader") return updateTriggerHeader(project, command.triggerId, command.fields);
   if (command.kind === "updateRandomLevelSettings") return updateRandomLevelSettings(project, command);
   if (command.kind === "updateMapRecord") return updateMapRecord(project, command.id, command.changes);
+  if (command.kind === "updateMapRecordNames") return updateMapRecordNames(project, command.id, command.changes);
   if (command.kind === "createLandLayout") return ensureLandLayout(project);
   if (command.kind === "updateLandLayoutCell") return updateLandLayoutCell(project, command.row, command.col, command.value);
   if (command.kind === "clearLandLayout") return clearLandLayout(project);

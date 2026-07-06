@@ -532,6 +532,47 @@ expect(bytesEqual(mapFiles.get("Data EDCD")?.slice(0, 10), sourceExtraCodes.slic
 expect(bytesEqual(mapFiles.get("Data EDCD")?.slice(10, 20), sourceExtraCodes.slice(10, 20)), "Unauthored EDCD row 1 should remain byte-identical");
 expect(bytesEqual(mapFiles.get("Data EDCD")?.slice(20, 30), extraCodeRow([70, -71, 72, -73, 74])), "Authored EDCD row should encode parameter values");
 
+const mapNameSourceResourceFork = writeResourceFork([
+  resource("STR#", -102, "Map Names", 0, encodeStringListResource(["Old Primary 0", "Old Primary 1"])),
+  resource("STR#", -101, "Map Names", 0, encodeStringListResource(["Old Secondary 0", "Old Secondary 1"]))
+]);
+const mapNameRawFiles = mapRawFiles.map((file) => file.name === "Scenario" ? rawFile("Scenario", mapNameSourceResourceFork, "resource-fork") : file);
+const mapNameRawSources = {
+  ...rawSources,
+  totalBytes: mapNameRawFiles.reduce((sum, file) => sum + file.bytesData.byteLength, 0),
+  files: mapNameRawFiles
+};
+const mapNameProject = {
+  ...fixtureProject(mapNameRawFiles),
+  mapRecords: [
+    mapRecord(0, {
+      name: "New Primary 0",
+      primaryName: "New Primary 0",
+      secondaryName: "New Secondary 0",
+      mapNameAuthored: true,
+      rawBytes: Array.from(sourceMapRecords.slice(0, MAP_RECORD_BYTES)),
+      authored: false
+    }),
+    mapRecord(1, {
+      name: "Old Primary 1",
+      primaryName: "Old Primary 1",
+      secondaryName: "Old Secondary 1",
+      rawBytes: Array.from(sourceMapRecords.slice(MAP_RECORD_BYTES, MAP_RECORD_BYTES * 2)),
+      authored: false
+    })
+  ]
+};
+const mapNameUpdate = createBrowserScenarioPackageZip(mapNameProject, mapNameRawSources, "mac-classic-folder");
+const mapNameFiles = unzipScenarioPackage(mapNameUpdate.zip);
+const mapNameResources = resourceMap(parseResourceFork(mapNameFiles.get("Scenario")));
+const authoredPrimaryMapNames = parseStringListResource(mapNameResources.get("STR#:-102")?.data ?? new Uint8Array());
+const authoredSecondaryMapNames = parseStringListResource(mapNameResources.get("STR#:-101")?.data ?? new Uint8Array());
+expect(mapNameUpdate.report.writtenFiles.includes("Scenario"), "Authored map names should write Scenario resource fork");
+expect(authoredPrimaryMapNames[0] === "New Primary 0", "Authored primary map name should replace STR# -102 slot");
+expect(authoredPrimaryMapNames[1] === "Old Primary 1", "Unauthored primary map name should remain populated from project state");
+expect(authoredSecondaryMapNames[0] === "New Secondary 0", "Authored secondary map name should replace STR# -101 slot");
+expect(authoredSecondaryMapNames[1] === "Old Secondary 1", "Unauthored secondary map name should remain populated from project state");
+
 const globalHookProject = {
   ...project,
   scenario: {
@@ -1273,6 +1314,9 @@ function fieldRow(tiles) {
 function mapRecord(id, overrides = {}) {
   return {
     id,
+    name: `Map ${id}`,
+    primaryName: `Map ${id}`,
+    secondaryName: "",
     markers: [],
     startX: 0,
     startY: 0,
@@ -1285,6 +1329,7 @@ function mapRecord(id, overrides = {}) {
     note: "",
     rawBytes: new Array(MAP_RECORD_BYTES).fill(0),
     authored: true,
+    mapNameAuthored: false,
     ...overrides
   };
 }

@@ -29,9 +29,12 @@ export function normalizeTile(value: number) {
 
 export function normalizeIconId(value: number) {
   if (value >= 0) {
-    // Positive 201-999 values are direct map icon ids. Values above 999 are
-    // Realmz land-state encodings and must not be reduced into icon ids here.
-    return value > 200 && value < 1000 ? value : null;
+    let iconId = clearRealmzShortBit(value, 1);
+    iconId = clearRealmzShortBit(iconId, 2);
+    for (let attempt = 0; attempt < 3 && iconId > 999; attempt += 1) {
+      iconId -= 1000;
+    }
+    return iconId > 200 && iconId < 1000 ? iconId : null;
   }
   let iconId = value;
   while (iconId < -999) iconId += 1000;
@@ -52,11 +55,11 @@ export const PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES = [
 ];
 
 export const PAINTABLE_REFERENCE_ACTOR_ICON_VALUES = [
-  ...negativeAliases(range(379, 461)),
-  ...negativeAliases(range(464, 496)),
-  ...negativeAliases(range(500, 590)),
-  ...negativeAliases(range(600, 619)),
-  ...negativeAliases(range(692, 824))
+  ...range(379, 461),
+  ...range(464, 496),
+  ...range(500, 590),
+  ...range(600, 619),
+  ...range(692, 824)
 ];
 
 export function tileIconCandidates(value: number) {
@@ -82,8 +85,4 @@ function range(start: number, end: number) {
   const out: number[] = [];
   for (let value = start; value <= end; value += 1) out.push(value);
   return out;
-}
-
-function negativeAliases(values: number[]) {
-  return values.map((value) => -value);
 }

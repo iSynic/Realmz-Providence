@@ -23,6 +23,7 @@ export function ToolSidebar({
   if (tools.length === 0) return null;
   if (activeDomain === "assets") return null;
   if (activeDomain === "combat") return null;
+  if (activeDomain === "player-maps") return null;
   if (activeDomain === "economy" && activeWorkbench === "project") return null;
   if (activeDomain === "encounters" && activeWorkbench === "project") return null;
   if (activeDomain === "scripts" && activeWorkbench === "project") return null;

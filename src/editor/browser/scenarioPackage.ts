@@ -607,7 +607,9 @@ function scenarioIconResourceUpdates(
 function mapNameResourceUpdates(project: Project, originalResourceFork: Uint8Array) {
   if ((project.mapRecords ?? []).length === 0) return [];
   const existing = parseResourceFork(originalResourceFork);
+  const hasAuthoredNames = project.mapRecords.some((record) => record.mapNameAuthored);
   if (
+    !hasAuthoredNames &&
     existing.some((entry) => entry.resourceType === "STR#" && entry.id === -102) &&
     existing.some((entry) => entry.resourceType === "STR#" && entry.id === -101)
   ) {

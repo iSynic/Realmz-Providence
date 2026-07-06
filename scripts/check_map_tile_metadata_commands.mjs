@@ -15,12 +15,14 @@ try {
   const commands = await server.ssrLoadModule("/src/editor/projectCommands/mapCommands.ts");
   const metadata = await server.ssrLoadModule("/src/editor/map/tileMetadata.ts");
   const paintGroups = await server.ssrLoadModule("/src/editor/map/paintGroups.ts");
+  const renderValues = await server.ssrLoadModule("/src/editor/map/renderValues.ts");
 
   checkCustomMapstatsAttributeSync(commands, metadata, paintGroups);
   checkCustomCombatBuildSync(commands, metadata);
   checkCustomLandlookBaseSync(commands);
   checkBuiltInLandlookStaysReadOnly(commands);
   checkSpecialTileSolidity(commands, metadata);
+  checkPositiveIconBackedTileValues(renderValues, metadata);
   checkMapsMenuRecordEvidence();
 
   if (failures.length > 0) {
@@ -123,10 +125,31 @@ function checkSpecialTileSolidity({ updateSpecialTileSolidity }, { classifyTileV
   assert(meaning.attributeFlags.includes("solid"), "negative special tile did not pick up Data Solids solidity");
 }
 
+function checkPositiveIconBackedTileValues({ PAINTABLE_REFERENCE_ACTOR_ICON_VALUES, tileIconCandidates }, { classifyTileValue, resolveTileRender }) {
+  for (const tile of [379, 692, 824]) {
+    assert(tileIconCandidates(tile)[0] === tile, `positive actor-range tile ${tile} should resolve as a direct icon-backed map value`);
+    const meaning = classifyTileValue(tile, customTileset(), [], {});
+    assert(meaning.kind === "special-positive", `positive actor-range tile ${tile} should classify as a special positive icon`);
+    assert(meaning.attributeFlags.includes("special-icon"), `positive actor-range tile ${tile} should be grouped as a special icon`);
+    const render = resolveTileRender(tile, customTileset(), [], {});
+    assert(render.iconCandidates[0] === tile, `positive actor-range tile ${tile} should render through icon candidates`);
+  }
+  assert(tileIconCandidates(1379)[0] === 379, "positive thousand-band actor tile 1379 should resolve to direct icon 379 after Realmz state normalization");
+  assert(PAINTABLE_REFERENCE_ACTOR_ICON_VALUES.includes(379), "actor palette should expose positive runtime cicn IDs");
+  assert(!PAINTABLE_REFERENCE_ACTOR_ICON_VALUES.includes(-379), "actor palette should not expose negative aliases for positive runtime cicn IDs");
+  for (const tile of [-47, -1047, -2047]) {
+    assert(tileIconCandidates(tile)[0] === -47, `negative special tile ${tile} should still resolve as special icon -47`);
+  }
+}
+
 function checkMapsMenuRecordEvidence() {
   const browserParser = fs.readFileSync(path.join(root, "src/editor/browser/realmzParser.ts"), "utf8");
+  const appBootstrap = fs.readFileSync(path.join(root, "src/editor/app/useAppBootstrapEffects.ts"), "utf8");
+  const appUtils = fs.readFileSync(path.join(root, "src/editor/app/appUtils.ts"), "utf8");
   const mapWorkbench = fs.readFileSync(path.join(root, "src/editor/components/maps/MapRecordsWorkbench.tsx"), "utf8");
   const mapsPanel = fs.readFileSync(path.join(root, "src/editor/panels/MapsPanel.tsx"), "utf8");
+  const playerMapsPanel = fs.readFileSync(path.join(root, "src/editor/panels/PlayerMapsPanel.tsx"), "utf8");
+  const registry = fs.readFileSync(path.join(root, "src/editor/workbench/registry.tsx"), "utf8");
   const evidence = fs.readFileSync(path.join(root, "docs/format-evidence-cards/map-record-runtime-anchors.md"), "utf8");
   for (const snippet of [
     "PRIMARY_MAP_NAMES_RESOURCE_ID = -102",
@@ -139,14 +162,30 @@ function checkMapsMenuRecordEvidence() {
     assert(browserParser.includes(snippet), `Browser parser should apply Maps Menu STR# name hints: ${snippet}`);
   }
   for (const snippet of [
-    "Maps Menu",
-    "Realmz Data MD2 records",
-    "STR# -102/-101 Map Names resources",
-    "Menu names come from the scenario Map Names STR# resources"
+    "Player Map",
+    "Maps/Notes",
+    "Edit the map name, target view, note, markers",
+    "The name shown for this entry in the Maps/Notes menu."
   ]) {
-    assert(mapWorkbench.includes(snippet), `Maps Menu workbench should use runtime-backed authoring language: ${snippet}`);
+    assert(mapWorkbench.includes(snippet), `Player Maps workbench should use authoring-focused language: ${snippet}`);
   }
-  assert(mapsPanel.includes('label: "Maps Menu"'), "Maps panel should expose Data MD2 records as Maps Menu entries.");
+  assert(!mapsPanel.includes('label: "Maps Menu"'), "Land/Dungeon Maps panel should no longer bury Data MD2 records as a Maps Menu mode.");
+  assert(playerMapsPanel.includes("Player Maps"), "Player Maps panel should expose Data MD2 records as a first-class authoring surface.");
+  assert(playerMapsPanel.includes("Maps/Notes entries players can find in game"), "Player Maps panel should describe the player-facing Maps/Notes workflow.");
+  assert(registry.includes('"player-maps"'), "Workbench registry should expose Player Maps as a top-level domain.");
+  assert(registry.includes('label: "Land/Dungeon Maps"'), "Maps domain should be renamed Land/Dungeon Maps.");
+  assert(appUtils.includes("playerMapMarkerIconIds"), "Player Map marker icon IDs should be collected from MapRecord data.");
+  for (const snippet of [
+    "playerMapIconIds",
+    "state.project.mapRecords",
+    "playerMapMarkerIconIds",
+    "mapIconIdSet",
+    "iconIdMatchesSet(playerMapIconIdSet, id)",
+    "isRealmzReferenceIconLibraryAsset",
+    "realmzReferenceIconAsset"
+  ]) {
+    assert(appBootstrap.includes(snippet), `Icon preload should include Player Map marker originals: ${snippet}`);
+  }
   for (const snippet of [
     "map[20]",
     "STR# -102",

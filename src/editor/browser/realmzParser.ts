@@ -457,6 +457,7 @@ function parseMapRecords(buffer: Uint8Array | undefined) {
         right: i16(buffer, start + 82)
       },
       note: decodePascalText(buffer.slice(start + 84, start + MAP_RECORD_BYTES)),
+      mapNameAuthored: false,
       rawBytes,
       provenance: provenance("Data MD2", id, start, MAP_RECORD_BYTES, "source-backed")
     });

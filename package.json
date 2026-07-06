@@ -70,6 +70,7 @@
     "check:combat-monsters": "node scripts/check_combat_monster_commands.mjs",
     "check:browser-project-package": "node scripts/check_browser_project_package.mjs",
     "check:browser-scenario-package": "node scripts/check_browser_scenario_package.mjs",
+    "check:isy305-player-map-fixture": "node scripts/check_isy305_player_map_fixture.mjs",
     "check:browser-desktop-scenario-parity": "node scripts/check_browser_desktop_scenario_parity.mjs",
     "check:pict-preview": "node scripts/check_pict_directbits_preview.mjs",
     "check:text-style-authoring": "node scripts/check_text_style_authoring.mjs",

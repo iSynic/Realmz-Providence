@@ -1,6 +1,6 @@
 import { ReactNode, Suspense } from "react";
 import { EditorState } from "../store";
-import { AssetSearchHint, BenchmarkReport, ExportReport, LibraryCatalog, ManagedAssetKind, MapCoordinateTarget, MapEntity, MapViewFlag, ProjectCommand, RandomLevel, ScenarioTarget, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
+import { AssetSearchHint, BenchmarkReport, ExportReport, LibraryCatalog, ManagedAssetKind, MapCoordinateTarget, MapEntity, MapRecord, MapViewFlag, ProjectCommand, RandomLevel, ScenarioTarget, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
 import { MediaAssetImportOptions } from "../mediaAssets";
 import { LibraryDraftSpec } from "../libraryDrafts";
 import { Issue } from "../types";
@@ -10,6 +10,7 @@ import {
   LazyLibraryHubPanel as LibraryHubPanel,
   LazyLinterPanel as LinterPanel,
   LazyMapsPanel as MapsPanel,
+  LazyPlayerMapsPanel as PlayerMapsPanel,
   LazyRecordsPanel as RecordsPanel,
   LazyResourcesPanel as ResourcesPanel,
   LazyRulesPanel as RulesPanel,
@@ -61,6 +62,7 @@ function WorkbenchRouterContent({
   onOpenScripts,
   onOpenTool,
   onOpenMapCoordinate,
+  onOpenPlayerMapTarget,
   onBeginPaintStroke,
   onApplyCommand,
   onCommitPaintStroke,
@@ -151,6 +153,20 @@ function WorkbenchRouterContent({
         onApplyCommand={onApplyCommand}
         onCommitPaintStroke={onCommitPaintStroke}
         onCancelPaintStroke={onCancelPaintStroke}
+      />
+    );
+  }
+
+  if (state.activeTab === "player-maps") {
+    return (
+      <PlayerMapsPanel
+        project={state.project}
+        selectedEntity={state.selectedEntity}
+        atlasEntries={state.atlasEntries}
+        icons={state.iconEntries}
+        onSelectEntity={onSelectEntity}
+        onOpenRelatedMap={onOpenPlayerMapTarget}
+        onApplyCommand={onApplyCommand}
       />
     );
   }
@@ -362,6 +378,7 @@ type WorkbenchRouterProps = {
   onOpenScripts: (entity: SelectedEntity) => void;
   onOpenTool: (tab: "assets" | "rules" | "scripts" | "text", editor: string) => void;
   onOpenMapCoordinate: (target: MapCoordinateTarget) => void;
+  onOpenPlayerMapTarget: (record: MapRecord) => void;
   onBeginPaintStroke: (label: string) => void;
   onApplyCommand: (command: ProjectCommand) => void;
   onCommitPaintStroke: () => void;

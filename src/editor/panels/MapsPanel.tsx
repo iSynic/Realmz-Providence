@@ -3,7 +3,7 @@ import { EditorState } from "../store";
 import { CustomMapStamp, LevelType, MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, SmartBrushMaskCell, SmartBrushPreset, TilePaletteCategory, TilesetAsset, TriggerRecord } from "../types";
 import { triggerOverlayKinds } from "../semanticGraph";
 import { RealmzMapCanvas } from "../components/MapCanvas";
-import { LandLayoutEditor, LandTileAtlasEditor, MapContextSidebar, MapRecordsWorkbench, MapSelectionSidebar, RandomAreasWorkbench, type LandLayoutCellSelection } from "../components/MapContextSidebar";
+import { LandLayoutEditor, LandTileAtlasEditor, MapContextSidebar, MapSelectionSidebar, RandomAreasWorkbench, type LandLayoutCellSelection } from "../components/MapContextSidebar";
 import { MapViewFilters } from "../components/MapViewFilters";
 import { landlookGroupTiles } from "../map/paintGroups";
 import { buildPaintChanges, rectCells } from "../map/regionPaint";
@@ -18,8 +18,7 @@ const MAP_WORKBENCH_MODES: Array<{ id: MapWorkbenchMode; label: string; descript
   { id: "canvas", label: "Canvas", description: "Paint, sample, place Action Points, edit regions, and work directly on the map." },
   { id: "land-layout", label: "Land Layout", description: "Edit outdoor level adjacency for off-map travel." },
   { id: "land-tiles", label: "Land Tiles", description: "Inspect landlook tiles, movement metadata, and combat expansion." },
-  { id: "random-areas", label: "Random Encounters", description: "Edit random encounter rectangles: priority, chance, battles, text, sounds, and extra AP doors." },
-  { id: "map-records", label: "Maps Menu", description: "Browse and edit Realmz Maps menu entries, picture links, rectangles, markers, and notes." }
+  { id: "random-areas", label: "Random Encounters", description: "Edit random encounter rectangles: priority, chance, battles, text, sounds, and extra AP doors." }
 ];
 
 export function MapsPanel({
@@ -350,23 +349,6 @@ export function MapsPanel({
               onSetViewFlag={onSetViewFlag}
               onSetTool={openCanvasTool}
               onSelectEntity={onSelectEntity}
-              onApplyCommand={onApplyCommand}
-            />
-          </MapModeSurface>
-        )}
-        {workbenchMode === "map-records" && (
-          <MapModeSurface
-            title="Maps Menu"
-            subtitle="Map records describe starts, picture links, rectangles, notes, and related map navigation."
-          >
-            <MapRecordsWorkbench
-              project={state.project}
-              selectedMap={selectedMap}
-              mapRecords={mapRecords}
-              onSelectMap={onSelectMap}
-              onSelectEntity={onSelectEntity}
-              onSetWorkbenchMode={switchWorkbenchMode}
-              onSetViewFlag={onSetViewFlag}
               onApplyCommand={onApplyCommand}
             />
           </MapModeSurface>

@@ -638,8 +638,15 @@ for (const snippet of [
 ]) {
   if (targetPicker.includes(snippet)) failures.push(`Encounter direct target picker must use search as the primary selector: ${snippet}`);
 }
-if (!targetPicker.includes("29: { label: \"Map Item\", hint: \"Select map item 0 through 19.\", searchable: false }")) {
-  failures.push("Map Item should remain the fixed-list exception for the direct target picker.");
+if (!targetPicker.includes("29: { label: \"Player Map\", hint: \"Select the Maps/Notes entry to give or display.\", searchPlaceholder: \"Search map #, name, or note...\" }")) {
+  failures.push("Code 29 should use the searchable Player Map picker.");
+}
+for (const snippet of [
+  "function addPlayerMapTargets(project: Project, options: ScriptTargetOption[])",
+  "options.push(playerMapTargetOption(record, used));",
+  "record.note?.trim() || \"\""
+]) {
+  if (!targetPicker.includes(snippet)) failures.push(`Code 29 Player Map picker is missing map-record search support: ${snippet}`);
 }
 if (targetPicker.includes("if (resolvedValue === 0) return null;")) {
   failures.push("Target picker must not treat every 0 ID as unselected; encounter/map/quest record 0 can be real targets.");

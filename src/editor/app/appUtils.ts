@@ -1,4 +1,4 @@
-import { LibraryCatalog, Project } from "../types";
+import { LibraryCatalog, MapRecord, Project } from "../types";
 import { commandError } from "../utils";
 
 let mapFocusNonce = 0;
@@ -39,6 +39,21 @@ export function isPaintableSpecialLandLibraryAsset(asset: LibraryCatalog["assets
     asset.label.includes("Special Land") ||
     (typeof asset.resourceId === "number" && (asset.resourceId < 0 || isActorIconResourceId(Math.abs(asset.resourceId))))
   );
+}
+
+export function playerMapMarkerIconIds(record: MapRecord) {
+  const ids = new Set<number>();
+  for (const marker of record.markers ?? []) {
+    if (marker.iconId !== 0) ids.add(Math.abs(marker.iconId));
+  }
+  const raw = record.rawBytes ?? [];
+  for (let slot = 0; slot < 10; slot += 1) {
+    const offset = slot * 6;
+    if (raw.length < offset + 2) continue;
+    const iconId = readSignedShort(raw, offset);
+    if (iconId !== 0) ids.add(Math.abs(iconId));
+  }
+  return [...ids];
 }
 
 export function nextUntitledProjectName() {
@@ -101,6 +116,11 @@ function isActorIconResourceId(resourceId: number) {
     (resourceId >= 600 && resourceId <= 619) ||
     (resourceId >= 692 && resourceId <= 824)
   );
+}
+
+function readSignedShort(bytes: number[], offset: number) {
+  const unsigned = ((bytes[offset] & 0xff) << 8) | (bytes[offset + 1] & 0xff);
+  return unsigned >= 0x8000 ? unsigned - 0x10000 : unsigned;
 }
 
 function sanitizePackageName(name: string) {

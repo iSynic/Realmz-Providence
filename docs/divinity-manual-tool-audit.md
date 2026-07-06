@@ -106,7 +106,7 @@ Recommended follow-up:
 - Providence domain: Maps
 - Providence tools: Land Editor, Land Layout
 - Existing parity map: Land Editor / Land Layout -> Maps
-- Registry tools: Maps/Land Editor; Maps/Land Layout
+- Registry tools: Land/Dungeon Maps/Land Editor; Land/Dungeon Maps/Land Layout
 
 Manual claim summary:
 
@@ -683,7 +683,7 @@ Recommended follow-up:
 - Providence domain: Maps
 - Providence tools: Map Records, Land Editor, Dungeon Editor
 - Existing parity map: Map Editor -> Maps
-- Registry tools: Maps/Land Editor; Maps/Dungeon Editor; Maps/Land Layout
+- Registry tools: Land/Dungeon Maps/Land Editor; Land/Dungeon Maps/Dungeon Editor; Land/Dungeon Maps/Land Layout
 
 Manual claim summary:
 
@@ -715,7 +715,7 @@ Recommended follow-up:
 - Providence domain: Maps
 - Providence tools: Dungeon Editor
 - Existing parity map: Dungeon Editor -> Maps
-- Registry tools: Maps/Dungeon Editor
+- Registry tools: Land/Dungeon Maps/Dungeon Editor
 
 Manual claim summary:
 
@@ -886,7 +886,7 @@ Recommended follow-up:
 - Providence domain: Assets / Maps
 - Providence tools: Special Land Tiles, Scenario Assets
 - Existing parity map: Creating Special Land Tiles -> Assets/Maps
-- Registry tools: Maps/Special Land Tiles; Assets/Scenario Assets; Assets/Special Land Tiles
+- Registry tools: Land/Dungeon Maps/Special Land Tiles; Assets/Scenario Assets; Assets/Special Land Tiles
 
 Manual claim summary:
 
@@ -950,7 +950,7 @@ Recommended follow-up:
 - Providence domain: Assets / Maps
 - Providence tools: Reference Libraries, Land Editor
 - Existing parity map: Standard Land Tile Editor -> Assets/Maps
-- Registry tools: Maps/Land Editor; Assets/Reference Libraries
+- Registry tools: Land/Dungeon Maps/Land Editor; Assets/Reference Libraries
 
 Manual claim summary:
 

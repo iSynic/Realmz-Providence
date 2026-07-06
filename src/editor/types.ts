@@ -1,6 +1,7 @@
 export type LevelType = "land" | "dungeon";
 export type EditorTab =
   | "maps"
+  | "player-maps"
   | "scripts"
   | "scenario"
   | "encounters"
@@ -22,7 +23,7 @@ export type AssetSearchHint = {
   selectedEntityId?: string | null;
 };
 export type EditorTool = "select" | "paint" | "stamp" | "trigger" | "random" | "sample" | "pan";
-export type MapWorkbenchMode = "canvas" | "land-layout" | "land-tiles" | "random-areas" | "map-records";
+export type MapWorkbenchMode = "canvas" | "land-layout" | "land-tiles" | "random-areas";
 export type MapPaintMode = "brush" | "replace" | "clear" | "smart";
 export type MapPaintVariation = "single" | "cycle-group" | "random-group";
 export type MapRegionSelection = { left: number; top: number; right: number; bottom: number };
@@ -1092,6 +1093,7 @@ export type MapRecord = {
   primaryName?: string;
   secondaryName?: string;
   nameSource?: string;
+  mapNameAuthored?: boolean;
   rawBytes?: number[];
   authored?: boolean;
   provenance?: Provenance;
@@ -1143,6 +1145,12 @@ export type ProjectCommand =
       label: string;
       id: number;
       changes: Partial<Pick<MapRecord, "markers" | "startX" | "startY" | "level" | "pictId" | "iconSize" | "show" | "isDungeon" | "rect" | "note">>;
+    }
+  | {
+      kind: "updateMapRecordNames";
+      label: string;
+      id: number;
+      changes: Partial<Pick<MapRecord, "name" | "primaryName" | "secondaryName">>;
     }
   | { kind: "createLandLayout"; label: string }
   | { kind: "updateLandLayoutCell"; label: string; row: number; col: number; value: number }

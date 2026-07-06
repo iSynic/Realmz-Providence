@@ -1034,6 +1034,7 @@ pub fn parse_map_records(buffer: &[u8]) -> Vec<MapRecord> {
                 primary_name: None,
                 secondary_name: None,
                 name_source: None,
+                map_name_authored: false,
                 provenance: provenance("Data MD2", id, start, MAP_RECORD_BYTES),
             }
         })
