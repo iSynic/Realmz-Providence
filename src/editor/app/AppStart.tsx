@@ -57,6 +57,45 @@ export function ProjectNameDialog({
   );
 }
 
+export function CloseProjectDialog({
+  projectName,
+  saving,
+  onSaveAndClose,
+  onCloseWithoutSaving,
+  onCancel
+}: {
+  projectName: string;
+  saving: boolean;
+  onSaveAndClose: () => void;
+  onCloseWithoutSaving: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="modal-backdrop" role="presentation">
+      <section className="close-project-dialog" role="dialog" aria-modal="true" aria-labelledby="close-project-title">
+        <div className="panel-header">
+          <span id="close-project-title">Close Project</span>
+        </div>
+        <div className="close-project-dialog-body">
+          <strong>{projectName}</strong>
+          <p>This project has unsaved changes. Save the current project state before returning to the Providence start screen, or close without saving and discard the current in-memory edits.</p>
+        </div>
+        <div className="close-project-dialog-actions">
+          <button className="btn btn-ghost" type="button" onClick={onCancel} disabled={saving}>
+            Cancel
+          </button>
+          <button className="btn btn-danger" type="button" onClick={onCloseWithoutSaving} disabled={saving}>
+            Close Without Saving
+          </button>
+          <button className="btn btn-primary" type="button" onClick={onSaveAndClose} disabled={saving}>
+            {saving ? "Saving..." : "Save and Close"}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export function ProjectStart({
   desktopRuntime,
   projectRoot,

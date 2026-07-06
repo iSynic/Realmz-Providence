@@ -2874,6 +2874,41 @@ button.documents-source-chip {
   background: #12161a;
 }
 
+.close-project-dialog {
+  width: min(520px, 100%);
+  overflow: hidden;
+  border: 1px solid #303a46;
+  border-radius: 8px;
+  background: #15191e;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.58);
+}
+
+.close-project-dialog-body {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+
+.close-project-dialog-body strong {
+  color: #f3f7fb;
+  font-size: 14px;
+}
+
+.close-project-dialog-body p {
+  color: #a8b4c0;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.close-project-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 14px;
+  border-top: 1px solid #252a31;
+  background: #12161a;
+}
+
 
 
 .editor-sidebar {

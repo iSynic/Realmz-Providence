@@ -333,7 +333,7 @@ export function useProjectLifecycleActions({
   }
 
   async function saveProject() {
-    if (!state.project) return;
+    if (!state.project) return false;
     if (!desktopRuntime) {
       try {
         const snapshot = await saveBrowserProject(state.project);
@@ -343,18 +343,21 @@ export function useProjectLifecycleActions({
           type: "setStatus",
           status: "Project saved locally in this browser. Use Export to download a Providence project ZIP backup."
         });
+        return true;
       } catch (error) {
         dispatch({ type: "setStatus", status: `Browser save failed: ${commandError(error)}` });
+        return false;
       }
-      return;
     }
     try {
       dispatch({ type: "setStatus", status: "Saving project..." });
       const project = await invoke<Project>("save_project", { projectDir, project: state.project });
       dispatch({ type: "markSaved", project });
       dispatch({ type: "setStatus", status: "Project saved" });
+      return true;
     } catch (error) {
       dispatch({ type: "setStatus", status: `Save failed: ${commandError(error)}` });
+      return false;
     }
   }
 
@@ -453,13 +456,10 @@ export function useProjectLifecycleActions({
     }
   }
 
-  function closeProject() {
-    if (state.dirty && typeof window !== "undefined") {
-      const shouldClose = window.confirm("Close the current project? Unsaved editor changes will be discarded.");
-      if (!shouldClose) {
-        dispatch({ type: "setStatus", status: "Close project cancelled" });
-        return;
-      }
+  function closeProject({ discardUnsaved = false }: { discardUnsaved?: boolean } = {}) {
+    if (state.dirty && !discardUnsaved) {
+      dispatch({ type: "setStatus", status: "Choose Save and Close or Close Without Saving before closing this project." });
+      return false;
     }
     if (!desktopRuntime) suppressActiveBrowserProjectRestore();
     setProjectDir("");
@@ -468,6 +468,7 @@ export function useProjectLifecycleActions({
     dispatch({ type: "setWorkbench", workbench: "project", tab: "maps" });
     dispatch({ type: "setActiveEditor", editor: "hub" });
     dispatch({ type: "setStatus", status: desktopRuntime ? "Project closed" : "Project closed. Refresh will stay on the Providence start screen; use Resume Local to reopen the browser-local project." });
+    return true;
   }
 
   function downloadProjectJsonBackup() {

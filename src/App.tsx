@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { Suspense, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { DEFAULT_DIVINITY_ROOT, DEFAULT_EXPORT, DEFAULT_REALMZ_DATA_ROOT, DEFAULT_WORKSPACE } from "./editor/constants";
-import { ProjectNameDialog, ProjectStart } from "./editor/app/AppStart";
+import { CloseProjectDialog, ProjectNameDialog, ProjectStart } from "./editor/app/AppStart";
 import {
   isPaintableSpecialLandLibraryAsset,
   isProjectEmpty,
@@ -95,6 +95,8 @@ export function App() {
   const [projectDir, setProjectDir] = useState("");
   const [exportDir, setExportDir] = useState(DEFAULT_EXPORT);
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
+  const [closeProjectDialogOpen, setCloseProjectDialogOpen] = useState(false);
+  const [closeProjectSaving, setCloseProjectSaving] = useState(false);
   const [documentsOpen, setDocumentsOpen] = useState(false);
   const [divinityManualOpen, setDivinityManualOpen] = useState(false);
   const [divinityManualHref, setDivinityManualHref] = useState("");
@@ -322,6 +324,35 @@ export function App() {
       realmzData: DEFAULT_REALMZ_DATA_ROOT
     }
   });
+
+  function requestCloseProject() {
+    if (!state.project) return;
+    if (state.dirty) {
+      setCloseProjectDialogOpen(true);
+      return;
+    }
+    closeProject();
+  }
+
+  async function saveAndCloseProject() {
+    if (closeProjectSaving) return;
+    setCloseProjectSaving(true);
+    const saved = await saveProject();
+    setCloseProjectSaving(false);
+    if (!saved) return;
+    setCloseProjectDialogOpen(false);
+    closeProject({ discardUnsaved: true });
+  }
+
+  function closeProjectWithoutSaving() {
+    setCloseProjectDialogOpen(false);
+    closeProject({ discardUnsaved: true });
+  }
+
+  function cancelCloseProject() {
+    setCloseProjectDialogOpen(false);
+    dispatch({ type: "setStatus", status: "Close project cancelled" });
+  }
 
   function updateSelectedMap(nextMap: MapEntity) {
     if (!state.project) return;
@@ -599,7 +630,7 @@ export function App() {
       onToggleTutorial={() => dispatch({ type: "setTutorialEnabled", enabled: !state.tutorialEnabled })}
       onNewProject={showNewProjectDialog}
       onOpenProject={chooseExistingProject}
-      onCloseProject={closeProject}
+      onCloseProject={requestCloseProject}
       onImportScenario={importScenario}
       onUndo={() => dispatch({ type: "undo" })}
       onRedo={() => dispatch({ type: "redo" })}
@@ -684,6 +715,15 @@ export function App() {
             dispatch({ type: "setStatus", status: "New project cancelled" });
           }}
           onCreate={() => createNewProject()}
+        />
+      )}
+      {closeProjectDialogOpen && state.project && (
+        <CloseProjectDialog
+          projectName={state.project.scenario.name}
+          saving={closeProjectSaving}
+          onSaveAndClose={saveAndCloseProject}
+          onCloseWithoutSaving={closeProjectWithoutSaving}
+          onCancel={cancelCloseProject}
         />
       )}
       {documentsOpen && (
