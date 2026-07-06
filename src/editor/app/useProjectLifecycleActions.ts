@@ -5,7 +5,7 @@ import { isBrowserPickerAbort, pickBrowserProjectSource, pickBrowserScenarioSour
 import { createBrowserWorkspace, importBrowserLibrary } from "../browser/library";
 import { benchmarkBrowserProject, createBrowserProject, ensureBrowserReferenceTileAttributes, importBrowserScenario, openBrowserProject, validateBrowserProject } from "../browser/project";
 import { browserProjectPackageFileName, createBrowserProjectPackageZip } from "../browser/projectPackage";
-import { loadActiveBrowserProject, loadBrowserProjectRawSources, saveBrowserProject } from "../browser/projectStore";
+import { allowActiveBrowserProjectRestore, loadActiveBrowserProject, loadBrowserProjectRawSources, saveBrowserProject, suppressActiveBrowserProjectRestore } from "../browser/projectStore";
 import { createBrowserScenarioPackageZip } from "../browser/scenarioPackage";
 import { persistBrowserIconLibraryEntries } from "../iconLibrary";
 import { LibraryDraftSpec, createLibraryDraft, updateLibraryDraft } from "../libraryDrafts";
@@ -107,19 +107,6 @@ export function useProjectLifecycleActions({
 
   async function chooseExistingProject() {
     if (!desktopRuntime) {
-      try {
-        const snapshot = await loadActiveBrowserProject();
-        if (snapshot) {
-          setProjectDir(snapshot.key);
-          setExportDir(defaultExportPath(roots.export, snapshot.project.scenario.name));
-          dispatch({ type: "setProject", project: snapshot.project, selectedMapId: snapshot.project.maps[0]?.id ?? null });
-          dispatch({ type: "setTab", tab: "maps" });
-          dispatch({ type: "setStatus", status: `Opened saved browser project ${snapshot.project.scenario.name}` });
-          return;
-        }
-      } catch (error) {
-        dispatch({ type: "setStatus", status: `Browser project storage unavailable: ${commandError(error)}` });
-      }
       try {
         const handle = await pickBrowserProjectSource();
         try {
@@ -447,6 +434,42 @@ export function useProjectLifecycleActions({
     }
   }
 
+  async function resumeBrowserProject() {
+    if (desktopRuntime) return;
+    try {
+      const snapshot = await loadActiveBrowserProject({ includeSuppressed: true });
+      if (!snapshot) {
+        dispatch({ type: "setStatus", status: "No browser-local project is available to resume." });
+        return;
+      }
+      allowActiveBrowserProjectRestore();
+      setProjectDir(snapshot.key);
+      setExportDir(defaultExportPath(roots.export, snapshot.project.scenario.name));
+      dispatch({ type: "setProject", project: snapshot.project, selectedMapId: snapshot.project.maps[0]?.id ?? null });
+      dispatch({ type: "setTab", tab: "maps" });
+      dispatch({ type: "setStatus", status: `Resumed browser project ${snapshot.project.scenario.name}` });
+    } catch (error) {
+      dispatch({ type: "setStatus", status: `Resume failed: ${commandError(error)}` });
+    }
+  }
+
+  function closeProject() {
+    if (state.dirty && typeof window !== "undefined") {
+      const shouldClose = window.confirm("Close the current project? Unsaved editor changes will be discarded.");
+      if (!shouldClose) {
+        dispatch({ type: "setStatus", status: "Close project cancelled" });
+        return;
+      }
+    }
+    if (!desktopRuntime) suppressActiveBrowserProjectRestore();
+    setProjectDir("");
+    setExportDir(defaultExportPath(roots.export, "Untitled Scenario"));
+    dispatch({ type: "setProject", project: null, selectedMapId: null });
+    dispatch({ type: "setWorkbench", workbench: "project", tab: "maps" });
+    dispatch({ type: "setActiveEditor", editor: "hub" });
+    dispatch({ type: "setStatus", status: desktopRuntime ? "Project closed" : "Project closed. Refresh will stay on the Providence start screen; use Resume Local to reopen the browser-local project." });
+  }
+
   function downloadProjectJsonBackup() {
     if (!state.project) return;
     downloadBrowserProjectJson(state.project);
@@ -457,6 +480,8 @@ export function useProjectLifecycleActions({
     showNewProjectDialog,
     createNewProject,
     chooseExistingProject,
+    resumeBrowserProject,
+    closeProject,
     importScenario,
     openLibraryHub,
     openProjectWorkbench,

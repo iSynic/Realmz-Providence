@@ -6,6 +6,7 @@ const DB_NAME = "realmz-providence-browser-projects";
 const DB_VERSION = 1;
 const PROJECT_STORE = "projects";
 const ACTIVE_PROJECT_KEY = "realmz-providence.activeBrowserProject";
+const ACTIVE_PROJECT_RESTORE_SUPPRESSED_KEY = "realmz-providence.activeBrowserProjectRestoreSuppressed";
 
 export type BrowserProjectSnapshot = {
   key: string;
@@ -47,12 +48,14 @@ export async function saveBrowserProject(project: Project, rawSources?: BrowserR
   };
   await putSnapshot(db, snapshot);
   rememberActiveProject(key);
+  allowActiveBrowserProjectRestore();
   db.close();
   registerBrowserSourceSnapshot(snapshot.project, snapshot.rawSources);
   return snapshot;
 }
 
-export async function loadActiveBrowserProject() {
+export async function loadActiveBrowserProject(options: { includeSuppressed?: boolean } = {}) {
+  if (!options.includeSuppressed && activeProjectRestoreSuppressed()) return null;
   const key = activeProjectKey();
   if (!key) return null;
   const db = await openProjectDb();
@@ -65,6 +68,16 @@ export async function loadActiveBrowserProject() {
     ...snapshot,
     project
   };
+}
+
+export function suppressActiveBrowserProjectRestore() {
+  if (typeof localStorage === "undefined") return;
+  localStorage.setItem(ACTIVE_PROJECT_RESTORE_SUPPRESSED_KEY, "1");
+}
+
+export function allowActiveBrowserProjectRestore() {
+  if (typeof localStorage === "undefined") return;
+  localStorage.removeItem(ACTIVE_PROJECT_RESTORE_SUPPRESSED_KEY);
 }
 
 export async function loadBrowserProjectRawSources(project: Project) {
@@ -81,6 +94,11 @@ export async function loadBrowserProjectRawSources(project: Project) {
 function activeProjectKey() {
   if (typeof localStorage === "undefined") return null;
   return localStorage.getItem(ACTIVE_PROJECT_KEY);
+}
+
+function activeProjectRestoreSuppressed() {
+  if (typeof localStorage === "undefined") return false;
+  return localStorage.getItem(ACTIVE_PROJECT_RESTORE_SUPPRESSED_KEY) === "1";
 }
 
 function rememberActiveProject(key: string) {

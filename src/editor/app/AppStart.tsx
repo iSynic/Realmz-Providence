@@ -1,3 +1,4 @@
+import { BookOpen, FilePlus2, FolderOpen, LibraryBig, RefreshCcw } from "lucide-react";
 import { TutorialTip } from "../components/TutorialTip";
 
 const NEW_PROJECT_DIALOG_HELP =
@@ -59,7 +60,12 @@ export function ProjectNameDialog({
 export function ProjectStart({
   desktopRuntime,
   projectRoot,
-  browserPreviewStatus
+  browserPreviewStatus,
+  onNewProject,
+  onOpenProject,
+  onResumeProject,
+  onLibraryHub,
+  onDocuments
 }: {
   desktopRuntime: boolean;
   browserFileSystem: boolean;
@@ -67,6 +73,7 @@ export function ProjectStart({
   browserPreviewStatus: string;
   onNewProject: () => void;
   onOpenProject: () => void;
+  onResumeProject?: () => void;
   onImportScenario: () => void;
   onLibraryHub: () => void;
   onDocuments: () => void;
@@ -86,6 +93,25 @@ export function ProjectStart({
           <small>{desktopRuntime ? `Projects are created under ${projectRoot}. Bundled libraries are seeded automatically.` : "Browser preview opens downloaded Providence ZIP packages and loads bundled library fixtures into memory."}</small>
         </TutorialTip>
         {!desktopRuntime && <small>{browserPreviewStatus}</small>}
+        <div className="project-start-actions">
+          <button className="btn btn-primary" type="button" onClick={onNewProject}>
+            <FilePlus2 size={15} /> New Project
+          </button>
+          <button className="btn btn-secondary" type="button" onClick={onOpenProject}>
+            <FolderOpen size={15} /> Open Project
+          </button>
+          {onResumeProject && (
+            <button className="btn btn-secondary" type="button" onClick={onResumeProject}>
+              <RefreshCcw size={15} /> Resume Local
+            </button>
+          )}
+          <button className="btn btn-secondary" type="button" onClick={onLibraryHub}>
+            <LibraryBig size={15} /> Library
+          </button>
+          <button className="btn btn-secondary" type="button" onClick={onDocuments}>
+            <BookOpen size={15} /> Documents
+          </button>
+        </div>
       </div>
     </section>
   );

@@ -378,18 +378,19 @@ for (const snippet of [
   "ClassicStyleRunDraft",
   "plainStyleAssetFromDraft",
   "styleAssetFromBytes",
-  "Make Style Editable",
   "CLASSIC_AUTHOR_FONT_OPTIONS",
   "textSelectionRangeFromTextArea",
   "applyAuthorStyleToSelection",
   "text-source-details",
   "text-style-format-toolbar",
   "onDisplaySelectionChange",
-  "Apply Selection",
   "Custom Font ID",
   "Add Style Run",
-  "Save Style",
   "Apply Style Bytes",
+  "Remove Override",
+  "Flatten To Plain Style",
+  "applyViewportChanges",
+  "onApplyChanges={applyViewportChanges}",
   "parseClassicStyleRuns",
   "styleRunDraftsFromRuns",
   "classicStyleRunsFromDrafts",
@@ -397,7 +398,8 @@ for (const snippet of [
   "parseHexBytes",
   "StyledScrollingTextPreview",
   "REALMZ_GAMEPLAY_TEXT_VIEW_WIDTH",
-  "title=\"Gameplay viewport preview\"",
+  "\"Gameplay viewport editor\"",
+  "\"Gameplay viewport preview\"",
   "movieViewportWidth={REALMZ_GAMEPLAY_TEXT_VIEW_WIDTH}",
   "semanticResourceType(entity)",
   "semanticResourceId(entity)",
@@ -405,8 +407,7 @@ for (const snippet of [
   "bytesToDataUrl(bytes, \"application/octet-stream\")",
   "resourceType: \"TEXT\"",
   "resourceType: \"styl\"",
-  ".filter((asset) => asset.resourceType.trim() === \"TEXT\")",
-  "Apply Scrolling Text"
+  ".filter((asset) => asset.resourceType.trim() === \"TEXT\")"
 ]) {
   if (!textPanel.includes(snippet)) failures.push(`Text panel is missing authored scrolling TEXT resource support: ${snippet}`);
 }
@@ -455,6 +456,7 @@ for (const snippet of [
   "export function StyledScrollingTextPreview",
   "export function styledTextPreviewSegments",
   "Offset-preserving Classic TEXT/styl preview. Windows Realmz testing currently ignores styl formatting.",
+  "Apply Changes",
   "function styleRunPreviewTitle",
   "export function parseClassicStyleRuns",
   "export function classicStyleBytesFromRuns"

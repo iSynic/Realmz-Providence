@@ -12,6 +12,7 @@ export function ProvidenceEditorShell({
   runtimeLabel,
   runtimeLive,
   canOpenProject,
+  canCloseProject,
   canImportScenario,
   browserPreviewStatus,
   importAllowed,
@@ -34,6 +35,7 @@ export function ProvidenceEditorShell({
   onToggleTutorial,
   onNewProject,
   onOpenProject,
+  onCloseProject,
   onImportScenario,
   onUndo,
   onRedo,
@@ -47,6 +49,7 @@ export function ProvidenceEditorShell({
   runtimeLabel: string;
   runtimeLive: boolean;
   canOpenProject: boolean;
+  canCloseProject: boolean;
   canImportScenario: boolean;
   browserPreviewStatus: string;
   importAllowed: boolean;
@@ -69,6 +72,7 @@ export function ProvidenceEditorShell({
   onToggleTutorial: () => void;
   onNewProject: () => void;
   onOpenProject: () => void;
+  onCloseProject: () => void;
   onImportScenario: () => void;
   onUndo: () => void;
   onRedo: () => void;
@@ -91,6 +95,7 @@ export function ProvidenceEditorShell({
         editing={Boolean(state.groupLabel)}
         importAllowed={importAllowed}
         canOpenProject={canOpenProject}
+        canCloseProject={canCloseProject}
         canImportScenario={canImportScenario}
         browserPreviewStatus={browserPreviewStatus}
         undoLabel={undoLabel}
@@ -112,6 +117,7 @@ export function ProvidenceEditorShell({
         onToggleTutorial={onToggleTutorial}
         onNewProject={onNewProject}
         onOpenProject={onOpenProject}
+        onCloseProject={onCloseProject}
         onImportScenario={onImportScenario}
         onUndo={onUndo}
         onRedo={onRedo}

@@ -4217,6 +4217,20 @@ button.documents-source-chip {
   font-size: 11px;
 }
 
+.project-start-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.project-start-actions .btn {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
 
 
 

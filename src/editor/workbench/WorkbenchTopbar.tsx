@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { BookOpen, ChevronLeft, ChevronRight, Download, FilePlus2, FolderOpen, LibraryBig, RefreshCcw, Save, Search, Upload } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, Download, FilePlus2, FolderOpen, LibraryBig, RefreshCcw, Save, Search, Upload, X } from "lucide-react";
 import { ActiveWorkbench } from "../types";
 import { IconButton } from "../components/IconButton";
 import { TutorialTip } from "../components/TutorialTip";
@@ -26,6 +26,8 @@ const TOPBAR_NEW_PROJECT_HELP =
   "New creates an empty Providence folder package. Import remains available only while the project is still empty, so create the package before importing a Realmz scenario.";
 const TOPBAR_OPEN_PROJECT_HELP =
   "Open loads an existing Providence project package. Browser mode opens downloaded .providence.zip packages; use Import for raw Realmz scenario folders.";
+const TOPBAR_CLOSE_PROJECT_HELP =
+  "Close returns to the Providence start screen. In browser mode it pauses auto-resume without deleting the saved project from browser storage; use Resume Local on the start screen to reopen it.";
 const TOPBAR_IMPORT_HELP =
   "Import reads a Realmz scenario folder into an empty Providence project, keeping source snapshots so export can preserve unsupported files safely.";
 const TOPBAR_UNDO_HELP =
@@ -49,6 +51,7 @@ export function WorkbenchTopbar({
   editing,
   importAllowed,
   canOpenProject,
+  canCloseProject,
   canImportScenario,
   browserPreviewStatus,
   undoLabel,
@@ -70,6 +73,7 @@ export function WorkbenchTopbar({
   onToggleTutorial,
   onNewProject,
   onOpenProject,
+  onCloseProject,
   onImportScenario,
   onUndo,
   onRedo,
@@ -85,6 +89,7 @@ export function WorkbenchTopbar({
   editing: boolean;
   importAllowed: boolean;
   canOpenProject: boolean;
+  canCloseProject: boolean;
   canImportScenario: boolean;
   browserPreviewStatus: string;
   undoLabel: string | null;
@@ -106,6 +111,7 @@ export function WorkbenchTopbar({
   onToggleTutorial: () => void;
   onNewProject: () => void;
   onOpenProject: () => void;
+  onCloseProject: () => void;
   onImportScenario: () => void;
   onUndo: () => void;
   onRedo: () => void;
@@ -226,6 +232,19 @@ export function WorkbenchTopbar({
             <span>Open</span>
           </button>
         </TutorialTip>
+        {canCloseProject && (
+          <TutorialTip title="Close Project" body={TOPBAR_CLOSE_PROJECT_HELP} side="below">
+            <button
+              className="topbar-action-button"
+              type="button"
+              onClick={onCloseProject}
+              title="Close current project and return to the Providence start screen"
+            >
+              <X size={15} />
+              <span>Close</span>
+            </button>
+          </TutorialTip>
+        )}
         {importAllowed && (
           <TutorialTip title="Import Scenario" body={TOPBAR_IMPORT_HELP} side="below">
             <button

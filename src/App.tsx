@@ -287,6 +287,8 @@ export function App() {
     showNewProjectDialog,
     createNewProject,
     chooseExistingProject,
+    resumeBrowserProject,
+    closeProject,
     importScenario,
     openLibraryHub,
     openProjectWorkbench,
@@ -571,6 +573,7 @@ export function App() {
       runtimeLabel={desktopRuntime ? "Desktop" : browserFileSystem ? "Browser FS" : "Browser Local"}
       runtimeLive={true}
       canOpenProject={true}
+      canCloseProject={Boolean(state.project)}
       canImportScenario={desktopRuntime || browserFileSystem}
       browserPreviewStatus={BROWSER_PREVIEW_STATUS}
       importAllowed={importAllowed}
@@ -596,6 +599,7 @@ export function App() {
       onToggleTutorial={() => dispatch({ type: "setTutorialEnabled", enabled: !state.tutorialEnabled })}
       onNewProject={showNewProjectDialog}
       onOpenProject={chooseExistingProject}
+      onCloseProject={closeProject}
       onImportScenario={importScenario}
       onUndo={() => dispatch({ type: "undo" })}
       onRedo={() => dispatch({ type: "redo" })}
@@ -617,6 +621,7 @@ export function App() {
             projectRoot={storagePaths.projectRoot}
             onNewProject={showNewProjectDialog}
             onOpenProject={chooseExistingProject}
+            onResumeProject={desktopRuntime ? undefined : resumeBrowserProject}
             onImportScenario={importScenario}
             onLibraryHub={openLibraryHub}
             onDocuments={() => setDocumentsOpen(true)}
