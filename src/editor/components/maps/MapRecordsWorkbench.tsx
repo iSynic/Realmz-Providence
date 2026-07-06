@@ -421,9 +421,9 @@ function MapRecordEditor({
   );
 }
 
-// Modern Realmz renders Player Maps into lookrect: 320+leftshift by 320+downshift, with screensize=1.
-const PLAYER_MAP_PREVIEW_WIDTH = 480;
-const PLAYER_MAP_PREVIEW_HEIGHT = 416;
+// Current Realmz Castle main still shows Maps/Notes helper maps in the classic 320x320 map window.
+const PLAYER_MAP_PREVIEW_WIDTH = 320;
+const PLAYER_MAP_PREVIEW_HEIGHT = 320;
 const PLAYER_MAP_PREVIEW_VIEW_OPTIONS: MapViewOptions = {
   showRealTiles: true,
   showDecodedColors: true,

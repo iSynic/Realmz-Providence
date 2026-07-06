@@ -2256,8 +2256,8 @@
 .player-map-preview-card canvas,
 .player-map-picture-preview,
 .player-map-scrolling-preview {
-  width: min(480px, 100%);
-  aspect-ratio: 480 / 416;
+  width: min(320px, 100%);
+  aspect-ratio: 1 / 1;
   height: auto;
   max-width: 100%;
   border: 1px solid #d4c790;
