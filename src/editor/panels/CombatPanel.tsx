@@ -6581,8 +6581,9 @@ function formatGridSpan(value: number) {
   return Number.isInteger(value) ? String(value) : value.toFixed(1).replace(/\.0$/, "");
 }
 
-function monsterBrushPaletteWindow(total: number, width: number, height: number, scrollTop: number) {
+export function monsterBrushPaletteWindow(total: number, width: number, height: number, scrollTop: number) {
   if (total <= 0) return { startIndex: 0, endIndex: 0, topSpacer: 0, bottomSpacer: 0 };
+  if (width <= 0 || height <= 0) return { startIndex: 0, endIndex: total, topSpacer: 0, bottomSpacer: 0 };
   const columns = Math.max(1, Math.floor((Math.max(width, MONSTER_BRUSH_TILE_SIZE) + MONSTER_BRUSH_TILE_GAP) / MONSTER_BRUSH_TILE_STRIDE));
   const totalRows = Math.ceil(total / columns);
   const visibleRows = Math.max(1, Math.ceil(Math.max(height, MONSTER_BRUSH_TILE_STRIDE) / MONSTER_BRUSH_TILE_STRIDE));

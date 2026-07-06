@@ -36,6 +36,7 @@ try {
   checkScenarioMonsterIconOverrideImport(realmzParser, combatPanel);
   checkIconLibraryMonsterPairMetadata(iconLibrary);
   checkCicnEncoder(cicnEncoder);
+  checkMonsterBrushPaletteWindow(combatPanel);
   checkScenarioMonsterIconTargetAllocation(combatPanel);
   checkMonsterRequiredWeaponEncoding(combatPanel);
   await checkScenarioMonsterIconTargetFiltering(combatPanel);
@@ -231,6 +232,20 @@ function checkGenerateMonsterVariantsForAll({ generateMonsterVariantsForAll }) {
   assert(findSet(next, 1, 3).armor === 40, "generateMonsterVariantsForAll did not generate Monster variant for the later active Normal record");
   assert(findSet(next, -1, 3).armor === 60, "generateMonsterVariantsForAll did not overwrite Mega variant for the later active Normal record");
   assert(findSet(next, 1, 2).displayName === "Keep Blank Source Variant", "generateMonsterVariantsForAll generated variants from a blank Normal slot");
+}
+
+function checkMonsterBrushPaletteWindow({ monsterBrushPaletteWindow }) {
+  const unmeasured = monsterBrushPaletteWindow(164, 0, 0, 0);
+  assert(unmeasured.startIndex === 0 && unmeasured.endIndex === 164, "monsterBrushPaletteWindow should render all entries before viewport measurement");
+  assert(unmeasured.topSpacer === 0 && unmeasured.bottomSpacer === 0, "monsterBrushPaletteWindow should not add virtual spacers before viewport measurement");
+
+  const measured = monsterBrushPaletteWindow(164, 392, 320, 0);
+  assert(measured.startIndex === 0 && measured.endIndex === 40, "monsterBrushPaletteWindow should render the visible measured grid window with overscan");
+
+  const scrolled = monsterBrushPaletteWindow(164, 392, 320, 800);
+  assert(scrolled.startIndex === 40 && scrolled.endIndex === 80, "monsterBrushPaletteWindow should advance by complete grid rows while scrolling");
+  assert(scrolled.topSpacer === 640, "monsterBrushPaletteWindow top spacer should preserve scrolled row height");
+  assert(scrolled.bottomSpacer === 1360, "monsterBrushPaletteWindow bottom spacer should preserve remaining row height");
 }
 
 function checkBattleReferenceCommands({ rewriteBattleMonsterReferences }, { battleReferencesForMonster }) {
