@@ -10,6 +10,7 @@ const crosswalk = readJson(path.join(root, "src", "editor", "generated", "opcode
 const manualHelp = readJson(path.join(root, "docs", "generated", "divinity-opcode-help.json"));
 const catalogSource = fs.readFileSync(path.join(root, "src", "editor", "panels", "scripts", "scriptActionCatalog.ts"), "utf8");
 const actionSource = fs.readFileSync(path.join(root, "src", "editor", "realmzActions.ts"), "utf8");
+const targetPickerSource = fs.readFileSync(path.join(root, "src", "editor", "components", "RealmzTargetPicker.tsx"), "utf8");
 const manualEntriesByResource = new Map(manualHelp.entries.map((entry) => [entry.resourceId, entry]));
 
 const firstClass = parseNumberSet(catalogSource, "FIRST_CLASS_ACTIONS");
@@ -19,6 +20,44 @@ const manualNoneStepOnly = parseNumberSet(catalogSource, "MANUAL_NONE_STEP_ONLY_
 const overrideCodes = parseOverrideCodes(catalogSource, "ACTION_OVERRIDES");
 const actionDetailCodes = parseOverrideCodes(actionSource, "ACTION_DETAILS");
 const chooserConsolidations = parseChooserConsolidations(catalogSource);
+const directTargetConfigs = parseTargetPickerConfigs(targetPickerSource);
+const searchTargetFamilies = new Set([
+  "message",
+  "message-or-option-label",
+  "option-label",
+  "sound",
+  "picture",
+  "text-resource",
+  "scrolling-text",
+  "shop",
+  "simple-encounter",
+  "complex-encounter",
+  "thief-encounter",
+  "timed-encounter",
+  "battle",
+  "treasure",
+  "item",
+  "monster",
+  "extra-action-point",
+  "extra-action-point-or-encounter",
+  "macro",
+  "quest-label",
+  "map-record",
+  "random-encounter-rectangle"
+]);
+const edcdSearchBackedFamilies = new Set([
+  "battle",
+  "treasure",
+  "shop",
+  "simple-encounter",
+  "complex-encounter",
+  "thief-encounter",
+  "timed-encounter",
+  "extra-action-point",
+  "extra-action-point-or-encounter",
+  "macro",
+  "monster"
+]);
 
 const entries = Object.values(crosswalk)
   .sort((a, b) => a.opcode - b.opcode)
@@ -38,6 +77,7 @@ const entries = Object.values(crosswalk)
     const gapStatus = auditGapStatus(entry, state, status, manualEntries, isManualNoneStepOnly);
     const evidenceConfidence = auditEvidenceConfidence(entry, status, manualEntries);
     const chooserConsolidation = chooserConsolidationFor(code);
+    const authoringControls = authoringControlsForEntry(entry, state, status, gapStatus, evidenceConfidence, providenceFields);
     return {
       opcode: code,
       title: coverageTitle(entry),
@@ -51,6 +91,7 @@ const entries = Object.values(crosswalk)
       relatedOpcodes: relatedManualOpcodes(manualEntries, code),
       ...(chooserConsolidation ? { chooserConsolidation } : {}),
       providenceFields,
+      authoringControls,
       edcdBacked: Boolean(entry.edcdBacked),
       shape: entry.shape,
       writerStatus: entry.writerStatus,
@@ -67,17 +108,22 @@ const entries = Object.values(crosswalk)
 const groups = groupBy(entries, (entry) => entry.status);
 const gapGroups = groupBy(entries, (entry) => entry.gapStatus);
 const confidenceGroups = groupBy(entries, (entry) => entry.evidenceConfidence);
+const controlStatusGroups = groupBy(entries.flatMap((entry) => entry.authoringControls), (control) => control.status);
+const expectedControlGroups = groupBy(entries.flatMap((entry) => entry.authoringControls), (control) => control.expectedControl);
 const report = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   source: {
     crosswalk: "src/editor/generated/opcodeEdcdCrosswalk.json",
     manualHelp: "docs/generated/divinity-opcode-help.json",
     catalog: "src/editor/panels/scripts/scriptActionCatalog.ts",
-    actions: "src/editor/realmzActions.ts"
+    actions: "src/editor/realmzActions.ts",
+    targetPicker: "src/editor/components/RealmzTargetPicker.tsx"
   },
   counts: Object.fromEntries([...groups.entries()].map(([key, value]) => [key, value.length]).sort()),
   gapCounts: Object.fromEntries([...gapGroups.entries()].map(([key, value]) => [key, value.length]).sort()),
   confidenceCounts: Object.fromEntries([...confidenceGroups.entries()].map(([key, value]) => [key, value.length]).sort()),
+  controlStatusCounts: Object.fromEntries([...controlStatusGroups.entries()].map(([key, value]) => [key, value.length]).sort()),
+  expectedControlCounts: Object.fromEntries([...expectedControlGroups.entries()].map(([key, value]) => [key, value.length]).sort()),
   entries,
   notes: [
     "Wrath AP 32/33 screenshot parity should be checked against the actual imported trigger selection, because the supplied Divinity and Providence screenshots appear to show neighboring Action Points rather than a guaranteed same selected row.",
@@ -221,6 +267,142 @@ function auditEvidenceConfidence(entry, status, manualEntries) {
   return "catalog-only";
 }
 
+function authoringControlsForEntry(entry, state, status, gapStatus, evidenceConfidence, fields) {
+  return fields.map((field) => {
+    const targetFamily = effectiveFieldTargetFamily(entry, field);
+    const expectedControl = expectedControlForField(entry, field, targetFamily, gapStatus);
+    return {
+      fieldLabel: field.label,
+      internalName: field.internalName,
+      index: field.index,
+      storage: storageForField(entry, field, expectedControl),
+      targetFamily,
+      expectedControl,
+      implementedSurface: implementedSurfaceForField(entry, field, targetFamily, expectedControl),
+      status: controlStatusForField(status, gapStatus, evidenceConfidence, expectedControl),
+      evidence: evidenceConfidence
+    };
+  });
+}
+
+function effectiveFieldTargetFamily(entry, field) {
+  if (field.preserved || field.internalName === "stepOnly") return null;
+  if (!entry.edcdBacked && field.internalName === "id") {
+    return directTargetConfigs.get(entry.opcode)?.targetFamily ?? field.targetFamily ?? entry.targetFamily ?? null;
+  }
+  const shape = String(entry.shape ?? "").toLowerCase();
+  const name = String(field.internalName ?? "").toLowerCase();
+  if (shape === "force-branch" && entry.opcode === 38 && name === "testa") return "item";
+  if (shape.includes("item") && (name.includes("item") || name === "required")) return "item";
+  if (shape === "action-data-patching" && name === "macro") return "extra-action-point";
+  if (name.includes("scrollingtext")) return "text-resource";
+  if (name.includes("timedencounter") || name === "timeencounter") return "timed-encounter";
+  if (name.includes("thief") || name.includes("rogue")) return "thief-encounter";
+  if (name.includes("treasure")) return "treasure";
+  if (name.includes("shop")) return "shop";
+  if (field.targetFamily === "message-or-option-label") return "message-or-option-label";
+  if (name.includes("sound")) return "sound";
+  if (name.includes("message") || name.startsWith("prompt")) return "message";
+  if (name.includes("monster")) return "monster";
+  if (name.includes("macro")) return "extra-action-point";
+  if (shape.includes("battle") && (name === "battlelow" || name === "battlehigh")) return "battle";
+  if (field.targetFamily === "extra-action-point-or-encounter") {
+    return branchDestinationField(name) ? "extra-action-point-or-encounter" : null;
+  }
+  return field.targetFamily ?? null;
+}
+
+function branchDestinationField(name) {
+  return [
+    "branchtarget",
+    "target",
+    "truetarget",
+    "falsetarget",
+    "successtarget",
+    "failuretarget",
+    "hastarget",
+    "missingtarget",
+    "successmacro",
+    "failuremacro"
+  ].includes(name);
+}
+
+function expectedControlForField(entry, field, targetFamily, gapStatus) {
+  const name = String(field.internalName ?? "").toLowerCase();
+  const label = String(field.label ?? "").toLowerCase();
+  if (name === "steponly" || gapStatus === "step-only-no-options" || gapStatus === "legacy-compatible") return "step-only";
+  if (field.preserved || gapStatus === "combat-macro-only" || gapStatus === "intentionally-preserved") return "advanced-preserved";
+  if (compactSelectField(name, label, targetFamily)) return "compact-select";
+  if (searchTargetFamilies.has(targetFamily)) return "search-target";
+  if (toggleField(name, label)) return "toggle";
+  return "narrow-number";
+}
+
+function implementedSurfaceForField(entry, field, targetFamily, expectedControl) {
+  if (expectedControl === "advanced-preserved") return entry.edcdBacked ? "Collapsed Technical Details preserved value" : "Preserved CODE/ID value";
+  if (expectedControl === "step-only") return "Action chooser step-only control";
+  if (!entry.edcdBacked) {
+    return expectedControl === "search-target" ? "RealmzTargetPicker search/preview target" : "Direct CODE/ID numeric field";
+  }
+  if (expectedControl === "search-target") {
+    if (targetFamily === "item") return "EdcdItemTargetField search/preview control";
+    if (targetFamily === "message" || targetFamily === "sound") return "EdcdSearchTargetField";
+    if (edcdSearchBackedFamilies.has(targetFamily)) return "EdcdSelectTargetField search-backed selected row";
+    return "EdcdSelectTargetField target picker";
+  }
+  if (expectedControl === "compact-select") return "Guided EDCD compact select";
+  if (expectedControl === "toggle") return "Guided EDCD boolean/signed intent control";
+  return "Guided EDCD narrow numeric field";
+}
+
+function controlStatusForField(status, gapStatus, evidenceConfidence, expectedControl) {
+  if (gapStatus === "needs-manual-evidence" || evidenceConfidence === "unknown") return "needs-evidence";
+  if (status === "truly-unknown" || status === "edcd-backed-needs-form") return "needs-ui-fix";
+  if (evidenceConfidence === "catalog-only" && gapStatus !== "intentionally-preserved" && expectedControl !== "step-only") return "needs-evidence";
+  return "ok";
+}
+
+function storageForField(entry, field, expectedControl) {
+  if (field.preserved) return "preserved-edcd-value";
+  if (expectedControl === "step-only") return "step-only";
+  return entry.edcdBacked ? "data-edcd-parameter-row" : "direct-code-id";
+}
+
+function compactSelectField(name, label, targetFamily) {
+  if (targetFamily === "map-item") return true;
+  return [
+    "mode",
+    "branchmode",
+    "missingbehavior",
+    "replypolarity",
+    "levelkind",
+    "resultslot",
+    "revivepartyflag",
+    "testb",
+    "selector",
+    "testselector",
+    "pickedselector",
+    "abilityorattribute",
+    "attributeflag",
+    "failurebehavior",
+    "falsebehavior",
+    "scope",
+    "condition",
+    "expectedstate",
+    "gender",
+    "who",
+    "sourceset",
+    "isdungeon",
+    "shapemode",
+    "darkstateplusone",
+    "resetdayflag"
+  ].some((token) => name.includes(token) || label.includes(token));
+}
+
+function toggleField(name, label) {
+  return ["stopifalready"].some((token) => name.includes(token) || label.includes(token));
+}
+
 function renderMarkdown(report) {
   const lines = [
     "# Action Point Opcode Coverage",
@@ -239,10 +421,18 @@ function renderMarkdown(report) {
     "",
     ...Object.entries(report.confidenceCounts).map(([status, count]) => `- ${status}: ${count}`),
     "",
+    "## Authoring Control Audit",
+    "",
+    ...Object.entries(report.controlStatusCounts).map(([status, count]) => `- ${status}: ${count}`),
+    "",
+    "## Expected Controls",
+    "",
+    ...Object.entries(report.expectedControlCounts).map(([status, count]) => `- ${status}: ${count}`),
+    "",
     "## Coverage",
     "",
-    "| Opcode | Gap | Confidence | Title | Manual ID | Providence Fields | Storage | Related | Chooser | Notes |",
-    "| ---: | --- | --- | --- | --- | --- | --- | --- | --- | --- |"
+    "| Opcode | Gap | Confidence | Title | Manual ID | Providence Fields | Authoring Controls | Storage | Related | Chooser | Notes |",
+    "| ---: | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"
   ];
   for (const entry of report.entries) {
     lines.push([
@@ -252,6 +442,7 @@ function renderMarkdown(report) {
       escapeCell(entry.title),
       escapeCell(entry.manual.idField || entry.idMeaning || ""),
       escapeCell(formatProvidenceFields(entry.providenceFields)),
+      escapeCell(formatAuthoringControls(entry.authoringControls)),
       entry.edcdBacked ? "Data EDCD" : entry.targetFamily ?? "direct",
       entry.relatedOpcodes.join(", "),
       escapeCell(formatChooserConsolidation(entry.chooserConsolidation)),
@@ -273,6 +464,16 @@ function renderMarkdown(report) {
     ""
   );
   return `${lines.join("\n")}\n`;
+}
+
+function formatAuthoringControls(controls) {
+  return controls
+    .map((control) => {
+      const target = control.targetFamily ? ` -> ${control.targetFamily}` : "";
+      const status = control.status === "ok" ? "" : ` [${control.status}]`;
+      return `${control.fieldLabel}: ${control.expectedControl}${target}${status}`;
+    })
+    .join("; ");
 }
 
 function formatProvidenceFields(fields) {
@@ -341,6 +542,52 @@ function parseChooserConsolidations(source) {
       reason: match[3],
       writeRule: match[4]
     }));
+}
+
+function parseTargetPickerConfigs(source) {
+  const start = source.indexOf("const configs:");
+  if (start < 0) return new Map();
+  const end = source.indexOf("\n  };", start);
+  const body = end > start ? source.slice(start, end) : source.slice(start);
+  const configs = new Map();
+  for (const match of body.matchAll(/(?:^|\n)\s*(\d+):\s*\{([^}]+)\}/g)) {
+    const opcode = Number(match[1]);
+    const objectText = match[2];
+    const label = stringProperty(objectText, "label") ?? "";
+    const recordType = stringProperty(objectText, "recordType");
+    const searchable = !/searchable:\s*false/.test(objectText);
+    configs.set(opcode, {
+      label,
+      recordType,
+      searchable,
+      targetFamily: targetFamilyForDirectTargetConfig(label, recordType)
+    });
+  }
+  return configs;
+}
+
+function stringProperty(objectText, name) {
+  const match = objectText.match(new RegExp(`${name}:\\s*"([^"]+)"`));
+  return match?.[1] ?? null;
+}
+
+function targetFamilyForDirectTargetConfig(label, recordType) {
+  if (recordType) return camelRecordTypeToTargetFamily(recordType);
+  const normalized = label.toLowerCase();
+  if (normalized.includes("string")) return "message";
+  if (normalized.includes("sound")) return "sound";
+  if (normalized.includes("picture")) return "picture";
+  if (normalized.includes("scrolling text")) return "text-resource";
+  if (normalized.includes("extra action point")) return "extra-action-point";
+  if (normalized.includes("map item")) return "map-item";
+  if (normalized.includes("map record")) return "map-record";
+  return "direct-id";
+}
+
+function camelRecordTypeToTargetFamily(recordType) {
+  return recordType
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .toLowerCase();
 }
 
 function groupBy(values, keyFor) {

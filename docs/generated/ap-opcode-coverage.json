@@ -1,10 +1,11 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "source": {
     "crosswalk": "src/editor/generated/opcodeEdcdCrosswalk.json",
     "manualHelp": "docs/generated/divinity-opcode-help.json",
     "catalog": "src/editor/panels/scripts/scriptActionCatalog.ts",
-    "actions": "src/editor/realmzActions.ts"
+    "actions": "src/editor/realmzActions.ts",
+    "targetPicker": "src/editor/components/RealmzTargetPicker.tsx"
   },
   "counts": {
     "authorable-now": 49,
@@ -26,6 +27,18 @@
     "manual-backed": 65,
     "manual-plus-preservation": 10,
     "source-backed": 53
+  },
+  "controlStatusCounts": {
+    "needs-evidence": 1,
+    "ok": 409
+  },
+  "expectedControlCounts": {
+    "advanced-preserved": 74,
+    "compact-select": 72,
+    "narrow-number": 133,
+    "search-target": 113,
+    "step-only": 17,
+    "toggle": 1
   },
   "entries": [
     {
@@ -94,6 +107,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Land Level ID",
+          "internalName": "level",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Rectangle Number To Alter",
+          "internalName": "randomRegion",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "New X ‘s In 10,000",
+          "internalName": "percent",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "New Battle Range Low",
+          "internalName": "battleLowOrKeep",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "battle",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "New Battle Range High",
+          "internalName": "battleHighOrKeep",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "battle",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "random-region-mutation",
       "writerStatus": "writer-ready-data-edcd",
@@ -130,6 +200,19 @@
           "internalName": "id",
           "targetFamily": "direct-id",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "ID",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "direct-id",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Direct CODE/ID numeric field",
+          "status": "needs-evidence",
+          "evidence": "catalog-only"
         }
       ],
       "edcdBacked": false,
@@ -170,6 +253,19 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Step only",
+          "internalName": "stepOnly",
+          "index": null,
+          "storage": "step-only",
+          "targetFamily": null,
+          "expectedControl": "step-only",
+          "implementedSurface": "Action chooser step-only control",
+          "status": "ok",
+          "evidence": "catalog-only"
+        }
+      ],
       "edcdBacked": false,
       "shape": null,
       "writerStatus": "writer-gated-direct-target-family",
@@ -208,6 +304,19 @@
           "internalName": "id",
           "targetFamily": "message",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "String Number To Display",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "message",
+          "expectedControl": "search-target",
+          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -278,6 +387,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Battle Number",
+          "internalName": "battleLow",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "battle",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Battle High",
+          "internalName": "battleHigh",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "battle",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Sound To Play Before Battle",
+          "internalName": "soundOrReviveLossMacro",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "sound",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSearchTargetField",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "String To Display Before Battle",
+          "internalName": "message",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "message",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSearchTargetField",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Revive Party Flag",
+          "internalName": "revivePartyFlag",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "battle",
       "writerStatus": "writer-ready-data-edcd",
@@ -346,6 +512,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Reply Polarity",
+          "internalName": "replyPolarity",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Branch Mode",
+          "internalName": "branchMode",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "X-AP/Branch No. Of Encounter (0-3)",
+          "internalName": "branchTarget",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point-or-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Prompt, Left Side (Optional)",
+          "internalName": "promptA",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "message-or-option-label",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField target picker",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Prompt, Right Side (Optional)",
+          "internalName": "promptB",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "message-or-option-label",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField target picker",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "choice",
       "writerStatus": "writer-ready-data-edcd",
@@ -384,6 +607,19 @@
           "internalName": "id",
           "targetFamily": "simple-encounter",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Simple Encounter ID",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "simple-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -426,6 +662,19 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Complex Encounter ID",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "complex-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": false,
       "shape": null,
       "writerStatus": "writer-gated-direct-target-family",
@@ -464,6 +713,19 @@
           "internalName": "id",
           "targetFamily": "shop",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Shop ID",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "shop",
+          "expectedControl": "search-target",
+          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -534,6 +796,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Level / Cache",
+          "internalName": "levelOrCache",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Target Record",
+          "internalName": "targetRecord",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Macro",
+          "internalName": "macro",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "For AP Replacement",
+          "internalName": "levelKind",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "For Encounter Script Replacement",
+          "internalName": "resultSlot",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "action-data-patching",
       "writerStatus": "writer-ready-data-edcd",
@@ -572,6 +891,19 @@
           "internalName": "id",
           "targetFamily": "same-map-action-point",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Same-map Action Point",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "same-map-action-point",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Direct CODE/ID numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -614,6 +946,19 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "ID",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "sound",
+          "expectedControl": "search-target",
+          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": false,
       "shape": null,
       "writerStatus": "writer-gated-direct-target-family",
@@ -654,6 +999,19 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Treasure ID",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "treasure",
+          "expectedControl": "search-target",
+          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": false,
       "shape": null,
       "writerStatus": "writer-gated-direct-target-family",
@@ -692,6 +1050,19 @@
           "internalName": "id",
           "targetFamily": "direct-id",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Amount Of Victory Points To Give",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "direct-id",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Direct CODE/ID numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -762,6 +1133,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Level",
+          "internalName": "level",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "X-Coordinate",
+          "internalName": "xOrDungeonY",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Y-Coordinate",
+          "internalName": "yOrDungeonX",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "New Tile ID",
+          "internalName": "tileValue",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Is Dungeon",
+          "internalName": "isDungeon",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "tile-mutation",
       "writerStatus": "writer-ready-data-edcd",
@@ -830,6 +1258,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Land/Dungeon Level",
+          "internalName": "level",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Action Point Number",
+          "internalName": "singleTrigger",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "New % (Negative Value = Disabled)",
+          "internalName": "percent",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Action Point No. Low",
+          "internalName": "rangeStartWithSign",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Action Point No. High",
+          "internalName": "rangeEnd",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "trigger-mutation",
       "writerStatus": "writer-ready-data-edcd",
@@ -868,6 +1353,19 @@
           "internalName": "id",
           "targetFamily": "direct-id",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Number Of Characters To Pick",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "direct-id",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Direct CODE/ID numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -938,6 +1436,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Multiplier ( - Is Hurt )",
+          "internalName": "multiplier",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Low Range",
+          "internalName": "low",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "High Range",
+          "internalName": "high",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Sound ---Optional---",
+          "internalName": "sound",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "sound",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSearchTargetField",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Message ---Optional---",
+          "internalName": "message",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "message",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSearchTargetField",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "damage-heal",
       "writerStatus": "writer-ready-data-edcd",
@@ -1004,6 +1559,63 @@
           "internalName": "message",
           "targetFamily": "message",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Multiplier ( - Is Hurt )",
+          "internalName": "multiplier",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Low Range",
+          "internalName": "low",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "High Range",
+          "internalName": "high",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Sound ---Optional---",
+          "internalName": "sound",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "sound",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSearchTargetField",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Message ---Optional---",
+          "internalName": "message",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "message",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSearchTargetField",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": true,
@@ -1075,6 +1687,63 @@
           "preserved": true
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Spell No. To Cast",
+          "internalName": "spell",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Power Level",
+          "internalName": "powerLevel",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "+/- % To DRVs Modifier",
+          "internalName": "saveAdjust",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Force Affect",
+          "internalName": "forceAffect",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 5",
+          "internalName": "unused",
+          "index": 4,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "spell-cast",
       "writerStatus": "writer-ready-data-edcd",
@@ -1141,6 +1810,63 @@
           "internalName": "unused",
           "targetFamily": null,
           "preserved": true
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Spell No. To Cast",
+          "internalName": "spell",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Power Level",
+          "internalName": "powerLevel",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "+/- % To DRVs Modifier",
+          "internalName": "saveAdjust",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Force Affect",
+          "internalName": "forceAffect",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 5",
+          "internalName": "unused",
+          "index": 4,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
         }
       ],
       "edcdBacked": true,
@@ -1211,6 +1937,63 @@
           "preserved": true
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Low String Range Number",
+          "internalName": "messageLow",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "message",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSearchTargetField",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "High String Range Number",
+          "internalName": "messageHigh",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "message",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSearchTargetField",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 3",
+          "internalName": "unused",
+          "index": 2,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 4",
+          "internalName": "unused",
+          "index": 3,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 5",
+          "internalName": "unused",
+          "index": 4,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "random-message",
       "writerStatus": "writer-ready-data-edcd",
@@ -1277,6 +2060,63 @@
           "internalName": "message",
           "targetFamily": "message",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Land ID To Teleport To",
+          "internalName": "levelOrKeep",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "X-Coordinate (-1 = No Change)",
+          "internalName": "xOrKeep",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Y-Coordinate (-1 = No Change)",
+          "internalName": "yOrKeep",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Sound ---Optional---",
+          "internalName": "sound",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "sound",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSearchTargetField",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Message ---Optional--- Script Tip",
+          "internalName": "message",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "message",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSearchTargetField",
+          "status": "ok",
+          "evidence": "source-backed"
         }
       ],
       "edcdBacked": true,
@@ -1347,6 +2187,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Item ID To Check For",
+          "internalName": "item",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "item",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdItemTargetField search/preview control",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "If Possessed, Branch To",
+          "internalName": "branchMode",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Missing Behavior",
+          "internalName": "missingBehavior",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "X-AP/Encounter No. If Possessed",
+          "internalName": "hasTarget",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point-or-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Missing Target",
+          "internalName": "missingTarget",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point-or-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "item-branch",
       "writerStatus": "writer-ready-data-edcd",
@@ -1413,6 +2310,63 @@
           "internalName": "replacementItem",
           "targetFamily": "item",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Item ID To Alter",
+          "internalName": "item",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "item",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdItemTargetField search/preview control",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Number Of Items To Affect",
+          "internalName": "maxMatches",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "To Do",
+          "internalName": "mode",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Charges To Add (- = Drain Charges)",
+          "internalName": "chargeDelta",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "New Item ID",
+          "internalName": "replacementItem",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "item",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdItemTargetField search/preview control",
+          "status": "ok",
+          "evidence": "source-backed"
         }
       ],
       "edcdBacked": true,
@@ -1494,6 +2448,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Land Level ID",
+          "internalName": "level",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Rectangle Number To Alter",
+          "internalName": "randomRegion",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "New X ‘s In 10,000",
+          "internalName": "percent",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "New Battle Range Low",
+          "internalName": "battleLowOrKeep",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "battle",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "New Battle Range High",
+          "internalName": "battleHighOrKeep",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "battle",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "random-region-mutation",
       "writerStatus": "writer-ready-data-edcd",
@@ -1532,6 +2543,19 @@
           "internalName": "id",
           "targetFamily": "direct-id",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "ID",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "direct-id",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Direct CODE/ID numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -1574,6 +2598,19 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Step only",
+          "internalName": "stepOnly",
+          "index": null,
+          "storage": "step-only",
+          "targetFamily": null,
+          "expectedControl": "step-only",
+          "implementedSurface": "Action chooser step-only control",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": false,
       "shape": null,
       "writerStatus": "writer-gated-direct-target-family",
@@ -1612,6 +2649,19 @@
           "internalName": "stepOnly",
           "targetFamily": null,
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Step only",
+          "internalName": "stepOnly",
+          "index": null,
+          "storage": "step-only",
+          "targetFamily": null,
+          "expectedControl": "step-only",
+          "implementedSurface": "Action chooser step-only control",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -1654,6 +2704,19 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Picture Resource ID To Display",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "picture",
+          "expectedControl": "search-target",
+          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": false,
       "shape": null,
       "writerStatus": "writer-gated-direct-target-family",
@@ -1694,6 +2757,19 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "ID",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "direct-id",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Direct CODE/ID numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": false,
       "shape": null,
       "writerStatus": "writer-gated-direct-target-family",
@@ -1732,6 +2808,19 @@
           "internalName": "id",
           "targetFamily": "direct-id",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Map Number To Give Or Display",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "map-item",
+          "expectedControl": "compact-select",
+          "implementedSurface": "Direct CODE/ID numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -1802,6 +2891,63 @@
           "preserved": true
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Signed Ability / Attribute",
+          "internalName": "signedAbilityOrAttribute",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "+/- Modifer",
+          "internalName": "adjustment",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Who To Check",
+          "internalName": "sourceSet",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Attribute Flag",
+          "internalName": "attributeFlag",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 5",
+          "internalName": "unused",
+          "index": 4,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "ability-check-pick",
       "writerStatus": "writer-ready-data-edcd",
@@ -1870,6 +3016,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Ability / Attribute",
+          "internalName": "abilityOrAttribute",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "+/- Modifer",
+          "internalName": "adjustment",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Attribute Flag",
+          "internalName": "attributeFlag",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Branch To X-AP On Success",
+          "internalName": "successMacro",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Branch To X-AP On Fail Note",
+          "internalName": "failureMacro",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "ability-check-branch",
       "writerStatus": "writer-ready-data-edcd",
@@ -1908,6 +3111,19 @@
           "internalName": "id",
           "targetFamily": "direct-id",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Inflation Rate Of Temple",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "direct-id",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Direct CODE/ID numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -1978,6 +3194,63 @@
           "preserved": true
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Signed Amount",
+          "internalName": "signedAmount",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Failure Marker",
+          "internalName": "failureMarker",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 3",
+          "internalName": "unused",
+          "index": 2,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 4",
+          "internalName": "unused",
+          "index": 3,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 5",
+          "internalName": "unused",
+          "index": 4,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "gold",
       "writerStatus": "writer-ready-data-edcd",
@@ -2016,6 +3289,19 @@
           "internalName": "stepOnly",
           "targetFamily": null,
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Step only",
+          "internalName": "stepOnly",
+          "index": null,
+          "storage": "step-only",
+          "targetFamily": null,
+          "expectedControl": "step-only",
+          "implementedSurface": "Action chooser step-only control",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -2058,6 +3344,19 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Simple Encounter Option",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "simple-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": false,
       "shape": null,
       "writerStatus": "writer-gated-direct-target-family",
@@ -2096,6 +3395,19 @@
           "internalName": "id",
           "targetFamily": "direct-id",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "ID",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "direct-id",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Direct CODE/ID numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -2166,6 +3478,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Mode",
+          "internalName": "mode",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Dungeon / Land Level To Goto",
+          "internalName": "level",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "X-Coord",
+          "internalName": "x",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Y-Coord",
+          "internalName": "y",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Starting Heading",
+          "internalName": "signedHeading",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "dungeon-move",
       "writerStatus": "writer-ready-data-edcd",
@@ -2234,6 +3603,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Item ID To Check For",
+          "internalName": "testA",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "item",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdItemTargetField search/preview control",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Test B",
+          "internalName": "testB",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Branch Mode",
+          "internalName": "branchMode",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "X-AP/Branch No",
+          "internalName": "target",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point-or-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Code No. (0 = Top Code/ID) E-Code",
+          "internalName": "slot",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "force-branch",
       "writerStatus": "writer-ready-data-edcd",
@@ -2272,6 +3698,19 @@
           "internalName": "id",
           "targetFamily": "extra-action-point",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Extra Action Point",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "extra-action-point",
+          "expectedControl": "search-target",
+          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -2342,6 +3781,63 @@
           "preserved": true
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Expected State",
+          "internalName": "expectedState",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Type Of Branch",
+          "internalName": "branchMode",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "X-AP/Encounter No",
+          "internalName": "branchTarget",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point-or-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Party Condition To Check For",
+          "internalName": "condition",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 5",
+          "internalName": "unused",
+          "index": 4,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "party-condition-branch",
       "writerStatus": "writer-ready-data-edcd",
@@ -2408,6 +3904,63 @@
           "internalName": "unused",
           "targetFamily": null,
           "preserved": true
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Simple Encounter No",
+          "internalName": "simpleEncounter",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "simple-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Choice No. To Eliminate (1-4)",
+          "internalName": "oneBasedChoiceSlot",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 3",
+          "internalName": "unused",
+          "index": 2,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 4",
+          "internalName": "unused",
+          "index": 3,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 5",
+          "internalName": "unused",
+          "index": 4,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
         }
       ],
       "edcdBacked": true,
@@ -2478,6 +4031,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Percent",
+          "internalName": "percent",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Success Behavior",
+          "internalName": "successBehavior",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Branch Mode",
+          "internalName": "branchMode",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "X-AP/Branch No. (0-3)",
+          "internalName": "target",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point-or-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Code No. (0 = Top Code/ID) E-Code",
+          "internalName": "slot",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "percent-branch",
       "writerStatus": "writer-ready-data-edcd",
@@ -2546,6 +4156,63 @@
           "preserved": true
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Affect Who",
+          "internalName": "scope",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Condition",
+          "internalName": "condition",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Duration/Magnitude",
+          "internalName": "durationOrDelta",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Sound ---Optional---",
+          "internalName": "sound",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "sound",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSearchTargetField",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 5",
+          "internalName": "unused",
+          "index": 4,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "condition",
       "writerStatus": "writer-ready-data-edcd",
@@ -2584,6 +4251,19 @@
           "internalName": "id",
           "targetFamily": "direct-id",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Branch To Eliminate (0-3)",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "complex-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -2654,6 +4334,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Land Level ID (-1 = No Change)",
+          "internalName": "levelOrKeep",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "X-Coord (-1 = No Change)",
+          "internalName": "xOrKeep",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Y-Coord (-1 = No Change)",
+          "internalName": "yOrKeep",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Sound ---Optional--- Note",
+          "internalName": "sound",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "sound",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSearchTargetField",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Message",
+          "internalName": "message",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "message",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSearchTargetField",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "teleport",
       "writerStatus": "writer-ready-data-edcd",
@@ -2722,6 +4459,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Quest ID To Branch On",
+          "internalName": "testA",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Test B",
+          "internalName": "testB",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Branch Mode",
+          "internalName": "branchMode",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "X-AP/Branch No. (0-3)",
+          "internalName": "target",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point-or-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Code No",
+          "internalName": "slot",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "force-branch",
       "writerStatus": "writer-ready-data-edcd",
@@ -2760,6 +4554,19 @@
           "internalName": "id",
           "targetFamily": "direct-id",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Quest ID To Set/Clear",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "quest-label",
+          "expectedControl": "search-target",
+          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -2830,6 +4637,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Low Range Of Battle ID",
+          "internalName": "battleLow",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "battle",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "High Range Of Battle ID",
+          "internalName": "battleHigh",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "battle",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Sound ---Optional---",
+          "internalName": "sound",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "sound",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSearchTargetField",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Message ---Optional---",
+          "internalName": "message",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "message",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSearchTargetField",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Treasure On Victory",
+          "internalName": "treasure",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "treasure",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "selective-battle",
       "writerStatus": "writer-ready-data-edcd",
@@ -2868,6 +4732,19 @@
           "internalName": "id",
           "targetFamily": "direct-id",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "ID",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "shop",
+          "expectedControl": "search-target",
+          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -2938,6 +4815,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Type",
+          "internalName": "selector",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Gender To Pick",
+          "internalName": "gender",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Race Caste / Class",
+          "internalName": "raceCasteOrClass",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 4",
+          "internalName": "unused",
+          "index": 3,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Who To Check",
+          "internalName": "livingOnly",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "race-caste-gender-selector",
       "writerStatus": "writer-ready-data-edcd",
@@ -3004,6 +4938,63 @@
           "internalName": "unused",
           "targetFamily": null,
           "preserved": true
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Shop ID To Alter",
+          "internalName": "shop",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "shop",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Alter Inflation Rate",
+          "internalName": "inflationDelta",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Item ID To Add/Reduce",
+          "internalName": "item",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "item",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdItemTargetField search/preview control",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Number To Add/Reduce",
+          "internalName": "stockDelta",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 5",
+          "internalName": "unused",
+          "index": 4,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": true,
@@ -3074,6 +5065,63 @@
           "preserved": true
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Selector",
+          "internalName": "selector",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Value",
+          "internalName": "value",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Source Set",
+          "internalName": "sourceSet",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 4",
+          "internalName": "unused",
+          "index": 3,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 5",
+          "internalName": "unused",
+          "index": 4,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "character-selector",
       "writerStatus": "writer-ready-data-edcd",
@@ -3140,6 +5188,63 @@
           "internalName": "unused",
           "targetFamily": null,
           "preserved": true
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Specific Caste Only",
+          "internalName": "exactCaste",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Caste Types",
+          "internalName": "casteGroup",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Check",
+          "internalName": "sourceSet",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 4",
+          "internalName": "unused",
+          "index": 3,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 5",
+          "internalName": "unused",
+          "index": 4,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
         }
       ],
       "edcdBacked": true,
@@ -3210,6 +5315,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Time Encounter ID",
+          "internalName": "timedEncounter",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "timed-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "New % Chance Of Activation",
+          "internalName": "percentOrKeep",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "New Day Increment (-1 = No Change)",
+          "internalName": "incrementOrKeep",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Reset Day Flag",
+          "internalName": "resetDayFlag",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Days To Add To Next Activation",
+          "internalName": "dayOffsetOrKeep",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "timed-encounter-mutation",
       "writerStatus": "writer-ready-data-edcd",
@@ -3276,6 +5438,63 @@
           "internalName": "failureTarget",
           "targetFamily": "extra-action-point-or-encounter",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Success On",
+          "internalName": "pickedSelector",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Type Of Branch",
+          "internalName": "failureBehavior",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 3",
+          "internalName": "unused",
+          "index": 2,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "X-AP On Success",
+          "internalName": "successMacro",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Failure Target",
+          "internalName": "failureTarget",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point-or-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": true,
@@ -3346,6 +5565,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Battle Number",
+          "internalName": "battleLow",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "battle",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Battle High",
+          "internalName": "battleHigh",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "battle",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Coward Macro",
+          "internalName": "cowardMacro",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Sound. (Optional)",
+          "internalName": "sound",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "sound",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSearchTargetField",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Message",
+          "internalName": "message",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "message",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSearchTargetField",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "battle-outcome-branch",
       "writerStatus": "writer-ready-data-edcd",
@@ -3412,6 +5688,63 @@
           "internalName": "unused",
           "targetFamily": null,
           "preserved": true
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Landlook",
+          "internalName": "landlook",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Is Dark",
+          "internalName": "isDark",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Target Land Level",
+          "internalName": "targetLandLevel",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 4",
+          "internalName": "unused",
+          "index": 3,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 5",
+          "internalName": "unused",
+          "index": 4,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
         }
       ],
       "edcdBacked": true,
@@ -3482,6 +5815,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Test A",
+          "internalName": "testA",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Test B",
+          "internalName": "testB",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Branch Mode",
+          "internalName": "branchMode",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "X-AP/Branch No. (0-3)",
+          "internalName": "target",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point-or-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Code No. (0 = Top Code/ID) E-Code",
+          "internalName": "slot",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "force-branch",
       "writerStatus": "writer-ready-data-edcd",
@@ -3548,6 +5938,63 @@
           "internalName": "slot",
           "targetFamily": "extra-action-point-or-encounter",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Test A",
+          "internalName": "testA",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Test B",
+          "internalName": "testB",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Branch Mode",
+          "internalName": "branchMode",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "X-AP/Branch No. (0-3)",
+          "internalName": "target",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point-or-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Code No. (0 = Top Code/ID) E-Code",
+          "internalName": "slot",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
         }
       ],
       "edcdBacked": true,
@@ -3618,6 +6065,63 @@
           "preserved": true
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Money Type",
+          "internalName": "moneyType",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Take From",
+          "internalName": "pickedOnly",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 3",
+          "internalName": "unused",
+          "index": 2,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 4",
+          "internalName": "unused",
+          "index": 3,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 5",
+          "internalName": "unused",
+          "index": 4,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "party-money-state",
       "writerStatus": "writer-ready-data-edcd",
@@ -3686,6 +6190,63 @@
           "preserved": true
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Preserved Value 1",
+          "internalName": "legacyLevel",
+          "index": 0,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Shift X Amount +/- Number Of Steps",
+          "internalName": "xShift",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Shift Y Amount +/- Number Of Steps",
+          "internalName": "yShift",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Randomize",
+          "internalName": "randomize",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 5",
+          "internalName": "unused",
+          "index": 4,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "position-shift",
       "writerStatus": "writer-ready-data-edcd",
@@ -3724,6 +6285,19 @@
           "internalName": "textResourceId",
           "targetFamily": "text-resource",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Scrolling Text",
+          "internalName": "textResourceId",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "text-resource",
+          "expectedControl": "search-target",
+          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -3794,6 +6368,63 @@
           "preserved": true
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Mode",
+          "internalName": "mode",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Days",
+          "internalName": "dayOrDelta",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Hours",
+          "internalName": "hourOrDelta",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Minutes E-Code 1 Notes",
+          "internalName": "minuteOrDelta",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 5",
+          "internalName": "unused",
+          "index": 4,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "time-mutation",
       "writerStatus": "writer-ready-data-edcd",
@@ -3860,6 +6491,63 @@
           "internalName": "failureMacro",
           "targetFamily": "extra-action-point-or-encounter",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Test Time",
+          "internalName": "dayLimit",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Test Time",
+          "internalName": "hourLimit",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 3",
+          "internalName": "unused",
+          "index": 2,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Success Macro",
+          "internalName": "successMacro",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Failure Macro",
+          "internalName": "failureMacro",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": true,
@@ -3930,6 +6618,63 @@
           "preserved": true
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Number Of Items To Award",
+          "internalName": "countOrRandomLimit",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Low ID Of Random Items",
+          "internalName": "itemLow",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "item",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdItemTargetField search/preview control",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "High ID Of Random Items",
+          "internalName": "itemHigh",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "item",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdItemTargetField search/preview control",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 4",
+          "internalName": "unused",
+          "index": 3,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 5",
+          "internalName": "unused",
+          "index": 4,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "random-items",
       "writerStatus": "writer-ready-data-edcd",
@@ -3968,6 +6713,19 @@
           "internalName": "id",
           "targetFamily": "direct-id",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "ID",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "direct-id",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Direct CODE/ID numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -4038,6 +6796,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Item ID To Check For",
+          "internalName": "item",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "item",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdItemTargetField search/preview control",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "If Enough Charges, Branch To",
+          "internalName": "branchMode",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Minimum Charges",
+          "internalName": "minimumCharges",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Success Target",
+          "internalName": "successTarget",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point-or-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Failure Target",
+          "internalName": "failureTarget",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point-or-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "item-charge-branch",
       "writerStatus": "writer-ready-data-edcd",
@@ -4104,6 +6919,63 @@
           "internalName": "unused",
           "targetFamily": null,
           "preserved": true
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Mode",
+          "internalName": "mode",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 2",
+          "internalName": "unused",
+          "index": 1,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Calculated Fatigue %",
+          "internalName": "percent",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 4",
+          "internalName": "unused",
+          "index": 3,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 5",
+          "internalName": "unused",
+          "index": 4,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
         }
       ],
       "edcdBacked": true,
@@ -4174,6 +7046,63 @@
           "preserved": true
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Spellcasting",
+          "internalName": "spellcasting",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Monstercasting",
+          "internalName": "monstercasting",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "monster",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Spellcharging",
+          "internalName": "spellcharging",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 4",
+          "internalName": "unused",
+          "index": 3,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 5",
+          "internalName": "unused",
+          "index": 4,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "spell-flags",
       "writerStatus": "writer-ready-data-edcd",
@@ -4242,6 +7171,63 @@
           "preserved": true
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Mode",
+          "internalName": "mode",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 2",
+          "internalName": "unused",
+          "index": 1,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 3",
+          "internalName": "unused",
+          "index": 2,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 4",
+          "internalName": "unused",
+          "index": 3,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 5",
+          "internalName": "unused",
+          "index": 4,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "save-restore-position",
       "writerStatus": "writer-ready-data-edcd",
@@ -4280,6 +7266,19 @@
           "internalName": "id",
           "targetFamily": "direct-id",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "ID",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "direct-id",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Direct CODE/ID numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -4350,6 +7349,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Low Quest ID Range To Check",
+          "internalName": "testA",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "High Quest ID Range To Check",
+          "internalName": "testB",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "REMARK",
+          "internalName": "falseBehavior",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Branch To",
+          "internalName": "branchMode",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "X-AP ID / Ecounter ID To Branch To",
+          "internalName": "target",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point-or-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "range-branch",
       "writerStatus": "writer-ready-data-edcd",
@@ -4416,6 +7472,63 @@
           "internalName": "range2High",
           "targetFamily": null,
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Shop ID",
+          "internalName": "shop",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "shop",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Low Items ID To Accept #1",
+          "internalName": "range1Low",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "High Items ID To Accept #1",
+          "internalName": "range1High",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Low Items ID To Accept #2",
+          "internalName": "range2Low",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "High Items ID To Accept #2 Example",
+          "internalName": "range2High",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
         }
       ],
       "edcdBacked": true,
@@ -4486,6 +7599,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Multiplier",
+          "internalName": "signedRollCount",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Low Range / Sound",
+          "internalName": "lowOrSound",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "sound",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSearchTargetField",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "High Range",
+          "internalName": "high",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Play Sound",
+          "internalName": "playSound",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "sound",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSearchTargetField",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Message",
+          "internalName": "message",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "message",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSearchTargetField",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "spell-points",
       "writerStatus": "writer-ready-data-edcd",
@@ -4552,6 +7722,63 @@
           "internalName": "target",
           "targetFamily": "extra-action-point-or-encounter",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Who To Test",
+          "internalName": "testA",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Test B",
+          "internalName": "testB",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "False Behavior",
+          "internalName": "falseBehavior",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "On Success Branch To",
+          "internalName": "branchMode",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "X-AP / Encounter ID Note",
+          "internalName": "target",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point-or-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
         }
       ],
       "edcdBacked": true,
@@ -4622,6 +7849,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Quest",
+          "internalName": "quest",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "quest",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Amount To Add",
+          "internalName": "delta",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Auto Branch Type",
+          "internalName": "branchMode",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Threshold",
+          "internalName": "threshold",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Target",
+          "internalName": "target",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point-or-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "quest-value",
       "writerStatus": "writer-ready-data-edcd",
@@ -4688,6 +7972,63 @@
           "internalName": "trueTarget",
           "targetFamily": "extra-action-point-or-encounter",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Quest Flag",
+          "internalName": "testA",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Test Value",
+          "internalName": "testB",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Branch Type",
+          "internalName": "branchMode",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Less Than Target",
+          "internalName": "falseTarget",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point-or-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Equal Or Greater Target",
+          "internalName": "trueTarget",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point-or-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
         }
       ],
       "edcdBacked": true,
@@ -4758,6 +8099,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Attribute To Test For",
+          "internalName": "testA",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Use Only For Type 7 Test",
+          "internalName": "testB",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Type Of Branch",
+          "internalName": "branchMode",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "False Target",
+          "internalName": "falseTarget",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point-or-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "X-AP / Encounter ID If Test = TRUE",
+          "internalName": "trueTarget",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point-or-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "false-true-branch",
       "writerStatus": "writer-ready-data-edcd",
@@ -4798,6 +8196,19 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "ID",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "direct-id",
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Preserved CODE/ID value",
+          "status": "ok",
+          "evidence": "manual-plus-preservation"
+        }
+      ],
       "edcdBacked": false,
       "shape": null,
       "writerStatus": "writer-gated-not-used",
@@ -4836,6 +8247,19 @@
           "internalName": "id",
           "targetFamily": "direct-id",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "ID",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "direct-id",
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Preserved CODE/ID value",
+          "status": "ok",
+          "evidence": "manual-plus-preservation"
         }
       ],
       "edcdBacked": false,
@@ -4906,6 +8330,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "What Condition To Test",
+          "internalName": "condition",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Character Selector",
+          "internalName": "characterSelector",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 3",
+          "internalName": "unused",
+          "index": 2,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Branch To X-AP On Success",
+          "internalName": "trueMacro",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Branch To X-AP On Fail",
+          "internalName": "falseMacro",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "condition-branch",
       "writerStatus": "writer-ready-data-edcd",
@@ -4944,6 +8425,19 @@
           "internalName": "stepOnly",
           "targetFamily": null,
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Step only",
+          "internalName": "stepOnly",
+          "index": null,
+          "storage": "step-only",
+          "targetFamily": null,
+          "expectedControl": "step-only",
+          "implementedSurface": "Action chooser step-only control",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -4986,6 +8480,19 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Step only",
+          "internalName": "stepOnly",
+          "index": null,
+          "storage": "step-only",
+          "targetFamily": null,
+          "expectedControl": "step-only",
+          "implementedSurface": "Action chooser step-only control",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": false,
       "shape": null,
       "writerStatus": "writer-gated-direct-target-family",
@@ -5024,6 +8531,19 @@
           "internalName": "stepOnly",
           "targetFamily": null,
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Step only",
+          "internalName": "stepOnly",
+          "index": null,
+          "storage": "step-only",
+          "targetFamily": null,
+          "expectedControl": "step-only",
+          "implementedSurface": "Action chooser step-only control",
+          "status": "ok",
+          "evidence": "source-backed"
         }
       ],
       "edcdBacked": false,
@@ -5094,6 +8614,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Type",
+          "internalName": "branchMode",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Low Range Value",
+          "internalName": "rangeLow",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "High Range Value",
+          "internalName": "rangeHigh",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Sound --- Optional ---",
+          "internalName": "sound",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "sound",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSearchTargetField",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Message --- Optional ---",
+          "internalName": "message",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "message",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSearchTargetField",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "random-branch",
       "writerStatus": "writer-ready-data-edcd",
@@ -5160,6 +8737,63 @@
           "internalName": "falseTarget",
           "targetFamily": "extra-action-point-or-encounter",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Test",
+          "internalName": "testSelector",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Signed Test Value",
+          "internalName": "signedTestValue",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Branch Type",
+          "internalName": "branchMode",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "X-AP/Encounter No. If Test = TRUE",
+          "internalName": "trueTarget",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point-or-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "False Target",
+          "internalName": "falseTarget",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point-or-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": true,
@@ -5230,6 +8864,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Monster Number To Check For",
+          "internalName": "testSelector",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "If Present, Branch To",
+          "internalName": "branchModeOrValue",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "False Behavior",
+          "internalName": "falseBehavior",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "X-AP/Encounter No. If Present",
+          "internalName": "trueTarget",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point-or-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "False Target",
+          "internalName": "falseTarget",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point-or-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "conditional-branch",
       "writerStatus": "writer-ready-data-edcd",
@@ -5270,6 +8961,19 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Monster Number To Drop",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "direct-id",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Direct CODE/ID numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": false,
       "shape": null,
       "writerStatus": "writer-gated-direct-target-family",
@@ -5308,6 +9012,19 @@
           "internalName": "id",
           "targetFamily": "direct-id",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Monster Number",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "direct-id",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Direct CODE/ID numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -5378,6 +9095,63 @@
           "preserved": true
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "How Much To Take",
+          "internalName": "amount",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Scope",
+          "internalName": "scope",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 3",
+          "internalName": "unused",
+          "index": 2,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 4",
+          "internalName": "unused",
+          "index": 3,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 5",
+          "internalName": "unused",
+          "index": 4,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "party-state",
       "writerStatus": "writer-ready-data-edcd",
@@ -5416,6 +9190,19 @@
           "internalName": "stepOnly",
           "targetFamily": null,
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Step only",
+          "internalName": "stepOnly",
+          "index": null,
+          "storage": "step-only",
+          "targetFamily": null,
+          "expectedControl": "step-only",
+          "implementedSurface": "Action chooser step-only control",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -5486,6 +9273,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Land/Dungeon Level Of Rectangle",
+          "internalName": "level",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Rectangle Number",
+          "internalName": "rect",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Is Dungeon",
+          "internalName": "isDungeon",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "+/- To Encounter %, Base 10,000",
+          "internalName": "percentDelta",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Shape Mode",
+          "internalName": "shapeMode",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "random-region-shape-mutation",
       "writerStatus": "writer-ready-data-edcd",
@@ -5524,6 +9368,19 @@
           "internalName": "stepOnly",
           "targetFamily": null,
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Step only",
+          "internalName": "stepOnly",
+          "index": null,
+          "storage": "step-only",
+          "targetFamily": null,
+          "expectedControl": "step-only",
+          "implementedSurface": "Action chooser step-only control",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -5566,6 +9423,19 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Step only",
+          "internalName": "stepOnly",
+          "index": null,
+          "storage": "step-only",
+          "targetFamily": null,
+          "expectedControl": "step-only",
+          "implementedSurface": "Action chooser step-only control",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": false,
       "shape": null,
       "writerStatus": "writer-gated-direct-target-family",
@@ -5604,6 +9474,19 @@
           "internalName": "id",
           "targetFamily": "direct-id",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Direction To Face The Party",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "direct-id",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Direct CODE/ID numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -5646,6 +9529,19 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Step only",
+          "internalName": "stepOnly",
+          "index": null,
+          "storage": "step-only",
+          "targetFamily": null,
+          "expectedControl": "step-only",
+          "implementedSurface": "Action chooser step-only control",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": false,
       "shape": null,
       "writerStatus": "writer-gated-direct-target-family",
@@ -5684,6 +9580,19 @@
           "internalName": "stepOnly",
           "targetFamily": null,
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Step only",
+          "internalName": "stepOnly",
+          "index": null,
+          "storage": "step-only",
+          "targetFamily": null,
+          "expectedControl": "step-only",
+          "implementedSurface": "Action chooser step-only control",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -5726,6 +9635,19 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Step only",
+          "internalName": "stepOnly",
+          "index": null,
+          "storage": "step-only",
+          "targetFamily": null,
+          "expectedControl": "step-only",
+          "implementedSurface": "Action chooser step-only control",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": false,
       "shape": null,
       "writerStatus": "writer-gated-direct-target-family",
@@ -5764,6 +9686,19 @@
           "internalName": "stepOnly",
           "targetFamily": null,
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Step only",
+          "internalName": "stepOnly",
+          "index": null,
+          "storage": "step-only",
+          "targetFamily": null,
+          "expectedControl": "step-only",
+          "implementedSurface": "Action chooser step-only control",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -5806,6 +9741,19 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Step only",
+          "internalName": "stepOnly",
+          "index": null,
+          "storage": "step-only",
+          "targetFamily": null,
+          "expectedControl": "step-only",
+          "implementedSurface": "Action chooser step-only control",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": false,
       "shape": null,
       "writerStatus": "writer-gated-direct-target-family",
@@ -5846,6 +9794,19 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Step only",
+          "internalName": "stepOnly",
+          "index": null,
+          "storage": "step-only",
+          "targetFamily": null,
+          "expectedControl": "step-only",
+          "implementedSurface": "Action chooser step-only control",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": false,
       "shape": null,
       "writerStatus": "writer-gated-direct-target-family",
@@ -5884,6 +9845,19 @@
           "internalName": "stepOnly",
           "targetFamily": null,
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Step only",
+          "internalName": "stepOnly",
+          "index": null,
+          "storage": "step-only",
+          "targetFamily": null,
+          "expectedControl": "step-only",
+          "implementedSurface": "Action chooser step-only control",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -5954,6 +9928,63 @@
           "preserved": true
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Mode",
+          "internalName": "mode",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Status Value",
+          "internalName": "statusValue",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Branch Mode / Behavior",
+          "internalName": "branchModeOrBehavior",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 4",
+          "internalName": "targetOrValueA",
+          "index": 3,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 5",
+          "internalName": "targetOrValueB",
+          "index": 4,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "boat-camp-state",
       "writerStatus": "writer-ready-data-edcd",
@@ -5994,6 +10025,19 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "ID",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "simple-encounter",
+          "expectedControl": "search-target",
+          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": false,
       "shape": null,
       "writerStatus": "writer-gated-direct-target-family",
@@ -6032,6 +10076,19 @@
           "internalName": "id",
           "targetFamily": "direct-id",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "ID",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "direct-id",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Direct CODE/ID numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -6102,6 +10159,63 @@
           "preserved": true
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Dark State Plus One",
+          "internalName": "darkStatePlusOne",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Stop If Already",
+          "internalName": "stopIfAlready",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "toggle",
+          "implementedSurface": "Guided EDCD boolean/signed intent control",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Preserved LOS Value",
+          "internalName": "unused",
+          "index": 2,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Preserved LOS Skip Value",
+          "internalName": "unused",
+          "index": 3,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 5",
+          "internalName": "unused",
+          "index": 4,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "dark-level-state",
       "writerStatus": "writer-ready-data-edcd",
@@ -6168,6 +10282,63 @@
           "internalName": "cowardMacro",
           "targetFamily": "extra-action-point-or-encounter",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Battle Low",
+          "internalName": "battleLow",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "battle",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Battle High",
+          "internalName": "battleHigh",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "battle",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Sound (Optional)",
+          "internalName": "sound",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "sound",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSearchTargetField",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "String ID (Optional)",
+          "internalName": "message",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "message",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSearchTargetField",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Coward Macro",
+          "internalName": "cowardMacro",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": true,
@@ -6238,6 +10409,63 @@
           "preserved": true
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Alter",
+          "internalName": "statSelector",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Amount To Increase / Decrease",
+          "internalName": "delta",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 3",
+          "internalName": "unused",
+          "index": 2,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 4",
+          "internalName": "unused",
+          "index": 3,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 5",
+          "internalName": "unused",
+          "index": 4,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "selected-character-state",
       "writerStatus": "writer-ready-data-edcd",
@@ -6276,6 +10504,19 @@
           "internalName": "id",
           "targetFamily": "direct-id",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "ID",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "direct-id",
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Preserved CODE/ID value",
+          "status": "ok",
+          "evidence": "manual-plus-preservation"
         }
       ],
       "edcdBacked": false,
@@ -6318,6 +10559,19 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "ID",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "direct-id",
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Preserved CODE/ID value",
+          "status": "ok",
+          "evidence": "manual-plus-preservation"
+        }
+      ],
       "edcdBacked": false,
       "shape": null,
       "writerStatus": "writer-gated-not-used",
@@ -6356,6 +10610,19 @@
           "internalName": "id",
           "targetFamily": "direct-id",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "ID",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "direct-id",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Direct CODE/ID numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -6398,6 +10665,19 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "ID",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "direct-id",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Direct CODE/ID numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": false,
       "shape": null,
       "writerStatus": "writer-gated-direct-target-family",
@@ -6436,6 +10716,19 @@
           "internalName": "id",
           "targetFamily": "direct-id",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "ID",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "direct-id",
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Preserved CODE/ID value",
+          "status": "ok",
+          "evidence": "manual-plus-preservation"
         }
       ],
       "edcdBacked": false,
@@ -6478,6 +10771,19 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "ID",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "direct-id",
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Preserved CODE/ID value",
+          "status": "ok",
+          "evidence": "manual-plus-preservation"
+        }
+      ],
       "edcdBacked": false,
       "shape": null,
       "writerStatus": "writer-gated-not-used",
@@ -6516,6 +10822,19 @@
           "internalName": "id",
           "targetFamily": "direct-id",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "ID",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "direct-id",
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Preserved CODE/ID value",
+          "status": "ok",
+          "evidence": "manual-plus-preservation"
         }
       ],
       "edcdBacked": false,
@@ -6558,6 +10877,19 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "ID",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "direct-id",
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Preserved CODE/ID value",
+          "status": "ok",
+          "evidence": "manual-plus-preservation"
+        }
+      ],
       "edcdBacked": false,
       "shape": null,
       "writerStatus": "writer-gated-not-used",
@@ -6596,6 +10928,19 @@
           "internalName": "id",
           "targetFamily": "direct-id",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "ID",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "direct-id",
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Preserved CODE/ID value",
+          "status": "ok",
+          "evidence": "manual-plus-preservation"
         }
       ],
       "edcdBacked": false,
@@ -6638,6 +10983,19 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "ID",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "direct-id",
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Preserved CODE/ID value",
+          "status": "ok",
+          "evidence": "manual-plus-preservation"
+        }
+      ],
       "edcdBacked": false,
       "shape": null,
       "writerStatus": "writer-gated-not-used",
@@ -6676,6 +11034,19 @@
           "internalName": "id",
           "targetFamily": "direct-id",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "ID",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "direct-id",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Direct CODE/ID numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -6746,6 +11117,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Target Type",
+          "internalName": "targetClass",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "NPC / Monster ID",
+          "internalName": "monsterId",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "monster",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Count",
+          "internalName": "count",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "New Icon ID",
+          "internalName": "replacementIcon",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "New Traitor Value",
+          "internalName": "traitorOverride",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "combat-monster-mutation",
       "writerStatus": "writer-ready-data-edcd",
@@ -6812,6 +11240,63 @@
           "internalName": "unused4",
           "targetFamily": null,
           "preserved": true
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Preserved Value 1",
+          "internalName": "unused0",
+          "index": 0,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 2",
+          "internalName": "unused1",
+          "index": 1,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 3",
+          "internalName": "unused2",
+          "index": 2,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 4",
+          "internalName": "unused3",
+          "index": 3,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 5",
+          "internalName": "unused4",
+          "index": 4,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
         }
       ],
       "edcdBacked": true,
@@ -6882,6 +11367,63 @@
           "preserved": true
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Message",
+          "internalName": "message",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "message",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSearchTargetField",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Sound -- Optional --",
+          "internalName": "sound",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "sound",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSearchTargetField",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 3",
+          "internalName": "unused",
+          "index": 2,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 4",
+          "internalName": "unused",
+          "index": 3,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 5",
+          "internalName": "unused",
+          "index": 4,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "fumble",
       "writerStatus": "writer-ready-data-edcd",
@@ -6948,6 +11490,63 @@
           "internalName": "monster5",
           "targetFamily": "monster",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Monster ID That Will Route",
+          "internalName": "monster1",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "monster",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Monster ID That Will Route",
+          "internalName": "monster2",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "monster",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Monster ID That Will Route",
+          "internalName": "monster3",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "monster",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Monster ID That Will Route",
+          "internalName": "monster4",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "monster",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Monster ID That Will Route",
+          "internalName": "monster5",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "monster",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
         }
       ],
       "edcdBacked": true,
@@ -7018,6 +11617,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Preserved Value 1",
+          "internalName": "unused",
+          "index": 0,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Monster ID To Spawn",
+          "internalName": "monster",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "monster",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Number To Spawn",
+          "internalName": "countOrRandomLimit",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Spawn Sound",
+          "internalName": "sound",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "sound",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSearchTargetField",
+          "status": "ok",
+          "evidence": "manual-backed"
+        },
+        {
+          "fieldLabel": "Force Traiter Value",
+          "internalName": "traitorOverride",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "manual-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "spawn",
       "writerStatus": "writer-ready-data-edcd",
@@ -7084,6 +11740,63 @@
           "internalName": "includeTraitorSide",
           "targetFamily": null,
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Monster ID To Destroy",
+          "internalName": "monsterId",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "monster",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Number Of Monsters To Destroy",
+          "internalName": "maxCount",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 3",
+          "internalName": "unused",
+          "index": 2,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Preserved Value 4",
+          "internalName": "unused",
+          "index": 3,
+          "storage": "preserved-edcd-value",
+          "targetFamily": null,
+          "expectedControl": "advanced-preserved",
+          "implementedSurface": "Collapsed Technical Details preserved value",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Include Traitor Side",
+          "internalName": "includeTraitorSide",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
         }
       ],
       "edcdBacked": true,
@@ -7154,6 +11867,63 @@
           "preserved": false
         }
       ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Activate On",
+          "internalName": "mode",
+          "index": 0,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Round No. / % Chance To Activate",
+          "internalName": "roundOrPercent",
+          "index": 1,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Activate",
+          "internalName": "repeatMode",
+          "index": 2,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Macro No. -OR- Random Macro",
+          "internalName": "macroLow",
+          "index": 3,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        },
+        {
+          "fieldLabel": "Random Macro (High Range) Note",
+          "internalName": "macroHigh",
+          "index": 4,
+          "storage": "data-edcd-parameter-row",
+          "targetFamily": "extra-action-point",
+          "expectedControl": "search-target",
+          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "status": "ok",
+          "evidence": "source-backed"
+        }
+      ],
       "edcdBacked": true,
       "shape": "battle-macro",
       "writerStatus": "writer-ready-data-edcd",
@@ -7192,6 +11962,19 @@
           "internalName": "id",
           "targetFamily": "direct-id",
           "preserved": false
+        }
+      ],
+      "authoringControls": [
+        {
+          "fieldLabel": "Monster ID To Test",
+          "internalName": "id",
+          "index": null,
+          "storage": "direct-code-id",
+          "targetFamily": "monster",
+          "expectedControl": "search-target",
+          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,

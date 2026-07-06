@@ -118,6 +118,14 @@ function hasCoverageField(entry, label, targetFamily = undefined) {
   });
 }
 
+function hasAuthoringControl(entry, label, expectedControl, targetFamily = undefined) {
+  return (entry?.authoringControls ?? []).some((control) => {
+    if (control.fieldLabel !== label) return false;
+    if (control.expectedControl !== expectedControl) return false;
+    return targetFamily === undefined || control.targetFamily === targetFamily;
+  });
+}
+
 function assertCoveragePair(a, b) {
   const left = coverageEntry(a);
   const right = coverageEntry(b);
@@ -129,8 +137,8 @@ function assertCoveragePair(a, b) {
   }
 }
 
-if (apOpcodeCoverage.schemaVersion !== 2) {
-  failures.push("Opcode audit report must use schemaVersion 2.");
+if (apOpcodeCoverage.schemaVersion !== 3) {
+  failures.push("Opcode audit report must use schemaVersion 3.");
 }
 if (!manualNoneStepOnlyMatch) {
   failures.push("Action catalog must declare MANUAL_NONE_STEP_ONLY_ACTIONS.");
@@ -140,7 +148,7 @@ for (const opcode of expectedManualNoneStepOnlyCodes) {
     failures.push(`Manual no-option opcode ${opcode} should be in MANUAL_NONE_STEP_ONLY_ACTIONS.`);
   }
 }
-for (const key of ["crosswalk", "manualHelp", "catalog", "actions"]) {
+for (const key of ["crosswalk", "manualHelp", "catalog", "actions", "targetPicker"]) {
   if (!apOpcodeCoverage.source?.[key]) failures.push(`Opcode audit report is missing source.${key}.`);
 }
 if (coverageEntries.length < 120) {
@@ -152,8 +160,15 @@ for (const key of ["counts", "gapCounts", "confidenceCounts"]) {
     failures.push(`Opcode audit report ${key} total ${total} does not match entry count ${coverageEntries.length}.`);
   }
 }
+const totalAuthoringControls = coverageEntries.reduce((sum, entry) => sum + (Array.isArray(entry.authoringControls) ? entry.authoringControls.length : 0), 0);
+for (const key of ["controlStatusCounts", "expectedControlCounts"]) {
+  const total = Object.values(apOpcodeCoverage[key] ?? {}).reduce((sum, value) => sum + Number(value || 0), 0);
+  if (total !== totalAuthoringControls) {
+    failures.push(`Opcode audit report ${key} total ${total} does not match authoring control count ${totalAuthoringControls}.`);
+  }
+}
 for (const entry of coverageEntries) {
-  for (const key of ["opcode", "title", "status", "gapStatus", "evidenceConfidence", "manual", "manualNoOptions", "manualNoneStepOnly", "relatedOpcodes", "providenceFields"]) {
+  for (const key of ["opcode", "title", "status", "gapStatus", "evidenceConfidence", "manual", "manualNoOptions", "manualNoneStepOnly", "relatedOpcodes", "providenceFields", "authoringControls"]) {
     if (!(key in entry)) failures.push(`Opcode audit report entry ${entry.opcode ?? "(unknown)"} is missing ${key}.`);
   }
   if (!Array.isArray(entry.manual?.resourceIds)) {
@@ -164,6 +179,26 @@ for (const entry of coverageEntries) {
   }
   if (!Array.isArray(entry.providenceFields) || entry.providenceFields.length === 0) {
     failures.push(`Opcode audit report entry ${entry.opcode ?? "(unknown)"} must list Providence fields.`);
+  }
+  if (!Array.isArray(entry.authoringControls) || entry.authoringControls.length === 0) {
+    failures.push(`Opcode audit report entry ${entry.opcode ?? "(unknown)"} must list authoring controls.`);
+  }
+  if (Array.isArray(entry.providenceFields) && Array.isArray(entry.authoringControls) && entry.providenceFields.length !== entry.authoringControls.length) {
+    failures.push(`Opcode audit report entry ${entry.opcode ?? "(unknown)"} must have one authoring control per Providence field.`);
+  }
+  for (const control of entry.authoringControls ?? []) {
+    for (const key of ["fieldLabel", "internalName", "storage", "expectedControl", "implementedSurface", "status", "evidence"]) {
+      if (!(key in control)) failures.push(`Opcode audit report entry ${entry.opcode ?? "(unknown)"} authoring control is missing ${key}.`);
+    }
+    if (!["search-target", "compact-select", "toggle", "narrow-number", "step-only", "advanced-preserved"].includes(control.expectedControl)) {
+      failures.push(`Opcode audit report entry ${entry.opcode ?? "(unknown)"} has unknown expectedControl ${control.expectedControl}.`);
+    }
+    if (!["ok", "needs-ui-fix", "needs-copy-fix", "needs-evidence", "intentionally-preserved"].includes(control.status)) {
+      failures.push(`Opcode audit report entry ${entry.opcode ?? "(unknown)"} has unknown control status ${control.status}.`);
+    }
+    if (entry.gapStatus === "covered-in-current-ui" && control.status !== "ok") {
+      failures.push(`Covered opcode ${entry.opcode} has unresolved authoring control ${control.fieldLabel}: ${control.status}.`);
+    }
   }
   if (entry.manualNoOptions && !entry.manualNoneStepOnly) {
     failures.push(`Manual no-option opcode ${entry.opcode} should be marked manualNoneStepOnly or explicitly audited as an exception.`);
@@ -214,16 +249,46 @@ const scrollingText62 = coverageEntry(62);
 if (!hasCoverageField(scrollingText62, "Scrolling Text", "text-resource")) {
   failures.push("Opcode 62 should report a Scrolling Text target field.");
 }
+if (!hasAuthoringControl(scrollingText62, "Scrolling Text", "search-target", "text-resource")) {
+  failures.push("Opcode 62 should audit Scrolling Text as a search-target authoring control.");
+}
+
+const treasure10 = coverageEntry(10);
+if (!hasAuthoringControl(treasure10, "Treasure ID", "search-target", "treasure")) {
+  failures.push("Opcode 10 should audit Treasure ID as a treasure search-target control.");
+}
+
+const itemBranch21 = coverageEntry(21);
+for (const [label, expectedControl, targetFamily] of [
+  ["Item ID To Check For", "search-target", "item"],
+  ["If Possessed, Branch To", "compact-select", undefined],
+  ["Missing Behavior", "compact-select", undefined],
+  ["X-AP/Encounter No. If Possessed", "search-target", "extra-action-point-or-encounter"],
+  ["Missing Target", "search-target", "extra-action-point-or-encounter"]
+]) {
+  if (!hasAuthoringControl(itemBranch21, label, expectedControl, targetFamily)) {
+    failures.push(`Opcode 21 should audit ${label} as ${expectedControl}${targetFamily ? ` for ${targetFamily}` : ""}.`);
+  }
+}
 
 const noManualEvidence = coverageEntry(-14);
 if (noManualEvidence?.gapStatus !== "needs-manual-evidence") {
   failures.push("Opcode -14 should stay marked needs-manual-evidence until a source/manual backing is found.");
+}
+if (!hasAuthoringControl(noManualEvidence, "ID", "narrow-number", "direct-id")) {
+  failures.push("Opcode -14 should retain a direct ID control audit while its behavior stays evidence-gated.");
+}
+if (!(noManualEvidence?.authoringControls ?? []).some((control) => control.status === "needs-evidence")) {
+  failures.push("Opcode -14 should have an authoring control marked needs-evidence.");
 }
 
 for (const opcode of [25, 26, 34, 82, 83, 91, 93, 94, 96, 97, 100, 101, 102]) {
   const entry = coverageEntry(opcode);
   if (entry?.gapStatus !== "step-only-no-options") {
     failures.push(`Manual no-option opcode ${opcode} should stay marked step-only-no-options.`);
+  }
+  if (!(entry?.authoringControls ?? []).every((control) => control.expectedControl === "step-only" && control.status === "ok")) {
+    failures.push(`Manual no-option opcode ${opcode} should audit as an ok step-only control.`);
   }
 }
 
