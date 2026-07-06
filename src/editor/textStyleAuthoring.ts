@@ -7,6 +7,7 @@ import {
   cssHexToClassicRgb,
   type ClassicTextStyleRun
 } from "./components/StyledTextPreview";
+import { rawRangeToDisplayRange, type ClassicTextPreviewDecode } from "./classicTextPreview";
 
 export const CLASSIC_AUTHOR_FONT_OPTIONS = [
   { id: 0, label: "Default" },
@@ -81,18 +82,13 @@ export function textSelectionRangeFromTextArea(element: Pick<HTMLTextAreaElement
 }
 
 export function selectedTextRange(range: TextSelectionRange, text: string): TextSelectionRange {
-  const start = Math.max(0, Math.min(text.length, Math.min(range.start, range.end)));
-  const end = Math.max(start, Math.min(text.length, Math.max(range.start, range.end)));
-  return { start, end };
+  return selectedOffsetRange(range, text.length);
 }
 
-export function currentLineTextRange(range: TextSelectionRange, text: string): TextSelectionRange {
-  if (!text) return { start: 0, end: 0 };
-  const cursor = Math.max(0, Math.min(text.length, Math.min(range.start, range.end)));
-  const lineStart = text.lastIndexOf("\n", Math.max(0, cursor - 1)) + 1;
-  const nextBreak = text.indexOf("\n", cursor);
-  const lineEnd = nextBreak >= 0 ? nextBreak : text.length;
-  return { start: lineStart, end: lineEnd };
+export function selectedOffsetRange(range: TextSelectionRange, length: number): TextSelectionRange {
+  const start = Math.max(0, Math.min(length, Math.min(range.start, range.end)));
+  const end = Math.max(start, Math.min(length, Math.max(range.start, range.end)));
+  return { start, end };
 }
 
 export function textSelectionSummary(text: string, range: TextSelectionRange) {
@@ -125,19 +121,19 @@ export function removeStyleRunDraft(drafts: ClassicStyleRunDraft[], id: string) 
   return drafts.filter((draft) => draft.id !== id).map((draft, index) => ({ ...draft, index }));
 }
 
-export function applyAuthorStyleToSelection(drafts: ClassicStyleRunDraft[], text: string, range: TextSelectionRange, style: AuthorStyleDraft) {
-  const selected = selectedTextRange(range, text);
+export function applyAuthorStyleToSelection(drafts: ClassicStyleRunDraft[], text: string, range: TextSelectionRange, style: AuthorStyleDraft, rawTextLength = text.length) {
+  const selected = selectedOffsetRange(range, rawTextLength);
   if (selected.end <= selected.start) return drafts;
   const source = drafts.length ? drafts : styleRunDraftsFromRuns([]);
   const activeAtStart = styleRunDraftAtOffset(source, selected.start);
   const activeAtEnd = styleRunDraftAtOffset(source, selected.end);
-  const hasEndBoundary = selected.end < text.length && source.some((draft) => styleRunStart(draft.startChar) === selected.end);
+  const hasEndBoundary = selected.end < rawTextLength && source.some((draft) => styleRunStart(draft.startChar) === selected.end);
   const nextDrafts = source.filter((draft) => {
     const start = styleRunStart(draft.startChar);
     return start == null || start < selected.start || start >= selected.end;
   });
   nextDrafts.push(styleRunDraftFromAuthorStyle(activeAtStart, selected.start, style, `selection:${selected.start}:${selected.end}:${Date.now()}`));
-  if (selected.end < text.length && !hasEndBoundary) {
+  if (selected.end < rawTextLength && !hasEndBoundary) {
     nextDrafts.push(styleRunDraftFromTemplate(activeAtEnd, selected.end, `restore:${selected.end}:${Date.now()}`));
   }
   return reindexStyleRunDrafts(nextDrafts);
@@ -189,23 +185,27 @@ export function isCssHexColor(value: string) {
   return /^#[0-9a-fA-F]{6}$/.test(value);
 }
 
-export function styleRunRangeSummary(run: ClassicStyleRunDraft, drafts: ClassicStyleRunDraft[], text: string) {
-  const range = styleRunRange(run, drafts, text);
+export function styleRunRangeSummary(run: ClassicStyleRunDraft, drafts: ClassicStyleRunDraft[], text: string, decoded?: ClassicTextPreviewDecode) {
+  const range = styleRunRange(run, drafts, decoded?.rawByteLength ?? text.length);
   if (!range) return "Invalid start";
-  if (text.length === 0) return "Empty TEXT body";
+  const displayText = decoded?.text ?? text;
+  if (displayText.length === 0) return "Empty TEXT body";
   if (range.beyondText) return `Starts after current text (${range.start})`;
-  const excerpt = text.slice(range.start, Math.min(range.endExclusive, range.start + 54)).replace(/\s+/g, " ").trim() || "(blank text)";
-  const suffix = range.endExclusive - range.start > 54 ? "..." : "";
+  const displayRange = decoded ? rawRangeToDisplayRange(decoded, { start: range.start, end: range.endExclusive }) : { start: range.start, end: range.endExclusive };
+  const excerpt = displayText.slice(displayRange.start, Math.min(displayRange.end, displayRange.start + 54)).replace(/\s+/g, " ").trim() || "(blank text)";
+  const suffix = displayRange.end - displayRange.start > 54 ? "..." : "";
   return `${range.start}-${Math.max(range.start, range.endExclusive - 1)}: ${excerpt}${suffix}`;
 }
 
-export function styleRunRangeTitle(run: ClassicStyleRunDraft, drafts: ClassicStyleRunDraft[], text: string) {
-  const range = styleRunRange(run, drafts, text);
+export function styleRunRangeTitle(run: ClassicStyleRunDraft, drafts: ClassicStyleRunDraft[], text: string, decoded?: ClassicTextPreviewDecode) {
+  const range = styleRunRange(run, drafts, decoded?.rawByteLength ?? text.length);
   if (!range) return "This row needs a non-negative start character.";
-  if (text.length === 0) return "This TEXT resource has no body text yet.";
-  if (range.beyondText) return `This style starts at character ${range.start}, which is beyond the current ${text.length}-character TEXT body.`;
-  const excerpt = text.slice(range.start, range.endExclusive).replace(/\s+/g, " ").trim() || "(blank text)";
-  return `Applies from character ${range.start} through ${Math.max(range.start, range.endExclusive - 1)}: ${excerpt}`;
+  const displayText = decoded?.text ?? text;
+  if (displayText.length === 0) return "This TEXT resource has no body text yet.";
+  if (range.beyondText) return `This style starts at raw byte ${range.start}, which is beyond the current ${decoded?.rawByteLength ?? text.length}-byte TEXT body.`;
+  const displayRange = decoded ? rawRangeToDisplayRange(decoded, { start: range.start, end: range.endExclusive }) : { start: range.start, end: range.endExclusive };
+  const excerpt = displayText.slice(displayRange.start, displayRange.end).replace(/\s+/g, " ").trim() || "(blank text)";
+  return `Applies from raw byte ${range.start} through ${Math.max(range.start, range.endExclusive - 1)}: ${excerpt}`;
 }
 
 function styleRunDraftFromAuthorStyle(template: ClassicStyleRunDraft, startChar: number, style: AuthorStyleDraft, id: string): ClassicStyleRunDraft {
@@ -248,16 +248,16 @@ function styleRunStart(value: string) {
   return Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
 }
 
-function styleRunRange(run: ClassicStyleRunDraft, drafts: ClassicStyleRunDraft[], text: string) {
+function styleRunRange(run: ClassicStyleRunDraft, drafts: ClassicStyleRunDraft[], textLength: number) {
   const start = styleRunStart(run.startChar);
   if (start == null) return null;
   const nextStart = drafts
     .map((draft) => styleRunStart(draft.startChar))
     .filter((candidate): candidate is number => candidate != null && candidate > start)
-    .sort((left, right) => left - right)[0] ?? text.length;
+    .sort((left, right) => left - right)[0] ?? textLength;
   return {
     start,
-    endExclusive: Math.max(start, Math.min(nextStart, text.length)),
-    beyondText: start >= text.length
+    endExclusive: Math.max(start, Math.min(nextStart, textLength)),
+    beyondText: start >= textLength
   };
 }

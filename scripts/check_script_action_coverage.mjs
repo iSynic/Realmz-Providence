@@ -10,6 +10,7 @@ const assetsCssPath = path.join(root, "src/editor/styles/assets.css");
 const combatPanelPath = path.join(root, "src/editor/panels/CombatPanel.tsx");
 const textPanelPath = path.join(root, "src/editor/panels/TextPanel.tsx");
 const styledTextPreviewPath = path.join(root, "src/editor/components/StyledTextPreview.tsx");
+const classicTextPreviewPath = path.join(root, "src/editor/classicTextPreview.ts");
 const textStyleAuthoringPath = path.join(root, "src/editor/textStyleAuthoring.ts");
 const resourcesPanelPath = path.join(root, "src/editor/panels/ResourcesPanel.tsx");
 const resourceWidgetsPath = path.join(root, "src/editor/panels/resources/ResourceWidgets.tsx");
@@ -44,6 +45,7 @@ const assetsCss = fs.readFileSync(assetsCssPath, "utf8");
 const combatPanel = fs.readFileSync(combatPanelPath, "utf8");
 const textPanel = fs.readFileSync(textPanelPath, "utf8");
 const styledTextPreview = fs.readFileSync(styledTextPreviewPath, "utf8");
+const classicTextPreview = fs.readFileSync(classicTextPreviewPath, "utf8");
 const textStyleAuthoring = fs.readFileSync(textStyleAuthoringPath, "utf8");
 const resourcesPanel = fs.readFileSync(resourcesPanelPath, "utf8");
 const resourceWidgets = fs.readFileSync(resourceWidgetsPath, "utf8");
@@ -315,13 +317,13 @@ for (const snippet of [
   "CLASSIC_AUTHOR_FONT_OPTIONS",
   "textSelectionRangeFromTextArea",
   "applyAuthorStyleToSelection",
-  "Apply To Selection",
-  "Apply To Current Line",
-  "currentLineTextRange",
+  "text-source-details",
+  "text-style-format-toolbar",
+  "onDisplaySelectionChange",
+  "Apply Selection",
   "Custom Font ID",
-  "Apply Full-Text Style",
   "Add Style Run",
-  "Apply Style Runs",
+  "Save Style",
   "Apply Style Bytes",
   "parseClassicStyleRuns",
   "styleRunDraftsFromRuns",
@@ -329,6 +331,9 @@ for (const snippet of [
   "classicStyleBytesFromRuns",
   "parseHexBytes",
   "StyledScrollingTextPreview",
+  "REALMZ_GAMEPLAY_TEXT_VIEW_WIDTH",
+  "title=\"Gameplay viewport preview\"",
+  "movieViewportWidth={REALMZ_GAMEPLAY_TEXT_VIEW_WIDTH}",
   "semanticResourceType(entity)",
   "semanticResourceId(entity)",
   "function bytesToDataUrl(bytes: Uint8Array, mimeType = \"text/plain\")",
@@ -336,15 +341,22 @@ for (const snippet of [
   "resourceType: \"TEXT\"",
   "resourceType: \"styl\"",
   ".filter((asset) => asset.resourceType.trim() === \"TEXT\")",
-  "if (char === \"\\n\" || char === \"\\r\") return 13;",
   "Apply Scrolling Text"
 ]) {
   if (!textPanel.includes(snippet)) failures.push(`Text panel is missing authored scrolling TEXT resource support: ${snippet}`);
 }
 for (const snippet of [
+  "export function decodeClassicTextPreviewBytes",
+  "rawToDisplay",
+  "displayToRaw",
+  "export function displayRangeToRawRange",
+  "if (char === \"\\n\" || char === \"\\r\") return 13;"
+]) {
+  if (!classicTextPreview.includes(snippet)) failures.push(`Classic TEXT preview offset mapping is missing: ${snippet}`);
+}
+for (const snippet of [
   "export const CLASSIC_AUTHOR_FONT_OPTIONS",
   "export function textSelectionRangeFromTextArea",
-  "export function currentLineTextRange",
   "export function applyAuthorStyleToSelection",
   "export function styleRunDraftAtOffset",
   "export function classicStyleRunsFromDrafts",
@@ -364,7 +376,7 @@ for (const snippet of [
   if (!packageJson.includes(snippet)) failures.push(`package.json is missing text style authoring check wiring: ${snippet}`);
 }
 for (const snippet of [
-  "checkCurrentLineRanges",
+  "checkSelectedRanges",
   "checkSelectionStyleInsertion",
   "checkSelectionRestoresCoveredStyle",
   "classicStyleRunsFromDrafts",
@@ -373,8 +385,10 @@ for (const snippet of [
   if (!checkTextStyleAuthoring.includes(snippet)) failures.push(`Text style authoring check script is missing: ${snippet}`);
 }
 for (const snippet of [
+  "export const CLASSIC_TEXT_EDIT_VIEW_WIDTH = 320",
+  "export const REALMZ_GAMEPLAY_TEXT_VIEW_WIDTH = 480",
   "export function StyledScrollingTextPreview",
-  "function styledTextPreviewSegments",
+  "export function styledTextPreviewSegments",
   "Offset-preserving Classic TEXT/styl preview. Windows Realmz testing currently ignores styl formatting.",
   "function styleRunPreviewTitle",
   "export function parseClassicStyleRuns",
@@ -393,6 +407,8 @@ for (const snippet of [
   ".text-style-preview-body",
   ".text-style-preview-run i",
   ".text-style-preview-diagnostics",
+  ".text-style-format-toolbar",
+  ".text-style-toggle-group",
   ".text-style-selection-summary",
   ".text-style-custom-font",
   ".text-style-run-technical-details"
@@ -427,12 +443,14 @@ for (const snippet of [
 }
 for (const snippet of [
   "StyledTextResourcePreview",
+  "CLASSIC_TEXT_EDIT_VIEW_WIDTH",
   "useLibrarySameIdStyleBytes",
   "loadBrowserBundledLibraryResourceData",
   "projectSameIdStyleBytes",
   "sameSourceStyleAsset",
   "typeof summary.textOffsetBody === \"string\"",
-  "title=\"Text Resource Preview\""
+  "Classic 320 movie preview",
+  "isClassicAboutMovieTextAsset"
 ]) {
   if (!resourceWidgets.includes(snippet)) failures.push(`Assets resource preview must reuse the styled scrolling TEXT preview path: ${snippet}`);
 }
@@ -455,6 +473,7 @@ for (const snippet of [
 for (const snippet of [
   "textResourcePayloadSummary(resource)",
   "decodeClassicTextBody(resource.data)",
+  "textResourceBase64",
   "styleRunCountCandidate",
   "styleResourceBase64",
   "styleRunTableStatus",
@@ -467,12 +486,14 @@ for (const snippet of [
 for (const snippet of [
   "textOffsetBody",
   "decodeClassicTextOffsetBody",
+  "textResourceBase64",
   "styleResourceBase64",
   "bytesToBase64(resource.data)"
 ]) {
   if (!browserLibrary.includes(snippet)) failures.push(`Browser library catalog TEXT/styl summaries must preserve scrolling-text preview data: ${snippet}`);
 }
 for (const snippet of [
+  "textResourceBase64",
   "styleResourceBase64",
   "STANDARD.encode(&resource.data)",
   "styleRunTableStatus",
@@ -484,6 +505,7 @@ for (const snippet of [
 for (const snippet of [
   "textOffsetBody",
   "decode_classic_text_offset_body",
+  "textResourceBase64",
   "styleResourceBase64",
   "BASE64_STANDARD.encode(data)"
 ]) {

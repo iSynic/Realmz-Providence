@@ -442,6 +442,7 @@ fn resource_payload_summary(resource: &ResourceEntry) -> BTreeMap<String, serde_
                 ("textOffsetBody", json!(text_offset_body)),
                 ("textOffsetLength", json!(text_offset_length)),
                 ("textBytes", json!(resource.length)),
+                ("textResourceBase64", json!(STANDARD.encode(&resource.data))),
             ])
         }
         "styl" => {

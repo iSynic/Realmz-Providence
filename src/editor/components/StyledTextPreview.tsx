@@ -1,8 +1,16 @@
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
+import {
+  decodeClassicTextPreviewBytes,
+  decodeClassicTextPreviewString,
+  rawOffsetToDisplayOffset,
+  type ClassicTextPreviewDecode
+} from "../classicTextPreview";
 
 export const CLASSIC_STYLE_RUN_BYTES = 20;
 export const CLASSIC_TEXT_EDIT_VIEW_WIDTH = 320;
+// Modern Realmz compiles screensize=1, then sets lookrect.right to 320 + leftshift (160).
+export const REALMZ_GAMEPLAY_TEXT_VIEW_WIDTH = 480;
 export const CLASSIC_TEXT_EDIT_PREVIEW_SCALES = [1, 2, 3] as const;
 export const CLASSIC_STYLE_FACE_BITS = {
   bold: 1,
@@ -53,10 +61,17 @@ export const DEFAULT_CLASSIC_STYLE_RUN: ClassicTextStyleRun = {
 };
 
 type StyledTextPreviewSegment = {
-  start: number;
-  end: number;
+  displayStart: number;
+  displayEnd: number;
+  rawStart: number;
+  rawEnd: number;
   text: string;
   run: ClassicTextStyleRun | null;
+};
+
+export type StyledTextDisplaySelection = {
+  start: number;
+  end: number;
 };
 
 export function StyledScrollingTextPreview({
@@ -69,7 +84,10 @@ export function StyledScrollingTextPreview({
   className = "",
   textEditAlignment = "left",
   movieViewportWidth = CLASSIC_TEXT_EDIT_VIEW_WIDTH,
-  defaultViewportScale = 1
+  defaultViewportScale = 1,
+  textBytes = null,
+  showRunStartBadges = false,
+  onDisplaySelectionChange
 }: {
   text: string;
   runs: ClassicTextStyleRun[];
@@ -81,8 +99,15 @@ export function StyledScrollingTextPreview({
   textEditAlignment?: ClassicTextEditAlignment;
   movieViewportWidth?: number;
   defaultViewportScale?: number;
+  textBytes?: Uint8Array | null;
+  showRunStartBadges?: boolean;
+  onDisplaySelectionChange?: (range: StyledTextDisplaySelection) => void;
 }) {
-  const preview = useMemo(() => styledTextPreviewSegments(text, runs), [text, runs]);
+  const decodedText = useMemo(
+    () => textBytes ? decodeClassicTextPreviewBytes(textBytes) : decodeClassicTextPreviewString(text),
+    [text, textBytes]
+  );
+  const preview = useMemo(() => styledTextPreviewSegments(decodedText, runs), [decodedText, runs]);
   const [viewportScale, setViewportScale] = useState<ClassicTextEditPreviewScale>(() => normalizePreviewScale(defaultViewportScale));
   const [canvasHeight, setCanvasHeight] = useState(0);
   const canvasRef = useRef<HTMLDivElement | null>(null);
@@ -91,6 +116,9 @@ export function StyledScrollingTextPreview({
     width: `${normalizedViewportWidth * viewportScale}px`,
     height: canvasHeight > 0 ? `${canvasHeight * viewportScale}px` : undefined
   }), [canvasHeight, normalizedViewportWidth, viewportScale]);
+  const sectionStyle = useMemo(() => ({
+    "--text-style-preview-scaled-width": `${normalizedViewportWidth * viewportScale}px`
+  }) as CSSProperties, [normalizedViewportWidth, viewportScale]);
   const canvasStyle = useMemo<CSSProperties>(() => ({
     width: `${normalizedViewportWidth}px`,
     textAlign: textEditAlignment,
@@ -109,8 +137,19 @@ export function StyledScrollingTextPreview({
       window.removeEventListener("resize", measure);
     };
   }, [normalizedViewportWidth, preview]);
+  const captureDisplaySelection = useCallback(() => {
+    const element = canvasRef.current;
+    if (!element || !onDisplaySelectionChange) return;
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+    const range = selection.getRangeAt(0);
+    if (!element.contains(range.startContainer) || !element.contains(range.endContainer)) return;
+    const start = displayOffsetForDomPoint(element, range.startContainer, range.startOffset);
+    const end = displayOffsetForDomPoint(element, range.endContainer, range.endOffset);
+    onDisplaySelectionChange({ start: Math.min(start, end), end: Math.max(start, end) });
+  }, [onDisplaySelectionChange]);
   return (
-    <section className={`text-style-preview${className ? ` ${className}` : ""}`}>
+    <section className={`text-style-preview${className ? ` ${className}` : ""}`} style={sectionStyle}>
       <header>
         <div>
           <span>{title}</span>
@@ -135,15 +174,23 @@ export function StyledScrollingTextPreview({
       </header>
       <div className="text-style-preview-body">
         <div className="text-style-preview-frame" style={frameStyle}>
-          <div ref={canvasRef} className="text-style-preview-canvas" style={canvasStyle}>
+          <div
+            ref={canvasRef}
+            className="text-style-preview-canvas"
+            style={canvasStyle}
+            tabIndex={onDisplaySelectionChange ? 0 : undefined}
+            onMouseUp={captureDisplaySelection}
+            onKeyUp={captureDisplaySelection}
+            onBlur={captureDisplaySelection}
+          >
             {preview.segments.length > 0 ? preview.segments.map((segment) => (
               <span
-                key={`${segment.start}:${segment.end}:${segment.text.slice(0, 12)}`}
+                key={`${segment.rawStart}:${segment.rawEnd}:${segment.text.slice(0, 12)}`}
                 className={`text-style-preview-run ${segment.run ? "" : "plain"}`}
                 style={segment.run ? classicStyleRunCss(segment.run) : undefined}
-                title={segment.run ? styleRunPreviewTitle(segment.run, segment.start, segment.end) : `Plain text from character ${segment.start}`}
+                title={segment.run ? styleRunPreviewTitle(segment.run, segment.rawStart, segment.rawEnd, segment.displayStart, segment.displayEnd) : `Plain text from displayed character ${segment.displayStart}`}
               >
-                {segment.run && <i>{segment.start}</i>}
+                {segment.run && showRunStartBadges && <i>{segment.rawStart}</i>}
                 {segment.text}
               </span>
             )) : <span className="text-style-preview-empty">No scrolling TEXT body to preview.</span>}
@@ -158,6 +205,18 @@ export function StyledScrollingTextPreview({
       )}
     </section>
   );
+}
+
+function displayOffsetForDomPoint(root: HTMLElement, node: Node, offset: number) {
+  if (!root.contains(node)) return 0;
+  const range = document.createRange();
+  range.setStart(root, 0);
+  try {
+    range.setEnd(node, offset);
+  } catch {
+    return root.textContent?.length ?? 0;
+  }
+  return range.toString().length;
 }
 
 function normalizePreviewScale(value: number): ClassicTextEditPreviewScale {
@@ -234,37 +293,56 @@ export function u16FromBytes(bytes: Uint8Array, offset: number) {
   return (bytes[offset] << 8) | bytes[offset + 1];
 }
 
-function styledTextPreviewSegments(text: string, runs: ClassicTextStyleRun[]) {
+export function styledTextPreviewSegments(decoded: ClassicTextPreviewDecode, runs: ClassicTextStyleRun[]) {
   const diagnostics: string[] = [];
+  const text = decoded.text;
   if (!text) return { segments: [] as StyledTextPreviewSegment[], diagnostics };
   const validRuns = runs
     .filter((run) => Number.isInteger(run.startChar) && run.startChar >= 0)
     .sort((left, right) => left.startChar - right.startChar || left.index - right.index);
   if (validRuns.length === 0) {
-    return { segments: [{ start: 0, end: text.length, text, run: null }], diagnostics };
+    return { segments: [{ displayStart: 0, displayEnd: text.length, rawStart: 0, rawEnd: decoded.rawByteLength, text, run: null }], diagnostics };
   }
   const segments: StyledTextPreviewSegment[] = [];
-  let cursor = 0;
+  let displayCursor = 0;
+  let rawCursor = 0;
   validRuns.forEach((run, index) => {
-    const start = run.startChar;
-    const nextStart = validRuns.slice(index + 1).find((candidate) => candidate.startChar > start)?.startChar ?? text.length;
-    if (start >= text.length) {
-      diagnostics.push(`Style run ${run.index + 1} starts at character ${start}, outside the ${text.length}-character TEXT body.`);
+    const rawStart = run.startChar;
+    const nextRawStart = validRuns.slice(index + 1).find((candidate) => candidate.startChar > rawStart)?.startChar ?? decoded.rawByteLength;
+    const displayStart = rawOffsetToDisplayOffset(decoded, rawStart);
+    if (rawStart >= decoded.rawByteLength) {
+      diagnostics.push(`Style run ${run.index + 1} starts at raw byte ${rawStart}, outside the ${decoded.rawByteLength}-byte TEXT body.`);
       return;
     }
-    if (start > cursor) {
-      segments.push({ start: cursor, end: start, text: text.slice(cursor, start), run: null });
+    if (displayStart > displayCursor) {
+      segments.push({
+        displayStart: displayCursor,
+        displayEnd: displayStart,
+        rawStart: rawCursor,
+        rawEnd: rawStart,
+        text: text.slice(displayCursor, displayStart),
+        run: null
+      });
     }
-    const end = Math.max(start, Math.min(nextStart, text.length));
-    if (end <= start) {
-      diagnostics.push(`Style run ${run.index + 1} at character ${start} has no visible text span.`);
+    const rawEnd = Math.max(rawStart, Math.min(nextRawStart, decoded.rawByteLength));
+    const displayEnd = Math.max(displayStart, rawOffsetToDisplayOffset(decoded, rawEnd));
+    if (displayEnd <= displayStart) {
+      diagnostics.push(`Style run ${run.index + 1} at raw byte ${rawStart} has no visible text span.`);
       return;
     }
-    segments.push({ start, end, text: text.slice(start, end), run });
-    cursor = Math.max(cursor, end);
+    segments.push({ displayStart, displayEnd, rawStart, rawEnd, text: text.slice(displayStart, displayEnd), run });
+    displayCursor = Math.max(displayCursor, displayEnd);
+    rawCursor = Math.max(rawCursor, rawEnd);
   });
-  if (cursor < text.length) {
-    segments.push({ start: cursor, end: text.length, text: text.slice(cursor), run: null });
+  if (displayCursor < text.length) {
+    segments.push({
+      displayStart: displayCursor,
+      displayEnd: text.length,
+      rawStart: rawCursor,
+      rawEnd: decoded.rawByteLength,
+      text: text.slice(displayCursor),
+      run: null
+    });
   }
   return { segments, diagnostics };
 }
@@ -284,8 +362,8 @@ function classicStyleRunCss(run: ClassicTextStyleRun): CSSProperties {
   };
 }
 
-function styleRunPreviewTitle(run: ClassicTextStyleRun, start: number, end: number) {
-  return `Style run ${run.index + 1}: characters ${start}-${Math.max(start, end - 1)}, font ${run.font}, size ${run.size}, ${classicStyleFaceLabel(run.face)}.`;
+function styleRunPreviewTitle(run: ClassicTextStyleRun, rawStart: number, rawEnd: number, displayStart: number, displayEnd: number) {
+  return `Style run ${run.index + 1}: raw bytes ${rawStart}-${Math.max(rawStart, rawEnd - 1)}, display characters ${displayStart}-${Math.max(displayStart, displayEnd - 1)}, font ${run.font}, size ${run.size}, ${classicStyleFaceLabel(run.face)}.`;
 }
 
 function classicStyleFaceLabel(face: number) {

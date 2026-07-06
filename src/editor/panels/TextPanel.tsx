@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Copy, Eraser, FileText, List, MessageSquarePlus, Trash2, Volume2 } from "lucide-react";
+import { Bold, ChevronLeft, ChevronRight, Copy, Eraser, FileText, Italic, List, MessageSquarePlus, Trash2, Underline, Volume2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LibraryCatalog, MessageRecord, OptionLabelRecord, Project, ProjectCommand, SelectedEntity } from "../types";
 import { selectEntityFromId } from "../utils";
@@ -9,6 +9,7 @@ import {
   CLASSIC_STYLE_EXTRA_FACE_MASK,
   CLASSIC_STYLE_FACE_BITS,
   DEFAULT_CLASSIC_STYLE_RUN,
+  REALMZ_GAMEPLAY_TEXT_VIEW_WIDTH,
   StyledScrollingTextPreview,
   classicRgbToCssHex,
   classicStyleBytesFromRuns,
@@ -21,7 +22,6 @@ import {
   addStyleRunDraft,
   applyAuthorStyleToSelection,
   classicStyleRunsFromDrafts,
-  currentLineTextRange,
   isCssHexColor,
   removeStyleRunDraft,
   selectedTextRange,
@@ -29,12 +29,17 @@ import {
   styleRunRangeSummary,
   styleRunRangeTitle,
   textSelectionRangeFromTextArea,
-  textSelectionSummary,
   textSelectionTitle,
   updateStyleRunDraft,
   type ClassicStyleRunDraft,
   type TextSelectionRange
 } from "../textStyleAuthoring";
+import {
+  classicTextBytesFromDisplayString,
+  decodeClassicTextPreviewBytes,
+  decodeClassicTextPreviewString,
+  displayRangeToRawRange
+} from "../classicTextPreview";
 import { playPreviewUrl, useResolvedPreviewUrl, type PreviewRuntimeContext } from "../previewUrls";
 
 const DIVINITY_TEXT_SEPARATOR = `${" ".repeat(20)}\uf8ff${" ".repeat(20)}`;
@@ -1210,16 +1215,6 @@ function ImportedScrollingTextResourceEditor({
           </button>
         </div>
       </header>
-      <label className="text-message-field">
-        <span>Text</span>
-        <textarea
-          value={resource.text}
-          readOnly
-          onSelect={(event) => captureSelection(event.currentTarget)}
-          onKeyUp={(event) => captureSelection(event.currentTarget)}
-          onMouseUp={(event) => captureSelection(event.currentTarget)}
-        />
-      </label>
       <div className={`text-message-status ${unsupportedChars.length ? "warning" : "ok"}`}>
         <span>{byteLength.toLocaleString()} byte{byteLength === 1 ? "" : "s"} imported</span>
         <b>Source-backed imported TEXT remains preserved until Make Editable creates an authored replacement.</b>
@@ -1230,11 +1225,26 @@ function ImportedScrollingTextResourceEditor({
         project={project}
         resourceId={resource.resourceId}
         text={resource.text}
+        textBytes={resource.rawTextBytes}
         textChanged={false}
         textSelectionRange={textSelectionRange}
+        onTextSelectionRangeChange={setTextSelectionRange}
         onSelectEntity={onSelectEntity}
         onApplyCommand={onApplyCommand}
       />
+      <details className="text-source-details">
+        <summary>Text Source</summary>
+        <label className="text-message-field">
+          <span>Raw imported TEXT body</span>
+          <textarea
+            value={resource.text}
+            readOnly
+            onSelect={(event) => captureSelection(event.currentTarget)}
+            onKeyUp={(event) => captureSelection(event.currentTarget)}
+            onMouseUp={(event) => captureSelection(event.currentTarget)}
+          />
+        </label>
+      </details>
       <details className="advanced-details">
         <summary>
           <TutorialTip title="Advanced Details" body="Imported TEXT resources are shown here from the scenario resource fork. Making one editable writes an authored TEXT resource with the same ID; same-ID styl companions are preserved unless separately replaced." side="below">
@@ -1279,6 +1289,7 @@ function ScrollingTextEditor({
   const validResourceId = Number.isInteger(resourceId);
   const duplicateResourceId = validResourceId && assets.some((candidate) => candidate.id !== asset.id && candidate.resourceId === resourceId && candidate.resourceType.trim() === "TEXT");
   const byteLength = classicTextByteLength(text);
+  const textBytes = useMemo(() => classicTextBytes(text), [text]);
   const unsupportedChars = unsupportedClassicTextChars(text);
   const changed = validResourceId && (resourceId !== asset.resourceId || label !== asset.label || text !== decodeTextAsset(asset));
   const inManualRange = validResourceId && resourceId <= -200 && resourceId >= -300;
@@ -1328,19 +1339,6 @@ function ScrollingTextEditor({
           <input value={label} onChange={(event) => setLabel(event.currentTarget.value)} />
         </label>
       </div>
-      <label className="text-message-field">
-        <span>Text</span>
-        <textarea
-          value={text}
-          onChange={(event) => {
-            setText(event.currentTarget.value);
-            captureSelection(event.currentTarget);
-          }}
-          onSelect={(event) => captureSelection(event.currentTarget)}
-          onKeyUp={(event) => captureSelection(event.currentTarget)}
-          onMouseUp={(event) => captureSelection(event.currentTarget)}
-        />
-      </label>
       <div className={`text-message-status ${!validResourceId || duplicateResourceId || unsupportedChars.length || !inManualRange ? "warning" : "ok"}`}>
         <span>{byteLength.toLocaleString()} byte{byteLength === 1 ? "" : "s"} before export</span>
         {!validResourceId && <b>Resource ID must be a whole number.</b>}
@@ -1355,12 +1353,30 @@ function ScrollingTextEditor({
           project={project}
           resourceId={resourceId}
           text={text}
+          textBytes={textBytes}
           textChanged={changed}
           textSelectionRange={textSelectionRange}
+          onTextSelectionRangeChange={setTextSelectionRange}
           onSelectEntity={onSelectEntity}
           onApplyCommand={onApplyCommand}
         />
       )}
+      <details className="text-source-details">
+        <summary>Edit Text Source</summary>
+        <label className="text-message-field">
+          <span>Raw TEXT body</span>
+          <textarea
+            value={text}
+            onChange={(event) => {
+              setText(event.currentTarget.value);
+              captureSelection(event.currentTarget);
+            }}
+            onSelect={(event) => captureSelection(event.currentTarget)}
+            onKeyUp={(event) => captureSelection(event.currentTarget)}
+            onMouseUp={(event) => captureSelection(event.currentTarget)}
+          />
+        </label>
+      </details>
       <details className="advanced-details">
         <summary>
           <TutorialTip title="Advanced Details" body="Shows how this authored scrolling text will export as a Realmz TEXT resource. Same-ID styl resources remain preserved from imported resource forks." side="below">
@@ -1381,16 +1397,20 @@ function StyleCompanionEditor({
   project,
   resourceId,
   text,
+  textBytes,
   textChanged,
   textSelectionRange,
+  onTextSelectionRangeChange,
   onSelectEntity,
   onApplyCommand
 }: {
   project: Project;
   resourceId: number;
   text: string;
+  textBytes?: Uint8Array | null;
   textChanged: boolean;
   textSelectionRange: TextSelectionRange;
+  onTextSelectionRangeChange?: (range: TextSelectionRange) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
@@ -1432,13 +1452,12 @@ function StyleCompanionEditor({
   const styleRunBytes = styleRunDraftResult.ok ? classicStyleBytesFromRuns(styleRunDraftResult.runs) : null;
   const styleRunBytesDirty = styleRunBytes ? !bytesEqual(styleRunBytes, companion.rawStyleBytes ?? new Uint8Array()) : false;
   const previewRuns = styleRunDraftResult.ok ? styleRunDraftResult.runs : parsedStyleRuns.ok ? parsedStyleRuns.runs : [];
-  const normalizedTextSelection = selectedTextRange(textSelectionRange, text);
-  const selectedRangeValid = normalizedTextSelection.end > normalizedTextSelection.start;
-  const selectedTextSummary = selectedRangeValid ? textSelectionSummary(text, normalizedTextSelection) : "No text range selected";
-  const selectedTextTitle = selectedRangeValid ? textSelectionTitle(text, normalizedTextSelection) : "Select text in the TEXT body to derive style-run offsets.";
-  const currentLineRange = currentLineTextRange(textSelectionRange, text);
-  const currentLineValid = currentLineRange.end > currentLineRange.start;
-  const currentLineTitle = currentLineValid ? textSelectionTitle(text, currentLineRange) : "Place the cursor on a non-empty line to style that line.";
+  const decodedText = useMemo(() => textBytes ? decodeClassicTextPreviewBytes(textBytes) : decodeClassicTextPreviewString(text), [text, textBytes]);
+  const previewText = decodedText.text;
+  const normalizedTextSelection = selectedTextRange(textSelectionRange, previewText);
+  const rawTextSelection = displayRangeToRawRange(decodedText, normalizedTextSelection);
+  const selectedRangeValid = rawTextSelection.end > rawTextSelection.start;
+  const selectedTextTitle = selectedRangeValid ? textSelectionTitle(previewText, normalizedTextSelection) : "Select text in the styled preview to derive raw style-run offsets.";
   const fontOptionValue = CLASSIC_AUTHOR_FONT_OPTIONS.some((option) => option.id === parsedFont) ? String(parsedFont) : "custom";
   const applyStyleBytes = (bytes: Uint8Array, provenance: string, label: string) => {
     const asset = styleAssetFromBytes(companion.managedAsset ?? null, resourceId, bytes, provenance);
@@ -1511,22 +1530,15 @@ function StyleCompanionEditor({
           <b>TEXT edits preserve the imported style runs; flatten only if the old rich styling no longer matches the edited body.</b>
         )}
       </div>
-      <StyledScrollingTextPreview
-        text={text}
-        runs={previewRuns}
-        parseError={parsedStyleRuns.ok ? null : parsedStyleRuns.error}
-        draftDirty={styleRunBytesDirty}
-      />
       <div className="text-style-run-editor">
         <div className={`text-style-companion-summary ${parsedStyleRuns.ok ? "" : "warning"}`}>
           <span>{parsedStyleRuns.ok ? "Classic style-run table" : parsedStyleRuns.error}</span>
-          <span>{parsedStyleRuns.ok ? "Edit style runs below; raw bytes remain available for exact preservation." : "Raw bytes are preserved and can still be edited below."}</span>
+          <span>{parsedStyleRuns.ok ? "Select text in the visual preview, apply formatting, then save the style resource." : "Raw bytes are preserved and can still be edited below."}</span>
         </div>
-        <div className="text-style-full-run-controls">
+        <div className="text-style-format-toolbar">
           <div className={`text-style-selection-summary ${selectedRangeValid ? "active" : ""}`} title={selectedTextTitle}>
             <span>Selected Range</span>
-            <strong>{selectedRangeValid ? `${normalizedTextSelection.start}-${normalizedTextSelection.end - 1}` : "None"}</strong>
-            <small>{selectedTextSummary}</small>
+            <strong>{selectedRangeValid ? `${rawTextSelection.start}-${rawTextSelection.end - 1}` : "None"}</strong>
           </div>
           <label>
             <span>Font</span>
@@ -1542,116 +1554,83 @@ function StyleCompanionEditor({
               <option value="custom">Custom ID</option>
             </select>
           </label>
-          <details className="text-style-custom-font" open={fontOptionValue === "custom" || undefined}>
-            <summary>Custom Font ID</summary>
-            <label>
-              <span>Font ID</span>
+          {fontOptionValue === "custom" && (
+            <label className="text-style-custom-font">
+              <span>Custom Font ID</span>
               <input value={fontDraft} onChange={(event) => setFontDraft(event.currentTarget.value)} inputMode="numeric" />
             </label>
-          </details>
-          <label>
-            <span>Size</span>
-            <input value={sizeDraft} onChange={(event) => setSizeDraft(event.currentTarget.value)} inputMode="numeric" />
-          </label>
-          <label>
-            <span>Color</span>
-            <span className="text-style-color-field">
-              <input value={colorDraft} onChange={(event) => setColorDraft(event.currentTarget.value)} placeholder="#000000" />
-              <input
-                type="color"
-                value={isCssHexColor(colorDraft) ? colorDraft : "#000000"}
-                onChange={(event) => setColorDraft(event.currentTarget.value)}
-                aria-label="Full-text style color"
-              />
-            </span>
-          </label>
-          <label className="text-style-checkbox">
-            <input type="checkbox" checked={boldDraft} onChange={(event) => setBoldDraft(event.currentTarget.checked)} />
-            <span>Bold</span>
-          </label>
-          <label className="text-style-checkbox">
-            <input type="checkbox" checked={italicDraft} onChange={(event) => setItalicDraft(event.currentTarget.checked)} />
-            <span>Italic</span>
-          </label>
-          <label className="text-style-checkbox">
-            <input type="checkbox" checked={underlineDraft} onChange={(event) => setUnderlineDraft(event.currentTarget.checked)} />
-            <span>Underline</span>
-          </label>
+          )}
+          <div className="text-style-number-color-group">
+            <label className="text-style-size-field">
+              <span>Size</span>
+              <input value={sizeDraft} onChange={(event) => setSizeDraft(event.currentTarget.value)} inputMode="numeric" maxLength={4} />
+            </label>
+            <label className="text-style-color-label">
+              <span>Color</span>
+              <span className="text-style-color-field">
+                <input value={colorDraft} onChange={(event) => setColorDraft(event.currentTarget.value)} placeholder="#000000" />
+                <input
+                  type="color"
+                  value={isCssHexColor(colorDraft) ? colorDraft : "#000000"}
+                  onChange={(event) => setColorDraft(event.currentTarget.value)}
+                  aria-label="Selection style color"
+                />
+              </span>
+            </label>
+          </div>
+          <div className="text-style-toggle-group" aria-label="Selection style toggles">
+            <button type="button" className={boldDraft ? "active" : ""} aria-pressed={boldDraft} title="Bold" onClick={() => setBoldDraft((value) => !value)}>
+              <Bold size={15} />
+            </button>
+            <button type="button" className={italicDraft ? "active" : ""} aria-pressed={italicDraft} title="Italic" onClick={() => setItalicDraft((value) => !value)}>
+              <Italic size={15} />
+            </button>
+            <button type="button" className={underlineDraft ? "active" : ""} aria-pressed={underlineDraft} title="Underline" onClick={() => setUnderlineDraft((value) => !value)}>
+              <Underline size={15} />
+            </button>
+          </div>
           <button
             type="button"
-            className="btn btn-secondary btn-xs"
+            className="btn btn-secondary btn-xs text-style-toolbar-button"
             disabled={!fullStyleDraftValid || !selectedRangeValid}
             title={selectedTextTitle}
             onClick={() => {
               if (!fullStyleDraftValid || !selectedRangeValid) return;
-              setStyleRunDrafts((drafts) => applyAuthorStyleToSelection(drafts, text, normalizedTextSelection, {
+              setStyleRunDrafts((drafts) => applyAuthorStyleToSelection(drafts, previewText, rawTextSelection, {
                 font: parsedFont,
                 size: parsedSize,
                 color: colorDraft,
                 bold: boldDraft,
                 italic: italicDraft,
                 underline: underlineDraft
-              }));
+              }, decodedText.rawByteLength));
             }}
           >
-            Apply To Selection
+            Apply Selection
           </button>
           <button
             type="button"
-            className="btn btn-secondary btn-xs"
-            disabled={!fullStyleDraftValid || !currentLineValid}
-            title={currentLineTitle}
-            onClick={() => {
-              if (!fullStyleDraftValid || !currentLineValid) return;
-              setStyleRunDrafts((drafts) => applyAuthorStyleToSelection(drafts, text, currentLineRange, {
-                font: parsedFont,
-                size: parsedSize,
-                color: colorDraft,
-                bold: boldDraft,
-                italic: italicDraft,
-                underline: underlineDraft
-              }));
-            }}
-          >
-            Apply To Current Line
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary btn-xs"
+            className="btn btn-primary btn-xs text-style-toolbar-button"
             disabled={!styleRunDraftResult.ok || !styleRunBytesDirty}
             onClick={() => {
               if (!styleRunBytes) return;
               applyStyleBytes(styleRunBytes, "Authored in Providence Scrolling Text style runs", `Update Style ${resourceId}`);
             }}
           >
-            Apply Style Runs
-          </button>
-          <button
-            type="button"
-            className="btn btn-secondary btn-xs"
-            disabled={!fullStyleDraftValid}
-            onClick={() => {
-              if (!fullStyleDraftValid) return;
-              const face = (boldDraft ? CLASSIC_STYLE_FACE_BITS.bold : 0)
-                | (italicDraft ? CLASSIC_STYLE_FACE_BITS.italic : 0)
-                | (underlineDraft ? CLASSIC_STYLE_FACE_BITS.underline : 0);
-              const template = firstStyleRun ?? DEFAULT_CLASSIC_STYLE_RUN;
-              const bytes = classicStyleBytesFromRuns([{
-                ...template,
-                startChar: 0,
-                font: parsedFont,
-                face,
-                size: parsedSize,
-                height: Math.max(template.height, parsedSize),
-                ascent: Math.max(0, Math.min(template.ascent, Math.max(parsedSize - 1, 0))),
-                color: cssHexToClassicRgb(colorDraft)
-              }]);
-              applyStyleBytes(bytes, "Authored in Providence Scrolling Text style runs", `Update Style ${resourceId}`);
-            }}
-          >
-            Apply Full-Text Style
+            Save Style
           </button>
         </div>
+        <StyledScrollingTextPreview
+          text={previewText}
+          textBytes={textBytes}
+          runs={previewRuns}
+          parseError={parsedStyleRuns.ok ? null : parsedStyleRuns.error}
+          draftDirty={styleRunBytesDirty}
+          title="Gameplay viewport preview"
+          description="Display Scrolling Text uses Realmz lookrect geometry; modern Realmz uses a 480 px gameplay text viewport."
+          movieViewportWidth={REALMZ_GAMEPLAY_TEXT_VIEW_WIDTH}
+          onDisplaySelectionChange={onTextSelectionRangeChange}
+        />
         {parsedStyleRuns.ok && (
           <details className="text-style-run-technical-details">
             <summary>Technical Style Runs</summary>
@@ -1698,21 +1677,21 @@ function StyleCompanionEditor({
                     aria-label={`Style run ${run.index + 1} color picker`}
                   />
                 </span>
-                <span className="text-style-run-excerpt" title={styleRunRangeTitle(run, styleRunDrafts, text)}>
-                  {styleRunRangeSummary(run, styleRunDrafts, text)}
+                <span className="text-style-run-excerpt" title={styleRunRangeTitle(run, styleRunDrafts, previewText, decodedText)}>
+                  {styleRunRangeSummary(run, styleRunDrafts, previewText, decodedText)}
                 </span>
                 <div className="text-style-run-flags">
                   <label title="Bold">
                     <input type="checkbox" checked={run.bold} onChange={(event) => setStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { bold: event.currentTarget.checked }))} />
-                    <span>B</span>
+                    <Bold size={12} />
                   </label>
                   <label title="Italic">
                     <input type="checkbox" checked={run.italic} onChange={(event) => setStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { italic: event.currentTarget.checked }))} />
-                    <span>I</span>
+                    <Italic size={12} />
                   </label>
                   <label title="Underline">
                     <input type="checkbox" checked={run.underline} onChange={(event) => setStyleRunDrafts((drafts) => updateStyleRunDraft(drafts, run.id, { underline: event.currentTarget.checked }))} />
-                    <span>U</span>
+                    <Underline size={12} />
                   </label>
                 </div>
                 <button
@@ -1746,7 +1725,7 @@ function StyleCompanionEditor({
                   applyStyleBytes(styleRunBytes, "Authored in Providence Scrolling Text style runs", `Update Style ${resourceId}`);
                 }}
               >
-                Apply Style Runs
+                Save Style
               </button>
               {styleRunBytesDirty && (
                 <button type="button" className="btn btn-secondary btn-xs" onClick={() => setStyleRunDrafts(parsedStyleRuns.ok ? styleRunDraftsFromRuns(parsedStyleRuns.runs) : [])}>
@@ -1875,6 +1854,7 @@ type ImportedScrollingTextResource = {
   label: string;
   source: string;
   text: string;
+  rawTextBytes: Uint8Array | null;
   hasStyle: boolean;
   styleEntityId: string | null;
 };
@@ -1920,12 +1900,13 @@ function scrollingTextProjectAssets(project: Project) {
 function importedScrollingTextResourceRows(project: Project, managedAssets: Project["assets"]): ImportedScrollingTextResource[] {
   const managedIds = new Set(managedAssets.map((asset) => asset.resourceId));
   return (project.semanticSchema?.entities ?? [])
-    .map((entity) => {
+    .map((entity): ImportedScrollingTextResource | null => {
       const resourceType = semanticResourceType(entity);
       if (resourceType !== "TEXT") return null;
       const resourceId = semanticResourceId(entity);
       if (!Number.isInteger(resourceId) || managedIds.has(resourceId)) return null;
-      const text = importedTextBody(entity.summary);
+      const rawTextBytes = bytesFromBase64String(entity.summary.textResourceBase64);
+      const text = rawTextBytes ? decodeClassicTextPreviewBytes(rawTextBytes).text : importedTextBody(entity.summary);
       const styleEntity = sameIdStyleResourceEntity(project, resourceId);
       return {
         entityId: entity.id,
@@ -1933,6 +1914,7 @@ function importedScrollingTextResourceRows(project: Project, managedAssets: Proj
         label: entity.label || `Scrolling Text ${resourceId}`,
         source: entity.source,
         text,
+        rawTextBytes,
         hasStyle: styleEntity != null,
         styleEntityId: styleEntity?.id ?? null
       };
@@ -2093,12 +2075,7 @@ function styleAssetFromBytes(existing: Project["assets"][number] | null, resourc
 }
 
 function classicTextBytes(text: string) {
-  const bytes = new Uint8Array(Array.from(text ?? "").map((char) => {
-    if (char === "\n" || char === "\r") return 13;
-    const code = char.charCodeAt(0);
-    return code <= 0x7f ? code : 0x3f;
-  }));
-  return bytes;
+  return classicTextBytesFromDisplayString(text);
 }
 
 function bytesToDataUrl(bytes: Uint8Array, mimeType = "text/plain") {

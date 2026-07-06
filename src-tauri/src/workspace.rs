@@ -1217,6 +1217,7 @@ fn resource_payload_summary(resource_type: &str, data: &[u8]) -> BTreeMap<String
             ("textOffsetBody", json!(text_offset_body)),
             ("textOffsetLength", json!(text_offset_body.chars().count())),
             ("textBytes", json!(data.len())),
+            ("textResourceBase64", json!(BASE64_STANDARD.encode(data))),
         ]);
     }
     if resource_type == "styl" {

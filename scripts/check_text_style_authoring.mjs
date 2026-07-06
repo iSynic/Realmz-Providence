@@ -10,11 +10,17 @@ const failures = [];
 
 try {
   const authoring = await server.ssrLoadModule("/src/editor/textStyleAuthoring.ts");
+  const classicText = await server.ssrLoadModule("/src/editor/classicTextPreview.ts");
+  const styledPreview = await server.ssrLoadModule("/src/editor/components/StyledTextPreview.tsx");
 
-  checkCurrentLineRanges(authoring);
+  checkSelectedRanges(authoring);
   checkSelectionStyleInsertion(authoring);
   checkSelectionRestoresCoveredStyle(authoring);
   checkValidation(authoring);
+  checkClassicTextOffsetMaps(classicText);
+  checkStyledPreviewUsesRawOffsets(classicText, styledPreview);
+  checkRawOffsetAuthoring(classicText, authoring);
+  checkStyleBytesPreserveUnchanged(authoring, styledPreview);
 
   if (failures.length > 0) {
     console.error("Text style authoring checks failed:");
@@ -29,11 +35,8 @@ try {
 
 process.exit(process.exitCode ?? 0);
 
-function checkCurrentLineRanges({ currentLineTextRange, selectedTextRange }) {
+function checkSelectedRanges({ selectedTextRange }) {
   const text = "Alpha\nBeta\nGamma";
-  assertRange(currentLineTextRange({ start: 8, end: 8 }, text), 6, 10, "cursor inside Beta should select the Beta line");
-  assertRange(currentLineTextRange({ start: 5, end: 5 }, text), 0, 5, "cursor on a newline should select the preceding line");
-  assertRange(currentLineTextRange({ start: 99, end: 99 }, text), 11, 16, "cursor past the text should select the final line");
   assertRange(selectedTextRange({ start: 12, end: 3 }, text), 3, 12, "reversed selections should normalize");
   assertRange(selectedTextRange({ start: -20, end: 200 }, text), 0, text.length, "out-of-range selections should clamp to the text body");
 }
@@ -84,6 +87,58 @@ function checkValidation({ classicStyleRunsFromDrafts, styleRunDraftsFromRuns })
   assert(!invalidColor.ok, "invalid color values should be rejected");
 }
 
+function checkClassicTextOffsetMaps({ decodeClassicTextPreviewBytes, displayOffsetToRawOffset, rawOffsetToDisplayOffset }) {
+  const bytes = new Uint8Array([13, 9, 65, 0x80, 31, 66, 0, 67]);
+  const decoded = decodeClassicTextPreviewBytes(bytes);
+  assert(decoded.text === "\n\tA\u0080 B", `Classic preview text should preserve offset-significant bytes, got ${JSON.stringify(decoded.text)}`);
+  assert(decoded.rawByteLength === 6, `NUL should end visible raw TEXT at byte 6, got ${decoded.rawByteLength}`);
+  for (const offset of [0, 1, 2, 3, 4, 5, 6]) {
+    assert(rawOffsetToDisplayOffset(decoded, offset) === offset, `raw offset ${offset} should map to display offset ${offset}`);
+    assert(displayOffsetToRawOffset(decoded, offset) === offset, `display offset ${offset} should map to raw offset ${offset}`);
+  }
+  assert(rawOffsetToDisplayOffset(decoded, 7) === 6, "raw offsets after NUL should clamp to the visible display end");
+}
+
+function checkStyledPreviewUsesRawOffsets({ decodeClassicTextPreviewBytes }, { styledTextPreviewSegments }) {
+  const decoded = decodeClassicTextPreviewBytes(new Uint8Array([13, 9, 65, 0x80, 31, 66]));
+  const preview = styledTextPreviewSegments(decoded, [
+    run({ index: 0, startChar: 0, font: 1 }),
+    run({ index: 1, startChar: 2, font: 3 }),
+    run({ index: 2, startChar: 5, font: 4 })
+  ]);
+  assert(preview.diagnostics.length === 0, `raw-offset preview fixture should not emit diagnostics: ${preview.diagnostics.join("; ")}`);
+  const segments = preview.segments.map((segment) => `${segment.rawStart}-${segment.rawEnd}:${JSON.stringify(segment.text)}`);
+  const expected = `0-2:${JSON.stringify("\n\t")}|2-5:${JSON.stringify(`A${String.fromCharCode(0x80)} `)}|5-6:${JSON.stringify("B")}`;
+  assert(segments.join("|") === expected, `preview segments should slice display text through raw offsets, got ${segments.join("|")}`);
+}
+
+function checkRawOffsetAuthoring({ decodeClassicTextPreviewBytes, displayRangeToRawRange }, { applyAuthorStyleToSelection, classicStyleRunsFromDrafts, styleRunDraftsFromRuns }) {
+  const decoded = decodeClassicTextPreviewBytes(new Uint8Array([13, 9, 65, 0x80, 31, 66]));
+  const rawRange = displayRangeToRawRange(decoded, { start: 2, end: 5 });
+  assert(rawRange.start === 2 && rawRange.end === 5, `display selection should map to raw bytes 2-5, got ${rawRange.start}-${rawRange.end}`);
+  const drafts = applyAuthorStyleToSelection(styleRunDraftsFromRuns([]), decoded.text, rawRange, authorStyle({ font: 20, bold: true }), decoded.rawByteLength);
+  const result = classicStyleRunsFromDrafts(drafts);
+  assert(result.ok, "raw-offset selection drafts should compile to Classic style runs");
+  if (result.ok) {
+    assertStarts(result.runs, [0, 2, 5], "authoring a display selection should write raw Classic startChar offsets");
+  }
+}
+
+function checkStyleBytesPreserveUnchanged({ classicStyleRunsFromDrafts, styleRunDraftsFromRuns }, { classicStyleBytesFromRuns, parseClassicStyleRuns }) {
+  const originalBytes = classicStyleBytesFromRuns([
+    run({ index: 0, startChar: 0, font: 1, size: 12 }),
+    run({ index: 1, startChar: 3, height: 18, ascent: 14, font: 1602, face: 1, size: 18 })
+  ]);
+  const parsed = parseClassicStyleRuns(originalBytes);
+  assert(parsed.ok, "fixture styl bytes should parse");
+  if (!parsed.ok) return;
+  const result = classicStyleRunsFromDrafts(styleRunDraftsFromRuns(parsed.runs));
+  assert(result.ok, "unchanged style drafts should compile");
+  if (!result.ok) return;
+  const roundTripped = classicStyleBytesFromRuns(result.runs);
+  assert(bytesEqual(originalBytes, roundTripped), "unchanged styl bytes should round-trip exactly through draft conversion");
+}
+
 function run(overrides = {}) {
   return {
     index: overrides.index ?? 0,
@@ -111,6 +166,14 @@ function authorStyle(overrides = {}) {
 function assertStarts(drafts, expected, message) {
   const actual = drafts.map((draft) => Number(draft.startChar));
   assert(actual.join(",") === expected.join(","), `${message}: expected ${expected.join(",")}, got ${actual.join(",")}`);
+}
+
+function bytesEqual(left, right) {
+  if (left.byteLength !== right.byteLength) return false;
+  for (let index = 0; index < left.byteLength; index += 1) {
+    if (left[index] !== right[index]) return false;
+  }
+  return true;
 }
 
 function assertRange(range, start, end, message) {

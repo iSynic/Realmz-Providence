@@ -525,7 +525,8 @@ function resourcePayloadSummary(resource: ResourceEntry) {
       textPreview: decodeClassicTextBody(resource.data.slice(0, 240)),
       textOffsetBody,
       textOffsetLength: textOffsetBody.length,
-      textBytes: resource.length
+      textBytes: resource.length,
+      textResourceBase64: bytesToBase64(resource.data)
     };
   }
   if (resource.resourceType === "styl") {

@@ -1317,6 +1317,29 @@
   line-height: 1.45;
 }
 
+.text-source-details {
+  border: 1px solid #26333f;
+  border-radius: 6px;
+  background: #0b1118;
+  padding: 8px 10px;
+}
+
+.text-source-details > summary {
+  cursor: pointer;
+  color: #8fc7ff;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.text-source-details[open] > summary {
+  margin-bottom: 8px;
+}
+
+.text-source-details .text-message-field textarea {
+  min-height: 150px;
+}
+
 .text-message-field.option-label-field input {
   max-width: 420px;
   min-height: 34px;
@@ -1407,6 +1430,9 @@
 .text-style-preview {
   display: grid;
   gap: 8px;
+  box-sizing: border-box;
+  width: min(100%, calc(var(--text-style-preview-scaled-width, 100%) + 40px));
+  margin: 0 auto;
   border: 1px solid #26333f;
   border-radius: 5px;
   background: #090f16;
@@ -1477,6 +1503,7 @@
 
 .text-style-preview-body {
   display: block;
+  box-sizing: border-box;
   min-height: 90px;
   max-height: 260px;
   overflow: auto;
@@ -1558,19 +1585,33 @@
   padding-top: 8px;
 }
 
-.text-style-full-run-controls {
-  display: grid;
-  grid-template-columns: minmax(180px, 1fr) repeat(4, minmax(86px, 130px)) repeat(3, auto) repeat(3, auto);
+.text-style-format-toolbar {
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: end;
+  justify-content: flex-start;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  border: 1px solid #26333f;
+  border-radius: 6px;
+  background: #0a1118;
+  padding: 8px;
 }
 
-.text-style-full-run-controls label {
+.text-style-format-toolbar > label {
   display: grid;
+  flex: 0 1 132px;
   gap: 4px;
+  min-width: 82px;
 }
 
-.text-style-full-run-controls label > span:first-child,
+.text-style-format-toolbar > label:first-of-type {
+  flex-basis: 190px;
+}
+
+.text-style-format-toolbar label > span:first-child,
 .text-style-run-table b {
   color: #8fc7ff;
   font-size: 10px;
@@ -1578,11 +1619,11 @@
   text-transform: uppercase;
 }
 
-.text-style-full-run-controls input {
+.text-style-format-toolbar input {
   min-height: 29px;
 }
 
-.text-style-full-run-controls select {
+.text-style-format-toolbar select {
   min-height: 29px;
   border: 1px solid #2d3b49;
   border-radius: 5px;
@@ -1593,14 +1634,51 @@
   font-size: 11px;
 }
 
-.text-style-selection-summary {
+.text-style-toolbar-button {
+  flex: 0 0 112px;
+  justify-content: center;
+  min-height: 32px;
+}
+
+.text-style-number-color-group {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.text-style-number-color-group > label {
   display: grid;
-  gap: 3px;
-  min-height: 58px;
+  gap: 4px;
+}
+
+.text-style-size-field {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.text-style-size-field input {
+  box-sizing: content-box;
+  width: 4ch;
+  min-width: 4ch;
+  max-width: 4ch;
+}
+
+.text-style-color-label {
+  width: 132px;
+}
+
+.text-style-selection-summary {
+  display: flex;
+  flex: 0 1 190px;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 32px;
   border: 1px solid #26333f;
   border-radius: 5px;
   background: #0a1118;
-  padding: 7px;
+  padding: 5px 8px;
 }
 
 .text-style-selection-summary.active {
@@ -1630,23 +1708,37 @@
 
 .text-style-custom-font {
   display: grid;
+  flex: 0 1 132px;
   gap: 4px;
-  align-self: stretch;
-  min-height: 29px;
 }
 
-.text-style-custom-font > summary {
-  min-height: 29px;
+.text-style-toggle-group {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 2px;
+  align-items: center;
+  height: 32px;
+  border: 1px solid #2d3b49;
+  border-radius: 5px;
+  background: #0b1118;
+  padding: 2px;
+}
+
+.text-style-toggle-group button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 26px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #d6e7f5;
   cursor: pointer;
-  color: #8fc7ff;
-  font-size: 10px;
-  font-weight: 900;
-  line-height: 29px;
-  text-transform: uppercase;
 }
 
-.text-style-custom-font label {
-  margin-top: 4px;
+.text-style-toggle-group button.active {
+  background: #174262;
+  color: #fff;
 }
 
 .text-style-color-field {
@@ -1679,6 +1771,7 @@
 .text-style-run-table {
   display: grid;
   gap: 5px;
+  overflow-x: auto;
   border: 1px solid #26333f;
   border-radius: 5px;
   background: #0a1118;
@@ -1708,6 +1801,7 @@
   grid-template-columns: 72px 58px 54px minmax(126px, 148px) minmax(170px, 1fr) minmax(110px, auto) auto;
   gap: 8px;
   align-items: center;
+  min-width: 780px;
 }
 
 .text-style-run-table input {
