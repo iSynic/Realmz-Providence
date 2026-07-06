@@ -1468,19 +1468,21 @@ function StyleCompanionEditor({
   const normalizedTextSelection = selectedTextRange(textSelectionRange, previewText);
   const rawTextSelection = displayRangeToRawRange(decodedText, normalizedTextSelection);
   const selectedRangeValid = rawTextSelection.end > rawTextSelection.start;
-  const selectedTextTitle = selectedRangeValid ? textSelectionTitle(previewText, normalizedTextSelection) : "Select text in the styled preview to derive raw style-run offsets.";
+  const activeStyleOffset = Math.max(0, Math.min(decodedText.rawByteLength, rawTextSelection.start));
+  const selectedTextTitle = selectedRangeValid
+    ? textSelectionTitle(previewText, normalizedTextSelection)
+    : `Caret at raw byte ${activeStyleOffset}; toolbar reflects the style run active here.`;
   const canEditText = textEditable && onTextChange != null;
   const fontOptionValue = CLASSIC_AUTHOR_FONT_OPTIONS.some((option) => option.id === parsedFont) ? String(parsedFont) : "custom";
   useEffect(() => {
-    if (!selectedRangeValid) return;
-    const run = styleRunDraftAtOffset(styleRunDrafts, rawTextSelection.start);
+    const run = styleRunDraftAtOffset(styleRunDrafts, activeStyleOffset);
     setFontDraft(run.font);
     setSizeDraft(run.size);
     setColorDraft(run.color);
     setBoldDraft(run.bold);
     setItalicDraft(run.italic);
     setUnderlineDraft(run.underline);
-  }, [resourceId, selectedRangeValid, rawTextSelection.start, rawTextSelection.end]);
+  }, [resourceId, activeStyleOffset, rawTextSelection.end, styleRunDrafts]);
   const toolbarStyleFromDrafts = (updates: Partial<{
     font: string;
     size: string;
@@ -1587,7 +1589,7 @@ function StyleCompanionEditor({
         <div className="text-style-format-toolbar">
           <div className={`text-style-selection-summary ${selectedRangeValid ? "active" : ""}`} title={selectedTextTitle}>
             <span>Selected Range</span>
-            <strong>{selectedRangeValid ? `${rawTextSelection.start}-${rawTextSelection.end - 1}` : "None"}</strong>
+            <strong>{selectedRangeValid ? `${rawTextSelection.start}-${rawTextSelection.end - 1}` : `Caret ${activeStyleOffset}`}</strong>
           </div>
           <label>
             <span>Font</span>
