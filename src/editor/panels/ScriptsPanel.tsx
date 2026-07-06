@@ -855,8 +855,8 @@ function ScriptAuthoringPanel({
     });
   }, [selectedKey]);
   const applySelectedSlot = useCallback(() => {
-    if (!selectedTrigger) return false;
-    onApplyCommand?.({
+    if (!selectedTrigger || !onApplyCommand) return false;
+    onApplyCommand({
       kind: "updateActionSlot",
       label: `Update slot ${selectedSlot}`,
       triggerId: selectedTrigger.id,
@@ -864,8 +864,9 @@ function ScriptAuthoringPanel({
       rawCode: selectedDraft.rawCode,
       id: selectedDraft.id
     });
+    discardSelectedDraft();
     return true;
-  }, [onApplyCommand, selectedDraft.id, selectedDraft.rawCode, selectedSlot, selectedTrigger]);
+  }, [discardSelectedDraft, onApplyCommand, selectedDraft.id, selectedDraft.rawCode, selectedSlot, selectedTrigger]);
   const requestDraftNavigation = useCallback((label: string, action: () => void) => {
     confirmBeforeDraftDiscard(label, action);
   }, [confirmBeforeDraftDiscard]);

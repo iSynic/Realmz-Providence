@@ -1,5 +1,6 @@
 import { createContext, ReactNode, useCallback, useContext, useMemo, useRef, useState } from "react";
 import { Save, X } from "lucide-react";
+import { flushSync } from "react-dom";
 
 export type DraftGuardSurface = "scripts" | "text" | "assets" | "maps" | "combat" | "project" | "library" | "other";
 
@@ -92,7 +93,11 @@ export function useDraftChangeGuardController() {
     const snapshot = [...entriesRef.current.values()];
     try {
       for (const entry of snapshot) {
-        const applied = await entry.apply();
+        let applyResult: boolean | Promise<boolean> | undefined;
+        flushSync(() => {
+          applyResult = entry.apply();
+        });
+        const applied = await applyResult;
         if (applied === false) {
           entry.focus?.();
           setError(`${entry.title} could not be applied. Fix the draft before continuing.`);
@@ -117,7 +122,9 @@ export function useDraftChangeGuardController() {
     setError("");
     const snapshot = [...entriesRef.current.values()];
     try {
-      for (const entry of snapshot) entry.discard();
+      flushSync(() => {
+        for (const entry of snapshot) entry.discard();
+      });
       for (const entry of snapshot) entriesRef.current.delete(entry.id);
       bump();
       const action = pending.action;
