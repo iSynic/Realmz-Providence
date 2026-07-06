@@ -1138,7 +1138,6 @@ function ScrollingTextWorkbench({
             <ImportedScrollingTextResourceEditor
               project={project}
               resource={selectedImportedResource}
-              onSelectEntity={onSelectEntity}
               onApplyCommand={(command) => {
                 onApplyCommand(command);
                 if (command.kind === "attachProjectAsset" && command.asset.resourceType.trim() === "TEXT") {
@@ -1153,7 +1152,6 @@ function ScrollingTextWorkbench({
               project={project}
               asset={selectedAsset}
               assets={assets}
-              onSelectEntity={onSelectEntity}
               onApplyCommand={onApplyCommand}
             />
           ) : (
@@ -1180,12 +1178,10 @@ function scrollingTextRowLabel(row: ScrollingTextListRow) {
 function ImportedScrollingTextResourceEditor({
   project,
   resource,
-  onSelectEntity,
   onApplyCommand
 }: {
   project: Project;
   resource: ImportedScrollingTextResource;
-  onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
   const byteLength = classicTextByteLength(resource.text);
@@ -1200,11 +1196,6 @@ function ImportedScrollingTextResourceEditor({
           <small>Imported scenario TEXT resource. Make it editable to author a scenario-owned replacement.</small>
         </div>
         <div className="text-message-actions">
-          {resource.styleEntityId && (
-            <button type="button" className="btn btn-secondary btn-xs" onClick={() => onSelectEntity(selectEntityFromId(resource.styleEntityId!))}>
-              Open Style
-            </button>
-          )}
           <button
             type="button"
             className="btn btn-primary btn-xs"
@@ -1231,7 +1222,6 @@ function ImportedScrollingTextResourceEditor({
         textChanged={false}
         textSelectionRange={textSelectionRange}
         onTextSelectionRangeChange={setTextSelectionRange}
-        onSelectEntity={onSelectEntity}
         onApplyCommand={onApplyCommand}
       />
       <details className="text-source-details">
@@ -1267,13 +1257,11 @@ function ScrollingTextEditor({
   project,
   asset,
   assets,
-  onSelectEntity,
   onApplyCommand
 }: {
   project: Project;
   asset: Project["assets"][number];
   assets: Project["assets"];
-  onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
   const [resourceIdDraft, setResourceIdDraft] = useState(String(asset.resourceId));
@@ -1310,11 +1298,6 @@ function ScrollingTextEditor({
           <small>Scenario TEXT resource used by Display Scrolling Text.</small>
         </div>
         <div className="text-message-actions">
-          {styleCompanion.entity && (
-            <button type="button" className="btn btn-secondary btn-xs" onClick={() => onSelectEntity(styleCompanion.entity!)}>
-              Open Style
-            </button>
-          )}
           <button
             type="button"
             className="btn btn-danger btn-xs"
@@ -1364,7 +1347,6 @@ function ScrollingTextEditor({
           onTextChange={setText}
           onApplyText={applyScrollingText}
           textApplyDisabled={applyDisabled}
-          onSelectEntity={onSelectEntity}
           onApplyCommand={onApplyCommand}
         />
       )}
@@ -1412,7 +1394,6 @@ function StyleCompanionEditor({
   onTextChange,
   onApplyText,
   textApplyDisabled = true,
-  onSelectEntity,
   onApplyCommand
 }: {
   project: Project;
@@ -1426,7 +1407,6 @@ function StyleCompanionEditor({
   onTextChange?: (text: string) => void;
   onApplyText?: () => void;
   textApplyDisabled?: boolean;
-  onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
   const companion = useMemo(() => sameIdStyleCompanion(project, resourceId), [project, resourceId]);
@@ -1457,7 +1437,6 @@ function StyleCompanionEditor({
     setStyleRunDrafts(parsedStyleRuns.ok ? styleRunDraftsFromRuns(parsedStyleRuns.runs) : []);
   }, [resourceId, companion.styleHex, parsedStyleRuns.ok]);
   const styleHexDirty = normalizeHex(styleHexDraft) !== normalizeHex(companion.styleHex ?? "");
-  const canOpen = companion.entity != null;
   const parsedFont = Number(fontDraft);
   const styleRunDraftResult = useMemo(() => classicStyleRunsFromDrafts(styleRunDrafts), [styleRunDrafts]);
   const styleRunBytes = styleRunDraftResult.ok ? classicStyleBytesFromRuns(styleRunDraftResult.runs) : null;
@@ -1531,11 +1510,6 @@ function StyleCompanionEditor({
           <small>{styleState}</small>
         </div>
         <div className="text-message-actions">
-          {canOpen && (
-            <button type="button" className="btn btn-secondary btn-xs" onClick={() => onSelectEntity(companion.entity!)}>
-              Open Style
-            </button>
-          )}
           {companion.managedAsset && (
             <button
               type="button"
@@ -1953,7 +1927,6 @@ type ImportedScrollingTextResource = {
   text: string;
   rawTextBytes: Uint8Array | null;
   hasStyle: boolean;
-  styleEntityId: string | null;
 };
 
 type ProjectSemanticEntity = NonNullable<Project["semanticSchema"]>["entities"][number];
@@ -2012,8 +1985,7 @@ function importedScrollingTextResourceRows(project: Project, managedAssets: Proj
         source: entity.source,
         text,
         rawTextBytes,
-        hasStyle: styleEntity != null,
-        styleEntityId: styleEntity?.id ?? null
+        hasStyle: styleEntity != null
       };
     })
     .filter((row): row is ImportedScrollingTextResource => row != null)
