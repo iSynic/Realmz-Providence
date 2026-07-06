@@ -1284,9 +1284,9 @@ function ScrollingTextEditor({
   const changed = validResourceId && (resourceId !== asset.resourceId || label !== asset.label || text !== decodeTextAsset(asset));
   const inManualRange = validResourceId && resourceId <= -200 && resourceId >= -300;
   const styleCompanion = useMemo(() => sameIdStyleCompanion(project, resourceId), [project, resourceId]);
-  const applyDisabled = !changed || !validResourceId || duplicateResourceId;
+  const applyBlocked = !validResourceId || duplicateResourceId;
   const applyScrollingText = () => {
-    if (!validResourceId) return;
+    if (applyBlocked || !changed) return;
     const nextAsset = scrollingTextAssetFromDraft(asset, resourceId, label.trim() || `Scrolling Text ${resourceId}`, text);
     onApplyCommand({ kind: "replaceProjectAsset", label: `Update Scrolling Text ${resourceId}`, assetId: asset.id, asset: nextAsset });
   };
@@ -1304,14 +1304,6 @@ function ScrollingTextEditor({
             onClick={() => onApplyCommand({ kind: "deleteProjectAsset", label: `Delete Scrolling Text ${asset.resourceId}`, assetId: asset.id })}
           >
             <Trash2 size={12} /> Delete
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary btn-xs"
-            disabled={applyDisabled}
-            onClick={applyScrollingText}
-          >
-            Apply Scrolling Text
           </button>
         </div>
       </header>
@@ -1345,8 +1337,8 @@ function ScrollingTextEditor({
           onTextSelectionRangeChange={setTextSelectionRange}
           textEditable
           onTextChange={setText}
-          onApplyText={applyScrollingText}
-          textApplyDisabled={applyDisabled}
+          onApplyTextChanges={applyScrollingText}
+          textApplyBlocked={applyBlocked}
           onApplyCommand={onApplyCommand}
         />
       )}
@@ -1392,8 +1384,8 @@ function StyleCompanionEditor({
   onTextSelectionRangeChange,
   textEditable = false,
   onTextChange,
-  onApplyText,
-  textApplyDisabled = true,
+  onApplyTextChanges,
+  textApplyBlocked = true,
   onApplyCommand
 }: {
   project: Project;
@@ -1405,8 +1397,8 @@ function StyleCompanionEditor({
   onTextSelectionRangeChange?: (range: TextSelectionRange) => void;
   textEditable?: boolean;
   onTextChange?: (text: string) => void;
-  onApplyText?: () => void;
-  textApplyDisabled?: boolean;
+  onApplyTextChanges?: () => void;
+  textApplyBlocked?: boolean;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
   const companion = useMemo(() => sameIdStyleCompanion(project, resourceId), [project, resourceId]);
@@ -1497,6 +1489,16 @@ function StyleCompanionEditor({
         : { kind: "attachProjectAsset", label, asset }
     );
   };
+  const canApplyTextChanges = textChanged && onApplyTextChanges != null;
+  const canApplyStyleRunChanges = styleRunDraftResult.ok && styleRunBytes != null && styleRunBytesDirty;
+  const applyChangesDisabled = textApplyBlocked || (!canApplyTextChanges && !canApplyStyleRunChanges);
+  const applyViewportChanges = () => {
+    if (textApplyBlocked) return;
+    if (canApplyTextChanges) onApplyTextChanges?.();
+    if (canApplyStyleRunChanges && styleRunBytes) {
+      applyStyleBytes(styleRunBytes, "Authored in Providence Scrolling Text style runs", `Update Style ${resourceId}`);
+    }
+  };
   const styleState = companion.managedAsset
     ? "Authored style override"
     : companion.importedEntity
@@ -1517,18 +1519,6 @@ function StyleCompanionEditor({
               onClick={() => onApplyCommand({ kind: "deleteProjectAsset", label: `Remove Style Override ${resourceId}`, assetId: companion.managedAsset!.id })}
             >
               Remove Override
-            </button>
-          )}
-          {companion.importedStyleBytes && !companion.managedAsset && (
-            <button
-              type="button"
-              className="btn btn-primary btn-xs"
-              onClick={() => {
-                const asset = styleAssetFromBytes(null, resourceId, companion.importedStyleBytes!, "Authored from imported style companion");
-                onApplyCommand({ kind: "attachProjectAsset", label: `Make Style ${resourceId} editable`, asset });
-              }}
-            >
-              Make Style Editable
             </button>
           )}
           <button
@@ -1558,7 +1548,7 @@ function StyleCompanionEditor({
       <div className="text-style-run-editor">
         <div className={`text-style-companion-summary ${parsedStyleRuns.ok ? "" : "warning"}`}>
           <span>{parsedStyleRuns.ok ? "Classic style-run table" : parsedStyleRuns.error}</span>
-          <span>{parsedStyleRuns.ok ? "Edit and select text directly in the gameplay viewport; formatting changes preview immediately until Save Style." : "Raw bytes are preserved and can still be edited below."}</span>
+          <span>{parsedStyleRuns.ok ? "Edit and select text directly in the gameplay viewport; formatting changes preview immediately until Apply Changes." : "Raw bytes are preserved and can still be edited below."}</span>
         </div>
         <div className="text-style-format-toolbar">
           <div className={`text-style-selection-summary ${selectedRangeValid ? "active" : ""}`} title={selectedTextTitle}>
@@ -1675,17 +1665,6 @@ function StyleCompanionEditor({
               <Underline size={15} />
             </button>
           </div>
-          <button
-            type="button"
-            className="btn btn-primary btn-xs text-style-toolbar-button"
-            disabled={!styleRunDraftResult.ok || !styleRunBytesDirty}
-            onClick={() => {
-              if (!styleRunBytes) return;
-              applyStyleBytes(styleRunBytes, "Authored in Providence Scrolling Text style runs", `Update Style ${resourceId}`);
-            }}
-          >
-            Save Style
-          </button>
         </div>
         <StyledScrollingTextPreview
           text={previewText}
@@ -1698,8 +1677,8 @@ function StyleCompanionEditor({
           movieViewportWidth={REALMZ_GAMEPLAY_TEXT_VIEW_WIDTH}
           editableText={canEditText}
           onTextChange={onTextChange}
-          onApplyText={onApplyText}
-          textApplyDisabled={textApplyDisabled}
+          onApplyChanges={applyViewportChanges}
+          applyChangesDisabled={applyChangesDisabled}
           onDisplaySelectionChange={onTextSelectionRangeChange}
         />
         {parsedStyleRuns.ok && (
@@ -1786,17 +1765,6 @@ function StyleCompanionEditor({
                 onClick={() => setStyleRunDrafts((drafts) => addStyleRunDraft(drafts))}
               >
                 Add Style Run
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary btn-xs"
-                disabled={!styleRunDraftResult.ok || !styleRunBytesDirty}
-                onClick={() => {
-                  if (!styleRunBytes) return;
-                  applyStyleBytes(styleRunBytes, "Authored in Providence Scrolling Text style runs", `Update Style ${resourceId}`);
-                }}
-              >
-                Save Style
               </button>
               {styleRunBytesDirty && (
                 <button type="button" className="btn btn-secondary btn-xs" onClick={() => setStyleRunDrafts(parsedStyleRuns.ok ? styleRunDraftsFromRuns(parsedStyleRuns.runs) : [])}>

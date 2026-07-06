@@ -89,8 +89,8 @@ export function StyledScrollingTextPreview({
   showRunStartBadges = false,
   editableText = false,
   onTextChange,
-  onApplyText,
-  textApplyDisabled = true,
+  onApplyChanges,
+  applyChangesDisabled = true,
   onDisplaySelectionChange
 }: {
   text: string;
@@ -107,8 +107,8 @@ export function StyledScrollingTextPreview({
   showRunStartBadges?: boolean;
   editableText?: boolean;
   onTextChange?: (text: string) => void;
-  onApplyText?: () => void;
-  textApplyDisabled?: boolean;
+  onApplyChanges?: () => void;
+  applyChangesDisabled?: boolean;
   onDisplaySelectionChange?: (range: StyledTextDisplaySelection) => void;
 }) {
   const decodedText = useMemo(
@@ -191,9 +191,9 @@ export function StyledScrollingTextPreview({
         </div>
         <div className="text-style-preview-header-actions">
           {draftDirty && <b>Draft style runs</b>}
-          {editableText && onApplyText && (
-            <button type="button" className="btn btn-primary btn-xs" disabled={textApplyDisabled} onClick={onApplyText}>
-              Apply Text
+          {editableText && onApplyChanges && (
+            <button type="button" className="btn btn-primary btn-xs" disabled={applyChangesDisabled} onClick={onApplyChanges}>
+              Apply Changes
             </button>
           )}
           <div className="text-style-preview-scale-controls" aria-label="Classic TextEdit preview scale">
