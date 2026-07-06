@@ -1427,48 +1427,6 @@
   color: #ffb4a6;
 }
 
-.text-style-inline-text-editor {
-  display: grid;
-  gap: 6px;
-  box-sizing: border-box;
-  width: min(100%, 520px);
-  margin: 0 auto;
-  border: 1px solid #26333f;
-  border-radius: 5px;
-  background: #090f16;
-  padding: 8px;
-}
-
-.text-style-inline-text-editor label {
-  display: grid;
-  gap: 5px;
-}
-
-.text-style-inline-text-editor label > span,
-.text-style-inline-text-editor > div > span {
-  color: #8fc7ff;
-  font-size: 10px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.text-style-inline-text-editor textarea {
-  box-sizing: border-box;
-  min-height: 150px;
-  resize: vertical;
-  font-family: var(--mono-font);
-  font-size: 13px;
-  line-height: 1.65;
-}
-
-.text-style-inline-text-editor > div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  justify-content: space-between;
-}
-
 .text-style-preview {
   display: grid;
   gap: 8px;
@@ -1569,6 +1527,22 @@
   white-space: pre-wrap;
   overflow-wrap: normal;
   word-break: normal;
+}
+
+.text-style-preview-canvas[contenteditable="true"] {
+  min-height: 220px;
+  cursor: text;
+  outline: none;
+}
+
+.text-style-preview-canvas[contenteditable="true"]:focus-visible {
+  box-shadow: inset 0 0 0 2px rgba(43, 143, 216, 0.5);
+}
+
+.text-style-preview-canvas[contenteditable="true"]:empty::before {
+  content: attr(data-placeholder);
+  color: #777;
+  font-style: italic;
 }
 
 .text-style-preview-run {

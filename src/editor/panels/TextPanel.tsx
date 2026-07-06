@@ -1470,10 +1470,6 @@ function StyleCompanionEditor({
   const selectedRangeValid = rawTextSelection.end > rawTextSelection.start;
   const selectedTextTitle = selectedRangeValid ? textSelectionTitle(previewText, normalizedTextSelection) : "Select text in the styled preview to derive raw style-run offsets.";
   const canEditText = textEditable && onTextChange != null;
-  const currentTextByteLength = classicTextByteLength(text);
-  const captureInlineTextSelection = (element: HTMLTextAreaElement) => {
-    onTextSelectionRangeChange?.(textSelectionRangeFromTextArea(element));
-  };
   const fontOptionValue = CLASSIC_AUTHOR_FONT_OPTIONS.some((option) => option.id === parsedFont) ? String(parsedFont) : "custom";
   useEffect(() => {
     if (!selectedRangeValid) return;
@@ -1583,36 +1579,10 @@ function StyleCompanionEditor({
           <b>TEXT edits preserve the imported style runs; flatten only if the old rich styling no longer matches the edited body.</b>
         )}
       </div>
-      {canEditText && (
-        <div className="text-style-inline-text-editor">
-          <label>
-            <span>Text</span>
-            <textarea
-              value={text}
-              onChange={(event) => {
-                onTextChange?.(event.currentTarget.value);
-                captureInlineTextSelection(event.currentTarget);
-              }}
-              onSelect={(event) => captureInlineTextSelection(event.currentTarget)}
-              onKeyUp={(event) => captureInlineTextSelection(event.currentTarget)}
-              onMouseUp={(event) => captureInlineTextSelection(event.currentTarget)}
-              spellCheck
-            />
-          </label>
-          <div>
-            <span>{currentTextByteLength.toLocaleString()} byte{currentTextByteLength === 1 ? "" : "s"}</span>
-            {onApplyText && (
-              <button type="button" className="btn btn-primary btn-xs" disabled={textApplyDisabled} onClick={onApplyText}>
-                Apply Text
-              </button>
-            )}
-          </div>
-        </div>
-      )}
       <div className="text-style-run-editor">
         <div className={`text-style-companion-summary ${parsedStyleRuns.ok ? "" : "warning"}`}>
           <span>{parsedStyleRuns.ok ? "Classic style-run table" : parsedStyleRuns.error}</span>
-          <span>{parsedStyleRuns.ok ? "Select text in the editor or preview; formatting changes preview immediately until Save Style." : "Raw bytes are preserved and can still be edited below."}</span>
+          <span>{parsedStyleRuns.ok ? "Edit and select text directly in the gameplay viewport; formatting changes preview immediately until Save Style." : "Raw bytes are preserved and can still be edited below."}</span>
         </div>
         <div className="text-style-format-toolbar">
           <div className={`text-style-selection-summary ${selectedRangeValid ? "active" : ""}`} title={selectedTextTitle}>
@@ -1747,9 +1717,13 @@ function StyleCompanionEditor({
           runs={previewRuns}
           parseError={parsedStyleRuns.ok ? null : parsedStyleRuns.error}
           draftDirty={styleRunBytesDirty}
-          title="Gameplay viewport preview"
-          description="Display Scrolling Text uses Realmz lookrect geometry; modern Realmz uses a 480 px gameplay text viewport."
+          title={canEditText ? "Gameplay viewport editor" : "Gameplay viewport preview"}
+          description={canEditText ? "Editable Display Scrolling Text in Realmz gameplay viewport geometry." : "Display Scrolling Text uses Realmz lookrect geometry; modern Realmz uses a 480 px gameplay text viewport."}
           movieViewportWidth={REALMZ_GAMEPLAY_TEXT_VIEW_WIDTH}
+          editableText={canEditText}
+          onTextChange={onTextChange}
+          onApplyText={onApplyText}
+          textApplyDisabled={textApplyDisabled}
           onDisplaySelectionChange={onTextSelectionRangeChange}
         />
         {parsedStyleRuns.ok && (

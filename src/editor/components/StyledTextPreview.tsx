@@ -87,6 +87,10 @@ export function StyledScrollingTextPreview({
   defaultViewportScale = 1,
   textBytes = null,
   showRunStartBadges = false,
+  editableText = false,
+  onTextChange,
+  onApplyText,
+  textApplyDisabled = true,
   onDisplaySelectionChange
 }: {
   text: string;
@@ -101,6 +105,10 @@ export function StyledScrollingTextPreview({
   defaultViewportScale?: number;
   textBytes?: Uint8Array | null;
   showRunStartBadges?: boolean;
+  editableText?: boolean;
+  onTextChange?: (text: string) => void;
+  onApplyText?: () => void;
+  textApplyDisabled?: boolean;
   onDisplaySelectionChange?: (range: StyledTextDisplaySelection) => void;
 }) {
   const decodedText = useMemo(
@@ -111,6 +119,7 @@ export function StyledScrollingTextPreview({
   const [viewportScale, setViewportScale] = useState<ClassicTextEditPreviewScale>(() => normalizePreviewScale(defaultViewportScale));
   const [canvasHeight, setCanvasHeight] = useState(0);
   const canvasRef = useRef<HTMLDivElement | null>(null);
+  const pendingSelectionRef = useRef<StyledTextDisplaySelection | null>(null);
   const normalizedViewportWidth = Math.max(1, Math.round(movieViewportWidth));
   const frameStyle = useMemo<CSSProperties>(() => ({
     width: `${normalizedViewportWidth * viewportScale}px`,
@@ -137,6 +146,13 @@ export function StyledScrollingTextPreview({
       window.removeEventListener("resize", measure);
     };
   }, [normalizedViewportWidth, preview]);
+  useLayoutEffect(() => {
+    const element = canvasRef.current;
+    const pending = pendingSelectionRef.current;
+    if (!editableText || !element || !pending) return;
+    pendingSelectionRef.current = null;
+    setDomSelectionForDisplayRange(element, pending.start, pending.end);
+  }, [editableText, text, preview]);
   const captureDisplaySelection = useCallback(() => {
     const element = canvasRef.current;
     if (!element || !onDisplaySelectionChange) return;
@@ -148,6 +164,24 @@ export function StyledScrollingTextPreview({
     const end = displayOffsetForDomPoint(element, range.endContainer, range.endOffset);
     onDisplaySelectionChange({ start: Math.min(start, end), end: Math.max(start, end) });
   }, [onDisplaySelectionChange]);
+  const captureEditableSelection = useCallback(() => {
+    const element = canvasRef.current;
+    if (!element) return null;
+    const selection = displaySelectionForRoot(element);
+    if (selection) onDisplaySelectionChange?.(selection);
+    return selection;
+  }, [onDisplaySelectionChange]);
+  const updateEditableText = useCallback(() => {
+    const element = canvasRef.current;
+    if (!element || !editableText || !onTextChange) return;
+    const selection = captureEditableSelection();
+    pendingSelectionRef.current = selection;
+    onTextChange(readEditableText(element));
+  }, [captureEditableSelection, editableText, onTextChange]);
+  const insertEditableText = useCallback((value: string) => {
+    if (!editableText) return;
+    document.execCommand("insertText", false, value);
+  }, [editableText]);
   return (
     <section className={`text-style-preview${className ? ` ${className}` : ""}`} style={sectionStyle}>
       <header>
@@ -157,6 +191,11 @@ export function StyledScrollingTextPreview({
         </div>
         <div className="text-style-preview-header-actions">
           {draftDirty && <b>Draft style runs</b>}
+          {editableText && onApplyText && (
+            <button type="button" className="btn btn-primary btn-xs" disabled={textApplyDisabled} onClick={onApplyText}>
+              Apply Text
+            </button>
+          )}
           <div className="text-style-preview-scale-controls" aria-label="Classic TextEdit preview scale">
             {CLASSIC_TEXT_EDIT_PREVIEW_SCALES.map((scale) => (
               <button
@@ -178,9 +217,27 @@ export function StyledScrollingTextPreview({
             ref={canvasRef}
             className="text-style-preview-canvas"
             style={canvasStyle}
-            tabIndex={onDisplaySelectionChange ? 0 : undefined}
+            tabIndex={editableText || onDisplaySelectionChange ? 0 : undefined}
+            contentEditable={editableText}
+            suppressContentEditableWarning={editableText}
+            spellCheck={editableText}
+            data-placeholder={editableText ? "Enter scrolling text..." : undefined}
+            onBeforeInput={(event) => {
+              if (!editableText) return;
+              const inputEvent = event.nativeEvent as InputEvent;
+              if (inputEvent.inputType === "insertParagraph" || inputEvent.inputType === "insertLineBreak") {
+                event.preventDefault();
+                insertEditableText("\n");
+              }
+            }}
+            onPaste={(event) => {
+              if (!editableText) return;
+              event.preventDefault();
+              insertEditableText(event.clipboardData.getData("text/plain"));
+            }}
+            onInput={updateEditableText}
             onMouseUp={captureDisplaySelection}
-            onKeyUp={captureDisplaySelection}
+            onKeyUp={captureEditableSelection}
             onBlur={captureDisplaySelection}
           >
             {preview.segments.length > 0 ? preview.segments.map((segment) => (
@@ -193,7 +250,7 @@ export function StyledScrollingTextPreview({
                 {segment.run && showRunStartBadges && <i>{segment.rawStart}</i>}
                 {segment.text}
               </span>
-            )) : <span className="text-style-preview-empty">No scrolling TEXT body to preview.</span>}
+            )) : editableText ? null : <span className="text-style-preview-empty">No scrolling TEXT body to preview.</span>}
           </div>
         </div>
       </div>
@@ -217,6 +274,47 @@ function displayOffsetForDomPoint(root: HTMLElement, node: Node, offset: number)
     return root.textContent?.length ?? 0;
   }
   return range.toString().length;
+}
+
+function displaySelectionForRoot(root: HTMLElement): StyledTextDisplaySelection | null {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return null;
+  const range = selection.getRangeAt(0);
+  if (!root.contains(range.startContainer) || !root.contains(range.endContainer)) return null;
+  const start = displayOffsetForDomPoint(root, range.startContainer, range.startOffset);
+  const end = displayOffsetForDomPoint(root, range.endContainer, range.endOffset);
+  return { start: Math.min(start, end), end: Math.max(start, end) };
+}
+
+function setDomSelectionForDisplayRange(root: HTMLElement, start: number, end: number) {
+  const startPoint = domPointForDisplayOffset(root, start);
+  const endPoint = domPointForDisplayOffset(root, end);
+  if (!startPoint || !endPoint) return;
+  const range = document.createRange();
+  range.setStart(startPoint.node, startPoint.offset);
+  range.setEnd(endPoint.node, endPoint.offset);
+  const selection = window.getSelection();
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+}
+
+function domPointForDisplayOffset(root: HTMLElement, offset: number) {
+  const target = Math.max(0, offset);
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let cursor = 0;
+  let lastText: Text | null = null;
+  while (walker.nextNode()) {
+    const node = walker.currentNode as Text;
+    lastText = node;
+    const next = cursor + node.data.length;
+    if (target <= next) return { node, offset: Math.max(0, Math.min(node.data.length, target - cursor)) };
+    cursor = next;
+  }
+  return lastText ? { node: lastText, offset: lastText.data.length } : { node: root, offset: 0 };
+}
+
+function readEditableText(root: HTMLElement) {
+  return root.textContent ?? "";
 }
 
 function normalizePreviewScale(value: number): ClassicTextEditPreviewScale {
