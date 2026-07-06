@@ -26,11 +26,13 @@ import {
   removeStyleRunDraft,
   selectedTextRange,
   styleRunDraftsFromRuns,
+  styleRunDraftAtOffset,
   styleRunRangeSummary,
   styleRunRangeTitle,
   textSelectionRangeFromTextArea,
   textSelectionTitle,
   updateStyleRunDraft,
+  type AuthorStyleDraft,
   type ClassicStyleRunDraft,
   type TextSelectionRange
 } from "../textStyleAuthoring";
@@ -1139,7 +1141,7 @@ function ScrollingTextWorkbench({
               onSelectEntity={onSelectEntity}
               onApplyCommand={(command) => {
                 onApplyCommand(command);
-                if (command.kind === "attachProjectAsset") {
+                if (command.kind === "attachProjectAsset" && command.asset.resourceType.trim() === "TEXT") {
                   setSelectedImportedResourceId(null);
                   onSelect(command.asset);
                 }
@@ -1295,6 +1297,11 @@ function ScrollingTextEditor({
   const inManualRange = validResourceId && resourceId <= -200 && resourceId >= -300;
   const styleCompanion = useMemo(() => sameIdStyleCompanion(project, resourceId), [project, resourceId]);
   const applyDisabled = !changed || !validResourceId || duplicateResourceId;
+  const applyScrollingText = () => {
+    if (!validResourceId) return;
+    const nextAsset = scrollingTextAssetFromDraft(asset, resourceId, label.trim() || `Scrolling Text ${resourceId}`, text);
+    onApplyCommand({ kind: "replaceProjectAsset", label: `Update Scrolling Text ${resourceId}`, assetId: asset.id, asset: nextAsset });
+  };
   return (
     <article className="text-message-editor text-scrolling-resource-editor">
       <header>
@@ -1319,11 +1326,7 @@ function ScrollingTextEditor({
             type="button"
             className="btn btn-primary btn-xs"
             disabled={applyDisabled}
-            onClick={() => {
-              if (!validResourceId) return;
-              const nextAsset = scrollingTextAssetFromDraft(asset, resourceId, label.trim() || `Scrolling Text ${resourceId}`, text);
-              onApplyCommand({ kind: "replaceProjectAsset", label: `Update Scrolling Text ${resourceId}`, assetId: asset.id, asset: nextAsset });
-            }}
+            onClick={applyScrollingText}
           >
             Apply Scrolling Text
           </button>
@@ -1357,6 +1360,10 @@ function ScrollingTextEditor({
           textChanged={changed}
           textSelectionRange={textSelectionRange}
           onTextSelectionRangeChange={setTextSelectionRange}
+          textEditable
+          onTextChange={setText}
+          onApplyText={applyScrollingText}
+          textApplyDisabled={applyDisabled}
           onSelectEntity={onSelectEntity}
           onApplyCommand={onApplyCommand}
         />
@@ -1401,6 +1408,10 @@ function StyleCompanionEditor({
   textChanged,
   textSelectionRange,
   onTextSelectionRangeChange,
+  textEditable = false,
+  onTextChange,
+  onApplyText,
+  textApplyDisabled = true,
   onSelectEntity,
   onApplyCommand
 }: {
@@ -1411,6 +1422,10 @@ function StyleCompanionEditor({
   textChanged: boolean;
   textSelectionRange: TextSelectionRange;
   onTextSelectionRangeChange?: (range: TextSelectionRange) => void;
+  textEditable?: boolean;
+  onTextChange?: (text: string) => void;
+  onApplyText?: () => void;
+  textApplyDisabled?: boolean;
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
@@ -1444,10 +1459,6 @@ function StyleCompanionEditor({
   const styleHexDirty = normalizeHex(styleHexDraft) !== normalizeHex(companion.styleHex ?? "");
   const canOpen = companion.entity != null;
   const parsedFont = Number(fontDraft);
-  const parsedSize = Number(sizeDraft);
-  const fullStyleDraftValid = Number.isInteger(parsedFont) && parsedFont >= 0 && parsedFont <= 32767
-    && Number.isInteger(parsedSize) && parsedSize >= 1 && parsedSize <= 255
-    && isCssHexColor(colorDraft);
   const styleRunDraftResult = useMemo(() => classicStyleRunsFromDrafts(styleRunDrafts), [styleRunDrafts]);
   const styleRunBytes = styleRunDraftResult.ok ? classicStyleBytesFromRuns(styleRunDraftResult.runs) : null;
   const styleRunBytesDirty = styleRunBytes ? !bytesEqual(styleRunBytes, companion.rawStyleBytes ?? new Uint8Array()) : false;
@@ -1458,7 +1469,49 @@ function StyleCompanionEditor({
   const rawTextSelection = displayRangeToRawRange(decodedText, normalizedTextSelection);
   const selectedRangeValid = rawTextSelection.end > rawTextSelection.start;
   const selectedTextTitle = selectedRangeValid ? textSelectionTitle(previewText, normalizedTextSelection) : "Select text in the styled preview to derive raw style-run offsets.";
+  const canEditText = textEditable && onTextChange != null;
+  const currentTextByteLength = classicTextByteLength(text);
+  const captureInlineTextSelection = (element: HTMLTextAreaElement) => {
+    onTextSelectionRangeChange?.(textSelectionRangeFromTextArea(element));
+  };
   const fontOptionValue = CLASSIC_AUTHOR_FONT_OPTIONS.some((option) => option.id === parsedFont) ? String(parsedFont) : "custom";
+  useEffect(() => {
+    if (!selectedRangeValid) return;
+    const run = styleRunDraftAtOffset(styleRunDrafts, rawTextSelection.start);
+    setFontDraft(run.font);
+    setSizeDraft(run.size);
+    setColorDraft(run.color);
+    setBoldDraft(run.bold);
+    setItalicDraft(run.italic);
+    setUnderlineDraft(run.underline);
+  }, [resourceId, selectedRangeValid, rawTextSelection.start, rawTextSelection.end]);
+  const toolbarStyleFromDrafts = (updates: Partial<{
+    font: string;
+    size: string;
+    color: string;
+    bold: boolean;
+    italic: boolean;
+    underline: boolean;
+  }> = {}): AuthorStyleDraft | null => {
+    const font = Number(updates.font ?? fontDraft);
+    const size = Number(updates.size ?? sizeDraft);
+    const color = updates.color ?? colorDraft;
+    if (!Number.isInteger(font) || font < 0 || font > 32767) return null;
+    if (!Number.isInteger(size) || size < 1 || size > 255) return null;
+    if (!isCssHexColor(color)) return null;
+    return {
+      font,
+      size,
+      color,
+      bold: updates.bold ?? boldDraft,
+      italic: updates.italic ?? italicDraft,
+      underline: updates.underline ?? underlineDraft
+    };
+  };
+  const applyToolbarStyleToSelection = (style: AuthorStyleDraft | null) => {
+    if (!style || !selectedRangeValid) return;
+    setStyleRunDrafts((drafts) => applyAuthorStyleToSelection(drafts, previewText, rawTextSelection, style, decodedText.rawByteLength));
+  };
   const applyStyleBytes = (bytes: Uint8Array, provenance: string, label: string) => {
     const asset = styleAssetFromBytes(companion.managedAsset ?? null, resourceId, bytes, provenance);
     onApplyCommand(
@@ -1530,10 +1583,36 @@ function StyleCompanionEditor({
           <b>TEXT edits preserve the imported style runs; flatten only if the old rich styling no longer matches the edited body.</b>
         )}
       </div>
+      {canEditText && (
+        <div className="text-style-inline-text-editor">
+          <label>
+            <span>Text</span>
+            <textarea
+              value={text}
+              onChange={(event) => {
+                onTextChange?.(event.currentTarget.value);
+                captureInlineTextSelection(event.currentTarget);
+              }}
+              onSelect={(event) => captureInlineTextSelection(event.currentTarget)}
+              onKeyUp={(event) => captureInlineTextSelection(event.currentTarget)}
+              onMouseUp={(event) => captureInlineTextSelection(event.currentTarget)}
+              spellCheck
+            />
+          </label>
+          <div>
+            <span>{currentTextByteLength.toLocaleString()} byte{currentTextByteLength === 1 ? "" : "s"}</span>
+            {onApplyText && (
+              <button type="button" className="btn btn-primary btn-xs" disabled={textApplyDisabled} onClick={onApplyText}>
+                Apply Text
+              </button>
+            )}
+          </div>
+        </div>
+      )}
       <div className="text-style-run-editor">
         <div className={`text-style-companion-summary ${parsedStyleRuns.ok ? "" : "warning"}`}>
           <span>{parsedStyleRuns.ok ? "Classic style-run table" : parsedStyleRuns.error}</span>
-          <span>{parsedStyleRuns.ok ? "Select text in the visual preview, apply formatting, then save the style resource." : "Raw bytes are preserved and can still be edited below."}</span>
+          <span>{parsedStyleRuns.ok ? "Select text in the editor or preview; formatting changes preview immediately until Save Style." : "Raw bytes are preserved and can still be edited below."}</span>
         </div>
         <div className="text-style-format-toolbar">
           <div className={`text-style-selection-summary ${selectedRangeValid ? "active" : ""}`} title={selectedTextTitle}>
@@ -1545,7 +1624,9 @@ function StyleCompanionEditor({
             <select
               value={fontOptionValue}
               onChange={(event) => {
-                setFontDraft(event.currentTarget.value === "custom" ? "" : event.currentTarget.value);
+                const next = event.currentTarget.value === "custom" ? "" : event.currentTarget.value;
+                setFontDraft(next);
+                applyToolbarStyleToSelection(toolbarStyleFromDrafts({ font: next }));
               }}
             >
               {CLASSIC_AUTHOR_FONT_OPTIONS.map((option) => (
@@ -1557,57 +1638,97 @@ function StyleCompanionEditor({
           {fontOptionValue === "custom" && (
             <label className="text-style-custom-font">
               <span>Custom Font ID</span>
-              <input value={fontDraft} onChange={(event) => setFontDraft(event.currentTarget.value)} inputMode="numeric" />
+              <input
+                value={fontDraft}
+                onChange={(event) => {
+                  const next = event.currentTarget.value;
+                  setFontDraft(next);
+                  applyToolbarStyleToSelection(toolbarStyleFromDrafts({ font: next }));
+                }}
+                inputMode="numeric"
+              />
             </label>
           )}
           <div className="text-style-number-color-group">
             <label className="text-style-size-field">
               <span>Size</span>
-              <input value={sizeDraft} onChange={(event) => setSizeDraft(event.currentTarget.value)} inputMode="numeric" maxLength={4} />
+              <input
+                value={sizeDraft}
+                onChange={(event) => {
+                  const next = event.currentTarget.value;
+                  setSizeDraft(next);
+                  applyToolbarStyleToSelection(toolbarStyleFromDrafts({ size: next }));
+                }}
+                inputMode="numeric"
+                maxLength={4}
+              />
             </label>
             <label className="text-style-color-label">
               <span>Color</span>
               <span className="text-style-color-field">
-                <input value={colorDraft} onChange={(event) => setColorDraft(event.currentTarget.value)} placeholder="#000000" />
+                <input
+                  value={colorDraft}
+                  onChange={(event) => {
+                    const next = event.currentTarget.value;
+                    setColorDraft(next);
+                    applyToolbarStyleToSelection(toolbarStyleFromDrafts({ color: next }));
+                  }}
+                  placeholder="#000000"
+                />
                 <input
                   type="color"
                   value={isCssHexColor(colorDraft) ? colorDraft : "#000000"}
-                  onChange={(event) => setColorDraft(event.currentTarget.value)}
+                  onChange={(event) => {
+                    const next = event.currentTarget.value;
+                    setColorDraft(next);
+                    applyToolbarStyleToSelection(toolbarStyleFromDrafts({ color: next }));
+                  }}
                   aria-label="Selection style color"
                 />
               </span>
             </label>
           </div>
           <div className="text-style-toggle-group" aria-label="Selection style toggles">
-            <button type="button" className={boldDraft ? "active" : ""} aria-pressed={boldDraft} title="Bold" onClick={() => setBoldDraft((value) => !value)}>
+            <button
+              type="button"
+              className={boldDraft ? "active" : ""}
+              aria-pressed={boldDraft}
+              title="Bold"
+              onClick={() => {
+                const next = !boldDraft;
+                setBoldDraft(next);
+                applyToolbarStyleToSelection(toolbarStyleFromDrafts({ bold: next }));
+              }}
+            >
               <Bold size={15} />
             </button>
-            <button type="button" className={italicDraft ? "active" : ""} aria-pressed={italicDraft} title="Italic" onClick={() => setItalicDraft((value) => !value)}>
+            <button
+              type="button"
+              className={italicDraft ? "active" : ""}
+              aria-pressed={italicDraft}
+              title="Italic"
+              onClick={() => {
+                const next = !italicDraft;
+                setItalicDraft(next);
+                applyToolbarStyleToSelection(toolbarStyleFromDrafts({ italic: next }));
+              }}
+            >
               <Italic size={15} />
             </button>
-            <button type="button" className={underlineDraft ? "active" : ""} aria-pressed={underlineDraft} title="Underline" onClick={() => setUnderlineDraft((value) => !value)}>
+            <button
+              type="button"
+              className={underlineDraft ? "active" : ""}
+              aria-pressed={underlineDraft}
+              title="Underline"
+              onClick={() => {
+                const next = !underlineDraft;
+                setUnderlineDraft(next);
+                applyToolbarStyleToSelection(toolbarStyleFromDrafts({ underline: next }));
+              }}
+            >
               <Underline size={15} />
             </button>
           </div>
-          <button
-            type="button"
-            className="btn btn-secondary btn-xs text-style-toolbar-button"
-            disabled={!fullStyleDraftValid || !selectedRangeValid}
-            title={selectedTextTitle}
-            onClick={() => {
-              if (!fullStyleDraftValid || !selectedRangeValid) return;
-              setStyleRunDrafts((drafts) => applyAuthorStyleToSelection(drafts, previewText, rawTextSelection, {
-                font: parsedFont,
-                size: parsedSize,
-                color: colorDraft,
-                bold: boldDraft,
-                italic: italicDraft,
-                underline: underlineDraft
-              }, decodedText.rawByteLength));
-            }}
-          >
-            Apply Selection
-          </button>
           <button
             type="button"
             className="btn btn-primary btn-xs text-style-toolbar-button"
