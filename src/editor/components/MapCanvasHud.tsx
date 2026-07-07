@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { EditorTool, MapEntity, MapHudAnchor, RandomLevel, SemanticEntity, TriggerRecord } from "../types";
-import { numberSummary, randomRectCellBounds, randomRectContainsCell, tileValueAt } from "../map/geometry";
+import { mapRecordContainsCell, mapRecordTerrainFootprint, randomRectCellBounds, randomRectContainsCell, tileValueAt } from "../map/geometry";
 import { hasSecretMarkerTile, hasSecretPathTile, isSecretWalkableTile } from "../map/secrets";
 import { triggerOverlayKind } from "../map/drawMapCanvas";
 
@@ -31,10 +31,11 @@ export function MapKeyHud({
   selectedTile: number;
   tilesetLabel: string;
 }) {
-  const boxes = hover ? hoverBoxesAt(hover, triggers, randomLevel, mapRecords) : [];
+  const visibleMapRecords = mapRecords.filter((record) => mapRecordTerrainFootprint(record, map));
+  const boxes = hover ? hoverBoxesAt(map, hover, triggers, randomLevel, visibleMapRecords) : [];
   const raw = hover ? tileValueAt(map, hover.x, hover.y) : null;
   const secretTags = hover && raw != null ? secretHoverTags(raw, map) : [];
-  const overlayCount = triggers.length + (randomLevel?.rects.length ?? 0) + mapRecords.length;
+  const overlayCount = triggers.length + (randomLevel?.rects.length ?? 0) + visibleMapRecords.length;
   return (
     <div
       className={`map-key-hud anchor-${anchor}`}
@@ -68,21 +69,27 @@ export function MapKeyHud({
       <div className="map-key-row subtle">
         {activeTool === "paint" ? `painting ${selectedTile}` : activeTool} | {tilesetLabel}
       </div>
-      <div className="map-key-legend">
-        <span><i className="map-key-swatch random" />random</span>
-        <span><i className="map-key-swatch quest" />quest</span>
-        <span><i className="map-key-swatch encounter" />encounter</span>
-        <span><i className="map-key-swatch battle" />battle</span>
-        <span><i className="map-key-swatch entrance" />entrance</span>
-        <span><i className="map-key-swatch map" />map</span>
-        <span><i className="map-key-swatch text" />text</span>
-        <span><i className="map-key-swatch trigger" />trigger</span>
+      <div className="map-key-legend" aria-label="Map overlay legend">
+        <span className="map-key-legend-group">
+          <b>areas</b>
+          <span><i className="map-key-swatch area random" />random</span>
+          <span><i className="map-key-swatch area map" />player map</span>
+        </span>
+        <span className="map-key-legend-group">
+          <b>APs</b>
+          <span><i className="map-key-swatch ap quest" />quest</span>
+          <span><i className="map-key-swatch ap encounter" />encounter</span>
+          <span><i className="map-key-swatch ap battle" />battle</span>
+          <span><i className="map-key-swatch ap text" />text</span>
+          <span><i className="map-key-swatch ap trigger" />other</span>
+        </span>
       </div>
     </div>
   );
 }
 
 function hoverBoxesAt(
+  map: MapEntity,
   hover: { x: number; y: number },
   triggers: TriggerRecord[],
   randomLevel: RandomLevel | null,
@@ -101,9 +108,10 @@ function hoverBoxesAt(
     boxes.push(`Action Point ${trigger.recordIndex} ${category} @ ${hover.x},${hover.y}`);
   }
   for (const record of mapRecords) {
-    const x = numberSummary(record, "startX");
-    const y = numberSummary(record, "startY");
-    if (x === hover.x && y === hover.y) boxes.push(`${record.label} start @ ${hover.x},${hover.y}`);
+    if (!mapRecordContainsCell(record, map, hover.x, hover.y)) continue;
+    const footprint = mapRecordTerrainFootprint(record, map);
+    if (!footprint) continue;
+    boxes.push(`${record.label} view ${footprint.left},${footprint.top} - ${footprint.right},${footprint.bottom}; anchor ${footprint.anchorX},${footprint.anchorY}`);
   }
   return boxes.sort((a, b) => {
     const aRandom = a.startsWith("Random") ? 1 : 0;

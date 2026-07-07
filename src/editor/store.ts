@@ -54,6 +54,8 @@ export type EditorState = MapViewOptions & {
   selectedEntity: SelectedEntity | null;
   activeTab: EditorTab;
   activeTool: EditorTool;
+  visibleRandomRectIds: string[];
+  visibleMapRecordIds: number[];
   status: string;
   dirty: boolean;
   exportReport: ExportReport | null;
@@ -118,6 +120,8 @@ export type EditorAction =
   | { type: "setShowTriggers"; value: boolean }
   | { type: "setShowRandomRects"; value: boolean }
   | { type: "setShowMapRecords"; value: boolean }
+  | { type: "setVisibleRandomRectIds"; ids: string[] }
+  | { type: "setVisibleMapRecordIds"; ids: number[] }
   | { type: "setAtlases"; entries: Record<string, AtlasEntry>; status: string }
   | { type: "setIcons"; entries: Record<number, IconEntry>; status: string };
 
@@ -143,6 +147,8 @@ export function initialEditorState(desktopRuntime: boolean): EditorState {
     selectedEntity: null,
     activeTab: "maps",
     activeTool: "select",
+    visibleRandomRectIds: [],
+    visibleMapRecordIds: [],
     status: desktopRuntime ? "Ready" : BROWSER_PREVIEW_STATUS,
     dirty: false,
     exportReport: null,
@@ -154,8 +160,8 @@ export function initialEditorState(desktopRuntime: boolean): EditorState {
     showDecodedColors: false,
     showRealmzCoordinates: true,
     showTriggers: true,
-    showRandomRects: true,
-    showMapRecords: true,
+    showRandomRects: false,
+    showMapRecords: false,
     showEncounterOverlays: true,
     showQuestOverlays: true,
     showMapOverlays: true,
@@ -246,6 +252,8 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         exportReport: null,
         benchmark: null,
         semanticMapping: null,
+        visibleRandomRectIds: [],
+        visibleMapRecordIds: [],
         past: [],
         future: [],
         groupBaseProject: null,
@@ -412,6 +420,8 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         selectedCell: null,
         selectedEntity: mapSelectionFor(state.project, action.id),
         focusTarget: null,
+        visibleRandomRectIds: [],
+        visibleMapRecordIds: [],
         dirty: pendingGroupChanged ? true : state.dirty,
         past: pendingGroupChanged && state.groupBaseProject ? pushHistory(state.past, state.groupBaseProject, pendingGroupLabel) : state.past,
         future: pendingGroupChanged ? [] : state.future,
@@ -459,6 +469,10 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return { ...state, showRandomRects: action.value };
     case "setShowMapRecords":
       return { ...state, showMapRecords: action.value };
+    case "setVisibleRandomRectIds":
+      return { ...state, visibleRandomRectIds: uniqueStrings(action.ids) };
+    case "setVisibleMapRecordIds":
+      return { ...state, visibleMapRecordIds: uniqueNumbers(action.ids) };
     case "setAtlases":
       return { ...state, atlasEntries: action.entries, atlasStatus: action.status };
     case "setIcons":
@@ -476,6 +490,14 @@ function groupedLabel(label: string | null, count: number) {
   if (!label) return "Project edit";
   if (count <= 1) return label;
   return `${label} (${count} cells)`;
+}
+
+function uniqueStrings(values: string[]) {
+  return Array.from(new Set(values.filter(Boolean)));
+}
+
+function uniqueNumbers(values: number[]) {
+  return Array.from(new Set(values.filter((value) => Number.isFinite(value)).map((value) => Math.trunc(value))));
 }
 
 function mapSelectionFor(project: Project | null, id: string | null): SelectedEntity | null {

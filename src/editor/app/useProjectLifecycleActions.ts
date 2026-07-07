@@ -80,13 +80,13 @@ export function useProjectLifecycleActions({
         const snapshot = await saveBrowserProject(project);
         setProjectDir(snapshot.key);
         setExportDir(defaultExportPath(roots.export, snapshot.project.scenario.name));
-        dispatch({ type: "setProject", project: snapshot.project, selectedMapId: null });
+        dispatch({ type: "setProject", project: snapshot.project, selectedMapId: snapshot.project.maps[0]?.id ?? null });
         dispatch({ type: "setTab", tab: "maps" });
         dispatch({ type: "setStatus", status: `Created and saved browser project ${snapshot.project.scenario.name}` });
       } catch (error) {
         setProjectDir(project.scenario.projectPath);
         setExportDir(defaultExportPath(roots.export, project.scenario.name));
-        dispatch({ type: "setProject", project, selectedMapId: null });
+        dispatch({ type: "setProject", project, selectedMapId: project.maps[0]?.id ?? null });
         dispatch({ type: "setTab", tab: "maps" });
         dispatch({ type: "setStatus", status: `Created browser project ${project.scenario.name}; local save failed: ${commandError(error)}` });
       }
@@ -97,7 +97,7 @@ export function useProjectLifecycleActions({
       const project = await invoke<Project>("create_project", { projectName, projectDir: targetProjectDir });
       setProjectDir(project.scenario.projectPath || targetProjectDir);
       setExportDir(defaultExportPath(roots.export, project.scenario.name));
-      dispatch({ type: "setProject", project, selectedMapId: null });
+      dispatch({ type: "setProject", project, selectedMapId: project.maps[0]?.id ?? null });
       dispatch({ type: "setTab", tab: "maps" });
       dispatch({ type: "setStatus", status: `Created ${project.scenario.name}` });
     } catch (error) {
@@ -124,9 +124,9 @@ export function useProjectLifecycleActions({
           const snapshot = await saveBrowserProject(project);
           setProjectDir(snapshot.key);
           setExportDir(defaultExportPath(roots.export, snapshot.project.scenario.name));
-          dispatch({ type: "setProject", project: snapshot.project, selectedMapId: null });
+          dispatch({ type: "setProject", project: snapshot.project, selectedMapId: snapshot.project.maps[0]?.id ?? null });
           dispatch({ type: "setTab", tab: "maps" });
-          dispatch({ type: "setStatus", status: `Started empty browser project ${project.scenario.name}` });
+          dispatch({ type: "setStatus", status: `Started browser project ${project.scenario.name}` });
         }
       } catch (error) {
         if (isBrowserPickerAbort(error)) {

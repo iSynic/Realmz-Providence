@@ -61,24 +61,24 @@ export function MapCapabilityPanel({
       </details>
       <details className="context-section affordance-section" open>
         <summary>
-          <span>Random Areas</span>
-          <b>{randomLevel?.rects.length ?? 0} / 20{showRandomRects ? "" : " hidden"}</b>
+          <span>Random Rectangles</span>
+          <b>{randomLevel?.rects.length ?? 0}/20{showRandomRects ? "" : " overlay off"}</b>
         </summary>
         <div className="affordance-button-grid compact">
-          <AffordanceButton label="Set Area" body="Use the Random Area tool or selected-cell actions to create and resize a Random Rectangle. Realmz stores up to twenty per level." tone="ready" onClick={() => onSetTool("random")} />
+          <AffordanceButton label="Set Rectangle" body="Use the Random Rectangle tool or selected-cell actions to create and resize a Random Rectangle. Realmz stores up to twenty per level." tone="ready" onClick={() => onSetTool("random")} />
           <AffordanceButton label="Highlight" body="Locate and highlight the first selected Random Rectangle on the map without changing its stored fields." tone="ready" onClick={onHighlightRandomRect} disabled={!randomLevel?.rects.length} />
           <AffordanceButton label="Show All" body="Show every Random Rectangle on the current level, including regions used for invisible encounters and extra Action Point doors." tone="ready" onClick={onShowRandomRects} />
           <AffordanceButton label="Edit Fields" body="Select a Random Rectangle to edit bounds, chance out of 10,000, battle range, text, sound, option byte, and extra AP doors." tone="ready" onClick={onEditRandomRect} disabled={!randomLevel?.rects.length} />
         </div>
         <div className="mini-rect-list">
-          {randomLevel?.rects.slice(0, 6).map((rect) => (
+          {randomLevel?.rects.map((rect) => (
             <button key={rect.rectIndex} className="mini-rect-row" type="button" onClick={() => onSelectRandomRect?.(rect.rectIndex)}>
               <strong>Rect {rect.rectIndex}</strong>
               <span>{rect.left},{rect.top} to {rect.right},{rect.bottom}</span>
               <small>{rect.percent} / 10000 | battles {rect.battleRange.join("-")}</small>
             </button>
           ))}
-          {!randomLevel?.rects.length && <p className="empty-copy compact">No active Random Rectangles decoded for this level.</p>}
+          {!randomLevel?.rects.length && <p className="empty-copy compact">No random rectangles on this level.</p>}
         </div>
       </details>
       {isDungeon && (
@@ -165,7 +165,7 @@ export function CellTileEvidence({ cell, records }: { cell: { x: number; y: numb
       <span><b>State Band</b>{cell.tile > 999 ? "positive" : "none"}</span>
       <span><b>Path Bit</b>{cell.tile > 0 && Boolean(cell.tile & 4) ? "yes" : "no"}</span>
       <span><b>Note Bit</b>{cell.tile > 0 && Boolean(cell.tile & 2) ? "yes" : "no"}</span>
-      <span><b>Map Starts</b>{records.length}</span>
+      <span><b>Player Maps</b>{records.length}</span>
     </div>
   );
 }

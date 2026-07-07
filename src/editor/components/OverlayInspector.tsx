@@ -1,4 +1,5 @@
 import { MapEntity, RandomLevel, SelectedEntity, SemanticEntity, TriggerRecord } from "../types";
+import { mapRecordTerrainFootprint } from "../map/geometry";
 import { selectEntityFromId, triggerEntityId } from "../utils";
 import { InfoGrid } from "./InfoGrid";
 
@@ -82,16 +83,19 @@ export function OverlayInspector({
 
   const mapRecord = mapRecords.find((record) => record.id === selectedEntity.id);
   if (mapRecord) {
+    const footprint = mapRecordTerrainFootprint(mapRecord, map);
     return (
       <section className="object-inspector overlay-inspector">
         <div className="inspector-header">
-          <span>Map Start</span>
+          <span>Player Map Area</span>
           <small>{mapRecord.source}</small>
         </div>
         <InfoGrid
           rows={[
             ["Label", mapRecord.label],
-            ["Start", `${summaryNumber(mapRecord, "startX") ?? "?"}, ${summaryNumber(mapRecord, "startY") ?? "?"}`],
+            ["Anchor", `${summaryNumber(mapRecord, "startX") ?? "?"}, ${summaryNumber(mapRecord, "startY") ?? "?"}`],
+            ["View Area", footprint ? `${footprint.left}, ${footprint.top} to ${footprint.right}, ${footprint.bottom}` : "not shown on this terrain map"],
+            ["Tile Size", footprint ? footprint.tileSize : summaryNumber(mapRecord, "iconSize") ?? "unknown"],
             ["Level", summaryNumber(mapRecord, "level") ?? "unknown"],
             ["Dungeon", summaryBool(mapRecord, "isDungeon") ? "yes" : "no"],
             ["Editable", mapRecord.editable ? "yes" : "read-only"]

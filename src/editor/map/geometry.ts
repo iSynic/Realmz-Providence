@@ -81,9 +81,58 @@ export function randomRectContainsCell(rect: RandomLevel["rects"][number], x: nu
   return x >= bounds.left && x <= bounds.right && y >= bounds.top && y <= bounds.bottom;
 }
 
+export function mapRecordTerrainFootprint(entity: SemanticEntity, map: MapEntity) {
+  const pictId = numberSummary(entity, "pictId") ?? 0;
+  const show = numberSummary(entity, "show") ?? 0;
+  const level = numberSummary(entity, "level");
+  const startX = numberSummary(entity, "startX");
+  const startY = numberSummary(entity, "startY");
+  const isDungeon = boolSummary(entity, "isDungeon");
+  if (pictId !== 0 || show < 0 || level !== map.index || isDungeon !== (map.levelType === "dungeon") || startX == null || startY == null) {
+    return null;
+  }
+  const tileSize = normalizedPlayerMapTileSize(numberSummary(entity, "iconSize") ?? 0);
+  const columns = Math.ceil(320 / tileSize);
+  const rows = Math.ceil(320 / tileSize);
+  const left = Math.max(0, Math.min(MAP_CELLS, startX));
+  const top = Math.max(0, Math.min(MAP_CELLS, startY));
+  const rightEdge = Math.max(0, Math.min(MAP_CELLS, startX + columns));
+  const bottomEdge = Math.max(0, Math.min(MAP_CELLS, startY + rows));
+  if (rightEdge <= left || bottomEdge <= top) return null;
+  return {
+    anchorX: startX,
+    anchorY: startY,
+    left,
+    top,
+    right: rightEdge - 1,
+    bottom: bottomEdge - 1,
+    rightEdge,
+    bottomEdge,
+    width: rightEdge - left,
+    height: bottomEdge - top,
+    tileSize
+  };
+}
+
+export function mapRecordContainsCell(entity: SemanticEntity, map: MapEntity, x: number, y: number) {
+  const footprint = mapRecordTerrainFootprint(entity, map);
+  return Boolean(footprint && x >= footprint.left && x <= footprint.right && y >= footprint.top && y <= footprint.bottom);
+}
+
 export function numberSummary(entity: SemanticEntity, key: string) {
   const value = entity.summary[key];
   return typeof value === "number" ? value : null;
+}
+
+export function boolSummary(entity: SemanticEntity, key: string) {
+  const value = entity.summary[key];
+  return typeof value === "boolean" ? value : null;
+}
+
+function normalizedPlayerMapTileSize(value: number) {
+  if (value === 8 || value === 16 || value === 32) return value;
+  if (value > 0 && value < 64) return Math.max(4, Math.min(32, Math.trunc(value)));
+  return 8;
 }
 
 function clampCellEdge(value: number) {

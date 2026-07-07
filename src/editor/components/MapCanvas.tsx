@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AtlasEntry,
+  CustomMapStamp,
   EditorTool,
   IconEntry,
   MapPreviewFocalPoint,
@@ -13,6 +14,7 @@ import {
   MapFocusTarget,
   MapRegionSelection,
   MapViewOptions,
+  Project,
   ProjectCommand,
   RandomLevel,
   SelectedEntity,
@@ -25,6 +27,7 @@ import {
 } from "../types";
 import { clampScroll, mapCellFromTileIndex, MAP_CELLS } from "../map/geometry";
 import { useMapInteractions } from "../map/useMapInteractions";
+import { captureMapStampFromRegion, createMapStampId, normalizeMapStamps } from "../map/customMapStamps";
 import { hasSecretMarkerTile, isSecretWalkableTile } from "../map/secrets";
 import { loadMapOverlaySprites } from "../map/mapOverlaySprites";
 import { ScrollArea } from "../ui";
@@ -53,7 +56,18 @@ import { MapKeyHud } from "./MapCanvasHud";
 const BASE_CANVAS_SIZE = 900;
 const COORDINATE_GUTTER_CELLS = 1;
 
+type RegionContextMenuState = {
+  x: number;
+  y: number;
+  cell: { x: number; y: number };
+  region: MapRegionSelection;
+  error?: string;
+};
+
+type StampLibraryTarget = "project" | "global";
+
 export function RealmzMapCanvas({
+  project,
   map,
   tileset,
   atlas,
@@ -84,17 +98,22 @@ export function RealmzMapCanvas({
   smartBrushMask,
   smartBrushPlan,
   smartBrushDrawing,
+  globalMapStamps,
   onSelectCell,
   onSetSelectedRegion,
+  onClearSelection,
   onSetSmartBrushMask,
   onSetSmartBrushDrawing,
   onSampleTile,
   onSelectEntity,
   onBeginPaintStroke,
   onApplyCommand,
+  onSetGlobalMapStamps,
+  onSelectSuperTileStamp,
   onCommitPaintStroke,
   onCancelPaintStroke
 }: {
+  project: Project | null;
   map: MapEntity;
   tileset: TilesetAsset | null;
   atlas: AtlasEntry | null;
@@ -125,14 +144,18 @@ export function RealmzMapCanvas({
   smartBrushMask: SmartBrushMaskCell[];
   smartBrushPlan: SmartBrushPlan | null;
   smartBrushDrawing: boolean;
+  globalMapStamps: CustomMapStamp[];
   onSelectCell: (cell: { x: number; y: number; tile: number } | null) => void;
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
+  onClearSelection: () => void;
   onSetSmartBrushMask: (mask: SmartBrushMaskCell[]) => void;
   onSetSmartBrushDrawing: (drawing: boolean) => void;
   onSampleTile: (tile: number) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
   onBeginPaintStroke: (label: string) => void;
   onApplyCommand: (command: ProjectCommand) => void;
+  onSetGlobalMapStamps: (stamps: CustomMapStamp[]) => void;
+  onSelectSuperTileStamp: (stampId: string) => void;
   onCommitPaintStroke: () => void;
   onCancelPaintStroke: () => void;
 }) {
@@ -145,6 +168,8 @@ export function RealmzMapCanvas({
   const [hudPosition, setHudPosition] = useState({ left: 10, top: 10 });
   const [hudAnchor, setHudAnchor] = useState<MapHudAnchor>("bottom-left");
   const [overlaySpriteVersion, setOverlaySpriteVersion] = useState(0);
+  const [regionContextMenu, setRegionContextMenu] = useState<RegionContextMenuState | null>(null);
+  const [stampLibraryTarget, setStampLibraryTarget] = useState<StampLibraryTarget>("project");
   const tileRevisionRef = useRef(0);
   const tileReferenceRef = useRef(map.tiles);
   if (tileReferenceRef.current !== map.tiles) {
@@ -154,6 +179,67 @@ export function RealmzMapCanvas({
   const setHudNode = useCallback((node: HTMLDivElement | null) => {
     hudRef.current = node;
   }, []);
+  const contextStampRegion = regionContextMenu?.region ?? selectedRegion;
+  const selectedRegionSize = contextStampRegion
+    ? {
+        width: Math.abs(contextStampRegion.right - contextStampRegion.left) + 1,
+        height: Math.abs(contextStampRegion.bottom - contextStampRegion.top) + 1
+      }
+    : null;
+  const createStampFromSelection = useCallback(() => {
+    if (!contextStampRegion) return;
+    const existingCount = stampLibraryTarget === "project"
+      ? project?.editorMetadata?.mapStamps?.length ?? 0
+      : globalMapStamps.length;
+    const fallbackName = `Stamp ${existingCount + 1}`;
+    const name = window.prompt("Name this map stamp", fallbackName)?.trim();
+    if (!name) return;
+    const stamp = captureMapStampFromRegion(map, contextStampRegion, tileset, name, createMapStampId(name));
+    if (!stamp) {
+      setRegionContextMenu((current) => current
+        ? { ...current, error: "Selected region has no stampable tiles." }
+        : current);
+      return;
+    }
+    if (stampLibraryTarget === "project") {
+      if (!project) {
+        setRegionContextMenu((current) => current ? { ...current, error: "Open a project before creating a project stamp." } : current);
+        return;
+      }
+      onApplyCommand({
+        kind: "createMapStamp",
+        label: `Create stamp ${stamp.name}`,
+        id: stamp.id,
+        name: stamp.name,
+        width: stamp.width,
+        height: stamp.height,
+        cells: stamp.cells
+      });
+    } else {
+      onSetGlobalMapStamps(normalizeMapStamps([...globalMapStamps, stamp]));
+    }
+    onSelectSuperTileStamp(`${stampLibraryTarget}:${stamp.id}`);
+    setRegionContextMenu(null);
+  }, [contextStampRegion, globalMapStamps, map, onApplyCommand, onSelectSuperTileStamp, onSetGlobalMapStamps, project, stampLibraryTarget, tileset]);
+
+  useEffect(() => {
+    if (!regionContextMenu) return;
+    const closeOnOutsidePointer = (event: globalThis.PointerEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("[data-map-context-menu]")) return;
+      setRegionContextMenu(null);
+    };
+    const closeOnEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") setRegionContextMenu(null);
+    };
+    window.addEventListener("pointerdown", closeOnOutsidePointer);
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("pointerdown", closeOnOutsidePointer);
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [regionContextMenu]);
+
   useEffect(() => {
     loadMapOverlaySprites(() => setOverlaySpriteVersion((version) => version + 1));
   }, []);
@@ -237,12 +323,15 @@ export function RealmzMapCanvas({
     showRandomRects,
     showMapRecords,
     selectedEntity,
+    selectedCell,
+    selectedRegion,
     smartBrushMask,
     smartBrushDrawing,
     overlayCanvasRef,
     wrapRef,
     onSelectCell,
     onSetSelectedRegion,
+    onClearSelection,
     onSetSmartBrushMask,
     onSetSmartBrushDrawing,
     onSampleTile,
@@ -251,6 +340,7 @@ export function RealmzMapCanvas({
     onApplyCommand,
     onCommitPaintStroke,
     onCancelPaintStroke,
+    onOpenRegionContextMenu: (menu) => setRegionContextMenu({ ...menu }),
     onPreviewPaintChange: previewPaintChange,
     onResetPaintPreview: resetPaintPreview
   });
@@ -313,7 +403,7 @@ export function RealmzMapCanvas({
     if (viewOptions.showSecretOverlays) drawSecretTileOverlay(ctx, map, cell, icons);
     if (previewMode !== "off") drawMapVisibilityPreview(ctx, map, tileset, tileAttributes, cell, previewMode, previewFocalPoint);
     drawTriggers(ctx, triggers, selectedEntity, cell);
-    if (showMapRecords) drawMapRecords(ctx, mapRecords, selectedEntity, cell);
+    if (showMapRecords) drawMapRecords(ctx, map, mapRecords, selectedEntity, cell);
     if (selectedRegion) drawRegionSelection(ctx, selectedRegion, cell, "selected");
     if (smartBrushDrawing && smartBrushMask.length > 0) {
       drawSmartTerrainMask(ctx, smartBrushMask, cell);
@@ -406,6 +496,13 @@ export function RealmzMapCanvas({
     hudAnchor
   ]);
 
+  const regionMenuStyle = regionContextMenu
+    ? {
+        left: `${Math.max(8, Math.min(regionContextMenu.x, window.innerWidth - 300))}px`,
+        top: `${Math.max(8, Math.min(regionContextMenu.y, window.innerHeight - 190))}px`
+      }
+    : undefined;
+
   return (
     <ScrollArea className="room-canvas-wrap" orientation="both" aria-label="Map canvas" onViewportRef={(node) => { wrapRef.current = node; }}>
       <div className="canvas-frame" style={{ width: `${canvasCssSize}px`, height: `${canvasCssSize}px` }}>
@@ -447,6 +544,38 @@ export function RealmzMapCanvas({
           tilesetLabel={viewOptions.showRealTiles && atlas ? `${atlas.asset.name} atlas` : `${tileset?.name ?? "unknown"} decoded`}
         />
       </div>
+      {regionContextMenu && selectedRegionSize ? (
+        <div
+          className="map-canvas-context-menu"
+          data-map-context-menu
+          role="menu"
+          style={regionMenuStyle}
+        >
+          <div className="map-canvas-context-menu-header">
+            <strong>{selectedRegionSize.width === 1 && selectedRegionSize.height === 1 ? "Selected Tile" : "Selected Region"}</strong>
+            <span>{selectedRegionSize.width}x{selectedRegionSize.height}</span>
+          </div>
+          <label className="map-canvas-context-menu-field">
+            <span>Stamp Library</span>
+            <select
+              value={stampLibraryTarget}
+              onChange={(event) => setStampLibraryTarget(event.currentTarget.value as StampLibraryTarget)}
+            >
+              <option value="project" disabled={!project}>Project Stamps</option>
+              <option value="global">Global Stamps</option>
+            </select>
+          </label>
+          <button
+            className="context-action-button"
+            type="button"
+            disabled={stampLibraryTarget === "project" && !project}
+            onClick={createStampFromSelection}
+          >
+            Send To Stamp
+          </button>
+          {regionContextMenu.error ? <p className="map-canvas-context-menu-error">{regionContextMenu.error}</p> : null}
+        </div>
+      ) : null}
     </ScrollArea>
   );
 }

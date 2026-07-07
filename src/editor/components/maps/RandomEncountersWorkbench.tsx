@@ -188,11 +188,13 @@ export function RandomAreasWorkbench({
 export function RandomRectangleEditor({
   map,
   rect,
-  onApplyCommand
+  onApplyCommand,
+  compact = false
 }: {
   map: MapEntity | null;
   rect: RandomLevel["rects"][number];
   onApplyCommand: (command: ProjectCommand) => void;
+  compact?: boolean;
 }) {
   if (!map) return null;
   const update = (fields: Partial<Omit<RandomLevel["rects"][number], "rectIndex">>) => {
@@ -216,26 +218,46 @@ export function RandomRectangleEditor({
     update({ randomDoorPercent });
   };
   return (
-    <div className="map-random-editor">
-      <InfoGrid
-        rows={[
-          ["Rectangle", rect.rectIndex],
-          ["Edit State", "Realmz-writable"],
-          ["Record Type", map.levelType === "land" ? "Land random encounters" : "Dungeon random encounters"]
-        ]}
-      />
+    <div className={`map-random-editor${compact ? " compact" : ""}`}>
+      <section className="map-authoring-group random-rect-summary" aria-label="Random rectangle summary">
+        <h4>Random Rectangle {rect.rectIndex}</h4>
+        <InfoGrid
+          rows={[
+            ["Area", `${rect.left},${rect.top} to ${rect.right},${rect.bottom}`],
+            ["Chance in 10000", rect.percent === -1 ? "Extra AP doors" : `${rect.percent} / 10000`],
+            ["Battles", `${rect.battleRange[0] ?? 0}-${rect.battleRange[1] ?? 0}`]
+          ]}
+        />
+      </section>
       <MapDiagnostics diagnostics={randomRectDiagnostics(rect)} />
-      <div className="map-authoring-form">
-        <MapNumberField label="Left" value={rect.left} min={0} max={89} help={RECT_BOUNDS_HELP} onCommit={(left) => update({ left })} />
-        <MapNumberField label="Top" value={rect.top} min={0} max={89} help={RECT_BOUNDS_HELP} onCommit={(top) => update({ top })} />
-        <MapNumberField label="Right" value={rect.right} min={0} max={90} help={RECT_BOUNDS_HELP} onCommit={(right) => update({ right })} />
-        <MapNumberField label="Bottom" value={rect.bottom} min={0} max={90} help={RECT_BOUNDS_HELP} onCommit={(bottom) => update({ bottom })} />
-        <MapNumberField label="Times in 10,000" value={rect.percent} min={-1} max={10000} help={RECT_CHANCE_HELP} onCommit={(percent) => update({ percent })} />
-        <MapNumberField label="Battle Low" value={rect.battleRange[0] ?? 0} help={BATTLE_RANGE_HELP} onCommit={(value) => update({ battleRange: [value, rect.battleRange[1] ?? value] })} />
-        <MapNumberField label="Battle High" value={rect.battleRange[1] ?? 0} help={BATTLE_RANGE_HELP} onCommit={(value) => update({ battleRange: [rect.battleRange[0] ?? value, value] })} />
-        <MapNumberField label="Option" value={rect.option} min={-128} max={127} help={RANDOM_OPTION_HELP} onCommit={(option) => update({ option })} />
-        <MapNumberField label="Sound" value={rect.sound} help={RANDOM_SOUND_TEXT_HELP} onCommit={(sound) => update({ sound })} />
-        <MapNumberField label="Text" value={rect.text} help={RANDOM_SOUND_TEXT_HELP} onCommit={(text) => update({ text })} />
+      <div className="map-authoring-form random-rect-form">
+        <section className="map-authoring-group" aria-label="Random rectangle bounds">
+          <h4>Bounds</h4>
+          <div className="map-authoring-fields two-column">
+            <MapNumberField label="Left" value={rect.left} min={0} max={89} compact plain maxLength={2} help={RECT_BOUNDS_HELP} onCommit={(left) => update({ left })} />
+            <MapNumberField label="Top" value={rect.top} min={0} max={89} compact plain maxLength={2} help={RECT_BOUNDS_HELP} onCommit={(top) => update({ top })} />
+            <MapNumberField label="Right" value={rect.right} min={0} max={90} compact plain maxLength={2} help={RECT_BOUNDS_HELP} onCommit={(right) => update({ right })} />
+            <MapNumberField label="Bottom" value={rect.bottom} min={0} max={90} compact plain maxLength={2} help={RECT_BOUNDS_HELP} onCommit={(bottom) => update({ bottom })} />
+          </div>
+        </section>
+        <section className="map-authoring-group" aria-label="Random rectangle encounter">
+          <h4>Encounter</h4>
+          <div className="map-authoring-fields two-column">
+            <div className="random-rect-chance-field">
+              <MapNumberField label="Chance in 10000" value={rect.percent} min={-1} max={10000} plain maxLength={5} help={RECT_CHANCE_HELP} onCommit={(percent) => update({ percent })} />
+            </div>
+            <MapNumberField label="Option" value={rect.option} min={-128} max={127} compact plain maxLength={4} help={RANDOM_OPTION_HELP} onCommit={(option) => update({ option })} />
+            <MapNumberField label="Battle Low" value={rect.battleRange[0] ?? 0} compact plain maxLength={5} help={BATTLE_RANGE_HELP} onCommit={(value) => update({ battleRange: [value, rect.battleRange[1] ?? value] })} />
+            <MapNumberField label="Battle High" value={rect.battleRange[1] ?? 0} compact plain maxLength={5} help={BATTLE_RANGE_HELP} onCommit={(value) => update({ battleRange: [rect.battleRange[0] ?? value, value] })} />
+          </div>
+        </section>
+        <section className="map-authoring-group" aria-label="Random rectangle media">
+          <h4>Media</h4>
+          <div className="map-authoring-fields two-column">
+            <MapNumberField label="Sound" value={rect.sound} compact plain maxLength={6} help={RANDOM_SOUND_TEXT_HELP} onCommit={(sound) => update({ sound })} />
+            <MapNumberField label="Text" value={rect.text} compact plain maxLength={6} help={RANDOM_SOUND_TEXT_HELP} onCommit={(text) => update({ text })} />
+          </div>
+        </section>
         <label className="map-check-field">
           <input type="checkbox" checked={rect.only} onChange={(event) => update({ only: event.currentTarget.checked })} />
           <TutorialTip title="Exclusive Random Rectangle" body={RANDOM_ONLY_HELP} side="right">
@@ -243,7 +265,7 @@ export function RandomRectangleEditor({
           </TutorialTip>
         </label>
       </div>
-      <details className="context-section" open>
+      <details className="context-section random-door-section" open>
         <summary>
           <TutorialTip title="Extra Action Point Doors" body={RANDOM_DOORS_HELP} side="below">
             <span>Extra Action Point Doors</span>
@@ -252,10 +274,11 @@ export function RandomRectangleEditor({
         </summary>
         <div className="map-authoring-form">
           {[0, 1, 2].map((index) => (
-            <div className="map-door-pair" key={index}>
-              <MapNumberField label={`Door ${index + 1}`} value={rect.randomDoors[index] ?? 0} help={RANDOM_DOORS_HELP} onCommit={(value) => updateDoor(index, value)} />
-              <MapNumberField label={`Door ${index + 1} %`} value={rect.randomDoorPercent[index] ?? 0} min={-100} max={100} help={RANDOM_DOORS_HELP} onCommit={(value) => updateDoorPercent(index, value)} />
-              <small className="context-capacity-note compact">{randomDoorPercentMeaning(rect.randomDoorPercent[index] ?? 0)}</small>
+            <div className="map-door-row" key={index}>
+              <span>Door {index + 1}</span>
+              <MapNumberField label="AP" value={rect.randomDoors[index] ?? 0} compact plain maxLength={5} help={RANDOM_DOORS_HELP} onCommit={(value) => updateDoor(index, value)} />
+              <MapNumberField label="%" value={rect.randomDoorPercent[index] ?? 0} min={-100} max={100} compact plain maxLength={4} help={RANDOM_DOORS_HELP} onCommit={(value) => updateDoorPercent(index, value)} />
+              <small>{randomDoorPercentMeaning(rect.randomDoorPercent[index] ?? 0)}</small>
             </div>
           ))}
         </div>

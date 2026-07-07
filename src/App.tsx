@@ -202,7 +202,7 @@ export function App() {
   }, [state.project?.assetCatalog.tilesets, state.project?.semanticSchema, selectedMapLocationKey, selectedMapRenderKey]);
   const selectedMapRecords = useMemo(
     () => semanticMapRecordsForMap(state.project, selectedMap),
-    [state.project?.semanticSchema, selectedMapLocationKey]
+    [state.project?.mapRecords, state.project?.semanticSchema, selectedMapLocationKey]
   );
   const visibleIssues = useMemo(
     () => issuesFor(state.project),
@@ -730,6 +730,8 @@ export function App() {
         onSetZoom={(zoom) => dispatch({ type: "setZoom", zoom })}
         onSetSmoothTiles={(value) => dispatch({ type: "setSmoothTiles", value })}
         onSetViewFlag={(flag: MapViewFlag, value: boolean) => dispatch({ type: "setMapViewFlag", flag, value })}
+        onSetVisibleRandomRectIds={(ids) => dispatch({ type: "setVisibleRandomRectIds", ids })}
+        onSetVisibleMapRecordIds={(ids) => dispatch({ type: "setVisibleMapRecordIds", ids })}
         onClearSelection={clearMapSelection}
         onOpenScripts={openScriptsForEntity}
         onOpenTool={(tab, editor) => confirmBeforeDraftDiscard(`open ${editor.replace(/-/g, " ")}`, () => openProjectTool(tab, editor))}

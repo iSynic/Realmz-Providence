@@ -58,6 +58,8 @@ function WorkbenchRouterContent({
   onSetZoom,
   onSetSmoothTiles,
   onSetViewFlag,
+  onSetVisibleRandomRectIds,
+  onSetVisibleMapRecordIds,
   onClearSelection,
   onOpenScripts,
   onOpenTool,
@@ -147,6 +149,8 @@ function WorkbenchRouterContent({
         onSetZoom={onSetZoom}
         onSetSmoothTiles={onSetSmoothTiles}
         onSetViewFlag={onSetViewFlag}
+        onSetVisibleRandomRectIds={onSetVisibleRandomRectIds}
+        onSetVisibleMapRecordIds={onSetVisibleMapRecordIds}
         onClearSelection={onClearSelection}
         onOpenScripts={onOpenScripts}
         onBeginPaintStroke={onBeginPaintStroke}
@@ -375,6 +379,8 @@ type WorkbenchRouterProps = {
   onSetZoom: (zoom: number) => void;
   onSetSmoothTiles: (value: boolean) => void;
   onSetViewFlag: (flag: MapViewFlag, value: boolean) => void;
+  onSetVisibleRandomRectIds: (ids: string[]) => void;
+  onSetVisibleMapRecordIds: (ids: number[]) => void;
   onClearSelection: () => void;
   onOpenScripts: (entity: SelectedEntity) => void;
   onOpenTool: (tab: "assets" | "rules" | "scripts" | "text", editor: string) => void;

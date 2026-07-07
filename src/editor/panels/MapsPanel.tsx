@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { EditorState } from "../store";
 import { CustomMapStamp, LevelType, MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, SmartBrushMaskCell, SmartBrushPreset, TilePaletteCategory, TilesetAsset, TriggerRecord } from "../types";
-import { triggerOverlayKinds } from "../semanticGraph";
 import { RealmzMapCanvas } from "../components/MapCanvas";
 import { LandLayoutEditor, LandTileAtlasEditor, MapContextSidebar, MapSelectionSidebar, RandomAreasWorkbench, type LandLayoutCellSelection } from "../components/MapContextSidebar";
 import { MapViewFilters } from "../components/MapViewFilters";
@@ -11,6 +10,7 @@ import { clearTileForMap } from "../map/tileClear";
 import { buildSmartTerrainChanges, buildSmartTerrainPaintChanges, smartBrushProfileForTileset } from "../map/smartTerrainBrush";
 import { builtInStampToMapStamp, customMapStampToMapStamp, superTileStampsForMap } from "../map/superTileStamps";
 import { readGlobalMapStamps, writeGlobalMapStamps } from "../map/customMapStamps";
+import { randomRectEntityId } from "../map/geometry";
 
 const MAP_WORKBENCH_MODE_STORAGE_KEY = "providence.mapWorkbenchMode.v1";
 
@@ -37,6 +37,8 @@ export function MapsPanel({
   onSetZoom,
   onSetSmoothTiles,
   onSetViewFlag,
+  onSetVisibleRandomRectIds,
+  onSetVisibleMapRecordIds,
   onClearSelection,
   onOpenScripts,
   onBeginPaintStroke,
@@ -59,6 +61,8 @@ export function MapsPanel({
   onSetZoom: (zoom: number) => void;
   onSetSmoothTiles: (value: boolean) => void;
   onSetViewFlag: (flag: MapViewFlag, value: boolean) => void;
+  onSetVisibleRandomRectIds: (ids: string[]) => void;
+  onSetVisibleMapRecordIds: (ids: number[]) => void;
   onClearSelection: () => void;
   onOpenScripts: (entity: SelectedEntity) => void;
   onBeginPaintStroke: (label: string) => void;
@@ -84,27 +88,30 @@ export function MapsPanel({
   const [smartBrushMask, setSmartBrushMask] = useState<SmartBrushMaskCell[]>([]);
   const [smartBrushDrawing, setSmartBrushDrawing] = useState(false);
   const [selectedLayoutCell, setSelectedLayoutCell] = useState<LandLayoutCellSelection>(null);
-  const [replaceSourceTile, setReplaceSourceTile] = useState<number | null>(null);
-  const semanticSchema = state.project?.semanticSchema;
   const visibleTriggers = useMemo(
-    () => state.showTriggers ? mapTriggers.filter((trigger) => triggerMatchesViewFilters(state.project, trigger, state)) : [],
-    [
-      mapTriggers,
-      semanticSchema,
-      state.showBattleOverlays,
-      state.showEncounterOverlays,
-      state.showMapOverlays,
-      state.showQuestOverlays,
-      state.showTextOverlays,
-      state.showTriggers,
-      state.showUnknownOverlays
-    ]
+    () => state.showTriggers ? mapTriggers : [],
+    [mapTriggers, state.showTriggers]
   );
+  const visibleRandomLevel = useMemo(() => {
+    if (!selectedMap || !selectedRandomLevel || !state.showRandomRects) return null;
+    if (state.visibleRandomRectIds.length === 0) return selectedRandomLevel;
+    const visibleIds = new Set(state.visibleRandomRectIds);
+    const rects = selectedRandomLevel.rects.filter((rect) => visibleIds.has(randomRectEntityId(selectedMap, rect.rectIndex)));
+    return rects.length > 0 ? { ...selectedRandomLevel, rects } : null;
+  }, [selectedMap, selectedRandomLevel, state.showRandomRects, state.visibleRandomRectIds]);
+  const visibleMapRecords = useMemo(() => {
+    if (!state.showMapRecords) return [];
+    if (state.visibleMapRecordIds.length === 0) return mapRecords;
+    const visibleIds = new Set(state.visibleMapRecordIds);
+    return mapRecords.filter((record) => {
+      const recordId = semanticMapRecordId(record);
+      return recordId != null && visibleIds.has(recordId);
+    });
+  }, [mapRecords, state.showMapRecords, state.visibleMapRecordIds]);
   useEffect(() => {
     setSelectedRegion(null);
     setSmartBrushMask([]);
     setSmartBrushDrawing(false);
-    setReplaceSourceTile(null);
     setPreviewFocalPoint(null);
   }, [selectedMap?.id]);
   useEffect(() => {
@@ -167,8 +174,15 @@ export function MapsPanel({
   }, [paintMode, selectedMap, selectedTileset]);
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Delete" && event.key !== "Backspace") return;
       if (isTextEditingTarget(event.target)) return;
+      if (event.key === "Escape") {
+        if (!selectedRegion && !state.selectedCell && !state.selectedEntity) return;
+        event.preventDefault();
+        setSelectedRegion(null);
+        onClearSelection();
+        return;
+      }
+      if (event.key !== "Delete" && event.key !== "Backspace") return;
       if (workbenchMode !== "canvas" || state.activeTool !== "select" || !selectedMap) return;
       const clearTile = clearTileForMap(selectedMap, selectedTileset);
       const cells = selectedRegion
@@ -188,7 +202,7 @@ export function MapsPanel({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onApplyCommand, selectedMap, selectedRegion, selectedTileset, state.activeTool, state.selectedCell, workbenchMode]);
+  }, [onApplyCommand, onClearSelection, selectedMap, selectedRegion, selectedTileset, state.activeTool, state.selectedCell, state.selectedEntity, workbenchMode]);
   const switchWorkbenchMode = (mode: MapWorkbenchMode) => {
     setWorkbenchMode(mode);
   };
@@ -216,6 +230,12 @@ export function MapsPanel({
         selectedTileset={selectedTileset}
         atlas={atlas}
         workbenchMode={workbenchMode}
+        selectedRandomLevel={selectedRandomLevel}
+        contextFocus={contextFocus}
+        previewMode={previewMode}
+        previewFocalPoint={previewFocalPoint ?? state.selectedCell ?? defaultPreviewFocalPoint(selectedMap)}
+        onSetPreviewMode={setPreviewMode}
+        onSetPreviewFocalPoint={setPreviewFocalPoint}
         onSetWorkbenchMode={switchWorkbenchMode}
         onSelectMap={onSelectMap}
         onSetTool={openCanvasTool}
@@ -235,8 +255,6 @@ export function MapsPanel({
         onSetSelectedRegion={setSelectedRegion}
         globalMapStamps={globalMapStamps}
         onSetGlobalMapStamps={setGlobalMapStamps}
-        replaceSourceTile={replaceSourceTile}
-        onSetReplaceSourceTile={setReplaceSourceTile}
         onApplyCommand={onApplyCommand}
         paletteOpen={paletteOpen}
         onSetPaletteOpen={setPaletteOpen}
@@ -247,20 +265,26 @@ export function MapsPanel({
           <>
             <MapViewFilters
               state={state}
+              selectedMap={selectedMap}
+              selectedRandomLevel={selectedRandomLevel}
+              mapRecords={mapRecords}
               onSetZoom={onSetZoom}
               onSetSmoothTiles={onSetSmoothTiles}
               onSetViewFlag={onSetViewFlag}
+              onSetVisibleRandomRectIds={onSetVisibleRandomRectIds}
+              onSetVisibleMapRecordIds={onSetVisibleMapRecordIds}
             />
             {selectedMap ? (
               <RealmzMapCanvas
+                project={state.project}
                 map={selectedMap}
                 tileset={selectedTileset}
                 atlas={atlas}
                 icons={state.iconEntries}
                 triggers={visibleTriggers}
                 allTriggers={mapTriggers}
-                randomLevel={selectedRandomLevel}
-                mapRecords={mapRecords}
+                randomLevel={visibleRandomLevel}
+                mapRecords={visibleMapRecords}
                 activeTool={state.activeTool}
                 paintMode={paintMode}
                 paintVariation={paintVariation}
@@ -272,8 +296,8 @@ export function MapsPanel({
                 smoothTiles={state.smoothTiles}
                 viewOptions={state}
                 tileAttributes={state.project?.tileAttributes ?? []}
-                showRandomRects={state.showRandomRects}
-                showMapRecords={state.showMapRecords}
+                showRandomRects={Boolean(visibleRandomLevel)}
+                showMapRecords={visibleMapRecords.length > 0}
                 previewMode={previewMode}
                 previewFocalPoint={previewFocalPoint ?? state.selectedCell ?? defaultPreviewFocalPoint(selectedMap)}
                 focusTarget={state.focusTarget}
@@ -283,14 +307,18 @@ export function MapsPanel({
                 smartBrushMask={smartBrushMask}
                 smartBrushPlan={paintMode === "smart" ? visibleSmartBrushPlan : null}
                 smartBrushDrawing={paintMode === "smart" && smartBrushDrawing}
+                globalMapStamps={globalMapStamps}
                 onSelectCell={onSelectCell}
                 onSetSelectedRegion={setSelectedRegion}
+                onClearSelection={onClearSelection}
                 onSetSmartBrushMask={setSmartBrushMask}
                 onSetSmartBrushDrawing={setSmartBrushDrawing}
                 onSampleTile={onSelectTile}
                 onSelectEntity={onSelectEntity}
                 onBeginPaintStroke={onBeginPaintStroke}
                 onApplyCommand={onApplyCommand}
+                onSetGlobalMapStamps={setGlobalMapStamps}
+                onSelectSuperTileStamp={setSelectedSuperTileStampId}
                 onCommitPaintStroke={onCommitPaintStroke}
                 onCancelPaintStroke={onCancelPaintStroke}
               />
@@ -394,10 +422,9 @@ export function MapsPanel({
         onSetPaletteVariationTiles={setPaletteVariationTiles}
         selectedRegion={selectedRegion}
         onSetSelectedRegion={setSelectedRegion}
+        onClearSelection={onClearSelection}
         globalMapStamps={globalMapStamps}
         onSetGlobalMapStamps={setGlobalMapStamps}
-        replaceSourceTile={replaceSourceTile}
-        onSetReplaceSourceTile={setReplaceSourceTile}
         smartBrushPreset={smartBrushPreset}
         onSetSmartBrushPreset={setSmartBrushPreset}
         smartBrushMask={smartBrushMask}
@@ -419,7 +446,6 @@ export function MapsPanel({
           setSmartBrushMask([]);
         }}
         onSelectEntity={onSelectEntity}
-        onClearSelection={onClearSelection}
         onApplyCommand={onApplyCommand}
       />
     </>
@@ -457,6 +483,13 @@ function nextMapIndex(maps: MapEntity[], levelType: LevelType) {
   return maps
     .filter((map) => map.levelType === levelType)
     .reduce((max, map) => Math.max(max, map.index), -1) + 1;
+}
+
+function semanticMapRecordId(record: SemanticEntity) {
+  const summaryId = record.summary.id;
+  if (typeof summaryId === "number" && Number.isFinite(summaryId)) return Math.trunc(summaryId);
+  const match = /^map-record:(-?\d+)$/.exec(record.id);
+  return match ? Number(match[1]) : null;
 }
 
 function readStoredWorkbenchMode(): MapWorkbenchMode {
@@ -502,17 +535,4 @@ function isTextEditingTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false;
   const tag = target.tagName.toLowerCase();
   return tag === "input" || tag === "textarea" || tag === "select" || target.isContentEditable;
-}
-
-function triggerMatchesViewFilters(project: Project | null, trigger: TriggerRecord, state: EditorState) {
-  const kinds = triggerOverlayKinds(project, trigger);
-  if (kinds.size === 0) return state.showUnknownOverlays;
-  return (
-    (kinds.has("encounter") && state.showEncounterOverlays) ||
-    (kinds.has("battle") && state.showBattleOverlays) ||
-    (kinds.has("map") && state.showMapOverlays) ||
-    (kinds.has("text") && state.showTextOverlays) ||
-    (kinds.has("quest") && state.showQuestOverlays) ||
-    (kinds.has("unknown") && state.showUnknownOverlays)
-  );
 }

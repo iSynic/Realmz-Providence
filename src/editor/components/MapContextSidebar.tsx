@@ -2,12 +2,12 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, ty
 import { TOOLS } from "../constants";
 import { EditorState } from "../store";
 import { CustomMapStamp, EditorTool, IconEntry, MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRecord, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, SmartBrushMaskCell, SmartBrushPlan, SmartBrushPreset, TileAttributeFlag, TilePaletteCategory, TilesetAsset, TriggerRecord } from "../types";
-import { mapTileIndex, randomRectContainsCell, randomRectEntityId, tileValueAt } from "../map/geometry";
-import { allMapCells, buildReplaceChanges, dominantTiles, rectCells, regionCellCount } from "../map/regionPaint";
+import { mapRecordContainsCell, mapTileIndex, randomRectContainsCell, randomRectEntityId, tileValueAt } from "../map/geometry";
+import { rectCells, regionCellCount } from "../map/regionPaint";
 import { actionSlotEntitiesForTriggerRecord } from "../semanticGraph";
 import { compactValue, linksFor, mapEntityId, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
 import { InfoGrid } from "./InfoGrid";
-import { ActionPointCodeTable, CellTileEvidence, MapCapabilityPanel } from "./MapAffordances";
+import { CellTileEvidence, MapCapabilityPanel } from "./MapAffordances";
 import { PaintPalettePanel } from "./TileSelectionBar";
 import { classifyTileValue, standardTileValues, tileAttributeGroup } from "../map/tileMetadata";
 import { atlasBaseTile, normalizeIconId } from "../map/renderValues";
@@ -24,7 +24,7 @@ import { attributeSourceLabel, forestTypeLabel, normalizedCombatBuild, tileAttri
 import { LandTileAtlasEditor } from "./maps/LandTilesWorkbench";
 import { MapDiagnostics, MapNumberField } from "./maps/MapFormControls";
 import { RandomAreasWorkbench, RandomRectangleEditor, randomRectDiagnostics } from "./maps/RandomEncountersWorkbench";
-import { clearRegion, fillRegion, paintModeLabel, regionLabel, replaceRegion, replaceWholeMap } from "./maps/mapRegionUiUtils";
+import { clearRegion, fillRegion, paintModeLabel, regionLabel } from "./maps/mapRegionUiUtils";
 import { RecordSelectionDetails } from "./maps/MapRecordsWorkbench";
 import { SMART_BRUSH_PRESETS, smartBrushProfileForTileset } from "../map/smartTerrainBrush";
 
@@ -34,6 +34,8 @@ export { LandTileAtlasEditor };
 export { RandomAreasWorkbench };
 
 type MapContextFocus = "flags" | "atlas" | "layout" | "source";
+type MapSidebarInspector = "setup" | "paint" | "selection" | "land-layout" | "land-tiles" | "random-areas";
+
 const MAP_TOOLSET_MODES: Array<{ id: MapWorkbenchMode; label: string; body: string }> = [
   { id: "canvas", label: "Canvas", body: "Map painting and placement" },
   { id: "land-layout", label: "Land Layout", body: "Outdoor adjacency grid" },
@@ -66,6 +68,12 @@ export function MapContextSidebar({
   selectedTileset,
   atlas,
   workbenchMode,
+  selectedRandomLevel,
+  contextFocus,
+  previewMode,
+  previewFocalPoint,
+  onSetPreviewMode,
+  onSetPreviewFocalPoint,
   onSetWorkbenchMode,
   onSelectMap,
   onSetTool,
@@ -85,8 +93,6 @@ export function MapContextSidebar({
   onSetSelectedRegion,
   globalMapStamps,
   onSetGlobalMapStamps,
-  replaceSourceTile,
-  onSetReplaceSourceTile,
   onApplyCommand,
   paletteOpen,
   onSetPaletteOpen
@@ -96,6 +102,12 @@ export function MapContextSidebar({
   selectedTileset: TilesetAsset | null;
   atlas: EditorState["atlasEntries"][string] | null;
   workbenchMode: MapWorkbenchMode;
+  selectedRandomLevel: RandomLevel | null;
+  contextFocus: MapContextFocus;
+  previewMode: MapPreviewMode;
+  previewFocalPoint: MapPreviewFocalPoint;
+  onSetPreviewMode: (mode: MapPreviewMode) => void;
+  onSetPreviewFocalPoint: (point: MapPreviewFocalPoint | null) => void;
   onSetWorkbenchMode: (mode: MapWorkbenchMode) => void;
   onSelectMap: (id: string) => void;
   onSetTool: (tool: EditorTool) => void;
@@ -115,8 +127,6 @@ export function MapContextSidebar({
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
   globalMapStamps: CustomMapStamp[];
   onSetGlobalMapStamps: (stamps: CustomMapStamp[]) => void;
-  replaceSourceTile: number | null;
-  onSetReplaceSourceTile: (tile: number | null) => void;
   onApplyCommand: (command: ProjectCommand) => void;
   paletteOpen: boolean;
   onSetPaletteOpen: (open: boolean) => void;
@@ -135,7 +145,15 @@ export function MapContextSidebar({
         <MapOutliner
           project={state.project}
           selectedMap={selectedMap}
+          selectedTileset={selectedTileset}
+          atlas={atlas}
+          randomLevel={selectedRandomLevel}
+          contextFocus={contextFocus}
+          previewMode={previewMode}
+          previewFocalPoint={previewFocalPoint}
           onSelectMap={onSelectMap}
+          onSetPreviewMode={onSetPreviewMode}
+          onSetPreviewFocalPoint={onSetPreviewFocalPoint}
           onSetWorkbenchMode={onSetWorkbenchMode}
           onApplyCommand={onApplyCommand}
         />
@@ -191,10 +209,9 @@ export function MapSelectionSidebar({
   onSetPaletteVariationTiles,
   selectedRegion,
   onSetSelectedRegion,
+  onClearSelection,
   globalMapStamps,
   onSetGlobalMapStamps,
-  replaceSourceTile,
-  onSetReplaceSourceTile,
   smartBrushPreset,
   onSetSmartBrushPreset,
   smartBrushMask,
@@ -204,7 +221,6 @@ export function MapSelectionSidebar({
   selectedSuperTileStampId,
   onSelectSuperTileStamp,
   onSelectEntity,
-  onClearSelection,
   onApplyCommand
 }: {
   state: EditorState;
@@ -244,10 +260,9 @@ export function MapSelectionSidebar({
   onSetPaletteVariationTiles: (tiles: number[] | null) => void;
   selectedRegion: MapRegionSelection | null;
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
+  onClearSelection: () => void;
   globalMapStamps: CustomMapStamp[];
   onSetGlobalMapStamps: (stamps: CustomMapStamp[]) => void;
-  replaceSourceTile: number | null;
-  onSetReplaceSourceTile: (tile: number | null) => void;
   smartBrushPreset: SmartBrushPreset;
   onSetSmartBrushPreset: (preset: SmartBrushPreset) => void;
   smartBrushMask: SmartBrushMaskCell[];
@@ -257,7 +272,6 @@ export function MapSelectionSidebar({
   selectedSuperTileStampId: string | null;
   onSelectSuperTileStamp: (stampId: string) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
-  onClearSelection: () => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
   const [open, setOpen] = useState(() => localStorage.getItem("providence.mapRightContextOpen.v1") !== "0");
@@ -271,12 +285,44 @@ export function MapSelectionSidebar({
   }, [paletteState]);
   const selection = selectionSummary(selectedMap, state.selectedEntity, state.selectedCell, selectedRegion, mapTriggers, selectedRandomLevel, mapRecords);
   const activeSelection = workbenchMode === "canvas" ? selection : null;
-  const isPaintInspector = workbenchMode === "canvas" && (state.activeTool === "paint" || state.activeTool === "stamp");
+  const isPaintInspector = workbenchMode === "canvas" && (state.activeTool === "paint" || state.activeTool === "stamp" || selectedRegion != null);
+  const inspectorChoice: MapSidebarInspector = isPaintInspector
+    ? "paint"
+    : activeSelection
+      ? "selection"
+      : workbenchMode === "canvas"
+        ? "setup"
+        : workbenchMode;
+  const switchInspector = (choice: MapSidebarInspector) => {
+    switch (choice) {
+      case "paint":
+        onSetWorkbenchMode("canvas");
+        onSetTool("paint");
+        break;
+      case "selection":
+        if (!selection) return;
+        onSetWorkbenchMode("canvas");
+        onSetTool("select");
+        break;
+      case "setup":
+        onSetSelectedRegion(null);
+        onClearSelection();
+        onSetWorkbenchMode("canvas");
+        onSetTool("select");
+        break;
+      case "land-layout":
+      case "land-tiles":
+      case "random-areas":
+        onSetSelectedRegion(null);
+        onSetWorkbenchMode(choice);
+        break;
+    }
+  };
   if (!open) {
     return (
       <aside className="map-context-rail">
         <button type="button" onClick={() => setOpen(true)}>
-          {isPaintInspector ? "Paint" : "Inspector"}
+          {inspectorChoice === "paint" ? "Paint" : "Inspector"}
         </button>
       </aside>
     );
@@ -294,9 +340,13 @@ export function MapSelectionSidebar({
       >
         <ScrollArea className="editor-inspector-scroll map-context-scroll" aria-label="Map contextual inspector">
           <div className="panel-header map-context-header">
-          <span>{isPaintInspector ? "Paint Inspector" : activeSelection ? "Selection Inspector" : "Map Setup"}</span>
-          <button className="btn btn-ghost btn-xs" type="button" onClick={() => setOpen(false)}>Collapse</button>
-        </div>
+            <MapInspectorSwitcher
+              value={inspectorChoice}
+              hasSelection={selection != null}
+              onChange={switchInspector}
+            />
+            <button className="btn btn-ghost btn-xs" type="button" onClick={() => setOpen(false)}>Collapse</button>
+          </div>
         {isPaintInspector ? (
           <PaintInspector
             state={state}
@@ -321,8 +371,6 @@ export function MapSelectionSidebar({
             onSetSelectedRegion={onSetSelectedRegion}
             globalMapStamps={globalMapStamps}
             onSetGlobalMapStamps={onSetGlobalMapStamps}
-            replaceSourceTile={replaceSourceTile}
-            onSetReplaceSourceTile={onSetReplaceSourceTile}
             smartBrushPreset={smartBrushPreset}
             onSetSmartBrushPreset={onSetSmartBrushPreset}
             smartBrushMask={smartBrushMask}
@@ -344,20 +392,10 @@ export function MapSelectionSidebar({
             selection={activeSelection}
             map={selectedMap}
             project={state.project}
-            selectedPaintTile={state.selectedTile}
             selectedTileset={selectedTileset}
             icons={state.iconEntries}
-            paintMode={paintMode}
-            paintVariation={paintVariation}
-            activePaintGroupId={activePaintGroupId}
-            variationTiles={variationTiles}
-            selectedRegion={selectedRegion}
-            onSetSelectedRegion={onSetSelectedRegion}
-            replaceSourceTile={replaceSourceTile}
-            onSetReplaceSourceTile={onSetReplaceSourceTile}
             onSelectEntity={onSelectEntity}
             onOpenScripts={onOpenScripts}
-            onClearSelection={onClearSelection}
             onApplyCommand={onApplyCommand}
           />
         ) : workbenchMode !== "canvas" ? (
@@ -410,6 +448,32 @@ type Selection =
   | { kind: "trigger"; trigger: TriggerRecord }
   | { kind: "random"; rect: RandomLevel["rects"][number] }
   | { kind: "record"; record: SemanticEntity };
+
+function MapInspectorSwitcher({
+  value,
+  hasSelection,
+  onChange
+}: {
+  value: MapSidebarInspector;
+  hasSelection: boolean;
+  onChange: (choice: MapSidebarInspector) => void;
+}) {
+  return (
+    <select
+      className="map-inspector-switcher"
+      aria-label="Choose right sidebar inspector"
+      value={value}
+      onChange={(event) => onChange(event.currentTarget.value as MapSidebarInspector)}
+    >
+      <option value="setup">Map Setup</option>
+      <option value="paint">Paint Inspector</option>
+      <option value="selection" disabled={!hasSelection}>Selection Inspector</option>
+      <option value="land-layout">Land Layout</option>
+      <option value="land-tiles">Land Tiles</option>
+      <option value="random-areas">Random Rectangles</option>
+    </select>
+  );
+}
 
 function MapModeInspector({
   mode,
@@ -478,7 +542,7 @@ function MapModeInspector({
         />
       )}
       <div className="context-action-stack compact">
-        <button className="btn btn-primary btn-xs context-action-button" type="button" onClick={() => onSetWorkbenchMode("canvas")}>
+        <button className="btn btn-primary btn-xs context-action-button context-action-button-narrow" type="button" onClick={() => onSetWorkbenchMode("canvas")}>
           Return To Canvas
         </button>
       </div>
@@ -570,48 +634,33 @@ function CoreMapSetup({
     onSelectEntity({ type: "encounter", id: randomRectEntityId(selectedMap, randomLevel.rects[0].rectIndex) });
   };
   return (
-    <section className="context-panel">
+    <section className="context-panel map-setup-panel">
       <div className="panel-header">
-        <span>Core Map Setup</span>
-        <small>{modeLabel(workbenchMode)} | {selectedMap?.levelType ?? "none"}</small>
+        <span>Level Setup</span>
+        <small>{modeLabel(workbenchMode)} | {selectedMap ? selectedMap.levelType : "none"}</small>
       </div>
-      <details className="context-section" open>
-        <summary>
-          <span>Map Identity</span>
-          <b>{selectedMap?.levelType ?? "none"}</b>
-        </summary>
-        <InfoGrid
-          rows={[
-            ["Map ID", selectedMap ? mapEntityId(selectedMap.levelType, selectedMap.index) : "none"],
-            ["Record", selectedMap ? `${selectedMap.source} #${selectedMap.index}` : "none"],
-            ["Tileset", selectedMap?.render.tilesetId ?? "none"],
-            ["Land Look", randomLevel?.landlook ?? "none"]
-          ]}
-        />
-      </details>
-      <details className="context-section" open={contextFocus === "flags"}>
-        <summary>
-          <span>Realmz Map Flags</span>
-          <b>{randomLevel ? "configured" : "none"}</b>
-        </summary>
-        <MapLevelSettings
-          map={selectedMap}
-          randomLevel={randomLevel}
-          selectedTileset={selectedTileset}
-          atlas={atlas}
-          previewMode={previewMode}
-          previewFocalPoint={previewFocalPoint}
-          onSetPreviewMode={onSetPreviewMode}
-          onSetPreviewFocalPoint={onSetPreviewFocalPoint}
-          onApplyCommand={onApplyCommand}
-        />
-      </details>
-      {selectedMap && project && (
-        <p className="context-capacity-note">
-          {actionPointCapacity(project.triggers, selectedMap.levelType, selectedMap.index).active}/100 Action Point records used.{" "}
-          {randomLevel?.rects.length ?? 0}/20 Random Rectangles active.
-        </p>
-      )}
+      <div className="map-setup-body">
+        <section className="map-setup-card">
+          <header>
+            <span>Current Level</span>
+            <b>{selectedMap ? selectedMap.levelType : "none"}</b>
+          </header>
+          <InfoGrid
+            rows={[
+              ["Name", selectedMap?.name ?? "none"],
+              ["Index", selectedMap ? selectedMap.index : "none"],
+              ["Tileset", selectedTileset?.name ?? selectedMap?.render.tilesetId ?? "none"],
+              ["Landlook", randomLevel?.landlook ?? selectedMap?.render.landlook ?? "none"]
+            ]}
+          />
+          {selectedMap && project && (
+            <div className="map-setup-counts">
+              <span>{actionPointCapacity(project.triggers, selectedMap.levelType, selectedMap.index).active}/100 AP</span>
+              <span>{randomLevel?.rects.length ?? 0}/20 random</span>
+            </div>
+          )}
+        </section>
+      </div>
       <MapCapabilityPanel
         map={selectedMap}
         randomLevel={randomLevel}
@@ -642,19 +691,33 @@ function CoreMapSetup({
 function MapOutliner({
   project,
   selectedMap,
+  selectedTileset,
+  atlas,
+  randomLevel,
+  contextFocus,
+  previewMode,
+  previewFocalPoint,
   onSelectMap,
+  onSetPreviewMode,
+  onSetPreviewFocalPoint,
   onSetWorkbenchMode,
   onApplyCommand
 }: {
   project: Project | null;
   selectedMap: MapEntity | null;
+  selectedTileset: TilesetAsset | null;
+  atlas: EditorState["atlasEntries"][string] | null;
+  randomLevel: RandomLevel | null;
+  contextFocus: MapContextFocus;
+  previewMode: MapPreviewMode;
+  previewFocalPoint: MapPreviewFocalPoint;
   onSelectMap: (id: string) => void;
+  onSetPreviewMode: (mode: MapPreviewMode) => void;
+  onSetPreviewFocalPoint: (point: MapPreviewFocalPoint | null) => void;
   onSetWorkbenchMode: (mode: MapWorkbenchMode) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
   const maps = project?.maps ?? [];
-  const landCount = maps.filter((map) => map.levelType === "land").length;
-  const dungeonCount = maps.filter((map) => map.levelType === "dungeon").length;
   const createMap = (levelType: "land" | "dungeon") => {
     if (!project) return;
     const index = nextMapIndex(maps, levelType);
@@ -677,44 +740,47 @@ function MapOutliner({
         <span>Scenario Maps</span>
         <small>{maps.length.toLocaleString()}</small>
       </div>
-      <div className="map-outliner-actions">
-        <button className="btn btn-primary btn-xs" type="button" disabled={!project} onClick={() => createMap("land")}>
-          New Land
-        </button>
-        <button className="btn btn-secondary btn-xs" type="button" disabled={!project} onClick={() => createMap("dungeon")}>
-          New Dungeon
-        </button>
-        <button className="btn btn-secondary btn-xs" type="button" disabled={!project || !selectedMap} onClick={duplicateMap}>
-          Duplicate
-        </button>
-        {selectedMap?.levelType === "land" && (
-          <button className="btn btn-secondary btn-xs" type="button" onClick={() => onSetWorkbenchMode("land-layout")}>
-            Place In Layout
+      <div className="map-sidebar-group">
+        <div className="map-sidebar-group-title">Map Records</div>
+        <div className="map-outliner-actions">
+          <button className="btn btn-primary btn-xs" type="button" disabled={!project} onClick={() => createMap("land")}>
+            New Land
           </button>
+          <button className="btn btn-secondary btn-xs" type="button" disabled={!project} onClick={() => createMap("dungeon")}>
+            New Dungeon
+          </button>
+          <button className="btn btn-secondary btn-xs" type="button" disabled={!project || !selectedMap} onClick={duplicateMap}>
+            Duplicate
+          </button>
+        </div>
+      </div>
+      <div className={`map-sidebar-group map-sidebar-current-map${contextFocus === "flags" ? " active" : ""}`}>
+        <label className="context-field compact">
+          <span>Current Map</span>
+          <select value={selectedMap?.id ?? ""} onChange={(event) => onSelectMap(event.currentTarget.value)} disabled={!project}>
+            {!project && <option value="">No project loaded</option>}
+            {project && maps.length === 0 && <option value="">No maps yet</option>}
+            {maps.map((map) => (
+              <option key={map.id} value={map.id}>
+                {map.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        {selectedMap && (
+          <MapLevelSettings
+            map={selectedMap}
+            randomLevel={randomLevel}
+            selectedTileset={selectedTileset}
+            atlas={atlas}
+            previewMode={previewMode}
+            previewFocalPoint={previewFocalPoint}
+            onSetPreviewMode={onSetPreviewMode}
+            onSetPreviewFocalPoint={onSetPreviewFocalPoint}
+            onApplyCommand={onApplyCommand}
+          />
         )}
       </div>
-      <label className="context-field compact">
-        <span>Current Map</span>
-        <select value={selectedMap?.id ?? ""} onChange={(event) => onSelectMap(event.currentTarget.value)} disabled={!project}>
-          {!project && <option value="">No project loaded</option>}
-          {project && maps.length === 0 && <option value="">No maps yet</option>}
-          {maps.map((map) => (
-            <option key={map.id} value={map.id}>
-              {map.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      <div className="map-outliner-meta">
-        <span>{landCount} land</span>
-        <span>{dungeonCount} dungeon</span>
-        {selectedMap && <span>{selectedMap.render.tilesetId}</span>}
-      </div>
-      {selectedMap && (
-        <p className="map-current-summary">
-          {selectedMap.name} | {selectedMap.levelType} {selectedMap.index} | {selectedMap.render.tilesetId}
-        </p>
-      )}
       {!project && <p className="empty-copy compact">Create or import a scenario to browse maps.</p>}
       {project && maps.length === 0 && <p className="empty-copy compact">Create a land or dungeon map to begin authoring this scenario.</p>}
     </section>
@@ -726,6 +792,10 @@ function nextMapIndex(maps: MapEntity[], levelType: "land" | "dungeon") {
     .filter((map) => map.levelType === levelType)
     .reduce((max, map) => Math.max(max, map.index), -1) + 1;
 }
+
+const AUTHORING_TOOL_IDS: EditorTool[] = ["paint", "stamp", "trigger", "random"];
+const NAVIGATION_TOOL_IDS: EditorTool[] = ["select", "pan", "sample"];
+const TOOL_BY_ID = new Map(TOOLS.map((tool) => [tool.id, tool]));
 
 function MapToolset({
   state,
@@ -750,30 +820,34 @@ function MapToolset({
         <span>Map Toolset</span>
         <small>{workbenchMode === "canvas" ? toolLabel(state.activeTool) : modeLabel(workbenchMode)}</small>
       </div>
-      <div className="map-toolset-mode-grid" role="group" aria-label="Map workbench modes">
-        {MAP_TOOLSET_MODES.map((mode) => (
-          <button
-            key={mode.id}
-            type="button"
-            className={workbenchMode === mode.id ? "active" : ""}
-            onClick={() => onSetWorkbenchMode(mode.id)}
-            title={mode.body}
-          >
-            <span>{mode.label}</span>
-          </button>
-        ))}
+      <div className="map-sidebar-group">
+        <div className="map-sidebar-group-title">Map Sections</div>
+        <div className="map-toolset-mode-grid" role="group" aria-label="Map workbench modes">
+          {MAP_TOOLSET_MODES.map((mode) => (
+            <button
+              key={mode.id}
+              type="button"
+              className={workbenchMode === mode.id ? "active" : ""}
+              onClick={() => onSetWorkbenchMode(mode.id)}
+              title={mode.body}
+            >
+              <span>{mode.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
       {workbenchMode === "canvas" ? (
         <>
-          <div className="sidebar-tool-grid">
-            {TOOLS.map((tool) => (
-              <TutorialTip key={tool.id} title={toolLabel(tool.id)} body={tool.hint} side="right">
-                <button className={`sidebar-tool${state.activeTool === tool.id ? " active" : ""}`} onClick={() => onSetTool(tool.id)}>
-                  {tool.icon}
-                  <span>{toolLabel(tool.id)}</span>
-                </button>
-              </TutorialTip>
-            ))}
+          <div className="map-sidebar-group">
+            <div className="map-sidebar-group-title">Canvas Tools</div>
+            <div className="sidebar-tool-columns">
+              <div className="sidebar-tool-column" aria-label="Authoring tools">
+                {AUTHORING_TOOL_IDS.map((id) => renderSidebarTool(id, state.activeTool, onSetTool))}
+              </div>
+              <div className="sidebar-tool-column" aria-label="Navigation and selection tools">
+                {NAVIGATION_TOOL_IDS.map((id) => renderSidebarTool(id, state.activeTool, onSetTool))}
+              </div>
+            </div>
           </div>
           <PaintTileSummary
             selectedTile={state.selectedTile}
@@ -792,6 +866,19 @@ function MapToolset({
         />
       )}
     </section>
+  );
+}
+
+function renderSidebarTool(id: EditorTool, activeTool: EditorTool, onSetTool: (tool: EditorTool) => void) {
+  const tool = TOOL_BY_ID.get(id);
+  if (!tool) return null;
+  return (
+    <TutorialTip key={tool.id} title={toolLabel(tool.id)} body={tool.hint} side="right">
+      <button className={`sidebar-tool${activeTool === tool.id ? " active" : ""}`} onClick={() => onSetTool(tool.id)}>
+        {tool.icon}
+        <span>{toolLabel(tool.id)}</span>
+      </button>
+    </TutorialTip>
   );
 }
 
@@ -854,8 +941,6 @@ function PaintInspector({
   onSetSelectedRegion,
   globalMapStamps,
   onSetGlobalMapStamps,
-  replaceSourceTile,
-  onSetReplaceSourceTile,
   smartBrushPreset,
   onSetSmartBrushPreset,
   smartBrushMask,
@@ -894,8 +979,6 @@ function PaintInspector({
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
   globalMapStamps: CustomMapStamp[];
   onSetGlobalMapStamps: (stamps: CustomMapStamp[]) => void;
-  replaceSourceTile: number | null;
-  onSetReplaceSourceTile: (tile: number | null) => void;
   smartBrushPreset: SmartBrushPreset;
   onSetSmartBrushPreset: (preset: SmartBrushPreset) => void;
   smartBrushMask: SmartBrushMaskCell[];
@@ -937,7 +1020,6 @@ function PaintInspector({
       onSetGlobalMapStamps={onSetGlobalMapStamps}
       onSetVariationTiles={onSetPaletteVariationTiles}
       paintVariation={paintVariation}
-      onSetPaintVariation={onSetPaintVariation}
       onApplyCommand={onApplyCommand}
       selectedSuperTileStampId={selectedSuperTileStampId}
       onSelectSuperTileStamp={onSelectSuperTileStamp}
@@ -976,9 +1058,6 @@ function PaintInspector({
         paintMode={paintMode}
         onSetPaintMode={onSetPaintMode}
         selectedRegion={selectedRegion}
-        onSetSelectedRegion={onSetSelectedRegion}
-        replaceSourceTile={replaceSourceTile}
-        onSetReplaceSourceTile={onSetReplaceSourceTile}
         smartBrushPreset={smartBrushPreset}
         onSetSmartBrushPreset={onSetSmartBrushPreset}
         smartBrushMask={smartBrushMask}
@@ -986,6 +1065,11 @@ function PaintInspector({
         onClearSmartBrushMask={onClearSmartBrushMask}
         onApplySmartBrush={onApplySmartBrush}
         onApplyCommand={onApplyCommand}
+        showVariation={state.activeTool !== "stamp"}
+        onSetPaintVariation={onSetPaintVariation}
+        onActivatePaintTool={() => {
+          if (state.activeTool !== "paint") onSetTool("paint");
+        }}
       />
       {selectedRegion && paintMode !== "smart" && (
         <RegionSelectionDetails
@@ -994,16 +1078,10 @@ function PaintInspector({
           selectedTileset={selectedTileset}
           tileAttributes={state.project?.tileAttributes ?? []}
           icons={state.iconEntries}
-          paintMode={paintMode}
-          onSetSelectedRegion={onSetSelectedRegion}
-          showClearSelection={false}
-          replaceSourceTile={replaceSourceTile}
-          onSetReplaceSourceTile={onSetReplaceSourceTile}
           selectedPaintTile={state.selectedTile}
-          onApplyCommand={onApplyCommand}
         />
       )}
-      <div className="paint-palette-shell">
+      <div className={`paint-palette-shell${paletteOpen && docked ? " paint-palette-shell-docked" : ""}`}>
         <div className="paint-palette-shell-header">
           <TutorialTip
             title="Tile Palette"
@@ -1030,7 +1108,7 @@ function PaintInspector({
             )}
           </div>
         </div>
-        {paletteOpen && docked && palette}
+        {paletteOpen && docked && <div className="paint-palette-scroll">{palette}</div>}
         {paletteOpen && !docked && <p className="empty-copy compact">Palette is floating over the map canvas.</p>}
       </div>
       {paletteOpen && !docked && (
@@ -1046,6 +1124,12 @@ function PaintInspector({
     </section>
   );
 }
+
+const PAINT_VARIATION_OPTIONS: Array<{ id: MapPaintVariation; label: string; hint: string }> = [
+  { id: "single", label: "Single Tile", hint: "Paint the selected tile." },
+  { id: "cycle-group", label: "Cycle Group", hint: "Advance through the active palette group once for each newly painted cell." },
+  { id: "random-group", label: "Random Group", hint: "Pick a stable pseudo-random tile from the active palette group for each newly painted cell." }
+];
 
 function FloatingPaintPalette({
   paletteState,
@@ -1227,14 +1311,16 @@ function MapLevelSettings({
           </select>
         </label>
       )}
-      <label className="map-check-field">
-        <input type="checkbox" checked={Boolean(randomLevel?.isDark)} onChange={(event) => commit({ isDark: event.currentTarget.checked })} />
-        <span>Dark level</span>
-      </label>
-      <label className="map-check-field">
-        <input type="checkbox" checked={Boolean(randomLevel?.useLos)} onChange={(event) => commit({ useLos: event.currentTarget.checked })} />
-        <span>Use line of sight</span>
-      </label>
+      <div className="map-flag-row">
+        <label className="map-check-field">
+          <input type="checkbox" checked={Boolean(randomLevel?.isDark)} onChange={(event) => commit({ isDark: event.currentTarget.checked })} />
+          <span>Dark level</span>
+        </label>
+        <label className="map-check-field">
+          <input type="checkbox" checked={Boolean(randomLevel?.useLos)} onChange={(event) => commit({ useLos: event.currentTarget.checked })} />
+          <span>Line of sight</span>
+        </label>
+      </div>
       {applied && <small className="map-applied-status">{applied}</small>}
       {atlasMissing && <div className="map-diagnostic-list"><span>Landlook atlas is unavailable; map rendering will fall back to colors.</span></div>}
       <div className="map-preview-controls">
@@ -1247,20 +1333,14 @@ function MapLevelSettings({
             <option value="both">Both</option>
           </select>
         </label>
-        <div className="map-authoring-form">
-          <MapNumberField label="Focus X" value={previewFocalPoint.x} min={0} max={89} onCommit={(x) => onSetPreviewFocalPoint({ ...previewFocalPoint, x })} />
-          <MapNumberField label="Focus Y" value={previewFocalPoint.y} min={0} max={89} onCommit={(y) => onSetPreviewFocalPoint({ ...previewFocalPoint, y })} />
+        <div className="map-setup-focus-row">
+          <MapNumberField label="Focus X" value={previewFocalPoint.x} min={0} max={89} compact plain maxLength={2} onCommit={(x) => onSetPreviewFocalPoint({ ...previewFocalPoint, x })} />
+          <MapNumberField label="Focus Y" value={previewFocalPoint.y} min={0} max={89} compact plain maxLength={2} onCommit={(y) => onSetPreviewFocalPoint({ ...previewFocalPoint, y })} />
+          <button className="btn btn-ghost btn-xs context-action-button" type="button" onClick={() => onSetPreviewFocalPoint(null)}>
+            Use Current
+          </button>
         </div>
-        <button className="btn btn-ghost btn-xs context-action-button" type="button" onClick={() => onSetPreviewFocalPoint(null)}>
-          Use selected/default focus
-        </button>
       </div>
-      <small>
-        {map.levelType === "dungeon"
-          ? "Dungeon geometry editing is not ready in this slice."
-          : "Landlook changes update Realmz random-level metadata and render hints."}{" "}
-        Dark and line-of-sight are saved/exported Realmz flags; previews are editor-only approximations and do not write runtime site data.
-      </small>
     </div>
   );
 }
@@ -1461,7 +1541,6 @@ function SpecialTileSolidityEditor({
 
 const PAINT_MODES: Array<{ id: MapPaintMode; label: string; body: string }> = [
   { id: "brush", label: "Brush", body: "Paint cells by dragging." },
-  { id: "replace", label: "Replace Tile", body: "Replace one tile value in a region or map." },
   { id: "clear", label: "Eraser", body: "Restore cells to the current map's clear tile." },
   { id: "smart", label: "Smart", body: "Beta: draw a terrain mask and resolve mountain, water, or forest edges automatically." }
 ];
@@ -1478,16 +1557,16 @@ function PaintModePanel({
   paintMode,
   onSetPaintMode,
   selectedRegion,
-  onSetSelectedRegion,
-  replaceSourceTile,
-  onSetReplaceSourceTile,
   smartBrushPreset,
   onSetSmartBrushPreset,
   smartBrushMask,
   smartBrushPlan,
   onClearSmartBrushMask,
   onApplySmartBrush,
-  onApplyCommand
+  onApplyCommand,
+  showVariation,
+  onSetPaintVariation,
+  onActivatePaintTool
 }: {
   map: MapEntity | null;
   selectedTileset: TilesetAsset | null;
@@ -1500,9 +1579,6 @@ function PaintModePanel({
   paintMode: MapPaintMode;
   onSetPaintMode: (mode: MapPaintMode) => void;
   selectedRegion: MapRegionSelection | null;
-  onSetSelectedRegion: (region: MapRegionSelection | null) => void;
-  replaceSourceTile: number | null;
-  onSetReplaceSourceTile: (tile: number | null) => void;
   smartBrushPreset: SmartBrushPreset;
   onSetSmartBrushPreset: (preset: SmartBrushPreset) => void;
   smartBrushMask: SmartBrushMaskCell[];
@@ -1510,15 +1586,23 @@ function PaintModePanel({
   onClearSmartBrushMask: () => void;
   onApplySmartBrush: () => void;
   onApplyCommand: (command: ProjectCommand) => void;
+  showVariation: boolean;
+  onSetPaintVariation: (variation: MapPaintVariation) => void;
+  onActivatePaintTool: () => void;
 }) {
   const smartUnavailable = paintMode === "smart" && smartBrushPlan.reason != null && smartBrushMask.length === 0;
   const smartDisabled = !map || map.levelType !== "land" || smartBrushProfileForTileset(selectedTileset) == null;
+  const activeVariation = PAINT_VARIATION_OPTIONS.find((variation) => variation.id === paintVariation) ?? PAINT_VARIATION_OPTIONS[0];
+  const setMode = (mode: MapPaintMode) => {
+    onSetPaintMode(mode);
+    onActivatePaintTool();
+  };
   return (
     <div className="paint-mode-panel">
       <div className="paint-mode-header">
         <TutorialTip
           title="Paint Subtools"
-          body="Brush paints the selected value, Replace swaps a source tile, Eraser writes the map's clear tile, and Smart is a beta terrain-mask resolver for mountains, water, and forest."
+          body="Brush paints the selected value, Eraser writes the map's clear tile, and Smart is a beta terrain-mask resolver for mountains, water, and forest."
           side="right"
         >
           <span>Paint Subtool</span>
@@ -1532,20 +1616,37 @@ function PaintModePanel({
             className={paintMode === mode.id ? "active" : ""}
             type="button"
             disabled={mode.id === "smart" && smartDisabled}
-            onClick={() => onSetPaintMode(mode.id)}
+            onClick={() => setMode(mode.id)}
             title={mode.id === "smart" && smartDisabled ? "Smart terrain is available for supported land maps." : mode.body}
           >
             {mode.label}
           </button>
         ))}
       </div>
-      <p className="paint-mode-hint">
-        {paintMode === "brush" && "Drag to paint."}
-        {paintMode === "brush" && !selectedRegion && " Use Select and drag on the map to choose a region."}
-        {paintMode === "replace" && "Replace one tile in the selected region."}
-        {paintMode === "clear" && `Drag to restore ${clearTileLabel(map, selectedTileset)}.`}
-        {paintMode === "smart" && "Drag across the map to build a terrain mask, then apply the resolved preview."}
-      </p>
+      {showVariation && (
+        <>
+          <div className="paint-mode-divider" />
+          <div className="paint-mode-variation" aria-label="Brush variation">
+            <div className="paint-variation-header">
+              <span>Variation</span>
+              <b>{activeVariation.label}</b>
+            </div>
+            <div className="paint-variation-buttons" role="toolbar" aria-label="Brush variation mode">
+              {PAINT_VARIATION_OPTIONS.map((variation) => (
+                <button
+                  key={variation.id}
+                  type="button"
+                  className={paintVariation === variation.id ? "active" : ""}
+                  onClick={() => onSetPaintVariation(variation.id)}
+                  title={variation.hint}
+                >
+                  {variation.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
       {paintMode === "smart" && (
         <div className="smart-brush-panel">
           <label className="map-number-field">
@@ -1627,15 +1728,7 @@ function PaintModePanel({
           </label>
           <button type="button" onClick={() => fillRegion(map, selectedRegion, selectedTile, selectedTileset, paintVariation, activePaintGroupId, variationTiles, paintFillChance, onApplyCommand)}>Fill</button>
           <button type="button" onClick={() => clearRegion(map, selectedRegion, selectedTileset, onApplyCommand)}>Clear</button>
-          <button type="button" onClick={() => onSetSelectedRegion(null)}>Clear Selection</button>
         </div>
-      )}
-      {paintMode === "replace" && (
-        <MapNumberField
-          label="Replace Source Tile"
-          value={replaceSourceTile ?? selectedTile}
-          onCommit={(tile) => onSetReplaceSourceTile(tile)}
-        />
       )}
     </div>
   );
@@ -1647,68 +1740,19 @@ function RegionSelectionDetails({
   selectedTileset,
   tileAttributes,
   icons,
-  paintMode,
-  onSetSelectedRegion,
-  showClearSelection = true,
-  replaceSourceTile,
-  onSetReplaceSourceTile,
-  selectedPaintTile,
-  onApplyCommand
+  selectedPaintTile
 }: {
   map: MapEntity | null;
   region: MapRegionSelection;
   selectedTileset: TilesetAsset | null;
   tileAttributes: Project["tileAttributes"];
   icons: EditorState["iconEntries"];
-  paintMode: MapPaintMode;
-  onSetSelectedRegion: (region: MapRegionSelection | null) => void;
-  showClearSelection?: boolean;
-  replaceSourceTile: number | null;
-  onSetReplaceSourceTile: (tile: number | null) => void;
   selectedPaintTile: number;
-  onApplyCommand: (command: ProjectCommand) => void;
 }) {
   if (!map) return <p className="empty-copy compact">Select a map region to edit tiles.</p>;
-  const cells = rectCells(map, region);
-  const sourceTile = replaceSourceTile ?? dominantTiles(cells, 1)[0]?.tile ?? selectedPaintTile;
-  const regionReplaceCount = buildReplaceChanges(map, cells, sourceTile, selectedPaintTile).length;
-  const mapReplaceCount = buildReplaceChanges(map, allMapCells(map), sourceTile, selectedPaintTile).length;
   const selectedMeaning = classifyTileValue(selectedPaintTile, selectedTileset, tileAttributes, icons);
   return (
     <div className="region-selection-details">
-      {showClearSelection && (
-        <div className="context-action-stack">
-          <button className="btn btn-secondary btn-xs context-action-button" type="button" onClick={() => onSetSelectedRegion(null)}>
-            Clear Selection
-          </button>
-        </div>
-      )}
-      <details className="context-section" open={paintMode === "replace"}>
-        <summary><span>Replace Tile</span><b>{sourceTile} to {selectedPaintTile}</b></summary>
-        <div className="map-authoring-form">
-          <MapNumberField label="Source Tile" value={sourceTile} onCommit={(tile) => onSetReplaceSourceTile(tile)} />
-          <label className="map-number-field">
-            <span>Target Tile</span>
-            <input type="number" value={selectedPaintTile} readOnly />
-          </label>
-        </div>
-        <div className="context-action-stack">
-          <button className="btn btn-primary btn-xs context-action-button" type="button" disabled={regionReplaceCount === 0} onClick={() => replaceRegion(map, region, sourceTile, selectedPaintTile, onApplyCommand)}>
-            Replace In Region ({regionReplaceCount})
-          </button>
-          <button
-            className="btn btn-ghost btn-xs context-action-button"
-            type="button"
-            disabled={mapReplaceCount === 0}
-            onClick={() => {
-              if (mapReplaceCount > 250 && !window.confirm(`Replace ${mapReplaceCount.toLocaleString()} tiles across ${map.name}?`)) return;
-              replaceWholeMap(map, sourceTile, selectedPaintTile, onApplyCommand);
-            }}
-          >
-            Replace Whole Map ({mapReplaceCount})
-          </button>
-        </div>
-      </details>
       <div className="tile-meaning-inspector compact">
         <div className="tile-meaning-title">
           <span>Selected Paint Tile</span>
@@ -1724,39 +1768,19 @@ function SelectionInspector({
   selection,
   map,
   project,
-  selectedPaintTile,
   selectedTileset,
   icons,
-  paintMode,
-  paintVariation,
-  activePaintGroupId,
-  variationTiles,
-  selectedRegion,
-  onSetSelectedRegion,
-  replaceSourceTile,
-  onSetReplaceSourceTile,
   onSelectEntity,
   onOpenScripts,
-  onClearSelection,
   onApplyCommand
 }: {
   selection: Selection;
   map: MapEntity | null;
   project: Project | null;
-  selectedPaintTile: number;
   selectedTileset: TilesetAsset | null;
   icons: EditorState["iconEntries"];
-  paintMode: MapPaintMode;
-  paintVariation: MapPaintVariation;
-  activePaintGroupId: string;
-  variationTiles: number[] | null | undefined;
-  selectedRegion: MapRegionSelection | null;
-  onSetSelectedRegion: (region: MapRegionSelection | null) => void;
-  replaceSourceTile: number | null;
-  onSetReplaceSourceTile: (tile: number | null) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
   onOpenScripts: (entity: SelectedEntity) => void;
-  onClearSelection: () => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
   const selectedCellMeaning = selection.kind === "cell"
@@ -1766,7 +1790,6 @@ function SelectionInspector({
     <section className="context-panel">
       <div className="panel-header">
         <span>Selection Inspector</span>
-        <button className="btn btn-ghost btn-xs" onClick={onClearSelection}>Core</button>
       </div>
       {selection.kind === "cell" && (
         <>
@@ -1795,7 +1818,7 @@ function SelectionInspector({
               ["Combat Expansion", normalizedCombatBuild(selectedCellMeaning?.attributes ?? null) ? "3 x 3" : "none"],
               ["Action Points", selection.triggers.length],
               ["Random Rects", selection.rects.length],
-              ["Starts", selection.records.length],
+              ["Player Maps", selection.records.length],
               ["Edit State", "editable"]
             ]}
           />
@@ -1917,21 +1940,6 @@ function SelectionInspector({
           )}
         </>
       )}
-      {selection.kind === "region" && (
-        <RegionSelectionDetails
-          map={map}
-          region={selection.region}
-          selectedTileset={selectedTileset}
-          tileAttributes={project?.tileAttributes ?? []}
-          icons={icons}
-          paintMode={paintMode}
-          onSetSelectedRegion={onSetSelectedRegion}
-          replaceSourceTile={replaceSourceTile}
-          onSetReplaceSourceTile={onSetReplaceSourceTile}
-          selectedPaintTile={selectedPaintTile}
-          onApplyCommand={onApplyCommand}
-        />
-      )}
       {selection.kind === "trigger" && (
         <TriggerSelectionDetails
           project={project}
@@ -1942,7 +1950,7 @@ function SelectionInspector({
         />
       )}
       {selection.kind === "random" && (
-        <RandomRectangleEditor map={map} rect={selection.rect} onApplyCommand={onApplyCommand} />
+        <RandomRectangleEditor map={map} rect={selection.rect} onApplyCommand={onApplyCommand} compact />
       )}
       {selection.kind === "record" && (
         <RecordSelectionDetails project={project} map={map} record={selection.record} onSelectEntity={onSelectEntity} onApplyCommand={onApplyCommand} />
@@ -2037,23 +2045,56 @@ function CellActionPointDetails({
   );
 }
 
-function ActionPointMessageSummary({ project, trigger }: { project: Project | null; trigger: TriggerRecord }) {
-  const messageSteps = trigger.actions
-    .map((action) => messageTargetPreview(project, action))
-    .filter((preview): preview is NonNullable<typeof preview> => Boolean(preview));
-  if (messageSteps.length === 0) return null;
+function ActionPointStepTable({
+  project,
+  trigger,
+  slots,
+  onSelectEntity
+}: {
+  project: Project | null;
+  trigger: TriggerRecord;
+  slots: ReturnType<typeof actionSlotEntitiesForTriggerRecord>;
+  onSelectEntity: (entity: SelectedEntity) => void;
+}) {
   return (
-    <details className="context-section action-point-message-summary" open>
-      <summary><span>Messages Used Here</span><b>{messageSteps.length}</b></summary>
-      <div className="selection-link-list">
-        {messageSteps.map((preview) => (
-          <article className="cell-action-card compact" key={`${trigger.id}:message:${preview.slot}`}>
-            <strong>Step {preview.slot}: Message {preview.id}{preview.noWait ? " (no wait)" : ""}</strong>
-            <small>{preview.text ? truncateMapInspectorText(preview.text, 180) : "Message target is empty or missing."}</small>
-          </article>
-        ))}
+    <section className="map-authoring-group map-action-steps" aria-label="Action point steps">
+      <h4>Steps</h4>
+      <div className="map-linked-step-table">
+        <div className="map-linked-step-head">
+          <span>Step</span>
+          <span>Code</span>
+          <span>ID</span>
+          <span>Action</span>
+        </div>
+        {Array.from({ length: 8 }, (_, step) => {
+          const action = trigger.actions.find((candidate) => candidate.slot === step);
+          const slotEntity = slots.find((slot) => Number(slot.summary.slot) === step);
+          const label = action ? mapInspectorActionSummary(project, action) : "Empty";
+          const content = (
+            <>
+              <span>{step}</span>
+              <span>{action?.rawCode ?? 0}{action?.gosub ? "*" : ""}</span>
+              <span>{action?.id ?? 0}</span>
+              <span>{label}</span>
+            </>
+          );
+          return slotEntity ? (
+            <button
+              key={step}
+              className={action ? "filled" : ""}
+              type="button"
+              onClick={() => onSelectEntity(selectEntityFromId(slotEntity.id))}
+            >
+              {content}
+            </button>
+          ) : (
+            <div key={step} className={action ? "filled" : ""}>
+              {content}
+            </div>
+          );
+        })}
       </div>
-    </details>
+    </section>
   );
 }
 
@@ -2197,18 +2238,21 @@ function TriggerSelectionDetails({
     trigger.targetY === trigger.coordinate.y
   );
   return (
-    <>
-      <InfoGrid
-        rows={[
-          ["Type", trigger.source === "Data ED3" ? "Extra Action Point" : "Action Point"],
-          ["Record", `${trigger.source} #${trigger.recordIndex}`],
-          ["Edit State", isActionPoint ? "Realmz-writable" : "macro"]
-        ]}
-      />
+    <div className="map-trigger-editor">
+      <section className="map-authoring-group map-trigger-summary" aria-label="Action point summary">
+        <h4>{trigger.source === "Data ED3" ? "Extra Action Point" : "Action Point"} {trigger.recordIndex}</h4>
+        <InfoGrid
+          rows={[
+            ["Record", `${trigger.source} #${trigger.recordIndex}`],
+            ["Chance", `${trigger.percent}%`],
+            ["Steps", `${trigger.actions.filter((action) => action.code !== 0 || action.id !== 0).length}/8 filled`]
+          ]}
+        />
+      </section>
       {isActionPoint && (
         <div className="context-action-stack">
           <button
-            className="btn btn-primary btn-xs context-action-button"
+            className="btn btn-primary btn-xs context-action-button context-action-button-narrow"
             type="button"
             onClick={() => onOpenScripts(selectEntityFromId(triggerEntityId(trigger.levelType, trigger.levelIndex, trigger.recordIndex, trigger.source)))}
           >
@@ -2221,13 +2265,13 @@ function TriggerSelectionDetails({
           <section className="map-authoring-group" aria-label="Trigger Location">
             <h4>Trigger Location</h4>
             <div className="map-authoring-fields two-column">
-              <MapNumberField label="X" value={trigger.coordinate.x} min={0} max={89} commitOnChange onCommit={(x) => move({ x })} />
-              <MapNumberField label="Y" value={trigger.coordinate.y} min={0} max={89} commitOnChange onCommit={(y) => move({ y })} />
+              <MapNumberField label="X" value={trigger.coordinate.x} min={0} max={89} compact plain maxLength={2} commitOnChange onCommit={(x) => move({ x })} />
+              <MapNumberField label="Y" value={trigger.coordinate.y} min={0} max={89} compact plain maxLength={2} commitOnChange onCommit={(y) => move({ y })} />
             </div>
           </section>
           <section className="map-authoring-group" aria-label="Activation">
             <h4>Activation</h4>
-            <MapNumberField label="% Chance" value={trigger.percent} min={0} max={100} onCommit={(percent) => onApplyCommand({ kind: "updateTriggerHeader", label: "Update Action Point chance", triggerId: trigger.id, fields: { percent } })} />
+            <MapNumberField label="% Chance" value={trigger.percent} min={0} max={100} compact plain maxLength={3} onCommit={(percent) => onApplyCommand({ kind: "updateTriggerHeader", label: "Update Action Point chance", triggerId: trigger.id, fields: { percent } })} />
           </section>
           <details className="map-authoring-group map-authoring-destination" open={!destinationMatchesTrigger}>
             <summary>
@@ -2239,9 +2283,9 @@ function TriggerSelectionDetails({
               )}
             </summary>
             <div className="map-authoring-fields three-column">
-              <MapNumberField label="Level" value={trigger.landid ?? 0} min={0} max={255} onCommit={(landid) => onApplyCommand({ kind: "updateTriggerHeader", label: "Update Action Point target level", triggerId: trigger.id, fields: { landid } })} />
-              <MapNumberField label="X" value={trigger.targetX ?? 0} min={0} max={89} onCommit={(targetX) => onApplyCommand({ kind: "updateTriggerHeader", label: "Update Action Point target X", triggerId: trigger.id, fields: { targetX } })} />
-              <MapNumberField label="Y" value={trigger.targetY ?? 0} min={0} max={89} onCommit={(targetY) => onApplyCommand({ kind: "updateTriggerHeader", label: "Update Action Point target Y", triggerId: trigger.id, fields: { targetY } })} />
+              <MapNumberField label="Level" value={trigger.landid ?? 0} min={0} max={255} compact plain maxLength={3} onCommit={(landid) => onApplyCommand({ kind: "updateTriggerHeader", label: "Update Action Point target level", triggerId: trigger.id, fields: { landid } })} />
+              <MapNumberField label="X" value={trigger.targetX ?? 0} min={0} max={89} compact plain maxLength={2} onCommit={(targetX) => onApplyCommand({ kind: "updateTriggerHeader", label: "Update Action Point target X", triggerId: trigger.id, fields: { targetX } })} />
+              <MapNumberField label="Y" value={trigger.targetY ?? 0} min={0} max={89} compact plain maxLength={2} onCommit={(targetY) => onApplyCommand({ kind: "updateTriggerHeader", label: "Update Action Point target Y", triggerId: trigger.id, fields: { targetY } })} />
             </div>
           </details>
           <button className="btn btn-ghost btn-xs context-action-button" type="button" onClick={() => onApplyCommand({ kind: "deleteTrigger", label: "Clear Action Point", triggerId: trigger.id })}>
@@ -2249,26 +2293,8 @@ function TriggerSelectionDetails({
           </button>
         </div>
       )}
-      <ActionPointMessageSummary project={project} trigger={trigger} />
-      <ActionPointCodeTable trigger={trigger} />
-      <div className="action-slot-list padded">
-        {slots.length > 0
-          ? slots.map((slot) => {
-              const slotNumber = typeof slot.summary.slot === "number" ? slot.summary.slot : Number(slot.summary.slot);
-              const action = trigger.actions.find((candidate) => candidate.slot === slotNumber);
-              return (
-                <button key={slot.id} className="link-chip" onClick={() => onSelectEntity(selectEntityFromId(slot.id))}>
-                  {String(slot.summary.slot ?? "?")}: {action ? mapInspectorActionSummary(project, action) : actionSlotLabel(slot)}
-                </button>
-              );
-            })
-          : trigger.actions.map((action) => (
-              <button key={`${trigger.id}:${action.slot}`} className="link-chip">
-                {action.slot}: {mapInspectorActionSummary(project, action)}
-              </button>
-            ))}
-      </div>
-    </>
+      <ActionPointStepTable project={project} trigger={trigger} slots={slots} onSelectEntity={onSelectEntity} />
+    </div>
   );
 }
 
@@ -2353,12 +2379,13 @@ function selectionSummary(
     cell: selectedCell,
     triggers: triggers.filter((trigger) => trigger.coordinate?.x === selectedCell.x && trigger.coordinate.y === selectedCell.y),
     rects: randomLevel?.rects.filter((rect) => randomRectContainsCell(rect, selectedCell.x, selectedCell.y)) ?? [],
-    records: mapRecords.filter((record) => record.summary.startX === selectedCell.x && record.summary.startY === selectedCell.y)
+    records: map ? mapRecords.filter((record) => mapRecordContainsCell(record, map, selectedCell.x, selectedCell.y)) : []
   };
 }
 
 function toolLabel(tool: EditorTool) {
-  if (tool === "trigger") return "Action Point";
+  const definition = TOOL_BY_ID.get(tool);
+  if (definition) return definition.label;
   return tool[0].toUpperCase() + tool.slice(1);
 }
 
@@ -2389,9 +2416,4 @@ function nextAvailableRandomRectIndex(project: Project | null, levelType: MapEnt
     if (!used.has(index)) return index;
   }
   return null;
-}
-
-function actionSlotLabel(slot: SemanticEntity) {
-  const usage = slot.summary.edcdUsage as { summary?: string } | undefined;
-  return usage?.summary ?? String(slot.summary.label ?? `opcode ${slot.summary.code ?? "?"}`);
 }

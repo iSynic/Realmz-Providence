@@ -2,6 +2,7 @@ import { AtlasEntry, IconEntry, MapEntity, MapPreviewFocalPoint, MapPreviewMode,
 import {
   clampCell,
   MAP_CELLS,
+  mapRecordTerrainFootprint,
   numberSummary,
   randomRectCellBounds,
   randomRectEntityId,
@@ -277,15 +278,31 @@ function drawActionPointMarker(
 
 export function drawMapRecords(
   ctx: CanvasRenderingContext2D,
+  map: MapEntity,
   mapRecords: SemanticEntity[],
   selectedEntity: SelectedEntity | null,
   cell: number
 ) {
   for (const record of mapRecords) {
+    const footprint = mapRecordTerrainFootprint(record, map);
+    if (!footprint) continue;
     const x = numberSummary(record, "startX");
     const y = numberSummary(record, "startY");
     if (x == null || y == null || x < 0 || y < 0 || x >= MAP_CELLS || y >= MAP_CELLS) continue;
     const isSelected = selectedEntity?.id === record.id;
+    ctx.save();
+    ctx.fillStyle = isSelected ? "rgba(255, 212, 122, 0.13)" : "rgba(82, 168, 255, 0.12)";
+    ctx.strokeStyle = isSelected ? "rgba(255, 212, 122, 0.9)" : "rgba(82, 168, 255, 0.72)";
+    ctx.lineWidth = isSelected ? 2 : 1.5;
+    ctx.setLineDash([Math.max(3, cell * 0.32), Math.max(2, cell * 0.22)]);
+    ctx.fillRect(footprint.left * cell, footprint.top * cell, footprint.width * cell, footprint.height * cell);
+    ctx.strokeRect(
+      footprint.left * cell + 0.5,
+      footprint.top * cell + 0.5,
+      footprint.width * cell - 1,
+      footprint.height * cell - 1
+    );
+    ctx.setLineDash([]);
     ctx.fillStyle = "#1d2530";
     ctx.strokeStyle = isSelected ? "#ffd47a" : "#eff6ff";
     ctx.lineWidth = isSelected ? 3 : 2;
@@ -293,6 +310,7 @@ export function drawMapRecords(
     ctx.rect(x * cell + cell * 0.25, y * cell + cell * 0.25, cell * 0.5, cell * 0.5);
     ctx.fill();
     ctx.stroke();
+    ctx.restore();
   }
 }
 

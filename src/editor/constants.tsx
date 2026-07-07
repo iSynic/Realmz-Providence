@@ -57,7 +57,7 @@ export const TOOLS: { id: EditorTool; label: string; icon: JSX.Element; hint: st
   { id: "paint", label: "Paint", icon: <Brush size={16} />, hint: "Paint standard landlook tiles, special land tiles, and icon-backed Realmz tile values onto the map." },
   { id: "stamp", label: "Stamp", icon: <Stamp size={16} />, hint: "Place prebuilt multi-tile brushes such as Realmz tree pairs and large special-land structures." },
   { id: "trigger", label: "Action Point", icon: <Binary size={16} />, hint: "Click to create or select Action Points on this map." },
-  { id: "random", label: "Random Area", icon: <RectangleHorizontal size={16} />, hint: "Drag to create or resize a Realmz Random Rectangle on this map." },
+  { id: "random", label: "Random Rect", icon: <RectangleHorizontal size={16} />, hint: "Drag to create or resize a Realmz Random Rectangle on this map." },
   { id: "sample", label: "Sample", icon: <Eye size={16} />, hint: "Pick a tile from the map into the palette" }
 ];
 

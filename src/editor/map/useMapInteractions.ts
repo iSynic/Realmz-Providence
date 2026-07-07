@@ -41,12 +41,15 @@ export function useMapInteractions({
   showRandomRects,
   showMapRecords,
   selectedEntity,
+  selectedCell,
+  selectedRegion,
   smartBrushMask,
   smartBrushDrawing,
   overlayCanvasRef,
   wrapRef,
   onSelectCell,
   onSetSelectedRegion,
+  onClearSelection,
   onSetSmartBrushMask,
   onSetSmartBrushDrawing,
   onSampleTile,
@@ -55,6 +58,7 @@ export function useMapInteractions({
   onApplyCommand,
   onCommitPaintStroke,
   onCancelPaintStroke,
+  onOpenRegionContextMenu,
   onPreviewPaintChange,
   onResetPaintPreview
 }: {
@@ -73,12 +77,15 @@ export function useMapInteractions({
   showRandomRects: boolean;
   showMapRecords: boolean;
   selectedEntity: SelectedEntity | null;
+  selectedCell: { x: number; y: number; tile: number } | null;
+  selectedRegion: MapRegionSelection | null;
   smartBrushMask: SmartBrushMaskCell[];
   smartBrushDrawing: boolean;
   overlayCanvasRef: RefObject<HTMLCanvasElement | null>;
   wrapRef: RefObject<HTMLDivElement | null>;
   onSelectCell: (cell: { x: number; y: number; tile: number } | null) => void;
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
+  onClearSelection: () => void;
   onSetSmartBrushMask: (mask: SmartBrushMaskCell[]) => void;
   onSetSmartBrushDrawing: (drawing: boolean) => void;
   onSampleTile: (tile: number) => void;
@@ -87,6 +94,7 @@ export function useMapInteractions({
   onApplyCommand: (command: ProjectCommand) => void;
   onCommitPaintStroke: () => void;
   onCancelPaintStroke: () => void;
+  onOpenRegionContextMenu?: (menu: { x: number; y: number; cell: { x: number; y: number }; region: MapRegionSelection }) => void;
   onPreviewPaintChange?: (change: PaintCellChange) => void;
   onResetPaintPreview?: () => void;
 }) {
@@ -131,18 +139,22 @@ export function useMapInteractions({
 
   useEffect(() => {
     if (!hover || !isBrushLikeTool(activeTool, paintMode)) return;
+    if (!cellInRegion(hover, selectedRegion)) {
+      setPaintCursor(null);
+      return;
+    }
     setPaintCursor({ ...hover, tile: brushTileForCell(hover) });
-  }, [activePaintGroupId, activeTool, hover, paintMode, paintVariation, selectedTile, selectedTileset, variationTiles]);
+  }, [activePaintGroupId, activeTool, hover, paintMode, paintVariation, selectedRegion, selectedTile, selectedTileset, variationTiles]);
 
   useEffect(() => {
     if (activeTool !== "stamp" || !hover || !selectedSuperTileStamp) {
       setStampCursor(null);
       return;
     }
-    setStampCursor(superTileStampPreviewCells(map, selectedSuperTileStamp, hover));
-  }, [activeTool, hover, map, selectedSuperTileStamp]);
+    setStampCursor(stampPreviewWithinSelection(superTileStampPreviewCells(map, selectedSuperTileStamp, hover), selectedRegion));
+  }, [activeTool, hover, map, selectedRegion, selectedSuperTileStamp]);
 
-  function cellFromEvent(event: PointerEvent<HTMLCanvasElement>) {
+  function cellFromEvent(event: PointerEvent<HTMLCanvasElement> | MouseEvent<HTMLCanvasElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
     return cellFromCanvasPoint(event.clientX, event.clientY, rect);
   }
@@ -171,7 +183,26 @@ export function useMapInteractions({
     if (hit.kind !== "cell") onSelectEntity(hit.entity);
   }
 
+  function shouldClearCurrentSelectionBeforeInspect(cell: { x: number; y: number }, hit: MapHitTarget) {
+    if (selectedRegion) return !cellInRegion(cell, selectedRegion);
+    if (selectedCell) return selectedCell.x !== cell.x || selectedCell.y !== cell.y;
+    const entity = selectedEntity;
+    if (!isCanvasEntitySelection(entity)) return false;
+    return hit.kind === "cell" || hit.entity.id !== entity.id;
+  }
+
+  function clearCurrentSelection(cell: { x: number; y: number }, hit: MapHitTarget) {
+    onSetSelectedRegion(null);
+    onClearSelection();
+    setHover(cell);
+    setHoverTarget(hit);
+    setRegionPreview(null);
+    setPaintCursor(null);
+    setStampCursor(null);
+  }
+
   function paintAt(cell: { x: number; y: number }) {
+    if (!cellInRegion(cell, selectedRegion)) return;
     const key = `${cell.x}:${cell.y}`;
     if (strokeCellsRef.current.has(key)) return;
     const index = mapTileIndex(map, cell.x, cell.y);
@@ -210,13 +241,17 @@ export function useMapInteractions({
       setPaintCursor(null);
       return;
     }
+    if (!cellInRegion(cell, selectedRegion)) {
+      setPaintCursor(null);
+      return;
+    }
     setPaintCursor({ ...cell, tile: brushTileForCell(cell) });
   }
 
   function placeStampAt(cell: { x: number; y: number }) {
     if (!selectedSuperTileStamp) return;
-    const changes = buildSuperTileStampChanges(map, selectedSuperTileStamp, cell);
-    setStampCursor(superTileStampPreviewCells(map, selectedSuperTileStamp, cell));
+    const changes = buildSuperTileStampChanges(map, selectedSuperTileStamp, cell).filter((change) => cellInRegion(change, selectedRegion));
+    setStampCursor(stampPreviewWithinSelection(superTileStampPreviewCells(map, selectedSuperTileStamp, cell), selectedRegion));
     setHoverTarget({ kind: "cell", cell: { ...cell, tile: tileValueAt(map, cell.x, cell.y) } });
     selectTargetCell({ ...cell, tile: selectedSuperTileStamp.cells[0]?.tile ?? tileValueAt(map, cell.x, cell.y) });
     if (changes.length === 0) return;
@@ -237,6 +272,18 @@ export function useMapInteractions({
     setHoverTarget(null);
     setPaintCursor(null);
     event.currentTarget.setPointerCapture(event.pointerId);
+    return true;
+  }
+
+  function openSelectionContextMenu(event: PointerEvent<HTMLCanvasElement> | MouseEvent<HTMLCanvasElement>) {
+    const cell = cellFromEvent(event);
+    const region = contextRegionForCell(cell, selectedRegion, selectedCell);
+    if (!region || !onOpenRegionContextMenu) return false;
+    setHover(cell);
+    setHoverTarget({ kind: "cell", cell: { ...cell, tile: tileValueAt(map, cell.x, cell.y) } });
+    setPaintCursor(null);
+    setStampCursor(null);
+    onOpenRegionContextMenu({ x: event.clientX, y: event.clientY, cell, region });
     return true;
   }
 
@@ -295,6 +342,7 @@ export function useMapInteractions({
   function addSmartMaskCell(cell: { x: number; y: number }) {
     const drag = smartMaskDragRef.current;
     if (!drag) return false;
+    if (!cellInRegion(cell, selectedRegion)) return false;
     const key = `${cell.x}:${cell.y}`;
     if (drag.cells.has(key)) return false;
     drag.cells.set(key, { x: cell.x, y: cell.y });
@@ -362,13 +410,19 @@ export function useMapInteractions({
         event.currentTarget.focus();
         if (event.button === 2) {
           event.preventDefault();
+          if (openSelectionContextMenu(event)) return;
           startPan(event);
           return;
         }
         if (activeTool === "select") {
           const cell = cellFromEvent(event);
+          const hit = targetAt(cell);
+          if (shouldClearCurrentSelectionBeforeInspect(cell, hit)) {
+            clearCurrentSelection(cell, hit);
+            return;
+          }
           setHover(cell);
-          setHoverTarget(targetAt(cell));
+          setHoverTarget(hit);
           selectDragRef.current = {
             start: cell,
             x: event.clientX,
@@ -459,7 +513,7 @@ export function useMapInteractions({
         if (activeTool === "stamp") {
           setHover(cell);
           setHoverTarget({ kind: "cell", cell: { ...cell, tile: tileValueAt(map, cell.x, cell.y) } });
-          if (selectedSuperTileStamp) setStampCursor(superTileStampPreviewCells(map, selectedSuperTileStamp, cell));
+          if (selectedSuperTileStamp) setStampCursor(stampPreviewWithinSelection(superTileStampPreviewCells(map, selectedSuperTileStamp, cell), selectedRegion));
           return;
         }
         if (paintActiveRef.current) {
@@ -486,7 +540,7 @@ export function useMapInteractions({
           const start = selectDragRef.current.start;
           selectDragRef.current = null;
           if (!didDrag) {
-            applyToolAt(event);
+            if (!(selectedRegion && cellInRegion(start, selectedRegion))) applyToolAt(event);
           } else {
             const end = cellFromEvent(event);
             setRegionPreview(null);
@@ -581,6 +635,7 @@ export function useMapInteractions({
       },
       onContextMenu(event: MouseEvent<HTMLCanvasElement>) {
         event.preventDefault();
+        openSelectionContextMenu(event);
       },
       onKeyDown(event: KeyboardEvent<HTMLCanvasElement>) {
         if (event.key !== "Escape") return;
@@ -608,6 +663,19 @@ function selectedRandomRectIndex(map: MapEntity, selectedEntity: SelectedEntity 
   if (!selectedEntity?.id.startsWith(prefix)) return null;
   const value = Number(selectedEntity.id.slice(prefix.length));
   return Number.isInteger(value) ? value : null;
+}
+
+function isCanvasEntitySelection(entity: SelectedEntity | null): entity is SelectedEntity {
+  if (!entity || entity.type === "map") return false;
+  return (
+    entity.type === "trigger" ||
+    entity.type === "macro" ||
+    entity.type === "encounter" ||
+    entity.id.startsWith("trigger:") ||
+    entity.id.startsWith("macro:") ||
+    entity.id.startsWith("random:") ||
+    entity.id.startsWith("map-record:")
+  );
 }
 
 function nextRandomRectIndex(randomLevel: RandomLevel | null) {
@@ -690,4 +758,26 @@ function pointInPolygon(x: number, y: number, polygon: Array<{ x: number; y: num
 
 function isBrushLikeTool(activeTool: EditorTool, paintMode: MapPaintMode) {
   return activeTool === "paint" && (paintMode === "brush" || paintMode === "clear");
+}
+
+function cellInRegion(cell: { x: number; y: number }, region: MapRegionSelection | null) {
+  if (!region) return true;
+  return cell.x >= region.left && cell.x <= region.right && cell.y >= region.top && cell.y <= region.bottom;
+}
+
+function contextRegionForCell(
+  cell: { x: number; y: number },
+  selectedRegion: MapRegionSelection | null,
+  selectedCell: { x: number; y: number; tile: number } | null
+) {
+  if (selectedRegion && cellInRegion(cell, selectedRegion)) return selectedRegion;
+  if (selectedCell && selectedCell.x === cell.x && selectedCell.y === cell.y) {
+    return { left: cell.x, top: cell.y, right: cell.x, bottom: cell.y };
+  }
+  return null;
+}
+
+function stampPreviewWithinSelection(cursor: MapStampPreviewCell[], region: MapRegionSelection | null) {
+  if (!region) return cursor;
+  return cursor.filter((cell) => cellInRegion(cell, region));
 }

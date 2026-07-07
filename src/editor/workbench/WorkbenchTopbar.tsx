@@ -23,7 +23,7 @@ const TOPBAR_LIBRARY_HELP =
 const TOPBAR_PROJECT_HELP =
   "Project returns from Library Workbench to the active Providence project, where scenario maps, records, resources, diagnostics, and export live.";
 const TOPBAR_NEW_PROJECT_HELP =
-  "New creates an empty Providence folder package. Import remains available only while the project is still empty, so create the package before importing a Realmz scenario.";
+  "New creates a Providence package with an editable land level 0. Use Import before authoring project content when starting from a raw Realmz scenario.";
 const TOPBAR_OPEN_PROJECT_HELP =
   "Open loads an existing Providence project package. Browser mode opens downloaded .providence.zip packages; use Import for raw Realmz scenario folders.";
 const TOPBAR_CLOSE_PROJECT_HELP =

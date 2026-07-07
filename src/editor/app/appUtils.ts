@@ -66,17 +66,78 @@ export function isMissingProjectJson(error: unknown) {
 }
 
 export function isProjectEmpty(project: Project) {
+  const hasAuthoredRecords = [
+    project.triggers,
+    project.extracodes,
+    project.messages,
+    project.optionLabels,
+    project.battles,
+    project.monsters,
+    project.monsterSets,
+    project.monsterDescriptions,
+    project.monsterIconOverrides,
+    project.scenarioIconResources,
+    project.scenarioItems,
+    project.treasures,
+    project.shops,
+    project.simpleEncounters,
+    project.complexEncounters,
+    project.thiefEncounters,
+    project.timedEncounters,
+    project.questLabels,
+    project.spellOverrides,
+    project.raceOverrides,
+    project.casteOverrides,
+    project.assets,
+    project.mapRecords,
+    project.customLandlooks,
+    project.editorMetadata?.tilePalettes,
+    project.editorMetadata?.mapStamps,
+    project.editorMetadata?.questThreads,
+    project.editorMetadata?.questContextSources
+  ].some((records) => (records?.length ?? 0) > 0);
   return (
-    project.maps.length === 0 &&
-    project.triggers.length === 0 &&
-    project.randomLevels.length === 0 &&
-    project.extracodes.length === 0 &&
+    !hasAuthoredRecords &&
+    (project.maps.length === 0 || hasOnlyStarterLandMap(project)) &&
+    (project.randomLevels.length === 0 || hasOnlyStarterLandRandomLevel(project)) &&
+    project.landLayout == null &&
     project.source.files.length === 0 &&
     (project.semanticSchema?.records ?? []).length === 0 &&
     (project.semanticSchema?.entities ?? []).length === 0 &&
     project.records.alignments.length === 0 &&
     Object.keys(project.records.counts).length === 0
   );
+}
+
+function hasOnlyStarterLandMap(project: Project) {
+  if (project.maps.length !== 1) return false;
+  const map = project.maps[0];
+  return map.id === "land:0" &&
+    map.levelType === "land" &&
+    map.index === 0 &&
+    map.source === "Data LD" &&
+    map.name === "Land Level 0" &&
+    map.width === 90 &&
+    map.height === 90 &&
+    map.render?.landlook === 0 &&
+    map.render?.tilesetId === "landlook-0" &&
+    map.tiles.length === 90 * 90 &&
+    map.tiles.every((tile) => tile === 156);
+}
+
+function hasOnlyStarterLandRandomLevel(project: Project) {
+  if (project.randomLevels.length !== 1) return false;
+  const level = project.randomLevels[0];
+  return level.id === "land:0:randlevel" &&
+    level.source === "Data RD" &&
+    level.levelType === "land" &&
+    level.levelIndex === 0 &&
+    level.landlook === 0 &&
+    level.isDark === false &&
+    level.useLos === false &&
+    level.rects.length === 0 &&
+    (level.rawValues?.length ?? 0) === 644 / 2 &&
+    (level.rawValues ?? []).every((value) => value === 0);
 }
 
 export function isSemanticMappingPending(project: Project | null) {

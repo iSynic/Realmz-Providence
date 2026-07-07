@@ -164,7 +164,6 @@ export function LandLayoutEditor({
                 tilesetByMapId={tilesetByMapId}
                 icons={icons}
                 onSetSelectedCell={onSetSelectedCell}
-                onSelectMap={onSelectMap}
                 onApplyCommand={onApplyCommand}
               />
             ))
@@ -208,7 +207,6 @@ function LandLayoutGridCell({
   tilesetByMapId,
   icons,
   onSetSelectedCell,
-  onSelectMap,
   onApplyCommand
 }: {
   row: number;
@@ -222,7 +220,6 @@ function LandLayoutGridCell({
   tilesetByMapId: Map<string, TilesetAsset>;
   icons: Record<number, IconEntry>;
   onSetSelectedCell: (cell: LandLayoutCellSelection) => void;
-  onSelectMap: (id: string) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
   const index = row * LAND_LAYOUT_COLS + col;
@@ -268,18 +265,6 @@ function LandLayoutGridCell({
           <option value={String(value)}>{value}</option>
         )}
       </select>
-      {target && (
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onSelectMap(target.id);
-          }}
-          aria-label={`Open ${target.name}`}
-        >
-          Open
-        </button>
-      )}
     </div>
   );
 }
@@ -342,7 +327,7 @@ function LandLayoutDetailPanel({
       <div className="context-action-stack compact">
         <TutorialTip title="Place Current Land" body={PLACE_CURRENT_LAND_HELP} side="left">
           <button
-            className="btn btn-primary btn-xs context-action-button"
+            className="btn btn-primary btn-xs context-action-button context-action-button-narrow"
             type="button"
             disabled={!selectedCell || currentLandValue == null}
             onClick={() => {
@@ -355,7 +340,7 @@ function LandLayoutDetailPanel({
         </TutorialTip>
         <TutorialTip title="Clear Layout Cell" body={CLEAR_CELL_HELP} side="left">
           <button
-            className="btn btn-secondary btn-xs context-action-button"
+            className="btn btn-secondary btn-xs context-action-button context-action-button-narrow"
             type="button"
             disabled={!selectedCell || detail.value === 0}
             onClick={() => {
@@ -368,7 +353,7 @@ function LandLayoutDetailPanel({
         </TutorialTip>
         <TutorialTip title="Open Linked Map" body={OPEN_LINKED_MAP_HELP} side="left">
           <button
-            className="btn btn-secondary btn-xs context-action-button"
+            className="btn btn-secondary btn-xs context-action-button context-action-button-narrow"
             type="button"
             disabled={!detail.target}
             onClick={() => detail.target && onSelectMap(detail.target.id)}
@@ -377,7 +362,7 @@ function LandLayoutDetailPanel({
           </button>
         </TutorialTip>
         <TutorialTip title="Neighbor Preview" body={LAYOUT_NEIGHBORS_HELP} side="left">
-          <button className="btn btn-secondary btn-xs context-action-button" type="button" onClick={() => onSetShowNeighbors(!showNeighbors)}>
+          <button className="btn btn-secondary btn-xs context-action-button context-action-button-narrow" type="button" onClick={() => onSetShowNeighbors(!showNeighbors)}>
             {showNeighbors ? "Hide Neighbors" : "Show Neighbors"}
           </button>
         </TutorialTip>

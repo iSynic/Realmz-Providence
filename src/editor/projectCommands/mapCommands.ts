@@ -445,11 +445,15 @@ function replaceRandomLevel(project: Project, level: RandomLevel) {
   const randomLevels = upsertRandomLevel(project.randomLevels, level);
   const maps = project.maps.map((map) => {
     if (map.levelType !== level.levelType || map.index !== level.levelIndex) return map;
+    const previousLandlook = map.render.landlook;
+    const nextLandlook = level.levelType === "dungeon" ? -1 : level.landlook;
+    const tiles = remapClearTilesForLandlook(map, previousLandlook, nextLandlook);
     return {
       ...map,
+      tiles,
       render: {
         ...map.render,
-        landlook: level.landlook,
+        landlook: nextLandlook,
         tilesetId: level.levelType === "dungeon" ? "dungeon-top-down-302" : `landlook-${level.landlook}`,
         mode: level.levelType === "dungeon" ? "dungeon-top-down" : "outdoor-landlook"
       }
@@ -462,6 +466,20 @@ function replaceRandomLevel(project: Project, level: RandomLevel) {
   };
   const map = maps.find((candidate) => candidate.levelType === level.levelType && candidate.index === level.levelIndex);
   return map ? { ...nextProject, assetCatalog: ensureMapTileset(nextProject, map) } : nextProject;
+}
+
+function remapClearTilesForLandlook(map: MapEntity, previousLandlook: number | null, nextLandlook: number | null) {
+  if (map.levelType !== "land" || previousLandlook == null || nextLandlook == null || previousLandlook === nextLandlook) return map.tiles;
+  const previousClearTile = landlookBaseTile(previousLandlook);
+  const nextClearTile = landlookBaseTile(nextLandlook);
+  if (previousClearTile == null || nextClearTile == null || previousClearTile === nextClearTile) return map.tiles;
+  let changed = false;
+  const tiles = map.tiles.map((tile) => {
+    if (tile !== previousClearTile) return tile;
+    changed = true;
+    return nextClearTile;
+  });
+  return changed ? tiles : map.tiles;
 }
 
 function upsertRandomLevel(levels: RandomLevel[], level: RandomLevel) {

@@ -11,6 +11,9 @@ import { tileIconCandidates } from "../map/renderValues";
 import { defaultRuleNames } from "../ruleNames";
 
 const EMPTY_TARGET_COMPATIBILITY = { blockers: [], warnings: [], notes: [] };
+const MAP_SIZE = 90;
+const FIELD_BYTES = MAP_SIZE * MAP_SIZE * 2;
+const RANDOM_LEVEL_BYTES = 644;
 const pendingBrowserSemantics = new Map<string, { files: Map<string, Uint8Array>; sourceFiles: Project["source"]["files"] }>();
 const browserScenarioPreviewSources = new Map<string, Map<string, Uint8Array>>();
 const browserScenarioResourcePreviewCache = new Map<string, string | null>();
@@ -19,7 +22,7 @@ let bundledLandlookMapstatsPromise: Promise<Project["tileAttributes"]> | null = 
 
 export function createBrowserProject(projectName: string): Project {
   const safeName = projectName.trim() || "Untitled Scenario";
-  const project: Project = {
+  const project: Project = createDefaultLandLevelProject({
     schemaVersion: 4,
     appVersion: "browser-preview",
     scenario: {
@@ -73,9 +76,50 @@ export function createBrowserProject(projectName: string): Project {
     diagnostics: [],
     semanticSchema: emptySemanticSchema(),
     validation: { ok: true, errors: [], warnings: [], exportableFiles: [], passThroughFiles: [], targetCompatibilityIssues: [], targetCompatibility: EMPTY_TARGET_COMPATIBILITY }
-  };
+  });
   project.validation = validateBrowserProject(project);
   return project;
+}
+
+function createDefaultLandLevelProject(project: Project): Project {
+  const fillTile = landlookBaseTile(0) ?? 1;
+  return {
+    ...project,
+    maps: [
+      ...project.maps,
+      {
+        id: "land:0",
+        levelType: "land",
+        source: "Data LD",
+        index: 0,
+        name: "Land Level 0",
+        width: MAP_SIZE,
+        height: MAP_SIZE,
+        tiles: new Array(MAP_SIZE * MAP_SIZE).fill(fillTile),
+        render: { tilesetId: "landlook-0", landlook: 0, mode: "outdoor-landlook" },
+        provenance: { sourceFile: "Data LD", recordIndex: 0, byteOffset: 0, byteLength: FIELD_BYTES, confidence: "inferred" }
+      }
+    ],
+    randomLevels: [
+      ...project.randomLevels,
+      {
+        id: "land:0:randlevel",
+        source: "Data RD",
+        levelType: "land",
+        levelIndex: 0,
+        landlook: 0,
+        isDark: false,
+        useLos: false,
+        rects: [],
+        rawValues: new Array(RANDOM_LEVEL_BYTES / 2).fill(0),
+        provenance: { sourceFile: "Data RD", recordIndex: 0, byteOffset: 0, byteLength: RANDOM_LEVEL_BYTES, confidence: "inferred" }
+      }
+    ],
+    assetCatalog: {
+      ...project.assetCatalog,
+      tilesets: [...(project.assetCatalog?.tilesets ?? []), browserReferenceTileset(0)]
+    }
+  };
 }
 
 export async function importBrowserScenario(source: BrowserScenarioSource): Promise<Project> {

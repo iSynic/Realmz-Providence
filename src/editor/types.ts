@@ -24,7 +24,7 @@ export type AssetSearchHint = {
 };
 export type EditorTool = "select" | "paint" | "stamp" | "trigger" | "random" | "sample" | "pan";
 export type MapWorkbenchMode = "canvas" | "land-layout" | "land-tiles" | "random-areas";
-export type MapPaintMode = "brush" | "replace" | "clear" | "smart";
+export type MapPaintMode = "brush" | "clear" | "smart";
 export type MapPaintVariation = "single" | "cycle-group" | "random-group";
 export type MapRegionSelection = { left: number; top: number; right: number; bottom: number };
 export type SmartBrushPreset = "mountains" | "water" | "forest";

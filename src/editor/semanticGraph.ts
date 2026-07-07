@@ -105,6 +105,15 @@ export function linkedEntities(project: Project | null, id: string, kinds?: Iter
     .filter(Boolean) as SemanticEntity[];
 }
 
+function uniqueEntities(entities: SemanticEntity[]) {
+  const seen = new Set<string>();
+  return entities.filter((entity) => {
+    if (seen.has(entity.id)) return false;
+    seen.add(entity.id);
+    return true;
+  });
+}
+
 export function semanticTriggersForMap(project: Project | null, map: MapEntity | null) {
   if (!project || !map) return [];
   // Action Point placement is mutable authoring state. Semantic located_on links are
@@ -124,12 +133,40 @@ export function semanticMapRecordsForMap(project: Project | null, map: MapEntity
   const linked = incomingLinks(project, mapId, ["describes_map"])
     .map((link) => entityById(project, link.from))
     .filter((entity): entity is SemanticEntity => entity?.type === "map record");
-  if (linked.length > 0) return linked;
-  return schemaEntities(project, "map record").filter((entity) => {
+  const matching = schemaEntities(project, "map record").filter((entity) => {
     const level = numberSummary(entity, "level");
     const isDungeon = booleanSummary(entity, "isDungeon");
     return level === map.index && isDungeon === (map.levelType === "dungeon");
   });
+  const liveRecords = (project.mapRecords ?? [])
+    .filter((record) => record.level === map.index && record.isDungeon === (map.levelType === "dungeon"))
+    .map((record) => ({
+      id: `map-record:${record.id}`,
+      type: "map record",
+      label: record.primaryName || record.name || `Player Map ${record.id}`,
+      editState: "editable",
+      confidence: "confirmed",
+      source: "Data MD2",
+      recordRef: `record:Data MD2:${record.id}`,
+      byteRange: record.provenance
+        ? { start: record.provenance.byteOffset, endExclusive: record.provenance.byteOffset + record.provenance.byteLength, length: record.provenance.byteLength }
+        : null,
+      editable: true,
+      summary: {
+        id: record.id,
+        name: record.primaryName || record.name || `Player Map ${record.id}`,
+        startX: record.startX,
+        startY: record.startY,
+        level: record.level,
+        pictId: record.pictId,
+        iconSize: record.iconSize,
+        show: record.show,
+        isDungeon: record.isDungeon,
+        rect: record.rect,
+        note: record.note
+      }
+    } satisfies SemanticEntity));
+  return uniqueEntities([...liveRecords, ...linked, ...matching]);
 }
 
 export function semanticRandomRegionsForMap(project: Project | null, map: MapEntity | null) {

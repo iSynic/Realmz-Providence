@@ -1,6 +1,9 @@
 use crate::error::{IoPath, JsonPath, ProvidenceError, Result};
 use crate::project::*;
-use crate::realmz::{parse_scenario_buffers, ParsedScenario, SUPPORTED_WRITE_FILES, TRACKED_FILES};
+use crate::realmz::{
+    parse_scenario_buffers, ParsedScenario, FIELD_BYTES, RANDLEVEL_BYTES, SUPPORTED_WRITE_FILES,
+    TRACKED_FILES,
+};
 use base64::{
     engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD},
     Engine as _,
@@ -56,13 +59,13 @@ pub fn create_project(
             files: Vec::new(),
             immutable: true,
         },
-        maps: Vec::new(),
+        maps: vec![default_land_map()],
         land_layout: None,
         map_records: Vec::new(),
         tile_attributes: Vec::new(),
         custom_landlooks: Vec::new(),
         triggers: Vec::new(),
-        random_levels: Vec::new(),
+        random_levels: vec![default_land_random_level()],
         extracodes: Vec::new(),
         messages: Vec::new(),
         option_labels: Vec::new(),
@@ -85,7 +88,7 @@ pub fn create_project(
         caste_overrides: Vec::new(),
         rule_names: default_rule_names(),
         assets: Vec::new(),
-        asset_catalog: AssetCatalog::default(),
+        asset_catalog: default_asset_catalog(),
         editor_metadata: EditorMetadata::default(),
         records: RecordCatalog::default(),
         diagnostics: Vec::new(),
@@ -731,6 +734,75 @@ fn default_contact_info(name: &str) -> ScenarioContactInfo {
         raw_bytes: Vec::new(),
         authored: true,
         provenance: None,
+    }
+}
+
+fn default_land_map() -> MapEntity {
+    let landlook = 0;
+    let fill_tile = landlook_base_tile(landlook).unwrap_or(1);
+    MapEntity {
+        id: "land:0".to_string(),
+        level_type: LevelType::Land,
+        source: "Data LD".to_string(),
+        index: 0,
+        name: "Land Level 0".to_string(),
+        width: MAP_SIZE,
+        height: MAP_SIZE,
+        tiles: vec![fill_tile; MAP_SIZE * MAP_SIZE],
+        render: MapRender {
+            tileset_id: "landlook-0".to_string(),
+            landlook: Some(landlook),
+            mode: RenderMode::OutdoorLandlook,
+        },
+        provenance: Provenance {
+            source_file: "Data LD".to_string(),
+            record_index: 0,
+            byte_offset: 0,
+            byte_length: FIELD_BYTES,
+            confidence: Confidence::Inferred,
+        },
+    }
+}
+
+fn default_land_random_level() -> RandomLevel {
+    RandomLevel {
+        id: "land:0:randlevel".to_string(),
+        source: "Data RD".to_string(),
+        level_type: LevelType::Land,
+        level_index: 0,
+        landlook: 0,
+        is_dark: false,
+        use_los: false,
+        rects: Vec::new(),
+        raw_values: vec![0; RANDLEVEL_BYTES / 2],
+        provenance: Provenance {
+            source_file: "Data RD".to_string(),
+            record_index: 0,
+            byte_offset: 0,
+            byte_length: RANDLEVEL_BYTES,
+            confidence: Confidence::Inferred,
+        },
+    }
+}
+
+fn default_asset_catalog() -> AssetCatalog {
+    AssetCatalog {
+        tilesets: vec![TilesetAsset {
+            id: "landlook-0".to_string(),
+            landlook: 0,
+            name: "Plains".to_string(),
+            source: "Realmz reference resources".to_string(),
+            available: true,
+            image_path: None,
+            pict_id: Some(300),
+            tile_width: 32,
+            tile_height: 32,
+            columns: 20,
+            rows: 10,
+            custom: false,
+            base_tile: landlook_base_tile(0),
+        }],
+        ..AssetCatalog::default()
     }
 }
 
@@ -2025,6 +2097,44 @@ mod tests {
             .join(PROJECT_FILE_NAME)
             .is_file());
         assert_ne!(first.scenario.project_path, second.scenario.project_path);
+    }
+
+    #[test]
+    fn create_project_seeds_default_land_level_zero() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let project_dir = temp.path().join("Starter.providence");
+        let project = create_project("Starter".to_string(), &project_dir).expect("create project");
+
+        let land = project
+            .maps
+            .iter()
+            .find(|map| map.level_type == LevelType::Land && map.index == 0)
+            .expect("default land level");
+        assert_eq!(land.id, "land:0");
+        assert_eq!(land.width, MAP_SIZE);
+        assert_eq!(land.height, MAP_SIZE);
+        assert_eq!(land.tiles.len(), MAP_SIZE * MAP_SIZE);
+        assert!(land.tiles.iter().all(|tile| *tile == 156));
+        assert_eq!(land.render.landlook, Some(0));
+        assert_eq!(land.render.tileset_id, "landlook-0");
+        assert!(project.random_levels.iter().any(|level| {
+            level.level_type == LevelType::Land
+                && level.level_index == 0
+                && level.landlook == 0
+                && level.raw_values.len() == RANDLEVEL_BYTES / 2
+        }));
+        assert!(project.asset_catalog.tilesets.iter().any(|tileset| {
+            tileset.id == "landlook-0" && tileset.base_tile == Some(156)
+        }));
+        assert!(
+            project.validation.ok,
+            "seeded new project should validate cleanly: {:?}",
+            project.validation.errors
+        );
+        assert!(
+            project_dir.join(PROJECT_FILE_NAME).is_file(),
+            "created project should still be saved to disk"
+        );
     }
 
     #[test]

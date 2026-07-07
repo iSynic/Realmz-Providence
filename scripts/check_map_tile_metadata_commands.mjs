@@ -16,7 +16,10 @@ try {
   const metadata = await server.ssrLoadModule("/src/editor/map/tileMetadata.ts");
   const paintGroups = await server.ssrLoadModule("/src/editor/map/paintGroups.ts");
   const renderValues = await server.ssrLoadModule("/src/editor/map/renderValues.ts");
+  const browserProject = await server.ssrLoadModule("/src/editor/browser/project.ts");
+  const appUtilsModule = await server.ssrLoadModule("/src/editor/app/appUtils.ts");
 
+  checkDefaultBrowserProject(browserProject, appUtilsModule);
   checkCustomMapstatsAttributeSync(commands, metadata, paintGroups);
   checkCustomCombatBuildSync(commands, metadata);
   checkCustomLandlookBaseSync(commands);
@@ -195,6 +198,21 @@ function checkMapsMenuRecordEvidence() {
   ]) {
     assert(evidence.includes(snippet), `Map record evidence should document the runtime Maps menu model: ${snippet}`);
   }
+}
+
+function checkDefaultBrowserProject({ createBrowserProject }, { isProjectEmpty }) {
+  const project = createBrowserProject("Starter");
+  const land = project.maps.find((map) => map.levelType === "land" && map.index === 0);
+  assert(Boolean(land), "Browser New Project should create land level 0 by default.");
+  assert(project.validation?.ok === true, "Browser New Project should validate without requiring the author to create a map first.");
+  assert(land?.tiles.length === 90 * 90, "Default browser land level should have 8100 tiles.");
+  assert(land?.tiles.every((tile) => tile === 156), "Default browser land level should be filled with Plains base tile 156.");
+  assert(land?.render?.landlook === 0 && land?.render?.tilesetId === "landlook-0", "Default browser land level should use Plains landlook 0.");
+  assert(project.randomLevels.some((level) => level.levelType === "land" && level.levelIndex === 0 && level.landlook === 0), "Browser New Project should create the matching land random-level row.");
+  assert(project.assetCatalog?.tilesets?.some((tileset) => tileset.id === "landlook-0" && tileset.baseTile === 156), "Browser New Project should include the Plains tileset metadata.");
+  assert(isProjectEmpty(project), "Untouched browser starter project should still be import-safe.");
+  const editedProject = { ...project, maps: [{ ...land, tiles: [1, ...land.tiles.slice(1)] }] };
+  assert(!isProjectEmpty(editedProject), "Starter project should stop being import-safe after a map edit.");
 }
 
 function projectWithCustomLandlook(overrides = {}) {

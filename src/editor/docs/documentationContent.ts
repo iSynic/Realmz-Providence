@@ -170,7 +170,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "Safe First Steps",
         points: [
-          "Create or open a Providence project before importing a Realmz scenario.",
+          "Create a new Providence project to start authoring from land level 0, or import a Realmz scenario before authoring project content.",
           "Import is available only while a project is empty, so source data cannot be accidentally merged into existing authored records.",
           "Use validation before export. Providence will explain missing targets, unsupported edits, malformed resources, and export blockers."
         ],
@@ -530,7 +530,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "Lifecycle Flow",
         points: [
-          "Use New to create a Providence package. This is the starting point for a blank scenario or a later import.",
+          "Use New to create a Providence package seeded with land level 0. This is the starting point for a blank authored scenario.",
           "Use Import Scenario only while the project is empty. Import reads a Realmz scenario folder into the project package and captures preservation evidence.",
           "Author maps, records, resources, strings, encounters, rules, scripts, and editor metadata inside the project.",
           "Use Save to persist the Providence package on desktop. Dirty means there are unsaved project edits.",
@@ -545,15 +545,15 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "New, Open, And Import",
         paragraphs: [
-          "New creates an empty Providence package with library-backed defaults. Empty projects can author new maps directly or import a raw Realmz scenario before any project content exists.",
+          "New creates a Providence package with library-backed defaults and an editable land level 0. Import Scenario is the raw Realmz scenario path and should be used before authoring project content.",
           "Open loads an existing Providence project package. Browser mode opens downloaded `.providence.zip` packages directly; desktop mode opens project package folders. If you select a raw scenario folder when you meant to import, Providence cannot assume how to merge it into the current project.",
           "Import Scenario reads classic Realmz scenario files, resource forks, fixed-record data, pictures, sounds, icons, maps, scripts, and runtime-adjacent evidence into the empty package. Imported source files are then treated as evidence and preservation inputs."
         ],
         cards: [
           {
             title: "New Project",
-            body: "Creates the package and leaves import available while no maps, records, or resources have been authored.",
-            facts: ["empty workspace"]
+            body: "Creates the package with a starter outdoor land level so map-dependent tools have a valid target immediately.",
+            facts: ["land level 0"]
           },
           {
             title: "Open Project",

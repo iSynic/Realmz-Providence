@@ -1,6 +1,6 @@
 import { MapEntity, MapHitTarget, RandomLevel, SelectedEntity, SemanticEntity, TriggerRecord } from "../types";
 import { selectEntityFromId, triggerEntityId } from "../utils";
-import { MapCell, numberSummary, randomRectContainsCell, randomRectEntityId, rectArea, tileValueAt } from "./geometry";
+import { MapCell, mapRecordTerrainFootprint, numberSummary, randomRectContainsCell, randomRectEntityId, rectArea, tileValueAt } from "./geometry";
 
 export function hitTestMapTarget({
   map,
@@ -24,7 +24,7 @@ export function hitTestMapTarget({
   if (trigger) {
     return { kind: "trigger", cell: tileCell, trigger, entity: triggerSelection(trigger) };
   }
-  const mapRecord = showMapRecords ? mapRecordAt(mapRecords, cell.x, cell.y) : null;
+  const mapRecord = showMapRecords ? mapRecordAt(map, mapRecords, cell.x, cell.y) : null;
   if (mapRecord) {
     return { kind: "mapRecord", cell: tileCell, record: mapRecord, entity: selectEntityFromId(mapRecord.id) };
   }
@@ -59,6 +59,6 @@ export function randomRectAt(randomLevel: RandomLevel, x: number, y: number) {
   );
 }
 
-export function mapRecordAt(mapRecords: SemanticEntity[], x: number, y: number) {
-  return mapRecords.find((record) => numberSummary(record, "startX") === x && numberSummary(record, "startY") === y) ?? null;
+export function mapRecordAt(map: MapEntity, mapRecords: SemanticEntity[], x: number, y: number) {
+  return mapRecords.find((record) => numberSummary(record, "startX") === x && numberSummary(record, "startY") === y && mapRecordTerrainFootprint(record, map)) ?? null;
 }

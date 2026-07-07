@@ -2,11 +2,11 @@ import { BookOpen, FilePlus2, FolderOpen, LibraryBig, RefreshCcw } from "lucide-
 import { TutorialTip } from "../components/TutorialTip";
 
 const NEW_PROJECT_DIALOG_HELP =
-  "A Providence project is its own folder package. Create the package first, then import a Realmz scenario only while the project is still empty.";
+  "A Providence project is its own folder package. New projects start with an editable land level 0; import a Realmz scenario before authoring project content.";
 const PROJECT_NAME_HELP =
   "The project name becomes the Providence package name and default export name. It does not have to match an imported Realmz scenario folder, though matching names are easier to track.";
 const PROJECT_START_HELP =
-  "Start with New when authoring or importing a scenario, Open when returning to a Providence project package, or Library when you only need bundled Realmz/Divinity reference material.";
+  "Start with New when authoring a blank scenario, Import when bringing in a raw Realmz scenario, Open when returning to a Providence project package, or Library when you only need bundled Realmz/Divinity reference material.";
 const PROJECT_RUNTIME_HELP =
   "Desktop projects can save, export, and use native folder dialogs. Browser preview opens Providence ZIP packages, saves locally, and uses folder support only where the browser exposes it.";
 
@@ -42,7 +42,7 @@ export function ProjectNameDialog({
             </TutorialTip>
             <input autoFocus value={value} onChange={(event) => onChange(event.currentTarget.value)} />
           </label>
-          <p>Providence will create this project under the default project directory. Import remains available only while the project is empty.</p>
+          <p>Providence will create this project under the default project directory with an editable land level 0.</p>
         </div>
         <div className="project-name-dialog-actions">
           <button className="btn btn-ghost" type="button" onClick={onCancel}>

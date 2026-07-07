@@ -1,11 +1,10 @@
-import { allMapCells, buildPaintChanges, buildReplaceChanges, rectCells, regionDimensions } from "../../map/regionPaint";
+import { buildPaintChanges, rectCells, regionDimensions } from "../../map/regionPaint";
 import { buildRegionPaintPlan, paintSeed } from "../../map/paintResolver";
 import { clearTileForMap } from "../../map/tileClear";
 import { MapEntity, MapPaintMode, MapPaintVariation, MapRegionSelection, ProjectCommand, TilesetAsset } from "../../types";
 
 const PAINT_MODE_LABELS: Record<MapPaintMode, string> = {
   brush: "Brush",
-  replace: "Replace Tile",
   clear: "Eraser",
   smart: "Smart"
 };
@@ -58,39 +57,6 @@ export function clearRegion(
   onApplyCommand({
     kind: "paintTiles",
     label: `Clear region ${region.left},${region.top}-${region.right},${region.bottom}`,
-    mapId: map.id,
-    cells: changes
-  });
-}
-
-export function replaceRegion(
-  map: MapEntity,
-  region: MapRegionSelection,
-  fromTile: number,
-  toTile: number,
-  onApplyCommand: (command: ProjectCommand) => void
-) {
-  const changes = buildReplaceChanges(map, rectCells(map, region), fromTile, toTile);
-  if (changes.length === 0) return;
-  onApplyCommand({
-    kind: "paintTiles",
-    label: `Replace tile ${fromTile} with ${toTile} in region`,
-    mapId: map.id,
-    cells: changes
-  });
-}
-
-export function replaceWholeMap(
-  map: MapEntity,
-  fromTile: number,
-  toTile: number,
-  onApplyCommand: (command: ProjectCommand) => void
-) {
-  const changes = buildReplaceChanges(map, allMapCells(map), fromTile, toTile);
-  if (changes.length === 0) return;
-  onApplyCommand({
-    kind: "paintTiles",
-    label: `Replace tile ${fromTile} with ${toTile} on map`,
     mapId: map.id,
     cells: changes
   });
