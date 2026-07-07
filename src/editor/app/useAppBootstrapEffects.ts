@@ -25,6 +25,7 @@ import { isPaintableSpecialLandLibraryAsset, isSemanticMappingPending, playerMap
 import type { BrowserSemanticBuildProgress } from "../browser/semantic";
 
 const BROWSER_ICON_OVERLAY_PRELOAD_LIMIT = 1024;
+const PLAYER_MAP_DEFAULT_MARKER_ICON_IDS = [137, 139] as const;
 const SEMANTIC_MAPPING_PHASE_TOTAL = 11;
 const DESKTOP_SEMANTIC_MAPPING_STAGES = [
   { afterMs: 0, phase: "sources", label: "Preparing Source Snapshot", completed: 0 },
@@ -346,6 +347,7 @@ export function useAppBootstrapEffects({
       if (!shouldLoadIconOverlaysForTab(state.activeTab)) return;
       const requestedIconOverlayKey = [
         desktopRuntime ? "desktop" : "browser",
+        state.activeTab,
         projectDir,
         workspaceDir,
         iconLoadKey
@@ -359,7 +361,10 @@ export function useAppBootstrapEffects({
       const realmzActorIconAssets = (state.libraryCatalog?.assets ?? []).filter((asset) => isRealmzActorOrCreatureIconLibraryAsset(asset));
       const realmzReferenceIconAssets = (state.libraryCatalog?.assets ?? []).filter((asset) => isRealmzReferenceIconLibraryAsset(asset));
       const mapIconIds = state.project.maps.flatMap((map) => referencedMapIconIds(map.tiles));
-      const playerMapIconIds = (state.project.mapRecords ?? []).flatMap(playerMapMarkerIconIds);
+      const playerMapIconIds = [
+        ...(state.activeTab === "player-maps" ? PLAYER_MAP_DEFAULT_MARKER_ICON_IDS : []),
+        ...(state.project.mapRecords ?? []).flatMap(playerMapMarkerIconIds)
+      ];
       const projectIconIds = [
         ...(state.project.assetCatalog.icons ?? [])
           .filter((asset) => asset.resourceType === "cicn")
@@ -520,6 +525,7 @@ export function useAppBootstrapEffects({
       disposed = true;
       if (loadingIconOverlayKeyRef.current === [
         desktopRuntime ? "desktop" : "browser",
+        state.activeTab,
         projectDir,
         workspaceDir,
         iconLoadKey

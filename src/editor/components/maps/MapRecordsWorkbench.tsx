@@ -35,6 +35,7 @@ const MAP_RECORD_MARKER_FIELD_HELP =
   "Marker fields store an icon ID plus x/y position within this player map preview. Set all three values to zero when a marker slot should be inactive.";
 const MAP_RECORD_RECT_HELP =
   "The display rectangle controls how picture-backed maps are drawn. Keep bounds ordered.";
+const DEFAULT_PLAYER_MAP_MARKER_ICON_IDS = [137, 139] as const;
 
 export function MapRecordsWorkbench({
   project,
@@ -345,6 +346,9 @@ function MapRecordEditor({
   const updateMarker = (slot: number, changes: Partial<MapMarker>) => {
     update({ markers: markers.map((marker, index) => (index === slot ? { ...marker, ...changes } : marker)) });
   };
+  const clearMarker = (slot: number) => {
+    updateMarker(slot, { iconId: 0, x: 0, y: 0 });
+  };
   const isScrollingTextMap = playerMapRecordDisplayKind(record) === "scrolling-text";
   const targetMap = project?.maps.find((candidate) => candidate.levelType === (record.isDungeon ? "dungeon" : "land") && candidate.index === record.level) ?? null;
   const targetMapId = `${record.isDungeon ? "dungeon" : "land"}:${record.level}`;
@@ -366,6 +370,7 @@ function MapRecordEditor({
           atlasEntries={atlasEntries}
           icons={icons}
           onUpdateMarker={updateMarker}
+          onClearMarker={clearMarker}
         />
         <div className="player-map-settings-panel">
           <div className="player-map-name-fields">
@@ -442,23 +447,6 @@ function MapRecordEditor({
         <>
           <details className="context-section">
             <summary>
-              <TutorialTip title="Map Markers" body={MAP_RECORD_MARKERS_HELP} side="below">
-                <span>Markers</span>
-              </TutorialTip>
-              <b>{activeMarkerCount(record)}/10</b>
-            </summary>
-            <div className="map-authoring-form">
-              {markers.map((marker, slot) => (
-                <div className="map-door-pair" key={slot}>
-                  <MapNumberField label={`M${slot + 1} Icon`} value={marker.iconId} help={MAP_RECORD_MARKER_FIELD_HELP} onCommit={(iconId) => updateMarker(slot, { iconId })} {...compactNumberProps} />
-                  <MapNumberField label={`M${slot + 1} X`} value={marker.x} help={MAP_RECORD_MARKER_FIELD_HELP} onCommit={(x) => updateMarker(slot, { x })} {...compactNumberProps} />
-                  <MapNumberField label={`M${slot + 1} Y`} value={marker.y} help={MAP_RECORD_MARKER_FIELD_HELP} onCommit={(y) => updateMarker(slot, { y })} {...compactNumberProps} />
-                </div>
-              ))}
-            </div>
-          </details>
-          <details className="context-section">
-            <summary>
               <TutorialTip title="Display Rectangle" body={MAP_RECORD_RECT_HELP} side="below">
                 <span>Display Rect</span>
               </TutorialTip>
@@ -502,7 +490,8 @@ function PlayerMapPreview({
   markers,
   atlasEntries,
   icons,
-  onUpdateMarker
+  onUpdateMarker,
+  onClearMarker
 }: {
   project: Project | null;
   record: MapRecord;
@@ -510,6 +499,7 @@ function PlayerMapPreview({
   atlasEntries?: Record<string, AtlasEntry>;
   icons?: Record<number, IconEntry>;
   onUpdateMarker: (slot: number, changes: Partial<MapMarker>) => void;
+  onClearMarker: (slot: number) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [activeMarkerSlot, setActiveMarkerSlot] = useState(0);
@@ -526,8 +516,9 @@ function PlayerMapPreview({
   const markersKey = markers.map((marker) => `${marker.iconId}:${marker.x}:${marker.y}`).join("|");
   const activeMarkerIconId = markers[activeMarkerSlot]?.iconId ?? 0;
   const placeIconEntry = iconEntries[placeIconId] ?? iconEntries[Math.abs(placeIconId)] ?? null;
-  const iconOptions = useMemo(() => playerMapIconOptionIds(project, iconEntries), [iconEntries, project]);
+  const iconOptions = useMemo(() => playerMapIconOptionIds(project, placeIconId), [placeIconId, project]);
   const iconDatalistId = `player-map-icon-options-${record.id}`;
+  const activeMarkerCount = markers.filter(isActiveMarker).length;
 
   useEffect(() => {
     if (activeMarkerIconId !== 0) setPlaceIconId(activeMarkerIconId);
@@ -653,7 +644,41 @@ function PlayerMapPreview({
           <button className={`btn btn-xs ${placingMarker ? "btn-primary" : "btn-secondary"}`} type="button" disabled={!targetMap || Boolean(picture?.previewPath)} onClick={() => setPlacingMarker((value) => !value)}>
             Place
           </button>
+          <button className="btn btn-xs btn-secondary" type="button" disabled={!isActiveMarker(markers[activeMarkerSlot])} onClick={() => onClearMarker(activeMarkerSlot)}>
+            Delete
+          </button>
         </div>
+      )}
+      {scrollingTextId === null && (
+        <details className="player-map-marker-details">
+          <summary>
+            <TutorialTip title="Map Markers" body={MAP_RECORD_MARKERS_HELP} side="below">
+              <span>Markers</span>
+            </TutorialTip>
+            <b>{activeMarkerCount}/10</b>
+          </summary>
+          <div className="player-map-marker-list">
+            {markers.map((marker, slot) => {
+              const markerIconEntry = iconEntries[marker.iconId] ?? iconEntries[Math.abs(marker.iconId)] ?? null;
+              return (
+                <div className={`player-map-marker-row${slot === activeMarkerSlot ? " selected" : ""}`} key={slot}>
+                  <button className="btn btn-xs btn-secondary player-map-marker-slot-button" type="button" onClick={() => setActiveMarkerSlot(slot)}>
+                    M{slot + 1}
+                  </button>
+                  <span className="player-map-marker-row-preview" title={marker.iconId === 0 ? "No marker" : `Icon ${marker.iconId}`}>
+                    {markerIconEntry?.url ? <img src={markerIconEntry.url} alt="" /> : <span>{marker.iconId === 0 ? "-" : marker.iconId}</span>}
+                  </span>
+                  <MapNumberField label="Icon" value={marker.iconId} help={MAP_RECORD_MARKER_FIELD_HELP} onCommit={(iconId) => onUpdateMarker(slot, { iconId })} commitOnChange compact plain maxLength={6} />
+                  <MapNumberField label="X" value={marker.x} help={MAP_RECORD_MARKER_FIELD_HELP} onCommit={(x) => onUpdateMarker(slot, { x })} commitOnChange compact plain maxLength={5} />
+                  <MapNumberField label="Y" value={marker.y} help={MAP_RECORD_MARKER_FIELD_HELP} onCommit={(y) => onUpdateMarker(slot, { y })} commitOnChange compact plain maxLength={5} />
+                  <button className="btn btn-xs btn-danger" type="button" disabled={!isActiveMarker(marker)} onClick={() => onClearMarker(slot)} aria-label={`Delete marker ${slot + 1}`}>
+                    x
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </details>
       )}
     </section>
   );
@@ -665,18 +690,26 @@ function normalizedPreviewTileSize(value: number) {
   return 8;
 }
 
-function playerMapIconOptionIds(project: Project | null, icons: Record<number, IconEntry>) {
+function playerMapIconOptionIds(project: Project | null, currentIconId: number) {
   const byId = new Map<number, string>();
-  for (const id of Object.keys(icons)) {
-    const numeric = Number(id);
-    if (Number.isFinite(numeric)) byId.set(numeric, `Icon ${numeric}`);
+  for (const id of DEFAULT_PLAYER_MAP_MARKER_ICON_IDS) {
+    byId.set(id, `Icon ${id}`);
   }
-  for (const asset of project?.assetCatalog.icons ?? []) {
-    byId.set(asset.resourceId, asset.name ? `${asset.name} (${asset.resourceId})` : `Icon ${asset.resourceId}`);
+  for (const record of project?.mapRecords ?? []) {
+    for (const marker of mapRecordMarkers(record)) {
+      if (marker.iconId !== 0) byId.set(marker.iconId, `Icon ${marker.iconId}`);
+    }
+  }
+  if (currentIconId !== 0) {
+    byId.set(currentIconId, `Icon ${currentIconId}`);
   }
   return [...byId.entries()]
     .sort(([left], [right]) => left - right)
     .map(([id, label]) => ({ id, label }));
+}
+
+function isActiveMarker(marker: MapMarker | undefined) {
+  return Boolean(marker && (marker.iconId !== 0 || marker.x !== 0 || marker.y !== 0));
 }
 
 function clampSignedInt16(value: number) {
