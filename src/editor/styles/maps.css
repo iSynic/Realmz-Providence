@@ -203,18 +203,43 @@
 
 
 .map-sidebar-group {
+  --pane-accent: #3c78b2;
+  --pane-accent-rgb: 60, 120, 178;
   display: grid;
   gap: 7px;
   margin: 0 10px 10px;
   padding: 8px;
-  border: 1px solid #263342;
+  border: 1px solid rgba(var(--pane-accent-rgb), 0.34);
+  border-left: 3px solid var(--pane-accent);
   border-radius: 7px;
-  background: #101820;
+  background:
+    linear-gradient(135deg, rgba(var(--pane-accent-rgb), 0.11), transparent 58%),
+    #101820;
   box-shadow: inset 0 1px 0 rgba(157, 207, 255, 0.04);
 }
 
+.map-records-group {
+  --pane-accent: #4f9ce6;
+  --pane-accent-rgb: 79, 156, 230;
+}
+
+.map-current-map-group {
+  --pane-accent: #38bdf8;
+  --pane-accent-rgb: 56, 189, 248;
+}
+
+.map-sections-group {
+  --pane-accent: #7aa8ff;
+  --pane-accent-rgb: 122, 168, 255;
+}
+
+.canvas-tools-group {
+  --pane-accent: #7ddf8a;
+  --pane-accent-rgb: 125, 223, 138;
+}
+
 .map-sidebar-group-title {
-  color: #8fc2f5;
+  color: var(--pane-accent);
   font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
@@ -226,11 +251,13 @@
 }
 
 .map-sidebar-group.active {
-  border-color: #2f88cc;
-  background: #0e1c29;
+  border-color: rgba(var(--pane-accent-rgb), 0.72);
+  background:
+    linear-gradient(135deg, rgba(var(--pane-accent-rgb), 0.16), transparent 60%),
+    #0e1c29;
   box-shadow:
     inset 0 1px 0 rgba(157, 207, 255, 0.06),
-    0 0 0 1px rgba(47, 136, 204, 0.18);
+    0 0 0 1px rgba(var(--pane-accent-rgb), 0.2);
 }
 
 .map-sidebar-current-map .map-level-settings {
@@ -482,6 +509,30 @@
   color: #b9ddff;
 }
 
+.map-sections-group .map-toolset-mode-grid button.active {
+  border-color: rgba(122, 168, 255, 0.88);
+  background: #17294a;
+  color: #c9dcff;
+}
+
+.paint-mode-grid button:hover,
+.paint-mode-grid button.active,
+.paint-variation-buttons button:hover,
+.paint-variation-buttons button.active,
+.paint-variation-compact button:hover,
+.paint-variation-compact button.active {
+  border-color: rgba(243, 200, 105, 0.78);
+  background: #2b2416;
+  color: #ffe3a3;
+}
+
+.paint-palette-tabs button:hover,
+.paint-palette-tabs button.active {
+  border-color: rgba(59, 214, 184, 0.78);
+  background: #112a27;
+  color: #bff8ed;
+}
+
 
 
 .map-toolset-mode-grid button span {
@@ -545,6 +596,31 @@
 
 
 .sidebar-tool.active {
+  border-color: #3c78b2;
+  background: #172d48;
+  color: #b9ddff;
+}
+
+.authoring-tools .sidebar-tool {
+  border-color: rgba(125, 223, 138, 0.24);
+  background:
+    linear-gradient(135deg, rgba(125, 223, 138, 0.06), transparent 60%),
+    #15191f;
+}
+
+.authoring-tools .sidebar-tool:hover,
+.authoring-tools .sidebar-tool.active {
+  border-color: rgba(125, 223, 138, 0.78);
+  background: #14271a;
+  color: #c9f7ce;
+}
+
+.navigation-tools .sidebar-tool {
+  border-color: rgba(157, 207, 255, 0.22);
+}
+
+.navigation-tools .sidebar-tool:hover,
+.navigation-tools .sidebar-tool.active {
   border-color: #3c78b2;
   background: #172d48;
   color: #b9ddff;
@@ -1574,15 +1650,20 @@
 
 
 .paint-palette-shell {
+  --pane-accent: #3bd6b8;
+  --pane-accent-rgb: 59, 214, 184;
   flex: 0 0 auto;
   display: grid;
   grid-template-rows: auto;
   gap: 8px;
   margin: 0 10px 10px;
   padding: 8px;
-  border: 1px solid #26333f;
+  border: 1px solid rgba(var(--pane-accent-rgb), 0.34);
+  border-left: 3px solid var(--pane-accent);
   border-radius: 6px;
-  background: #0f151c;
+  background:
+    linear-gradient(135deg, rgba(var(--pane-accent-rgb), 0.1), transparent 58%),
+    #0f151c;
 }
 
 
@@ -1703,13 +1784,18 @@
 
 
 .paint-mode-panel {
+  --pane-accent: #f3c869;
+  --pane-accent-rgb: 243, 200, 105;
   display: grid;
   gap: 8px;
   margin: 0 10px 8px;
   padding: 8px;
-  border: 1px solid #26333f;
+  border: 1px solid rgba(var(--pane-accent-rgb), 0.34);
+  border-left: 3px solid var(--pane-accent);
   border-radius: 6px;
-  background: #0f151c;
+  background:
+    linear-gradient(135deg, rgba(var(--pane-accent-rgb), 0.1), transparent 58%),
+    #0f151c;
 }
 
 
@@ -1719,7 +1805,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  color: #8ebeea;
+  color: var(--pane-accent);
   font-size: 9px;
   font-weight: 900;
   text-transform: uppercase;

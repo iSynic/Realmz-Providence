@@ -740,7 +740,7 @@ function MapOutliner({
         <span>Scenario Maps</span>
         <small>{maps.length.toLocaleString()}</small>
       </div>
-      <div className="map-sidebar-group">
+      <div className="map-sidebar-group map-records-group">
         <div className="map-sidebar-group-title">Map Records</div>
         <div className="map-outliner-actions">
           <button className="btn btn-primary btn-xs" type="button" disabled={!project} onClick={() => createMap("land")}>
@@ -754,7 +754,7 @@ function MapOutliner({
           </button>
         </div>
       </div>
-      <div className={`map-sidebar-group map-sidebar-current-map${contextFocus === "flags" ? " active" : ""}`}>
+      <div className={`map-sidebar-group map-sidebar-current-map map-current-map-group${contextFocus === "flags" ? " active" : ""}`}>
         <label className="context-field compact">
           <span>Current Map</span>
           <select value={selectedMap?.id ?? ""} onChange={(event) => onSelectMap(event.currentTarget.value)} disabled={!project}>
@@ -820,7 +820,7 @@ function MapToolset({
         <span>Map Toolset</span>
         <small>{workbenchMode === "canvas" ? toolLabel(state.activeTool) : modeLabel(workbenchMode)}</small>
       </div>
-      <div className="map-sidebar-group">
+      <div className="map-sidebar-group map-sections-group">
         <div className="map-sidebar-group-title">Map Sections</div>
         <div className="map-toolset-mode-grid" role="group" aria-label="Map workbench modes">
           {MAP_TOOLSET_MODES.map((mode) => (
@@ -838,13 +838,13 @@ function MapToolset({
       </div>
       {workbenchMode === "canvas" ? (
         <>
-          <div className="map-sidebar-group">
+          <div className="map-sidebar-group canvas-tools-group">
             <div className="map-sidebar-group-title">Canvas Tools</div>
             <div className="sidebar-tool-columns">
-              <div className="sidebar-tool-column" aria-label="Authoring tools">
+              <div className="sidebar-tool-column authoring-tools" aria-label="Authoring tools">
                 {AUTHORING_TOOL_IDS.map((id) => renderSidebarTool(id, state.activeTool, onSetTool))}
               </div>
-              <div className="sidebar-tool-column" aria-label="Navigation and selection tools">
+              <div className="sidebar-tool-column navigation-tools" aria-label="Navigation and selection tools">
                 {NAVIGATION_TOOL_IDS.map((id) => renderSidebarTool(id, state.activeTool, onSetTool))}
               </div>
             </div>
