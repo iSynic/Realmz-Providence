@@ -5,7 +5,7 @@ import { CollapsibleSection, EmptyState, FieldRow, PanelSection } from "../ui";
 import { itemReferenceOptions, type ItemReferenceOption } from "../itemReferences";
 import { createRecordTypeForEdcdTarget, edcdFieldTargetKind, edcdTargetLabel, edcdTargetOptions, missingEdcdTargetReferences, type EdcdTargetKind, type EdcdTargetOption } from "../edcdTargets";
 import { type OpcodeParameterLabel } from "../opcodeCrosswalk";
-import { CHOICE_BRANCH_MODES, choiceBranchModeLabel, choiceBranchTargetKind, choiceContinueLabel, nextOptionLabelId, parseChoicePromptValue, serializeChoicePromptValue, type ChoicePromptKind } from "../choiceDialogs";
+import { CHOICE_BRANCH_MODES, choiceBranchModeLabel, choiceBranchTargetKind, choiceContinueLabel, choicePromptStorageFromOptionLabels, parseChoicePromptValue, serializeChoicePromptValue } from "../choiceDialogs";
 import { scriptActionSummary } from "../panels/scripts/scriptActionCatalog";
 import { selectEntityFromId } from "../utils";
 
@@ -1907,7 +1907,6 @@ function ChoiceDialogEditor({
             onChange={(value) => setField(3, value)}
             onSelectEntity={onSelectEntity}
             onOpenText={onOpenText}
-            onApplyCommand={onApplyCommand}
           />
           <ChoicePromptField
             project={project}
@@ -1917,7 +1916,6 @@ function ChoiceDialogEditor({
             onChange={(value) => setField(4, value)}
             onSelectEntity={onSelectEntity}
             onOpenText={onOpenText}
-            onApplyCommand={onApplyCommand}
           />
         </div>
         {targetIssues.map((issue) => (
@@ -1968,8 +1966,7 @@ function ChoicePromptField({
   warning,
   onChange,
   onSelectEntity,
-  onOpenText,
-  onApplyCommand
+  onOpenText
 }: {
   project: Project;
   label: string;
@@ -1978,28 +1975,25 @@ function ChoicePromptField({
   onChange: (value: number) => void;
   onSelectEntity?: (entity: SelectedEntity) => void;
   onOpenText?: (editor: "messages" | "option-labels") => void;
-  onApplyCommand?: (command: ProjectCommand) => void;
 }) {
-  const prompt = parseChoicePromptValue(value);
+  const storage = choicePromptStorageFromOptionLabels(project.optionLabels);
+  const usesOptionLabels = storage === "option-labels";
+  const prompt = parseChoicePromptValue(value, storage);
   const messages = [...(project.messages ?? [])].sort((a, b) => a.id - b.id);
   const optionLabels = [...(project.optionLabels ?? [])].sort((a, b) => a.id - b.id);
+  const promptMessages = messages.filter((record) => record.id > 0);
+  const promptOptionLabels = optionLabels.filter((record) => record.id > 0);
   const selectedMessage = prompt.kind === "message" ? messages.find((record) => record.id === prompt.id) : null;
   const selectedOptionLabel = prompt.kind === "option-label" ? optionLabels.find((record) => record.id === prompt.id) : null;
-  const selectKind = (kind: ChoicePromptKind) => {
-    if (kind === "message") onChange(serializeChoicePromptValue(kind, selectedMessage?.id ?? messages[0]?.id ?? 0));
-    else if (kind === "option-label") {
-      const existingId = selectedOptionLabel?.id ?? optionLabels[0]?.id;
-      if (existingId != null) {
-        onChange(serializeChoicePromptValue(kind, existingId));
-        return;
-      }
-      const id = nextOptionLabelId(optionLabels);
-      onApplyCommand?.({ kind: "createOptionLabel", label: `Create Option Label ${id}`, id });
-      onChange(-id);
-      openOptionLabel(id);
-    }
-    else onChange(0);
-  };
+  const promptRecords = usesOptionLabels ? promptOptionLabels : promptMessages;
+  const selectedPromptId = prompt.kind === "default" ? 0 : prompt.id;
+  const selectedPromptExists = usesOptionLabels ? Boolean(selectedOptionLabel) : Boolean(selectedMessage);
+  const promptKind = usesOptionLabels ? "option-label" : "message";
+  const promptLabel = usesOptionLabels ? "Choice Label" : "String";
+  const promptHelp = usesOptionLabels
+    ? "This scenario stores Player Option choice text in compact option labels."
+    : "This scenario stores Player Option choice text in ordinary scenario strings.";
+  const promptText = usesOptionLabels ? selectedOptionLabel?.text : selectedMessage?.text;
   const openMessage = (id: number) => {
     onSelectEntity?.(selectEntityFromId(`message:${id}`));
     onOpenText?.("messages");
@@ -2008,56 +2002,31 @@ function ChoicePromptField({
     onSelectEntity?.(selectEntityFromId(`option-label:${id}`));
     onOpenText?.("option-labels");
   };
-  const createOptionLabel = () => {
-    const id = prompt.kind === "option-label" && prompt.id > 0 ? prompt.id : nextOptionLabelId(optionLabels);
-    onApplyCommand?.({ kind: "createOptionLabel", label: `Create Option Label ${id}`, id });
-    onChange(-id);
-    openOptionLabel(id);
-  };
 
   return (
     <div className={`choice-prompt-field script-required-field${warning ? " has-warning" : ""}`}>
       <label>
         <span>{label}</span>
-        <select value={prompt.kind} onChange={(event) => selectKind(event.currentTarget.value as ChoicePromptKind)}>
-          <option value="default">Default Yes/No</option>
-          <option value="message">String</option>
-          <option value="option-label">Option Label</option>
-        </select>
+        <select
+          value={selectedPromptId > 0 && !selectedPromptExists ? `raw:${selectedPromptId}` : String(selectedPromptId)}
+          disabled={promptRecords.length === 0 && selectedPromptId === 0}
+          onChange={(event) => {
+            const raw = event.currentTarget.value;
+            if (raw.startsWith("raw:")) return;
+            const nextId = Number(raw);
+            onChange(nextId > 0 ? serializeChoicePromptValue(promptKind, nextId) : 0);
+          }}
+        >
+          <option value="0">Default Yes/No</option>
+          {!selectedPromptExists && selectedPromptId > 0 && (
+            <option value={`raw:${selectedPromptId}`}>Missing {promptLabel} {selectedPromptId}</option>
+          )}
+          {promptRecords.map((record) => (
+            <option key={record.id} value={record.id}>{record.id}: {record.text || "Empty"}</option>
+          ))}
+          </select>
+        <small>{prompt.kind === "default" ? "Uses the standard Yes / No option text." : promptText || promptHelp}</small>
       </label>
-      {prompt.kind === "message" && (
-        <label>
-          <span>String</span>
-          <select value={selectedMessage ? String(prompt.id) : `raw:${prompt.id}`} onChange={(event) => {
-            const raw = event.currentTarget.value;
-            if (raw.startsWith("raw:")) return;
-            onChange(Number(raw));
-          }}>
-            {!selectedMessage && prompt.id > 0 && <option value={`raw:${prompt.id}`}>Missing String {prompt.id}</option>}
-            {messages.map((record) => (
-              <option key={record.id} value={record.id}>{record.id}: {record.text || "Empty"}</option>
-            ))}
-          </select>
-          <small>{selectedMessage?.text || "Choose a scenario string."}</small>
-        </label>
-      )}
-      {prompt.kind === "option-label" && (
-        <label>
-          <span>Option Label</span>
-          <select value={selectedOptionLabel ? String(prompt.id) : `raw:${prompt.id}`} onChange={(event) => {
-            const raw = event.currentTarget.value;
-            if (raw.startsWith("raw:")) return;
-            onChange(-Number(raw));
-          }}>
-            {!selectedOptionLabel && prompt.id > 0 && <option value={`raw:${prompt.id}`}>Missing Option Label {prompt.id}</option>}
-            {optionLabels.map((record) => (
-              <option key={record.id} value={record.id}>{record.id}: {record.text || "Empty"}</option>
-            ))}
-          </select>
-          <small>{selectedOptionLabel?.text || "Option labels are compact choice text."}</small>
-        </label>
-      )}
-      {prompt.kind === "default" && <p>Uses the standard Yes / No option text.</p>}
       <div className="choice-prompt-actions">
         {prompt.kind === "message" && prompt.id > 0 && (
           <button type="button" className="btn btn-secondary btn-xs" onClick={() => openMessage(prompt.id)}>
@@ -2066,12 +2035,7 @@ function ChoicePromptField({
         )}
         {prompt.kind === "option-label" && prompt.id > 0 && selectedOptionLabel && (
           <button type="button" className="btn btn-secondary btn-xs" onClick={() => openOptionLabel(prompt.id)}>
-            Edit Label
-          </button>
-        )}
-        {prompt.kind === "option-label" && (!selectedOptionLabel || prompt.id === 0) && (
-          <button type="button" className="btn btn-primary btn-xs" onClick={createOptionLabel}>
-            {prompt.id > 0 ? "Create Label" : "New Label"}
+            Edit Choice Label
           </button>
         )}
       </div>

@@ -1,7 +1,7 @@
 import { ACTION_OPTIONS, NOT_USED_ACTION_CODES, actionOptionFor, isDispatcherNoopOpcode, normalizeStepOpcode, type RealmzActionOption } from "../../realmzActions";
 import { crosswalkForOpcode, parameterLabelsForOpcode } from "../../opcodeCrosswalk";
 import { signedTargetBehaviorLabel, targetOptionForOpcodeValue, targetPickerConfig } from "../../components/RealmzTargetPicker";
-import { choiceBranchModeLabel, choiceBranchTargetKind, parseChoicePromptValue } from "../../choiceDialogs";
+import { choiceBranchModeLabel, choiceBranchTargetKind, choicePromptStorageFromOptionLabels, parseChoicePromptValue } from "../../choiceDialogs";
 import { edcdFieldTargetKind, edcdTargetOptions, type EdcdTargetKind } from "../../edcdTargets";
 import { LibraryCatalog, Project } from "../../types";
 
@@ -882,7 +882,7 @@ function targetRoute(project: Project | null, targetKind: EdcdTargetKind, value:
 }
 
 function promptSummary(project: Project | null, value: number) {
-  const prompt = parseChoicePromptValue(value);
+  const prompt = parseChoicePromptValue(value, choicePromptStorageFromOptionLabels(project?.optionLabels));
   if (prompt.kind === "default") return "Yes/No";
   if (prompt.kind === "message") return messageLabel(project, prompt.id);
   const label = project?.optionLabels?.find((record) => record.id === prompt.id);

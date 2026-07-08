@@ -1,6 +1,6 @@
 import { LibraryCatalog, Project, RealmzTargetRecordKind, SelectedEntity } from "./types";
 import { selectEntityFromId } from "./utils";
-import { choiceBranchTargetKind, parseChoicePromptValue } from "./choiceDialogs";
+import { choiceBranchTargetKind, choicePromptStorageFromOptionLabels, parseChoicePromptValue } from "./choiceDialogs";
 import { divinityCompatibleSoundIds, divinitySoundReferenceLabel, isDivinityCompatibleSoundId } from "./soundReferences";
 import { itemReferenceOptions } from "./itemReferences";
 
@@ -484,9 +484,10 @@ function missingChoiceDialogReferences(project: Project, fieldNames: string[], v
     addIssue(2, fieldNames[2] ?? "branchTarget", branchKind, branchTarget);
   }
 
+  const promptStorage = choicePromptStorageFromOptionLabels(project.optionLabels);
   for (const index of [3, 4]) {
     if (preserved.has(index)) continue;
-    const prompt = parseChoicePromptValue(values[index] ?? 0);
+    const prompt = parseChoicePromptValue(values[index] ?? 0, promptStorage);
     if (prompt.kind === "message" && !project.messages.some((record) => record.id === prompt.id)) {
       addIssue(index, fieldNames[index] ?? `prompt${index - 2}`, "message", prompt.id);
     }

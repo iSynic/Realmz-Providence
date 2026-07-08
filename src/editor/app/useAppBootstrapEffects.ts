@@ -604,7 +604,7 @@ function waitForBrowserPaint() {
 }
 
 function shouldBuildSemanticSchemaForTab(tab: EditorState["activeTab"]) {
-  return ["player-maps", "scripts", "encounters", "combat", "economy", "rules", "assets", "records", "linter"].includes(tab);
+  return ["player-maps", "scripts", "strings", "encounters", "combat", "economy", "rules", "assets", "records", "linter"].includes(tab);
 }
 
 function shouldHydrateBrowserReferenceTileAttributesForTab(tab: EditorState["activeTab"]) {

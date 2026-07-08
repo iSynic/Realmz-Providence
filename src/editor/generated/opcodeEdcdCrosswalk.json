@@ -141,7 +141,7 @@
           "help": "Prompt, left side (Optional)",
           "internalName": "promptA",
           "preserved": false,
-          "targetFamily": "message-or-option-label"
+          "targetFamily": "message"
         },
         {
           "index": 4,
@@ -149,7 +149,7 @@
           "help": "Prompt, right side (Optional)",
           "internalName": "promptB",
           "preserved": false,
-          "targetFamily": "message-or-option-label"
+          "targetFamily": "message"
         }
       ]
     },

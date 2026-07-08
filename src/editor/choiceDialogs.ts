@@ -1,6 +1,7 @@
 import { OptionLabelRecord } from "./types";
 
 export type ChoicePromptKind = "default" | "message" | "option-label";
+export type ChoicePromptStorage = "messages" | "option-labels";
 export type ChoiceBranchTargetKind = "macro" | "simpleEncounter" | "complexEncounter";
 
 export type ChoicePromptTarget = {
@@ -17,15 +18,18 @@ export const CHOICE_BRANCH_MODES = [
   { value: 4, label: "Eliminate Action Point", help: "Eliminate this Action Point and stop." }
 ] as const;
 
-export function parseChoicePromptValue(value: number): ChoicePromptTarget {
-  if (value > 0) return { kind: "message", id: value };
-  if (value < 0) return { kind: "option-label", id: Math.abs(value) };
+export function choicePromptStorageFromOptionLabels(optionLabels: OptionLabelRecord[] | null | undefined): ChoicePromptStorage {
+  return optionLabels && optionLabels.length > 0 ? "option-labels" : "messages";
+}
+
+export function parseChoicePromptValue(value: number, storage: ChoicePromptStorage = "messages"): ChoicePromptTarget {
+  const id = Math.abs(Math.trunc(value));
+  if (id > 0) return { kind: storage === "option-labels" ? "option-label" : "message", id };
   return { kind: "default", id: 0 };
 }
 
 export function serializeChoicePromptValue(kind: ChoicePromptKind, id: number) {
-  if (kind === "message") return Math.max(0, Math.trunc(id));
-  if (kind === "option-label") return -Math.max(0, Math.trunc(id));
+  if (kind === "message" || kind === "option-label") return Math.max(0, Math.trunc(id));
   return 0;
 }
 

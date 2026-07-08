@@ -1,10 +1,10 @@
-import { Bold, ChevronLeft, ChevronRight, Copy, Eraser, FileText, Italic, List, MessageSquarePlus, Trash2, Underline, Volume2 } from "lucide-react";
+import { Bold, ChevronLeft, ChevronRight, Copy, Eraser, FileText, Italic, List, MessageSquarePlus, Trash2, Underline } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LibraryCatalog, MessageRecord, OptionLabelRecord, Project, ProjectCommand, SelectedEntity } from "../types";
 import { selectEntityFromId } from "../utils";
 import { classicTextByteLength, messageUsageLinks, optionLabelUsageLinks, resourceUsageLinks, unsupportedClassicTextChars } from "../contentLinks";
 import { TutorialTip } from "../components/TutorialTip";
-import { filterTargetOptions, signedSoundValueForSelection, signedSoundWaitsForCompletion, soundReferenceOptionForQuery, targetOptionForOpcodeValue, targetOptionsForOpcode, type ScriptTargetOption } from "../components/RealmzTargetPicker";
+import { TargetPicker } from "../components/RealmzTargetPicker";
 import {
   CLASSIC_STYLE_EXTRA_FACE_MASK,
   CLASSIC_STYLE_FACE_BITS,
@@ -42,22 +42,22 @@ import {
   decodeClassicTextPreviewString,
   displayRangeToRawRange
 } from "../classicTextPreview";
-import { playPreviewUrl, useResolvedPreviewUrl, type PreviewRuntimeContext } from "../previewUrls";
+import { type PreviewRuntimeContext } from "../previewUrls";
 import { useDraftChangeGuards } from "../app/draftChangeGuard";
 
 const DIVINITY_TEXT_SEPARATOR = `${" ".repeat(20)}\uf8ff${" ".repeat(20)}`;
 type TextAuthoringTab = "strings" | "option-labels" | "scrolling-text";
-const TEXT_WORKBENCH_HELP = "Text authors the central Data SD2 message pool, Data OD two-choice option labels, and readable TEXT/STR#/styl reference resources. Other tools link back here through numeric message and option-label IDs.";
+const TEXT_WORKBENCH_HELP = "Text authors scenario dialogue strings, choice labels, and scrolling text resources. Other tools link back here through numeric message and TEXT IDs.";
 const EXPORT_TEXT_HELP = "Export Text writes all Data SD2 strings with Divinity-style separators so the file can be spell-checked without changing the project.";
 const IMPORT_TEXT_HELP = "Import Text accepts a file from this export workflow and refuses imports with the wrong number of string segments to avoid shifting every string ID.";
 const REFERENCE_STRINGS_HELP = "Reference Strings shows readable TEXT, STR#, and style resources from project or library resource forks. These are searchable evidence, not the central Data SD2 message pool.";
 const STRINGS_TAB_HELP = "Strings edits Data SD2 message records: Realmz text boxes used by scripts, battles, encounters, random areas, notes, and many prompts.";
-const OPTION_LABELS_TAB_HELP = "Option Labels edits Data OD compact labels for two-choice dialogs. Realmz uses the first visible character as the keyboard shortcut.";
+const OPTION_LABELS_TAB_HELP = "Option Labels edits compact two-choice text used by some scenarios for Player Option prompts. Scenarios without these labels use ordinary Strings for the same prompt IDs.";
 const SCROLLING_TEXT_TAB_HELP = "Scrolling Text authors scenario TEXT resources used by the Display Scrolling Text action. These are separate from ordinary Data SD2 strings; styl companions are preserved as resource data, but current Windows testing ignores their formatting and Mac 7.1.2 runtime behavior is suspect.";
 const FIND_OCCURRENCE_HELP = "Find Occurrence searches every scenario string by ID or text, then jumps through matching Data SD2 records.";
 const FIND_LONG_STRING_HELP = "Find Long String jumps to strings at the Realmz byte limit or with characters that need cleanup before export.";
 const STRING_BYTE_LIMIT_HELP = "Realmz message records are fixed 256-byte Pascal strings, so the editable text must fit in 255 Classic text bytes before export.";
-const STRING_SOUND_HELP = "Choose the sound Divinity stores with this string. The assignment lives in scenario support data while visible text stays in Data SD2. Negative sound values are preserved for compatibility, but string playback wait behavior is not yet proven.";
+const STRING_SOUND_HELP = "Choose the sound attached to this string. Wait For Sound stores the classic negative sound reference while keeping the authoring control explicit.";
 const OPTION_BYTE_LIMIT_HELP = "Data OD option labels use 25-byte Pascal slots, leaving 24 bytes of editable label text.";
 const USED_BY_HELP = "Used By links show the records Providence knows refer to this text. Check these before changing wording or meaning.";
 const ADVANCED_TEXT_HELP = "Advanced Details shows source status and preserved raw bytes for the current fixed-width text record.";
@@ -318,17 +318,20 @@ export function TextPanel({
       <div className="text-authoring-tabs" role="tablist" aria-label="String editors">
         <TutorialTip title="Strings" body={STRINGS_TAB_HELP} side="below">
           <button type="button" className={activeTab === "strings" ? "active" : ""} role="tab" aria-selected={activeTab === "strings"} onClick={() => selectTextTab("strings")}>
-            Strings
+            <span>Strings</span>
+            <b>{records.length.toLocaleString()}</b>
           </button>
         </TutorialTip>
         <TutorialTip title="Option Labels" body={OPTION_LABELS_TAB_HELP} side="below">
           <button type="button" className={activeTab === "option-labels" ? "active" : ""} role="tab" aria-selected={activeTab === "option-labels"} onClick={() => selectTextTab("option-labels")}>
-            Option Labels
+            <span>Option Labels</span>
+            <b>{optionRecords.length.toLocaleString()}</b>
           </button>
         </TutorialTip>
         <TutorialTip title="Scrolling Text" body={SCROLLING_TEXT_TAB_HELP} side="below">
           <button type="button" className={activeTab === "scrolling-text" ? "active" : ""} role="tab" aria-selected={activeTab === "scrolling-text"} onClick={() => selectTextTab("scrolling-text")}>
-            Scrolling Text
+            <span>Scrolling Text</span>
+            <b>{(scrollingTextAssets.length + importedScrollingTextResources.length).toLocaleString()}</b>
           </button>
         </TutorialTip>
       </div>
@@ -610,26 +613,12 @@ function MessageEditor({
 }) {
   const { confirmBeforeDraftDiscard, registerDraftGuard } = useDraftChangeGuards();
   const [text, setText] = useSyncedTextDraft(record.id, record.text);
-  const [soundQuery, setSoundQuery] = useState("");
   const byteLength = classicTextByteLength(text);
   const unsupportedChars = unsupportedClassicTextChars(text);
   const changed = text !== record.text;
   const usages = messageUsageLinks(project, record.id);
   const nextId = nextMessageId(records);
   const currentSoundId = stringSoundForMessage(project, record.id);
-  const soundOptions = useMemo(() => targetOptionsForOpcode(project, 9, catalog), [catalog, project]);
-  const selectedSound = useMemo(() => currentSoundId ? targetOptionForOpcodeValue(project, 9, currentSoundId, catalog) : null, [catalog, currentSoundId, project]);
-  const filteredSoundOptions = useMemo(() => {
-    const matches = filterTargetOptions(soundOptions, soundQuery);
-    const typed = soundReferenceOptionForQuery(9, soundQuery);
-    return typed && !matches.some((option) => option.value === typed.value)
-      ? [typed, ...matches].slice(0, 160)
-      : matches.slice(0, 160);
-  }, [soundOptions, soundQuery]);
-  const visibleSoundOptions = selectedSound && !filteredSoundOptions.some((option) => option.key === selectedSound.key)
-    ? [selectedSound, ...filteredSoundOptions.slice(0, 159)]
-    : filteredSoundOptions;
-  const selectedPreviewUrl = useStringSoundPreviewUrl(selectedSound, currentSoundId, project, previewContext);
   const applyStringText = useCallback(() => {
     if (byteLength > 255) return false;
     onApplyCommand({ kind: "updateMessageRecord", label: `Update String ${record.id}`, id: record.id, changes: { text } });
@@ -652,8 +641,6 @@ function MessageEditor({
     });
   }, [applyStringText, byteLength, changed, discardStringText, record.id, record.text, registerDraftGuard, text]);
   const updateSound = (soundId: number) => onApplyCommand({ kind: "updateStringSound", label: `Set String ${record.id} sound`, messageId: record.id, soundId });
-  const updateSoundSelection = (soundId: number) => updateSound(signedSoundValueForSelection(soundId, signedSoundWaitsForCompletion(currentSoundId)));
-  const updateSoundSign = (negativeReference: boolean) => updateSound(signedSoundValueForSelection(currentSoundId, negativeReference));
   return (
     <article className="text-message-editor">
       <header>
@@ -714,58 +701,27 @@ function MessageEditor({
             <TutorialTip title="String Sound" body={STRING_SOUND_HELP} side="below">
               <span>Sound</span>
             </TutorialTip>
-            <small>{currentSoundId ? soundSummaryLabel(selectedSound, currentSoundId) : "No sound"}</small>
+            <small>{currentSoundId ? `Sound ${Math.abs(currentSoundId)}` : "No sound"}</small>
           </div>
           <div className="text-string-sound-actions">
-            {selectedSound?.entity && (
-              <button type="button" className="btn btn-secondary btn-xs" onClick={() => selectedSound.entity && onSelectEntity(selectedSound.entity)}>
-                Open Sound
-              </button>
-            )}
-            <button
-              type="button"
-              className="btn btn-secondary btn-xs"
-              disabled={!selectedPreviewUrl}
-              title={selectedPreviewUrl ? "Play this sound preview." : "No preview is available for this sound reference."}
-              onClick={() => selectedPreviewUrl && playPreviewUrl(selectedPreviewUrl)}
-            >
-              <Volume2 size={12} /> Play
-            </button>
             <button type="button" className="btn btn-secondary btn-xs" disabled={!currentSoundId} onClick={() => updateSound(0)}>
               Clear
             </button>
           </div>
         </header>
-        <label>
-          <span>Choose sound</span>
-          <input value={soundQuery} onChange={(event) => setSoundQuery(event.currentTarget.value)} placeholder="Search sounds..." />
-          <select
-            value={currentSoundId ? String(Math.abs(currentSoundId)) : ""}
-            onChange={(event) => updateSoundSelection(Number(event.currentTarget.value || 0))}
-          >
-            <option value="">No sound</option>
-            {currentSoundId && !selectedSound && <option value={Math.abs(currentSoundId)}>Current sound {currentSoundId}</option>}
-            {visibleSoundOptions.map((option) => (
-              <option key={option.key} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-        </label>
-        <label className="text-string-sound-wait">
-          <input
-            type="checkbox"
-            checked={signedSoundWaitsForCompletion(currentSoundId)}
-            disabled={!currentSoundId}
-            onChange={(event) => updateSoundSign(event.currentTarget.checked)}
-          />
-          <span>Store as negative sound ID</span>
-        </label>
-        <small>
-          {selectedSound
-            ? [selectedSound.detail, selectedSound.summary, signedSoundWaitsForCompletion(currentSoundId) ? "Negative sound reference" : "", selectedSound.compatibility, selectedSound.sourceState].filter(Boolean).join(" | ")
-            : currentSoundId
-              ? `Sound ${currentSoundId}`
-              : "Choose a sound resource for this string."}
-        </small>
+        <TargetPicker
+          project={project}
+          catalog={catalog}
+          opcode={9}
+          value={currentSoundId}
+          onChange={updateSound}
+          onInspect={onSelectEntity}
+          emptyLabel="No sound selected"
+          showSearch
+          showDetail
+          showTargetCount={false}
+          previewContext={previewContext}
+        />
       </section>
       <section className="text-used-by-panel">
         <header>
@@ -825,22 +781,6 @@ function useSyncedTextDraft(recordId: number, appliedText: string) {
   return [text, setText] as const;
 }
 
-function soundSummaryLabel(option: ScriptTargetOption | null, soundId: number) {
-  if (!soundId) return "No sound";
-  if (!option) return `Sound ${soundId}`;
-  return signedSoundWaitsForCompletion(soundId) ? `${option.label} · negative` : option.label;
-}
-
-function useStringSoundPreviewUrl(option: ScriptTargetOption | null, soundId: number, project: Project, previewContext: PreviewRuntimeContext) {
-  const previewResourceId = soundId ? Math.abs(soundId) : option?.value ?? null;
-  return useResolvedPreviewUrl(
-    option?.previewPath ?? option?.managedAsset?.previewPath ?? option?.libraryAsset?.previewPath ?? null,
-    option?.managedAsset ?? null,
-    option?.libraryAsset ?? null,
-    { ...previewContext, project, resourceType: "snd ", resourceId: previewResourceId }
-  );
-}
-
 function OptionLabelsWorkbench({
   project,
   records,
@@ -893,7 +833,7 @@ function OptionLabelsWorkbench({
           <List size={14} /> {showList ? "Hide Search List" : "Show Search List"}
         </button>
         <label className="text-find-field">
-          <TutorialTip title="Search Labels" body="Search Data OD option labels by ID or visible text. These labels are separate from the central Data SD2 message pool." side="below">
+          <TutorialTip title="Search Labels" body="Search two-choice option labels by ID or visible text. These labels are edited separately from ordinary scenario messages." side="below">
             <span>Search Labels</span>
           </TutorialTip>
           <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search option labels..." />
@@ -1596,7 +1536,9 @@ function StyleCompanionEditor({
   const styleRunBytesDirty = styleRunDraftsTouched && styleRunBytesChanged;
   const styleRunDraftDirty = styleRunDraftsTouched && (!styleRunDraftResult.ok || styleRunBytesChanged);
   const previewRuns = styleRunDraftResult.ok ? styleRunDraftResult.runs : parsedStyleRuns.ok ? parsedStyleRuns.runs : [];
-  const decodedText = useMemo(() => textBytes ? decodeClassicTextPreviewBytes(textBytes) : decodeClassicTextPreviewString(text), [text, textBytes]);
+  const canEditText = textEditable && onTextChange != null;
+  const previewTextBytes = canEditText ? null : textBytes;
+  const decodedText = useMemo(() => previewTextBytes ? decodeClassicTextPreviewBytes(previewTextBytes) : decodeClassicTextPreviewString(text), [text, previewTextBytes]);
   const previewText = decodedText.text;
   const normalizedTextSelection = selectedTextRange(textSelectionRange, previewText);
   const rawTextSelection = displayRangeToRawRange(decodedText, normalizedTextSelection);
@@ -1605,7 +1547,6 @@ function StyleCompanionEditor({
   const selectedTextTitle = selectedRangeValid
     ? textSelectionTitle(previewText, normalizedTextSelection)
     : `Caret at raw byte ${activeStyleOffset}; toolbar reflects the style run active here.`;
-  const canEditText = textEditable && onTextChange != null;
   const fontOptionValue = CLASSIC_AUTHOR_FONT_OPTIONS.some((option) => option.id === parsedFont) ? String(parsedFont) : "custom";
   useEffect(() => {
     const run = styleRunDraftAtOffset(styleRunDrafts, activeStyleOffset);
@@ -1890,7 +1831,7 @@ function StyleCompanionEditor({
         </div>
         <StyledScrollingTextPreview
           text={previewText}
-          textBytes={textBytes}
+          textBytes={previewTextBytes}
           runs={previewRuns}
           parseError={parsedStyleRuns.ok ? null : parsedStyleRuns.error}
           draftDirty={styleRunDraftDirty}
@@ -2128,11 +2069,25 @@ type ImportedScrollingTextResource = {
 
 type ProjectSemanticEntity = NonNullable<Project["semanticSchema"]>["entities"][number];
 
+function projectSemanticEntities(project: Project): ProjectSemanticEntity[] {
+  const schemaEntities = project.semanticSchema?.entities ?? [];
+  if (schemaEntities.length > 0) return schemaEntities;
+  const legacyEntities = (project as unknown as { semanticIndex?: { entities?: ProjectSemanticEntity[] } }).semanticIndex?.entities;
+  return Array.isArray(legacyEntities) ? legacyEntities : [];
+}
+
 function semanticResourceType(entity: ProjectSemanticEntity) {
-  const direct = String(entity.summary.type ?? entity.summary.resourceType ?? "").trim();
-  if (direct) return direct;
+  const resourceType = String(entity.summary.resourceType ?? "").trim();
+  if (resourceType) return resourceType;
   const match = entity.id.match(/^resource:([^:]+):/);
-  return match?.[1]?.trim() ?? "";
+  const fromId = match?.[1]?.trim() ?? "";
+  if (fromId) return fromId;
+  const direct = String(entity.summary.type ?? "").trim();
+  const entityType = String(entity.type ?? "").trim();
+  if (direct === "text-resource" || entityType === "text-resource" || entity.summary.textResourceBase64 || entity.summary.textOffsetBody) return "TEXT";
+  if (direct === "style-resource" || entityType === "style-resource" || entity.summary.styleResourceBase64) return "styl";
+  if (direct === "string-list-resource" || entityType === "string-list-resource") return "STR#";
+  return direct;
 }
 
 function semanticResourceId(entity: ProjectSemanticEntity) {
@@ -2166,7 +2121,7 @@ function scrollingTextProjectAssets(project: Project) {
 
 function importedScrollingTextResourceRows(project: Project, managedAssets: Project["assets"]): ImportedScrollingTextResource[] {
   const managedIds = new Set(managedAssets.map((asset) => asset.resourceId));
-  return (project.semanticSchema?.entities ?? [])
+  return projectSemanticEntities(project)
     .map((entity): ImportedScrollingTextResource | null => {
       const resourceType = semanticResourceType(entity);
       if (resourceType !== "TEXT") return null;
@@ -2205,7 +2160,7 @@ function nextScrollingTextResourceId(project: Project) {
   for (const asset of project.assets ?? []) {
     if (asset.resourceType.trim() === "TEXT" || asset.kind === "text") used.add(asset.resourceId);
   }
-  for (const entity of project.semanticSchema?.entities ?? []) {
+  for (const entity of projectSemanticEntities(project)) {
     if (semanticResourceType(entity) !== "TEXT") continue;
     const id = semanticResourceId(entity);
     if (Number.isInteger(id)) used.add(id);
@@ -2276,7 +2231,7 @@ function sameIdStyleCompanion(project: Project, resourceId: number): TextStyleCo
   }
   const projectAsset = (project.assets ?? []).find((asset) => asset.resourceType.trim() === "styl" && asset.resourceId === resourceId);
   const managedStyleBytes = projectAsset ? bytesFromDataUrl(projectAsset.resourcePath) ?? bytesFromDataUrl(projectAsset.originalPath) ?? bytesFromDataUrl(projectAsset.previewPath) : null;
-  const importedEntity = project.semanticSchema?.entities.find((candidate) => {
+  const importedEntity = projectSemanticEntities(project).find((candidate) => {
     if (semanticResourceType(candidate) !== "styl") return false;
     return semanticResourceId(candidate) === resourceId;
   }) ?? null;

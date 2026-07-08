@@ -1,4 +1,5 @@
 import { actionOptionFor, normalizeStepOpcode } from "./realmzActions";
+import { choicePromptStorageFromOptionLabels } from "./choiceDialogs";
 import { racePortraitSetFirstIconId, spellAnimationFrameIds, spellSoundResourceId } from "./resourceIds";
 import { ruleCasteName, ruleRaceName } from "./ruleNames";
 import { LibraryAsset, ManagedAsset, Project, SelectedEntity } from "./types";
@@ -107,7 +108,7 @@ function buildMessageUsageLinks(project: Project) {
     if (!actionOptionFor(action.rawCode).edcdShape) return;
     const row = rows.get(edcdRowId(action));
     if (!row) return;
-    for (const target of edcdMessageTargets(code, row.values)) {
+    for (const target of edcdMessageTargets(project, code, row.values)) {
       add(target.value, {
         key: `${context.key}:edcd-message:${target.fieldIndex}`,
         label: context.label,
@@ -131,6 +132,7 @@ function buildMessageUsageLinks(project: Project) {
 
 function buildOptionLabelUsageLinks(project: Project) {
   const links = new Map<number, ContentUsageLink[]>();
+  if (choicePromptStorageFromOptionLabels(project.optionLabels) !== "option-labels") return links;
   const add = (optionLabelId: number, link: ContentUsageLink) => {
     if (!Number.isFinite(optionLabelId) || optionLabelId <= 0) return;
     const existing = links.get(optionLabelId);
@@ -151,8 +153,9 @@ function buildOptionLabelUsageLinks(project: Project) {
       { fieldIndex: 4, value: row.values[4] ?? 0, label: "Choice option B" }
     ];
     for (const option of options) {
-      if (option.value >= 0) continue;
-      add(Math.abs(option.value), {
+      const optionId = Math.abs(option.value);
+      if (optionId <= 0) continue;
+      add(optionId, {
         key: `${context.key}:option-label:${option.fieldIndex}`,
         label: context.label,
         detail: `${context.actionLabel}: ${option.label}`,
@@ -319,7 +322,7 @@ function edcdMessageUsageLinks(project: Project, messageId: number) {
     if (!actionOptionFor(action.rawCode).edcdShape) return;
     const row = rows.get(edcdRowId(action));
     if (!row) return;
-    for (const target of edcdMessageTargets(code, row.values)) {
+    for (const target of edcdMessageTargets(project, code, row.values)) {
       if (target.value !== messageId) continue;
       links.push({
         key: `${context.key}:edcd-message:${target.fieldIndex}`,
@@ -469,7 +472,7 @@ function edcdRowId(action: ScriptActionLike) {
   return Math.max(0, action.id);
 }
 
-function edcdMessageTargets(code: number, values: number[]): EdcdUsageTarget[] {
+function edcdMessageTargets(project: Project, code: number, values: number[]): EdcdUsageTarget[] {
   const value = (index: number) => values[index] ?? 0;
   const targets: EdcdUsageTarget[] = [];
   const add = (fieldIndex: number, label: string, rawValue = value(fieldIndex)) => {
@@ -479,7 +482,7 @@ function edcdMessageTargets(code: number, values: number[]): EdcdUsageTarget[] {
 
   if (code === 2 || code === 48 || code === 107) add(3, "battle message");
   else if (code === 56) add(4, "battle message");
-  else if (code === 3) {
+  else if (code === 3 && choicePromptStorageFromOptionLabels(project.optionLabels) === "messages") {
     add(3, "choice prompt A");
     add(4, "choice prompt B");
   } else if (code === 15 || code === 16) add(4, "damage/heal message");

@@ -559,7 +559,6 @@ function targetFamilyForRow(row) {
 function targetFamilyForField(fieldName, shape) {
   const normalized = String(fieldName ?? "").toLowerCase();
   const normalizedShape = String(shape ?? "").toLowerCase();
-  if (normalizedShape === "choice" && normalized.startsWith("prompt")) return "message-or-option-label";
   if (normalized.includes("message") || normalized.startsWith("prompt")) return "message";
   if (normalized.includes("sound")) return "sound";
   if (normalized.includes("battle")) return "battle";

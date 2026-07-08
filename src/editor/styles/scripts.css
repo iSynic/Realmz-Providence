@@ -5831,6 +5831,22 @@
 
 
 
+.choice-prompt-legacy-label {
+  display: grid;
+  gap: 4px;
+  border: 1px solid rgba(242, 188, 104, 0.35);
+  border-radius: 5px;
+  background: rgba(242, 188, 104, 0.08);
+  padding: 7px;
+}
+
+.choice-prompt-legacy-label strong {
+  color: #f2bc68;
+  font-size: 11px;
+}
+
+
+
 .choice-prompt-actions {
   display: flex;
   flex-wrap: wrap;

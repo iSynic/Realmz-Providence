@@ -1990,8 +1990,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           },
           {
             title: "Option Labels",
-            body: "Data OD stores compact two-choice labels. Realmz prefers these labels for player-option dialogs when Data OD is present.",
-            facts: ["Data OD", "24 bytes"]
+            body: "Some scenarios store Player Option two-choice prompt text in compact option-label slots. Scenarios without those slots use ordinary Strings for the same prompt IDs.",
+            facts: ["Player Option", "24 bytes"]
           },
           {
             title: "Reference Strings",
@@ -2029,14 +2029,14 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "Option Labels",
         paragraphs: [
-          "Option Labels authors the short two-choice labels used by player-option dialogs. Realmz reads Data OD in fixed 25-byte slots and uses the first visible character as the keyboard shortcut.",
-          "If Data OD is absent, Realmz can fall back to Data SD2 for option text. Providence keeps the Data OD editor separate so authors can see which compact labels are source-backed and which script rows use them."
+          "Option Labels edits compact two-choice text when a scenario contains that label table. Player Option prompt IDs are still numeric IDs; Realmz chooses whether those IDs read from Option Labels or ordinary Strings based on the scenario data.",
+          "Providence follows that scenario-level choice automatically, so authors do not choose String versus Option Label on each Player Option field."
         ],
         points: [
           "Keep labels short and direct; the export limit is 24 text bytes plus the Pascal length byte.",
           "Watch duplicate shortcut warnings when two labels begin with the same visible character.",
-          "Use Used By links to find player-option script parameters before renaming a label.",
-          "Create and duplicate labels only when a two-choice script row needs a new compact label."
+          "Use the Player Option editor to choose the active prompt text for the scenario.",
+          "Use Scenario Strings for Player Option prompt text in scenarios that do not have compact option labels."
         ]
       },
       {
@@ -2049,7 +2049,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "Run Find Long String after import to review strings at the length limit and strings with unsupported characters.",
           "Search Reference Strings when you need readable TEXT, STR#, or styl resource-fork evidence.",
           "Do not paste resource-fork text into Data SD2 blindly; resource text may be documentation, metadata, UI reference material, or a different runtime string family.",
-          "Use Assets for resource ownership and export-scope questions; use Text for authoring Data SD2 and Data OD records."
+          "Use Assets for resource ownership and export-scope questions; use Text for authoring scenario strings, choice labels, and scrolling text."
         ]
       },
       {

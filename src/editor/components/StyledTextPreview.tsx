@@ -150,7 +150,6 @@ export function StyledScrollingTextPreview({
     const element = canvasRef.current;
     const pending = pendingSelectionRef.current;
     if (!editableText || !element || !pending) return;
-    pendingSelectionRef.current = null;
     setDomSelectionForDisplayRange(element, pending.start, pending.end);
   }, [editableText, text, preview]);
   const captureDisplaySelection = useCallback(() => {
@@ -168,20 +167,49 @@ export function StyledScrollingTextPreview({
     const element = canvasRef.current;
     if (!element) return null;
     const selection = displaySelectionForRoot(element);
-    if (selection) onDisplaySelectionChange?.(selection);
+    if (selection) {
+      pendingSelectionRef.current = selection;
+      onDisplaySelectionChange?.(selection);
+    }
     return selection;
   }, [onDisplaySelectionChange]);
-  const updateEditableText = useCallback(() => {
+  const editableSelectionForRoot = useCallback((element: HTMLElement) => {
+    const selection = displaySelectionForRoot(element);
+    const pending = pendingSelectionRef.current;
+    if (pending && document.activeElement === element) return pending;
+    if (!selection) return pending;
+    return selection;
+  }, []);
+  const ignoreNativeEditableInput = useCallback(() => {
+    // Browser-native contenteditable mutations are not authoritative here; keydown,
+    // paste, and explicit selection events own all draft text/caret changes.
+  }, []);
+  const replaceEditableSelection = useCallback((value: string, fallbackSelection?: StyledTextDisplaySelection) => {
+    if (!editableText || !onTextChange) return;
     const element = canvasRef.current;
-    if (!element || !editableText || !onTextChange) return;
-    const selection = captureEditableSelection();
-    pendingSelectionRef.current = selection;
-    onTextChange(readEditableText(element));
-  }, [captureEditableSelection, editableText, onTextChange]);
-  const insertEditableText = useCallback((value: string) => {
-    if (!editableText) return;
-    document.execCommand("insertText", false, value);
-  }, [editableText]);
+    if (!element) return;
+    const selection = editableSelectionForRoot(element) ?? fallbackSelection ?? { start: decodedText.text.length, end: decodedText.text.length };
+    const start = Math.max(0, Math.min(decodedText.text.length, selection.start));
+    const end = Math.max(start, Math.min(decodedText.text.length, selection.end));
+    const nextText = `${decodedText.text.slice(0, start)}${value}${decodedText.text.slice(end)}`;
+    const nextCaret = start + value.length;
+    pendingSelectionRef.current = { start: nextCaret, end: nextCaret };
+    onTextChange(nextText);
+    onDisplaySelectionChange?.({ start: nextCaret, end: nextCaret });
+  }, [decodedText.text, editableSelectionForRoot, editableText, onDisplaySelectionChange, onTextChange]);
+  const deleteEditableSelection = useCallback((direction: "backward" | "forward") => {
+    if (!editableText || !onTextChange) return;
+    const element = canvasRef.current;
+    if (!element) return;
+    const selection = editableSelectionForRoot(element) ?? { start: decodedText.text.length, end: decodedText.text.length };
+    let start = Math.max(0, Math.min(decodedText.text.length, selection.start));
+    let end = Math.max(start, Math.min(decodedText.text.length, selection.end));
+    if (start === end) {
+      if (direction === "backward") start = Math.max(0, start - 1);
+      else end = Math.min(decodedText.text.length, end + 1);
+    }
+    replaceEditableSelection("", { start, end });
+  }, [decodedText.text.length, editableSelectionForRoot, editableText, onTextChange, replaceEditableSelection]);
   return (
     <section className={`text-style-preview${className ? ` ${className}` : ""}`} style={sectionStyle}>
       <header>
@@ -222,22 +250,77 @@ export function StyledScrollingTextPreview({
             suppressContentEditableWarning={editableText}
             spellCheck={editableText}
             data-placeholder={editableText ? "Enter scrolling text..." : undefined}
-            onBeforeInput={(event) => {
+            onBeforeInputCapture={(event) => {
               if (!editableText) return;
               const inputEvent = event.nativeEvent as InputEvent;
               if (inputEvent.inputType === "insertParagraph" || inputEvent.inputType === "insertLineBreak") {
                 event.preventDefault();
-                insertEditableText("\n");
+                replaceEditableSelection("\n");
+                return;
+              }
+              if (inputEvent.inputType === "insertText") {
+                event.preventDefault();
+                replaceEditableSelection(inputEvent.data ?? "");
+                return;
+              }
+              if (inputEvent.inputType === "deleteContentBackward") {
+                event.preventDefault();
+                deleteEditableSelection("backward");
+                return;
+              }
+              if (inputEvent.inputType === "deleteContentForward") {
+                event.preventDefault();
+                deleteEditableSelection("forward");
+              }
+            }}
+            onKeyDownCapture={(event) => {
+              if (!editableText) return;
+              if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a") {
+                event.preventDefault();
+                pendingSelectionRef.current = { start: 0, end: decodedText.text.length };
+                onDisplaySelectionChange?.({ start: 0, end: decodedText.text.length });
+                const element = canvasRef.current;
+                if (element) setDomSelectionForDisplayRange(element, 0, decodedText.text.length);
+                return;
+              }
+              if (event.key === "Backspace" || event.key === "Delete") {
+                event.preventDefault();
+                deleteEditableSelection(event.key === "Backspace" ? "backward" : "forward");
+                return;
+              }
+              if (event.key === "Enter") {
+                event.preventDefault();
+                replaceEditableSelection("\n");
+                return;
+              }
+              if (!event.ctrlKey && !event.metaKey && !event.altKey && event.key.length === 1) {
+                event.preventDefault();
+                replaceEditableSelection(event.key);
               }
             }}
             onPaste={(event) => {
               if (!editableText) return;
               event.preventDefault();
-              insertEditableText(event.clipboardData.getData("text/plain"));
+              replaceEditableSelection(event.clipboardData.getData("text/plain"));
             }}
-            onInput={updateEditableText}
+            onInput={ignoreNativeEditableInput}
             onMouseUp={captureDisplaySelection}
-            onKeyUp={captureEditableSelection}
+            onKeyUp={(event) => {
+              if (!editableText) {
+                captureDisplaySelection();
+                return;
+              }
+              if (
+                event.key === "Backspace" ||
+                event.key === "Delete" ||
+                event.key === "Enter" ||
+                ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a") ||
+                (!event.ctrlKey && !event.metaKey && !event.altKey && event.key.length === 1)
+              ) {
+                return;
+              }
+              captureEditableSelection();
+            }}
             onBlur={captureDisplaySelection}
           >
             {preview.segments.length > 0 ? preview.segments.map((segment) => (
@@ -311,10 +394,6 @@ function domPointForDisplayOffset(root: HTMLElement, offset: number) {
     cursor = next;
   }
   return lastText ? { node: lastText, offset: lastText.data.length } : { node: root, offset: 0 };
-}
-
-function readEditableText(root: HTMLElement) {
-  return root.textContent ?? "";
 }
 
 function normalizePreviewScale(value: number): ClassicTextEditPreviewScale {

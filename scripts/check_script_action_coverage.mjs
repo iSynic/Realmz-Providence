@@ -896,8 +896,8 @@ for (const snippet of [
   if (!mapFormControls.includes(snippet)) failures.push(`Map number field live-commit support is missing: ${snippet}`);
 }
 for (const snippet of [
-  "label=\"X\" value={trigger.coordinate.x} min={0} max={89} commitOnChange",
-  "label=\"Y\" value={trigger.coordinate.y} min={0} max={89} commitOnChange"
+  "label=\"X\" value={trigger.coordinate.x} min={0} max={89} compact plain maxLength={2} commitOnChange",
+  "label=\"Y\" value={trigger.coordinate.y} min={0} max={89} compact plain maxLength={2} commitOnChange"
 ]) {
   if (!mapContextSidebar.includes(snippet)) failures.push(`Map Action Point selection inspector live movement is missing: ${snippet}`);
 }
