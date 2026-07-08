@@ -351,16 +351,13 @@ export function MapsPanel({
           >
             <LandTileAtlasEditor
               project={state.project}
+              selectedMapId={selectedMap?.id ?? null}
               selectedTileset={selectedTileset}
               atlas={atlas}
+              atlasEntries={state.atlasEntries}
               icons={state.iconEntries}
               selectedPaintTile={state.selectedTile}
               onSelectTile={onSelectTile}
-              onSetTool={openCanvasTool}
-              onOpenPalette={() => {
-                setPaletteOpen(true);
-                setWorkbenchMode("canvas");
-              }}
               onApplyCommand={onApplyCommand}
             />
           </MapModeSurface>

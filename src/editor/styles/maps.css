@@ -1440,6 +1440,56 @@
   font-size: 11px;
 }
 
+.land-tiles-sidebar-detail {
+  display: grid;
+  gap: 8px;
+}
+
+.land-tiles-sidebar-summary {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid #253340;
+  border-radius: 6px;
+  background: #10161d;
+}
+
+.land-tiles-sidebar-swatch {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #344657;
+  border-radius: 5px;
+}
+
+.land-tiles-sidebar-swatch .tile-swatch canvas {
+  width: 56px;
+  height: 56px;
+}
+
+.land-tiles-sidebar-summary div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.land-tiles-sidebar-summary strong,
+.land-tiles-sidebar-summary small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.land-tiles-sidebar-summary strong {
+  color: #f3f8ff;
+  font-size: 12px;
+}
+
 
 
 .compact-tile-readout {
@@ -2054,6 +2104,107 @@
   gap: 8px;
 }
 
+.custom-landlook-tools {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.custom-landlook-card {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #253340;
+  border-radius: 7px;
+  background:
+    linear-gradient(135deg, rgba(59, 214, 184, 0.08), transparent 60%),
+    #10161d;
+}
+
+.custom-landlook-card p {
+  margin: 0;
+  color: #95a8b8;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.custom-landlook-card p.warning {
+  color: #f3ca76;
+}
+
+.custom-landlook-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: end;
+}
+
+.custom-landlook-form.import {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.custom-landlook-form label {
+  flex: 1 1 160px;
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  color: #7ea9d5;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.45px;
+  text-transform: uppercase;
+}
+
+.custom-landlook-form select {
+  width: 100%;
+  min-width: 0;
+  min-height: 30px;
+  box-sizing: border-box;
+  border: 1px solid #2d3946;
+  border-radius: 5px;
+  background: #0f141a;
+  color: #f0f6fc;
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 8px;
+}
+
+.custom-landlook-form .map-number-field.compact {
+  flex: 0 0 70px;
+  width: 70px;
+}
+
+.custom-landlook-form .btn,
+.custom-landlook-file-button {
+  flex: 0 0 auto;
+}
+
+.custom-landlook-file-button {
+  min-height: 28px;
+  align-self: end;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 10px;
+  border: 1px solid #3f6b2f;
+  border-radius: 5px;
+  background: #142019;
+  color: #bfe8bf !important;
+  cursor: pointer;
+}
+
+.custom-landlook-file-button input {
+  display: none;
+}
+
+@media (max-width: 1380px) {
+  .custom-landlook-tools {
+    grid-template-columns: 1fr;
+  }
+}
+
 
 
 .map-search-input {
@@ -2077,15 +2228,120 @@
 
 .land-tile-atlas-main {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   align-items: start;
 }
 
 
 
+.land-tile-atlas-browser {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+
+
+.land-tile-filter-bar {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) max-content;
+  gap: 8px;
+  align-items: center;
+  padding: 6px;
+  border: 1px solid #253340;
+  border-radius: 6px;
+  background: #10161d;
+}
+
+
+
+.land-tile-search-input {
+  min-height: 30px;
+}
+
+
+
+.land-tile-filter-menu-wrap {
+  position: relative;
+}
+
+
+
+.land-tile-filter-button {
+  border-radius: 6px;
+}
+
+
+
+.land-tile-filter-button em {
+  max-width: 150px;
+  overflow: hidden;
+  color: #dbe9f5;
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+
+.land-tile-filter-popover {
+  right: 0;
+  left: auto;
+  width: min(360px, calc(100vw - 360px));
+}
+
+
+
+.land-tile-filter-list {
+  display: grid;
+  gap: 5px;
+  overflow-y: auto;
+  padding: 8px 10px;
+}
+
+
+
+.land-tile-filter-list button {
+  display: grid;
+  gap: 2px;
+  padding: 7px 8px;
+  border: 1px solid #223140;
+  border-radius: 5px;
+  background: #0c141c;
+  color: #dce8f4;
+  text-align: left;
+}
+
+
+
+.land-tile-filter-list button:hover,
+.land-tile-filter-list button.active {
+  border-color: #4a77ad;
+  background: #17263a;
+}
+
+
+
+.land-tile-filter-list strong {
+  color: #f1f6fb;
+  font-size: 10px;
+}
+
+
+
+.land-tile-filter-list small {
+  color: #8ca6bc;
+  font-size: 9px;
+  line-height: 1.3;
+}
+
+
+
 .land-tile-detail-rail {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
   gap: 10px;
   min-width: 0;
   max-width: 100%;
@@ -2146,12 +2402,12 @@
 
 .land-tile-atlas-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(42px, 42px));
+  grid-template-columns: repeat(20, 32px);
   align-content: start;
-  justify-content: start;
-  gap: 3px;
+  justify-content: center;
+  gap: 2px;
   max-width: 100%;
-  max-height: min(70vh, 760px);
+  max-height: none;
   overflow: auto;
   padding: 6px;
   border: 1px solid #253340;
@@ -2164,8 +2420,8 @@
 .land-tile-atlas-grid button {
   position: relative;
   min-width: 0;
-  width: 42px;
-  height: 42px;
+  width: 32px;
+  height: 32px;
   aspect-ratio: 1 / 1;
   display: grid;
   place-items: center;
@@ -2212,12 +2468,7 @@
 
 @media (min-width: 1680px) {
   .land-tile-atlas-grid {
-    grid-template-columns: repeat(auto-fill, minmax(48px, 48px));
-  }
-
-  .land-tile-atlas-grid button {
-    width: 48px;
-    height: 48px;
+    grid-template-columns: repeat(20, 32px);
   }
 }
 

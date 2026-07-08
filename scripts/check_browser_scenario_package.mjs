@@ -1090,6 +1090,7 @@ expect(bytesEqual(writtenTimedEncounters?.slice(40, 80), timedEncounterRow(autho
 const resourceUpdateProject = {
   ...project,
   assets: [
+    managedAsset("asset-custom-landlook-atlas-6", "Custom 1 Landlook Atlas", "picture", "PICT", 306, "data:image/png;base64,AAECAw=="),
     managedAsset("asset-text-202", "Text 202", "text", "TEXT", 202, "data:text/plain;base64,SGVsbG8="),
     managedAsset("asset-styl-202", "Style 202", "text", "styl", 202, "data:application/octet-stream;base64,AQID")
   ]
@@ -1103,6 +1104,7 @@ expect(macWithResourceUpdate.report.resourceWarnings.some((warning) => warning.i
 expect(macWithResourceUpdate.report.resourceWarnings.some((warning) => warning.includes("2 existing resource(s) were replaced")), "TEXT/styl replacement should be reported");
 const macResources = resourceMap(parseResourceFork(macUpdatedFiles.get("Scenario")));
 expect(bytesEqual(macResources.get("PICT:1")?.data, Uint8Array.from([1, 2, 3])), "Mac resource export should preserve PICT data");
+expect(bytesEqual(macResources.get("PICT:306")?.data, Uint8Array.from([0, 1, 2, 3])), "Mac resource export should write generated Custom 1 PICT 306 atlas data");
 expect(bytesEqual(macResources.get("cicn:2")?.data, Uint8Array.from([4, 5, 6])), "Mac resource export should preserve cicn data");
 expect(bytesEqual(macResources.get("snd :3")?.data, Uint8Array.from([7, 8, 9])), "Mac resource export should preserve snd data");
 expect(bytesEqual(macResources.get("STR#:-101")?.data, Uint8Array.from([0, 1, 4, 77, 97, 112, 49])), "Mac resource export should preserve STR# data");
@@ -1117,6 +1119,7 @@ expect(bytesEqual(windowsUpdatedFiles.get("Scenario"), sourceResourceFork), "Win
 expect(windowsWithResourceUpdate.report.writtenFiles.includes("Scenario.rsrc"), "Windows resource sidecar should be reported as written");
 const windowsSidecarResources = resourceMap(parseResourceFork(windowsUpdatedFiles.get("Scenario.rsrc")));
 expect(!windowsSidecarResources.has("PICT:1"), "Windows Scenario.rsrc sidecar should not merge raw Scenario-only PICT resources");
+expect(bytesEqual(windowsSidecarResources.get("PICT:306")?.data, Uint8Array.from([0, 1, 2, 3])), "Windows Scenario.rsrc sidecar should contain generated Custom 1 PICT 306 atlas data");
 expect(bytesEqual(windowsSidecarResources.get("TEXT:202")?.data, Uint8Array.from([72, 101, 108, 108, 111])), "Windows Scenario.rsrc sidecar should contain TEXT 202 update");
 expect(bytesEqual(windowsSidecarResources.get("styl:202")?.data, Uint8Array.from([1, 2, 3])), "Windows Scenario.rsrc sidecar should contain styl 202 update");
 

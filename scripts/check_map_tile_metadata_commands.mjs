@@ -23,6 +23,7 @@ try {
   checkCustomMapstatsAttributeSync(commands, metadata, paintGroups);
   checkCustomCombatBuildSync(commands, metadata);
   checkCustomLandlookBaseSync(commands);
+  checkCreateCustomLandlookFromSource(commands);
   checkBuiltInLandlookStaysReadOnly(commands);
   checkSpecialTileSolidity(commands, metadata);
   checkPositiveIconBackedTileValues(renderValues, metadata);
@@ -94,6 +95,55 @@ function checkCustomLandlookBaseSync({ updateCustomLandlookBase }) {
   const profile = findProfile(next, 6, 4);
   assert(profile?.baseTile === 111, "custom landlook base tile edit did not refresh tileAttributes");
   assert(profile?.baseScale === 2, "custom landlook base scale edit did not refresh tileAttributes");
+}
+
+function checkCreateCustomLandlookFromSource({ createCustomLandlookFromSource }) {
+  const builtInProject = projectWithCustomLandlook({
+    customLandlooks: [],
+    tileAttributes: [
+      mapstatsProfile(0, record(5, { solid: 1, spare: 77 }), { sourceFile: "Data P BD", baseTile: 156, baseScale: 1 })
+    ],
+    assetCatalog: { tilesets: [standardTileset(0)] },
+    maps: [landMap(0, 0)],
+    randomLevels: [randomLevel(0, 0)]
+  });
+  const next = createCustomLandlookFromSource(builtInProject, {
+    kind: "createCustomLandlookFromSource",
+    label: "Create Custom 1",
+    sourceLandlook: 0,
+    targetLandlook: 6,
+    assignMapId: "land:0"
+  });
+  const custom = next.customLandlooks.find((landlook) => landlook.landlook === 6);
+  assert(custom?.sourceFile === "Data Custom 1 BD", "Custom 1 creation should target Data Custom 1 BD.");
+  assert(custom?.authored === true, "Custom landlook creation should mark metadata authored.");
+  assert(custom?.records?.[5]?.solid === 1, "Custom landlook creation did not copy built-in tile metadata.");
+  assert(custom?.records?.[5]?.spare === 77, "Custom landlook creation should preserve mapped spare words from the source profile.");
+  assert(findProfile(next, 6, 5)?.editableScope === "scenario-custom", "Custom landlook creation did not sync writable tileAttributes.");
+  assert(next.assetCatalog.tilesets.some((tileset) => tileset.landlook === 6 && tileset.pictId === 306 && tileset.name === "Custom 1"), "Custom landlook creation did not register the Custom 1 atlas.");
+  assert(next.maps[0]?.render?.landlook === 6 && next.maps[0]?.render?.tilesetId === "landlook-6", "Custom landlook creation did not switch the assigned map.");
+  assert(next.randomLevels[0]?.landlook === 6, "Custom landlook creation did not switch the assigned random-level row.");
+
+  const sourceCustom = projectWithCustomLandlook().customLandlooks[0];
+  sourceCustom.records[8] = record(8, { spare: 222, solid: 1 });
+  sourceCustom.rangeSlots = [{ slot: 0, label: "Reserved", firstTile: 10, lastTile: 20, reserved: 333 }];
+  sourceCustom.trailingBytes = [4, 5, 6];
+  sourceCustom.rawBytes = [7, 8, 9];
+  const cloned = createCustomLandlookFromSource(projectWithCustomLandlook({
+    customLandlooks: [sourceCustom],
+    assetCatalog: { tilesets: [customTileset(6)] }
+  }), {
+    kind: "createCustomLandlookFromSource",
+    label: "Create Custom 2",
+    sourceLandlook: 6,
+    targetLandlook: 7
+  });
+  const custom2 = cloned.customLandlooks.find((landlook) => landlook.landlook === 7);
+  assert(custom2?.sourceFile === "Data Custom 2 BD", "Custom duplication should retarget Data Custom 2 BD.");
+  assert(custom2?.records?.[8]?.spare === 222, "Custom duplication should preserve spare mapstats words.");
+  assert(custom2?.rangeSlots?.[0]?.reserved === 333, "Custom duplication should preserve range reserved words.");
+  assert(custom2?.trailingBytes?.join(",") === "4,5,6", "Custom duplication should preserve trailing bytes.");
+  assert(custom2?.rawBytes?.join(",") === "7,8,9", "Custom duplication should preserve raw bytes.");
 }
 
 function checkBuiltInLandlookStaysReadOnly({ updateCustomLandTileAttributes }) {
@@ -229,31 +279,76 @@ function projectWithCustomLandlook(overrides = {}) {
     authored: false
   }];
   return {
-    maps: [],
-    randomLevels: [],
+    maps: overrides.maps ?? [],
+    randomLevels: overrides.randomLevels ?? [],
     mapRecords: [],
     landLayout: null,
     tileAttributes: overrides.tileAttributes ?? customLandlooks.flatMap((landlook) => landlook.records.map((entry) => mapstatsProfile(landlook.landlook, entry, landlook))),
     customLandlooks,
-    assetCatalog: { tilesets: [customTileset()] }
+    assetCatalog: overrides.assetCatalog ?? { tilesets: [customTileset()] }
   };
 }
 
-function customTileset() {
+function customTileset(landlook = 6) {
   return {
-    id: "landlook-6",
-    landlook: 6,
-    name: "Custom 6",
+    id: `landlook-${landlook}`,
+    landlook,
+    name: landlook === 6 ? "Custom 1" : landlook === 7 ? "Custom 2" : "Custom 3",
     source: "Scenario resource fork",
     available: true,
     imagePath: null,
-    pictId: 306,
+    pictId: 300 + landlook,
     tileWidth: 32,
     tileHeight: 32,
     columns: 20,
     rows: 10,
     custom: true,
     baseTile: 156
+  };
+}
+
+function standardTileset(landlook) {
+  return {
+    id: `landlook-${landlook}`,
+    landlook,
+    name: landlook === 0 ? "Plains" : `Landlook ${landlook}`,
+    source: "Realmz reference resources",
+    available: true,
+    imagePath: null,
+    pictId: 300 + landlook,
+    tileWidth: 32,
+    tileHeight: 32,
+    columns: 20,
+    rows: 10,
+    custom: false,
+    baseTile: 156
+  };
+}
+
+function landMap(index, landlook) {
+  return {
+    id: `land:${index}`,
+    levelType: "land",
+    index,
+    name: `Land ${index}`,
+    width: 90,
+    height: 90,
+    tiles: new Array(90 * 90).fill(156),
+    render: { landlook, tilesetId: `landlook-${landlook}`, mode: "outdoor-landlook" }
+  };
+}
+
+function randomLevel(index, landlook) {
+  return {
+    id: `land:${index}:randlevel`,
+    source: "Data RD",
+    levelType: "land",
+    levelIndex: index,
+    landlook,
+    isDark: false,
+    useLos: false,
+    rects: [],
+    rawValues: []
   };
 }
 

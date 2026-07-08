@@ -3,6 +3,7 @@ import {
   clearLandLayout,
   clearRandomRect,
   createMap,
+  createCustomLandlookFromSource,
   createMapRecord,
   createRandomRect,
   duplicateMap,
@@ -143,6 +144,7 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "duplicateMapStamp") return duplicateMapStamp(project, command.stampId, command.id, command.name);
   if (command.kind === "updateMapStamp") return updateMapStamp(project, command.stampId, command.changes);
   if (command.kind === "updateCustomLandTileAttributes") return updateCustomLandTileAttributes(project, command);
+  if (command.kind === "createCustomLandlookFromSource") return createCustomLandlookFromSource(project, command);
   if (command.kind === "updateSpecialTileSolidity") return updateSpecialTileSolidity(project, command);
   if (command.kind === "updateCustomLandTileCombatBuild") return updateCustomLandTileCombatBuild(project, command);
   if (command.kind === "updateCustomLandlookBase") return updateCustomLandlookBase(project, command);

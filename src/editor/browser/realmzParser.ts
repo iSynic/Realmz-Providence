@@ -1397,9 +1397,9 @@ export function landlookName(landlook: number) {
     3: "Subterranean",
     4: "Castle",
     5: "Desert",
-    6: "Custom 6",
-    7: "Custom 7",
-    8: "Custom 8",
+    6: "Custom 1",
+    7: "Custom 2",
+    8: "Custom 3",
     9: "Swamp",
     10: "Snow"
   };

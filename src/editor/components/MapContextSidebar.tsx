@@ -404,6 +404,9 @@ export function MapSelectionSidebar({
             project={state.project}
             selectedMap={selectedMap}
             selectedTileset={selectedTileset}
+            atlas={atlas}
+            icons={state.iconEntries}
+            selectedTile={state.selectedTile}
             randomLevel={selectedRandomLevel}
             mapRecords={mapRecords}
             onSetWorkbenchMode={onSetWorkbenchMode}
@@ -480,6 +483,9 @@ function MapModeInspector({
   project,
   selectedMap,
   selectedTileset,
+  atlas,
+  icons,
+  selectedTile,
   randomLevel,
   mapRecords,
   onSetWorkbenchMode
@@ -488,6 +494,9 @@ function MapModeInspector({
   project: Project | null;
   selectedMap: MapEntity | null;
   selectedTileset: TilesetAsset | null;
+  atlas: EditorState["atlasEntries"][string] | null;
+  icons: EditorState["iconEntries"];
+  selectedTile: number;
   randomLevel: RandomLevel | null;
   mapRecords: SemanticEntity[];
   onSetWorkbenchMode: (mode: MapWorkbenchMode) => void;
@@ -520,15 +529,13 @@ function MapModeInspector({
         </>
       )}
       {mode === "land-tiles" && (
-        <InfoGrid
-          rows={[
-            ["Tileset", selectedTileset?.name ?? "none"],
-            ["Scope", selectedTileset ? (selectedTileset.custom ? "Scenario custom" : "Built into Realmz") : "none"],
-            ["Editing", selectedTileset ? (selectedTileset.custom ? "Custom tiles writable" : "Reference only") : "none"],
-            ["Tile Count", selectedTileset ? selectedTileset.columns * selectedTileset.rows : 0],
-            ["Base Tile", selectedTileset?.baseTile ?? "none"],
-            ["Current Map", selectedMap?.name ?? "none"]
-          ]}
+        <LandTilesModeInspector
+          project={project}
+          selectedMap={selectedMap}
+          selectedTileset={selectedTileset}
+          atlas={atlas}
+          icons={icons}
+          selectedTile={selectedTile}
         />
       )}
       {mode === "random-areas" && (
@@ -547,6 +554,42 @@ function MapModeInspector({
         </button>
       </div>
     </section>
+  );
+}
+
+function LandTilesModeInspector({
+  project,
+  selectedMap,
+  selectedTileset,
+  atlas,
+  icons,
+  selectedTile
+}: {
+  project: Project | null;
+  selectedMap: MapEntity | null;
+  selectedTileset: TilesetAsset | null;
+  atlas: EditorState["atlasEntries"][string] | null;
+  icons: EditorState["iconEntries"];
+  selectedTile: number;
+}) {
+  if (!selectedTileset) {
+    return <p className="empty-copy compact">Select a land map to inspect its land tiles.</p>;
+  }
+  const meaning = classifyTileValue(selectedTile, selectedTileset, project?.tileAttributes ?? [], icons);
+  return (
+    <div className="land-tiles-sidebar-detail">
+      <div className="land-tiles-sidebar-summary">
+        <div className="land-tiles-sidebar-swatch" style={{ background: tileColor(selectedTile) }}>
+          <TileSwatch atlas={atlas} icons={icons} tile={selectedTile} tileset={selectedTileset} showBadge={false} />
+        </div>
+        <div>
+          <strong>{meaning.label}</strong>
+          <small>{selectedTileset.name}</small>
+          <small>{selectedMap?.name ?? "No current map"}</small>
+        </div>
+      </div>
+      <InfoGrid rows={tileAttributeRows(meaning)} />
+    </div>
   );
 }
 

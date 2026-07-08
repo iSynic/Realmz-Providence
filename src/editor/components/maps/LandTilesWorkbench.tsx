@@ -1,15 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
+import type { ChangeEvent } from "react";
 import { EditorState } from "../../store";
-import { EditorTool, IconEntry, Project, ProjectCommand, TileAttributeFlag, TilesetAsset } from "../../types";
+import { IconEntry, ManagedAsset, Project, ProjectCommand, ResourceAsset, TileAttributeFlag, TilesetAsset } from "../../types";
 import { LandlookTileVisualCategory, landlookVisualCategoryLabel } from "../../map/landlookTileSemantics";
 import { classifyTileValue, standardTileValues, tileAttributeGroup } from "../../map/tileMetadata";
-import { InfoGrid } from "../InfoGrid";
 import { TileSwatch } from "../TileSwatch";
-import { tileColor } from "../TileSprite";
+import { loadImage, tileColor } from "../TileSprite";
 import { MapNumberField } from "./MapFormControls";
-import { attributeSourceLabel, normalizedCombatBuild, tileAttributeLabel, tileAttributeRows } from "./mapTileUiUtils";
+import { normalizedCombatBuild, tileAttributeLabel } from "./mapTileUiUtils";
 
 type LandTileFilterId = TileAttributeFlag | "all" | `visual:${LandlookTileVisualCategory}`;
+type CustomAtlasImportMode = "full" | "block" | "tile";
+
+const CUSTOM_LANDLOOKS = [
+  { landlook: 6, label: "Custom 1", pictId: 306 },
+  { landlook: 7, label: "Custom 2", pictId: 307 },
+  { landlook: 8, label: "Custom 3", pictId: 308 }
+] as const;
+const LOCKED_LAND_TILES = new Set([60, 61]);
 
 const LAND_TILE_FILTERS: Array<{ id: LandTileFilterId; label: string; hint: string }> = [
   { id: "all", label: "All", hint: "Show the full current landlook atlas." },
@@ -44,31 +52,44 @@ function landTileFilterLabel(item: { id: LandTileFilterId; label: string }, tile
 
 export function LandTileAtlasEditor({
   project,
+  selectedMapId,
   selectedTileset,
   atlas,
+  atlasEntries,
   icons,
   selectedPaintTile,
   onSelectTile,
-  onSetTool,
-  onOpenPalette,
   onApplyCommand
 }: {
   project: Project | null;
+  selectedMapId?: string | null;
   selectedTileset: TilesetAsset | null;
   atlas: EditorState["atlasEntries"][string] | null;
+  atlasEntries?: EditorState["atlasEntries"];
   icons: Record<number, IconEntry>;
   selectedPaintTile: number;
   onSelectTile: (tile: number) => void;
-  onSetTool: (tool: EditorTool) => void;
-  onOpenPalette: () => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
   const [filter, setFilter] = useState<LandTileFilterId>("all");
   const [query, setQuery] = useState("");
   const [inspectedTile, setInspectedTile] = useState(selectedPaintTile);
+  const [sourceLandlook, setSourceLandlook] = useState(selectedTileset?.landlook ?? 0);
+  const [targetLandlook, setTargetLandlook] = useState<number>(6);
+  const [importMode, setImportMode] = useState<CustomAtlasImportMode>("tile");
+  const [importTargetTile, setImportTargetTile] = useState(selectedPaintTile);
+  const [importSourceId, setImportSourceId] = useState("");
+  const [importStatus, setImportStatus] = useState("");
+  const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   useEffect(() => {
     setInspectedTile(selectedPaintTile);
+    setImportTargetTile(selectedPaintTile);
   }, [selectedPaintTile, selectedTileset?.id]);
+  useEffect(() => {
+    if (selectedTileset) setSourceLandlook(selectedTileset.landlook);
+  }, [selectedTileset?.landlook]);
+  const sourceTilesets = useMemo(() => landlookSourceTilesets(project), [project]);
+  const imageSources = useMemo(() => customAtlasImageSources(project), [project]);
 
   if (!selectedTileset) {
     return <p className="empty-copy compact">Select a land map to inspect its tile set.</p>;
@@ -93,111 +114,250 @@ export function LandTileAtlasEditor({
       || profile.attributeFlags.map(tileAttributeLabel).join(" ").toLowerCase().includes(normalizedQuery);
   });
   const meaning = classifyTileValue(inspectedTile, selectedTileset, attributes, icons);
-  const attributeRows = tileAttributeRows(meaning);
-  const quickFilters = meaning.attributeFlags.filter((flag) => LAND_TILE_FILTERS.some((item) => item.id === flag));
-  const visualFilter = meaning.visual ? `visual:${meaning.visual.category}` as LandTileFilterId : null;
-  const editingScope = meaning.attributes?.editableScope === "scenario-custom" ? "Scenario custom" : "Read-only";
+  const selectedCustom = CUSTOM_LANDLOOKS.some((entry) => entry.landlook === selectedTileset.landlook);
+  const activeFilter = LAND_TILE_FILTERS.find((item) => item.id === filter) ?? LAND_TILE_FILTERS[0];
+  const activeFilterLabel = landTileFilterLabel(activeFilter, selectedTileset);
+
+  const createCustomLandlook = async () => {
+    if (!project) return;
+    const target = CUSTOM_LANDLOOKS.find((entry) => entry.landlook === targetLandlook);
+    if (!target) return;
+    const hasExisting = (project.customLandlooks ?? []).some((landlook) => landlook.landlook === target.landlook)
+      || (project.assets ?? []).some((asset) => asset.linkedEntity === `landlook:${target.landlook}`);
+    if (hasExisting && !window.confirm(`${target.label} already has authored data. Replace it?`)) return;
+    setImportStatus("");
+    onApplyCommand({
+      kind: "createCustomLandlookFromSource",
+      label: `Create ${target.label} landlook`,
+      sourceLandlook,
+      targetLandlook: target.landlook,
+      assignMapId: selectedMapId ?? null
+    });
+    const sourceTileset = sourceTilesets.find((tileset) => tileset.landlook === sourceLandlook);
+    const sourceAtlas = sourceTileset ? atlasEntries?.[sourceTileset.id] : null;
+    const sourceImage = sourceAtlas?.image ?? (atlas && selectedTileset.landlook === sourceLandlook ? atlas.image : null);
+    if (sourceImage) {
+      const dataUrl = atlasImageToDataUrl(sourceImage);
+      onApplyCommand({
+        kind: "replaceCustomLandlookAtlas",
+        label: `Copy atlas to ${target.label}`,
+        landlook: target.landlook,
+        asset: customLandlookAtlasAsset(target.landlook, dataUrl, `Copied from ${sourceTileset?.name ?? selectedTileset.name}`, sourceImage.width, sourceImage.height)
+      });
+      setImportStatus(`${target.label} created and ${sourceTileset?.name ?? "source"} atlas copied.`);
+    } else {
+      setImportStatus(`${target.label} metadata created. Switch to a loaded source atlas or import art to generate PICT ${target.pictId}.`);
+    }
+  };
+
+  const importAtlasSource = async (sourceUrl: string, sourceLabel: string) => {
+    if (!selectedCustom) {
+      setImportStatus("Create or switch to Custom 1, Custom 2, or Custom 3 before importing art.");
+      return;
+    }
+    if (!atlas) {
+      setImportStatus("Current custom atlas is not loaded yet.");
+      return;
+    }
+    try {
+      const dataUrl = await composeCustomLandlookAtlas({
+        mode: importMode,
+        atlasImage: atlas.image,
+        sourceUrl,
+        targetTile: importTargetTile
+      });
+      const target = CUSTOM_LANDLOOKS.find((entry) => entry.landlook === selectedTileset.landlook);
+      onApplyCommand({
+        kind: "replaceCustomLandlookAtlas",
+        label: `Import ${importMode === "full" ? "tile set" : importMode === "block" ? "picture block" : "tile"} into ${target?.label ?? selectedTileset.name}`,
+        landlook: selectedTileset.landlook,
+        asset: customLandlookAtlasAsset(selectedTileset.landlook, dataUrl, sourceLabel, 640, 320)
+      });
+      setImportStatus(`Imported ${sourceLabel} into ${target?.label ?? selectedTileset.name}.`);
+    } catch (error) {
+      setImportStatus(error instanceof Error ? error.message : "Image import failed.");
+    }
+  };
+
+  const importFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    try {
+      await importAtlasSource(url, file.name);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  const importSelectedImageSource = async () => {
+    const source = imageSources.find((candidate) => candidate.id === importSourceId);
+    if (!source) {
+      setImportStatus("Choose a project or reference image source first.");
+      return;
+    }
+    await importAtlasSource(source.url, source.label);
+  };
 
   return (
     <div className="land-tile-atlas-editor">
-      <div className="land-tile-atlas-top">
-        <div className="land-tile-atlas-status">
-          <InfoGrid
-            rows={[
-              ["Tileset", selectedTileset.name],
-              ["Scope", selectedTileset.custom ? "Scenario custom" : "Built into Realmz"],
-              ["Editing", editingScope],
-              ["Tile Count", tiles.length],
-              ["Base Tile", selectedTileset.baseTile],
-              ["Shown", visibleTiles.length]
-            ]}
-          />
-        </div>
-        <div className="land-tile-atlas-controls">
-          <input
-            className="map-search-input"
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.currentTarget.value)}
-            placeholder="Search tile id, label, or trait..."
-          />
-          <div className="land-tile-atlas-toolbar" role="toolbar" aria-label="Tile attribute filters">
-            {LAND_TILE_FILTERS.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={filter === item.id ? "active" : ""}
-                onClick={() => setFilter(item.id)}
-                title={item.hint}
-              >
-                {landTileFilterLabel(item, selectedTileset)}
-              </button>
-            ))}
+      <div className="custom-landlook-tools">
+        <section className="custom-landlook-card">
+          <div className="tile-meaning-title">
+            <span>Create Custom From Existing</span>
+            <b>Custom 1-3 only</b>
           </div>
-        </div>
+          <div className="custom-landlook-form">
+            <label>
+              Source
+              <select value={sourceLandlook} onChange={(event) => setSourceLandlook(Number(event.currentTarget.value))}>
+                {sourceTilesets.map((tileset) => (
+                  <option key={tileset.landlook} value={tileset.landlook}>
+                    {tileset.name} ({tileset.landlook})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Save As
+              <select value={targetLandlook} onChange={(event) => setTargetLandlook(Number(event.currentTarget.value))}>
+                {CUSTOM_LANDLOOKS.map((entry) => (
+                  <option key={entry.landlook} value={entry.landlook}>
+                    {entry.label} - PICT {entry.pictId}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button className="btn btn-primary btn-xs" type="button" onClick={() => void createCustomLandlook()} disabled={!project}>
+              Create Custom
+            </button>
+          </div>
+          <p>Built-in landlooks can be copied to Custom 1-3 before editing.</p>
+        </section>
+        <section className="custom-landlook-card">
+          <div className="tile-meaning-title">
+            <span>Import Atlas Art</span>
+            <b>{selectedCustom ? selectedTileset.name : "choose custom"}</b>
+          </div>
+          <div className="custom-landlook-form import">
+            <label>
+              Mode
+              <select value={importMode} onChange={(event) => setImportMode(event.currentTarget.value as CustomAtlasImportMode)}>
+                <option value="full">Full 640 x 320 Atlas</option>
+                <option value="block">32px-Aligned Block</option>
+                <option value="tile">Single 32 x 32 Tile</option>
+              </select>
+            </label>
+            {importMode !== "full" && (
+              <MapNumberField
+                label="Target Tile"
+                value={importTargetTile}
+                onCommit={setImportTargetTile}
+                min={1}
+                max={200}
+                compact
+                plain
+              />
+            )}
+            <label>
+              Existing Image
+              <select value={importSourceId} onChange={(event) => setImportSourceId(event.currentTarget.value)}>
+                <option value="">Upload file or choose...</option>
+                {imageSources.map((source) => (
+                  <option key={source.id} value={source.id}>{source.label}</option>
+                ))}
+              </select>
+            </label>
+            <button className="btn btn-secondary btn-xs" type="button" onClick={() => void importSelectedImageSource()} disabled={!importSourceId || !selectedCustom}>
+              Import Selected
+            </button>
+            <label className="custom-landlook-file-button">
+              Import File
+              <input type="file" accept="image/*" onChange={(event) => void importFile(event)} disabled={!selectedCustom} />
+            </label>
+          </div>
+          {importStatus && <p className={importStatus.toLowerCase().includes("failed") || importStatus.toLowerCase().includes("choose") ? "warning" : ""}>{importStatus}</p>}
+        </section>
       </div>
       <div className="land-tile-atlas-main">
-        <div className="land-tile-atlas-grid">
-          {visibleTiles.map((tile) => (
-            <button
-              key={tile}
-              type="button"
-              className={[
-                tile === selectedPaintTile ? "selected" : "",
-                tile === inspectedTile ? "inspected" : ""
-              ].filter(Boolean).join(" ")}
-              style={{ background: tileColor(tile) }}
-              onClick={() => {
-                setInspectedTile(tile);
-                onSelectTile(tile);
-              }}
-              title={`Tile ${tile}`}
-            >
-              <TileSwatch atlas={atlas} icons={icons} tile={tile} tileset={selectedTileset} />
-            </button>
-          ))}
-          {visibleTiles.length === 0 && <span className="empty-inline">No tiles match this filter.</span>}
-        </div>
-        <aside className="land-tile-detail-rail">
-          <div className="land-tile-detail-card">
-            <div className="land-tile-detail-preview" style={{ background: tileColor(inspectedTile) }}>
-              <TileSwatch atlas={atlas} icons={icons} tile={inspectedTile} tileset={selectedTileset} showBadge={false} />
-            </div>
-            <div className="land-tile-detail-body">
-              <div className="tile-meaning-title">
-                <span>{meaning.label}</span>
-                <b>{attributeSourceLabel(meaning.attributes)}</b>
-              </div>
-              <InfoGrid rows={attributeRows} />
-              {(visualFilter || quickFilters.length > 0) && (
-                <div className="land-tile-quick-filters" aria-label="Matching tile filters">
-                  {visualFilter && (
-                    <button type="button" onClick={() => setFilter(visualFilter)} title={`Show all ${landlookVisualCategoryLabel(meaning.visual!.category, selectedTileset.landlook)} tiles`}>
-                      Show {landlookVisualCategoryLabel(meaning.visual!.category, selectedTileset.landlook)}
-                    </button>
-                  )}
-                  {quickFilters.map((flag) => (
-                    <button key={flag} type="button" onClick={() => setFilter(flag)} title={`Show all ${tileAttributeLabel(flag)} tiles`}>
-                      Show {tileAttributeLabel(flag)}
-                    </button>
-                  ))}
+        <div className="land-tile-atlas-browser">
+          <div className="land-tile-filter-bar">
+            <input
+              className="map-search-input land-tile-search-input"
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.currentTarget.value)}
+              placeholder="Search tile id, label, or trait..."
+            />
+            <div className="land-tile-filter-menu-wrap">
+              <button
+                className="overlay-menu-button land-tile-filter-button"
+                type="button"
+                aria-expanded={filterMenuOpen}
+                onClick={() => setFilterMenuOpen((open) => !open)}
+              >
+                <span>Tile Filters</span>
+                <b>{visibleTiles.length}/{tiles.length}</b>
+                <em>{activeFilterLabel}</em>
+              </button>
+              {filterMenuOpen && (
+                <div className="overlay-popover land-tile-filter-popover" role="dialog" aria-label="Tile filters">
+                  <div className="overlay-popover-head">
+                    <strong>Tile Filters</strong>
+                    <span>{activeFilterLabel}</span>
+                  </div>
+                  <div className="land-tile-filter-list" role="listbox" aria-label="Tile attribute filters">
+                    {LAND_TILE_FILTERS.map((item) => {
+                      const label = landTileFilterLabel(item, selectedTileset);
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          className={filter === item.id ? "active" : ""}
+                          onClick={() => {
+                            setFilter(item.id);
+                            setFilterMenuOpen(false);
+                          }}
+                          title={item.hint}
+                        >
+                          <strong>{label}</strong>
+                          <small>{item.hint}</small>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="overlay-popover-actions">
+                    <button type="button" onClick={() => { setFilter("all"); setFilterMenuOpen(false); }}>Show All</button>
+                    <button type="button" onClick={() => setFilterMenuOpen(false)}>Close</button>
+                  </div>
                 </div>
               )}
-              <div className="context-action-stack compact">
-                <button
-                  className="btn btn-primary btn-xs context-action-button"
-                  type="button"
-                  onClick={() => {
-                    onSelectTile(inspectedTile);
-                    onSetTool("paint");
-                    onOpenPalette();
-                  }}
-                >
-                  Paint With This Tile
-                </button>
-              </div>
             </div>
           </div>
+          <div className="land-tile-atlas-grid">
+            {visibleTiles.map((tile) => (
+              <button
+                key={tile}
+                type="button"
+                className={[
+                  tile === selectedPaintTile ? "selected" : "",
+                  tile === inspectedTile ? "inspected" : ""
+                ].filter(Boolean).join(" ")}
+                style={{ background: tileColor(tile) }}
+                onClick={() => {
+                  setInspectedTile(tile);
+                  onSelectTile(tile);
+                }}
+                title={`Tile ${tile}`}
+              >
+                <TileSwatch atlas={atlas} icons={icons} tile={tile} tileset={selectedTileset} />
+              </button>
+            ))}
+            {visibleTiles.length === 0 && <span className="empty-inline">No tiles match this filter.</span>}
+          </div>
+        </div>
+        <aside className="land-tile-detail-rail">
           <CombatBuildPreview
             atlas={atlas}
             icons={icons}
@@ -211,13 +371,178 @@ export function LandTileAtlasEditor({
             tileset={selectedTileset}
             onApplyCommand={onApplyCommand}
           />
-          <p className="context-capacity-note">
-            Built-in Realmz landlooks are read-only. Scenario custom landlooks and Data Solids special tiles are the current safe authoring surface.
-          </p>
         </aside>
       </div>
     </div>
   );
+}
+
+function landlookSourceTilesets(project: Project | null) {
+  const seen = new Set<number>();
+  return [...(project?.assetCatalog?.tilesets ?? [])]
+    .filter((tileset) => {
+      if (tileset.tileWidth !== 32 || tileset.tileHeight !== 32 || tileset.columns !== 20 || tileset.rows !== 10) return false;
+      if (seen.has(tileset.landlook)) return false;
+      seen.add(tileset.landlook);
+      return true;
+    })
+    .sort((left, right) => left.landlook - right.landlook);
+}
+
+function customAtlasImageSources(project: Project | null) {
+  if (!project) return [];
+  const out: Array<{ id: string; label: string; url: string }> = [];
+  for (const asset of project.assets ?? []) {
+    if (!["picture", "icon", "special-land-tile"].includes(asset.kind)) continue;
+    const url = asset.previewPath || asset.resourcePath || asset.originalPath;
+    if (!url) continue;
+    out.push({
+      id: `asset:${asset.id}`,
+      label: `${asset.label} (${asset.resourceType} ${asset.resourceId})`,
+      url
+    });
+  }
+  for (const asset of [...(project.assetCatalog?.pictures ?? []), ...(project.assetCatalog?.icons ?? [])]) {
+    const url = asset.previewPath;
+    if (!url) continue;
+    out.push({
+      id: `resource:${asset.source}:${asset.resourceType}:${asset.resourceId}`,
+      label: resourceImageSourceLabel(asset),
+      url
+    });
+  }
+  return out;
+}
+
+function resourceImageSourceLabel(asset: ResourceAsset) {
+  return `${asset.name || asset.resourceType} ${asset.resourceId}`;
+}
+
+function atlasImageToDataUrl(image: HTMLImageElement) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 640;
+  canvas.height = 320;
+  const ctx = required2dContext(canvas);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(image, 0, 0, 640, 320);
+  return canvas.toDataURL("image/png");
+}
+
+async function composeCustomLandlookAtlas({
+  mode,
+  atlasImage,
+  sourceUrl,
+  targetTile
+}: {
+  mode: CustomAtlasImportMode;
+  atlasImage: HTMLImageElement;
+  sourceUrl: string;
+  targetTile: number;
+}) {
+  const sourceImage = await loadImage(sourceUrl);
+  const sourceWidth = sourceImage.naturalWidth || sourceImage.width;
+  const sourceHeight = sourceImage.naturalHeight || sourceImage.height;
+  const canvas = document.createElement("canvas");
+  canvas.width = 640;
+  canvas.height = 320;
+  const ctx = required2dContext(canvas);
+  ctx.imageSmoothingEnabled = false;
+  if (mode === "full") {
+    if (sourceWidth !== 640 || sourceHeight !== 320) {
+      throw new Error("Full tile set import requires a 640 x 320 image.");
+    }
+    ctx.drawImage(sourceImage, 0, 0, 640, 320);
+    copyLockedAtlasTile(atlasImage, ctx, 60);
+    copyLockedAtlasTile(atlasImage, ctx, 61);
+    return canvas.toDataURL("image/png");
+  }
+  ctx.drawImage(atlasImage, 0, 0, 640, 320);
+  const tile = Math.trunc(targetTile);
+  if (tile < 1 || tile > 200) throw new Error("Target tile must be between 1 and 200.");
+  if (LOCKED_LAND_TILES.has(tile)) throw new Error("Tiles 60 and 61 are locked by Realmz and cannot be imported directly.");
+  const rect = atlasTileRect(tile);
+  if (mode === "tile") {
+    if (sourceWidth !== 32 || sourceHeight !== 32) throw new Error("Single tile import requires a 32 x 32 image.");
+    ctx.drawImage(sourceImage, rect.x, rect.y, 32, 32);
+    return canvas.toDataURL("image/png");
+  }
+  if (sourceWidth % 32 !== 0 || sourceHeight % 32 !== 0) {
+    throw new Error("Picture block import dimensions must be multiples of 32 pixels.");
+  }
+  const widthTiles = sourceWidth / 32;
+  const heightTiles = sourceHeight / 32;
+  const startCol = rect.x / 32;
+  const startRow = rect.y / 32;
+  if (startCol + widthTiles > 20 || startRow + heightTiles > 10) {
+    throw new Error("Picture block import would exceed the 20 x 10 atlas bounds.");
+  }
+  for (let row = 0; row < heightTiles; row += 1) {
+    for (let col = 0; col < widthTiles; col += 1) {
+      const target = (startRow + row) * 20 + startCol + col + 1;
+      if (LOCKED_LAND_TILES.has(target)) throw new Error("Picture block import overlaps locked tiles 60 or 61.");
+    }
+  }
+  ctx.drawImage(sourceImage, rect.x, rect.y);
+  return canvas.toDataURL("image/png");
+}
+
+function copyLockedAtlasTile(source: HTMLImageElement, ctx: CanvasRenderingContext2D, tile: number) {
+  const rect = atlasTileRect(tile);
+  ctx.drawImage(source, rect.x, rect.y, 32, 32, rect.x, rect.y, 32, 32);
+}
+
+function atlasTileRect(tile: number) {
+  const index = tile - 1;
+  return {
+    x: (index % 20) * 32,
+    y: Math.floor(index / 20) * 32
+  };
+}
+
+function required2dContext(canvas: HTMLCanvasElement) {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas rendering is unavailable.");
+  return ctx;
+}
+
+function customLandlookAtlasAsset(landlook: number, dataUrl: string, sourceLabel: string, sourceWidth: number, sourceHeight: number): ManagedAsset {
+  const target = CUSTOM_LANDLOOKS.find((entry) => entry.landlook === landlook);
+  const label = `${target?.label ?? `Custom ${landlook}`} Landlook Atlas`;
+  return {
+    id: `asset:custom-landlook-atlas:${landlook}:${Date.now()}`,
+    label,
+    kind: "picture",
+    resourceType: "PICT",
+    resourceId: 300 + landlook,
+    fileName: `${label}.png`,
+    originalPath: dataUrl,
+    previewPath: dataUrl,
+    resourcePath: dataUrl,
+    mimeType: "image/png",
+    bytes: Math.round(dataUrl.length * 0.75),
+    sha256: `browser-generated-${landlook}-${Date.now()}`,
+    width: 640,
+    height: 320,
+    durationMs: null,
+    sampleRate: null,
+    channels: null,
+    exportState: "ready",
+    provenance: `Browser generated from ${sourceLabel}`,
+    linkedEntity: `landlook:${landlook}`,
+    conversion: {
+      target: "custom-landlook-atlas",
+      fitMode: "stretch",
+      scaleMode: "crisp",
+      matte: "transparent",
+      paletteMode: "adaptive-256",
+      ditherMode: "none",
+      sourceWidth,
+      sourceHeight,
+      finalWidth: 640,
+      finalHeight: 320,
+      warnings: []
+    }
+  };
 }
 
 function CombatBuildPreview({

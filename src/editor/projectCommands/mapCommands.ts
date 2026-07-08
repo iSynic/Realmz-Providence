@@ -1,4 +1,4 @@
-import { LevelType, MapEntity, MapMarker, MapRecord, PaintCellChange, Project, ProjectCommand, Provenance, RandomLevel, RandomRect, TileAttributeFlag, TileAttributeProfile, TilesetAsset } from "../types";
+import { LandlookRangeSlot, LevelType, MapEntity, MapMarker, MapRecord, MapstatsRecord, PaintCellChange, Project, ProjectCommand, Provenance, RandomLevel, RandomRect, TileAttributeFlag, TileAttributeProfile, TilesetAsset } from "../types";
 
 const MAP_SIZE = 90;
 const FIELD_BYTES = MAP_SIZE * MAP_SIZE * 2;
@@ -10,6 +10,13 @@ const MAP_RECORD_MARKERS = 10;
 const MAP_RECORD_MARKER_BYTES = 6;
 const LAND_LAYOUT_ROWS = 8;
 const LAND_LAYOUT_COLS = 16;
+const CUSTOM_LANDLOOK_RECORDS = 201;
+const CUSTOM_LANDLOOKS = new Set([6, 7, 8]);
+const CUSTOM_LANDLOOK_SOURCE_FILES: Record<number, string> = {
+  6: "Data Custom 1 BD",
+  7: "Data Custom 2 BD",
+  8: "Data Custom 3 BD"
+};
 
 export function paintTiles(project: Project, mapId: string, cells: PaintCellChange[]) {
   if (cells.length === 0) return project;
@@ -234,6 +241,232 @@ export function updateSpecialTileSolidity(
     }, command.solid));
   }
   return changed ? { ...project, tileAttributes } : project;
+}
+
+export function createCustomLandlookFromSource(
+  project: Project,
+  command: Extract<ProjectCommand, { kind: "createCustomLandlookFromSource" }>
+) {
+  const sourceLandlook = Math.trunc(command.sourceLandlook);
+  const targetLandlook = Math.trunc(command.targetLandlook);
+  if (!CUSTOM_LANDLOOKS.has(targetLandlook)) return project;
+  const sourceFile = CUSTOM_LANDLOOK_SOURCE_FILES[targetLandlook];
+  const existingSource = (project.customLandlooks ?? []).find((landlook) => landlook.landlook === sourceLandlook);
+  const targetMetadata = existingSource
+    ? cloneCustomLandlookMetadata(existingSource, targetLandlook, sourceFile)
+    : createCustomLandlookMetadataFromProfiles(project, sourceLandlook, targetLandlook, sourceFile);
+  const customLandlooks = [
+    ...(project.customLandlooks ?? []).filter((landlook) => landlook.landlook !== targetLandlook),
+    targetMetadata
+  ].sort((left, right) => left.landlook - right.landlook);
+  const tileAttributes = (project.tileAttributes ?? []).filter((profile) =>
+    !(profile.sourceKind === "mapstats" && profile.landlook === targetLandlook)
+  );
+  let nextProject: Project = {
+    ...project,
+    customLandlooks,
+    tileAttributes
+  };
+  nextProject = syncCustomLandlookTileAttributes(nextProject, targetMetadata);
+  nextProject = upsertCustomLandlookTileset(nextProject, sourceLandlook, targetMetadata);
+  if (command.assignMapId) {
+    nextProject = assignMapToCustomLandlook(nextProject, command.assignMapId, sourceLandlook, targetLandlook);
+  }
+  return nextProject;
+}
+
+function cloneCustomLandlookMetadata(source: CustomLandlookMetadata, targetLandlook: number, sourceFile: string): CustomLandlookMetadata {
+  return {
+    ...source,
+    landlook: targetLandlook,
+    sourceFile,
+    records: source.records.map((record) => cloneMapstatsRecord(record)),
+    rangeSlots: source.rangeSlots.map((slot) => ({ ...slot })),
+    trailingBytes: [...(source.trailingBytes ?? [])],
+    rawBytes: [...(source.rawBytes ?? [])],
+    writerGate: {
+      ...source.writerGate,
+      evidence: [...(source.writerGate?.evidence ?? [])]
+    },
+    authored: true
+  };
+}
+
+function createCustomLandlookMetadataFromProfiles(
+  project: Project,
+  sourceLandlook: number,
+  targetLandlook: number,
+  sourceFile: string
+): CustomLandlookMetadata {
+  const sourceTileset = findTilesetForLandlook(project, sourceLandlook);
+  const sampleProfile = (project.tileAttributes ?? []).find((profile) =>
+    profile.sourceKind === "mapstats" &&
+    profile.landlook === sourceLandlook &&
+    profile.baseTile != null
+  );
+  const baseTile = sampleProfile?.baseTile ?? sourceTileset?.baseTile ?? landlookBaseTile(sourceLandlook) ?? 156;
+  const baseScale = sampleProfile?.baseScale ?? 1;
+  return {
+    landlook: targetLandlook,
+    sourceFile,
+    records: Array.from({ length: CUSTOM_LANDLOOK_RECORDS }, (_, tile) =>
+      mapstatsRecordFromProfile(tile, findMapstatsProfile(project, sourceLandlook, tile))
+    ),
+    baseTile,
+    baseScale,
+    rangeSlots: defaultCustomLandlookRangeSlots(),
+    trailingBytes: [],
+    rawBytes: [],
+    writerGate: defaultCustomLandlookWriterGate(),
+    authored: true
+  };
+}
+
+function mapstatsRecordFromProfile(tile: number, profile: TileAttributeProfile | null): MapstatsRecord {
+  return {
+    tile,
+    sound: profile?.movementSoundId ?? 0,
+    time: profile?.movementCost ?? 0,
+    solid: profile?.solidType ?? 0,
+    shore: profile?.shore ? 1 : 0,
+    needBoat: profile?.boatRequirement ?? 0,
+    isPath: profile?.pathFlag ? 1 : 0,
+    los: profile?.blocksLos ? 1 : 0,
+    flyFloat: profile?.flyFloatRequired ? 1 : 0,
+    forest: profile?.forestType ?? 0,
+    spare: profile?.spare ?? 0,
+    combatBuild: normalizeCombatBuild(profile?.combatBuild),
+    clearLandId: profile?.clearLandId ?? 0
+  };
+}
+
+function cloneMapstatsRecord(record: MapstatsRecord): MapstatsRecord {
+  return {
+    ...record,
+    combatBuild: normalizeCombatBuild(record.combatBuild)
+  };
+}
+
+function normalizeCombatBuild(combatBuild: number[][] | undefined | null) {
+  return [0, 1, 2].map((row) =>
+    [0, 1, 2].map((col) => clampSignedShort(combatBuild?.[row]?.[col] ?? 0))
+  );
+}
+
+function findMapstatsProfile(project: Project, landlook: number, tile: number) {
+  return (project.tileAttributes ?? []).find((profile) =>
+    profile.sourceKind === "mapstats" &&
+    profile.landlook === landlook &&
+    profile.tile === tile
+  ) ?? null;
+}
+
+function findTilesetForLandlook(project: Project, landlook: number) {
+  return (project.assetCatalog?.tilesets ?? []).find((tileset) => tileset.landlook === landlook || tileset.id === `landlook-${landlook}`) ?? null;
+}
+
+function defaultCustomLandlookRangeSlots(): LandlookRangeSlot[] {
+  return Array.from({ length: 10 }, (_, slot) => ({
+    slot,
+    label: `Range ${slot + 1}`,
+    firstTile: 0,
+    lastTile: 0,
+    reserved: 0
+  }));
+}
+
+function defaultCustomLandlookWriterGate() {
+  return {
+    metadataWriterStatus: "decoded-writable",
+    atlasWriterStatus: "generated",
+    writableFields: [
+      "tile sound",
+      "time/move",
+      "solid",
+      "shore",
+      "needBoat",
+      "path",
+      "line-of-sight",
+      "fly/float",
+      "forest",
+      "combat build",
+      "clear/base tile",
+      "base tile",
+      "base scale",
+      "range slots"
+    ],
+    preserveOnlyFields: ["spare", "range reserved words", "trailing bytes"],
+    evidence: [
+      "Divinity manual: standard tile sets can be loaded as templates, but only Custom 1 through Custom 3 can be saved.",
+      "Providence writes Data Custom 1/2/3 BD metadata and generated PICT 306/307/308 atlas resources."
+    ]
+  };
+}
+
+function upsertCustomLandlookTileset(project: Project, sourceLandlook: number, landlook: CustomLandlookMetadata): Project {
+  const sourceTileset = findTilesetForLandlook(project, sourceLandlook);
+  const pictId = landlookPictId(landlook.landlook);
+  const fallbackImagePath = sourceTileset?.imagePath
+    ?? (sourceTileset?.pictId != null ? `reference-picture:${sourceTileset.pictId}` : null);
+  const required: TilesetAsset = {
+    id: `landlook-${landlook.landlook}`,
+    landlook: landlook.landlook,
+    name: customLandlookDisplayName(landlook.landlook),
+    source: `Scenario custom copied from ${sourceTileset?.name ?? landlookName(sourceLandlook)}`,
+    available: Boolean(fallbackImagePath) || Boolean(sourceTileset?.available),
+    imagePath: fallbackImagePath,
+    pictId,
+    tileWidth: 32,
+    tileHeight: 32,
+    columns: 20,
+    rows: 10,
+    custom: true,
+    baseTile: landlook.baseTile
+  };
+  const assetCatalog = {
+    ...project.assetCatalog,
+    tilesets: [...(project.assetCatalog?.tilesets ?? [])],
+    pictures: project.assetCatalog?.pictures,
+    icons: project.assetCatalog?.icons,
+    sounds: project.assetCatalog?.sounds
+  };
+  const existingIndex = assetCatalog.tilesets.findIndex((tileset) => tileset.landlook === landlook.landlook || tileset.id === required.id);
+  if (existingIndex >= 0) {
+    const existing = assetCatalog.tilesets[existingIndex];
+    assetCatalog.tilesets[existingIndex] = {
+      ...existing,
+      ...required,
+      imagePath: existing.imagePath && existing.pictId === pictId ? existing.imagePath : required.imagePath,
+      available: existing.available || required.available
+    };
+  } else {
+    assetCatalog.tilesets.push(required);
+  }
+  return { ...project, assetCatalog };
+}
+
+function assignMapToCustomLandlook(project: Project, mapId: string, previousLandlook: number, targetLandlook: number): Project {
+  let matchedMap: MapEntity | null = null;
+  const maps = project.maps.map((map) => {
+    if (map.id !== mapId || map.levelType !== "land") return map;
+    matchedMap = map;
+    return {
+      ...map,
+      tiles: remapClearTilesForLandlook(map, previousLandlook, targetLandlook),
+      render: {
+        ...map.render,
+        landlook: targetLandlook,
+        tilesetId: `landlook-${targetLandlook}`,
+        mode: "outdoor-landlook" as const
+      }
+    };
+  });
+  if (!matchedMap) return project;
+  const randomLevels = (project.randomLevels ?? []).map((level) => {
+    if (level.levelType !== matchedMap?.levelType || level.levelIndex !== matchedMap.index) return level;
+    return syncMapRenderForRandomLevel({ ...level, landlook: targetLandlook });
+  });
+  return { ...project, maps, randomLevels };
 }
 
 function specialTileSolidityProfile(profile: TileAttributeProfile, solid: boolean): TileAttributeProfile {
@@ -616,13 +849,17 @@ function landlookName(landlook: number) {
     3: "Subterranean",
     4: "Castle",
     5: "Desert",
-    6: "Custom 6",
-    7: "Custom 7",
-    8: "Custom 8",
+    6: "Custom 1",
+    7: "Custom 2",
+    8: "Custom 3",
     9: "Swamp",
     10: "Snow"
   };
   return names[landlook] ?? "Unknown landlook";
+}
+
+function customLandlookDisplayName(landlook: number) {
+  return ({ 6: "Custom 1", 7: "Custom 2", 8: "Custom 3" } as Record<number, string>)[landlook] ?? `Custom ${landlook}`;
 }
 
 function landlookPictId(landlook: number) {
