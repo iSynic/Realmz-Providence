@@ -1659,8 +1659,28 @@
   min-height: 29px;
 }
 
+.text-style-format-toolbar input:not([type="color"]) {
+  box-sizing: border-box;
+  min-height: 32px;
+  border: 1px solid #2d3b49;
+  border-radius: 5px;
+  background: #0b1118;
+  color: #f5fbff;
+  padding: 5px 8px;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.text-style-format-toolbar input:not([type="color"]):focus,
+.text-style-format-toolbar select:focus {
+  border-color: #3c8fd1;
+  outline: 1px solid #2f7ebd;
+  outline-offset: 0;
+}
+
 .text-style-format-toolbar select {
-  min-height: 29px;
+  min-height: 32px;
   border: 1px solid #2d3b49;
   border-radius: 5px;
   background: #0b1118;
@@ -1688,14 +1708,15 @@
 }
 
 .text-style-size-field input {
-  box-sizing: content-box;
+  box-sizing: border-box;
   width: 4ch;
-  min-width: 4ch;
-  max-width: 4ch;
+  min-width: 52px;
+  max-width: 52px;
+  text-align: center;
 }
 
 .text-style-color-label {
-  width: 132px;
+  width: 146px;
 }
 
 .text-style-selection-summary {
@@ -1773,16 +1794,19 @@
 
 .text-style-color-field {
   display: grid;
-  grid-template-columns: minmax(78px, 1fr) 30px;
+  grid-template-columns: minmax(92px, 1fr) 32px;
   gap: 5px;
   align-items: center;
 }
 
 .text-style-color-field input[type="color"] {
-  width: 30px;
-  min-width: 30px;
-  min-height: 28px;
-  padding: 2px;
+  width: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  border: 1px solid #647282;
+  border-radius: 5px;
+  background: #0b1118;
+  padding: 3px;
   cursor: pointer;
 }
 

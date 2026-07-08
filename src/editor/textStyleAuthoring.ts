@@ -139,6 +139,50 @@ export function applyAuthorStyleToSelection(drafts: ClassicStyleRunDraft[], text
   return reindexStyleRunDrafts(nextDrafts);
 }
 
+export function adjustStyleRunsForTextEdit(
+  drafts: ClassicStyleRunDraft[],
+  edit: { start: number; end: number; insertedLength: number },
+  rawTextLength: number
+) {
+  const source = drafts.length ? drafts : styleRunDraftsFromRuns([]);
+  const start = Math.max(0, Math.min(rawTextLength, Math.min(edit.start, edit.end)));
+  const end = Math.max(start, Math.min(rawTextLength, Math.max(edit.start, edit.end)));
+  const insertedLength = Math.max(0, edit.insertedLength);
+  const removedLength = end - start;
+  const delta = insertedLength - removedLength;
+  if (delta === 0 && removedLength === 0) return source;
+  const insertedEnd = start + insertedLength;
+  const activeAfterSelection = styleRunDraftAtOffset(source, end);
+  const collapsedInsert = removedLength === 0 && insertedLength > 0;
+  const needsRestoreAfterReplacement = removedLength > 0
+    && insertedEnd < rawTextLength + delta
+    && !source.some((draft) => styleRunStart(draft.startChar) === end);
+
+  const adjusted = source
+    .filter((draft) => {
+      const runStart = styleRunStart(draft.startChar);
+      if (runStart == null) return true;
+      return !(removedLength > 0 && runStart > start && runStart < end);
+    })
+    .map((draft) => {
+      const runStart = styleRunStart(draft.startChar);
+      if (runStart == null) return draft;
+      if (collapsedInsert) {
+        if (runStart === 0 && start === 0) return draft;
+        return runStart >= start ? { ...draft, startChar: String(runStart + delta) } : draft;
+      }
+      if (removedLength > 0 && runStart >= end) {
+        return { ...draft, startChar: String(Math.max(0, runStart + delta)) };
+      }
+      return draft;
+    });
+
+  if (needsRestoreAfterReplacement) {
+    adjusted.push(styleRunDraftFromTemplate(activeAfterSelection, insertedEnd, `restore-edit:${start}:${end}:${Date.now()}`));
+  }
+  return dedupeStyleRunStarts(reindexStyleRunDrafts(adjusted));
+}
+
 export function styleRunDraftAtOffset(drafts: ClassicStyleRunDraft[], offset: number) {
   return drafts
     .filter((draft) => {
@@ -241,6 +285,20 @@ function reindexStyleRunDrafts(drafts: ClassicStyleRunDraft[]) {
       return leftStart - rightStart || left.index - right.index;
     })
     .map((draft, index) => ({ ...draft, index }));
+}
+
+function dedupeStyleRunStarts(drafts: ClassicStyleRunDraft[]) {
+  const byStart = new Map<number, ClassicStyleRunDraft>();
+  const passthrough: ClassicStyleRunDraft[] = [];
+  for (const draft of drafts) {
+    const start = styleRunStart(draft.startChar);
+    if (start == null) {
+      passthrough.push(draft);
+    } else {
+      byStart.set(start, draft);
+    }
+  }
+  return reindexStyleRunDrafts([...byStart.values(), ...passthrough]);
 }
 
 function styleRunStart(value: string) {

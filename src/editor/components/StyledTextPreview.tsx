@@ -74,6 +74,12 @@ export type StyledTextDisplaySelection = {
   end: number;
 };
 
+export type StyledTextEditChange = {
+  start: number;
+  end: number;
+  insertedText: string;
+};
+
 export function StyledScrollingTextPreview({
   text,
   runs,
@@ -89,6 +95,7 @@ export function StyledScrollingTextPreview({
   showRunStartBadges = false,
   editableText = false,
   onTextChange,
+  onTextEdit,
   onApplyChanges,
   applyChangesDisabled = true,
   onDisplaySelectionChange
@@ -107,6 +114,7 @@ export function StyledScrollingTextPreview({
   showRunStartBadges?: boolean;
   editableText?: boolean;
   onTextChange?: (text: string) => void;
+  onTextEdit?: (text: string, change: StyledTextEditChange) => void;
   onApplyChanges?: () => void;
   applyChangesDisabled?: boolean;
   onDisplaySelectionChange?: (range: StyledTextDisplaySelection) => void;
@@ -176,29 +184,31 @@ export function StyledScrollingTextPreview({
   const editableSelectionForRoot = useCallback((element: HTMLElement) => {
     const selection = displaySelectionForRoot(element);
     const pending = pendingSelectionRef.current;
-    if (pending && document.activeElement === element) return pending;
-    if (!selection) return pending;
-    return selection;
+    if (selection) {
+      pendingSelectionRef.current = selection;
+      return selection;
+    }
+    return pending;
   }, []);
   const ignoreNativeEditableInput = useCallback(() => {
     // Browser-native contenteditable mutations are not authoritative here; keydown,
     // paste, and explicit selection events own all draft text/caret changes.
   }, []);
   const replaceEditableSelection = useCallback((value: string, fallbackSelection?: StyledTextDisplaySelection) => {
-    if (!editableText || !onTextChange) return;
+    if (!editableText || (!onTextChange && !onTextEdit)) return;
     const element = canvasRef.current;
     if (!element) return;
-    const selection = editableSelectionForRoot(element) ?? fallbackSelection ?? { start: decodedText.text.length, end: decodedText.text.length };
+    const selection = fallbackSelection ?? editableSelectionForRoot(element) ?? { start: decodedText.text.length, end: decodedText.text.length };
     const start = Math.max(0, Math.min(decodedText.text.length, selection.start));
     const end = Math.max(start, Math.min(decodedText.text.length, selection.end));
     const nextText = `${decodedText.text.slice(0, start)}${value}${decodedText.text.slice(end)}`;
     const nextCaret = start + value.length;
     pendingSelectionRef.current = { start: nextCaret, end: nextCaret };
-    onTextChange(nextText);
+    onTextEdit?.(nextText, { start, end, insertedText: value }) ?? onTextChange?.(nextText);
     onDisplaySelectionChange?.({ start: nextCaret, end: nextCaret });
-  }, [decodedText.text, editableSelectionForRoot, editableText, onDisplaySelectionChange, onTextChange]);
+  }, [decodedText.text, editableSelectionForRoot, editableText, onDisplaySelectionChange, onTextChange, onTextEdit]);
   const deleteEditableSelection = useCallback((direction: "backward" | "forward") => {
-    if (!editableText || !onTextChange) return;
+    if (!editableText || (!onTextChange && !onTextEdit)) return;
     const element = canvasRef.current;
     if (!element) return;
     const selection = editableSelectionForRoot(element) ?? { start: decodedText.text.length, end: decodedText.text.length };
@@ -209,7 +219,7 @@ export function StyledScrollingTextPreview({
       else end = Math.min(decodedText.text.length, end + 1);
     }
     replaceEditableSelection("", { start, end });
-  }, [decodedText.text.length, editableSelectionForRoot, editableText, onTextChange, replaceEditableSelection]);
+  }, [decodedText.text.length, editableSelectionForRoot, editableText, onTextChange, onTextEdit, replaceEditableSelection]);
   return (
     <section className={`text-style-preview${className ? ` ${className}` : ""}`} style={sectionStyle}>
       <header>
@@ -304,7 +314,10 @@ export function StyledScrollingTextPreview({
               replaceEditableSelection(event.clipboardData.getData("text/plain"));
             }}
             onInput={ignoreNativeEditableInput}
-            onMouseUp={captureDisplaySelection}
+            onMouseUp={() => {
+              if (editableText) captureEditableSelection();
+              else captureDisplaySelection();
+            }}
             onKeyUp={(event) => {
               if (!editableText) {
                 captureDisplaySelection();

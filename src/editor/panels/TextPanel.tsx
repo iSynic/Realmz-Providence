@@ -20,6 +20,7 @@ import {
 import {
   CLASSIC_AUTHOR_FONT_OPTIONS,
   addStyleRunDraft,
+  adjustStyleRunsForTextEdit,
   applyAuthorStyleToSelection,
   classicStyleRunsFromDrafts,
   isCssHexColor,
@@ -36,6 +37,7 @@ import {
   type ClassicStyleRunDraft,
   type TextSelectionRange
 } from "../textStyleAuthoring";
+import type { StyledTextEditChange } from "../components/StyledTextPreview";
 import {
   classicTextBytesFromDisplayString,
   decodeClassicTextPreviewBytes,
@@ -100,6 +102,7 @@ export function TextPanel({
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const records = [...(project.messages ?? [])].sort((a, b) => a.id - b.id);
   const optionRecords = [...(project.optionLabels ?? [])].sort((a, b) => a.id - b.id);
+  const hasOptionLabels = optionRecords.length > 0;
   const scrollingTextAssets = scrollingTextProjectAssets(project);
   const importedScrollingTextResources = importedScrollingTextResourceRows(project, scrollingTextAssets);
   const selectedId = selectedMessageId(selectedEntity, records) ?? records[0]?.id ?? 0;
@@ -128,13 +131,14 @@ export function TextPanel({
   }, [confirmBeforeDraftDiscard, onSelectEntity]);
   const selectTextTab = useCallback((tab: TextAuthoringTab) => {
     if (tab === activeTab) return;
+    if (tab === "option-labels" && !hasOptionLabels) return;
     const labels: Record<TextAuthoringTab, string> = {
       strings: "Strings",
       "option-labels": "Option Labels",
       "scrolling-text": "Scrolling Text"
     };
     confirmBeforeDraftDiscard(`open ${labels[tab]}`, () => setActiveTab(tab));
-  }, [activeTab, confirmBeforeDraftDiscard]);
+  }, [activeTab, confirmBeforeDraftDiscard, hasOptionLabels]);
   const filteredRecords = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return records;
@@ -185,6 +189,12 @@ export function TextPanel({
   }, [activeTab, onSelectEntity, records, selectedRecord]);
 
   useEffect(() => {
+    if (activeTab === "option-labels" && !hasOptionLabels) {
+      setActiveTab("strings");
+    }
+  }, [activeTab, hasOptionLabels]);
+
+  useEffect(() => {
     if (activeEditor === "text-resources") {
       setActiveTab("scrolling-text");
       setShowReferences(true);
@@ -197,22 +207,27 @@ export function TextPanel({
       setActiveTab("strings");
     }
     if (activeEditor === "option-labels") {
-      setActiveTab("option-labels");
+      setActiveTab(hasOptionLabels ? "option-labels" : "strings");
     }
-  }, [activeEditor]);
+  }, [activeEditor, hasOptionLabels]);
 
   useEffect(() => {
+    if (!hasOptionLabels) {
+      if (selectedOptionId != null) setSelectedOptionId(null);
+      return;
+    }
     if (selectedOptionId == null && optionRecords.length > 0) {
       setSelectedOptionId(optionRecords[0].id);
     }
-  }, [optionRecords, selectedOptionId]);
+  }, [hasOptionLabels, optionRecords, selectedOptionId]);
 
   useEffect(() => {
     const optionId = selectedOptionLabelId(selectedEntity);
     if (optionId == null) return;
+    if (!hasOptionLabels) return;
     setActiveTab("option-labels");
     setSelectedOptionId(optionId);
-  }, [selectedEntity]);
+  }, [hasOptionLabels, selectedEntity]);
 
   useEffect(() => {
     if (!selectedEntity?.id) return;
@@ -241,10 +256,15 @@ export function TextPanel({
               <span>String Editor</span>
             </TutorialTip>
           </h1>
-          <p>Edit scenario strings and two-choice option labels used by Realmz dialogs.</p>
+          <p>{hasOptionLabels ? "Edit scenario strings and imported two-choice option labels used by Realmz dialogs." : "Edit scenario strings used by Realmz dialogs."}</p>
         </div>
         <div className="text-workbench-actions">
-          <b>{records.length.toLocaleString()} strings | {optionRecords.length.toLocaleString()} option labels | {(scrollingTextAssets.length + importedScrollingTextResources.length).toLocaleString()} scrolling text</b>
+          <b>
+            {records.length.toLocaleString()} strings
+            {hasOptionLabels ? ` | ${optionRecords.length.toLocaleString()} option labels` : ""}
+            {" | "}
+            {(scrollingTextAssets.length + importedScrollingTextResources.length).toLocaleString()} scrolling text
+          </b>
           <input
             ref={importInputRef}
             type="file"
@@ -322,12 +342,14 @@ export function TextPanel({
             <b>{records.length.toLocaleString()}</b>
           </button>
         </TutorialTip>
-        <TutorialTip title="Option Labels" body={OPTION_LABELS_TAB_HELP} side="below">
-          <button type="button" className={activeTab === "option-labels" ? "active" : ""} role="tab" aria-selected={activeTab === "option-labels"} onClick={() => selectTextTab("option-labels")}>
-            <span>Option Labels</span>
-            <b>{optionRecords.length.toLocaleString()}</b>
-          </button>
-        </TutorialTip>
+        {hasOptionLabels && (
+          <TutorialTip title="Option Labels" body={OPTION_LABELS_TAB_HELP} side="below">
+            <button type="button" className={activeTab === "option-labels" ? "active" : ""} role="tab" aria-selected={activeTab === "option-labels"} onClick={() => selectTextTab("option-labels")}>
+              <span>Option Labels</span>
+              <b>{optionRecords.length.toLocaleString()}</b>
+            </button>
+          </TutorialTip>
+        )}
         <TutorialTip title="Scrolling Text" body={SCROLLING_TEXT_TAB_HELP} side="below">
           <button type="button" className={activeTab === "scrolling-text" ? "active" : ""} role="tab" aria-selected={activeTab === "scrolling-text"} onClick={() => selectTextTab("scrolling-text")}>
             <span>Scrolling Text</span>
@@ -1593,6 +1615,19 @@ function StyleCompanionEditor({
     setStyleRunDrafts(parsedStyleRuns.ok ? styleRunDraftsFromRuns(parsedStyleRuns.runs) : []);
     setStyleRunDraftsTouched(false);
   };
+  const handleViewportTextEdit = useCallback((nextText: string, change: StyledTextEditChange) => {
+    onTextChange?.(nextText);
+    const hasStyleRunsToPreserve = styleRunDraftsTouched || (companion.rawStyleBytes?.byteLength ?? 0) > 0;
+    if (!hasStyleRunsToPreserve) return;
+    const editedRawRange = displayRangeToRawRange(decodedText, { start: change.start, end: change.end });
+    const insertedLength = classicTextBytesFromDisplayString(change.insertedText).length;
+    setStyleRunDraftsTouched(true);
+    setStyleRunDrafts((drafts) => adjustStyleRunsForTextEdit(
+      drafts,
+      { start: editedRawRange.start, end: editedRawRange.end, insertedLength },
+      decodedText.rawByteLength
+    ));
+  }, [companion.rawStyleBytes?.byteLength, decodedText, onTextChange, styleRunDraftsTouched]);
   const applyStyleBytes = (bytes: Uint8Array, provenance: string, label: string) => {
     const asset = styleAssetFromBytes(companion.managedAsset ?? null, resourceId, bytes, provenance);
     onApplyCommand(
@@ -1840,6 +1875,7 @@ function StyleCompanionEditor({
           movieViewportWidth={REALMZ_GAMEPLAY_TEXT_VIEW_WIDTH}
           editableText={canEditText}
           onTextChange={onTextChange}
+          onTextEdit={handleViewportTextEdit}
           onApplyChanges={applyViewportChanges}
           applyChangesDisabled={applyChangesDisabled}
           onDisplaySelectionChange={onTextSelectionRangeChange}
