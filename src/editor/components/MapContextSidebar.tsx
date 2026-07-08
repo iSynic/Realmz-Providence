@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { TOOLS } from "../constants";
 import { EditorState } from "../store";
-import { CustomMapStamp, EditorTool, IconEntry, MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRecord, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, SmartBrushMaskCell, SmartBrushPlan, SmartBrushPreset, TileAttributeFlag, TilePaletteCategory, TilesetAsset, TriggerRecord } from "../types";
+import { CustomMapStamp, DungeonCellFlag, EditorTool, IconEntry, MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRecord, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, SmartBrushMaskCell, SmartBrushPlan, SmartBrushPreset, TileAttributeFlag, TilePaletteCategory, TilesetAsset, TriggerRecord } from "../types";
 import { mapRecordContainsCell, mapTileIndex, randomRectContainsCell, randomRectEntityId, tileValueAt } from "../map/geometry";
 import { rectCells, regionCellCount } from "../map/regionPaint";
 import { actionSlotEntitiesForTriggerRecord } from "../semanticGraph";
@@ -13,6 +13,7 @@ import { classifyTileValue, standardTileValues, tileAttributeGroup } from "../ma
 import { atlasBaseTile, normalizeIconId } from "../map/renderValues";
 import { hasSecretMarkerTile, isSecretWalkableTile } from "../map/secrets";
 import { clearTileForMap, clearTileLabel } from "../map/tileClear";
+import { activeManagedDungeonFlags, DUNGEON_CELL_FLAG_DEFINITIONS, DUNGEON_CLEAR_TO_WALL_FLAGS, DUNGEON_CELL_FLAG_MASKS, dungeonCellMask, dungeonDrawFlagsFromValue, dungeonFlagState } from "../map/dungeonCellFlags";
 import { tileColor } from "./TileSprite";
 import { TileSwatch } from "./TileSwatch";
 import { TutorialTip } from "./TutorialTip";
@@ -34,7 +35,7 @@ export { LandTileAtlasEditor };
 export { RandomAreasWorkbench };
 
 type MapContextFocus = "flags" | "atlas" | "layout" | "source";
-type MapSidebarInspector = "setup" | "paint" | "selection" | "land-layout" | "land-tiles" | "random-areas";
+type MapSidebarInspector = "setup" | "paint" | "dungeon-draw" | "selection" | "land-layout" | "land-tiles" | "random-areas";
 
 const MAP_TOOLSET_MODES: Array<{ id: MapWorkbenchMode; label: string; body: string }> = [
   { id: "canvas", label: "Canvas", body: "Map painting and placement" },
@@ -95,7 +96,9 @@ export function MapContextSidebar({
   onSetGlobalMapStamps,
   onApplyCommand,
   paletteOpen,
-  onSetPaletteOpen
+  onSetPaletteOpen,
+  dungeonDrawFlags: _dungeonDrawFlags,
+  onSetDungeonDrawFlags: _onSetDungeonDrawFlags
 }: {
   state: EditorState;
   selectedMap: MapEntity | null;
@@ -130,6 +133,8 @@ export function MapContextSidebar({
   onApplyCommand: (command: ProjectCommand) => void;
   paletteOpen: boolean;
   onSetPaletteOpen: (open: boolean) => void;
+  dungeonDrawFlags: Record<DungeonCellFlag, boolean>;
+  onSetDungeonDrawFlags: (flags: Record<DungeonCellFlag, boolean>) => void;
 }) {
   return (
     <ResizablePane
@@ -159,6 +164,7 @@ export function MapContextSidebar({
         />
         <MapToolset
           state={state}
+          selectedMap={selectedMap}
           selectedTileset={selectedTileset}
           atlas={atlas}
           workbenchMode={workbenchMode}
@@ -221,7 +227,9 @@ export function MapSelectionSidebar({
   selectedSuperTileStampId,
   onSelectSuperTileStamp,
   onSelectEntity,
-  onApplyCommand
+  onApplyCommand,
+  dungeonDrawFlags,
+  onSetDungeonDrawFlags
 }: {
   state: EditorState;
   selectedMap: MapEntity | null;
@@ -273,6 +281,8 @@ export function MapSelectionSidebar({
   onSelectSuperTileStamp: (stampId: string) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand: (command: ProjectCommand) => void;
+  dungeonDrawFlags: Record<DungeonCellFlag, boolean>;
+  onSetDungeonDrawFlags: (flags: Record<DungeonCellFlag, boolean>) => void;
 }) {
   const [open, setOpen] = useState(() => localStorage.getItem("providence.mapRightContextOpen.v1") !== "0");
   const [paletteState, setPaletteState] = useState<PaintPaletteState>(() => readPaintPaletteState());
@@ -283,21 +293,38 @@ export function MapSelectionSidebar({
   useEffect(() => {
     localStorage.setItem(PAINT_PALETTE_STORAGE_KEY, JSON.stringify(paletteState));
   }, [paletteState]);
+  useEffect(() => {
+    if (selectedMap?.levelType === "dungeon" && (state.activeTool === "paint" || state.activeTool === "stamp")) {
+      onSetTool("select");
+    }
+    if (selectedMap?.levelType !== "dungeon" && state.activeTool === "dungeon-draw") {
+      onSetTool("select");
+    }
+  }, [onSetTool, selectedMap?.levelType, state.activeTool]);
   const selection = selectionSummary(selectedMap, state.selectedEntity, state.selectedCell, selectedRegion, mapTriggers, selectedRandomLevel, mapRecords);
   const activeSelection = workbenchMode === "canvas" ? selection : null;
-  const isPaintInspector = workbenchMode === "canvas" && (state.activeTool === "paint" || state.activeTool === "stamp" || selectedRegion != null);
+  const selectedMapIsDungeon = selectedMap?.levelType === "dungeon";
+  const isPaintInspector = workbenchMode === "canvas" && !selectedMapIsDungeon && (state.activeTool === "paint" || state.activeTool === "stamp" || selectedRegion != null);
+  const isDungeonDrawInspector = workbenchMode === "canvas" && selectedMapIsDungeon && state.activeTool === "dungeon-draw";
   const inspectorChoice: MapSidebarInspector = isPaintInspector
     ? "paint"
-    : activeSelection
-      ? "selection"
-      : workbenchMode === "canvas"
-        ? "setup"
-        : workbenchMode;
+    : isDungeonDrawInspector
+      ? "dungeon-draw"
+      : activeSelection
+        ? "selection"
+        : workbenchMode === "canvas"
+          ? "setup"
+          : workbenchMode;
   const switchInspector = (choice: MapSidebarInspector) => {
     switch (choice) {
       case "paint":
         onSetWorkbenchMode("canvas");
         onSetTool("paint");
+        break;
+      case "dungeon-draw":
+        if (!selectedMapIsDungeon) return;
+        onSetWorkbenchMode("canvas");
+        onSetTool("dungeon-draw");
         break;
       case "selection":
         if (!selection) return;
@@ -343,6 +370,7 @@ export function MapSelectionSidebar({
             <MapInspectorSwitcher
               value={inspectorChoice}
               hasSelection={selection != null}
+              hasDungeonDraw={selectedMapIsDungeon}
               onChange={switchInspector}
             />
             <button className="btn btn-ghost btn-xs" type="button" onClick={() => setOpen(false)}>Collapse</button>
@@ -387,13 +415,24 @@ export function MapSelectionSidebar({
             paletteState={paletteState}
             onSetPaletteState={setPaletteState}
           />
+        ) : isDungeonDrawInspector ? (
+          <DungeonDrawInspector
+            atlas={atlas}
+            selectedTileset={selectedTileset}
+            icons={state.iconEntries}
+            dungeonDrawFlags={dungeonDrawFlags}
+            onSetDungeonDrawFlags={onSetDungeonDrawFlags}
+          />
         ) : activeSelection ? (
           <SelectionInspector
             selection={activeSelection}
             map={selectedMap}
             project={state.project}
             selectedTileset={selectedTileset}
+            atlas={atlas}
             icons={state.iconEntries}
+            dungeonDrawFlags={dungeonDrawFlags}
+            onSetDungeonDrawFlags={onSetDungeonDrawFlags}
             onSelectEntity={onSelectEntity}
             onOpenScripts={onOpenScripts}
             onApplyCommand={onApplyCommand}
@@ -455,10 +494,12 @@ type Selection =
 function MapInspectorSwitcher({
   value,
   hasSelection,
+  hasDungeonDraw,
   onChange
 }: {
   value: MapSidebarInspector;
   hasSelection: boolean;
+  hasDungeonDraw: boolean;
   onChange: (choice: MapSidebarInspector) => void;
 }) {
   return (
@@ -470,6 +511,7 @@ function MapInspectorSwitcher({
     >
       <option value="setup">Map Setup</option>
       <option value="paint">Paint Inspector</option>
+      <option value="dungeon-draw" disabled={!hasDungeonDraw}>Dungeon Draw</option>
       <option value="selection" disabled={!hasSelection}>Selection Inspector</option>
       <option value="land-layout">Land Layout</option>
       <option value="land-tiles">Land Tiles</option>
@@ -671,6 +713,21 @@ function CoreMapSetup({
       }))
     });
   };
+  const setEntireDungeonMappedState = (unmapped: boolean) => {
+    if (!selectedMap || selectedMap.levelType !== "dungeon") return;
+    onApplyCommand({
+      kind: "updateDungeonCellFlags",
+      label: unmapped ? "Unmap entire dungeon" : "Map entire dungeon",
+      mapId: selectedMap.id,
+      flags: { unmapped },
+      cells: selectedMap.tiles.map((from, index) => ({
+        index,
+        x: index % selectedMap.width,
+        y: Math.floor(index / selectedMap.width),
+        from
+      }))
+    });
+  };
   const focusFirstRandomRect = () => {
     if (!selectedMap || !randomLevel?.rects.length) return;
     onSetViewFlag("showRandomRects", true);
@@ -721,6 +778,8 @@ function CoreMapSetup({
         onShowRandomRects={() => onSetViewFlag("showRandomRects", true)}
         onHighlightRandomRect={focusFirstRandomRect}
         onEditRandomRect={() => onSetWorkbenchMode("random-areas")}
+        onMapEntireDungeon={selectedMap?.levelType === "dungeon" ? () => setEntireDungeonMappedState(false) : undefined}
+        onUnmapEntireDungeon={selectedMap?.levelType === "dungeon" ? () => setEntireDungeonMappedState(true) : undefined}
         onSelectRandomRect={
           selectedMap
             ? (rectIndex) => onSelectEntity({ type: "encounter", id: randomRectEntityId(selectedMap, rectIndex) })
@@ -836,12 +895,14 @@ function nextMapIndex(maps: MapEntity[], levelType: "land" | "dungeon") {
     .reduce((max, map) => Math.max(max, map.index), -1) + 1;
 }
 
-const AUTHORING_TOOL_IDS: EditorTool[] = ["paint", "stamp", "trigger", "random"];
+const LAND_AUTHORING_TOOL_IDS: EditorTool[] = ["paint", "stamp", "trigger", "random"];
+const DUNGEON_AUTHORING_TOOL_IDS: EditorTool[] = ["dungeon-draw", "trigger", "random"];
 const NAVIGATION_TOOL_IDS: EditorTool[] = ["select", "pan", "sample"];
 const TOOL_BY_ID = new Map(TOOLS.map((tool) => [tool.id, tool]));
 
 function MapToolset({
   state,
+  selectedMap,
   selectedTileset,
   atlas,
   workbenchMode,
@@ -850,6 +911,7 @@ function MapToolset({
   onSelectTile
 }: {
   state: EditorState;
+  selectedMap: MapEntity | null;
   selectedTileset: TilesetAsset | null;
   atlas: EditorState["atlasEntries"][string] | null;
   workbenchMode: MapWorkbenchMode;
@@ -857,6 +919,8 @@ function MapToolset({
   onSetTool: (tool: EditorTool) => void;
   onSelectTile: (tile: number) => void;
 }) {
+  const isDungeon = selectedMap?.levelType === "dungeon";
+  const authoringTools = isDungeon ? DUNGEON_AUTHORING_TOOL_IDS : LAND_AUTHORING_TOOL_IDS;
   return (
     <section className="context-panel map-toolset-panel">
       <div className="panel-header">
@@ -885,22 +949,29 @@ function MapToolset({
             <div className="map-sidebar-group-title">Canvas Tools</div>
             <div className="sidebar-tool-columns">
               <div className="sidebar-tool-column authoring-tools" aria-label="Authoring tools">
-                {AUTHORING_TOOL_IDS.map((id) => renderSidebarTool(id, state.activeTool, onSetTool))}
+                {authoringTools.map((id) => renderSidebarTool(id, state.activeTool, onSetTool))}
               </div>
               <div className="sidebar-tool-column navigation-tools" aria-label="Navigation and selection tools">
                 {NAVIGATION_TOOL_IDS.map((id) => renderSidebarTool(id, state.activeTool, onSetTool))}
               </div>
             </div>
           </div>
-          <PaintTileSummary
-            selectedTile={state.selectedTile}
-            inspectedTile={state.selectedCell?.tile ?? null}
-            atlas={atlas}
-            selectedTileset={selectedTileset}
-            tileAttributes={state.project?.tileAttributes ?? []}
-            icons={state.iconEntries}
-            onSelectTile={onSelectTile}
-          />
+          {isDungeon ? (
+            <div className="map-toolset-mode-notice">
+              <strong>Dungeon cells use flags</strong>
+              <p>Draw applies the selected dungeon cell flags. Select a cell or region to adjust the draw flags in the inspector.</p>
+            </div>
+          ) : (
+            <PaintTileSummary
+              selectedTile={state.selectedTile}
+              inspectedTile={state.selectedCell?.tile ?? null}
+              atlas={atlas}
+              selectedTileset={selectedTileset}
+              tileAttributes={state.project?.tileAttributes ?? []}
+              icons={state.iconEntries}
+              onSelectTile={onSelectTile}
+            />
+          )}
         </>
       ) : (
         <MapToolsetModeNotice
@@ -1807,12 +1878,250 @@ function RegionSelectionDetails({
   );
 }
 
+const DUNGEON_FLAG_PREVIEW_TILES: Partial<Record<DungeonCellFlag, number>> = {
+  wall: DUNGEON_CELL_FLAG_MASKS.wall,
+  horizontalDoor: DUNGEON_CELL_FLAG_MASKS.horizontalDoor,
+  verticalDoor: DUNGEON_CELL_FLAG_MASKS.verticalDoor,
+  stairs: DUNGEON_CELL_FLAG_MASKS.stairs,
+  column: DUNGEON_CELL_FLAG_MASKS.column,
+  unmapped: DUNGEON_CELL_FLAG_MASKS.unmapped,
+  allowMoveNorth: DUNGEON_CELL_FLAG_MASKS.allowMoveNorth,
+  allowMoveEast: DUNGEON_CELL_FLAG_MASKS.allowMoveEast,
+  allowMoveSouth: DUNGEON_CELL_FLAG_MASKS.allowMoveSouth,
+  allowMoveWest: DUNGEON_CELL_FLAG_MASKS.allowMoveWest,
+  archway: DUNGEON_CELL_FLAG_MASKS.archway,
+  noWallInBattle: DUNGEON_CELL_FLAG_MASKS.noWallInBattle
+};
+
+function DungeonDrawInspector({
+  atlas,
+  selectedTileset,
+  icons,
+  dungeonDrawFlags,
+  onSetDungeonDrawFlags
+}: {
+  atlas: EditorState["atlasEntries"][string] | null;
+  selectedTileset: TilesetAsset | null;
+  icons: EditorState["iconEntries"];
+  dungeonDrawFlags: Record<DungeonCellFlag, boolean>;
+  onSetDungeonDrawFlags: (flags: Record<DungeonCellFlag, boolean>) => void;
+}) {
+  const setFlag = (flag: DungeonCellFlag, enabled: boolean) => {
+    onSetDungeonDrawFlags({ ...dungeonDrawFlags, [flag]: enabled });
+  };
+  return (
+    <section className="context-panel dungeon-draw-inspector">
+      <div className="panel-header">
+        <span>Dungeon Draw</span>
+        <b>Flags</b>
+      </div>
+      <div className="selection-summary-card">
+        <strong>Draw flags</strong>
+        <span>Choose the cell flags Draw will place on the dungeon canvas.</span>
+      </div>
+      <div className="dungeon-flag-actions">
+        <button
+          className="btn btn-ghost btn-xs"
+          type="button"
+          onClick={() => onSetDungeonDrawFlags({ ...dungeonDrawFlags, ...DUNGEON_CLEAR_TO_WALL_FLAGS })}
+        >
+          Clear To Wall
+        </button>
+      </div>
+      <div className="dungeon-flag-grid">
+        {DUNGEON_CELL_FLAG_DEFINITIONS.map((definition) => (
+          <DungeonFlagToggle
+            key={definition.id}
+            label={definition.label}
+            group={definition.group}
+            state={dungeonDrawFlags[definition.id] ? "on" : "off"}
+            previewTile={DUNGEON_FLAG_PREVIEW_TILES[definition.id]}
+            atlas={atlas}
+            selectedTileset={selectedTileset}
+            icons={icons}
+            onChange={(enabled) => setFlag(definition.id, enabled)}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function DungeonCellFlagEditor({
+  map,
+  selection,
+  atlas,
+  selectedTileset,
+  icons,
+  dungeonDrawFlags,
+  onSetDungeonDrawFlags,
+  onApplyCommand
+}: {
+  map: MapEntity;
+  selection: Extract<Selection, { kind: "cell" }> | Extract<Selection, { kind: "region" }>;
+  atlas: EditorState["atlasEntries"][string] | null;
+  selectedTileset: TilesetAsset | null;
+  icons: EditorState["iconEntries"];
+  dungeonDrawFlags: Record<DungeonCellFlag, boolean>;
+  onSetDungeonDrawFlags: (flags: Record<DungeonCellFlag, boolean>) => void;
+  onApplyCommand: (command: ProjectCommand) => void;
+}) {
+  const selectedCell = selection.kind === "cell"
+    ? {
+        ...selection.cell,
+        index: mapTileIndex(map, selection.cell.x, selection.cell.y),
+        tile: tileValueAt(map, selection.cell.x, selection.cell.y)
+      }
+    : null;
+  const cells = selection.kind === "cell"
+    ? selectedCell ? [selectedCell] : []
+    : rectCells(map, selection.region);
+  const values = cells.map((cell) => cell.tile);
+  const managedFlags = activeManagedDungeonFlags(values);
+  const scopeLabel = selection.kind === "cell"
+    ? `Cell ${selection.cell.x}, ${selection.cell.y}`
+    : `${regionLabel(selection.region)} (${cells.length} cells)`;
+  const selectedCellTile = selectedCell?.tile ?? null;
+  useEffect(() => {
+    if (selection.kind !== "cell" || selectedCellTile == null) return;
+    onSetDungeonDrawFlags(dungeonDrawFlagsFromValue(selectedCellTile));
+  }, [onSetDungeonDrawFlags, selectedCellTile, selection.kind]);
+  const applyFlags = (label: string, flags: Extract<ProjectCommand, { kind: "updateDungeonCellFlags" }>["flags"]) => {
+    onApplyCommand({
+      kind: "updateDungeonCellFlags",
+      label,
+      mapId: map.id,
+      flags,
+      cells: cells.map((cell) => ({ x: cell.x, y: cell.y, index: cell.index, from: cell.tile }))
+    });
+  };
+  const setDrawAndApplyFlags = (
+    label: string,
+    flags: Extract<ProjectCommand, { kind: "updateDungeonCellFlags" }>["flags"]
+  ) => {
+    onSetDungeonDrawFlags({ ...dungeonDrawFlags, ...flags });
+    applyFlags(label, flags);
+  };
+  const clearDrawFlags = () => {
+    onSetDungeonDrawFlags({ ...dungeonDrawFlags, ...DUNGEON_CLEAR_TO_WALL_FLAGS });
+    applyFlags("Clear selected dungeon cells", DUNGEON_CLEAR_TO_WALL_FLAGS);
+  };
+
+  return (
+    <div className="dungeon-flag-editor">
+      <div className="selection-summary-card">
+        <strong>{scopeLabel}</strong>
+        <span>{selection.kind === "region" ? "Batch edit dungeon cell flags" : "Edit dungeon cell flags"}; Draw uses these toggles.</span>
+      </div>
+      <div className="dungeon-flag-actions">
+        <button className="btn btn-secondary btn-xs" type="button" onClick={() => setDrawAndApplyFlags("Map selected dungeon cells", { unmapped: false })}>
+          Map Selected
+        </button>
+        <button className="btn btn-secondary btn-xs" type="button" onClick={() => setDrawAndApplyFlags("Unmap selected dungeon cells", { unmapped: true })}>
+          Unmap Selected
+        </button>
+        <button className="btn btn-ghost btn-xs" type="button" onClick={clearDrawFlags}>
+          Clear To Wall
+        </button>
+      </div>
+      <div className="dungeon-flag-grid">
+        {DUNGEON_CELL_FLAG_DEFINITIONS.map((definition) => (
+          <DungeonFlagToggle
+            key={definition.id}
+            label={definition.label}
+            group={definition.group}
+            state={dungeonFlagState(values, definition.id)}
+            previewTile={DUNGEON_FLAG_PREVIEW_TILES[definition.id]}
+            atlas={atlas}
+            selectedTileset={selectedTileset}
+            icons={icons}
+            onChange={(enabled) => setDrawAndApplyFlags(`${enabled ? "Set" : "Clear"} ${definition.label}`, { [definition.id]: enabled })}
+          />
+        ))}
+      </div>
+      {managedFlags.length > 0 && (
+        <div className="dungeon-managed-flags">
+          <span>Preserved</span>
+          {managedFlags.map((flag) => <b key={flag.id}>{flag.label}</b>)}
+        </div>
+      )}
+      <details className="context-section dungeon-technical-details">
+        <summary><span>Technical Details</span><b>{cells.length}</b></summary>
+        <InfoGrid
+          rows={[
+            ["Raw values", summarizeRawDungeonValues(values)],
+            ["Masks", summarizeDungeonMasks(values)]
+          ]}
+        />
+      </details>
+    </div>
+  );
+}
+
+function DungeonFlagToggle({
+  label,
+  group,
+  state,
+  previewTile,
+  atlas,
+  selectedTileset,
+  icons,
+  onChange
+}: {
+  label: string;
+  group: string;
+  state: "on" | "off" | "mixed";
+  previewTile: number | undefined;
+  atlas: EditorState["atlasEntries"][string] | null;
+  selectedTileset: TilesetAsset | null;
+  icons: EditorState["iconEntries"];
+  onChange: (enabled: boolean) => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (ref.current) ref.current.indeterminate = state === "mixed";
+  }, [state]);
+  return (
+    <label className={`dungeon-flag-toggle ${state}`}>
+      <input
+        ref={ref}
+        type="checkbox"
+        checked={state === "on"}
+        onChange={(event) => onChange(event.currentTarget.checked)}
+      />
+      <span className="dungeon-flag-preview">
+        {previewTile != null
+          ? <TileSwatch atlas={atlas} icons={icons} tile={previewTile} tileset={selectedTileset} showBadge={false} allowIconFallback={false} />
+          : <span className="dungeon-flag-preview-empty" />}
+      </span>
+      <span>{label}</span>
+      <small>{state === "mixed" ? "mixed" : group}</small>
+    </label>
+  );
+}
+
+function summarizeRawDungeonValues(values: number[]) {
+  if (values.length === 0) return "none";
+  const unique = [...new Set(values)];
+  if (unique.length === 1) return String(unique[0]);
+  return `${unique.length} values`;
+}
+
+function summarizeDungeonMasks(values: number[]) {
+  if (values.length === 0) return "none";
+  const unique = [...new Set(values.map((value) => `0x${dungeonCellMask(value).toString(16).padStart(4, "0")}`))];
+  return unique.length === 1 ? unique[0] : `${unique.length} masks`;
+}
+
 function SelectionInspector({
   selection,
   map,
   project,
   selectedTileset,
+  atlas,
   icons,
+  dungeonDrawFlags,
+  onSetDungeonDrawFlags,
   onSelectEntity,
   onOpenScripts,
   onApplyCommand
@@ -1821,7 +2130,10 @@ function SelectionInspector({
   map: MapEntity | null;
   project: Project | null;
   selectedTileset: TilesetAsset | null;
+  atlas: EditorState["atlasEntries"][string] | null;
   icons: EditorState["iconEntries"];
+  dungeonDrawFlags: Record<DungeonCellFlag, boolean>;
+  onSetDungeonDrawFlags: (flags: Record<DungeonCellFlag, boolean>) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
   onOpenScripts: (entity: SelectedEntity) => void;
   onApplyCommand: (command: ProjectCommand) => void;
@@ -1834,7 +2146,19 @@ function SelectionInspector({
       <div className="panel-header">
         <span>Selection Inspector</span>
       </div>
-      {selection.kind === "cell" && (
+      {map?.levelType === "dungeon" && (selection.kind === "cell" || selection.kind === "region") && (
+        <DungeonCellFlagEditor
+          map={map}
+          selection={selection}
+          atlas={atlas}
+          selectedTileset={selectedTileset}
+          icons={icons}
+          dungeonDrawFlags={dungeonDrawFlags}
+          onSetDungeonDrawFlags={onSetDungeonDrawFlags}
+          onApplyCommand={onApplyCommand}
+        />
+      )}
+      {selection.kind === "cell" && map?.levelType !== "dungeon" && (
         <>
           {map && project && (
             <p className={`context-capacity-note${actionPointCapacity(project.triggers, map.levelType, map.index).canCreate ? "" : " blocked"}`}>

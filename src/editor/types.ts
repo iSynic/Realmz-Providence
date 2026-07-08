@@ -22,7 +22,7 @@ export type AssetSearchHint = {
   kindFilter?: ManagedAssetKind | "all";
   selectedEntityId?: string | null;
 };
-export type EditorTool = "select" | "paint" | "stamp" | "trigger" | "random" | "sample" | "pan";
+export type EditorTool = "select" | "paint" | "stamp" | "dungeon-draw" | "trigger" | "random" | "sample" | "pan";
 export type MapWorkbenchMode = "canvas" | "land-layout" | "land-tiles" | "random-areas";
 export type MapPaintMode = "brush" | "clear" | "smart";
 export type MapPaintVariation = "single" | "cycle-group" | "random-group";
@@ -1099,8 +1099,31 @@ export type MapRecord = {
   provenance?: Provenance;
 };
 
+export type DungeonCellFlag =
+  | "wall"
+  | "horizontalDoor"
+  | "verticalDoor"
+  | "stairs"
+  | "column"
+  | "unmapped"
+  | "allowMoveNorth"
+  | "allowMoveEast"
+  | "allowMoveSouth"
+  | "allowMoveWest"
+  | "archway"
+  | "noWallInBattle";
+
+export type DungeonCellFlagState = "on" | "off" | "mixed";
+
 export type ProjectCommand =
   | { kind: "paintTiles"; mapId: string; label: string; cells: PaintCellChange[] }
+  | {
+      kind: "updateDungeonCellFlags";
+      mapId: string;
+      label: string;
+      flags: Partial<Record<DungeonCellFlag, boolean>>;
+      cells: Array<{ x: number; y: number; index: number; from: number }>;
+    }
   | { kind: "paintBattleGridCells"; battleId: number; label: string; cells: BattleGridCellChange[] }
   | { kind: "createMap"; label: string; levelType: LevelType }
   | { kind: "duplicateMap"; label: string; mapId: string }

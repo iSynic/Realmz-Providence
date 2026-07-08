@@ -121,8 +121,9 @@ function hoverBoxesAt(
 }
 
 function secretHoverTags(value: number, map: MapEntity) {
+  if (map.levelType === "dungeon") return [];
   const tags = [];
-  if (hasSecretMarkerTile(value, map)) tags.push(map.levelType === "dungeon" ? "dungeon secret" : "secret marker");
+  if (hasSecretMarkerTile(value, map)) tags.push("secret marker");
   if (isSecretWalkableTile(value, map)) tags.push("hidden walkable tile");
   else if (hasSecretPathTile(value, map)) tags.push("encoded passability flag");
   return tags;

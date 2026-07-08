@@ -14,6 +14,14 @@ const EMPTY_TARGET_COMPATIBILITY = { blockers: [], warnings: [], notes: [] };
 const MAP_SIZE = 90;
 const FIELD_BYTES = MAP_SIZE * MAP_SIZE * 2;
 const RANDOM_LEVEL_BYTES = 644;
+const BUNDLED_LANDLOOK_MAPSTATS = [
+  ["Data P BD", 0],
+  ["Data SUB BD", 3],
+  ["Data Castle BD", 4],
+  ["Data Desert BD", 5],
+  ["Data Swamp BD", 9],
+  ["Data Snow BD", 10]
+] as const;
 const pendingBrowserSemantics = new Map<string, { files: Map<string, Uint8Array>; sourceFiles: Project["source"]["files"] }>();
 const browserScenarioPreviewSources = new Map<string, Map<string, Uint8Array>>();
 const browserScenarioResourcePreviewCache = new Map<string, string | null>();
@@ -92,7 +100,7 @@ function createDefaultLandLevelProject(project: Project): Project {
         levelType: "land",
         source: "Data LD",
         index: 0,
-        name: "Land Level 0",
+        name: canonicalMapLevelName("land", 0),
         width: MAP_SIZE,
         height: MAP_SIZE,
         tiles: new Array(MAP_SIZE * MAP_SIZE).fill(fillTile),
@@ -558,6 +566,10 @@ export function normalizeBrowserProject(project: Project): Project {
   project.spellOverrides ??= [];
   project.raceOverrides ??= [];
   project.casteOverrides ??= [];
+  project.maps = (project.maps ?? []).map((map) => ({
+    ...map,
+    name: canonicalMapLevelName(map.levelType, map.index)
+  }));
   project.ruleNames = defaultRuleNames(project.ruleNames);
   project.editorMetadata ??= { displayNames: {}, tilePalettes: [], mapStamps: [], questThreads: [], questContextSources: [] };
   project.editorMetadata.displayNames ??= {};
@@ -572,11 +584,15 @@ export function normalizeBrowserProject(project: Project): Project {
   return project;
 }
 
+function canonicalMapLevelName(levelType: Project["maps"][number]["levelType"], index: number) {
+  return `${levelType === "dungeon" ? "Dungeon" : "Land"} level ${index}`;
+}
+
 export async function ensureBrowserReferenceTileAttributes(project: Project) {
   project.tileAttributes ??= [];
   backfillTilesetMetadata(project);
   project.tileAttributes = [
-    ...project.tileAttributes.filter((profile) => profile.sourceKind !== "mapstats"),
+    ...project.tileAttributes.filter((profile) => !isBundledReferenceMapstatsProfile(profile)),
     ...await loadBundledLandlookMapstats()
   ];
   return project;
@@ -589,14 +605,7 @@ async function loadBundledLandlookMapstats() {
 
 async function loadBundledLandlookMapstatsUncached() {
   const out: Project["tileAttributes"] = [];
-  for (const [fileName, landlook] of [
-    ["Data P BD", 0],
-    ["Data SUB BD", 3],
-    ["Data Castle BD", 4],
-    ["Data Desert BD", 5],
-    ["Data Swamp BD", 9],
-    ["Data Snow BD", 10]
-  ] as const) {
+  for (const [fileName, landlook] of BUNDLED_LANDLOOK_MAPSTATS) {
     try {
       const response = await fetch(`/bundled-libraries/realmz-reference/${encodeURIComponent(fileName)}`, { cache: "force-cache" });
       if (!response.ok) continue;
@@ -606,6 +615,11 @@ async function loadBundledLandlookMapstatsUncached() {
     }
   }
   return out;
+}
+
+function isBundledReferenceMapstatsProfile(profile: NonNullable<Project["tileAttributes"]>[number]) {
+  if (profile.sourceKind !== "mapstats") return false;
+  return BUNDLED_LANDLOOK_MAPSTATS.some(([source, landlook]) => profile.source === source && profile.landlook === landlook);
 }
 
 function backfillTilesetMetadata(project: Project) {

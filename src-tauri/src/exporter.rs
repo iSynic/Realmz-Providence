@@ -1,8 +1,8 @@
 use crate::error::{IoPath, ProvidenceError, Result};
 use crate::importer::RAW_SOURCES_DIR;
 use crate::project::{
-    LevelType, MapEntity, MonsterIconOverride, MonsterIconOverrideSource, ProvidenceProject,
-    ScenarioTarget, TargetCompatibilityBuckets, TargetCompatibilityIssue,
+    LevelType, MonsterIconOverride, MonsterIconOverrideSource, ProvidenceProject, ScenarioTarget,
+    TargetCompatibilityBuckets, TargetCompatibilityIssue,
 };
 use crate::realmz::{
     write_battles, write_caste_overrides, write_complex_encounters, write_custom_landlook_metadata,
@@ -669,7 +669,8 @@ fn write_managed_resources(
             }
         }
     };
-    result.preserved_resources = parse_resource_fork_entries(&original).len();
+    let original_entries = parse_resource_fork_entries(&original);
+    result.preserved_resources = original_entries.len();
     let mut updates = map_name_resource_updates(project, &original);
     updates.extend(monster_icon_override_updates(
         &project.monster_icon_overrides,
@@ -715,6 +716,13 @@ fn write_managed_resources(
                 "Scrolling Text TEXT/styl export is runtime-suspect: recent Windows Realmz testing ignored styl formatting, and Mac Realmz 7.1.2 crashed after a Providence-authored Scrolling Text action step.".to_string(),
             );
             scrolling_text_runtime_warning_emitted = true;
+        }
+        if original_entries.iter().any(|entry| {
+            entry.resource_type == asset.resource_type
+                && entry.id == asset.resource_id
+                && entry.data == data
+        }) {
+            continue;
         }
         updates.push(ResourceForkEntry {
             resource_type: asset.resource_type.clone(),
@@ -790,18 +798,24 @@ fn monster_icon_override_updates(
         );
         let existing_base = preserve_existing_metadata
             .then(|| {
-                original_entries
-                    .iter()
-                    .find(|entry| entry.resource_type == "cicn" && entry.id == target as i16)
+                original_entries.iter().find(|entry| {
+                    entry.resource_type == "cicn" && i32::from(entry.id).abs() == target
+                })
             })
             .flatten();
         let existing_paired = preserve_existing_metadata
             .then(|| {
                 original_entries.iter().find(|entry| {
-                    entry.resource_type == "cicn" && entry.id == (target + 308) as i16
+                    entry.resource_type == "cicn" && i32::from(entry.id).abs() == target + 308
                 })
             })
             .flatten();
+        if preserve_existing_metadata
+            && existing_base.is_some_and(|entry| entry.data == base_data)
+            && existing_paired.is_some_and(|entry| entry.data == paired_data)
+        {
+            continue;
+        }
         updates.push(ResourceForkEntry {
             resource_type: "cicn".to_string(),
             id: target as i16,
@@ -969,14 +983,12 @@ fn map_name_resource_updates(
 ) -> Vec<ResourceForkEntry> {
     map_name_resource_updates_for_records(
         &project.map_records,
-        &project.maps,
         original_resource_fork,
     )
 }
 
 fn map_name_resource_updates_for_records(
     map_records: &[crate::project::MapRecord],
-    maps: &[MapEntity],
     original_resource_fork: &[u8],
 ) -> Vec<ResourceForkEntry> {
     if map_records.is_empty() {
@@ -984,19 +996,12 @@ fn map_name_resource_updates_for_records(
     }
     let existing = parse_resource_fork_entries(original_resource_fork);
     let has_authored_names = map_records.iter().any(|record| record.map_name_authored);
-    if existing
-        .iter()
-        .any(|entry| entry.resource_type == "STR#" && entry.id == -102)
-        && !has_authored_names
-        && existing
-            .iter()
-            .any(|entry| entry.resource_type == "STR#" && entry.id == -101)
-    {
+    if !has_authored_names {
         return Vec::new();
     }
     let primary_names: Vec<String> = map_records
         .iter()
-        .map(|record| map_record_primary_name(maps, record))
+        .map(map_record_primary_name)
         .collect();
     let secondary_names: Vec<String> = map_records
         .iter()
@@ -1010,62 +1015,44 @@ fn map_name_resource_updates_for_records(
                 .to_string()
         })
         .collect();
+    let primary_data = encode_string_list_resource(&primary_names);
+    let secondary_data = encode_string_list_resource(&secondary_names);
+    let existing_primary = existing
+        .iter()
+        .find(|entry| entry.resource_type == "STR#" && entry.id == -102);
+    let existing_secondary = existing
+        .iter()
+        .find(|entry| entry.resource_type == "STR#" && entry.id == -101);
+    if existing_primary.is_some_and(|entry| entry.data == primary_data)
+        && existing_secondary.is_some_and(|entry| entry.data == secondary_data)
+    {
+        return Vec::new();
+    }
     vec![
         ResourceForkEntry {
             resource_type: "STR#".to_string(),
             id: -102,
             name: "Map Names".to_string(),
             attributes: 0,
-            data: encode_string_list_resource(&primary_names),
+            data: primary_data,
         },
         ResourceForkEntry {
             resource_type: "STR#".to_string(),
             id: -101,
             name: "Map Names".to_string(),
             attributes: 0,
-            data: encode_string_list_resource(&secondary_names),
+            data: secondary_data,
         },
     ]
 }
 
-fn map_record_primary_name(maps: &[MapEntity], record: &crate::project::MapRecord) -> String {
-    for candidate in [
-        record.name.as_deref(),
-        record.primary_name.as_deref(),
-        map_name_for_record_target(maps, record).as_deref(),
-    ] {
+fn map_record_primary_name(record: &crate::project::MapRecord) -> String {
+    for candidate in [record.name.as_deref(), record.primary_name.as_deref()] {
         if let Some(name) = candidate.map(str::trim).filter(|name| !name.is_empty()) {
             return name.to_string();
         }
     }
     format!("Map {}", record.id + 1)
-}
-
-fn map_name_for_record_target(
-    maps: &[MapEntity],
-    record: &crate::project::MapRecord,
-) -> Option<String> {
-    let level_type = if record.is_dungeon {
-        LevelType::Dungeon
-    } else {
-        LevelType::Land
-    };
-    let level_index = usize::try_from(record.level).ok()?;
-    maps.iter()
-        .find(|map| map.level_type == level_type && map.index == level_index)
-        .filter(|map| {
-            map.name
-                != format!(
-                    "{} level {}",
-                    if level_type == LevelType::Dungeon {
-                        "Dungeon"
-                    } else {
-                        "Land"
-                    },
-                    map.index
-                )
-        })
-        .map(|map| map.name.clone())
 }
 
 fn scenario_shell_file_name(project: &ProvidenceProject) -> &str {
@@ -1086,10 +1073,9 @@ mod tests {
         preserve_imported_fixed_length, scenario_icon_resource_updates, ResourceExportResult,
     };
     use crate::project::{
-        Confidence, LevelType, ManagedAsset, ManagedAssetExportState, ManagedAssetKind, MapEntity,
-        MapRecord, MapRecordRect, MapRender, MonsterIconOverride, MonsterIconOverrideSource,
-        Provenance, RenderMode, ScenarioIconResource, ScenarioIconResourceSource,
-        ScenarioItemRecord,
+        Confidence, ManagedAsset, ManagedAssetExportState, ManagedAssetKind, MapRecord,
+        MapRecordRect, MonsterIconOverride, MonsterIconOverrideSource, Provenance,
+        ScenarioIconResource, ScenarioIconResourceSource, ScenarioItemRecord,
     };
     use crate::resource_fork::{
         decode_string_list_resource, encode_string_list_resource, write_resource_fork,
@@ -1241,7 +1227,24 @@ mod tests {
             false,
         )];
 
-        let updates = map_name_resource_updates_for_records(&records, &[], &original);
+        let updates = map_name_resource_updates_for_records(&records, &original);
+
+        assert!(updates.is_empty());
+    }
+
+    #[test]
+    fn map_name_resource_updates_skip_authored_names_when_bytes_match_original() {
+        let original = write_resource_fork(&[
+            map_names_resource(-102, &["Old Primary 0", "Old Primary 1"]),
+            map_names_resource(-101, &["Old Secondary 0", "Old Secondary 1"]),
+        ])
+        .unwrap();
+        let records = vec![
+            map_record_with_names(0, "Old Primary 0", "Old Secondary 0", true),
+            map_record_with_names(1, "Old Primary 1", "Old Secondary 1", false),
+        ];
+
+        let updates = map_name_resource_updates_for_records(&records, &original);
 
         assert!(updates.is_empty());
     }
@@ -1258,7 +1261,7 @@ mod tests {
             map_record_with_names(1, "Old Primary 1", "Old Secondary 1", false),
         ];
 
-        let updates = map_name_resource_updates_for_records(&records, &[], &original);
+        let updates = map_name_resource_updates_for_records(&records, &original);
 
         assert_eq!(updates.len(), 2);
         let primary = updates
@@ -1280,7 +1283,7 @@ mod tests {
     }
 
     #[test]
-    fn map_name_resource_updates_can_fallback_to_related_level_name() {
+    fn map_name_resource_updates_do_not_fallback_to_related_level_name() {
         let records = vec![MapRecord {
             name: None,
             primary_name: None,
@@ -1288,9 +1291,8 @@ mod tests {
             level: 2,
             ..map_record_with_names(0, "", "", true)
         }];
-        let maps = vec![map_entity(LevelType::Land, 2, "Bywater Clue Map")];
 
-        let updates = map_name_resource_updates_for_records(&records, &maps, &[]);
+        let updates = map_name_resource_updates_for_records(&records, &[]);
         let primary = updates
             .iter()
             .find(|entry| entry.resource_type == "STR#" && entry.id == -102)
@@ -1298,7 +1300,7 @@ mod tests {
 
         assert_eq!(
             decode_string_list_resource(&primary.data),
-            vec!["Bywater Clue Map".to_string()]
+            vec!["Map 1".to_string()]
         );
     }
 
@@ -1405,25 +1407,6 @@ mod tests {
             raw_bytes: Vec::new(),
             authored: false,
             provenance: provenance("Data MD2", id, crate::realmz::MAP_RECORD_BYTES),
-        }
-    }
-
-    fn map_entity(level_type: LevelType, index: usize, name: &str) -> MapEntity {
-        MapEntity {
-            id: format!("{}:{}", level_type.as_str(), index),
-            level_type,
-            source: level_type.field_file().to_string(),
-            index,
-            name: name.to_string(),
-            width: 90,
-            height: 90,
-            tiles: Vec::new(),
-            render: MapRender {
-                tileset_id: "abstract-fallback".to_string(),
-                landlook: None,
-                mode: RenderMode::AbstractFallback,
-            },
-            provenance: provenance(level_type.field_file(), index, 16200),
         }
     }
 

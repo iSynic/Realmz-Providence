@@ -67,7 +67,7 @@ Immediate safe authoring candidates:
 - Show pillar bit `0x0010` as source-backed but delay authoring if Divinity UI semantics are not yet mapped.
 - Show note bit `0x0020` through the Notes workflow, not as a generic dungeon geometry brush.
 - Show encounter / Action Point trigger bit `0x1000` through Action Point placement and validation.
-- Show visible arch/revealed passage bit `0x2000` as runtime-mutated reveal state unless Divinity writer evidence proves authors set it directly.
+- Expose archway bit `0x2000` as directly writable; Divinity's Dungeon Editor exposes an Archway checkbox. Realmz can also mutate/display this bit for revealed arch/passages at runtime.
 - Show secret directional bits `0x0F00` as source-backed secret/pass-through evidence, but require a more guided editor so users choose direction rather than raw bit.
 - Preserve high/sign bit `0x8000`; do not expose it as a normal control unless a source or Divinity editor owner is later proven.
 

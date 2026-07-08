@@ -1468,9 +1468,15 @@ fn assert_fixture_contracts(name: &str, project: &ProvidenceProject) {
                 project
                     .maps
                     .iter()
-                    .any(|map| !map.name.starts_with("Land Level")
-                        && !map.name.starts_with("Dungeon Level")),
-                "City of Bywater should promote at least one resource-backed map name"
+                    .all(|map| {
+                        let kind = if map.level_type.as_str() == "dungeon" {
+                            "Dungeon"
+                        } else {
+                            "Land"
+                        };
+                        map.name == format!("{kind} level {}", map.index)
+                    }),
+                "City of Bywater should keep STR# Map Names on player-map records, not land/dungeon levels"
             );
         }
         "Prelude to Pestilence" => {
@@ -1978,8 +1984,15 @@ fn assert_semantic_schema(name: &str, source: &Path, project: &ProvidenceProject
                 project
                     .maps
                     .iter()
-                    .any(|map| !map.name.ends_with(&format!("level {}", map.index))),
-                "{name} should promote resource-backed map names into imported map labels"
+                    .all(|map| {
+                        let kind = if map.level_type.as_str() == "dungeon" {
+                            "Dungeon"
+                        } else {
+                            "Land"
+                        };
+                        map.name == format!("{kind} level {}", map.index)
+                    }),
+                "{name} should keep STR# map names on player-map records, not land/dungeon level labels"
             );
         }
     }
@@ -2735,11 +2748,17 @@ fn exports_hardened_fixtures_byte_identically_without_edits() {
                 exported_file.is_file(),
                 "{name} should export imported file {file_name}"
             );
-            assert_eq!(
-                fs::read(&source_file).unwrap(),
-                fs::read(&exported_file).unwrap(),
-                "{name} {file_name} should export byte-identically without edits"
-            );
+            let source_bytes = fs::read(&source_file).unwrap();
+            let exported_bytes = fs::read(&exported_file).unwrap();
+            if source_bytes != exported_bytes {
+                panic!(
+                    "{name} {file_name} should export byte-identically without edits; written_resources={:?}; warnings={:?}; written_files={:?}; pass_through_files={:?}",
+                    report.written_resources,
+                    report.resource_warnings,
+                    report.written_files,
+                    report.pass_through_files
+                );
+            }
         }
 
         for source_file in &project.source.files {
@@ -2760,12 +2779,20 @@ fn exports_hardened_fixtures_byte_identically_without_edits() {
                 "{name} should pass through non-tracked source file {}",
                 source_file.relative_path
             );
-            assert_eq!(
-                fs::read(&source_path).unwrap(),
-                fs::read(&exported_path).unwrap(),
-                "{name} {} should pass through byte-identically",
-                source_file.relative_path
-            );
+            let source_bytes = fs::read(&source_path).unwrap();
+            let exported_bytes = fs::read(&exported_path).unwrap();
+            if source_bytes != exported_bytes {
+                panic!(
+                    "{name} {} should pass through byte-identically; written_resources={:?}; warnings={:?}; written_files={:?}; pass_through_files={:?}; source_file_name={:?}; role={:?}",
+                    source_file.relative_path,
+                    report.written_resources,
+                    report.resource_warnings,
+                    report.written_files,
+                    report.pass_through_files,
+                    source_file.name,
+                    source_file.role
+                );
+            }
         }
 
         assert!(

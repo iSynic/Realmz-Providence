@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AtlasEntry,
   CustomMapStamp,
+  DungeonCellFlag,
   EditorTool,
   IconEntry,
   MapPreviewFocalPoint,
@@ -83,6 +84,7 @@ export function RealmzMapCanvas({
   variationTiles,
   selectedTile,
   selectedSuperTileStamp,
+  dungeonDrawFlags,
   zoom,
   smoothTiles,
   viewOptions,
@@ -129,6 +131,7 @@ export function RealmzMapCanvas({
   variationTiles?: number[] | null;
   selectedTile: number;
   selectedSuperTileStamp: MapStamp | null;
+  dungeonDrawFlags: Record<DungeonCellFlag, boolean>;
   zoom: number;
   smoothTiles: boolean;
   viewOptions: MapViewOptions;
@@ -295,9 +298,9 @@ export function RealmzMapCanvas({
     ctx.imageSmoothingQuality = smoothTiles ? "high" : "low";
     ctx.save();
     ctx.translate(layout.gutter, layout.gutter);
-    drawTileValueCell(ctx, { tile: change.to, x: change.x, y: change.y, atlas, icons, viewOptions, cell: layout.cell });
+    drawTileValueCell(ctx, { tile: change.to, x: change.x, y: change.y, atlas, icons, viewOptions, cell: layout.cell, allowIconFallback: map.levelType !== "dungeon" });
     ctx.restore();
-  }, [atlas, canvasCssSize, icons, smoothTiles, viewOptions]);
+  }, [atlas, canvasCssSize, icons, map.levelType, smoothTiles, viewOptions]);
   const resetPaintPreview = useCallback(() => {
     const canvas = baseCanvasRef.current;
     if (!canvas) return;
@@ -316,6 +319,7 @@ export function RealmzMapCanvas({
     variationTiles,
     selectedTile,
     selectedSuperTileStamp,
+    dungeonDrawFlags,
     selectedTileset: tileset,
     triggers,
     randomLevel,
@@ -412,7 +416,7 @@ export function RealmzMapCanvas({
     }
     if (selectedCell && !selectedRegion && !paintCursor && !stampCursor) drawSelectedCell(ctx, selectedCell, cell);
     if (regionPreview) drawRegionSelection(ctx, regionPreview, cell, "preview");
-    if (paintCursor) drawPaintCursor(ctx, { cursor: paintCursor, atlas, icons, viewOptions, cell });
+    if (paintCursor) drawPaintCursor(ctx, { cursor: paintCursor, atlas, icons, viewOptions, cell, allowIconFallback: map.levelType !== "dungeon" });
     else if (stampCursor) drawStampCursor(ctx, { cursor: stampCursor, atlas, icons, viewOptions, cell });
     else if (hover) drawHover(ctx, hover, cell);
   }, [
@@ -695,6 +699,7 @@ function cursorForTool(tool: EditorTool, paintMode: MapPaintMode, target: MapHit
   if (tool === "paint" && paintMode === "smart") return "crosshair";
   if (tool === "paint") return "none";
   if (tool === "stamp") return "copy";
+  if (tool === "dungeon-draw") return "none";
   if (tool === "random") return target?.kind === "randomRect" ? "move" : "crosshair";
   if (tool === "sample") return "copy";
   if (tool === "select" && target?.kind === "cell") return "grab";

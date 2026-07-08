@@ -1,4 +1,5 @@
 import { LandlookRangeSlot, LevelType, MapEntity, MapMarker, MapRecord, MapstatsRecord, PaintCellChange, Project, ProjectCommand, Provenance, RandomLevel, RandomRect, TileAttributeFlag, TileAttributeProfile, TilesetAsset } from "../types";
+import { setDungeonCellFlags } from "../map/dungeonCellFlags";
 
 const MAP_SIZE = 90;
 const FIELD_BYTES = MAP_SIZE * MAP_SIZE * 2;
@@ -10,6 +11,7 @@ const MAP_RECORD_MARKERS = 10;
 const MAP_RECORD_MARKER_BYTES = 6;
 const LAND_LAYOUT_ROWS = 8;
 const LAND_LAYOUT_COLS = 16;
+const DUNGEON_WALL_TILE = 1;
 const CUSTOM_LANDLOOK_RECORDS = 201;
 const CUSTOM_LANDLOOKS = new Set([6, 7, 8]);
 const CUSTOM_LANDLOOK_SOURCE_FILES: Record<number, string> = {
@@ -29,6 +31,27 @@ export function paintTiles(project: Project, mapId: string, cells: PaintCellChan
       if (cell.index < 0 || cell.index >= tiles.length) continue;
       if (tiles[cell.index] === cell.to) continue;
       tiles[cell.index] = cell.to;
+      mapChanged = true;
+    }
+    if (!mapChanged) return map;
+    projectChanged = true;
+    return { ...map, tiles };
+  });
+  return projectChanged ? { ...project, maps } : project;
+}
+
+export function updateDungeonCellFlags(project: Project, command: Extract<ProjectCommand, { kind: "updateDungeonCellFlags" }>) {
+  if (command.cells.length === 0) return project;
+  let projectChanged = false;
+  const maps = project.maps.map((map) => {
+    if (map.id !== command.mapId || map.levelType !== "dungeon") return map;
+    const tiles = [...map.tiles];
+    let mapChanged = false;
+    for (const cell of command.cells) {
+      if (cell.index < 0 || cell.index >= tiles.length) continue;
+      const next = setDungeonCellFlags(tiles[cell.index], command.flags);
+      if (next === tiles[cell.index]) continue;
+      tiles[cell.index] = next;
       mapChanged = true;
     }
     if (!mapChanged) return map;
@@ -732,13 +755,13 @@ function nextMapIndex(project: Project, levelType: LevelType) {
 
 function authoredMap(levelType: LevelType, index: number, source: MapEntity | null): MapEntity {
   const render = defaultRender(levelType, source);
-  const fillTile = levelType === "land" ? landlookBaseTile(render.landlook ?? 0) ?? 1 : 0;
+  const fillTile = levelType === "land" ? landlookBaseTile(render.landlook ?? 0) ?? 1 : DUNGEON_WALL_TILE;
   return {
     id: `${levelType}:${index}`,
     levelType,
     source: levelType === "land" ? "Data LD" : "Data DL",
     index,
-    name: `${levelType === "land" ? "Land" : "Dungeon"} Level ${index}`,
+    name: `${levelType === "land" ? "Land" : "Dungeon"} level ${index}`,
     width: MAP_SIZE,
     height: MAP_SIZE,
     tiles: source ? [...source.tiles] : new Array(MAP_SIZE * MAP_SIZE).fill(fillTile),

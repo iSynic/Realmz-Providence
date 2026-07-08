@@ -8,13 +8,15 @@ function TileSwatchComponent({
   icons,
   tile,
   tileset,
-  showBadge = true
+  showBadge = true,
+  allowIconFallback = true
 }: {
   atlas: AtlasEntry | null;
   icons?: Record<number, IconEntry>;
   tile: number;
   tileset: TilesetAsset | null;
   showBadge?: boolean;
+  allowIconFallback?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const metadata = useMemo(() => classifyTileValue(tile, tileset, [], icons), [icons, tile, tileset]);
@@ -28,8 +30,8 @@ function TileSwatchComponent({
     context.clearRect(0, 0, canvas.width, canvas.height);
     context.fillStyle = tileColor(tile);
     context.fillRect(0, 0, canvas.width, canvas.height);
-    drawTileSprite(context, atlas, tile, 0, 0, canvas.width, canvas.height, icons);
-  }, [atlas, icons, tile]);
+    drawTileSprite(context, atlas, tile, 0, 0, canvas.width, canvas.height, icons, allowIconFallback);
+  }, [allowIconFallback, atlas, icons, tile]);
 
   return (
     <span className={`tile-swatch tile-kind-${metadata.kind}`} aria-hidden="true">

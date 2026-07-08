@@ -27,27 +27,9 @@ struct MapRecordTarget {
     start_y: i16,
 }
 
-pub fn apply_map_name_hints(parsed: &mut ParsedScenario, buffers: &BTreeMap<String, Vec<u8>>) {
-    let names = resource_map_names(buffers);
-    if names.is_empty() {
-        return;
-    }
-    for target in map_record_targets(buffers) {
-        let Some(name) = names.get(&target.record_index) else {
-            continue;
-        };
-        if name.name.is_empty() {
-            continue;
-        }
-        let Some(map) = parsed
-            .maps
-            .iter_mut()
-            .find(|map| map.level_type == target.level_type && map.index == target.level_index)
-        else {
-            continue;
-        };
-        map.name = name.name.clone();
-    }
+pub fn apply_map_name_hints(_parsed: &mut ParsedScenario, _buffers: &BTreeMap<String, Vec<u8>>) {
+    // STR# "Map Names" labels Data MD2 player-map records, not land/dungeon levels.
+    // The names are attached when map records are projected into semantic entities.
 }
 
 pub(super) fn resource_map_names(

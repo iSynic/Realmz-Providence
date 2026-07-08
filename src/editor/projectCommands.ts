@@ -13,6 +13,7 @@ import {
   updateCustomLandTileCombatBuild,
   updateCustomLandlookBase,
   updateCustomLandlookRangeSlot,
+  updateDungeonCellFlags,
   updateLandLayoutCell,
   updateMapRecord,
   updateMapRecordNames,
@@ -115,6 +116,7 @@ import {
 
 export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "paintTiles") return paintTiles(project, command.mapId, command.cells);
+  if (command.kind === "updateDungeonCellFlags") return updateDungeonCellFlags(project, command);
   if (command.kind === "paintBattleGridCells") return paintBattleGridCells(project, command.battleId, command.cells);
   if (command.kind === "createMap") return createMap(project, command);
   if (command.kind === "duplicateMap") return duplicateMap(project, command);
@@ -232,12 +234,14 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
 
 export function projectCommandLabel(command: ProjectCommand) {
   if (command.kind === "paintTiles") return command.cells.length === 1 ? "Paint tile" : `Paint ${command.cells.length} tiles`;
+  if (command.kind === "updateDungeonCellFlags") return command.label;
   if (command.kind === "paintBattleGridCells") return command.cells.length === 1 ? "Paint battle cell" : `Paint ${command.cells.length} battle cells`;
   return command.label;
 }
 
 export function projectCommandChangeCount(command: ProjectCommand) {
   if (command.kind === "paintTiles") return command.cells.length;
+  if (command.kind === "updateDungeonCellFlags") return command.cells.length;
   if (command.kind === "paintBattleGridCells") return command.cells.length;
   if (command.kind === "bulkUpdateMessageRecords") return command.updates.length;
   if (command.kind === "createMonstersFromTemplates") return command.entries.length;

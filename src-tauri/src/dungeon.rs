@@ -72,14 +72,13 @@ impl DungeonPrimitive {
             | Self::AllowMoveNorth
             | Self::AllowMoveEast
             | Self::AllowMoveSouth
-            | Self::AllowMoveWest => DungeonPrimitiveWriterStatus::WriterSafePrimitive,
+            | Self::AllowMoveWest
+            | Self::VisibleArch => DungeonPrimitiveWriterStatus::WriterSafePrimitive,
             Self::NoteMarker => DungeonPrimitiveWriterStatus::RouteThroughNoteWorkflow,
             Self::ActionPointMarker => {
                 DungeonPrimitiveWriterStatus::RouteThroughActionPointWorkflow
             }
-            Self::RevealedSecret | Self::VisibleArch => {
-                DungeonPrimitiveWriterStatus::ReadOnlyPreserve
-            }
+            Self::RevealedSecret => DungeonPrimitiveWriterStatus::ReadOnlyPreserve,
         }
     }
 
@@ -211,7 +210,6 @@ mod tests {
             DungeonPrimitive::NoteMarker,
             DungeonPrimitive::ActionPointMarker,
             DungeonPrimitive::RevealedSecret,
-            DungeonPrimitive::VisibleArch,
         ] {
             assert!(!primitive.is_directly_writable());
             assert!(apply_dungeon_primitive(0, primitive, true).is_err());
@@ -232,6 +230,7 @@ mod tests {
             DungeonPrimitive::AllowMoveEast,
             DungeonPrimitive::AllowMoveSouth,
             DungeonPrimitive::AllowMoveWest,
+            DungeonPrimitive::VisibleArch,
         ] {
             assert!(primitive.is_directly_writable());
             let changed = apply_dungeon_primitive(0, primitive, true).unwrap();

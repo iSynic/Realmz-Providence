@@ -15,7 +15,9 @@ export function MapCapabilityPanel({
   onShowRandomRects,
   onHighlightRandomRect,
   onEditRandomRect,
-  onSelectRandomRect
+  onSelectRandomRect,
+  onMapEntireDungeon,
+  onUnmapEntireDungeon
 }: {
   map: MapEntity | null;
   randomLevel: RandomLevel | null;
@@ -31,6 +33,8 @@ export function MapCapabilityPanel({
   onHighlightRandomRect: () => void;
   onEditRandomRect: () => void;
   onSelectRandomRect?: (rectIndex: number) => void;
+  onMapEntireDungeon?: () => void;
+  onUnmapEntireDungeon?: () => void;
 }) {
   const isDungeon = map?.levelType === "dungeon";
   return (
@@ -41,12 +45,18 @@ export function MapCapabilityPanel({
           <b>{activeToolLabel(activeTool)}</b>
         </summary>
         <div className="affordance-button-grid">
-          <AffordanceButton label="Paint Tiles" body="Use Paint and Sample to edit raw Realmz map-field values. Brush, Replace, Eraser, Fill Chance, custom palettes, and Smart terrain all write normal undoable tile edits." tone="ready" onClick={() => { onSetTool("paint"); onOpenPalette(); }} />
-          <AffordanceButton label="Special / Icons" body="Open the Paint palette to place negative special land cicn tiles and icon-backed values. Large buildings and landmarks usually live here, not in ordinary landlook terrain." tone="ready" onClick={() => { onSetTool("paint"); onOpenPalette(); }} />
+          {isDungeon ? (
+            <AffordanceButton label="Dungeon Flags" body="Dungeon cells are authored through wall, door, stair, column, archway, unmapped, movement, and battle-wall flags rather than land tile palettes." tone="ready" onClick={onFocusFlags} />
+          ) : (
+            <>
+              <AffordanceButton label="Paint Tiles" body="Use Paint and Sample to edit raw Realmz map-field values. Brush, Eraser, Fill Chance, custom palettes, and Smart terrain all write normal undoable tile edits." tone="ready" onClick={() => { onSetTool("paint"); onOpenPalette(); }} />
+              <AffordanceButton label="Special / Icons" body="Open the Paint palette to place negative special land cicn tiles and icon-backed values. Large buildings and landmarks usually live here, not in ordinary landlook terrain." tone="ready" onClick={() => { onSetTool("paint"); onOpenPalette(); }} />
+            </>
+          )}
           <AffordanceButton label="Action Points" body="Use the Action Point tool or selected-cell actions to create, move, edit, and clear AP records. Use Scripts for the deeper opcode and target workflow." tone="ready" onClick={() => onSetTool("trigger")} />
           <AffordanceButton label="Map Flags" body="Edit map setup such as landlook, renderer, darkness, and line of sight. Providence previews LOS/darkness as editor guidance, not Realmz runtime visibility cache data." tone="ready" onClick={onFocusFlags} />
-          <AffordanceButton label="Edit Land Tiles" body="Open the current landlook atlas, tile metadata, Data Solids evidence, and Divinity-style combat expansion preview for the selected map." tone="ready" onClick={onFocusAtlas} />
-          <AffordanceButton label="Clear Level" body="Clear every cell to the level's base tile after confirmation. On dungeon maps the clear tile can be walkable blank space." tone="danger" onClick={onClearLevel} />
+          {!isDungeon && <AffordanceButton label="Edit Land Tiles" body="Open the current landlook atlas, tile metadata, Data Solids evidence, and Divinity-style combat expansion preview for the selected map." tone="ready" onClick={onFocusAtlas} />}
+          <AffordanceButton label="Clear Level" body={isDungeon ? "Fill every dungeon cell with the standard wall tile after confirmation." : "Clear every cell to the level's base tile after confirmation."} tone="danger" onClick={onClearLevel} />
         </div>
       </details>
       <details className="context-section affordance-section">
@@ -85,16 +95,12 @@ export function MapCapabilityPanel({
         <details className="context-section affordance-section" open>
           <summary>
             <span>Cell Flags</span>
-            <b>inspect</b>
+            <b>edit</b>
           </summary>
-          <p className="empty-copy compact">Dungeon cells pack wall, door, stair, secret, and movement-edge flags. Providence shows the decoded shape here while deeper flag authoring remains staged for a later pass.</p>
-          <div className="bit-toggle-grid">
-            {["Wall", "Door", "Stairs", "Secret", "Move Up", "Move Right", "Move Down", "Move Left"].map((label) => (
-              <label key={label}>
-                <input type="checkbox" disabled />
-                <span>{label}</span>
-              </label>
-            ))}
+          <p className="empty-copy compact">Select one dungeon cell or drag a region to edit wall, door, stair, column, unmapped, movement, and battle-wall flags.</p>
+          <div className="affordance-button-grid compact">
+            <AffordanceButton label="Map Entire Level" body="Clear the Unmapped flag from every dungeon cell." tone="ready" onClick={onMapEntireDungeon} disabled={!onMapEntireDungeon} />
+            <AffordanceButton label="Unmap Entire Level" body="Set the Unmapped flag on every dungeon cell." tone="ready" onClick={onUnmapEntireDungeon} disabled={!onUnmapEntireDungeon} />
           </div>
         </details>
       )}

@@ -1145,8 +1145,6 @@ function applyMapNameHints(maps: MapEntity[], mapRecords: MapRecord[], buffers: 
     record.primaryName = hint.primaryName || undefined;
     record.secondaryName = hint.secondaryName || undefined;
     record.nameSource = hint.source;
-    const map = maps.find((candidate) => candidate.levelType === (record.isDungeon ? "dungeon" : "land") && candidate.index === record.level);
-    if (map) map.name = hint.name;
   }
 }
 

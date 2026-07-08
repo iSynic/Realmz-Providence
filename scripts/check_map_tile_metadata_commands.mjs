@@ -20,6 +20,8 @@ try {
   const appUtilsModule = await server.ssrLoadModule("/src/editor/app/appUtils.ts");
 
   checkDefaultBrowserProject(browserProject, appUtilsModule);
+  checkNewDungeonDefaultsToWall(commands);
+  checkDungeonCellFlagCommand(commands);
   checkCustomMapstatsAttributeSync(commands, metadata, paintGroups);
   checkCustomCombatBuildSync(commands, metadata);
   checkCustomLandlookBaseSync(commands);
@@ -38,6 +40,88 @@ try {
   }
 } finally {
   await server.close();
+}
+
+function checkNewDungeonDefaultsToWall({ createMap }) {
+  const project = projectWithCustomLandlook({
+    maps: [],
+    randomLevels: [],
+    assetCatalog: { tilesets: [] },
+    tileAttributes: []
+  });
+  const next = createMap(project, { kind: "createMap", label: "Create dungeon map", levelType: "dungeon" });
+  const dungeon = next.maps.find((map) => map.levelType === "dungeon" && map.index === 0);
+  assert(Boolean(dungeon), "Creating a dungeon map should add dungeon level 0.");
+  assert(dungeon?.render?.mode === "dungeon-top-down", "New dungeon map should use the dungeon top-down renderer.");
+  assert(dungeon?.render?.landlook === -1, "New dungeon map should use dungeon landlook -1.");
+  assert(dungeon?.tiles.length === 90 * 90, "New dungeon map should have 8100 cells.");
+  assert(dungeon?.tiles.every((tile) => tile === 1), "New dungeon map should default to wall cell value 1, not open floor 0.");
+  const random = next.randomLevels.find((level) => level.levelType === "dungeon" && level.levelIndex === 0);
+  assert(Boolean(random), "Creating a dungeon map should add the matching dungeon random-level row.");
+  assert(next.assetCatalog?.tilesets?.some((tileset) => tileset.id === "dungeon-top-down-302"), "Creating a dungeon map should register the dungeon top-down tileset.");
+}
+
+function checkDungeonCellFlagCommand({ updateDungeonCellFlags }) {
+  const preserved = 0x1000 | 0x8000;
+  const signedPreserved = preserved >= 0x8000 ? preserved - 0x10000 : preserved;
+  const project = projectWithCustomLandlook({
+    maps: [
+      dungeonMap(0, [signedPreserved, 0, 0, 0]),
+      landMap(0, 0)
+    ],
+    randomLevels: []
+  });
+  const next = updateDungeonCellFlags(project, {
+    kind: "updateDungeonCellFlags",
+    label: "Set dungeon flags",
+    mapId: "dungeon:0",
+    flags: {
+      wall: true,
+      horizontalDoor: true,
+      verticalDoor: true,
+      stairs: true,
+      column: true,
+      unmapped: true,
+      allowMoveNorth: true,
+      allowMoveEast: true,
+      allowMoveSouth: true,
+      allowMoveWest: true,
+      archway: true,
+      noWallInBattle: true
+    },
+    cells: [
+      { x: 0, y: 0, index: 0, from: signedPreserved },
+      { x: 1, y: 0, index: 1, from: 0 }
+    ]
+  });
+  const dungeon = next.maps.find((map) => map.id === "dungeon:0");
+  const firstMask = dungeon.tiles[0] & 0xffff;
+  assert((firstMask & preserved) === preserved, "Dungeon flag edits should preserve AP/high bits.");
+  for (const mask of [0x0001, 0x0002, 0x0004, 0x0008, 0x0010, 0x0080, 0x0100, 0x0200, 0x0400, 0x0800, 0x2000, 0x4000]) {
+    assert((firstMask & mask) === mask, `Dungeon flag edit did not set writer-safe mask 0x${mask.toString(16)}.`);
+  }
+  const cleared = updateDungeonCellFlags(next, {
+    kind: "updateDungeonCellFlags",
+    label: "Clear dungeon flags",
+    mapId: "dungeon:0",
+    flags: { wall: false, unmapped: false, allowMoveNorth: false, archway: false, noWallInBattle: false },
+    cells: [{ x: 0, y: 0, index: 0, from: dungeon.tiles[0] }]
+  });
+  const clearedMask = cleared.maps.find((map) => map.id === "dungeon:0").tiles[0] & 0xffff;
+  assert((clearedMask & 0x0001) === 0, "Dungeon flag edit did not clear wall.");
+  assert((clearedMask & 0x0080) === 0, "Dungeon flag edit did not clear unmapped.");
+  assert((clearedMask & 0x0100) === 0, "Dungeon flag edit did not clear north movement.");
+  assert((clearedMask & 0x2000) === 0, "Dungeon flag edit did not clear archway.");
+  assert((clearedMask & 0x4000) === 0, "Dungeon flag edit did not clear no-wall-in-battle.");
+  assert((clearedMask & preserved) === preserved, "Dungeon flag clears should preserve managed/high bits.");
+  const rejected = updateDungeonCellFlags(project, {
+    kind: "updateDungeonCellFlags",
+    label: "Reject land",
+    mapId: "land:0",
+    flags: { wall: true },
+    cells: [{ x: 0, y: 0, index: 0, from: 156 }]
+  });
+  assert(rejected === project, "Dungeon flag edit should reject land maps without mutation.");
 }
 
 function checkCustomMapstatsAttributeSync({ updateCustomLandTileAttributes }, { classifyTileValue, tileAttributeGroup }, { landlookGroupTiles }) {
@@ -101,7 +185,11 @@ function checkCreateCustomLandlookFromSource({ createCustomLandlookFromSource })
   const builtInProject = projectWithCustomLandlook({
     customLandlooks: [],
     tileAttributes: [
-      mapstatsProfile(0, record(5, { solid: 1, spare: 77 }), { sourceFile: "Data P BD", baseTile: 156, baseScale: 1 })
+      mapstatsProfile(0, record(5, {
+        solid: 1,
+        spare: 77,
+        combatBuild: [[5, 6, 7], [8, 9, 10], [11, 12, 13]]
+      }), { sourceFile: "Data P BD", baseTile: 156, baseScale: 1 })
     ],
     assetCatalog: { tilesets: [standardTileset(0)] },
     maps: [landMap(0, 0)],
@@ -119,7 +207,9 @@ function checkCreateCustomLandlookFromSource({ createCustomLandlookFromSource })
   assert(custom?.authored === true, "Custom landlook creation should mark metadata authored.");
   assert(custom?.records?.[5]?.solid === 1, "Custom landlook creation did not copy built-in tile metadata.");
   assert(custom?.records?.[5]?.spare === 77, "Custom landlook creation should preserve mapped spare words from the source profile.");
+  assert(custom?.records?.[5]?.combatBuild?.[2]?.[2] === 13, "Custom landlook creation did not copy built-in combat expansion metadata.");
   assert(findProfile(next, 6, 5)?.editableScope === "scenario-custom", "Custom landlook creation did not sync writable tileAttributes.");
+  assert(findProfile(next, 6, 5)?.combatBuild?.[0]?.[1] === 6, "Custom landlook creation did not sync combat expansion into writable tileAttributes.");
   assert(next.assetCatalog.tilesets.some((tileset) => tileset.landlook === 6 && tileset.pictId === 306 && tileset.name === "Custom 1"), "Custom landlook creation did not register the Custom 1 atlas.");
   assert(next.maps[0]?.render?.landlook === 6 && next.maps[0]?.render?.tilesetId === "landlook-6", "Custom landlook creation did not switch the assigned map.");
   assert(next.randomLevels[0]?.landlook === 6, "Custom landlook creation did not switch the assigned random-level row.");
@@ -197,6 +287,7 @@ function checkPositiveIconBackedTileValues({ PAINTABLE_REFERENCE_ACTOR_ICON_VALU
 
 function checkMapsMenuRecordEvidence() {
   const browserParser = fs.readFileSync(path.join(root, "src/editor/browser/realmzParser.ts"), "utf8");
+  const rustMapNames = fs.readFileSync(path.join(root, "src-tauri/src/semantic/map_names.rs"), "utf8");
   const appBootstrap = fs.readFileSync(path.join(root, "src/editor/app/useAppBootstrapEffects.ts"), "utf8");
   const appUtils = fs.readFileSync(path.join(root, "src/editor/app/appUtils.ts"), "utf8");
   const mapWorkbench = fs.readFileSync(path.join(root, "src/editor/components/maps/MapRecordsWorkbench.tsx"), "utf8");
@@ -210,10 +301,13 @@ function checkMapsMenuRecordEvidence() {
     "applyMapNameHints(maps, mapRecords, buffers)",
     "parseStringListResource(resource.data)",
     "record.primaryName = hint.primaryName || undefined",
-    "map.name = hint.name"
+    "record.nameSource = hint.source"
   ]) {
     assert(browserParser.includes(snippet), `Browser parser should apply Maps Menu STR# name hints: ${snippet}`);
   }
+  assert(!browserParser.includes("map.name = hint.name"), "Maps Menu STR# names should not rename land/dungeon level records.");
+  assert(rustMapNames.includes('STR# "Map Names" labels Data MD2 player-map records, not land/dungeon levels.'), "Rust semantic map-name path should document Player Map label ownership.");
+  assert(!rustMapNames.includes("map.name = name.name.clone()"), "Rust Maps Menu STR# names should not rename land/dungeon level records.");
   for (const snippet of [
     "Player Map",
     "Maps/Notes",
@@ -335,6 +429,19 @@ function landMap(index, landlook) {
     height: 90,
     tiles: new Array(90 * 90).fill(156),
     render: { landlook, tilesetId: `landlook-${landlook}`, mode: "outdoor-landlook" }
+  };
+}
+
+function dungeonMap(index, tiles = []) {
+  return {
+    id: `dungeon:${index}`,
+    levelType: "dungeon",
+    index,
+    name: `Dungeon ${index}`,
+    width: 2,
+    height: 2,
+    tiles: tiles.length ? tiles : new Array(4).fill(1),
+    render: { landlook: -1, tilesetId: "dungeon-top-down-302", mode: "dungeon-top-down" }
   };
 }
 

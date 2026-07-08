@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { EditorState } from "../store";
-import { CustomMapStamp, LevelType, MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, SmartBrushMaskCell, SmartBrushPreset, TilePaletteCategory, TilesetAsset, TriggerRecord } from "../types";
+import { CustomMapStamp, DungeonCellFlag, LevelType, MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, SmartBrushMaskCell, SmartBrushPreset, TilePaletteCategory, TilesetAsset, TriggerRecord } from "../types";
 import { RealmzMapCanvas } from "../components/MapCanvas";
 import { LandLayoutEditor, LandTileAtlasEditor, MapContextSidebar, MapSelectionSidebar, RandomAreasWorkbench, type LandLayoutCellSelection } from "../components/MapContextSidebar";
 import { MapViewFilters } from "../components/MapViewFilters";
 import { landlookGroupTiles } from "../map/paintGroups";
 import { buildPaintChanges, rectCells } from "../map/regionPaint";
 import { clearTileForMap } from "../map/tileClear";
+import { DUNGEON_CLEAR_TO_WALL_FLAGS, DUNGEON_DEFAULT_DRAW_FLAGS } from "../map/dungeonCellFlags";
 import { buildSmartTerrainChanges, buildSmartTerrainPaintChanges, smartBrushProfileForTileset } from "../map/smartTerrainBrush";
 import { builtInStampToMapStamp, customMapStampToMapStamp, superTileStampsForMap } from "../map/superTileStamps";
 import { readGlobalMapStamps, writeGlobalMapStamps } from "../map/customMapStamps";
@@ -77,6 +78,7 @@ export function MapsPanel({
   const [paintVariation, setPaintVariation] = useState<MapPaintVariation>("single");
   const [activePaintGroupId, setActivePaintGroupId] = useState("all");
   const [paintPaletteMode, setPaintPaletteMode] = useState<TilePaletteCategory>("landlook");
+  const [dungeonDrawFlags, setDungeonDrawFlags] = useState<Record<DungeonCellFlag, boolean>>(DUNGEON_DEFAULT_DRAW_FLAGS);
   const [activeCustomPaletteId, setActiveCustomPaletteId] = useState<string | null>(null);
   const [selectedSuperTileStampId, setSelectedSuperTileStampId] = useState<string | null>(null);
   const [globalMapStamps, setGlobalMapStamps] = useState<CustomMapStamp[]>(() => readGlobalMapStamps());
@@ -190,6 +192,18 @@ export function MapsPanel({
         : state.selectedCell
           ? rectCells(selectedMap, { left: state.selectedCell.x, top: state.selectedCell.y, right: state.selectedCell.x, bottom: state.selectedCell.y })
           : [];
+      if (selectedMap.levelType === "dungeon") {
+        if (cells.length === 0) return;
+        event.preventDefault();
+        onApplyCommand({
+          kind: "updateDungeonCellFlags",
+          label: selectedRegion ? "Clear selected dungeon region" : "Clear selected dungeon cell",
+          mapId: selectedMap.id,
+          flags: DUNGEON_CLEAR_TO_WALL_FLAGS,
+          cells: cells.map((cell) => ({ x: cell.x, y: cell.y, index: cell.index, from: cell.tile }))
+        });
+        return;
+      }
       const changes = buildPaintChanges(selectedMap, cells, clearTile);
       if (changes.length === 0) return;
       event.preventDefault();
@@ -258,6 +272,8 @@ export function MapsPanel({
         onApplyCommand={onApplyCommand}
         paletteOpen={paletteOpen}
         onSetPaletteOpen={setPaletteOpen}
+        dungeonDrawFlags={dungeonDrawFlags}
+        onSetDungeonDrawFlags={setDungeonDrawFlags}
       />
 
       <section className={`editor-canvas-area map-workbench-area map-workbench-${workbenchMode}`}>
@@ -292,6 +308,7 @@ export function MapsPanel({
                 variationTiles={variationTiles}
                 selectedTile={state.selectedTile}
                 selectedSuperTileStamp={selectedSuperTileStamp}
+                dungeonDrawFlags={dungeonDrawFlags}
                 zoom={state.zoom}
                 smoothTiles={state.smoothTiles}
                 viewOptions={state}
@@ -444,6 +461,8 @@ export function MapsPanel({
         }}
         onSelectEntity={onSelectEntity}
         onApplyCommand={onApplyCommand}
+        dungeonDrawFlags={dungeonDrawFlags}
+        onSetDungeonDrawFlags={setDungeonDrawFlags}
       />
     </>
   );

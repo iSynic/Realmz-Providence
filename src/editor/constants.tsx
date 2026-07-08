@@ -10,6 +10,7 @@ import {
   Flag,
   Grid3X3,
   Hand,
+  PencilLine,
   Map as MapIcon,
   MessageSquareText,
   MousePointer2,
@@ -56,6 +57,7 @@ export const TOOLS: { id: EditorTool; label: string; icon: JSX.Element; hint: st
   { id: "pan", label: "Pan", icon: <Hand size={16} />, hint: "Drag to move around the map canvas. Right-click-drag pans from any map tool." },
   { id: "paint", label: "Paint", icon: <Brush size={16} />, hint: "Paint standard landlook tiles, special land tiles, and icon-backed Realmz tile values onto the map." },
   { id: "stamp", label: "Stamp", icon: <Stamp size={16} />, hint: "Place prebuilt multi-tile brushes such as Realmz tree pairs and large special-land structures." },
+  { id: "dungeon-draw", label: "Draw", icon: <PencilLine size={16} />, hint: "Draw dungeon cells with the selected wall, door, stair, column, movement, unmapped, and battle-wall flags." },
   { id: "trigger", label: "Action Point", icon: <Binary size={16} />, hint: "Click to create or select Action Points on this map." },
   { id: "random", label: "Random Rect", icon: <RectangleHorizontal size={16} />, hint: "Drag to create or resize a Realmz Random Rectangle on this map." },
   { id: "sample", label: "Sample", icon: <Eye size={16} />, hint: "Pick a tile from the map into the palette" }

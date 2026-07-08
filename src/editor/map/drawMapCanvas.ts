@@ -66,7 +66,7 @@ export function drawBaseMapCell(
   }
 ) {
   const tile = tileValueAt(map, x, y);
-  drawTileValueCell(ctx, { tile, x, y, atlas, icons, viewOptions, cell });
+  drawTileValueCell(ctx, { tile, x, y, atlas, icons, viewOptions, cell, allowIconFallback: map.levelType !== "dungeon" });
 }
 
 export function drawTileValueCell(
@@ -78,7 +78,8 @@ export function drawTileValueCell(
     atlas,
     icons,
     viewOptions,
-    cell
+    cell,
+    allowIconFallback = true
   }: {
     tile: number;
     x: number;
@@ -87,13 +88,14 @@ export function drawTileValueCell(
     icons: Record<number, IconEntry>;
     viewOptions: MapViewOptions;
     cell: number;
+    allowIconFallback?: boolean;
   }
 ) {
   const left = x * cell;
   const top = y * cell;
   const size = Math.ceil(cell);
   const drewSprite = viewOptions.showRealTiles
-    ? drawTileSprite(ctx, atlas, tile, left, top, size, size, icons)
+    ? drawTileSprite(ctx, atlas, tile, left, top, size, size, icons, allowIconFallback)
     : false;
   if (!drewSprite) {
     ctx.fillStyle = tileColor(tile);
@@ -317,6 +319,7 @@ export function drawMapRecords(
 const whiteKeyedOverlayCache = new WeakMap<HTMLImageElement, HTMLCanvasElement>();
 
 export function drawSecretTileOverlay(ctx: CanvasRenderingContext2D, map: MapEntity, cell: number, icons: Record<number, IconEntry> = {}) {
+  if (map.levelType === "dungeon") return;
   ctx.save();
   for (let y = 0; y < MAP_CELLS; y += 1) {
     for (let x = 0; x < MAP_CELLS; x += 1) {
@@ -487,20 +490,22 @@ export function drawPaintCursor(
     atlas,
     icons,
     viewOptions,
-    cell
+    cell,
+    allowIconFallback = true
   }: {
     cursor: { x: number; y: number; tile: number };
     atlas: AtlasEntry | null;
     icons: Record<number, IconEntry>;
     viewOptions: MapViewOptions;
     cell: number;
+    allowIconFallback?: boolean;
   }
 ) {
   const left = cursor.x * cell;
   const top = cursor.y * cell;
   ctx.save();
   ctx.globalAlpha = 0.92;
-  drawTileValueCell(ctx, { tile: cursor.tile, x: cursor.x, y: cursor.y, atlas, icons, viewOptions, cell });
+  drawTileValueCell(ctx, { tile: cursor.tile, x: cursor.x, y: cursor.y, atlas, icons, viewOptions, cell, allowIconFallback });
   ctx.globalAlpha = 1;
   ctx.strokeStyle = "#f8fafc";
   ctx.lineWidth = Math.max(2, Math.min(5, cell * 0.14));

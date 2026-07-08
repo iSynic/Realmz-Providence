@@ -216,16 +216,16 @@ const AUDIT_BY_PAGE = {
     followUp: ["Compare each map record field and map display option to current Maps UI.", "Separate authored map records from runtime/generated files in the audit."]
   }),
   21: audit({
-    status: "inspect-only",
+    status: "partial",
     domain: "Maps",
     tools: ["Dungeon Editor"],
     parityKeys: ["Dungeon Editor"],
     registryLabels: ["Dungeon Editor"],
     summary: "Manual Dungeon Editor covers dungeon geometry, walls/doors, darkness, line-of-sight, and dungeon-specific behavior.",
-    handling: "Providence imports, renders, and explains dungeon levels, darkness, LOS, and render provenance, but does not fully author dungeon geometry.",
+    handling: "Providence imports and renders dungeon levels and now authors source-backed cell flags for walls, doors, stairs, columns, unmapped cells, movement limits, and no-wall-in-battle while preserving managed/runtime bits.",
     evidence: ["docs/generated/dungeon-bitfield-evidence.json", "docs/generated/dungeon-byte-ownership.json", "docs/generated/outdoor-visibility-evidence.json"],
-    gaps: ["Dungeon geometry and flag authoring are not full parity.", "Bit ownership needs more source/manual/fixture proof before safe writing."],
-    followUp: ["Use dungeon coverage reports to split inspect-only fields from writer-ready fields.", "Keep geometry editing disabled until bit-level writer gates are met."]
+    gaps: ["Full Dungeon Editor parity still needs Divinity fixture coverage.", "Action Point, note, revealed-secret, visible-arch, and unknown/high bits remain routed through owning tools or preserved read-only."],
+    followUp: ["Fixture-test a Divinity-authored dungeon with doors, archways, movement restrictions, APs, notes, and unmapped cells.", "Decide whether note/secret/runtime-visible bits need first-class authoring after fixture parity."]
   }),
   22: audit({
     status: "partial",
@@ -300,16 +300,16 @@ const AUDIT_BY_PAGE = {
     followUp: ["Audit picture/sound ID ranges and export behavior against manual claims.", "Make scenario-owned versus shared-library source explicit in all target pickers."]
   }),
   28: audit({
-    status: "inspect-only",
+    status: "partial",
     domain: "Assets / Maps",
-    tools: ["Reference Libraries", "Land Editor"],
+    tools: ["Land Tiles", "Land Editor"],
     parityKeys: ["Standard Land Tile Editor"],
-    registryLabels: ["Reference Libraries", "Land Editor"],
+    registryLabels: ["Land Tiles", "Land Editor"],
     summary: "Manual Standard Land Tile Editor covers modifying land tile metadata, terrain properties, and tile art behavior.",
-    handling: "Providence browses current landlook atlases and decoded tile metadata, but built-in landlook editing remains read-only.",
+    handling: "Providence treats built-in landlooks as templates and authors Custom 1-3 landlooks with generated 640x320 atlas PICT resources, tile behavior metadata, and combat-map expansion edits.",
     evidence: ["docs/generated/custom-landlook-coverage.json", "docs/generated/tile-attribute-evidence.json", "docs/format-evidence-cards/custom-landlook-writers.md"],
-    gaps: ["Tile-attribute writing remains future work.", "Custom landlook file/resource behavior needs complete writer proof."],
-    followUp: ["Keep standard tile editing inspect-only until every exported byte is understood.", "Use existing custom-landlook coverage to define the first writer-ready subset."]
+    gaps: ["Built-in landlooks are not mutated directly.", "Unproven range-slot/tail authoring remains gated.", "Arbitrary PICT opcode editing remains out of scope."],
+    followUp: ["Keep Custom 1-3 as the only writable standard-landlook destinations.", "Use Divinity fixtures before promoting range-slot/tail fields into normal authoring controls."]
   }),
   29: audit({
     status: "partial",

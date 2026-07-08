@@ -18,8 +18,8 @@ This audit compares Divinity Manual 7.0 chapters to Providence tools. It tracks 
 | Status | Count |
 | --- | ---: |
 | covered | 1 |
-| partial | 30 |
-| inspect-only | 3 |
+| partial | 32 |
+| inspect-only | 1 |
 | fixture-gated | 0 |
 | not-applicable | 4 |
 | unknown | 0 |
@@ -48,14 +48,14 @@ This audit compares Divinity Manual 7.0 chapters to Providence tools. It tracks 
 | 18 | Rogue Encounter Editor | partial | Encounters | Rogue Encounter |
 | 19 | Time Encounter Editor | partial | Encounters | Timed Encounter |
 | 20 | Map Editor | partial | Maps | Map Records, Land Editor, Dungeon Editor |
-| 21 | Dungeon Editor | inspect-only | Maps | Dungeon Editor |
+| 21 | Dungeon Editor | partial | Maps | Dungeon Editor |
 | 22 | Macros • Quests | partial | Action Points | Extra Action Points, Quests |
 | 23 | Monster Mash | partial | Combat / Library | Combat / Icon Set, Monster Library, Scenario Icons |
 | 24 | Vault of Arcana | partial | Economy / Library | Vault of Arcana, Items, Providence Icon Library |
 | 25 | Adding Monster & Item Icons | partial | Assets / Combat / Economy | Scenario Icons, Monster Editor, Items |
 | 26 | Creating Special Land Tiles | partial | Assets / Maps | Special Land Tiles, Scenario Assets |
 | 27 | Adding Pictures & Sounds To Your Scenario | partial | Assets / Strings / Scripts | Scenario Pictures, Scenario Sounds, Scenario Assets |
-| 28 | Standard Land Tile Editor | inspect-only | Assets / Maps | Reference Libraries, Land Editor |
+| 28 | Standard Land Tile Editor | partial | Assets / Maps | Land Tiles, Land Editor |
 | 29 | Spell Editor | partial | Rules | Spell Editor |
 | 30 | Race Editor | partial | Rules | Race Editor |
 | 31 | Caste Editor | partial | Rules | Caste Editor |
@@ -711,7 +711,7 @@ Recommended follow-up:
 
 ### 21. Dungeon Editor
 
-- Status: `inspect-only`
+- Status: `partial`
 - Providence domain: Maps
 - Providence tools: Dungeon Editor
 - Existing parity map: Dungeon Editor -> Maps
@@ -723,7 +723,7 @@ Manual Dungeon Editor covers dungeon geometry, walls/doors, darkness, line-of-si
 
 Current Providence handling:
 
-Providence imports, renders, and explains dungeon levels, darkness, LOS, and render provenance, but does not fully author dungeon geometry.
+Providence imports and renders dungeon levels and now authors source-backed cell flags for walls, doors, stairs, columns, unmapped cells, movement limits, and no-wall-in-battle while preserving managed/runtime bits.
 
 Evidence:
 
@@ -733,13 +733,13 @@ Evidence:
 
 Gaps:
 
-- Dungeon geometry and flag authoring are not full parity.
-- Bit ownership needs more source/manual/fixture proof before safe writing.
+- Full Dungeon Editor parity still needs Divinity fixture coverage.
+- Action Point, note, revealed-secret, visible-arch, and unknown/high bits remain routed through owning tools or preserved read-only.
 
 Recommended follow-up:
 
-- Use dungeon coverage reports to split inspect-only fields from writer-ready fields.
-- Keep geometry editing disabled until bit-level writer gates are met.
+- Fixture-test a Divinity-authored dungeon with doors, archways, movement restrictions, APs, notes, and unmapped cells.
+- Decide whether note/secret/runtime-visible bits need first-class authoring after fixture parity.
 
 ### 22. Macros • Quests
 
@@ -946,11 +946,11 @@ Recommended follow-up:
 
 ### 28. Standard Land Tile Editor
 
-- Status: `inspect-only`
+- Status: `partial`
 - Providence domain: Assets / Maps
-- Providence tools: Reference Libraries, Land Editor
+- Providence tools: Land Tiles, Land Editor
 - Existing parity map: Standard Land Tile Editor -> Assets/Maps
-- Registry tools: Land/Dungeon Maps/Land Editor; Assets/Reference Libraries
+- Registry tools: Land/Dungeon Maps/Land Editor
 
 Manual claim summary:
 
@@ -958,7 +958,7 @@ Manual Standard Land Tile Editor covers modifying land tile metadata, terrain pr
 
 Current Providence handling:
 
-Providence browses current landlook atlases and decoded tile metadata, but built-in landlook editing remains read-only.
+Providence treats built-in landlooks as templates and authors Custom 1-3 landlooks with generated 640x320 atlas PICT resources, tile behavior metadata, and combat-map expansion edits.
 
 Evidence:
 
@@ -968,13 +968,14 @@ Evidence:
 
 Gaps:
 
-- Tile-attribute writing remains future work.
-- Custom landlook file/resource behavior needs complete writer proof.
+- Built-in landlooks are not mutated directly.
+- Unproven range-slot/tail authoring remains gated.
+- Arbitrary PICT opcode editing remains out of scope.
 
 Recommended follow-up:
 
-- Keep standard tile editing inspect-only until every exported byte is understood.
-- Use existing custom-landlook coverage to define the first writer-ready subset.
+- Keep Custom 1-3 as the only writable standard-landlook destinations.
+- Use Divinity fixtures before promoting range-slot/tail fields into normal authoring controls.
 
 ### 29. Spell Editor
 

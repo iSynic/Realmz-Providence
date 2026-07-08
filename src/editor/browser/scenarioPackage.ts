@@ -215,7 +215,7 @@ function writeManagedResources(
     ...mapNameResourceUpdates(project, original),
     ...monsterIconOverrideUpdates(project, original, result),
     ...scenarioIconResourceUpdates(project.scenarioItems, project.scenarioIconResources, result),
-    ...managedAssetResourceUpdates(project.assets ?? [], result)
+    ...managedAssetResourceUpdates(project.assets ?? [], original, result)
   ];
   if (updates.length === 0) {
     return { ...result, resourceBytes: original };
@@ -498,8 +498,9 @@ function defaultCustomSpellName(customId: number) {
   return `Custom Spell ${customId}`;
 }
 
-function managedAssetResourceUpdates(assets: ManagedAsset[], result: ResourceExportResult) {
+function managedAssetResourceUpdates(assets: ManagedAsset[], originalResourceFork: Uint8Array, result: ResourceExportResult) {
   const updates: ResourceForkUpdate[] = [];
+  const originalEntries = parseResourceFork(originalResourceFork);
   let scrollingTextWarningEmitted = false;
   for (const asset of assets) {
     if (asset.exportState !== "ready") {
@@ -513,6 +514,9 @@ function managedAssetResourceUpdates(assets: ManagedAsset[], result: ResourceExp
     const data = managedAssetResourceBytes(asset);
     if (!data) {
       result.blockedAssets.push(`${asset.label} is missing browser-embedded converted resource bytes.`);
+      continue;
+    }
+    if (originalEntries.some((entry) => entry.resourceType === asset.resourceType && entry.id === asset.resourceId && bytesEqual(entry.data, data))) {
       continue;
     }
     if (!scrollingTextWarningEmitted && asset.kind === "text" && (asset.resourceType === "TEXT" || asset.resourceType.trim() === "styl")) {
@@ -548,8 +552,11 @@ function monsterIconOverrideUpdates(project: Project, original: Uint8Array, resu
     }
     const label = override.sourceLabel || `Monster Mash ${override.sourceBaseIconId}`;
     const preserveExistingMetadata = override.sourceKind === "scenario-resource";
-    const existingBase = preserveExistingMetadata ? originalEntries.find((entry) => entry.resourceType === "cicn" && entry.id === target) : null;
-    const existingPaired = preserveExistingMetadata ? originalEntries.find((entry) => entry.resourceType === "cicn" && entry.id === target + 308) : null;
+    const existingBase = preserveExistingMetadata ? originalEntries.find((entry) => entry.resourceType === "cicn" && Math.abs(entry.id) === target) : null;
+    const existingPaired = preserveExistingMetadata ? originalEntries.find((entry) => entry.resourceType === "cicn" && Math.abs(entry.id) === target + 308) : null;
+    if (preserveExistingMetadata && existingBase && existingPaired && bytesEqual(existingBase.data, baseData) && bytesEqual(existingPaired.data, pairedData)) {
+      continue;
+    }
     updates.push({
       resourceType: "cicn",
       id: target,
@@ -608,10 +615,18 @@ function mapNameResourceUpdates(project: Project, originalResourceFork: Uint8Arr
   if ((project.mapRecords ?? []).length === 0) return [];
   const existing = parseResourceFork(originalResourceFork);
   const hasAuthoredNames = project.mapRecords.some((record) => record.mapNameAuthored);
+  if (!hasAuthoredNames) {
+    return [];
+  }
+  const primaryData = encodeStringListResource(project.mapRecords.map(mapRecordPrimaryName));
+  const secondaryData = encodeStringListResource(project.mapRecords.map((record) => record.secondaryName?.trim() || "--------------------"));
+  const existingPrimary = existing.find((entry) => entry.resourceType === "STR#" && entry.id === -102);
+  const existingSecondary = existing.find((entry) => entry.resourceType === "STR#" && entry.id === -101);
   if (
-    !hasAuthoredNames &&
-    existing.some((entry) => entry.resourceType === "STR#" && entry.id === -102) &&
-    existing.some((entry) => entry.resourceType === "STR#" && entry.id === -101)
+    existingPrimary &&
+    existingSecondary &&
+    bytesEqual(existingPrimary.data, primaryData) &&
+    bytesEqual(existingSecondary.data, secondaryData)
   ) {
     return [];
   }
@@ -621,31 +636,29 @@ function mapNameResourceUpdates(project: Project, originalResourceFork: Uint8Arr
       id: -102,
       name: "Map Names",
       attributes: 0,
-      data: encodeStringListResource(project.mapRecords.map((record) => mapRecordPrimaryName(project, record)))
+      data: primaryData
     },
     {
       resourceType: "STR#",
       id: -101,
       name: "Map Names",
       attributes: 0,
-      data: encodeStringListResource(project.mapRecords.map((record) => record.secondaryName?.trim() || "--------------------"))
+      data: secondaryData
     }
   ];
 }
 
-function mapRecordPrimaryName(project: Project, record: MapRecord) {
-  for (const candidate of [record.name, record.primaryName, mapNameForRecordTarget(project, record)]) {
+function bytesEqual(left: Uint8Array, right: Uint8Array) {
+  if (left.length !== right.length) return false;
+  return left.every((byte, index) => byte === right[index]);
+}
+
+function mapRecordPrimaryName(record: MapRecord) {
+  for (const candidate of [record.name, record.primaryName]) {
     const name = candidate?.trim();
     if (name) return name;
   }
   return `Map ${record.id + 1}`;
-}
-
-function mapNameForRecordTarget(project: Project, record: MapRecord) {
-  const levelType = record.isDungeon ? "dungeon" : "land";
-  const map = project.maps.find((candidate) => candidate.levelType === levelType && candidate.index === record.level);
-  const defaultName = `${levelType === "dungeon" ? "Dungeon" : "Land"} level ${record.level}`;
-  return map && map.name !== defaultName ? map.name : null;
 }
 
 function sourceResourceFile(project: Project, rawFiles: BrowserRawSourceFile[], target: ScenarioTarget) {

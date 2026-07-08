@@ -6,6 +6,12 @@ const DUNGEON_TINY_SIZE = 16;
 const DUNGEON_TINY_COLUMNS = 4;
 const DUNGEON_TINY_SOURCE_X = 576;
 const DUNGEON_TINY_SOURCE_Y = 320;
+const DUNGEON_VISIBLE_ARCH_MASK = 0x2000;
+const DUNGEON_ALLOW_MOVE_NORTH_MASK = 0x0100;
+const DUNGEON_ALLOW_MOVE_EAST_MASK = 0x0200;
+const DUNGEON_ALLOW_MOVE_SOUTH_MASK = 0x0400;
+const DUNGEON_ALLOW_MOVE_WEST_MASK = 0x0800;
+const DUNGEON_NO_WALL_IN_BATTLE_MASK = 0x4000;
 
 export function TileSprite({ atlas, tile }: { atlas: AtlasEntry; tile: number }) {
   if (isDungeonAtlas(atlas.asset)) return null;
@@ -38,9 +44,12 @@ export function drawTileSprite(
   dy: number,
   dw: number,
   dh: number,
-  iconEntries?: Record<number, IconEntry>
+  iconEntries?: Record<number, IconEntry>,
+  allowIconFallback = true
 ) {
-  const icon = tileIconCandidates(tile).map((iconId) => iconEntries?.[iconId]).find((entry) => Boolean(entry?.image));
+  const icon = allowIconFallback
+    ? tileIconCandidates(tile).map((iconId) => iconEntries?.[iconId]).find((entry) => Boolean(entry?.image))
+    : undefined;
   if (!atlas) {
     if (icon?.image) {
       ctx.drawImage(icon.image, dx, dy, dw, dh);
@@ -49,9 +58,7 @@ export function drawTileSprite(
     return false;
   }
   if (isDungeonAtlas(atlas.asset)) {
-    const drewDungeon = drawDungeonTileSprite(ctx, atlas.image, tile, dx, dy, dw, dh);
-    if (icon?.image) ctx.drawImage(icon.image, dx, dy, dw, dh);
-    return drewDungeon || Boolean(icon?.image);
+    return drawDungeonTileSprite(ctx, atlas.image, tile, dx, dy, dw, dh);
   }
   const rect = tileAtlasRect(atlas.asset, tile);
   if (!rect) {
@@ -158,7 +165,7 @@ export function loadImage(url: string) {
   });
 }
 
-function isDungeonAtlas(asset: TilesetAsset) {
+export function isDungeonAtlas(asset: TilesetAsset) {
   return asset.id === DUNGEON_ATLAS_ID || asset.pictId === 302;
 }
 
@@ -251,7 +258,99 @@ function drawDungeonTileSprite(
       drawDungeonSprite(ctx, image, index, dx, dy, dw, dh);
     }
   }
+  drawDungeonBehaviorOverlays(ctx, value, dx, dy, dw, dh);
   return true;
+}
+
+function drawDungeonBehaviorOverlays(
+  ctx: CanvasRenderingContext2D,
+  value: number,
+  dx: number,
+  dy: number,
+  dw: number,
+  dh: number
+) {
+  const mask = value & 0xffff;
+  if (mask & DUNGEON_VISIBLE_ARCH_MASK) {
+    ctx.save();
+    ctx.strokeStyle = "#39ff35";
+    ctx.lineWidth = Math.max(1, Math.round(Math.min(dw, dh) / 12));
+    ctx.beginPath();
+    ctx.arc(dx + dw / 2, dy + dh / 2, Math.max(2, Math.min(dw, dh) * 0.22), 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+  const arrowColor = "#f5f2cf";
+  if (mask & DUNGEON_ALLOW_MOVE_NORTH_MASK) drawDungeonArrow(ctx, dx, dy, dw, dh, "north", arrowColor);
+  if (mask & DUNGEON_ALLOW_MOVE_EAST_MASK) drawDungeonArrow(ctx, dx, dy, dw, dh, "east", arrowColor);
+  if (mask & DUNGEON_ALLOW_MOVE_SOUTH_MASK) drawDungeonArrow(ctx, dx, dy, dw, dh, "south", arrowColor);
+  if (mask & DUNGEON_ALLOW_MOVE_WEST_MASK) drawDungeonArrow(ctx, dx, dy, dw, dh, "west", arrowColor);
+  if (mask & DUNGEON_NO_WALL_IN_BATTLE_MASK) drawDungeonNoWallInBattleMarker(ctx, dx, dy, dw, dh);
+}
+
+function drawDungeonArrow(
+  ctx: CanvasRenderingContext2D,
+  dx: number,
+  dy: number,
+  dw: number,
+  dh: number,
+  direction: "north" | "east" | "south" | "west",
+  color: string
+) {
+  const cx = dx + dw / 2;
+  const cy = dy + dh / 2;
+  const base = Math.min(dw, dh);
+  const outer = Math.max(2, base * 0.16);
+  const inset = Math.max(2, base * 0.13);
+  let points: Array<[number, number]>;
+  if (direction === "north") {
+    const y = dy + inset;
+    points = [[cx, y], [cx - outer, y + outer * 1.2], [cx + outer, y + outer * 1.2]];
+  } else if (direction === "east") {
+    const x = dx + dw - inset;
+    points = [[x, cy], [x - outer * 1.2, cy - outer], [x - outer * 1.2, cy + outer]];
+  } else if (direction === "south") {
+    const y = dy + dh - inset;
+    points = [[cx, y], [cx - outer, y - outer * 1.2], [cx + outer, y - outer * 1.2]];
+  } else {
+    const x = dx + inset;
+    points = [[x, cy], [x + outer * 1.2, cy - outer], [x + outer * 1.2, cy + outer]];
+  }
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = "rgba(5, 7, 10, 0.62)";
+  ctx.lineWidth = Math.max(1, Math.round(base / 11));
+  ctx.beginPath();
+  ctx.moveTo(points[0][0], points[0][1]);
+  ctx.lineTo(points[1][0], points[1][1]);
+  ctx.lineTo(points[2][0], points[2][1]);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawDungeonNoWallInBattleMarker(
+  ctx: CanvasRenderingContext2D,
+  dx: number,
+  dy: number,
+  dw: number,
+  dh: number
+) {
+  const size = Math.max(1, Math.round(Math.min(dw, dh) / 9));
+  const cx = Math.round(dx + dw / 2 - size / 2);
+  const cy = Math.round(dy + dh / 2 - size / 2);
+  const step = Math.max(1, Math.round(size * 1.15));
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = "#00e5ff";
+  ctx.fillRect(cx, cy - step, size, size);
+  ctx.fillRect(cx - step, cy, size, size);
+  ctx.fillRect(cx + step, cy, size, size);
+  ctx.fillRect(cx, cy + step, size, size);
+  ctx.fillStyle = "#35ff46";
+  ctx.fillRect(cx, cy, size, size);
+  ctx.restore();
 }
 
 function drawDungeonSprite(

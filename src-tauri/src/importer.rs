@@ -745,7 +745,7 @@ fn default_land_map() -> MapEntity {
         level_type: LevelType::Land,
         source: "Data LD".to_string(),
         index: 0,
-        name: "Land Level 0".to_string(),
+        name: "Land level 0".to_string(),
         width: MAP_SIZE,
         height: MAP_SIZE,
         tiles: vec![fill_tile; MAP_SIZE * MAP_SIZE],

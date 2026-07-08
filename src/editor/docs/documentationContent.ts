@@ -1031,7 +1031,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "Divinity's Map Editor maps to Providence map records, map starts, Action Point overlays, random rectangles, and map flags.",
           "Divinity's Dungeon Editor maps to Providence dungeon rendering, dungeon Action Points, dungeon map fields, darkness, and line-of-sight preview.",
           "Divinity's Creating Special Land Tiles chapter maps to Providence Assets plus the Paint Palette's Special / Icons tab.",
-          "Divinity's Standard Land Tile Editor maps to Providence's Land Tiles and Combat Tiles view. Standard Realmz landlook records remain read-only until every exported byte is understood."
+          "Divinity's Standard Land Tile Editor maps to Providence's Land Tiles view. Built-in Realmz landlooks are templates; copy them to Custom 1-3 before editing art, tile behavior, or combat expansion."
         ],
         callout: {
           tone: "info",
@@ -1076,7 +1076,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         points: [
           "Brush paints the selected value by dragging.",
           "Replace swaps one source tile value for the selected paint tile in a region or whole map.",
-          "Eraser restores cells to the current map's clear tile, which can be walkable blank space on dungeon maps.",
+          "Eraser restores cells to the current map's clear tile. Dungeon maps clear to the standard wall cell; open floors, doors, stairs, columns, unmapped cells, archways, and movement restrictions are dungeon cell flags rather than land palette tiles.",
           "Fill Region uses the selected tile, cycle group, random group, or custom palette variation.",
           "Chance To Fill scatters paint across only some eligible cells, useful for rocks, trees, graves, ruins, or other flavor tiles.",
           "Sample picks an existing map cell into the paint tile so imported maps can teach the palette.",
@@ -1234,8 +1234,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "Tile Metadata and Safety",
         paragraphs: [
-          "Providence derives standard land tile behavior from Realmz mapstats and derives scenario-local special tile solidity from Data Solids. The inspector names the source whenever possible so authored edits can stay grounded in evidence.",
-          "Standard Realmz landlook records are read-only in this pass. Scenario custom landlook data and Data Solids are the intended writable surfaces where Providence has a typed command path and export support."
+          "Providence derives standard land tile behavior from Realmz mapstats and derives scenario-local special tile solidity from Data Solids. Built-in landlooks can be loaded as templates and copied to Custom 1-3 for editing.",
+          "Scenario custom landlook data is writable where Providence has a typed command path and export support: generated atlas art, tile behavior, and combat-map expansion. Unproven range-slot/tail fields remain reference-only."
         ],
         points: [
           "Passable/solid describes runtime movement, not whether the art visually looks open.",
@@ -1249,7 +1249,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         points: [
           "Large buildings, towers, and landmarks are often negative special land icons. Look under Paint Palette > Special / Icons > Structures.",
           "Browser imports need the scenario files plus resource-fork sidecars when Mac resources hold special land art.",
-          "A blank dungeon tile may be the walkable clear tile, so erasing a dungeon cell is not the same concept as deleting a map record.",
+          "A dungeon cell is a packed flag value. Clearing a dungeon cell returns it to the standard wall state; open floors, doors, stairs, columns, unmapped cells, archways, movement restrictions, and battle-wall behavior need dungeon-specific flag authoring.",
           "Encoded secret/passable markers are overlays. They should not hide the tile art underneath.",
           "If a palette tile renders as fallback grass, verify whether the map value is a landlook tile, special/icon value, raw used value, or missing resource-backed icon."
         ]

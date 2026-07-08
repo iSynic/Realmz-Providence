@@ -115,6 +115,7 @@ export function LandTileAtlasEditor({
   });
   const meaning = classifyTileValue(inspectedTile, selectedTileset, attributes, icons);
   const selectedCustom = CUSTOM_LANDLOOKS.some((entry) => entry.landlook === selectedTileset.landlook);
+  const selectedCustomLabel = CUSTOM_LANDLOOKS.find((entry) => entry.landlook === selectedTileset.landlook)?.label;
   const activeFilter = LAND_TILE_FILTERS.find((item) => item.id === filter) ?? LAND_TILE_FILTERS[0];
   const activeFilterLabel = landTileFilterLabel(activeFilter, selectedTileset);
 
@@ -208,6 +209,7 @@ export function LandTileAtlasEditor({
             <span>Create Custom From Existing</span>
             <b>Custom 1-3 only</b>
           </div>
+          <p className="custom-landlook-primary-copy">Load any built-in or custom landlook as a template, then save the editable copy to Custom 1, 2, or 3.</p>
           <div className="custom-landlook-form">
             <label>
               Source
@@ -233,17 +235,17 @@ export function LandTileAtlasEditor({
               Create Custom
             </button>
           </div>
-          <p>Built-in landlooks can be copied to Custom 1-3 before editing.</p>
         </section>
         <section className="custom-landlook-card">
           <div className="tile-meaning-title">
             <span>Import Atlas Art</span>
-            <b>{selectedCustom ? selectedTileset.name : "choose custom"}</b>
+            <b>{selectedCustom ? selectedCustomLabel ?? selectedTileset.name : "choose custom"}</b>
           </div>
+          <p className="custom-landlook-primary-copy">{selectedCustom ? "Import art into the selected custom landlook atlas." : "Switch this map to Custom 1, 2, or 3 before importing atlas art."}</p>
           <div className="custom-landlook-form import">
             <label>
               Mode
-              <select value={importMode} onChange={(event) => setImportMode(event.currentTarget.value as CustomAtlasImportMode)}>
+              <select value={importMode} onChange={(event) => setImportMode(event.currentTarget.value as CustomAtlasImportMode)} disabled={!selectedCustom}>
                 <option value="full">Full 640 x 320 Atlas</option>
                 <option value="block">32px-Aligned Block</option>
                 <option value="tile">Single 32 x 32 Tile</option>
@@ -262,7 +264,7 @@ export function LandTileAtlasEditor({
             )}
             <label>
               Existing Image
-              <select value={importSourceId} onChange={(event) => setImportSourceId(event.currentTarget.value)}>
+              <select value={importSourceId} onChange={(event) => setImportSourceId(event.currentTarget.value)} disabled={!selectedCustom}>
                 <option value="">Upload file or choose...</option>
                 {imageSources.map((source) => (
                   <option key={source.id} value={source.id}>{source.label}</option>
@@ -351,7 +353,7 @@ export function LandTileAtlasEditor({
                 }}
                 title={`Tile ${tile}`}
               >
-                <TileSwatch atlas={atlas} icons={icons} tile={tile} tileset={selectedTileset} />
+                <TileSwatch atlas={atlas} icons={icons} tile={tile} tileset={selectedTileset} showBadge={false} />
               </button>
             ))}
             {visibleTiles.length === 0 && <span className="empty-inline">No tiles match this filter.</span>}
@@ -650,9 +652,9 @@ function TileAttributeEditor({
       <div className="tile-attribute-editor compact">
         <div className="tile-meaning-title">
           <span>Tile Behavior</span>
-          <b>{attributes.editableScope === "special-tile" ? "edit from selected special tile" : "read-only"}</b>
+          <b>{attributes.editableScope === "special-tile" ? "edit from selected special tile" : "copy to custom"}</b>
         </div>
-        <p>{attributes.editableScope === "special-tile" ? "Select a special tile on the map canvas to edit its Data Solids passability." : "Standard Realmz landlook behavior is shown for reference and is not edited in this pass."}</p>
+        <p>{attributes.editableScope === "special-tile" ? "Select a special tile on the map canvas to edit its Data Solids passability." : "Built-in landlooks are templates. Create Custom 1, 2, or 3 from this landlook before editing tile behavior."}</p>
       </div>
     );
   }

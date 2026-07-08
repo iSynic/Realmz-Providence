@@ -116,7 +116,7 @@ function hasOnlyStarterLandMap(project: Project) {
     map.levelType === "land" &&
     map.index === 0 &&
     map.source === "Data LD" &&
-    map.name === "Land Level 0" &&
+    map.name === "Land level 0" &&
     map.width === 90 &&
     map.height === 90 &&
     map.render?.landlook === 0 &&

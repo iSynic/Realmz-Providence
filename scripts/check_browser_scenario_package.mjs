@@ -573,6 +573,31 @@ expect(authoredPrimaryMapNames[1] === "Old Primary 1", "Unauthored primary map n
 expect(authoredSecondaryMapNames[0] === "New Secondary 0", "Authored secondary map name should replace STR# -101 slot");
 expect(authoredSecondaryMapNames[1] === "Old Secondary 1", "Unauthored secondary map name should remain populated from project state");
 
+const mapNameNoopProject = {
+  ...fixtureProject(mapNameRawFiles),
+  mapRecords: [
+    mapRecord(0, {
+      name: "Old Primary 0",
+      primaryName: "Old Primary 0",
+      secondaryName: "Old Secondary 0",
+      mapNameAuthored: true,
+      rawBytes: Array.from(sourceMapRecords.slice(0, MAP_RECORD_BYTES)),
+      authored: false
+    }),
+    mapRecord(1, {
+      name: "Old Primary 1",
+      primaryName: "Old Primary 1",
+      secondaryName: "Old Secondary 1",
+      rawBytes: Array.from(sourceMapRecords.slice(MAP_RECORD_BYTES, MAP_RECORD_BYTES * 2)),
+      authored: false
+    })
+  ]
+};
+const mapNameNoop = createBrowserScenarioPackageZip(mapNameNoopProject, mapNameRawSources, "mac-classic-folder");
+const mapNameNoopFiles = unzipScenarioPackage(mapNameNoop.zip);
+expect(!mapNameNoop.report.writtenFiles.includes("Scenario"), "Authored map names matching imported STR# bytes should not rewrite Scenario resource fork");
+expect(bytesEqual(mapNameNoopFiles.get("Scenario"), mapNameSourceResourceFork), "Matching authored map names should preserve imported STR# Map Names bytes");
+
 const globalHookProject = {
   ...project,
   scenario: {
@@ -1086,6 +1111,20 @@ expect(bytesEqual(writtenThiefEncounters?.slice(0, 118), sourceThiefEncounters.s
 expect(bytesEqual(writtenThiefEncounters?.slice(118, 236), thiefEncounterRow(authoredThiefEncounter)), "Authored thief encounter row should encode fields");
 expect(bytesEqual(writtenTimedEncounters?.slice(0, 40), sourceTimedEncounters.slice(0, 40)), "Unauthored timed encounter row should remain byte-identical");
 expect(bytesEqual(writtenTimedEncounters?.slice(40, 80), timedEncounterRow(authoredTimedEncounter)), "Authored timed encounter row should encode fields");
+
+const noOpResourceAssetProject = {
+  ...project,
+  mapRecords: [],
+  monsterIconOverrides: [],
+  scenarioIconResources: [],
+  assets: [
+    managedAsset("asset-text-202-noop", "Text 202", "text", "TEXT", 202, "data:text/plain;base64,T2xk"),
+    managedAsset("asset-styl-202-noop", "Style 202", "text", "styl", 202, "data:application/octet-stream;base64,CQkJ")
+  ]
+};
+const noOpResourceExport = createBrowserScenarioPackageZip(noOpResourceAssetProject, rawSources, "mac-classic-folder");
+expect(!noOpResourceExport.report.writtenFiles.includes("Scenario"), "Managed assets matching imported resource bytes should not rewrite Scenario");
+expect(noOpResourceExport.report.passThroughFiles.includes("Scenario"), "Unchanged imported resource fork should stay pass-through");
 
 const resourceUpdateProject = {
   ...project,

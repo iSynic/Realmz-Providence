@@ -1,6 +1,7 @@
 import { KeyboardEvent, MouseEvent, PointerEvent, RefObject, useEffect, useRef, useState } from "react";
 import {
   EditorTool,
+  DungeonCellFlag,
   MapEntity,
   MapHitTarget,
   MapPaintMode,
@@ -21,6 +22,7 @@ import { hitTestMapTarget } from "./hitTest";
 import { normalizeRegionBounds } from "./regionPaint";
 import { makePaintTileResolver, paintSeed } from "./paintResolver";
 import { clearTileForMap } from "./tileClear";
+import { setDungeonCellFlags } from "./dungeonCellFlags";
 import { nextActionPointRecordIndex } from "../actionPointCapacity";
 import { selectEntityFromId, triggerEntityId } from "../utils";
 import { buildSuperTileStampChanges, MapStamp, MapStampPreviewCell, superTileStampPreviewCells } from "./superTileStamps";
@@ -34,6 +36,7 @@ export function useMapInteractions({
   variationTiles,
   selectedTile,
   selectedSuperTileStamp,
+  dungeonDrawFlags,
   selectedTileset,
   triggers,
   randomLevel,
@@ -70,6 +73,7 @@ export function useMapInteractions({
   variationTiles?: number[] | null;
   selectedTile: number;
   selectedSuperTileStamp: MapStamp | null;
+  dungeonDrawFlags: Record<DungeonCellFlag, boolean>;
   selectedTileset: TilesetAsset | null;
   triggers: TriggerRecord[];
   randomLevel: RandomLevel | null;
@@ -106,6 +110,7 @@ export function useMapInteractions({
     moved: boolean;
   } | null>(null);
   const paintActiveRef = useRef(false);
+  const dungeonDrawActiveRef = useRef(false);
   const randomDragRef = useRef<{
     start: { x: number; y: number };
     rectIndex: number | null;
@@ -121,6 +126,7 @@ export function useMapInteractions({
   const paintStrokeSeedRef = useRef(0);
   const paintResolverRef = useRef<PaintTileResolver | null>(null);
   const pendingPaintChangesRef = useRef<PaintCellChange[]>([]);
+  const pendingDungeonCellChangesRef = useRef<PaintCellChange[]>([]);
   const lastPaintCellRef = useRef<{ x: number; y: number; tile: number } | null>(null);
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
   const [hoverTarget, setHoverTarget] = useState<MapHitTarget | null>(null);
@@ -129,7 +135,7 @@ export function useMapInteractions({
   const [regionPreview, setRegionPreview] = useState<MapRegionSelection | null>(null);
 
   useEffect(() => {
-    if (isBrushLikeTool(activeTool, paintMode)) return;
+    if (isBrushLikeTool(activeTool, paintMode) || activeTool === "dungeon-draw") return;
     setPaintCursor(null);
   }, [activeTool, paintMode]);
 
@@ -138,13 +144,13 @@ export function useMapInteractions({
   }, [activePaintGroupId, activeTool, map.id, paintMode, paintVariation, selectedTile, selectedTileset, variationTiles]);
 
   useEffect(() => {
-    if (!hover || !isBrushLikeTool(activeTool, paintMode)) return;
+    if (!hover || (!isBrushLikeTool(activeTool, paintMode) && activeTool !== "dungeon-draw")) return;
     if (!cellInRegion(hover, selectedRegion)) {
       setPaintCursor(null);
       return;
     }
-    setPaintCursor({ ...hover, tile: brushTileForCell(hover) });
-  }, [activePaintGroupId, activeTool, hover, paintMode, paintVariation, selectedRegion, selectedTile, selectedTileset, variationTiles]);
+    setPaintCursor({ ...hover, tile: activeTool === "dungeon-draw" ? dungeonTileForCell(hover) : brushTileForCell(hover) });
+  }, [activePaintGroupId, activeTool, dungeonDrawFlags, hover, paintMode, paintVariation, selectedRegion, selectedTile, selectedTileset, variationTiles]);
 
   useEffect(() => {
     if (activeTool !== "stamp" || !hover || !selectedSuperTileStamp) {
@@ -222,6 +228,25 @@ export function useMapInteractions({
     onPreviewPaintChange?.(change);
   }
 
+  function drawDungeonAt(cell: { x: number; y: number }) {
+    if (!cellInRegion(cell, selectedRegion)) return;
+    const key = `${cell.x}:${cell.y}`;
+    if (strokeCellsRef.current.has(key)) return;
+    const index = mapTileIndex(map, cell.x, cell.y);
+    const from = tileValueAt(map, cell.x, cell.y);
+    const to = setDungeonCellFlags(from, dungeonDrawFlags);
+    setHoverTarget({ kind: "cell", cell: { ...cell, tile: from } });
+    strokeCellsRef.current.add(key);
+    if (from === to) {
+      lastPaintCellRef.current = { ...cell, tile: from };
+      return;
+    }
+    const change: PaintCellChange = { ...cell, index, from, to };
+    lastPaintCellRef.current = { ...cell, tile: to };
+    pendingDungeonCellChangesRef.current.push(change);
+    onPreviewPaintChange?.(change);
+  }
+
   function brushTileForCell(cell: { x: number; y: number }) {
     if (activeTool === "paint" && paintMode === "clear") return clearTileForMap(map, selectedTileset);
     const resolver = paintResolverRef.current ?? makePaintTileResolver({
@@ -236,7 +261,19 @@ export function useMapInteractions({
     return resolver({ ...cell, index: mapTileIndex(map, cell.x, cell.y), tile: tileValueAt(map, cell.x, cell.y) }, paintSequenceRef.current);
   }
 
+  function dungeonTileForCell(cell: { x: number; y: number }) {
+    return setDungeonCellFlags(tileValueAt(map, cell.x, cell.y), dungeonDrawFlags);
+  }
+
   function updatePaintCursor(cell: { x: number; y: number }) {
+    if (activeTool === "dungeon-draw") {
+      if (!cellInRegion(cell, selectedRegion)) {
+        setPaintCursor(null);
+        return;
+      }
+      setPaintCursor({ ...cell, tile: dungeonTileForCell(cell) });
+      return;
+    }
     if (!isBrushLikeTool(activeTool, paintMode)) {
       setPaintCursor(null);
       return;
@@ -336,6 +373,10 @@ export function useMapInteractions({
       placeStampAt(cell);
       return;
     }
+    if (activeTool === "dungeon-draw") {
+      drawDungeonAt(cell);
+      return;
+    }
     if (isBrushLikeTool(activeTool, paintMode)) paintAt(cell);
   }
 
@@ -394,6 +435,31 @@ export function useMapInteractions({
     strokeCellsRef.current.clear();
     if (hover && isBrushLikeTool(activeTool, paintMode)) {
       setPaintCursor({ ...hover, tile: brushTileForCell(hover) });
+    }
+    if (commit) onCommitPaintStroke();
+    else onCancelPaintStroke();
+  }
+
+  function finishDungeonDrawStroke(commit: boolean) {
+    if (!dungeonDrawActiveRef.current) return;
+    dungeonDrawActiveRef.current = false;
+    const changes = pendingDungeonCellChangesRef.current;
+    pendingDungeonCellChangesRef.current = [];
+    if (commit && changes.length > 0) {
+      onApplyCommand({
+        kind: "updateDungeonCellFlags",
+        mapId: map.id,
+        label: "Draw dungeon cell flags",
+        flags: dungeonDrawFlags,
+        cells: changes.map((change) => ({ x: change.x, y: change.y, index: change.index, from: change.from }))
+      });
+    } else if (!commit && changes.length > 0) {
+      onResetPaintPreview?.();
+    }
+    lastPaintCellRef.current = null;
+    strokeCellsRef.current.clear();
+    if (hover && activeTool === "dungeon-draw") {
+      setPaintCursor({ ...hover, tile: dungeonTileForCell(hover) });
     }
     if (commit) onCommitPaintStroke();
     else onCancelPaintStroke();
@@ -460,6 +526,14 @@ export function useMapInteractions({
           applyToolAt(event);
           return;
         }
+        if (activeTool === "dungeon-draw") {
+          dungeonDrawActiveRef.current = true;
+          strokeCellsRef.current.clear();
+          pendingDungeonCellChangesRef.current = [];
+          onBeginPaintStroke("Draw dungeon cell flags");
+          applyToolAt(event);
+          return;
+        }
         if (isBrushLikeTool(activeTool, paintMode)) {
           paintActiveRef.current = true;
           strokeCellsRef.current.clear();
@@ -521,6 +595,12 @@ export function useMapInteractions({
           setHoverTarget({ kind: "cell", cell: { ...cell, tile: tileValueAt(map, cell.x, cell.y) } });
           updatePaintCursor(cell);
           paintAt(cell);
+          return;
+        }
+        if (dungeonDrawActiveRef.current) {
+          setHover(cell);
+          updatePaintCursor(cell);
+          drawDungeonAt(cell);
           return;
         }
         setHover(cell);
@@ -607,6 +687,7 @@ export function useMapInteractions({
           return;
         }
         finishPaintStroke(true);
+        finishDungeonDrawStroke(true);
         if (event.currentTarget.hasPointerCapture(event.pointerId)) {
           event.currentTarget.releasePointerCapture(event.pointerId);
         }
@@ -622,12 +703,13 @@ export function useMapInteractions({
         setPaintCursor(null);
         setStampCursor(null);
         finishPaintStroke(false);
+        finishDungeonDrawStroke(false);
         if (event.currentTarget.hasPointerCapture(event.pointerId)) {
           event.currentTarget.releasePointerCapture(event.pointerId);
         }
       },
       onPointerLeave() {
-        if (paintActiveRef.current || panRef.current || selectDragRef.current || randomDragRef.current) return;
+        if (paintActiveRef.current || dungeonDrawActiveRef.current || panRef.current || selectDragRef.current || randomDragRef.current) return;
         setHover(null);
         setHoverTarget(null);
         setPaintCursor(null);
@@ -644,6 +726,7 @@ export function useMapInteractions({
         setPaintCursor(null);
         setStampCursor(null);
         finishPaintStroke(false);
+        finishDungeonDrawStroke(false);
       }
     }
   };
