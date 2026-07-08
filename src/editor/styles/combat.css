@@ -26,60 +26,75 @@
   justify-content: space-between;
   gap: 14px;
   padding: 14px;
-  border: 1px solid #252f39;
+  border: 1px solid #252a31;
   border-radius: 7px;
-  background: #141a20;
+  background: #151719;
 }
 
 .combat-hero h1 {
-  color: #f0f7ff;
+  color: #eef3f8;
   font-size: 18px;
+  line-height: 1.2;
 }
 
 .combat-hero p,
 .combat-hero small {
-  color: #9db6ca;
+  color: #8e9aa7;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.combat-hero p {
+  max-width: 760px;
+  margin-top: 5px;
+}
+
+.combat-hero small {
+  flex-shrink: 0;
+  color: #71aef0;
   font-size: 11px;
+  text-transform: uppercase;
 }
 
 .combat-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
+  gap: 6px;
   margin: 10px 0;
-  padding: 8px;
-  border: 1px solid #25313d;
+  padding: 7px;
+  border: 1px solid #26333f;
   border-radius: 7px;
-  background: #0b1118;
+  background: #0c1218;
 }
 
 .combat-tabs button {
-  min-height: 32px;
+  min-height: 30px;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   border: 1px solid #2b3a49;
   border-radius: 6px;
   background: #101821;
-  color: #c6d7e7;
-  padding: 0 10px;
+  color: #9fb4c7;
+  padding: 0 9px;
   font: inherit;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
+  text-transform: uppercase;
 }
 
 .combat-tabs button.active {
   border-color: #2b8fd8;
   background: #10283d;
-  color: #ffffff;
+  color: #e4f2ff;
 }
 
 .combat-tabs b {
-  min-width: 24px;
+  min-width: 22px;
   min-height: 18px;
   display: inline-grid;
   place-items: center;
-  border: 1px solid #2b4e6d;
+  border: 1px solid #2b3a49;
   border-radius: 999px;
   background: #0a121a;
   color: #b8dfff;
