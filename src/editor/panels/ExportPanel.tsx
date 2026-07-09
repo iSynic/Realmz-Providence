@@ -25,11 +25,8 @@ const BROWSER_SCENARIO_EXPORT_HELP = "Browser scenario ZIP export packages the c
 const BROWSER_EXPORT_TARGET_HELP = "Choose the browser export artifact. Project ZIP is a Providence backup; Mac and Windows scenario ZIPs are Realmz folders built from captured raw sources.";
 const BENCHMARK_HELP = "Benchmark Project measures large-scenario UI and validation scale so release candidates do not regress on dense maps, triggers, or Action Settings.";
 const EXPORT_REPORT_HELP = "The export report is the release ledger for this session: output folder, target, source files, pass-through files, resource writes, preserved resources, blocked assets, and warnings.";
-const EXPORT_PLAN_HELP = "Export Plan previews the current project boundary before writing: writer-supported records, pass-through files, resource gaps, runtime caches, unresolved links, and blocked objects.";
-const RESOURCE_NOTES_HELP = "Resource Export Notes explain resource fork entries that were preserved, skipped, blocked, or written with caution. Review used resource warnings before release.";
-const TARGET_COMPAT_HELP = "Target Compatibility reports target-specific blockers, warnings, and notes for Mac Classic, Windows Realmz, or portable Providence exports.";
+const EXPORT_PLAN_HELP = "Readiness previews the current project boundary before writing: writer-supported records, pass-through files, resource gaps, runtime caches, unresolved links, and blocked objects.";
 const EXPORT_SOURCES_HELP = "Export sources show writer-supported source files and pass-through files. Writer-supported files are encoded from project data; pass-through files are copied from the source snapshot.";
-const PERFORMANCE_GATE_HELP = "Performance Gate is a lightweight release smoke for scale. Run it after importing or editing a large scenario to catch slow validation or canvas-size regressions.";
 
 export function ExportPanel({
   project,
@@ -62,9 +59,16 @@ export function ExportPanel({
   const exportButtonHelp = !desktopRuntime && browserTarget !== "project-zip" ? BROWSER_SCENARIO_EXPORT_HELP : EXPORT_ACTION_HELP;
   const exportDisabled = !project;
   const selectedBrowserScenarioTarget = browserTargetToScenarioTarget(browserTarget);
+  const selectedScenarioTarget = desktopRuntime ? target : selectedBrowserScenarioTarget;
+  const diagnostics = exportDiagnostics(project, exportReport, {
+    browserTarget,
+    desktopRuntime,
+    plan,
+    selectedScenarioTarget
+  });
   return (
     <div className="editor-full-panel export-workbench">
-      <section className="tab-panel">
+      <section className="tab-panel export-artifact-panel">
         <div className="panel-header">
           <TutorialTip title={exportTitle} body={EXPORT_WORKBENCH_HELP} side="below">
             <span>{exportTitle}</span>
@@ -106,151 +110,185 @@ export function ExportPanel({
               </button>
             </TutorialTip>
           ) : null}
-          <TutorialTip title="Benchmark Project" body={BENCHMARK_HELP} side="below">
-            <button className="btn btn-secondary" disabled={!project} onClick={onBenchmark}>
-              <Gauge size={14} /> Benchmark Project
-            </button>
-          </TutorialTip>
         </div>
-        {!desktopRuntime ? (
-          <TutorialTip title="Browser Scenario ZIP Writer" body={BROWSER_SCENARIO_EXPORT_HELP} side="below">
-            <p className="empty-copy browser-export-boundary">
-              Browser scenario ZIPs preserve captured raw sources and apply supported record/resource updates. Review the export report for resource warnings, project-only labels, and missing raw-source diagnostics.
-            </p>
-          </TutorialTip>
-        ) : null}
+        <InfoGrid
+          rows={[
+            ["Artifact", desktopRuntime ? exportTargetLabel(target) : browserTargetLabel(browserTarget)],
+            ["Writer", desktopRuntime ? "Desktop folder writer" : "Browser ZIP writer"],
+            ["Scenario", project?.scenario.name ?? "No project"],
+            ["Diagnostics", diagnostics.length.toLocaleString()]
+          ]}
+        />
         {exportReport ? (
-          <TutorialTip title="Export Report" body={EXPORT_REPORT_HELP} side="below">
-            <div>
-              <InfoGrid
-                rows={[
-                  ["Output", exportReport.outputPath],
-                  ["Target", exportTargetLabel(exportReport.target)],
-                  ["Written", exportReport.writtenFiles.join(", ") || "none"],
-                  ["Pass-through", exportReport.passThroughFiles.length.toLocaleString()],
-                  ["Resources", exportReport.writtenResources.join(", ") || "none"],
-                  ["Preserved Resources", exportReport.preservedResources.toLocaleString()],
-                  ["Blocked Assets", exportReport.blockedAssets.join(", ") || "none"],
-                  ["Warnings", exportReport.warnings.length.toLocaleString()]
-                ]}
-              />
-            </div>
-          </TutorialTip>
+          <ExportReportSummary report={exportReport} />
         ) : (
           <p className="empty-copy">No export has been run in this session.</p>
         )}
       </section>
       <section className="tab-panel">
         <div className="panel-header">
-          <TutorialTip title="Export Plan" body={EXPORT_PLAN_HELP} side="below">
-            <span>Export Plan</span>
+          <TutorialTip title="Readiness & Sources" body={EXPORT_PLAN_HELP} side="below">
+            <span>Readiness & Sources</span>
           </TutorialTip>
         </div>
-        <InfoGrid
-          rows={[
-            ["Writable Records", plan.editableRecords.toLocaleString()],
-            ["Pass-through Files", plan.passThroughFiles.toLocaleString()],
-            ["Resource Fallbacks", plan.resourceGaps.toLocaleString()],
-            ["Asset Fallbacks", plan.assetFallbacks.toLocaleString()],
-            ["Runtime Caches", plan.runtimeCaches.toLocaleString()],
-            ["Unresolved Links", plan.unresolvedLinks.toLocaleString()],
-            ["Blocked Objects", plan.blockedObjects.toLocaleString()],
-            ["Managed Assets", plan.managedAssets.toLocaleString()]
-          ]}
-        />
-        {exportReport?.resourceWarnings.length ? (
-          <ScrollArea className="lint-results compact" aria-label="Resource export notes">
-            <section>
-              <header>
-                <TutorialTip title="Resource Export Notes" body={RESOURCE_NOTES_HELP} side="below">
-                  <span>Resource Export Notes</span>
-                </TutorialTip>
-              </header>
-              {exportReport.resourceWarnings.map((warning) => (
-                <div key={warning} className="lint-issue warning">! {warning}</div>
-              ))}
-            </section>
-          </ScrollArea>
-        ) : null}
-        {exportReport && targetCompatibilityCount(exportReport) > 0 ? (
-          <ScrollArea className="lint-results compact" aria-label="Target compatibility notes">
-            <section>
-              <header>
-                <TutorialTip title="Target Compatibility" body={TARGET_COMPAT_HELP} side="below">
-                  <span>Target Compatibility</span>
-                </TutorialTip>
-              </header>
-              {exportReport.targetCompatibility.blockers.map((issue) => (
-                <div key={`blocker-${issue.target}-${issue.code}-${issue.message}`} className="lint-issue error">
-                  x {issue.message}
-                </div>
-              ))}
-              {exportReport.targetCompatibility.warnings.map((issue) => (
-                <div key={`warning-${issue.target}-${issue.code}-${issue.message}`} className="lint-issue warning">
-                  ! {issue.message}
-                </div>
-              ))}
-              {exportReport.targetCompatibility.notes.map((issue) => (
-                <div key={`note-${issue.target}-${issue.code}-${issue.message}`} className="lint-issue info">
-                  i {issue.message}
-                </div>
-              ))}
-            </section>
-          </ScrollArea>
-        ) : null}
-        <TutorialTip title="Export Sources" body={EXPORT_SOURCES_HELP} side="below">
-          <span className="export-sources-help-label">Export Sources</span>
-        </TutorialTip>
-        <ScrollArea className="record-table" aria-label="Export sources">
-          {plan.exportableSources.map((source) => (
-            <article key={source.name} className="record-row">
-              <button type="button">
-                <strong>{source.name}</strong>
-                <span>writer-supported</span>
-                <small>{source.bytes.toLocaleString()} source bytes</small>
-              </button>
-            </article>
-          ))}
-          {plan.passThroughSources.slice(0, 10).map((source) => (
-            <article key={source.id} className="record-row">
-              <button type="button">
-                <strong>{source.name}</strong>
-                <span>pass-through</span>
-                <small>{source.origin}</small>
-              </button>
-            </article>
-          ))}
-        </ScrollArea>
+        <div className="export-readiness-grid">
+          <section className="export-readiness-column">
+            <h3>Package Readiness</h3>
+            <InfoGrid
+              rows={[
+                ["Writable Records", plan.editableRecords.toLocaleString()],
+                ["Writer Sources", plan.exportableSources.length.toLocaleString()],
+                ["Pass-through", plan.passThroughFiles.toLocaleString()],
+                ["Resource Gaps", plan.resourceGaps.toLocaleString()],
+                ["Asset Fallbacks", plan.assetFallbacks.toLocaleString()],
+                ["Runtime Caches", plan.runtimeCaches.toLocaleString()],
+                ["Unresolved Links", plan.unresolvedLinks.toLocaleString()],
+                ["Blocked Objects", plan.blockedObjects.toLocaleString()],
+                ["Managed Assets", plan.managedAssets.toLocaleString()]
+              ]}
+            />
+          </section>
+          <section className="export-readiness-column">
+            <TutorialTip title="Export Sources" body={EXPORT_SOURCES_HELP} side="below">
+              <h3>Source Package</h3>
+            </TutorialTip>
+            <InfoGrid
+              rows={[
+                ["Encoded Sources", plan.exportableSources.length.toLocaleString()],
+                ["Copied Sources", plan.passThroughSources.length.toLocaleString()],
+                ["Shown", sourceShownCount(plan).toLocaleString()]
+              ]}
+            />
+            <SourceRows plan={plan} />
+          </section>
+        </div>
       </section>
       <section className="tab-panel">
-        <div className="panel-header">
-          <TutorialTip title="Performance Gate" body={PERFORMANCE_GATE_HELP} side="below">
-            <span>Performance Gate</span>
-          </TutorialTip>
+        <div className="export-review-grid">
+          <section className="export-review-column">
+            <div className="panel-header compact">
+              <TutorialTip title="Export Diagnostics" body={EXPORT_REPORT_HELP} side="below">
+                <span>Export Diagnostics</span>
+              </TutorialTip>
+            </div>
+            <DiagnosticsList diagnostics={diagnostics} />
+          </section>
+          <section className="export-review-column">
+            <BenchmarkSummary benchmark={benchmark} project={project} onBenchmark={onBenchmark} />
+          </section>
         </div>
-        {benchmark ? (
-          <InfoGrid
-            rows={[
-              ["Maps", benchmark.maps.toLocaleString()],
-              ["Triggers", benchmark.triggers.toLocaleString()],
-              ["EDCD", benchmark.extracodes.toLocaleString()],
-              ["Canvas tiles", benchmark.estimatedCanvasTiles.toLocaleString()],
-              ["Validation", `${benchmark.validationMs} ms`]
-            ]}
-          />
-        ) : (
-          <p className="empty-copy">Run the benchmark after importing a large scenario.</p>
-        )}
       </section>
     </div>
   );
 }
 
-function targetCompatibilityCount(report: ExportReport) {
+function ExportReportSummary({ report }: { report: ExportReport }) {
   return (
-    report.targetCompatibility.blockers.length +
-    report.targetCompatibility.warnings.length +
-    report.targetCompatibility.notes.length
+    <TutorialTip title="Export Report" body={EXPORT_REPORT_HELP} side="below">
+      <div>
+        <InfoGrid
+          rows={[
+            ["Output", report.outputPath],
+            ["Target", exportTargetLabel(report.target)],
+            ["Written", report.writtenFiles.join(", ") || "none"],
+            ["Pass-through", report.passThroughFiles.length.toLocaleString()],
+            ["Resources", report.writtenResources.join(", ") || "none"],
+            ["Preserved Resources", report.preservedResources.toLocaleString()],
+            ["Blocked Assets", report.blockedAssets.join(", ") || "none"],
+            ["Warnings", report.warnings.length.toLocaleString()]
+          ]}
+        />
+      </div>
+    </TutorialTip>
+  );
+}
+
+function SourceRows({ plan }: { plan: ReturnType<typeof exportPlan> }) {
+  const rows = [
+    ...plan.exportableSources.map((source) => ({
+      id: `exportable:${source.name}`,
+      name: source.name,
+      mode: "writer-supported",
+      detail: `${source.bytes.toLocaleString()} source bytes`
+    })),
+    ...plan.passThroughSources.slice(0, 10).map((source) => ({
+      id: source.id,
+      name: source.name,
+      mode: "pass-through",
+      detail: source.origin
+    }))
+  ];
+  if (rows.length === 0) return <p className="empty-copy compact">No source files are available for this project state.</p>;
+  return (
+    <ScrollArea className="record-table export-source-list" aria-label="Export sources">
+      {rows.map((source) => (
+        <article key={source.id} className="record-row">
+          <button type="button" disabled>
+            <strong>{source.name}</strong>
+            <span>{source.mode}</span>
+            <small>{source.detail}</small>
+          </button>
+        </article>
+      ))}
+      {plan.passThroughSources.length > 10 ? (
+        <p className="empty-copy compact">{(plan.passThroughSources.length - 10).toLocaleString()} more pass-through source file(s).</p>
+      ) : null}
+    </ScrollArea>
+  );
+}
+
+function DiagnosticsList({ diagnostics }: { diagnostics: ExportDiagnostic[] }) {
+  if (diagnostics.length === 0) return <p className="empty-copy">No export diagnostics for the current project state.</p>;
+  return (
+    <ScrollArea className="lint-results compact export-diagnostics-list" aria-label="Export diagnostics">
+      <section>
+        {diagnostics.map((diagnostic, index) => (
+          <div key={`${diagnostic.kind}-${diagnostic.message}-${index}`} className={`lint-issue ${diagnostic.kind}`}>
+            {diagnostic.kind === "error" ? "x" : diagnostic.kind === "warning" ? "!" : "i"} {diagnostic.message}
+            {diagnostic.detail ? <small>{diagnostic.detail}</small> : null}
+          </div>
+        ))}
+      </section>
+    </ScrollArea>
+  );
+}
+
+function BenchmarkSummary({
+  benchmark,
+  project,
+  onBenchmark
+}: {
+  benchmark: BenchmarkReport | null;
+  project: Project | null;
+  onBenchmark: () => void;
+}) {
+  return (
+    <>
+      <div className="panel-header compact export-benchmark-header">
+        <TutorialTip title="Project Benchmark" body={BENCHMARK_HELP} side="below">
+          <span>Project Benchmark</span>
+        </TutorialTip>
+        <TutorialTip title="Benchmark Project" body={BENCHMARK_HELP} side="below">
+          <button className="btn btn-secondary" disabled={!project} onClick={onBenchmark}>
+            <Gauge size={14} /> Benchmark Project
+          </button>
+        </TutorialTip>
+      </div>
+      {benchmark ? (
+        <InfoGrid
+          rows={[
+            ["Maps", benchmark.maps.toLocaleString()],
+            ["Triggers", benchmark.triggers.toLocaleString()],
+            ["EDCD", benchmark.extracodes.toLocaleString()],
+            ["Canvas tiles", benchmark.estimatedCanvasTiles.toLocaleString()],
+            ["Validation", `${benchmark.validationMs} ms`],
+            ["Result", benchmark.ok ? "Pass" : "Review"]
+          ]}
+        />
+      ) : (
+        <p className="empty-copy">No benchmark has been run in this session.</p>
+      )}
+    </>
   );
 }
 
@@ -267,6 +305,18 @@ function exportTargetLabel(target: ExportReport["target"]) {
   }
 }
 
+function browserTargetLabel(target: BrowserExportTarget) {
+  switch (target) {
+    case "mac-classic-scenario-zip":
+      return "Mac Classic Scenario ZIP";
+    case "windows-realmz-scenario-zip":
+      return "Windows Realmz Scenario ZIP";
+    case "project-zip":
+    default:
+      return "Providence Project ZIP";
+  }
+}
+
 function browserTargetToScenarioTarget(target: BrowserExportTarget): ScenarioTarget {
   switch (target) {
     case "mac-classic-scenario-zip":
@@ -277,6 +327,77 @@ function browserTargetToScenarioTarget(target: BrowserExportTarget): ScenarioTar
     default:
       return "providence-portable-folder";
   }
+}
+
+function sourceShownCount(plan: ReturnType<typeof exportPlan>) {
+  return plan.exportableSources.length + Math.min(plan.passThroughSources.length, 10);
+}
+
+type ExportDiagnostic = {
+  kind: "error" | "warning" | "info";
+  message: string;
+  detail?: string;
+};
+
+function exportDiagnostics(
+  project: Project | null,
+  report: ExportReport | null,
+  context: {
+    browserTarget: BrowserExportTarget;
+    desktopRuntime: boolean;
+    plan: ReturnType<typeof exportPlan>;
+    selectedScenarioTarget: ScenarioTarget;
+  }
+): ExportDiagnostic[] {
+  const diagnostics: ExportDiagnostic[] = [];
+  if (report) {
+    diagnostics.push(...report.warnings.map((message) => ({ kind: "warning" as const, message, detail: "Export report warning" })));
+    diagnostics.push(...report.resourceWarnings.map((message) => ({ kind: "warning" as const, message, detail: "Resource export note" })));
+    diagnostics.push(...report.blockedAssets.map((message) => ({ kind: "warning" as const, message, detail: "Blocked asset" })));
+    diagnostics.push(...report.targetCompatibility.blockers.map((issue) => ({ kind: "error" as const, message: issue.message, detail: exportTargetLabel(issue.target) })));
+    diagnostics.push(...report.targetCompatibility.warnings.map((issue) => ({ kind: "warning" as const, message: issue.message, detail: exportTargetLabel(issue.target) })));
+    diagnostics.push(...report.targetCompatibility.notes.map((issue) => ({ kind: "info" as const, message: issue.message, detail: exportTargetLabel(issue.target) })));
+    return diagnostics;
+  }
+  if (!project) return diagnostics;
+  if (
+    !context.desktopRuntime &&
+    context.browserTarget !== "project-zip" &&
+    context.plan.exportableSources.length === 0 &&
+    context.plan.passThroughSources.length === 0
+  ) {
+    diagnostics.push({
+      kind: "warning",
+      message: "Scenario ZIP export needs a captured raw source snapshot.",
+      detail: "Import a Realmz scenario or open a Providence project ZIP that includes raw-sources."
+    });
+  }
+  diagnostics.push(...project.validation.errors.map((message) => ({ kind: "error" as const, message, detail: "Validation blocker" })));
+  diagnostics.push(...project.validation.warnings.filter(isExportFacingWarning).map(issueFromPreExportWarning));
+  const targetCompatibility = compatibilityForTarget(project.validation.targetCompatibility, context.selectedScenarioTarget);
+  diagnostics.push(...targetCompatibility.blockers.map((issue) => ({ kind: "error" as const, message: issue.message, detail: exportTargetLabel(issue.target) })));
+  diagnostics.push(...targetCompatibility.warnings.map((issue) => ({ kind: "warning" as const, message: issue.message, detail: exportTargetLabel(issue.target) })));
+  diagnostics.push(...targetCompatibility.notes.map((issue) => ({ kind: "info" as const, message: issue.message, detail: exportTargetLabel(issue.target) })));
+  return diagnostics;
+}
+
+function isExportFacingWarning(message: string) {
+  return /source|snapshot|export|pass-through|resource|target|unsupported|scenario package|raw/i.test(message);
+}
+
+function issueFromPreExportWarning(message: string): ExportDiagnostic {
+  if (/preserved source file\(s\) will pass through unchanged/.test(message)) {
+    return { kind: "info", message, detail: "Preserved source package note" };
+  }
+  return { kind: "warning", message, detail: "Pre-export warning" };
+}
+
+function compatibilityForTarget(buckets: Project["validation"]["targetCompatibility"], target: ScenarioTarget) {
+  return {
+    blockers: buckets.blockers.filter((issue) => issue.target === target || issue.target === "providence-portable-folder"),
+    warnings: buckets.warnings.filter((issue) => issue.target === target || issue.target === "providence-portable-folder"),
+    notes: buckets.notes.filter((issue) => issue.target === target || issue.target === "providence-portable-folder")
+  };
 }
 
 function exportPlan(project: Project | null) {

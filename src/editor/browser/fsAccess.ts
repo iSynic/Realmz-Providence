@@ -602,7 +602,8 @@ function packageFallbackRootName(projectRoot: string, selectedRootName: string) 
   return packageRootName(rootSegment);
 }
 
-const SUPPORTED_WRITE_FILES = new Set([
+export const SUPPORTED_WRITE_FILES = new Set([
+  "Global",
   "Data LD",
   "Data DL",
   "Data DD",
@@ -610,14 +611,30 @@ const SUPPORTED_WRITE_FILES = new Set([
   "Data RD",
   "Data RDD",
   "Layout",
+  "Data ED",
+  "Data ED2",
   "Data ED3",
   "Data EDCD",
+  "Data MD",
   "Data MD1",
   "Data MD-1",
+  "Data DES",
+  "Data BD",
+  "Data SD",
+  "Data SD2",
+  "Data OD",
+  "Data MD2",
+  "Data TD",
+  "Data TD2",
+  "Data TD3",
   "Data CS",
   "Data CI",
   "Data RI",
-  "Data Solids",
-  "Data OD",
-  "Data DES"
+  "Data NI",
+  "Data Spell",
+  "Data Race",
+  "Data Caste",
+  "Data Custom 1 BD",
+  "Data Custom 2 BD",
+  "Data Custom 3 BD"
 ]);

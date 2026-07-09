@@ -1,6 +1,5 @@
 .script-workbench,
-.assets-panel,
-.export-workbench {
+.assets-panel {
   display: grid;
   grid-template-columns: minmax(300px, 0.85fr) minmax(420px, 1.15fr);
   gap: 14px;
@@ -9,9 +8,9 @@
 
 
 .export-workbench {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
   gap: 14px;
 }
 
@@ -20,6 +19,81 @@
 .export-workbench > .tab-panel {
   width: min(100%, 1500px);
   box-sizing: border-box;
+}
+
+
+
+.export-readiness-grid,
+.export-review-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  padding: 10px;
+}
+
+
+
+.export-readiness-column,
+.export-review-column {
+  min-width: 0;
+  border: 1px solid #20252b;
+  border-radius: 5px;
+  background: #111418;
+  overflow: hidden;
+}
+
+
+
+.export-readiness-column > h3,
+.export-readiness-column .tutorial-tip > h3 {
+  margin: 0;
+  padding: 9px 10px;
+  border-bottom: 1px solid #20252b;
+  color: #dfe7ef;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+
+
+.export-source-list,
+.export-diagnostics-list {
+  max-height: 250px;
+}
+
+
+
+.export-source-list .record-row > button:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+
+
+.export-review-column .panel-header.compact,
+.export-benchmark-header {
+  min-height: 40px;
+  padding: 8px 10px;
+}
+
+
+
+.export-benchmark-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+
+
+@media (max-width: 1050px) {
+  .export-readiness-grid,
+  .export-review-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 

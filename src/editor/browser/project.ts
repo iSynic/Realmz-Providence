@@ -1,5 +1,5 @@
 import { BenchmarkReport, ItemTextRecord, Project, ScenarioShell, ValidationReport } from "../types";
-import { BrowserProjectSource, BrowserRawSourceSnapshot, BrowserScenarioSource, readProjectPackage, readScenarioSource } from "./fsAccess";
+import { BrowserProjectSource, BrowserRawSourceSnapshot, BrowserScenarioSource, SUPPORTED_WRITE_FILES, readProjectPackage, readScenarioSource } from "./fsAccess";
 import { browserReferenceAtlasUrl, browserTilesetAtlasUrl, hasBrowserReferenceAtlas } from "./atlasPaths";
 import { parseResourceFork, parseStringListResource } from "./library";
 import { buildBrowserSemanticSchema, type BrowserSemanticBuildProgress } from "./semantic";
@@ -878,14 +878,18 @@ export function validateBrowserProject(project: Project): ValidationReport {
   const sourceNames = new Set(project.source.files.map((file) => file.name));
   validateTileAttributes(project, sourceNames, warnings);
   validateMapRecords(project, errors, warnings);
-  const exportableFiles = ["Data LD", "Data DL", "Data DD", "Data DDD", "Data RD", "Data RDD", "Layout", "Data ED3", "Data EDCD", "Data ED", "Data ED2", "Data TD2", "Data TD3", "Data MD", "Data MD1", "Data MD-1", "Data DES", "Data BD", "Data SD", "Data SD2", "Data OD", "Data MD2", "Data TD"].filter((name) =>
-    sourceNames.has(name) || (name === "Layout" && project.landLayout)
+  const exportableFiles = [
+    ...SUPPORTED_WRITE_FILES,
+    project.scenario.shell?.sourceFile?.trim() ?? "",
+    project.scenario.supportFile?.sourceFile?.trim() ?? ""
+  ].filter((name, index, names) =>
+    name && names.indexOf(name) === index && (sourceNames.has(name) || (name === "Layout" && project.landLayout))
   );
   const passThroughFiles = project.source.files
-    .filter((file) => !file.editable && !isGeneratedRuntimeCacheFile(file.name))
+    .filter((file) => !isBrowserWritableSourceFile(project, file.name) && !isGeneratedRuntimeCacheFile(file.name))
     .map((file) => file.name);
   if (passThroughFiles.length > 0) {
-    warnings.push(`${passThroughFiles.length.toLocaleString()} unsupported source file(s) will pass through unchanged: ${passThroughFiles.slice(0, 10).join(", ")}.`);
+    warnings.push(`${passThroughFiles.length.toLocaleString()} preserved source file(s) will pass through unchanged because Providence does not author those file families directly: ${passThroughFiles.slice(0, 10).join(", ")}.`);
   }
   for (const source of project.source.files) {
     if (isGeneratedRuntimeCacheFile(source.name)) {
@@ -893,6 +897,13 @@ export function validateBrowserProject(project: Project): ValidationReport {
     }
   }
   return { ok: errors.length === 0, errors, warnings, exportableFiles, passThroughFiles, targetCompatibilityIssues: [], targetCompatibility: EMPTY_TARGET_COMPATIBILITY };
+}
+
+function isBrowserWritableSourceFile(project: Project, name: string) {
+  if (SUPPORTED_WRITE_FILES.has(name)) return true;
+  if (project.scenario.shell?.sourceFile?.trim() === name) return true;
+  if (project.scenario.supportFile?.sourceFile?.trim() === name) return true;
+  return false;
 }
 
 function isGeneratedRuntimeCacheFile(name: string) {

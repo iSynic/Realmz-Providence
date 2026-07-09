@@ -210,6 +210,7 @@ const SUPPORTING_VALIDATION_WARNING_PATTERNS = [
   /\d+(?:,\d+)* render asset fallback\(s\) are present; maps using them may render as decoded colors\.$/,
   /\d+(?:,\d+)* generated runtime cache model\(s\) are read-only and will not be authored on export\.$/,
   /\d+(?:,\d+)* unsupported source file\(s\) will pass through unchanged:/,
+  /\d+(?:,\d+)* preserved source file\(s\) will pass through unchanged because Providence does not author those file families directly:/,
   /^Semantic (missing-edcd-row|missing-secondary-edcd-row):/,
   /^.+ looks like a generated runtime cache and is treated as evidence, not authored data\.$/,
   /^.+ atlas is not available in browser import; decoded colors are used\.$/,
